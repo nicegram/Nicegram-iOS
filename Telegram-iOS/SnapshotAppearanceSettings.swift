@@ -23,7 +23,7 @@ func snapshotAppearanceSettings(application: UIApplication, mainWindow: UIWindow
     }).start()
     
     let rootController = TelegramRootController(context: context)
-    rootController.addRootControllers(showCallsTab: true)
+    rootController.addRootControllers(showCallsTab: true, showNonMutedChatsTab: false, showContactsTab: true)
     window.viewController = rootController
     rootController.rootTabController!.selectedIndex = 3
     rootController.pushViewController(themeSettingsController(context: context))

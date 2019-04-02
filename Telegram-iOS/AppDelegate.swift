@@ -134,6 +134,10 @@ private final class SharedApplicationContext {
     }
 }
 
+private struct NiceFeaturesSelectionState: Equatable {
+    
+}
+
 @objc(AppDelegate) class AppDelegate: UIResponder, UIApplicationDelegate, PKPushRegistryDelegate, BITHockeyManagerDelegate, UNUserNotificationCenterDelegate, UIAlertViewDelegate {
     @objc var window: UIWindow?
     var nativeWindow: (UIWindow & WindowHost)?
@@ -760,7 +764,21 @@ private final class SharedApplicationContext {
         })
         
         let watchManagerArgumentsPromise = Promise<WatchManagerArguments?>()
-            
+        var showNonMutedChatsTab = false
+        var showContactsTab = true
+        
+        _ = (accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.niceSettings])).start(next: { sharedData in
+                if let settings = sharedData.entries[ApplicationSpecificSharedDataKeys.niceSettings] as? NiceSettings {
+                    showNonMutedChatsTab = settings.workmode
+                    showContactsTab = settings.showContactsTab
+                } else {
+                    let defaultSettings = NiceSettings.defaultSettings
+                    showNonMutedChatsTab = defaultSettings.workmode
+                    showContactsTab = defaultSettings.showContactsTab
+                }
+            })
+        
+        
         self.context.set(self.sharedContextPromise.get()
         |> deliverOnMainQueue
         |> mapToSignal { sharedApplicationContext -> Signal<AuthorizedApplicationContext?, NoError> in
@@ -793,7 +811,7 @@ private final class SharedApplicationContext {
             |> map { accountAndSettings -> AuthorizedApplicationContext? in
                 return accountAndSettings.flatMap { account, limitsConfiguration, callListSettings in
                     let context = AccountContext(sharedContext: sharedApplicationContext.sharedContext, account: account, limitsConfiguration: limitsConfiguration)
-                    return AuthorizedApplicationContext(mainWindow: self.mainWindow, watchManagerArguments: watchManagerArgumentsPromise.get(), context: context, accountManager: sharedApplicationContext.sharedContext.accountManager, showCallsTab: callListSettings.showTab, reinitializedNotificationSettings: {
+                    return AuthorizedApplicationContext(mainWindow: self.mainWindow, watchManagerArguments: watchManagerArgumentsPromise.get(), context: context, accountManager: sharedApplicationContext.sharedContext.accountManager, showCallsTab: callListSettings.showTab, showNonMutedChatsTab: showNonMutedChatsTab, showContactsTab: showContactsTab, reinitializedNotificationSettings: {
                         let _ = (self.context.get()
                         |> take(1)
                         |> deliverOnMainQueue).start(next: { context in
