@@ -27,7 +27,7 @@
 	url = https://github.com/nicegram/TelegramCore.git
 [submodule "submodules/TelegramUI"]
 	path = submodules/TelegramUI
-	url = https://github.com/peter-iakovlev/TelegramUI.git
+	url = https://github.com/nicegram/TelegramUI.git
 [submodule "submodules/ffmpeg"]
 	path = submodules/ffmpeg
 	url = https://github.com/peter-iakovlev/ffmpeg.git
