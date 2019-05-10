@@ -34,3 +34,6 @@
 [submodule "submodules/LegacyComponents"]
 	path = submodules/LegacyComponents
 	url = https://github.com/peter-iakovlev/legacycomponents.git
+[submodule "submodules/webp"]
+	path = submodules/webp
+	url = https://github.com/peter-iakovlev/webp.git
