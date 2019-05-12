@@ -1,69 +1,65 @@
 // Notifications
-"PUSH_MESSAGE_TEXT" = "%1$@: %2$@";
-"PUSH_MESSAGE_NOTEXT" = "%1$@ sent you a message";
-"PUSH_MESSAGE_PHOTO" = "%1$@ sent you a photo";
-"PUSH_MESSAGE_PHOTO_SECRET" = "%1$@ sent you a self-destructing photo";
-"PUSH_MESSAGE_VIDEO" = "%1$@ sent you a video";
-"PUSH_MESSAGE_VIDEO_SECRET" = "%1$@ sent you a self-destructing video";
-"PUSH_MESSAGE_ROUND" = "%1$@ sent you a video message";
-"PUSH_MESSAGE_CONTACT" = "%1$@ shared a contact with you";
-"PUSH_MESSAGE_GEO" = "%1$@ sent you a map";
-"PUSH_MESSAGE_GEOLIVE" = "%1$@ started sharing their live location";
-"PUSH_MESSAGE_DOC" = "%1$@ sent you a file";
-"PUSH_MESSAGE_AUDIO" = "%1$@ sent you a voice message";
-"PUSH_MESSAGE_GIF" = "%1$@ sent you a GIF";
+"PUSH_MESSAGE_TEXT" = "%1$@|%2$@";
+"PUSH_MESSAGE_NOTEXT" = "%1$@|sent you a message";
+"PUSH_MESSAGE_PHOTO" = "%1$@|sent you a photo";
+"PUSH_MESSAGE_PHOTO_SECRET" = "%1$@|sent you a self-destructing photo";
+"PUSH_MESSAGE_VIDEO" = "%1$@|sent you a video";
+"PUSH_MESSAGE_VIDEO_SECRET" = "%1$@|sent you a self-destructing video";
+"PUSH_MESSAGE_ROUND" = "%1$@|sent you a video message";
+"PUSH_MESSAGE_CONTACT" = "%1$@|shared a contact %2$@ with you";
+"PUSH_MESSAGE_GEO" = "%1$@|sent you a map";
+"PUSH_MESSAGE_GEOLIVE" = "%1$@|started sharing their live location";
+"PUSH_MESSAGE_DOC" = "%1$@|sent you a file";
+"PUSH_MESSAGE_AUDIO" = "%1$@|sent you a voice message";
+"PUSH_MESSAGE_GIF" = "%1$@|sent you a GIF";
 "PUSH_ENCRYPTED_MESSAGE" = "You have a new message%1$@";
 "PUSH_LOCKED_MESSAGE" = "You have a new message%1$@";
-"PUSH_MESSAGE_SCREENSHOT" = "%1$@ took a screenshot!";
+"PUSH_MESSAGE_SCREENSHOT" = "%1$@|took a screenshot!";
 "PUSH_ENCRYPTION_REQUEST" = "New encryption request%1$@";
 "PUSH_ENCRYPTION_ACCEPT" = "Your encryption request was accepted%1$@";
 
-"PUSH_MESSAGE_POLL" = "%1$@ sent you a poll";
-"PUSH_CHANNEL_MESSAGE_POLL" = "%1$@ posted a poll";
-"PUSH_CHAT_MESSAGE_POLL" = "%1$@ sent a poll to the group %2$@";
-"PUSH_PINNED_POLL" = "%1$@ pinned a poll";
+"PUSH_MESSAGE_POLL" = "%1$@|sent you a poll %2$@";
+"PUSH_CHANNEL_MESSAGE_POLL" = "%1$@|posted a poll %2$@";
+"PUSH_PINNED_POLL" = "%1$@|pinned a poll";
 
-"PUSH_CHAT_MESSAGE_TEXT" = "%1$@@%2$@: %3$@";
-"PUSH_CHAT_MESSAGE_NOTEXT" = "%1$@ sent a message to the group %2$@";
-"PUSH_CHAT_MESSAGE_PHOTO" = "%1$@ sent a photo to the group %2$@";
-"PUSH_CHAT_MESSAGE_VIDEO" = "%1$@ sent a video to the group %2$@";
-"PUSH_CHAT_MESSAGE_ROUND" = "%1$@ sent a video message to the group %2$@";
-"PUSH_CHAT_MESSAGE_CONTACT" = "%1$@ shared a contact in the group %2$@";
-"PUSH_CHAT_MESSAGE_GEO" = "%1$@ sent a map to the group %2$@";
-"PUSH_CHAT_MESSAGE_GEOLIVE" = "%1$@ started sharing their live location with %2$@";
-"PUSH_CHAT_MESSAGE_DOC" = "%1$@ sent a file to the group %2$@";
-"PUSH_CHAT_MESSAGE_AUDIO" = "%1$@ sent a voice message to the group %2$@";
-"PUSH_CHAT_MESSAGE_GIF" = "%1$@ sent a GIF to the group %2$@";
-"PUSH_CHAT_CREATED" = "%1$@ invited you to the group %2$@";
-"PUSH_CHAT_TITLE_EDITED" = "%1$@ edited the group's %2$@ name";
-"PUSH_CHAT_PHOTO_EDITED" = "%1$@ edited the group's %2$@ photo";
-"PUSH_CHAT_ADD_MEMBER" = "%1$@ invited %3$@ to the group %2$@";
-"PUSH_CHAT_ADD_YOU" = "%1$@ invited you to the group %2$@";
-"PUSH_CHAT_DELETE_YOU" = "%1$@ removed you from the group %2$@";
-"PUSH_CHAT_DELETE_MEMBER" = "%1$@ removed %3$@ from the group %2$@";
-"PUSH_CHAT_LEFT" = "%1$@ left the group %2$@";
-"PUSH_CHAT_RETURNED" = "%1$@ returned to the group %2$@";
-"PUSH_CHAT_MESSAGE_PHOTOS" = "%1$@ sent %3$@ photos to the group %2$@";
-"PUSH_CHAT_MESSAGES" = "%1$@ sent %3$@ messages to the group %2$@";
+"PUSH_CHAT_MESSAGE_TEXT" = "%2$@|%1$@: %3$@";
+"PUSH_CHAT_MESSAGE_NOTEXT" = "%2$@|%1$@ sent a message";
+"PUSH_CHAT_MESSAGE_PHOTO" = "%2$@|%1$@ sent a photo";
+"PUSH_CHAT_MESSAGE_VIDEO" = "%2$@|%1$@ sent a video";
+"PUSH_CHAT_MESSAGE_ROUND" = "%2$@|%1$@ sent a video message";
+"PUSH_CHAT_MESSAGE_CONTACT" = "%2$@|%1$@ shared a contact %3$@";
+"PUSH_CHAT_MESSAGE_GEO" = "%2$@|%1$@ sent a map";
+"PUSH_CHAT_MESSAGE_GEOLIVE" = "%2$@|%1$@ started sharing their live location";
+"PUSH_CHAT_MESSAGE_DOC" = "%2$@|%1$@ sent a file";
+"PUSH_CHAT_MESSAGE_AUDIO" = "%2$@|%1$@ sent a voice message";
+"PUSH_CHAT_MESSAGE_GIF" = "%2$@|%1$@ sent a GIF";
+"PUSH_CHAT_CREATED" = "%2$@|%1$@ invited you to the group";
+"PUSH_CHAT_TITLE_EDITED" = "%2$@|%1$@ edited the group's name";
+"PUSH_CHAT_PHOTO_EDITED" = "%2$@|%1$@ edited the group's photo";
+"PUSH_CHAT_ADD_MEMBER" = "%2$@|%1$@ invited %3$@ to the group";
+"PUSH_CHAT_ADD_YOU" = "%2$@|%1$@ invited you to the group";
+"PUSH_CHAT_DELETE_YOU" = "%2$@|%1$@ removed you from the group";
+"PUSH_CHAT_DELETE_MEMBER" = "%2$@|%1$@ removed %3$@ from the group";
+"PUSH_CHAT_LEFT" = "%2$@|%1$@ left the group";
+"PUSH_CHAT_RETURNED" = "%2$@|%1$@ returned to the group";
 
-"PUSH_MESSAGE_STICKER" = "%1$@ sent you a %2$@sticker";
-"PUSH_CHAT_MESSAGE_STICKER" = "%1$@ sent a %3$@sticker to the group %2$@";
+"PUSH_MESSAGE_STICKER" = "%1$@|sent you a %2$@sticker";
+"PUSH_CHAT_MESSAGE_STICKER" = "%2$@|%1$@ sent a %3$@sticker";
 
-"PUSH_CONTACT_JOINED" = "%1$@ joined Nicegram!";
+"PUSH_CONTACT_JOINED" = "%1$@|joined Telegram!";
 
-"PUSH_CHANNEL_MESSAGE_TEXT" = "%1$@: %2$@";
-"PUSH_CHANNEL_MESSAGE_NOTEXT" = "%1$@ posted a message";
-"PUSH_CHANNEL_MESSAGE_PHOTO" = "%1$@ posted a photo";
-"PUSH_CHANNEL_MESSAGE_VIDEO" = "%1$@ posted a video";
-"PUSH_CHANNEL_MESSAGE_ROUND" = "%1$@ posted a video message";
-"PUSH_CHANNEL_MESSAGE_DOC" = "%1$@ posted a document";
-"PUSH_CHANNEL_MESSAGE_STICKER" = "%1$@ posted a %2$@sticker";
-"PUSH_CHANNEL_MESSAGE_AUDIO" = "%1$@ posted a voice message";
-"PUSH_CHANNEL_MESSAGE_CONTACT" = "%1$@ posted a contact";
-"PUSH_CHANNEL_MESSAGE_GEO" = "%1$@ posted a map";
-"PUSH_CHANNEL_MESSAGE_GEOLIVE" = "%1$@ posted a live location";
-"PUSH_CHANNEL_MESSAGE_GIF" = "%1$@ posted a GIF";
-"PUSH_CHANNEL_MESSAGES" = "%1$@ posted %2$@ messages";
+"PUSH_CHANNEL_MESSAGE_TEXT" = "%1$@|%2$@";
+"PUSH_CHANNEL_MESSAGE_NOTEXT" = "%1$@|posted a message";
+"PUSH_CHANNEL_MESSAGE_PHOTO" = "%1$@|posted a photo";
+"PUSH_CHANNEL_MESSAGE_VIDEO" = "%1$@|posted a video";
+"PUSH_CHANNEL_MESSAGE_ROUND" = "%1$@|posted a video message";
+"PUSH_CHANNEL_MESSAGE_DOC" = "%1$@|posted a document";
+"PUSH_CHANNEL_MESSAGE_STICKER" = "%1$@|posted a %2$@sticker";
+"PUSH_CHANNEL_MESSAGE_AUDIO" = "%1$@|posted a voice message";
+"PUSH_CHANNEL_MESSAGE_CONTACT" = "%1$@|posted a %2$@ contact";
+"PUSH_CHANNEL_MESSAGE_GEO" = "%1$@|posted a map";
+"PUSH_CHANNEL_MESSAGE_GEOLIVE" = "%1$@|posted a live location";
+"PUSH_CHANNEL_MESSAGE_GIF" = "%1$@|posted a GIF";
 
 "PUSH_PINNED_TEXT" = "%1$@ pinned \"%2$@\" ";
 "PUSH_PINNED_NOTEXT" = "%1$@ pinned a message";
@@ -73,14 +69,13 @@
 "PUSH_PINNED_DOC" = "%1$@ pinned a file";
 "PUSH_PINNED_STICKER" = "%1$@ pinned a %2$@sticker";
 "PUSH_PINNED_AUDIO" = "%1$@ pinned a voice message";
-"PUSH_PINNED_CONTACT" = "%1$@ pinned a contact";
 "PUSH_PINNED_GEO" = "%1$@ pinned a map";
 "PUSH_PINNED_GEOLIVE" = "%1$@ pinned a live location";
 "PUSH_PINNED_GIF" = "%1$@ pinned a GIF";
 
-"PUSH_MESSAGE_GAME" = "%1$@ invited you to play %2$@";
-"PUSH_CHANNEL_MESSAGE_GAME" = "%1$@ invited you to play %2$@";
-"PUSH_CHAT_MESSAGE_GAME" = "%1$@ invited the group %2$@ to play %3$@";
+"PUSH_MESSAGE_GAME" = "%1$@|invited you to play %2$@";
+"PUSH_CHANNEL_MESSAGE_GAME" = "%1$@|invited you to play %2$@";
+"PUSH_CHAT_MESSAGE_GAME" = "%2$@|%1$@ invited the group to play %3$@";
 "PUSH_PINNED_GAME" = "%1$@ pinned a game";
 
 "PUSH_MESSAGE_TEXT" = "%1$@|%2$@";
@@ -116,6 +111,7 @@
 "PUSH_MESSAGE" = "%1$@|sent you a message";
 "PUSH_MESSAGES_1" = "%1$@|sent you a message";
 "PUSH_MESSAGES_any" = "%1$@|sent you %2$d messages";
+"PUSH_MESSAGE_ALBUM" = "%1$@|sent you an album";
 
 "PUSH_CHANNEL_MESSAGE_TEXT" = "%1$@|%2$@";
 "PUSH_CHANNEL_MESSAGE_NOTEXT" = "%1$@|posted a message";
@@ -140,16 +136,16 @@
 "PUSH_CHANNEL_MESSAGE_VIDEO" = "%1$@|posted a video";
 "PUSH_CHANNEL_MESSAGE_VIDEOS_1" = "%1$@|posted a video";
 "PUSH_CHANNEL_MESSAGE_VIDEOS_any" = "%1$@|posted %2$d videos";
-"PUSH_CHANNEL_MESSAGE_ROUND" = "%1$@|posted a round video";
-"PUSH_CHANNEL_MESSAGE_ROUNDS_1" = "%1$@|posted a round video";
-"PUSH_CHANNEL_MESSAGE_ROUNDS_any" = "%1$@|posted %2$d round videos";
+"PUSH_CHANNEL_MESSAGE_ROUND" = "%1$@|posted a video message";
+"PUSH_CHANNEL_MESSAGE_ROUNDS_1" = "%1$@|posted a video message";
+"PUSH_CHANNEL_MESSAGE_ROUNDS_any" = "%1$@|posted %2$d video messages";
 "PUSH_CHANNEL_MESSAGE" = "%1$@|posted a message";
 "PUSH_CHANNEL_MESSAGES_1" = "%1$@|posted a message";
 "PUSH_CHANNEL_MESSAGES_any" = "%1$@|posted %2$d messages";
+"PUSH_CHANNEL_ALBUM" = "%1$@|posted an album";
 
 "PUSH_CHAT_MESSAGE_TEXT" = "%2$@|%1$@:%3$@";
 "PUSH_CHAT_MESSAGE_NOTEXT" = "%2$@|%1$@ sent a message to the group";
-"PUSH_CHAT_MESSAGE_PHOTO" = "%2$@|%1$@ sent a photo";
 "PUSH_CHAT_MESSAGE_VIDEO" = "%2$@|%1$@ sent a video ";
 "PUSH_CHAT_MESSAGE_ROUND" = "%2$@|%1$@ sent a video message";
 "PUSH_CHAT_MESSAGE_DOC" = "%2$@|%1$@ sent a file";
@@ -158,7 +154,7 @@
 "PUSH_CHAT_MESSAGE_CONTACT" = "%2$@|%1$@ shared a contact";
 "PUSH_CHAT_MESSAGE_GEO" = "%2$@|%1$@ sent a map";
 "PUSH_CHAT_MESSAGE_GEOLIVE" = "%2$@|%1$@ started sharing their live location";
-"PUSH_CHAT_MESSAGE_POLL" = "%2$@|%1$@ sent a poll";
+"PUSH_CHAT_MESSAGE_POLL" = "%2$@|%1$@ sent a poll %3$@ to the group";
 "PUSH_CHAT_MESSAGE_GIF" = "%2$@|%1$@ sent a GIF";
 "PUSH_CHAT_MESSAGE_GAME" = "%2$@|%1$@ invited the group to play %3$@";
 "PUSH_CHAT_MESSAGE_INVOICE" = "%2$@|%1$@ sent an invoice for %3$@";
@@ -187,6 +183,7 @@
 "PUSH_CHAT_MESSAGE" = "%2$@|%1$@ sent a message";
 "PUSH_CHAT_MESSAGES_1" = "%2$@|%1$@ sent a message";
 "PUSH_CHAT_MESSAGES_any" = "%2$@|%1$@ sent %3$d messages";
+"PUSH_CHAT_ALBUM" = "%2$@|%1$@ sent an album";
 
 "PUSH_PINNED_TEXT" = "%1$@|pinned \"%2$@\" ";
 "PUSH_PINNED_NOTEXT" = "%1$@|pinned a message";
@@ -196,10 +193,10 @@
 "PUSH_PINNED_DOC" = "%1$@|pinned a file";
 "PUSH_PINNED_STICKER" = "%1$@|pinned a %2$@sticker";
 "PUSH_PINNED_AUDIO" = "%1$@|pinned a voice message";
-"PUSH_PINNED_CONTACT" = "%1$@|pinned a contact";
+"PUSH_PINNED_CONTACT" = "%1$@|pinned a %2$@ contact";
 "PUSH_PINNED_GEO" = "%1$@|pinned a map";
 "PUSH_PINNED_GEOLIVE" = "%1$@|pinned a live location";
-"PUSH_PINNED_POLL" = "|%1$@|pinned a poll";
+"PUSH_PINNED_POLL" = "|%1$@|pinned a poll %2$@";
 "PUSH_PINNED_GAME" = "%1$@|pinned a game";
 "PUSH_PINNED_INVOICE" = "%1$@|pinned an invoice";
 "PUSH_PINNED_GIF" = "%1$@|pinned a GIF";
@@ -211,6 +208,14 @@
 
 "PUSH_PHONE_CALL_REQUEST" = "%1$@|is calling you!";
 "PUSH_PHONE_CALL_MISSED" = "%1$@|You missed a call";
+
+"PUSH_MESSAGE_GAME_SCORE" = "%1$@ scored %3$@ in game %2$@";
+"PUSH_MESSAGE_VIDEOS" = "%1$@ sent you %2$@ videos";
+"PUSH_MESSAGE_CHANNEL_MESSAGE_GAME_SCORE" = "%1$@ scored %3$@ in game %2$@";
+"PUSH_CHANNEL_MESSAGE_VIDEOS" = "%1$@ posted %2$@ videos";
+"PUSH_PINNED_GAME_SCORE" = "%1$@ pinned a game score";
+"PUSH_CHAT_MESSAGE_GAME_SCORE" = "%1$@ scored %4$@ in game %3$@ in the group %2$@";
+"PUSH_CHAT_MESSAGE_VIDEOS" = "%1$@ sent %3$@ videos to the group %2$@";
 
 "LOCAL_MESSAGE_FWDS" = "%1$@ forwarded you %2$d messages";
 "LOCAL_CHANNEL_MESSAGE_FWDS" = "%1$@ posted %2$d forwarded messages";
@@ -537,6 +542,7 @@
 "Message.Audio" = "Voice Message";
 "Message.ForwardedMessage" = "Forwarded Message\nFrom: %@";
 "Message.Animation" = "GIF";
+"Message.Game" = "Game";
 
 // Conversation Profile
 "ConversationProfile.ErrorCreatingConversation" = "An error occurred";
@@ -3926,8 +3932,9 @@ Unused sets are archived when you add more.";
 "ChatList.DeleteSavedMessagesConfirmation" = "Are you sure you want to delete\nSaved Messages?";
 
 "Undo.Undo" = "Undo";
-"Undo.MessagesDeleted" = "Messages deleted";
 "Undo.ChatDeleted" = "Chat deleted";
+"Undo.ChatCleared" = "Chat cleared";
+"Undo.ChatClearedForBothSides" = "Chat cleared for both sides";
 "Undo.SecretChatDeleted" = "Secret Chat deleted";
 "Undo.LeftChannel" = "Left channel";
 "Undo.LeftGroup" = "Left group";
@@ -4005,7 +4012,7 @@ Unused sets are archived when you add more.";
 "AutoDownloadSettings.TypeGroupChats" = "Groups";
 "AutoDownloadSettings.TypeChannels" = "Channels";
 "AutoDownloadSettings.UpToForAll" = "Up to %@ for all chats";
-"AutoDownloadSettings.UpToFor" = "Up to %@ for %@";
+"AutoDownloadSettings.UpToFor" = "Up to %1$@ for %2$@";
 "AutoDownloadSettings.OffForAll" = "Off for all chats";
 "AutoDownloadSettings.Delimeter" = ", ";
 "AutoDownloadSettings.LastDelimeter" = " and ";
@@ -4182,6 +4189,7 @@ Unused sets are archived when you add more.";
 "SettingsSearch.Synonyms.Appearance.ChatBackground.Custom" = " ";
 "SettingsSearch.Synonyms.Appearance.AutoNightTheme" = " ";
 "SettingsSearch.Synonyms.Appearance.ColorTheme" = " ";
+"SettingsSearch.Synonyms.Appearance.LargeEmoji" = " ";
 "SettingsSearch.Synonyms.Appearance.Animations" = "Animations";
 
 "SettingsSearch.Synonyms.SavedMessages" = " ";
@@ -4195,3 +4203,62 @@ Unused sets are archived when you add more.";
 "ChatList.DeleteForEveryone" = "Delete for me and %@";
 
 "ChatList.ClearChatConfirmation" = "Are you sure you want to delete all\nmessages in the chat with %@?";
+
+"Settings.CheckPhoneNumberTitle" = "Is %@ still your number?";
+"Settings.CheckPhoneNumberText" = "Keep your number up to date to ensure you can always log in to Telegram. [Learn more]()";
+"Settings.KeepPhoneNumber" = "Keep %@";
+"Settings.ChangePhoneNumber" = "Change Number";
+
+"Undo.ChatDeletedForBothSides" = "Chat deleted for both sides";
+
+"DataUpgrade.Running" = "Optimizing Telegram...";
+
+"Call.Mute" = "mute";
+"Call.Camera" = "camera";
+"Call.Flip" = "flip";
+"Call.End" = "end";
+"Call.Speaker" = "speaker";
+
+"MemberSearch.BotSection" = "BOTS";
+
+"Conversation.PrivateMessageLinkCopied" = "This link will only work for members of this chat.";
+"Conversation.ErrorInaccessibleMessage" = "Unfortunately, you can't access this message. You are not a member of the chat where it was posted.";
+
+"Stickers.ClearRecent" = "Clear Recent Stickers";
+
+"Appearance.Other" = "Other";
+"Appearance.LargeEmoji" = "Large Emoji";
+
+"ChatList.ArchiveAction" = "Archive";
+"ChatList.UnarchiveAction" = "Unarchive";
+"ChatList.HideAction" = "Hide";
+"ChatList.UnhideAction" = "Pin";
+
+"ChatList.UndoArchiveTitle" = "Chat archived";
+"ChatList.UndoArchiveMultipleTitle" = "Chats archived";
+"ChatList.UndoArchiveText1" = "Hide the archive by swiping left on it.";
+"ChatList.UndoArchiveHiddenTitle" = "Archive hidden";
+"ChatList.UndoArchiveHiddenText" = "Swipe down to see archive.";
+"ChatList.UndoArchiveRevealedTitle" = "Archive pinned";
+"ChatList.UndoArchiveRevealedText" = "Swipe left on the archive to hide it.";
+"ChatList.ArchivedChatsTitle" = "Archived Chats";
+
+"PasscodeSettings.PasscodeOptions" = "Passcode Options";
+
+"Conversation.PrivateChannelTooltip" = "This channel is private";
+
+"PasscodeSettings.PasscodeOptions" = "Passcode Options";
+"PasscodeSettings.AlphanumericCode" = "Custom Alphanumeric Code";
+"PasscodeSettings.4DigitCode" = "4-Digit Numeric Code";
+"PasscodeSettings.6DigitCode" = "6-Digit Numeric Code";
+
+"Conversation.ScamWarning" = "⚠️ Warning: Many users reported this account as a scam. Please be careful, especially if it asks you for money.";
+
+"Conversation.ClearChatConfirmation" = "Warning, this will delete your **entire chat history** with %@.";
+
+"ArchivedChats.IntroTitle1" = "This is your archive";
+"ArchivedChats.IntroText1" = "Chats with enabled notifications get unarchived when new notifications arrive.";
+"ArchivedChats.IntroTitle2" = "Muted Chats";
+"ArchivedChats.IntroText2" = "Muted chats stay archived when new messages arrive.";
+"ArchivedChats.IntroTitle3" = "Pinned Chats";
+"ArchivedChats.IntroText3" = "You can pin up to 100 archived chats to the top.";

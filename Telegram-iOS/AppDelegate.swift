@@ -13,6 +13,8 @@ import CloudKit
 
 private let handleVoipNotifications = false
 
+private var testIsLaunched = false
+
 private func encodeText(_ string: String, _ key: Int) -> String {
     var result = ""
     for c in string.unicodeScalars {
@@ -120,7 +122,7 @@ private enum QueuedWakeup: Int32 {
     case backgroundLocation
 }
 
-private final class SharedApplicationContext {
+final class SharedApplicationContext {
     let sharedContext: SharedAccountContext
     let notificationManager: SharedNotificationManager
     let wakeupManager: SharedWakeupManager
@@ -204,6 +206,9 @@ private struct NiceFeaturesSelectionState: Equatable {
     }
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]? = nil) -> Bool {
+        precondition(!testIsLaunched)
+        testIsLaunched = true
+        
         let statusBarHost = ApplicationStatusBarHost()
         let (window, hostView) = nativeWindowHostView()
         self.mainWindow = Window1(hostView: hostView, statusBarHost: statusBarHost)
@@ -350,7 +355,8 @@ private struct NiceFeaturesSelectionState: Equatable {
         
         let networkArguments = NetworkInitializationArguments(apiId: apiId, languagesCategory: languagesCategory, appVersion: appVersion, voipMaxLayer: PresentationCallManager.voipMaxLayer, appData: BuildConfig.shared().bundleData)
         
-        let appGroupName = "group.\(Bundle.main.bundleIdentifier!)"
+        let baseAppBundleId = Bundle.main.bundleIdentifier!
+        let appGroupName = "group.\(baseAppBundleId)"
         let maybeAppGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)
         
         guard let appGroupUrl = maybeAppGroupUrl else {
@@ -375,6 +381,11 @@ private struct NiceFeaturesSelectionState: Equatable {
         
         let rootPath = rootPathForBasePath(appGroupUrl.path)
         performAppGroupUpgrades(appGroupPath: appGroupUrl.path, rootPath: rootPath)
+        
+        let deviceSpecificEncryptionParameters = BuildConfig.deviceSpecificEncryptionParameters(rootPath, baseAppBundleId: baseAppBundleId)
+        print(deviceSpecificEncryptionParameters.key, deviceSpecificEncryptionParameters.salt)
+        print(ValueBoxEncryptionParameters.Key(data: deviceSpecificEncryptionParameters.key)!, ValueBoxEncryptionParameters.Salt(data: deviceSpecificEncryptionParameters.salt)!)
+        let encryptionParameters = ValueBoxEncryptionParameters(forceEncryptionIfNoSet: false, key: ValueBoxEncryptionParameters.Key(data: deviceSpecificEncryptionParameters.key)!, salt: ValueBoxEncryptionParameters.Salt(data: deviceSpecificEncryptionParameters.salt)!)
         
         TempBox.initializeShared(basePath: rootPath, processType: "app", launchSpecificId: arc4random64())
         
@@ -575,131 +586,184 @@ private struct NiceFeaturesSelectionState: Equatable {
             self.window?.rootViewController?.dismiss(animated: true, completion: nil)
         })
         
-        // Move back to signal
-        let accountManager = AccountManager(basePath: rootPath + "/accounts-metadata")
-        let upgradeSemaphore = DispatchSemaphore(value: 0)
-        let _ = upgradedAccounts(accountManager: accountManager, rootPath: rootPath).start(completed: {
-            upgradeSemaphore.signal()
-        })
-        upgradeSemaphore.wait()
+        var showNonMutedChatsTab = false
+        var showContactsTab = true
         
-        var initialPresentationDataAndSettings: InitialPresentationDataAndSettings?
-        let semaphore = DispatchSemaphore(value: 0)
-        let _ = currentPresentationDataAndSettings(accountManager: accountManager).start(next: { value in
-            initialPresentationDataAndSettings = value
-            semaphore.signal()
-        })
-        semaphore.wait()
-        
-        let legacyBasePath = appGroupUrl.path
-        let legacyCache = LegacyCache(path: legacyBasePath + "/Caches")
-        
-        var setPresentationCall: ((PresentationCall?) -> Void)?
-        let sharedContext = SharedAccountContext(mainWindow: self.mainWindow, basePath: rootPath, accountManager: accountManager, applicationBindings: applicationBindings, initialPresentationDataAndSettings: initialPresentationDataAndSettings!, networkArguments: networkArguments, rootPath: rootPath, legacyBasePath: legacyBasePath, legacyCache: legacyCache, apsNotificationToken: self.notificationTokenPromise.get() |> map(Optional.init), voipNotificationToken: self.voipTokenPromise.get() |> map(Optional.init), setNotificationCall: { call in
-            setPresentationCall?(call)
-        }, navigateToChat: { accountId, peerId, messageId in
-            self.openChatWhenReady(accountId: accountId, peerId: peerId, messageId: messageId)
-        })
-        
-        let rawAccounts = sharedContext.activeAccounts
-        |> map { _, accounts, _ -> [Account] in
-            return accounts.map({ $0.1 })
-        }
-        let _ = (sharedAccountInfos(accountManager: sharedContext.accountManager, accounts: rawAccounts)
-        |> deliverOn(Queue())).start(next: { infos in
-            storeAccountsData(rootPath: rootPath, accounts: infos)
-        })
-        
-        sharedContext.presentGlobalController = { [weak self] c, a in
-            guard let strongSelf = self else {
-                return
-            }
-            strongSelf.mainWindow.present(c, on: .root)
-        }
-        sharedContext.presentCrossfadeController = { [weak self] in
-            guard let strongSelf = self else {
-                return
-            }
-            var exists = false
-            strongSelf.mainWindow.forEachViewController { controller in
-                if controller is ThemeSettingsCrossfadeController {
-                    exists = true
+        let accountManagerSignal = Signal<AccountManager, NoError> { subscriber in
+            let accountManager = AccountManager(basePath: rootPath + "/accounts-metadata")
+            return (upgradedAccounts(accountManager: accountManager, rootPath: rootPath, encryptionParameters: encryptionParameters)
+            |> deliverOnMainQueue).start(next: { progress in
+                if self.dataImportSplash == nil {
+                    self.dataImportSplash = LegacyDataImportSplash(theme: nil, strings: nil)
+                    self.dataImportSplash?.serviceAction = {
+                        self.debugPressed()
+                    }
+                    self.mainWindow.coveringView = self.dataImportSplash
                 }
-                return true
+                self.dataImportSplash?.progress = (.generic, progress)
+            }, completed: {
+                if let dataImportSplash = self.dataImportSplash {
+                    self.dataImportSplash = nil
+                    if self.mainWindow.coveringView === dataImportSplash {
+                        self.mainWindow.coveringView = nil
+                    }
+                }
+                subscriber.putNext(accountManager)
+                subscriber.putCompletion()
+            })
+        }
+        
+        let sharedContextSignal = accountManagerSignal
+        |> deliverOnMainQueue
+        |> take(1)
+        |> mapToSignal { accountManager -> Signal<(SharedApplicationContext, LoggingSettings), NoError> in
+            var initialPresentationDataAndSettings: InitialPresentationDataAndSettings?
+            let semaphore = DispatchSemaphore(value: 0)
+            let _ = currentPresentationDataAndSettings(accountManager: accountManager).start(next: { value in
+                initialPresentationDataAndSettings = value
+                semaphore.signal()
+            })
+            semaphore.wait()
+            
+            if let initialPresentationDataAndSettings = initialPresentationDataAndSettings {
+                self.window?.backgroundColor = initialPresentationDataAndSettings.presentationData.theme.chatList.backgroundColor
             }
             
-            if !exists {
-                strongSelf.mainWindow.present(ThemeSettingsCrossfadeController(), on: .root)
-            }
-        }
-        
-        let notificationManager = SharedNotificationManager(episodeId: self.episodeId, application: application, clearNotificationsManager: clearNotificationsManager, inForeground: applicationBindings.applicationInForeground, accounts: sharedContext.activeAccounts |> map { primary, accounts, _ in accounts.map({ ($0.1, $0.1.id == primary?.id) }) }, pollLiveLocationOnce: { accountId in
-            let _ = (self.context.get()
-            |> filter {
-                return $0 != nil
-            }
-            |> take(1)
-            |> deliverOnMainQueue).start(next: { context in
-                if let context = context, context.context.account.id == accountId {
-                    context.context.liveLocationManager?.pollOnce()
+            let legacyBasePath = appGroupUrl.path
+            let legacyCache = LegacyCache(path: legacyBasePath + "/Caches")
+            
+            var setPresentationCall: ((PresentationCall?) -> Void)?
+            let sharedContext = SharedAccountContext(mainWindow: self.mainWindow, basePath: rootPath, encryptionParameters: encryptionParameters, accountManager: accountManager, applicationBindings: applicationBindings, initialPresentationDataAndSettings: initialPresentationDataAndSettings!, networkArguments: networkArguments, rootPath: rootPath, legacyBasePath: legacyBasePath, legacyCache: legacyCache, apsNotificationToken: self.notificationTokenPromise.get() |> map(Optional.init), voipNotificationToken: self.voipTokenPromise.get() |> map(Optional.init), setNotificationCall: { call in
+                setPresentationCall?(call)
+            }, navigateToChat: { accountId, peerId, messageId in
+                self.openChatWhenReady(accountId: accountId, peerId: peerId, messageId: messageId)
+            }, displayUpgradeProgress: { progress in
+                if let progress = progress {
+                    if self.dataImportSplash == nil {
+                        self.dataImportSplash = LegacyDataImportSplash(theme: initialPresentationDataAndSettings?.presentationData.theme, strings: initialPresentationDataAndSettings?.presentationData.strings)
+                        self.mainWindow.coveringView = self.dataImportSplash
+                    }
+                    self.dataImportSplash?.progress = (.generic, progress)
+                } else if let dataImportSplash = self.dataImportSplash {
+                    self.dataImportSplash = nil
+                    if self.mainWindow.coveringView === dataImportSplash {
+                        self.mainWindow.coveringView = nil
+                    }
                 }
             })
-        })
-        setPresentationCall = { call in
-            notificationManager.setNotificationCall(call, strings: sharedContext.currentPresentationData.with({ $0 }).strings)
-        }
-        let liveLocationPolling = self.context.get()
-        |> mapToSignal { context -> Signal<AccountRecordId?, NoError> in
-            if let context = context, let liveLocationManager = context.context.liveLocationManager {
-                let accountId = context.context.account.id
-                return liveLocationManager.isPolling
-                |> distinctUntilChanged
-                |> map { value -> AccountRecordId? in
-                    if value {
-                        return accountId
-                    } else {
-                        return nil
-                    }
+            
+            let rawAccounts = sharedContext.activeAccounts
+            |> map { _, accounts, _ -> [Account] in
+                return accounts.map({ $0.1 })
+            }
+            let _ = (sharedAccountInfos(accountManager: sharedContext.accountManager, accounts: rawAccounts)
+            |> deliverOn(Queue())).start(next: { infos in
+                storeAccountsData(rootPath: rootPath, accounts: infos)
+            })
+            
+            sharedContext.presentGlobalController = { [weak self] c, a in
+                guard let strongSelf = self else {
+                    return
                 }
-            } else {
-                return .single(nil)
+                strongSelf.mainWindow.present(c, on: .root)
+            }
+            sharedContext.presentCrossfadeController = { [weak self] in
+                guard let strongSelf = self else {
+                    return
+                }
+                var exists = false
+                strongSelf.mainWindow.forEachViewController { controller in
+                    if controller is ThemeSettingsCrossfadeController {
+                        exists = true
+                    }
+                    return true
+                }
+                
+                if !exists {
+                    strongSelf.mainWindow.present(ThemeSettingsCrossfadeController(), on: .root)
+                }
+            }
+            
+            let notificationManager = SharedNotificationManager(episodeId: self.episodeId, application: application, clearNotificationsManager: clearNotificationsManager, inForeground: applicationBindings.applicationInForeground, accounts: sharedContext.activeAccounts |> map { primary, accounts, _ in accounts.map({ ($0.1, $0.1.id == primary?.id) }) }, pollLiveLocationOnce: { accountId in
+                let _ = (self.context.get()
+                |> filter {
+                    return $0 != nil
+                }
+                |> take(1)
+                |> deliverOnMainQueue).start(next: { context in
+                    if let context = context, context.context.account.id == accountId {
+                        context.context.liveLocationManager?.pollOnce()
+                    }
+                })
+            })
+            setPresentationCall = { call in
+                notificationManager.setNotificationCall(call, strings: sharedContext.currentPresentationData.with({ $0 }).strings)
+            }
+            let liveLocationPolling = self.context.get()
+            |> mapToSignal { context -> Signal<AccountRecordId?, NoError> in
+                if let context = context, let liveLocationManager = context.context.liveLocationManager {
+                    let accountId = context.context.account.id
+                    return liveLocationManager.isPolling
+                    |> distinctUntilChanged
+                    |> map { value -> AccountRecordId? in
+                        if value {
+                            return accountId
+                        } else {
+                            return nil
+                        }
+                    }
+                } else {
+                    return .single(nil)
+                }
+            }
+            let watchTasks = self.context.get()
+            |> mapToSignal { context -> Signal<AccountRecordId?, NoError> in
+                if let context = context, let watchManager = context.context.watchManager {
+                    let accountId = context.context.account.id
+                    let runningTasks: Signal<WatchRunningTasks?, NoError> = .single(nil)
+                    |> then(watchManager.runningTasks)
+                    return runningTasks
+                    |> distinctUntilChanged
+                    |> map { value -> AccountRecordId? in
+                        if let value = value, value.running {
+                            return accountId
+                        } else {
+                            return nil
+                        }
+                    }
+                    |> distinctUntilChanged
+                } else {
+                    return .single(nil)
+                }
+            }
+            let wakeupManager = SharedWakeupManager(beginBackgroundTask: { name, expiration in application.beginBackgroundTask(withName: name, expirationHandler: expiration) }, endBackgroundTask: { id in application.endBackgroundTask(id) }, backgroundTimeRemaining: { application.backgroundTimeRemaining }, activeAccounts: sharedContext.activeAccounts |> map { ($0.0, $0.1.map { ($0.0, $0.1) }) }, liveLocationPolling: liveLocationPolling, watchTasks: watchTasks, inForeground: applicationBindings.applicationInForeground, hasActiveAudioSession: self.hasActiveAudioSession.get(), notificationManager: notificationManager, mediaManager: sharedContext.mediaManager, callManager: sharedContext.callManager, accountUserInterfaceInUse: { id in
+                return sharedContext.accountUserInterfaceInUse(id)
+            })
+            let sharedApplicationContext = SharedApplicationContext(sharedContext: sharedContext, notificationManager: notificationManager, wakeupManager: wakeupManager)
+            sharedApplicationContext.sharedContext.mediaManager.overlayMediaManager.attachOverlayMediaController(sharedApplicationContext.overlayMediaController)
+            
+            _ = (accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.niceSettings])).start(next: { sharedData in
+                if let settings = sharedData.entries[ApplicationSpecificSharedDataKeys.niceSettings] as? NiceSettings {
+                    showNonMutedChatsTab = settings.workmode
+                    showContactsTab = settings.showContactsTab
+                } else {
+                    let defaultSettings = NiceSettings.defaultSettings
+                    showNonMutedChatsTab = defaultSettings.workmode
+                    showContactsTab = defaultSettings.showContactsTab
+                }
+            })
+            
+            return accountManager.transaction { transaction -> (SharedApplicationContext, LoggingSettings) in
+                return (sharedApplicationContext, transaction.getSharedData(SharedDataKeys.loggingSettings) as? LoggingSettings ?? LoggingSettings.defaultSettings)
             }
         }
-        let watchTasks = self.context.get()
-        |> mapToSignal { context -> Signal<AccountRecordId?, NoError> in
-            if let context = context, let watchManager = context.context.watchManager {
-                let accountId = context.context.account.id
-                let runningTasks: Signal<WatchRunningTasks?, NoError> = .single(nil)
-                |> then(watchManager.runningTasks)
-                return runningTasks
-                |> distinctUntilChanged
-                |> map { value -> AccountRecordId? in
-                    if let value = value, value.running {
-                        return accountId
-                    } else {
-                        return nil
-                    }
-                }
-                |> distinctUntilChanged
-            } else {
-                return .single(nil)
-            }
-        }
-        let wakeupManager = SharedWakeupManager(beginBackgroundTask: { name, expiration in application.beginBackgroundTask(withName: name, expirationHandler: expiration) }, endBackgroundTask: { id in application.endBackgroundTask(id) }, backgroundTimeRemaining: { application.backgroundTimeRemaining }, activeAccounts: sharedContext.activeAccounts |> map { ($0.0, $0.1.map { ($0.0, $0.1) }) }, liveLocationPolling: liveLocationPolling, watchTasks: watchTasks, inForeground: applicationBindings.applicationInForeground, hasActiveAudioSession: hasActiveAudioSession.get(), notificationManager: notificationManager, mediaManager: sharedContext.mediaManager, callManager: sharedContext.callManager, accountUserInterfaceInUse: { id in
-            return sharedContext.accountUserInterfaceInUse(id)
-        })
-        let sharedApplicationContext = SharedApplicationContext(sharedContext: sharedContext, notificationManager: notificationManager, wakeupManager: wakeupManager)
-        sharedApplicationContext.sharedContext.mediaManager.overlayMediaManager.attachOverlayMediaController(sharedApplicationContext.overlayMediaController)
-        self.sharedContextPromise.set(
-        accountManager.transaction { transaction -> (SharedApplicationContext, LoggingSettings) in
-            return (sharedApplicationContext, transaction.getSharedData(SharedDataKeys.loggingSettings) as? LoggingSettings ?? LoggingSettings.defaultSettings)
-        }
+        self.sharedContextPromise.set(sharedContextSignal
         |> mapToSignal { sharedApplicationContext, loggingSettings -> Signal<SharedApplicationContext, NoError> in
             Logger.shared.logToFile = loggingSettings.logToFile
             Logger.shared.logToConsole = loggingSettings.logToConsole
             Logger.shared.redactSensitiveData = loggingSettings.redactSensitiveData
             
-            return importedLegacyAccount(basePath: appGroupUrl.path, accountManager: sharedApplicationContext.sharedContext.accountManager, present: { controller in
+            return importedLegacyAccount(basePath: appGroupUrl.path, accountManager: sharedApplicationContext.sharedContext.accountManager, encryptionParameters: encryptionParameters, present: { controller in
                 self.window?.rootViewController?.present(controller, animated: true, completion: nil)
             })
             |> `catch` { _ -> Signal<ImportedLegacyAccountEvent, NoError> in
@@ -724,7 +788,7 @@ private struct NiceFeaturesSelectionState: Equatable {
                     case let .progress(type, value):
                         Queue.mainQueue().async {
                             if self.dataImportSplash == nil {
-                                self.dataImportSplash = LegacyDataImportSplash()
+                                self.dataImportSplash = LegacyDataImportSplash(theme: nil, strings: nil)
                                 self.dataImportSplash?.serviceAction = {
                                     self.debugPressed()
                                 }
@@ -764,19 +828,6 @@ private struct NiceFeaturesSelectionState: Equatable {
         })
         
         let watchManagerArgumentsPromise = Promise<WatchManagerArguments?>()
-        var showNonMutedChatsTab = false
-        var showContactsTab = true
-        
-        _ = (accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.niceSettings])).start(next: { sharedData in
-                if let settings = sharedData.entries[ApplicationSpecificSharedDataKeys.niceSettings] as? NiceSettings {
-                    showNonMutedChatsTab = settings.workmode
-                    showContactsTab = settings.showContactsTab
-                } else {
-                    let defaultSettings = NiceSettings.defaultSettings
-                    showNonMutedChatsTab = defaultSettings.workmode
-                    showContactsTab = defaultSettings.showContactsTab
-                }
-            })
         
         
         self.context.set(self.sharedContextPromise.get()
@@ -811,7 +862,7 @@ private struct NiceFeaturesSelectionState: Equatable {
             |> map { accountAndSettings -> AuthorizedApplicationContext? in
                 return accountAndSettings.flatMap { account, limitsConfiguration, callListSettings in
                     let context = AccountContext(sharedContext: sharedApplicationContext.sharedContext, account: account, limitsConfiguration: limitsConfiguration)
-                    return AuthorizedApplicationContext(mainWindow: self.mainWindow, watchManagerArguments: watchManagerArgumentsPromise.get(), context: context, accountManager: sharedApplicationContext.sharedContext.accountManager, showCallsTab: callListSettings.showTab, showNonMutedChatsTab: showNonMutedChatsTab, showContactsTab: showContactsTab, reinitializedNotificationSettings: {
+                    return AuthorizedApplicationContext(sharedApplicationContext: sharedApplicationContext, mainWindow: self.mainWindow, watchManagerArguments: watchManagerArgumentsPromise.get(), context: context, accountManager: sharedApplicationContext.sharedContext.accountManager, showCallsTab: callListSettings.showTab, showNonMutedChatsTab: showNonMutedChatsTab, showContactsTab: showContactsTab, reinitializedNotificationSettings: {
                         let _ = (self.context.get()
                         |> take(1)
                         |> deliverOnMainQueue).start(next: { context in
@@ -894,8 +945,11 @@ private struct NiceFeaturesSelectionState: Equatable {
         
         let contextReadyDisposable = MetaDisposable()
         
+        let startTime = CFAbsoluteTimeGetCurrent()
         self.contextDisposable.set((self.context.get()
         |> deliverOnMainQueue).start(next: { context in
+            print("Application: context took \(CFAbsoluteTimeGetCurrent() - startTime) to become available")
+            
             var network: Network?
             if let context = context {
                 network = context.context.account.network
@@ -917,6 +971,10 @@ private struct NiceFeaturesSelectionState: Equatable {
                 |> filter { $0 }
                 |> take(1)
                 |> deliverOnMainQueue).start(next: { _ in
+                    let readyTime = CFAbsoluteTimeGetCurrent() - startTime
+                    if readyTime > 0.5 {
+                        print("Application: context took \(readyTime) to become ready")
+                    }
                     self.mainWindow.viewController = context.rootController
                     if firstTime {
                         let layer = context.rootController.view.layer
@@ -950,7 +1008,7 @@ private struct NiceFeaturesSelectionState: Equatable {
                         }
                         return true
                     })
-                    self.mainWindow.topLevelOverlayControllers = [sharedApplicationContext.overlayMediaController, context.notificationController]
+                    self.mainWindow.topLevelOverlayControllers = [context.sharedApplicationContext.overlayMediaController, context.notificationController]
                     var authorizeNotifications = true
                     if #available(iOS 10.0, *) {
                         authorizeNotifications = false
@@ -997,7 +1055,10 @@ private struct NiceFeaturesSelectionState: Equatable {
         }))
         
         self.watchCommunicationManagerPromise.set(watchCommunicationManager(context: self.context, allowBackgroundTimeExtension: { timeout in
-            wakeupManager.allowBackgroundTimeExtension(timeout: timeout)
+            let _ = (self.sharedContextPromise.get()
+            |> take(1)).start(next: { sharedContext in
+                sharedContext.wakeupManager.allowBackgroundTimeExtension(timeout: timeout)
+            })
         }))
         let _ = self.watchCommunicationManagerPromise.get().start(next: { manager in
             if let manager = manager {
@@ -1077,8 +1138,10 @@ private struct NiceFeaturesSelectionState: Equatable {
                         }
                     }))
                 }
-                let presentationData = sharedContext.currentPresentationData.with { $0 }
-                strongSelf.mainWindow.present(standardTextAlertController(theme: AlertControllerTheme(presentationTheme: presentationData.theme), title: alert.title, text: alert.message ?? "", actions: actions), on: .root)
+                if let sharedContext = strongSelf.contextValue?.context.sharedContext {
+                    let presentationData = sharedContext.currentPresentationData.with { $0 }
+                    strongSelf.mainWindow.present(standardTextAlertController(theme: AlertControllerTheme(presentationTheme: presentationData.theme), title: alert.title, text: alert.message ?? "", actions: actions), on: .root)
+                }
             }
         })
         
@@ -1114,6 +1177,27 @@ private struct NiceFeaturesSelectionState: Equatable {
         self.isActiveValue = false
         self.isActivePromise.set(false)
         self.clearNotificationsManager?.commitNow()
+        
+        if let navigationController = self.mainWindow.viewController as? NavigationController {
+            for controller in navigationController.viewControllers {
+                if let controller = controller as? TabBarController {
+                    for subController in controller.controllers {
+                        subController.forEachController { controller in
+                            if let controller = controller as? UndoOverlayController {
+                                controller.dismissWithCommitAction()
+                            }
+                            return true
+                        }
+                    }
+                }
+            }
+        }
+        self.mainWindow.forEachViewController { controller in
+            if let controller = controller as? UndoOverlayController {
+                controller.dismissWithCommitAction()
+            }
+            return true
+        }
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {

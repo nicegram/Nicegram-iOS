@@ -55,7 +55,7 @@ private enum SnapshotPeer {
             case let .secretChat(id, userId, _, _, _):
                 return TelegramSecretChat(id: PeerId(namespace: Namespaces.Peer.SecretChat, id: id), creationDate: 123, regularPeerId: PeerId(namespace: Namespaces.Peer.CloudUser, id: userId), accessHash: 123, role: .creator, embeddedState: .active, messageAutoremoveTimeout: nil)
             case let .channel(id, avatar, title):
-                return TelegramChannel(id: PeerId(namespace: Namespaces.Peer.CloudChannel, id: id), accessHash: 123, title: title, username: nil, photo: avatarImages(postbox, avatar), creationDate: 123, version: 0, participationStatus: .member, info: .broadcast(TelegramChannelBroadcastInfo(flags: [])), flags: [], restrictionInfo: nil, adminRights: nil, bannedRights: nil, defaultBannedRights: nil, peerGroupId: nil)
+                return TelegramChannel(id: PeerId(namespace: Namespaces.Peer.CloudChannel, id: id), accessHash: 123, title: title, username: nil, photo: avatarImages(postbox, avatar), creationDate: 123, version: 0, participationStatus: .member, info: .broadcast(TelegramChannelBroadcastInfo(flags: [])), flags: [], restrictionInfo: nil, adminRights: nil, bannedRights: nil, defaultBannedRights: nil)
         }
     }
 }
@@ -113,7 +113,7 @@ func snapshotChatList(application: UIApplication, mainWindow: UIWindow, window: 
     
     let _ = (context.account.postbox.transaction { transaction -> Void in
         if let hole = context.account.postbox.seedConfiguration.initializeChatListWithHole.topLevel {
-            transaction.replaceChatListHole(groupId: nil, index: hole.index, hole: nil)
+            transaction.replaceChatListHole(groupId: .root, index: hole.index, hole: nil)
         }
         
         let accountPeer = TelegramUser(id: context.account.peerId, accessHash: nil, firstName: "Alena", lastName: "Shy", username: "alenashy", phone: "44321456789", photo: [], botInfo: nil, restrictionInfo: nil, flags: [])
@@ -133,7 +133,7 @@ func snapshotChatList(application: UIApplication, mainWindow: UIWindow, window: 
                     return updated
                 })
             }
-            transaction.updatePeerChatListInclusion(peer.id, inclusion: .ifHasMessages)
+            transaction.updatePeerChatListInclusion(peer.id, inclusion: .ifHasMessagesOrOneOf(groupId: .root, pinningIndex: nil, minTimestamp: nil))
             let _ = transaction.addMessages([item.message.storeMessage(context.account.peerId, baseDate)], location: .UpperHistoryBlock)
             transaction.resetIncomingReadStates([peer.id: [Namespaces.Message.Cloud: .idBased(maxIncomingReadId: Int32.max - 1, maxOutgoingReadId: Int32.max - 1, maxKnownId: Int32.max - 1, count: item.unreadCount, markedUnread: false)]])
             if item.isMuted {
@@ -142,7 +142,7 @@ func snapshotChatList(application: UIApplication, mainWindow: UIWindow, window: 
                 transaction.updateCurrentPeerNotificationSettings([peer.id: TelegramPeerNotificationSettings.defaultSettings])
             }
         }
-        transaction.setPinnedItemIds(chatList.filter{ $0.isPinned }.map{ .peer($0.message.peer.peerId) })
+        transaction.setPinnedItemIds(groupId: .root, itemIds: chatList.filter{ $0.isPinned }.map{ .peer($0.message.peer.peerId) })
     }).start()
     
     let rootController = TelegramRootController(context: context)

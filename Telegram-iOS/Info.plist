@@ -19,7 +19,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>5.5</string>
+	<string>5.6</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleURLTypes</key>
@@ -78,8 +78,8 @@
 		<string>googlechrome</string>
 		<string>googlechromes</string>
 		<string>firefox</string>
-		<string>opera-http</string>
-		<string>opera-https</string>
+		<string>touch-http</string>
+		<string>touch-https</string>
 		<string>yandexbrowser-open-url</string>
 		<string>vimeo</string>
 		<string>vine</string>
@@ -87,6 +87,10 @@
 		<string>uber</string>
 		<string>citymapper</string>
 		<string>lyft</string>
+		<string>opera-http</string>
+		<string>opera-https</string>
+		<string>firefox-focus</string>
+		<string>ddgQuickLink</string>
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>

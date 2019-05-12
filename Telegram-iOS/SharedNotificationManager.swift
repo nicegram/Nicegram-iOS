@@ -29,6 +29,7 @@ final class SharedNotificationManager {
     private var inForeground: Bool = false
     private var inForegroundDisposable: Disposable?
     
+    private var accountManager: AccountManager?
     private var accountsAndKeys: [(Account, Bool, MasterNotificationKey)]?
     private var accountsAndKeysDisposable: Disposable?
     
@@ -198,6 +199,7 @@ final class SharedNotificationManager {
             let aps = payload["aps"] as? [AnyHashable: Any]
             
             var readMessageId: MessageId?
+            var isForcedLogOut = false
             var isCall = false
             var isAnnouncement = false
             var isLocationPolling = false
@@ -207,6 +209,7 @@ final class SharedNotificationManager {
             var body: String?
             var apnsSound: String?
             var configurationUpdate: (Int32, String, Int32, Data?)?
+            var messagesDeleted: [MessageId] = []
             if let aps = aps, let alert = aps["alert"] as? String {
                 if let range = alert.range(of: ": ") {
                     title = String(alert[..<range.lowerBound])
@@ -222,12 +225,35 @@ final class SharedNotificationManager {
                     }
                 }
                 if let locKey = alert["loc-key"] as? String {
-                    if locKey == "PHONE_CALL_REQUEST" {
+                    if locKey == "SESSION_REVOKE" {
+                        isForcedLogOut = true
+                    } else if locKey == "PHONE_CALL_REQUEST" {
                         isCall = true
                     } else if locKey == "GEO_LIVE_PENDING" {
                         isLocationPolling = true
                     } else if locKey == "MESSAGE_MUTED" {
                         isMutePolling = true
+                    } else if locKey == "MESSAGE_DELETED" {
+                        var peerId: PeerId?
+                        if let fromId = payload["from_id"] {
+                            let fromIdValue = fromId as! NSString
+                            peerId = PeerId(namespace: Namespaces.Peer.CloudUser, id: Int32(fromIdValue.intValue))
+                        } else if let fromId = payload["chat_id"] {
+                            let fromIdValue = fromId as! NSString
+                            peerId = PeerId(namespace: Namespaces.Peer.CloudGroup, id: Int32(fromIdValue.intValue))
+                        } else if let fromId = payload["channel_id"] {
+                            let fromIdValue = fromId as! NSString
+                            peerId = PeerId(namespace: Namespaces.Peer.CloudChannel, id: Int32(fromIdValue.intValue))
+                        }
+                        if let peerId = peerId {
+                            if let messageIds = payload["messages"] as? String {
+                                for messageId in messageIds.split(separator: ",") {
+                                    if let messageIdValue = Int32(messageId) {
+                                        messagesDeleted.append(MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: messageIdValue))
+                                    }
+                                }
+                            }
+                        }
                     }
                     let string = NSLocalizedString(locKey, comment: "")
                     if !string.isEmpty {
@@ -346,6 +372,15 @@ final class SharedNotificationManager {
                 }
             }
             
+            if isForcedLogOut {
+                self.clearNotificationsManager?.clearAll()
+                
+                if let accountManager = self.accountManager {
+                    let _ = logoutFromAccount(id: account.id, accountManager: accountManager, alreadyLoggedOutRemotely: true).start()
+                }
+                return
+            }
+            
             if notificationRequestId != nil || isMutePolling || isCall {
                 if !self.inForeground || !isCurrent {
                     self.beginPollingState(account: account)
@@ -359,11 +394,24 @@ final class SharedNotificationManager {
             
             if let readMessageId = readMessageId {
                 self.clearNotificationsManager?.append(readMessageId)
-                self.clearNotificationsManager?.commitNow()
                 
                 let _ = account.postbox.transaction(ignoreDisabled: true, { transaction -> Void in
                     transaction.applyIncomingReadMaxId(readMessageId)
                 }).start()
+            }
+            
+            for messageId in messagesDeleted {
+                self.clearNotificationsManager?.append(messageId)
+            }
+            
+            if !messagesDeleted.isEmpty {
+                let _ = account.postbox.transaction(ignoreDisabled: true, { transaction -> Void in
+                    transaction.deleteMessages(messagesDeleted)
+                }).start()
+            }
+            
+            if readMessageId != nil || !messagesDeleted.isEmpty {
+                self.clearNotificationsManager?.commitNow()
             }
             
             if let (datacenterId, host, port, secret) = configurationUpdate {
