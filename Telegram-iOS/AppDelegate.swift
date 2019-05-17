@@ -586,7 +586,7 @@ private struct NiceFeaturesSelectionState: Equatable {
             self.window?.rootViewController?.dismiss(animated: true, completion: nil)
         })
         
-        var showNonMutedChatsTab = false
+        var showFilteredChatsTab: NiceChatListNodePeersFilter = .onlyNonMuted
         var showContactsTab = true
         
         let accountManagerSignal = Signal<AccountManager, NoError> { subscriber in
@@ -744,11 +744,11 @@ private struct NiceFeaturesSelectionState: Equatable {
             
             _ = (accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.niceSettings])).start(next: { sharedData in
                 if let settings = sharedData.entries[ApplicationSpecificSharedDataKeys.niceSettings] as? NiceSettings {
-                    showNonMutedChatsTab = settings.workmode
+                    showFilteredChatsTab = .onlyNonMuted //settings.workmode
                     showContactsTab = settings.showContactsTab
                 } else {
                     let defaultSettings = NiceSettings.defaultSettings
-                    showNonMutedChatsTab = defaultSettings.workmode
+                    showFilteredChatsTab = .onlyNonMuted //defaultSettings.workmode
                     showContactsTab = defaultSettings.showContactsTab
                 }
             })
@@ -862,7 +862,7 @@ private struct NiceFeaturesSelectionState: Equatable {
             |> map { accountAndSettings -> AuthorizedApplicationContext? in
                 return accountAndSettings.flatMap { account, limitsConfiguration, callListSettings in
                     let context = AccountContext(sharedContext: sharedApplicationContext.sharedContext, account: account, limitsConfiguration: limitsConfiguration)
-                    return AuthorizedApplicationContext(sharedApplicationContext: sharedApplicationContext, mainWindow: self.mainWindow, watchManagerArguments: watchManagerArgumentsPromise.get(), context: context, accountManager: sharedApplicationContext.sharedContext.accountManager, showCallsTab: callListSettings.showTab, showNonMutedChatsTab: showNonMutedChatsTab, showContactsTab: showContactsTab, reinitializedNotificationSettings: {
+                    return AuthorizedApplicationContext(sharedApplicationContext: sharedApplicationContext, mainWindow: self.mainWindow, watchManagerArguments: watchManagerArgumentsPromise.get(), context: context, accountManager: sharedApplicationContext.sharedContext.accountManager, showCallsTab: callListSettings.showTab, showFilteredChatsTab: showFilteredChatsTab, showContactsTab: showContactsTab, reinitializedNotificationSettings: {
                         let _ = (self.context.get()
                         |> take(1)
                         |> deliverOnMainQueue).start(next: { context in

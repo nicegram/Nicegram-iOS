@@ -100,13 +100,13 @@ final class AuthorizedApplicationContext {
     
     private var showCallsTab: Bool
     private var showCallsTabDisposable: Disposable?
-    private var showNonMutedChatsTab: Bool
-    private var showNonMutedChatsTabDisposable: Disposable?
+    private var showFilteredChatsTab: NiceChatListNodePeersFilter?
+    private var showFilteredChatsTabDisposable: Disposable?
     private var showContactsTab: Bool
     private var showContactsTabDisposable: Disposable?
     private var enablePostboxTransactionsDiposable: Disposable?
     
-    init(sharedApplicationContext: SharedApplicationContext, mainWindow: Window1, watchManagerArguments: Signal<WatchManagerArguments?, NoError>, context: AccountContext, accountManager: AccountManager, showCallsTab: Bool, showNonMutedChatsTab: Bool, showContactsTab: Bool,  reinitializedNotificationSettings: @escaping () -> Void) {
+    init(sharedApplicationContext: SharedApplicationContext, mainWindow: Window1, watchManagerArguments: Signal<WatchManagerArguments?, NoError>, context: AccountContext, accountManager: AccountManager, showCallsTab: Bool, showFilteredChatsTab: NiceChatListNodePeersFilter?, showContactsTab: Bool,  reinitializedNotificationSettings: @escaping () -> Void) {
         self.sharedApplicationContext = sharedApplicationContext
         
         setupLegacyComponents(context: context)
@@ -118,7 +118,7 @@ final class AuthorizedApplicationContext {
         self.context = context
         
         self.showCallsTab = showCallsTab
-        self.showNonMutedChatsTab = showNonMutedChatsTab
+        self.showFilteredChatsTab = showFilteredChatsTab
         self.showContactsTab = showContactsTab
         
         self.notificationController = NotificationContainerController(context: context)
@@ -271,7 +271,7 @@ final class AuthorizedApplicationContext {
                         strongSelf.context.sharedContext.mediaManager.overlayMediaManager.controller?.view.isHidden = false
                         strongSelf.notificationController.view.isHidden = false
                         if strongSelf.rootController.rootTabController == nil {
-                            strongSelf.rootController.addRootControllers(showCallsTab: strongSelf.showCallsTab, showNonMutedChatsTab: strongSelf.showNonMutedChatsTab, showContactsTab: strongSelf.showContactsTab)
+                            strongSelf.rootController.addRootControllers(showCallsTab: strongSelf.showCallsTab, showFilteredChatsTab: strongSelf.showFilteredChatsTab, showContactsTab: strongSelf.showContactsTab)
                             if let peerId = strongSelf.scheduledOperChatWithPeerId {
                                 strongSelf.scheduledOperChatWithPeerId = nil
                                 strongSelf.openChatWithPeerId(peerId: peerId)
@@ -709,11 +709,11 @@ final class AuthorizedApplicationContext {
         
         self.showCallsTabDisposable = combineLatest(showCallsTabSignal |> deliverOnMainQueue, niceSettings |> deliverOnMainQueue).start(next: { [weak self] value, niceSettingsValue in
             if let strongSelf = self {
-                if strongSelf.showCallsTab != value || strongSelf.showNonMutedChatsTab != niceSettingsValue.workmode || strongSelf.showContactsTab != niceSettingsValue.showContactsTab {
+                if strongSelf.showCallsTab != value || strongSelf.showContactsTab != niceSettingsValue.showContactsTab {
                     strongSelf.showCallsTab = value
-                    strongSelf.showNonMutedChatsTab = niceSettingsValue.workmode
+                    // strongSelf.showNonMutedChatsTab = niceSettingsValue.workmode
                     strongSelf.showContactsTab = niceSettingsValue.showContactsTab
-                    strongSelf.rootController.updateRootControllers(showCallsTab: value, showNonMutedChatsTab: niceSettingsValue.workmode, showContactsTab: niceSettingsValue.showContactsTab)
+                    strongSelf.rootController.updateRootControllers(showCallsTab: value, showFilteredChatsTab: strongSelf.showFilteredChatsTab, showContactsTab: niceSettingsValue.showContactsTab)
                 }
             }
         })

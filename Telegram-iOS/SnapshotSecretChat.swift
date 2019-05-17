@@ -67,7 +67,7 @@ func snapshotSecretChat(application: UIApplication, mainWindow: UIWindow, window
     }).start()
     
     let rootController = TelegramRootController(context: context)
-    rootController.addRootControllers(showCallsTab: true, showNonMutedChatsTab: false, showContactsTab: true)
+    rootController.addRootControllers(showCallsTab: true, showFilteredChatsTab: .onlyNonMuted, showContactsTab: true)
     window.viewController = rootController
     navigateToChatController(navigationController: rootController, context: context, chatLocation: .peer(secretPeer.id), animated: false)
 }

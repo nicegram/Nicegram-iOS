@@ -146,7 +146,7 @@ func snapshotChatList(application: UIApplication, mainWindow: UIWindow, window: 
     }).start()
     
     let rootController = TelegramRootController(context: context)
-    rootController.addRootControllers(showCallsTab: true, showNonMutedChatsTab: false, showContactsTab: true)
+    rootController.addRootControllers(showCallsTab: true, showFilteredChatsTab: .onlyNonMuted, showContactsTab: true)
     window.viewController = rootController
     rootController.rootTabController!.selectedIndex = 0
     rootController.rootTabController!.selectedIndex = 2
