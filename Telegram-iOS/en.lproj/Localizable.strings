@@ -46,7 +46,7 @@
 "PUSH_MESSAGE_STICKER" = "%1$@|sent you a %2$@sticker";
 "PUSH_CHAT_MESSAGE_STICKER" = "%2$@|%1$@ sent a %3$@sticker";
 
-"PUSH_CONTACT_JOINED" = "%1$@|joined Telegram!";
+"PUSH_CONTACT_JOINED" = "%1$@|joined Nicegram!";
 
 "PUSH_CHANNEL_MESSAGE_TEXT" = "%1$@|%2$@";
 "PUSH_CHANNEL_MESSAGE_NOTEXT" = "%1$@|posted a message";
@@ -2738,7 +2738,7 @@ Unused sets are archived when you add more.";
 "SocksProxySetup.UseForCalls" = "Use for calls";
 "SocksProxySetup.UseForCallsHelp" = "Proxy servers may degrade the quality of your calls.";
 
-"InviteText.URL" = "https://telegram.org/dl";
+"InviteText.URL" = "https://nicegram.org/dl";
 "InviteText.SingleContact" = "Hey, I'm using Nicegram to chat. Join me! Download it here: %@";
 "InviteText.ContactsCountText_1" = "Hey, I'm using Nicegram to chat. Join me! Download it here: {url}";
 "InviteText.ContactsCountText_2" = "Hey, I'm using Nicegram to chat – and so are 2 of our other contacts. Join us! Download it here: {url}";
@@ -3813,7 +3813,7 @@ Unused sets are archived when you add more.";
 "AttachmentMenu.WebSearch" = "Web Search";
 
 "Conversation.UnsupportedMediaPlaceholder" = "This message is not supported on your version of Nicegram. Please update to the latest version.";
-"Conversation.UpdateTelegram" = "UPDATE TELEGRAM";
+"Conversation.UpdateTelegram" = "UPDATE NICEGRAM";
 
 "Cache.LowDiskSpaceText" = "Your phone has run out of available storage. Please free some space to download or upload media.";
 
@@ -4205,13 +4205,13 @@ Unused sets are archived when you add more.";
 "ChatList.ClearChatConfirmation" = "Are you sure you want to delete all\nmessages in the chat with %@?";
 
 "Settings.CheckPhoneNumberTitle" = "Is %@ still your number?";
-"Settings.CheckPhoneNumberText" = "Keep your number up to date to ensure you can always log in to Telegram. [Learn more]()";
+"Settings.CheckPhoneNumberText" = "Keep your number up to date to ensure you can always log in to Nicegram. [Learn more]()";
 "Settings.KeepPhoneNumber" = "Keep %@";
 "Settings.ChangePhoneNumber" = "Change Number";
 
 "Undo.ChatDeletedForBothSides" = "Chat deleted for both sides";
 
-"DataUpgrade.Running" = "Optimizing Telegram...";
+"DataUpgrade.Running" = "Optimizing Nicegram...";
 
 "Call.Mute" = "mute";
 "Call.Camera" = "camera";
