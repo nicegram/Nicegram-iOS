@@ -213,6 +213,8 @@
 		09D304392174344900C00567 /* TGBridgeMessageEntities.m in Sources */ = {isa = PBXBuildFile; fileRef = 09C572F42172953500BDF00F /* TGBridgeMessageEntities.m */; };
 		09FDAEE62140477F00BF856F /* MtProtoKitDynamic.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 09FDAEE52140477F00BF856F /* MtProtoKitDynamic.framework */; };
 		516290EF224AEAEF008519B7 /* CloudKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 516290EE224AEAEF008519B7 /* CloudKit.framework */; };
+		51970DF3229CA1D100F7921B /* NiceLocalizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 51970DF1229CA1D100F7921B /* NiceLocalizable.strings */; };
+		51970DF6229CA1F700F7921B /* NiceLocalizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 51970DF4229CA1F700F7921B /* NiceLocalizable.strings */; };
 		D000CACF21FB6E380011B15D /* NotificationService.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = D000CAC821FB6E370011B15D /* NotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		D001D5AA1F878DA300DF975A /* PhoneCountries.txt in Resources */ = {isa = PBXBuildFile; fileRef = D001D5A91F878DA300DF975A /* PhoneCountries.txt */; };
 		D006CFA021A8D11B00FDCD32 /* ModernProto.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = D006CF9E21A8D11B00FDCD32 /* ModernProto.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -898,6 +900,8 @@
 		09FDAEE52140477F00BF856F /* MtProtoKitDynamic.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = MtProtoKitDynamic.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		516290EE224AEAEF008519B7 /* CloudKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CloudKit.framework; path = System/Library/Frameworks/CloudKit.framework; sourceTree = SDKROOT; };
 		5179362E224AEEC50001DC2B /* Widget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Widget.entitlements; sourceTree = "<group>"; };
+		51970DF2229CA1D100F7921B /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/NiceLocalizable.strings; sourceTree = "<group>"; };
+		51970DF5229CA1F700F7921B /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = NiceLocalizable.strings; sourceTree = "<group>"; };
 		D000CAC021FB6E160011B15D /* NotificationService-HockeyApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "NotificationService-HockeyApp.entitlements"; sourceTree = "<group>"; };
 		D000CAC121FB6E160011B15D /* NotificationService-Fork.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "NotificationService-Fork.entitlements"; sourceTree = "<group>"; };
 		D000CAC221FB6E170011B15D /* NotificationService-AppStore.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "NotificationService-AppStore.entitlements"; sourceTree = "<group>"; };
@@ -2358,6 +2362,7 @@
 			isa = PBXGroup;
 			children = (
 				D00ED7581FE94630001F38BD /* AppIntentVocabulary.plist */,
+				51970DF1229CA1D100F7921B /* NiceLocalizable.strings */,
 				D09DCBB51D0C856B00F51FFE /* Localizable.strings */,
 				D00ED75B1FE95287001F38BD /* InfoPlist.strings */,
 			);
@@ -2430,6 +2435,7 @@
 				D0CE6F3A213EDA4300BCD44B /* Localizable.strings */,
 				D0CE6F3C213EDA4300BCD44B /* InfoPlist.strings */,
 				D0CE6F3E213EDA4300BCD44B /* AppIntentVocabulary.plist */,
+				51970DF4229CA1F700F7921B /* NiceLocalizable.strings */,
 			);
 			path = ru.lproj;
 			sourceTree = "<group>";
@@ -2900,6 +2906,8 @@
 				D04DCC361F71C80000B021D7 /* 9.m4a in Resources */,
 				D0CE6F5A213EDA4400BCD44B /* AppIntentVocabulary.plist in Resources */,
 				D04DCC301F71C80000B021D7 /* 3.m4a in Resources */,
+				51970DF6229CA1F700F7921B /* NiceLocalizable.strings in Resources */,
+				51970DF3229CA1D100F7921B /* NiceLocalizable.strings in Resources */,
 				D0E8B8AE2044496C00605593 /* voip_end.caf in Resources */,
 				D0CE6F68213EDA4400BCD44B /* InfoPlist.strings in Resources */,
 				D0CE6F6A213EDA4400BCD44B /* Localizable.strings in Resources */,
@@ -3402,6 +3410,22 @@
 				09C56F8E2172797200BDF00F /* Base */,
 			);
 			name = Interface.storyboard;
+			sourceTree = "<group>";
+		};
+		51970DF1229CA1D100F7921B /* NiceLocalizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				51970DF2229CA1D100F7921B /* en */,
+			);
+			name = NiceLocalizable.strings;
+			sourceTree = "<group>";
+		};
+		51970DF4229CA1F700F7921B /* NiceLocalizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				51970DF5229CA1F700F7921B /* ru */,
+			);
+			name = NiceLocalizable.strings;
 			sourceTree = "<group>";
 		};
 		D00859AA1B28189D00EAF753 /* LaunchScreen.xib */ = {
