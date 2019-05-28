@@ -5,7 +5,7 @@
 "ChatFilter.Channels" = "Каналы";
 "ChatFilter.Private" = "Личные";
 "ChatFilter.Groups" = "Группы";
-"ChatFilter.Unread" = "Пропущены";
+"ChatFilter.Unread" = "Непрочитанные";
 "ChatFilter.Unmuted" = "Со звуком";
 "ChatFilter.Favourites" = "Важные";
 
@@ -20,4 +20,4 @@
 "Chat.SaveToCloud" = "Сохранить в Избранное";
 
 /*Open Pin*/
-"Chat.OpenPin" = "Закреп.";
+"Chat.OpenPin" = "Показать";
