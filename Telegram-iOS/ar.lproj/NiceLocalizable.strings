@@ -3,7 +3,7 @@
 /*ChatFilter*/
 "ChatFilter.Bots" = "السير";
 "ChatFilter.Channels" = "القنوات";
-"ChatFilter.Private" = "الخاصه";
+"ChatFilter.Private" = "المستخدمين";
 "ChatFilter.Groups" = "مجموعات";
 "ChatFilter.Unread" = "غير المقروءه";
 "ChatFilter.Unmuted" = "اونموتيد";
