@@ -3,7 +3,7 @@
 /*ChatFilter*/
 "ChatFilter.Bots" = "Bots";
 "ChatFilter.Channels" = "Channels";
-"ChatFilter.Private" = "Private";
+"ChatFilter.Private" = "Users";
 "ChatFilter.Groups" = "Groups";
 "ChatFilter.Unread" = "Unread";
 "ChatFilter.Unmuted" = "Unmuted";
