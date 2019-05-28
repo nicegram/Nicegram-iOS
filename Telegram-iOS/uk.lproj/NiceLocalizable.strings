@@ -3,7 +3,7 @@
 /*ChatFilter*/
 "ChatFilter.Bots" = "Боти";
 "ChatFilter.Channels" = "Канали";
-"ChatFilter.Private" = "Користувач";
+"ChatFilter.Private" = "Користувачі";
 "ChatFilter.Groups" = "Групи";
 "ChatFilter.Unread" = "Непрочитане";
 "ChatFilter.Unmuted" = "Нотифiкувати";
