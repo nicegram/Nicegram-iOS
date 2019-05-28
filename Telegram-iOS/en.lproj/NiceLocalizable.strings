@@ -1,6 +1,6 @@
 "AppName" = "Nicegram";
 
-// ChatFilter
+/*ChatFilter*/
 "ChatFilter.Bots" = "Bots";
 "ChatFilter.Channels" = "Channels";
 "ChatFilter.Private" = "Private";
@@ -9,15 +9,15 @@
 "ChatFilter.Unmuted" = "Unmuted";
 "ChatFilter.Favourites" = "Favourites";
 
-// Nice Features
+/*Nice Features*/
 "NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "TABS";
 "NiceFeatures.Tabs.ShowContacts" = "Show Contacts Tab";
 "NiceFeatures.ChatScreen.Header" = "CHAT SCREEN";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Animated Stickers";
 
-// Save to Cloud
+/*Save to Cloud*/
 "Chat.SaveToCloud" = "Save to Cloud";
 
-// Open Pin
-"Chat.OpenPin" = "Open Pin";
+/*Open Pin*/
+"Chat.OpenPin" = "Show Pin";
