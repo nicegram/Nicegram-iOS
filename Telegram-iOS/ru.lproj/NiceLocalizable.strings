@@ -3,7 +3,7 @@
 /*ChatFilter*/
 "ChatFilter.Bots" = "Боты";
 "ChatFilter.Channels" = "Каналы";
-"ChatFilter.Private" = "Личные";
+"ChatFilter.Private" = "Пользователи";
 "ChatFilter.Groups" = "Группы";
 "ChatFilter.Unread" = "Непрочитанные";
 "ChatFilter.Unmuted" = "Со звуком";
@@ -20,4 +20,4 @@
 "Chat.SaveToCloud" = "Сохранить в Избранное";
 
 /*Open Pin*/
-"Chat.OpenPin" = "Показать";
+"Chat.OpenPin" = "Показать Пин";
