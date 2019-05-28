@@ -3,7 +3,7 @@
 /*ChatFilter*/
 "ChatFilter.Bots" = "机器人";
 "ChatFilter.Channels" = "频道";
-"ChatFilter.Private" = "私人";
+"ChatFilter.Private" = "用户";
 "ChatFilter.Groups" = "群组";
 "ChatFilter.Unread" = "未读信息";
 "ChatFilter.Unmuted" = "已启用通知";
