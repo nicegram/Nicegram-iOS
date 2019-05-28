@@ -1,1 +1,23 @@
+"AppName" = "Nicegram";
 
+/*ChatFilter*/
+"ChatFilter.Bots" = "Боти";
+"ChatFilter.Channels" = "Канали";
+"ChatFilter.Private" = "Користувач";
+"ChatFilter.Groups" = "Групи";
+"ChatFilter.Unread" = "Непрочитане";
+"ChatFilter.Unmuted" = "Нотифiкувати";
+"ChatFilter.Favourites" = "Обране";
+
+/*Nice Features*/
+"NiceFeatures.Title" = "Nicegram";
+"NiceFeatures.Tabs.Header" = "ВКЛАДКИ";
+"NiceFeatures.Tabs.ShowContacts" = "Показувати контакти";
+"NiceFeatures.ChatScreen.Header" = "ВIКНО ЧАТУ";
+"NiceFeatures.ChatScreen.AnimatedStickers" = "Анiмованi стiкери";
+
+/*Save to Cloud*/
+"Chat.SaveToCloud" = "Зберегти До Хмари";
+
+/*Open Pin*/
+"Chat.OpenPin" = "Показати Пiн";
