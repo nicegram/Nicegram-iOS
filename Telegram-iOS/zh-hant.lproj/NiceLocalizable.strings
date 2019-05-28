@@ -1,1 +1,23 @@
+"AppName" = "Nicegram";
 
+/*ChatFilter*/
+"ChatFilter.Bots" = "机器人";
+"ChatFilter.Channels" = "频道";
+"ChatFilter.Private" = "私聊";
+"ChatFilter.Groups" = "群组";
+"ChatFilter.Unread" = "未读";
+"ChatFilter.Unmuted" = "通知";
+"ChatFilter.Favourites" = "最爱";
+
+/*Nice Features*/
+"NiceFeatures.Title" = "Nicegram";
+"NiceFeatures.Tabs.Header" = "表情";
+"NiceFeatures.Tabs.ShowContacts" = "历史表情";
+"NiceFeatures.ChatScreen.Header" = "";
+"NiceFeatures.ChatScreen.AnimatedStickers" = "动画表情";
+
+/*Save to Cloud*/
+"Chat.SaveToCloud" = "云端储存";
+
+/*Open Pin*/
+"Chat.OpenPin" = "置顶";
