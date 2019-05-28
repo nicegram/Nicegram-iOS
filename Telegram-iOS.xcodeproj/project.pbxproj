@@ -212,6 +212,7 @@
 		09D304382174344900C00567 /* TGBridgeWebPageMediaAttachment.m in Sources */ = {isa = PBXBuildFile; fileRef = 09C572F52172953500BDF00F /* TGBridgeWebPageMediaAttachment.m */; };
 		09D304392174344900C00567 /* TGBridgeMessageEntities.m in Sources */ = {isa = PBXBuildFile; fileRef = 09C572F42172953500BDF00F /* TGBridgeMessageEntities.m */; };
 		09FDAEE62140477F00BF856F /* MtProtoKitDynamic.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 09FDAEE52140477F00BF856F /* MtProtoKitDynamic.framework */; };
+		51447234229D6ACD004E91F1 /* NiceLocalizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 51447232229D6ACD004E91F1 /* NiceLocalizable.strings */; };
 		516290EF224AEAEF008519B7 /* CloudKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 516290EE224AEAEF008519B7 /* CloudKit.framework */; };
 		51706F2F229D511500D32A47 /* NiceLocalizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 51706F2D229D511500D32A47 /* NiceLocalizable.strings */; };
 		51706F32229D516300D32A47 /* NiceLocalizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 51706F30229D516300D32A47 /* NiceLocalizable.strings */; };
@@ -905,6 +906,7 @@
 		09CFB211217299E80083F7A3 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS5.0.sdk/System/Library/Frameworks/CoreLocation.framework; sourceTree = DEVELOPER_DIR; };
 		09D304212174335F00C00567 /* WatchBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchBridge.swift; sourceTree = "<group>"; };
 		09FDAEE52140477F00BF856F /* MtProtoKitDynamic.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = MtProtoKitDynamic.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		51447233229D6ACD004E91F1 /* uk */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uk; path = NiceLocalizable.strings; sourceTree = "<group>"; };
 		516290EE224AEAEF008519B7 /* CloudKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CloudKit.framework; path = System/Library/Frameworks/CloudKit.framework; sourceTree = SDKROOT; };
 		51706F2E229D511500D32A47 /* zh-tw */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-tw"; path = NiceLocalizable.strings; sourceTree = "<group>"; };
 		51706F31229D516300D32A47 /* zh-hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-hant"; path = NiceLocalizable.strings; sourceTree = "<group>"; };
@@ -1933,6 +1935,14 @@
 			name = "Recovered References";
 			sourceTree = "<group>";
 		};
+		51447231229D6AB6004E91F1 /* uk.lproj */ = {
+			isa = PBXGroup;
+			children = (
+				51447232229D6ACD004E91F1 /* NiceLocalizable.strings */,
+			);
+			path = uk.lproj;
+			sourceTree = "<group>";
+		};
 		51706F2A229D50AA00D32A47 /* zh-hans.lproj */ = {
 			isa = PBXGroup;
 			children = (
@@ -2027,6 +2037,7 @@
 		D008599F1B28189D00EAF753 /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
+				51447231229D6AB6004E91F1 /* uk.lproj */,
 				51706F2C229D50F300D32A47 /* zh-tw.lproj */,
 				51706F2B229D50EA00D32A47 /* zh-hant.lproj */,
 				51706F2A229D50AA00D32A47 /* zh-hans.lproj */,
@@ -2882,6 +2893,7 @@
 				"zh-tw",
 				"zh-hant",
 				"zh-hans",
+				uk,
 			);
 			mainGroup = D00859931B28189D00EAF753;
 			productRefGroup = D008599D1B28189D00EAF753 /* Products */;
@@ -2947,6 +2959,7 @@
 				D0338736223A9A9A007A2CE4 /* Config-Hockeyapp-Internal.xcconfig in Resources */,
 				D08DB0C0213F4D1D00F2ADBF /* telegram_sphere@2x.png in Resources */,
 				D08DB0AB213F4D1D00F2ADBF /* ic_bubble@2x.png in Resources */,
+				51447234229D6ACD004E91F1 /* NiceLocalizable.strings in Resources */,
 				D04DCC341F71C80000B021D7 /* 7.m4a in Resources */,
 				D0CE6F60213EDA4400BCD44B /* AppIntentVocabulary.plist in Resources */,
 				D0CE6F63213EDA4400BCD44B /* AppIntentVocabulary.plist in Resources */,
@@ -3465,6 +3478,14 @@
 				09C56F8E2172797200BDF00F /* Base */,
 			);
 			name = Interface.storyboard;
+			sourceTree = "<group>";
+		};
+		51447232229D6ACD004E91F1 /* NiceLocalizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				51447233229D6ACD004E91F1 /* uk */,
+			);
+			name = NiceLocalizable.strings;
 			sourceTree = "<group>";
 		};
 		51706F2D229D511500D32A47 /* NiceLocalizable.strings */ = {
