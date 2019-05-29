@@ -744,7 +744,7 @@ private struct NiceFeaturesSelectionState: Equatable {
             
             _ = (accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.niceSettings])).start(next: { sharedData in
                 if let settings = sharedData.entries[ApplicationSpecificSharedDataKeys.niceSettings] as? NiceSettings {
-                    showFilteredChatsTab = .onlyNonMuted //settings.workmode
+                    showFilteredChatsTab = settings.currentFilter //settings.workmode
                     showContactsTab = settings.showContactsTab
                 } else {
                     let defaultSettings = NiceSettings.defaultSettings
