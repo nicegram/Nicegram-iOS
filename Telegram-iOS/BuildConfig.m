@@ -339,6 +339,31 @@ API_AVAILABLE(ios(10))
     return instance;
 }
 
+- (instancetype _Nonnull)initWithBaseAppBundleId:(NSString * _Nonnull)baseAppBundleId {
+    self = [super init];
+    if (self != nil) {
+        _apiId = APP_CONFIG_API_ID;
+        _apiHash = @(APP_CONFIG_API_HASH);
+        _hockeyAppId = @(APP_CONFIG_HOCKEYAPP_ID);
+        
+        MTPKCS *signature = checkSignature([[[NSBundle mainBundle] executablePath] UTF8String]);
+        NSMutableDictionary *dataDict = [[NSMutableDictionary alloc] init];
+        
+        if (baseAppBundleId != nil) {
+            dataDict[@"bundleId"] = baseAppBundleId;
+        }
+        if (signature.name != nil) {
+            dataDict[@"name"] = signature.name;
+        }
+        if (signature.data != nil) {
+            dataDict[@"data"] = [MTSha1(signature.data) base64EncodedStringWithOptions:0];
+        }
+        
+        _bundleData = [NSJSONSerialization dataWithJSONObject:dataDict options:0 error:nil];
+    }
+    return self;
+}
+
 - (NSData * _Nullable)bundleData {
     return [[NSData alloc] init];;
 }
@@ -541,7 +566,7 @@ API_AVAILABLE(ios(10))
         [resultData writeToFile:filePath atomically:false];
     }
     
-    if (@available(iOS 11, *)) {
+    /*if (@available(iOS 11, *)) {
         NSData *currentEncryptedData = [NSData dataWithContentsOfFile:encryptedPath];
         
         LocalPrivateKey *localPrivateKey = [self getLocalPrivateKey:baseAppBundleId];
@@ -564,7 +589,7 @@ API_AVAILABLE(ios(10))
                 [encryptedData writeToFile:encryptedPath atomically:false];
             }
         }
-    }
+    }*/
     
     CFAbsoluteTime endTime = CFAbsoluteTimeGetCurrent();
     NSLog(@"deviceSpecificEncryptionParameters took %f ms", (endTime - startTime) * 1000.0);

@@ -1532,6 +1532,7 @@
 "Forward.ChannelReadOnly" = "Sorry, you can't post to this channel.";
 
 "Channel.ErrorAccessDenied" = "Sorry, this channel is private.";
+"Group.ErrorAccessDenied" = "Sorry, this channel is private.";
 "Conversation.InputTextBroadcastPlaceholder" = "Broadcast";
 
 "Channel.NotificationLoading" = "Loading...";
@@ -2159,6 +2160,7 @@ Unused sets are archived when you add more.";
 "ShareMenu.CopyShareLinkGame" = "Copy link to game";
 
 "Message.PinnedGame" = "pinned a game";
+"Message.AuthorPinnedGame" = "%@ pinned a game";
 
 "Target.ShareGameConfirmationPrivate" = "Share the game with %@?";
 "Target.ShareGameConfirmationGroup" = "Share the game with \"%@\"?";
@@ -4211,7 +4213,10 @@ Unused sets are archived when you add more.";
 
 "Undo.ChatDeletedForBothSides" = "Chat deleted for both sides";
 
-"DataUpgrade.Running" = "Optimizing Nicegram...";
+"AppUpgrade.Running" = "Optimizing Nicegram...
+This may take a while, depending on the size of the database. Please keep the app open until the process is finished.
+
+Sorry for the inconvenience.";
 
 "Call.Mute" = "mute";
 "Call.Camera" = "camera";
@@ -4244,6 +4249,7 @@ Unused sets are archived when you add more.";
 "ChatList.ArchivedChatsTitle" = "Archived Chats";
 
 "PasscodeSettings.PasscodeOptions" = "Passcode Options";
+"PasscodeSettings.DoNotMatch" = "Passcodes don't match. Please try again.";
 
 "Conversation.PrivateChannelTooltip" = "This channel is private";
 
@@ -4262,3 +4268,68 @@ Unused sets are archived when you add more.";
 "ArchivedChats.IntroText2" = "Muted chats stay archived when new messages arrive.";
 "ArchivedChats.IntroTitle3" = "Pinned Chats";
 "ArchivedChats.IntroText3" = "You can pin up to 100 archived chats to the top.";
+
+"UserInfo.ScamUserWarning" = "⚠️ Warning: Many users reported this user as a scam. Please be careful, especially if it asks you for money.";
+"UserInfo.ScamBotWarning" = "⚠️ Warning: Many users reported this user as a scam. Please be careful, especially if it asks you for money.";
+"ChannelInfo.ScamChannelWarning" = "⚠️ Warning: Many users reported this channel as a scam. Please be careful, especially if it asks you for money.";
+"GroupInfo.ScamGroupWarning" = "⚠️ Warning: Many users reported this group as a scam. Please be careful, especially if it asks you for money.";
+
+"Privacy.AddNewPeer" = "Add Users or Groups";
+"PrivacyPhoneNumberSettings.WhoCanSeeMyPhoneNumber" = "WHO CAN SEE MY PHONE NUMBER";
+"PrivacyPhoneNumberSettings.CustomHelp" = "Users who already have your number saved in the contacts will also see it on Telegram.";
+"Privacy.PhoneNumber" = "Phone Number";
+"PrivacySettings.PhoneNumber" = "Phone Number";
+"Contacts.SearchUsersAndGroupsLabel" = "Search for users and groups";
+
+"PrivacySettings.PasscodeOff" = "Off";
+"PrivacySettings.PasscodeOn" = "On";
+
+"UserInfo.BlockConfirmationTitle" = "Do you want to block %@ from messaging and calling you on Telegram?";
+"UserInfo.BlockActionTitle" = "Block %@";
+"ReportSpam.DeleteThisChat" = "Delete this Chat";
+
+"PrivacySettings.BlockedPeersEmpty" = "None";
+
+"Channel.DiscussionGroup" = "Discussion";
+"Group.LinkedChannel" = "Linked Channel";
+"Channel.DiscussionGroupAdd" = "Add";
+"Channel.DiscussionGroupInfo" = "Add group chat for comments.";
+"Channel.DiscussionGroup.Header" = "Select a group chat for discussion that will be displayed in your channel.";
+"Channel.DiscussionGroup.HeaderSet" = "A link to %@ is shown to all subscribers in the bottom panel.";
+"Channel.DiscussionGroup.HeaderGroupSet" = "%@ is linking the group as it's discussion board.";
+"Channel.DiscussionGroup.HeaderLabel" = "Discuss";
+"Channel.DiscussionGroup.Create" = "Create New Group";
+"Channel.DiscussionGroup.PrivateGroup" = "private group";
+"Channel.DiscussionGroup.Info" = "Everything you post in the channel will be forwarded to this group.";
+"Channel.DiscussionGroup.LinkGroup" = "Link Group";
+"Channel.DiscussionGroup.UnlinkGroup" = "Unlink Group";
+"Channel.DiscussionGroup.UnlinkChannel" = "Unlink Channel";
+"Channel.DiscussionGroup.PublicChannelLink" = "Do you want to make %1$@ the discussion board for %2$@?";
+"Channel.DiscussionGroup.PrivateChannelLink" = "Do you want to make %1$@ the discussion board for %2$@?
+
+Any member of this group will be able to see messages in the channel.";
+"Channel.DiscussionGroup.MakeHistoryPublic" = "Warning: If you set this private group as the disccussion group for your channel, all channel subscribers will be able to access the group. \"Chat history for new members\" will be switched to Visible.";
+"Channel.DiscussionGroup.MakeHistoryPublicProceed" = "Proceed";
+
+"Channel.DiscussionGroup.SearchPlaceholder" = "Search";
+
+"Channel.AdminLog.MessageChangedLinkedGroup" = "%1$@ made %2$@ the discussion group for this channel.";
+"Channel.AdminLog.MessageChangedLinkedChannel" = "%1$@ linked this group to %2$@";
+"Channel.AdminLog.MessageChangedUnlinkedGroup" = "%1$@ removed the discussion group %2$@";
+"Channel.AdminLog.MessageChangedUnlinkedChannel" = "%1$@ unlinked this group from %2$@";
+
+"Conversation.OpenBotLinkTitle" = "Open Link";
+"Conversation.OpenBotLinkText" = "Do you want to open\n**%@**?";
+"Conversation.OpenBotLinkLogin" = "Log in to **%1$@** as %2$@";
+"Conversation.OpenBotLinkAllowMessages" = "Allow **%@** to send me messages";
+"Conversation.OpenBotLinkOpen" = "Open";
+
+"TextFormat.Link" = "Link";
+
+"TextFormat.AddLinkTitle" = "Add Link";
+"TextFormat.AddLinkText" = "The link will be displayed as \"%@\".";
+"TextFormat.AddLinkPlaceholder" = "URL";
+
+"Channel.AddBotErrorHaveRights" = "Bots can only be added as administrators.";
+"Channel.AddBotAsAdmin" = "Make Admin";
+"Channel.AddBotErrorNoRights" = "Sorry, bots can only be added to channels as administrators.";

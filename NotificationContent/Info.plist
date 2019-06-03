@@ -17,7 +17,7 @@
 	<key>CFBundlePackageType</key>
 	<string>XPC!</string>
 	<key>CFBundleShortVersionString</key>
-	<string>5.6</string>
+	<string>5.7</string>
 	<key>CFBundleVersion</key>
 	<string>${BUILD_NUMBER}</string>
 	<key>NSExtension</key>
@@ -32,10 +32,10 @@
 			<key>UNNotificationExtensionInitialContentSizeRatio</key>
 			<real>0.0001</real>
 		</dict>
-		<key>NSExtensionMainStoryboard</key>
-		<string>MainInterface</string>
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.usernotifications.content-extension</string>
+		<key>NSExtensionPrincipalClass</key>
+		<string>NotificationViewController</string>
 	</dict>
 </dict>
 </plist>

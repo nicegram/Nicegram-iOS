@@ -209,6 +209,8 @@ private struct NiceFeaturesSelectionState: Equatable {
         precondition(!testIsLaunched)
         testIsLaunched = true
         
+        let launchStartTime = CFAbsoluteTimeGetCurrent()
+        
         let statusBarHost = ApplicationStatusBarHost()
         let (window, hostView) = nativeWindowHostView()
         self.mainWindow = Window1(hostView: hostView, statusBarHost: statusBarHost)
@@ -321,43 +323,18 @@ private struct NiceFeaturesSelectionState: Equatable {
         })
         self.clearNotificationsManager = clearNotificationsManager
         
-        #if DEBUG
-        for argument in ProcessInfo.processInfo.arguments {
-            if argument.hasPrefix("snapshot:") {
-                GlobalExperimentalSettings.isAppStoreBuild = true
-                
-                guard let dataPath = ProcessInfo.processInfo.environment["snapshot-data-path"] else {
-                    preconditionFailure()
-                }
-                setupSnapshotData(dataPath)
-                switch String(argument[argument.index(argument.startIndex, offsetBy: "snapshot:".count)...]) {
-                    case "chat-list":
-                        snapshotChatList(application: application, mainWindow: self.window!, window: self.mainWindow, statusBarHost: statusBarHost)
-                    case "secret-chat":
-                        snapshotSecretChat(application: application, mainWindow: self.window!, window: self.mainWindow, statusBarHost: statusBarHost)
-                    case "settings":
-                        snapshotSettings(application: application, mainWindow: self.window!, window: self.mainWindow, statusBarHost: statusBarHost)
-                    case "appearance-settings":
-                        snapshotAppearanceSettings(application: application, mainWindow: self.window!, window: self.mainWindow, statusBarHost: statusBarHost)
-                    default:
-                        break
-                }
-                self.window?.makeKeyAndVisible()
-                return true
-            }
-        }
-        #endif
-        
-        let apiId: Int32 = BuildConfig.shared().apiId
-        let languagesCategory = "ios"
-        
         let appVersion = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "unknown"
-        
-        let networkArguments = NetworkInitializationArguments(apiId: apiId, languagesCategory: languagesCategory, appVersion: appVersion, voipMaxLayer: PresentationCallManager.voipMaxLayer, appData: BuildConfig.shared().bundleData)
         
         let baseAppBundleId = Bundle.main.bundleIdentifier!
         let appGroupName = "group.\(baseAppBundleId)"
         let maybeAppGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)
+        
+        let buildConfig = BuildConfig(baseAppBundleId: baseAppBundleId)
+        
+        let apiId: Int32 = buildConfig.apiId
+        let languagesCategory = "ios"
+        
+        let networkArguments = NetworkInitializationArguments(apiId: apiId, languagesCategory: languagesCategory, appVersion: appVersion, voipMaxLayer: PresentationCallManager.voipMaxLayer, appData: buildConfig.bundleData)
         
         guard let appGroupUrl = maybeAppGroupUrl else {
             UIAlertView(title: nil, message: "Error 2", delegate: nil, cancelButtonTitle: "OK").show()
@@ -373,7 +350,7 @@ private struct NiceFeaturesSelectionState: Equatable {
             isDebugConfiguration = true
         }
         
-        if isDebugConfiguration || BuildConfig.shared().isInternalBuild {
+        if isDebugConfiguration || buildConfig.isInternalBuild {
             LoggingSettings.defaultSettings = LoggingSettings(logToFile: true, logToConsole: false, redactSensitiveData: true)
         } else {
             LoggingSettings.defaultSettings = LoggingSettings(logToFile: false, logToConsole: false, redactSensitiveData: true)
@@ -432,7 +409,7 @@ private struct NiceFeaturesSelectionState: Equatable {
         
         telegramUIDeclareEncodables()
         
-        GlobalExperimentalSettings.isAppStoreBuild = BuildConfig.shared().isAppStoreBuild
+        GlobalExperimentalSettings.isAppStoreBuild = buildConfig.isAppStoreBuild
         
         GlobalExperimentalSettings.enableFeed = false
         #if DEBUG
@@ -448,7 +425,7 @@ private struct NiceFeaturesSelectionState: Equatable {
         
         initializeAccountManagement()
         
-        let applicationBindings = TelegramApplicationBindings(isMainApp: true, containerPath: appGroupUrl.path, appSpecificScheme: BuildConfig.shared().appSpecificUrlScheme, openUrl: { url in
+        let applicationBindings = TelegramApplicationBindings(isMainApp: true, containerPath: appGroupUrl.path, appSpecificScheme: buildConfig.appSpecificUrlScheme, openUrl: { url in
             var parsedUrl = URL(string: url)
             if let parsed = parsedUrl {
                 if parsed.scheme == nil || parsed.scheme!.isEmpty {
@@ -541,7 +518,7 @@ private struct NiceFeaturesSelectionState: Equatable {
                 UIApplication.shared.openURL(url)
             }
         }, openAppStorePage: {
-            let appStoreId = BuildConfig.shared().appStoreId
+            let appStoreId = buildConfig.appStoreId
             if let url = URL(string: "itms-apps://itunes.apple.com/app/id\(appStoreId)") {
                 UIApplication.shared.openURL(url)
             }
@@ -584,6 +561,20 @@ private struct NiceFeaturesSelectionState: Equatable {
             self.window?.rootViewController?.present(controller, animated: true, completion: nil)
         }, dismissNativeController: {
             self.window?.rootViewController?.dismiss(animated: true, completion: nil)
+        }, getAlternateIconName: {
+            if #available(iOS 10.3, *) {
+                return application.alternateIconName
+            } else {
+                return nil
+            }
+        }, requestSetAlternateIconName: { name, completion in
+            if #available(iOS 10.3, *) {
+                application.setAlternateIconName(name, completionHandler: { error in
+                    completion(error == nil)
+                })
+            } else {
+                completion(false)
+            }
         })
         
         var showFilteredChatsTab: NiceChatListNodePeersFilter = .onlyNonMuted
@@ -616,31 +607,33 @@ private struct NiceFeaturesSelectionState: Equatable {
         let sharedContextSignal = accountManagerSignal
         |> deliverOnMainQueue
         |> take(1)
-        |> mapToSignal { accountManager -> Signal<(SharedApplicationContext, LoggingSettings), NoError> in
-            var initialPresentationDataAndSettings: InitialPresentationDataAndSettings?
-            let semaphore = DispatchSemaphore(value: 0)
-            let _ = currentPresentationDataAndSettings(accountManager: accountManager).start(next: { value in
-                initialPresentationDataAndSettings = value
-                semaphore.signal()
-            })
-            semaphore.wait()
-            
-            if let initialPresentationDataAndSettings = initialPresentationDataAndSettings {
-                self.window?.backgroundColor = initialPresentationDataAndSettings.presentationData.theme.chatList.backgroundColor
+        |> deliverOnMainQueue
+        |> take(1)
+        |> mapToSignal { accountManager -> Signal<(AccountManager, InitialPresentationDataAndSettings), NoError> in
+            return currentPresentationDataAndSettings(accountManager: accountManager)
+                |> map { initialPresentationDataAndSettings -> (AccountManager, InitialPresentationDataAndSettings) in
+                    return (accountManager, initialPresentationDataAndSettings)
             }
+        }
+        |> deliverOnMainQueue
+        |> mapToSignal { accountManager, initialPresentationDataAndSettings -> Signal<(SharedApplicationContext, LoggingSettings), NoError> in
+            self.window?.backgroundColor = initialPresentationDataAndSettings.presentationData.theme.chatList.backgroundColor
             
             let legacyBasePath = appGroupUrl.path
             let legacyCache = LegacyCache(path: legacyBasePath + "/Caches")
             
             var setPresentationCall: ((PresentationCall?) -> Void)?
-            let sharedContext = SharedAccountContext(mainWindow: self.mainWindow, basePath: rootPath, encryptionParameters: encryptionParameters, accountManager: accountManager, applicationBindings: applicationBindings, initialPresentationDataAndSettings: initialPresentationDataAndSettings!, networkArguments: networkArguments, rootPath: rootPath, legacyBasePath: legacyBasePath, legacyCache: legacyCache, apsNotificationToken: self.notificationTokenPromise.get() |> map(Optional.init), voipNotificationToken: self.voipTokenPromise.get() |> map(Optional.init), setNotificationCall: { call in
+            let sharedContext = SharedAccountContext(mainWindow: self.mainWindow, basePath: rootPath, encryptionParameters: encryptionParameters, accountManager: accountManager, applicationBindings: applicationBindings, initialPresentationDataAndSettings: initialPresentationDataAndSettings, networkArguments: networkArguments, rootPath: rootPath, legacyBasePath: legacyBasePath, legacyCache: legacyCache, apsNotificationToken: self.notificationTokenPromise.get() |> map(Optional.init), voipNotificationToken: self.voipTokenPromise.get() |> map(Optional.init), setNotificationCall: { call in
                 setPresentationCall?(call)
             }, navigateToChat: { accountId, peerId, messageId in
                 self.openChatWhenReady(accountId: accountId, peerId: peerId, messageId: messageId)
             }, displayUpgradeProgress: { progress in
                 if let progress = progress {
                     if self.dataImportSplash == nil {
-                        self.dataImportSplash = LegacyDataImportSplash(theme: initialPresentationDataAndSettings?.presentationData.theme, strings: initialPresentationDataAndSettings?.presentationData.strings)
+                        self.dataImportSplash = LegacyDataImportSplash(theme: initialPresentationDataAndSettings.presentationData.theme, strings: initialPresentationDataAndSettings.presentationData.strings)
+                        self.dataImportSplash?.serviceAction = {
+                            self.debugPressed()
+                        }
                         self.mainWindow.coveringView = self.dataImportSplash
                     }
                     self.dataImportSplash?.progress = (.generic, progress)
@@ -938,7 +931,7 @@ private struct NiceFeaturesSelectionState: Equatable {
             |> deliverOnMainQueue
             |> map { accountAndSettings -> UnauthorizedApplicationContext? in
                 return accountAndSettings.flatMap { account, limitsConfiguration, callListSettings, otherAccountPhoneNumbers in
-                    return UnauthorizedApplicationContext(sharedContext: sharedApplicationContext.sharedContext, account: account, otherAccountPhoneNumbers: otherAccountPhoneNumbers)
+                    return UnauthorizedApplicationContext(buildConfig: buildConfig, sharedContext: sharedApplicationContext.sharedContext, account: account, otherAccountPhoneNumbers: otherAccountPhoneNumbers)
                 }
             }
         })
@@ -975,6 +968,8 @@ private struct NiceFeaturesSelectionState: Equatable {
                     if readyTime > 0.5 {
                         print("Application: context took \(readyTime) to become ready")
                     }
+                    print("Launch to ready took \((CFAbsoluteTimeGetCurrent() - launchStartTime) * 1000.0) ms")
+                    
                     self.mainWindow.viewController = context.rootController
                     if firstTime {
                         let layer = context.rootController.view.layer
@@ -1157,7 +1152,7 @@ private struct NiceFeaturesSelectionState: Equatable {
             }
         })
         
-        if let hockeyAppId = BuildConfig.shared().hockeyAppId, !hockeyAppId.isEmpty {
+        if let hockeyAppId = buildConfig.hockeyAppId, !hockeyAppId.isEmpty {
             BITHockeyManager.shared().configure(withIdentifier: hockeyAppId, delegate: self)
             BITHockeyManager.shared().crashManager.crashManagerStatus = .alwaysAsk
             BITHockeyManager.shared().start()
@@ -2007,7 +2002,7 @@ private struct NiceFeaturesSelectionState: Equatable {
     }
     
     @objc func debugPressed() {
-        let _ = (Logger.shared.collectLogs()
+        let _ = (Logger.shared.collectShortLogFiles()
         |> deliverOnMainQueue).start(next: { logs in
             var activityItems: [Any] = []
             for (_, path) in logs {
