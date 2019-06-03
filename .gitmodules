@@ -3,7 +3,7 @@
 	url = https://github.com/peter-iakovlev/AsyncDisplayKit.git
 [submodule "submodules/Display"]
 	path = submodules/Display
-	url = https://github.com/peter-iakovlev/Display.git
+	url = https://github.com/nicegram/Display.git
 [submodule "submodules/HockeySDK-iOS"]
 	path = submodules/HockeySDK-iOS
 	url = https://github.com/peter-iakovlev/HockeySDK-iOS.git
