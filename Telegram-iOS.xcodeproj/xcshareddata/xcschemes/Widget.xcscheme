@@ -57,7 +57,7 @@
       </AdditionalOptions>
    </TestAction>
    <LaunchAction
-      buildConfiguration = "DebugHockeyapp"
+      buildConfiguration = "DebugAppStoreLLC"
       selectedDebuggerIdentifier = ""
       selectedLauncherIdentifier = "Xcode.IDEFoundation.Launcher.PosixSpawn"
       launchStyle = "0"
@@ -67,16 +67,26 @@
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES"
       launchAutomaticallySubstyle = "2">
-      <BuildableProductRunnable
-         runnableDebuggingMode = "0">
+      <RemoteRunnable
+         runnableDebuggingMode = "2"
+         BundleIdentifier = "com.apple.springboard">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "D008599B1B28189D00EAF753"
-            BuildableName = "Nicegram.app"
-            BlueprintName = "Telegram-iOS"
+            BlueprintIdentifier = "D0B2F736204F4C9900D3BFB9"
+            BuildableName = "Widget.appex"
+            BlueprintName = "Widget"
             ReferencedContainer = "container:Telegram-iOS.xcodeproj">
          </BuildableReference>
-      </BuildableProductRunnable>
+      </RemoteRunnable>
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "D0B2F736204F4C9900D3BFB9"
+            BuildableName = "Widget.appex"
+            BlueprintName = "Widget"
+            ReferencedContainer = "container:Telegram-iOS.xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
       <AdditionalOptions>
       </AdditionalOptions>
    </LaunchAction>
