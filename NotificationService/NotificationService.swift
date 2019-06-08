@@ -441,21 +441,6 @@ class NotificationService: UNNotificationServiceExtension {
                 }
             }
             
-            var isSilent: Bool = false
-            if let silent = dict["silent"] as? Int {
-                if (silent != 0) {
-                    isSilent = true
-                }
-            }
-            
-            if (!isSilent && self.bestAttemptContent?.title != nil && !(self.bestAttemptContent?.title.isEmpty)!) {
-                //CloudVeil start
-                let currentBadge = NotificationService.getAppBadge()
-                self.bestAttemptContent?.badge = (currentBadge + 1) as NSNumber
-                NotificationService.setAppBadge(currentBadge + 1)
-                //CloudVeil end
-            }
-            
             self.bestAttemptContent?.userInfo = userInfo
             
             self.cancelFetch?()
@@ -525,43 +510,6 @@ class NotificationService: UNNotificationServiceExtension {
             }
         }
     }
-    
-    public static func getAppGroupName() -> String? {
-        let appBundleIdentifier = Bundle.main.bundleIdentifier!
-        if let lastDotRange = appBundleIdentifier.range(of: ".", options: [.backwards]) {
-            let appGroupName = "group.\(appBundleIdentifier[..<lastDotRange.lowerBound])"
-            let maybeAppGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)
-            
-            if maybeAppGroupUrl != nil {
-                return appGroupName
-            } else {
-                return nil
-            }
-        }
-        
-        return nil
-    }
-    
-    //CloudVeil start
-    public static func getAppBadge() -> Int {
-        if let appGroupName = getAppGroupName() {
-            if let userDefaults = UserDefaults(suiteName: appGroupName) {
-                return userDefaults.integer(forKey: "app-badge")
-            }
-        }
-        return 0
-    }
-    
-    public static func setAppBadge(_ newValue: Int) {
-        if let appGroupName = getAppGroupName() {
-            if let userDefaults = UserDefaults(suiteName: appGroupName) {
-                userDefaults.set(newValue, forKey: "app-badge")
-                userDefaults.synchronize()
-            }
-        }
-    }
-    //CloudVeil end
-    
     
     override func serviceExtensionTimeWillExpire() {
         Logger.shared.log("NotificationService", "serviceExtensionTimeWillExpire")
