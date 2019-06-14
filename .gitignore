@@ -2,6 +2,8 @@ fastlane/README.md
 fastlane/report.xml
 fastlane/test_output/*
 fastlane/fastlanematch
+fastlane/Fastfile
+Gemfile
 build/*
 *.pbxuser
 !default.pbxuser
