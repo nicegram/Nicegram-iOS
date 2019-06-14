@@ -1,1 +1,2 @@
-Fixed sudden logout
+Fix Push notifications for muted chats.
+Settings > Nicegram > Fix Notifications

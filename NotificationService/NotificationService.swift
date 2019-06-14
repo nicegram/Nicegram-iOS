@@ -506,6 +506,7 @@ class NotificationService: UNNotificationServiceExtension {
             Logger.shared.log("NotificationService", "couldn't decrypt notification")
             
             if let bestAttemptContent = self.bestAttemptContent {
+                self.bestAttemptContent?.badge = nil
                 contentHandler(bestAttemptContent)
             }
         }
