@@ -1,2 +1,28 @@
-Fix Push notifications for muted chats.
-Settings > Nicegram > Fix Notifications
+FOLDERS [BETA / UNSTABLE]
+- You MUST have at least one chat in official Telegram archive!!
+- Tap "Edit" on the top left corner, select chats and tap "Create Folder".
+- You can only CREATE folders and REMOVE CHATS from folders ("Unarchive" button).
+- Chat will not be removed from folder if you will bet a notification in that chat.
+- Folders act like Аrchive.
+- If something goes bad, tap 10x times on settings icon and choose Clear Database & Folders. This will affect only secret chats and folders. You don't need to relogin.
+
+UNLIMITED PINNED CHATS
+- Pins will sync only if you have 5 chats or less
+- Pinned chats will be resetted in Nicegram if you change them in other client.
+
+
+
+######
+
+
+ПАПКИ [БЕТА / НЕСТАБИЛЬНЫ]
+- У вас ОБЯЗАТЕЛЬНО должен быть как минимум один чат в АРХИВЕ Telegram!
+- Нажмите "Изменить" в левом верхнем углу, выберите чаты и создайте папку.
+- Вы можете только СОЗДАВАТЬ папк и УДАЛЯТЬ ЧАТЫ из папок (кнопка "Вернуть")
+- Чат не будет убран из папки, даже если вам придет уведомление в нем.
+- Папки схожи по поведению с Архивом.
+- Если что-то пошло не так, нажимите 10х раз на иконку настроек, затем Clear Database & Folders. Это затронет только секретные чаты и папки. Перелогин не потребуется.
+
+НЕОГРАНИЧЕННОЕ ЧИСЛО ЗАКРЕПОВ
+- Закрепленные чаты синхронизируются с серверами Telegram, только если у вас их 5 или меньше.
+- Если вы измените закрепленные чаты в другом клиенте, то они будут сброшены в Nicegram.

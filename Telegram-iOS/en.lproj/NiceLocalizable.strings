@@ -22,3 +22,11 @@
 
 /*Open Pin*/
 "Chat.OpenPin" = "Show Pin";
+
+/*Folders*/
+"Folder.DefaultName" = "Folder";
+"Folder.New" = "New Folder";
+"Folder.Name" = "Folder Name";
+// Create 📁
+"Folder.Create" = "Create Folder";
+"Folder.Created" = "Folder Created";
