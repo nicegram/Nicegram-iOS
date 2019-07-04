@@ -49,7 +49,6 @@
 		09C56F8F2172797200BDF00F /* Interface.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 09C56F8D2172797200BDF00F /* Interface.storyboard */; };
 		09C56F912172797400BDF00F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 09C56F902172797400BDF00F /* Assets.xcassets */; };
 		09C56F982172797500BDF00F /* Watch Extension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 09C56F972172797400BDF00F /* Watch Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		09C56FA52172797500BDF00F /* Watch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 09C56F8B2172797200BDF00F /* Watch.app */; };
 		09C5713E21727D9E00BDF00F /* TGInterfaceController.m in Sources */ = {isa = PBXBuildFile; fileRef = 09C5712021727BF800BDF00F /* TGInterfaceController.m */; };
 		09C5713F21727DA000BDF00F /* TGExtensionDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 09C5712221727BF800BDF00F /* TGExtensionDelegate.m */; };
 		09C5714021727DAA00BDF00F /* TGDateUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 09C5713921727CFD00BDF00F /* TGDateUtils.m */; };
@@ -396,13 +395,6 @@
 			remoteGlobalIDString = 09C56F962172797400BDF00F;
 			remoteInfo = "Watch Extension";
 		};
-		09C56FA32172797500BDF00F /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D00859941B28189D00EAF753 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 09C56F8A2172797200BDF00F;
-			remoteInfo = Watch;
-		};
 		D000CACD21FB6E380011B15D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = D00859941B28189D00EAF753 /* Project object */;
@@ -465,7 +457,6 @@
 			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
 			dstSubfolderSpec = 16;
 			files = (
-				09C56FA52172797500BDF00F /* Watch.app in Embed Watch Content */,
 			);
 			name = "Embed Watch Content";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2443,7 +2434,6 @@
 				D0D2688D1D79A70B00C422DA /* PBXTargetDependency */,
 				D0B2F741204F4C9900D3BFB9 /* PBXTargetDependency */,
 				D02CF607215D9ABF00E0F56A /* PBXTargetDependency */,
-				09C56FA42172797500BDF00F /* PBXTargetDependency */,
 				D000CACE21FB6E380011B15D /* PBXTargetDependency */,
 			);
 			name = "Telegram-iOS";
@@ -2551,12 +2541,12 @@
 				TargetAttributes = {
 					09C56F8A2172797200BDF00F = {
 						CreatedOnToolsVersion = 10.0;
-						DevelopmentTeam = C67CF9S4VU;
+						DevelopmentTeam = ZUU76P392K;
 						ProvisioningStyle = Manual;
 					};
 					09C56F962172797400BDF00F = {
 						CreatedOnToolsVersion = 10.0;
-						DevelopmentTeam = C67CF9S4VU;
+						DevelopmentTeam = ZUU76P392K;
 						ProvisioningStyle = Manual;
 					};
 					D000CAC721FB6E370011B15D = {
@@ -3118,11 +3108,6 @@
 			target = 09C56F962172797400BDF00F /* Watch Extension */;
 			targetProxy = 09C56F992172797500BDF00F /* PBXContainerItemProxy */;
 		};
-		09C56FA42172797500BDF00F /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 09C56F8A2172797200BDF00F /* Watch */;
-			targetProxy = 09C56FA32172797500BDF00F /* PBXContainerItemProxy */;
-		};
 		D000CACE21FB6E380011B15D /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = D000CAC721FB6E370011B15D /* NotificationService */;
@@ -3527,7 +3512,7 @@
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = C67CF9S4VU;
+				DEVELOPMENT_TEAM = ZUU76P392K;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -3551,7 +3536,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.nicegram.Telegram-iOS.watchkitapp";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "match Development ph.telegra.Telegraph.watchkitapp";
+				PROVISIONING_PROFILE_SPECIFIER = "match Development com.nicegram.Telegram-iOS.watchkitapp";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -3602,7 +3587,7 @@
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = C67CF9S4VU;
+				DEVELOPMENT_TEAM = ZUU76P392K;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -3619,7 +3604,7 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.nicegram.Telegram-iOS.watchkitapp";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "match AppStore ph.telegra.Telegraph.watchkitapp";
+				PROVISIONING_PROFILE_SPECIFIER = "match AppStore com.nicegram.Telegram-iOS.watchkitapp";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
@@ -3669,7 +3654,7 @@
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = C67CF9S4VU;
+				DEVELOPMENT_TEAM = ZUU76P392K;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -3695,7 +3680,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.nicegram.Telegram-iOS.watchkitapp.watchkitextension";
 				PRODUCT_NAME = "${TARGET_NAME}";
-				PROVISIONING_PROFILE_SPECIFIER = "match Development ph.telegra.Telegraph.watchkitapp.watchkitextension";
+				PROVISIONING_PROFILE_SPECIFIER = "match Development com.nicegram.Telegram-iOS.watchkitapp.watchkitextension";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -3746,7 +3731,7 @@
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = C67CF9S4VU;
+				DEVELOPMENT_TEAM = ZUU76P392K;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -3765,7 +3750,7 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.nicegram.Telegram-iOS.watchkitapp.watchkitextension";
 				PRODUCT_NAME = "${TARGET_NAME}";
-				PROVISIONING_PROFILE_SPECIFIER = "match AppStore ph.telegra.Telegraph.watchkitapp.watchkitextension";
+				PROVISIONING_PROFILE_SPECIFIER = "match AppStore com.nicegram.Telegram-iOS.watchkitapp.watchkitextension";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
@@ -4123,7 +4108,7 @@
 			baseConfigurationReference = D0ADF914212B399A00310BBC /* Config-AppStoreLLC.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIconLLC;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				BITCODE_GENERATION_MODE = marker;
 				BUILD_NUMBER = 99999;
 				CLANG_MODULES_AUTOLINK = NO;
@@ -4414,7 +4399,7 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				APP_BUNDLE_ID = "com.nicegram.Telegram-iOS";
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIconLLC;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				BITCODE_GENERATION_MODE = bitcode;
 				BUILD_NUMBER = 99999;
 				CLANG_MODULES_AUTOLINK = NO;

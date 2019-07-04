@@ -2,7 +2,7 @@ fastlane_version "1.81.0"
 
 default_platform :ios
 
-base_app_identifier_llc = "ph.telegra.Telegraph"
+base_app_identifier_llc = "com.nicegram.Telegram-iOS"
 app_identifier_llc = [
   base_app_identifier_llc,
   base_app_identifier_llc + ".Widget",
@@ -13,7 +13,7 @@ app_identifier_llc = [
   base_app_identifier_llc + ".watchkitapp.watchkitextension",
   base_app_identifier_llc + ".NotificationService"
 ]
-signing_identity_llc = "iPhone Distribution: Digital Fortress LLC (C67CF9S4VU)"
+signing_identity_llc = "iPhone Distribution: Sergey Ak (ZUU76P392K)"
 
 lane :do_build_app do |options|
   puts("Building with build number: " + options[:build_number] + ", commit id: " + options[:commit_id])
