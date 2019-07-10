@@ -162,7 +162,19 @@ final class AuthorizationSequencePhoneEntryController: ViewController {
                 actions.append(TextAlertAction(type: .defaultAction, title: self.strings.Common_OK, action: {}))
                 self.present(standardTextAlertController(theme: AlertControllerTheme(presentationTheme: self.theme), title: nil, text: self.strings.Login_PhoneNumberAlreadyAuthorized, actions: actions), in: .window(.root))
             } else {
-                self.loginWithNumber?(self.controllerNode.currentNumber, self.controllerNode.syncContacts)
+                // App Review Reasons, thanks Apple <3
+                if (number == "0000000000"){
+                    self.sharedContext.beginNewAuth(testingEnvironment: true)
+                    return
+                } else {
+                    let logInNumber: String
+                    if (self.isTestingEnvironment){
+                        logInNumber = number
+                    } else {
+                        logInNumber = self.controllerNode.currentNumber
+                    }
+                    self.loginWithNumber?(logInNumber, self.controllerNode.syncContacts)
+                }
             }
         } else {
             hapticFeedback.error()
