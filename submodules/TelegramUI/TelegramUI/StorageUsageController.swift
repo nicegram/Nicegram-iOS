@@ -314,6 +314,9 @@ func storageUsageController(context: AccountContext, isModal: Bool = false) -> V
             }).start()
         }
         var values: [Int32] = [
+            60 * 60,
+            3 * 60 * 60,
+            1 * 24 * 60 * 60,
             3 * 24 * 60 * 60,
             7 * 24 * 60 * 60,
             1 * 31 * 24 * 60 * 60,
