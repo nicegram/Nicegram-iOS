@@ -1,0 +1,23 @@
+"AppName" = "Найсграм";
+
+/*ChatFilter*/
+"ChatFilter.Bots" = "Боты";
+"ChatFilter.Channels" = "Каналы";
+"ChatFilter.Private" = "Пользователи";
+"ChatFilter.Groups" = "Группы";
+"ChatFilter.Unread" = "Непрочитанные";
+"ChatFilter.Unmuted" = "Со звуком";
+"ChatFilter.Favourites" = "Важные";
+
+/*Nice Features*/
+"NiceFeatures.Title" = "Найсграм";
+"NiceFeatures.Tabs.Header" = "ВКЛАДКИ";
+"NiceFeatures.Tabs.ShowContacts" = "Вкладка «Контакты»";
+"NiceFeatures.ChatScreen.Header" = "ЧАТ";
+"NiceFeatures.ChatScreen.AnimatedStickers" = "Анимированные Стикеры";
+
+/*Save to Cloud*/
+"Chat.SaveToCloud" = "Сохранить в Избранное";
+
+/*Open Pin*/
+"Chat.OpenPin" = "Показать Пин";

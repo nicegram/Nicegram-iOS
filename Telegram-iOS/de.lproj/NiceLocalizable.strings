@@ -1,0 +1,23 @@
+"AppName" = "Nicegram";
+
+/*ChatFilter*/
+"ChatFilter.Bots" = "Bots";
+"ChatFilter.Channels" = "Kanäle";
+"ChatFilter.Private" = "Benutzer";
+"ChatFilter.Groups" = "Gruppen";
+"ChatFilter.Unread" = "Ungelesen";
+"ChatFilter.Unmuted" = "Laut";
+"ChatFilter.Favourites" = "Favoriten";
+
+/*Nice Features*/
+"NiceFeatures.Title" = "Nicegram";
+"NiceFeatures.Tabs.Header" = "TABS";
+"NiceFeatures.Tabs.ShowContacts" = "Kontakte Tab anzeigen";
+"NiceFeatures.ChatScreen.Header" = "CHAT ANZEIGE";
+"NiceFeatures.ChatScreen.AnimatedStickers" = "Animierte Stickers";
+
+/*Save to Cloud*/
+"Chat.SaveToCloud" = "An Gespeichertes Senden";
+
+/*Open Pin*/
+"Chat.OpenPin" = "Pin anzeigen";

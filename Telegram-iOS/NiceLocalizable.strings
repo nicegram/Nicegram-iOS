@@ -1,0 +1,33 @@
+"AppName" = "Nicegram";
+
+/*ChatFilter*/
+"ChatFilter.Bots" = "Bots";
+"ChatFilter.Channels" = "Channels";
+"ChatFilter.Private" = "Users";
+"ChatFilter.Groups" = "Groups";
+"ChatFilter.Unread" = "Unread";
+"ChatFilter.Unmuted" = "Unmuted";
+"ChatFilter.Favourites" = "Favourites";
+
+/*Nice Features*/
+"NiceFeatures.Title" = "Nicegram";
+"NiceFeatures.Notifications.Fix" = "Fix Notifications";
+"NiceFeatures.Notifications.FixNotice" = "Use this if you get notifications from muted chats.\nIf using multiple accounts, account title in notification will be disabled.";
+"NiceFeatures.Tabs.Header" = "TABS";
+"NiceFeatures.Tabs.ShowContacts" = "Show Contacts Tab";
+"NiceFeatures.ChatScreen.Header" = "CHAT SCREEN";
+
+/*Save to Cloud*/
+"Chat.SaveToCloud" = "Save to Cloud";
+
+/*Open Pin*/
+"Chat.OpenPin" = "Show Pin";
+
+
+/*Folders*/
+// "Folder.DefaultName" = "Folder";
+// "Folder.New" = "New Folder";
+// "Folder.Name" = "Folder Name";
+// Create 📁
+// "Folder.Create" = "Create Folder";
+// "Folder.Created" = "Folder Created";

@@ -340,7 +340,7 @@
 
 // Login
 "Login.PhoneAndCountryHelp" = "Please confirm your country code and enter your phone number.";
-"Login.CodeSentInternal" = "We've sent the code to the **Nicegram** app on your other device";
+"Login.CodeSentInternal" = "We've sent the code to the **Telegram** app on your other device";
 "Login.HaveNotReceivedCodeInternal" = "Haven't received the code?";
 "Login.CodeSentSms" = "We have sent you an SMS with the code";
 "Login.Code" = "Code";
