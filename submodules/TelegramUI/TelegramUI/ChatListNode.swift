@@ -32,8 +32,26 @@ public struct ChatListNodePeersFilter: OptionSet {
     public static let includeSavedMessages = ChatListNodePeersFilter(rawValue: 1 << 11)
 }
 
+public struct NiceChatListNodePeersFilter: OptionSet {
+    public var rawValue: Int32
+    
+    public init(rawValue: Int32) {
+        self.rawValue = rawValue
+    }
+    
+    public static let onlyPrivateChats = NiceChatListNodePeersFilter(rawValue: 1 << 0)
+    public static let onlyGroups = NiceChatListNodePeersFilter(rawValue: 1 << 1)
+    public static let onlyChannels = NiceChatListNodePeersFilter(rawValue: 1 << 3)
+    public static let onlyBots = NiceChatListNodePeersFilter(rawValue: 1 << 4)
+    public static let onlyNonMuted = NiceChatListNodePeersFilter(rawValue: 1 << 5)
+    public static let onlyUnread = NiceChatListNodePeersFilter(rawValue: 1 << 6)
+    
+    public static let all: [NiceChatListNodePeersFilter] = [.onlyBots, .onlyChannels, .onlyGroups, .onlyPrivateChats, .onlyUnread, .onlyNonMuted]
+}
+
 enum ChatListNodeMode {
     case chatList
+    // case filteredChatList(filter: NiceChatListNodePeersFilter)
     case peers(filter: ChatListNodePeersFilter)
 }
 

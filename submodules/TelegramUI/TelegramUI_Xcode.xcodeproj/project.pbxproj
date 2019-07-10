@@ -198,6 +198,9 @@
 		09FFBCDB22849CB500C33B4B /* PDF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09FFBCDA22849CB500C33B4B /* PDF.swift */; };
 		9F06830921A404AB001D8EDB /* NotificationExceptionControllerNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F06830821A404AB001D8EDB /* NotificationExceptionControllerNode.swift */; };
 		9F06830B21A404C4001D8EDB /* NotificationExceptionSettingsController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F06830A21A404C4001D8EDB /* NotificationExceptionSettingsController.swift */; };
+		A5E8799422D605C800AD2C2C /* NiceUISettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E8799322D605C800AD2C2C /* NiceUISettings.swift */; };
+		A5E8799822D6079500AD2C2C /* NiceFeaturesController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E8799722D6079500AD2C2C /* NiceFeaturesController.swift */; };
+		A5E8799B22D6090C00AD2C2C /* NiceStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E8799A22D6090C00AD2C2C /* NiceStrings.swift */; };
 		D000CABA21EE130D0011B15D /* MapResourceToAvatarSizes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D000CAB921EE130D0011B15D /* MapResourceToAvatarSizes.swift */; };
 		D000CABC21F158AD0011B15D /* PrepareSecretThumbnailData.swift in Sources */ = {isa = PBXBuildFile; fileRef = D000CABB21F158AD0011B15D /* PrepareSecretThumbnailData.swift */; };
 		D00580B321E4B51600CB7CD3 /* DeleteChatPeerActionSheetItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00580B221E4B51600CB7CD3 /* DeleteChatPeerActionSheetItem.swift */; };
@@ -1421,6 +1424,9 @@
 		09FFBCDA22849CB500C33B4B /* PDF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDF.swift; sourceTree = "<group>"; };
 		9F06830821A404AB001D8EDB /* NotificationExceptionControllerNode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NotificationExceptionControllerNode.swift; sourceTree = "<group>"; };
 		9F06830A21A404C4001D8EDB /* NotificationExceptionSettingsController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NotificationExceptionSettingsController.swift; sourceTree = "<group>"; };
+		A5E8799322D605C800AD2C2C /* NiceUISettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceUISettings.swift; sourceTree = "<group>"; };
+		A5E8799722D6079500AD2C2C /* NiceFeaturesController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceFeaturesController.swift; sourceTree = "<group>"; };
+		A5E8799A22D6090C00AD2C2C /* NiceStrings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceStrings.swift; sourceTree = "<group>"; };
 		D000CAB921EE130D0011B15D /* MapResourceToAvatarSizes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapResourceToAvatarSizes.swift; sourceTree = "<group>"; };
 		D000CABB21F158AD0011B15D /* PrepareSecretThumbnailData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrepareSecretThumbnailData.swift; sourceTree = "<group>"; };
 		D002A0D01E9B99F500A81812 /* SoftwareVideoSource.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SoftwareVideoSource.swift; sourceTree = "<group>"; };
@@ -2804,6 +2810,40 @@
 				094735022275B62B00EA2312 /* PasscodeLayout.swift */,
 			);
 			name = Passcode;
+			sourceTree = "<group>";
+		};
+		A5E8799222D6034300AD2C2C /* NiceUI */ = {
+			isa = PBXGroup;
+			children = (
+				A5E8799922D608FD00AD2C2C /* Strings */,
+				A5E8799622D6074500AD2C2C /* Controllers */,
+				A5E8799522D6073B00AD2C2C /* Components */,
+				A5E8799322D605C800AD2C2C /* NiceUISettings.swift */,
+			);
+			path = NiceUI;
+			sourceTree = "<group>";
+		};
+		A5E8799522D6073B00AD2C2C /* Components */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		A5E8799622D6074500AD2C2C /* Controllers */ = {
+			isa = PBXGroup;
+			children = (
+				A5E8799722D6079500AD2C2C /* NiceFeaturesController.swift */,
+			);
+			path = Controllers;
+			sourceTree = "<group>";
+		};
+		A5E8799922D608FD00AD2C2C /* Strings */ = {
+			isa = PBXGroup;
+			children = (
+				A5E8799A22D6090C00AD2C2C /* NiceStrings.swift */,
+			);
+			path = Strings;
 			sourceTree = "<group>";
 		};
 		D00580B421E4BFE800CB7CD3 /* Undo Overlay */ = {
@@ -5033,6 +5073,7 @@
 		D0FC40811D5B8E7400261D9D /* TelegramUI */ = {
 			isa = PBXGroup;
 			children = (
+				A5E8799222D6034300AD2C2C /* NiceUI */,
 				D008179822B478FE008A895F /* App */,
 				D07551891DDA4C7C0073E051 /* Legacy Components */,
 				D0F69E911D6B8C8E0046BCD6 /* Utils */,
@@ -5385,6 +5426,7 @@
 				09F799FA21C3542D00820234 /* LegacyWebSearchGallery.swift in Sources */,
 				D01C99781F4F382C00DCFAF6 /* InstantPageSettingsItemTheme.swift in Sources */,
 				D0CAD8FB20AE1D1B00ACD96E /* ChannelMemberCategoryListContext.swift in Sources */,
+				A5E8799B22D6090C00AD2C2C /* NiceStrings.swift in Sources */,
 				D0EC6CC21EB9F58800EBF1C3 /* LegacyEmptyController.swift in Sources */,
 				D0EC6CC31EB9F58800EBF1C3 /* LegacyNavigationController.swift in Sources */,
 				D0EC6CC41EB9F58800EBF1C3 /* LegacyLocationPicker.swift in Sources */,
@@ -5572,6 +5614,7 @@
 				D0F760DD222034980074F7E5 /* ChannelStatsControllerNode.swift in Sources */,
 				D0EC6D231EB9F58800EBF1C3 /* StickerResources.swift in Sources */,
 				09C9EA3821A044B500E90146 /* StringForDuration.swift in Sources */,
+				A5E8799822D6079500AD2C2C /* NiceFeaturesController.swift in Sources */,
 				D0EC6D241EB9F58800EBF1C3 /* CachedResourceRepresentations.swift in Sources */,
 				09619B8E21A34C0100493558 /* InstantPageScrollableNode.swift in Sources */,
 				D01590A622BD460C0017C33E /* MetalAnimationRenderer.swift in Sources */,
@@ -6197,6 +6240,7 @@
 				D0EC6E3F1EB9F58900EBF1C3 /* ItemListTextItem.swift in Sources */,
 				D0EC6E401EB9F58900EBF1C3 /* ItemListActivityTextItem.swift in Sources */,
 				0958FBB9218AD6AF00E0CBD8 /* InstantPageFeedbackItem.swift in Sources */,
+				A5E8799422D605C800AD2C2C /* NiceUISettings.swift in Sources */,
 				D00817D022B47A14008A895F /* WakeupManager.swift in Sources */,
 				D0AF798822C2E26500CECCB8 /* matrix.cc in Sources */,
 				D0EC6E411EB9F58900EBF1C3 /* ItemListEditableItem.swift in Sources */,

@@ -590,7 +590,7 @@ public class PeerMediaCollectionController: TelegramController {
                                 strongSelf.navigationActionDisposable.set((strongSelf.context.account.postbox.loadedPeerWithId(peerId)
                                 |> take(1)
                                 |> deliverOnMainQueue).start(next: { [weak self] peer in
-                                    if let strongSelf = self, peer.restrictionText == nil {
+                                    if let strongSelf = self, self!.context.sharedContext.immediateExperimentalUISettings.brr {
                                         if let infoController = peerInfoController(context: strongSelf.context, peer: peer) {
                                             (strongSelf.navigationController as? NavigationController)?.pushViewController(infoController)
                                         }
