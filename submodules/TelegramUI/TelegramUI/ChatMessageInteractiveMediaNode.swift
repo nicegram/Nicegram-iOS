@@ -46,6 +46,7 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode {
     private var currentImageArguments: TransformImageArguments?
     private var videoNode: UniversalVideoNode?
     private var videoContent: NativeVideoContent?
+    private var animatedStickerNode: AnimatedStickerNode?
     private var statusNode: RadialStatusNode?
     var videoNodeDecoration: ChatBubbleVideoDecoration?
     private var badgeNode: ChatMessageInteractiveMediaBadge?
@@ -100,6 +101,7 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode {
                     videoNode.canAttachContent = false
                 }
             }
+            self.animatedStickerNode?.visibility = self.visibility
             self.visibilityPromise.set(self.visibility)
         }
     }
@@ -181,8 +183,8 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode {
             let point = recognizer.location(in: self.imageNode.view)
             if let fetchStatus = self.fetchStatus, case .Local = fetchStatus {
                 var videoContentMatch = true
-                if let content = self.videoContent, case let .message(id, _, mediaId) = content.nativeId {
-                    videoContentMatch = self.message?.id == id && self.media?.id == mediaId
+                if let content = self.videoContent, case let .message(stableId, mediaId) = content.nativeId {
+                    videoContentMatch = self.message?.stableId == stableId && self.media?.id == mediaId
                 }
                 self.activateLocalContent((self.automaticPlayback ?? false) && videoContentMatch ? .automaticPlayback : .default)
             } else {
@@ -203,7 +205,10 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode {
         let imageLayout = self.imageNode.asyncLayout()
         
         let currentVideoNode = self.videoNode
+        let currentAnimatedStickerNode = self.animatedStickerNode
+        
         let hasCurrentVideoNode = currentVideoNode != nil
+        let hasCurrentAnimatedStickerNode = currentAnimatedStickerNode != nil
         let currentAutomaticDownload = self.automaticDownload
         let currentAutomaticPlayback = self.automaticPlayback
         
@@ -231,12 +236,13 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode {
             }
             
             var isInlinePlayableVideo = false
+            var isSticker = false
             var maxDimensions = layoutConstants.image.maxDimensions
             var maxHeight = layoutConstants.image.maxDimensions.height
             
             var unboundSize: CGSize
             if let image = media as? TelegramMediaImage, let dimensions = largestImageRepresentation(image.representations)?.dimensions {
-                unboundSize = CGSize(width: floor(dimensions.width * 0.5), height: floor(dimensions.height * 0.5))
+                unboundSize = CGSize(width: max(10.0, floor(dimensions.width * 0.5)), height: max(10.0, floor(dimensions.height * 0.5)))
             } else if let file = media as? TelegramMediaFile, var dimensions = file.dimensions {
                 if let thumbnail = file.previewRepresentations.first {
                     let dimensionsVertical = dimensions.width < dimensions.height
@@ -255,8 +261,9 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode {
                         maxDimensions = CGSize(width: constrainedSize.width, height: layoutConstants.video.maxVerticalHeight)
                     }
                     maxHeight = maxDimensions.height
-                } else if file.isSticker {
+                } else if file.isSticker || file.isAnimatedSticker {
                     unboundSize = unboundSize.aspectFilled(CGSize(width: 162.0, height: 162.0))
+                    isSticker = true
                 }
                 isInlinePlayableVideo = file.isVideo && !isSecretMedia
             } else if let image = media as? TelegramMediaWebFile, let dimensions = image.dimensions {
@@ -283,10 +290,14 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode {
             
             switch sizeCalculation {
                 case let .constrained(constrainedSize):
-                    if unboundSize.width > unboundSize.height {
-                        nativeSize = unboundSize.aspectFitted(constrainedSize)
+                    if isSticker {
+                        nativeSize = unboundSize.aspectFittedOrSmaller(constrainedSize)
                     } else {
-                        nativeSize = unboundSize.aspectFitted(CGSize(width: constrainedSize.height, height: constrainedSize.width))
+                        if unboundSize.width > unboundSize.height {
+                            nativeSize = unboundSize.aspectFitted(constrainedSize)
+                        } else {
+                            nativeSize = unboundSize.aspectFitted(CGSize(width: constrainedSize.height, height: constrainedSize.width))
+                        }
                     }
                 case .unconstrained:
                     nativeSize = unboundSize
@@ -375,10 +386,17 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode {
                     }
                     
                     var replaceVideoNode: Bool?
+                    var replaceAnimatedStickerNode: Bool?
                     var updateVideoFile: TelegramMediaFile?
+                    var updateAnimatedStickerFile: TelegramMediaFile?
                     var onlyFullSizeVideoThumbnail: Bool?
                     
-                    var emptyColor: UIColor = message.effectivelyIncoming(context.account.peerId) ? theme.chat.bubble.incomingMediaPlaceholderColor : theme.chat.bubble.outgoingMediaPlaceholderColor
+                    var emptyColor: UIColor
+                    if isSticker {
+                        emptyColor = .clear
+                    } else {
+                        emptyColor = message.effectivelyIncoming(context.account.peerId) ? theme.chat.bubble.incomingMediaPlaceholderColor : theme.chat.bubble.outgoingMediaPlaceholderColor
+                    }
                     if let wallpaper = media as? WallpaperPreviewMedia, case let .file(_, patternColor) = wallpaper.content {
                         emptyColor = patternColor ?? UIColor(rgb: 0xd6e2ee, alpha: 0.5)
                     }
@@ -387,6 +405,9 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode {
                         if let image = media as? TelegramMediaImage {
                             if hasCurrentVideoNode {
                                 replaceVideoNode = true
+                            }
+                            if hasCurrentAnimatedStickerNode {
+                                replaceAnimatedStickerNode = true
                             }
                             if isSecretMedia {
                                 updateImageSignal = { synchronousLoad in
@@ -416,6 +437,9 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode {
                             if hasCurrentVideoNode {
                                 replaceVideoNode = true
                             }
+                            if hasCurrentAnimatedStickerNode {
+                                replaceAnimatedStickerNode = true
+                            }
                             updateImageSignal = { synchronousLoad in
                                 return chatWebFileImage(account: context.account, file: image)
                             }
@@ -433,7 +457,11 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode {
                                     return chatSecretMessageVideo(account: context.account, videoReference: .message(message: MessageReference(message), media: file))
                                 }
                             } else {
-                                if file.isSticker {
+                                if file.isAnimatedSticker {
+                                    updateImageSignal = { synchronousLoad in
+                                        return chatMessageAnimatedSticker(postbox: context.account.postbox, file: file, small: false, size: CGSize(width: 400.0, height: 400.0))
+                                    }
+                                } else if file.isSticker {
                                     updateImageSignal = { synchronousLoad in
                                         return chatMessageSticker(account: context.account, file: file, small: false)
                                     }
@@ -462,6 +490,21 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode {
                             } else {
                                 if hasCurrentVideoNode {
                                     replaceVideoNode = false
+                                }
+                                
+                                if file.isAnimatedSticker {
+                                    updateAnimatedStickerFile = file
+                                    if hasCurrentAnimatedStickerNode {
+                                        if let currentMedia = currentMedia {
+                                            if !currentMedia.isSemanticallyEqual(to: file) {
+                                                replaceAnimatedStickerNode = true
+                                            }
+                                        } else {
+                                            replaceAnimatedStickerNode = true
+                                        }
+                                    } else {
+                                        replaceAnimatedStickerNode = true
+                                    }
                                 }
                             }
                             
@@ -602,7 +645,7 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode {
                                     let mediaManager = context.sharedContext.mediaManager
                                     
                                     let streamVideo = isMediaStreamable(message: message, media: updatedVideoFile)
-                                    let videoContent = NativeVideoContent(id: .message(message.id, message.stableId, updatedVideoFile.fileId), fileReference: .message(message: MessageReference(message), media: updatedVideoFile), streamVideo: streamVideo ? .conservative : .none, enableSound: false, fetchAutomatically: false, onlyFullSizeThumbnail: (onlyFullSizeVideoThumbnail ?? false), continuePlayingWithoutSoundOnLostAudioSession: isInlinePlayableVideo, placeholderColor: emptyColor)
+                                    let videoContent = NativeVideoContent(id: .message(message.stableId, updatedVideoFile.fileId), fileReference: .message(message: MessageReference(message), media: updatedVideoFile), streamVideo: streamVideo ? .conservative : .none, enableSound: false, fetchAutomatically: false, onlyFullSizeThumbnail: (onlyFullSizeVideoThumbnail ?? false), continuePlayingWithoutSoundOnLostAudioSession: isInlinePlayableVideo, placeholderColor: emptyColor)
                                     let videoNode = UniversalVideoNode(postbox: context.account.postbox, audioSession: mediaManager.audioSession, manager: mediaManager.universalVideoManager, decoration: decoration, content: videoContent, priority: .embedded)
                                     videoNode.isUserInteractionEnabled = false
                                     videoNode.ownsContentNodeUpdated = { [weak self] owns in
@@ -625,6 +668,29 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode {
                                 }
                             }
                             
+                            if let currentReplaceAnimatedStickerNode = replaceAnimatedStickerNode {
+                                replaceAnimatedStickerNode = nil
+                                if currentReplaceAnimatedStickerNode, let animatedStickerNode = strongSelf.animatedStickerNode {
+                                    animatedStickerNode.removeFromSupernode()
+                                    strongSelf.animatedStickerNode = nil
+                                }
+                                
+                                if currentReplaceAnimatedStickerNode, let updatedAnimatedStickerFile = updateAnimatedStickerFile {
+                                    let animatedStickerNode = AnimatedStickerNode()
+                                    animatedStickerNode.isUserInteractionEnabled = false
+                                    animatedStickerNode.started = {
+                                        guard let strongSelf = self else {
+                                            return
+                                        }
+                                        strongSelf.imageNode.isHidden = true
+                                    }
+                                    strongSelf.animatedStickerNode = animatedStickerNode
+                                    animatedStickerNode.setup(account: context.account, resource: updatedAnimatedStickerFile.resource, width: 384, height: 384, mode: .cached)
+                                    strongSelf.insertSubnode(animatedStickerNode, aboveSubnode: strongSelf.imageNode)
+                                    animatedStickerNode.visibility = strongSelf.visibility
+                                }
+                            }
+                            
                             if let videoNode = strongSelf.videoNode {
                                 if !(replaceVideoNode ?? false), let decoration = videoNode.decoration as? ChatBubbleVideoDecoration, decoration.corners != corners {
                                     decoration.updateCorners(corners)
@@ -643,6 +709,11 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode {
                                 } else {
                                     videoNode.canAttachContent = false
                                 }
+                            }
+                            
+                            if let animatedStickerNode = strongSelf.animatedStickerNode {
+                                animatedStickerNode.frame = imageFrame
+                                animatedStickerNode.updateLayout(size: imageFrame.size)
                             }
                             
                             if let updateImageSignal = updateImageSignal {

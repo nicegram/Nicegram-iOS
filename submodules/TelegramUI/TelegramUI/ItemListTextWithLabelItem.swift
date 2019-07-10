@@ -18,7 +18,7 @@ final class ItemListTextWithLabelItem: ListViewItem, ItemListItem {
     let style: ItemListStyle
     let labelColor: ItemListTextWithLabelItemTextColor
     let textColor: ItemListTextWithLabelItemTextColor
-    let enabledEntitiyTypes: EnabledEntityTypes
+    let enabledEntityTypes: EnabledEntityTypes
     let multiline: Bool
     let selected: Bool?
     let sectionId: ItemListSectionId
@@ -28,14 +28,14 @@ final class ItemListTextWithLabelItem: ListViewItem, ItemListItem {
     
     let tag: Any?
     
-    init(theme: PresentationTheme, label: String, text: String, style: ItemListStyle = .plain, labelColor: ItemListTextWithLabelItemTextColor = .primary, textColor: ItemListTextWithLabelItemTextColor = .primary, enabledEntitiyTypes: EnabledEntityTypes, multiline: Bool, selected: Bool? = nil, sectionId: ItemListSectionId, action: (() -> Void)?, longTapAction: (() -> Void)? = nil, linkItemAction: ((TextLinkItemActionType, TextLinkItem) -> Void)? = nil, tag: Any? = nil) {
+    init(theme: PresentationTheme, label: String, text: String, style: ItemListStyle = .plain, labelColor: ItemListTextWithLabelItemTextColor = .primary, textColor: ItemListTextWithLabelItemTextColor = .primary, enabledEntityTypes: EnabledEntityTypes, multiline: Bool, selected: Bool? = nil, sectionId: ItemListSectionId, action: (() -> Void)?, longTapAction: (() -> Void)? = nil, linkItemAction: ((TextLinkItemActionType, TextLinkItem) -> Void)? = nil, tag: Any? = nil) {
         self.theme = theme
         self.label = label
         self.text = text
         self.style = style
         self.labelColor = labelColor
         self.textColor = textColor
-        self.enabledEntitiyTypes = enabledEntitiyTypes
+        self.enabledEntityTypes = enabledEntityTypes
         self.multiline = multiline
         self.selected = selected
         self.sectionId = sectionId
@@ -199,7 +199,7 @@ class ItemListTextWithLabelItemNode: ListViewItemNode {
             }
             let (labelLayout, labelApply) = makeLabelLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: item.label, font: labelFont, textColor: labelColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - leftOffset - leftInset - rightInset, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
-            let entities = generateTextEntities(item.text, enabledTypes: item.enabledEntitiyTypes)
+            let entities = generateTextEntities(item.text, enabledTypes: item.enabledEntityTypes)
             let baseColor: UIColor
             switch item.textColor {
                 case .primary:
