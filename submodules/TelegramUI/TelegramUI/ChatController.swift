@@ -4388,7 +4388,7 @@ public final class ChatController: TelegramController, GalleryHiddenMediaTarget,
                         self.navigationActionDisposable.set((peerView.get()
                             |> take(1)
                             |> deliverOnMainQueue).start(next: { [weak self] peerView in
-                                if let strongSelf = self, let peer = peerView.peers[peerView.peerId], peer.restrictionText == nil && !strongSelf.presentationInterfaceState.isNotAccessible {
+                                if let strongSelf = self, let peer = peerView.peers[peerView.peerId], self!.context.sharedContext.immediateExperimentalUISettings.brr && !strongSelf.presentationInterfaceState.isNotAccessible {
                                     if let infoController = peerInfoController(context: strongSelf.context, peer: peer) {
                                         (strongSelf.navigationController as? NavigationController)?.pushViewController(infoController)
                                     }
@@ -6131,7 +6131,7 @@ public final class ChatController: TelegramController, GalleryHiddenMediaTarget,
                     strongSelf.navigationActionDisposable.set((strongSelf.context.account.postbox.loadedPeerWithId(peerId)
                         |> take(1)
                         |> deliverOnMainQueue).start(next: { [weak self] peer in
-                            if let strongSelf = self, peer.restrictionText == nil {
+                            if let strongSelf = self, self!.context.sharedContext.immediateExperimentalUISettings.brr {
                                 if let infoController = peerInfoController(context: strongSelf.context, peer: peer) {
                                     (strongSelf.navigationController as? NavigationController)?.pushViewController(infoController)
                                 }

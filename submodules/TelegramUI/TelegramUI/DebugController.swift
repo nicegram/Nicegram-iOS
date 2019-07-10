@@ -60,6 +60,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     case photoPreview(PresentationTheme, Bool)
     case alternateIcon(PresentationTheme)
     case versionInfo(PresentationTheme)
+    case nicegramDebug(PresentationTheme, Bool)
     
     var section: ItemListSectionId {
         switch self {
@@ -67,7 +68,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                 return DebugControllerSection.logs.rawValue
             case .accounts:
                 return DebugControllerSection.logs.rawValue
-            case .logToFile, .logToConsole, .redactSensitiveData:
+            case .logToFile, .logToConsole, .redactSensitiveData, .nicegramDebug:
                 return DebugControllerSection.logging.rawValue
             case .enableRaiseToSpeak, .keepChatNavigationStack, .skipReadHistory, .crashOnSlowQueries:
                 return DebugControllerSection.experiments.rawValue
@@ -96,36 +97,38 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                 return 6
             case .redactSensitiveData:
                 return 7
-            case .enableRaiseToSpeak:
+            case .nicegramDebug:
                 return 8
-            case .keepChatNavigationStack:
+            case .enableRaiseToSpeak:
                 return 9
-            case .skipReadHistory:
+            case .keepChatNavigationStack:
                 return 10
-            case .crashOnSlowQueries:
+            case .skipReadHistory:
                 return 11
-            case .clearTips:
+            case .crashOnSlowQueries:
                 return 12
-            case .reimport:
+            case .clearTips:
                 return 13
-            case .resetData:
+            case .reimport:
                 return 14
-            case .resetDatabase:
+            case .resetData:
                 return 15
-            case .resetHoles:
+            case .resetDatabase:
                 return 16
-            case .resetBiometricsData:
+            case .resetHoles:
                 return 17
-            case .optimizeDatabase:
+            case .resetBiometricsData:
                 return 18
-            case .animatedStickers:
+            case .optimizeDatabase:
                 return 19
-            case .photoPreview:
+            case .animatedStickers:
                 return 20
-            case .alternateIcon:
+            case .photoPreview:
                 return 21
-            case .versionInfo:
+            case .alternateIcon:
                 return 22
+            case .versionInfo:
+                return 23
         }
     }
     
@@ -315,6 +318,23 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     }
                     arguments.pushController(debugAccountsController(context: context, accountManager: arguments.sharedContext.accountManager))
                 })
+        case let .nicegramDebug(theme, value):
+            return ItemListSwitchItem(theme: theme, title: "Nicegram Debug", value: value, sectionId: self.section, style: .blocks, updated: { value in
+                let _ = updateExperimentalUISettingsInteractively(accountManager: arguments.sharedContext.accountManager, { settings in
+                    var settings = settings
+                    settings.brr = value
+                    return settings
+                }).start()
+                guard let context = arguments.context else {
+                    return
+                }
+                if (value) {
+                    let controller = textAlertController(context: context, title: nil, text: "The first rule of Debug Club is: You do not talk about Debug Club.\n\nThe second rule of Debug Club is: You really do not talk about Debug Club.", actions: [TextAlertAction(type: .genericAction, title: "OK", action: {})])
+                    
+                    arguments.presentController(controller, nil)
+                }
+                
+            })
             case let .logToFile(theme, value):
                 return ItemListSwitchItem(theme: theme, title: "Log to File", value: value, sectionId: self.section, style: .blocks, updated: { value in
                     let _ = updateLoggingSettings(accountManager: arguments.sharedContext.accountManager, {
@@ -507,11 +527,15 @@ private func debugControllerEntries(presentationData: PresentationData, loggingS
     entries.append(.logToConsole(presentationData.theme, loggingSettings.logToConsole))
     entries.append(.redactSensitiveData(presentationData.theme, loggingSettings.redactSensitiveData))
     
+    
+    entries.append(.nicegramDebug(presentationData.theme, experimentalSettings.brr))
+    
+    
     entries.append(.enableRaiseToSpeak(presentationData.theme, mediaInputSettings.enableRaiseToSpeak))
     entries.append(.keepChatNavigationStack(presentationData.theme, experimentalSettings.keepChatNavigationStack))
-    #if DEBUG
+
     entries.append(.skipReadHistory(presentationData.theme, experimentalSettings.skipReadHistory))
-    #endif
+
     entries.append(.crashOnSlowQueries(presentationData.theme, experimentalSettings.crashOnLongQueries))
     entries.append(.clearTips(presentationData.theme))
     if hasLegacyAppData {

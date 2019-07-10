@@ -7,7 +7,10 @@ func titlePanelForChatPresentationInterfaceState(_ chatPresentationInterfaceStat
         return nil
     }
     if chatPresentationInterfaceState.renderedPeer?.peer?.restrictionText != nil {
-        return nil
+        if (context.sharedContext.immediateExperimentalUISettings.brr) {
+        } else {
+            return nil
+        }
     }
     if chatPresentationInterfaceState.search != nil {
         return nil

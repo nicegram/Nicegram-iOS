@@ -5,7 +5,10 @@ import TelegramCore
 
 func inputPanelForChatPresentationIntefaceState(_ chatPresentationInterfaceState: ChatPresentationInterfaceState, context: AccountContext, currentPanel: ChatInputPanelNode?, textInputPanelNode: ChatTextInputPanelNode?, interfaceInteraction: ChatPanelInterfaceInteraction?) -> ChatInputPanelNode? {
     if let renderedPeer = chatPresentationInterfaceState.renderedPeer, renderedPeer.peer?.restrictionText != nil {
-        return nil
+        if (context.sharedContext.immediateExperimentalUISettings.brr) {
+        } else {
+            return nil
+        }
     }
     if chatPresentationInterfaceState.isNotAccessible {
         return nil

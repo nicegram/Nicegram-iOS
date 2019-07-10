@@ -7,16 +7,18 @@ public struct ExperimentalUISettings: Equatable, PreferencesEntry {
     public var skipReadHistory: Bool
     public var crashOnLongQueries: Bool
     public var chatListPhotos: Bool
+    public var brr: Bool
     
     public static var defaultSettings: ExperimentalUISettings {
-        return ExperimentalUISettings(keepChatNavigationStack: false, skipReadHistory: false, crashOnLongQueries: false, chatListPhotos: false)
+        return ExperimentalUISettings(keepChatNavigationStack: false, skipReadHistory: false, crashOnLongQueries: false, chatListPhotos: false, brr: false)
     }
     
-    public init(keepChatNavigationStack: Bool, skipReadHistory: Bool, crashOnLongQueries: Bool, chatListPhotos: Bool) {
+    public init(keepChatNavigationStack: Bool, skipReadHistory: Bool, crashOnLongQueries: Bool, chatListPhotos: Bool, brr: Bool) {
         self.keepChatNavigationStack = keepChatNavigationStack
         self.skipReadHistory = skipReadHistory
         self.crashOnLongQueries = crashOnLongQueries
         self.chatListPhotos = chatListPhotos
+        self.brr = brr
     }
     
     public init(decoder: PostboxDecoder) {
@@ -24,6 +26,7 @@ public struct ExperimentalUISettings: Equatable, PreferencesEntry {
         self.skipReadHistory = decoder.decodeInt32ForKey("skipReadHistory", orElse: 0) != 0
         self.crashOnLongQueries = decoder.decodeInt32ForKey("crashOnLongQueries", orElse: 0) != 0
         self.chatListPhotos = decoder.decodeInt32ForKey("chatListPhotos", orElse: 0) != 0
+        self.brr = decoder.decodeInt32ForKey("nice:brr", orElse: 0) != 0
     }
     
     public func encode(_ encoder: PostboxEncoder) {
@@ -31,6 +34,7 @@ public struct ExperimentalUISettings: Equatable, PreferencesEntry {
         encoder.encodeInt32(self.skipReadHistory ? 1 : 0, forKey: "skipReadHistory")
         encoder.encodeInt32(self.crashOnLongQueries ? 1 : 0, forKey: "crashOnLongQueries")
         encoder.encodeInt32(self.chatListPhotos ? 1 : 0, forKey: "chatListPhotos")
+        encoder.encodeInt32(self.brr ? 1 : 0, forKey: "nice:brr")
     }
     
     public func isEqual(to: PreferencesEntry) -> Bool {

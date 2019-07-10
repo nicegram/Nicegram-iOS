@@ -299,7 +299,7 @@ public final class AvatarNode: ASDisplayNode {
                     representation = nil
                     icon = .deletedIcon
             }
-        } else if peer?.restrictionText == nil {
+        } else {
             representation = peer?.smallProfileImage
         }
         let updatedState: AvatarNodeState = .peerAvatar(peer?.id ?? PeerId(namespace: 0, id: 0), peer?.displayLetters ?? [], representation)

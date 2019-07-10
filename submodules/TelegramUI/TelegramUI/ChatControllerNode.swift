@@ -1393,6 +1393,12 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                 }
             }
             
+            if (restrictionText != chatPresentationInterfaceState.strings.Channel_ErrorAccessDenied || restrictionText != chatPresentationInterfaceState.strings.Group_ErrorAccessDenied) {
+                if (self.context.sharedContext.immediateExperimentalUISettings.brr) {
+                    restrictionText = nil
+                }
+            }
+            
             if let restrictionText = restrictionText {
                 if self.restrictedNode == nil {
                     let restrictedNode = ChatRecentActionsEmptyNode(theme: chatPresentationInterfaceState.theme, chatWallpaper: chatPresentationInterfaceState.chatWallpaper)

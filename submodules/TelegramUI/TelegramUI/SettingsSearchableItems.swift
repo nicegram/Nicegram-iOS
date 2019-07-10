@@ -7,7 +7,7 @@ import TelegramCore
 import TelegramUIPreferences
 import TelegramCallsUI
 
-private let maximumNumberOfAccounts = 3
+private let maximumNumberOfAccounts = 7
 
 enum SettingsSearchableItemIcon {
     case profile
