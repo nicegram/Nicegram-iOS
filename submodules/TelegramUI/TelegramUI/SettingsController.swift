@@ -88,7 +88,7 @@ private enum SettingsEntry: ItemListNodeEntry {
     case addAccount(PresentationTheme, String)
     
     case proxy(PresentationTheme, UIImage?, String, String)
-    case niceFeatures(PresentationTheme, String)
+    case niceFeatures(PresentationTheme, UIImage?, String)
     
     case savedMessages(PresentationTheme, UIImage?, String)
     case recentCalls(PresentationTheme, UIImage?, String)
@@ -263,12 +263,12 @@ private enum SettingsEntry: ItemListNodeEntry {
                 } else {
                     return false
                 }
-            case let .niceFeatures(lhsTheme, lhsText):
-                if case let .niceFeatures(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+            case let .niceFeatures(lhsTheme, lhsImage, lhsText):
+                if case let .niceFeatures(rhsTheme, rhsImage, rhsText) = rhs, lhsTheme === rhsTheme, lhsImage === rhsImage, lhsText == rhsText {
                     return true
                 } else {
                     return false
-                }
+            }
             case let .savedMessages(lhsTheme, lhsImage, lhsText):
                 if case let .savedMessages(rhsTheme, rhsImage, rhsText) = rhs, lhsTheme === rhsTheme, lhsImage === rhsImage, lhsText == rhsText {
                     return true
@@ -409,8 +409,8 @@ private enum SettingsEntry: ItemListNodeEntry {
                 return ItemListDisclosureItem(theme: theme, icon: image, title: text, label: value, sectionId: ItemListSectionId(self.section), style: .blocks, action: {
                     arguments.openProxy()
                 }, clearHighlightAutomatically: false)
-            case let .niceFeatures(theme, text):
-                return ItemListDisclosureItem(theme: theme, icon: nil, title: text, label: "", sectionId: ItemListSectionId(self.section), style: .blocks, action: {
+            case let .niceFeatures(theme, image, text):
+                return ItemListDisclosureItem(theme: theme, icon: image, title: text, label: "", sectionId: ItemListSectionId(self.section), style: .blocks, action: {
                     arguments.openNiceFeatures()
                 })
             case let .savedMessages(theme, image, text):
@@ -517,7 +517,7 @@ private func settingsEntries(account: Account, presentationData: PresentationDat
             entries.append(.proxy(presentationData.theme, PresentationResourcesSettings.proxy, presentationData.strings.Settings_Proxy, valueString))
         }
         
-        entries.append(.niceFeatures(presentationData.theme, l("NiceFeatures.Title", presentationData.strings.baseLanguageCode)))
+        entries.append(.niceFeatures(presentationData.theme, PresentationResourcesSettings.nicegramIcon, l("NiceFeatures.Title", presentationData.strings.baseLanguageCode)))
         entries.append(.savedMessages(presentationData.theme, PresentationResourcesSettings.savedMessages, presentationData.strings.Settings_SavedMessages))
         entries.append(.recentCalls(presentationData.theme, PresentationResourcesSettings.recentCalls, presentationData.strings.CallSettings_RecentCalls))
         entries.append(.stickers(presentationData.theme, PresentationResourcesSettings.stickers, presentationData.strings.ChatSettings_Stickers, unreadTrendingStickerPacks == 0 ? "" : "\(unreadTrendingStickerPacks)", archivedPacks))

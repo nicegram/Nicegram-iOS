@@ -3,6 +3,8 @@ import UIKit
 import Display
 
 struct PresentationResourcesSettings {
+    static let nicegramIcon = UIImage(bundleImageName: "Settings/MenuIcons/NiceSettings")?.precomposed()
+    
     static let editProfile = UIImage(bundleImageName: "Settings/MenuIcons/EditProfile")?.precomposed()
     static let proxy = UIImage(bundleImageName: "Settings/MenuIcons/Proxy")?.precomposed()
     static let savedMessages = UIImage(bundleImageName: "Settings/MenuIcons/SavedMessages")?.precomposed()

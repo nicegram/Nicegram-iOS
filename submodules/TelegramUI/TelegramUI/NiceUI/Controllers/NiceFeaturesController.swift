@@ -18,12 +18,13 @@ private final class NiceFeaturesControllerArguments {
     let togglePinnedMessage: (Bool) -> Void
     let toggleShowContactsTab: (Bool) -> Void
     let toggleFixNotifications: (Bool) -> Void
+    let updateShowCallsTab: (Bool) -> Void
     
-    
-    init(togglePinnedMessage:@escaping (Bool) -> Void, toggleShowContactsTab:@escaping (Bool) -> Void, toggleFixNotifications:@escaping (Bool) -> Void) {
+    init(togglePinnedMessage:@escaping (Bool) -> Void, toggleShowContactsTab:@escaping (Bool) -> Void, toggleFixNotifications:@escaping (Bool) -> Void, updateShowCallsTab:@escaping (Bool) -> Void) {
         self.togglePinnedMessage = togglePinnedMessage
         self.toggleShowContactsTab = toggleShowContactsTab
         self.toggleFixNotifications = toggleFixNotifications
+        self.updateShowCallsTab = updateShowCallsTab
     }
 }
 
@@ -50,6 +51,7 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
     
     case tabsHeader(PresentationTheme, String)
     case showContactsTab(PresentationTheme, String, Bool)
+    case duplicateShowCalls(PresentationTheme, String, Bool)
     
     case chatScreenHeader(PresentationTheme, String)
     
@@ -59,7 +61,7 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return niceFeaturesControllerSection.messageNotifications.rawValue
         case .chatsListHeader:
             return niceFeaturesControllerSection.chatsList.rawValue
-        case .tabsHeader, .showContactsTab:
+        case .tabsHeader, .showContactsTab, .duplicateShowCalls:
             return niceFeaturesControllerSection.tabs.rawValue
         case .chatScreenHeader:
             return niceFeaturesControllerSection.chatScreen.rawValue
@@ -83,8 +85,10 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return .index(5)
         case .showContactsTab:
             return .index(6)
-        case .chatScreenHeader:
+        case .duplicateShowCalls:
             return .index(7)
+        case .chatScreenHeader:
+            return .index(8)
         }
     }
     
@@ -138,6 +142,14 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
+            
+        case let .duplicateShowCalls(lhsTheme, lhsText, lhsValue):
+            if case let .duplicateShowCalls(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
+                return true
+            } else {
+                return false
+            }
+            
             
         case let .chatScreenHeader(lhsTheme, lhsText):
             if case let .chatScreenHeader(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
@@ -199,6 +211,13 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             default:
                 return true
             }
+        case .duplicateShowCalls:
+            switch rhs {
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls:
+                return false
+            default:
+                return true
+            }
         case .chatScreenHeader:
             return false
         }
@@ -226,6 +245,10 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return ItemListSwitchItem(theme: theme, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.toggleShowContactsTab(value)
             })
+        case let .duplicateShowCalls(theme, text, value):
+            return ItemListSwitchItem(theme: theme, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                arguments.updateShowCallsTab(value)
+            })
         case let .chatScreenHeader(theme, text):
             return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
         }
@@ -241,7 +264,7 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
  }
  */
 
-private func niceFeaturesControllerEntries(niceSettings: NiceSettings, presentationData: PresentationData) -> [NiceFeaturesControllerEntry] {
+private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls: Bool, presentationData: PresentationData) -> [NiceFeaturesControllerEntry] {
     var entries: [NiceFeaturesControllerEntry] = []
     
     entries.append(.messageNotificationsHeader(presentationData.theme, presentationData.strings.Notifications_Title.uppercased()))
@@ -252,6 +275,7 @@ private func niceFeaturesControllerEntries(niceSettings: NiceSettings, presentat
     
     entries.append(.tabsHeader(presentationData.theme, l("NiceFeatures.Tabs.Header", presentationData.strings.baseLanguageCode)))
     entries.append(.showContactsTab(presentationData.theme, l("NiceFeatures.Tabs.ShowContacts", presentationData.strings.baseLanguageCode), niceSettings.showContactsTab))
+    entries.append(.duplicateShowCalls(presentationData.theme, presentationData.strings.CallSettings_TabIcon, showCalls))
     
     //entries.append(.chatScreenHeader(presentationData.theme, l(key: "NiceFeatures.ChatScreen.Header", locale: presentationData.strings.baseLanguageCode)))
     //entries.append(.animatedStickers(presentationData.theme, l(key:  "NiceFeatures.ChatScreen.AnimatedStickers", locale: presentationData.strings.baseLanguageCode), GlobalExperimentalSettings.animatedStickers))
@@ -288,6 +312,14 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
             return settings
         }).start()
         context.sharedContext.updateNotificationTokensRegistration()
+    }, updateShowCallsTab: { value in
+        let _ = updateCallListSettingsInteractively(accountManager: context.sharedContext.accountManager, {
+            $0.withUpdatedShowTab(value)
+        }).start()
+        
+        if value {
+            let _ = ApplicationSpecificNotice.incrementCallsTabTips(accountManager: context.sharedContext.accountManager, count: 4).start()
+        }
     }
     )
     
@@ -303,7 +335,15 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
                 niceSettings = NiceSettings.defaultSettings
             }
             
-            let entries = niceFeaturesControllerEntries(niceSettings: niceSettings, presentationData: presentationData)
+            let showCalls: Bool
+            if let settings = sharedData.entries[ApplicationSpecificSharedDataKeys.callListSettings] as? CallListSettings {
+                showCalls = settings.showTab
+            } else {
+                showCalls = true
+            }
+            
+            
+            let entries = niceFeaturesControllerEntries(niceSettings: niceSettings, showCalls: showCalls, presentationData: presentationData)
             
             var index = 0
             var scrollToItem: ListViewScrollToItem?
