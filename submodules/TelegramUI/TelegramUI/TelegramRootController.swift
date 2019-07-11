@@ -17,6 +17,8 @@ public final class TelegramRootController: NavigationController {
     public var chatListController: ChatListController?
     public var accountSettingsController: ViewController?
     
+    public var filterControllers: [ChatListController]?
+    
     private var permissionsDisposable: Disposable?
     private var presentationDataDisposable: Disposable?
     private var presentationData: PresentationData
@@ -78,7 +80,7 @@ public final class TelegramRootController: NavigationController {
         self.presentationDataDisposable?.dispose()
     }
     
-    public func addRootControllers(showCallsTab: Bool) {
+    public func addRootControllers(showCallsTab: Bool, niceSettings: NiceSettings) {
         let tabBarController = TabBarController(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData), theme: TabBarControllerTheme(rootControllerTheme: self.presentationData.theme))
         let chatListController = ChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true)
         chatListController.tabBarItem.badgeValue = self.context.sharedContext.switchingData.chatListBadge
@@ -90,11 +92,34 @@ public final class TelegramRootController: NavigationController {
         contactsController.switchToChatsController = {  [weak self] in
             self?.openChatsController(activateSearch: false)
         }
-        controllers.append(contactsController)
-        
+        // let niceSettings = getNiceSettings(accountManager: self.context.sharedContext.accountManager)
+        if niceSettings.showContactsTab {
+            controllers.append(contactsController)
+        }
         if showCallsTab {
             controllers.append(callListController)
         }
+        if niceSettings.maxFilters > 0 {
+            var filControllers: [ChatListController] = []
+            for (index, filter) in niceSettings.chatFilters.enumerated() {
+                // Break if max filters
+                if index + 1 > niceSettings.maxFilters {
+                    break
+                }
+                filControllers.append(ChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, filter: filter, filterIndex: Int32(index)))
+            }
+            
+            if !filControllers.isEmpty {
+                for controller in filControllers {
+                    controller.tabBarItem.badgeValue = self.context.sharedContext.switchingData.chatListBadge
+                    controllers.append(controller)
+                }
+                self.filterControllers = filControllers
+            } else {
+                self.filterControllers = nil
+            }
+        }
+
         controllers.append(chatListController)
         
         let restoreSettignsController = self.context.sharedContext.switchingData.settingsController
@@ -114,15 +139,42 @@ public final class TelegramRootController: NavigationController {
         self.pushViewController(tabBarController, animated: false)
     }
     
-    public func updateRootControllers(showCallsTab: Bool) {
+    public func updateRootControllers(showCallsTab: Bool, niceSettings: NiceSettings) {
         guard let rootTabController = self.rootTabController else {
             return
         }
         var controllers: [ViewController] = []
-        controllers.append(self.contactsController!)
+        // let niceSettings = getNiceSettings(accountManager: self.context.sharedContext.accountManager)
+        if niceSettings.showContactsTab {
+            controllers.append(self.contactsController!)
+        }
+        
         if showCallsTab {
             controllers.append(self.callListController!)
         }
+        
+        if niceSettings.maxFilters > 0 {
+            var filControllers: [ChatListController] = []
+            for (index, filter) in niceSettings.chatFilters.enumerated() {
+                // Break if max filters
+                if index + 1 > niceSettings.maxFilters {
+                    break
+                }
+                filControllers.append(ChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, filter: filter, filterIndex: Int32(index)))
+            }
+            
+            if !filControllers.isEmpty {
+                for controller in filControllers {
+                    controller.tabBarItem.badgeValue = self.context.sharedContext.switchingData.chatListBadge
+                    controllers.append(controller)
+                }
+                self.filterControllers = filControllers
+            } else {
+                self.filterControllers = nil
+            }
+        }
+        
+        
         controllers.append(self.chatListController!)
         controllers.append(self.accountSettingsController!)
         

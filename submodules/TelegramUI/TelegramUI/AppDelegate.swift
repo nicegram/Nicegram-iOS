@@ -622,6 +622,9 @@ final class SharedApplicationContext {
             }
         })
         
+        var showFilteredChatTabs: [NiceChatListNodePeersFilter] = [.onlyUnread, .onlyNonMuted]
+        var showContactsTab = true
+        
         let accountManagerSignal = Signal<AccountManager, NoError> { subscriber in
             let accountManager = AccountManager(basePath: rootPath + "/accounts-metadata")
             return (upgradedAccounts(accountManager: accountManager, rootPath: rootPath, encryptionParameters: encryptionParameters)
@@ -885,7 +888,7 @@ final class SharedApplicationContext {
             |> map { accountAndSettings -> AuthorizedApplicationContext? in
                 return accountAndSettings.flatMap { account, limitsConfiguration, callListSettings in
                     let context = AccountContext(sharedContext: sharedApplicationContext.sharedContext, account: account, limitsConfiguration: limitsConfiguration)
-                    return AuthorizedApplicationContext(sharedApplicationContext: sharedApplicationContext, mainWindow: self.mainWindow, watchManagerArguments: watchManagerArgumentsPromise.get(), context: context, accountManager: sharedApplicationContext.sharedContext.accountManager, showCallsTab: callListSettings.showTab, reinitializedNotificationSettings: {
+                    return AuthorizedApplicationContext(sharedApplicationContext: sharedApplicationContext, mainWindow: self.mainWindow, watchManagerArguments: watchManagerArgumentsPromise.get(), context: context, accountManager: sharedApplicationContext.sharedContext.accountManager, showCallsTab: callListSettings.showTab, showFilteredChatTabs: showFilteredChatTabs, showContactsTab: showContactsTab, reinitializedNotificationSettings: {
                         let _ = (self.context.get()
                         |> take(1)
                         |> deliverOnMainQueue).start(next: { context in

@@ -201,6 +201,8 @@
 		A5E8799422D605C800AD2C2C /* NiceUISettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E8799322D605C800AD2C2C /* NiceUISettings.swift */; };
 		A5E8799822D6079500AD2C2C /* NiceFeaturesController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E8799722D6079500AD2C2C /* NiceFeaturesController.swift */; };
 		A5E8799B22D6090C00AD2C2C /* NiceStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E8799A22D6090C00AD2C2C /* NiceStrings.swift */; };
+		A5E879BE22D663E000AD2C2C /* NiceTabBarFilterSwitchController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E879BD22D663E000AD2C2C /* NiceTabBarFilterSwitchController.swift */; };
+		A5E879C022D6640C00AD2C2C /* NiceTabBarFilterSwitchControllerNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E879BF22D6640C00AD2C2C /* NiceTabBarFilterSwitchControllerNode.swift */; };
 		D000CABA21EE130D0011B15D /* MapResourceToAvatarSizes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D000CAB921EE130D0011B15D /* MapResourceToAvatarSizes.swift */; };
 		D000CABC21F158AD0011B15D /* PrepareSecretThumbnailData.swift in Sources */ = {isa = PBXBuildFile; fileRef = D000CABB21F158AD0011B15D /* PrepareSecretThumbnailData.swift */; };
 		D00580B321E4B51600CB7CD3 /* DeleteChatPeerActionSheetItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00580B221E4B51600CB7CD3 /* DeleteChatPeerActionSheetItem.swift */; };
@@ -1427,6 +1429,8 @@
 		A5E8799322D605C800AD2C2C /* NiceUISettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceUISettings.swift; sourceTree = "<group>"; };
 		A5E8799722D6079500AD2C2C /* NiceFeaturesController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceFeaturesController.swift; sourceTree = "<group>"; };
 		A5E8799A22D6090C00AD2C2C /* NiceStrings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceStrings.swift; sourceTree = "<group>"; };
+		A5E879BD22D663E000AD2C2C /* NiceTabBarFilterSwitchController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceTabBarFilterSwitchController.swift; sourceTree = "<group>"; };
+		A5E879BF22D6640C00AD2C2C /* NiceTabBarFilterSwitchControllerNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceTabBarFilterSwitchControllerNode.swift; sourceTree = "<group>"; };
 		D000CAB921EE130D0011B15D /* MapResourceToAvatarSizes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapResourceToAvatarSizes.swift; sourceTree = "<group>"; };
 		D000CABB21F158AD0011B15D /* PrepareSecretThumbnailData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrepareSecretThumbnailData.swift; sourceTree = "<group>"; };
 		D002A0D01E9B99F500A81812 /* SoftwareVideoSource.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SoftwareVideoSource.swift; sourceTree = "<group>"; };
@@ -2834,6 +2838,8 @@
 			isa = PBXGroup;
 			children = (
 				A5E8799722D6079500AD2C2C /* NiceFeaturesController.swift */,
+				A5E879BD22D663E000AD2C2C /* NiceTabBarFilterSwitchController.swift */,
+				A5E879BF22D6640C00AD2C2C /* NiceTabBarFilterSwitchControllerNode.swift */,
 			);
 			path = Controllers;
 			sourceTree = "<group>";
@@ -5636,6 +5642,7 @@
 				099529B421D3E5D800805E13 /* CheckDiskSpace.swift in Sources */,
 				D04281EF200E3D88009DDE36 /* GroupInfoSearchItem.swift in Sources */,
 				D02660941F34CE5C000E2DC5 /* LegacyLocationVenueIconDataSource.swift in Sources */,
+				A5E879C022D6640C00AD2C2C /* NiceTabBarFilterSwitchControllerNode.swift in Sources */,
 				D081E104217F57D2003CD921 /* LanguageLinkPreviewController.swift in Sources */,
 				D0E9BAE21F0574D800F079A4 /* STPBankAccount.m in Sources */,
 				D0104F2A1F471DA6004E4881 /* InstantImageGalleryItem.swift in Sources */,
@@ -6248,6 +6255,7 @@
 				D0E8175920122FE100B82BBB /* ChatRecentActionsFilterController.swift in Sources */,
 				D0EC6E431EB9F58900EBF1C3 /* ItemListEditableDeleteControlNode.swift in Sources */,
 				D08557E722C5FEB90026D6D2 /* AnimatedStickerNode.swift in Sources */,
+				A5E879BE22D663E000AD2C2C /* NiceTabBarFilterSwitchController.swift in Sources */,
 				D0EC6E441EB9F58900EBF1C3 /* ItemListSingleLineInputItem.swift in Sources */,
 				D01776B31F1D69A80044446D /* RadialStatusNode.swift in Sources */,
 				D084023420E295F000065674 /* GroupStickerPackSetupController.swift in Sources */,

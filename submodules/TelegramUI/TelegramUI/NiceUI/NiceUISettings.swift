@@ -14,16 +14,20 @@ import TelegramUIPreferences
 public struct NiceSettings: PreferencesEntry, Equatable {
     public var pinnedMessagesNotification: Bool
     public var showContactsTab: Bool
-    public var currentFilter: NiceChatListNodePeersFilter
+    public var chatFilters: [NiceChatListNodePeersFilter]
+    public var maxFilters: Int32
+    public var currentFilter: Int32
     public var fixNotifications: Bool
     
     public static var defaultSettings: NiceSettings {
-        return NiceSettings(pinnedMessagesNotification: true, showContactsTab: true, currentFilter: .onlyNonMuted, fixNotifications: true)
+        return NiceSettings(pinnedMessagesNotification: true, showContactsTab: true, chatFilters: [.onlyUnread, .onlyNonMuted], maxFilters: 2, currentFilter: 0, fixNotifications: true)
     }
     
-    init(pinnedMessagesNotification: Bool, showContactsTab: Bool, currentFilter: NiceChatListNodePeersFilter, fixNotifications: Bool) {
+    init(pinnedMessagesNotification: Bool, showContactsTab: Bool, chatFilters: [NiceChatListNodePeersFilter], maxFilters: Int32, currentFilter: Int32, fixNotifications: Bool) {
         self.pinnedMessagesNotification = pinnedMessagesNotification
         self.showContactsTab = showContactsTab
+        self.chatFilters = chatFilters
+        self.maxFilters = maxFilters
         self.currentFilter = currentFilter
         self.fixNotifications = fixNotifications
     }
@@ -31,14 +35,35 @@ public struct NiceSettings: PreferencesEntry, Equatable {
     public init(decoder: PostboxDecoder) {
         self.pinnedMessagesNotification = decoder.decodeBoolForKey("nice:pinnedMessagesNotification", orElse: true)
         self.showContactsTab = decoder.decodeBoolForKey("nice:showContactsTab", orElse: true)
-        self.currentFilter = NiceChatListNodePeersFilter(rawValue: decoder.decodeInt32ForKey("nice:currentFilter", orElse: 1 << 5))
+        
+        let filterList = decoder.decodeInt32ArrayForKey("nice:chatFilters")
+        
+        if filterList.isEmpty {
+            self.chatFilters = [.onlyUnread, .onlyNonMuted]
+        } else {
+            self.chatFilters = []
+            for filter in filterList {
+                chatFilters.append(NiceChatListNodePeersFilter(rawValue: filter))
+            }
+        }
+        
+        self.maxFilters = decoder.decodeInt32ForKey("nice:maxFilters", orElse: 2)
+        self.currentFilter = decoder.decodeInt32ForKey("nice:currentFilterIndex", orElse: 0)
+        
         self.fixNotifications = decoder.decodeBoolForKey("nice:fixNotifications", orElse: true)
     }
     
     public func encode(_ encoder: PostboxEncoder) {
         encoder.encodeBool(self.pinnedMessagesNotification, forKey: "nice:pinnedMessagesNotification")
         encoder.encodeBool(self.showContactsTab, forKey: "nice:showContactsTab")
-        encoder.encodeInt32(self.currentFilter.rawValue, forKey: "nice:currentFilter")
+        
+        var filterList: [Int32] = []
+        for filter in self.chatFilters {
+            filterList.append(filter.rawValue)
+        }
+        encoder.encodeInt32Array(filterList, forKey: "nice:chatFilters")
+        encoder.encodeInt32(self.maxFilters, forKey: "nice:maxFilters")
+        encoder.encodeInt32(self.currentFilter, forKey: "nice:currentFilterIndex")
         encoder.encodeBool(self.fixNotifications, forKey: "nice:fixNotifications")
     }
     
@@ -54,9 +79,9 @@ public struct NiceSettings: PreferencesEntry, Equatable {
         return lhs.pinnedMessagesNotification == rhs.pinnedMessagesNotification && lhs.showContactsTab == rhs.showContactsTab && lhs.currentFilter == rhs.currentFilter && lhs.fixNotifications == rhs.fixNotifications
     }
     
-    public func withUpdatedCurrentFilter(_ currentFilter: NiceChatListNodePeersFilter) -> NiceSettings {
-        return NiceSettings(pinnedMessagesNotification: self.pinnedMessagesNotification, showContactsTab: self.showContactsTab, currentFilter: currentFilter, fixNotifications: fixNotifications)
-    }
+    /* public func withUpdatedCurrentFilter(_ currentFilter: NiceChatListNodePeersFilter) -> NiceSettings {
+        return NiceSettings(pinnedMessagesNotification: self.pinnedMessagesNotification, showContactsTab: self.showContactsTab, chatFilters: self. currentFilter: currentFilter, fixNotifications: fixNotifications)
+    } */
     
     /*
      public func withUpdatedpinnedMessagesNotification(_ pinnedMessagesNotification: Bool) -> NiceSettings {
@@ -86,3 +111,21 @@ public func updateNiceSettingsInteractively(accountManager: AccountManager, _ f:
         })
     }
 }
+
+
+public func getNiceSettings(accountManager: AccountManager) -> NiceSettings {
+    var niceSettings: NiceSettings? = nil
+    let semaphore = DispatchSemaphore(value: 0)
+    _ = (accountManager.transaction { transaction in
+        niceSettings = transaction.getSharedData(ApplicationSpecificSharedDataKeys.niceSettings) as? NiceSettings
+        semaphore.signal()
+    }).start()
+    semaphore.wait()
+    
+    if (niceSettings == nil) {
+        niceSettings = NiceSettings.defaultSettings
+    }
+    
+    return niceSettings!
+}
+

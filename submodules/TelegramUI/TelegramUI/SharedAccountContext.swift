@@ -741,7 +741,12 @@ public final class SharedAccountContext {
                         }
                         let encrypt: Bool
                         if #available(iOS 10.0, *) {
-                            encrypt = true
+                            let niceSettings = getNiceSettings(accountManager: self.accountManager)
+                            if niceSettings.fixNotifications {
+                                encrypt = false
+                            } else {
+                                encrypt = true
+                            }
                         } else {
                             encrypt = false
                         }
@@ -809,6 +814,43 @@ public final class SharedAccountContext {
                 self.switchingData = (nil, nil, nil)
             }
         })
+    }
+    
+    public func switchToFilter(filter: NiceChatListNodePeersFilter, fromSettingsController settingsController: (SettingsController & ViewController)? = nil, withChatListController chatListController: ChatListController? = nil) {
+        
+        assert(Queue.mainQueue().isCurrent())
+        var chatsBadge: String?
+        if let rootController = self.mainWindow?.viewController as? TelegramRootController {
+            if (chatListController?.filter == filter) {
+                return
+            }
+            chatListController?.filter = filter
+            if let tabsController = rootController.viewControllers.first as? TabBarController {
+                for controller in tabsController.controllers {
+                    if let controller = controller as? ChatListController {
+                        chatsBadge = controller.tabBarItem.badgeValue
+                    }
+                }
+                
+                if let chatListController = chatListController {
+                    let filterIndex = chatListController.filterIndex ?? 0
+                    for (index, controller) in tabsController.controllers.enumerated() {
+                        if let controller = controller as? ChatListController {
+                            if controller.filterIndex == filterIndex {
+                                var controllers = tabsController.controllers
+                                controllers[index] = ChatListController(context: chatListController.context, groupId: .root, controlsHistoryPreload: chatListController.controlsHistoryPreload, hideNetworkActivityStatus: chatListController.hideNetworkActivityStatus, filter: filter, filterIndex: filterIndex)
+                                tabsController.setControllers(controllers, selectedIndex: index)
+                                break
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        
+        
+        self.switchingData = (settingsController, chatListController, chatsBadge)
     }
     
     public func navigateToChat(accountId: AccountRecordId, peerId: PeerId, messageId: MessageId?) {

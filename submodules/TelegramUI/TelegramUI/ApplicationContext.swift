@@ -104,9 +104,13 @@ final class AuthorizedApplicationContext {
     
     private var showCallsTab: Bool
     private var showCallsTabDisposable: Disposable?
+    private var showContactsTab: Bool
+    private var showContactsTabDisposable: Disposable?
+    private var showFilteredChatTabs: [NiceChatListNodePeersFilter]?
+    private var showFilteredChatTabsDisposable: Disposable?
     private var enablePostboxTransactionsDiposable: Disposable?
     
-    init(sharedApplicationContext: SharedApplicationContext, mainWindow: Window1, watchManagerArguments: Signal<WatchManagerArguments?, NoError>, context: AccountContext, accountManager: AccountManager, showCallsTab: Bool, reinitializedNotificationSettings: @escaping () -> Void) {
+    init(sharedApplicationContext: SharedApplicationContext, mainWindow: Window1, watchManagerArguments: Signal<WatchManagerArguments?, NoError>, context: AccountContext, accountManager: AccountManager,  showCallsTab: Bool, showFilteredChatTabs: [NiceChatListNodePeersFilter]?, showContactsTab: Bool, reinitializedNotificationSettings: @escaping () -> Void) {
         self.sharedApplicationContext = sharedApplicationContext
         
         setupLegacyComponents(context: context)
@@ -118,6 +122,8 @@ final class AuthorizedApplicationContext {
         self.context = context
         
         self.showCallsTab = showCallsTab
+        self.showFilteredChatTabs = showFilteredChatTabs
+        self.showContactsTab = showContactsTab
         
         self.notificationController = NotificationContainerController(context: context)
         
@@ -262,7 +268,8 @@ final class AuthorizedApplicationContext {
                         strongSelf.context.sharedContext.mediaManager.overlayMediaManager.controller?.view.isHidden = false
                         strongSelf.notificationController.view.isHidden = false
                         if strongSelf.rootController.rootTabController == nil {
-                            strongSelf.rootController.addRootControllers(showCallsTab: strongSelf.showCallsTab)
+                            let niceSettings = getNiceSettings(accountManager: strongSelf.context.sharedContext.accountManager)
+                            strongSelf.rootController.addRootControllers(showCallsTab: strongSelf.showCallsTab, niceSettings: niceSettings)
                             if let (peerId, messageId, activateInput) = strongSelf.scheduledOperChatWithPeerId {
                                 strongSelf.scheduledOperChatWithPeerId = nil
                                 strongSelf.openChatWithPeerId(peerId: peerId, messageId: messageId, activateInput: activateInput)
@@ -741,11 +748,24 @@ final class AuthorizedApplicationContext {
             }
             return value
         }
-        self.showCallsTabDisposable = (showCallsTabSignal |> deliverOnMainQueue).start(next: { [weak self] value in
+        
+        let niceSettings = context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.niceSettings])
+            |> map { sharedData -> NiceSettings in
+                var value = NiceSettings.defaultSettings
+                if let settings = sharedData.entries[ApplicationSpecificSharedDataKeys.niceSettings] as? NiceSettings {
+                    value = settings
+                }
+                return value
+        }
+        
+        self.showCallsTabDisposable = combineLatest(showCallsTabSignal |> deliverOnMainQueue, niceSettings |> deliverOnMainQueue).start(next: { [weak self] value, niceSettingsValue in
             if let strongSelf = self {
-                if strongSelf.showCallsTab != value {
+                if strongSelf.showCallsTab != value || strongSelf.showContactsTab != niceSettingsValue.showContactsTab || strongSelf.showFilteredChatTabs != niceSettingsValue.chatFilters {
                     strongSelf.showCallsTab = value
-                    strongSelf.rootController.updateRootControllers(showCallsTab: value)
+                    // strongSelf.showNonMutedChatsTab = niceSettingsValue.workmode
+                    strongSelf.showContactsTab = niceSettingsValue.showContactsTab
+                    strongSelf.showFilteredChatTabs = niceSettingsValue.chatFilters
+                    strongSelf.rootController.updateRootControllers(showCallsTab: value, niceSettings: niceSettingsValue)
                 }
             }
         })
