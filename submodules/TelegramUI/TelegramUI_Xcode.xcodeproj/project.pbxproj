@@ -198,6 +198,7 @@
 		09FFBCDB22849CB500C33B4B /* PDF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09FFBCDA22849CB500C33B4B /* PDF.swift */; };
 		9F06830921A404AB001D8EDB /* NotificationExceptionControllerNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F06830821A404AB001D8EDB /* NotificationExceptionControllerNode.swift */; };
 		9F06830B21A404C4001D8EDB /* NotificationExceptionSettingsController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F06830A21A404C4001D8EDB /* NotificationExceptionSettingsController.swift */; };
+		A51F6CC722D802E9001E968A /* NiceSettingsFiltersAmountActionSheetController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51F6CC622D802E9001E968A /* NiceSettingsFiltersAmountActionSheetController.swift */; };
 		A5E8799422D605C800AD2C2C /* NiceUISettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E8799322D605C800AD2C2C /* NiceUISettings.swift */; };
 		A5E8799822D6079500AD2C2C /* NiceFeaturesController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E8799722D6079500AD2C2C /* NiceFeaturesController.swift */; };
 		A5E8799B22D6090C00AD2C2C /* NiceStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E8799A22D6090C00AD2C2C /* NiceStrings.swift */; };
@@ -1426,6 +1427,7 @@
 		09FFBCDA22849CB500C33B4B /* PDF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDF.swift; sourceTree = "<group>"; };
 		9F06830821A404AB001D8EDB /* NotificationExceptionControllerNode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NotificationExceptionControllerNode.swift; sourceTree = "<group>"; };
 		9F06830A21A404C4001D8EDB /* NotificationExceptionSettingsController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NotificationExceptionSettingsController.swift; sourceTree = "<group>"; };
+		A51F6CC622D802E9001E968A /* NiceSettingsFiltersAmountActionSheetController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceSettingsFiltersAmountActionSheetController.swift; sourceTree = "<group>"; };
 		A5E8799322D605C800AD2C2C /* NiceUISettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceUISettings.swift; sourceTree = "<group>"; };
 		A5E8799722D6079500AD2C2C /* NiceFeaturesController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceFeaturesController.swift; sourceTree = "<group>"; };
 		A5E8799A22D6090C00AD2C2C /* NiceStrings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceStrings.swift; sourceTree = "<group>"; };
@@ -2837,6 +2839,7 @@
 		A5E8799622D6074500AD2C2C /* Controllers */ = {
 			isa = PBXGroup;
 			children = (
+				A51F6CC622D802E9001E968A /* NiceSettingsFiltersAmountActionSheetController.swift */,
 				A5E8799722D6079500AD2C2C /* NiceFeaturesController.swift */,
 				A5E879BD22D663E000AD2C2C /* NiceTabBarFilterSwitchController.swift */,
 				A5E879BF22D6640C00AD2C2C /* NiceTabBarFilterSwitchControllerNode.swift */,
@@ -5504,6 +5507,7 @@
 				D0EC6CE31EB9F58800EBF1C3 /* PresentationResourcesChat.swift in Sources */,
 				09EC0DE722C67FB100E7185B /* UpdateInfoController.swift in Sources */,
 				D0AA840C1FEB2BA3005C6E91 /* OverlayPlayerControlsNode.swift in Sources */,
+				A51F6CC722D802E9001E968A /* NiceSettingsFiltersAmountActionSheetController.swift in Sources */,
 				09DD5D5021ECC3C400D7007A /* SuppressContactsWarning.swift in Sources */,
 				D02B198A21F1DA9E0094A764 /* SharedAccountContext.swift in Sources */,
 				D0F67FF21EE6B915000E5906 /* ChannelMembersSearchControllerNode.swift in Sources */,
