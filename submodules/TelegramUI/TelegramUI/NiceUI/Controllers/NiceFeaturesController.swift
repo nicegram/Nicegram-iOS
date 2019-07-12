@@ -19,9 +19,9 @@ private final class NiceFeaturesControllerArguments {
     let toggleShowContactsTab: (Bool) -> Void
     let toggleFixNotifications: (Bool) -> Void
     let updateShowCallsTab: (Bool) -> Void
-    let openFiltersAmount: () -> Void
+    let openFiltersAmount: (Int32) -> Void
     
-    init(togglePinnedMessage:@escaping (Bool) -> Void, toggleShowContactsTab:@escaping (Bool) -> Void, toggleFixNotifications:@escaping (Bool) -> Void, updateShowCallsTab:@escaping (Bool) -> Void, openFiltersAmount:@escaping () -> Void) {
+    init(togglePinnedMessage:@escaping (Bool) -> Void, toggleShowContactsTab:@escaping (Bool) -> Void, toggleFixNotifications:@escaping (Bool) -> Void, updateShowCallsTab:@escaping (Bool) -> Void, openFiltersAmount:@escaping (Int32) -> Void) {
         self.togglePinnedMessage = togglePinnedMessage
         self.toggleShowContactsTab = toggleShowContactsTab
         self.toggleFixNotifications = toggleFixNotifications
@@ -309,7 +309,7 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
         case let .filtersAmount(theme, text, value):
             return ItemListDisclosureItem(theme: theme, icon: nil, title: text, label: String(value), sectionId: ItemListSectionId(self.section), style: .blocks, action: {
-                arguments.openFiltersAmount()
+                arguments.openFiltersAmount(value)
             }, clearHighlightAutomatically: false)
         case let .filtersNotice(theme, text):
             return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
@@ -389,9 +389,8 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
         if value {
             let _ = ApplicationSpecificNotice.incrementCallsTabTips(accountManager: context.sharedContext.accountManager, count: 4).start()
         }
-    }, openFiltersAmount: { 
-        let niceSettings = getNiceSettings(accountManager: context.accountManager)
-        let filtersController = NiceSettingsFiltersAmountActionSheetController(context: context, currentValue: niceSettings.maxFilters, applyValue: { value in
+    }, openFiltersAmount: { value in
+        let filtersController = NiceSettingsFiltersAmountActionSheetController(context: context, currentValue: value, applyValue: { value in
             let _ = updateNiceSettingsInteractively(accountManager: context.sharedContext.accountManager, { settings in
                 var settings = settings
                 settings.maxFilters = value
