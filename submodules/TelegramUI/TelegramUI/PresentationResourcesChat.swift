@@ -724,6 +724,12 @@ struct PresentationResourcesChat {
         })
     }
     
+    static func chatTitlePanelGotoPinImage(_ theme: PresentationTheme) -> UIImage? {
+        return theme.image(PresentationResourceKey.chatTitlePanelGotoPinImage.rawValue, { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Title Panels/PeerPinnedIcon"), color: theme.chat.inputPanel.panelControlAccentColor)
+        })
+    }
+    
     static func chatMessageAttachedContentButtonIncoming(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.chatMessageAttachedContentButtonIncoming.rawValue, { theme in
             return generateStretchableFilledCircleImage(diameter: 9.0, color: nil, strokeColor: theme.chat.bubble.incomingAccentControlColor, strokeWidth: 1.0, backgroundColor: nil)

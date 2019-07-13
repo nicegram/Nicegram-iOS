@@ -371,6 +371,7 @@ public class PeerMediaCollectionController: TelegramController {
         }, requestUnvoteInMessage: { _ in
         }, requestStopPollInMessage: { _ in
         }, updateInputLanguage: { _ in
+        }, gotoPin: {
         }, unarchiveChat: {
         }, openLinkEditing: {
         }, reportPeerIrrelevantGeoLocation: {

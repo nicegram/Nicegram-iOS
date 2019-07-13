@@ -14,6 +14,7 @@ private enum ChatInfoTitleButton {
     case call
     case report
     case unarchive
+    case gotopin
     
     func title(_ strings: PresentationStrings) -> String {
         switch self {
@@ -31,6 +32,8 @@ private enum ChatInfoTitleButton {
                 return strings.ReportPeer_Report
             case .unarchive:
                 return strings.ChatList_UnarchiveAction
+            case .gotopin:
+                return l("Chat.OpenPin", strings.baseLanguageCode)
         }
     }
     
@@ -50,6 +53,8 @@ private enum ChatInfoTitleButton {
                 return PresentationResourcesChat.chatTitlePanelReportImage(theme)
             case .unarchive:
                 return PresentationResourcesChat.chatTitlePanelUnarchiveImage(theme)
+            case .gotopin:
+                return PresentationResourcesChat.chatTitlePanelGotoPinImage(theme)
         }
     }
 }
@@ -84,15 +89,15 @@ private func peerButtons(_ peer: Peer, interfaceState: ChatPresentationInterface
         return buttons
     } else if let channel = peer as? TelegramChannel {
         if channel.flags.contains(.isCreator) || channel.username == nil {
-            return [.search, muteAction, infoButton]
+            return [.search, muteAction, .gotopin, infoButton]
         } else {
-            return [.search, .report, muteAction, infoButton]
+            return [.search, muteAction, .gotopin, infoButton]
         }
     } else if let group = peer as? TelegramGroup {
         if case .creator = group.role {
-            return [.search, muteAction, infoButton]
+            return [.search, muteAction, .gotopin, infoButton]
         } else {
-            return [.search, muteAction, infoButton]
+            return [.search, muteAction, .gotopin, infoButton]
         }
     } else {
         return [.search, muteAction, infoButton]
@@ -222,6 +227,8 @@ final class ChatInfoTitlePanelNode: ChatTitleAccessoryPanelNode {
                         self.interfaceInteraction?.reportPeer()
                     case .unarchive:
                         self.interfaceInteraction?.unarchiveChat()
+                    case .gotopin:
+                        self.interfaceInteraction?.gotoPin()
                 }
                 break
             }

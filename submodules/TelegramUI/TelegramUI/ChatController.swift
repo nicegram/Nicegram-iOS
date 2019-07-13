@@ -3230,7 +3230,17 @@ public final class ChatController: TelegramController, GalleryHiddenMediaTarget,
                     }
                         
                     if canManagePin {
-                        strongSelf.present(textAlertController(context: strongSelf.context, title: nil, text: strongSelf.presentationData.strings.Conversation_UnpinMessageAlert, actions: [TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_No, action: {}), TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Yes, action: {
+                        strongSelf.present(textAlertController(context: strongSelf.context, title: nil, text: strongSelf.presentationData.strings.Conversation_UnpinMessageAlert, actions: [TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_No, action: {}), TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Call_AudioRouteHide, action: {
+                            if let pinnedMessage = strongSelf.presentationInterfaceState.pinnedMessage {
+                                strongSelf.updateChatPresentationInterfaceState(animated: true, interactive: true, {
+                                    return $0.updatedInterfaceState({ $0.withUpdatedMessageActionsState({ value in
+                                        var value = value
+                                        value.closedPinnedMessageId = pinnedMessage.id
+                                        return value
+                                    }) })
+                                })
+                            }
+                        }), TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_Yes, action: {
                             if let strongSelf = self {
                                 let disposable: MetaDisposable
                                 if let current = strongSelf.unpinMessageDisposable {
@@ -3433,6 +3443,25 @@ public final class ChatController: TelegramController, GalleryHiddenMediaTarget,
                 strongSelf.updateChatPresentationInterfaceState(animated: true, interactive: true, {
                     return $0.updatedInterfaceState({ $0.withUpdatedInputLanguage(f($0.inputLanguage)) })
                 })
+            }
+        }, gotoPin: { [weak self] in
+            if let strongSelf = self {
+                if let pinnedMessage = strongSelf.presentationInterfaceState.pinnedMessage {
+                    strongSelf.navigateToMessage(from: nil, to: .id(pinnedMessage.id))
+                    strongSelf.updateChatPresentationInterfaceState(animated: true, interactive: true, { current in
+                        return current.updatedPinnedMessageId(pinnedMessage.id)
+                    })
+                    strongSelf.updateChatPresentationInterfaceState(animated: true, interactive: true, {
+                        return $0.updatedInterfaceState({ $0.withUpdatedMessageActionsState({ value in
+                            var value = value
+                            value.closedPinnedMessageId = nil
+                            return value
+                        }) })
+                    })
+                    if let chatTitleView = strongSelf.chatTitleView {
+                        chatTitleView.pressed?()
+                    }
+                }
             }
         }, unarchiveChat: { [weak self] in
             guard let strongSelf = self, case let .peer(peerId) = strongSelf.chatLocation else {

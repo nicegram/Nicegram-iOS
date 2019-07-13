@@ -99,6 +99,7 @@ final class ChatRecentActionsController: TelegramController {
         }, requestUnvoteInMessage: { _ in
         }, requestStopPollInMessage: { _ in
         }, updateInputLanguage: { _ in
+        }, gotoPin: {
         }, unarchiveChat: {
         }, openLinkEditing: {  
         }, reportPeerIrrelevantGeoLocation: {
