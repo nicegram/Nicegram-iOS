@@ -101,16 +101,18 @@ final class AuthorizedApplicationContext {
     private var removeNotificationsDisposable: Disposable?
     
     private var applicationInForegroundDisposable: Disposable?
-    
+    private var foo: Bool
     private var showCallsTab: Bool
     private var showCallsTabDisposable: Disposable?
     private var showContactsTab: Bool
     private var showContactsTabDisposable: Disposable?
     private var showFilteredChatTabs: [NiceChatListNodePeersFilter]?
     private var showFilteredChatTabsDisposable: Disposable?
+    private var maxFilters: Int32
+    private var maxFiltersDisposable: Disposable?
     private var enablePostboxTransactionsDiposable: Disposable?
     
-    init(sharedApplicationContext: SharedApplicationContext, mainWindow: Window1, watchManagerArguments: Signal<WatchManagerArguments?, NoError>, context: AccountContext, accountManager: AccountManager,  showCallsTab: Bool, showFilteredChatTabs: [NiceChatListNodePeersFilter]?, showContactsTab: Bool, reinitializedNotificationSettings: @escaping () -> Void) {
+    init(sharedApplicationContext: SharedApplicationContext, mainWindow: Window1, watchManagerArguments: Signal<WatchManagerArguments?, NoError>, context: AccountContext, accountManager: AccountManager, foo: Bool, showCallsTab: Bool, showFilteredChatTabs: [NiceChatListNodePeersFilter]?, showContactsTab: Bool, maxFilters: Int32, reinitializedNotificationSettings: @escaping () -> Void) {
         self.sharedApplicationContext = sharedApplicationContext
         
         setupLegacyComponents(context: context)
@@ -124,6 +126,8 @@ final class AuthorizedApplicationContext {
         self.showCallsTab = showCallsTab
         self.showFilteredChatTabs = showFilteredChatTabs
         self.showContactsTab = showContactsTab
+        self.maxFilters = maxFilters
+        self.foo = foo
         
         self.notificationController = NotificationContainerController(context: context)
         
@@ -760,11 +764,12 @@ final class AuthorizedApplicationContext {
         
         self.showCallsTabDisposable = combineLatest(showCallsTabSignal |> deliverOnMainQueue, niceSettings |> deliverOnMainQueue).start(next: { [weak self] value, niceSettingsValue in
             if let strongSelf = self {
-                if strongSelf.showCallsTab != value || strongSelf.showContactsTab != niceSettingsValue.showContactsTab || strongSelf.showFilteredChatTabs != niceSettingsValue.chatFilters {
+                if strongSelf.foo != niceSettingsValue.foo || strongSelf.showCallsTab != value || strongSelf.showContactsTab != niceSettingsValue.showContactsTab {
                     strongSelf.showCallsTab = value
                     // strongSelf.showNonMutedChatsTab = niceSettingsValue.workmode
                     strongSelf.showContactsTab = niceSettingsValue.showContactsTab
-                    strongSelf.showFilteredChatTabs = niceSettingsValue.chatFilters
+                    strongSelf.showFilteredChatTabs = SimplyNiceSettings().chatFilters
+                    strongSelf.foo = niceSettingsValue.foo
                     strongSelf.rootController.updateRootControllers(showCallsTab: value, niceSettings: niceSettingsValue)
                 }
             }

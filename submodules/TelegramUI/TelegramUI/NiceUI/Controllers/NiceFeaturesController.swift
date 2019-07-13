@@ -19,14 +19,14 @@ private final class NiceFeaturesControllerArguments {
     let toggleShowContactsTab: (Bool) -> Void
     let toggleFixNotifications: (Bool) -> Void
     let updateShowCallsTab: (Bool) -> Void
-    let openFiltersAmount: (Int32) -> Void
+    let changeFiltersAmount: (Int32) -> Void
     
-    init(togglePinnedMessage:@escaping (Bool) -> Void, toggleShowContactsTab:@escaping (Bool) -> Void, toggleFixNotifications:@escaping (Bool) -> Void, updateShowCallsTab:@escaping (Bool) -> Void, openFiltersAmount:@escaping (Int32) -> Void) {
+    init(togglePinnedMessage:@escaping (Bool) -> Void, toggleShowContactsTab:@escaping (Bool) -> Void, toggleFixNotifications:@escaping (Bool) -> Void, updateShowCallsTab:@escaping (Bool) -> Void, changeFiltersAmount:@escaping (Int32) -> Void) {
         self.togglePinnedMessage = togglePinnedMessage
         self.toggleShowContactsTab = toggleShowContactsTab
         self.toggleFixNotifications = toggleFixNotifications
         self.updateShowCallsTab = updateShowCallsTab
-        self.openFiltersAmount = openFiltersAmount
+        self.changeFiltersAmount = changeFiltersAmount
     }
 }
 
@@ -307,10 +307,10 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             })
         case let .filtersHeader(theme, text):
             return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
-        case let .filtersAmount(theme, text, value):
-            return ItemListDisclosureItem(theme: theme, icon: nil, title: text, label: String(value), sectionId: ItemListSectionId(self.section), style: .blocks, action: {
-                arguments.openFiltersAmount(value)
-            }, clearHighlightAutomatically: false)
+        case let .filtersAmount(theme, lang, value):
+            return NiceSettingsFiltersAmountPickerItem(theme: theme, lang: lang, value: value, customPosition: nil, enabled: true, sectionId: self.section, updated: { preset in
+                arguments.changeFiltersAmount(preset)
+            })
         case let .filtersNotice(theme, text):
             return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
             
@@ -343,9 +343,9 @@ private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls
     entries.append(.showContactsTab(presentationData.theme, l("NiceFeatures.Tabs.ShowContacts", presentationData.strings.baseLanguageCode), niceSettings.showContactsTab))
     entries.append(.duplicateShowCalls(presentationData.theme, presentationData.strings.CallSettings_TabIcon, showCalls))
     
-    entries.append(.filtersHeader(presentationData.theme, l("NiceFeatures.Filters.Header")))
-    entries.append(.filtersAmount(presentationData.theme, l("NiceFeatures.Filters.Amount"), niceSettings.maxFilters))
-    entries.append(.filtersNotice(presentationData.theme, l("NiceFeatures.Filters.Notice")))
+    entries.append(.filtersHeader(presentationData.theme, l("NiceFeatures.Filters.Header", presentationData.strings.baseLanguageCode)))
+    entries.append(.filtersAmount(presentationData.theme, presentationData.strings.baseLanguageCode, SimplyNiceSettings().maxFilters))
+    entries.append(.filtersNotice(presentationData.theme, l("NiceFeatures.Filters.Notice", presentationData.strings.baseLanguageCode)))
     //entries.append(.chatScreenHeader(presentationData.theme, l(key: "NiceFeatures.ChatScreen.Header", locale: presentationData.strings.baseLanguageCode)))
     //entries.append(.animatedStickers(presentationData.theme, l(key:  "NiceFeatures.ChatScreen.AnimatedStickers", locale: presentationData.strings.baseLanguageCode), GlobalExperimentalSettings.animatedStickers))
     
@@ -355,7 +355,12 @@ private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls
 
 
 private struct NiceFeaturesSelectionState: Equatable {
-    
+    var updatingFiltersAmountValue: Int32? = nil
+}
+
+
+public func dummyCompleteDisposable() -> Signal<Void, NoError> {
+    return .complete()
 }
 
 public func niceFeaturesController(context: AccountContext) -> ViewController {
@@ -389,15 +394,36 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
         if value {
             let _ = ApplicationSpecificNotice.incrementCallsTabTips(accountManager: context.sharedContext.accountManager, count: 4).start()
         }
-    }, openFiltersAmount: { value in
-        let filtersController = NiceSettingsFiltersAmountActionSheetController(context: context, currentValue: value, applyValue: { value in
+    }, changeFiltersAmount: { value in
+        SimplyNiceSettings().maxFilters = Int32(value)
+        if SimplyNiceSettings().maxFilters > SimplyNiceSettings().chatFilters.count {
+            let delta = Int(SimplyNiceSettings().maxFilters) - SimplyNiceSettings().chatFilters.count
+            
+            for _ in 0...delta {
+                SimplyNiceSettings().chatFilters.append(.onlyNonMuted)
+            }
+        }
+        let _ = updateNiceSettingsInteractively(accountManager: context.sharedContext.accountManager, { settings in
+            var settings = settings
+            settings.foo = !settings.foo
+            return settings
+        }).start()
+        
+        // workaround
+        let _ = updateNiceSettingsInteractively(accountManager: context.sharedContext.accountManager, { settings in
+            var settings = settings
+            settings.showContactsTab = !settings.showContactsTab
+            return settings
+        }).start(completed: {
             let _ = updateNiceSettingsInteractively(accountManager: context.sharedContext.accountManager, { settings in
                 var settings = settings
-                settings.maxFilters = value
+                settings.showContactsTab = !settings.showContactsTab
                 return settings
-            }).start()
+            }).start(completed: {
+                print("COMPLETED CONTACTS")
+            })
         })
-        controller.present(filtersController, in: .window(.root))
+        
     }
     )
     
@@ -410,16 +436,10 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
             return value
     }
     
+    let niceSettings = getNiceSettings(accountManager: context.sharedContext.accountManager)
+    
     let signal = combineLatest(context.sharedContext.presentationData, context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.niceSettings]), showCallsTab, statePromise.get())
         |> map { presentationData, sharedData, showCalls, state -> (ItemListControllerState, (ItemListNodeState<NiceFeaturesControllerEntry>, NiceFeaturesControllerEntry.ItemGenerationArguments)) in
-            
-            let niceSettings: NiceSettings
-            
-            if let value = sharedData.entries[ApplicationSpecificSharedDataKeys.niceSettings] as? NiceSettings {
-                niceSettings = value
-            } else {
-                niceSettings = NiceSettings.defaultSettings
-            }
             
             let entries = niceFeaturesControllerEntries(niceSettings: niceSettings, showCalls: showCalls, presentationData: presentationData)
             

@@ -76,6 +76,7 @@ public class ChatListController: TelegramController, UIViewControllerPreviewingD
                 let _ = updateNiceSettingsInteractively(accountManager: accountManager, { settings in
                     var settings = settings
                     let index = self?.filterIndex ?? 0
+                    SimplyNiceSettings().chatFilters[Int(index)] = f
                     settings.chatFilters[Int(index)] = f
                     settings.currentFilter = index
                     return settings

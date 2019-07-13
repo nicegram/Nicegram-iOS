@@ -99,11 +99,11 @@ public final class TelegramRootController: NavigationController {
         if showCallsTab {
             controllers.append(callListController)
         }
-        if niceSettings.maxFilters > 0 {
+        if SimplyNiceSettings().maxFilters > 0 {
             var filControllers: [ChatListController] = []
-            for (index, filter) in niceSettings.chatFilters.enumerated() {
+            for (index, filter) in SimplyNiceSettings().chatFilters.enumerated() {
                 // Break if max filters
-                if index + 1 > niceSettings.maxFilters {
+                if index + 1 > SimplyNiceSettings().maxFilters {
                     break
                 }
                 filControllers.append(ChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, filter: filter, filterIndex: Int32(index)))
@@ -153,11 +153,11 @@ public final class TelegramRootController: NavigationController {
             controllers.append(self.callListController!)
         }
         
-        if niceSettings.maxFilters > 0 {
+        if SimplyNiceSettings().maxFilters > 0 {
             var filControllers: [ChatListController] = []
-            for (index, filter) in niceSettings.chatFilters.enumerated() {
+            for (index, filter) in SimplyNiceSettings().chatFilters.enumerated() {
                 // Break if max filters
-                if index + 1 > niceSettings.maxFilters {
+                if index + 1 > SimplyNiceSettings().maxFilters {
                     break
                 }
                 filControllers.append(ChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, filter: filter, filterIndex: Int32(index)))
