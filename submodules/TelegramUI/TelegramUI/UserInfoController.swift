@@ -387,8 +387,8 @@ private enum UserInfoEntry: ItemListNodeEntry {
                 return ItemListCallListItem(theme: theme, strings: strings, dateTimeFormat: dateTimeFormat, messages: messages, sectionId: self.section, style: .plain)
             case let .about(theme, peer, text, value):
                 var enabledEntityTypes: EnabledEntityTypes = []
-                if let peer = peer as? TelegramUser, let _ = peer.botInfo {
-                    enabledEntityTypes = [.url, .mention, .hashtag]
+                if let peer = peer as? TelegramUser {
+                    enabledEntityTypes = [.url, .mention, .hashtag, .phoneNumber, .external]
                 }
                 return ItemListTextWithLabelItem(theme: theme, label: text, text: foldMultipleLineBreaks(value), enabledEntityTypes: enabledEntityTypes, multiline: true, sectionId: self.section, action: nil, longTapAction: {
                     arguments.displayAboutContextMenu(value)
