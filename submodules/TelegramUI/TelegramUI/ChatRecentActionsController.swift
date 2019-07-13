@@ -49,6 +49,8 @@ final class ChatRecentActionsController: TelegramController {
         }, forwardSelectedMessages: {
         }, forwardCurrentForwardMessages: {
         }, forwardMessages: { _ in
+        }, cloudSelectedMessages: {
+        }, cloudMessages: { _ in
         }, shareSelectedMessages: {
         }, updateTextInputStateAndMode: { _ in
         }, updateInputModeAndDismissedButtonKeyboardMessageId: { _ in
@@ -100,6 +102,7 @@ final class ChatRecentActionsController: TelegramController {
         }, requestStopPollInMessage: { _ in
         }, updateInputLanguage: { _ in
         }, gotoPin: {
+        }, dismissInput: {
         }, unarchiveChat: {
         }, openLinkEditing: {  
         }, reportPeerIrrelevantGeoLocation: {

@@ -186,8 +186,18 @@ func stringWithAppliedEntities(_ text: String, entities: [MessageTextEntity], ba
                     nsString = text as NSString
                 }
                 string.addAttribute(NSAttributedStringKey(rawValue: TelegramTextAttributes.BotCommand), value: nsString!.substring(with: range), range: range)
-            case .Code, .Pre:
+            case .Pre:
                 string.addAttribute(NSAttributedStringKey.font, value: fixedFont, range: range)
+                if nsString == nil {
+                    nsString = text as NSString
+                }
+                string.addAttribute(NSAttributedStringKey(rawValue: TelegramTextAttributes.Pre), value: nsString!.substring(with: range), range: range)
+            case .Code:
+                string.addAttribute(NSAttributedStringKey.font, value: fixedFont, range: range)
+                if nsString == nil {
+                    nsString = text as NSString
+                }
+                string.addAttribute(NSAttributedStringKey(rawValue: TelegramTextAttributes.Code), value: nsString!.substring(with: range), range: range)            
             case let .Custom(type):
                 if type == ApplicationSpecificEntityType.Timecode {
                     string.addAttribute(NSAttributedStringKey.foregroundColor, value: linkColor, range: range)

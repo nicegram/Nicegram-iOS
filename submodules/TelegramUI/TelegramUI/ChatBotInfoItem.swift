@@ -113,7 +113,7 @@ final class ChatBotInfoItemNode: ListViewItemNode {
                         break
                     case .ignore:
                         return .fail
-                    case .url, .peerMention, .textMention, .botCommand, .hashtag, .instantPage, .wallpaper, .call, .openMessage, .timecode, .tooltip:
+                    case .url, .peerMention, .textMention, .botCommand, .hashtag, .code, .pre, .instantPage, .wallpaper, .call, .openMessage, .timecode, .tooltip:
                         return .waitForSingleTap
                 }
             }
@@ -229,7 +229,9 @@ final class ChatBotInfoItemNode: ListViewItemNode {
                         TelegramTextAttributes.PeerMention,
                         TelegramTextAttributes.PeerTextMention,
                         TelegramTextAttributes.BotCommand,
-                        TelegramTextAttributes.Hashtag
+                        TelegramTextAttributes.Hashtag,
+                        TelegramTextAttributes.Code,
+                        TelegramTextAttributes.Pre
                     ]
                     for name in possibleNames {
                         if let _ = attributes[NSAttributedStringKey(rawValue: name)] {
@@ -277,6 +279,10 @@ final class ChatBotInfoItemNode: ListViewItemNode {
                 return .botCommand(botCommand)
             } else if let hashtag = attributes[NSAttributedStringKey(rawValue: TelegramTextAttributes.Hashtag)] as? TelegramHashtag {
                 return .hashtag(hashtag.peerName, hashtag.hashtag)
+            } else if let code = attributes[NSAttributedStringKey(rawValue: TelegramTextAttributes.Code)] as? String {
+                return .code(code)
+            } else if let pre = attributes[NSAttributedStringKey(rawValue: TelegramTextAttributes.Pre)] as? String {
+                return .pre(pre)
             } else {
                 return .none
             }

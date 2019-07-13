@@ -4,9 +4,11 @@ import AsyncDisplayKit
 
 public class ActionSheetTextItem: ActionSheetItem {
     public let title: String
+    public let alignment: NSTextAlignment
     
-    public init(title: String) {
+    public init(title: String, alignment: NSTextAlignment = .center) {
         self.title = title
+        self.alignment = alignment
     }
     
     public func node(theme: ActionSheetControllerTheme) -> ActionSheetItemNode {
@@ -52,7 +54,7 @@ public class ActionSheetTextNode: ActionSheetItemNode {
     func setItem(_ item: ActionSheetTextItem) {
         self.item = item
         
-        self.label.attributedText = NSAttributedString(string: item.title, font: ActionSheetTextNode.defaultFont, textColor: self.theme.secondaryTextColor, paragraphAlignment: .center)
+        self.label.attributedText = NSAttributedString(string: item.title, font: ActionSheetTextNode.defaultFont, textColor: self.theme.secondaryTextColor, paragraphAlignment: item.alignment)
         
         self.setNeedsLayout()
     }

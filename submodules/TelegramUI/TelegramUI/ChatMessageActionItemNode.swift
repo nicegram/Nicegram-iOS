@@ -625,7 +625,9 @@ class ChatMessageActionBubbleContentNode: ChatMessageBubbleContentNode {
                         TelegramTextAttributes.PeerMention,
                         TelegramTextAttributes.PeerTextMention,
                         TelegramTextAttributes.BotCommand,
-                        TelegramTextAttributes.Hashtag
+                        TelegramTextAttributes.Hashtag,
+                        TelegramTextAttributes.Code,
+                        TelegramTextAttributes.Pre
                     ]
                     for name in possibleNames {
                         if let _ = attributes[NSAttributedStringKey(rawValue: name)] {
@@ -683,6 +685,10 @@ class ChatMessageActionBubbleContentNode: ChatMessageBubbleContentNode {
                 return .botCommand(botCommand)
             } else if let hashtag = attributes[NSAttributedStringKey(rawValue: TelegramTextAttributes.Hashtag)] as? TelegramHashtag {
                 return .hashtag(hashtag.peerName, hashtag.hashtag)
+            } else if let code = attributes[NSAttributedStringKey(rawValue: TelegramTextAttributes.Code)] as? String {
+                return .code(code)
+            } else if let pre = attributes[NSAttributedStringKey(rawValue: TelegramTextAttributes.Pre)] as? String {
+                return .pre(pre)
             }
         }
         if let imageNode = imageNode, imageNode.frame.contains(point) {

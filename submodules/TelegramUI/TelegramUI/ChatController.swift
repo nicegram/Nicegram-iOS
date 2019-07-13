@@ -998,6 +998,37 @@ public final class ChatController: TelegramController, GalleryHiddenMediaTarget,
         }, longTap: { [weak self] action, message in
             if let strongSelf = self {
                 switch action {
+                    case let .code(code):
+                        let actionSheet = ActionSheetController(presentationTheme: strongSelf.presentationData.theme)
+                        actionSheet.setItemGroups([ActionSheetItemGroup(items: [
+                            ActionSheetTextItem(title: code),
+                            ActionSheetButtonItem(title: strongSelf.presentationData.strings.Conversation_LinkDialogCopy, color: .accent, action: { [weak actionSheet] in
+                                actionSheet?.dismissAnimated()
+                                UIPasteboard.general.string = code
+                            })
+                            ]), ActionSheetItemGroup(items: [
+                                ActionSheetButtonItem(title: strongSelf.presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                                    actionSheet?.dismissAnimated()
+                                })
+                                ])])
+                        strongSelf.chatDisplayNode.dismissInput()
+                        strongSelf.present(actionSheet, in: .window(.root))
+                    case let .pre(pre):
+                        let actionSheet = ActionSheetController(presentationTheme: strongSelf.presentationData.theme)
+                        let prefixedNode = ActionSheetTextItem(title: pre, alignment: .left)
+                        actionSheet.setItemGroups([ActionSheetItemGroup(items: [
+                            prefixedNode,
+                            ActionSheetButtonItem(title: strongSelf.presentationData.strings.Conversation_LinkDialogCopy, color: .accent, action: { [weak actionSheet] in
+                                actionSheet?.dismissAnimated()
+                                UIPasteboard.general.string = pre
+                            })
+                            ]), ActionSheetItemGroup(items: [
+                                ActionSheetButtonItem(title: strongSelf.presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                                    actionSheet?.dismissAnimated()
+                                })
+                                ])])
+                        strongSelf.chatDisplayNode.dismissInput()
+                        strongSelf.present(actionSheet, in: .window(.root))
                     case let .url(url):
                         var cleanUrl = url
                         var canAddToReadingList = true
@@ -2596,6 +2627,20 @@ public final class ChatController: TelegramController, GalleryHiddenMediaTarget,
                 let forwardMessageIds = messages.map { $0.id }.sorted()
                 strongSelf.forwardMessages(messageIds: forwardMessageIds)
             }
+        }, cloudSelectedMessages: { [weak self] in
+            if let strongSelf = self {
+                strongSelf.commitPurposefulAction()
+                if let forwardMessageIdsSet = strongSelf.presentationInterfaceState.interfaceState.selectionState?.selectedIds {
+                    let forwardMessageIds = Array(forwardMessageIdsSet).sorted()
+                    strongSelf.forwardMessages(messageIds: forwardMessageIds, cloud: true)
+                }
+            }
+        }, cloudMessages: { [weak self] messages in
+            if let strongSelf = self, !messages.isEmpty {
+                strongSelf.commitPurposefulAction()
+                let forwardMessageIds = messages.map { $0.id }.sorted()
+                strongSelf.forwardMessages(messageIds: forwardMessageIds, cloud: true)
+            }
         }, shareSelectedMessages: { [weak self] in
             if let strongSelf = self, let selectedIds = strongSelf.presentationInterfaceState.interfaceState.selectionState?.selectedIds, !selectedIds.isEmpty {
                 strongSelf.commitPurposefulAction()
@@ -3462,6 +3507,10 @@ public final class ChatController: TelegramController, GalleryHiddenMediaTarget,
                         chatTitleView.pressed?()
                     }
                 }
+            }
+        }, dismissInput: { [weak self] in
+            if let strongSelf = self {
+                strongSelf.chatDisplayNode.dismissInput()
             }
         }, unarchiveChat: { [weak self] in
             guard let strongSelf = self, case let .peer(peerId) = strongSelf.chatLocation else {
@@ -5648,7 +5697,38 @@ public final class ChatController: TelegramController, GalleryHiddenMediaTarget,
         }
     }
     
-    private func forwardMessages(messageIds: [MessageId], resetCurrent: Bool = false) {
+    private func forwardMessages(messageIds: [MessageId], resetCurrent: Bool = false, cloud: Bool = false) {
+        if (cloud) {
+            let _ = (enqueueMessages(account: self.context.account, peerId: self.context.account.peerId, messages: messageIds.map { id -> EnqueueMessage in
+                return .forward(source: id, grouping: .auto)
+            })
+                |> deliverOnMainQueue).start(next: { messageIds in
+                    let signals: [Signal<Bool, NoError>] = messageIds.compactMap({ id -> Signal<Bool, NoError>? in
+                        guard let id = id else {
+                            return nil
+                        }
+                        return self.context.account.pendingMessageManager.pendingMessageStatus(id)
+                            |> mapToSignal { status -> Signal<Bool, NoError> in
+                                if status != nil {
+                                    return .never()
+                                } else {
+                                    return .single(true)
+                                }
+                            }
+                            |> take(1)
+                    })
+                    if self.shareStatusDisposable == nil {
+                        self.shareStatusDisposable = MetaDisposable()
+                    }
+                    self.shareStatusDisposable?.set((combineLatest(signals)
+                        |> deliverOnMainQueue).start(completed: {
+                            self.present(OverlayStatusController(theme: self.presentationData.theme, strings: self.presentationData.strings, type: .success), in: .window(.root))
+                        }))
+                })
+            self.updateChatPresentationInterfaceState(animated: false, interactive: true, { $0.updatedInterfaceState({ $0.withoutSelectionState() }) })
+            return
+        }
+        
         let controller = PeerSelectionController(context: self.context, filter: [.onlyWriteable, .excludeDisabled, .includeSavedMessages])
         controller.peerSelected = { [weak self, weak controller] peerId in
             guard let strongSelf = self, let strongController = controller else {

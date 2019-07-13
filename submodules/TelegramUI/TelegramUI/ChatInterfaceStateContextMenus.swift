@@ -528,6 +528,24 @@ func contextMenuForChatPresentationIntefaceState(chatPresentationInterfaceState:
                 }
             }
         }
+        
+        if let peer = message.peers[message.id.peerId] as? TelegramChannel {
+            if let user = message.author as? TelegramUser {
+                if (user.id != context.account.peerId) && peer.hasPermission(.banMembers) {
+                    let banDisposables = DisposableDict<PeerId>()
+                    // TODO: Check is user an admin?
+                    actions.append(.context(ContextMenuAction(content: .text(title: chatPresentationInterfaceState.strings.Conversation_ContextMenuBan, accessibilityLabel: chatPresentationInterfaceState.strings.Conversation_ContextMenuBan), action: {
+                        interfaceInteraction.dismissInput()
+                        banDisposables.set((fetchChannelParticipant(account: context.account, peerId: peer.id, participantId: user.id)
+                            |> deliverOnMainQueue).start(next: { participant in
+                                controllerInteraction.presentController(channelBannedMemberController(context: context, peerId: peer.id, memberId: message.author!.id, initialParticipant: participant, updated: { _ in }, upgradedToSupergroup: { _, f in f() }), ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+                            }), forKey: user.id)
+                        
+                    })))
+                }
+            }
+        }
+        
         if data.canSelect {
             actions.append(.context(ContextMenuAction(content: .text(title: chatPresentationInterfaceState.strings.Conversation_ContextMenuMore, accessibilityLabel: chatPresentationInterfaceState.strings.Conversation_ContextMenuMore.replacingOccurrences(of: "...", with: "")), action: {
                 interfaceInteraction.beginMessageSelection(selectAll ? messages.map { $0.id } : [message.id])
@@ -574,6 +592,10 @@ func contextMenuForChatPresentationIntefaceState(chatPresentationInterfaceState:
                     interfaceInteraction.forwardMessages(selectAll ? messages : [message])
             })))
         }
+        
+        actions.append(.sheet(ChatMessageContextMenuSheetAction(color: .accent, title: l("Chat.SaveToCloud", chatPresentationInterfaceState.strings.baseLanguageCode), action: {
+            interfaceInteraction.cloudMessages(selectAll ? messages : [message])
+        })))
         
         if data.messageActions.options.contains(.report) {
             actions.append(.sheet(ChatMessageContextMenuSheetAction(color: .accent, title: chatPresentationInterfaceState.strings.Conversation_ContextMenuReport, action: {

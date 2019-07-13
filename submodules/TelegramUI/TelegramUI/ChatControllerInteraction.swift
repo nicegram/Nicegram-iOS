@@ -37,6 +37,8 @@ public enum ChatControllerInteractionLongTapAction {
     case peerMention(PeerId, String)
     case command(String)
     case hashtag(String)
+    case code(String)
+    case pre(String)
     case timecode(Double, String)
 }
 

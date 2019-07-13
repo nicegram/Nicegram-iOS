@@ -226,6 +226,35 @@ final class ChatRecentActionsControllerNode: ViewControllerTracingNode {
         }, presentGlobalOverlayController: { _, _ in }, callPeer: { _ in }, longTap: { [weak self] action, message in
             if let strongSelf = self {
                 switch action {
+                    case let .code(code):
+                        let actionSheet = ActionSheetController(presentationTheme: strongSelf.presentationData.theme)
+                        actionSheet.setItemGroups([ActionSheetItemGroup(items: [
+                            ActionSheetTextItem(title: code),
+                            ActionSheetButtonItem(title: strongSelf.presentationData.strings.Conversation_LinkDialogCopy, color: .accent, action: { [weak actionSheet] in
+                                actionSheet?.dismissAnimated()
+                                UIPasteboard.general.string = code
+                            })
+                            ]), ActionSheetItemGroup(items: [
+                                ActionSheetButtonItem(title: strongSelf.presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                                    actionSheet?.dismissAnimated()
+                                })
+                                ])])
+                        strongSelf.presentController(actionSheet, nil)
+                    case let .pre(pre):
+                        let actionSheet = ActionSheetController(presentationTheme: strongSelf.presentationData.theme)
+                        let prefixedNode = ActionSheetTextItem(title: pre, alignment: .left)
+                        actionSheet.setItemGroups([ActionSheetItemGroup(items: [
+                            prefixedNode,
+                            ActionSheetButtonItem(title: strongSelf.presentationData.strings.Conversation_LinkDialogCopy, color: .accent, action: { [weak actionSheet] in
+                                actionSheet?.dismissAnimated()
+                                UIPasteboard.general.string = pre
+                            })
+                            ]), ActionSheetItemGroup(items: [
+                                ActionSheetButtonItem(title: strongSelf.presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                                    actionSheet?.dismissAnimated()
+                                })
+                                ])])
+                        strongSelf.presentController(actionSheet, nil)
                     case let .url(url):
                         var cleanUrl = url
                         let canOpenIn = availableOpenInOptions(context: strongSelf.context, item: .url(url: url)).count > 1

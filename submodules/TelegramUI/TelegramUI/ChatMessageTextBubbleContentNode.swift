@@ -393,6 +393,10 @@ class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                 return .hashtag(hashtag.peerName, hashtag.hashtag)
             } else if let timecode = attributes[NSAttributedStringKey(rawValue: TelegramTextAttributes.Timecode)] as? TelegramTimecode {
                 return .timecode(timecode.time, timecode.text)
+            } else if let code = attributes[NSAttributedStringKey(rawValue: TelegramTextAttributes.Code)] as? String {
+                return .code(code)
+            } else if let pre = attributes[NSAttributedStringKey(rawValue: TelegramTextAttributes.Pre)] as? String {
+                return .pre(pre)
             } else {
                 return .none
             }
@@ -413,7 +417,9 @@ class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                         TelegramTextAttributes.PeerTextMention,
                         TelegramTextAttributes.BotCommand,
                         TelegramTextAttributes.Hashtag,
-                        TelegramTextAttributes.Timecode
+                        TelegramTextAttributes.Timecode,
+                        TelegramTextAttributes.Code,
+                        TelegramTextAttributes.Pre
                     ]
                     for name in possibleNames {
                         if let _ = attributes[NSAttributedStringKey(rawValue: name)] {

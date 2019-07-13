@@ -16,13 +16,14 @@
 "NiceFeatures.Tabs.Header" = "TABS";
 "NiceFeatures.Tabs.ShowContacts" = "Show Contacts Tab";
 "NiceFeatures.ChatScreen.Header" = "CHAT SCREEN";
+"NiceFeatures.Filters.Header" = "FILTERS (TABS)";
+"NiceFeatures.Filters.Notice" = "Select the number of tabs with filters.\nLongtap each tab to change filter";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "Save to Cloud";
 
 /*Open Pin*/
 "Chat.OpenPin" = "Show Pin";
-
 
 /*Folders*/
 // "Folder.DefaultName" = "Folder";
