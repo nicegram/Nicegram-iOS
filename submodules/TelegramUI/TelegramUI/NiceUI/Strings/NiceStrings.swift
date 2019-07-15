@@ -39,5 +39,16 @@ public func l(_ key: String, _ locale: String = "en") -> String {
     if !niceLocales.keys.contains(lang) {
         lang = "en"
     }
-    return niceLocales[lang]?[key] ?? niceLocales["en"]?[key] ?? key
+    
+    var result = "[MISSING STRING]"
+    
+    if let res = niceLocales[lang]?[key], !res.isEmpty {
+        result = res
+    } else if let res = niceLocales["en"]?[key], !res.isEmpty {
+        result = res
+    } else if !key.isEmpty {
+        result = key
+    }
+    
+    return result
 }
