@@ -6,7 +6,7 @@
 "ChatFilter.Private" = "Utenti";
 "ChatFilter.Groups" = "Gruppi";
 "ChatFilter.Unread" = "Non letti";
-"ChatFilter.Unmuted" = "Unmuted";
+"ChatFilter.Unmuted" = "Non silenziate";
 "ChatFilter.Favourites" = "Preferiti";
 
 /*Nice Features*/
@@ -17,7 +17,12 @@
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Adesivi animati";
 
 /*Save to Cloud*/
-"Chat.SaveToCloud" = "Salva su cloud";
+"Chat.SaveToCloud" = "Salva sul cloud";
 
 /*Open Pin*/
 "Chat.OpenPin" = "Mostra pin";
+"ChatFilter.Admin" = "";
+"NiceFeatures.Notifications.Fix" = "";
+"NiceFeatures.Notifications.FixNotice" = "";
+"NiceFeatures.Filters.Header" = "";
+"NiceFeatures.Filters.Notice" = "";
