@@ -21,3 +21,8 @@
 
 /*Open Pin*/
 "Chat.OpenPin" = "開啟置頂";
+"ChatFilter.Admin" = "";
+"NiceFeatures.Notifications.Fix" = "";
+"NiceFeatures.Notifications.FixNotice" = "";
+"NiceFeatures.Filters.Header" = "";
+"NiceFeatures.Filters.Notice" = "";
