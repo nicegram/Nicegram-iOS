@@ -909,9 +909,33 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Us
     }, shareContact: {
         shareContactImpl?()
     }, shareMyContact: {
-        shareMyContactImpl?()
+        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+        let actionSheet = ActionSheetController(presentationTheme: presentationData.theme)
+        actionSheet.setItemGroups([ActionSheetItemGroup(items: [
+            ActionSheetButtonItem(title: presentationData.strings.UserInfo_ShareMyContactInfo, color: .destructive, action: { [weak actionSheet] in
+                actionSheet?.dismissAnimated()
+                shareMyContactImpl?()
+            }),
+            ]), ActionSheetItemGroup(items: [
+                ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                    actionSheet?.dismissAnimated()
+                })
+                ])])
+        presentControllerImpl?(actionSheet, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
     }, startSecretChat: {
-        startSecretChatImpl?()
+        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+        let actionSheet = ActionSheetController(presentationTheme: presentationData.theme)
+        actionSheet.setItemGroups([ActionSheetItemGroup(items: [
+            ActionSheetButtonItem(title: presentationData.strings.UserInfo_StartSecretChat, color: .destructive, action: { [weak actionSheet] in
+                actionSheet?.dismissAnimated()
+                startSecretChatImpl?()
+            }),
+            ]), ActionSheetItemGroup(items: [
+                ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                    actionSheet?.dismissAnimated()
+                })
+                ])])
+        presentControllerImpl?(actionSheet, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
     }, changeNotificationMuteSettings: {
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
         let _ = (context.account.postbox.transaction { transaction -> (TelegramPeerNotificationSettings, GlobalNotificationSettings) in
@@ -1084,7 +1108,19 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Us
     }, displayCopyContextMenu: { tag, phone in
         displayCopyContextMenuImpl?(tag, phone)
     }, call: {
-        requestCallImpl()
+        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+        let actionSheet = ActionSheetController(presentationTheme: presentationData.theme)
+        actionSheet.setItemGroups([ActionSheetItemGroup(items: [
+            ActionSheetButtonItem(title: presentationData.strings.Conversation_Call, color: .destructive, action: { [weak actionSheet] in
+                actionSheet?.dismissAnimated()
+                requestCallImpl()
+            }),
+            ]), ActionSheetItemGroup(items: [
+                ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                    actionSheet?.dismissAnimated()
+                })
+                ])])
+        presentControllerImpl?(actionSheet, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
     }, openCallMenu: { number in
         let _ = (getUserPeer(postbox: context.account.postbox, peerId: peerId)
         |> deliverOnMainQueue).start(next: { peer, _ in
