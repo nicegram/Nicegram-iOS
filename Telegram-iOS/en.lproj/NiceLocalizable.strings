@@ -8,16 +8,17 @@
 "ChatFilter.Unread" = "Unread";
 "ChatFilter.Unmuted" = "Unmuted";
 "ChatFilter.Favourites" = "Favourites";
+"ChatFilter.Admin" = "Admin";
 
 /*Nice Features*/
 "NiceFeatures.Title" = "Nicegram";
-"NiceFeatures.Notifications.Fix" = "Fix Notifications";
-"NiceFeatures.Notifications.FixNotice" = "Use this if you get notifications from muted chats.\nIf using multiple accounts, account title in notification will be disabled.";
+"NiceFeatures.Notifications.Fix" = "Remove Unwanted Notifications";
+"NiceFeatures.Notifications.FixNotice" = "Useful if you get notifications from muted chats.\nReply from notifications, account labels and media previews will be disabled.";
 "NiceFeatures.Tabs.Header" = "TABS";
 "NiceFeatures.Tabs.ShowContacts" = "Show Contacts Tab";
 "NiceFeatures.ChatScreen.Header" = "CHAT SCREEN";
 "NiceFeatures.Filters.Header" = "FILTERS (TABS)";
-"NiceFeatures.Filters.Notice" = "Select the number of tabs with filters.\nLongtap each tab to change filter";
+"NiceFeatures.Filters.Notice" = "Select the number of custom tabs.\nLongtap on tab to change filter.";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "Save to Cloud";
@@ -32,3 +33,5 @@
 // Create 📁
 // "Folder.Create" = "Create Folder";
 // "Folder.Created" = "Folder Created";
+// "Folder.Edit" = "Edit Folder";
+// "Folder.Add" = "Add Chats";
