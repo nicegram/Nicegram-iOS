@@ -147,10 +147,19 @@ public func setNiceSettings(accountManager: AccountManager, newNiceSettings: Nic
 }
 
 // I'm fucking tired of these "Disposables", "transactions" and other shit, really. I'm not an iOS dev at all. Just want to make things nice...
-
+public func setDefaults() {
+    let UD = UserDefaults(suiteName: "SimplyNiceSettings")
+    UD?.register(defaults: ["maxFilters": 2])
+    UD?.register(defaults: ["chatFilters": [1 << 6, 1 << 5]])
+}
 
 public class SimplyNiceSettings {
     let UD = UserDefaults(suiteName: "SimplyNiceSettings")
+    
+    init() {
+        setDefaults()
+    }
+    
     var maxFilters: Int32 {
         // let k = "maxFilters"
         get {
