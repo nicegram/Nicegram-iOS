@@ -46,8 +46,9 @@ public struct NiceChatListNodePeersFilter: OptionSet {
     public static let onlyNonMuted = NiceChatListNodePeersFilter(rawValue: 1 << 5)
     public static let onlyUnread = NiceChatListNodePeersFilter(rawValue: 1 << 6)
     // public static let onlyFavourites = NiceChatListNodePeersFilter(rawValue: 1 << 7)
+    public static let onlyAdmin = NiceChatListNodePeersFilter(rawValue: 1 << 8)
     
-    public static let all: [NiceChatListNodePeersFilter] = [.onlyBots, .onlyChannels, .onlyGroups, .onlyPrivateChats, .onlyUnread, .onlyNonMuted]
+    public static let all: [NiceChatListNodePeersFilter] = [.onlyAdmin, .onlyBots, .onlyChannels, .onlyGroups, .onlyPrivateChats, .onlyUnread, .onlyNonMuted]
 }
 
 enum ChatListNodeMode {
@@ -610,6 +611,14 @@ final class ChatListNode: ListView {
                                 if (readState != nil) {
                                     return readState!.isUnread
                                 }
+                            } else if filter.contains(.onlyAdmin) {
+                                var isAdmin: Bool = false
+                                if let peer = peer.chatMainPeer as? TelegramChannel {
+                                    if peer.adminRights != nil || peer.flags == TelegramChannelFlags.isCreator {
+                                        isAdmin = true
+                                    }
+                                }
+                                return isAdmin
                             }
                             
                             return false
