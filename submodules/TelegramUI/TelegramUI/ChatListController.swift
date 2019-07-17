@@ -1004,7 +1004,7 @@ public class ChatListController: TelegramController, UIViewControllerPreviewingD
                             }
                         }
                     }
-                    toolbar = Toolbar(leftAction: leftAction, rightAction: ToolbarAction(title: presentationData.strings.Common_Delete, isEnabled: options.delete), middleAction: ToolbarAction(title: l("Folder.Create", presentationData.strings.baseLanguageCode), isEnabled: archiveEnabled))
+                    toolbar = Toolbar(leftAction: leftAction, rightAction: ToolbarAction(title: presentationData.strings.Common_Delete, isEnabled: options.delete), middleAction: ToolbarAction(title: presentationData.strings.ChatList_ArchiveAction, isEnabled: archiveEnabled))
                 }
             } else {
                 if let (options, peerIds) = peerIdsAndOptions {
