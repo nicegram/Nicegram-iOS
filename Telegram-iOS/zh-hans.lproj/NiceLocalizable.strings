@@ -30,6 +30,6 @@
 "Chat.OpenPin" = "显示置顶";
 "ChatFilter.Admin" = "管理员";
 "NiceFeatures.Notifications.Fix" = "禁用不想要的通知";
-"NiceFeatures.Notifications.FixNotice" = "如果你从关闭通知收到一个通知,是非常有用的.\n来自通知,帐户标签和媒体预览的回复将被禁用.";
+"NiceFeatures.Notifications.FixNotice" = "如果在关闭通知群组/频道仍然会收到通知,那开启此功能可以禁用此通知.\n开启此功能,在通知界面回复消息,帐户标签和媒体预览将会被禁用.";
 "NiceFeatures.Filters.Header" = "标签过滤";
-"NiceFeatures.Filters.Notice" = "选择自定义标签的数量.\n长按标签更改过滤.";
+"NiceFeatures.Filters.Notice" = "选择自定义标签的数量.\n长按标签更改标签选项.";
