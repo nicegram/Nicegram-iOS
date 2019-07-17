@@ -21,8 +21,8 @@
 
 /*Open Pin*/
 "Chat.OpenPin" = "開啟置頂";
-"ChatFilter.Admin" = "";
-"NiceFeatures.Notifications.Fix" = "";
-"NiceFeatures.Notifications.FixNotice" = "";
-"NiceFeatures.Filters.Header" = "";
-"NiceFeatures.Filters.Notice" = "";
+"ChatFilter.Admin" = "管理員";
+"NiceFeatures.Notifications.Fix" = "關閉所有通知";
+"NiceFeatures.Notifications.FixNotice" = "如果您想將「關閉通知」的對話完全禁音，這將非常有用。\n來自回覆、@username、媒體預覽的通知將被停用。";
+"NiceFeatures.Filters.Header" = "過濾標籤";
+"NiceFeatures.Filters.Notice" = "選擇自訂標籤的數量。\n長按標籤來更改過濾。";
