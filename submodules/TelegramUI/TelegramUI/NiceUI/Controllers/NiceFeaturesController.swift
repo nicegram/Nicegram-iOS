@@ -20,9 +20,9 @@ private final class NiceFeaturesControllerArguments {
     let toggleFixNotifications: (Bool) -> Void
     let updateShowCallsTab: (Bool) -> Void
     let changeFiltersAmount: (Int32) -> Void
-    let toggleShowTabNames: (Bool) -> Void
+    let toggleShowTabNames: (Bool, String) -> Void
     
-    init(togglePinnedMessage:@escaping (Bool) -> Void, toggleShowContactsTab:@escaping (Bool) -> Void, toggleFixNotifications:@escaping (Bool) -> Void, updateShowCallsTab:@escaping (Bool) -> Void, changeFiltersAmount:@escaping (Int32) -> Void, toggleShowTabNames:@escaping (Bool) -> Void) {
+    init(togglePinnedMessage:@escaping (Bool) -> Void, toggleShowContactsTab:@escaping (Bool) -> Void, toggleFixNotifications:@escaping (Bool) -> Void, updateShowCallsTab:@escaping (Bool) -> Void, changeFiltersAmount:@escaping (Int32) -> Void, toggleShowTabNames:@escaping (Bool, String) -> Void) {
         self.togglePinnedMessage = togglePinnedMessage
         self.toggleShowContactsTab = toggleShowContactsTab
         self.toggleFixNotifications = toggleFixNotifications
@@ -57,7 +57,7 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
     case tabsHeader(PresentationTheme, String)
     case showContactsTab(PresentationTheme, String, Bool)
     case duplicateShowCalls(PresentationTheme, String, Bool)
-    case showTabNames(PresentationTheme, String, Bool)
+    case showTabNames(PresentationTheme, String, Bool, String)
     
     case filtersHeader(PresentationTheme, String)
     case filtersAmount(PresentationTheme, String, Int32)
@@ -170,8 +170,8 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
                 return false
             }
             
-        case let .showTabNames(lhsTheme, lhsText, lhsValue):
-            if case let .showTabNames(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
+        case let .showTabNames(lhsTheme, lhsText, lhsValue, lhsLanguage):
+            if case let .showTabNames(rhsTheme, rhsText, rhsValue, rhsLanguage) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue, lhsLanguage == rhsLanguage {
                 return true
             } else {
                 return false
@@ -324,9 +324,9 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return ItemListSwitchItem(theme: theme, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.updateShowCallsTab(value)
             })
-        case let .showTabNames(theme, text, value):
+        case let .showTabNames(theme, text, value, locale):
             return ItemListSwitchItem(theme: theme, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
-                arguments.toggleShowTabNames(value)
+                arguments.toggleShowTabNames(value, locale)
             })
         case let .filtersHeader(theme, text):
             return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
@@ -354,23 +354,25 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
 private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls: Bool, presentationData: PresentationData) -> [NiceFeaturesControllerEntry] {
     var entries: [NiceFeaturesControllerEntry] = []
     
+    let locale = presentationData.strings.baseLanguageCode
+    
     entries.append(.messageNotificationsHeader(presentationData.theme, presentationData.strings.Notifications_Title.uppercased()))
     //entries.append(.pinnedMessageNotification(presentationData.theme, "Pinned Messages", niceSettings.pinnedMessagesNotification))  //presentationData.strings.Nicegram_Settings_Features_PinnedMessages
-    entries.append(.fixNotifications(presentationData.theme, l("NiceFeatures.Notifications.Fix", presentationData.strings.baseLanguageCode), niceSettings.fixNotifications))
-    entries.append(.fixNotificationsNotice(presentationData.theme, l("NiceFeatures.Notifications.FixNotice", presentationData.strings.baseLanguageCode)))
+    entries.append(.fixNotifications(presentationData.theme, l("NiceFeatures.Notifications.Fix", locale), niceSettings.fixNotifications))
+    entries.append(.fixNotificationsNotice(presentationData.theme, l("NiceFeatures.Notifications.FixNotice", locale)))
     
     
-    entries.append(.tabsHeader(presentationData.theme, l("NiceFeatures.Tabs.Header", presentationData.strings.baseLanguageCode)))
-    entries.append(.showContactsTab(presentationData.theme, l("NiceFeatures.Tabs.ShowContacts", presentationData.strings.baseLanguageCode), niceSettings.showContactsTab))
+    entries.append(.tabsHeader(presentationData.theme, l("NiceFeatures.Tabs.Header", locale)))
+    entries.append(.showContactsTab(presentationData.theme, l("NiceFeatures.Tabs.ShowContacts", locale), niceSettings.showContactsTab))
     entries.append(.duplicateShowCalls(presentationData.theme, presentationData.strings.CallSettings_TabIcon, showCalls))
     
-    entries.append(.showTabNames(presentationData.theme, l("NiceFeatures.Tabs.ShowNames", presentationData.strings.baseLanguageCode), SimplyNiceSettings().showTabNames))
+    entries.append(.showTabNames(presentationData.theme, l("NiceFeatures.Tabs.ShowNames", locale), SimplyNiceSettings().showTabNames, locale))
     
-    entries.append(.filtersHeader(presentationData.theme, l("NiceFeatures.Filters.Header", presentationData.strings.baseLanguageCode)))
-    entries.append(.filtersAmount(presentationData.theme, presentationData.strings.baseLanguageCode, SimplyNiceSettings().maxFilters))
-    entries.append(.filtersNotice(presentationData.theme, l("NiceFeatures.Filters.Notice", presentationData.strings.baseLanguageCode)))
-    //entries.append(.chatScreenHeader(presentationData.theme, l(key: "NiceFeatures.ChatScreen.Header", locale: presentationData.strings.baseLanguageCode)))
-    //entries.append(.animatedStickers(presentationData.theme, l(key:  "NiceFeatures.ChatScreen.AnimatedStickers", locale: presentationData.strings.baseLanguageCode), GlobalExperimentalSettings.animatedStickers))
+    entries.append(.filtersHeader(presentationData.theme, l("NiceFeatures.Filters.Header", locale)))
+    entries.append(.filtersAmount(presentationData.theme, locale, SimplyNiceSettings().maxFilters))
+    entries.append(.filtersNotice(presentationData.theme, l("NiceFeatures.Filters.Notice", locale)))
+    //entries.append(.chatScreenHeader(presentationData.theme, l(key: "NiceFeatures.ChatScreen.Header", locale: locale)))
+    //entries.append(.animatedStickers(presentationData.theme, l(key:  "NiceFeatures.ChatScreen.AnimatedStickers", locale: locale), GlobalExperimentalSettings.animatedStickers))
     
     
     return entries
@@ -389,6 +391,7 @@ public func dummyCompleteDisposable() -> Signal<Void, NoError> {
 public func niceFeaturesController(context: AccountContext) -> ViewController {
     let statePromise = ValuePromise(NiceFeaturesSelectionState(), ignoreRepeated: true)
     var dismissImpl: (() -> Void)?
+    var presentControllerImpl: ((ViewController, Any?) -> Void)?
     
     func updateTabs() {
         let _ = updateNiceSettingsInteractively(accountManager: context.sharedContext.accountManager, { settings in
@@ -450,9 +453,13 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
         
         updateTabs()
         
-    }, toggleShowTabNames: { value in
+    }, toggleShowTabNames: { value, locale in
         SimplyNiceSettings().showTabNames = value
         updateTabs()
+        
+        let controller = textAlertController(context: context, title: nil, text: l("Common.RestartRequired", locale), actions: [TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: {preconditionFailure()}),TextAlertAction(type: .genericAction, title: l("Common.Later", locale), action: {})])
+        
+        presentControllerImpl?(controller, nil)
     }
     )
     
@@ -494,6 +501,9 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
     let controller = ItemListController(context: context, state: signal)
     dismissImpl = { [weak controller] in
         controller?.dismiss()
+    }
+    presentControllerImpl = { [weak controller] c, a in
+        controller?.present(c, in: .window(.root), with: a)
     }
     return controller
 }

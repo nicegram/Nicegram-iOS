@@ -220,11 +220,6 @@ public class ChatListController: TelegramController, UIViewControllerPreviewingD
             self.tabBarItem.image = icon
             self.tabBarItem.selectedImage = icon
             
-            if !SimplyNiceSettings().showTabNames {
-                self.tabBarItem.title = ""
-                //self.tabBarItem.imageInsets = UIEdgeInsetsMake(offset, 0, -offset, 0)
-            }
-            
             let leftBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Edit, style: .plain, target: self, action: #selector(self.editPressed))
             leftBarButtonItem.accessibilityLabel = self.presentationData.strings.Common_Edit
             self.navigationItem.leftBarButtonItem = leftBarButtonItem
@@ -496,10 +491,6 @@ public class ChatListController: TelegramController, UIViewControllerPreviewingD
             }
             
             self.tabBarItem.title = title
-            if !SimplyNiceSettings().showTabNames {
-                self.tabBarItem.title = ""
-                //self.tabBarItem.imageInsets = UIEdgeInsetsMake(offset, 0, -offset, 0)
-            }
             let backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.DialogList_Title, style: .plain, target: nil, action: nil)
             backBarButtonItem.accessibilityLabel = self.presentationData.strings.Common_Back
             self.navigationItem.backBarButtonItem = backBarButtonItem

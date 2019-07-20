@@ -219,15 +219,16 @@ class TabBarNode: ASDisplayNode {
     private var theme: TabBarControllerTheme
     private var validLayout: (CGSize, CGFloat, CGFloat, CGFloat)?
     private var horizontal: Bool = false
-    
+    public var showTabNames: Bool
     private var badgeImage: UIImage
     
     let separatorNode: ASDisplayNode
     private var tabBarNodeContainers: [TabBarNodeContainer] = []
     
-    init(theme: TabBarControllerTheme, itemSelected: @escaping (Int, Bool, [ASDisplayNode]) -> Void) {
+    init(theme: TabBarControllerTheme, itemSelected: @escaping (Int, Bool, [ASDisplayNode]) -> Void, showTabNames: Bool = true) {
         self.itemSelected = itemSelected
         self.theme = theme
+        self.showTabNames = showTabNames
         
         self.separatorNode = ASDisplayNode()
         self.separatorNode.backgroundColor = theme.tabBarSeparatorColor
@@ -415,8 +416,13 @@ class TabBarNode: ASDisplayNode {
                 let originX = floor(leftNodeOriginX + CGFloat(i) * distanceBetweenNodes - nodeSize.width / 2.0)
                 let nodeFrame = CGRect(origin: CGPoint(x: originX, y: 4.0), size: nodeSize)
                 transition.updateFrame(node: node, frame: nodeFrame)
-                node.imageNode.frame = CGRect(origin: CGPoint(), size: nodeFrame.size)
-                node.textImageNode.frame = CGRect(origin: CGPoint(), size: nodeFrame.size)
+                if self.showTabNames {
+                    node.imageNode.frame = CGRect(origin: CGPoint(), size: nodeFrame.size)
+                    node.textImageNode.frame = CGRect(origin: CGPoint(), size: nodeFrame.size)
+                } else {
+                    node.imageNode.frame = CGRect(origin: CGPoint(x: 0.0, y: 6.0), size: nodeFrame.size)
+                    node.textImageNode.frame = CGRect(origin: CGPoint(), size: CGSize())
+                }
                 
                 if container.badgeValue != container.appliedBadgeValue {
                     container.appliedBadgeValue = container.badgeValue
