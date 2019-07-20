@@ -11,6 +11,27 @@ public func useSpecialTabBarIcons() -> Bool {
     return (Date(timeIntervalSince1970: 1545642000)...Date(timeIntervalSince1970: 1546387200)).contains(Date())
 }
 
+public func getFilterIcon(filter: NiceChatListNodePeersFilter) -> String {
+    switch (filter) {
+    case .onlyPrivateChats:
+        return "Filters/PersonalChats"
+    case .onlyGroups:
+        return "Filters/GroupChats"
+    case .onlyChannels:
+        return "Filters/Channels"
+    case .onlyBots:
+        return "Filters/Bots"
+    case .onlyNonMuted:
+        return "Filters/Unmuted"
+    case .onlyUnread:
+        return "Filters/UnreadChats"
+    case .onlyAdmin:
+        return "Filters/Admin"
+    default:
+        return "Chat List/Tabs/NY/IconChats"
+    }
+}
+
 private func fixListNodeScrolling(_ listNode: ListView, searchNode: NavigationBarSearchContentNode) -> Bool {
     if searchNode.expansionProgress > 0.0 && searchNode.expansionProgress < 1.0 {
         let scrollToItem: ListViewScrollToItem
@@ -188,10 +209,9 @@ public class ChatListController: TelegramController, UIViewControllerPreviewingD
             self.tabBarItem.title = title
             
             let icon: UIImage?
-            if (useSpecialTabBarIcons()) {
-                icon = UIImage(bundleImageName: "Chat List/Tabs/NY/IconChats")
-                // TODO: icons
-            } else if (self.filter != nil) {
+            if (self.filter != nil) {
+                icon = UIImage(bundleImageName: getFilterIcon(filter: self.filter!))
+            } else if (useSpecialTabBarIcons()) {
                 icon = UIImage(bundleImageName: "Chat List/Tabs/NY/IconChats")
             } else {
                 icon = UIImage(bundleImageName: "Chat List/Tabs/IconChats")
