@@ -151,6 +151,7 @@ public func setDefaults() {
     let UD = UserDefaults(suiteName: "SimplyNiceSettings")
     UD?.register(defaults: ["maxFilters": 2])
     UD?.register(defaults: ["chatFilters": [1 << 6, 1 << 5]])
+    UD?.register(defaults: ["showTabNames": true])
 }
 
 public class SimplyNiceSettings {
@@ -187,5 +188,14 @@ public class SimplyNiceSettings {
             UD?.set(resSet, forKey: "chatFilters")
         }
         
+    }
+    
+    var showTabNames: Bool {
+        get {
+            return UD?.bool(forKey: "showTabNames") ?? true
+        }
+        set {
+            UD?.set(newValue, forKey: "showTabNames")
+        }
     }
 }
