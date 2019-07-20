@@ -11,7 +11,7 @@ public func useSpecialTabBarIcons() -> Bool {
     return (Date(timeIntervalSince1970: 1545642000)...Date(timeIntervalSince1970: 1546387200)).contains(Date())
 }
 
-public func getFilterIcon(filter: NiceChatListNodePeersFilter) -> String {
+public func getFilterIconPath(filter: NiceChatListNodePeersFilter) -> String {
     switch (filter) {
     case .onlyPrivateChats:
         return "Filters/PersonalChats"
@@ -208,9 +208,13 @@ public class ChatListController: TelegramController, UIViewControllerPreviewingD
         if case .root = groupId {
             self.tabBarItem.title = title
             
+            if SimplyNiceSettings().showTabNames {
+                self.tabBarItem.title = nil
+            }
+            
             let icon: UIImage?
             if (self.filter != nil) {
-                icon = UIImage(bundleImageName: getFilterIcon(filter: self.filter!))
+                icon = UIImage(bundleImageName: getFilterIconPath(filter: self.filter!))
             } else if (useSpecialTabBarIcons()) {
                 icon = UIImage(bundleImageName: "Chat List/Tabs/NY/IconChats")
             } else {
@@ -491,6 +495,9 @@ public class ChatListController: TelegramController, UIViewControllerPreviewingD
             }
             
             self.tabBarItem.title = title
+            if SimplyNiceSettings().showTabNames {
+                self.tabBarItem.title = nil
+            }
             let backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.DialogList_Title, style: .plain, target: nil, action: nil)
             backBarButtonItem.accessibilityLabel = self.presentationData.strings.Common_Back
             self.navigationItem.backBarButtonItem = backBarButtonItem

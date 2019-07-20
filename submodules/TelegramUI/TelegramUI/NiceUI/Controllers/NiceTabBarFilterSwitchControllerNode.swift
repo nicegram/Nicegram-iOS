@@ -95,6 +95,7 @@ private protocol AbstractSwitchTabFilterItemNode {
  }*/
 
 private final class SwitchTabFilterItemNode: ASDisplayNode, AbstractSwitchTabFilterItemNode {
+    private let filter: NiceChatListNodePeersFilter
     private let tabName: String
     private let isCurrent: Bool
     private let presentationData: PresentationData
@@ -103,14 +104,15 @@ private final class SwitchTabFilterItemNode: ASDisplayNode, AbstractSwitchTabFil
     private let separatorNode: ASDisplayNode
     private let highlightedBackgroundNode: ASDisplayNode
     private let buttonNode: HighlightTrackingButtonNode
-    private let avatarNode: AvatarNode
+    private let filterIconNode: ASImageNode
     private let titleNode: ImmediateTextNode
     private let checkNode: ASImageNode
     
     private let badgeBackgroundNode: ASImageNode
     private let badgeTitleNode: ImmediateTextNode
     
-    init(tabName: String, isCurrent: Bool, displaySeparator: Bool, presentationData: PresentationData, action: @escaping () -> Void) {
+    init(filter: NiceChatListNodePeersFilter, tabName: String, isCurrent: Bool, displaySeparator: Bool, presentationData: PresentationData, action: @escaping () -> Void) {
+        self.filter = filter
         self.tabName = tabName
         self.isCurrent = isCurrent
         self.presentationData = presentationData
@@ -126,7 +128,8 @@ private final class SwitchTabFilterItemNode: ASDisplayNode, AbstractSwitchTabFil
         
         self.buttonNode = HighlightTrackingButtonNode()
         
-        self.avatarNode = AvatarNode(font: avatarFont)
+        self.filterIconNode = ASImageNode() //AvatarNode(font: avatarFont)
+        self.filterIconNode.image = generateItemListFilterIcon(getFilterIconPath(filter: filter), presentationData.theme.actionSheet.controlAccentColor)
         
         self.titleNode = ImmediateTextNode()
         self.titleNode.maximumNumberOfLines = 1
@@ -146,7 +149,7 @@ private final class SwitchTabFilterItemNode: ASDisplayNode, AbstractSwitchTabFil
         
         self.addSubnode(self.separatorNode)
         self.addSubnode(self.highlightedBackgroundNode)
-        // self.addSubnode(self.avatarNode)
+        self.addSubnode(self.filterIconNode)
         self.addSubnode(self.titleNode)
         self.addSubnode(self.checkNode)
         self.addSubnode(self.badgeBackgroundNode)
@@ -168,7 +171,7 @@ private final class SwitchTabFilterItemNode: ASDisplayNode, AbstractSwitchTabFil
     }
     
     func updateLayout(maxWidth: CGFloat) -> (CGFloat, CGFloat, (CGFloat) -> Void) {
-        let leftInset: CGFloat = 26.0
+        let leftInset: CGFloat = 56.0
         
         let badgeTitleSize = self.badgeTitleNode.updateLayout(CGSize(width: 100.0, height: .greatestFiniteMagnitude))
         let badgeMinSize = self.badgeBackgroundNode.image?.size.width ?? 20.0
@@ -194,6 +197,10 @@ private final class SwitchTabFilterItemNode: ASDisplayNode, AbstractSwitchTabFil
             let badgeBackgroundFrame = CGRect(origin: CGPoint(x: width - rightInset + floor((rightInset - badgeSize.width) / 2.0), y: floor((height - badgeSize.height) / 2.0)), size: badgeSize)
             self.badgeBackgroundNode.frame = badgeBackgroundFrame
             self.badgeTitleNode.frame = CGRect(origin: CGPoint(x: badgeBackgroundFrame.minX + floor((badgeBackgroundFrame.width - badgeTitleSize.width) / 2.0), y: badgeBackgroundFrame.minY + floor((badgeBackgroundFrame.height - badgeTitleSize.height) / 2.0)), size: badgeTitleSize)
+            
+            if let image = self.filterIconNode.image {
+                self.filterIconNode.frame = CGRect(origin: CGPoint(x: floor((leftInset - image.size.width) / 2.0), y: floor((height - image.size.height) / 2.0)), size: image.size)
+            }
             
             self.separatorNode.frame = CGRect(origin: CGPoint(x: 0.0, y: height - UIScreenPixel), size: CGSize(width: width, height: UIScreenPixel))
             self.highlightedBackgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: width, height: height))
@@ -287,7 +294,7 @@ final class TabBarFilterSwitchControllerNode: ViewControllerTracingNode {
                 continue
             }
             
-            contentNodes.append(SwitchTabFilterItemNode(tabName: tabName!, isCurrent: isCurrent, displaySeparator: true, presentationData: presentationData, action: {
+            contentNodes.append(SwitchTabFilterItemNode(filter: filter, tabName: tabName!, isCurrent: isCurrent, displaySeparator: true, presentationData: presentationData, action: {
                 if (isCurrent) {
                     return cancel()
                 } else {
@@ -543,4 +550,9 @@ private func setAnchorPoint(anchorPoint: CGPoint, forView view: UIView) {
     
     view.layer.position = position
     view.layer.anchorPoint = anchorPoint
+}
+
+
+func generateItemListFilterIcon(_ filterIconPath: String, _ color: UIColor) -> UIImage? {
+    return generateTintedImage(image: UIImage(bundleImageName: filterIconPath), color: color)
 }
