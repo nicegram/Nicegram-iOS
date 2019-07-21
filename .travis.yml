@@ -5,10 +5,9 @@ branches:
   only:
   - master
 
-before_install:
+  install:
   - gem update --system
-
-install:
+  - brew install pkg-config yasm
   - bundle install
   - bundle exec fastlane add_plugin telegram
 
