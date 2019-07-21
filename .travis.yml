@@ -5,6 +5,9 @@ branches:
   only:
   - master
 
+  before_install:
+  - gem install bundler
+
   install:
   - gem update --system
   - brew install pkg-config yasm
