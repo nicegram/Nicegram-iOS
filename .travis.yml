@@ -5,8 +5,8 @@ branches:
   only:
   - master
 
-before_install:
-  - bundle update
+install:
+  - bundle install
   - bundle exec fastlane add_plugin telegram
 
 script:
