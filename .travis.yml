@@ -1,0 +1,19 @@
+language: objective-c # even when you use Swift, this should still be objective-c
+osx_image: xcode10.2 # or another Xcode version you use
+
+branches:
+  only:
+  - master
+
+before_install:
+  - bundle update
+  - bundle exec fastlane add_plugin telegram
+
+script:
+  # Exit immediately if one of the commands fails
+  - set -e
+
+  # If not pull request, deploy a new TestFlight build
+  - if [ "$TRAVIS_PULL_REQUEST" == false ]; then
+       bundle exec fastlane build_ci;
+    fi;
