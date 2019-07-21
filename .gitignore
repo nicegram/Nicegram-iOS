@@ -30,6 +30,3 @@ AppBinary.xcworkspace/*
 Project.xcodeproj/*
 Watch/Watch.xcodeproj/*
 AppBundle.xcworkspace/*
-fastlane/Pluginfile
-Gemfile
-Gemfile.lock
