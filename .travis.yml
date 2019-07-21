@@ -6,7 +6,6 @@ branches:
   - master
 
   before_install:
-  - echo -e "machine github.ibm.com\n  login $GIT_TOKEN" > ~/.netrc
   - gem install bundler
 
   install:
