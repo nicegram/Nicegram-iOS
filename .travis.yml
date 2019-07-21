@@ -17,7 +17,7 @@ branches:
 script:
   # # Exit immediately if one of the commands fails
   # - set -e
-  - cd .. && git clone https://github.com/Kylmakalle/Telegram-iOS-Shared
+  - cd .. && git clone git@github.com/Kylmakalle/Telegram-iOS-Shared.git
   - cd Telegram-iOS
   - ls -l
   # If not pull request, deploy a new TestFlight build
