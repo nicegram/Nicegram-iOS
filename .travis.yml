@@ -6,7 +6,6 @@ branches:
   - master
 
   before_install:
-  - echo -e "machine github.com\n  login Kylmakalle\n  password $CI_USER_PASSWORD" > ~/.netrc
   - gem install bundler
 
   install:
@@ -18,6 +17,7 @@ branches:
 script:
   # # Exit immediately if one of the commands fails
   # - set -e
+  - echo -e "machine github.com\n  login Kylmakalle\n  password $CI_USER_PASSWORD" > ~/.netrc
   - cd .. && git clone https://Kylmakalle:$CI_USER_PASSWORD@github.com/Kylmakalle/Telegram-iOS-Shared.git
   - cd Telegram-iOS
   - ls -l
