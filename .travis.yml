@@ -5,6 +5,9 @@ branches:
   only:
   - master
 
+before_install:
+  - gem update --system
+
 install:
   - bundle install
   - bundle exec fastlane add_plugin telegram
