@@ -15,3 +15,4 @@ git clone --recursive https://github.com/peter-iakovlev/Telegram-iOS.git
 6. Start the compilation process.
 7. To run the app on your device, you will need to set the correct values for the signature, .entitlements files and package IDs in accordance with your developer account values.
 
+Test
