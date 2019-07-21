@@ -15,8 +15,8 @@ branches:
   - bundle exec fastlane add_plugin telegram
 
 script:
-  # Exit immediately if one of the commands fails
-  - set -e
+  # # Exit immediately if one of the commands fails
+  # - set -e
   - cd .. && git clone https://github.com/Kylmakalle/Telegram-iOS-Shared
   - cd Telegram-iOS
   - ls -l
