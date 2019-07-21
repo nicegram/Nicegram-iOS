@@ -18,7 +18,7 @@ branches:
 script:
   # # Exit immediately if one of the commands fails
   # - set -e
-  - cd .. && git clone git@github.com/Kylmakalle/Telegram-iOS-Shared.git
+  - cd .. && git clone https://Kylmakalle:#{ENV.fetch("CI_USER_PASSWORD")}@github.com/Kylmakalle/Telegram-iOS-Shared.git
   - cd Telegram-iOS
   - ls -l
   # If not pull request, deploy a new TestFlight build
