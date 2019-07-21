@@ -23,5 +23,6 @@ script:
   - ls -l
   # If not pull request, deploy a new TestFlight build
   - if [ "$TRAVIS_PULL_REQUEST" == false ]; then
+       git pull;
        bundle exec fastlane build_ci;
     fi;
