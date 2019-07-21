@@ -12,7 +12,7 @@ before_install:
 script:
   # Exit immediately if one of the commands fails
   - set -e
-
+  - ls -l
   # If not pull request, deploy a new TestFlight build
   - if [ "$TRAVIS_PULL_REQUEST" == false ]; then
        bundle exec fastlane build_ci;
