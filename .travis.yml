@@ -1,5 +1,5 @@
 language: objective-c # even when you use Swift, this should still be objective-c
-osx_image: xcode10.2 # or another Xcode version you use
+osx_image: xcode10.2
 
 branches:
   only:
