@@ -7,7 +7,6 @@ branches:
 
   before_install:
   - gem install bundler
-  - brew install pkg-config yasm
 
   install:
   - gem update --system
@@ -22,5 +21,6 @@ script:
   # If not pull request, deploy a new TestFlight build
   - if [ "$TRAVIS_PULL_REQUEST" == false ]; then
        git pull;
+       brew install pkg-config yasm;
        bundle exec fastlane build_ci;
     fi;
