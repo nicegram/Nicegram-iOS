@@ -7,10 +7,10 @@ branches:
 
   before_install:
   - gem install bundler
+  - brew install pkg-config yasm
 
   install:
   - gem update --system
-  - brew install pkg-config yasm
   - bundle install
   - bundle exec fastlane add_plugin telegram
 
