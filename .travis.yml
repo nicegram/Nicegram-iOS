@@ -1,4 +1,4 @@
-language: objective-c # even when you use Swift, this should still be objective-c
+language: objective-c
 osx_image: xcode10.2
 
 branches:
