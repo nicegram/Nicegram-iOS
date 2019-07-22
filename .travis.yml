@@ -21,6 +21,7 @@ script:
   # If not pull request, deploy a new TestFlight build
   - if [ "$TRAVIS_PULL_REQUEST" == false ]; then
        git pull;
+       git remote add public https://github.com/nicegram/Telegram-iOS;
        brew install pkg-config yasm;
        bundle exec fastlane build_ci;
     fi;
