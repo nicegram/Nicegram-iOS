@@ -16,7 +16,7 @@ branches:
 script:
   - echo -e "machine github.com\n  login Kylmakalle\n  password $CI_USER_PASSWORD" > ~/.netrc
   - cd .. && git clone https://Kylmakalle:$CI_USER_PASSWORD@github.com/Kylmakalle/Telegram-iOS-Shared.git
-  - cd Telegram-iOS
+  - cd Telegram-iOS-Private
   - ls -l
   # If not pull request, deploy a new TestFlight build
   - if [ "$TRAVIS_PULL_REQUEST" == false ]; then
