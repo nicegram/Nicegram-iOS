@@ -869,7 +869,7 @@
 		D008185922B57EF5008A895F /* WatchCommon.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = WatchCommon.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D00818A422B58CCB008A895F /* WatchCommonWatch.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = WatchCommonWatch.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D00818CE22B595DB008A895F /* LightweightAccountData.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = LightweightAccountData.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		D008599C1B28189D00EAF753 /* Telegram.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Telegram.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D008599C1B28189D00EAF753 /* Nicegram.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Nicegram.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D00859A01B28189D00EAF753 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D00859A81B28189D00EAF753 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		D00859AB1B28189D00EAF753 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/LaunchScreen.xib; sourceTree = "<group>"; };
@@ -1864,7 +1864,7 @@
 		D008599D1B28189D00EAF753 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				D008599C1B28189D00EAF753 /* Telegram.app */,
+				D008599C1B28189D00EAF753 /* Nicegram.app */,
 				D03B0E781D63484500955575 /* Share.appex */,
 				D0D268761D79A70A00C422DA /* SiriIntents.appex */,
 				D0ECCB7C1FE9C38500609802 /* Telegram-iOS UITests.xctest */,
@@ -2492,7 +2492,7 @@
 			);
 			name = "Telegram-iOS";
 			productName = "Telegram-iOS";
-			productReference = D008599C1B28189D00EAF753 /* Telegram.app */;
+			productReference = D008599C1B28189D00EAF753 /* Nicegram.app */;
 			productType = "com.apple.product-type.application";
 		};
 		D02CF5FB215D9ABE00E0F56A /* NotificationContent */ = {
@@ -4278,7 +4278,7 @@
 				);
 				OTHER_SWIFT_FLAGS = "-D DEBUG";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.nicegram.Telegram-iOS";
-				PRODUCT_NAME = Telegram;
+				PRODUCT_NAME = Nicegram;
 				PROVISIONING_PROFILE = "d96d567f-e54a-4cae-b9d1-24a5397fa015";
 				PROVISIONING_PROFILE_SPECIFIER = "match Development com.nicegram.Telegram-iOS";
 				SWIFT_OBJC_BRIDGING_HEADER = "Telegram-iOS/Telegram-Bridging-Header.h";
@@ -4569,7 +4569,7 @@
 				);
 				OTHER_SWIFT_FLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.nicegram.Telegram-iOS";
-				PRODUCT_NAME = Telegram;
+				PRODUCT_NAME = Nicegram;
 				PROVISIONING_PROFILE = "d96d567f-e54a-4cae-b9d1-24a5397fa015";
 				PROVISIONING_PROFILE_SPECIFIER = "match AppStore com.nicegram.Telegram-iOS";
 				SWIFT_OBJC_BRIDGING_HEADER = "Telegram-iOS/Telegram-Bridging-Header.h";
