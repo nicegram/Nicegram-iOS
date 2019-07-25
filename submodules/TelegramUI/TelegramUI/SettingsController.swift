@@ -36,6 +36,7 @@ private struct SettingsItemArguments {
     let avatarAndNameInfoContext: ItemListAvatarAndNameInfoItemContext
     
     let avatarTapAction: () -> Void
+    let presentController: (ViewController, Any?) -> Void
     
     let changeProfilePhoto: () -> Void
     let openUsername: () -> Void
@@ -354,6 +355,9 @@ private enum SettingsEntry: ItemListNodeEntry {
                 return ItemListAvatarAndNameInfoItem(account: account, theme: theme, strings: strings, dateTimeFormat: dateTimeFormat, mode: .settings, peer: peer, presence: TelegramUserPresence(status: .present(until: Int32.max), lastActivity: 0), cachedData: cachedData, state: state, sectionId: ItemListSectionId(self.section), style: .blocks(withTopInset: false, withExtendedBottomInset: false), editingNameUpdated: { _ in
                 }, avatarTapped: {
                     arguments.avatarTapAction()
+                }, idTapped: { value in
+                    UIPasteboard.general.string = value
+                    arguments.presentController(OverlayStatusController(theme: theme, strings: strings, type: .success), ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
                 }, context: arguments.avatarAndNameInfoContext, updatingImage: updatingImage, action: {
                     arguments.openEditing()
                 }, longTapAction: {
@@ -728,6 +732,8 @@ public func settingsController(context: AccountContext, accountManager: AccountM
                 }
             })
         })
+    }, presentController: { c, a in
+        presentControllerImpl?(c, a)
     }, changeProfilePhoto: {
         changeProfilePhotoImpl?()
     }, openUsername: {
@@ -1339,6 +1345,10 @@ public func settingsController(context: AccountContext, accountManager: AccountM
                 })
                 if let resultItemNode = resultItemNode, let user = peer as? TelegramUser {
                     var actions: [ContextMenuAction] = []
+                    
+                    actions.append(ContextMenuAction(content: .text(title: "ID", accessibilityLabel: "Copy ID"), action: {
+                        UIPasteboard.general.string = String(user.id.hashValue)
+                    }))
                     
                     if let phone = user.phone, !phone.isEmpty {
                         actions.append(ContextMenuAction(content: .text(title: presentationData.strings.Settings_CopyPhoneNumber, accessibilityLabel: presentationData.strings.Settings_CopyPhoneNumber), action: {

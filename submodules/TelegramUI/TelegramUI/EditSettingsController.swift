@@ -187,6 +187,9 @@ private enum SettingsEntry: ItemListNodeEntry {
                     arguments.updateEditingName(editingName)
                 }, avatarTapped: {
                     arguments.avatarTapAction()
+                }, idTapped: { value in
+                    UIPasteboard.general.string = value
+                    arguments.presentController(OverlayStatusController(theme: theme, strings: strings, type: .success))
                 }, context: arguments.avatarAndNameInfoContext, updatingImage: updatingImage)
             case let .userInfoNotice(theme, text):
                 return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
