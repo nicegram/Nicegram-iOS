@@ -321,7 +321,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                         }
                     }
                     
-                    if !messages.isEmpty || strongSelf.chatPresentationInterfaceState.interfaceState.forwardMessageIds != nil {
+                    if !messages.isEmpty || strongSelf.chatPresentationInterfaceState.interfaceState.forwardMessageIds != nil || !MessagesToCopy.isEmpty {
                         strongSelf.setupSendActionOnViewUpdate({ [weak strongSelf] in
                             if let strongSelf = strongSelf, let textInputPanelNode = strongSelf.inputPanelNode as? ChatTextInputPanelNode {
                                 strongSelf.ignoreUpdateHeight = true
@@ -331,7 +331,9 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                             }
                         })
                         
-                        if let forwardMessageIds = strongSelf.chatPresentationInterfaceState.interfaceState.forwardMessageIds {
+                        if !MessagesToCopy.isEmpty {
+                            messages += MessagesToCopy
+                        } else if let forwardMessageIds = strongSelf.chatPresentationInterfaceState.interfaceState.forwardMessageIds {
                             for id in forwardMessageIds {
                                 messages.append(.forward(source: id, grouping: .auto))
                             }

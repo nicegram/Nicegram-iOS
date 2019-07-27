@@ -12,6 +12,7 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
     private let reportButton: HighlightableButtonNode
     private let forwardButton: HighlightableButtonNode
     private let cloudButton: HighlightableButtonNode
+    private let copyForwardButton: HighlightableButtonNode
     private let shareButton: HighlightableButtonNode
     
     private var validLayout: (width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, maxHeight: CGFloat, metrics: LayoutMetrics)?
@@ -70,6 +71,10 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
         self.cloudButton.isAccessibilityElement = true
         self.cloudButton.accessibilityLabel = "Save To Favourites"
         
+        self.copyForwardButton = HighlightableButtonNode()
+        self.copyForwardButton.isAccessibilityElement = true
+        self.copyForwardButton.accessibilityLabel = "Forward As Copy"
+        
         self.shareButton = HighlightableButtonNode()
         self.shareButton.isEnabled = false
         self.shareButton.isAccessibilityElement = true
@@ -92,6 +97,7 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
         self.addSubnode(self.reportButton)
         self.addSubnode(self.forwardButton)
         self.addSubnode(self.cloudButton)
+        self.addSubnode(self.copyForwardButton)
         self.addSubnode(self.shareButton)
         
         self.forwardButton.isEnabled = false
@@ -101,6 +107,7 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
         self.reportButton.addTarget(self, action: #selector(self.reportButtonPressed), forControlEvents: .touchUpInside)
         self.forwardButton.addTarget(self, action: #selector(self.forwardButtonPressed), forControlEvents: .touchUpInside)
         self.cloudButton.addTarget(self, action: #selector(self.cloudButtonPressed), forControlEvents: .touchUpInside)
+        self.copyForwardButton.addTarget(self, action: #selector(self.copyForwardButtonPressed), forControlEvents: .touchUpInside)
         self.shareButton.addTarget(self, action: #selector(self.shareButtonPressed), forControlEvents: .touchUpInside)
     }
     
@@ -120,7 +127,8 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
             self.forwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionForward"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
             self.cloudButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Contact List/InviteActionIcon"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
             self.cloudButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Contact List/InviteActionIcon"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
-        }
+            self.copyForwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionForward"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
+            self.copyForwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionForward"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
     }
     
     @objc func deleteButtonPressed() {
@@ -137,6 +145,10 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
     
     @objc func cloudButtonPressed() {
         self.interfaceInteraction?.cloudSelectedMessages()
+    }
+    
+    @objc func copyForwardButtonPressed() {
+        self.interfaceInteraction?.copyForwardSelectedMessages()
     }
     
     @objc func shareButtonPressed() {

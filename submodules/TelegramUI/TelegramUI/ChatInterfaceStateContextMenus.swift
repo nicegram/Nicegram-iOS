@@ -587,6 +587,10 @@ func contextMenuForChatPresentationIntefaceState(chatPresentationInterfaceState:
             }
         }
         
+        actions.append(.sheet(ChatMessageContextMenuSheetAction(color: .accent, title: l("Chat.ForwardAsCopy", chatPresentationInterfaceState.strings.baseLanguageCode), action: {
+            interfaceInteraction.copyForwardMessages(selectAll ? messages : [message])
+        })))
+        
         if data.messageActions.options.contains(.forward) {
             actions.append(.sheet(ChatMessageContextMenuSheetAction(color: .accent, title: chatPresentationInterfaceState.strings.Conversation_ContextMenuForward, action: {
                     interfaceInteraction.forwardMessages(selectAll ? messages : [message])

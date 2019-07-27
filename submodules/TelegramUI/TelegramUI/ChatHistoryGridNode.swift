@@ -357,6 +357,7 @@ public final class ChatHistoryGridNode: GridNode, ChatHistoryNode {
         case .began:
             if let itemNode = self.itemNodeAtPoint(recognizer.location(in: self.view)) as? GridMessageItemNode, let messageId = itemNode.messageId {
                 liveSelectingState = (selecting: !selectionState.selectedIds.contains(messageId), currentMessageId: messageId)
+                copiedMessagesSelection([itemNode], !selectionState.selectedIds.contains(messageId))
                 controllerInteraction.toggleMessagesSelection([messageId], !selectionState.selectedIds.contains(messageId))
             }
         case .changed:
