@@ -202,7 +202,7 @@ public class SimplyNiceSettings {
 }
 
 public var MessagesToCopy: [EnqueueMessage] = []
-public var SelectedMessagesToCopy: [Message] = []
+// public var SelectedMessagesToCopy: [Message] = []
 
 public func convertMessagesForEnqueue(_ messages: [Message]) -> [EnqueueMessage] {
     var messagesToC: [EnqueueMessage] = []

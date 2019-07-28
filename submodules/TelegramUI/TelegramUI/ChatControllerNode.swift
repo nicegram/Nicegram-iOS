@@ -333,6 +333,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                         
                         if !MessagesToCopy.isEmpty {
                             messages += MessagesToCopy
+                            MessagesToCopy = []
                         } else if let forwardMessageIds = strongSelf.chatPresentationInterfaceState.interfaceState.forwardMessageIds {
                             for id in forwardMessageIds {
                                 messages.append(.forward(source: id, grouping: .auto))
