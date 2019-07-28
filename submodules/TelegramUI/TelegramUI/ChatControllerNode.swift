@@ -794,6 +794,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                             strongSelf.requestUpdateChatInterfaceState(true, false, { $0.withUpdatedReplyMessageId(nil) })
                         } else if let _ = accessoryPanelNode as? ForwardAccessoryPanelNode {
                             strongSelf.requestUpdateChatInterfaceState(true, false, { $0.withUpdatedForwardMessageIds(nil) })
+                            MessagesToCopy = []
                         } else if let _ = accessoryPanelNode as? EditAccessoryPanelNode {
                             strongSelf.interfaceInteraction?.setupEditMessage(nil)
                         } else if let _ = accessoryPanelNode as? WebpagePreviewAccessoryPanelNode {
