@@ -331,7 +331,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                             }
                         })
                         
-                        if !MessagesToCopy.isEmpty {
+                        if !MessagesToCopy.isEmpty, let _ = strongSelf.chatPresentationInterfaceState.interfaceState.forwardMessageIds {
                             messages += MessagesToCopy
                             MessagesToCopy = []
                         } else if let forwardMessageIds = strongSelf.chatPresentationInterfaceState.interfaceState.forwardMessageIds {
