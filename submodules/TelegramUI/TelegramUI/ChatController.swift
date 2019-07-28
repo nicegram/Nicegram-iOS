@@ -5727,7 +5727,7 @@ public final class ChatController: TelegramController, GalleryHiddenMediaTarget,
     private func copyForwardMessages(messages: [Message], resetCurrent: Bool = false) {
         let messageIds = messages.map { $0.id }.sorted()
         MessagesToCopy = convertMessagesForEnqueue(messages)
-        let controller = PeerSelectionController(context: self.context, filter: [.onlyWriteable, .excludeDisabled, .includeSavedMessages])
+        let controller = PeerSelectionController(context: self.context, filter: [.onlyWriteable, .excludeDisabled, .includeSavedMessages], title: l("Chat.ForwardAsCopy", self.presentationData.strings.baseLanguageCode))
         controller.peerSelected = { [weak self, weak controller] peerId in
             guard let strongSelf = self, let strongController = controller else {
                 return

@@ -16,8 +16,9 @@
 "NiceFeatures.ChatScreen.Header" = "ЧАТ";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Анимированные Стикеры";
 
-/*Save to Cloud*/
+/*Chat*/
 "Chat.SaveToCloud" = "Сохранить в Избранное";
+"Chat.ForwardAsCopy" = "Переслать без Автора";
 
 /*Open Pin*/
 "Chat.OpenPin" = "Показать Пин";

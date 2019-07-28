@@ -22,8 +22,9 @@
 "NiceFeatures.ChatScreen.Header" = "CHAT SCREEN";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Animated Stickers";
 
-/*Save to Cloud*/
+/*Chat*/
 "Chat.SaveToCloud" = "Save to Cloud";
+"Chat.ForwardAsCopy" = "Forward as Copy";
 
 /*Open Pin*/
 "Chat.OpenPin" = "Show Pin";
