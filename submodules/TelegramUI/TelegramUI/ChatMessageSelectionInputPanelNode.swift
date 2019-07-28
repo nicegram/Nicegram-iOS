@@ -72,6 +72,7 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
         self.cloudButton.accessibilityLabel = "Save To Favourites"
         
         self.copyForwardButton = HighlightableButtonNode()
+        self.copyForwardButton.isEnabled = false
         self.copyForwardButton.isAccessibilityElement = true
         self.copyForwardButton.accessibilityLabel = "Forward As Copy"
         
@@ -88,6 +89,8 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
         self.forwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionForward"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
         self.cloudButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Contact List/InviteActionIcon"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
         self.cloudButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Contact List/InviteActionIcon"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
+        self.copyForwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionForward"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
+        self.copyForwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionForward"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
         self.shareButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat List/NavigationShare"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
         self.shareButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat List/NavigationShare"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
         
@@ -129,6 +132,7 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
             self.cloudButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Contact List/InviteActionIcon"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
             self.copyForwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionForward"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
             self.copyForwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionForward"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
+        }
     }
     
     @objc func deleteButtonPressed() {
@@ -169,6 +173,7 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
             self.forwardButton.isEnabled = actions.options.contains(.forward)
             self.cloudButton.isEnabled = actions.options.contains(.forward)
             self.shareButton.isEnabled = false
+            self.copyForwardButton.isEnabled = self.cloudButton.isEnabled
             
             self.deleteButton.isEnabled = !actions.options.intersection([.deleteLocally, .deleteGlobally]).isEmpty
             self.shareButton.isEnabled = !actions.options.intersection([.forward]).isEmpty
@@ -184,6 +189,7 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
             self.forwardButton.isEnabled = false
             self.cloudButton.isEnabled = false
             self.shareButton.isEnabled = false
+            self.copyForwardButton.isEnabled = self.cloudButton.isEnabled
         }
         
         if self.deleteButton.isHidden && self.reportButton.isHidden {
@@ -200,14 +206,16 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
                 self.deleteButton,
                 self.shareButton,
                 self.cloudButton,
+                self.copyForwardButton,
                 self.forwardButton
             ]
         } else if !self.deleteButton.isHidden {
             buttons = [
                 self.deleteButton,
-                self.reportButton,
+                // self.reportButton,
                 self.shareButton,
                 self.cloudButton,
+                self.copyForwardButton,
                 self.forwardButton
             ]
         } else {
@@ -215,6 +223,7 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
                 self.reportButton,
                 self.shareButton,
                 self.cloudButton,
+                self.copyForwardButton,
                 self.forwardButton
             ]
         }

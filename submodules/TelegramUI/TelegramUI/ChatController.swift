@@ -2648,9 +2648,16 @@ public final class ChatController: TelegramController, GalleryHiddenMediaTarget,
                     let forwardMessageIds = Array(forwardMessageIdsSet).sorted()
                     var forwardMessages: [Message] = []
                     for messageId in forwardMessageIds {
-                        let msg = strongSelf.context.account.postbox.getMessage(messageId)
+                        var msg: Message? = nil
+                        let semaphore = DispatchSemaphore(value: 0)                        
+                        let _ = strongSelf.context.account.postbox.transaction({ transaction -> Void in
+                            msg = transaction.getMessage(messageId)
+                            semaphore.signal()
+                        }).start()
+                        semaphore.wait()
+                        
                         if msg != nil {
-                            forwardMessages.append(msg)
+                            forwardMessages.append(msg!)
                         }
                     }
                     strongSelf.copyForwardMessages(messages: forwardMessages)
