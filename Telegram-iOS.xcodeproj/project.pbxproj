@@ -200,6 +200,7 @@
 		09EC5CDA22CBBF9600292E42 /* telegram_plane1@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 09EC5CD922CBBF9600292E42 /* telegram_plane1@2x.png */; };
 		09FDAEE62140477F00BF856F /* MtProtoKitDynamic.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 09FDAEE52140477F00BF856F /* MtProtoKitDynamic.framework */; };
 		A59E4E0922DBFD8200DCC1E4 /* NiceLocalizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A59E4E0722DBFD8200DCC1E4 /* NiceLocalizable.strings */; };
+		A5CC7E6322F0FCCC00B8CA21 /* NiceLocalizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A5CC7E6122F0FCCC00B8CA21 /* NiceLocalizable.strings */; };
 		A5E8799E22D61CA300AD2C2C /* NiceLocalizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A5E8799C22D61CA300AD2C2C /* NiceLocalizable.strings */; };
 		A5E879A122D61CEA00AD2C2C /* NiceLocalizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A5E8799F22D61CEA00AD2C2C /* NiceLocalizable.strings */; };
 		A5E879A422D61D0300AD2C2C /* NiceLocalizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A5E879A222D61D0300AD2C2C /* NiceLocalizable.strings */; };
@@ -844,6 +845,7 @@
 		09EC5CD922CBBF9600292E42 /* telegram_plane1@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "telegram_plane1@2x.png"; sourceTree = "<group>"; };
 		09FDAEE52140477F00BF856F /* MtProtoKitDynamic.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = MtProtoKitDynamic.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A59E4E0822DBFD8200DCC1E4 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/NiceLocalizable.strings; sourceTree = "<group>"; };
+		A5CC7E6222F0FCCC00B8CA21 /* fa */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fa; path = NiceLocalizable.strings; sourceTree = "<group>"; };
 		A5E8799D22D61CA300AD2C2C /* ar */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ar; path = NiceLocalizable.strings; sourceTree = "<group>"; };
 		A5E879A022D61CEA00AD2C2C /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = NiceLocalizable.strings; sourceTree = "<group>"; };
 		A5E879A322D61D0300AD2C2C /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = NiceLocalizable.strings; sourceTree = "<group>"; };
@@ -1817,6 +1819,14 @@
 			name = Model;
 			sourceTree = "<group>";
 		};
+		A5CC7E6022F0FCA800B8CA21 /* fa.lproj */ = {
+			isa = PBXGroup;
+			children = (
+				A5CC7E6122F0FCCC00B8CA21 /* NiceLocalizable.strings */,
+			);
+			path = fa.lproj;
+			sourceTree = "<group>";
+		};
 		A5E879AB22D61DC500AD2C2C /* uk.lproj */ = {
 			isa = PBXGroup;
 			children = (
@@ -1898,6 +1908,7 @@
 		D008599F1B28189D00EAF753 /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
+				A5CC7E6022F0FCA800B8CA21 /* fa.lproj */,
 				A5E879B022D61E4200AD2C2C /* zh-hant.lproj */,
 				A5E879AF22D61E3900AD2C2C /* zh-hans.lproj */,
 				A5E879AB22D61DC500AD2C2C /* uk.lproj */,
@@ -2704,6 +2715,7 @@
 				"zh-Hant",
 				"zh-hans",
 				"zh-Hans",
+				fa,
 			);
 			mainGroup = D00859931B28189D00EAF753;
 			productRefGroup = D008599D1B28189D00EAF753 /* Products */;
@@ -2780,6 +2792,7 @@
 				09A4193022B7A4D500637EB4 /* BlueClassicIconIpad@2x.png in Resources */,
 				D04DCC361F71C80000B021D7 /* 9.m4a in Resources */,
 				D0CE6F5A213EDA4400BCD44B /* AppIntentVocabulary.plist in Resources */,
+				A5CC7E6322F0FCCC00B8CA21 /* NiceLocalizable.strings in Resources */,
 				09EBE2AE22B004EA00F670AB /* BlueFilledIconIpad@2x.png in Resources */,
 				D04DCC301F71C80000B021D7 /* 3.m4a in Resources */,
 				D0E8B8AE2044496C00605593 /* voip_end.caf in Resources */,
@@ -3238,6 +3251,14 @@
 			isa = PBXVariantGroup;
 			children = (
 				A59E4E0822DBFD8200DCC1E4 /* en */,
+			);
+			name = NiceLocalizable.strings;
+			sourceTree = "<group>";
+		};
+		A5CC7E6122F0FCCC00B8CA21 /* NiceLocalizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				A5CC7E6222F0FCCC00B8CA21 /* fa */,
 			);
 			name = NiceLocalizable.strings;
 			sourceTree = "<group>";
