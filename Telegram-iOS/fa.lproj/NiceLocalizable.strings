@@ -1,1 +1,42 @@
+"AppName" = "Nicegram";
 
+/*ChatFilter*/
+"ChatFilter.Bots" = "ربات ها";
+"ChatFilter.Channels" = "کانال‌ ها";
+"ChatFilter.Private" = "کاربرها";
+"ChatFilter.Groups" = "گروه ها";
+"ChatFilter.Unread" = "خوانده نشده";
+
+/*Fuzzy*/
+"ChatFilter.Unmuted" = "بیصدا نشده ها";
+"ChatFilter.Favourites" = "علاقه‌ مندی‌ها";
+
+/*Nice Features*/
+/*Fuzzy*/
+"NiceFeatures.Title" = "Nicegram";
+"NiceFeatures.Tabs.Header" = "برگه ها";
+"NiceFeatures.Tabs.ShowContacts" = "نمایش برگه مخاطبین";
+"NiceFeatures.ChatScreen.Header" = "صفحه چت";
+
+/*Fuzzy*/
+"NiceFeatures.ChatScreen.AnimatedStickers" = "استیکرهای انیمیشنی";
+
+/*Save to Cloud*/
+"Chat.SaveToCloud" = "ذخیره در فضای ابری";
+
+/*Open Pin*/
+"Chat.OpenPin" = "نشان دادن سنجاق";
+"ChatFilter.Admin" = "مدیر";
+"NiceFeatures.Notifications.Fix" = "غیرفعال کردن اعلان های ناخواسته";
+"NiceFeatures.Notifications.FixNotice" = "در صورت دریافت اعلان از گپ های خاموش مفید است.\nپاسخ از اعلان ها، برچسب های حساب و پیش نمایش رسانه ها در دسترس نخواهد بود.";
+"NiceFeatures.Filters.Header" = "فیلترها( برگه ها)";
+"NiceFeatures.Filters.Notice" = "تعداد برگه ها را انتخاب کنید\nبرای تغییر فیلتر نوار را حرکت طولانی دهید";
+
+/*Common*/
+"Common.ExitNow" = "خروج";
+"Common.Later" = "بعدا";
+"Common.RestartRequired" = "راه اندازی مجدد";
+
+/*Fuzzy*/
+"NiceFeatures.Tabs.ShowNames" = "نشان دادن برگه اسم ها";
+"Chat.ForwardAsCopy" = "فوروارد بدون نقل قول";
