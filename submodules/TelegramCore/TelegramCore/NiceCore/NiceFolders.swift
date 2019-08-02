@@ -316,7 +316,7 @@ public class NiceFolder: NSObject, NSCoding {
     }
     
     override public var description: String {
-        return "NiceFolder(\(groupId), \(name), (\(items.count)), \(items))"
+        return "NiceFolder(group(\(groupId)), \(name), (\(items.count)), \(items))"
     }
     
     public func save() {
@@ -350,7 +350,7 @@ public class SimplyNiceFolders {
     }
     
     
-    var folders: [NiceFolder] {
+    public var folders: [NiceFolder] {
         get {
             return NSKeyedUnarchiver.unarchiveObject(with: (UD?.data(forKey: "folders"))!) as! [NiceFolder]
         }
@@ -453,7 +453,21 @@ public func removeNiceFolderItems(_ folder: NiceFolder, _ peerIds: [Int64]) {
     folder.items = newFolderItems
 }
 
+public func sureRemovePeerFromFolder(_ peerId: PeerId) {
+    let folder = getPeerFolder(peerId.toInt64())
+    if folder != nil {
+        removeNiceFolderItems(folder!, peersToInt64([peerId]))
+    }
+}
 
-public func validateFolders() {
-    FolderLogger.shared.log("TEST", "Test")
+
+public func syncFolders(_ postbox: Postbox) {
+    fLog("Syncing folders")
+    for folder in SimplyNiceFolders().folders {
+        for peerId in folder.items {
+            let _ = updatePeerGroupIdInteractively(postbox: postbox, peerId: PeerId(peerId), groupId: PeerGroupId(rawValue: folder.groupId)).start(completed: {
+                fLog("Sync done for \(peerId) in \(folder)")
+            })
+        }
+    }
 }

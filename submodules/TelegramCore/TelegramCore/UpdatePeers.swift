@@ -27,6 +27,7 @@ func updatePeerChatInclusionWithMinTimestamp(transaction: Transaction, id: PeerI
         default:
             fLog("Resetting inclusion for \(id.toInt64())")
             if forceRootGroupIfNotExists {
+                sureRemovePeerFromFolder(id)
                 updatedInclusion = .ifHasMessagesOrOneOf(groupId: .root, pinningIndex: nil, minTimestamp: minTimestamp)
             }
     }
@@ -55,12 +56,14 @@ public func updatePeers(transaction: Transaction, peers: [Peer], update: (Peer?,
                 if let group = updated as? TelegramGroup {
                     if group.flags.contains(.deactivated) {
                         transaction.updatePeerChatListInclusion(peerId, inclusion: .notIncluded)
+                        sureRemovePeerFromFolder(peerId)
                     } else {
                         switch group.membership {
                             case .Member:
                                 updatePeerChatInclusionWithMinTimestamp(transaction: transaction, id: peerId, minTimestamp: group.creationDate, forceRootGroupIfNotExists: false)
                             default:
                                 transaction.updatePeerChatListInclusion(peerId, inclusion: .notIncluded)
+                                sureRemovePeerFromFolder(peerId)
                         }
                     }
                 } else {
@@ -73,10 +76,13 @@ public func updatePeers(transaction: Transaction, peers: [Peer], update: (Peer?,
                             updatePeerChatInclusionWithMinTimestamp(transaction: transaction, id: peerId, minTimestamp: channel.creationDate, forceRootGroupIfNotExists: false)
                         case .left:
                             transaction.updatePeerChatListInclusion(peerId, inclusion: .notIncluded)
+                            sureRemovePeerFromFolder(peerId)
                         case .kicked where channel.creationDate == 0:
                             transaction.updatePeerChatListInclusion(peerId, inclusion: .notIncluded)
+                            sureRemovePeerFromFolder(peerId)
                         default:
                             transaction.updatePeerChatListInclusion(peerId, inclusion: .notIncluded)
+                            sureRemovePeerFromFolder(peerId)
                     }
                 } else {
                     assertionFailure()

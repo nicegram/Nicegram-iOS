@@ -981,6 +981,7 @@ final class SharedApplicationContext {
             var network: Network?
             if let context = context {
                 network = context.context.account.network
+                syncFolders(context.context.account.postbox)
             }
             
             Logger.shared.log("App \(self.episodeId)", "received context \(String(describing: context)) account \(String(describing: context?.context.account.id)) network \(String(describing: network))")

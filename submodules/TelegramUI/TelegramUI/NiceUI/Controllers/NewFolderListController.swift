@@ -148,7 +148,7 @@ private enum NewFolderListEntry: ItemListNodeEntry {
     func item(_ arguments: NewFolderListControllerArguments) -> ListViewItem {
         switch self {
         case let .create(theme, text):
-            return ItemListPeerActionItem(theme: theme, icon: PresentationResourcesItemList.addPersonIcon(theme), title: text, sectionId: self.section, editing: false, action: {
+            return ItemListPeerActionItem(theme: theme, icon: PresentationResourcesItemList.addExceptionIcon(theme), title: text, sectionId: self.section, editing: false, action: {
                 arguments.createNew()
             })
         case let .archive(theme, text):
