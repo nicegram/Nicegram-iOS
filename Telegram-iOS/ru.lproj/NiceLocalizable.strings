@@ -16,9 +16,8 @@
 "NiceFeatures.ChatScreen.Header" = "ЧАТ";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Анимированные Стикеры";
 
-/*Chat*/
+/*Save to Cloud*/
 "Chat.SaveToCloud" = "Сохранить в Избранное";
-"Chat.ForwardAsCopy" = "Переслать без Автора";
 
 /*Open Pin*/
 "Chat.OpenPin" = "Показать Пин";
@@ -27,3 +26,21 @@
 "NiceFeatures.Notifications.FixNotice" = "Нужно, если вы получаете уведомления, даже если они отключены в чате. Ответ из уведомления, метки аккаунтов и предпросмотр медиа будут недоступны.";
 "NiceFeatures.Filters.Header" = "ФИЛЬТРЫ (ВКЛАДКИ)";
 "NiceFeatures.Filters.Notice" = "Выберите количество пользовательских вкладок.\nДолгое нажатие по вкладке позволит сменить фильтр.";
+
+/*Common*/
+"Common.ExitNow" = "Выйти Сейчас";
+"Common.Later" = "Позже";
+"Common.RestartRequired" = "Необходим перезапуск!";
+"NiceFeatures.Tabs.ShowNames" = "Показывать Имена Вкладок";
+"Chat.ForwardAsCopy" = "Переслать без Автора";
+
+/*Folder*/
+"Folder.DefaultName" = "Папка";
+"Folder.New" = "Новая Папка";
+"Folder.Created" = "Папка создана";
+"Folder.AddToExisting" = "Добавить в Папку";
+"Folder.Updated" = "Папка обновлена";
+"Folder.Create" = "Создать Папку...";
+"Folder.Create.Name" = "Название Папки";
+"Folder.Create.Placeholder" = "Папка...";
+"Folder.LimitExceeded" = "К сожалению, создать можно не больше 3 папок. Совсем скоро можно будет создать больше.";
