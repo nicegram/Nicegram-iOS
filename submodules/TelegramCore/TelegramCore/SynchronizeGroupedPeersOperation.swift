@@ -51,7 +51,7 @@ public func updatePeerGroupIdInteractively(transaction: Transaction, peerId: Pee
     }
     if initialInclusion != updatedInclusion {
         transaction.updatePeerChatListInclusion(peerId, inclusion: updatedInclusion)
-        if peerId.namespace != Namespaces.Peer.SecretChat {
+        if peerId.namespace != Namespaces.Peer.SecretChat && !isNiceFolderCheck(groupId.rawValue) {
             addSynchronizeGroupedPeersOperation(transaction: transaction, peerId: peerId, groupId: groupId)
         }
     }

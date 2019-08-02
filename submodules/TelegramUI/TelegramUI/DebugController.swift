@@ -414,6 +414,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                             actionSheet?.dismissAnimated()
                             let databasePath = arguments.sharedContext.accountManager.basePath + "/db"
                             let _ = try? FileManager.default.removeItem(atPath: databasePath)
+                            resetFolders()
                             preconditionFailure()
                         }),
                     ]), ActionSheetItemGroup(items: [
@@ -431,11 +432,12 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     let presentationData = arguments.sharedContext.currentPresentationData.with { $0 }
                     let actionSheet = ActionSheetController(presentationTheme: presentationData.theme)
                     actionSheet.setItemGroups([ActionSheetItemGroup(items: [
-                        ActionSheetTextItem(title: "All secret chats will be lost."),
+                        ActionSheetTextItem(title: "All secret chats & folders will be lost."),
                         ActionSheetButtonItem(title: "Clear Database", color: .destructive, action: { [weak actionSheet] in
                             actionSheet?.dismissAnimated()
                             let databasePath = context.account.basePath + "/postbox/db"
                             let _ = try? FileManager.default.removeItem(atPath: databasePath)
+                            resetFolders()
                             preconditionFailure()
                         }),
                     ]), ActionSheetItemGroup(items: [

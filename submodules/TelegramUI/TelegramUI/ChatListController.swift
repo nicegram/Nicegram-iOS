@@ -189,17 +189,14 @@ public class ChatListController: TelegramController, UIViewControllerPreviewingD
         } else {
             title = self.presentationData.strings.ChatList_ArchivedChatsTitle
             // FOLDER TITLE
-//            if isNiceFolderCheck(groupId: self.groupId) {
-//                let niceFolder = getNiceFolder(accountManager: self.context.sharedContext.accountManager, groupId: self.groupId)
-//                if niceFolder != nil {
-//                    if let name = niceFolder?.name {
-//                        title = name
-//                    }
-//                } else {
-//                    title = l(key: "Folder.DefaultName", locale: self.presentationData.strings.baseLanguageCode)
-//                }
-//            }
-            //
+            if isNiceFolderCheck(self.groupId.rawValue) {
+                let niceFolder = getFolder(self.groupId.rawValue)
+                if niceFolder != nil {
+                    title = niceFolder!.name
+                } else {
+                    title = l("Folder.DefaultName", self.presentationData.strings.baseLanguageCode)
+                }
+            }
         }
         
         self.titleView.title = NetworkStatusTitle(text: title, activity: false, hasProxy: false, connectsViaProxy: false, isPasscodeSet: false, isManuallyLocked: false)
@@ -321,17 +318,14 @@ public class ChatListController: TelegramController, UIViewControllerPreviewingD
                     } else {
                         defaultTitle = strongSelf.presentationData.strings.ChatList_ArchivedChatsTitle
                         // FOLDER TITLE
-//                        if isNiceFolderCheck(groupId: strongSelf.groupId) {
-//                            let niceFolder = getNiceFolder(accountManager: strongSelf.context.sharedContext.accountManager, groupId: strongSelf.groupId)
-//                            if niceFolder != nil {
-//                                if let name = niceFolder?.name {
-//                                    defaultTitle = name
-//                                }
-//                            } else {
-//                                defaultTitle = l(key: "Folder.DefaultName", locale: strongSelf.presentationData.strings.baseLanguageCode)
-//                            }
-//                        }
-                        //
+                        if isNiceFolderCheck(strongSelf.groupId.rawValue) {
+                            let niceFolder = getFolder(strongSelf.groupId.rawValue)
+                            if niceFolder != nil {
+                                defaultTitle = niceFolder!.name
+                            } else {
+                                defaultTitle = l("Folder.DefaultName", strongSelf.presentationData.strings.baseLanguageCode)
+                            }
+                        }
                     }
                     if state.editing {
                         if case .root = strongSelf.groupId {
@@ -846,10 +840,10 @@ public class ChatListController: TelegramController, UIViewControllerPreviewingD
                     }
                     strongSelf.chatListDisplayNode.chatListNode.setCurrentRemovingPeerId(nil)
                 })
-//                let folder = getPeerFolder(accountManager: strongSelf.context.sharedContext.accountManager, peerId: peerId)
-//                if folder != nil {
-//                    removeNiceFolderItems(accountManager: strongSelf.context.sharedContext.accountManager, groupId: folder!.groupId, peerIds: [peerId])
-//                }
+                let folder = getPeerFolder(peerId.toInt64())
+                if folder != nil {
+                    removeNiceFolderItems(folder!, peersToInt64([peerId]))
+                }
             }
         }
         
@@ -1024,7 +1018,7 @@ public class ChatListController: TelegramController, UIViewControllerPreviewingD
                             }
                         }
                     }
-                    toolbar = Toolbar(leftAction: leftAction, rightAction: ToolbarAction(title: presentationData.strings.Common_Delete, isEnabled: options.delete), middleAction: ToolbarAction(title: presentationData.strings.ChatList_ArchiveAction, isEnabled: archiveEnabled))
+                    toolbar = Toolbar(leftAction: leftAction, rightAction: ToolbarAction(title: presentationData.strings.Common_Delete, isEnabled: options.delete), middleAction: ToolbarAction(title: "Folder 📁", isEnabled: archiveEnabled))
                 }
             } else {
                 if let (options, peerIds) = peerIdsAndOptions {
@@ -1540,21 +1534,9 @@ public class ChatListController: TelegramController, UIViewControllerPreviewingD
             self.present(actionSheet, in: .window(.root))
         } else if case .middle = action, !peerIds.isEmpty {
             if case .root = self.groupId {
-                self.archiveChats(peerIds: Array(peerIds))
-//                let strongSelf = self
-//
-//                var text: String?
-//                let controller = niceInputAlertController(sharedContext: self.context.sharedContext, account: self.context.account, text: text ?? "", link: nil, apply: { [weak self] link in
-//                    if let link = link {
-//                        Logger.shared.log("NiceFolders", "Naming \(link)")
-//                        strongSelf.folderChats(peerIds: Array(peerIds), name: link)
-//                        strongSelf.donePressed()
-//                    }
-//                })
-//                self.present(controller, in: .window(.root))
-                
-                // self.folderChats(peerIds: Array(peerIds))
-                
+                let strongSelf = self
+                let controller = newFolderListController(context: strongSelf.context, parent: strongSelf, peerIds: Array(peerIds))
+                self.present(controller, in: .window(.root), with: ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
             } else {
                 if !peerIds.isEmpty {
                     self.chatListDisplayNode.chatListNode.setCurrentRemovingPeerId(peerIds.first!)
@@ -1570,10 +1552,10 @@ public class ChatListController: TelegramController, UIViewControllerPreviewingD
                             strongSelf.chatListDisplayNode.chatListNode.setCurrentRemovingPeerId(nil)
                             strongSelf.donePressed()
                         })
-//                    let folder = getPeerFolder(accountManager: self.context.sharedContext.accountManager, peerId: peerIds.first!)
-//                    if folder != nil {
-//                        removeNiceFolderItems(accountManager: self.context.sharedContext.accountManager, groupId: folder!.groupId, peerIds: Array(peerIds))
-//                    }
+                    let folder = getFolder(self.groupId.rawValue)
+                    if folder != nil {
+                        removeNiceFolderItems(folder!, peersToInt64(Array(peerIds)))
+                    }
                 }
             }
         }
@@ -1698,93 +1680,83 @@ public class ChatListController: TelegramController, UIViewControllerPreviewingD
             })
     }
     
-    private func folderChats(peerIds: [PeerId], name: String?) {
-//        guard !peerIds.isEmpty else {
-//            return
-//        }
-//        var name = name
-//
-//        let postbox = self.context.account.postbox
-//        self.chatListDisplayNode.chatListNode.setCurrentRemovingPeerId(peerIds[0])
-//
-//
-//        let groupId = generateFolderGroupId()
-//        if name == nil {
-//            name = l(key: "Folder.DefaultName", locale: self.presentationData.strings.baseLanguageCode).uppercased()
-//        }
-//        createNiceFolder(accountManager: self.context.sharedContext.accountManager, name: name, peerIds: peerIds, groupId: groupId)
-//
-//
-//        let semaphore = DispatchSemaphore(value: 0)
-//
-//        let _ = (postbox.transaction { transaction -> Void in
-//            for peerId in peerIds {
-//                updatePeerGroupIdInteractively(transaction: transaction, peerId: peerId, groupId: groupId)
-//            }
-//            semaphore.signal()
-//            }
-//            |> deliverOnMainQueue).start()
-//
-//        semaphore.wait()
-//
-//        let _ = (ApplicationSpecificNotice.incrementArchiveChatTips(accountManager: self.context.sharedContext.accountManager, count: 1)
-//            |> deliverOnMainQueue).start(next: { [weak self] previousHintCount in
-//                let _ = (postbox.transaction { transaction -> Void in
-//                    for peerId in peerIds {
-//                        updatePeerGroupIdInteractively(transaction: transaction, peerId: peerId, groupId: groupId)
-//                    }
-//                    }
-//                    |> deliverOnMainQueue).start(completed: {
-//                        guard let strongSelf = self else {
-//                            return
-//                        }
-//                        strongSelf.chatListDisplayNode.chatListNode.setCurrentRemovingPeerId(nil)
-//
-//                        let action: (Bool) -> Void = { shouldCommit in
-//                            guard let strongSelf = self else {
-//                                return
-//                            }
-//                            if !shouldCommit {
-//                                deleteNiceFolder(accountManager: strongSelf.context.sharedContext.accountManager, groupId: groupId)
-//                                strongSelf.chatListDisplayNode.chatListNode.setCurrentRemovingPeerId(peerIds[0])
-//                                let _ = (postbox.transaction { transaction -> Void in
-//                                    for peerId in peerIds {
-//                                        updatePeerGroupIdInteractively(transaction: transaction, peerId: peerId, groupId: .root)
-//                                    }
-//                                    }
-//                                    |> deliverOnMainQueue).start(completed: {
-//                                        guard let strongSelf = self else {
-//                                            return
-//                                        }
-//                                        strongSelf.chatListDisplayNode.chatListNode.setCurrentRemovingPeerId(nil)
-//                                    })
-//                            }
-//                        }
-//
-//                        strongSelf.forEachController({ controller in
-//                            if let controller = controller as? UndoOverlayController {
-//                                controller.dismissWithCommitActionAndReplacementAnimation()
-//                            }
-//                            return true
-//                        })
-//
-//                        var title = l(key: "Folder.Created", locale: strongSelf.presentationData.strings.baseLanguageCode)
-//                        let text: String
-//                        let undo: Bool
-//                        switch previousHintCount {
-//                        case 0:
-//                            text = strongSelf.presentationData.strings.ChatList_UndoArchiveText1
-//                            undo = false
-//                        default:
-//                            text = title
-//                            title = ""
-//                            undo = true
-//                        }
-//                        strongSelf.present(UndoOverlayController(context: strongSelf.context, content: .archivedChat(peerId: peerIds[0], title: title, text: text, undo: undo), elevatedLayout: false, animateInAsReplacement: true, action: action), in: .current)
-//
-//                        strongSelf.chatListDisplayNode.playArchiveAnimation()
-//                    })
-//            })
+    public func folderChats(peerIds: [PeerId], name: String?, existingFolder: NiceFolder? = nil) {
+        guard !peerIds.isEmpty else {
+            return
+        }
+        var name = name
+        
+        let postbox = self.context.account.postbox
+        self.chatListDisplayNode.chatListNode.setCurrentRemovingPeerId(peerIds[0])
+        
+        if name == nil {
+            name = l("Folder.DefaultName", self.presentationData.strings.baseLanguageCode).uppercased()
+        }
+        
+        let folder = existingFolder ?? createFolder(name!, peersToInt64(peerIds))
+        let _ = (ApplicationSpecificNotice.incrementArchiveChatTips(accountManager: self.context.sharedContext.accountManager, count: 1)
+            |> deliverOnMainQueue).start(next: { [weak self] previousHintCount in
+                let _ = (postbox.transaction { transaction -> Void in
+                    for peerId in peerIds {
+                        updatePeerGroupIdInteractively(transaction: transaction, peerId: peerId, groupId: PeerGroupId(rawValue: folder.groupId))
+                    }
+                    }
+                    |> deliverOnMainQueue).start(completed: {
+                        guard let strongSelf = self else {
+                            return
+                        }
+                        strongSelf.chatListDisplayNode.chatListNode.setCurrentRemovingPeerId(nil)
+                        
+                        let action: (Bool) -> Void = { shouldCommit in
+                            guard let strongSelf = self else {
+                                return
+                            }
+                            if !shouldCommit {
+                                if existingFolder == nil {
+                                    deleteFolder(folder.groupId)
+                                } else {
+                                    removeNiceFolderItems(existingFolder!, peersToInt64(peerIds))
+                                }
+                                
+                                strongSelf.chatListDisplayNode.chatListNode.setCurrentRemovingPeerId(peerIds[0])
+                                let _ = (postbox.transaction { transaction -> Void in
+                                    for peerId in peerIds {
+                                        updatePeerGroupIdInteractively(transaction: transaction, peerId: peerId, groupId: .root)
+                                    }
+                                    }
+                                    |> deliverOnMainQueue).start(completed: {
+                                        guard let strongSelf = self else {
+                                            return
+                                        }
+                                        strongSelf.chatListDisplayNode.chatListNode.setCurrentRemovingPeerId(nil)
+                                    })
+                            }
+                        }
+                        
+                        strongSelf.forEachController({ controller in
+                            if let controller = controller as? UndoOverlayController {
+                                controller.dismissWithCommitActionAndReplacementAnimation()
+                            }
+                            return true
+                        })
+                        
+                        var title = l("Folder.Created", strongSelf.presentationData.strings.baseLanguageCode)
+                        let text: String
+                        let undo: Bool
+                        switch previousHintCount {
+                        case 0:
+                            text = strongSelf.presentationData.strings.ChatList_UndoArchiveText1
+                            undo = false
+                        default:
+                            text = title
+                            title = ""
+                            undo = true
+                        }
+                        strongSelf.present(UndoOverlayController(context: strongSelf.context, content: .archivedChat(peerId: peerIds[0], title: title, text: text, undo: undo), elevatedLayout: false, animateInAsReplacement: true, action: action), in: .current)
+                        
+                        strongSelf.chatListDisplayNode.playArchiveAnimation()
+                    })
+            })
     }
     
     

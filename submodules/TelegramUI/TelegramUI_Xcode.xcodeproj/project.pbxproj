@@ -199,6 +199,9 @@
 		9F06830921A404AB001D8EDB /* NotificationExceptionControllerNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F06830821A404AB001D8EDB /* NotificationExceptionControllerNode.swift */; };
 		9F06830B21A404C4001D8EDB /* NotificationExceptionSettingsController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F06830A21A404C4001D8EDB /* NotificationExceptionSettingsController.swift */; };
 		A51F6CC722D802E9001E968A /* NiceSettingsFiltersAmountPickerItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51F6CC622D802E9001E968A /* NiceSettingsFiltersAmountPickerItem.swift */; };
+		A5441CA222F3A00B00C6FBB0 /* ControllerTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5441CA122F3A00B00C6FBB0 /* ControllerTemplate.swift */; };
+		A5764F9C22F348080080C6E0 /* TextInputController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5764F9B22F348080080C6E0 /* TextInputController.swift */; };
+		A5764F9E22F39BC20080C6E0 /* NewFolderListController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5764F9D22F39BC20080C6E0 /* NewFolderListController.swift */; };
 		A5E8799422D605C800AD2C2C /* NiceUISettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E8799322D605C800AD2C2C /* NiceUISettings.swift */; };
 		A5E8799822D6079500AD2C2C /* NiceFeaturesController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E8799722D6079500AD2C2C /* NiceFeaturesController.swift */; };
 		A5E8799B22D6090C00AD2C2C /* NiceStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E8799A22D6090C00AD2C2C /* NiceStrings.swift */; };
@@ -1428,6 +1431,9 @@
 		9F06830821A404AB001D8EDB /* NotificationExceptionControllerNode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NotificationExceptionControllerNode.swift; sourceTree = "<group>"; };
 		9F06830A21A404C4001D8EDB /* NotificationExceptionSettingsController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NotificationExceptionSettingsController.swift; sourceTree = "<group>"; };
 		A51F6CC622D802E9001E968A /* NiceSettingsFiltersAmountPickerItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceSettingsFiltersAmountPickerItem.swift; sourceTree = "<group>"; };
+		A5441CA122F3A00B00C6FBB0 /* ControllerTemplate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControllerTemplate.swift; sourceTree = "<group>"; };
+		A5764F9B22F348080080C6E0 /* TextInputController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextInputController.swift; sourceTree = "<group>"; };
+		A5764F9D22F39BC20080C6E0 /* NewFolderListController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewFolderListController.swift; sourceTree = "<group>"; };
 		A5E8799322D605C800AD2C2C /* NiceUISettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceUISettings.swift; sourceTree = "<group>"; };
 		A5E8799722D6079500AD2C2C /* NiceFeaturesController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceFeaturesController.swift; sourceTree = "<group>"; };
 		A5E8799A22D6090C00AD2C2C /* NiceStrings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceStrings.swift; sourceTree = "<group>"; };
@@ -2818,9 +2824,18 @@
 			name = Passcode;
 			sourceTree = "<group>";
 		};
+		A5764FA022F39FB30080C6E0 /* Templates */ = {
+			isa = PBXGroup;
+			children = (
+				A5441CA122F3A00B00C6FBB0 /* ControllerTemplate.swift */,
+			);
+			path = Templates;
+			sourceTree = "<group>";
+		};
 		A5E8799222D6034300AD2C2C /* NiceUI */ = {
 			isa = PBXGroup;
 			children = (
+				A5764FA022F39FB30080C6E0 /* Templates */,
 				A5E8799922D608FD00AD2C2C /* Strings */,
 				A5E8799622D6074500AD2C2C /* Controllers */,
 				A5E8799522D6073B00AD2C2C /* Components */,
@@ -2843,6 +2858,8 @@
 				A5E8799722D6079500AD2C2C /* NiceFeaturesController.swift */,
 				A5E879BD22D663E000AD2C2C /* NiceTabBarFilterSwitchController.swift */,
 				A5E879BF22D6640C00AD2C2C /* NiceTabBarFilterSwitchControllerNode.swift */,
+				A5764F9B22F348080080C6E0 /* TextInputController.swift */,
+				A5764F9D22F39BC20080C6E0 /* NewFolderListController.swift */,
 			);
 			path = Controllers;
 			sourceTree = "<group>";
@@ -5610,6 +5627,7 @@
 				D0461439200514F000EC0EF2 /* LiveLocationSummaryManager.swift in Sources */,
 				D056CD781FF2A6EE00880D28 /* ChatMessageSwipeToReplyNode.swift in Sources */,
 				D0CE67941F7DB45100FFB557 /* ChatMessageContactBubbleContentNode.swift in Sources */,
+				A5441CA222F3A00B00C6FBB0 /* ControllerTemplate.swift in Sources */,
 				09749BCD21F23139008FDDE9 /* WallpaperGalleryDecorationNode.swift in Sources */,
 				09EDAD26220D30980012A50B /* AutodownloadConnectionTypeController.swift in Sources */,
 				D0B3AC802142E2E900CD1374 /* ResetPasswordController.swift in Sources */,
@@ -5719,6 +5737,7 @@
 				D0AEAE272080D6970013176E /* PaneSearchBarNode.swift in Sources */,
 				0921F60B228C8765001A13D7 /* ItemListPlaceholderItem.swift in Sources */,
 				D0EC6D4F1EB9F58800EBF1C3 /* ChatListSearchItem.swift in Sources */,
+				A5764F9E22F39BC20080C6E0 /* NewFolderListController.swift in Sources */,
 				D0EC6D501EB9F58800EBF1C3 /* ChatListNodeEntries.swift in Sources */,
 				D0EC6D511EB9F58800EBF1C3 /* ChatListViewTransition.swift in Sources */,
 				D0380DAB204EA72F000414AB /* RadialStatusSecretTimeoutContentNode.swift in Sources */,
@@ -6225,6 +6244,7 @@
 				D0EC6E321EB9F58900EBF1C3 /* CreateGroupController.swift in Sources */,
 				D00BED221F73F82400922292 /* SharePeersContainerNode.swift in Sources */,
 				D0EC55A3210231D600D1992C /* SearchPeerMembers.swift in Sources */,
+				A5764F9C22F348080080C6E0 /* TextInputController.swift in Sources */,
 				D0EC6E331EB9F58900EBF1C3 /* CreateChannelController.swift in Sources */,
 				D0AA29AE1F72770D00C050AC /* ChatListItemStrings.swift in Sources */,
 				D0EC6E341EB9F58900EBF1C3 /* ItemListItem.swift in Sources */,

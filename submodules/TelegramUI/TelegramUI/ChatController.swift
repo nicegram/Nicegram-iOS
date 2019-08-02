@@ -3558,6 +3558,10 @@ public final class ChatController: TelegramController, GalleryHiddenMediaTarget,
                 updatePeerGroupIdInteractively(transaction: transaction, peerId: peerId, groupId: .root)
             }
             |> deliverOnMainQueue).start()
+            let folder = getPeerFolder(peerId.toInt64())
+            if folder != nil {
+                removeNiceFolderItems(folder!, peersToInt64([peerId]))
+            }
         }, openLinkEditing: { [weak self] in
             if let strongSelf = self {
                 var selectionRange: Range<Int>?

@@ -22,8 +22,10 @@ func updatePeerChatInclusionWithMinTimestamp(transaction: Transaction, id: PeerI
             } else {
                 updatedMinTimestamp = minTimestamp
             }
+            Logger.shared.log("NiceFolders", "Current Inlusion \(groupId)")
             updatedInclusion = .ifHasMessagesOrOneOf(groupId: groupId, pinningIndex: pinningIndex, minTimestamp: updatedMinTimestamp)
         default:
+            Logger.shared.log("NiceFolders", "Resetting inclusion for \(id)")
             if forceRootGroupIfNotExists {
                 updatedInclusion = .ifHasMessagesOrOneOf(groupId: .root, pinningIndex: nil, minTimestamp: minTimestamp)
             }
@@ -46,7 +48,6 @@ func minTimestampForPeerInclusion(_ peer: Peer) -> Int32? {
 public func updatePeers(transaction: Transaction, peers: [Peer], update: (Peer?, Peer) -> Peer?) {
     transaction.updatePeersInternal(peers, update: { previous, updated in
         let peerId = updated.id
-        
         switch peerId.namespace {
             case Namespaces.Peer.CloudUser:
                 break
