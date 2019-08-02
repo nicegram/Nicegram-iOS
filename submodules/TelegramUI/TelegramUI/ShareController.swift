@@ -657,6 +657,7 @@ public final class ShareController: ViewController {
         self.currentAccount = account
         self.acountActiveDisposable.set(self.sharedContext.setAccountUserInterfaceInUse(account.id))
         
+        // TODO: Fix for sharing to folder
         self.peers.set(combineLatest(
             self.currentAccount.postbox.loadedPeerWithId(self.currentAccount.peerId)
             |> take(1),
