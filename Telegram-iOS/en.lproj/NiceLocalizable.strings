@@ -43,4 +43,5 @@
 "Folder.Create" = "Create Folder...";
 "Folder.Create.Name" = "Folder Name";
 "Folder.Create.Placeholder" = "Folder...";
+"Folder.LimitExceeded" = "Sorry, you can create no more then 3 custom folders.\nMore folders will be available soon.";
 
