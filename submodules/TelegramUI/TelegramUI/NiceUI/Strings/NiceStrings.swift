@@ -25,7 +25,9 @@ let niceLocales: [String : [String : String]] = [
     // Simplified
     "zh-hans": gd(locale: "zh-hans"),
     // Traditional
-    "zh-hant": gd(locale: "zh-hant")
+    "zh-hant": gd(locale: "zh-hant"),
+    
+    "fa": gd(locale: "fa")
 ]
 
 public func l(_ key: String, _ locale: String = "en") -> String {
