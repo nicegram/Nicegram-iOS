@@ -2241,7 +2241,7 @@ func replayFinalState(accountManager: AccountManager, postbox: Postbox, accountP
                 }
                 let folder = getPeerFolder(peerId.toInt64())
                 if folder != nil {
-                    Logger.shared.log("NiceFolders", "Ignoring peer folder update")
+                    fLog("Ignoring peer folder update")
                     break
                 }
                 transaction.updatePeerChatListInclusion(peerId, inclusion: .ifHasMessagesOrOneOf(groupId: groupId, pinningIndex: currentPinningIndex, minTimestamp: currentMinTimestamp))

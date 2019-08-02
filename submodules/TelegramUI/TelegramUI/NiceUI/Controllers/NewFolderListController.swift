@@ -18,26 +18,31 @@ import TelegramUIPreferences
 private final class NewFolderListControllerArguments {
     let createNew: () -> (Void)
     let addToExisting: (NiceFolder) -> (Void)
+    let archive: () -> (Void)
     
-    init(createNew:@escaping () -> (Void), addToExisting:@escaping (NiceFolder) -> (Void)) {
+    init(createNew:@escaping () -> (Void), addToExisting:@escaping (NiceFolder) -> (Void), archive:@escaping () -> (Void)) {
         self.createNew = createNew
         self.addToExisting = addToExisting
+        self.archive = archive
     }
 }
 
 private enum NewFolderListSection: Int32 {
     case actions
+    case archive
     case folders
 }
 
 private enum NewFolderListEntryStableId: Hashable {
     case create
+    case archive
     case foldersHeader
     case folder(Int32)
 }
 
 private enum NewFolderListEntry: ItemListNodeEntry {
     case create(PresentationTheme, String)
+    case archive(PresentationTheme, String)
     case foldersHeader(PresentationTheme, String)
     case folderItem(Int32, PresentationTheme, PresentationStrings, NiceFolder)
     
@@ -45,6 +50,8 @@ private enum NewFolderListEntry: ItemListNodeEntry {
         switch self {
         case .create:
             return NewFolderListSection.actions.rawValue
+        case .archive:
+            return NewFolderListSection.archive.rawValue
         case .folderItem, .foldersHeader:
             return NewFolderListSection.folders.rawValue
         }
@@ -54,6 +61,8 @@ private enum NewFolderListEntry: ItemListNodeEntry {
         switch self {
         case .create:
             return .create
+        case .archive:
+            return .archive
         case .foldersHeader:
             return .foldersHeader
         case let .folderItem(_, _, _, folder):
@@ -65,6 +74,12 @@ private enum NewFolderListEntry: ItemListNodeEntry {
         switch lhs {
         case let .create(lhsTheme, lhsText):
             if case let .create(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
+        case let .archive(lhsTheme, lhsText):
+            if case let .archive(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
                 return true
             } else {
                 return false
@@ -104,6 +119,12 @@ private enum NewFolderListEntry: ItemListNodeEntry {
             } else {
                 return false
             }
+        case .archive:
+            if case .archive = rhs {
+                return true
+            } else {
+                return false
+            }
         case .foldersHeader:
             if case .foldersHeader = rhs {
                 return true
@@ -113,6 +134,8 @@ private enum NewFolderListEntry: ItemListNodeEntry {
         case let .folderItem(index, _, _, _):
             switch rhs {
             case .create:
+                return false
+            case .archive:
                 return false
             case .foldersHeader:
                 return false
@@ -127,6 +150,10 @@ private enum NewFolderListEntry: ItemListNodeEntry {
         case let .create(theme, text):
             return ItemListPeerActionItem(theme: theme, icon: PresentationResourcesItemList.addPersonIcon(theme), title: text, sectionId: self.section, editing: false, action: {
                 arguments.createNew()
+            })
+        case let .archive(theme, text):
+            return ItemListPeerActionItem(theme: theme, icon: PresentationResourcesItemList.archiveIcon(theme), title: text, sectionId: self.section, editing: false, action: {
+                arguments.archive()
             })
         case let .foldersHeader(theme, text):
             return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
@@ -187,6 +214,9 @@ private func newFolderListControllerEntries(presentationData: PresentationData) 
     
     entries.append(.create(presentationData.theme, l("Folder.Create", presentationData.strings.baseLanguageCode)))
     print("NICE FOLDER \(getNiceFolders())")
+    
+    entries.append(.archive(presentationData.theme, presentationData.strings.ChatList_ArchiveAction))
+    
     if getNiceFolders().count > 0 {
         entries.append(.foldersHeader(presentationData.theme, l("Folder.AddToExisting", presentationData.strings.baseLanguageCode).uppercased()))
     }
@@ -224,7 +254,7 @@ public func newFolderListController(context: AccountContext, parent: ChatListCon
             let controller = textInputController(sharedContext: context.sharedContext, account: context.account, text: text ?? "", input: nil, apply: { input in
                 if let input = input {
                     dismissImpl?()
-                    Logger.shared.log("NiceFolders", "Naming \(input)")
+                    fLog("Naming \(input)")
                     parent.folderChats(peerIds: peerIds, name: input)
                     parent.donePressed()
                 }
@@ -234,8 +264,12 @@ public func newFolderListController(context: AccountContext, parent: ChatListCon
         
     }, addToExisting: { folder in
         dismissImpl?()
-        Logger.shared.log("NiceFolders", "Addded \(peerIds.count) peers to \(folder)")
+        fLog("Addded \(peerIds.count) peers to \(folder)")
         parent.folderChats(peerIds: peerIds, name: nil, existingFolder: folder)
+        parent.donePressed()
+    }, archive : {
+        dismissImpl?()
+        parent.archiveChats(peerIds: peerIds)
         parent.donePressed()
     })
     

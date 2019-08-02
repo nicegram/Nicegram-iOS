@@ -44,6 +44,7 @@
 		9FC8ADA9206BBD000094F7B4 /* SaveSecureIdValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = D093D805206539D000BC3599 /* SaveSecureIdValue.swift */; };
 		9FC8ADAB206BBFF10094F7B4 /* RecentWebSessions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FC8ADAA206BBFF10094F7B4 /* RecentWebSessions.swift */; };
 		9FC8ADAC206BC00A0094F7B4 /* RecentWebSessions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FC8ADAA206BBFF10094F7B4 /* RecentWebSessions.swift */; };
+		A5206C7422F462ED00288DB5 /* NiceManagedFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5206C7322F462ED00288DB5 /* NiceManagedFile.swift */; };
 		A5599B0E22F25506003251E3 /* NiceFolders.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5599B0D22F25506003251E3 /* NiceFolders.swift */; };
 		C205FEA81EB3B75900455808 /* ExportMessageLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = C205FEA71EB3B75900455808 /* ExportMessageLink.swift */; };
 		C205FEA91EB3B75900455808 /* ExportMessageLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = C205FEA71EB3B75900455808 /* ExportMessageLink.swift */; };
@@ -838,6 +839,7 @@
 		09EDAD3922131D010012A50B /* ManagedAutodownloadSettingsUpdates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagedAutodownloadSettingsUpdates.swift; sourceTree = "<group>"; };
 		9F06830F21A40DEC001D8EDB /* NotificationExceptionsList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationExceptionsList.swift; sourceTree = "<group>"; };
 		9FC8ADAA206BBFF10094F7B4 /* RecentWebSessions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentWebSessions.swift; sourceTree = "<group>"; };
+		A5206C7322F462ED00288DB5 /* NiceManagedFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceManagedFile.swift; sourceTree = "<group>"; };
 		A5599B0D22F25506003251E3 /* NiceFolders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceFolders.swift; sourceTree = "<group>"; };
 		C205FEA71EB3B75900455808 /* ExportMessageLink.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ExportMessageLink.swift; sourceTree = "<group>"; };
 		C210DD611FBDB90800F673D8 /* SourceReferenceMessageAttribute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceReferenceMessageAttribute.swift; sourceTree = "<group>"; };
@@ -1291,6 +1293,7 @@
 			isa = PBXGroup;
 			children = (
 				A5599B0D22F25506003251E3 /* NiceFolders.swift */,
+				A5206C7322F462ED00288DB5 /* NiceManagedFile.swift */,
 			);
 			path = NiceCore;
 			sourceTree = "<group>";
@@ -2276,6 +2279,7 @@
 				090E779022AAABC600CD99F5 /* PeersNearby.swift in Sources */,
 				D073CE601DCB9D14007511FD /* OutgoingMessageInfoAttribute.swift in Sources */,
 				D0AAD1A81E32602500D5B9DE /* AutoremoveTimeoutMessageAttribute.swift in Sources */,
+				A5206C7422F462ED00288DB5 /* NiceManagedFile.swift in Sources */,
 				C2366C831E4F3EAA0097CCFF /* GroupReturnAndLeft.swift in Sources */,
 				0900555621E4A96E0030924C /* Wallpaper.swift in Sources */,
 				C230BEB61EE9A3760029586C /* ChannelAdminEventLogs.swift in Sources */,

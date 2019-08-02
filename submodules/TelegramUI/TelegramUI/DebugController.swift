@@ -240,8 +240,8 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     })
                 })
             case let .sendNotificationLogs(theme):
-                return ItemListDisclosureItem(theme: theme, title: "Send Notification Logs", label: "", sectionId: self.section, style: .blocks, action: {
-                    let _ = (Logger(basePath: arguments.sharedContext.basePath + "/notificationServiceLogs").collectLogs()
+                return ItemListDisclosureItem(theme: theme, title: "Send Folder Logs", label: "", sectionId: self.section, style: .blocks, action: {
+                    let _ = (Logger(basePath: arguments.sharedContext.basePath + "/niceFolderLogs").collectLogs()
                     |> deliverOnMainQueue).start(next: { logs in
                         guard let context = arguments.context else {
                             return
@@ -262,6 +262,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                         arguments.presentController(controller, ViewControllerPresentationArguments(presentationAnimation: ViewControllerPresentationAnimation.modalSheet))
                     })
                 })
+            //case let .sendFolderLogs(theme):
             case let .sendCriticalLogs(theme):
                 return ItemListDisclosureItem(theme: theme, title: "Send Critical Logs", label: "", sectionId: self.section, style: .blocks, action: {
                     let _ = (Logger.shared.collectShortLogFiles()
@@ -425,7 +426,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     arguments.presentController(actionSheet, nil)
                 })
             case let .resetDatabase(theme):
-                return ItemListActionItem(theme: theme, title: "Clear Database", kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                return ItemListActionItem(theme: theme, title: "Clear Database & Folders", kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     guard let context = arguments.context else {
                         return
                     }

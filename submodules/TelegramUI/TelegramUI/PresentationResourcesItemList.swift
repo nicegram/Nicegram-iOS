@@ -108,6 +108,21 @@ struct PresentationResourcesItemList {
         })
     }
     
+    static func archiveIcon(_ theme: PresentationTheme) -> UIImage? {
+//        return theme.image(PresentationResourceKey.itemListArchiveIcon.rawValue, { theme in
+//            if let img = generateTintedImage(image: UIImage(bundleImageName: "Chat List/Archive/Intro2Base"), color: theme.list.itemAccentColor) {
+//                if let personIcon = addPersonIcon(theme) {
+//                    return imageWithImage(image: img, scaledToSize: personIcon.size)
+//                }
+//            }
+//            return nil
+//        })
+        return theme.image(PresentationResourceKey.itemListArchiveIcon.rawValue, { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Avatar/ArchiveAvatarIcon"), color: theme.list.itemAccentColor)
+        })
+    }
+    
+    
     static func createGroupIcon(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.itemListCreateGroupIcon.rawValue, { theme in
             return generateTintedImage(image: UIImage(bundleImageName: "Location/CreateGroupIcon"), color: theme.list.itemAccentColor)

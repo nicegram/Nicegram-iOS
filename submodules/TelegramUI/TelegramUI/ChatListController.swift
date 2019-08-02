@@ -1615,7 +1615,7 @@ public class ChatListController: TelegramController, UIViewControllerPreviewingD
         }
     }
     
-    private func archiveChats(peerIds: [PeerId]) {
+    public func archiveChats(peerIds: [PeerId]) {
         guard !peerIds.isEmpty else {
             return
         }
