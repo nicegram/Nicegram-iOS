@@ -188,7 +188,7 @@ private func newFolderListControllerEntries(presentationData: PresentationData) 
     entries.append(.create(presentationData.theme, l("Folder.Create", presentationData.strings.baseLanguageCode)))
     print("NICE FOLDER \(getNiceFolders())")
     if getNiceFolders().count > 0 {
-        entries.append(.foldersHeader(presentationData.theme, "Add chats to existing folder".uppercased()))
+        entries.append(.foldersHeader(presentationData.theme, l("Folder.AddToExisting", presentationData.strings.baseLanguageCode).uppercased()))
     }
     
     
@@ -208,6 +208,8 @@ public func newFolderListController(context: AccountContext, parent: ChatListCon
     let statePromise = ValuePromise(NewFolderListSelectionState(), ignoreRepeated: true)
     var dismissImpl: (() -> Void)?
     var presentControllerImpl: ((ViewController, Any?) -> Void)?
+    let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+    let locale = presentationData.strings.baseLanguageCode
     
     func updateTabs() {
     }
@@ -226,18 +228,9 @@ public func newFolderListController(context: AccountContext, parent: ChatListCon
                     parent.folderChats(peerIds: peerIds, name: input)
                     parent.donePressed()
                 }
-                }, title: "Input Folder Name", subtitle: "", placeholder: "Folder...")
+                }, title: l("Folder.Create.Name", locale), subtitle: "", placeholder: l("Folder.Create.Placeholder", locale))
             presentControllerImpl?(controller, nil)
         }
-//        var text: String?
-//        let controller = textInputController(sharedContext: context.sharedContext, account: context.account, text: text ?? "", input: nil, apply: { input in
-//            if let input = input {
-//                dismissImpl?()
-//                Logger.shared.log("NiceFolders", "Naming \(input)")
-//                parent.folderChats(peerIds: peerIds, name: input)
-//                parent.donePressed()
-//            }
-//        }, title: "Input Folder Name", subtitle: "", placeholder: "Folder...")
         
     }, addToExisting: { folder in
         dismissImpl?()
@@ -269,7 +262,7 @@ public func newFolderListController(context: AccountContext, parent: ChatListCon
                 dismissImpl?()
             })
             
-            let controllerState = ItemListControllerState(theme: presentationData.theme, title: .text(l("Folder", presentationData.strings.baseLanguageCode)), leftNavigationButton: leftNavigationButton, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
+            let controllerState = ItemListControllerState(theme: presentationData.theme, title: .text(l("Folder.New", presentationData.strings.baseLanguageCode)), leftNavigationButton: leftNavigationButton, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
             let listState = ItemListNodeState(entries: entries, style: .blocks, ensureVisibleItemTag: focusOnItemTag, initialScrollToItem: scrollToItem)
             
             return (controllerState, (listState, arguments))

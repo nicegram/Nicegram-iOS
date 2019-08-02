@@ -1018,7 +1018,7 @@ public class ChatListController: TelegramController, UIViewControllerPreviewingD
                             }
                         }
                     }
-                    toolbar = Toolbar(leftAction: leftAction, rightAction: ToolbarAction(title: presentationData.strings.Common_Delete, isEnabled: options.delete), middleAction: ToolbarAction(title: "Folder 📁", isEnabled: archiveEnabled))
+                    toolbar = Toolbar(leftAction: leftAction, rightAction: ToolbarAction(title: presentationData.strings.Common_Delete, isEnabled: options.delete), middleAction: ToolbarAction(title: l("Folder.New", presentationData.strings.baseLanguageCode), isEnabled: archiveEnabled))
                 }
             } else {
                 if let (options, peerIds) = peerIdsAndOptions {
@@ -1739,8 +1739,12 @@ public class ChatListController: TelegramController, UIViewControllerPreviewingD
                             }
                             return true
                         })
-                        
-                        var title = l("Folder.Created", strongSelf.presentationData.strings.baseLanguageCode)
+                        var title = ""
+                        if existingFolder != nil {
+                            title = l("Folder.Updated", strongSelf.presentationData.strings.baseLanguageCode)
+                        } else {
+                            title = l("Folder.Created", strongSelf.presentationData.strings.baseLanguageCode)
+                        }
                         let text: String
                         let undo: Bool
                         switch previousHintCount {
