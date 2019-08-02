@@ -241,6 +241,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                 })
             case let .sendNotificationLogs(theme):
                 return ItemListDisclosureItem(theme: theme, title: "Send Folder Logs", label: "", sectionId: self.section, style: .blocks, action: {
+                    fLog("FOLDERS: \(SimplyNiceFolders().folders)")
                     let _ = (Logger(basePath: arguments.sharedContext.basePath + "/niceFolderLogs").collectLogs()
                     |> deliverOnMainQueue).start(next: { logs in
                         guard let context = arguments.context else {

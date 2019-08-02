@@ -34,6 +34,7 @@ public func updatePeerGroupIdInteractively(postbox: Postbox, peerId: PeerId, gro
 }
 
 public func updatePeerGroupIdInteractively(transaction: Transaction, peerId: PeerId, groupId: PeerGroupId) {
+    fLog("UpdatePeerGroupId \(peerId.toInt64()) in \(groupId)")
     let initialInclusion = transaction.getPeerChatListInclusion(peerId)
     var updatedInclusion = initialInclusion
     switch initialInclusion {

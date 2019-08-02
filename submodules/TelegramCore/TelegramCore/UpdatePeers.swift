@@ -22,10 +22,10 @@ func updatePeerChatInclusionWithMinTimestamp(transaction: Transaction, id: PeerI
             } else {
                 updatedMinTimestamp = minTimestamp
             }
-            fLog("Current Inlusion \(groupId)")
+            fLog("Current Inlusion for \(id.toInt64()) is \(groupId)")
             updatedInclusion = .ifHasMessagesOrOneOf(groupId: groupId, pinningIndex: pinningIndex, minTimestamp: updatedMinTimestamp)
         default:
-            fLog("Resetting inclusion for \(id)")
+            fLog("Resetting inclusion for \(id.toInt64())")
             if forceRootGroupIfNotExists {
                 updatedInclusion = .ifHasMessagesOrOneOf(groupId: .root, pinningIndex: nil, minTimestamp: minTimestamp)
             }

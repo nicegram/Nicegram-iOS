@@ -241,22 +241,21 @@ public final class FolderLogger {
 
 
 public func fLog(_ text: String, _ tag: String = "Folders") {
-    let appBundleIdentifier = Bundle.main.bundleIdentifier!
-    if let lastDotRange = appBundleIdentifier.range(of: ".", options: [.backwards]) {
-        let appGroupName = "group.\(appBundleIdentifier[..<lastDotRange.lowerBound])"
-        let maybeAppGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)
+    let baseAppBundleId = Bundle.main.bundleIdentifier!
+    let appGroupName = "group.\(baseAppBundleId)"
+    let maybeAppGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)
+    
+    if let appGroupUrl = maybeAppGroupUrl {
+        let rootPath = appGroupUrl.path + "/telegram-data"
         
-        if let appGroupUrl = maybeAppGroupUrl {
-            let rootPath = appGroupUrl.path + "/telegram-data"
-
-            if folderLogger == nil {
-                let logsPath = rootPath + "/niceFolderLogs"
-                FolderLogger.setSharedLogger(FolderLogger(basePath: logsPath))
-            }
-        } else {
-            preconditionFailure()
+        if folderLogger == nil {
+            let logsPath = rootPath + "/niceFolderLogs"
+            FolderLogger.setSharedLogger(FolderLogger(basePath: logsPath))
         }
+    } else {
+        preconditionFailure()
     }
+
     
     FolderLogger.shared.log(tag, text)
 }
@@ -317,7 +316,7 @@ public class NiceFolder: NSObject, NSCoding {
     }
     
     override public var description: String {
-        return "NiceFolder(\(groupId), \(name), \(items.count), \(items))"
+        return "NiceFolder(\(groupId), \(name), (\(items.count)), \(items))"
     }
     
     public func save() {
@@ -338,6 +337,7 @@ public func setFoldersDefaults() {
 }
 
 public func resetFolders() {
+    fLog("Folders RESET")
     let UD = UserDefaults(suiteName: "SimplyNiceFolders")
     UD?.removePersistentDomain(forName: "SimplyNiceFolders")
 }
@@ -345,7 +345,7 @@ public func resetFolders() {
 public class SimplyNiceFolders {
     let UD = UserDefaults(suiteName: "SimplyNiceFolders")
     
-    init() {
+    public init() {
         setFoldersDefaults()
     }
     
@@ -443,8 +443,8 @@ public func removeNiceFolderItems(_ folder: NiceFolder, _ peerIds: [Int64]) {
     for peerId in peerIds {
         peersToRemove.append(peerId)
     }
-    fLog("Removed items from folder")
     let newFolderItems = Array(Set(folder.items).subtracting(peersToRemove))
+    fLog("Removed items \(peersToRemove) from folder \(folder)")
     if newFolderItems.isEmpty {
         fLog("Automatically deleting folder \(folder)")
         deleteFolder(folder.groupId)
