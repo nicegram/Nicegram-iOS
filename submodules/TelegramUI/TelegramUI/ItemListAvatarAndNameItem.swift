@@ -439,7 +439,9 @@ class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNode, Ite
                 switch item.mode {
                     case .settings:
                         if let phone = peer.phone, !phone.isEmpty {
-                            statusText += formatPhoneNumber(phone)
+                            if !SimplyNiceSettings().hideNumber {
+                                statusText += formatPhoneNumber(phone)
+                            }
                         }
                         if let username = peer.username, !username.isEmpty {
                             if !statusText.isEmpty {

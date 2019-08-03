@@ -21,14 +21,16 @@ private final class NiceFeaturesControllerArguments {
     let updateShowCallsTab: (Bool) -> Void
     let changeFiltersAmount: (Int32) -> Void
     let toggleShowTabNames: (Bool, String) -> Void
+    let toggleHidePhone: (Bool, String) -> Void
     
-    init(togglePinnedMessage:@escaping (Bool) -> Void, toggleShowContactsTab:@escaping (Bool) -> Void, toggleFixNotifications:@escaping (Bool) -> Void, updateShowCallsTab:@escaping (Bool) -> Void, changeFiltersAmount:@escaping (Int32) -> Void, toggleShowTabNames:@escaping (Bool, String) -> Void) {
+    init(togglePinnedMessage:@escaping (Bool) -> Void, toggleShowContactsTab:@escaping (Bool) -> Void, toggleFixNotifications:@escaping (Bool) -> Void, updateShowCallsTab:@escaping (Bool) -> Void, changeFiltersAmount:@escaping (Int32) -> Void, toggleShowTabNames:@escaping (Bool, String) -> Void, toggleHidePhone:@escaping (Bool, String) -> Void) {
         self.togglePinnedMessage = togglePinnedMessage
         self.toggleShowContactsTab = toggleShowContactsTab
         self.toggleFixNotifications = toggleFixNotifications
         self.updateShowCallsTab = updateShowCallsTab
         self.changeFiltersAmount = changeFiltersAmount
         self.toggleShowTabNames = toggleShowTabNames
+        self.toggleHidePhone = toggleHidePhone
     }
 }
 
@@ -39,6 +41,7 @@ private enum niceFeaturesControllerSection: Int32 {
     case tabs
     case filters
     case chatScreen
+    case other
 }
 
 private enum NiceFeaturesControllerEntityId: Equatable, Hashable {
@@ -65,6 +68,9 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
     
     case chatScreenHeader(PresentationTheme, String)
     
+    case otherHeader(PresentationTheme, String)
+    case hideNumber(PresentationTheme, String, Bool, String)
+    
     var section: ItemListSectionId {
         switch self {
         case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice:
@@ -77,6 +83,8 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return niceFeaturesControllerSection.filters.rawValue
         case .chatScreenHeader:
             return niceFeaturesControllerSection.chatScreen.rawValue
+        case .otherHeader, .hideNumber:
+            return niceFeaturesControllerSection.other.rawValue
         }
         
     }
@@ -109,6 +117,10 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return .index(11)
         case .chatScreenHeader:
             return .index(20)
+        case .otherHeader:
+            return .index(21)
+        case .hideNumber:
+            return .index(22)
         }
     }
     
@@ -204,7 +216,19 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
-        }
+        case let .otherHeader(lhsTheme, lhsText):
+            if case let .otherHeader(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
+        case let .hideNumber(lhsTheme, lhsText, lhsValue, lhsLanguage):
+            if case let .hideNumber(rhsTheme, rhsText, rhsValue, rhsLanguage) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue, lhsLanguage == rhsLanguage {
+                return true
+            } else {
+                return false
+            }
+       }
     }
     
     static func <(lhs: NiceFeaturesControllerEntry, rhs: NiceFeaturesControllerEntry) -> Bool {
@@ -294,6 +318,20 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
                 return true
             }
         case .chatScreenHeader:
+            switch rhs {
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader:
+                return false
+            default:
+                return true
+            }
+        case .otherHeader:
+            switch rhs {
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .otherHeader:
+                return false
+            default:
+                return true
+            }
+        case .hideNumber:
             return false
         }
     }
@@ -338,6 +376,12 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
         case let .chatScreenHeader(theme, text):
             return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
+        case let .otherHeader(theme, text):
+            return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
+        case let .hideNumber(theme, text, value, locale):
+            return ItemListSwitchItem(theme: theme, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                arguments.toggleHidePhone(value, locale)
+            })
         }
     }
     
@@ -355,7 +399,7 @@ private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls
     var entries: [NiceFeaturesControllerEntry] = []
     
     let locale = presentationData.strings.baseLanguageCode
-    
+    let simplyNiceSettings = SimplyNiceSettings()
 //    entries.append(.messageNotificationsHeader(presentationData.theme, presentationData.strings.Notifications_Title.uppercased()))
     //entries.append(.pinnedMessageNotification(presentationData.theme, "Pinned Messages", niceSettings.pinnedMessagesNotification))  //presentationData.strings.Nicegram_Settings_Features_PinnedMessages
 //    entries.append(.fixNotifications(presentationData.theme, l("NiceFeatures.Notifications.Fix", locale), niceSettings.fixNotifications))
@@ -369,11 +413,13 @@ private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls
     entries.append(.showTabNames(presentationData.theme, l("NiceFeatures.Tabs.ShowNames", locale), SimplyNiceSettings().showTabNames, locale))
     
     entries.append(.filtersHeader(presentationData.theme, l("NiceFeatures.Filters.Header", locale)))
-    entries.append(.filtersAmount(presentationData.theme, locale, SimplyNiceSettings().maxFilters))
+    entries.append(.filtersAmount(presentationData.theme, locale, simplyNiceSettings.maxFilters))
     entries.append(.filtersNotice(presentationData.theme, l("NiceFeatures.Filters.Notice", locale)))
     //entries.append(.chatScreenHeader(presentationData.theme, l(key: "NiceFeatures.ChatScreen.Header", locale: locale)))
     //entries.append(.animatedStickers(presentationData.theme, l(key:  "NiceFeatures.ChatScreen.AnimatedStickers", locale: locale), GlobalExperimentalSettings.animatedStickers))
     
+    entries.append(.otherHeader(presentationData.theme, presentationData.strings.ChatSettings_Other))
+    entries.append(.hideNumber(presentationData.theme, l("NiceFeatures.HideNumber", locale), simplyNiceSettings.hideNumber, locale))
     
     return entries
 }
@@ -456,6 +502,12 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
     }, toggleShowTabNames: { value, locale in
         SimplyNiceSettings().showTabNames = value
         updateTabs()
+        
+        let controller = textAlertController(context: context, title: nil, text: l("Common.RestartRequired", locale), actions: [TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: {preconditionFailure()}),TextAlertAction(type: .genericAction, title: l("Common.Later", locale), action: {})])
+        
+        presentControllerImpl?(controller, nil)
+    }, toggleHidePhone: { value, locale in
+        SimplyNiceSettings().hideNumber = value
         
         let controller = textAlertController(context: context, title: nil, text: l("Common.RestartRequired", locale), actions: [TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: {preconditionFailure()}),TextAlertAction(type: .genericAction, title: l("Common.Later", locale), action: {})])
         

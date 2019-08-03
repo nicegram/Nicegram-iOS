@@ -21,6 +21,8 @@
 "NiceFeatures.Tabs.ShowNames" = "Show Tab Names";
 "NiceFeatures.ChatScreen.Header" = "CHAT SCREEN";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Animated Stickers";
+"NiceFeatures.HideNumber" = "Hide phone in settings";
+
 
 /*Chat*/
 "Chat.SaveToCloud" = "Save to Cloud";

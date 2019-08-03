@@ -153,6 +153,7 @@ public func setDefaults() {
     UD?.register(defaults: ["maxFilters": 2])
     UD?.register(defaults: ["chatFilters": [1 << 6, 1 << 5]])
     UD?.register(defaults: ["showTabNames": true])
+    UD?.register(defaults: ["hideNumber": false])
 }
 
 public class SimplyNiceSettings {
@@ -160,6 +161,15 @@ public class SimplyNiceSettings {
     
     init() {
         setDefaults()
+    }
+    
+    var hideNumber: Bool {
+        get {
+            return UD?.bool(forKey: "hideNumber") ?? false
+        }
+        set {
+            UD?.set(newValue, forKey: "hideNumber")
+        }
     }
     
     var maxFilters: Int32 {
