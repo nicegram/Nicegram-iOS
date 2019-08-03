@@ -567,7 +567,10 @@ final class ChatListNode: ListView {
             let (rawEntries, isLoading) = chatListNodeEntriesForView(update.view, state: state, savedMessagesPeer: savedMessagesPeer, hideArchivedFolderByDefault: hideArchivedFolderByDefault, displayArchiveIntro: displayArchiveIntro, mode: mode)
             let entries = rawEntries.filter { entry in
                 switch entry {
-                case let .PeerEntry(_, _, _, readState, notificationSettings, _, peer, _, _, _, _, _, _, _):
+                case let .PeerEntry(_, _, _, readState, notificationSettings, _, peer, _, _, _, _, _, _, isAd):
+                    if isAd {
+                        return false
+                    }
                     switch mode {
                         case .chatList:
                             return true
