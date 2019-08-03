@@ -1694,6 +1694,9 @@ public class ChatListController: TelegramController, UIViewControllerPreviewingD
         }
         
         let folder = existingFolder ?? createFolder(name!, peersToInt64(peerIds))
+        if existingFolder != nil {
+            existingFolder!.items += peersToInt64(peerIds)
+        }
         let _ = (ApplicationSpecificNotice.incrementArchiveChatTips(accountManager: self.context.sharedContext.accountManager, count: 1)
             |> deliverOnMainQueue).start(next: { [weak self] previousHintCount in
                 let _ = (postbox.transaction { transaction -> Void in
