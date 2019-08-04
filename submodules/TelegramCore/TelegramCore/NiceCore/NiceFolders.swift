@@ -253,7 +253,26 @@ public func fLog(_ text: String, _ tag: String = "Folders") {
             FolderLogger.setSharedLogger(FolderLogger(basePath: logsPath))
         }
     } else {
-        preconditionFailure()
+        let appBundleIdentifier = Bundle.main.bundleIdentifier!
+        guard let lastDotRange = appBundleIdentifier.range(of: ".", options: [.backwards]) else {
+            Logger.shared.log(tag + " (Main Logger)", text)
+            return
+        }
+        
+        let baseAppBundleId = String(appBundleIdentifier[..<lastDotRange.lowerBound])
+        let appGroupName = "group.\(baseAppBundleId)"
+        let maybeAppGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)
+        
+        if let appGroupUrl = maybeAppGroupUrl {
+            let rootPath = appGroupUrl.path + "/telegram-data"
+            
+            if folderLogger == nil {
+                let logsPath = rootPath + "/niceFolderLogs"
+                FolderLogger.setSharedLogger(FolderLogger(basePath: logsPath))
+            }
+        } else {
+            Logger.shared.log(tag + " (Main Logger)", text)
+        }
     }
 
     
