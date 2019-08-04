@@ -321,19 +321,36 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                         }
                     }
                     
-                    if !messages.isEmpty || strongSelf.chatPresentationInterfaceState.interfaceState.forwardMessageIds != nil || !MessagesToCopy.isEmpty {
+                    if !messages.isEmpty || strongSelf.chatPresentationInterfaceState.interfaceState.forwardMessageIds != nil {
                         strongSelf.setupSendActionOnViewUpdate({ [weak strongSelf] in
                             if let strongSelf = strongSelf, let textInputPanelNode = strongSelf.inputPanelNode as? ChatTextInputPanelNode {
                                 strongSelf.ignoreUpdateHeight = true
                                 textInputPanelNode.text = ""
-                                strongSelf.requestUpdateChatInterfaceState(false, true, { $0.withUpdatedReplyMessageId(nil).withUpdatedForwardMessageIds(nil).withUpdatedComposeDisableUrlPreview(nil) })
+                                strongSelf.requestUpdateChatInterfaceState(false, true, { $0.withUpdatedReplyMessageId(nil).withUpdatedForwardMessageIds(nil).withUpdatedComposeDisableUrlPreview(nil).withUpdatedForwardAsCopy(false) })
                                 strongSelf.ignoreUpdateHeight = false
                             }
                         })
                         
-                        if !MessagesToCopy.isEmpty, let _ = strongSelf.chatPresentationInterfaceState.interfaceState.forwardMessageIds {
-                            messages += MessagesToCopy
-                            MessagesToCopy = []
+                        if let forwardMessageIds = strongSelf.chatPresentationInterfaceState.interfaceState.forwardMessageIds, strongSelf.chatPresentationInterfaceState.interfaceState.forwardAsCopy {
+                            for id in forwardMessageIds {
+                                if let cachedMessage = MessagesToCopyDict[id] {
+                                    messages.append(cachedMessage)
+                                } else {
+                                    var msg: Message? = nil
+                                    let semaphore = DispatchSemaphore(value: 0)
+                                    let _ = strongSelf.context.account.postbox.transaction({ transaction -> Void in
+                                        msg = transaction.getMessage(id)
+                                        semaphore.signal()
+                                    }).start()
+                                    semaphore.wait()
+                                    
+                                    if let msg = msg {
+                                        messages.append(convertMessagesForEnqueue([msg])[0])
+                                    } else {
+                                        messages.append(.forward(source: id, grouping: .auto))
+                                    }
+                                }
+                            }
                         } else if let forwardMessageIds = strongSelf.chatPresentationInterfaceState.interfaceState.forwardMessageIds {
                             for id in forwardMessageIds {
                                 messages.append(.forward(source: id, grouping: .auto))
@@ -793,8 +810,8 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                         if let _ = accessoryPanelNode as? ReplyAccessoryPanelNode {
                             strongSelf.requestUpdateChatInterfaceState(true, false, { $0.withUpdatedReplyMessageId(nil) })
                         } else if let _ = accessoryPanelNode as? ForwardAccessoryPanelNode {
-                            strongSelf.requestUpdateChatInterfaceState(true, false, { $0.withUpdatedForwardMessageIds(nil) })
-                            MessagesToCopy = []
+                            strongSelf.requestUpdateChatInterfaceState(true, false, { $0.withUpdatedForwardMessageIds(nil).withUpdatedForwardAsCopy(false) })
+                            // MessagesToCopy = []
                         } else if let _ = accessoryPanelNode as? EditAccessoryPanelNode {
                             strongSelf.interfaceInteraction?.setupEditMessage(nil)
                         } else if let _ = accessoryPanelNode as? WebpagePreviewAccessoryPanelNode {

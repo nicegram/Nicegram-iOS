@@ -86,8 +86,8 @@ public struct NiceSettings: PreferencesEntry, Equatable {
     }
     
     /* public func withUpdatedCurrentFilter(_ currentFilter: NiceChatListNodePeersFilter) -> NiceSettings {
-        return NiceSettings(pinnedMessagesNotification: self.pinnedMessagesNotification, showContactsTab: self.showContactsTab, chatFilters: self. currentFilter: currentFilter, fixNotifications: fixNotifications)
-    } */
+     return NiceSettings(pinnedMessagesNotification: self.pinnedMessagesNotification, showContactsTab: self.showContactsTab, chatFilters: self. currentFilter: currentFilter, fixNotifications: fixNotifications)
+     } */
     
     /*
      public func withUpdatedpinnedMessagesNotification(_ pinnedMessagesNotification: Bool) -> NiceSettings {
@@ -212,6 +212,7 @@ public class SimplyNiceSettings {
 }
 
 public var MessagesToCopy: [EnqueueMessage] = []
+public var MessagesToCopyDict: [MessageId:EnqueueMessage] = [:]
 // public var SelectedMessagesToCopy: [Message] = []
 
 public func convertMessagesForEnqueue(_ messages: [Message]) -> [EnqueueMessage] {
@@ -227,32 +228,15 @@ public func convertMessagesForEnqueue(_ messages: [Message]) -> [EnqueueMessage]
     return messagesToC
 }
 
-//public func copiedMessagesSelection(_ messages: [Message], _  value: Bool) -> [Message] {
-//    for m in messages {
-//        var isTargetInSelected: Bool = false
-//        var targetIndex = 0
-//
-//        for (i, msg) in SelectedMessagesToCopy.enumerated() {
-//            if m.id == msg.id {
-//                isTargetInSelected = true
-//                targetIndex = i
-//            }
-//        }
-//        if (value) { // if add
-//            if isTargetInSelected {
-//                // pass
-//            } else {
-//                SelectedMessagesToCopy.append(m)
-//            }
-//        } else { // if remove
-//            if isTargetInSelected {
-//                SelectedMessagesToCopy.remove(at: targetIndex)
-//            } else {
-//                // pass
-//            }
-//        }
-//    }
-//
-//    SelectedMessagesToCopy = SelectedMessagesToCopy.sorted(by: { $0.id > $1.id })
-//
-//}
+public func convertMessagesForEnqueueDict(_ messages: [Message]) -> [MessageId:EnqueueMessage] {
+    var messagesToC: [MessageId:EnqueueMessage] = [:]
+    for m in messages {
+        var media: AnyMediaReference?
+        if !m.media.isEmpty {
+            media = .standalone(media: m.media[0])
+        }
+        let enqMsg: EnqueueMessage = .message(text: m.text, attributes: m.attributes, mediaReference: media, replyToMessageId: nil, localGroupingKey: m.groupingKey)
+        messagesToC[m.id] = enqMsg
+    }
+    return messagesToC
+}

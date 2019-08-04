@@ -5730,7 +5730,8 @@ public final class ChatController: TelegramController, GalleryHiddenMediaTarget,
     
     private func copyForwardMessages(messages: [Message], resetCurrent: Bool = false) {
         let messageIds = messages.map { $0.id }.sorted()
-        MessagesToCopy = convertMessagesForEnqueue(messages)
+        // MessagesToCopy = convertMessagesForEnqueue(messages)
+        MessagesToCopyDict = MessagesToCopyDict.merging(convertMessagesForEnqueueDict(messages)) { $1 }
         let controller = PeerSelectionController(context: self.context, filter: [.onlyWriteable, .excludeDisabled, .includeSavedMessages], title: l("Chat.ForwardAsCopy", self.presentationData.strings.baseLanguageCode))
         controller.peerSelected = { [weak self, weak controller] peerId in
             guard let strongSelf = self, let strongController = controller else {
@@ -5738,15 +5739,15 @@ public final class ChatController: TelegramController, GalleryHiddenMediaTarget,
             }
             
             if resetCurrent {
-                strongSelf.updateChatPresentationInterfaceState(animated: false, interactive: true, { $0.updatedInterfaceState({ $0.withUpdatedForwardMessageIds(nil) }) })
+                strongSelf.updateChatPresentationInterfaceState(animated: false, interactive: true, { $0.updatedInterfaceState({ $0.withUpdatedForwardMessageIds(nil).withUpdatedForwardAsCopy(false) }) })
             }
             
             if case .peer(peerId) = strongSelf.chatLocation, strongSelf.parentController == nil {
-                strongSelf.updateChatPresentationInterfaceState(animated: false, interactive: true, { $0.updatedInterfaceState({ $0.withUpdatedForwardMessageIds(messageIds).withoutSelectionState() }) })
+                strongSelf.updateChatPresentationInterfaceState(animated: false, interactive: true, { $0.updatedInterfaceState({ $0.withUpdatedForwardMessageIds(messageIds).withUpdatedForwardAsCopy(true).withoutSelectionState() }) })
                 strongController.dismiss()
             } else if peerId == strongSelf.context.account.peerId {
                 
-                let _ = (enqueueMessages(   account: strongSelf.context.account, peerId: strongSelf.context.account.peerId, messages: MessagesToCopy)
+                let _ = (enqueueMessages(account: strongSelf.context.account, peerId: strongSelf.context.account.peerId, messages: convertMessagesForEnqueue(messages))
                     |> deliverOnMainQueue).start(next: { messageIds in
                         if let strongSelf = self {
                             let signals: [Signal<Bool, NoError>] = messageIds.compactMap({ id -> Signal<Bool, NoError>? in
@@ -5781,9 +5782,9 @@ public final class ChatController: TelegramController, GalleryHiddenMediaTarget,
                 let _ = (strongSelf.context.account.postbox.transaction({ transaction -> Void in
                     transaction.updatePeerChatInterfaceState(peerId, update: { currentState in
                         if let currentState = currentState as? ChatInterfaceState {
-                            return currentState.withUpdatedForwardMessageIds(messageIds)
+                            return currentState.withUpdatedForwardMessageIds(messageIds).withUpdatedForwardAsCopy(true)
                         } else {
-                            return ChatInterfaceState().withUpdatedForwardMessageIds(messageIds)
+                            return ChatInterfaceState().withUpdatedForwardMessageIds(messageIds).withUpdatedForwardAsCopy(true)
                         }
                     })
                 }) |> deliverOnMainQueue).start(completed: {
