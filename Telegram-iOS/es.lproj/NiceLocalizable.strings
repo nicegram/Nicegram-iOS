@@ -21,8 +21,27 @@
 
 /*Open Pin*/
 "Chat.OpenPin" = "Mostrar Pin";
-"ChatFilter.Admin" = "";
-"NiceFeatures.Notifications.Fix" = "";
-"NiceFeatures.Notifications.FixNotice" = "";
-"NiceFeatures.Filters.Header" = "";
-"NiceFeatures.Filters.Notice" = "";
+"ChatFilter.Admin" = "Admin";
+"NiceFeatures.Notifications.Fix" = "Deshabilitar Notificaciones no deseadas ";
+"NiceFeatures.Notifications.FixNotice" = "Util si obtienes notificaciones de chats silenciados\nEl Responder desde notificaciones, nombres de cuentas y vista previa de multimedia no estarán disponibles ";
+"NiceFeatures.Filters.Header" = "FILTROS (PESTAÑAS)";
+"NiceFeatures.Filters.Notice" = "Selecciona el número de pestañas personalizadas \nMantiene presionado en la pestaña para cambiar el filtro ";
+
+/*Common*/
+"Common.ExitNow" = "";
+"Common.Later" = "";
+"Common.RestartRequired" = "";
+"NiceFeatures.Tabs.ShowNames" = "";
+"Chat.ForwardAsCopy" = "";
+
+/*Folder*/
+"Folder.DefaultName" = "";
+"Folder.New" = "";
+"Folder.Created" = "";
+"Folder.AddToExisting" = "";
+"Folder.Updated" = "";
+"Folder.Create" = "";
+"Folder.Create.Name" = "";
+"Folder.Create.Placeholder" = "";
+"Folder.LimitExceeded" = "";
+"NiceFeatures.HideNumber" = "";
