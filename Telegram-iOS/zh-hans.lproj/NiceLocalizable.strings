@@ -40,3 +40,15 @@
 "Common.RestartRequired" = "需要重启";
 "NiceFeatures.Tabs.ShowNames" = "显示标签名字";
 "Chat.ForwardAsCopy" = "无引用转发";
+
+/*Folder*/
+"Folder.DefaultName" = "文件夹";
+"Folder.New" = "新建文件夹";
+"Folder.Created" = "文件夹已创建";
+"Folder.AddToExisting" = "添加到已有文件夹";
+"Folder.Updated" = "文件夹已更新";
+"Folder.Create" = "创建文件夹";
+"Folder.Create.Name" = "文件夹名字";
+"Folder.Create.Placeholder" = "文件夹...";
+"Folder.LimitExceeded" = "抱歉,您最多只能创建3个自定义文件夹.\n即将推出可创建更多文件夹功能.";
+"NiceFeatures.HideNumber" = "设置中隐藏手机号码";
