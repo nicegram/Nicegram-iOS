@@ -203,6 +203,8 @@
 		A5441CA222F3A00B00C6FBB0 /* ControllerTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5441CA122F3A00B00C6FBB0 /* ControllerTemplate.swift */; };
 		A5764F9C22F348080080C6E0 /* TextInputController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5764F9B22F348080080C6E0 /* TextInputController.swift */; };
 		A5764F9E22F39BC20080C6E0 /* NewFolderListController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5764F9D22F39BC20080C6E0 /* NewFolderListController.swift */; };
+		A59730DA22F784B8003C68B7 /* IAPCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A59730D922F784B8003C68B7 /* IAPCore.swift */; };
+		A59730DE22F7A1B2003C68B7 /* IAPListController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A59730DD22F7A1B2003C68B7 /* IAPListController.swift */; };
 		A5E8799422D605C800AD2C2C /* NiceUISettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E8799322D605C800AD2C2C /* NiceUISettings.swift */; };
 		A5E8799822D6079500AD2C2C /* NiceFeaturesController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E8799722D6079500AD2C2C /* NiceFeaturesController.swift */; };
 		A5E8799B22D6090C00AD2C2C /* NiceStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E8799A22D6090C00AD2C2C /* NiceStrings.swift */; };
@@ -1436,6 +1438,8 @@
 		A5441CA122F3A00B00C6FBB0 /* ControllerTemplate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControllerTemplate.swift; sourceTree = "<group>"; };
 		A5764F9B22F348080080C6E0 /* TextInputController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextInputController.swift; sourceTree = "<group>"; };
 		A5764F9D22F39BC20080C6E0 /* NewFolderListController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewFolderListController.swift; sourceTree = "<group>"; };
+		A59730D922F784B8003C68B7 /* IAPCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IAPCore.swift; sourceTree = "<group>"; };
+		A59730DD22F7A1B2003C68B7 /* IAPListController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IAPListController.swift; sourceTree = "<group>"; };
 		A5E8799322D605C800AD2C2C /* NiceUISettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceUISettings.swift; sourceTree = "<group>"; };
 		A5E8799722D6079500AD2C2C /* NiceFeaturesController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceFeaturesController.swift; sourceTree = "<group>"; };
 		A5E8799A22D6090C00AD2C2C /* NiceStrings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceStrings.swift; sourceTree = "<group>"; };
@@ -2842,9 +2846,19 @@
 			path = Templates;
 			sourceTree = "<group>";
 		};
+		A59730D822F784A3003C68B7 /* IAP */ = {
+			isa = PBXGroup;
+			children = (
+				A59730D922F784B8003C68B7 /* IAPCore.swift */,
+				A59730DD22F7A1B2003C68B7 /* IAPListController.swift */,
+			);
+			path = IAP;
+			sourceTree = "<group>";
+		};
 		A5E8799222D6034300AD2C2C /* NiceUI */ = {
 			isa = PBXGroup;
 			children = (
+				A59730D822F784A3003C68B7 /* IAP */,
 				A5206C7022F4550800288DB5 /* Utils */,
 				A5764FA022F39FB30080C6E0 /* Templates */,
 				A5E8799922D608FD00AD2C2C /* Strings */,
@@ -6190,6 +6204,7 @@
 				09F215A822649C7900AEDF6D /* PasscodeEntryKeyboardNode.swift in Sources */,
 				D0EC6E111EB9F58900EBF1C3 /* InstantPageNode.swift in Sources */,
 				D0EC6E121EB9F58900EBF1C3 /* InstantPageLayout.swift in Sources */,
+				A59730DA22F784B8003C68B7 /* IAPCore.swift in Sources */,
 				D0D4345C1F97CEAA00CC1806 /* ProxyServerSettingsController.swift in Sources */,
 				D08BDF641FA37BEA009D08E1 /* ChatRecordingPreviewInputPanelNode.swift in Sources */,
 				D0943B071FDEC529001522CC /* InstantVideoRadialStatusNode.swift in Sources */,
@@ -6360,6 +6375,7 @@
 				D00ADFDD1EBB73C200873D2E /* OverlayMediaManager.swift in Sources */,
 				D056CD7C1FF3E92C00880D28 /* DirectionalPanGestureRecognizer.swift in Sources */,
 				D0EC6E5F1EB9F58900EBF1C3 /* RecentSessionsController.swift in Sources */,
+				A59730DE22F7A1B2003C68B7 /* IAPListController.swift in Sources */,
 				D0EC6E601EB9F58900EBF1C3 /* BlockedPeersController.swift in Sources */,
 				D06BEC8C1F65E30A0035A545 /* WebEmbedVideoContent.swift in Sources */,
 				D0EC6E611EB9F58900EBF1C3 /* SelectivePrivacySettingsController.swift in Sources */,
