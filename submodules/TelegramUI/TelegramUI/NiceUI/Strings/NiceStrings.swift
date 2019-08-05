@@ -45,7 +45,6 @@ public func getLangFallback(_ lang: String) -> String {
 
 public func l(_ key: String, _ locale: String = "en") -> String {
     var lang = locale
-    print(lang)
     let rawSuffix = "-raw"
     if lang.hasSuffix(rawSuffix) {
         lang = String(lang.dropLast(rawSuffix.count))
