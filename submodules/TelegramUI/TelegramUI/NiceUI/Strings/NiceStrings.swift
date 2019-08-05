@@ -27,12 +27,25 @@ let niceLocales: [String : [String : String]] = [
     // Traditional
     "zh-hant": gd(locale: "zh-hant"),
     
-    "fa": gd(locale: "fa")
+    "fa": gd(locale: "fa"),
+    "pl": gd(locale: "pl"),
+    "sk": gd(locale: "sk")
 ]
+
+public func getLangFallback(_ lang: String) -> String {
+    switch (lang) {
+        case "zh-hant":
+            return "zh-hans"
+        case "uk":
+            return "ru"
+        default:
+            return "en"
+    }
+}
 
 public func l(_ key: String, _ locale: String = "en") -> String {
     var lang = locale
-    
+    print(lang)
     let rawSuffix = "-raw"
     if lang.hasSuffix(rawSuffix) {
         lang = String(lang.dropLast(rawSuffix.count))
@@ -45,6 +58,8 @@ public func l(_ key: String, _ locale: String = "en") -> String {
     var result = "[MISSING STRING]"
     
     if let res = niceLocales[lang]?[key], !res.isEmpty {
+        result = res
+    } else if let res = niceLocales[getLangFallback(lang)]?[key], !res.isEmpty {
         result = res
     } else if let res = niceLocales["en"]?[key], !res.isEmpty {
         result = res
