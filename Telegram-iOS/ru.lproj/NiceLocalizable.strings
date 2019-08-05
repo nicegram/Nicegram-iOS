@@ -44,3 +44,4 @@
 "Folder.Create.Name" = "Название Папки";
 "Folder.Create.Placeholder" = "Папка...";
 "Folder.LimitExceeded" = "К сожалению, создать можно не больше 3 папок. Совсем скоро можно будет создать больше.";
+"NiceFeatures.HideNumber" = "Скрыть номер в настройках";
