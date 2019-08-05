@@ -1,7 +1,47 @@
-/* 
-  NiceLocalizable.strings
-  Telegram-iOS
+"AppName" = "Nicegram";
 
-  Created by Sergey on 05/08/2019.
-  Copyright © 2019 Telegram. All rights reserved.
-*/
+/*ChatFilter*/
+"ChatFilter.Bots" = "Boti";
+"ChatFilter.Channels" = "Kanály";
+"ChatFilter.Private" = "Ľudia";
+"ChatFilter.Groups" = "Skupiny";
+"ChatFilter.Unread" = "Neprečítané";
+"ChatFilter.Unmuted" = "Nestlmené";
+"ChatFilter.Favourites" = "Obľúbené";
+
+/*Nice Features*/
+"NiceFeatures.Title" = "Nicegram";
+"NiceFeatures.Tabs.Header" = "KARTY";
+"NiceFeatures.Tabs.ShowContacts" = "Zobraz kontakty";
+"NiceFeatures.ChatScreen.Header" = "CHATOVÁ OBRAZOVKA";
+"NiceFeatures.ChatScreen.AnimatedStickers" = "Animované nálepky";
+
+/*Save to Cloud*/
+"Chat.SaveToCloud" = "Ulož na Cloud";
+
+/*Open Pin*/
+"Chat.OpenPin" = "Zobraz špendlík";
+"ChatFilter.Admin" = "";
+"NiceFeatures.Notifications.Fix" = "";
+"NiceFeatures.Notifications.FixNotice" = "";
+"NiceFeatures.Filters.Header" = "";
+"NiceFeatures.Filters.Notice" = "";
+
+/*Common*/
+"Common.ExitNow" = "";
+"Common.Later" = "";
+"Common.RestartRequired" = "";
+"NiceFeatures.Tabs.ShowNames" = "";
+"Chat.ForwardAsCopy" = "";
+
+/*Folder*/
+"Folder.DefaultName" = "";
+"Folder.New" = "";
+"Folder.Created" = "";
+"Folder.AddToExisting" = "";
+"Folder.Updated" = "";
+"Folder.Create" = "";
+"Folder.Create.Name" = "";
+"Folder.Create.Placeholder" = "";
+"Folder.LimitExceeded" = "";
+"NiceFeatures.HideNumber" = "";
