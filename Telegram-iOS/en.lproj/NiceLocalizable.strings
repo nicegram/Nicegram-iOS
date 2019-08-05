@@ -1,10 +1,5 @@
 "AppName" = "Nicegram";
 
-/*Common*/
-"Common.ExitNow" = "Exit Now";
-"Common.Later" = "Later";
-"Common.RestartRequired" = "Restart Required!";
-
 /*ChatFilter*/
 "ChatFilter.Bots" = "Bots";
 "ChatFilter.Channels" = "Channels";
@@ -18,15 +13,11 @@
 "NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "TABS";
 "NiceFeatures.Tabs.ShowContacts" = "Show Contacts Tab";
-"NiceFeatures.Tabs.ShowNames" = "Show Tab Names";
 "NiceFeatures.ChatScreen.Header" = "CHAT SCREEN";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Animated Stickers";
-"NiceFeatures.HideNumber" = "Hide phone in settings";
 
-
-/*Chat*/
+/*Save to Cloud*/
 "Chat.SaveToCloud" = "Save to Cloud";
-"Chat.ForwardAsCopy" = "Forward as Copy";
 
 /*Open Pin*/
 "Chat.OpenPin" = "Show Pin";
@@ -35,6 +26,13 @@
 "NiceFeatures.Notifications.FixNotice" = "Useful if you get notifications from muted chats.\nReply from notifications, account labels and media previews will be unavailable.";
 "NiceFeatures.Filters.Header" = "FILTERS (TABS)";
 "NiceFeatures.Filters.Notice" = "Select the number of custom tabs.\nLongtap on tab to change filter.";
+
+/*Common*/
+"Common.ExitNow" = "Exit Now";
+"Common.Later" = "Later";
+"Common.RestartRequired" = "Restart Required!";
+"NiceFeatures.Tabs.ShowNames" = "Show Tab Names";
+"Chat.ForwardAsCopy" = "Forward As Copy";
 
 /*Folder*/
 "Folder.DefaultName" = "Folder";
@@ -46,4 +44,4 @@
 "Folder.Create.Name" = "Folder Name";
 "Folder.Create.Placeholder" = "Folder...";
 "Folder.LimitExceeded" = "Sorry, you can create no more then 3 custom folders.\nMore folders will be available soon.";
-
+"NiceFeatures.HideNumber" = "Hide phone in settings";
