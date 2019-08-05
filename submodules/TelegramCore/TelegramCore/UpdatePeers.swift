@@ -22,7 +22,7 @@ func updatePeerChatInclusionWithMinTimestamp(transaction: Transaction, id: PeerI
             } else {
                 updatedMinTimestamp = minTimestamp
             }
-            fLog("Current Inlusion for \(id.toInt64()) is \(groupId)")
+            // fLog("Current Inclusion for \(id.toInt64()) is \(groupId)")
             updatedInclusion = .ifHasMessagesOrOneOf(groupId: groupId, pinningIndex: pinningIndex, minTimestamp: updatedMinTimestamp)
         default:
             fLog("Resetting inclusion for \(id.toInt64())")
