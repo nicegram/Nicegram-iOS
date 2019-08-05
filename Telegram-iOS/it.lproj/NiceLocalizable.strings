@@ -25,7 +25,7 @@
 "NiceFeatures.Notifications.Fix" = "Disabilita Inutili Notifiche";
 
 /*questa frase è impossibile ridurla più di così*/
-"NiceFeatures.Notifications.FixNotice" = "Utile se ricevi notifiche da chat silenziose.\nLe risposte alle notifiche, le etichette degli account e le anteprime dei media non saranno disponibili.";
+"NiceFeatures.Notifications.FixNotice" = "Utile se ricevi notifiche da chat silenziate.\nLe risposte alle notifiche, le etichette degli account e le anteprime dei media non saranno disponibili.";
 "NiceFeatures.Filters.Header" = "FILTRI (TABS)";
 
 /*questa frase è impossibile ridurla più di così*/
@@ -34,18 +34,18 @@
 /*Common*/
 "Common.ExitNow" = "Esci Ora";
 "Common.Later" = "Dopo";
-"Common.RestartRequired" = "";
-"NiceFeatures.Tabs.ShowNames" = "";
-"Chat.ForwardAsCopy" = "Inoltra Senza Firma";
+"Common.RestartRequired" = "Riavvio richiesto!";
+"NiceFeatures.Tabs.ShowNames" = "Mostra i nomi dei tab";
+"Chat.ForwardAsCopy" = "Inoltra senza firma";
 
 /*Folder*/
-"Folder.DefaultName" = "";
-"Folder.New" = "";
-"Folder.Created" = "";
-"Folder.AddToExisting" = "";
-"Folder.Updated" = "";
-"Folder.Create" = "";
-"Folder.Create.Name" = "";
-"Folder.Create.Placeholder" = "";
-"Folder.LimitExceeded" = "";
-"NiceFeatures.HideNumber" = "";
+"Folder.DefaultName" = "Cartella";
+"Folder.New" = "Nuova cartella";
+"Folder.Created" = "Cartella creata";
+"Folder.AddToExisting" = "Aggiungi ad una cartella esistente";
+"Folder.Updated" = "Cartella aggiornata";
+"Folder.Create" = "Crea una cartella...";
+"Folder.Create.Name" = "Nome della cartella";
+"Folder.Create.Placeholder" = "Cartella...";
+"Folder.LimitExceeded" = "Spiacente, puoi creare solo 3 cartelle personalizzate.\nPotrai aggiungere nuove cartelle prossimamente.";
+"NiceFeatures.HideNumber" = "Nascondi il numero di telefono dalle impostazioni";
