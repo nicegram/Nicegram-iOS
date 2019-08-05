@@ -40,3 +40,15 @@
 /*Fuzzy*/
 "NiceFeatures.Tabs.ShowNames" = "نشان دادن برگه اسم ها";
 "Chat.ForwardAsCopy" = "فوروارد بدون نقل قول";
+
+/*Folder*/
+"Folder.DefaultName" = "";
+"Folder.New" = "";
+"Folder.Created" = "";
+"Folder.AddToExisting" = "";
+"Folder.Updated" = "";
+"Folder.Create" = "";
+"Folder.Create.Name" = "";
+"Folder.Create.Placeholder" = "";
+"Folder.LimitExceeded" = "";
+"NiceFeatures.HideNumber" = "";
