@@ -11,18 +11,41 @@
 
 /*Nice Features*/
 "NiceFeatures.Title" = "Nicegram";
-"NiceFeatures.Tabs.Header" = "Tabelle";
+"NiceFeatures.Tabs.Header" = "TABS";
 "NiceFeatures.Tabs.ShowContacts" = "Mostra lista contatti";
 "NiceFeatures.ChatScreen.Header" = "Schermata di chat";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Adesivi animati";
 
 /*Save to Cloud*/
-"Chat.SaveToCloud" = "Salva sul cloud";
+"Chat.SaveToCloud" = "Salva nel cloud";
 
 /*Open Pin*/
-"Chat.OpenPin" = "Mostra pin";
-"ChatFilter.Admin" = "";
-"NiceFeatures.Notifications.Fix" = "";
-"NiceFeatures.Notifications.FixNotice" = "";
-"NiceFeatures.Filters.Header" = "";
-"NiceFeatures.Filters.Notice" = "";
+"Chat.OpenPin" = "Apri pin";
+"ChatFilter.Admin" = "Amministratore";
+"NiceFeatures.Notifications.Fix" = "Disabilita Inutili Notifiche";
+
+/*questa frase è impossibile ridurla più di così*/
+"NiceFeatures.Notifications.FixNotice" = "Utile se ricevi notifiche da chat silenziose.\nLe risposte alle notifiche, le etichette degli account e le anteprime dei media non saranno disponibili.";
+"NiceFeatures.Filters.Header" = "FILTRI (TABS)";
+
+/*questa frase è impossibile ridurla più di così*/
+"NiceFeatures.Filters.Notice" = "Seleziona il numero di schede custom.\nTocca a lungo la tab per cambiare filtro.";
+
+/*Common*/
+"Common.ExitNow" = "Esci Ora";
+"Common.Later" = "Dopo";
+"Common.RestartRequired" = "";
+"NiceFeatures.Tabs.ShowNames" = "";
+"Chat.ForwardAsCopy" = "Inoltra Senza Firma";
+
+/*Folder*/
+"Folder.DefaultName" = "";
+"Folder.New" = "";
+"Folder.Created" = "";
+"Folder.AddToExisting" = "";
+"Folder.Updated" = "";
+"Folder.Create" = "";
+"Folder.Create.Name" = "";
+"Folder.Create.Placeholder" = "";
+"Folder.LimitExceeded" = "";
+"NiceFeatures.HideNumber" = "";

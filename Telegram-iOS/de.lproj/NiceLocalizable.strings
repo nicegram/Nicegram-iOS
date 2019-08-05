@@ -26,3 +26,22 @@
 "NiceFeatures.Notifications.FixNotice" = "";
 "NiceFeatures.Filters.Header" = "";
 "NiceFeatures.Filters.Notice" = "";
+
+/*Common*/
+"Common.ExitNow" = "";
+"Common.Later" = "";
+"Common.RestartRequired" = "";
+"NiceFeatures.Tabs.ShowNames" = "";
+"Chat.ForwardAsCopy" = "";
+
+/*Folder*/
+"Folder.DefaultName" = "";
+"Folder.New" = "";
+"Folder.Created" = "";
+"Folder.AddToExisting" = "";
+"Folder.Updated" = "";
+"Folder.Create" = "";
+"Folder.Create.Name" = "";
+"Folder.Create.Placeholder" = "";
+"Folder.LimitExceeded" = "";
+"NiceFeatures.HideNumber" = "";
