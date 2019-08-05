@@ -210,6 +210,7 @@
 		A5E879AE22D61DDE00AD2C2C /* NiceLocalizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A5E879AC22D61DDE00AD2C2C /* NiceLocalizable.strings */; };
 		A5E879B422D61E6900AD2C2C /* NiceLocalizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A5E879B222D61E6900AD2C2C /* NiceLocalizable.strings */; };
 		A5E879B722D61E9600AD2C2C /* NiceLocalizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A5E879B522D61E9600AD2C2C /* NiceLocalizable.strings */; };
+		A5FF33EE22F8816E00D27C15 /* NiceLocalizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A5FF33EC22F8816E00D27C15 /* NiceLocalizable.strings */; };
 		D000CACF21FB6E380011B15D /* NotificationService.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = D000CAC821FB6E370011B15D /* NotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		D001D5AA1F878DA300DF975A /* PhoneCountries.txt in Resources */ = {isa = PBXBuildFile; fileRef = D001D5A91F878DA300DF975A /* PhoneCountries.txt */; };
 		D008185022B5797A008A895F /* BuildConfig.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D008184F22B5797A008A895F /* BuildConfig.framework */; };
@@ -856,6 +857,7 @@
 		A5E879AD22D61DDE00AD2C2C /* uk */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uk; path = NiceLocalizable.strings; sourceTree = "<group>"; };
 		A5E879B322D61E6900AD2C2C /* zh-hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-hant"; path = NiceLocalizable.strings; sourceTree = "<group>"; };
 		A5E879B622D61E9600AD2C2C /* zh-hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-hans"; path = NiceLocalizable.strings; sourceTree = "<group>"; };
+		A5FF33ED22F8816E00D27C15 /* pl */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = pl; path = NiceLocalizable.strings; sourceTree = "<group>"; };
 		D000CAC021FB6E160011B15D /* NotificationService-HockeyApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "NotificationService-HockeyApp.entitlements"; sourceTree = "<group>"; };
 		D000CAC121FB6E160011B15D /* NotificationService-Fork.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "NotificationService-Fork.entitlements"; sourceTree = "<group>"; };
 		D000CAC221FB6E170011B15D /* NotificationService-AppStore.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "NotificationService-AppStore.entitlements"; sourceTree = "<group>"; };
@@ -1854,6 +1856,14 @@
 			path = "zh-hant.lproj";
 			sourceTree = "<group>";
 		};
+		A5FF33EB22F8810800D27C15 /* pl.lproj */ = {
+			isa = PBXGroup;
+			children = (
+				A5FF33EC22F8816E00D27C15 /* NiceLocalizable.strings */,
+			);
+			path = pl.lproj;
+			sourceTree = "<group>";
+		};
 		D00859931B28189D00EAF753 = {
 			isa = PBXGroup;
 			children = (
@@ -1911,6 +1921,7 @@
 		D008599F1B28189D00EAF753 /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
+				A5FF33EB22F8810800D27C15 /* pl.lproj */,
 				A5CC7E6022F0FCA800B8CA21 /* fa.lproj */,
 				A5E879B022D61E4200AD2C2C /* zh-hant.lproj */,
 				A5E879AF22D61E3900AD2C2C /* zh-hans.lproj */,
@@ -2723,6 +2734,7 @@
 				"zh-hans",
 				"zh-Hans",
 				fa,
+				pl,
 			);
 			mainGroup = D00859931B28189D00EAF753;
 			productRefGroup = D008599D1B28189D00EAF753 /* Products */;
@@ -2799,6 +2811,7 @@
 				09A4193022B7A4D500637EB4 /* BlueClassicIconIpad@2x.png in Resources */,
 				D04DCC361F71C80000B021D7 /* 9.m4a in Resources */,
 				D0CE6F5A213EDA4400BCD44B /* AppIntentVocabulary.plist in Resources */,
+				A5FF33EE22F8816E00D27C15 /* NiceLocalizable.strings in Resources */,
 				A5CC7E6322F0FCCC00B8CA21 /* NiceLocalizable.strings in Resources */,
 				09EBE2AE22B004EA00F670AB /* BlueFilledIconIpad@2x.png in Resources */,
 				D04DCC301F71C80000B021D7 /* 3.m4a in Resources */,
@@ -3330,6 +3343,14 @@
 			isa = PBXVariantGroup;
 			children = (
 				A5E879B622D61E9600AD2C2C /* zh-hans */,
+			);
+			name = NiceLocalizable.strings;
+			sourceTree = "<group>";
+		};
+		A5FF33EC22F8816E00D27C15 /* NiceLocalizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				A5FF33ED22F8816E00D27C15 /* pl */,
 			);
 			name = NiceLocalizable.strings;
 			sourceTree = "<group>";
