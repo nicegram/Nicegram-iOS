@@ -28,20 +28,20 @@
 "NiceFeatures.Filters.Notice" = "選擇自訂標籤的數量。\n長按標籤來更改過濾。";
 
 /*Common*/
-"Common.ExitNow" = "";
-"Common.Later" = "";
-"Common.RestartRequired" = "";
-"NiceFeatures.Tabs.ShowNames" = "";
-"Chat.ForwardAsCopy" = "";
+"Common.ExitNow" = "立即結束";
+"Common.Later" = "稍後";
+"Common.RestartRequired" = "必須重新啟動";
+"NiceFeatures.Tabs.ShowNames" = "顯示標籤名稱";
+"Chat.ForwardAsCopy" = "複製後轉傳";
 
 /*Folder*/
-"Folder.DefaultName" = "";
-"Folder.New" = "";
-"Folder.Created" = "";
-"Folder.AddToExisting" = "";
-"Folder.Updated" = "";
-"Folder.Create" = "";
-"Folder.Create.Name" = "";
-"Folder.Create.Placeholder" = "";
-"Folder.LimitExceeded" = "";
-"NiceFeatures.HideNumber" = "";
+"Folder.DefaultName" = "資料夾";
+"Folder.New" = "新資料夾";
+"Folder.Created" = "已建立資料夾";
+"Folder.AddToExisting" = "新增至現有資料夾";
+"Folder.Updated" = "資料夾已更新";
+"Folder.Create" = "建立資料夾…";
+"Folder.Create.Name" = "資料夾名稱";
+"Folder.Create.Placeholder" = "資料夾…";
+"Folder.LimitExceeded" = "抱歉，您最多只能建立 3 個自訂資料夾。\n很快就可以建立更多。";
+"NiceFeatures.HideNumber" = "在設定中隱藏電話號碼";
