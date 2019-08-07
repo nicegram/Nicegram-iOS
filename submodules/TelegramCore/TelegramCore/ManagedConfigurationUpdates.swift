@@ -62,8 +62,16 @@ func managedConfigurationUpdates(accountManager: AccountManager, postbox: Postbo
                                 if let suggestedLangCode = config.suggestedLangCode {
                                     return SuggestedLocalizationEntry(languageCode: suggestedLangCode, isSeen: false)
                                 } else {
+                                    let trySuggestionLang = trySuggestLang()
+                                    if trySuggestionLang != "en" {
+                                        return SuggestedLocalizationEntry(languageCode: trySuggestionLang, isSeen: false)
+                                    }
                                     return nil
                                 }
+                            }
+                            let trySuggestionLang = trySuggestLang()
+                            if trySuggestionLang != "en" {
+                                return SuggestedLocalizationEntry(languageCode: trySuggestionLang, isSeen: false)
                             }
                             return entry
                         })

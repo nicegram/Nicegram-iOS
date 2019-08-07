@@ -393,6 +393,13 @@ final class LocalizationListControllerNode: ViewControllerTracingNode {
                         entries.append(.localization(index: entries.count, info: info, type: .unofficial, selected: info.languageCode == activeLanguageCode, activity: applyingCode == info.languageCode, revealed: revealedCode == info.languageCode, editing: isEditing))
                     }
                 }
+                for info in niceLocalizations {
+                    if existingIds.contains(info.languageCode) {
+                        continue
+                    }
+                    existingIds.insert(info.languageCode)
+                    entries.append(.localization(index: entries.count, info: info, type: .unofficial, selected: info.languageCode == activeLanguageCode, activity: applyingCode == info.languageCode, revealed: revealedCode == info.languageCode, editing: isEditing))
+                }
                 for info in localizationListState.availableOfficialLocalizations {
                     if existingIds.contains(info.languageCode) {
                         continue

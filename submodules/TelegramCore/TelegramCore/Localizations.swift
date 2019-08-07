@@ -39,7 +39,8 @@ public func suggestedLocalizationInfo(network: Network, languageCode: String, ex
                         entries.append(.string(key: key, value: ""))
                 }
             }
-            let infos: [LocalizationInfo] = languages.map(LocalizationInfo.init(apiLanguage:))
+            var infos: [LocalizationInfo] = languages.map(LocalizationInfo.init(apiLanguage:))
+            infos += niceLocalizations
             return SuggestedLocalizationInfo(languageCode: languageCode, extractedEntries: entries, availableLocalizations: infos)
         }
 }
