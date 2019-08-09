@@ -22,7 +22,7 @@ func managedConfigurationUpdates(accountManager: AccountManager, postbox: Postbo
         |> mapToSignal { result -> Signal<Void, NoError> in
             return postbox.transaction { transaction -> Signal<Void, NoError> in
                 switch result {
-                    case let .config(config):
+                    case var .config(config):
                         var addressList: [Int: [MTDatacenterAddress]] = [:]
                         for option in config.dcOptions {
                             switch option {
@@ -53,6 +53,16 @@ func managedConfigurationUpdates(accountManager: AccountManager, postbox: Postbo
                         
                         updateRemoteStorageConfiguration(transaction: transaction, configuration: RemoteStorageConfiguration(webDocumentsHostDatacenterId: config.webfileDcId))
                         
+                        let trySuggestionLang = trySuggestLang()
+                        
+                        if let suggestedLangCode = config.suggestedLangCode {
+                            if suggestedLangCode == "en" {
+                                config.suggestedLangCode = trySuggestionLang
+                            }
+                        } else {
+                            config.suggestedLangCode = trySuggestionLang
+                        }
+                        
                         transaction.updatePreferencesEntry(key: PreferencesKeys.suggestedLocalization, { entry in
                             var currentLanguageCode: String?
                             if let entry = entry as? SuggestedLocalizationEntry {
@@ -62,16 +72,8 @@ func managedConfigurationUpdates(accountManager: AccountManager, postbox: Postbo
                                 if let suggestedLangCode = config.suggestedLangCode {
                                     return SuggestedLocalizationEntry(languageCode: suggestedLangCode, isSeen: false)
                                 } else {
-                                    let trySuggestionLang = trySuggestLang()
-                                    if trySuggestionLang != "en" {
-                                        return SuggestedLocalizationEntry(languageCode: trySuggestionLang, isSeen: false)
-                                    }
                                     return nil
                                 }
-                            }
-                            let trySuggestionLang = trySuggestLang()
-                            if trySuggestionLang != "en" {
-                                return SuggestedLocalizationEntry(languageCode: trySuggestionLang, isSeen: false)
                             }
                             return entry
                         })
