@@ -588,21 +588,20 @@ final class SharedApplicationContext {
         }, dismissNativeController: {
             self.window?.rootViewController?.dismiss(animated: true, completion: nil)
         }, getAvailableAlternateIcons: {
-            return []
-//            if #available(iOS 10.3, *) {
-//                var icons = [PresentationAppIcon(name: "Blue", imageName: "BlueIcon", isDefault: false)]
-//                        PresentationAppIcon(name: "Black", imageName: "BlackIcon", isDefault: false),
-//                        PresentationAppIcon(name: "BlueClassic", imageName: "BlueClassicIcon", isDefault: false),
-//                        PresentationAppIcon(name: "BlackClassic", imageName: "BlackClassicIcon", isDefault: false),
-//                        PresentationAppIcon(name: "BlueFilled", imageName: "BlueFilledIcon", isDefault: false),
-//                        PresentationAppIcon(name: "BlackFilled", imageName: "BlackFilledIcon", isDefault: false)]
-//                if buildConfig.isInternalBuild {
-//                    icons.append(PresentationAppIcon(name: "WhiteFilled", imageName: "WhiteFilledIcon", isDefault: false))
-//                }
-//                return icons
-//            } else {
-//                return []
-//            }
+            if #available(iOS 10.3, *) {
+                var icons = [PresentationAppIcon(name: "Blue", imageName: "BlueIcon", isDefault: false),
+                        PresentationAppIcon(name: "Black", imageName: "BlackIcon", isDefault: false),
+                        // PresentationAppIcon(name: "BlueClassic", imageName: "BlueClassicIcon", isDefault: false),
+                        // PresentationAppIcon(name: "BlackClassic", imageName: "BlackClassicIcon", isDefault: false),
+                        PresentationAppIcon(name: "BlueFilled", imageName: "BlueFilledIcon", isDefault: false),
+                        PresentationAppIcon(name: "BlackFilled", imageName: "BlackFilledIcon", isDefault: false)]
+                if buildConfig.isInternalBuild {
+                    icons.append(PresentationAppIcon(name: "WhiteFilled", imageName: "WhiteFilledIcon", isDefault: false))
+                }
+                return icons
+            } else {
+                return []
+            }
         }, getAlternateIconName: {
             if #available(iOS 10.3, *) {
                 return application.alternateIconName

@@ -230,17 +230,17 @@ private enum ThemeSettingsControllerEntry: ItemListNodeEntry {
             case let .accentColor(theme, text, color):
                 let colorValue = color?.baseColor.colorValue ?? defaultDayAccentColor
                 let accentColor = UIColor(rgb: UInt32(bitPattern: colorValue))
-                return ItemListDisclosureItem(theme: theme, icon: nil, title: text, label: "", labelStyle: .color(accentColor), sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
-                    arguments.openAccentColor(colorValue)
-                }, tag: ThemeSettingsEntryTag.accentColor)
-//                return ThemeSettingsAccentColorItem(theme: theme, sectionId: self.section, colors: PresentationThemeBaseColor.allCases, currentColor: color ?? PresentationThemeAccentColor(baseColor: .blue, value: 0.5), updated: { color in
-//                    let _ = updatePresentationThemeSettingsInteractively(accountManager: arguments.context.sharedContext.accountManager, { current in
-//                        var themeSpecificAccentColors = current.themeSpecificAccentColors
-//                        themeSpecificAccentColors[current.theme.index] = color
-//                        return PresentationThemeSettings(chatWallpaper: current.chatWallpaper, theme: current.theme, themeSpecificAccentColors: themeSpecificAccentColors, themeSpecificChatWallpapers: current.themeSpecificChatWallpapers, fontSize: current.fontSize, automaticThemeSwitchSetting: current.automaticThemeSwitchSetting, largeEmoji: current.largeEmoji, disableAnimations: current.disableAnimations)
-//                    }).start()
-//                }, toggleSlider: {
-//                })
+//                return ItemListDisclosureItem(theme: theme, icon: nil, title: text, label: "", labelStyle: .color(accentColor), sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
+//                    arguments.openAccentColor(colorValue)
+//                }, tag: ThemeSettingsEntryTag.accentColor)
+                return ThemeSettingsAccentColorItem(theme: theme, sectionId: self.section, colors: PresentationThemeBaseColor.allCases, currentColor: color ?? PresentationThemeAccentColor(baseColor: .blue, value: 0.5), updated: { color in
+                    let _ = updatePresentationThemeSettingsInteractively(accountManager: arguments.context.sharedContext.accountManager, { current in
+                        var themeSpecificAccentColors = current.themeSpecificAccentColors
+                        themeSpecificAccentColors[current.theme.index] = color
+                        return PresentationThemeSettings(chatWallpaper: current.chatWallpaper, theme: current.theme, themeSpecificAccentColors: themeSpecificAccentColors, themeSpecificChatWallpapers: current.themeSpecificChatWallpapers, fontSize: current.fontSize, automaticThemeSwitchSetting: current.automaticThemeSwitchSetting, largeEmoji: current.largeEmoji, disableAnimations: current.disableAnimations)
+                    }).start()
+                }, toggleSlider: {
+                })
             case let .autoNightTheme(theme, text, value):
                 return ItemListDisclosureItem(theme: theme, icon: nil, title: text, label: value, labelStyle: .text, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
                     arguments.openAutoNightTheme()

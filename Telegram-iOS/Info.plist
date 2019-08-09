@@ -24,16 +24,6 @@
 				<key>UIPrerenderedIcon</key>
 				<true/>
 			</dict>
-			<key>BlackClassic</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>BlackClassicIcon</string>
-					<string>BlackClassicNotificationIcon</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<true/>
-			</dict>
 			<key>BlackFilled</key>
 			<dict>
 				<key>CFBundleIconFiles</key>
@@ -53,30 +43,11 @@
 				<key>UIPrerenderedIcon</key>
 				<true/>
 			</dict>
-			<key>BlueClassic</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>BlueClassicIcon</string>
-					<string>BlueClassicNotificationIcon</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<true/>
-			</dict>
 			<key>BlueFilled</key>
 			<dict>
 				<key>CFBundleIconFiles</key>
 				<array>
 					<string>BlueFilledIcon</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<true/>
-			</dict>
-			<key>WhiteFilled</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>WhiteFilledIcon</string>
 				</array>
 				<key>UIPrerenderedIcon</key>
 				<true/>
@@ -105,17 +76,6 @@
 				<key>UIPrerenderedIcon</key>
 				<true/>
 			</dict>
-			<key>BlackClassic</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>BlackClassicIconIpad</string>
-					<string>BlackClassicIconLargeIpad</string>
-					<string>BlackClassicNotificationIcon</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<true/>
-			</dict>
 			<key>BlackFilled</key>
 			<dict>
 				<key>CFBundleIconFiles</key>
@@ -137,32 +97,12 @@
 				<key>UIPrerenderedIcon</key>
 				<true/>
 			</dict>
-			<key>BlueClassic</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>BlueClassicIconIpad</string>
-					<string>BlueClassicIconLargeIpad</string>
-					<string>BlueClassicNotificationIcon</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<true/>
-			</dict>
 			<key>BlueFilled</key>
 			<dict>
 				<key>CFBundleIconFiles</key>
 				<array>
 					<string>BlueFilledIconIpad</string>
 					<string>BlueFilledIconLargeIpad</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<true/>
-			</dict>
-			<key>WhiteFilled</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>WhiteFilledIcon</string>
 				</array>
 				<key>UIPrerenderedIcon</key>
 				<true/>
