@@ -11,3 +11,4 @@
 "NSLocationAlwaysAndWhenInUseUsageDescription" = "When you choose to share your Live Location with friends in a chat, Nicegram needs background access to your location to keep them updated for the duration of the live sharing.";
 "NSLocationAlwaysUsageDescription" = "When you choose to share your live location with friends in a chat, Nicegram needs background access to your location to keep them updated for the duration of the live sharing. You also need this to send locations from an Apple Watch.";
 "NSLocationWhenInUseUsageDescription" = "When you send your location to your friends, Nicegram needs access to show them a map.";
+"NSFaceIDUsageDescription" = "You can use Face ID to unlock the app.";

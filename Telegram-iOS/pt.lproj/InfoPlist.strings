@@ -5,6 +5,7 @@
 "NSLocationAlwaysUsageDescription" = "Para enviar sua localização para seus amigos, o Nicegram precisa de permissão para mostrá-los o mapa. Você também precisará disso para enviar localizações de um Apple Watch.";
 "NSCameraUsageDescription" = "Precisamos acessar sua câmera para que você possa capturar fotos e vídeos.";
 "NSPhotoLibraryUsageDescription" = "Precisamos disso para que você possa compartilhar fotos e vídeos de sua galeria.";
+"NSPhotoLibraryAddUsageDescription" = "Precisamos disso para que você possa salvar fotos e vídeos em sua galeria de fotos.";
 "NSMicrophoneUsageDescription" = "Precisamos disso para que você possa gravar mensagens de voz e vídeos com som.";
 "NSSiriUsageDescription" = "Você pode usar a Siri para enviar mensagens.";
 
@@ -12,3 +13,4 @@
 "NSLocationAlwaysUsageDescription" = "Para enviar sua localização para seus amigos, o Nicegram precisa de permissão para mostrá-los o mapa. Você também precisará disso para enviar localizações de um Apple Watch.";
 "NSLocationWhenInUseUsageDescription" = "Para enviar sua localização para seus amigos o Nicegram precisa de permissão para mostrá-los o mapa.";
 
+"NSFaceIDUsageDescription" = "Você pode usar o Face ID para desbloquear o app.";

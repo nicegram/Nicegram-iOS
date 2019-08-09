@@ -54,7 +54,7 @@ public class PeerMediaCollectionController: TelegramController {
         
         self.title = self.presentationData.strings.SharedMedia_TitleAll
         
-        self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBar.style.style
+        self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
         
         self.navigationItem.backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Back, style: .plain, target: nil, action: nil)
         
@@ -180,9 +180,12 @@ public class PeerMediaCollectionController: TelegramController {
                 if let strongSelf = self, strongSelf.isNodeLoaded {
                     strongSelf.updateInterfaceState(animated: true, { $0.withToggledSelectedMessages(ids, value: value) })
                 }
+            }, sendCurrentMessage: { _ in    
             }, sendMessage: { _ in
-            },sendSticker: { _, _ in
-            }, sendGif: { _ in
+            }, sendSticker: { _, _, _, _ in
+                return false
+            }, sendGif: { _, _, _ in
+                return false
             }, requestMessageActionCallback: { _, _, _ in
             }, requestMessageActionUrlAuth: { _, _, _ in
             }, activateSwitchInline: { _, _ in
@@ -272,7 +275,7 @@ public class PeerMediaCollectionController: TelegramController {
         }, requestMessageUpdate: { _ in
         }, cancelInteractiveKeyboardGestures: {
         }, automaticMediaDownloadSettings: MediaAutoDownloadSettings.defaultSettings,
-           pollActionState: ChatInterfacePollActionState())
+           pollActionState: ChatInterfacePollActionState(), stickerSettings: ChatInterfaceStickerSettings(loopAnimatedStickers: false))
         
         self.controllerInteraction = controllerInteraction
         
@@ -350,7 +353,8 @@ public class PeerMediaCollectionController: TelegramController {
         }, navigateToChat: { _ in
         }, openPeerInfo: {
         }, togglePeerNotifications: {
-        }, sendContextResult: { _, _ in
+        }, sendContextResult: { _, _, _, _ in
+            return false
         }, sendBotCommand: { _, _ in
         }, sendBotStart: { _ in
         }, botSwitchChatWithPayload: { _, _ in
@@ -364,7 +368,8 @@ public class PeerMediaCollectionController: TelegramController {
         }, displayVideoUnmuteTip: { _ in
         }, switchMediaRecordingMode: {
         }, setupMessageAutoremoveTimeout: {
-        }, sendSticker: { _ in
+        }, sendSticker: { _, _, _ in
+            return false
         }, unblockPeer: {
         }, pinMessage: { _ in
         }, unpinMessage: {
@@ -390,6 +395,8 @@ public class PeerMediaCollectionController: TelegramController {
         }, unarchiveChat: {
         }, openLinkEditing: {
         }, reportPeerIrrelevantGeoLocation: {
+        }, displaySlowmodeTooltip: { _, _ in
+        }, displaySendMessageOptions: {
         }, statuses: nil)
         
         self.updateInterfaceState(animated: false, { return $0 })
@@ -410,7 +417,7 @@ public class PeerMediaCollectionController: TelegramController {
     
     private func themeAndStringsUpdated() {
         self.navigationItem.backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Back, style: .plain, target: nil, action: nil)
-        self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBar.style.style
+        self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
         self.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationData: self.presentationData))
       //  self.chatTitleView?.updateThemeAndStrings(theme: self.presentationData.theme, strings: self.presentationData.strings)
         self.updateInterfaceState(animated: false, { state in
@@ -663,7 +670,7 @@ public class PeerMediaCollectionController: TelegramController {
                             
                             if peerId == strongSelf.context.account.peerId {
                                 let _ = (enqueueMessages(account: strongSelf.context.account, peerId: peerId, messages: messageIds.map { id -> EnqueueMessage in
-                                    return .forward(source: id, grouping: .auto)
+                                    return .forward(source: id, grouping: .auto, attributes: [])
                                 })
                                 |> deliverOnMainQueue).start(next: { [weak self] messageIds in
                                     if let strongSelf = self {
@@ -672,7 +679,7 @@ public class PeerMediaCollectionController: TelegramController {
                                                 return nil
                                             }
                                             return strongSelf.context.account.pendingMessageManager.pendingMessageStatus(id)
-                                            |> mapToSignal { status -> Signal<Bool, NoError> in
+                                            |> mapToSignal { status, _ -> Signal<Bool, NoError> in
                                                 if status != nil {
                                                     return .never()
                                                 } else {

@@ -279,7 +279,7 @@ private func channelBannedMemberControllerEntries(presentationData: Presentation
         let currentRightsFlags: TelegramChatBannedRightsFlags
         if let updatedFlags = state.updatedFlags {
             currentRightsFlags = updatedFlags
-        } else if let initialParticipant = initialParticipant, case let .member(_, _, _, maybeBanInfo) = initialParticipant, let banInfo = maybeBanInfo {
+        } else if let initialParticipant = initialParticipant, case let .member(_, _, _, maybeBanInfo, _) = initialParticipant, let banInfo = maybeBanInfo {
             currentRightsFlags = banInfo.rights.flags
         } else {
             currentRightsFlags = defaultBannedRights.flags
@@ -288,7 +288,7 @@ private func channelBannedMemberControllerEntries(presentationData: Presentation
         let currentTimeout: Int32
         if let updatedTimeout = state.updatedTimeout {
             currentTimeout = updatedTimeout
-        } else if let initialParticipant = initialParticipant, case let .member(_, _, _, maybeBanInfo) = initialParticipant, let banInfo = maybeBanInfo {
+        } else if let initialParticipant = initialParticipant, case let .member(_, _, _, maybeBanInfo, _) = initialParticipant, let banInfo = maybeBanInfo {
             currentTimeout = banInfo.rights.untilDate
         } else {
             currentTimeout = Int32.max
@@ -325,7 +325,7 @@ private func channelBannedMemberControllerEntries(presentationData: Presentation
         let currentRightsFlags: TelegramChatBannedRightsFlags
         if let updatedFlags = state.updatedFlags {
             currentRightsFlags = updatedFlags
-        } else if let initialParticipant = initialParticipant, case let .member(_, _, _, maybeBanInfo) = initialParticipant, let banInfo = maybeBanInfo {
+        } else if let initialParticipant = initialParticipant, case let .member(_, _, _, maybeBanInfo, _) = initialParticipant, let banInfo = maybeBanInfo {
             currentRightsFlags = banInfo.rights.flags
         } else {
             currentRightsFlags = defaultBannedRightsFlags
@@ -334,7 +334,7 @@ private func channelBannedMemberControllerEntries(presentationData: Presentation
         let currentTimeout: Int32
         if let updatedTimeout = state.updatedTimeout {
             currentTimeout = updatedTimeout
-        } else if let initialParticipant = initialParticipant, case let .member(_, _, _, maybeBanInfo) = initialParticipant, let banInfo = maybeBanInfo {
+        } else if let initialParticipant = initialParticipant, case let .member(_, _, _, maybeBanInfo, _) = initialParticipant, let banInfo = maybeBanInfo {
             currentTimeout = banInfo.rights.untilDate
         } else {
             currentTimeout = Int32.max
@@ -553,7 +553,7 @@ public func channelBannedMemberController(context: AccountContext, peerId: PeerI
                         }
                         
                         if updateFlags == nil && updateTimeout == nil {
-                            if case let .member(_, _, _, maybeBanInfo) = initialParticipant {
+                            if case let .member(_, _, _, maybeBanInfo, _) = initialParticipant {
                                 if maybeBanInfo == nil {
                                     updateFlags = defaultBannedRightsFlags
                                     updateTimeout = Int32.max
@@ -565,7 +565,7 @@ public func channelBannedMemberController(context: AccountContext, peerId: PeerI
                             let currentRightsFlags: TelegramChatBannedRightsFlags
                             if let updatedFlags = updateFlags {
                                 currentRightsFlags = updatedFlags
-                            } else if case let .member(_, _, _, maybeBanInfo) = initialParticipant, let banInfo = maybeBanInfo {
+                            } else if case let .member(_, _, _, maybeBanInfo, _) = initialParticipant, let banInfo = maybeBanInfo {
                                 currentRightsFlags = banInfo.rights.flags
                             } else {
                                 currentRightsFlags = defaultBannedRightsFlags
@@ -574,7 +574,7 @@ public func channelBannedMemberController(context: AccountContext, peerId: PeerI
                             let currentTimeout: Int32
                             if let updateTimeout = updateTimeout {
                                 currentTimeout = updateTimeout
-                            } else if case let .member(_, _, _, maybeBanInfo) = initialParticipant, let banInfo = maybeBanInfo {
+                            } else if case let .member(_, _, _, maybeBanInfo, _) = initialParticipant, let banInfo = maybeBanInfo {
                                 currentTimeout = banInfo.rights.untilDate
                             } else {
                                 currentTimeout = Int32.max

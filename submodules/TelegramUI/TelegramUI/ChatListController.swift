@@ -175,7 +175,7 @@ public class ChatListController: TelegramController, UIViewControllerPreviewingD
         
         super.init(context: context, navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData), mediaAccessoryPanelVisibility: .always, locationBroadcastPanelSource: .summary)
         
-        self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBar.style.style
+        self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
         
         var title: String
         if case .root = self.groupId {
@@ -519,7 +519,7 @@ public class ChatListController: TelegramController, UIViewControllerPreviewingD
         
         self.titleView.theme = self.presentationData.theme
         
-        self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBar.style.style
+        self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
         self.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationData: self.presentationData))
         
         if self.isNodeLoaded {
@@ -965,6 +965,14 @@ public class ChatListController: TelegramController, UIViewControllerPreviewingD
                 return fixListNodeScrolling(listView, searchNode: searchContentNode)
             } else {
                 return false
+            }
+        }
+        
+        self.chatListDisplayNode.isEmptyUpdated = { [weak self] isEmpty in
+            if let strongSelf = self, let searchContentNode = strongSelf.searchContentNode, let validLayout = strongSelf.validLayout {
+                if isEmpty {
+                    searchContentNode.updateListVisibleContentOffset(.known(0.0))
+                }
             }
         }
         
