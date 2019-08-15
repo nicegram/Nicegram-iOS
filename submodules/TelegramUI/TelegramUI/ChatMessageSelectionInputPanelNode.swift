@@ -97,7 +97,7 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
         super.init()
         
         self.addSubnode(self.deleteButton)
-        self.addSubnode(self.reportButton)
+        // self.addSubnode(self.reportButton)
         self.addSubnode(self.forwardButton)
         self.addSubnode(self.cloudButton)
         self.addSubnode(self.copyForwardButton)
