@@ -9,6 +9,8 @@ import WebPImage
 #else
 import WebP
 #endif
+import MediaResources
+import Emoji
 
 public struct EmojiThumbnailResourceId: MediaResourceId {
     public let emoji: String
@@ -198,7 +200,7 @@ private func matchingEmojiEntry(_ emoji: String) -> (UInt8, UInt8, UInt8)? {
 }
 
 func messageIsElligibleForLargeEmoji(_ message: Message) -> Bool {
-    if message.media.isEmpty && !message.text.isEmpty && message.text.containsOnlyEmoji && message.text.emojis.count < 4 {
+    if !message.text.isEmpty && message.text.containsOnlyEmoji && message.text.emojis.count < 4 {
         var messageEntities: [MessageTextEntity]?
         for attribute in message.attributes {
             if let attribute = attribute as? TextEntitiesMessageAttribute {
@@ -350,7 +352,7 @@ func fetchEmojiSpriteResource(postbox: Postbox, network: Network, resource: Emoj
                             let image = buffer.with { buffer -> UIImage? in
                                 return WebP.convert(fromWebP: buffer.data)
                             }
-                            if let image = image, let data = UIImagePNGRepresentation(image) {
+                            if let image = image, let data = image.pngData() {
                                 subscriber.putNext(.dataPart(resourceOffset: 0, data: data, range: 0 ..< data.count, complete: true))
                                 subscriber.putCompletion()
                             }

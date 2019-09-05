@@ -7,6 +7,10 @@ import TelegramCore
 import SwiftSignalKit
 import TelegramPresentationData
 import TelegramUIPreferences
+import AccountContext
+import StickerResources
+import PhotoResources
+import TelegramStringFormatting
 
 final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
     private let context: AccountContext
@@ -33,7 +37,7 @@ final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
         self.tapButton = HighlightTrackingButtonNode()
         
         self.closeButton = HighlightableButtonNode()
-        self.closeButton.hitTestSlop = UIEdgeInsetsMake(-8.0, -8.0, -8.0, -8.0)
+        self.closeButton.hitTestSlop = UIEdgeInsets(top: -8.0, left: -8.0, bottom: -8.0, right: -8.0)
         self.closeButton.displaysAsynchronously = false
         
         self.separatorNode = ASDisplayNode()
@@ -106,8 +110,8 @@ final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
             self.theme = interfaceState.theme
             self.closeButton.setImage(PresentationResourcesChat.chatInputPanelCloseIconImage(interfaceState.theme), for: [])
             self.lineNode.image = PresentationResourcesChat.chatInputPanelVerticalSeparatorLineImage(interfaceState.theme)
-            self.backgroundColor = interfaceState.theme.rootController.navigationBar.backgroundColor
-            self.separatorNode.backgroundColor = interfaceState.theme.rootController.navigationBar.separatorColor
+            self.backgroundColor = interfaceState.theme.chat.historyNavigation.fillColor
+            self.separatorNode.backgroundColor = interfaceState.theme.chat.historyNavigation.strokeColor
         }
         
         var messageUpdated = false

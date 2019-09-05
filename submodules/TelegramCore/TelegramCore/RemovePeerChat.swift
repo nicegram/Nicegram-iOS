@@ -49,7 +49,7 @@ public func removePeerChat(account: Account, transaction: Transaction, mediaBox:
                 }
             }
         }
-        clearHistory(transaction: transaction, mediaBox: mediaBox, peerId: peerId)
+        clearHistory(transaction: transaction, mediaBox: mediaBox, peerId: peerId, namespaces: .all)
         transaction.updatePeerChatListInclusion(peerId, inclusion: .notIncluded)
         sureRemovePeerFromFolder(peerId)
         transaction.removeOrderedItemListItem(collectionId: Namespaces.OrderedItemList.RecentlySearchedPeerIds, itemId: RecentPeerItemId(peerId).rawValue)
@@ -58,11 +58,11 @@ public func removePeerChat(account: Account, transaction: Transaction, mediaBox:
         if peerId.namespace == Namespaces.Peer.CloudUser  {
             transaction.updatePeerChatListInclusion(peerId, inclusion: .notIncluded)
             sureRemovePeerFromFolder(peerId)
-            clearHistory(transaction: transaction, mediaBox: mediaBox, peerId: peerId)
+            clearHistory(transaction: transaction, mediaBox: mediaBox, peerId: peerId, namespaces: .all)
         } else if peerId.namespace == Namespaces.Peer.CloudGroup {
             transaction.updatePeerChatListInclusion(peerId, inclusion: .notIncluded)
             sureRemovePeerFromFolder(peerId)
-            clearHistory(transaction: transaction, mediaBox: mediaBox, peerId: peerId)
+            clearHistory(transaction: transaction, mediaBox: mediaBox, peerId: peerId, namespaces: .all)
         } else {
             transaction.updatePeerChatListInclusion(peerId, inclusion: .notIncluded)
             sureRemovePeerFromFolder(peerId)

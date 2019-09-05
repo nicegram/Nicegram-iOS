@@ -6,6 +6,7 @@ import Postbox
 import TelegramCore
 import SwiftSignalKit
 import TelegramPresentationData
+import AccountContext
 
 final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
     private let deleteButton: HighlightableButtonNode
@@ -36,7 +37,7 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
                     }
                     self.canDeleteMessagesDisposable.set(nil)
                 } else if let context = self.context {
-                    self.canDeleteMessagesDisposable.set((chatAvailableMessageActions(postbox: context.account.postbox, accountPeerId: context.account.peerId, messageIds: self.selectedMessages)
+                    self.canDeleteMessagesDisposable.set((context.sharedContext.chatAvailableMessageActions(postbox: context.account.postbox, accountPeerId: context.account.peerId, messageIds: self.selectedMessages)
                     |> deliverOnMainQueue).start(next: { [weak self] actions in
                         if let strongSelf = self {
                             strongSelf.actions = actions
@@ -50,22 +51,22 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
         }
     }
     
-    init(theme: PresentationTheme) {
+    init(theme: PresentationTheme, strings: PresentationStrings) {
         self.theme = theme
         
         self.deleteButton = HighlightableButtonNode()
         self.deleteButton.isEnabled = false
         self.deleteButton.isAccessibilityElement = true
-        self.deleteButton.accessibilityLabel = "Delete"
+        self.deleteButton.accessibilityLabel = strings.VoiceOver_MessageContextDelete
         
         self.reportButton = HighlightableButtonNode()
         self.reportButton.isEnabled = false
         self.reportButton.isAccessibilityElement = true
-        self.reportButton.accessibilityLabel = "Report"
+        self.reportButton.accessibilityLabel = strings.VoiceOver_MessageContextReport
         
         self.forwardButton = HighlightableButtonNode()
         self.forwardButton.isAccessibilityElement = true
-        self.forwardButton.accessibilityLabel = "Forward"
+        self.forwardButton.accessibilityLabel = strings.VoiceOver_MessageContextForward
         
         self.cloudButton = HighlightableButtonNode()
         self.cloudButton.isAccessibilityElement = true
@@ -79,10 +80,10 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
         self.shareButton = HighlightableButtonNode()
         self.shareButton.isEnabled = false
         self.shareButton.isAccessibilityElement = true
-        self.shareButton.accessibilityLabel = "Share"
+        self.shareButton.accessibilityLabel = strings.VoiceOver_MessageContextShare
         
-        self.deleteButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionThrash"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
-        self.deleteButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionThrash"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
+        self.deleteButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionTrash"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
+        self.deleteButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionTrash"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
         self.reportButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionReport"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
         self.reportButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionReport"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
         self.forwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionForward"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
@@ -91,8 +92,8 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
         self.cloudButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Contact List/InviteActionIcon"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
         self.copyForwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionCopyForward"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
         self.copyForwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionCopyForward"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
-        self.shareButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat List/NavigationShare"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
-        self.shareButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat List/NavigationShare"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
+        self.shareButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionAction")), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
+        self.shareButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionAction")), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
         
         super.init()
         
@@ -122,8 +123,8 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
         if self.theme !== theme {
             self.theme = theme
             
-            self.deleteButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionThrash"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
-            self.deleteButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionThrash"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
+            self.deleteButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionTrash"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
+            self.deleteButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionTrash"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
             self.reportButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionReport"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
             self.reportButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionReport"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
             self.forwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionForward"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])

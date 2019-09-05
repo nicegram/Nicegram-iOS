@@ -104,7 +104,7 @@ private func peerButtons(_ peer: Peer, interfaceState: ChatPresentationInterface
     }
 }
 
-private let buttonFont = Font.regular(10.0)
+private let buttonFont = Font.medium(10.0)
 
 private final class ChatInfoTitlePanelButtonNode: HighlightableButtonNode {
     override init() {
@@ -150,8 +150,8 @@ final class ChatInfoTitlePanelNode: ChatTitleAccessoryPanelNode {
         let panelHeight: CGFloat = 55.0
         
         if themeUpdated {
-            self.separatorNode.backgroundColor = interfaceState.theme.rootController.navigationBar.separatorColor
-            self.backgroundColor = interfaceState.theme.rootController.navigationBar.backgroundColor
+            self.backgroundColor = interfaceState.theme.chat.historyNavigation.fillColor
+            self.separatorNode.backgroundColor = interfaceState.theme.chat.historyNavigation.strokeColor
         }
         
         let updatedButtons: [ChatInfoTitleButton]
@@ -162,8 +162,6 @@ final class ChatInfoTitlePanelNode: ChatTitleAccessoryPanelNode {
                 } else {
                     updatedButtons = []
                 }
-            /*case .group:
-                updatedButtons = groupButtons()*/
         }
         
         var buttonsUpdated = false
@@ -187,7 +185,7 @@ final class ChatInfoTitlePanelNode: ChatTitleAccessoryPanelNode {
                 let buttonNode = ChatInfoTitlePanelButtonNode()
                 buttonNode.laysOutHorizontally = false
                 
-                buttonNode.setup(text: button.title(interfaceState.strings), color: interfaceState.theme.rootController.navigationBar.accentTextColor, icon: button.icon(interfaceState.theme))
+                buttonNode.setup(text: button.title(interfaceState.strings), color: interfaceState.theme.chat.inputPanel.panelControlAccentColor, icon: button.icon(interfaceState.theme))
                 
                 buttonNode.addTarget(self, action: #selector(self.buttonPressed(_:)), forControlEvents: [.touchUpInside])
                 self.addSubnode(buttonNode)

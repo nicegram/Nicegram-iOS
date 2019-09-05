@@ -6,7 +6,6 @@ import Postbox
 import TelegramCore
 import SwiftSignalKit
 import TelegramPresentationData
-import TelegramUIPrivateModule
 import LegacyComponents
 
 import RMIntro
@@ -75,7 +74,7 @@ final class AuthorizationSequenceSplashController: ViewController {
         
         self.supportedOrientations = ViewControllerSupportedOrientations(regularSize: .all, compactSize: .portrait)
         
-        self.statusBar.statusBarStyle = theme.rootController.statusBarStyle.style
+        self.statusBar.statusBarStyle = theme.intro.statusBarStyle.style
         
         self.controller.startMessaging = { [weak self] in
             self?.activateLocalization("en")

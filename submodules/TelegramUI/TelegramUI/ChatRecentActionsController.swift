@@ -5,8 +5,11 @@ import TelegramCore
 import Postbox
 import SwiftSignalKit
 import TelegramPresentationData
+import TelegramBaseController
+import AccountContext
+import AlertUI
 
-final class ChatRecentActionsController: TelegramController {
+final class ChatRecentActionsController: TelegramBaseController {
     private var controllerNode: ChatRecentActionsControllerNode {
         return self.displayNode as! ChatRecentActionsControllerNode
     }
@@ -39,13 +42,14 @@ final class ChatRecentActionsController: TelegramController {
             }
         })
         
-        self.panelInteraction = ChatPanelInterfaceInteraction(setupReplyMessage: { _ in
-        }, setupEditMessage: { _ in
-        }, beginMessageSelection: { _ in
+        self.panelInteraction = ChatPanelInterfaceInteraction(setupReplyMessage: { _, _ in
+        }, setupEditMessage: { _, _ in
+        }, beginMessageSelection: { _, _ in
         }, deleteSelectedMessages: {
         }, reportSelectedMessages: {
-        }, reportMessages: { _ in
-        }, deleteMessages: { _ in
+        }, reportMessages: { _, _ in
+        }, deleteMessages: { _, _, f in
+            f(.default)
         }, forwardSelectedMessages: {
         }, forwardCurrentForwardMessages: {
         }, forwardMessages: { _ in
@@ -112,6 +116,7 @@ final class ChatRecentActionsController: TelegramController {
         }, reportPeerIrrelevantGeoLocation: {
         }, displaySlowmodeTooltip: { _, _ in
         }, displaySendMessageOptions: {
+        }, openScheduledMessages: {
         }, statuses: nil)
         
         self.navigationItem.titleView = self.titleView

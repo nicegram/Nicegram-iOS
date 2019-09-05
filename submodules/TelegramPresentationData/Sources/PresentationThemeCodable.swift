@@ -1,20 +1,18 @@
 import Foundation
 import UIKit
+import Postbox
 import TelegramCore
-
-public enum PresentationThemeColorDecodingError: Error {
-    case generic
-}
+import TelegramUIPreferences
 
 private func decodeColor<Key>(_ values: KeyedDecodingContainer<Key>, _ key: Key) throws -> UIColor {
-    if let value = try? values.decode(String.self, forKey: key) {
-        if value.lowercased() == "clear" {
-            return UIColor.clear
-        } else if let color = UIColor(hexString: value) {
-            return color
-        }
+    let value = try values.decode(String.self, forKey: key)
+    if value.lowercased() == "clear" {
+        return UIColor.clear
+    } else if let color = UIColor(hexString: value) {
+        return color
+    } else {
+        throw PresentationThemeDecodingError.generic
     }
-    throw PresentationThemeColorDecodingError.generic
 }
 
 private func encodeColor<Key>(_ values: inout KeyedEncodingContainer<Key>, _ value: UIColor, _ key: Key) throws {
@@ -35,14 +33,44 @@ extension TelegramWallpaper: Codable {
                 case "builtin":
                     self = .builtin(WallpaperSettings())
                 default:
-                    if let color = UIColor(hexString: value) {
+                    if [6,7].contains(value.count), let color = UIColor(hexString: value) {
                         self = .color(Int32(bitPattern: color.rgb))
                     } else {
-                        throw PresentationThemeColorDecodingError.generic
+                        let components = value.components(separatedBy: " ")
+                        var slug: String?
+                        var color: Int32?
+                        var intensity: Int32?
+                        var blur = false
+                        var motion = false
+                        if !components.isEmpty {
+                            slug = components[0]
+                        }
+                        if components.count > 1, !["motion", "blur"].contains(components[1]), components[1].count == 6, let value = UIColor(hexString: components[1]) {
+                            color = Int32(bitPattern: value.rgb)
+                        }
+                        if components.count > 2, !["motion", "blur"].contains(components[2]), let value = Int32(components[2]) {
+                            if value >= 0 && value <= 100 {
+                                intensity = value
+                            } else {
+                                intensity = 50
+                            }
+                        }
+                        if components.contains("motion") {
+                            motion = true
+                        }
+                        if components.contains("blur") {
+                            blur = true
+                        }
+                        if let slug = slug {
+                            self = .file(id: 0, accessHash: 0, isCreator: false, isDefault: false, isPattern: color != nil, isDark: false, slug: slug, file: TelegramMediaFile(fileId: MediaId(namespace: 0, id: 0), partialReference: nil, resource: LocalFileMediaResource(fileId: 0), previewRepresentations: [], immediateThumbnailData: nil, mimeType: "", size: nil, attributes: []), settings: WallpaperSettings(blur: blur, motion: motion, color: color, intensity: intensity))
+                        } else {
+                            throw PresentationThemeDecodingError.generic
+                        }
                     }
             }
+        } else {
+            throw PresentationThemeDecodingError.generic
         }
-        throw PresentationThemeColorDecodingError.generic
     }
     
     public func encode(to encoder: Encoder) throws {
@@ -52,6 +80,24 @@ extension TelegramWallpaper: Codable {
                 try container.encode("builtin")
             case let .color(value):
                 try container.encode(String(format: "%06x", value))
+            case let .file(file):
+                var components: [String] = []
+                components.append(file.slug)
+                if file.isPattern {
+                    if let color = file.settings.color {
+                        components.append(String(format: "%06x", color))
+                    }
+                    if let intensity = file.settings.intensity {
+                        components.append("\(intensity)")
+                    }
+                }
+                if file.settings.motion {
+                    components.append("motion")
+                }
+                if file.settings.blur {
+                    components.append("blur")
+                }
+                try container.encode(components.joined(separator: " "))
             default:
                 break
         }
@@ -143,6 +189,22 @@ extension PresentationThemeKeyboardColor: Codable {
 }
 
 extension PresentationThemeExpandedNotificationBackgroundType: Codable {
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.singleValueContainer()
+        if let value = try? values.decode(String.self) {
+            switch value.lowercased() {
+                case "light":
+                    self = .light
+                case "dark":
+                    self = .dark
+                default:
+                    self = .light
+            }
+        } else {
+            self = .light
+        }
+    }
+    
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {
@@ -175,18 +237,21 @@ extension PresentationThemeGradientColors: Codable {
 
 extension PresentationThemeIntro: Codable {
     enum CodingKeys: String, CodingKey {
+        case statusBar
         case startButton
         case dot
     }
     
     public convenience init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
-        self.init(startButtonColor: try decodeColor(values, .startButton),
+        self.init(statusBarStyle: try values.decode(PresentationThemeStatusBarStyle.self, forKey: .statusBar),
+                  startButtonColor: try decodeColor(values, .startButton),
                   dotColor: try decodeColor(values, .dot))
     }
     
     public func encode(to encoder: Encoder) throws {
         var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(self.statusBarStyle, forKey: .statusBar)
         try encodeColor(&values, self.startButtonColor, .startButton)
         try encodeColor(&values, self.dotColor, .dot)
     }
@@ -340,6 +405,7 @@ extension PresentationThemeRootController: Codable {
         case tabBar
         case navBar
         case searchBar
+        case keyboard
     }
     
     public convenience init(from decoder: Decoder) throws {
@@ -347,7 +413,8 @@ extension PresentationThemeRootController: Codable {
         self.init(statusBarStyle: try values.decode(PresentationThemeStatusBarStyle.self, forKey: .statusBar),
                   tabBar: try values.decode(PresentationThemeRootTabBar.self, forKey: .tabBar),
                   navigationBar: try values.decode(PresentationThemeRootNavigationBar.self, forKey: .navBar),
-                  navigationSearchBar: try values.decode(PresentationThemeNavigationSearchBar.self, forKey: .searchBar))
+                  navigationSearchBar: try values.decode(PresentationThemeNavigationSearchBar.self, forKey: .searchBar),
+                  keyboardColor: try values.decode(PresentationThemeKeyboardColor.self, forKey: .keyboard))
     }
     
     public func encode(to encoder: Encoder) throws {
@@ -356,6 +423,7 @@ extension PresentationThemeRootController: Codable {
         try values.encode(self.tabBar, forKey: .tabBar)
         try values.encode(self.navigationBar, forKey: .navBar)
         try values.encode(self.navigationSearchBar, forKey: .searchBar)
+        try values.encode(self.keyboardColor, forKey: .keyboard)
     }
 }
 
@@ -414,6 +482,7 @@ extension PresentationThemeActionSheet: Codable {
         try encodeColor(&values, self.opaqueItemBackgroundColor, .opaqueItemBg)
         try encodeColor(&values, self.itemBackgroundColor, .itemBg)
         try encodeColor(&values, self.opaqueItemHighlightedBackgroundColor, .opaqueItemHighlightedBg)
+        try encodeColor(&values, self.itemHighlightedBackgroundColor, .itemHighlightedBg)
         try encodeColor(&values, self.opaqueItemSeparatorColor, .opaqueItemSeparator)
         try encodeColor(&values, self.standardActionTextColor, .standardActionText)
         try encodeColor(&values, self.destructiveActionTextColor, .destructiveActionText)
@@ -706,7 +775,6 @@ extension PresentationThemeChatList: Codable {
         case regularSearchBar
         case sectionHeaderBg
         case sectionHeaderText
-        case searchBarKeyboard
         case verifiedIconBg
         case verifiedIconFg
         case secretIcon
@@ -743,7 +811,6 @@ extension PresentationThemeChatList: Codable {
                   regularSearchBarColor: try decodeColor(values, .regularSearchBar),
                   sectionHeaderFillColor: try decodeColor(values, .sectionHeaderBg),
                   sectionHeaderTextColor: try decodeColor(values, .sectionHeaderText),
-                  searchBarKeyboardColor: try values.decode(PresentationThemeKeyboardColor.self, forKey: .searchBarKeyboard),
                   verifiedIconFillColor: try decodeColor(values, .verifiedIconBg),
                   verifiedIconForegroundColor: try decodeColor(values, .verifiedIconFg),
                   secretIconColor: try decodeColor(values, .secretIcon),
@@ -780,7 +847,6 @@ extension PresentationThemeChatList: Codable {
         try encodeColor(&values, self.regularSearchBarColor, .regularSearchBar)
         try encodeColor(&values, self.sectionHeaderFillColor, .sectionHeaderBg)
         try encodeColor(&values, self.sectionHeaderTextColor, .sectionHeaderText)
-        try values.encode(self.searchBarKeyboardColor, forKey: .searchBarKeyboard)
         try encodeColor(&values, self.verifiedIconFillColor, .verifiedIconBg)
         try encodeColor(&values, self.verifiedIconForegroundColor, .verifiedIconFg)
         try encodeColor(&values, self.secretIconColor, .secretIcon)
@@ -900,32 +966,37 @@ extension PresentationThemePartedColors: Codable {
         case actionButtonsBg
         case actionButtonsStroke
         case actionButtonsText
+        case textSelection
+        case textSelectionKnob
     }
     
     public convenience init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
-        self.init(bubble: try values.decode(PresentationThemeBubbleColor.self, forKey: .bubble),
-                  primaryTextColor: try decodeColor(values, .primaryText),
-                  secondaryTextColor: try decodeColor(values, .secondaryText),
-                  linkTextColor: try decodeColor(values, .linkText),
-                  linkHighlightColor: try decodeColor(values, .linkHighlight),
-                  scamColor: try decodeColor(values, .scam),
-                  textHighlightColor: try decodeColor(values, .textHighlight),
-                  accentTextColor: try decodeColor(values, .accentText),
-                  accentControlColor: try decodeColor(values, .accentControl),
-                  mediaActiveControlColor: try decodeColor(values, .mediaActiveControl),
-                  mediaInactiveControlColor: try decodeColor(values, .mediaInactiveControl),
-                  pendingActivityColor: try decodeColor(values, .pendingActivity),
-                  fileTitleColor: try decodeColor(values, .fileTitle),
-                  fileDescriptionColor: try decodeColor(values, .fileDescription),
-                  fileDurationColor: try decodeColor(values, .fileDuration),
-                  mediaPlaceholderColor: try decodeColor(values, .mediaPlaceholder),
-                  polls: try values.decode(PresentationThemeChatBubblePolls.self, forKey: .polls),
-                  actionButtonsFillColor: try values.decode(PresentationThemeVariableColor.self, forKey: .actionButtonsBg),
-                  actionButtonsStrokeColor: try values.decode(PresentationThemeVariableColor.self, forKey: .actionButtonsStroke),
-                  actionButtonsTextColor: try values.decode(PresentationThemeVariableColor.self, forKey: .actionButtonsText))
+        self.init(
+            bubble: try values.decode(PresentationThemeBubbleColor.self, forKey: .bubble),
+            primaryTextColor: try decodeColor(values, .primaryText),
+            secondaryTextColor: try decodeColor(values, .secondaryText),
+            linkTextColor: try decodeColor(values, .linkText),
+            linkHighlightColor: try decodeColor(values, .linkHighlight),
+            scamColor: try decodeColor(values, .scam),
+            textHighlightColor: try decodeColor(values, .textHighlight),
+            accentTextColor: try decodeColor(values, .accentText),
+            accentControlColor: try decodeColor(values, .accentControl),
+            mediaActiveControlColor: try decodeColor(values, .mediaActiveControl),
+            mediaInactiveControlColor: try decodeColor(values, .mediaInactiveControl),
+            pendingActivityColor: try decodeColor(values, .pendingActivity),
+            fileTitleColor: try decodeColor(values, .fileTitle),
+            fileDescriptionColor: try decodeColor(values, .fileDescription),
+            fileDurationColor: try decodeColor(values, .fileDuration),
+            mediaPlaceholderColor: try decodeColor(values, .mediaPlaceholder),
+            polls: try values.decode(PresentationThemeChatBubblePolls.self, forKey: .polls),
+            actionButtonsFillColor: try values.decode(PresentationThemeVariableColor.self, forKey: .actionButtonsBg),
+            actionButtonsStrokeColor: try values.decode(PresentationThemeVariableColor.self, forKey: .actionButtonsStroke),
+            actionButtonsTextColor: try values.decode(PresentationThemeVariableColor.self, forKey: .actionButtonsText),
+            textSelectionColor: try decodeColor(values, .textSelection),
+            textSelectionKnobColor: try decodeColor(values, .textSelectionKnob)
+        )
     }
-    
     
     public func encode(to encoder: Encoder) throws {
         var values = encoder.container(keyedBy: CodingKeys.self)
@@ -949,6 +1020,8 @@ extension PresentationThemePartedColors: Codable {
         try values.encode(self.actionButtonsFillColor, forKey: .actionButtonsBg)
         try values.encode(self.actionButtonsStrokeColor, forKey: .actionButtonsStroke)
         try values.encode(self.actionButtonsTextColor, forKey: .actionButtonsText)
+        try encodeColor(&values, self.textSelectionColor, .textSelection)
+        try encodeColor(&values, self.textSelectionKnobColor, .textSelectionKnob)
     }
 }
 
@@ -1128,7 +1201,6 @@ extension PresentationThemeChatInputPanel: Codable {
         case primaryText
         case secondaryText
         case mediaRecordDot
-        case keyboard
         case mediaRecordControl
     }
     
@@ -1150,7 +1222,6 @@ extension PresentationThemeChatInputPanel: Codable {
                   primaryTextColor: try decodeColor(values, .primaryText),
                   secondaryTextColor: try decodeColor(values, .secondaryText),
                   mediaRecordingDotColor: try decodeColor(values, .mediaRecordDot),
-                  keyboardColor: try values.decode(PresentationThemeKeyboardColor.self, forKey: .keyboard),
                   mediaRecordingControl: try values.decode(PresentationThemeChatInputPanelMediaRecordingControl.self, forKey: .mediaRecordControl))
     }
     
@@ -1172,7 +1243,6 @@ extension PresentationThemeChatInputPanel: Codable {
         try encodeColor(&values, self.primaryTextColor, .primaryText)
         try encodeColor(&values, self.secondaryTextColor, .secondaryText)
         try encodeColor(&values, self.mediaRecordingDotColor, .mediaRecordDot)
-        try values.encode(self.keyboardColor, forKey: .keyboard)
         try values.encode(self.mediaRecordingControl, forKey: .mediaRecordControl)
     }
 }
@@ -1298,7 +1368,15 @@ extension PresentationThemeChat: Codable {
     
     public convenience init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
-        self.init(defaultWallpaper: try values.decode(TelegramWallpaper.self, forKey: .defaultWallpaper),
+        
+        var wallpaper = try values.decode(TelegramWallpaper.self, forKey: .defaultWallpaper)
+        if let decoder = decoder as? PresentationThemeDecoding {
+            if case .file = wallpaper, let resolvedWallpaper = decoder.resolvedWallpaper {
+                wallpaper = resolvedWallpaper
+            }
+        }
+    
+        self.init(defaultWallpaper: wallpaper,
                   message: try values.decode(PresentationThemeChatMessage.self, forKey: .message),
                   serviceMessage: try values.decode(PresentationThemeServiceMessage.self, forKey: .serviceMessage),
                   inputPanel: try values.decode(PresentationThemeChatInputPanel.self, forKey: .inputPanel),
@@ -1363,6 +1441,47 @@ extension PresentationThemeExpandedNotification: Codable {
     }
 }
 
+extension PresentationThemeContextMenu: Codable {
+    enum CodingKeys: String, CodingKey {
+        case dim
+        case background
+        case itemSeparator
+        case sectionSeparator
+        case itemBg
+        case itemHighlightedBg
+        case primary
+        case secondary
+        case destructive
+    }
+    
+    public convenience init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(dimColor: try decodeColor(values, .dim),
+                  backgroundColor: try decodeColor(values, .background),
+                  itemSeparatorColor: try decodeColor(values, .itemSeparator),
+                  sectionSeparatorColor: try decodeColor(values, .sectionSeparator),
+                  itemBackgroundColor: try decodeColor(values, .itemBg),
+                  itemHighlightedBackgroundColor: try decodeColor(values, .itemHighlightedBg),
+                  primaryColor: try decodeColor(values, .primary),
+                  secondaryColor: try decodeColor(values, .secondary),
+                  destructiveColor: try decodeColor(values, .destructive)
+        )
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try encodeColor(&values, self.dimColor, .dim)
+        try encodeColor(&values, self.backgroundColor, .background)
+        try encodeColor(&values, self.itemSeparatorColor, .itemSeparator)
+        try encodeColor(&values, self.sectionSeparatorColor, .sectionSeparator)
+        try encodeColor(&values, self.itemBackgroundColor, .itemBg)
+        try encodeColor(&values, self.itemHighlightedBackgroundColor, .itemHighlightedBg)
+        try encodeColor(&values, self.primaryColor, .primary)
+        try encodeColor(&values, self.secondaryColor, .secondary)
+        try encodeColor(&values, self.destructiveColor, .destructive)
+    }
+}
+
 extension PresentationThemeInAppNotification: Codable {
     enum CodingKeys: String, CodingKey {
         case bg
@@ -1411,10 +1530,46 @@ extension PresentationThemeName: Codable {
     }
 }
 
+extension PresentationBuiltinThemeReference: Codable {
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.singleValueContainer()
+        if let value = try? values.decode(String.self) {
+            switch value.lowercased() {
+                case "day":
+                    self = .day
+                case "classic":
+                    self = .dayClassic
+                case "nightTinted":
+                    self = .nightAccent
+                case "night":
+                    self = .night
+                default:
+                    self = .dayClassic
+            }
+        } else {
+            self = .dayClassic
+        }
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+            case .day:
+                try container.encode("day")
+            case .dayClassic:
+                try container.encode("classic")
+            case .nightAccent:
+                try container.encode("nightTinted")
+            case .night:
+                try container.encode("night")
+        }
+    }
+}
+
 extension PresentationTheme: Codable {
     enum CodingKeys: String, CodingKey {
         case name
-        case author
+        case basedOn
         case dark
         case intro
         case passcode
@@ -1423,14 +1578,28 @@ extension PresentationTheme: Codable {
         case chatList
         case chat
         case actionSheet
+        case contextMenu
         case notification
     }
     
     public convenience init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
-        self.init(name: try values.decode(PresentationThemeName.self, forKey: .name),
-                  author: (try? values.decode(String.self, forKey: .author)) ?? nil,
+        let referenceTheme: PresentationBuiltinThemeReference
+        if let theme = try? values.decode(PresentationBuiltinThemeReference.self, forKey: .basedOn) {
+            referenceTheme = theme
+        } else {
+            referenceTheme = .dayClassic
+        }
+        
+        if let decoder = decoder as? PresentationThemeDecoding {
+            let serviceBackgroundColor = decoder.serviceBackgroundColor ?? .black
+            decoder.referenceTheme = makeDefaultPresentationTheme(reference: referenceTheme, accentColor: nil, serviceBackgroundColor: serviceBackgroundColor, baseColor: nil)
+        }
+        
+        self.init(name: (try? values.decode(PresentationThemeName.self, forKey: .name)) ?? .custom("Untitled"),
+                  referenceTheme: referenceTheme,
                   overallDarkAppearance: (try? values.decode(Bool.self, forKey: .dark)) ?? false,
+                  baseColor: nil,
                   intro: try values.decode(PresentationThemeIntro.self, forKey: .intro),
                   passcode: try values.decode(PresentationThemePasscode.self, forKey: .passcode),
                   rootController: try values.decode(PresentationThemeRootController.self, forKey: .root),
@@ -1438,13 +1607,15 @@ extension PresentationTheme: Codable {
                   chatList: try values.decode(PresentationThemeChatList.self, forKey: .chatList),
                   chat: try values.decode(PresentationThemeChat.self, forKey: .chat),
                   actionSheet: try values.decode(PresentationThemeActionSheet.self, forKey: .actionSheet),
-                  inAppNotification: try values.decode(PresentationThemeInAppNotification.self, forKey: .notification))
+                  contextMenu: try values.decode(PresentationThemeContextMenu.self, forKey: .contextMenu),
+                  inAppNotification: try values.decode(PresentationThemeInAppNotification.self, forKey: .notification)
+        )
     }
     
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(self.name, forKey: .name)
-        try container.encode(self.author, forKey: .author)
+        try container.encode(self.referenceTheme, forKey: .basedOn)
         try container.encode(self.overallDarkAppearance, forKey: .dark)
         try container.encode(self.intro, forKey: .intro)
         try container.encode(self.passcode, forKey: .passcode)
@@ -1453,6 +1624,7 @@ extension PresentationTheme: Codable {
         try container.encode(self.chatList, forKey: .chatList)
         try container.encode(self.chat, forKey: .chat)
         try container.encode(self.actionSheet, forKey: .actionSheet)
+        try container.encode(self.contextMenu, forKey: .contextMenu)
         try container.encode(self.inAppNotification, forKey: .notification)
     }
 }

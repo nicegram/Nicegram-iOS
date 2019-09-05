@@ -15,7 +15,6 @@ import Foundation
     #endif
     import UIKit
 #endif
-import TelegramCorePrivateModule
 
 
 public protocol AccountState: PostboxCoding {
@@ -272,7 +271,7 @@ let telegramPostboxSeedConfiguration: SeedConfiguration = {
         } else {
             return [.regularChatsAndPrivateGroups]
         }
-    }, additionalChatListIndexNamespace: Namespaces.Message.Cloud, messageNamespacesRequiringGroupStatsValidation: [Namespaces.Message.Cloud], defaultMessageNamespaceReadStates: [Namespaces.Message.Local: .idBased(maxIncomingReadId: 0, maxOutgoingReadId: 0, maxKnownId: 0, count: 0, markedUnread: false)])
+    }, additionalChatListIndexNamespace: Namespaces.Message.Cloud, messageNamespacesRequiringGroupStatsValidation: [Namespaces.Message.Cloud], defaultMessageNamespaceReadStates: [Namespaces.Message.Local: .idBased(maxIncomingReadId: 0, maxOutgoingReadId: 0, maxKnownId: 0, count: 0, markedUnread: false)], chatMessagesNamespaces: Set([Namespaces.Message.Cloud, Namespaces.Message.Local, Namespaces.Message.SecretIncoming]))
 }()
 
 public enum AccountPreferenceEntriesResult {
@@ -1242,7 +1241,9 @@ public class Account {
         self.managedOperationsDisposable.add(managedSynchronizeConsumeMessageContentOperations(postbox: self.postbox, network: self.network, stateManager: self.stateManager).start())
         self.managedOperationsDisposable.add(managedConsumePersonalMessagesActions(postbox: self.postbox, network: self.network, stateManager: self.stateManager).start())
         self.managedOperationsDisposable.add(managedSynchronizeMarkAllUnseenPersonalMessagesOperations(postbox: self.postbox, network: self.network, stateManager: self.stateManager).start())
+        self.managedOperationsDisposable.add(managedApplyPendingMessageReactionsActions(postbox: self.postbox, network: self.network, stateManager: self.stateManager).start())
         self.managedOperationsDisposable.add(managedSynchronizeEmojiKeywordsOperations(postbox: self.postbox, network: self.network).start())
+        self.managedOperationsDisposable.add(managedApplyPendingScheduledMessagesActions(postbox: self.postbox, network: self.network, stateManager: self.stateManager).start())
         
         let importantBackgroundOperations: [Signal<AccountRunningImportantTasks, NoError>] = [
             managedSynchronizeChatInputStateOperations(postbox: self.postbox, network: self.network) |> map { $0 ? AccountRunningImportantTasks.other : [] },
@@ -1304,6 +1305,7 @@ public class Account {
         self.managedOperationsDisposable.add(managedPendingPeerNotificationSettings(postbox: self.postbox, network: self.network).start())
         self.managedOperationsDisposable.add(managedSynchronizeAppLogEventsOperations(postbox: self.postbox, network: self.network).start())
         self.managedOperationsDisposable.add(managedNotificationSettingsBehaviors(postbox: self.postbox).start())
+        self.managedOperationsDisposable.add(managedThemesUpdates(accountManager: accountManager, postbox: self.postbox, network: self.network).start())
         
         if !self.supplementary {
             self.managedOperationsDisposable.add(managedAnimatedEmojiUpdates(postbox: self.postbox, network: self.network).start())

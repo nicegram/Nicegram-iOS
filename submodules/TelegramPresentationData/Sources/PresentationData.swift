@@ -39,7 +39,7 @@ public struct PresentationAppIcon: Equatable {
     public let imageName: String
     public let isDefault: Bool
     
-    public init(name: String, imageName: String, isDefault: Bool) {
+    public init(name: String, imageName: String, isDefault: Bool = false) {
         self.name = name
         self.imageName = imageName
         self.isDefault = isDefault
@@ -150,14 +150,15 @@ private func currentDateTimeFormat() -> PresentationDateTimeFormat {
                 break
             }
         }
-    }
-    
-    if dateString.contains("M\(dateSeparator)d") {
-        dateFormat = .monthFirst
+        if dateString.contains("M\(dateSeparator)d") {
+            dateFormat = .monthFirst
+        } else {
+            dateFormat = .dayFirst
+        }
     } else {
         dateFormat = .dayFirst
     }
-    
+
     let decimalSeparator = locale.decimalSeparator ?? "."
     let groupingSeparator = locale.groupingSeparator ?? ""
     return PresentationDateTimeFormat(timeFormat: timeFormat, dateFormat: dateFormat, dateSeparator: dateSeparator, decimalSeparator: decimalSeparator, groupingSeparator: groupingSeparator)
@@ -253,13 +254,13 @@ public func currentPresentationDataAndSettings(accountManager: AccountManager) -
         
         let parameters = AutomaticThemeSwitchParameters(settings: themeSettings.automaticThemeSwitchSetting)
         if automaticThemeShouldSwitchNow(parameters, currentTheme: themeSettings.theme) {
-            effectiveTheme = .builtin(themeSettings.automaticThemeSwitchSetting.theme)
+            effectiveTheme = themeSettings.automaticThemeSwitchSetting.theme
         } else {
             effectiveTheme = themeSettings.theme
         }
         
         let effectiveAccentColor = themeSettings.themeSpecificAccentColors[effectiveTheme.index]?.color
-        themeValue = makePresentationTheme(themeReference: effectiveTheme, accentColor: effectiveAccentColor, serviceBackgroundColor: defaultServiceBackgroundColor)
+        themeValue = makePresentationTheme(mediaBox: accountManager.mediaBox, themeReference: effectiveTheme, accentColor: effectiveAccentColor, serviceBackgroundColor: defaultServiceBackgroundColor, baseColor: themeSettings.themeSpecificAccentColors[effectiveTheme.index]?.baseColor ?? .blue)
         
         if effectiveTheme != themeSettings.theme {
             switch effectiveChatWallpaper {
@@ -300,7 +301,7 @@ private enum PreparedAutomaticThemeSwitchTrigger {
 
 private struct AutomaticThemeSwitchParameters {
     let trigger: PreparedAutomaticThemeSwitchTrigger
-    let theme: PresentationBuiltinThemeReference
+    let theme: PresentationThemeReference
     
     init(settings: AutomaticThemeSwitchSetting) {
         let trigger: PreparedAutomaticThemeSwitchTrigger
@@ -329,15 +330,6 @@ private struct AutomaticThemeSwitchParameters {
 }
 
 private func automaticThemeShouldSwitchNow(_ parameters: AutomaticThemeSwitchParameters, currentTheme: PresentationThemeReference) -> Bool {
-    switch currentTheme {
-        case let .builtin(builtin):
-            switch builtin {
-                case .nightAccent, .night:
-                    return false
-                default:
-                    break
-            }
-    }
     switch parameters.trigger {
         case .none:
             return false
@@ -462,14 +454,12 @@ public func chatServiceBackgroundColor(wallpaper: TelegramWallpaper, mediaBox: M
                 }
             } else {
                 return Signal<UIColor, NoError> { subscriber in
-                    let fetch = mediaBox.fetchedResource(file.file.resource, parameters: nil).start()
                     let data = serviceColor(for: mediaBox.resourceData(file.file.resource)).start(next: { next in
                         subscriber.putNext(next)
                     }, completed: {
                         subscriber.putCompletion()
                     })
                     return ActionDisposable {
-                        fetch.dispose()
                         data.dispose()
                     }
                 }
@@ -513,7 +503,7 @@ public func updatedPresentationData(accountManager: AccountManager, applicationI
                         var effectiveChatWallpaper: TelegramWallpaper = currentWallpaper
                         
                         if shouldSwitch {
-                            let automaticTheme: PresentationThemeReference = .builtin(themeSettings.automaticThemeSwitchSetting.theme)
+                            let automaticTheme = themeSettings.automaticThemeSwitchSetting.theme
                             if let themeSpecificWallpaper = themeSettings.themeSpecificChatWallpapers[automaticTheme.index] {
                                 effectiveChatWallpaper = themeSpecificWallpaper
                             }
@@ -523,7 +513,7 @@ public func updatedPresentationData(accountManager: AccountManager, applicationI
                         }
                         
                         let effectiveAccentColor = themeSettings.themeSpecificAccentColors[effectiveTheme.index]?.color
-                        let themeValue = makePresentationTheme(themeReference: effectiveTheme, accentColor: effectiveAccentColor, serviceBackgroundColor: serviceBackgroundColor)
+                        let themeValue = makePresentationTheme(mediaBox: accountManager.mediaBox, themeReference: effectiveTheme, accentColor: effectiveAccentColor, serviceBackgroundColor: serviceBackgroundColor, baseColor: themeSettings.themeSpecificAccentColors[effectiveTheme.index]?.baseColor ?? .blue)
                         
                         if effectiveTheme != themeSettings.theme && themeSettings.themeSpecificChatWallpapers[effectiveTheme.index] == nil {
                             switch effectiveChatWallpaper {

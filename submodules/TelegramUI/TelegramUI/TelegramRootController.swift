@@ -5,7 +5,11 @@ import Postbox
 import TelegramCore
 import SwiftSignalKit
 import TelegramPresentationData
-import TelegramUIPrivateModule
+import AccountContext
+import ContactListUI
+import CallListUI
+import ChatListUI
+import SettingsUI
 
 public final class TelegramRootController: NavigationController {
     private let context: AccountContext
@@ -34,7 +38,7 @@ public final class TelegramRootController: NavigationController {
             let image = generateTintedImage(image: UIImage(bundleImageName: "Chat List/EmptyMasterDetailIcon"), color: presentationData.theme.chatList.messageTextColor.withAlphaComponent(0.2))
             navigationDetailsBackgroundMode = image != nil ? .image(image!) : nil
         default:
-            let image = chatControllerBackgroundImage(wallpaper: presentationData.chatWallpaper, mediaBox: context.account.postbox.mediaBox)
+            let image = chatControllerBackgroundImage(theme: presentationData.theme, wallpaper: presentationData.chatWallpaper, mediaBox: context.account.postbox.mediaBox, knockoutMode: context.sharedContext.immediateExperimentalUISettings.knockoutWallpaper)
             navigationDetailsBackgroundMode = image != nil ? .wallpaper(image!) : nil
         }
         
@@ -43,22 +47,18 @@ public final class TelegramRootController: NavigationController {
         self.presentationDataDisposable = (context.sharedContext.presentationData
         |> deliverOnMainQueue).start(next: { [weak self] presentationData in
             if let strongSelf = self {
-                
                 if presentationData.chatWallpaper != strongSelf.presentationData.chatWallpaper {
                     let navigationDetailsBackgroundMode: NavigationEmptyDetailsBackgoundMode?
                     switch presentationData.chatWallpaper {
-                    case .color:
-                        let image = generateTintedImage(image: UIImage(bundleImageName: "Chat List/EmptyMasterDetailIcon"), color: presentationData.theme.chatList.messageTextColor.withAlphaComponent(0.2))
-                        navigationDetailsBackgroundMode = image != nil ? .image(image!) : nil
-                    default:
-                        let image = chatControllerBackgroundImage(wallpaper: presentationData.chatWallpaper, mediaBox: strongSelf.context.account.postbox.mediaBox)
-                        navigationDetailsBackgroundMode = image != nil ? .wallpaper(image!) : nil
+                        case .color:
+                            let image = generateTintedImage(image: UIImage(bundleImageName: "Chat List/EmptyMasterDetailIcon"), color: presentationData.theme.chatList.messageTextColor.withAlphaComponent(0.2))
+                            navigationDetailsBackgroundMode = image != nil ? .image(image!) : nil
+                        default:
+                            navigationDetailsBackgroundMode = chatControllerBackgroundImage(theme: presentationData.theme, wallpaper: presentationData.chatWallpaper, mediaBox: strongSelf.context.sharedContext.accountManager.mediaBox, knockoutMode: strongSelf.context.sharedContext.immediateExperimentalUISettings.knockoutWallpaper).flatMap(NavigationEmptyDetailsBackgoundMode.wallpaper)
                     }
                     strongSelf.updateBackgroundDetailsMode(navigationDetailsBackgroundMode, transition: .immediate)
                 }
-                
-                
-                
+
                 let previousTheme = strongSelf.presentationData.theme
                 strongSelf.presentationData = presentationData
                 if previousTheme !== presentationData.theme {
@@ -82,8 +82,10 @@ public final class TelegramRootController: NavigationController {
     
     public func addRootControllers(showCallsTab: Bool, niceSettings: NiceSettings) {
         let tabBarController = TabBarController(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData), theme: TabBarControllerTheme(rootControllerTheme: self.presentationData.theme), showTabNames: SimplyNiceSettings().showTabNames)
-        let chatListController = ChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true)
-        chatListController.tabBarItem.badgeValue = self.context.sharedContext.switchingData.chatListBadge
+        let chatListController = self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
+        if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
+            chatListController.tabBarItem.badgeValue = sharedContext.switchingData.chatListBadge
+        }
         let callListController = CallListController(context: self.context, mode: .tab)
         
         var controllers: [ViewController] = []
@@ -122,11 +124,16 @@ public final class TelegramRootController: NavigationController {
 
         controllers.append(chatListController)
         
-        let restoreSettignsController = self.context.sharedContext.switchingData.settingsController
+        var restoreSettignsController: (ViewController & SettingsController)?
+        if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
+            restoreSettignsController = sharedContext.switchingData.settingsController
+        }
         restoreSettignsController?.updateContext(context: self.context)
-        self.context.sharedContext.switchingData = (nil, nil, nil)
+        if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
+            sharedContext.switchingData = (nil, nil, nil)
+        }
         
-        let accountSettingsController = restoreSettignsController ?? settingsController(context: self.context, accountManager: context.sharedContext.accountManager)
+        let accountSettingsController = restoreSettignsController ?? settingsController(context: self.context, accountManager: context.sharedContext.accountManager, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
         controllers.append(accountSettingsController)
         
         tabBarController.setControllers(controllers, selectedIndex: restoreSettignsController != nil ? (controllers.count - 1) : (controllers.count - 2))
@@ -190,7 +197,7 @@ public final class TelegramRootController: NavigationController {
             self.popToRoot(animated: false)
         }
         
-        if let index = rootTabController.controllers.index(where: { $0 is ChatListController}) {
+        if let index = rootTabController.controllers.firstIndex(where: { $0 is ChatListController}) {
             rootTabController.selectedIndex = index
         }
         
@@ -200,7 +207,7 @@ public final class TelegramRootController: NavigationController {
     }
     
     public func openRootCompose() {
-        self.chatListController?.composePressed()
+        self.chatListController?.activateCompose()
     }
     
     public func openRootCamera() {
