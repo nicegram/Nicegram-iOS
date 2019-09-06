@@ -113,7 +113,9 @@ public final class TelegramRootController: NavigationController {
             
             if !filControllers.isEmpty {
                 for controller in filControllers {
-                    controller.tabBarItem.badgeValue = self.context.sharedContext.switchingData.chatListBadge
+                    if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
+                        controller.tabBarItem.badgeValue = sharedContext.switchingData.chatListBadge
+                    }
                     controllers.append(controller)
                 }
                 self.filterControllers = filControllers

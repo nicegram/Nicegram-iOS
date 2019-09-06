@@ -32,6 +32,8 @@ public final class TelegramTimecode {
 }
 
 public struct TelegramTextAttributes {
+    public static let Code = "TelegramCode"
+    public static let Pre = "TelegramPre"
     public static let URL = "UrlAttributeT"
     public static let PeerMention = "TelegramPeerMention"
     public static let PeerTextMention = "TelegramPeerTextMention"

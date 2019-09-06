@@ -347,7 +347,7 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePrevewItemNode 
                             break
                         case .ignore:
                             return .fail
-                        case .url, .peerMention, .textMention, .botCommand, .code, .pre, .hashtag, .instantPage, .wallpaper, .theme .call, .openMessage, .timecode, .tooltip:
+                        case .url, .peerMention, .textMention, .botCommand, .code, .pre, .hashtag, .instantPage, .wallpaper, .theme, .call, .openMessage, .timecode, .tooltip:
                             return .waitForSingleTap
                     }
                 }
@@ -2270,6 +2270,8 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePrevewItemNode 
                     switch tapAction {
                         case .none, .ignore:
                             break
+                        case .code(_), .pre(_):
+                            break
                         case let .url(url, concealed):
                             foundTapAction = true
                             self.item?.controllerInteraction.openUrl(url, concealed, nil)
@@ -2354,6 +2356,8 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePrevewItemNode 
                         tapMessage = contentNode.item?.message
                         let tapAction = contentNode.tapActionAtPoint(CGPoint(x: location.x - contentNode.frame.minX, y: location.y - contentNode.frame.minY), gesture: gesture)
                         switch tapAction {
+                            case .pre(_), .code(_):
+                                break
                             case .none, .ignore:
                                 break
                             case let .url(url, _):

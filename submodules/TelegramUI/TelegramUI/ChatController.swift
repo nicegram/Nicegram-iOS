@@ -3729,7 +3729,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                                     }) })
                                 })
                             }
-                        }) TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Conversation_Unpin, action: {
+                        }), TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Conversation_Unpin, action: {
                             if let strongSelf = self {
                                 let disposable: MetaDisposable
                                 if let current = strongSelf.unpinMessageDisposable {
@@ -5010,19 +5010,20 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
             }
         case .openChatInfo:
             switch self.chatLocationInfoData {
-                case let .peer(peerView):
-                    self.navigationActionDisposable.set((peerView.get()
-                        |> take(1)
-                        |> deliverOnMainQueue).start(next: { [weak self] peerView in
-                            if let strongSelf = self, let peer = peerView.peers[peerView.peerId], peer.restrictionText == nil && !strongSelf.presentationInterfaceState.isNotAccessible {
-                                if let infoController = peerInfoController(context: strongSelf.context, peer: peer) {
-                                    (strongSelf.navigationController as? NavigationController)?.pushViewController(infoController)
-                                }
-                            } else if let strongSelf = self, let peer = peerView.peers[peerView.peerId], self!.context.sharedContext.immediateExperimentalUISettings.brr && !strongSelf.presentationInterfaceState.isNotAccessible {
-                                if let infoController = peerInfoController(context: strongSelf.context, peer: peer) {
-                                    (strongSelf.navigationController as? NavigationController)?.pushViewController(infoController)
-                                }
+            case let .peer(peerView):
+                self.navigationActionDisposable.set((peerView.get()
+                    |> take(1)
+                    |> deliverOnMainQueue).start(next: { [weak self] peerView in
+                        if let strongSelf = self, let peer = peerView.peers[peerView.peerId], peer.restrictionText(platform: "ios") == nil && !strongSelf.presentationInterfaceState.isNotAccessible {
+                            if let infoController = strongSelf.context.sharedContext.makePeerInfoController(context: strongSelf.context, peer: peer, mode: .generic) {
+                                (strongSelf.navigationController as? NavigationController)?.pushViewController(infoController)
                             }
+                        }
+                        if let strongSelf = self, let peer = peerView.peers[peerView.peerId], self!.context.sharedContext.immediateExperimentalUISettings.brr && !strongSelf.presentationInterfaceState.isNotAccessible {
+                            if let infoController = strongSelf.context.sharedContext.makePeerInfoController(context: strongSelf.context, peer: peer, mode: .generic) {
+                                (strongSelf.navigationController as? NavigationController)?.pushViewController(infoController)
+                            }
+                        }
                     }))
             }
         case .search:
@@ -6378,7 +6379,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
         let messageIds = messages.map { $0.id }.sorted()
         // MessagesToCopy = convertMessagesForEnqueue(messages)
         MessagesToCopyDict = MessagesToCopyDict.merging(convertMessagesForEnqueueDict(messages)) { $1 }
-        let controller = PeerSelectionController(context: self.context, filter: [.onlyWriteable, .excludeDisabled, .includeSavedMessages], title: l("Chat.ForwardAsCopy", self.presentationData.strings.baseLanguageCode))
+        let controller = self.context.sharedContext.makePeerSelectionController(PeerSelectionControllerParams(context: self.context, filter: [.onlyWriteable, .excludeDisabled, .includeSavedMessages], title: l("Chat.ForwardAsCopy", self.presentationData.strings.baseLanguageCode)))
         controller.peerSelected = { [weak self, weak controller] peerId in
             guard let strongSelf = self, let strongController = controller else {
                 return
@@ -6490,8 +6491,6 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
             return
         }
         
-        let controller = PeerSelectionController(context: self.context, filter: [.onlyWriteable, .excludeDisabled, .includeSavedMessages])
-    private func forwardMessages(messageIds: [MessageId], resetCurrent: Bool = false) {
         let controller = self.context.sharedContext.makePeerSelectionController(PeerSelectionControllerParams(context: self.context, filter: [.onlyWriteable, .excludeDisabled, .includeSavedMessages]))
         controller.peerSelected = { [weak self, weak controller] peerId in
             guard let strongSelf = self, let strongController = controller else {
