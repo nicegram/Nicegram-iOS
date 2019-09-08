@@ -108,7 +108,7 @@ public final class TelegramRootController: NavigationController {
                 if index + 1 > SimplyNiceSettings().maxFilters {
                     break
                 }
-                filControllers.append(ChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, filter: filter, filterIndex: Int32(index)))
+                filControllers.append(self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, filter: filter, filterIndex: Int32(index)))
             }
             
             if !filControllers.isEmpty {
@@ -169,12 +169,14 @@ public final class TelegramRootController: NavigationController {
                 if index + 1 > SimplyNiceSettings().maxFilters {
                     break
                 }
-                filControllers.append(ChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, filter: filter, filterIndex: Int32(index)))
+                filControllers.append(self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, filter: filter, filterIndex: Int32(index)))
             }
             
             if !filControllers.isEmpty {
                 for controller in filControllers {
-                    controller.tabBarItem.badgeValue = self.context.sharedContext.switchingData.chatListBadge
+                    if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
+                        controller.tabBarItem.badgeValue = sharedContext.switchingData.chatListBadge
+                    }
                     controllers.append(controller)
                 }
                 self.filterControllers = filControllers

@@ -92,8 +92,8 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
         self.cloudButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Contact List/InviteActionIcon"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
         self.copyForwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionCopyForward"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
         self.copyForwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionCopyForward"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
-        self.shareButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionAction")), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
-        self.shareButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionAction")), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
+        self.shareButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionAction"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
+        self.shareButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionAction"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
         
         super.init()
         

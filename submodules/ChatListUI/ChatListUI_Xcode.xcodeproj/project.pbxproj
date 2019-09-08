@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A58B9D312324FE140001DFE3 /* NicegramUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A58B9D302324FE140001DFE3 /* NicegramUI.framework */; };
 		D0C9CA9A230234D400FAB518 /* ChatListUI.h in Headers */ = {isa = PBXBuildFile; fileRef = D0C9CA98230234D400FAB518 /* ChatListUI.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		D0C9CAAD230235E500FAB518 /* ChatListSearchContainerNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0C9CAA4230235E300FAB518 /* ChatListSearchContainerNode.swift */; };
 		D0C9CAAE230235E500FAB518 /* ChatListRecentPeersListItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0C9CAA5230235E300FAB518 /* ChatListRecentPeersListItem.swift */; };
@@ -64,6 +65,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A58B9D302324FE140001DFE3 /* NicegramUI.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NicegramUI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A5FF8D1423247E6800EFF33E /* NicegramLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NicegramLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0C9CA95230234D400FAB518 /* ChatListUI.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = ChatListUI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0C9CA98230234D400FAB518 /* ChatListUI.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ChatListUI.h; sourceTree = "<group>"; };
 		D0C9CA99230234D400FAB518 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -127,6 +130,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A58B9D312324FE140001DFE3 /* NicegramUI.framework in Frameworks */,
 				D0C9CBE82303407100FAB518 /* ContactListUI.framework in Frameworks */,
 				D0C9CBE62303387E00FAB518 /* ContactsPeerItem.framework in Frameworks */,
 				D0C9CBB42302B64C00FAB518 /* LanguageSuggestionUI.framework in Frameworks */,
@@ -204,6 +208,8 @@
 		D0C9CAB62302360600FAB518 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				A58B9D302324FE140001DFE3 /* NicegramUI.framework */,
+				A5FF8D1423247E6800EFF33E /* NicegramLib.framework */,
 				D0C9CBE72303407100FAB518 /* ContactListUI.framework */,
 				D0C9CBE52303387E00FAB518 /* ContactsPeerItem.framework */,
 				D0C9CBB32302B64C00FAB518 /* LanguageSuggestionUI.framework */,

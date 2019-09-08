@@ -3,6 +3,25 @@ import Display
 import Postbox
 import SwiftSignalKit
 
+public struct NiceChatListNodePeersFilter: OptionSet {
+    public var rawValue: Int32
+    
+    public init(rawValue: Int32) {
+        self.rawValue = rawValue
+    }
+    
+    public static let onlyPrivateChats = NiceChatListNodePeersFilter(rawValue: 1 << 0)
+    public static let onlyGroups = NiceChatListNodePeersFilter(rawValue: 1 << 1)
+    public static let onlyChannels = NiceChatListNodePeersFilter(rawValue: 1 << 3)
+    public static let onlyBots = NiceChatListNodePeersFilter(rawValue: 1 << 4)
+    public static let onlyNonMuted = NiceChatListNodePeersFilter(rawValue: 1 << 5)
+    public static let onlyUnread = NiceChatListNodePeersFilter(rawValue: 1 << 6)
+    // public static let onlyFavourites = NiceChatListNodePeersFilter(rawValue: 1 << 7)
+    public static let onlyAdmin = NiceChatListNodePeersFilter(rawValue: 1 << 8)
+    
+    public static let all: [NiceChatListNodePeersFilter] = [.onlyAdmin, .onlyBots, .onlyChannels, .onlyGroups, .onlyPrivateChats, .onlyUnread, .onlyNonMuted]
+}
+
 public struct ChatListNodePeersFilter: OptionSet {
     public var rawValue: Int32
     

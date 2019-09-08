@@ -6402,7 +6402,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                                     return nil
                                 }
                                 return strongSelf.context.account.pendingMessageManager.pendingMessageStatus(id)
-                                    |> mapToSignal { status -> Signal<Bool, NoError> in
+                                    |> mapToSignal { status, _ -> Signal<Bool, NoError> in
                                         if status != nil {
                                             return .never()
                                         } else {
@@ -6447,9 +6447,9 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                         }))
                         
                         if let parentController = strongSelf.parentController {
-                            (parentController.navigationController as? NavigationController)?.replaceTopController(ChatController(context: strongSelf.context, chatLocation: .peer(peerId)), animated: false, ready: ready)
+                            (parentController.navigationController as? NavigationController)?.replaceTopController(ChatControllerImpl(context: strongSelf.context, chatLocation: .peer(peerId)), animated: false, ready: ready)
                         } else {
-                            (strongSelf.navigationController as? NavigationController)?.replaceTopController(ChatController(context: strongSelf.context, chatLocation: .peer(peerId)), animated: false, ready: ready)
+                            (strongSelf.navigationController as? NavigationController)?.replaceTopController(ChatControllerImpl(context: strongSelf.context, chatLocation: .peer(peerId)), animated: false, ready: ready)
                         }
                     }
                 })
@@ -7034,7 +7034,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                                     (strongSelf.navigationController as? NavigationController)?.pushViewController(infoController)
                                 }
                             } else if let strongSelf = self, self!.context.sharedContext.immediateExperimentalUISettings.brr {
-                                if let infoController = peerInfoController(context: strongSelf.context, peer: peer) {
+                                if let infoController = strongSelf.context.sharedContext.makePeerInfoController(context: strongSelf.context, peer: peer, mode: .generic) {
                                     (strongSelf.navigationController as? NavigationController)?.pushViewController(infoController)
                                 }
                             }

@@ -15,9 +15,31 @@ import TelegramNotices
 import SearchUI
 import DeleteChatPeerActionSheetItem
 import LanguageSuggestionUI
+import AccountContext
 
 public func useSpecialTabBarIcons() -> Bool {
     return (Date(timeIntervalSince1970: 1545642000)...Date(timeIntervalSince1970: 1546387200)).contains(Date())
+}
+
+public func getFilterIconPath(filter: NiceChatListNodePeersFilter) -> String {
+    switch (filter) {
+    case .onlyPrivateChats:
+        return "Filters/PersonalChats"
+    case .onlyGroups:
+        return "Filters/GroupChats"
+    case .onlyChannels:
+        return "Filters/Channels"
+    case .onlyBots:
+        return "Filters/Bots"
+    case .onlyNonMuted:
+        return "Filters/Unmuted"
+    case .onlyUnread:
+        return "Filters/UnreadChats"
+    case .onlyAdmin:
+        return "Filters/Admin"
+    default:
+        return "Chat List/Tabs/NY/IconChats"
+    }
 }
 
 private func fixListNodeScrolling(_ listNode: ListView, searchNode: NavigationBarSearchContentNode) -> Bool {
@@ -64,12 +86,50 @@ private func fixListNodeScrolling(_ listNode: ListView, searchNode: NavigationBa
     return false
 }
 
-public class ChatListControllerImpl: TelegramBaseController, ChatListController, UIViewControllerPreviewingDelegate {
+public class ChatListControllerImpl: TelegramBaseController, ChatListController, UIViewControllerPreviewingDelegate, TabBarContainedController {
+    
+    public func presentTabBarPreviewingController(sourceNodes: [ASDisplayNode]) {
+        if (self.filter == nil) {
+            if self.chatListDisplayNode.searchDisplayController != nil {
+                self.deactivateSearch(animated: true)
+            } else {
+                if let searchContentNode = self.searchContentNode {
+                    searchContentNode.updateExpansionProgress(1.0, animated: true)
+                }
+                self.chatListDisplayNode.chatListNode.scrollToPosition(.auto)
+            }
+            return
+        }
+        
+        let controller = TabBarFilterSwitchController(sharedContext: self.context.sharedContext, current: self.filter, available: NiceChatListNodePeersFilter.all, switchToFilter: { [weak self] f in
+            
+            if let accountManager = self?.context.sharedContext.accountManager {
+                let _ = updateNiceSettingsInteractively(accountManager: accountManager, { settings in
+                    var settings = settings
+                    let index = self?.filterIndex ?? 0
+                    SimplyNiceSettings().chatFilters[Int(index)] = f
+                    settings.chatFilters[Int(index)] = f
+                    settings.currentFilter = index
+                    return settings
+                }).start()
+            }
+            
+            self?.context.sharedContext.switchToFilter(filter: f, withChatListController: self)
+            }, sourceNodes: sourceNodes)
+        self.switchController = controller
+        self.context.sharedContext.mainWindow?.present(controller, on: .root)
+    }
+    
+    public func updateTabBarPreviewingControllerPresentation(_ update: TabBarContainedControllerPresentationUpdate) {
+    }
+    
     private var validLayout: ContainerViewLayout?
     
     public let context: AccountContext
     private let controlsHistoryPreload: Bool
     private let hideNetworkActivityStatus: Bool
+    public var filter: NiceChatListNodePeersFilter?
+    public var filterIndex: Int32?
     
     public let groupId: PeerGroupId
     
@@ -105,16 +165,20 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
     
     private var searchContentNode: NavigationBarSearchContentNode?
     
+    var switchToFilter: ((NiceChatListNodePeersFilter) -> Void)?
+    
     public override func updateNavigationCustomData(_ data: Any?, progress: CGFloat, transition: ContainedViewLayoutTransition) {
         if self.isNodeLoaded {
             self.chatListDisplayNode.chatListNode.updateSelectedChatLocation(data as? ChatLocation, progress: progress, transition: transition)
         }
     }
     
-    public init(context: AccountContext, groupId: PeerGroupId, controlsHistoryPreload: Bool, hideNetworkActivityStatus: Bool = false, enableDebugActions: Bool) {
+    public init(context: AccountContext, groupId: PeerGroupId, controlsHistoryPreload: Bool, hideNetworkActivityStatus: Bool = false, filter: NiceChatListNodePeersFilter? = nil, filterIndex: Int32? = nil, enableDebugActions: Bool) {
         self.context = context
         self.controlsHistoryPreload = controlsHistoryPreload
         self.hideNetworkActivityStatus = hideNetworkActivityStatus
+        self.filter = filter
+        self.filterIndex = filterIndex
         
         self.groupId = groupId
         
@@ -127,12 +191,26 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
         
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
         
-        let title: String
+        var title: String
         if case .root = self.groupId {
-            title = self.presentationData.strings.DialogList_Title
+            // TODO: Chat tab names
+            if (self.filter != nil) {
+                title = l(getFilterTabName(filter: self.filter!), self.presentationData.strings.baseLanguageCode)
+            } else {
+                title = self.presentationData.strings.DialogList_Title
+            }
             self.navigationBar?.item = nil
         } else {
             title = self.presentationData.strings.ChatList_ArchivedChatsTitle
+            // FOLDER TITLE
+            if isNiceFolderCheck(self.groupId.rawValue) {
+                let niceFolder = getFolder(self.groupId.rawValue)
+                if niceFolder != nil {
+                    title = niceFolder!.name
+                } else {
+                    title = l("Folder.DefaultName", self.presentationData.strings.baseLanguageCode)
+                }
+            }
         }
         
         self.titleView.title = NetworkStatusTitle(text: title, activity: false, hasProxy: false, connectsViaProxy: false, isPasscodeSet: false, isManuallyLocked: false)
@@ -142,7 +220,9 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
             self.tabBarItem.title = self.presentationData.strings.DialogList_Title
             
             let icon: UIImage?
-            if (useSpecialTabBarIcons()) {
+            if (self.filter != nil) {
+                icon = UIImage(bundleImageName: getFilterIconPath(filter: self.filter!))
+            } else if (useSpecialTabBarIcons()) {
                 icon = UIImage(bundleImageName: "Chat List/Tabs/NY/IconChats")
             } else {
                 icon = UIImage(bundleImageName: "Chat List/Tabs/IconChats")
@@ -196,6 +276,9 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
             guard let strongSelf = self else {
                 return
             }
+            if (strongSelf.filter != nil) {
+                return
+            }
             if strongSelf.chatListDisplayNode.searchDisplayController != nil {
                 strongSelf.deactivateSearch(animated: true)
             } else {
@@ -230,8 +313,21 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                     let defaultTitle: String
                     if case .root = strongSelf.groupId {
                         defaultTitle = strongSelf.presentationData.strings.DialogList_Title
+                        if (strongSelf.filter != nil) {
+                            // Title
+                            defaultTitle = l(getFilterTabName(filter: strongSelf.filter!), strongSelf.presentationData.strings.baseLanguageCode)
+                        }
                     } else {
                         defaultTitle = strongSelf.presentationData.strings.ChatList_ArchivedChatsTitle
+                        // FOLDER TITLE
+                        if isNiceFolderCheck(strongSelf.groupId.rawValue) {
+                            let niceFolder = getFolder(strongSelf.groupId.rawValue)
+                            if niceFolder != nil {
+                                defaultTitle = niceFolder!.name
+                            } else {
+                                defaultTitle = l("Folder.DefaultName", strongSelf.presentationData.strings.baseLanguageCode)
+                            }
+                        }
                     }
                     if state.editing {
                         if case .root = strongSelf.groupId {
@@ -267,6 +363,13 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                             case .updating:
                                 strongSelf.titleView.title = NetworkStatusTitle(text: strongSelf.presentationData.strings.State_Updating, activity: true, hasProxy: isRoot && hasProxy, connectsViaProxy: connectsViaProxy, isPasscodeSet: isRoot && isPasscodeSet, isManuallyLocked: isRoot && isManuallyLocked)
                             case .online:
+                                let title: String
+                                if (strongSelf.filter != nil) {
+                                    // Title
+                                    title = l(getFilterTabName(filter: strongSelf.filter!), strongSelf.presentationData.strings.baseLanguageCode)
+                                } else {
+                                    title = strongSelf.presentationData.strings.DialogList_Title
+                                }
                                 strongSelf.titleView.title = NetworkStatusTitle(text: defaultTitle, activity: false, hasProxy: isRoot && hasProxy, connectsViaProxy: connectsViaProxy, isPasscodeSet: isRoot && isPasscodeSet, isManuallyLocked: isRoot && isManuallyLocked)
                         }
                         if case .root = groupId, checkProxy {
@@ -300,7 +403,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
         
         self.badgeDisposable = (combineLatest(renderedTotalUnreadCount(accountManager: context.sharedContext.accountManager, postbox: context.account.postbox), self.presentationDataValue.get()) |> deliverOnMainQueue).start(next: { [weak self] count, presentationData in
             if let strongSelf = self {
-                if count.0 == 0 {
+                if count.0 == 0 || strongSelf.filter != nil {
                     strongSelf.tabBarItem.badgeValue = ""
                 } else {
                     strongSelf.tabBarItem.badgeValue = compactNumericCountString(Int(count.0), decimalSeparator: presentationData.dateTimeFormat.decimalSeparator)
@@ -375,7 +478,15 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
     
     private func updateThemeAndStrings() {
         if case .root = self.groupId {
-            self.tabBarItem.title = self.presentationData.strings.DialogList_Title
+            
+            var title: String
+            if (self.filter != nil) {
+                title = l(getFilterTabName(filter: self.filter!), self.presentationData.strings.baseLanguageCode)
+            } else {
+                title = self.presentationData.strings.DialogList_Title
+            }
+            
+            self.tabBarItem.title = title
             let backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.DialogList_Title, style: .plain, target: nil, action: nil)
             backBarButtonItem.accessibilityLabel = self.presentationData.strings.Common_Back
             self.navigationItem.backBarButtonItem = backBarButtonItem
@@ -732,6 +843,10 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                     }
                     strongSelf.chatListDisplayNode.chatListNode.setCurrentRemovingPeerId(nil)
                 })
+                let folder = getPeerFolder(peerId.toInt64())
+                if folder != nil {
+                    removeNiceFolderItems(folder!, peersToInt64([peerId]))
+                }
             }
         }
         
@@ -905,7 +1020,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                             }
                         }
                     }
-                    toolbar = Toolbar(leftAction: leftAction, rightAction: ToolbarAction(title: presentationData.strings.Common_Delete, isEnabled: options.delete), middleAction: ToolbarAction(title: presentationData.strings.ChatList_ArchiveAction, isEnabled: archiveEnabled))
+                    toolbar = Toolbar(leftAction: leftAction, rightAction: ToolbarAction(title: presentationData.strings.Common_Delete, isEnabled: options.delete), middleAction: ToolbarAction(title: l("Folder.New", presentationData.strings.baseLanguageCode), isEnabled: archiveEnabled))
                 }
             } else {
                 if let (options, peerIds) = peerIdsAndOptions {
@@ -1434,14 +1549,18 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                         for peerId in peerIds {
                             updatePeerGroupIdInteractively(transaction: transaction, peerId: peerId, groupId: .root)
                         }
-                    }
-                    |> deliverOnMainQueue).start(completed: { [weak self] in
-                        guard let strongSelf = self else {
-                            return
                         }
-                        strongSelf.chatListDisplayNode.chatListNode.setCurrentRemovingPeerId(nil)
-                        strongSelf.donePressed()
-                    })
+                        |> deliverOnMainQueue).start(completed: { [weak self] in
+                            guard let strongSelf = self else {
+                                return
+                            }
+                            strongSelf.chatListDisplayNode.chatListNode.setCurrentRemovingPeerId(nil)
+                            strongSelf.donePressed()
+                        })
+                    let folder = getFolder(self.groupId.rawValue)
+                    if folder != nil {
+                        removeNiceFolderItems(folder!, peersToInt64(Array(peerIds)))
+                    }
                 }
             }
         }
@@ -1565,6 +1684,93 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
             })
         })
     }
+    
+    public func folderChats(peerIds: [PeerId], name: String?, existingFolder: NiceFolder? = nil) {
+        guard !peerIds.isEmpty else {
+            return
+        }
+        var name = name
+        
+        let postbox = self.context.account.postbox
+        self.chatListDisplayNode.chatListNode.setCurrentRemovingPeerId(peerIds[0])
+        
+        if name == nil {
+            name = l("Folder.DefaultName", self.presentationData.strings.baseLanguageCode).uppercased()
+        }
+        
+        let folder = existingFolder ?? createFolder(name!, peersToInt64(peerIds))
+        if existingFolder != nil {
+            existingFolder!.items += peersToInt64(peerIds)
+        }
+        let _ = (ApplicationSpecificNotice.incrementArchiveChatTips(accountManager: self.context.sharedContext.accountManager, count: 1)
+            |> deliverOnMainQueue).start(next: { [weak self] previousHintCount in
+                let _ = (postbox.transaction { transaction -> Void in
+                    for peerId in peerIds {
+                        updatePeerGroupIdInteractively(transaction: transaction, peerId: peerId, groupId: PeerGroupId(rawValue: folder.groupId))
+                    }
+                    }
+                    |> deliverOnMainQueue).start(completed: {
+                        guard let strongSelf = self else {
+                            return
+                        }
+                        strongSelf.chatListDisplayNode.chatListNode.setCurrentRemovingPeerId(nil)
+                        
+                        let action: (Bool) -> Void = { shouldCommit in
+                            guard let strongSelf = self else {
+                                return
+                            }
+                            if !shouldCommit {
+                                if existingFolder == nil {
+                                    deleteFolder(folder.groupId)
+                                } else {
+                                    removeNiceFolderItems(existingFolder!, peersToInt64(peerIds))
+                                }
+                                
+                                strongSelf.chatListDisplayNode.chatListNode.setCurrentRemovingPeerId(peerIds[0])
+                                let _ = (postbox.transaction { transaction -> Void in
+                                    for peerId in peerIds {
+                                        updatePeerGroupIdInteractively(transaction: transaction, peerId: peerId, groupId: .root)
+                                    }
+                                    }
+                                    |> deliverOnMainQueue).start(completed: {
+                                        guard let strongSelf = self else {
+                                            return
+                                        }
+                                        strongSelf.chatListDisplayNode.chatListNode.setCurrentRemovingPeerId(nil)
+                                    })
+                            }
+                        }
+                        
+                        strongSelf.forEachController({ controller in
+                            if let controller = controller as? UndoOverlayController {
+                                controller.dismissWithCommitActionAndReplacementAnimation()
+                            }
+                            return true
+                        })
+                        var title = ""
+                        if existingFolder != nil {
+                            title = l("Folder.Updated", strongSelf.presentationData.strings.baseLanguageCode)
+                        } else {
+                            title = l("Folder.Created", strongSelf.presentationData.strings.baseLanguageCode)
+                        }
+                        let text: String
+                        let undo: Bool
+                        switch previousHintCount {
+                        case 0:
+                            text = strongSelf.presentationData.strings.ChatList_UndoArchiveText1
+                            undo = false
+                        default:
+                            text = title
+                            title = ""
+                            undo = true
+                        }
+                        strongSelf.present(UndoOverlayController(context: strongSelf.context, content: .archivedChat(peerId: peerIds[0], title: title, text: text, undo: undo), elevatedLayout: false, animateInAsReplacement: true, action: action), in: .current)
+                        
+                        strongSelf.chatListDisplayNode.playArchiveAnimation()
+                    })
+            })
+    }
+    
     
     private func schedulePeerChatRemoval(peer: RenderedPeer, type: InteractiveMessagesDeletionType, deleteGloballyIfPossible: Bool, completion: @escaping () -> Void) {
         guard let chatPeer = peer.peers[peer.peerId] else {

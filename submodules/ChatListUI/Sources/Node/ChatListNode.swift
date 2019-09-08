@@ -13,6 +13,7 @@ import ContactsPeerItem
 
 public enum ChatListNodeMode {
     case chatList
+    case filteredChatList(filter: NiceChatListNodePeersFilter)
     case peers(filter: ChatListNodePeersFilter)
 }
 
@@ -139,6 +140,8 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
                 switch mode {
                     case .chatList:
                         return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListItem(presentationData: presentationData, context: context, peerGroupId: peerGroupId, index: index, content: .peer(message: message, peer: peer, combinedReadState: combinedReadState, notificationSettings: notificationSettings, presence: presence, summaryInfo: summaryInfo, embeddedState: embeddedState, inputActivities: inputActivities, isAd: isAd, ignoreUnreadBadge: false), editing: editing, hasActiveRevealControls: hasActiveRevealControls, selected: selected, header: nil, enableContextActions: true, hiddenOffset: false, interaction: nodeInteraction), directionHint: entry.directionHint)
+                    case let .filteredChatList(_):
+                        return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListItem(presentationData: presentationData, context: context, peerGroupId: peerGroupId, index: index, content: .peer(message: message, peer: peer, combinedReadState: combinedReadState, notificationSettings: notificationSettings, presence: presence, summaryInfo: summaryInfo, embeddedState: embeddedState, inputActivities: inputActivities, isAd: isAd, ignoreUnreadBadge: false), editing: editing, hasActiveRevealControls: hasActiveRevealControls, selected: selected, header: nil, enableContextActions: true, hiddenOffset: false, interaction: nodeInteraction), directionHint: entry.directionHint)
                     case let .peers(filter):
                         let itemPeer = peer.chatMainPeer
                         var chatPeer: Peer?
@@ -219,6 +222,8 @@ private func mappedUpdateEntries(context: AccountContext, nodeInteraction: ChatL
             case let .PeerEntry(index, presentationData, message, combinedReadState, notificationSettings, embeddedState, peer, presence, summaryInfo, editing, hasActiveRevealControls, selected, inputActivities, isAd):
                 switch mode {
                     case .chatList:
+                        return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListItem(presentationData: presentationData, context: context, peerGroupId: peerGroupId, index: index, content: .peer(message: message, peer: peer, combinedReadState: combinedReadState, notificationSettings: notificationSettings, presence: presence, summaryInfo: summaryInfo, embeddedState: embeddedState, inputActivities: inputActivities, isAd: isAd, ignoreUnreadBadge: false), editing: editing, hasActiveRevealControls: hasActiveRevealControls, selected: selected, header: nil, enableContextActions: true, hiddenOffset: false, interaction: nodeInteraction), directionHint: entry.directionHint)
+                    case let .filteredChatList(_):
                         return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListItem(presentationData: presentationData, context: context, peerGroupId: peerGroupId, index: index, content: .peer(message: message, peer: peer, combinedReadState: combinedReadState, notificationSettings: notificationSettings, presence: presence, summaryInfo: summaryInfo, embeddedState: embeddedState, inputActivities: inputActivities, isAd: isAd, ignoreUnreadBadge: false), editing: editing, hasActiveRevealControls: hasActiveRevealControls, selected: selected, header: nil, enableContextActions: true, hiddenOffset: false, interaction: nodeInteraction), directionHint: entry.directionHint)
                     case let .peers(filter):
                         let itemPeer = peer.chatMainPeer
@@ -533,10 +538,64 @@ public final class ChatListNode: ListView {
             let (rawEntries, isLoading) = chatListNodeEntriesForView(update.view, state: state, savedMessagesPeer: savedMessagesPeer, hideArchivedFolderByDefault: hideArchivedFolderByDefault, displayArchiveIntro: displayArchiveIntro, mode: mode)
             let entries = rawEntries.filter { entry in
                 switch entry {
-                case let .PeerEntry(_, _, _, _, _, _, peer, _, _, _, _, _, _, _):
+                case let .PeerEntry(_, _, _, readState, notificationSettings, _, peer, _, _, _, _, _, _, isAd):
+                    if isAd {
+                        return false
+                    }
                     switch mode {
                         case .chatList:
                             return true
+                        case let .filteredChatList(filter):
+                            if filter.contains(.onlyPrivateChats) {
+                                var isBot: Bool = false
+                                if let p = peer.peers[peer.peerId] as? TelegramUser {
+                                    if (p.botInfo != nil) {
+                                        isBot = true
+                                    }
+                                }
+                                if (peer.peerId.namespace == Namespaces.Peer.CloudUser || peer.peerId.namespace == Namespaces.Peer.SecretChat) && !isBot {
+                                    return true
+                                }
+                            } else if filter.contains(.onlyNonMuted) {
+                                return !(notificationSettings?.isRemovedFromTotalUnreadCount ?? TelegramPeerNotificationSettings.defaultSettings.isRemovedFromTotalUnreadCount)
+                                
+                            } else if filter.contains(.onlyBots) {
+                                var isBot: Bool = false
+                                if let p = peer.peers[peer.peerId] as? TelegramUser {
+                                    if (p.botInfo != nil) {
+                                        isBot = true
+                                    }
+                                }
+                                return isBot
+                            } else if filter.contains(.onlyGroups) {
+                                var isGroup: Bool = false
+                                if let peer = peer.chatMainPeer as? TelegramChannel, case .group = peer.info {
+                                    isGroup = true
+                                } else if peer.peerId.namespace == Namespaces.Peer.CloudGroup {
+                                    isGroup = true
+                                }
+                                return isGroup
+                            } else if filter.contains(.onlyChannels) {
+                                if let peer = peer.chatMainPeer as? TelegramChannel, case .broadcast = peer.info {
+                                    return true
+                                } else {
+                                    return false
+                                }
+                            } else if filter.contains(.onlyUnread) {
+                                if (readState != nil) {
+                                    return readState!.isUnread
+                                }
+                            } else if filter.contains(.onlyAdmin) {
+                                var isAdmin: Bool = false
+                                if let peer = peer.chatMainPeer as? TelegramChannel {
+                                    if peer.adminRights != nil || peer.flags == TelegramChannelFlags.isCreator {
+                                        isAdmin = true
+                                    }
+                                }
+                                return isAdmin
+                            }
+                            
+                            return false
                         case let .peers(filter):
                             guard !filter.contains(.excludeSavedMessages) || peer.peerId != currentPeerId else { return false }
                             guard !filter.contains(.excludeSecretChats) || peer.peerId.namespace != Namespaces.Peer.SecretChat else { return false }
@@ -770,6 +829,8 @@ public final class ChatListNode: ListView {
         switch mode {
             case .chatList:
                 initialLocation = .initial(count: 50)
+            case .filteredChatList:
+                initialLocation = .initial(count: 600)
             case .peers:
                 initialLocation = .initial(count: 200)
         }
