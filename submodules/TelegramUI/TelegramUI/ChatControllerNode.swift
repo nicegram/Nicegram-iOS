@@ -11,6 +11,7 @@ import TextFormat
 import AccountContext
 import TelegramNotices
 import ReactionSelectionNode
+import ChatListUI
 
 private final class ChatControllerNodeView: UITracingLayerView, WindowInputAccessoryHeightProvider, PreviewingHostView {
     var inputAccessoryHeight: (() -> CGFloat)?

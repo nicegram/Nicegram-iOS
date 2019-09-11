@@ -82,7 +82,7 @@ public final class TelegramRootController: NavigationController {
     
     public func addRootControllers(showCallsTab: Bool, niceSettings: NiceSettings) {
         let tabBarController = TabBarController(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData), theme: TabBarControllerTheme(rootControllerTheme: self.presentationData.theme), showTabNames: SimplyNiceSettings().showTabNames)
-        let chatListController = self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
+        let chatListController = self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: nil, filterIndex: nil, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
         if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
             chatListController.tabBarItem.badgeValue = sharedContext.switchingData.chatListBadge
         }
@@ -108,7 +108,7 @@ public final class TelegramRootController: NavigationController {
                 if index + 1 > SimplyNiceSettings().maxFilters {
                     break
                 }
-                filControllers.append(self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, filter: filter, filterIndex: Int32(index)))
+                filControllers.append(self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: filter, filterIndex: Int32(index), enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild))
             }
             
             if !filControllers.isEmpty {
@@ -169,7 +169,7 @@ public final class TelegramRootController: NavigationController {
                 if index + 1 > SimplyNiceSettings().maxFilters {
                     break
                 }
-                filControllers.append(self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, filter: filter, filterIndex: Int32(index)))
+                filControllers.append(self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: filter, filterIndex: Int32(index), enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild))
             }
             
             if !filControllers.isEmpty {

@@ -10,4 +10,7 @@ public protocol ChatListController: ViewController {
     func deactivateSearch(animated: Bool)
     func activateCompose()
     func maybeAskForPeerChatRemoval(peer: RenderedPeer, deleteGloballyIfPossible: Bool, completion: @escaping (Bool) -> Void, removed: @escaping () -> Void)
+    
+    var filter: NiceChatListNodePeersFilter? { get set }
+    var filterIndex: Int32? { get set }
 }

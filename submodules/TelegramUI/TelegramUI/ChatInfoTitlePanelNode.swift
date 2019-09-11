@@ -5,6 +5,7 @@ import AsyncDisplayKit
 import Postbox
 import TelegramCore
 import TelegramPresentationData
+import ChatListUI
 
 private enum ChatInfoTitleButton {
     case search
@@ -54,7 +55,8 @@ private enum ChatInfoTitleButton {
             case .unarchive:
                 return PresentationResourcesChat.chatTitlePanelUnarchiveImage(theme)
             case .gotopin:
-                return PresentationResourcesChat.chatTitlePanelGotoPinImage(theme)
+                return nil
+                // return PresentationResourcesChat.chatTitlePanelGotoPinImage(theme)
         }
     }
 }

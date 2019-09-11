@@ -699,6 +699,8 @@ private func userInfoEntries(account: Account, presentationData: PresentationDat
                         entries.append(UserInfoEntry.botPrivacy(presentationData.theme, presentationData.strings.UserInfo_BotPrivacy))
                     }
                 }
+                // Sometimes cache can be laggy, another workaround
+                entries.sort()
             }
         }
         

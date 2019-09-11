@@ -790,7 +790,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         })
     }
     
-    public func switchToFilter(filter: NiceChatListNodePeersFilter, fromSettingsController settingsController: (SettingsController & ViewController)? = nil, withChatListController chatListController: ChatListController? = nil) {
+    public func switchToFilter(filter: NiceChatListNodePeersFilter, withChatListController chatListController: ChatListController? = nil) {
         
         assert(Queue.mainQueue().isCurrent())
         var chatsBadge: String?
@@ -812,7 +812,9 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                         if let controller = controller as? ChatListController {
                             if controller.filterIndex == filterIndex {
                                 var controllers = tabsController.controllers
-                                controllers[index] = ChatListController(context: chatListController.context, groupId: .root, controlsHistoryPreload: chatListController.controlsHistoryPreload, hideNetworkActivityStatus: chatListController.hideNetworkActivityStatus, filter: filter, filterIndex: filterIndex)
+                                controllers[index] = self.makeChatListController(context: chatListController.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false,
+                                    filter: filter, filterIndex: filterIndex, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
+//                                controllers[index] = ChatListController(context: chatListController.context, groupId: .root, controlsHistoryPreload: chatListController.controlsHistoryPreload, hideNetworkActivityStatus: chatListController.hideNetworkActivityStatus, filter: filter, filterIndex: filterIndex)
                                 tabsController.setControllers(controllers, selectedIndex: index)
                                 break
                             }
@@ -824,7 +826,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         
         
         
-        self.switchingData = (settingsController, chatListController, chatsBadge)
+        self.switchingData = (nil, chatListController, chatsBadge)
     }
     
     public func navigateToChat(accountId: AccountRecordId, peerId: PeerId, messageId: MessageId?) {

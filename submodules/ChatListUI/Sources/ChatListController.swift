@@ -167,6 +167,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
     
     var switchToFilter: ((NiceChatListNodePeersFilter) -> Void)?
     
+    weak var switchController: TabBarFilterSwitchController?
+    
     public override func updateNavigationCustomData(_ data: Any?, progress: CGFloat, transition: ContainedViewLayoutTransition) {
         if self.isNodeLoaded {
             self.chatListDisplayNode.chatListNode.updateSelectedChatLocation(data as? ChatLocation, progress: progress, transition: transition)
@@ -310,7 +312,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
         if !self.hideNetworkActivityStatus {
             self.titleDisposable = combineLatest(queue: .mainQueue(), context.account.networkState, hasProxy, passcode, self.chatListDisplayNode.chatListNode.state).start(next: { [weak self] networkState, proxy, passcode, state in
                 if let strongSelf = self {
-                    let defaultTitle: String
+                    var defaultTitle: String
                     if case .root = strongSelf.groupId {
                         defaultTitle = strongSelf.presentationData.strings.DialogList_Title
                         if (strongSelf.filter != nil) {
@@ -1246,7 +1248,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
         }
     }
     
-    @objc private func donePressed() {
+    @objc public func donePressed() {
         let editItem = UIBarButtonItem(title: self.presentationData.strings.Common_Edit, style: .plain, target: self, action: #selector(self.editPressed))
         editItem.accessibilityLabel = self.presentationData.strings.Common_Edit
         if case .root = self.groupId {
@@ -1620,7 +1622,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
         }
     }
     
-    private func archiveChats(peerIds: [PeerId]) {
+    public func archiveChats(peerIds: [PeerId]) {
         guard !peerIds.isEmpty else {
             return
         }

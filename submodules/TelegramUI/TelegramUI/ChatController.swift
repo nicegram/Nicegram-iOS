@@ -46,6 +46,8 @@ import UrlHandling
 import ReactionSelectionNode
 import MessageReactionListUI
 
+import ChatListUI
+
 public enum ChatControllerPeekActions {
     case standard
     case remove(() -> Void)

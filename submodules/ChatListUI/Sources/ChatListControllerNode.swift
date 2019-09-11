@@ -74,7 +74,14 @@ final class ChatListControllerNode: ASDisplayNode {
         self.groupId = groupId
         self.presentationData = presentationData
         
-        self.chatListNode = ChatListNode(context: context, groupId: groupId, controlsHistoryPreload: controlsHistoryPreload, mode: .chatList, theme: presentationData.theme, strings: presentationData.strings, dateTimeFormat: presentationData.dateTimeFormat, nameSortOrder: presentationData.nameSortOrder, nameDisplayOrder: presentationData.nameDisplayOrder, disableAnimations: presentationData.disableAnimations)
+        let mode: ChatListNodeMode
+        if (controller.filter != nil) {
+            mode = .filteredChatList(filter: controller.filter!)
+        } else {
+            mode = .chatList
+        }
+        
+        self.chatListNode = ChatListNode(context: context, groupId: groupId, controlsHistoryPreload: controlsHistoryPreload, mode: mode, theme: presentationData.theme, strings: presentationData.strings, dateTimeFormat: presentationData.dateTimeFormat, nameSortOrder: presentationData.nameSortOrder, nameDisplayOrder: presentationData.nameDisplayOrder, disableAnimations: presentationData.disableAnimations)
         
         self.controller = controller
         

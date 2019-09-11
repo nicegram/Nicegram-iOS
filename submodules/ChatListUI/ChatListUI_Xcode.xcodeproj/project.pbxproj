@@ -7,6 +7,18 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A53C6A482325B304000D4020 /* NiceStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53C6A382325B304000D4020 /* NiceStrings.swift */; };
+		A53C6A492325B304000D4020 /* NiceImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53C6A3A2325B304000D4020 /* NiceImage.swift */; };
+		A53C6A4A2325B304000D4020 /* IAPListController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53C6A3C2325B304000D4020 /* IAPListController.swift */; };
+		A53C6A4B2325B304000D4020 /* IAPCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53C6A3D2325B304000D4020 /* IAPCore.swift */; };
+		A53C6A4C2325B304000D4020 /* ControllerTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53C6A3F2325B304000D4020 /* ControllerTemplate.swift */; };
+		A53C6A4D2325B304000D4020 /* NewFolderListController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53C6A412325B304000D4020 /* NewFolderListController.swift */; };
+		A53C6A4E2325B304000D4020 /* NiceFeaturesController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53C6A422325B304000D4020 /* NiceFeaturesController.swift */; };
+		A53C6A4F2325B304000D4020 /* NiceTabBarFilterSwitchControllerNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53C6A432325B304000D4020 /* NiceTabBarFilterSwitchControllerNode.swift */; };
+		A53C6A502325B304000D4020 /* NiceSettingsFiltersAmountPickerItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53C6A442325B304000D4020 /* NiceSettingsFiltersAmountPickerItem.swift */; };
+		A53C6A512325B304000D4020 /* TextInputController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53C6A452325B304000D4020 /* TextInputController.swift */; };
+		A53C6A522325B304000D4020 /* NiceTabBarFilterSwitchController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53C6A462325B304000D4020 /* NiceTabBarFilterSwitchController.swift */; };
+		A53C6A532325B304000D4020 /* NiceUISettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53C6A472325B304000D4020 /* NiceUISettings.swift */; };
 		A58B9D312324FE140001DFE3 /* NicegramUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A58B9D302324FE140001DFE3 /* NicegramUI.framework */; };
 		D0C9CA9A230234D400FAB518 /* ChatListUI.h in Headers */ = {isa = PBXBuildFile; fileRef = D0C9CA98230234D400FAB518 /* ChatListUI.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		D0C9CAAD230235E500FAB518 /* ChatListSearchContainerNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0C9CAA4230235E300FAB518 /* ChatListSearchContainerNode.swift */; };
@@ -65,6 +77,18 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A53C6A382325B304000D4020 /* NiceStrings.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NiceStrings.swift; sourceTree = "<group>"; };
+		A53C6A3A2325B304000D4020 /* NiceImage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NiceImage.swift; sourceTree = "<group>"; };
+		A53C6A3C2325B304000D4020 /* IAPListController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IAPListController.swift; sourceTree = "<group>"; };
+		A53C6A3D2325B304000D4020 /* IAPCore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IAPCore.swift; sourceTree = "<group>"; };
+		A53C6A3F2325B304000D4020 /* ControllerTemplate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ControllerTemplate.swift; sourceTree = "<group>"; };
+		A53C6A412325B304000D4020 /* NewFolderListController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NewFolderListController.swift; sourceTree = "<group>"; };
+		A53C6A422325B304000D4020 /* NiceFeaturesController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NiceFeaturesController.swift; sourceTree = "<group>"; };
+		A53C6A432325B304000D4020 /* NiceTabBarFilterSwitchControllerNode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NiceTabBarFilterSwitchControllerNode.swift; sourceTree = "<group>"; };
+		A53C6A442325B304000D4020 /* NiceSettingsFiltersAmountPickerItem.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NiceSettingsFiltersAmountPickerItem.swift; sourceTree = "<group>"; };
+		A53C6A452325B304000D4020 /* TextInputController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TextInputController.swift; sourceTree = "<group>"; };
+		A53C6A462325B304000D4020 /* NiceTabBarFilterSwitchController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NiceTabBarFilterSwitchController.swift; sourceTree = "<group>"; };
+		A53C6A472325B304000D4020 /* NiceUISettings.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NiceUISettings.swift; sourceTree = "<group>"; };
 		A58B9D302324FE140001DFE3 /* NicegramUI.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NicegramUI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A5FF8D1423247E6800EFF33E /* NicegramLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NicegramLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0C9CA95230234D400FAB518 /* ChatListUI.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = ChatListUI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -168,6 +192,65 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A53C6A362325B304000D4020 /* NiceUI */ = {
+			isa = PBXGroup;
+			children = (
+				A53C6A372325B304000D4020 /* Strings */,
+				A53C6A392325B304000D4020 /* Utils */,
+				A53C6A3B2325B304000D4020 /* IAP */,
+				A53C6A3E2325B304000D4020 /* Templates */,
+				A53C6A402325B304000D4020 /* Controllers */,
+				A53C6A472325B304000D4020 /* NiceUISettings.swift */,
+			);
+			path = NiceUI;
+			sourceTree = "<group>";
+		};
+		A53C6A372325B304000D4020 /* Strings */ = {
+			isa = PBXGroup;
+			children = (
+				A53C6A382325B304000D4020 /* NiceStrings.swift */,
+			);
+			path = Strings;
+			sourceTree = "<group>";
+		};
+		A53C6A392325B304000D4020 /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				A53C6A3A2325B304000D4020 /* NiceImage.swift */,
+			);
+			path = Utils;
+			sourceTree = "<group>";
+		};
+		A53C6A3B2325B304000D4020 /* IAP */ = {
+			isa = PBXGroup;
+			children = (
+				A53C6A3C2325B304000D4020 /* IAPListController.swift */,
+				A53C6A3D2325B304000D4020 /* IAPCore.swift */,
+			);
+			path = IAP;
+			sourceTree = "<group>";
+		};
+		A53C6A3E2325B304000D4020 /* Templates */ = {
+			isa = PBXGroup;
+			children = (
+				A53C6A3F2325B304000D4020 /* ControllerTemplate.swift */,
+			);
+			path = Templates;
+			sourceTree = "<group>";
+		};
+		A53C6A402325B304000D4020 /* Controllers */ = {
+			isa = PBXGroup;
+			children = (
+				A53C6A412325B304000D4020 /* NewFolderListController.swift */,
+				A53C6A422325B304000D4020 /* NiceFeaturesController.swift */,
+				A53C6A432325B304000D4020 /* NiceTabBarFilterSwitchControllerNode.swift */,
+				A53C6A442325B304000D4020 /* NiceSettingsFiltersAmountPickerItem.swift */,
+				A53C6A452325B304000D4020 /* TextInputController.swift */,
+				A53C6A462325B304000D4020 /* NiceTabBarFilterSwitchController.swift */,
+			);
+			path = Controllers;
+			sourceTree = "<group>";
+		};
 		D0C9CA8B230234D400FAB518 = {
 			isa = PBXGroup;
 			children = (
@@ -189,6 +272,7 @@
 		D0C9CA97230234D400FAB518 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				A53C6A362325B304000D4020 /* NiceUI */,
 				D0C9CAE3230236BF00FAB518 /* Node */,
 				D0C9CAA6230235E300FAB518 /* ChatListController.swift */,
 				D0C9CAAB230235E400FAB518 /* ChatListControllerNode.swift */,
@@ -346,11 +430,21 @@
 			files = (
 				D0C9CAF9230236F700FAB518 /* ChatListStatusNode.swift in Sources */,
 				D0C9CAF6230236F700FAB518 /* ChatListTypingNode.swift in Sources */,
+				A53C6A4C2325B304000D4020 /* ControllerTemplate.swift in Sources */,
 				D0C9CAF0230236F700FAB518 /* ChatListHoleItem.swift in Sources */,
+				A53C6A502325B304000D4020 /* NiceSettingsFiltersAmountPickerItem.swift in Sources */,
+				A53C6A4B2325B304000D4020 /* IAPCore.swift in Sources */,
+				A53C6A482325B304000D4020 /* NiceStrings.swift in Sources */,
+				A53C6A492325B304000D4020 /* NiceImage.swift in Sources */,
 				D0C9CAF8230236F700FAB518 /* ChatListItem.swift in Sources */,
+				A53C6A4F2325B304000D4020 /* NiceTabBarFilterSwitchControllerNode.swift in Sources */,
 				D0C9CAF7230236F700FAB518 /* ChatListItemStrings.swift in Sources */,
 				D0C9CAAD230235E500FAB518 /* ChatListSearchContainerNode.swift in Sources */,
+				A53C6A4A2325B304000D4020 /* IAPListController.swift in Sources */,
+				A53C6A512325B304000D4020 /* TextInputController.swift in Sources */,
 				D0C9CAB1230235E500FAB518 /* ChatListTitleView.swift in Sources */,
+				A53C6A532325B304000D4020 /* NiceUISettings.swift in Sources */,
+				A53C6A522325B304000D4020 /* NiceTabBarFilterSwitchController.swift in Sources */,
 				D0C9CAF4230236F700FAB518 /* ChatListViewTransition.swift in Sources */,
 				D0C9CB07230237D000FAB518 /* FrameworkBundle.swift in Sources */,
 				D0C9CAF5230236F700FAB518 /* ChatListNodeEntries.swift in Sources */,
@@ -361,10 +455,12 @@
 				D0C9CAB0230235E500FAB518 /* ChatListTitleProxyNode.swift in Sources */,
 				D0C9CAFB230236F700FAB518 /* ChatListArchiveInfoItem.swift in Sources */,
 				D0C9CAAF230235E500FAB518 /* ChatListController.swift in Sources */,
+				A53C6A4E2325B304000D4020 /* NiceFeaturesController.swift in Sources */,
 				D0C9CAB4230235E500FAB518 /* ChatListControllerNode.swift in Sources */,
 				D0C9CAB3230235E500FAB518 /* ChatListSelection.swift in Sources */,
 				D0C9CAAE230235E500FAB518 /* ChatListRecentPeersListItem.swift in Sources */,
 				D0C9CAF2230236F700FAB518 /* ChatListNode.swift in Sources */,
+				A53C6A4D2325B304000D4020 /* NewFolderListController.swift in Sources */,
 				D0C9CAF3230236F700FAB518 /* ChatListNodeLocation.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

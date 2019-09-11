@@ -14,6 +14,9 @@ import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
+import ItemListUI
+import ItemListPeerActionItem
+import AccountContext
 
 private final class NewFolderListControllerArguments {
     let createNew: () -> (Void)
@@ -148,11 +151,11 @@ private enum NewFolderListEntry: ItemListNodeEntry {
     func item(_ arguments: NewFolderListControllerArguments) -> ListViewItem {
         switch self {
         case let .create(theme, text):
-            return ItemListPeerActionItem(theme: theme, icon: PresentationResourcesItemList.addExceptionIcon(theme), title: text, sectionId: self.section, editing: false, action: {
+            return ItemListPeerActionItem(theme: theme, icon: PresentationResourcesItemList.plusIconImage(theme), title: text, sectionId: self.section, editing: false, action: {
                 arguments.createNew()
             })
         case let .archive(theme, text):
-            return ItemListPeerActionItem(theme: theme, icon: PresentationResourcesItemList.archiveIcon(theme), title: text, sectionId: self.section, editing: false, action: {
+            return ItemListPeerActionItem(theme: theme, icon: nil /*PresentationResourcesItemList.archiveIcon(theme)*/, title: text, sectionId: self.section, editing: false, action: {
                 arguments.archive()
             })
         case let .foldersHeader(theme, text):
@@ -234,7 +237,7 @@ private func newFolderListControllerEntries(presentationData: PresentationData) 
 private struct NewFolderListSelectionState: Equatable {
 }
 
-public func newFolderListController(context: AccountContext, parent: ChatListController, peerIds: [PeerId]) -> ViewController {
+public func newFolderListController(context: AccountContext, parent: ChatListControllerImpl, peerIds: [PeerId]) -> ViewController {
     let statePromise = ValuePromise(NewFolderListSelectionState(), ignoreRepeated: true)
     var dismissImpl: (() -> Void)?
     var presentControllerImpl: ((ViewController, Any?) -> Void)?
@@ -247,7 +250,7 @@ public func newFolderListController(context: AccountContext, parent: ChatListCon
     let arguments = NewFolderListControllerArguments(
     createNew: {
         if getNiceFolders().count >= 3 {
-            let controller = textAlertController(context: context, title: nil, text: l("Folder.LimitExceeded", locale), actions: [TextAlertAction(type: .genericAction, title: "OK", action: {})])
+            let controller = textAlertController(theme: AlertControllerTheme(presentationTheme: presentationData.theme), title: nil, text: NSAttributedString(string: l("Folder.LimitExceeded", locale)), actions: [TextAlertAction(type: .genericAction, title: "OK", action: {})])
             presentControllerImpl?(controller, nil)
         } else {
             var text: String?
@@ -282,7 +285,7 @@ public func newFolderListController(context: AccountContext, parent: ChatListCon
             var index = 0
             var scrollToItem: ListViewScrollToItem?
             // workaround
-            let focusOnItemTag: NotificationsAndSoundsEntryTag? = nil
+            let focusOnItemTag: FakeEntryTag? = nil
             if let focusOnItemTag = focusOnItemTag {
                 for entry in entries {
                     if entry.tag?.isEqual(to: focusOnItemTag) ?? false {

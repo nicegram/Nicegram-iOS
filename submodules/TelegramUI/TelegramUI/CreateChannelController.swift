@@ -138,7 +138,7 @@ private enum CreateChannelEntry: ItemListNodeEntry {
                 return ItemListAvatarAndNameInfoItem(account: arguments.account, theme: theme, strings: strings, dateTimeFormat: dateTimeFormat, mode: .generic, peer: peer, presence: nil, cachedData: nil, state: state, sectionId: ItemListSectionId(self.section), style: .blocks(withTopInset: false, withExtendedBottomInset: false), editingNameUpdated: { editingName in
                     arguments.updateEditingName(editingName)
                 }, avatarTapped: {
-                }, idTapped: { _ in 
+//                }, idTapped: { _ in 
                 }, updatingImage: avatar, tag: CreateChannelEntryTag.info)
             case let .setProfilePhoto(theme, text):
                 return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .natural, sectionId: ItemListSectionId(self.section), style: .blocks, action: {

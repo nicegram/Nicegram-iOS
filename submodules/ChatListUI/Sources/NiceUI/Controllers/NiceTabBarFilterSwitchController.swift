@@ -13,6 +13,8 @@ import Postbox
 import TelegramCore
 import SwiftSignalKit
 import TelegramPresentationData
+import AccountContext
+import ItemListUI
 
 public final class TabBarFilterSwitchController: ViewController {
     private var controllerNode: TabBarFilterSwitchControllerNode {

@@ -13,6 +13,9 @@ import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
+import ItemListUI
+import AccountContext
+import TelegramNotices
 
 private final class NiceFeaturesControllerArguments {
     let togglePinnedMessage: (Bool) -> Void
@@ -434,10 +437,18 @@ public func dummyCompleteDisposable() -> Signal<Void, NoError> {
     return .complete()
 }
 
+public enum FakeEntryTag: ItemListItemTag {
+    public func isEqual(to other: ItemListItemTag) -> Bool {
+        return true
+    }
+    
+}
+
 public func niceFeaturesController(context: AccountContext) -> ViewController {
     let statePromise = ValuePromise(NiceFeaturesSelectionState(), ignoreRepeated: true)
     var dismissImpl: (() -> Void)?
     var presentControllerImpl: ((ViewController, Any?) -> Void)?
+    let presentationData = context.sharedContext.currentPresentationData.with { $0 }
     
     func updateTabs() {
         let _ = updateNiceSettingsInteractively(accountManager: context.sharedContext.accountManager, { settings in
@@ -503,13 +514,13 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
         SimplyNiceSettings().showTabNames = value
         updateTabs()
         
-        let controller = textAlertController(context: context, title: nil, text: l("Common.RestartRequired", locale), actions: [TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: {preconditionFailure()}),TextAlertAction(type: .genericAction, title: l("Common.Later", locale), action: {})])
+        let controller = textAlertController(theme: AlertControllerTheme(presentationTheme: presentationData.theme), title: nil, text: NSAttributedString(string: l("Common.RestartRequired", locale)), actions: [TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: {preconditionFailure()}),TextAlertAction(type: .genericAction, title: l("Common.Later", locale), action: {})])
         
         presentControllerImpl?(controller, nil)
     }, toggleHidePhone: { value, locale in
         SimplyNiceSettings().hideNumber = value
         
-        let controller = textAlertController(context: context, title: nil, text: l("Common.RestartRequired", locale), actions: [TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: {preconditionFailure()}),TextAlertAction(type: .genericAction, title: l("Common.Later", locale), action: {})])
+        let controller = textAlertController(theme: AlertControllerTheme(presentationTheme: presentationData.theme), title: nil, text: NSAttributedString(string: l("Common.RestartRequired", locale)), actions: [TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: {preconditionFailure()}),TextAlertAction(type: .genericAction, title: l("Common.Later", locale), action: {})])
         
         presentControllerImpl?(controller, nil)
     }
@@ -534,7 +545,7 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
             var index = 0
             var scrollToItem: ListViewScrollToItem?
             // workaround
-            let focusOnItemTag: NotificationsAndSoundsEntryTag? = nil
+            let focusOnItemTag: FakeEntryTag? = nil
             if let focusOnItemTag = focusOnItemTag {
                 for entry in entries {
                     if entry.tag?.isEqual(to: focusOnItemTag) ?? false {

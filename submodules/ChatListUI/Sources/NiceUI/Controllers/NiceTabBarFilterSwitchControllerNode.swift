@@ -12,6 +12,7 @@ import Display
 import Postbox
 import TelegramCore
 import TelegramPresentationData
+import AccountContext
 
 private let avatarFont: UIFont = UIFont(name: ".SFCompactRounded-Semibold", size: 16.0)!
 
@@ -259,7 +260,7 @@ final class TabBarFilterSwitchControllerNode: ViewControllerTracingNode {
         self.effectView = UIVisualEffectView()
         if #available(iOS 9.0, *) {
         } else {
-            if presentationData.theme.chatList.searchBarKeyboardColor == .dark {
+            if presentationData.theme.rootController.keyboardColor == .dark {
                 self.effectView.effect = UIBlurEffect(style: .dark)
             } else {
                 self.effectView.effect = UIBlurEffect(style: .light)
@@ -269,7 +270,7 @@ final class TabBarFilterSwitchControllerNode: ViewControllerTracingNode {
         
         self.dimNode = ASDisplayNode()
         self.dimNode.alpha = 1.0
-        if presentationData.theme.chatList.searchBarKeyboardColor == .light {
+        if presentationData.theme.rootController.keyboardColor == .light {
             self.dimNode.backgroundColor = UIColor(white: 0.0, alpha: 0.04)
         } else {
             self.dimNode.backgroundColor = presentationData.theme.chatList.backgroundColor.withAlphaComponent(0.2)
@@ -318,7 +319,7 @@ final class TabBarFilterSwitchControllerNode: ViewControllerTracingNode {
     func animateIn() {
         UIView.animate(withDuration: 0.3, animations: {
             if #available(iOS 9.0, *) {
-                if self.presentationData.theme.chatList.searchBarKeyboardColor == .dark {
+                if self.presentationData.theme.rootController.keyboardColor == .dark {
                     if #available(iOSApplicationExtension 10.0, iOS 10.0, *) {
                         self.effectView.effect = UIBlurEffect(style: .regular)
                         if self.effectView.subviews.count == 2 {
@@ -341,7 +342,7 @@ final class TabBarFilterSwitchControllerNode: ViewControllerTracingNode {
             guard let strongSelf = self else {
                 return
             }
-            if strongSelf.presentationData.theme.chatList.searchBarKeyboardColor == .dark {
+            if strongSelf.presentationData.theme.rootController.keyboardColor == .dark {
                 if strongSelf.effectView.subviews.count == 2 {
                     strongSelf.effectView.subviews[1].isHidden = true
                 }
@@ -406,7 +407,7 @@ final class TabBarFilterSwitchControllerNode: ViewControllerTracingNode {
         })
         if let _ = self.validLayout, let sourceNode = self.sourceNodes.first {
             let sourceFrame = sourceNode.view.convert(sourceNode.bounds, to: self.view)
-            self.contentContainerNode.layer.animateFrame(from: self.contentContainerNode.frame, to: sourceFrame, duration: 0.15, timingFunction: kCAMediaTimingFunctionEaseIn, removeOnCompletion: false)
+            self.contentContainerNode.layer.animateFrame(from: self.contentContainerNode.frame, to: sourceFrame, duration: 0.15, timingFunction: CAMediaTimingFunctionName.easeIn.rawValue, removeOnCompletion: false)
         }
         
         if changedFilter {
@@ -467,7 +468,7 @@ final class TabBarFilterSwitchControllerNode: ViewControllerTracingNode {
                                 }
                                 imageView.image = updatedImage
                                 if let previousContents = previousImage?.cgImage, let updatedContents = updatedImage?.cgImage {
-                                    imageView.layer.animate(from: previousContents as AnyObject, to: updatedContents as AnyObject, keyPath: "contents", timingFunction: kCAMediaTimingFunctionEaseInEaseOut, duration: 0.15)
+                                    imageView.layer.animate(from: previousContents as AnyObject, to: updatedContents as AnyObject, keyPath: "contents", timingFunction: CAMediaTimingFunctionName.easeInEaseOut.rawValue, duration: 0.15)
                                 }
                                 imageView.layer.animateSpring(from: 0.6 as NSNumber, to: 1.0 as NSNumber, keyPath: "transform.scale", duration: 0.6, completion: { _ in
                                     completedSourceNodes = true
@@ -484,7 +485,7 @@ final class TabBarFilterSwitchControllerNode: ViewControllerTracingNode {
             }
             
             previousSnapshotViews.forEach { view in
-                self.view.bringSubview(toFront: view)
+                self.view.bringSubviewToFront(view)
             }
             
             if !hadBounce {

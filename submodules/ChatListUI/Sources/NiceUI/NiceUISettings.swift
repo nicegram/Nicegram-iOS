@@ -11,6 +11,7 @@ import Postbox
 import SwiftSignalKit
 import TelegramUIPreferences
 import TelegramCore
+import AccountContext
 
 public struct NiceSettings: PreferencesEntry, Equatable {
     public var foo: Bool
@@ -159,11 +160,11 @@ public func setDefaults() {
 public class SimplyNiceSettings {
     let UD = UserDefaults(suiteName: "SimplyNiceSettings")
     
-    init() {
+    public init() {
         setDefaults()
     }
     
-    var hideNumber: Bool {
+    public var hideNumber: Bool {
         get {
             return UD?.bool(forKey: "hideNumber") ?? false
         }
@@ -172,7 +173,7 @@ public class SimplyNiceSettings {
         }
     }
     
-    var maxFilters: Int32 {
+    public var maxFilters: Int32 {
         // let k = "maxFilters"
         get {
             return Int32(UD?.integer(forKey: "maxFilters") ?? 2)
@@ -182,7 +183,7 @@ public class SimplyNiceSettings {
         }
     }
     
-    var chatFilters: [NiceChatListNodePeersFilter] {
+    public var chatFilters: [NiceChatListNodePeersFilter] {
         get {
             let array = UD?.array(forKey: "chatFilters") as? [Int32] ?? [1 << 6, 1 << 5]
             var res: [NiceChatListNodePeersFilter] = []
@@ -201,7 +202,7 @@ public class SimplyNiceSettings {
         
     }
     
-    var showTabNames: Bool {
+    public var showTabNames: Bool {
         get {
             return UD?.bool(forKey: "showTabNames") ?? true
         }
