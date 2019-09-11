@@ -492,7 +492,15 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
                     UIView.transition(with: self.avatarNode.view, duration: 0.3, options: [.transitionCrossDissolve], animations: {
                     }, completion: nil)
                 }
-                self.avatarNode.setPeer(account: item.context.account, theme: item.presentationData.theme, peer: peer, overrideImage: .archivedChatsIcon(hiddenByDefault: groupReference.hiddenByDefault), emptyColor: item.presentationData.theme.list.mediaPlaceholderColor, synchronousLoad: synchronousLoads)
+                if isNiceFolderCheck(groupReference.groupId.rawValue) {
+                    if let folder = getFolder(groupReference.groupId.rawValue) {
+                        self.avatarNode.setCustomLetters(folder.name.map { String($0) }, explicitColor: .blue)
+                    } else {
+                        self.avatarNode.setPeer(account: item.context.account, theme: item.presentationData.theme, peer: peer, overrideImage: .archivedChatsIcon(hiddenByDefault: groupReference.hiddenByDefault), emptyColor: item.presentationData.theme.list.mediaPlaceholderColor, synchronousLoad: synchronousLoads)
+                    }
+                } else {
+                    self.avatarNode.setPeer(account: item.context.account, theme: item.presentationData.theme, peer: peer, overrideImage: .archivedChatsIcon(hiddenByDefault: groupReference.hiddenByDefault), emptyColor: item.presentationData.theme.list.mediaPlaceholderColor, synchronousLoad: synchronousLoads)
+            }
         }
         
         if let peer = peer {
@@ -599,6 +607,7 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
         
         let currentItem = self.layoutParams?.0
         let currentContentImageMedia = self.contentImageMedia
+        let multipleAvatarsLayout = MultipleAvatarsNode.asyncLayout(self.multipleAvatarsNode)
         
         return { item, params, first, last, firstWithHeader, nextIsPinned in
             let account = item.context.account
@@ -619,6 +628,8 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
             let isAd: Bool
             
             var groupHiddenByDefault = false
+            var isNiceFolder = false
+            var multipleAvatarsApply: ((Bool) -> MultipleAvatarsNode)?
             
             switch item.content {
                 case let .peer(messageValue, peerValue, combinedReadStateValue, notificationSettingsValue, peerPresenceValue, summaryInfoValue, embeddedStateValue, inputActivitiesValue, isAdValue, ignoreUnreadBadge):
@@ -654,6 +665,16 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
                     summaryInfo = ChatListMessageTagSummaryInfo()
                     inputActivities = nil
                     isPeerGroup = true
+                    if isNiceFolderCheck(groupId.rawValue) {
+                        isNiceFolder = true
+                        var reallyPeers: [Peer] = []
+                        for peer in peers {
+                            if let reallyPeer = peer.peer.peer {
+                                reallyPeers.append(reallyPeer)
+                            }
+                        }
+                        multipleAvatarsApply = multipleAvatarsLayout(item.context.account, item.presentationData.theme, reallyPeers, CGSize(width: 60.0, height: 60.0))
+                    }
                     groupHiddenByDefault = hiddenByDefault
                     let allCount = unreadState.count(countingCategory: .chats, mutedCategory: .all)
                     unreadCount = (allCount, allCount != 0, true, nil)
@@ -1234,6 +1255,24 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
                         onlineIcon = PresentationResourcesChatList.recentStatusOnlineIcon(item.presentationData.theme, state: .regular)
                     }
                     strongSelf.onlineNode.setImage(onlineIcon)
+                    
+                    if isNiceFolder {
+                        if let multipleAvatarsApply = multipleAvatarsApply {
+                            strongSelf.avatarNode.isHidden = true
+                            let multipleAvatarsNode = multipleAvatarsApply(animated && strongSelf.multipleAvatarsNode != nil)
+                            if strongSelf.multipleAvatarsNode != multipleAvatarsNode {
+                                strongSelf.multipleAvatarsNode?.removeFromSupernode()
+                                strongSelf.multipleAvatarsNode = multipleAvatarsNode
+                                strongSelf.addSubnode(multipleAvatarsNode)
+                                multipleAvatarsNode.frame = avatarFrame
+                            } else {
+                                transition.updateFrame(node: multipleAvatarsNode, frame: avatarFrame)
+                            }
+                        } else if let multipleAvatarsNode = strongSelf.multipleAvatarsNode {
+                            multipleAvatarsNode.removeFromSupernode()
+                            strongSelf.avatarNode.isHidden = false
+                        }
+                    }
                     
                     let _ = dateApply()
                     let _ = textApply()
