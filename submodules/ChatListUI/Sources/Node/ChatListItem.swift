@@ -295,6 +295,7 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
     private let highlightedBackgroundNode: ASDisplayNode
     
     let avatarNode: AvatarNode
+    var multipleAvatarsNode: MultipleAvatarsNode?
     let titleNode: TextNode
     let authorNode: TextNode
     let textNode: TextNode
@@ -652,7 +653,7 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
                     inputActivities = inputActivitiesValue
                     isPeerGroup = false
                     isAd = isAdValue
-                case let .groupReference(_, peers, messageValue, unreadState, hiddenByDefault):
+                case let .groupReference(groupId, peers, messageValue, unreadState, hiddenByDefault):
                     if let _ = messageValue, !peers.isEmpty {
                         contentPeer = .chat(peers[0].peer)
                     } else {
@@ -1563,6 +1564,9 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
             var avatarFrame = self.avatarNode.frame
             avatarFrame.origin.x = leftInset - 78.0 + editingOffset + 10.0 + offset
             transition.updateFrame(node: self.avatarNode, frame: avatarFrame)
+            if let multipleAvatarsNode = self.multipleAvatarsNode {
+                transition.updateFrame(node: multipleAvatarsNode, frame: avatarFrame)
+            }
             
             var onlineFrame = self.onlineNode.frame
             onlineFrame.origin.x = avatarFrame.maxX - onlineFrame.width - 2.0

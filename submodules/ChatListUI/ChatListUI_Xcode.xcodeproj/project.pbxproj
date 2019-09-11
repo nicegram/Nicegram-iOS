@@ -20,6 +20,7 @@
 		A53C6A522325B304000D4020 /* NiceTabBarFilterSwitchController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53C6A462325B304000D4020 /* NiceTabBarFilterSwitchController.swift */; };
 		A53C6A532325B304000D4020 /* NiceUISettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53C6A472325B304000D4020 /* NiceUISettings.swift */; };
 		A58B9D312324FE140001DFE3 /* NicegramUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A58B9D302324FE140001DFE3 /* NicegramUI.framework */; };
+		A5A985D92329768100C63E8A /* MultipleAvatarsNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A985D82329768100C63E8A /* MultipleAvatarsNode.swift */; };
 		D0C9CA9A230234D400FAB518 /* ChatListUI.h in Headers */ = {isa = PBXBuildFile; fileRef = D0C9CA98230234D400FAB518 /* ChatListUI.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		D0C9CAAD230235E500FAB518 /* ChatListSearchContainerNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0C9CAA4230235E300FAB518 /* ChatListSearchContainerNode.swift */; };
 		D0C9CAAE230235E500FAB518 /* ChatListRecentPeersListItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0C9CAA5230235E300FAB518 /* ChatListRecentPeersListItem.swift */; };
@@ -90,6 +91,7 @@
 		A53C6A462325B304000D4020 /* NiceTabBarFilterSwitchController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NiceTabBarFilterSwitchController.swift; sourceTree = "<group>"; };
 		A53C6A472325B304000D4020 /* NiceUISettings.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NiceUISettings.swift; sourceTree = "<group>"; };
 		A58B9D302324FE140001DFE3 /* NicegramUI.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NicegramUI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A5A985D82329768100C63E8A /* MultipleAvatarsNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultipleAvatarsNode.swift; sourceTree = "<group>"; };
 		A5FF8D1423247E6800EFF33E /* NicegramLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NicegramLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0C9CA95230234D400FAB518 /* ChatListUI.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = ChatListUI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0C9CA98230234D400FAB518 /* ChatListUI.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ChatListUI.h; sourceTree = "<group>"; };
@@ -195,6 +197,7 @@
 		A53C6A362325B304000D4020 /* NiceUI */ = {
 			isa = PBXGroup;
 			children = (
+				A5A985D72329766100C63E8A /* Nodes */,
 				A53C6A372325B304000D4020 /* Strings */,
 				A53C6A392325B304000D4020 /* Utils */,
 				A53C6A3B2325B304000D4020 /* IAP */,
@@ -249,6 +252,14 @@
 				A53C6A462325B304000D4020 /* NiceTabBarFilterSwitchController.swift */,
 			);
 			path = Controllers;
+			sourceTree = "<group>";
+		};
+		A5A985D72329766100C63E8A /* Nodes */ = {
+			isa = PBXGroup;
+			children = (
+				A5A985D82329768100C63E8A /* MultipleAvatarsNode.swift */,
+			);
+			path = Nodes;
 			sourceTree = "<group>";
 		};
 		D0C9CA8B230234D400FAB518 = {
@@ -454,6 +465,7 @@
 				D0C9CAB2230235E500FAB518 /* ChatListTitleLockView.swift in Sources */,
 				D0C9CAB0230235E500FAB518 /* ChatListTitleProxyNode.swift in Sources */,
 				D0C9CAFB230236F700FAB518 /* ChatListArchiveInfoItem.swift in Sources */,
+				A5A985D92329768100C63E8A /* MultipleAvatarsNode.swift in Sources */,
 				D0C9CAAF230235E500FAB518 /* ChatListController.swift in Sources */,
 				A53C6A4E2325B304000D4020 /* NiceFeaturesController.swift in Sources */,
 				D0C9CAB4230235E500FAB518 /* ChatListControllerNode.swift in Sources */,
