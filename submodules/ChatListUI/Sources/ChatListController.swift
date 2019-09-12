@@ -1542,8 +1542,9 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
             self.present(actionSheet, in: .window(.root))
         } else if case .middle = action, !peerIds.isEmpty {
             if case .root = self.groupId {
-                self.donePressed()
-                self.archiveChats(peerIds: Array(peerIds))
+                let strongSelf = self
+                let controller = newFolderListController(context: strongSelf.context, parent: strongSelf, peerIds: Array(peerIds))
+                self.present(controller, in: .window(.root), with: ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
             } else {
                 if !peerIds.isEmpty {
                     self.chatListDisplayNode.chatListNode.setCurrentRemovingPeerId(peerIds.first!)
