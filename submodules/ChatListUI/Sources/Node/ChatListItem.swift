@@ -872,14 +872,42 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
             switch contentData {
                 case let .chat(itemPeer, _, _, _):
                     if isPeerGroup {
-                        titleAttributedString = NSAttributedString(string: item.presentationData.strings.ChatList_ArchivedChatsTitle, font: titleFont, textColor: theme.titleColor)
+                        var title = item.presentationData.strings.ChatList_ArchivedChatsTitle
+                        switch item.content {
+                        case let .groupReference(groupId, _, _, _, _):
+                            if isNiceFolder {
+                                let niceFolder = getFolder(groupId.rawValue)
+                                if niceFolder != nil {
+                                    title = niceFolder!.name
+                                } else {
+                                    title = l("Folder.DefaultName", item.presentationData.strings.baseLanguageCode)
+                                }
+                            }
+                        default:
+                            break
+                        }
+                        titleAttributedString = NSAttributedString(string: title, font: titleFont, textColor: theme.titleColor)
                     } else if itemPeer.chatMainPeer?.id == item.context.account.peerId {
                         titleAttributedString = NSAttributedString(string: item.presentationData.strings.DialogList_SavedMessages, font: titleFont, textColor: theme.titleColor)
                     } else if let displayTitle = itemPeer.chatMainPeer?.displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder) {
                         titleAttributedString = NSAttributedString(string: displayTitle, font: titleFont, textColor: item.index.messageIndex.id.peerId.namespace == Namespaces.Peer.SecretChat ? theme.secretTitleColor : theme.titleColor)
                     }
                 case .group:
-                    titleAttributedString = NSAttributedString(string: item.presentationData.strings.ChatList_ArchivedChatsTitle, font: titleFont, textColor: theme.titleColor)
+                    var title = item.presentationData.strings.ChatList_ArchivedChatsTitle
+                    switch item.content {
+                    case let .groupReference(groupId, _, _, _, _):
+                        if isNiceFolder {
+                            let niceFolder = getFolder(groupId.rawValue)
+                            if niceFolder != nil {
+                                title = niceFolder!.name
+                            } else {
+                                title = l("Folder.DefaultName", item.presentationData.strings.baseLanguageCode)
+                            }
+                        }
+                    default:
+                        break
+                    }
+                    titleAttributedString = NSAttributedString(string: title, font: titleFont, textColor: theme.titleColor)
             }
             
             textAttributedString = attributedText
