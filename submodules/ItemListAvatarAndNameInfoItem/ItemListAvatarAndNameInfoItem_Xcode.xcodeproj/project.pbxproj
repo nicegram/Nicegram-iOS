@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A58EC9102330366D0028F089 /* ChatListUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A58EC90F2330366D0028F089 /* ChatListUI.framework */; };
 		D03E3DAA2304AEDD0049C28B /* ItemListAvatarAndNameInfoItem.h in Headers */ = {isa = PBXBuildFile; fileRef = D03E3DA82304AEDD0049C28B /* ItemListAvatarAndNameInfoItem.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		D03E3DB52304AF2E0049C28B /* ItemListAvatarAndNameItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = D03E3DB42304AF2E0049C28B /* ItemListAvatarAndNameItem.swift */; };
 		D03E3DB82304AF3B0049C28B /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D03E3DB72304AF3A0049C28B /* Foundation.framework */; };
@@ -26,6 +27,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A58EC90F2330366D0028F089 /* ChatListUI.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = ChatListUI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D03E3DA52304AEDD0049C28B /* ItemListAvatarAndNameInfoItem.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = ItemListAvatarAndNameInfoItem.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D03E3DA82304AEDD0049C28B /* ItemListAvatarAndNameInfoItem.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ItemListAvatarAndNameInfoItem.h; sourceTree = "<group>"; };
 		D03E3DA92304AEDD0049C28B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -51,6 +53,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A58EC9102330366D0028F089 /* ChatListUI.framework in Frameworks */,
 				D03E3DD02304AF760049C28B /* PeerPresenceStatusManager.framework in Frameworks */,
 				D03E3DCE2304AF720049C28B /* TelegramStringFormatting.framework in Frameworks */,
 				D03E3DCC2304AF6D0049C28B /* AvatarNode.framework in Frameworks */,
@@ -101,6 +104,7 @@
 		D03E3DB62304AF3A0049C28B /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				A58EC90F2330366D0028F089 /* ChatListUI.framework */,
 				D03E3DCF2304AF760049C28B /* PeerPresenceStatusManager.framework */,
 				D03E3DCD2304AF720049C28B /* TelegramStringFormatting.framework */,
 				D03E3DCB2304AF6D0049C28B /* AvatarNode.framework */,
