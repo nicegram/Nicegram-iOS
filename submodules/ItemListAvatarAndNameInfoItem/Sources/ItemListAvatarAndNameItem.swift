@@ -11,6 +11,7 @@ import ActivityIndicator
 import AvatarNode
 import TelegramStringFormatting
 import PeerPresenceStatusManager
+import ChatListUI
 
 private let updatingAvatarOverlayImage = generateFilledCircleImage(diameter: 66.0, color: UIColor(white: 0.0, alpha: 0.4), backgroundColor: nil)
 
@@ -135,6 +136,7 @@ public class ItemListAvatarAndNameInfoItem: ListViewItem, ItemListItem {
     let editingNameUpdated: (ItemListAvatarAndNameInfoItemName) -> Void
     let editingNameCompleted: () -> Void
     let avatarTapped: () -> Void
+    let idTapped: (String) -> Void
     let context: ItemListAvatarAndNameInfoItemContext?
     let updatingImage: ItemListAvatarAndNameInfoItemUpdatingAvatar?
     let call: (() -> Void)?
@@ -144,7 +146,7 @@ public class ItemListAvatarAndNameInfoItem: ListViewItem, ItemListItem {
     
     public let selectable: Bool
 
-    public init(account: Account, theme: PresentationTheme, strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat, mode: ItemListAvatarAndNameInfoItemMode, peer: Peer?, presence: PeerPresence?, label: String? = nil, cachedData: CachedPeerData?, state: ItemListAvatarAndNameInfoItemState, sectionId: ItemListSectionId, style: ItemListAvatarAndNameInfoItemStyle, editingNameUpdated: @escaping (ItemListAvatarAndNameInfoItemName) -> Void, editingNameCompleted: @escaping () -> Void = {}, avatarTapped: @escaping () -> Void, context: ItemListAvatarAndNameInfoItemContext? = nil, updatingImage: ItemListAvatarAndNameInfoItemUpdatingAvatar? = nil, call: (() -> Void)? = nil, action: (() -> Void)? = nil, longTapAction: (() -> Void)? = nil, tag: ItemListItemTag? = nil) {
+    public init(account: Account, theme: PresentationTheme, strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat, mode: ItemListAvatarAndNameInfoItemMode, peer: Peer?, presence: PeerPresence?, label: String? = nil, cachedData: CachedPeerData?, state: ItemListAvatarAndNameInfoItemState, sectionId: ItemListSectionId, style: ItemListAvatarAndNameInfoItemStyle, editingNameUpdated: @escaping (ItemListAvatarAndNameInfoItemName) -> Void, editingNameCompleted: @escaping () -> Void = {}, avatarTapped: @escaping () -> Void, idTapped: @escaping (String) -> Void, context: ItemListAvatarAndNameInfoItemContext? = nil, updatingImage: ItemListAvatarAndNameInfoItemUpdatingAvatar? = nil, call: (() -> Void)? = nil, action: (() -> Void)? = nil, longTapAction: (() -> Void)? = nil, tag: ItemListItemTag? = nil) {
         self.account = account
         self.theme = theme
         self.strings = strings
@@ -160,6 +162,7 @@ public class ItemListAvatarAndNameInfoItem: ListViewItem, ItemListItem {
         self.editingNameUpdated = editingNameUpdated
         self.editingNameCompleted = editingNameCompleted
         self.avatarTapped = avatarTapped
+        self.idTapped = idTapped
         self.context = context
         self.updatingImage = updatingImage
         self.call = call
@@ -234,6 +237,8 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
     private let nameNode: TextNode
     private var credibilityIconNode: ASImageNode?
     private let statusNode: TextNode
+    private let idNode: TextNode
+    private var idValue: String
     
     private let arrowNode: ASImageNode
     
@@ -294,6 +299,12 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
         self.statusNode.contentMode = .left
         self.statusNode.contentsScale = UIScreen.main.scale
         
+        self.idNode = TextNode()
+        self.idNode.isUserInteractionEnabled = true
+        self.idNode.contentMode = .left
+        self.idNode.contentsScale = UIScreen.main.scale
+        self.idValue = ""
+
         self.arrowNode = ASImageNode()
         self.arrowNode.isLayerBacked = true
         self.arrowNode.displaysAsynchronously = false
@@ -310,6 +321,8 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
         
         self.addSubnode(self.nameNode)
         self.addSubnode(self.statusNode)
+        
+        self.addSubnode(self.idNode)
         
         self.peerPresenceManager = PeerPresenceStatusManager(update: { [weak self] in
             if let strongSelf = self, let item = strongSelf.item, let layoutWidthAndNeighbors = strongSelf.layoutWidthAndNeighbors {
@@ -329,11 +342,13 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
         super.didLoad()
         
         self.avatarNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.avatarTapGesture(_:))))
+        self.idNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.idTapGesture(_:))))
     }
     
     public func asyncLayout() -> (_ item: ItemListAvatarAndNameInfoItem, _ params: ListViewItemLayoutParams, _ neighbors: ItemListNeighbors) -> (ListViewItemNodeLayout, (Bool, Bool) -> Void) {
         let layoutNameNode = TextNode.asyncLayout(self.nameNode)
         let layoutStatusNode = TextNode.asyncLayout(self.statusNode)
+        let layoutIdNode = TextNode.asyncLayout(self.idNode)
         let currentOverlayImage = self.updatingAvatarOverlay.image
         
         let currentItem = self.item
@@ -379,48 +394,54 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
             
             let (nameNodeLayout, nameNodeApply) = layoutNameNode(TextNodeLayoutArguments(attributedString: NSAttributedString(string: displayTitle.composedDisplayTitle(strings: item.strings), font: nameFont, textColor: item.theme.list.itemPrimaryTextColor), backgroundColor: nil, maximumNumberOfLines: nameMaximumNumberOfLines, truncationType: .end, constrainedSize: CGSize(width: baseWidth - 20 - 94.0 - (item.call != nil ? 36.0 : 0.0) - additionalTitleInset, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
+            var idText: String = "ID: "
+            let idColor: UIColor = item.theme.list.itemSecondaryTextColor
             var statusText: String = ""
             let statusColor: UIColor
             if let peer = item.peer as? TelegramUser {
+                self.idValue = String(peer.id.hashValue)
+                idText += self.idValue
                 let servicePeer = isServicePeer(peer)
                 switch item.mode {
-                    case .settings:
-                        if let phone = peer.phone, !phone.isEmpty {
-                            statusText += formatPhoneNumber(phone)
+                case .settings:
+                    if let phone = peer.phone, !phone.isEmpty {
+                        statusText += formatPhoneNumber(phone)
+                    }
+                    if let username = peer.username, !username.isEmpty {
+                        if !statusText.isEmpty {
+                            statusText += "\n"
                         }
-                        if let username = peer.username, !username.isEmpty {
-                            if !statusText.isEmpty {
-                                statusText += "\n"
-                            }
-                            statusText += "@\(username)"
-                        }
+                        statusText += "@\(username)"
+                    }
+                    statusColor = item.theme.list.itemSecondaryTextColor
+                case .generic, .contact, .editSettings:
+                    if let label = item.label {
+                        statusText = label
                         statusColor = item.theme.list.itemSecondaryTextColor
-                    case .generic, .contact, .editSettings:
-                        if let label = item.label {
-                            statusText = label
-                            statusColor = item.theme.list.itemSecondaryTextColor
-                        } else if peer.flags.contains(.isSupport), !servicePeer {
-                            statusText = item.strings.Bot_GenericSupportStatus
-                            statusColor = item.theme.list.itemSecondaryTextColor
-                        } else if let _ = peer.botInfo {
-                            statusText = item.strings.Bot_GenericBotStatus
-                            statusColor = item.theme.list.itemSecondaryTextColor
-                        } else if case .generic = item.mode, !servicePeer {
-                            let presence = (item.presence as? TelegramUserPresence) ?? TelegramUserPresence(status: .none, lastActivity: 0)
-                            let timestamp = CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970
-                            let (string, activity) = stringAndActivityForUserPresence(strings: item.strings, dateTimeFormat: item.dateTimeFormat, presence: presence, relativeTo: Int32(timestamp), expanded: true)
-                            statusText = string
-                            if activity {
-                                statusColor = item.theme.list.itemAccentColor
-                            } else {
-                                statusColor = item.theme.list.itemSecondaryTextColor
-                            }
+                    } else if peer.flags.contains(.isSupport), !servicePeer {
+                        statusText = item.strings.Bot_GenericSupportStatus
+                        statusColor = item.theme.list.itemSecondaryTextColor
+                    } else if let _ = peer.botInfo {
+                        statusText = item.strings.Bot_GenericBotStatus
+                        statusColor = item.theme.list.itemSecondaryTextColor
+                    } else if case .generic = item.mode, !servicePeer {
+                        let presence = (item.presence as? TelegramUserPresence) ?? TelegramUserPresence(status: .none, lastActivity: 0)
+                        let timestamp = CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970
+                        let (string, activity) = stringAndActivityForUserPresence(strings: item.strings, dateTimeFormat: item.dateTimeFormat, presence: presence, relativeTo: Int32(timestamp), expanded: true)
+                        statusText = string
+                        if activity {
+                            statusColor = item.theme.list.itemAccentColor
                         } else {
-                            statusText = ""
-                            statusColor = item.theme.list.itemPrimaryTextColor
+                            statusColor = item.theme.list.itemSecondaryTextColor
                         }
+                    } else {
+                        statusText = ""
+                        statusColor = item.theme.list.itemPrimaryTextColor
+                    }
                 }
             } else if let channel = item.peer as? TelegramChannel {
+                self.idValue = "-100" + String(channel.id.hashValue)
+                idText += self.idValue
                 if let cachedChannelData = item.cachedData as? CachedChannelData, let memberCount = cachedChannelData.participantsSummary.memberCount {
                     if case .group = channel.info {
                         if memberCount == 0 {
@@ -447,9 +468,13 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                     }
                 }
             } else if let group = item.peer as? TelegramGroup {
+                self.idValue = String(group.id.hashValue)
+                idText += self.idValue
                 statusText = item.strings.GroupInfo_ParticipantCount(Int32(group.participantCount))
                 statusColor = item.theme.list.itemSecondaryTextColor
             } else {
+                self.idValue = ""
+                idText += "Unknown"
                 statusText = ""
                 statusColor = item.theme.list.itemPrimaryTextColor
             }
@@ -461,6 +486,8 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
             
             let (statusNodeLayout, statusNodeApply) = layoutStatusNode(TextNodeLayoutArguments(attributedString: NSAttributedString(string: statusText, font: statusFont, textColor: statusColor), backgroundColor: nil, maximumNumberOfLines: 3, truncationType: .end, constrainedSize: CGSize(width: availableStatusWidth, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
+            let (idNodeLayout, idNodeApply) = layoutIdNode(TextNodeLayoutArguments(attributedString: NSAttributedString(string: idText, font: statusFont, textColor: idColor), backgroundColor: nil, maximumNumberOfLines: 3, truncationType: .end, constrainedSize: CGSize(width: availableStatusWidth, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
+            
             let separatorHeight = UIScreenPixel
             
             let contentSize: CGSize
@@ -471,12 +498,12 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                 case .plain:
                     itemBackgroundColor = item.theme.list.plainBackgroundColor
                     itemSeparatorColor = item.theme.list.itemPlainSeparatorColor
-                    contentSize = CGSize(width: params.width, height: 96.0)
+                    contentSize = CGSize(width: params.width, height: 96.0 + 4.0)
                     insets = itemListNeighborsPlainInsets(neighbors)
                 case let .blocks(withTopInset, withExtendedBottomInset):
                     itemBackgroundColor = item.theme.list.itemBlocksBackgroundColor
                     itemSeparatorColor = item.theme.list.itemBlocksSeparatorColor
-                    contentSize = CGSize(width: params.width, height: 92.0)
+                    contentSize = CGSize(width: params.width, height: 92.0 + 4.0)
                     if withTopInset {
                         insets = itemListNeighborsGroupedInsets(neighbors)
                     } else {
@@ -609,6 +636,7 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                     
                     let _ = nameNodeApply()
                     let _ = statusNodeApply()
+                    let _ = idNodeApply()
                     
                     var ignoreEmpty = false
                     if case .editSettings = item.mode {
@@ -639,11 +667,16 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                     let indicatorSize = strongSelf.activityIndicator.measure(CGSize(width: 100.0, height: 100.0))
                     strongSelf.activityIndicator.frame = CGRect(origin: CGPoint(x: floorToScreenPixels(avatarFrame.midX - indicatorSize.width / 2.0), y: floorToScreenPixels(avatarFrame.midY - indicatorSize.height / 2.0)), size: indicatorSize)
                     
-                    let nameY: CGFloat
+                    var nameY: CGFloat
                     if statusText.isEmpty {
                         nameY = floor((layout.contentSize.height - nameNodeLayout.size.height) / 2.0)
                     } else {
                         nameY = floor((layout.contentSize.height - nameNodeLayout.size.height - 3.0 - statusNodeLayout.size.height) / 2.0)
+                        if idText.isEmpty {
+                            nameY = floor((layout.contentSize.height - nameNodeLayout.size.height - 3.0 - statusNodeLayout.size.height) / 2.0)
+                        } else {
+                            nameY = floor((layout.contentSize.height - nameNodeLayout.size.height - 3.0 - statusNodeLayout.size.height - 3.0 - idNodeLayout.size.height) / 2.0)
+                        }
                     }
                     let nameFrame = CGRect(origin: CGPoint(x: params.leftInset + 94.0, y: nameY), size: nameNodeLayout.size)
                     strongSelf.nameNode.frame = nameFrame
@@ -666,6 +699,8 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                     }
                     
                     strongSelf.statusNode.frame = CGRect(origin: CGPoint(x: params.leftInset + 94.0, y: nameFrame.maxY + 3.0), size: statusNodeLayout.size)
+                    strongSelf.idNode.frame = CGRect(origin: CGPoint(x: params.leftInset + 94.0, y: strongSelf.statusNode.frame.maxY + 3.0), size: idNodeLayout.size)
+
                     
                     if let editingName = item.state.editingName {
                         var animateIn = false
@@ -822,6 +857,8 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                         if animated && animateIn {
                             strongSelf.statusNode.layer.animateAlpha(from: CGFloat(strongSelf.statusNode.layer.opacity), to: 0.0, duration: 0.3)
                             strongSelf.statusNode.alpha = 0.0
+                            strongSelf.idNode.layer.animateAlpha(from: CGFloat(strongSelf.idNode.layer.opacity), to: 0.0, duration: 0.3)
+                            strongSelf.idNode.alpha = 0.0
                             strongSelf.nameNode.layer.animateAlpha(from: CGFloat(strongSelf.nameNode.layer.opacity), to: 0.0, duration: 0.3)
                             strongSelf.nameNode.alpha = 0.0
                             strongSelf.callButton.layer.animateAlpha(from: CGFloat(strongSelf.callButton.layer.opacity), to: 0.0, duration: 0.3)
@@ -832,6 +869,7 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                             }
                         } else {
                             strongSelf.statusNode.alpha = 0.0
+                            strongSelf.idNode.alpha = 0.0
                             strongSelf.nameNode.alpha = 0.0
                             strongSelf.callButton.alpha = 0.0
                             strongSelf.credibilityIconNode?.alpha = 0.0
@@ -896,6 +934,9 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                             strongSelf.statusNode.layer.animateAlpha(from: CGFloat(strongSelf.statusNode.layer.opacity), to: 1.0, duration: 0.3)
                             strongSelf.statusNode.alpha = 1.0
                             
+                            strongSelf.idNode.layer.animateAlpha(from: CGFloat(strongSelf.idNode.layer.opacity), to: 1.0, duration: 0.3)
+                            strongSelf.idNode.alpha = 1.0
+                            
                             strongSelf.nameNode.layer.animateAlpha(from: CGFloat(strongSelf.nameNode.layer.opacity), to: 1.0, duration: 0.3)
                             strongSelf.nameNode.alpha = 1.0
                             
@@ -908,6 +949,7 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                             }
                         } else {
                             strongSelf.statusNode.alpha = 1.0
+                            strongSelf.idNode.alpha = 1.0
                             strongSelf.nameNode.alpha = 1.0
                             strongSelf.callButton.alpha = 1.0
                             strongSelf.credibilityIconNode?.alpha = 1.0
@@ -1035,6 +1077,12 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
     @objc private func avatarTapGesture(_ recognizer: UITapGestureRecognizer) {
         if let item = self.item {
             item.avatarTapped()
+        }
+    }
+    
+    @objc func idTapGesture(_ recognizer: UITapGestureRecognizer) {
+        if let item = self.item {
+            item.idTapped(self.idValue)
         }
     }
     

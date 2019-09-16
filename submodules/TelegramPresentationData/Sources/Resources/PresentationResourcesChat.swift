@@ -713,6 +713,12 @@ public struct PresentationResourcesChat {
         })
     }
     
+    public static func chatTitlePanelGotoPinImage(_ theme: PresentationTheme) -> UIImage? {
+        return theme.image(PresentationResourceKey.chatTitlePanelGotoPinImage.rawValue, { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Pin"), color: theme.chat.inputPanel.panelControlAccentColor)
+        })
+    }
+    
     public static func chatTitlePanelMuteImage(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.chatTitlePanelMuteImage.rawValue, { theme in
             return generateTintedImage(image: UIImage(bundleImageName: "Chat/Title Panels/MuteIcon"), color: theme.chat.inputPanel.panelControlAccentColor)

@@ -33,7 +33,7 @@ import WebSearchUI
 import PeerAvatarGalleryUI
 import MapResourceToAvatarSizes
 
-private let maximumNumberOfAccounts = 3
+private let maximumNumberOfAccounts = 7
 
 private let avatarFont = UIFont(name: ".SFCompactRounded-Semibold", size: 13.0)!
 
@@ -54,10 +54,12 @@ private struct SettingsItemArguments {
     let avatarAndNameInfoContext: ItemListAvatarAndNameInfoItemContext
     
     let avatarTapAction: () -> Void
+    let presentController: (ViewController, Any?) -> Void
     
     let changeProfilePhoto: () -> Void
     let openUsername: () -> Void
     let openProxy: () -> Void
+    let openNiceFeatures: () -> Void
     let openSavedMessages: () -> Void
     let openRecentCalls: () -> Void
     let openPrivacyAndSecurity: (AccountPrivacySettings?) -> Void
@@ -105,6 +107,7 @@ private enum SettingsEntry: ItemListNodeEntry {
     case addAccount(PresentationTheme, String)
     
     case proxy(PresentationTheme, UIImage?, String, String)
+    case niceFeatures(PresentationTheme, UIImage?, String)
     
     case savedMessages(PresentationTheme, UIImage?, String)
     case recentCalls(PresentationTheme, UIImage?, String)
@@ -129,7 +132,7 @@ private enum SettingsEntry: ItemListNodeEntry {
                 return SettingsSection.phone.rawValue
             case .account, .addAccount:
                 return SettingsSection.accounts.rawValue
-            case .proxy:
+            case .proxy, .niceFeatures:
                 return SettingsSection.proxy.rawValue
             case .savedMessages, .recentCalls, .stickers:
                 return SettingsSection.media.rawValue
@@ -162,30 +165,32 @@ private enum SettingsEntry: ItemListNodeEntry {
                 return 1002
             case .proxy:
                 return 1003
-            case .savedMessages:
+            case .niceFeatures:
                 return 1004
-            case .recentCalls:
+            case .savedMessages:
                 return 1005
-            case .stickers:
+            case .recentCalls:
                 return 1006
-            case .notificationsAndSounds:
+            case .stickers:
                 return 1007
-            case .privacyAndSecurity:
+            case .notificationsAndSounds:
                 return 1008
-            case .dataAndStorage:
+            case .privacyAndSecurity:
                 return 1009
-            case .themes:
+            case .dataAndStorage:
                 return 1010
-            case .language:
+            case .themes:
                 return 1011
-            case .passport:
+            case .language:
                 return 1012
-            case .watch:
+            case .passport:
                 return 1013
-            case .askAQuestion:
+            case .watch:
                 return 1014
-            case .faq:
+            case .askAQuestion:
                 return 1015
+            case .faq:
+                return 1016
         }
     }
     
@@ -277,6 +282,12 @@ private enum SettingsEntry: ItemListNodeEntry {
                 } else {
                     return false
                 }
+            case let .niceFeatures(lhsTheme, lhsImage, lhsText):
+                if case let .niceFeatures(rhsTheme, rhsImage, rhsText) = rhs, lhsTheme === rhsTheme, lhsImage === rhsImage, lhsText == rhsText {
+                    return true
+                } else {
+                    return false
+            }
             case let .savedMessages(lhsTheme, lhsImage, lhsText):
                 if case let .savedMessages(rhsTheme, rhsImage, rhsText) = rhs, lhsTheme === rhsTheme, lhsImage === rhsImage, lhsText == rhsText {
                     return true
@@ -362,6 +373,9 @@ private enum SettingsEntry: ItemListNodeEntry {
                 return ItemListAvatarAndNameInfoItem(account: account, theme: theme, strings: strings, dateTimeFormat: dateTimeFormat, mode: .settings, peer: peer, presence: TelegramUserPresence(status: .present(until: Int32.max), lastActivity: 0), cachedData: cachedData, state: state, sectionId: ItemListSectionId(self.section), style: .blocks(withTopInset: false, withExtendedBottomInset: false), editingNameUpdated: { _ in
                 }, avatarTapped: {
                     arguments.avatarTapAction()
+                }, idTapped: { value in
+                    UIPasteboard.general.string = value
+                    arguments.presentController(OverlayStatusController(theme: theme, strings: strings, type: .success), ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
                 }, context: arguments.avatarAndNameInfoContext, updatingImage: updatingImage, action: {
                     arguments.openEditing()
                 }, longTapAction: {
@@ -417,6 +431,10 @@ private enum SettingsEntry: ItemListNodeEntry {
                 return ItemListDisclosureItem(theme: theme, icon: image, title: text, label: value, sectionId: ItemListSectionId(self.section), style: .blocks, action: {
                     arguments.openProxy()
                 }, clearHighlightAutomatically: false)
+            case let .niceFeatures(theme, image, text):
+                return ItemListDisclosureItem(theme: theme, icon: image, title: text, label: "", sectionId: ItemListSectionId(self.section), style: .blocks, action: {
+                    arguments.openNiceFeatures()
+                })
             case let .savedMessages(theme, image, text):
                 return ItemListDisclosureItem(theme: theme, icon: image, title: text, label: "", sectionId: ItemListSectionId(self.section), style: .blocks, action: {
                     arguments.openSavedMessages()
@@ -521,6 +539,7 @@ private func settingsEntries(account: Account, presentationData: PresentationDat
             entries.append(.proxy(presentationData.theme, PresentationResourcesSettings.proxy, presentationData.strings.Settings_Proxy, valueString))
         }
         
+        entries.append(.niceFeatures(presentationData.theme, PresentationResourcesSettings.nicegramIcon, l("NiceFeatures.Title", presentationData.strings.baseLanguageCode)))
         entries.append(.savedMessages(presentationData.theme, PresentationResourcesSettings.savedMessages, presentationData.strings.Settings_SavedMessages))
         entries.append(.recentCalls(presentationData.theme, PresentationResourcesSettings.recentCalls, presentationData.strings.CallSettings_RecentCalls))
         entries.append(.stickers(presentationData.theme, PresentationResourcesSettings.stickers, presentationData.strings.ChatSettings_Stickers, unreadTrendingStickerPacks == 0 ? "" : "\(unreadTrendingStickerPacks)", archivedPacks))
@@ -729,6 +748,8 @@ public func settingsController(context: AccountContext, accountManager: AccountM
                 }
             })
         })
+    }, presentController: { c, a in
+        presentControllerImpl?(c, a)
     }, changeProfilePhoto: {
         changeProfilePhotoImpl?()
     }, openUsername: {
@@ -743,6 +764,12 @@ public func settingsController(context: AccountContext, accountManager: AccountM
         |> take(1)).start(next: { context in
             pushControllerImpl?(proxySettingsController(context: context))
         })
+    }, openNiceFeatures: {
+        let _ = (contextValue.get()
+            |> deliverOnMainQueue
+            |> take(1)).start(next: { context in
+                pushControllerImpl?(niceFeaturesController(context: context))
+            })
     }, openSavedMessages: {
         openSavedMessagesImpl?()
     }, openRecentCalls: {
@@ -1331,6 +1358,10 @@ public func settingsController(context: AccountContext, accountManager: AccountM
                 })
                 if let resultItemNode = resultItemNode, let user = peer as? TelegramUser {
                     var actions: [ContextMenuAction] = []
+                    
+                    actions.append(ContextMenuAction(content: .text(title: "ID", accessibilityLabel: "Copy ID"), action: {
+                        UIPasteboard.general.string = String(user.id.hashValue)
+                    }))
                     
                     if let phone = user.phone, !phone.isEmpty {
                         actions.append(ContextMenuAction(content: .text(title: presentationData.strings.Settings_CopyPhoneNumber, accessibilityLabel: presentationData.strings.Settings_CopyPhoneNumber), action: {

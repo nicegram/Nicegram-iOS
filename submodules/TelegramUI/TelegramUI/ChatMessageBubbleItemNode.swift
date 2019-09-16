@@ -19,6 +19,7 @@ import Emoji
 import ReactionSelectionNode
 import PersistentStringHash
 import GridMessageSelectionNode
+import OverlayStatusController
 
 private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> [(Message, AnyClass)] {
     var result: [(Message, AnyClass)] = []
@@ -2270,8 +2271,16 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePrevewItemNode 
                     switch tapAction {
                         case .none, .ignore:
                             break
-                        case .code(_), .pre(_):
-                            break
+                        case let .pre(pre):
+                            foundTapAction = true
+                            UIPasteboard.general.string = pre
+                            self.item?.controllerInteraction.presentController(OverlayStatusController(theme: (self.item?.presentationData.theme.theme)!, strings: (self.item?.presentationData.strings)!, type: .success), nil)
+                            break loop
+                        case let .code(code):
+                            foundTapAction = true
+                            UIPasteboard.general.string = code
+                            self.item?.controllerInteraction.presentController(OverlayStatusController(theme: (self.item?.presentationData.theme.theme)!, strings: (self.item?.presentationData.strings)!, type: .success), nil)
+                            break loop
                         case let .url(url, concealed):
                             foundTapAction = true
                             self.item?.controllerInteraction.openUrl(url, concealed, nil)

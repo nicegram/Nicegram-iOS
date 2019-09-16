@@ -514,13 +514,13 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
         SimplyNiceSettings().showTabNames = value
         updateTabs()
         
-        let controller = textAlertController(theme: AlertControllerTheme(presentationTheme: presentationData.theme), title: nil, text: NSAttributedString(string: l("Common.RestartRequired", locale)), actions: [TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: {preconditionFailure()}),TextAlertAction(type: .genericAction, title: l("Common.Later", locale), action: {})])
+        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationTheme: presentationData.theme), title: nil, text: l("Common.RestartRequired", locale), actions: [TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: {preconditionFailure()}),TextAlertAction(type: .genericAction, title: l("Common.Later", locale), action: {})])
         
         presentControllerImpl?(controller, nil)
     }, toggleHidePhone: { value, locale in
         SimplyNiceSettings().hideNumber = value
         
-        let controller = textAlertController(theme: AlertControllerTheme(presentationTheme: presentationData.theme), title: nil, text: NSAttributedString(string: l("Common.RestartRequired", locale)), actions: [TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: {preconditionFailure()}),TextAlertAction(type: .genericAction, title: l("Common.Later", locale), action: {})])
+        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationTheme: presentationData.theme), title: nil, text: l("Common.RestartRequired", locale), actions: [TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: {preconditionFailure()}),TextAlertAction(type: .genericAction, title: l("Common.Later", locale), action: {})])
         
         presentControllerImpl?(controller, nil)
     }

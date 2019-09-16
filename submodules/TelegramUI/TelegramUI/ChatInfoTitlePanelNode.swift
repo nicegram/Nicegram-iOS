@@ -55,8 +55,7 @@ private enum ChatInfoTitleButton {
             case .unarchive:
                 return PresentationResourcesChat.chatTitlePanelUnarchiveImage(theme)
             case .gotopin:
-                return nil
-                // return PresentationResourcesChat.chatTitlePanelGotoPinImage(theme)
+                return PresentationResourcesChat.chatTitlePanelGotoPinImage(theme)
         }
     }
 }

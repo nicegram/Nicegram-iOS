@@ -74,6 +74,8 @@ enum ChatItemGalleryFooterContentTapAction {
     case url(url: String, concealed: Bool)
     case textMention(String)
     case peerMention(PeerId, String)
+    case code(String)
+    case pre(String)
     case botCommand(String)
     case hashtag(String?, String)
     case instantPage

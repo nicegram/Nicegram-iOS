@@ -187,8 +187,18 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
                     nsString = text as NSString
                 }
                 string.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.BotCommand), value: nsString!.substring(with: range), range: range)
-            case .Code, .Pre:
+            case .Pre:
                 string.addAttribute(NSAttributedString.Key.font, value: fixedFont, range: range)
+                if nsString == nil {
+                    nsString = text as NSString
+                }
+                string.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.Pre), value: nsString!.substring(with: range), range: range)
+            case .Code:
+                string.addAttribute(NSAttributedString.Key.font, value: fixedFont, range: range)
+                if nsString == nil {
+                    nsString = text as NSString
+                }
+                string.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.Code), value: nsString!.substring(with: range), range: range)
             case .BlockQuote:
                 if let fontAttribute = fontAttributes[range] {
                     fontAttributes[range] = fontAttribute.union(.blockQuote)

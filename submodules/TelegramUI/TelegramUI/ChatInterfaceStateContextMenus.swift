@@ -11,6 +11,8 @@ import OverlayStatusController
 import AccountContext
 import ContextUI
 import LegacyUI
+import ChatListUI
+import PeerInfoUI
 
 private struct MessageContextMenuData {
     let starStatus: Bool?
@@ -584,22 +586,25 @@ func contextMenuForChatPresentationIntefaceState(chatPresentationInterfaceState:
             }
         }
         // TODO: Restrict from new context menu
-        // if let peer = message.peers[message.id.peerId] as? TelegramChannel {
-        //     if let user = message.author as? TelegramUser {
-        //         if (user.id != context.account.peerId) && peer.hasPermission(.banMembers) {
-        //             let banDisposables = DisposableDict<PeerId>()
-        //             // TODO: Check is user an admin?
-        //             actions.append(.context(ContextMenuAction(content: .text(title: chatPresentationInterfaceState.strings.Conversation_ContextMenuBan, accessibilityLabel: chatPresentationInterfaceState.strings.Conversation_ContextMenuBan), action: {
-        //                 interfaceInteraction.dismissInput()
-        //                 banDisposables.set((fetchChannelParticipant(account: context.account, peerId: peer.id, participantId: user.id)
-        //                     |> deliverOnMainQueue).start(next: { participant in
-        //                         controllerInteraction.presentController(channelBannedMemberController(context: context, peerId: peer.id, memberId: message.author!.id, initialParticipant: participant, updated: { _ in }, upgradedToSupergroup: { _, f in f() }), ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
-        //                     }), forKey: user.id)
-                        
-        //             })))
-        //         }
-        //     }
-        // }
+         if let peer = message.peers[message.id.peerId] as? TelegramChannel {
+             if let user = message.author as? TelegramUser {
+                 if (user.id != context.account.peerId) && peer.hasPermission(.banMembers) {
+                     let banDisposables = DisposableDict<PeerId>()
+                     // TODO: Check is user an admin?
+                    actions.append(.action(ContextMenuActionItem(text: chatPresentationInterfaceState.strings.Conversation_ContextMenuBan, icon: { theme in
+                        return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Restrict"), color: theme.actionSheet.primaryTextColor)
+                    }, action: { _, f in
+                        interfaceInteraction.dismissInput()
+                        banDisposables.set((fetchChannelParticipant(account: context.account, peerId: peer.id, participantId: user.id)
+                            |> deliverOnMainQueue).start(next: { participant in
+                        controllerInteraction.presentController(channelBannedMemberController(context: context, peerId: peer.id, memberId: message.author!.id, initialParticipant: participant, updated: { _ in }, upgradedToSupergroup: { _, f in f() }), ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+                            }), forKey: user.id)
+                        f(.dismissWithoutContent)
+                    }))
+                    )
+                 }
+             }
+         }
         
         // if data.canSelect {
         //     actions.append(.context(ContextMenuAction(content: .text(title: chatPresentationInterfaceState.strings.Conversation_ContextMenuMore, accessibilityLabel: chatPresentationInterfaceState.strings.Conversation_ContextMenuMore.replacingOccurrences(of: "...", with: "")), action: {
@@ -652,21 +657,26 @@ func contextMenuForChatPresentationIntefaceState(chatPresentationInterfaceState:
         
         
         if data.messageActions.options.contains(.forward) {
-            // TODO: New Forward Context menu
-            // actions.append(.sheet(ChatMessageContextMenuSheetAction(color: .accent, title: l("Chat.ForwardAsCopy", chatPresentationInterfaceState.strings.baseLanguageCode), action: {
-            // interfaceInteraction.copyForwardMessages(selectAll ? messages : [message])
-            // })))
-            // actions.append(.sheet(ChatMessageContextMenuSheetAction(color: .accent, title: chatPresentationInterfaceState.strings.Conversation_ContextMenuForward, action: {
-            //         interfaceInteraction.forwardMessages(selectAll ? messages : [message])
+            actions.append(.action(ContextMenuActionItem(text: l("Chat.ForwardAsCopy", chatPresentationInterfaceState.strings.baseLanguageCode), icon: { theme in
+                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionCopyForward"), color: theme.actionSheet.primaryTextColor)
+            }, action: { _, f in
+                interfaceInteraction.copyForwardMessages(selectAll ? messages : [message])
+                f(.dismissWithoutContent)
+            })))
+            
             actions.append(.action(ContextMenuActionItem(text: chatPresentationInterfaceState.strings.Conversation_ContextMenuForward, icon: { theme in
                 return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Forward"), color: theme.actionSheet.primaryTextColor)
             }, action: { _, f in
                 interfaceInteraction.forwardMessages(selectAll ? messages : [message])
                 f(.dismissWithoutContent)
             })))
-//            actions.append(.sheet(ChatMessageContextMenuSheetAction(color: .accent, title: l("Chat.SaveToCloud", chatPresentationInterfaceState.strings.baseLanguageCode), action: {
-//            interfaceInteraction.cloudMessages(selectAll ? messages : [message])
-//            })))
+            
+            actions.append(.action(ContextMenuActionItem(text: l("Chat.SaveToCloud", chatPresentationInterfaceState.strings.baseLanguageCode), icon: { theme in
+                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/FileCloudFetch"), color: theme.actionSheet.primaryTextColor)
+            }, action: { _, f in
+                interfaceInteraction.cloudMessages(selectAll ? messages : [message])
+                f(.dismissWithoutContent)
+            })))
         }
         
         

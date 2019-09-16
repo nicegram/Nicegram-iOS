@@ -127,6 +127,12 @@ public struct PresentationResourcesItemList {
         })
     }
     
+    public static func archiveIcon(_ theme: PresentationTheme) -> UIImage? {
+        return theme.image(PresentationResourceKey.archiveIcon.rawValue, { theme in
+            generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Archive"), color: theme.list.itemAccentColor)
+        })
+    }
+    
     public static func itemListCloseIconImage(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.itemListCloseIconImage.rawValue, { theme in
             return generateImage(CGSize(width: 12.0, height: 12.0), contextGenerator: { size, context in

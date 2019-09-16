@@ -155,7 +155,7 @@ private enum NewFolderListEntry: ItemListNodeEntry {
                 arguments.createNew()
             })
         case let .archive(theme, text):
-            return ItemListPeerActionItem(theme: theme, icon: nil /*PresentationResourcesItemList.archiveIcon(theme)*/, title: text, sectionId: self.section, editing: false, action: {
+            return ItemListPeerActionItem(theme: theme, icon: PresentationResourcesItemList.archiveIcon(theme), title: text, sectionId: self.section, editing: false, action: {
                 arguments.archive()
             })
         case let .foldersHeader(theme, text):
@@ -250,7 +250,7 @@ public func newFolderListController(context: AccountContext, parent: ChatListCon
     let arguments = NewFolderListControllerArguments(
     createNew: {
         if getNiceFolders().count >= 3 {
-            let controller = textAlertController(theme: AlertControllerTheme(presentationTheme: presentationData.theme), title: nil, text: NSAttributedString(string: l("Folder.LimitExceeded", locale)), actions: [TextAlertAction(type: .genericAction, title: "OK", action: {})])
+            let controller = standardTextAlertController(theme: AlertControllerTheme(presentationTheme: presentationData.theme), title: nil, text: l("Folder.LimitExceeded", locale), actions: [TextAlertAction(type: .genericAction, title: "OK", action: {})])
             presentControllerImpl?(controller, nil)
         } else {
             var text: String?

@@ -71,6 +71,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     case knockoutWallpaper(PresentationTheme, Bool)
     case gradientBubbles(PresentationTheme, Bool)
     case versionInfo(PresentationTheme)
+    case nicegramDebug(PresentationTheme, Bool)
     
     var section: ItemListSectionId {
         switch self {
@@ -78,7 +79,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return DebugControllerSection.logs.rawValue
         case .accounts:
             return DebugControllerSection.logs.rawValue
-        case .logToFile, .logToConsole, .redactSensitiveData:
+        case .logToFile, .logToConsole, .redactSensitiveData, .nicegramDebug:
             return DebugControllerSection.logging.rawValue
         case .enableRaiseToSpeak, .keepChatNavigationStack, .skipReadHistory, .crashOnSlowQueries:
             return DebugControllerSection.experiments.rawValue
@@ -107,36 +108,38 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return 6
         case .redactSensitiveData:
             return 7
-        case .enableRaiseToSpeak:
+        case .nicegramDebug:
             return 8
+        case .enableRaiseToSpeak:
+            return 8 + 1
         case .keepChatNavigationStack:
-            return 9
+            return 9 + 1
         case .skipReadHistory:
-            return 10
+            return 10 + 1
         case .crashOnSlowQueries:
-            return 11
+            return 11 + 1
         case .clearTips:
-            return 12
+            return 12 + 1
         case .reimport:
-            return 13
+            return 13 + 1
         case .resetData:
-            return 14
+            return 14 + 1
         case .resetDatabase:
-            return 15
+            return 15 + 1
         case .resetHoles:
-            return 16
+            return 16 + 1
         case .resetBiometricsData:
-            return 17
+            return 17 + 1
         case .optimizeDatabase:
-            return 18
+            return 18 + 1
         case .photoPreview:
-            return 19
+            return 19 + 1
         case .knockoutWallpaper:
-            return 20
+            return 20 + 1
         case .gradientBubbles:
-            return 21
+            return 21 + 1
         case .versionInfo:
-            return 22
+            return 22 + 1
         }
     }
     
@@ -257,8 +260,9 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     })
             })
         case let .sendNotificationLogs(theme):
-            return ItemListDisclosureItem(theme: theme, title: "Send Notification Logs", label: "", sectionId: self.section, style: .blocks, action: {
-                let _ = (Logger(basePath: arguments.sharedContext.basePath + "/notificationServiceLogs").collectLogs()
+            return ItemListDisclosureItem(theme: theme, title: "Send Folder Logs", label: "", sectionId: self.section, style: .blocks, action: {
+                fLog("FOLDERS: \(SimplyNiceFolders().folders)")
+                let _ = (Logger(basePath: arguments.sharedContext.basePath + "/niceFolderLogs").collectLogs()
                     |> deliverOnMainQueue).start(next: { logs in
                         guard let context = arguments.context else {
                             return
@@ -336,6 +340,30 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     return
                 }
                 arguments.pushController(debugAccountsController(context: context, accountManager: arguments.sharedContext.accountManager))
+            })
+        case let .nicegramDebug(theme, value):
+            return ItemListSwitchItem(theme: theme, title: "Nicegram Debug", value: value, sectionId: self.section, style: .blocks, updated: { value in
+                var newValue = value
+                let locale = NSLocale.current.languageCode
+                
+                if locale != "ru" {
+                    newValue = false
+                }
+                
+                let _ = updateExperimentalUISettingsInteractively(accountManager: arguments.sharedContext.accountManager, { settings in
+                    var settings = settings
+                    settings.brr = newValue
+                    return settings
+                }).start()
+                guard let context = arguments.context else {
+                    return
+                }
+                if (newValue) {
+                    let controller = standardTextAlertController(theme: AlertControllerTheme(presentationTheme: theme), title: nil, text: "Debug is Unavailable!", actions: [TextAlertAction(type: .genericAction, title: "OK", action: {})])
+                    
+                    arguments.presentController(controller, nil)
+                }
+                
             })
         case let .logToFile(theme, value):
             return ItemListSwitchItem(theme: theme, title: "Log to File", value: value, sectionId: self.section, style: .blocks, updated: { value in
@@ -416,6 +444,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                         actionSheet?.dismissAnimated()
                         let databasePath = arguments.sharedContext.accountManager.basePath + "/db"
                         let _ = try? FileManager.default.removeItem(atPath: databasePath)
+                        resetFolders()
                         preconditionFailure()
                     }),
                     ]), ActionSheetItemGroup(items: [
@@ -426,18 +455,19 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                 arguments.presentController(actionSheet, nil)
             })
         case let .resetDatabase(theme):
-            return ItemListActionItem(theme: theme, title: "Clear Database", kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+            return ItemListActionItem(theme: theme, title: "Clear Database & Folders", kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 guard let context = arguments.context else {
                     return
                 }
                 let presentationData = arguments.sharedContext.currentPresentationData.with { $0 }
                 let actionSheet = ActionSheetController(presentationTheme: presentationData.theme)
                 actionSheet.setItemGroups([ActionSheetItemGroup(items: [
-                    ActionSheetTextItem(title: "All secret chats will be lost."),
+                    ActionSheetTextItem(title: "All secret chats & folders will be lost."),
                     ActionSheetButtonItem(title: "Clear Database", color: .destructive, action: { [weak actionSheet] in
                         actionSheet?.dismissAnimated()
                         let databasePath = context.account.basePath + "/postbox/db"
                         let _ = try? FileManager.default.removeItem(atPath: databasePath)
+                        resetFolders()
                         preconditionFailure()
                     }),
                     ]), ActionSheetItemGroup(items: [
@@ -537,11 +567,13 @@ private func debugControllerEntries(presentationData: PresentationData, loggingS
     entries.append(.logToConsole(presentationData.theme, loggingSettings.logToConsole))
     entries.append(.redactSensitiveData(presentationData.theme, loggingSettings.redactSensitiveData))
     
+    entries.append(.nicegramDebug(presentationData.theme, experimentalSettings.brr))
+    
     entries.append(.enableRaiseToSpeak(presentationData.theme, mediaInputSettings.enableRaiseToSpeak))
     entries.append(.keepChatNavigationStack(presentationData.theme, experimentalSettings.keepChatNavigationStack))
-    #if DEBUG
+
     entries.append(.skipReadHistory(presentationData.theme, experimentalSettings.skipReadHistory))
-    #endif
+
     entries.append(.crashOnSlowQueries(presentationData.theme, experimentalSettings.crashOnLongQueries))
     entries.append(.clearTips(presentationData.theme))
     if hasLegacyAppData {

@@ -31,6 +31,15 @@ public final class TelegramTimecode {
     }
 }
 
+public final class TelegramCode {
+    init () {}
+}
+
+public final class TelegramPre {
+    init () {}
+}
+
+
 public struct TelegramTextAttributes {
     public static let Code = "TelegramCode"
     public static let Pre = "TelegramPre"
