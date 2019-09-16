@@ -358,7 +358,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                 guard let context = arguments.context else {
                     return
                 }
-                if (newValue) {
+                if (!newValue) {
                     let controller = standardTextAlertController(theme: AlertControllerTheme(presentationTheme: theme), title: nil, text: "Debug is Unavailable!", actions: [TextAlertAction(type: .genericAction, title: "OK", action: {})])
                     
                     arguments.presentController(controller, nil)
