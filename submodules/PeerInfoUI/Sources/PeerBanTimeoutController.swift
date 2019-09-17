@@ -93,8 +93,8 @@ private final class PeerBanTimeoutActionSheetItemNode: ActionSheetItemNode {
         self.valueChanged = valueChanged
         
         self.pickerView = UIDatePicker()
-        self.pickerView.datePickerMode = .date
-        self.pickerView.date = Date(timeIntervalSince1970: Double(roundDateToDays(currentValue)))
+        self.pickerView.datePickerMode = .dateAndTime
+        self.pickerView.date = Date(timeIntervalSince1970: Double(currentValue))
         self.pickerView.locale = localeWithStrings(strings)
         self.pickerView.minimumDate = Date()
         self.pickerView.maximumDate = Date(timeIntervalSince1970: Double(Int32.max - 1))
@@ -118,6 +118,6 @@ private final class PeerBanTimeoutActionSheetItemNode: ActionSheetItemNode {
     }
     
     @objc private func datePickerUpdated() {
-        self.valueChanged(roundDateToDays(Int32(self.pickerView.date.timeIntervalSince1970)))
+        self.valueChanged(Int32(self.pickerView.date.timeIntervalSince1970))
     }
 }
