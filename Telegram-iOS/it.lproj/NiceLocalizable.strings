@@ -49,3 +49,6 @@
 "Folder.Create.Placeholder" = "Cartella...";
 "Folder.LimitExceeded" = "Spiacente, puoi creare solo 3 cartelle personalizzate.\nPotrai aggiungere nuove cartelle prossimamente.";
 "NiceFeatures.HideNumber" = "Nascondi il numero di telefono dalle impostazioni";
+
+/*NGWeb*/
+"NGWeb.Blocked" = "Non disponibile su Nicegram 😒";
