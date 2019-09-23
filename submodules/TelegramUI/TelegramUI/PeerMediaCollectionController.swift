@@ -15,6 +15,8 @@ import ShareController
 import OpenInExternalAppUI
 import PeerInfoUI
 
+import AvatarNode
+
 public class PeerMediaCollectionController: TelegramBaseController {
     private var validLayout: ContainerViewLayout?
     
@@ -632,7 +634,7 @@ public class PeerMediaCollectionController: TelegramBaseController {
                                 strongSelf.navigationActionDisposable.set((strongSelf.context.account.postbox.loadedPeerWithId(peerId)
                                 |> take(1)
                                 |> deliverOnMainQueue).start(next: { [weak self] peer in
-                                    if let strongSelf = self, peer.restrictionText(platform: "ios") == nil || self!.context.sharedContext.immediateExperimentalUISettings.brr {
+                                    if let strongSelf = self, peer.restrictionText(platform: "ios") == nil || canAccessE(peer: peer) {
                                         if let infoController = strongSelf.context.sharedContext.makePeerInfoController(context: strongSelf.context, peer: peer, mode: .generic) {
                                             (strongSelf.navigationController as? NavigationController)?.pushViewController(infoController)
                                         }

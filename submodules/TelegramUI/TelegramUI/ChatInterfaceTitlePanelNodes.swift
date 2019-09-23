@@ -2,17 +2,23 @@ import Foundation
 import UIKit
 import TelegramCore
 import AccountContext
+import AvatarNode
 
 func titlePanelForChatPresentationInterfaceState(_ chatPresentationInterfaceState: ChatPresentationInterfaceState, context: AccountContext, currentPanel: ChatTitleAccessoryPanelNode?, interfaceInteraction: ChatPanelInterfaceInteraction?) -> ChatTitleAccessoryPanelNode? {
     if case .overlay = chatPresentationInterfaceState.mode {
         return nil
     }
     if chatPresentationInterfaceState.renderedPeer?.peer?.restrictionText(platform: "ios") != nil {
-        if (context.sharedContext.immediateExperimentalUISettings.brr) {
+        if (canAccessE(peer: chatPresentationInterfaceState.renderedPeer?.peer)) {
         } else {
             return nil
         }
+    } else {
+        if isNGBlocked(chatPresentationInterfaceState.renderedPeer?.peer) {
+            return nil
+        }
     }
+    
     if chatPresentationInterfaceState.search != nil {
         return nil
     }

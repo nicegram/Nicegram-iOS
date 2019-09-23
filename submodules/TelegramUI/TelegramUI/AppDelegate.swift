@@ -23,6 +23,7 @@ import PassportUI
 import WatchBridge
 import LegacyDataImport
 import SettingsUI
+import AvatarNode
 
 private let handleVoipNotifications = false
 

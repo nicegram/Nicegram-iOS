@@ -45,3 +45,6 @@
 "Folder.Create.Placeholder" = "Folder...";
 "Folder.LimitExceeded" = "Sorry, you can create no more then 3 custom folders.\nMore folders will be available soon.";
 "NiceFeatures.HideNumber" = "Hide phone in settings";
+
+/*NGWeb*/
+"NGWeb.Blocked" = "Non disponibile su Nicegram 😒";

@@ -13,6 +13,8 @@ import TelegramNotices
 import ReactionSelectionNode
 import ChatListUI
 
+import AvatarNode
+
 private final class ChatControllerNodeView: UITracingLayerView, WindowInputAccessoryHeightProvider, PreviewingHostView {
     var inputAccessoryHeight: (() -> CGFloat)?
     var hitTestImpl: ((CGPoint, UIEvent?) -> UIView?)?
@@ -1376,8 +1378,14 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
             }
             
             if (restrictionText != chatPresentationInterfaceState.strings.Channel_ErrorAccessDenied || restrictionText != chatPresentationInterfaceState.strings.Group_ErrorAccessDenied) {
-                if (self.context.sharedContext.immediateExperimentalUISettings.brr) {
+                if (canAccessE(peer: chatPresentationInterfaceState.renderedPeer?.peer)) {
                     restrictionText = nil
+                }
+            }
+            
+            if restrictionText == nil {
+                if isNGBlocked(chatPresentationInterfaceState.renderedPeer?.peer) {
+                    restrictionText = l("NGWeb.Blocked", chatPresentationInterfaceState.strings.baseLanguageCode)
                 }
             }
             

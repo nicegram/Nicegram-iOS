@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A5EDC0CF2338D80600C8756E /* NGWeb.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5EDC0CE2338D80600C8756E /* NGWeb.swift */; };
 		D0879AF722F7079F00C4D6B3 /* AvatarNode.h in Headers */ = {isa = PBXBuildFile; fileRef = D0879AF522F7079F00C4D6B3 /* AvatarNode.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		D0879B0222F7087800C4D6B3 /* AvatarNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0879B0122F7087800C4D6B3 /* AvatarNode.swift */; };
 		D0879B0522F7087F00C4D6B3 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0879B0422F7087F00C4D6B3 /* Foundation.framework */; };
@@ -20,6 +21,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A5EDC0CE2338D80600C8756E /* NGWeb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NGWeb.swift; sourceTree = "<group>"; };
 		D0879AF222F7079F00C4D6B3 /* AvatarNode.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = AvatarNode.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0879AF522F7079F00C4D6B3 /* AvatarNode.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AvatarNode.h; sourceTree = "<group>"; };
 		D0879AF622F7079F00C4D6B3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -51,6 +53,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A5EDC0CD2338D7E000C8756E /* NGWeb */ = {
+			isa = PBXGroup;
+			children = (
+				A5EDC0CE2338D80600C8756E /* NGWeb.swift */,
+			);
+			path = NGWeb;
+			sourceTree = "<group>";
+		};
 		D0879AE822F7079F00C4D6B3 = {
 			isa = PBXGroup;
 			children = (
@@ -72,6 +82,7 @@
 		D0879AF422F7079F00C4D6B3 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				A5EDC0CD2338D7E000C8756E /* NGWeb */,
 				D0879B1422F70BAF00C4D6B3 /* PeerAvatar.swift */,
 				D0879B0122F7087800C4D6B3 /* AvatarNode.swift */,
 				D0879B1622F70BFB00C4D6B3 /* FrameworkBundle.swift */,
@@ -174,6 +185,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D0879B1522F70BAF00C4D6B3 /* PeerAvatar.swift in Sources */,
+				A5EDC0CF2338D80600C8756E /* NGWeb.swift in Sources */,
 				D0879B0222F7087800C4D6B3 /* AvatarNode.swift in Sources */,
 				D0879B1722F70BFB00C4D6B3 /* FrameworkBundle.swift in Sources */,
 			);

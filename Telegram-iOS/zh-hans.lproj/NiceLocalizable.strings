@@ -52,3 +52,6 @@
 "Folder.Create.Placeholder" = "分组...";
 "Folder.LimitExceeded" = "抱歉,您最多只能创建3个自定义分组.\n即将推出可创建更多文件夹功能.";
 "NiceFeatures.HideNumber" = "设置中隐藏手机号码";
+
+/*NGWeb*/
+"NGWeb.Blocked" = "Nicegram中不可用 😒";
