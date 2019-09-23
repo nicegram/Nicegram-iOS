@@ -15,6 +15,7 @@ import TelegramUIPreferences
 import ItemListUI
 import OverlayStatusController
 import AccountContext
+import ChatListUI
 
 @objc private final class DebugControllerMailComposeDelegate: NSObject, MFMailComposeViewControllerDelegate {
     public func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
@@ -71,7 +72,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     case knockoutWallpaper(PresentationTheme, Bool)
     case gradientBubbles(PresentationTheme, Bool)
     case versionInfo(PresentationTheme)
-    case nicegramDebug(PresentationTheme, Bool)
+    case nicegramDebug(PresentationTheme, String)
     
     var section: ItemListSectionId {
         switch self {
@@ -341,29 +342,10 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                 }
                 arguments.pushController(debugAccountsController(context: context, accountManager: arguments.sharedContext.accountManager))
             })
-        case let .nicegramDebug(theme, value):
-            return ItemListSwitchItem(theme: theme, title: "Nicegram Debug", value: value, sectionId: self.section, style: .blocks, updated: { value in
-                var newValue = value
-                let locale = NSLocale.current.languageCode
-                
-                if locale != "ru" {
-                    newValue = false
-                }
-                
-                let _ = updateExperimentalUISettingsInteractively(accountManager: arguments.sharedContext.accountManager, { settings in
-                    var settings = settings
-                    settings.brr = newValue
-                    return settings
-                }).start()
-                guard let context = arguments.context else {
-                    return
-                }
-                if (!newValue) {
-                    let controller = standardTextAlertController(theme: AlertControllerTheme(presentationTheme: theme), title: nil, text: "Debug is Unavailable!", actions: [TextAlertAction(type: .genericAction, title: "OK", action: {})])
-                    
-                    arguments.presentController(controller, nil)
-                }
-                
+        case let .nicegramDebug(theme, lang):
+            return ItemListActionItem(theme: theme, title: "Nicegram Debug", kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                let controller = standardTextAlertController(theme: AlertControllerTheme(presentationTheme: theme), title: nil, text: l("NGWeb.Blocked", lang), actions: [TextAlertAction(type: .genericAction, title: "OK", action: {})])
+                arguments.presentController(controller, nil)
             })
         case let .logToFile(theme, value):
             return ItemListSwitchItem(theme: theme, title: "Log to File", value: value, sectionId: self.section, style: .blocks, updated: { value in
@@ -567,7 +549,7 @@ private func debugControllerEntries(presentationData: PresentationData, loggingS
     entries.append(.logToConsole(presentationData.theme, loggingSettings.logToConsole))
     entries.append(.redactSensitiveData(presentationData.theme, loggingSettings.redactSensitiveData))
     
-    entries.append(.nicegramDebug(presentationData.theme, experimentalSettings.brr))
+    entries.append(.nicegramDebug(presentationData.theme, presentationData.strings.baseLanguageCode))
     
     entries.append(.enableRaiseToSpeak(presentationData.theme, mediaInputSettings.enableRaiseToSpeak))
     entries.append(.keepChatNavigationStack(presentationData.theme, experimentalSettings.keepChatNavigationStack))
