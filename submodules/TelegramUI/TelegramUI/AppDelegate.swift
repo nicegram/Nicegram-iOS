@@ -985,7 +985,9 @@ final class SharedApplicationContext {
             if let context = context {
                 network = context.context.account.network
                 syncFolders(context.context.account.postbox)
-                updateNGInfo(userId: context.context.account.peerId.toInt64())
+                Queue().async {
+                    updateNGInfo(userId: context.context.account.peerId.toInt64())
+                }
             }
             
             Logger.shared.log("App \(self.episodeId)", "received context \(String(describing: context)) account \(String(describing: context?.context.account.id)) network \(String(describing: network))")

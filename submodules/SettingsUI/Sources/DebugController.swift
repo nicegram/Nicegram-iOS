@@ -52,6 +52,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     case sendLogs(PresentationTheme)
     case sendOneLog(PresentationTheme)
     case sendNotificationLogs(PresentationTheme)
+    case sendApiLogs(PresentationTheme)
     case sendCriticalLogs(PresentationTheme)
     case accounts(PresentationTheme)
     case logToFile(PresentationTheme, Bool)
@@ -76,7 +77,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     
     var section: ItemListSectionId {
         switch self {
-        case .sendLogs, .sendOneLog, .sendNotificationLogs, .sendCriticalLogs:
+        case .sendLogs, .sendOneLog, .sendNotificationLogs, .sendApiLogs, .sendCriticalLogs:
             return DebugControllerSection.logs.rawValue
         case .accounts:
             return DebugControllerSection.logs.rawValue
@@ -99,48 +100,50 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return 1
         case .sendNotificationLogs:
             return 2
-        case .sendCriticalLogs:
+        case .sendApiLogs:
             return 3
+        case .sendCriticalLogs:
+            return 3 + 1
         case .accounts:
-            return 4
+            return 4 + 1
         case .logToFile:
-            return 5
+            return 5 + 1
         case .logToConsole:
-            return 6
+            return 6 + 1
         case .redactSensitiveData:
-            return 7
+            return 7 + 1
         case .nicegramDebug:
-            return 8
-        case .enableRaiseToSpeak:
             return 8 + 1
+        case .enableRaiseToSpeak:
+            return 8 + 1 + 1
         case .keepChatNavigationStack:
-            return 9 + 1
+            return 9 + 1 + 1
         case .skipReadHistory:
-            return 10 + 1
+            return 10 + 1 + 1
         case .crashOnSlowQueries:
-            return 11 + 1
+            return 11 + 1 + 1
         case .clearTips:
-            return 12 + 1
+            return 12 + 1 + 1
         case .reimport:
-            return 13 + 1
+            return 13 + 1 + 1
         case .resetData:
-            return 14 + 1
+            return 14 + 1 + 1
         case .resetDatabase:
-            return 15 + 1
+            return 15 + 1 + 1
         case .resetHoles:
-            return 16 + 1
+            return 16 + 1 + 1
         case .resetBiometricsData:
-            return 17 + 1
+            return 17 + 1 + 1
         case .optimizeDatabase:
-            return 18 + 1
+            return 18 + 1 + 1
         case .photoPreview:
-            return 19 + 1
+            return 19 + 1 + 1
         case .knockoutWallpaper:
-            return 20 + 1
+            return 20 + 1 + 1
         case .gradientBubbles:
-            return 21 + 1
+            return 21 + 1 + 1
         case .versionInfo:
-            return 22 + 1
+            return 22 + 1 + 1
         }
     }
     
@@ -264,6 +267,29 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return ItemListDisclosureItem(theme: theme, title: "Send Folder Logs", label: "", sectionId: self.section, style: .blocks, action: {
                 fLog("FOLDERS: \(SimplyNiceFolders().folders)")
                 let _ = (Logger(basePath: arguments.sharedContext.basePath + "/niceFolderLogs").collectLogs()
+                    |> deliverOnMainQueue).start(next: { logs in
+                        guard let context = arguments.context else {
+                            return
+                        }
+                        let controller = context.sharedContext.makePeerSelectionController(PeerSelectionControllerParams(context: context, filter: [.onlyWriteable, .excludeDisabled]))
+                        controller.peerSelected = { [weak controller] peerId in
+                            if let strongController = controller {
+                                strongController.dismiss()
+                                
+                                let messages = logs.map { (name, path) -> EnqueueMessage in
+                                    let id = arc4random64()
+                                    let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: LocalFileReferenceMediaResource(localFilePath: path, randomId: id), previewRepresentations: [], immediateThumbnailData: nil, mimeType: "application/text", size: nil, attributes: [.FileName(fileName: name)])
+                                    return .message(text: "", attributes: [], mediaReference: .standalone(media: file), replyToMessageId: nil, localGroupingKey: nil)
+                                }
+                                let _ = enqueueMessages(account: context.account, peerId: peerId, messages: messages).start()
+                            }
+                        }
+                        arguments.presentController(controller, ViewControllerPresentationArguments(presentationAnimation: ViewControllerPresentationAnimation.modalSheet))
+                    })
+            })
+        case let .sendApiLogs(theme):
+            return ItemListDisclosureItem(theme: theme, title: "Send Nicegram API Logs", label: "", sectionId: self.section, style: .blocks, action: {
+                let _ = (Logger(basePath: arguments.sharedContext.basePath + "/ngApiLogs").collectLogs()
                     |> deliverOnMainQueue).start(next: { logs in
                         guard let context = arguments.context else {
                             return
@@ -542,6 +568,7 @@ private func debugControllerEntries(presentationData: PresentationData, loggingS
     entries.append(.sendLogs(presentationData.theme))
     entries.append(.sendOneLog(presentationData.theme))
     entries.append(.sendNotificationLogs(presentationData.theme))
+    entries.append(.sendApiLogs(presentationData.theme))
     entries.append(.sendCriticalLogs(presentationData.theme))
     entries.append(.accounts(presentationData.theme))
     
@@ -553,9 +580,9 @@ private func debugControllerEntries(presentationData: PresentationData, loggingS
     
     entries.append(.enableRaiseToSpeak(presentationData.theme, mediaInputSettings.enableRaiseToSpeak))
     entries.append(.keepChatNavigationStack(presentationData.theme, experimentalSettings.keepChatNavigationStack))
-
+    
     entries.append(.skipReadHistory(presentationData.theme, experimentalSettings.skipReadHistory))
-
+    
     entries.append(.crashOnSlowQueries(presentationData.theme, experimentalSettings.crashOnLongQueries))
     entries.append(.clearTips(presentationData.theme))
     if hasLegacyAppData {
@@ -568,7 +595,7 @@ private func debugControllerEntries(presentationData: PresentationData, loggingS
     entries.append(.photoPreview(presentationData.theme, experimentalSettings.chatListPhotos))
     entries.append(.knockoutWallpaper(presentationData.theme, experimentalSettings.knockoutWallpaper))
     entries.append(.gradientBubbles(presentationData.theme, experimentalSettings.gradientBubbles))
-
+    
     entries.append(.versionInfo(presentationData.theme))
     
     return entries
