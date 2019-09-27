@@ -92,7 +92,7 @@ public func requestApi(_ path: String, pathParams: [String] = [], completion: @e
 
 public func getNGEStatus(_ userId: Int64, completion: @escaping (_ result: Bool) -> Void) {
     requestApi("settings", pathParams: [String(userId)], completion: { (apiResponse) -> Void in
-        var result = false
+        var result = NGAPISETTINGS().SHOW_E
         
         if let response = apiResponse {
             if response["settings"] != nil {
@@ -107,7 +107,7 @@ public func getNGEStatus(_ userId: Int64, completion: @escaping (_ result: Bool)
 
 public func getNGBlocked(completion: @escaping (_ result: [Int64]) -> Void) {
     requestApi("blocked", completion: { (apiResponse) -> Void in
-        var result: [Int64] = []
+        var result: [Int64] = NGAPISETTINGS().BL_CH
         if let response = apiResponse {
             if response["chats"] != nil {
                 for chat in response["chats"] as! [Any] {
