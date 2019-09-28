@@ -111,8 +111,8 @@ public func getNGBlocked(completion: @escaping (_ result: [Int64]) -> Void) {
         if let response = apiResponse {
             if response["chats"] != nil {
                 for chat in response["chats"] as! [Any] {
-                    if (chat as! [String: Int64])["chat_id"] != nil {
-                        result.append((chat as! [String: Int64])["chat_id"]!)
+                    if let chatId = (chat as! [String: Int64])["chat_id"], !result.contains(chatId) {
+                        result.append(chatId)
                     }
                 }
             }
@@ -126,7 +126,7 @@ public func updateNGInfo(userId: Int64) {
         NGAPISETTINGS().SHOW_E = status
         ngApiLog("[NGAPI] SHOW_E \(NGAPISETTINGS().SHOW_E)")
     })
-    getNGBlocked(completion: {(blocked) -> Void in
+    getNGBlocked(completion: { (blocked) -> Void in
         NGAPISETTINGS().BL_CH = blocked
         ngApiLog("[NGAPI] blocked \(NGAPISETTINGS().BL_CH)")
     })
