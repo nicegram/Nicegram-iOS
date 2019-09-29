@@ -107,11 +107,11 @@ public func getNGEStatus(_ userId: Int64, completion: @escaping (_ result: Bool)
 
 public func getNGBlocked(completion: @escaping (_ result: [Int64]) -> Void) {
     requestApi("blocked", completion: { (apiResponse) -> Void in
-        var result: [Int64] = NGAPISETTINGS().BL_CH
+        var result: [Int64] = []
         if let response = apiResponse {
             if response["chats"] != nil {
                 for chat in response["chats"] as! [Any] {
-                    if let chatId = (chat as! [String: Int64])["chat_id"], !result.contains(chatId) {
+                    if let chatId = (chat as! [String: Int64])["chat_id"] {
                         result.append(chatId)
                     }
                 }
