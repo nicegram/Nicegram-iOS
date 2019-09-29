@@ -7230,7 +7230,10 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                     let sourceRect = CGRect(origin: CGPoint(x: floor(targetRect.midX), y: floor(targetRect.midY)), size: CGSize(width: 1.0, height: 1.0))
                     if let parsedUrl = parsedUrlValue {
                         if parsedUrl.scheme == "http" || parsedUrl.scheme == "https" {
-                            if #available(iOSApplicationExtension 9.0, iOS 9.0, *) {
+                            if SimplyNiceSettings().useBrowser {
+                                let browserUrl = getBrowserUrl(parsedUrl.absoluteString, browser: SimplyNiceSettings().browser)
+                                context.sharedContext.applicationBindings.openUrl(browserUrl)
+                            } else if #available(iOSApplicationExtension 9.0, iOS 9.0, *) {
                                 let controller = SFSafariViewController(url: parsedUrl)
                                 if #available(iOSApplicationExtension 10.0, iOS 10.0, *) {
                                     controller.preferredBarTintColor = self.presentationData.theme.rootController.navigationBar.backgroundColor

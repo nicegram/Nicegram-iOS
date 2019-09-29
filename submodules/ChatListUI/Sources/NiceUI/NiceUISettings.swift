@@ -155,6 +155,8 @@ public func setDefaults() {
     UD?.register(defaults: ["chatFilters": [1 << 6, 1 << 5]])
     UD?.register(defaults: ["showTabNames": true])
     UD?.register(defaults: ["hideNumber": false])
+    UD?.register(defaults: ["useBrowser": false])
+    UD?.register(defaults: ["browser": 0])
 }
 
 public class SimplyNiceSettings {
@@ -208,6 +210,24 @@ public class SimplyNiceSettings {
         }
         set {
             UD?.set(newValue, forKey: "showTabNames")
+        }
+    }
+    
+    public var useBrowser: Bool {
+        get {
+            return UD?.bool(forKey: "useBrowser") ?? false
+        }
+        set {
+            UD?.set(newValue, forKey: "useBrowser")
+        }
+    }
+    
+    public var browser: Int32 {
+        get {
+            return Int32(UD?.integer(forKey: "browser") ?? 0)
+        }
+        set {
+            UD?.set(newValue, forKey: "browser")
         }
     }
 }

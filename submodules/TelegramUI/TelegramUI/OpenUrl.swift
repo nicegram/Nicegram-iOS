@@ -14,6 +14,7 @@ import AccountContext
 import UrlEscaping
 import PassportUI
 import UrlHandling
+import ChatListUI
 
 public struct ParsedSecureIdUrl {
     public let peerId: PeerId
@@ -608,7 +609,10 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
             if parsedUrl.host == "t.me" || parsedUrl.host == "telegram.me" {
                 handleInternalUrl(parsedUrl.absoluteString)
             } else {
-                if #available(iOSApplicationExtension 9.0, iOS 9.0, *) {
+                if SimplyNiceSettings().useBrowser {
+                    let browserUrl = getBrowserUrl(parsedUrl.absoluteString, browser: SimplyNiceSettings().browser)
+                    context.sharedContext.applicationBindings.openUrl(browserUrl)
+                } else if #available(iOSApplicationExtension 9.0, iOS 9.0, *) {
                     if let window = navigationController?.view.window {
                         let controller = SFSafariViewController(url: parsedUrl)
                         if #available(iOSApplicationExtension 10.0, iOS 10.0, *) {
