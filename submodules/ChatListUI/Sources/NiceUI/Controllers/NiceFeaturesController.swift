@@ -95,6 +95,7 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
     case browserChrome(PresentationTheme, String, Bool, Bool)
     case browserYandex(PresentationTheme, String, Bool, Bool)
     case browserDuckDuckGo(PresentationTheme, String, Bool, Bool)
+    case browserAlook(PresentationTheme, String, Bool, Bool)
     case browserFirefox(PresentationTheme, String, Bool, Bool)
     case browserFirefoxFocus(PresentationTheme, String, Bool, Bool)
     case browserOperaTouch(PresentationTheme, String, Bool, Bool)
@@ -116,7 +117,7 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return niceFeaturesControllerSection.filters.rawValue
         case .chatScreenHeader:
             return niceFeaturesControllerSection.chatScreen.rawValue
-        case .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge:
+        case .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge:
             return niceFeaturesControllerSection.browsers.rawValue
         case .otherHeader, .hideNumber:
             return niceFeaturesControllerSection.other.rawValue
@@ -166,20 +167,22 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return .index(26)
         case .browserDuckDuckGo:
             return .index(27)
-        case .browserFirefox:
+        case .browserAlook:
             return .index(28)
-        case .browserFirefoxFocus:
+        case .browserFirefox:
             return .index(29)
-        case .browserOperaTouch:
+        case .browserFirefoxFocus:
             return .index(30)
-        case .browserOperaMini:
+        case .browserOperaTouch:
             return .index(31)
-        case .browserEdge:
+        case .browserOperaMini:
             return .index(32)
-        case .otherHeader:
+        case .browserEdge:
             return .index(33)
-        case .hideNumber:
+        case .otherHeader:
             return .index(34)
+        case .hideNumber:
+            return .index(35)
         }
     }
     
@@ -311,6 +314,12 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             }
         case let .browserDuckDuckGo(lhsTheme, lhsText, lhsTick, lhsEnabled):
             if case let .browserDuckDuckGo(rhsTheme, rhsText, rhsTick, rhsEnabled) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsTick == rhsTick, lhsEnabled == rhsEnabled {
+                return true
+            } else {
+                return false
+            }
+        case let .browserAlook(lhsTheme, lhsText, lhsTick, lhsEnabled):
+            if case let .browserAlook(rhsTheme, rhsText, rhsTick, rhsEnabled) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsTick == rhsTick, lhsEnabled == rhsEnabled {
                 return true
             } else {
                 return false
@@ -509,44 +518,51 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             default:
                 return true
             }
+        case .browserAlook:
+            switch rhs {
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserAlook:
+                return false
+            default:
+                return true
+            }
         case .browserFirefox:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserFirefox:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserAlook, .browserFirefox:
                 return false
             default:
                 return true
             }
         case .browserFirefoxFocus:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserFirefox, .browserFirefoxFocus:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserAlook, .browserFirefox, .browserFirefoxFocus:
                 return false
             default:
                 return true
             }
         case .browserOperaTouch:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch:
                 return false
             default:
                 return true
             }
         case .browserOperaMini:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini:
                 return false
             default:
                 return true
             }
         case .browserEdge:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge:
                 return false
             default:
                 return true
             }
         case .otherHeader:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge, .otherHeader:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge, .otherHeader:
                 return false
             default:
                 return true
@@ -617,6 +633,10 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
         case let .browserDuckDuckGo(theme, text, value, _):
             return ItemListCheckboxItem(theme: theme, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.customizeBrowser(.DuckDuckGo)
+            })
+        case let .browserAlook(theme, text, value, _):
+            return ItemListCheckboxItem(theme: theme, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                arguments.customizeBrowser(.Alook)
             })
         case let .browserFirefox(theme, text, value, _):
             return ItemListCheckboxItem(theme: theme, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
@@ -689,6 +709,7 @@ private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls
     entries.append(.browserChrome(presentationData.theme, "Chrome", simplyNiceSettings.browser == Browser.Chrome.rawValue, true))
     entries.append(.browserYandex(presentationData.theme, "Yandex", simplyNiceSettings.browser == Browser.Yandex.rawValue, true))
     entries.append(.browserDuckDuckGo(presentationData.theme, "DuckDuckGo", simplyNiceSettings.browser == Browser.DuckDuckGo.rawValue, true))
+    entries.append(.browserAlook(presentationData.theme, "Alook", simplyNiceSettings.browser == Browser.Alook.rawValue, true))
     entries.append(.browserFirefox(presentationData.theme, "Firefox", simplyNiceSettings.browser == Browser.Firefox.rawValue, true))
     entries.append(.browserFirefoxFocus(presentationData.theme, "Firefox Focus", simplyNiceSettings.browser == Browser.FirefoxFocus.rawValue, true))
     entries.append(.browserOperaTouch(presentationData.theme, "Opera Touch", simplyNiceSettings.browser == Browser.OperaTouch.rawValue, true))

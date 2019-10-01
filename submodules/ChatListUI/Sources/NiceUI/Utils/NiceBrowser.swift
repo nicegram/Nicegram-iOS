@@ -8,19 +8,20 @@
 
 import Foundation
 
-public enum Browser:Int32 {
-    case Safari
-    case Chrome
-    case Yandex
-    case DuckDuckGo
-    case Firefox
-    case FirefoxFocus
-    case OperaTouch
-    case OperaMini
-    case Edge
+public enum Browser:String {
+    case Safari = "safari"
+    case Chrome = "chrome"
+    case Yandex = "yandex"
+    case DuckDuckGo = "duckduckgo"
+    case Alook = "alook"
+    case Firefox = "firefox"
+    case FirefoxFocus = "firefoxfocus"
+    case OperaTouch = "operatouch"
+    case OperaMini = "operamini"
+    case Edge = "edge"
 }
 
-public func getBrowserUrl(_ url: String, browser: Int32) -> String{
+public func getBrowserUrl(_ url: String, browser: String) -> String {
     let browserCls = Browser(rawValue: browser) ?? Browser.Safari
     switch browserCls {
         case .Safari:
@@ -31,6 +32,8 @@ public func getBrowserUrl(_ url: String, browser: Int32) -> String{
             return "yandexbrowser-open-url://" + url.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)!
         case .DuckDuckGo:
             return "ddgQuickLink://" + url
+        case .Alook:
+            return "Alook://" + url
         case .Firefox:
             return "firefox://open-url?url=" + url.addingPercentEncoding(withAllowedCharacters: .urlQueryValueAllowed)!
         case .FirefoxFocus:

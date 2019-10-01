@@ -156,7 +156,7 @@ public func setDefaults() {
     UD?.register(defaults: ["showTabNames": true])
     UD?.register(defaults: ["hideNumber": false])
     UD?.register(defaults: ["useBrowser": false])
-    UD?.register(defaults: ["browser": 0])
+    UD?.register(defaults: ["browser": "safari"])
 }
 
 public class SimplyNiceSettings {
@@ -222,9 +222,9 @@ public class SimplyNiceSettings {
         }
     }
     
-    public var browser: Int32 {
+    public var browser: String {
         get {
-            return Int32(UD?.integer(forKey: "browser") ?? 0)
+            return String(UD?.string(forKey: "browser") ?? "safari")
         }
         set {
             UD?.set(newValue, forKey: "browser")
