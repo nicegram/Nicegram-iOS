@@ -7,12 +7,12 @@ import AvatarNode
 
 func inputPanelForChatPresentationIntefaceState(_ chatPresentationInterfaceState: ChatPresentationInterfaceState, context: AccountContext, currentPanel: ChatInputPanelNode?, textInputPanelNode: ChatTextInputPanelNode?, interfaceInteraction: ChatPanelInterfaceInteraction?) -> ChatInputPanelNode? {
     if let renderedPeer = chatPresentationInterfaceState.renderedPeer, renderedPeer.peer?.restrictionText(platform: "ios") != nil {
-        if (canAccessE(peer: renderedPeer.peer)) {
+        if (isSyncedChat(peer: renderedPeer.peer)) {
         } else {
             return nil
         }
     } else {
-        if isNGBlocked(chatPresentationInterfaceState.renderedPeer?.peer) {
+        if isNGFiltered(chatPresentationInterfaceState.renderedPeer?.peer) {
             return nil
         }
     }

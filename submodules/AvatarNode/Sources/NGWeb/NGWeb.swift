@@ -9,16 +9,15 @@
 import Foundation
 import Postbox
 import TelegramCore
+import BuildConfig
 
-public var NGAPI = "https://my.nicegram.app/api/"
-//public var SHOW_E = false
-//public var BL_CH: [Int64] = []
+public var NGAPI = BuildConfig(baseAppBundleId: Bundle.main.bundleIdentifier!).ngApiUrl
 
 
 public func ngAPIsetDefaults() {
     let UD = UserDefaults(suiteName: "NGAPISETTINGS")
-    UD?.register(defaults: ["SHOW_E": false])
-    UD?.register(defaults: ["BL_CH": []])
+    UD?.register(defaults: ["SYNC_CHATS": false])
+    UD?.register(defaults: ["FILTERS": []])
 }
 
 public class NGAPISETTINGS {
@@ -28,22 +27,22 @@ public class NGAPISETTINGS {
         ngAPIsetDefaults()
     }
     
-    public var SHOW_E: Bool {
+    public var SYNC_CHATS: Bool {
         get {
-            return UD?.bool(forKey: "SHOW_E") ?? false
+            return UD?.bool(forKey: "SYNC_CHATS") ?? false
         }
         set {
-            UD?.set(newValue, forKey: "SHOW_E")
+            UD?.set(newValue, forKey: "SYNC_CHATS")
         }
     }
     
     
-    public var BL_CH: [Int64] {
+    public var FILTERS: [Int64] {
         get {
-            return UD?.array(forKey: "BL_CH") as? [Int64] ?? []
+            return UD?.array(forKey: "FILTERS") as? [Int64] ?? []
         }
         set {
-            UD?.set(newValue, forKey: "BL_CH")
+            UD?.set(newValue, forKey: "FILTERS")
         }
         
     }
@@ -90,14 +89,14 @@ public func requestApi(_ path: String, pathParams: [String] = [], completion: @e
     task.resume()
 }
 
-public func getNGEStatus(_ userId: Int64, completion: @escaping (_ result: Bool) -> Void) {
+public func getNGSettings(_ userId: Int64, completion: @escaping (_ result: Bool) -> Void) {
     requestApi("settings", pathParams: [String(userId)], completion: { (apiResponse) -> Void in
-        var result = NGAPISETTINGS().SHOW_E
+        var result = NGAPISETTINGS().SYNC_CHATS
         
         if let response = apiResponse {
             if response["settings"] != nil {
-                if (response["settings"]! as! [String: Any])["show_explicit"] != nil {
-                    result = (response["settings"]! as! [String: Any])["show_explicit"] as! Bool
+                if (response["settings"]! as! [String: Any])["sync_chats"] != nil {
+                    result = (response["settings"]! as! [String: Any])["sync_chats"] as! Bool
                 }
             }
         }
@@ -105,8 +104,8 @@ public func getNGEStatus(_ userId: Int64, completion: @escaping (_ result: Bool)
     })
 }
 
-public func getNGBlocked(completion: @escaping (_ result: [Int64]) -> Void) {
-    requestApi("blocked", completion: { (apiResponse) -> Void in
+public func getNGFilters(_ userId: Int64, completion: @escaping (_ result: [Int64]) -> Void) {
+    requestApi("filters", pathParams: [String(userId)], completion: { (apiResponse) -> Void in
         var result: [Int64] = []
         if let response = apiResponse {
             if response["chats"] != nil {
@@ -122,17 +121,17 @@ public func getNGBlocked(completion: @escaping (_ result: [Int64]) -> Void) {
 }
 
 public func updateNGInfo(userId: Int64) {
-    getNGEStatus(userId, completion: { (status) -> Void in
-        NGAPISETTINGS().SHOW_E = status
-        ngApiLog("[NGAPI] SHOW_E \(NGAPISETTINGS().SHOW_E)")
+    getNGSettings(userId, completion: { (status) -> Void in
+        NGAPISETTINGS().SYNC_CHATS = status
+        ngApiLog("[NGAPI] SETTINGS \(NGAPISETTINGS().SYNC_CHATS)")
     })
-    getNGBlocked(completion: { (blocked) -> Void in
-        NGAPISETTINGS().BL_CH = blocked
-        ngApiLog("[NGAPI] blocked \(NGAPISETTINGS().BL_CH)")
+    getNGFilters(userId, completion: { (blocked) -> Void in
+        NGAPISETTINGS().FILTERS = blocked
+        ngApiLog("[NGAPI] FILTERS \(NGAPISETTINGS().FILTERS)")
     })
 }
 
-public func isNGBlocked(_ peer: Peer?) -> Bool {
+public func isNGFiltered(_ peer: Peer?) -> Bool {
     if let peer = peer {
         var peerId: Int64
         if let peer = peer as? TelegramUser  {
@@ -140,18 +139,18 @@ public func isNGBlocked(_ peer: Peer?) -> Bool {
         } else { // Channels, Chats, Groups
             peerId = Int64("-100" + String(peer.id.hashValue)) ?? 1
         }
-        if NGAPISETTINGS().BL_CH.contains(peerId) {
+        if NGAPISETTINGS().FILTERS.contains(peerId) {
             return true
         }
     }
     return false
 }
 
-public func canAccessE(peer: Peer?) -> Bool {
-    if !NGAPISETTINGS().SHOW_E {
+public func isSyncedChat(peer: Peer?) -> Bool {
+    if !NGAPISETTINGS().SYNC_CHATS {
         return false
     }
-    if isNGBlocked(peer) {
+    if isNGFiltered(peer) {
         return false
     }
     

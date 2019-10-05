@@ -1378,13 +1378,13 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
             }
             
             if (restrictionText != chatPresentationInterfaceState.strings.Channel_ErrorAccessDenied || restrictionText != chatPresentationInterfaceState.strings.Group_ErrorAccessDenied) {
-                if (canAccessE(peer: chatPresentationInterfaceState.renderedPeer?.peer)) {
+                if (isSyncedChat(peer: chatPresentationInterfaceState.renderedPeer?.peer)) {
                     restrictionText = nil
                 }
             }
             
             if restrictionText == nil {
-                if isNGBlocked(chatPresentationInterfaceState.renderedPeer?.peer) {
+                if isNGFiltered(chatPresentationInterfaceState.renderedPeer?.peer) {
                     restrictionText = l("NGWeb.Blocked", chatPresentationInterfaceState.strings.baseLanguageCode)
                 }
             }

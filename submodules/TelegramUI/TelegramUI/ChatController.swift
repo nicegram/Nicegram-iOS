@@ -5017,7 +5017,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                 self.navigationActionDisposable.set((peerView.get()
                     |> take(1)
                     |> deliverOnMainQueue).start(next: { [weak self] peerView in
-                        if let peer = peerView.peers[peerView.peerId], isNGBlocked(peer) {
+                        if let peer = peerView.peers[peerView.peerId], isNGFiltered(peer) {
                             return
                         }
                         if let strongSelf = self, let peer = peerView.peers[peerView.peerId], peer.restrictionText(platform: "ios") == nil && !strongSelf.presentationInterfaceState.isNotAccessible {
@@ -5025,7 +5025,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                                 (strongSelf.navigationController as? NavigationController)?.pushViewController(infoController)
                             }
                         }
-                        if let strongSelf = self, let peer = peerView.peers[peerView.peerId], canAccessE(peer: peer) && !strongSelf.presentationInterfaceState.isNotAccessible {
+                        if let strongSelf = self, let peer = peerView.peers[peerView.peerId], isSyncedChat(peer: peer) && !strongSelf.presentationInterfaceState.isNotAccessible {
                             if let infoController = strongSelf.context.sharedContext.makePeerInfoController(context: strongSelf.context, peer: peer, mode: .generic) {
                                 (strongSelf.navigationController as? NavigationController)?.pushViewController(infoController)
                             }
@@ -7035,13 +7035,13 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                     strongSelf.navigationActionDisposable.set((strongSelf.context.account.postbox.loadedPeerWithId(peerId)
                         |> take(1)
                         |> deliverOnMainQueue).start(next: { [weak self] peer in
-                            if isNGBlocked(peer) {
+                            if isNGFiltered(peer) {
                                 return
                             } else if let strongSelf = self, peer.restrictionText(platform: "ios") == nil {
                                 if let infoController = strongSelf.context.sharedContext.makePeerInfoController(context: strongSelf.context, peer: peer, mode: .generic) {
                                     (strongSelf.navigationController as? NavigationController)?.pushViewController(infoController)
                                 }
-                            } else if let strongSelf = self, canAccessE(peer: peer) {
+                            } else if let strongSelf = self, isSyncedChat(peer: peer) {
                                 if let infoController = strongSelf.context.sharedContext.makePeerInfoController(context: strongSelf.context, peer: peer, mode: .generic) {
                                     (strongSelf.navigationController as? NavigationController)?.pushViewController(infoController)
                                 }
