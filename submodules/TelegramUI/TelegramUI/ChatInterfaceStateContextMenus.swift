@@ -658,7 +658,7 @@ func contextMenuForChatPresentationIntefaceState(chatPresentationInterfaceState:
         
         if data.messageActions.options.contains(.forward) {
             actions.append(.action(ContextMenuActionItem(text: l("Chat.ForwardAsCopy", chatPresentationInterfaceState.strings.baseLanguageCode), icon: { theme in
-                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionCopyForward"), color: theme.actionSheet.primaryTextColor)
+                return generateTintedImage(image: UIImage(bundleImageName: "NiceContextMenu/CopyForward"), color: theme.actionSheet.primaryTextColor)
             }, action: { _, f in
                 interfaceInteraction.copyForwardMessages(selectAll ? messages : [message])
                 f(.dismissWithoutContent)
@@ -672,7 +672,7 @@ func contextMenuForChatPresentationIntefaceState(chatPresentationInterfaceState:
             })))
             
             actions.append(.action(ContextMenuActionItem(text: l("Chat.SaveToCloud", chatPresentationInterfaceState.strings.baseLanguageCode), icon: { theme in
-                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/FileCloudFetch"), color: theme.actionSheet.primaryTextColor)
+                return generateTintedImage(image: UIImage(bundleImageName: "NiceContextMenu/SaveToCloud"), color: theme.actionSheet.primaryTextColor)
             }, action: { _, f in
                 interfaceInteraction.cloudMessages(selectAll ? messages : [message])
                 f(.dismissWithoutContent)

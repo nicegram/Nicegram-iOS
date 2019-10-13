@@ -65,6 +65,29 @@ public extension Peer {
         }
     }
     
+    func restrictionReason(platform: String) -> String? {
+        var restrictionInfo: PeerAccessRestrictionInfo?
+        switch self {
+        case let user as TelegramUser:
+            restrictionInfo = user.restrictionInfo
+        case let channel as TelegramChannel:
+            restrictionInfo = channel.restrictionInfo
+        default:
+            break
+        }
+        
+        if let restrictionInfo = restrictionInfo {
+            for rule in restrictionInfo.rules {
+                if rule.platform == "all" || rule.platform == platform {
+                    return rule.reason
+                }
+            }
+            return nil
+        } else {
+            return nil
+        }
+    }
+    
     var addressName: String? {
         switch self {
         case let user as TelegramUser:

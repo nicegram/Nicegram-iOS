@@ -8,6 +8,7 @@
 "ChatFilter.Unread" = "Unread";
 "ChatFilter.Unmuted" = "Unmuted";
 "ChatFilter.Favourites" = "Favourites";
+"ChatFilter.Missed" = "Missed";
 
 /*Nice Features*/
 "NiceFeatures.Title" = "Nicegram";
@@ -47,7 +48,7 @@
 "NiceFeatures.HideNumber" = "Hide phone in settings";
 
 /*NGWeb*/
-"NGWeb.Blocked" = "Unavailable in Nicegram 😒";
+"NGWeb.Blocked" = "Unavailable in Nicegram due to AppStore Guidelines";
 
 /*Browser*/
 "NiceFeatures.Browser.Header" = "URLs";

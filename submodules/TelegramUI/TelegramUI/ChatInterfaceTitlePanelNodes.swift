@@ -9,12 +9,12 @@ func titlePanelForChatPresentationInterfaceState(_ chatPresentationInterfaceStat
         return nil
     }
     if chatPresentationInterfaceState.renderedPeer?.peer?.restrictionText(platform: "ios") != nil {
-        if (isSyncedChat(peer: chatPresentationInterfaceState.renderedPeer?.peer)) {
+        if (isAllowedChat(peer: chatPresentationInterfaceState.renderedPeer?.peer)) {
         } else {
             return nil
         }
     } else {
-        if isNGFiltered(chatPresentationInterfaceState.renderedPeer?.peer) {
+        if isNGForceBlocked(chatPresentationInterfaceState.renderedPeer?.peer) {
             return nil
         }
     }

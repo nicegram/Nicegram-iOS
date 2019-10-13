@@ -48,7 +48,7 @@
 
 
 /*NGWeb*/
-"NGWeb.Blocked" = "Недоступно в Nicegram 😒";
+"NGWeb.Blocked" = "Недоступно в Nicegram по правилам AppStore";
 
 /*Browser*/
 "NiceFeatures.Browser.Header" = "ССЫЛКИ";

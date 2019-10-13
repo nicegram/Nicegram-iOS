@@ -17,7 +17,9 @@ public var NGAPI = BuildConfig(baseAppBundleId: Bundle.main.bundleIdentifier!).n
 public func ngAPIsetDefaults() {
     let UD = UserDefaults(suiteName: "NGAPISETTINGS")
     UD?.register(defaults: ["SYNC_CHATS": false])
-    UD?.register(defaults: ["FILTERS": []])
+    UD?.register(defaults: ["RESTRICED": []])
+    UD?.register(defaults: ["RESTRICTION_REASONS": []])
+    UD?.register(defaults: ["ALLOWED": []])
 }
 
 public class NGAPISETTINGS {
@@ -37,14 +39,31 @@ public class NGAPISETTINGS {
     }
     
     
-    public var FILTERS: [Int64] {
+    public var RESTRICTED: [Int64] {
         get {
-            return UD?.array(forKey: "FILTERS") as? [Int64] ?? []
+            return UD?.array(forKey: "RESTRICTED") as? [Int64] ?? []
         }
         set {
-            UD?.set(newValue, forKey: "FILTERS")
+            UD?.set(newValue, forKey: "RESTRICTED")
         }
-        
+    }
+    
+    public var RESTRICTION_REASONS: [String] {
+        get {
+            return UD?.array(forKey: "RESTRICTION_REASONS") as? [String] ?? []
+        }
+        set {
+            UD?.set(newValue, forKey: "RESTRICTION_REASONS")
+        }
+    }
+    
+    public var ALLOWED: [Int64] {
+        get {
+            return UD?.array(forKey: "ALLOWED") as? [Int64] ?? []
+        }
+        set {
+            UD?.set(newValue, forKey: "ALLOWED")
+        }
     }
     
 }
@@ -104,8 +123,8 @@ public func getNGSettings(_ userId: Int64, completion: @escaping (_ result: Bool
     })
 }
 
-public func getNGFilters(_ userId: Int64, completion: @escaping (_ result: [Int64]) -> Void) {
-    requestApi("filters", pathParams: [String(userId)], completion: { (apiResponse) -> Void in
+public func getNGRestricted(_ userId: Int64, completion: @escaping (_ result: [Int64]) -> Void) {
+    requestApi("restricted", pathParams: [String(userId)], completion: { (apiResponse) -> Void in
         var result: [Int64] = []
         if let response = apiResponse {
             if response["chats"] != nil {
@@ -120,18 +139,57 @@ public func getNGFilters(_ userId: Int64, completion: @escaping (_ result: [Int6
     })
 }
 
-public func updateNGInfo(userId: Int64) {
-    getNGSettings(userId, completion: { (status) -> Void in
-        NGAPISETTINGS().SYNC_CHATS = status
-        ngApiLog("[NGAPI] SETTINGS \(NGAPISETTINGS().SYNC_CHATS)")
-    })
-    getNGFilters(userId, completion: { (blocked) -> Void in
-        NGAPISETTINGS().FILTERS = blocked
-        ngApiLog("[NGAPI] FILTERS \(NGAPISETTINGS().FILTERS)")
+public func getNGAllowed(_ userId: Int64, completion: @escaping (_ result: [Int64]) -> Void) {
+    requestApi("allowed", pathParams: [String(userId)], completion: { (apiResponse) -> Void in
+        var result: [Int64] = []
+        if let response = apiResponse {
+            if response["chats"] != nil {
+                for chat in response["chats"] as! [Any] {
+                    if let chatId = (chat as! [String: Int64])["chat_id"] {
+                        result.append(chatId)
+                    }
+                }
+            }
+        }
+        completion(result)
     })
 }
 
-public func isNGFiltered(_ peer: Peer?) -> Bool {
+public func getNGRestrictionReasons(_ userId: Int64, completion: @escaping (_ result: [String]) -> Void) {
+    requestApi("restrictionReasons", pathParams: [String(userId)], completion: { (apiResponse) -> Void in
+        var result: [String] = []
+        if let response = apiResponse {
+            if response["reasons"] != nil {
+                for reason in response["reasons"] as! [String] {
+                    result.append(reason)
+                }
+            }
+        }
+        completion(result)
+    })
+}
+
+public func updateNGInfo(userId: Int64) {
+    getNGSettings(userId, completion: { (status) -> Void in
+        NGAPISETTINGS().SYNC_CHATS = status
+        ngApiLog("[NGAPI] SYNC_CHATS \(NGAPISETTINGS().SYNC_CHATS)")
+    })
+    getNGRestricted(userId, completion: { (restricted) -> Void in
+        NGAPISETTINGS().RESTRICTED = restricted
+        ngApiLog("[NGAPI] RESTRICTED \(NGAPISETTINGS().RESTRICTED)")
+    })
+    getNGAllowed(userId, completion: { (allowed) -> Void in
+        NGAPISETTINGS().ALLOWED = allowed
+        ngApiLog("[NGAPI] ALLOWED \(NGAPISETTINGS().ALLOWED)")
+    })
+    getNGRestrictionReasons(userId, completion: { (reasons) -> Void in
+        NGAPISETTINGS().RESTRICTION_REASONS = reasons
+        ngApiLog("[NGAPI] RESTRICTED_REASONS count \(NGAPISETTINGS().RESTRICTION_REASONS.count)")
+    })
+}
+
+
+public func getTgId(_ peer: Peer?) -> Int64 {
     if let peer = peer {
         var peerId: Int64
         if let peer = peer as? TelegramUser  {
@@ -139,22 +197,55 @@ public func isNGFiltered(_ peer: Peer?) -> Bool {
         } else { // Channels, Chats, Groups
             peerId = Int64("-100" + String(peer.id.hashValue)) ?? 1
         }
-        if NGAPISETTINGS().FILTERS.contains(peerId) {
-            return true
-        }
+        return peerId
+    }
+    return 0
+}
+
+public func isNGForceBlocked(_ peer: Peer?) -> Bool {
+    let peerId = getTgId(peer)
+    if NGAPISETTINGS().RESTRICTED.contains(peerId) {
+        return true
     }
     return false
 }
 
-public func isSyncedChat(peer: Peer?) -> Bool {
-    if !NGAPISETTINGS().SYNC_CHATS {
-        return false
+public func isNGForceAllowed(_ peer: Peer?) -> Bool {
+    let peerId = getTgId(peer)
+    if NGAPISETTINGS().ALLOWED.contains(peerId) {
+        return true
     }
-    if isNGFiltered(peer) {
-        return false
+    return false
+}
+
+public func isNGAllowedReason(_ peer: Peer?) -> Bool {
+    var isAllowedReason = true
+    if let peer = peer {
+        if let restrictionReason = peer.restrictionReason(platform: "ios") {
+            if !NGAPISETTINGS().RESTRICTION_REASONS.contains(restrictionReason)  {
+                isAllowedReason = false
+            }
+        }
+    }
+    return isAllowedReason
+}
+
+public func isAllowedChat(peer: Peer?) -> Bool {
+    var isAllowed: Bool = false
+    if NGAPISETTINGS().SYNC_CHATS {
+        if isNGAllowedReason(peer) {
+            isAllowed = true
+        }
     }
     
-    return true
+    if isNGForceAllowed(peer){
+        isAllowed = true
+    }
+    
+    if isNGForceBlocked(peer) {
+        isAllowed = false
+    }
+    return isAllowed
 }
 
 

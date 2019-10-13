@@ -54,4 +54,4 @@
 "NiceFeatures.HideNumber" = "设置中隐藏手机号码";
 
 /*NGWeb*/
-"NGWeb.Blocked" = "Nicegram中不可用 😒";
+"NGWeb.Blocked" = "由于AppStore规则，在Nicegram中不可用";
