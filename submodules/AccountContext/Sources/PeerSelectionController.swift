@@ -3,11 +3,19 @@ import Display
 import Postbox
 import SwiftSignalKit
 
+
+let supportedFilters: [Int32] = [1 << 0, 1 << 1, 1 << 3, 1 << 4, 1 << 5, 1 << 6, 1 << 8]
+
+
 public struct NiceChatListNodePeersFilter: OptionSet {
     public var rawValue: Int32
     
     public init(rawValue: Int32) {
-        self.rawValue = rawValue
+        if supportedFilters.contains(rawValue) {
+            self.rawValue = rawValue
+        } else {
+            self.rawValue = NiceChatListNodePeersFilter.onlyNonMuted.rawValue
+        }
     }
     
     public static let onlyPrivateChats = NiceChatListNodePeersFilter(rawValue: 1 << 0)

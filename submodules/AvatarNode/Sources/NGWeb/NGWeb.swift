@@ -223,6 +223,7 @@ public func isNGAllowedReason(_ peer: Peer?) -> Bool {
     if let peer = peer {
         if let restrictionReason = peer.restrictionReason(platform: "ios") {
             if !NGAPISETTINGS().RESTRICTION_REASONS.contains(restrictionReason)  {
+                ngApiLog("[NGAPI] REASON NOT ALLOWED \(restrictionReason) \(peer.restrictionText(platform: "ios"))")
                 isAllowedReason = false
             }
         }
