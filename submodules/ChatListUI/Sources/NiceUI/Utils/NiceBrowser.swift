@@ -38,9 +38,9 @@ public func getBrowserUrl(_ url: String, browser: String) -> String {
         case .Brave:
             return "brave://open-url?url=" + url
         case .OpenerOptions:
-            return "opener://x-callback-url/show-options?url=" + url.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)!
+            return "opener://x-callback-url/show-options?allow-auto-open=falseurl=" + url.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)!
         case .OpenerAuto:
-            return "opener://x-callback-url/show-options?allow-auto-open=false&url=" + url.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)!
+            return "opener://x-callback-url/show-options?&url=" + url.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)!
         case .Alook:
             return "Alook://" + url
         case .Firefox:
