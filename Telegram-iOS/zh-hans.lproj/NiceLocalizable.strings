@@ -55,3 +55,8 @@
 
 /*NGWeb*/
 "NGWeb.Blocked" = "由于AppStore规则，在Nicegram中不可用";
+
+/*Browser*/
+"NiceFeatures.Browser.Header" = "连结";
+"NiceFeatures.Browser.UseBrowser" = "在浏览器中打开连结";
+"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram 将在外部浏览器开启连结而不是在App内开启，必须安装所选择的浏览器。";
