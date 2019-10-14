@@ -13,6 +13,9 @@ public enum Browser:String {
     case Chrome = "chrome"
     case Yandex = "yandex"
     case DuckDuckGo = "duckduckgo"
+    case Brave = "brave"
+    case OpenerOptions = "openeroptions"
+    case OpenerAuto = "openerauto"
     case Alook = "alook"
     case Firefox = "firefox"
     case FirefoxFocus = "firefoxfocus"
@@ -32,6 +35,12 @@ public func getBrowserUrl(_ url: String, browser: String) -> String {
             return "yandexbrowser-open-url://" + url.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)!
         case .DuckDuckGo:
             return "ddgQuickLink://" + url
+        case .Brave:
+            return "brave://open-url?url=" + url
+        case .OpenerOptions:
+            return "opener://x-callback-url/show-options?url=" + url.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)!
+        case .OpenerAuto:
+            return "opener://x-callback-url/show-options?allow-auto-open=false&url=" + url.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)!
         case .Alook:
             return "Alook://" + url
         case .Firefox:

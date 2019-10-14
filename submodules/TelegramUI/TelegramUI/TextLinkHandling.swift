@@ -13,6 +13,7 @@ import InstantPageUI
 import HashtagSearchUI
 import StickerPackPreviewUI
 import JoinLinkPreviewUI
+import ChatListUI
 
 func handleTextLinkActionImpl(context: AccountContext, peerId: PeerId?, navigateDisposable: MetaDisposable, controller: ViewController, action: TextLinkItemActionType, itemLink: TextLinkItem) {
     let presentImpl: (ViewController, Any?) -> Void = { controllerToPresent, _ in
@@ -49,7 +50,11 @@ func handleTextLinkActionImpl(context: AccountContext, peerId: PeerId?, navigate
             if let controller = controller {
                 switch result {
                     case let .externalUrl(url):
-                        context.sharedContext.applicationBindings.openUrl(url)
+                        var browserUrl = url
+                        if SimplyNiceSettings().useBrowser {
+                            browserUrl = getBrowserUrl(url, browser: SimplyNiceSettings().browser)
+                        }
+                        context.sharedContext.applicationBindings.openUrl(browserUrl)
                     case let .peer(peerId, _):
                         openResolvedPeerImpl(peerId, .default)
                     case let .channelMessage(peerId, messageId):
