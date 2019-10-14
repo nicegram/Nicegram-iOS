@@ -45,3 +45,11 @@
 "Folder.Create.Placeholder" = "資料夾…";
 "Folder.LimitExceeded" = "抱歉，您最多只能建立 3 個自訂資料夾。\n很快就可以建立更多。";
 "NiceFeatures.HideNumber" = "在設定中隱藏電話號碼";
+
+/*NGWeb*/
+"NGWeb.Blocked" = "由於 App Store 審核指南，在 Nicegram 中不可用";
+
+/*Browser*/
+"NiceFeatures.Browser.Header" = "連結";
+"NiceFeatures.Browser.UseBrowser" = "在瀏覽器中開啟連結";
+"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram 將在外部瀏覽器開啟連結而不是在 App 內開啟，必須安裝所選擇的瀏覽器。";
