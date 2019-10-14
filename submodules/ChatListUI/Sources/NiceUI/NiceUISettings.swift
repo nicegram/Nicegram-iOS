@@ -159,6 +159,8 @@ public func setDefaults() {
     UD?.register(defaults: ["browser": "safari"])
 }
 
+let supportedFilters: [Int32] = [1, 2, 8, 16, 32, 64, 256] // pow 2
+
 public class SimplyNiceSettings {
     let UD = UserDefaults(suiteName: "SimplyNiceSettings")
     
@@ -190,7 +192,11 @@ public class SimplyNiceSettings {
             let array = UD?.array(forKey: "chatFilters") as? [Int32] ?? [1 << 6, 1 << 5]
             var res: [NiceChatListNodePeersFilter] = []
             for item in array {
-                res.append(NiceChatListNodePeersFilter(rawValue: item))
+                if supportedFilters.contains(item) {
+                    res.append(NiceChatListNodePeersFilter(rawValue: item))
+                } else {
+                    res.append(NiceChatListNodePeersFilter(rawValue: 1 << 5))
+                }
             }
             return res
         }
