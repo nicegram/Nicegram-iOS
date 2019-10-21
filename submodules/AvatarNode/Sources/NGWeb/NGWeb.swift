@@ -75,7 +75,7 @@ extension String {
             do {
                 return try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
             } catch {
-                ngApiLog(error.localizedDescription)
+                ngApiLog("\(data) " + error.localizedDescription + " \(error)")
             }
         }
         return nil
@@ -157,11 +157,13 @@ public func getNGAllowed(_ userId: Int64, completion: @escaping (_ result: [Int6
 
 public func getNGRestrictionReasons(_ userId: Int64, completion: @escaping (_ result: [String]) -> Void) {
     requestApi("restrictionReasons", pathParams: [String(userId)], completion: { (apiResponse) -> Void in
-        var result: [String] = []
+        var result = NGAPISETTINGS().RESTRICTION_REASONS
         if let response = apiResponse {
             if response["reasons"] != nil {
                 for reason in response["reasons"] as! [String] {
-                    result.append(reason)
+                    if !result.contains(reason) {
+                        result.append(reason)
+                    }
                 }
             }
         }
@@ -172,19 +174,19 @@ public func getNGRestrictionReasons(_ userId: Int64, completion: @escaping (_ re
 public func updateNGInfo(userId: Int64) {
     getNGSettings(userId, completion: { (status) -> Void in
         NGAPISETTINGS().SYNC_CHATS = status
-        ngApiLog("[NGAPI] SYNC_CHATS \(NGAPISETTINGS().SYNC_CHATS)")
+        ngApiLog("SYNC_CHATS \(NGAPISETTINGS().SYNC_CHATS)")
     })
     getNGRestricted(userId, completion: { (restricted) -> Void in
         NGAPISETTINGS().RESTRICTED = restricted
-        ngApiLog("[NGAPI] RESTRICTED \(NGAPISETTINGS().RESTRICTED)")
+        ngApiLog("RESTRICTED \(NGAPISETTINGS().RESTRICTED)")
     })
     getNGAllowed(userId, completion: { (allowed) -> Void in
         NGAPISETTINGS().ALLOWED = allowed
-        ngApiLog("[NGAPI] ALLOWED \(NGAPISETTINGS().ALLOWED)")
+        ngApiLog("ALLOWED \(NGAPISETTINGS().ALLOWED)")
     })
     getNGRestrictionReasons(userId, completion: { (reasons) -> Void in
         NGAPISETTINGS().RESTRICTION_REASONS = reasons
-        ngApiLog("[NGAPI] RESTRICTED_REASONS count \(NGAPISETTINGS().RESTRICTION_REASONS.count)")
+        ngApiLog("RESTRICTED_REASONS count \(NGAPISETTINGS().RESTRICTION_REASONS.count)")
     })
 }
 
@@ -223,7 +225,7 @@ public func isNGAllowedReason(_ peer: Peer?) -> Bool {
     if let peer = peer {
         if let restrictionReason = peer.restrictionReason(platform: "ios") {
             if !NGAPISETTINGS().RESTRICTION_REASONS.contains(restrictionReason)  {
-                ngApiLog("[NGAPI] REASON NOT ALLOWED \(restrictionReason) \(peer.restrictionText(platform: "ios"))")
+                ngApiLog("REASON NOT ALLOWED \(restrictionReason) \(peer.restrictionText(platform: "ios"))")
                 isAllowedReason = false
             }
         }
