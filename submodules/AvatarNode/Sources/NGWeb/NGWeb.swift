@@ -20,6 +20,7 @@ public func ngAPIsetDefaults() {
     UD?.register(defaults: ["RESTRICED": []])
     UD?.register(defaults: ["RESTRICTION_REASONS": []])
     UD?.register(defaults: ["ALLOWED": []])
+    UD?.register(defaults: ["PREMIUM": false])
 }
 
 public class NGAPISETTINGS {
@@ -66,6 +67,15 @@ public class NGAPISETTINGS {
         }
     }
     
+    public var PREMIUM: Bool {
+        get {
+            return UD?.bool(forKey: "PREMIUM") as? Bool ?? false
+        }
+        set {
+            UD?.set(newValue, forKey: "PREMIUM")
+        }
+    }
+    
 }
 
 
@@ -108,12 +118,13 @@ public func requestApi(_ path: String, pathParams: [String] = [], completion: @e
     task.resume()
 }
 
-public func getNGSettings(_ userId: Int64, completion: @escaping (_ sync: Bool, _ rreasons: [String], _ allowed: [Int64], _ restricted: [Int64]) -> Void) {
+public func getNGSettings(_ userId: Int64, completion: @escaping (_ sync: Bool, _ rreasons: [String], _ allowed: [Int64], _ restricted: [Int64], _ premiumStatus: Bool) -> Void) {
     requestApi("settings", pathParams: [String(userId)], completion: { (apiResponse) -> Void in
         var syncChats = NGAPISETTINGS().SYNC_CHATS
         var restricitionReasons = NGAPISETTINGS().RESTRICTION_REASONS
         var allowedChats = NGAPISETTINGS().ALLOWED
         var restrictedChats = NGAPISETTINGS().RESTRICTED
+        var localPremium = NGAPISETTINGS().PREMIUM
         
         if let response = apiResponse {
             if let settings = response["settings"] {
@@ -134,19 +145,24 @@ public func getNGSettings(_ userId: Int64, completion: @escaping (_ sync: Bool, 
                 restrictedChats = restricted as! [Int64]
             }
             
+            if let premium = response["premium"]{
+                localPremium = premium as! Bool
+            }
+            
         }
-        completion(syncChats, restricitionReasons, allowedChats, restrictedChats)
+        completion(syncChats, restricitionReasons, allowedChats, restrictedChats, localPremium)
     })
 }
 
 public func updateNGInfo(userId: Int64) {
-    getNGSettings(userId, completion: { (sync, rreasons, allowed, restricted) -> Void in
+    getNGSettings(userId, completion: { (sync, rreasons, allowed, restricted, isPremium) -> Void in
         NGAPISETTINGS().SYNC_CHATS = sync
         NGAPISETTINGS().RESTRICTED = restricted
         NGAPISETTINGS().ALLOWED = allowed
         NGAPISETTINGS().RESTRICTION_REASONS = rreasons
+        NGAPISETTINGS().PREMIUM = isPremium
         
-        ngApiLog("SYNC_CHATS \(NGAPISETTINGS().SYNC_CHATS)\nRESTRICTED \(NGAPISETTINGS().RESTRICTED)\nALLOWED \(NGAPISETTINGS().ALLOWED)\nRESTRICTED_REASONS count \(NGAPISETTINGS().RESTRICTION_REASONS.count)")
+        ngApiLog("SYNC_CHATS \(NGAPISETTINGS().SYNC_CHATS)\nRESTRICTED \(NGAPISETTINGS().RESTRICTED)\nALLOWED \(NGAPISETTINGS().ALLOWED)\nRESTRICTED_REASONS count \(NGAPISETTINGS().RESTRICTION_REASONS.count)\nPREMIUM \(NGAPISETTINGS().PREMIUM)")
     })
 }
 

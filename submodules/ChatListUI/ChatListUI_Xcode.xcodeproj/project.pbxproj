@@ -20,6 +20,8 @@
 		A53C6A522325B304000D4020 /* NiceTabBarFilterSwitchController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53C6A462325B304000D4020 /* NiceTabBarFilterSwitchController.swift */; };
 		A53C6A532325B304000D4020 /* NiceUISettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53C6A472325B304000D4020 /* NiceUISettings.swift */; };
 		A545E9B623415A660036E772 /* NiceBrowser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A545E9B523415A660036E772 /* NiceBrowser.swift */; };
+		A55FCDF4235FA1E00049C2C7 /* PremiumController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A55FCDF3235FA1E00049C2C7 /* PremiumController.swift */; };
+		A55FCDF6235FA84C0049C2C7 /* PremiumSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A55FCDF5235FA84C0049C2C7 /* PremiumSettings.swift */; };
 		A58B9D312324FE140001DFE3 /* NicegramUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A58B9D302324FE140001DFE3 /* NicegramUI.framework */; };
 		A5A985D92329768100C63E8A /* MultipleAvatarsNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A985D82329768100C63E8A /* MultipleAvatarsNode.swift */; };
 		D0C9CA9A230234D400FAB518 /* ChatListUI.h in Headers */ = {isa = PBXBuildFile; fileRef = D0C9CA98230234D400FAB518 /* ChatListUI.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -92,6 +94,8 @@
 		A53C6A462325B304000D4020 /* NiceTabBarFilterSwitchController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NiceTabBarFilterSwitchController.swift; sourceTree = "<group>"; };
 		A53C6A472325B304000D4020 /* NiceUISettings.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NiceUISettings.swift; sourceTree = "<group>"; };
 		A545E9B523415A660036E772 /* NiceBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceBrowser.swift; sourceTree = "<group>"; };
+		A55FCDF3235FA1E00049C2C7 /* PremiumController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumController.swift; sourceTree = "<group>"; };
+		A55FCDF5235FA84C0049C2C7 /* PremiumSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumSettings.swift; sourceTree = "<group>"; };
 		A58B9D302324FE140001DFE3 /* NicegramUI.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NicegramUI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A5A985D82329768100C63E8A /* MultipleAvatarsNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultipleAvatarsNode.swift; sourceTree = "<group>"; };
 		A5FF8D1423247E6800EFF33E /* NicegramLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NicegramLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -232,6 +236,8 @@
 			children = (
 				A53C6A3C2325B304000D4020 /* IAPListController.swift */,
 				A53C6A3D2325B304000D4020 /* IAPCore.swift */,
+				A55FCDF3235FA1E00049C2C7 /* PremiumController.swift */,
+				A55FCDF5235FA84C0049C2C7 /* PremiumSettings.swift */,
 			);
 			path = IAP;
 			sourceTree = "<group>";
@@ -453,6 +459,7 @@
 				D0C9CAF8230236F700FAB518 /* ChatListItem.swift in Sources */,
 				A53C6A4F2325B304000D4020 /* NiceTabBarFilterSwitchControllerNode.swift in Sources */,
 				D0C9CAF7230236F700FAB518 /* ChatListItemStrings.swift in Sources */,
+				A55FCDF4235FA1E00049C2C7 /* PremiumController.swift in Sources */,
 				D0C9CAAD230235E500FAB518 /* ChatListSearchContainerNode.swift in Sources */,
 				A53C6A4A2325B304000D4020 /* IAPListController.swift in Sources */,
 				A53C6A512325B304000D4020 /* TextInputController.swift in Sources */,
@@ -477,6 +484,7 @@
 				D0C9CAAE230235E500FAB518 /* ChatListRecentPeersListItem.swift in Sources */,
 				D0C9CAF2230236F700FAB518 /* ChatListNode.swift in Sources */,
 				A53C6A4D2325B304000D4020 /* NewFolderListController.swift in Sources */,
+				A55FCDF6235FA84C0049C2C7 /* PremiumSettings.swift in Sources */,
 				D0C9CAF3230236F700FAB518 /* ChatListNodeLocation.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
