@@ -55,3 +55,9 @@
 "NiceFeatures.Browser.UseBrowser" = "Open links in browser";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram will open links in external browser instead of in-app. Selected browser must be installed.";
 
+/*Premium*/
+"Premium.Title" = "Premium";
+"Premium.UnlimitedPins.Header" = "UNLIMITED PINED CHATS";
+"Premium.SyncPins" = "Sync Pinned Chats";
+"Premium.SyncPins.Notice.ON" = "If you change pinned chats in other client, they WILL CHANGE in Nicegram.";
+"Premium.SyncPins.Notice.OFF" = "If you change pinned chats in other client, they WILL NOT CHANGE in Nicegram.";

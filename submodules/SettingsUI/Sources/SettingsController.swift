@@ -58,6 +58,7 @@ private struct SettingsItemArguments {
     
     let changeProfilePhoto: () -> Void
     let openUsername: () -> Void
+    let openPremium: () -> Void
     let openProxy: () -> Void
     let openNiceFeatures: () -> Void
     let openSavedMessages: () -> Void
@@ -87,6 +88,7 @@ private enum SettingsSection: Int32 {
     case info
     case phone
     case accounts
+    case premium
     case proxy
     case media
     case generalSettings
@@ -105,6 +107,8 @@ private enum SettingsEntry: ItemListNodeEntry {
     
     case account(Int, Account, PresentationTheme, PresentationStrings, PresentationDateTimeFormat, Peer, Int32, Bool)
     case addAccount(PresentationTheme, String)
+    
+    case premium(PresentationTheme, UIImage?, String)
     
     case proxy(PresentationTheme, UIImage?, String, String)
     case niceFeatures(PresentationTheme, UIImage?, String)
@@ -132,6 +136,8 @@ private enum SettingsEntry: ItemListNodeEntry {
                 return SettingsSection.phone.rawValue
             case .account, .addAccount:
                 return SettingsSection.accounts.rawValue
+            case .premium:
+                return SettingsSection.premium.rawValue
             case .proxy, .niceFeatures:
                 return SettingsSection.proxy.rawValue
             case .savedMessages, .recentCalls, .stickers:
@@ -163,34 +169,36 @@ private enum SettingsEntry: ItemListNodeEntry {
                 return 6 + Int32(account.0)
             case .addAccount:
                 return 1002
-            case .proxy:
+            case .premium:
                 return 1003
-            case .niceFeatures:
+            case .proxy:
                 return 1004
-            case .savedMessages:
+            case .niceFeatures:
                 return 1005
-            case .recentCalls:
+            case .savedMessages:
                 return 1006
-            case .stickers:
+            case .recentCalls:
                 return 1007
-            case .notificationsAndSounds:
+            case .stickers:
                 return 1008
-            case .privacyAndSecurity:
+            case .notificationsAndSounds:
                 return 1009
-            case .dataAndStorage:
+            case .privacyAndSecurity:
                 return 1010
-            case .themes:
+            case .dataAndStorage:
                 return 1011
-            case .language:
+            case .themes:
                 return 1012
-            case .passport:
+            case .language:
                 return 1013
-            case .watch:
+            case .passport:
                 return 1014
-            case .askAQuestion:
+            case .watch:
                 return 1015
-            case .faq:
+            case .askAQuestion:
                 return 1016
+            case .faq:
+                return 1017
         }
     }
     
@@ -272,6 +280,12 @@ private enum SettingsEntry: ItemListNodeEntry {
                 }
             case let .setUsername(lhsTheme, lhsText):
                 if case let .setUsername(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+                    return true
+                } else {
+                    return false
+                }
+            case let .premium(lhsTheme, lhsImage, lhsText):
+                if case let .premium(rhsTheme, rhsImage, rhsText) = rhs, lhsTheme === rhsTheme, lhsImage === rhsImage, lhsText == rhsText {
                     return true
                 } else {
                     return false
@@ -427,6 +441,10 @@ private enum SettingsEntry: ItemListNodeEntry {
                 return ItemListPeerActionItem(theme: theme, icon: PresentationResourcesItemList.plusIconImage(theme), title: text, alwaysPlain: false, sectionId: self.section, height: .generic, editing: false, action: {
                     arguments.addAccount()
                 })
+            case let .premium(theme, image, text):
+                return ItemListDisclosureItem(theme: theme, icon: image, title: text, label: "", sectionId: ItemListSectionId(self.section), style: .blocks, action: {
+                    arguments.openPremium()
+                })
             case let .proxy(theme, image, text, value):
                 return ItemListDisclosureItem(theme: theme, icon: image, title: text, label: value, sectionId: ItemListSectionId(self.section), style: .blocks, action: {
                     arguments.openProxy()
@@ -523,6 +541,8 @@ private func settingsEntries(account: Account, presentationData: PresentationDat
                 entries.append(.addAccount(presentationData.theme, presentationData.strings.Settings_AddAccount))
             }
         }
+        
+        entries.append(.premium(presentationData.theme, PresentationResourcesSettings.nicegramIcon, l("Premium.Title", presentationData.strings.baseLanguageCode)))
         
         if !proxySettings.servers.isEmpty {
             let valueString: String
@@ -758,6 +778,12 @@ public func settingsController(context: AccountContext, accountManager: AccountM
         |> take(1)).start(next: { context in
             presentControllerImpl?(usernameSetupController(context: context), nil)
         })
+    }, openPremium: {
+        let _ = (contextValue.get()
+            |> deliverOnMainQueue
+            |> take(1)).start(next: { context in
+                pushControllerImpl?(premiumController(context: context))
+            })
     }, openProxy: {
         let _ = (contextValue.get()
         |> deliverOnMainQueue

@@ -1,232 +1,57 @@
 //
-//  NGweb.swift
-//  TelegramUI
+//  NicegramPremium.swift
+//  NiceCore
 //
-//  Created by Sergey on 23/09/2019.
-//  Copyright © 2019 Telegram. All rights reserved.
+//  Created by Sergey Akentev on 23.10.2019.
+//  Copyright © 2019 Nicegram. All rights reserved.
 //
 
 import Foundation
-import Postbox
-import TelegramCore
-import BuildConfig
 
-public var NGAPI = BuildConfig(baseAppBundleId: Bundle.main.bundleIdentifier!).ngApiUrl
-
-
-public func ngAPIsetDefaults() {
-    let UD = UserDefaults(suiteName: "NGAPISETTINGS")
-    UD?.register(defaults: ["SYNC_CHATS": false])
-    UD?.register(defaults: ["RESTRICED": []])
-    UD?.register(defaults: ["RESTRICTION_REASONS": []])
-    UD?.register(defaults: ["ALLOWED": []])
-    // UD?.register(defaults: ["PREMIUM": false])
+public func setPremiumDefaults() {
+    let UD = UserDefaults(suiteName: "PremiumSettings")
+    UD?.register(defaults: ["syncPins": true])
+    UD?.register(defaults: ["isPremium": false])
 }
 
-public class NGAPISETTINGS {
-    let UD = UserDefaults(suiteName: "NGAPISETTINGS")
+
+public class PremiumSettings {
+    let UD = UserDefaults(suiteName: "PremiumSettings")
     
     public init() {
-        ngAPIsetDefaults()
+        setPremiumDefaults()
     }
     
-    public var SYNC_CHATS: Bool {
+    public var syncPins: Bool {
         get {
-            return UD?.bool(forKey: "SYNC_CHATS") ?? false
+            return UD?.bool(forKey: "syncPins") ?? true
         }
         set {
-            UD?.set(newValue, forKey: "SYNC_CHATS")
+            UD?.set(newValue, forKey: "syncPins")
         }
     }
     
-    
-    public var RESTRICTED: [Int64] {
+    public var isPremium: Bool {
         get {
-            return UD?.array(forKey: "RESTRICTED") as? [Int64] ?? []
+            return UD?.bool(forKey: "isPremium") ?? false
         }
         set {
-            UD?.set(newValue, forKey: "RESTRICTED")
+            UD?.set(newValue, forKey: "isPremium")
         }
     }
     
-    public var RESTRICTION_REASONS: [String] {
-        get {
-            return UD?.array(forKey: "RESTRICTION_REASONS") as? [String] ?? []
-        }
-        set {
-            UD?.set(newValue, forKey: "RESTRICTION_REASONS")
-        }
-    }
-    
-    public var ALLOWED: [Int64] {
-        get {
-            return UD?.array(forKey: "ALLOWED") as? [Int64] ?? []
-        }
-        set {
-            UD?.set(newValue, forKey: "ALLOWED")
-        }
-    }
-    
-//    public var PREMIUM: Bool {
-//        get {
-//            return UD?.bool(forKey: "PREMIUM") ?? false
-//        }
-//        set {
-//            UD?.set(newValue, forKey: "PREMIUM")
-//        }
-//    }
-    
 }
 
 
-extension String {
-    func convertToDictionary() -> [String: Any]? {
-        if let data = self.data(using: .utf8) {
-            do {
-                return try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
-            } catch {
-                ngApiLog("\(data) " + error.localizedDescription + " \(error)")
-            }
-        }
-        return nil
-    }
-}
 
-public func requestApi(_ path: String, pathParams: [String] = [], completion: @escaping (_ apiResult: [String: Any]?) -> Void) {
-    let startTime = CFAbsoluteTimeGetCurrent()
-    ngApiLog("DECLARING REQUEST \(path)")
-    var urlString = NGAPI + path + "/"
-    for param in pathParams {
-        urlString = urlString + String(param) + "/"
-    }
-    let url = URL(string: urlString)!
-    let task = URLSession.shared.dataTask(with: url) { (data, response, error) in
-        let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
-        ngApiLog("PROCESSED REQUEST \(path) IN \(timeElapsed) s.")
-        if let error = error {
-            ngApiLog("Error requesting settings: \(error)")
-        } else {
-            if let response = response as? HTTPURLResponse {
-                if response.statusCode == 200 {
-                    if let data = data, let dataString = String(data: data, encoding: .utf8) {
-                        completion(dataString.convertToDictionary())
-                    }
-                }
-            }
-        }
-    }
-    task.resume()
-}
-
-public func getNGSettings(_ userId: Int64, completion: @escaping (_ sync: Bool, _ rreasons: [String], _ allowed: [Int64], _ restricted: [Int64], _ premiumStatus: Bool) -> Void) {
-    requestApi("settings", pathParams: [String(userId)], completion: { (apiResponse) -> Void in
-        var syncChats = NGAPISETTINGS().SYNC_CHATS
-        var restricitionReasons = NGAPISETTINGS().RESTRICTION_REASONS
-        var allowedChats = NGAPISETTINGS().ALLOWED
-        var restrictedChats = NGAPISETTINGS().RESTRICTED
-        var localPremium = PremiumSettings().isPremium
-        
-        if let response = apiResponse {
-            if let settings = response["settings"] {
-                if  let syncSettings = (settings as! [String: Any])["sync_chats"] {
-                    syncChats = syncSettings as! Bool
-                }
-            }
-            
-            if let reasons = response["reasons"] {
-                restricitionReasons = reasons as! [String]
-            }
-            
-            if let allowed = response["allowed"] {
-                allowedChats = allowed as! [Int64]
-            }
-            
-            if let restricted = response["restricted"] {
-                restrictedChats = restricted as! [Int64]
-            }
-            
-            if let premium = response["premium"]{
-                localPremium = premium as! Bool
-            }
-            
-        }
-        completion(syncChats, restricitionReasons, allowedChats, restrictedChats, localPremium)
-    })
-}
-
-public func updateNGInfo(userId: Int64) {
-    getNGSettings(userId, completion: { (sync, rreasons, allowed, restricted, isPremium) -> Void in
-        NGAPISETTINGS().SYNC_CHATS = sync
-        NGAPISETTINGS().RESTRICTED = restricted
-        NGAPISETTINGS().ALLOWED = allowed
-        NGAPISETTINGS().RESTRICTION_REASONS = rreasons
-        
-        PremiumSettings().isPremium = isPremium
-        
-        ngApiLog("SYNC_CHATS \(NGAPISETTINGS().SYNC_CHATS)\nRESTRICTED \(NGAPISETTINGS().RESTRICTED)\nALLOWED \(NGAPISETTINGS().ALLOWED)\nRESTRICTED_REASONS count \(NGAPISETTINGS().RESTRICTION_REASONS.count)\nPREMIUM \(PremiumSettings().isPremium)")
-    })
+public func isPremium() -> Bool {
+    return PremiumSettings().isPremium
 }
 
 
-public func getTgId(_ peer: Peer?) -> Int64 {
-    if let peer = peer {
-        var peerId: Int64
-        if let peer = peer as? TelegramUser  {
-            peerId = Int64(peer.id.hashValue)
-        } else { // Channels, Chats, Groups
-            peerId = Int64("-100" + String(peer.id.hashValue)) ?? 1
-        }
-        return peerId
-    }
-    return 0
-}
 
-public func isNGForceBlocked(_ peer: Peer?) -> Bool {
-    let peerId = getTgId(peer)
-    if NGAPISETTINGS().RESTRICTED.contains(peerId) {
-        return true
-    }
-    return false
-}
 
-public func isNGForceAllowed(_ peer: Peer?) -> Bool {
-    let peerId = getTgId(peer)
-    if NGAPISETTINGS().ALLOWED.contains(peerId) {
-        return true
-    }
-    return false
-}
 
-public func isNGAllowedReason(_ peer: Peer?) -> Bool {
-    var isAllowedReason = true
-    if let peer = peer {
-        if let restrictionReason = peer.restrictionReason(platform: "ios") {
-            if !NGAPISETTINGS().RESTRICTION_REASONS.contains(restrictionReason)  {
-                ngApiLog("REASON NOT ALLOWED \(restrictionReason) \(peer.restrictionText(platform: "ios"))")
-                isAllowedReason = false
-            }
-        }
-    }
-    return isAllowedReason
-}
-
-public func isAllowedChat(peer: Peer?) -> Bool {
-    var isAllowed: Bool = false
-    if NGAPISETTINGS().SYNC_CHATS {
-        if isNGAllowedReason(peer) {
-            isAllowed = true
-        }
-    }
-    
-    if isNGForceAllowed(peer){
-        isAllowed = true
-    }
-    
-    if isNGForceBlocked(peer) {
-        isAllowed = false
-    }
-    return isAllowed
-}
 
 
 
@@ -234,7 +59,7 @@ public func isAllowedChat(peer: Peer?) -> Bool {
 // Logging
 
 
-enum NGAPIManagedFileMode {
+enum PREMIUMManagedFileMode {
     case read
     case readwrite
     case append
@@ -248,11 +73,11 @@ private func wrappedRead(_ fd: Int32, _ data: UnsafeMutableRawPointer, _ count: 
     return read(fd, data, count)
 }
 
-final class NGAPIManagedFile {
+final class PREMIUMManagedFile {
     private let fd: Int32
-    private let mode: NGAPIManagedFileMode
+    private let mode: PREMIUMManagedFileMode
     
-    init?(path: String, mode: NGAPIManagedFileMode) {
+    init?(path: String, mode: PREMIUMManagedFileMode) {
         self.mode = mode
         let fileMode: Int32
         let accessMode: UInt16
@@ -319,28 +144,28 @@ final class NGAPIManagedFile {
 }
 
 
-public var ngApiLogger: NGAPILogger?
+public var premiumLogger: PREMIUMLogger?
 
-public final class NGAPILogger {
+public final class PREMIUMLogger {
     private let maxLength: Int = 2 * 1024 * 1024
     private let maxFiles: Int = 20
     
     private let basePath: String
-    private var file: (NGAPIManagedFile, Int)?
+    private var file: (PREMIUMManagedFile, Int)?
     
     var logToFile: Bool = true
     var logToConsole: Bool = true
     
-    public static func setSharedLogger(_ logger: NGAPILogger) {
-        ngApiLogger = logger
+    public static func setSharedLogger(_ logger: PREMIUMLogger) {
+        premiumLogger = logger
     }
     
-    public static var shared: NGAPILogger {
-        if let ngApiLogger = ngApiLogger {
-            return ngApiLogger
+    public static var shared: PREMIUMLogger {
+        if let premiumLogger = premiumLogger {
+            return premiumLogger
         } else {
             assertionFailure()
-            let tempLogger = NGAPILogger(basePath: "")
+            let tempLogger = PREMIUMLogger(basePath: "")
             tempLogger.logToFile = false
             tempLogger.logToConsole = false
             return tempLogger
@@ -383,7 +208,7 @@ public final class NGAPILogger {
                 content = String(format: "[%@] %d-%d-%d %02d:%02d:%02d.%03d %@", arguments: [tag, Int(timeinfo.tm_year) + 1900, Int(timeinfo.tm_mon + 1), Int(timeinfo.tm_mday), Int(timeinfo.tm_hour), Int(timeinfo.tm_min), Int(timeinfo.tm_sec), Int(milliseconds), string])
             }
             
-            var currentFile: NGAPIManagedFile?
+            var currentFile: PREMIUMManagedFile?
             var openNew = false
             if let (file, length) = self.file {
                 if length >= self.maxLength {
@@ -422,7 +247,7 @@ public final class NGAPILogger {
                     if let (_, url) = maxCreationDate {
                         var value = stat()
                         if stat(url.path, &value) == 0 && Int(value.st_size) < self.maxLength {
-                            if let file = NGAPIManagedFile(path: url.path, mode: .append) {
+                            if let file = PREMIUMManagedFile(path: url.path, mode: .append) {
                                 self.file = (file, Int(value.st_size))
                                 currentFile = file
                             }
@@ -439,7 +264,7 @@ public final class NGAPILogger {
                     
                     let path = self.basePath + "/" + fileName
                     
-                    if let file = NGAPIManagedFile(path: path, mode: .append) {
+                    if let file = PREMIUMManagedFile(path: path, mode: .append) {
                         self.file = (file, 0)
                         currentFile = file
                     }
@@ -465,7 +290,7 @@ public final class NGAPILogger {
 }
 
 
-public func ngApiLog(_ text: String, _ tag: String = "NGAPI") {
+public func premiumLog(_ text: String, _ tag: String = "PREMIUM") {
     let baseAppBundleId = Bundle.main.bundleIdentifier!
     let appGroupName = "group.\(baseAppBundleId)"
     let maybeAppGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)
@@ -473,9 +298,9 @@ public func ngApiLog(_ text: String, _ tag: String = "NGAPI") {
     if let appGroupUrl = maybeAppGroupUrl {
         let rootPath = appGroupUrl.path + "/telegram-data"
         
-        if ngApiLogger == nil {
-            let logsPath = rootPath + "/ngApiLogs"
-            NGAPILogger.setSharedLogger(NGAPILogger(basePath: logsPath))
+        if premiumLogger == nil {
+            let logsPath = rootPath + "/premiumLogs"
+            PREMIUMLogger.setSharedLogger(PREMIUMLogger(basePath: logsPath))
         }
     } else {
         let appBundleIdentifier = Bundle.main.bundleIdentifier!
@@ -491,9 +316,9 @@ public func ngApiLog(_ text: String, _ tag: String = "NGAPI") {
         if let appGroupUrl = maybeAppGroupUrl {
             let rootPath = appGroupUrl.path + "/telegram-data"
             
-            if ngApiLogger == nil {
-                let logsPath = rootPath + "/ngApiLogs"
-                NGAPILogger.setSharedLogger(NGAPILogger(basePath: logsPath))
+            if premiumLogger == nil {
+                let logsPath = rootPath + "/premiumLogs"
+                PREMIUMLogger.setSharedLogger(PREMIUMLogger(basePath: logsPath))
             }
         } else {
             Logger.shared.log(tag + " (Main Logger)", text)
@@ -501,5 +326,5 @@ public func ngApiLog(_ text: String, _ tag: String = "NGAPI") {
     }
     
     
-    NGAPILogger.shared.log(tag, text)
+    PREMIUMLogger.shared.log(tag, text)
 }

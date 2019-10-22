@@ -52,6 +52,7 @@
 		A501FD9522FAF0B500F4FA58 /* NiceLangSuggestion.swift in Sources */ = {isa = PBXBuildFile; fileRef = A501FD9422FAF0B500F4FA58 /* NiceLangSuggestion.swift */; };
 		A5206C7422F462ED00288DB5 /* NiceManagedFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5206C7322F462ED00288DB5 /* NiceManagedFile.swift */; };
 		A5599B0E22F25506003251E3 /* NiceFolders.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5599B0D22F25506003251E3 /* NiceFolders.swift */; };
+		A55FCDF8235FB2750049C2C7 /* NicegramPremium.swift in Sources */ = {isa = PBXBuildFile; fileRef = A55FCDF7235FB2750049C2C7 /* NicegramPremium.swift */; };
 		C205FEA81EB3B75900455808 /* ExportMessageLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = C205FEA71EB3B75900455808 /* ExportMessageLink.swift */; };
 		C205FEA91EB3B75900455808 /* ExportMessageLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = C205FEA71EB3B75900455808 /* ExportMessageLink.swift */; };
 		C210DD621FBDB90800F673D8 /* SourceReferenceMessageAttribute.swift in Sources */ = {isa = PBXBuildFile; fileRef = C210DD611FBDB90800F673D8 /* SourceReferenceMessageAttribute.swift */; };
@@ -831,6 +832,7 @@
 		A501FD9422FAF0B500F4FA58 /* NiceLangSuggestion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceLangSuggestion.swift; sourceTree = "<group>"; };
 		A5206C7322F462ED00288DB5 /* NiceManagedFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceManagedFile.swift; sourceTree = "<group>"; };
 		A5599B0D22F25506003251E3 /* NiceFolders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NiceFolders.swift; sourceTree = "<group>"; };
+		A55FCDF7235FB2750049C2C7 /* NicegramPremium.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NicegramPremium.swift; sourceTree = "<group>"; };
 		C205FEA71EB3B75900455808 /* ExportMessageLink.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ExportMessageLink.swift; sourceTree = "<group>"; };
 		C210DD611FBDB90800F673D8 /* SourceReferenceMessageAttribute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceReferenceMessageAttribute.swift; sourceTree = "<group>"; };
 		C22EE61A1E67418000334C38 /* ToggleChannelSignatures.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ToggleChannelSignatures.swift; sourceTree = "<group>"; };
@@ -1273,6 +1275,7 @@
 				A5599B0D22F25506003251E3 /* NiceFolders.swift */,
 				A5206C7322F462ED00288DB5 /* NiceManagedFile.swift */,
 				A501FD9422FAF0B500F4FA58 /* NiceLangSuggestion.swift */,
+				A55FCDF7235FB2750049C2C7 /* NicegramPremium.swift */,
 			);
 			path = NiceCore;
 			sourceTree = "<group>";
@@ -1815,7 +1818,6 @@
 			isa = PBXGroup;
 			children = (
 				A5599B0C22F254E7003251E3 /* NiceCore */,
-				D03B0C791D62153400955575 /* third-party */,
 				D04D21352306EC8700609388 /* Mac Internal Updater */,
 				D03B0CB71D62232000955575 /* Utils */,
 				D03B0CCF1D62242200955575 /* Objects */,
@@ -2528,6 +2530,7 @@
 				D041E3F51E535464008C24B4 /* AddPeerMember.swift in Sources */,
 				D0AF32311FACEDEC0097362B /* CoreSettings.swift in Sources */,
 				D054649A20738760002ECC1E /* SecureIdRentalAgreementValue.swift in Sources */,
+				A55FCDF8235FB2750049C2C7 /* NicegramPremium.swift in Sources */,
 				D0E305A71E5B5CBE00D7A3A2 /* PeerAdmins.swift in Sources */,
 				D0575C2D22B922DF00A71A0E /* DeleteAccount.swift in Sources */,
 				D03B0D0D1D62255C00955575 /* SynchronizePeerReadState.swift in Sources */,

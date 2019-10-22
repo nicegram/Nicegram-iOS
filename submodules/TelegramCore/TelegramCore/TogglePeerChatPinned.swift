@@ -1,10 +1,10 @@
 import Foundation
 #if os(macOS)
-    import PostboxMac
-    import SwiftSignalKitMac
+import PostboxMac
+import SwiftSignalKitMac
 #else
-    import Postbox
-    import SwiftSignalKit
+import Postbox
+import SwiftSignalKit
 #endif
 
 public enum TogglePeerChatPinnedResult {
@@ -17,12 +17,12 @@ public func toggleItemPinned(postbox: Postbox, groupId: PeerGroupId, itemId: Pin
         var itemIds = transaction.getPinnedItemIds(groupId: groupId)
         let sameKind = itemIds.filter { item in
             switch itemId {
-                case let .peer(lhsPeerId):
-                    if case let .peer(rhsPeerId) = item {
-                        return (lhsPeerId.namespace == Namespaces.Peer.SecretChat) == (rhsPeerId.namespace == Namespaces.Peer.SecretChat) && lhsPeerId != rhsPeerId
-                    } else {
-                        return false
-                    }
+            case let .peer(lhsPeerId):
+                if case let .peer(rhsPeerId) = item {
+                    return (lhsPeerId.namespace == Namespaces.Peer.SecretChat) == (rhsPeerId.namespace == Namespaces.Peer.SecretChat) && lhsPeerId != rhsPeerId
+                } else {
+                    return false
+                }
             }
             
         }
@@ -42,17 +42,31 @@ public func toggleItemPinned(postbox: Postbox, groupId: PeerGroupId, itemId: Pin
             limitCount = Int(limitsConfiguration.maxArchivedPinnedChatCount)
         }
         
-        if sameKind.count + additionalCount > limitCount {
-            return .limitExceeded(limitCount)
-        } else {
-            if let index = itemIds.firstIndex(of: itemId) {
+        
+        if isPremium() {
+            if let index = itemIds.index(of: itemId) {
                 itemIds.remove(at: index)
             } else {
                 itemIds.insert(itemId, at: 0)
             }
-            addSynchronizePinnedChatsOperation(transaction: transaction, groupId: groupId)
+            if !(sameKind.count + additionalCount > limitCount) {
+                addSynchronizePinnedChatsOperation(transaction: transaction, groupId: groupId)
+            }
             transaction.setPinnedItemIds(groupId: groupId, itemIds: itemIds)
             return .done
+        } else {
+            if sameKind.count + additionalCount > limitCount {
+                return .limitExceeded(limitCount)
+            } else {
+                if let index = itemIds.firstIndex(of: itemId) {
+                    itemIds.remove(at: index)
+                } else {
+                    itemIds.insert(itemId, at: 0)
+                }
+                addSynchronizePinnedChatsOperation(transaction: transaction, groupId: groupId)
+                transaction.setPinnedItemIds(groupId: groupId, itemIds: itemIds)
+                return .done
+            }
         }
     }
 }
@@ -60,7 +74,20 @@ public func toggleItemPinned(postbox: Postbox, groupId: PeerGroupId, itemId: Pin
 public func reorderPinnedItemIds(transaction: Transaction, groupId: PeerGroupId, itemIds: [PinnedItemId]) -> Bool {
     if transaction.getPinnedItemIds(groupId: groupId) != itemIds {
         transaction.setPinnedItemIds(groupId: groupId, itemIds: itemIds)
-        addSynchronizePinnedChatsOperation(transaction: transaction, groupId: groupId)
+        if isPremium() {
+            let limitsConfiguration = transaction.getPreferencesEntry(key: PreferencesKeys.limitsConfiguration) as? LimitsConfiguration ?? LimitsConfiguration.defaultValue
+            let limitCount: Int?
+            if case .root = groupId {
+                limitCount = Int(limitsConfiguration.maxPinnedChatCount)
+            } else {
+                limitCount = nil
+            }
+            if limitCount != nil && itemIds.count <= limitCount! {
+                addSynchronizePinnedChatsOperation(transaction: transaction, groupId: groupId)
+            }
+        } else {
+            addSynchronizePinnedChatsOperation(transaction: transaction, groupId: groupId)
+        }
         return true
     } else {
         return false

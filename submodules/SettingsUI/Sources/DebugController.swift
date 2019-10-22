@@ -53,6 +53,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     case sendOneLog(PresentationTheme)
     case sendNotificationLogs(PresentationTheme)
     case sendApiLogs(PresentationTheme)
+    case sendPremiumLogs(PresentationTheme)
     case sendCriticalLogs(PresentationTheme)
     case accounts(PresentationTheme)
     case logToFile(PresentationTheme, Bool)
@@ -77,7 +78,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     
     var section: ItemListSectionId {
         switch self {
-        case .sendLogs, .sendOneLog, .sendNotificationLogs, .sendApiLogs, .sendCriticalLogs:
+        case .sendLogs, .sendOneLog, .sendNotificationLogs, .sendApiLogs, .sendPremiumLogs, .sendCriticalLogs:
             return DebugControllerSection.logs.rawValue
         case .accounts:
             return DebugControllerSection.logs.rawValue
@@ -102,48 +103,50 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return 2
         case .sendApiLogs:
             return 3
-        case .sendCriticalLogs:
+        case .sendPremiumLogs:
             return 3 + 1
+        case .sendCriticalLogs:
+            return 3 + 1 + 1
         case .accounts:
-            return 4 + 1
+            return 4 + 1 + 1
         case .logToFile:
-            return 5 + 1
+            return 5 + 1 + 1
         case .logToConsole:
-            return 6 + 1
+            return 6 + 1 + 1
         case .redactSensitiveData:
-            return 7 + 1
+            return 7 + 1 + 1
         case .a:
-            return 8 + 1
-        case .enableRaiseToSpeak:
             return 8 + 1 + 1
+        case .enableRaiseToSpeak:
+            return 8 + 1 + 1 + 1
         case .keepChatNavigationStack:
-            return 9 + 1 + 1
+            return 9 + 1 + 1 + 1
         case .skipReadHistory:
-            return 10 + 1 + 1
+            return 10 + 1 + 1 + 1
         case .crashOnSlowQueries:
-            return 11 + 1 + 1
+            return 11 + 1 + 1 + 1
         case .clearTips:
-            return 12 + 1 + 1
+            return 12 + 1 + 1 + 1
         case .reimport:
-            return 13 + 1 + 1
+            return 13 + 1 + 1 + 1
         case .resetData:
-            return 14 + 1 + 1
+            return 14 + 1 + 1 + 1
         case .resetDatabase:
-            return 15 + 1 + 1
+            return 15 + 1 + 1 + 1
         case .resetHoles:
-            return 16 + 1 + 1
+            return 16 + 1 + 1 + 1
         case .resetBiometricsData:
-            return 17 + 1 + 1
+            return 17 + 1 + 1 + 1
         case .optimizeDatabase:
-            return 18 + 1 + 1
+            return 18 + 1 + 1 + 1
         case .photoPreview:
-            return 19 + 1 + 1
+            return 19 + 1 + 1 + 1
         case .knockoutWallpaper:
-            return 20 + 1 + 1
+            return 20 + 1 + 1 + 1
         case .gradientBubbles:
-            return 21 + 1 + 1
+            return 21 + 1 + 1 + 1
         case .versionInfo:
-            return 22 + 1 + 1
+            return 22 + 1 + 1 + 1
         }
     }
     
@@ -290,6 +293,29 @@ private enum DebugControllerEntry: ItemListNodeEntry {
         case let .sendApiLogs(theme):
             return ItemListDisclosureItem(theme: theme, title: "Send Nicegram API Logs", label: "", sectionId: self.section, style: .blocks, action: {
                 let _ = (Logger(basePath: arguments.sharedContext.basePath + "/ngApiLogs").collectLogs()
+                    |> deliverOnMainQueue).start(next: { logs in
+                        guard let context = arguments.context else {
+                            return
+                        }
+                        let controller = context.sharedContext.makePeerSelectionController(PeerSelectionControllerParams(context: context, filter: [.onlyWriteable, .excludeDisabled]))
+                        controller.peerSelected = { [weak controller] peerId in
+                            if let strongController = controller {
+                                strongController.dismiss()
+                                
+                                let messages = logs.map { (name, path) -> EnqueueMessage in
+                                    let id = arc4random64()
+                                    let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: LocalFileReferenceMediaResource(localFilePath: path, randomId: id), previewRepresentations: [], immediateThumbnailData: nil, mimeType: "application/text", size: nil, attributes: [.FileName(fileName: name)])
+                                    return .message(text: "", attributes: [], mediaReference: .standalone(media: file), replyToMessageId: nil, localGroupingKey: nil)
+                                }
+                                let _ = enqueueMessages(account: context.account, peerId: peerId, messages: messages).start()
+                            }
+                        }
+                        arguments.presentController(controller, ViewControllerPresentationArguments(presentationAnimation: ViewControllerPresentationAnimation.modalSheet))
+                    })
+            })
+        case let .sendPremiumLogs(theme):
+            return ItemListDisclosureItem(theme: theme, title: "Send Premium Logs", label: "", sectionId: self.section, style: .blocks, action: {
+                let _ = (Logger(basePath: arguments.sharedContext.basePath + "/premiumLogs").collectLogs()
                     |> deliverOnMainQueue).start(next: { logs in
                         guard let context = arguments.context else {
                             return
@@ -567,6 +593,7 @@ private func debugControllerEntries(presentationData: PresentationData, loggingS
     entries.append(.sendOneLog(presentationData.theme))
     entries.append(.sendNotificationLogs(presentationData.theme))
     entries.append(.sendApiLogs(presentationData.theme))
+    entries.append(.sendPremiumLogs(presentationData.theme))
     entries.append(.sendCriticalLogs(presentationData.theme))
     entries.append(.accounts(presentationData.theme))
     

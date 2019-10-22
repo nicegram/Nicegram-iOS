@@ -60,3 +60,10 @@
 "NiceFeatures.Browser.Header" = "连结";
 "NiceFeatures.Browser.UseBrowser" = "在浏览器中打开连结";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram 将在外部浏览器开启连结而不是在App内开启，必须安装所选择的浏览器。";
+
+/*Premium*/
+"Premium.Title" = "保费";
+"Premium.UnlimitedPins.Header" = "无限聊天";
+"Premium.SyncPins" = "同步固定聊天";
+"Premium.SyncPins.Notice.ON" = "如果您更改其他客户端中的固定聊天，则它们在Nicegram中也会更改。";
+"Premium.SyncPins.Notice.OFF" = "如果您在其他客户端中更改固定聊天，则它们在Nicegram中不会更改。";
