@@ -108,85 +108,45 @@ public func requestApi(_ path: String, pathParams: [String] = [], completion: @e
     task.resume()
 }
 
-public func getNGSettings(_ userId: Int64, completion: @escaping (_ result: Bool) -> Void) {
+public func getNGSettings(_ userId: Int64, completion: @escaping (_ sync: Bool, _ rreasons: [String], _ allowed: [Int64], _ restricted: [Int64]) -> Void) {
     requestApi("settings", pathParams: [String(userId)], completion: { (apiResponse) -> Void in
-        var result = NGAPISETTINGS().SYNC_CHATS
+        var syncChats = NGAPISETTINGS().SYNC_CHATS
+        var restricitionReasons = NGAPISETTINGS().RESTRICTION_REASONS
+        var allowedChats = NGAPISETTINGS().ALLOWED
+        var restrictedChats = NGAPISETTINGS().RESTRICTED
         
         if let response = apiResponse {
-            if response["settings"] != nil {
-                if (response["settings"]! as! [String: Any])["sync_chats"] != nil {
-                    result = (response["settings"]! as! [String: Any])["sync_chats"] as! Bool
+            if let settings = response["settings"] {
+                if  let syncSettings = (settings as! [String: Any])["sync_chats"] {
+                    syncChats = syncSettings as! Bool
                 }
             }
-        }
-        completion(result)
-    })
-}
-
-public func getNGRestricted(_ userId: Int64, completion: @escaping (_ result: [Int64]) -> Void) {
-    requestApi("restricted", pathParams: [String(userId)], completion: { (apiResponse) -> Void in
-        var result: [Int64] = []
-        if let response = apiResponse {
-            if response["chats"] != nil {
-                for chat in response["chats"] as! [Any] {
-                    if let chatId = (chat as! [String: Int64])["chat_id"] {
-                        result.append(chatId)
-                    }
-                }
+            
+            if let reasons = response["reasons"] {
+                restricitionReasons = reasons as! [String]
             }
-        }
-        completion(result)
-    })
-}
-
-public func getNGAllowed(_ userId: Int64, completion: @escaping (_ result: [Int64]) -> Void) {
-    requestApi("allowed", pathParams: [String(userId)], completion: { (apiResponse) -> Void in
-        var result: [Int64] = []
-        if let response = apiResponse {
-            if response["chats"] != nil {
-                for chat in response["chats"] as! [Any] {
-                    if let chatId = (chat as! [String: Int64])["chat_id"] {
-                        result.append(chatId)
-                    }
-                }
+            
+            if let allowed = response["allowed"] {
+                allowedChats = allowed as! [Int64]
             }
-        }
-        completion(result)
-    })
-}
-
-public func getNGRestrictionReasons(_ userId: Int64, completion: @escaping (_ result: [String]) -> Void) {
-    requestApi("restrictionReasons", pathParams: [String(userId)], completion: { (apiResponse) -> Void in
-        var result = NGAPISETTINGS().RESTRICTION_REASONS
-        if let response = apiResponse {
-            if response["reasons"] != nil {
-                for reason in response["reasons"] as! [String] {
-                    if !result.contains(reason) {
-                        result.append(reason)
-                    }
-                }
+            
+            if let restricted = response["restricted"] {
+                restrictedChats = restricted as! [Int64]
             }
+            
         }
-        completion(result)
+        completion(syncChats, restricitionReasons, allowedChats, restrictedChats)
     })
 }
 
 public func updateNGInfo(userId: Int64) {
-    getNGSettings(userId, completion: { (status) -> Void in
-        NGAPISETTINGS().SYNC_CHATS = status
-        ngApiLog("SYNC_CHATS \(NGAPISETTINGS().SYNC_CHATS)")
-    })
-    getNGRestricted(userId, completion: { (restricted) -> Void in
+    getNGSettings(userId, completion: { (sync, rreasons, allowed, restricted) -> Void in
+        NGAPISETTINGS().SYNC_CHATS = sync
         NGAPISETTINGS().RESTRICTED = restricted
-        ngApiLog("RESTRICTED \(NGAPISETTINGS().RESTRICTED)")
-    })
-    getNGAllowed(userId, completion: { (allowed) -> Void in
         NGAPISETTINGS().ALLOWED = allowed
-        ngApiLog("ALLOWED \(NGAPISETTINGS().ALLOWED)")
-    })
-    getNGRestrictionReasons(userId, completion: { (reasons) -> Void in
-        NGAPISETTINGS().RESTRICTION_REASONS = reasons
-        ngApiLog("RESTRICTED_REASONS count \(NGAPISETTINGS().RESTRICTION_REASONS.count)")
+        NGAPISETTINGS().RESTRICTION_REASONS = rreasons
+        
+        ngApiLog("SYNC_CHATS \(NGAPISETTINGS().SYNC_CHATS)\nRESTRICTED \(NGAPISETTINGS().RESTRICTED)\nALLOWED \(NGAPISETTINGS().ALLOWED)\nRESTRICTED_REASONS count \(NGAPISETTINGS().RESTRICTION_REASONS.count)")
     })
 }
 
