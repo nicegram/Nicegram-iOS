@@ -1291,6 +1291,7 @@ final class SharedApplicationContext {
     
     func applicationWillTerminate(_ application: UIApplication) {
         Logger.shared.log("App \(self.episodeId)", "terminating")
+        PremiumSettings().lastOpened = utcnow()
     }
     
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {

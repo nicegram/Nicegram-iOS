@@ -790,7 +790,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         })
     }
     
-    public func switchToFilter(filter: NiceChatListNodePeersFilter, withChatListController chatListController: ChatListController? = nil) {
+    public func switchToFilter(filter: NiceChatListNodePeersFilter, withChatListController chatListController: ChatListController? = nil, clearCurrent: Bool = false) {
         
         assert(Queue.mainQueue().isCurrent())
         var chatsBadge: String?
@@ -798,7 +798,12 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             if (chatListController?.filter == filter) {
                 return
             }
-            chatListController?.filter = filter
+            
+            if (clearCurrent) {
+                chatListController?.filter = nil
+            } else {
+                chatListController?.filter = filter
+            }
             if let tabsController = rootController.viewControllers.first as? TabBarController {
                 for controller in tabsController.controllers {
                     if let controller = controller as? ChatListController {
@@ -821,6 +826,29 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                         }
                     }
                 }
+            }
+        }
+        
+        
+        
+        self.switchingData = (nil, chatListController, chatsBadge)
+    }
+    
+    
+    public func clearFilter(withChatListController chatListController: ChatListController) {
+        
+        assert(Queue.mainQueue().isCurrent())
+        var chatsBadge: String?
+        if let rootController = self.mainWindow?.viewController as? TelegramRootController {
+            if let tabsController = rootController.viewControllers.first as? TabBarController {
+                for controller in tabsController.controllers {
+                    if let controller = controller as? ChatListController {
+                        chatsBadge = controller.tabBarItem.badgeValue
+                    }
+                }
+                var controllers = tabsController.controllers
+                controllers[tabsController.controllers.endIndex - 2] = self.makeChatListController(context: chatListController.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: nil, filterIndex: nil, isMissed: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
+                tabsController.setControllers(controllers, selectedIndex: tabsController.controllers.endIndex - 2)
             }
         }
         
@@ -1044,8 +1072,8 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return createGroupControllerImpl(context: context, peerIds: peerIds, initialTitle: initialTitle, mode: mode, completion: completion)
     }
     
-    public func makeChatListController(context: AccountContext, groupId: PeerGroupId, controlsHistoryPreload: Bool, hideNetworkActivityStatus: Bool, filter: NiceChatListNodePeersFilter? = nil, filterIndex: Int32? = nil, enableDebugActions: Bool) -> ChatListController {
-        return ChatListControllerImpl(context: context, groupId: groupId, controlsHistoryPreload: controlsHistoryPreload, hideNetworkActivityStatus: hideNetworkActivityStatus, filter: filter, filterIndex: filterIndex, enableDebugActions: enableDebugActions)
+    public func makeChatListController(context: AccountContext, groupId: PeerGroupId, controlsHistoryPreload: Bool, hideNetworkActivityStatus: Bool, filter: NiceChatListNodePeersFilter? = nil, filterIndex: Int32? = nil, isMissed: Bool = false, enableDebugActions: Bool) -> ChatListController {
+        return ChatListControllerImpl(context: context, groupId: groupId, controlsHistoryPreload: controlsHistoryPreload, hideNetworkActivityStatus: hideNetworkActivityStatus, filter: filter, filterIndex: filterIndex, isMissed: isMissed, enableDebugActions: enableDebugActions)
     }
     
     public func makePeerSelectionController(_ params: PeerSelectionControllerParams) -> PeerSelectionController {

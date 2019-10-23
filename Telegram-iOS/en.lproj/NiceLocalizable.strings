@@ -57,7 +57,12 @@
 
 /*Premium*/
 "Premium.Title" = "Premium";
-"Premium.UnlimitedPins.Header" = "UNLIMITED PINED CHATS";
+"Premium.UnlimitedPins.Header" = "UNLIMITED PINNED CHATS";
 "Premium.SyncPins" = "Sync Pinned Chats";
 "Premium.SyncPins.Notice.ON" = "If you change pinned chats in other client, they WILL CHANGE in Nicegram.";
 "Premium.SyncPins.Notice.OFF" = "If you change pinned chats in other client, they WILL NOT CHANGE in Nicegram.";
+
+
+"Premium.Missed.Header" = "Missed messages";
+"Premium.Missed" = "Notify on missed messages";
+"Premium.Missed.Notice" = "When you open App after long delay (sleeping, studying, etc.), Nicegram will notify you about unread private messages and mentions.";

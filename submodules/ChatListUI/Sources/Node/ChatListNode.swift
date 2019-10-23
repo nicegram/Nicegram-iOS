@@ -538,7 +538,7 @@ public final class ChatListNode: ListView {
             let (rawEntries, isLoading) = chatListNodeEntriesForView(update.view, state: state, savedMessagesPeer: savedMessagesPeer, hideArchivedFolderByDefault: hideArchivedFolderByDefault, displayArchiveIntro: displayArchiveIntro, mode: mode)
             let entries = rawEntries.filter { entry in
                 switch entry {
-                case let .PeerEntry(_, _, _, readState, notificationSettings, _, peer, _, _, _, _, _, _, isAd):
+                case let .PeerEntry(_, _, _, readState, notificationSettings, _, peer, _, summaryInfo, _, _, _, _, isAd):
                     if isAd {
                         return false
                     }
@@ -593,6 +593,28 @@ public final class ChatListNode: ListView {
                                     }
                                 }
                                 return isAdmin
+                            } else if filter.contains(.onlyMissed) {
+                                var isMissed: Bool = false
+                                
+                                // New Msgs
+                                if let readState = readState {
+                                    if readState.isUnread && !(notificationSettings?.isRemovedFromTotalUnreadCount ?? TelegramPeerNotificationSettings.defaultSettings.isRemovedFromTotalUnreadCount) {
+                                        isMissed = true
+                                    }
+                                }
+                                
+                            
+                                // Tags
+                                let tagSummaryCount = summaryInfo.tagSummaryCount ?? 0
+                                let actionsSummaryCount = summaryInfo.actionsSummaryCount ?? 0
+                                let totalMentionCount = tagSummaryCount - actionsSummaryCount
+                                
+                                if totalMentionCount > 0 {
+                                    isMissed = true
+                                }
+                                
+                                
+                                return isMissed
                             }
                             
                             return false

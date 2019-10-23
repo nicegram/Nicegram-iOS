@@ -415,7 +415,7 @@ public protocol SharedAccountContext: class {
     func makeDeviceContactInfoController(context: AccountContext, subject: DeviceContactInfoSubject, completed: (() -> Void)?, cancelled: (() -> Void)?) -> ViewController
     func makePeersNearbyController(context: AccountContext) -> ViewController
     func makeComposeController(context: AccountContext) -> ViewController
-    func makeChatListController(context: AccountContext, groupId: PeerGroupId, controlsHistoryPreload: Bool, hideNetworkActivityStatus: Bool, filter: NiceChatListNodePeersFilter?, filterIndex: Int32?, enableDebugActions: Bool) -> ChatListController
+    func makeChatListController(context: AccountContext, groupId: PeerGroupId, controlsHistoryPreload: Bool, hideNetworkActivityStatus: Bool, filter: NiceChatListNodePeersFilter?, filterIndex: Int32?, isMissed: Bool, enableDebugActions: Bool) -> ChatListController
     func makeChatController(context: AccountContext, chatLocation: ChatLocation, subject: ChatControllerSubject?, botStart: ChatControllerInitialBotStart?, mode: ChatControllerPresentationMode) -> ChatController
     func makeChatMessagePreviewItem(context: AccountContext, message: Message, theme: PresentationTheme, strings: PresentationStrings, wallpaper: TelegramWallpaper, fontSize: PresentationFontSize, dateTimeFormat: PresentationDateTimeFormat, nameOrder: PresentationPersonNameOrder, forcedResourceStatus: FileMediaResourceStatus?) -> ListViewItem
     func makePeerSharedMediaController(context: AccountContext, peerId: PeerId) -> ViewController?
@@ -439,7 +439,8 @@ public protocol SharedAccountContext: class {
     var immediateHasOngoingCall: Bool { get }
     
     func switchToAccount(id: AccountRecordId, fromSettingsController settingsController: ViewController?, withChatListController chatListController: ViewController?)
-    func switchToFilter(filter: NiceChatListNodePeersFilter, withChatListController chatListController: ChatListController?)
+    func switchToFilter(filter: NiceChatListNodePeersFilter, withChatListController chatListController: ChatListController?, clearCurrent: Bool)
+    func clearFilter(withChatListController chatListController: ChatListController)
     func beginNewAuth(testingEnvironment: Bool)
 }
 

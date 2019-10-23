@@ -289,6 +289,9 @@ final class AuthorizedApplicationContext {
                         if strongSelf.rootController.rootTabController == nil {
                             let niceSettings = getNiceSettings(accountManager: strongSelf.context.sharedContext.accountManager)
                             strongSelf.rootController.addRootControllers(showCallsTab: strongSelf.showCallsTab, niceSettings: niceSettings)
+                            let oldOpened = PremiumSettings().lastOpened
+                            PremiumSettings().lastOpened = utcnow()
+                            premiumLog("LAST OPENED \(PremiumSettings().lastOpened) | DIFF \(PremiumSettings().lastOpened - oldOpened) s")
                             if let (peerId, messageId, activateInput) = strongSelf.scheduledOperChatWithPeerId {
                                 strongSelf.scheduledOperChatWithPeerId = nil
                                 strongSelf.openChatWithPeerId(peerId: peerId, messageId: messageId, activateInput: activateInput)

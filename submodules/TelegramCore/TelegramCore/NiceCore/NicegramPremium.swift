@@ -12,6 +12,8 @@ public func setPremiumDefaults() {
     let UD = UserDefaults(suiteName: "PremiumSettings")
     UD?.register(defaults: ["syncPins": true])
     UD?.register(defaults: ["isPremium": false])
+    UD?.register(defaults: ["lastOpenedApp": utcnow()])
+    
 }
 
 
@@ -40,6 +42,28 @@ public class PremiumSettings {
         }
     }
     
+//    public var lastOpenedApp: Date {
+//        get {
+//            if let storedDate = UD?.object(forKey: "lastOpenedApp") as? Date {
+//                return storedDate
+//            } else {
+//                return Date()
+//            }
+//        }
+//        set {
+//            UD?.set(newValue, forKey: "lastOpenedApp")
+//        }
+//    }
+    
+    public var lastOpened: Int {
+        get {
+            return UD?.integer(forKey: "lastOpened") ?? utcnow()
+        }
+        set {
+            UD?.set(newValue, forKey: "lastOpened")
+        }
+    }
+    
 }
 
 
@@ -48,11 +72,27 @@ public func isPremium() -> Bool {
     return PremiumSettings().isPremium
 }
 
+public func showMissed() -> Bool {
+    // premiumlog("MISSSED DIFF")
+    let isShowMissed: Bool = utcnow() - PremiumSettings().lastOpened > 1 * 60 * 60
+    
+    premiumLog("SHOWING  MISSED: \(isShowMissed)")
+    return isShowMissed
+}
 
 
 
 
-
+public func utcnow() -> Int {
+    // using current date and time as an example
+    let someDate = Date()
+    
+    // convert Date to TimeInterval (typealias for Double)
+    let timeInterval = someDate.timeIntervalSince1970
+    
+    // convert to Integer
+    return Int(timeInterval)
+}
 
 
 

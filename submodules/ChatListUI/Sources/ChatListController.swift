@@ -37,8 +37,10 @@ public func getFilterIconPath(filter: NiceChatListNodePeersFilter) -> String {
         return "Filters/UnreadChats"
     case .onlyAdmin:
         return "Filters/Admin"
+    case .onlyMissed:
+        return "Chat List/RevealActionUnreadIcon"
     default:
-        return "Chat List/Tabs/NY/IconChats"
+        return "Chat List/Tabs/IconChats"
     }
 }
 
@@ -89,7 +91,7 @@ private func fixListNodeScrolling(_ listNode: ListView, searchNode: NavigationBa
 public class ChatListControllerImpl: TelegramBaseController, ChatListController, UIViewControllerPreviewingDelegate, TabBarContainedController {
     
     public func presentTabBarPreviewingController(sourceNodes: [ASDisplayNode]) {
-        if (self.filter == nil) {
+        if (self.filter == nil || self.isMissed) {
             if self.chatListDisplayNode.searchDisplayController != nil {
                 self.deactivateSearch(animated: true)
             } else {
@@ -114,7 +116,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                 }).start()
             }
             
-            self?.context.sharedContext.switchToFilter(filter: f, withChatListController: self)
+            self?.context.sharedContext.switchToFilter(filter: f, withChatListController: self, clearCurrent: false)
             }, sourceNodes: sourceNodes)
         self.switchController = controller
         self.context.sharedContext.mainWindow?.present(controller, on: .root)
@@ -130,6 +132,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
     private let hideNetworkActivityStatus: Bool
     public var filter: NiceChatListNodePeersFilter?
     public var filterIndex: Int32?
+    
+    public var isMissed: Bool
     
     public let groupId: PeerGroupId
     
@@ -175,12 +179,17 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
         }
     }
     
-    public init(context: AccountContext, groupId: PeerGroupId, controlsHistoryPreload: Bool, hideNetworkActivityStatus: Bool = false, filter: NiceChatListNodePeersFilter? = nil, filterIndex: Int32? = nil, enableDebugActions: Bool) {
+    public init(context: AccountContext, groupId: PeerGroupId, controlsHistoryPreload: Bool, hideNetworkActivityStatus: Bool = false, filter: NiceChatListNodePeersFilter? = nil, filterIndex: Int32? = nil, isMissed: Bool = false, enableDebugActions: Bool) {
         self.context = context
         self.controlsHistoryPreload = controlsHistoryPreload
         self.hideNetworkActivityStatus = hideNetworkActivityStatus
         self.filter = filter
         self.filterIndex = filterIndex
+        
+        self.isMissed = isMissed
+        if (self.isMissed) {
+            self.filter = .onlyMissed
+        }
         
         self.groupId = groupId
         
@@ -237,9 +246,17 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
             leftBarButtonItem.accessibilityLabel = self.presentationData.strings.Common_Edit
             self.navigationItem.leftBarButtonItem = leftBarButtonItem
             
-            let rightBarButtonItem = UIBarButtonItem(image: PresentationResourcesRootController.navigationComposeIcon(self.presentationData.theme), style: .plain, target: self, action: #selector(self.composePressed))
-            rightBarButtonItem.accessibilityLabel = self.presentationData.strings.VoiceOver_Navigation_Compose
-            self.navigationItem.rightBarButtonItem = rightBarButtonItem
+            if (self.isMissed) {
+                let closeMissedText = "❌".uppercased()
+                let rightBarButtonItem  = UIBarButtonItem(title: closeMissedText, style: .plain, target: self, action: #selector(self.closeMissedPressed))
+                rightBarButtonItem.accessibilityLabel = self.presentationData.strings.Common_Close
+                self.navigationItem.rightBarButtonItem = rightBarButtonItem
+            } else {
+                let rightBarButtonItem = UIBarButtonItem(image: PresentationResourcesRootController.navigationComposeIcon(self.presentationData.theme), style: .plain, target: self, action: #selector(self.composePressed))
+                rightBarButtonItem.accessibilityLabel = self.presentationData.strings.VoiceOver_Navigation_Compose
+                self.navigationItem.rightBarButtonItem = rightBarButtonItem
+            }
+            
             let backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.DialogList_Title, style: .plain, target: nil, action: nil)
             backBarButtonItem.accessibilityLabel = self.presentationData.strings.Common_Back
             self.navigationItem.backBarButtonItem = backBarButtonItem
@@ -342,9 +359,16 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                         var isRoot = false
                         if case .root = strongSelf.groupId {
                             isRoot = true
-                            let rightBarButtonItem = UIBarButtonItem(image: PresentationResourcesRootController.navigationComposeIcon(strongSelf.presentationData.theme), style: .plain, target: strongSelf, action: #selector(strongSelf.composePressed))
-                            rightBarButtonItem.accessibilityLabel = strongSelf.presentationData.strings.VoiceOver_Navigation_Compose
-                            strongSelf.navigationItem.rightBarButtonItem = rightBarButtonItem
+                            if (strongSelf.isMissed) {
+                                let closeMissedText = "❌".uppercased()
+                                let rightBarButtonItem  = UIBarButtonItem(title: closeMissedText, style: .plain, target: self, action: #selector(strongSelf.closeMissedPressed))
+                                rightBarButtonItem.accessibilityLabel = strongSelf.presentationData.strings.Common_Close
+                                strongSelf.navigationItem.rightBarButtonItem = rightBarButtonItem
+                            } else {
+                                let rightBarButtonItem = UIBarButtonItem(image: PresentationResourcesRootController.navigationComposeIcon(strongSelf.presentationData.theme), style: .plain, target: strongSelf, action: #selector(strongSelf.composePressed))
+                                rightBarButtonItem.accessibilityLabel = strongSelf.presentationData.strings.VoiceOver_Navigation_Compose
+                                strongSelf.navigationItem.rightBarButtonItem = rightBarButtonItem
+                            }
                         }
                         
                         let (hasProxy, connectsViaProxy) = proxy
@@ -514,9 +538,17 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
         }
         if case .root = self.groupId {
             self.navigationItem.leftBarButtonItem = editItem
-            let rightBarButtonItem = UIBarButtonItem(image: PresentationResourcesRootController.navigationComposeIcon(self.presentationData.theme), style: .plain, target: self, action: #selector(self.composePressed))
-            rightBarButtonItem.accessibilityLabel = self.presentationData.strings.VoiceOver_Navigation_Compose
-            self.navigationItem.rightBarButtonItem = rightBarButtonItem
+            
+            if (self.isMissed) {
+                let closeMissedText = "❌".uppercased()
+                let rightBarButtonItem  = UIBarButtonItem(title: closeMissedText, style: .plain, target: self, action: #selector(self.closeMissedPressed))
+                rightBarButtonItem.accessibilityLabel = self.presentationData.strings.Common_Close
+                self.navigationItem.rightBarButtonItem = rightBarButtonItem
+            } else {
+                let rightBarButtonItem = UIBarButtonItem(image: PresentationResourcesRootController.navigationComposeIcon(self.presentationData.theme), style: .plain, target: self, action: #selector(self.composePressed))
+                rightBarButtonItem.accessibilityLabel = self.presentationData.strings.VoiceOver_Navigation_Compose
+                self.navigationItem.rightBarButtonItem = rightBarButtonItem
+            }
         } else {
             self.navigationItem.rightBarButtonItem = editItem
         }
@@ -1246,6 +1278,12 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
             state.peerIdWithRevealedOptions = nil
             return state
         }
+    }
+    
+    @objc private func closeMissedPressed() {
+        self.filter = nil
+        self.isMissed = false
+        self.context.sharedContext.clearFilter(withChatListController: self)
     }
     
     @objc public func donePressed() {
