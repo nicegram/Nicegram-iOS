@@ -74,10 +74,15 @@ public func isPremium() -> Bool {
 
 public func showMissed() -> Bool {
     // premiumlog("MISSSED DIFF")
-    let isShowMissed: Bool = utcnow() - PremiumSettings().lastOpened > 1 * 60 * 60
-    
-    premiumLog("SHOWING  MISSED: \(isShowMissed)")
-    return isShowMissed
+    if isPremium() {
+        let launchDiff = utcnow() - PremiumSettings().lastOpened
+        let isShowMissed: Bool = launchDiff > 1 * 60 * 60
+        
+        premiumLog("SHOWING  MISSED: \(isShowMissed) CAUSE LAUNCH DIFF IS \(launchDiff)")
+        return isShowMissed
+    } else {
+        return false
+    }
 }
 
 
