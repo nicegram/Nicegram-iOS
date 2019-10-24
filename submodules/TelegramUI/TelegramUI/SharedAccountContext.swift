@@ -814,7 +814,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                             if controller.filterIndex == filterIndex {
                                 var controllers = tabsController.controllers
                                 controllers[index] = self.makeChatListController(context: chatListController.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false,
-                                    filter: filter, filterIndex: filterIndex, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
+                                                                                 filter: filter, filterIndex: filterIndex, isMissed: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
 //                                controllers[index] = ChatListController(context: chatListController.context, groupId: .root, controlsHistoryPreload: chatListController.controlsHistoryPreload, hideNetworkActivityStatus: chatListController.hideNetworkActivityStatus, filter: filter, filterIndex: filterIndex)
                                 tabsController.setControllers(controllers, selectedIndex: index)
                                 break
@@ -843,7 +843,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                     }
                 }
                 var controllers = tabsController.controllers
-                controllers[tabsController.controllers.endIndex - 2] = self.makeChatListController(context: chatListController.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: nil, filterIndex: nil, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
+                controllers[tabsController.controllers.endIndex - 2] = self.makeChatListController(context: chatListController.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: nil, filterIndex: nil, isMissed: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
                 tabsController.setControllers(controllers, selectedIndex: tabsController.controllers.endIndex - 2)
             }
         }
@@ -1068,8 +1068,8 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return createGroupControllerImpl(context: context, peerIds: peerIds, initialTitle: initialTitle, mode: mode, completion: completion)
     }
     
-    public func makeChatListController(context: AccountContext, groupId: PeerGroupId, controlsHistoryPreload: Bool, hideNetworkActivityStatus: Bool, filter: NiceChatListNodePeersFilter? = nil, filterIndex: Int32? = nil,enableDebugActions: Bool) -> ChatListController {
-        return ChatListControllerImpl(context: context, groupId: groupId, controlsHistoryPreload: controlsHistoryPreload, hideNetworkActivityStatus: hideNetworkActivityStatus, filter: filter, filterIndex: filterIndex, enableDebugActions: enableDebugActions)
+    public func makeChatListController(context: AccountContext, groupId: PeerGroupId, controlsHistoryPreload: Bool, hideNetworkActivityStatus: Bool, filter: NiceChatListNodePeersFilter? = nil, filterIndex: Int32? = nil, isMissed: Bool = false, enableDebugActions: Bool) -> ChatListController {
+        return ChatListControllerImpl(context: context, groupId: groupId, controlsHistoryPreload: controlsHistoryPreload, hideNetworkActivityStatus: hideNetworkActivityStatus, filter: filter, filterIndex: filterIndex, isMissed: isMissed, enableDebugActions: enableDebugActions)
     }
     
     public func makePeerSelectionController(_ params: PeerSelectionControllerParams) -> PeerSelectionController {

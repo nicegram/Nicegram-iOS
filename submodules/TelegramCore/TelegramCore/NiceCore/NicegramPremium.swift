@@ -13,6 +13,8 @@ public func setPremiumDefaults() {
     UD?.register(defaults: ["syncPins": true])
     UD?.register(defaults: ["isPremium": false])
     UD?.register(defaults: ["lastOpenedApp": utcnow()])
+    UD?.register(defaults: ["notifyMissed": false])
+    UD?.register(defaults: ["notifyMissedEach": 5 * 60 *  60])
     
 }
 
@@ -42,19 +44,6 @@ public class PremiumSettings {
         }
     }
     
-//    public var lastOpenedApp: Date {
-//        get {
-//            if let storedDate = UD?.object(forKey: "lastOpenedApp") as? Date {
-//                return storedDate
-//            } else {
-//                return Date()
-//            }
-//        }
-//        set {
-//            UD?.set(newValue, forKey: "lastOpenedApp")
-//        }
-//    }
-    
     public var lastOpened: Int {
         get {
             return UD?.integer(forKey: "lastOpened") ?? utcnow()
@@ -63,6 +52,25 @@ public class PremiumSettings {
             UD?.set(newValue, forKey: "lastOpened")
         }
     }
+    
+    public var notifyMissed: Bool {
+        get {
+            return UD?.bool(forKey: "notifyMissed") ?? false
+        }
+        set {
+            UD?.set(newValue, forKey: "notifyMissed")
+        }
+    }
+    
+    public var notifyMissedEach: Int {
+        get {
+            return UD?.integer(forKey: "notifyMissedEach") ?? 5 * 60 *  60 // 5 hours
+        }
+        set {
+            UD?.set(newValue, forKey: "notifyMissedEach")
+        }
+    }
+    
     
 }
 
@@ -74,9 +82,9 @@ public func isPremium() -> Bool {
 
 public func showMissed() -> Bool {
     // premiumlog("MISSSED DIFF")
-    if isPremium() {
+    if isPremium() && PremiumSettings().notifyMissed {
         let launchDiff = utcnow() - PremiumSettings().lastOpened
-        let isShowMissed: Bool = launchDiff > 1 * 60 * 60
+        let isShowMissed: Bool = launchDiff > PremiumSettings().notifyMissedEach
         
         premiumLog("SHOWING  MISSED: \(isShowMissed) CAUSE LAUNCH DIFF IS \(launchDiff)")
         return isShowMissed

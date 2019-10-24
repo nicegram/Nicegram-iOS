@@ -1446,7 +1446,7 @@ public func settingsController(context: AccountContext, accountManager: AccountM
             })
             if let selectedAccount = selectedAccount, let sharedContext = sharedContext {
                 let accountContext = sharedContext.makeTempAccountContext(account: selectedAccount)
-                let chatListController = accountContext.sharedContext.makeChatListController(context: accountContext, groupId: .root, controlsHistoryPreload: false, hideNetworkActivityStatus: true, filter: nil, filterIndex: nil, enableDebugActions: enableDebugActions)
+                let chatListController = accountContext.sharedContext.makeChatListController(context: accountContext, groupId: .root, controlsHistoryPreload: false, hideNetworkActivityStatus: true, filter: nil, filterIndex: nil, isMissed: false, enableDebugActions: enableDebugActions)
                 return chatListController
             }
         }

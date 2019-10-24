@@ -64,5 +64,5 @@
 
 
 "Premium.Missed.Header" = "Missed messages";
-"Premium.Missed" = "Notify on missed messages";
-"Premium.Missed.Notice" = "When you open App after long delay (sleeping, studying, etc.), Nicegram will notify you about unread private messages and mentions.";
+"Premium.Missed" = "Notify on Missed messages";
+"Premium.Missed.Notice" = "When you open App after long delay (sleeping, working, etc.), Nicegram will show list of unread private messages and mentions.";

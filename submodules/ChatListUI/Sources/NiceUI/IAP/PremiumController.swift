@@ -23,9 +23,11 @@ private struct SelectionState: Equatable {
 
 private final class PremiumControllerArguments {
     let toggleSetting: (Bool, String) -> Void
+    let openSetMissedInterval: () -> Void
     
-    init(toggleSetting:@escaping (Bool, String) -> Void) {
+    init(toggleSetting:@escaping (Bool, String) -> Void, openSetMissedInterval:@escaping () -> Void) {
         self.toggleSetting = toggleSetting
+        self.openSetMissedInterval = openSetMissedInterval
     }
 }
 
@@ -33,6 +35,7 @@ private final class PremiumControllerArguments {
 private enum premiumControllerSection: Int32 {
     case mainHeader
     case syncPins
+    case notifyMissed
 }
 
 private enum PremiumControllerEntityId: Equatable, Hashable {
@@ -46,26 +49,35 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
     case syncPinsToggle(PresentationTheme, String, Bool)
     case syncPinsNotice(PresentationTheme, String)
     
+    case notifyMissed(PresentationTheme, String, String)
+    case notifyMissedNotice(PresentationTheme, String)
+    
     var section: ItemListSectionId {
         switch self {
-            case .header:
-                return premiumControllerSection.mainHeader.rawValue
-            case .syncPinsHeader, .syncPinsToggle, .syncPinsNotice:
-                return premiumControllerSection.syncPins.rawValue
+        case .header:
+            return premiumControllerSection.mainHeader.rawValue
+        case .syncPinsHeader, .syncPinsToggle, .syncPinsNotice:
+            return premiumControllerSection.syncPins.rawValue
+        case .notifyMissed, .notifyMissedNotice:
+            return premiumControllerSection.notifyMissed.rawValue
         }
         
     }
     
     var stableId: Int32 {
         switch self {
-            case .header:
-                return 0
-            case .syncPinsHeader:
-                return 1000
-            case .syncPinsToggle:
-                return 1100
-            case .syncPinsNotice:
-                return 1200
+        case .header:
+            return 0
+        case .syncPinsHeader:
+            return 1000
+        case .syncPinsToggle:
+            return 1100
+        case .syncPinsNotice:
+            return 1200
+        case .notifyMissed:
+            return 2100
+        case .notifyMissedNotice:
+            return 2200
         }
     }
     
@@ -95,8 +107,22 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
+            
+        case let .notifyMissed(lhsTheme, lhsText, lhsValue):
+            if case let .notifyMissed(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
+                return true
+            } else {
+                return false
+            }
+            
+        case let .notifyMissedNotice(lhsTheme, lhsText):
+            if case let .notifyMissedNotice(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
         }
-
+        
     }
     
     static func <(lhs: PremiumControllerEntry, rhs: PremiumControllerEntry) -> Bool {
@@ -115,6 +141,13 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             })
         case let .syncPinsNotice(theme, text):
             return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+            
+        case let .notifyMissed(theme, title, value):
+            return ItemListDisclosureItem(theme: theme, title: title, label: value, sectionId: self.section, style: .blocks, action: {
+                arguments.openSetMissedInterval()
+            })
+        case let .notifyMissedNotice(theme, text):
+            return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
         }
     }
     
@@ -125,6 +158,7 @@ private func premiumControllerEntries(presentationData: PresentationData, premiu
     var entries: [PremiumControllerEntry] = []
     
     let theme = presentationData.theme
+    let strings = presentationData.strings
     let locale = presentationData.strings.baseLanguageCode
     
     
@@ -139,6 +173,17 @@ private func premiumControllerEntries(presentationData: PresentationData, premiu
     }
     entries.append(.syncPinsNotice(theme, l(changeNoticeString, locale)))
     
+    var notifyTimeout = Int32.max
+    if PremiumSettings().notifyMissed {
+        notifyTimeout = Int32(PremiumSettings().notifyMissedEach)
+    } else {
+        notifyTimeout = Int32.max
+    }
+    let timeoutString = stringForShowMissedTimeout(strings, notifyTimeout)
+    
+    entries.append(.notifyMissed(theme, l("Premium.Missed", locale), timeoutString))
+    entries.append(.notifyMissedNotice(theme, l("Premium.Missed.Notice", locale)))
+    
     return entries
 }
 
@@ -147,6 +192,17 @@ private struct PremiumSelectionState: Equatable {
     var updatingFiltersAmountValue: Int32? = nil
 }
 
+private func stringForShowMissedTimeout(_ strings: PresentationStrings, _ timeout: Int32?) -> String {
+    if let timeout = timeout {
+        if timeout > 1 * 31 * 24 * 60 * 60 {
+            return strings.PrivacySettings_PasscodeOff
+        } else {
+            return timeIntervalString(strings: strings, value: timeout)
+        }
+    } else {
+        return strings.PrivacySettings_PasscodeOff
+    }
+}
 
 public func premiumController(context: AccountContext) -> ViewController {
     // let statePromise = ValuePromise(PremiumSelectionState(), ignoreRepeated: true)
@@ -179,17 +235,72 @@ public func premiumController(context: AccountContext) -> ViewController {
     }
     
     let arguments = PremiumControllerArguments(toggleSetting: { value, setting in
-            switch (setting) {
-                case "syncPins":
-                    PremiumSettings().syncPins = value
-                    break
-                default:
-                    break
+        switch (setting) {
+        case "syncPins":
+            PremiumSettings().syncPins = value
+            break
+        default:
+            break
+        }
+        updateState { state in
+            return SelectionState()
+        }
+    }, openSetMissedInterval: {
+        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+        let actionSheet = ActionSheetController(presentationTheme: presentationData.theme)
+        var items: [ActionSheetItem] = []
+        let setAction: (Int32?) -> Void = { value in
+            if let value = value {
+                if value == Int32.max {
+                    PremiumSettings().notifyMissed = false
+                } else if value > 0 {
+                    PremiumSettings().notifyMissed = true
+                    PremiumSettings().notifyMissedEach = Int(value)
+                } else {
+                    PremiumSettings().notifyMissed = false
+                }
+            } else {
+                PremiumSettings().notifyMissed = false
             }
             updateState { state in
                 return SelectionState()
             }
         }
+        var values: [Int32] = [
+            1 * 60,
+            5 * 60,
+            15 * 60,
+            30 * 60,
+            1 * 60 * 60,
+            3 * 60 * 60,
+            5 * 60 * 60,
+            8 * 60 * 60,
+            Int32.max]
+        
+        #if DEBUG
+        values.append(10)
+        values.sort()
+        #endif
+        
+        for value in values {
+            var t: Int32?
+            if value != 0 {
+                t = value
+            }
+            items.append(ActionSheetButtonItem(title: stringForShowMissedTimeout(presentationData.strings, t), color: .accent, action: { [weak actionSheet] in
+                actionSheet?.dismissAnimated()
+                
+                setAction(t)
+            }))
+        }
+        
+        actionSheet.setItemGroups([ActionSheetItemGroup(items: items), ActionSheetItemGroup(items: [
+            ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                actionSheet?.dismissAnimated()
+            })
+            ])])
+        presentControllerImpl?(actionSheet, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+    }
     )
     
     

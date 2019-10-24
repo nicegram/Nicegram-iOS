@@ -91,7 +91,7 @@ private func fixListNodeScrolling(_ listNode: ListView, searchNode: NavigationBa
 public class ChatListControllerImpl: TelegramBaseController, ChatListController, UIViewControllerPreviewingDelegate, TabBarContainedController {
     
     public func presentTabBarPreviewingController(sourceNodes: [ASDisplayNode]) {
-        if (self.filter == nil) {
+        if (self.filter == nil || self.isMissed || self.filterIndex == nil) {
             if self.chatListDisplayNode.searchDisplayController != nil {
                 self.deactivateSearch(animated: true)
             } else {
@@ -132,6 +132,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
     private let hideNetworkActivityStatus: Bool
     public var filter: NiceChatListNodePeersFilter?
     public var filterIndex: Int32?
+    
+    public var isMissed: Bool
     
     public let groupId: PeerGroupId
     
@@ -177,13 +179,14 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
         }
     }
     
-    public init(context: AccountContext, groupId: PeerGroupId, controlsHistoryPreload: Bool, hideNetworkActivityStatus: Bool = false, filter: NiceChatListNodePeersFilter? = nil, filterIndex: Int32? = nil, enableDebugActions: Bool) {
+    public init(context: AccountContext, groupId: PeerGroupId, controlsHistoryPreload: Bool, hideNetworkActivityStatus: Bool = false, filter: NiceChatListNodePeersFilter? = nil, filterIndex: Int32? = nil, isMissed: Bool = false, enableDebugActions: Bool) {
         self.context = context
         self.controlsHistoryPreload = controlsHistoryPreload
         self.hideNetworkActivityStatus = hideNetworkActivityStatus
         self.filter = filter
         self.filterIndex = filterIndex
         
+        self.isMissed = isMissed
         
         self.groupId = groupId
         
@@ -282,6 +285,10 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
             guard let strongSelf = self else {
                 return
             }
+            if (strongSelf.isMissed) {
+                print("LONGTAP MISSED")
+            }
+            
             if (strongSelf.filter != nil) {
                 return
             }

@@ -13,4 +13,5 @@ public protocol ChatListController: ViewController {
     
     var filter: NiceChatListNodePeersFilter? { get set }
     var filterIndex: Int32? { get set }
+    var isMissed: Bool { get set }
 }
