@@ -1,4 +1,4 @@
-"AppName" = "Nicegram";
+"AppName" = "نایس گرام";
 
 /*ChatFilter*/
 "ChatFilter.Bots" = "ربات ها";
@@ -13,7 +13,7 @@
 
 /*Nice Features*/
 /*Fuzzy*/
-"NiceFeatures.Title" = "Nicegram";
+"NiceFeatures.Title" = "نایس گرام";
 "NiceFeatures.Tabs.Header" = "برگه ها";
 "NiceFeatures.Tabs.ShowContacts" = "نمایش برگه مخاطبین";
 "NiceFeatures.ChatScreen.Header" = "صفحه چت";
@@ -36,19 +36,36 @@
 "Common.ExitNow" = "خروج";
 "Common.Later" = "بعدا";
 "Common.RestartRequired" = "راه اندازی مجدد";
-
-/*Fuzzy*/
 "NiceFeatures.Tabs.ShowNames" = "نشان دادن برگه اسم ها";
 "Chat.ForwardAsCopy" = "فوروارد بدون نقل قول";
 
 /*Folder*/
-"Folder.DefaultName" = "";
-"Folder.New" = "";
-"Folder.Created" = "";
-"Folder.AddToExisting" = "";
-"Folder.Updated" = "";
-"Folder.Create" = "";
-"Folder.Create.Name" = "";
-"Folder.Create.Placeholder" = "";
-"Folder.LimitExceeded" = "";
-"NiceFeatures.HideNumber" = "";
+"Folder.DefaultName" = "پوشه";
+"Folder.New" = "پوشه جدید";
+"Folder.Created" = "پوشه ساخته شده";
+"Folder.AddToExisting" = "به پوشه موجود اضافه شود";
+"Folder.Updated" = "بروزرسانی پوشه";
+"Folder.Create" = "ساخت پوشه";
+"Folder.Create.Name" = "نام پوشه";
+"Folder.Create.Placeholder" = "پوشه";
+"Folder.LimitExceeded" = "متاسفم،شما بیش از ۳ فایل نمی‌توانید ایجاد کنید.\nفایل های بیشتر بزودی";
+"NiceFeatures.HideNumber" = "پنهان کردن شماره موبایل در تنظیمات";
+
+/*NGWeb*/
+"NGWeb.Blocked" = "";
+
+/*Browser*/
+"NiceFeatures.Browser.Header" = "";
+"NiceFeatures.Browser.UseBrowser" = "";
+"NiceFeatures.Browser.UseBrowserNotice" = "";
+"ChatFilter.Missed" = "";
+
+/*Premium*/
+"Premium.Title" = "";
+"Premium.UnlimitedPins.Header" = "";
+"Premium.SyncPins" = "";
+"Premium.SyncPins.Notice.ON" = "";
+"Premium.SyncPins.Notice.OFF" = "";
+"Premium.Missed.Header" = "";
+"Premium.Missed" = "";
+"Premium.Missed.Notice" = "";
