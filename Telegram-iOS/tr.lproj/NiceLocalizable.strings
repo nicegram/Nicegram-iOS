@@ -53,3 +53,14 @@
 "NiceFeatures.Browser.Header" = "Bağlantılar";
 "NiceFeatures.Browser.UseBrowser" = "Bağlantıları tarayıcıda aç";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram, bağlantıları uygulama içi yerine harici tarayıcıda açacak. Seçilen tarayıcı yüklü olmalı.";
+"ChatFilter.Missed" = "";
+
+/*Premium*/
+"Premium.Title" = "";
+"Premium.UnlimitedPins.Header" = "";
+"Premium.SyncPins" = "";
+"Premium.SyncPins.Notice.ON" = "";
+"Premium.SyncPins.Notice.OFF" = "";
+"Premium.Missed.Header" = "";
+"Premium.Missed" = "";
+"Premium.Missed.Notice" = "";
