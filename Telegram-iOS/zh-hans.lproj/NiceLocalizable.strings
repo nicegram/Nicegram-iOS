@@ -60,10 +60,14 @@
 "NiceFeatures.Browser.Header" = "连结";
 "NiceFeatures.Browser.UseBrowser" = "在浏览器中打开连结";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram 将在外部浏览器开启连结而不是在App内开启，必须安装所选择的浏览器。";
+"ChatFilter.Missed" = "未读提醒";
 
 /*Premium*/
-"Premium.Title" = "保费";
-"Premium.UnlimitedPins.Header" = "无限聊天";
-"Premium.SyncPins" = "同步固定聊天";
-"Premium.SyncPins.Notice.ON" = "如果您更改其他客户端中的固定聊天，则它们在Nicegram中也会更改。";
-"Premium.SyncPins.Notice.OFF" = "如果您在其他客户端中更改固定聊天，则它们在Nicegram中不会更改。";
+"Premium.Title" = "Premium";
+"Premium.UnlimitedPins.Header" = "无限置顶对话";
+"Premium.SyncPins" = "同步置顶对话";
+"Premium.SyncPins.Notice.ON" = "如果您更改其他客户端中的置顶对话,则它们在Nicegram中也会同步更改.";
+"Premium.SyncPins.Notice.OFF" = "如果您更改其他客户端中的置顶对话,则它们在Nicegram中也不会同步更改.";
+"Premium.Missed.Header" = "未读提醒消息";
+"Premium.Missed" = "未读提醒通知";
+"Premium.Missed.Notice" = "长时间未使用Nicegram(比如睡眠,学习等),下次打开Nicegram会通知您未读的私人和提及消息.";
