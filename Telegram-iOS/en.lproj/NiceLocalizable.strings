@@ -8,7 +8,6 @@
 "ChatFilter.Unread" = "Unread";
 "ChatFilter.Unmuted" = "Unmuted";
 "ChatFilter.Favourites" = "Favourites";
-"ChatFilter.Missed" = "Missed";
 
 /*Nice Features*/
 "NiceFeatures.Title" = "Nicegram";
@@ -54,6 +53,7 @@
 "NiceFeatures.Browser.Header" = "URLs";
 "NiceFeatures.Browser.UseBrowser" = "Open links in browser";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram will open links in external browser instead of in-app. Selected browser must be installed.";
+"ChatFilter.Missed" = "Missed";
 
 /*Premium*/
 "Premium.Title" = "Premium";
@@ -61,8 +61,6 @@
 "Premium.SyncPins" = "Sync Pinned Chats";
 "Premium.SyncPins.Notice.ON" = "If you change pinned chats in other client, they WILL CHANGE in Nicegram.";
 "Premium.SyncPins.Notice.OFF" = "If you change pinned chats in other client, they WILL NOT CHANGE in Nicegram.";
-
-
 "Premium.Missed.Header" = "Missed messages";
-"Premium.Missed" = "Notify on Missed messages";
-"Premium.Missed.Notice" = "When you open App after long delay (sleeping, working, etc.), Nicegram will show list of unread private messages and mentions.";
+"Premium.Missed" = "Notify on missed messages";
+"Premium.Missed.Notice" = "When you open App after long delay (sleeping, studying, etc.), Nicegram will notify you about unread private messages and mentions.";
