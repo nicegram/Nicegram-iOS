@@ -22,7 +22,7 @@
 /*Open Pin*/
 "Chat.OpenPin" = "Apri pin";
 "ChatFilter.Admin" = "Amministratore";
-"NiceFeatures.Notifications.Fix" = "Disabilita Inutili Notifiche";
+"NiceFeatures.Notifications.Fix" = "Disabilita notifiche inutili";
 
 /*questa frase è impossibile ridurla più di così*/
 "NiceFeatures.Notifications.FixNotice" = "Utile se ricevi notifiche da chat silenziate.\nLe risposte alle notifiche, le etichette degli account e le anteprime dei media non saranno disponibili.";
@@ -51,4 +51,20 @@
 "NiceFeatures.HideNumber" = "Nascondi il numero di telefono dalle impostazioni";
 
 /*NGWeb*/
-"NGWeb.Blocked" = "Non disponibile su Nicegram 😒";
+"NGWeb.Blocked" = "";
+
+/*Browser*/
+"NiceFeatures.Browser.Header" = "";
+"NiceFeatures.Browser.UseBrowser" = "";
+"NiceFeatures.Browser.UseBrowserNotice" = "";
+"ChatFilter.Missed" = "";
+
+/*Premium*/
+"Premium.Title" = "";
+"Premium.UnlimitedPins.Header" = "";
+"Premium.SyncPins" = "";
+"Premium.SyncPins.Notice.ON" = "";
+"Premium.SyncPins.Notice.OFF" = "";
+"Premium.Missed.Header" = "";
+"Premium.Missed" = "";
+"Premium.Missed.Notice" = "";
