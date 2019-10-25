@@ -46,7 +46,6 @@
 "Folder.LimitExceeded" = "К сожалению, создать можно не больше 3 папок. Совсем скоро можно будет создать больше.";
 "NiceFeatures.HideNumber" = "Скрыть номер в настройках";
 
-
 /*NGWeb*/
 "NGWeb.Blocked" = "Недоступно в Nicegram по правилам AppStore";
 
@@ -54,6 +53,7 @@
 "NiceFeatures.Browser.Header" = "ССЫЛКИ";
 "NiceFeatures.Browser.UseBrowser" = "Открывать во внешнем браузере";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram будет открывать ссылки во внешнем браузере вместо встроенного. Выбранный браузер должен быть установлен.";
+"ChatFilter.Missed" = "";
 
 /*Premium*/
 "Premium.Title" = "Премиум";
@@ -61,3 +61,6 @@
 "Premium.SyncPins" = "Синхронизировать Чаты";
 "Premium.SyncPins.Notice.ON" = "Если вы измените закрепленные чаты в другом клиенте, они ИЗМЕНЯТСЯ в Nicegram.";
 "Premium.SyncPins.Notice.OFF" = "Если вы измените закрепленные чаты в другом клиенте, они НЕ ИЗМЕНЯТСЯ в Nicegram.";
+"Premium.Missed.Header" = "";
+"Premium.Missed" = "";
+"Premium.Missed.Notice" = "";
