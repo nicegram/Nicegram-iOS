@@ -1,12 +1,12 @@
 "AppName" = "Nicegram";
 
 /*ChatFilter*/
-"ChatFilter.Bots" = "Bots";
+"ChatFilter.Bots" = "Robots";
 "ChatFilter.Channels" = "Canales";
 "ChatFilter.Private" = "Usuarios";
 "ChatFilter.Groups" = "Grupos";
-"ChatFilter.Unread" = "Sin leer";
-"ChatFilter.Unmuted" = "Con Sonido";
+"ChatFilter.Unread" = "No leído";
+"ChatFilter.Unmuted" = "Desilenciar";
 "ChatFilter.Favourites" = "Favoritos";
 
 /*Nice Features*/
@@ -14,23 +14,23 @@
 "NiceFeatures.Tabs.Header" = "PESTAÑAS";
 "NiceFeatures.Tabs.ShowContacts" = "Mostrar pestaña de Contactos";
 "NiceFeatures.ChatScreen.Header" = "PANTALLA DE CHAT";
-"NiceFeatures.ChatScreen.AnimatedStickers" = "Stickers Animados";
+"NiceFeatures.ChatScreen.AnimatedStickers" = "Calcamonias Animadas";
 
 /*Save to Cloud*/
-"Chat.SaveToCloud" = "Guardar a la nube";
+"Chat.SaveToCloud" = "Guarda a la nube";
 
 /*Open Pin*/
-"Chat.OpenPin" = "Mostrar Pin";
+"Chat.OpenPin" = "Muestra Estaquilla";
 "ChatFilter.Admin" = "Admin";
-"NiceFeatures.Notifications.Fix" = "Deshabilitar Notificaciones no deseadas ";
-"NiceFeatures.Notifications.FixNotice" = "Util si obtienes notificaciones de chats silenciados\nEl Responder desde notificaciones, nombres de cuentas y vista previa de multimedia no estarán disponibles ";
+"NiceFeatures.Notifications.Fix" = "Deshabilita notificaciones indeseadas";
+"NiceFeatures.Notifications.FixNotice" = "Util si obtienes notificaciones de chats silenciados.\nCorrespondencias desde notificaciones, etiquetas de cuenta y vistas previas de multimedias no estarán disponibles.";
 "NiceFeatures.Filters.Header" = "FILTROS (PESTAÑAS)";
-"NiceFeatures.Filters.Notice" = "Selecciona el número de pestañas personalizadas \nMantiene presionado en la pestaña para cambiar el filtro ";
+"NiceFeatures.Filters.Notice" = "Selecciona el número de pestañas personalizadas. \nMantiene presionado la pestaña para cambiar el filtro.";
 
 /*Common*/
-"Common.ExitNow" = "";
-"Common.Later" = "";
-"Common.RestartRequired" = "";
+"Common.ExitNow" = "Salir Ahora";
+"Common.Later" = "Al rato";
+"Common.RestartRequired" = "Reinicio ";
 "NiceFeatures.Tabs.ShowNames" = "";
 "Chat.ForwardAsCopy" = "";
 
@@ -45,3 +45,22 @@
 "Folder.Create.Placeholder" = "";
 "Folder.LimitExceeded" = "";
 "NiceFeatures.HideNumber" = "";
+
+/*NGWeb*/
+"NGWeb.Blocked" = "";
+
+/*Browser*/
+"NiceFeatures.Browser.Header" = "";
+"NiceFeatures.Browser.UseBrowser" = "";
+"NiceFeatures.Browser.UseBrowserNotice" = "";
+"ChatFilter.Missed" = "";
+
+/*Premium*/
+"Premium.Title" = "";
+"Premium.UnlimitedPins.Header" = "";
+"Premium.SyncPins" = "";
+"Premium.SyncPins.Notice.ON" = "";
+"Premium.SyncPins.Notice.OFF" = "";
+"Premium.Missed.Header" = "";
+"Premium.Missed" = "";
+"Premium.Missed.Notice" = "";
