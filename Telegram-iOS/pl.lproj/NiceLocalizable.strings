@@ -45,3 +45,22 @@
 "Folder.Create.Placeholder" = "Folder…";
 "Folder.LimitExceeded" = "Nie możesz utworzyć więcej niż 3 foldery niestandardowe.\nWięcej folderów będzie dostępnych wkrótce.";
 "NiceFeatures.HideNumber" = "Ukryj  numer telefonu w ustawieniach";
+
+/*NGWeb*/
+"NGWeb.Blocked" = "Niedostępne w Nicegram ze względu na wytyczne AppStore";
+
+/*Browser*/
+"NiceFeatures.Browser.Header" = "URL";
+"NiceFeatures.Browser.UseBrowser" = "Otwórz linki w przeglądarce";
+"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram otworzy linki w zewnętrznej przeglądarce zamiast w aplikacji. Wybrana przeglądarka musi być zainstalowana.";
+"ChatFilter.Missed" = "Nieodebrane";
+
+/*Premium*/
+"Premium.Title" = "Premium";
+"Premium.UnlimitedPins.Header" = "NIEOGRANICZONE PRZYPIĘTE CZATY";
+"Premium.SyncPins" = "Synchronizuj przypięte czaty";
+"Premium.SyncPins.Notice.ON" = "Jeśli zmienisz przypięte czaty w innym kliencie, ZMIENIĄ SIĘ one też w Nicegram.";
+"Premium.SyncPins.Notice.OFF" = "Jeśli zmienisz przypięte czaty w innym kliencie, NIE ZMIENIĄ SIĘ one w Nicegram.";
+"Premium.Missed.Header" = "Nieodebrane wiadomości";
+"Premium.Missed" = "Powiadom o nieodebranych wiadomościach";
+"Premium.Missed.Notice" = "Gdy otworzysz aplikację po długim czasie (spanie, nauka itp.), Nicegram powiadomi cię o nieprzeczytanych wiadomościach prywatnych i wzmiankach.";
