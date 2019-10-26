@@ -15,7 +15,6 @@
 "NiceFeatures.Tabs.ShowContacts" = "Show Contacts Tab";
 "NiceFeatures.ChatScreen.Header" = "CHAT SCREEN";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Animated Stickers";
-"NiceFeatures.HideNumber" = "Hide phone in settings";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "Save to Cloud";
@@ -45,9 +44,7 @@
 "Folder.Create.Name" = "Folder Name";
 "Folder.Create.Placeholder" = "Folder...";
 "Folder.LimitExceeded" = "Sorry, you can create no more then 3 custom folders.\nMore folders are available in Premium.";
-"Folder.DeleteAsk" = "Delete Folder";
-"Folder.NeedPremium" = "This Folder is only available with Premium. You can get Premium or delete Folder with swipe.";
-
+"NiceFeatures.HideNumber" = "Hide phone in settings";
 
 /*NGWeb*/
 "NGWeb.Blocked" = "Unavailable in Nicegram due to AppStore Guidelines";
@@ -67,3 +64,5 @@
 "Premium.Missed.Header" = "Missed messages";
 "Premium.Missed" = "Notify on missed messages";
 "Premium.Missed.Notice" = "When you open App after long delay (sleeping, studying, etc.), Nicegram will notify you about unread private messages and mentions.";
+"Folder.DeleteAsk" = "Delete Folder";
+"Folder.NeedPremium" = "This Folder is only available with Premium. You can get Premium or delete Folder with swipe.";
