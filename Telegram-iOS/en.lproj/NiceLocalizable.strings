@@ -31,6 +31,8 @@
 "Common.ExitNow" = "Exit Now";
 "Common.Later" = "Later";
 "Common.RestartRequired" = "Restart Required!";
+"Common.SupportChatUsername" = "nicegramchat";
+"Common.FAQUrl" = "https://nicegram.app/faq/"
 "NiceFeatures.Tabs.ShowNames" = "Show Tab Names";
 "Chat.ForwardAsCopy" = "Forward As Copy";
 
