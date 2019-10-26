@@ -71,3 +71,5 @@
 "Premium.Missed.Header" = "未读提醒消息";
 "Premium.Missed" = "未读提醒通知";
 "Premium.Missed.Notice" = "长时间未使用Nicegram(比如睡眠,学习等),下次打开Nicegram会通知您未读的私人和提及消息.";
+"Folder.DeleteAsk" = "";
+"Folder.NeedPremium" = "";
