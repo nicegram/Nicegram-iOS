@@ -66,3 +66,5 @@
 "Premium.Missed.Notice" = "Gdy otworzysz aplikację po długim czasie (spanie, nauka itp.), Nicegram powiadomi cię o nieprzeczytanych wiadomościach prywatnych i wzmiankach.";
 "Folder.DeleteAsk" = "";
 "Folder.NeedPremium" = "";
+"Common.SupportChatUsername" = "";
+"Common.FAQUrl" = "";

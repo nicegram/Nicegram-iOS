@@ -70,3 +70,5 @@
 "Premium.Missed.Notice" = "Quando apri l'app dopo un po' di tempo, Nicegram ti ricorderà delle chat private non lette e delle menzioni.";
 "Folder.DeleteAsk" = "";
 "Folder.NeedPremium" = "";
+"Common.SupportChatUsername" = "nicegram_it";
+"Common.FAQUrl" = "";

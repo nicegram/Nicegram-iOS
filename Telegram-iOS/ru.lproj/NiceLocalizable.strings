@@ -64,5 +64,7 @@
 "Premium.Missed.Header" = "Пропущенные сообщения";
 "Premium.Missed" = "Уведомлять о пропущенных";
 "Premium.Missed.Notice" = "Когда вы открываете приложение после долгого отсутствия (сон, работа и т.д.), Nicegram откроет вкладку с непрочитанными сообщениями и упоминаниями.";
-"Folder.DeleteAsk" = "";
-"Folder.NeedPremium" = "";
+"Folder.DeleteAsk" = "Удалить папку";
+"Folder.NeedPremium" = "Эта Папка доступна только с Премиумом. Вы можете получить Премиум или удалить папку свайпом.";
+"Common.SupportChatUsername" = "nicegram_ru";
+"Common.FAQUrl" = "https://nicegram.app/ru/faq/";

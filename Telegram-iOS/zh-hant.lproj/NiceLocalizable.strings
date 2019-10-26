@@ -66,3 +66,5 @@
 "Premium.Missed.Notice" = "長時間未上線後開啟 App 時，Nicegram 會通知您未讀的對話及 TAG";
 "Folder.DeleteAsk" = "";
 "Folder.NeedPremium" = "";
+"Common.SupportChatUsername" = "nicegram_tw";
+"Common.FAQUrl" = "https://nicegram-tw.gitbook.io/";
