@@ -82,14 +82,17 @@ private struct SettingsItemArguments {
     let removeAccount: (AccountRecordId) -> Void
     let keepPhone: () -> Void
     let openPhoneNumberChange: () -> Void
+    let openNgChat: () -> Void
+    let openNgFaq: () -> Void
 }
 
 private enum SettingsSection: Int32 {
     case info
     case phone
     case accounts
-    case premium
     case proxy
+    case nicegram
+    case ngHelp
     case media
     case generalSettings
     case advanced
@@ -108,10 +111,13 @@ private enum SettingsEntry: ItemListNodeEntry {
     case account(Int, Account, PresentationTheme, PresentationStrings, PresentationDateTimeFormat, Peer, Int32, Bool)
     case addAccount(PresentationTheme, String)
     
-    case premium(PresentationTheme, UIImage?, String)
     
     case proxy(PresentationTheme, UIImage?, String, String)
+    case premium(PresentationTheme, UIImage?, String)
+    
     case niceFeatures(PresentationTheme, UIImage?, String)
+    case ngFaq(PresentationTheme, UIImage?, String)
+    case ngChat(PresentationTheme, UIImage?, String)
     
     case savedMessages(PresentationTheme, UIImage?, String)
     case recentCalls(PresentationTheme, UIImage?, String)
@@ -136,10 +142,12 @@ private enum SettingsEntry: ItemListNodeEntry {
                 return SettingsSection.phone.rawValue
             case .account, .addAccount:
                 return SettingsSection.accounts.rawValue
-            case .premium:
-                return SettingsSection.premium.rawValue
-            case .proxy, .niceFeatures:
+            case .proxy, .premium:
                 return SettingsSection.proxy.rawValue
+            case .niceFeatures:
+                return SettingsSection.nicegram.rawValue
+            case .ngFaq, .ngChat:
+                return SettingsSection.ngHelp.rawValue
             case .savedMessages, .recentCalls, .stickers:
                 return SettingsSection.media.rawValue
             case .notificationsAndSounds, .privacyAndSecurity, .dataAndStorage, .themes, .language:
@@ -175,30 +183,34 @@ private enum SettingsEntry: ItemListNodeEntry {
                 return 1004
             case .niceFeatures:
                 return 1005
-            case .savedMessages:
+            case .ngFaq:
                 return 1006
-            case .recentCalls:
+            case .ngChat:
                 return 1007
-            case .stickers:
+            case .savedMessages:
                 return 1008
-            case .notificationsAndSounds:
+            case .recentCalls:
                 return 1009
-            case .privacyAndSecurity:
+            case .stickers:
                 return 1010
-            case .dataAndStorage:
+            case .notificationsAndSounds:
                 return 1011
-            case .themes:
+            case .privacyAndSecurity:
                 return 1012
-            case .language:
+            case .dataAndStorage:
                 return 1013
-            case .passport:
+            case .themes:
                 return 1014
-            case .watch:
+            case .language:
                 return 1015
-            case .askAQuestion:
+            case .passport:
                 return 1016
-            case .faq:
+            case .watch:
                 return 1017
+            case .askAQuestion:
+                return 1018
+            case .faq:
+                return 1019
         }
     }
     
@@ -302,6 +314,18 @@ private enum SettingsEntry: ItemListNodeEntry {
                 } else {
                     return false
             }
+            case let .ngFaq(lhsTheme, lhsImage, lhsText):
+                if case let .ngFaq(rhsTheme, rhsImage, rhsText) = rhs, lhsTheme === rhsTheme, lhsImage === rhsImage, lhsText == rhsText {
+                    return true
+                } else {
+                    return false
+                }
+            case let .ngChat(lhsTheme, lhsImage, lhsText):
+                if case let .ngChat(rhsTheme, rhsImage, rhsText) = rhs, lhsTheme === rhsTheme, lhsImage === rhsImage, lhsText == rhsText {
+                    return true
+                } else {
+                    return false
+                }
             case let .savedMessages(lhsTheme, lhsImage, lhsText):
                 if case let .savedMessages(rhsTheme, rhsImage, rhsText) = rhs, lhsTheme === rhsTheme, lhsImage === rhsImage, lhsText == rhsText {
                     return true
@@ -453,6 +477,14 @@ private enum SettingsEntry: ItemListNodeEntry {
                 return ItemListDisclosureItem(theme: theme, icon: image, title: text, label: "", sectionId: ItemListSectionId(self.section), style: .blocks, action: {
                     arguments.openNiceFeatures()
                 })
+            case let .ngFaq(theme, image, text):
+                return ItemListDisclosureItem(theme: theme, icon: image, title: text, label: "", sectionId: ItemListSectionId(self.section), style: .blocks, action: {
+                    arguments.openNgFaq()
+                })
+            case let .ngChat(theme, image, text):
+                return ItemListDisclosureItem(theme: theme, icon: image, title: text, label: "", sectionId: ItemListSectionId(self.section), style: .blocks, action: {
+                    arguments.openNgChat()
+                })
             case let .savedMessages(theme, image, text):
                 return ItemListDisclosureItem(theme: theme, icon: image, title: text, label: "", sectionId: ItemListSectionId(self.section), style: .blocks, action: {
                     arguments.openSavedMessages()
@@ -542,7 +574,7 @@ private func settingsEntries(account: Account, presentationData: PresentationDat
             }
         }
         
-        entries.append(.premium(presentationData.theme, PresentationResourcesSettings.nicegramIcon, l("Premium.Title", presentationData.strings.baseLanguageCode)))
+        entries.append(.premium(presentationData.theme, PresentationResourcesSettings.premiumIcon, l("Premium.Title", presentationData.strings.baseLanguageCode)))
         
         if !proxySettings.servers.isEmpty {
             let valueString: String
@@ -559,7 +591,11 @@ private func settingsEntries(account: Account, presentationData: PresentationDat
             entries.append(.proxy(presentationData.theme, PresentationResourcesSettings.proxy, presentationData.strings.Settings_Proxy, valueString))
         }
         
+        
         entries.append(.niceFeatures(presentationData.theme, PresentationResourcesSettings.nicegramIcon, l("NiceFeatures.Title", presentationData.strings.baseLanguageCode)))
+        entries.append(.ngFaq(presentationData.theme, PresentationResourcesSettings.faq, l("Common.FAQ.Button", presentationData.strings.baseLanguageCode)))
+        entries.append(.ngChat(presentationData.theme, PresentationResourcesSettings.support, presentationData.strings.Settings_Support))
+        
         entries.append(.savedMessages(presentationData.theme, PresentationResourcesSettings.savedMessages, presentationData.strings.Settings_SavedMessages))
         entries.append(.recentCalls(presentationData.theme, PresentationResourcesSettings.recentCalls, presentationData.strings.CallSettings_RecentCalls))
         entries.append(.stickers(presentationData.theme, PresentationResourcesSettings.stickers, presentationData.strings.ChatSettings_Stickers, unreadTrendingStickerPacks == 0 ? "" : "\(unreadTrendingStickerPacks)", archivedPacks))
@@ -702,7 +738,18 @@ public func settingsController(context: AccountContext, accountManager: AccountM
     accountsAndPeers.set(activeAccountsAndPeers(context: context))
     
     let privacySettings = Promise<AccountPrivacySettings?>(nil)
-
+    
+    let openNicegramFaq: () -> Void = {
+        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+        let ngFaqUrl = l("Common.FAQUrl", presentationData.strings.baseLanguageCode)
+        if SimplyNiceSettings().useBrowser {
+            let browserUrl = getBrowserUrl(ngFaqUrl, browser: SimplyNiceSettings().browser)
+            context.sharedContext.applicationBindings.openUrl(browserUrl)
+        } else {
+            context.sharedContext.applicationBindings.openUrl(ngFaqUrl)
+        }
+    }
+    
     let openFaq: (Promise<ResolvedUrl>, String?) -> Void = { resolvedUrl, customAnchor in
         let _ = (contextValue.get()
         |> deliverOnMainQueue
@@ -959,6 +1006,16 @@ public func settingsController(context: AccountContext, accountManager: AccountM
                 pushControllerImpl?(ChangePhoneNumberIntroController(context: context, phoneNumber: formatPhoneNumber(phoneNumber)))
             })
         })
+    }, openNgChat: {
+        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+        presentControllerImpl?(textAlertController(context: context, title: nil, text: l("Common.FAQ.Intro"), actions: [
+            TextAlertAction(type: .genericAction, title: presentationData.strings.Settings_FAQ_Button, action: {
+                openNicegramFaq()
+            }), TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {
+                context.sharedContext.openExternalUrl(context: context, urlContext: .generic, url: "tg://resolve?domain=" + l("Common.SupportChatUsername", presentationData.strings.baseLanguageCode), forceExternal: false, presentationData: presentationData, navigationController: getNavigationControllerImpl?(), dismissInput: {})
+            })]), nil)
+    }, openNgFaq: {
+        openNicegramFaq()
     })
     
     changeProfilePhotoImpl = {
