@@ -161,7 +161,7 @@ private enum NewFolderListEntry: ItemListNodeEntry {
         case let .foldersHeader(theme, text):
             return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
         case let .folderItem(_, theme, _, folder):
-            return ItemListActionItem(theme: theme, title: folder.name, kind: .neutral, alignment: .center, sectionId: self.section, style: .blocks, action: {
+            return ItemListActionItem(theme: theme, title: folder.name, kind: .neutral, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 arguments.addToExisting(folder)
             })
         }
