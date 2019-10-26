@@ -31,8 +31,6 @@
 "Common.ExitNow" = "Exit Now";
 "Common.Later" = "Later";
 "Common.RestartRequired" = "Restart Required!";
-"Common.SupportChatUsername" = "nicegramchat";
-"Common.FAQUrl" = "https://nicegram.app/faq/";
 "NiceFeatures.Tabs.ShowNames" = "Show Tab Names";
 "Chat.ForwardAsCopy" = "Forward As Copy";
 
@@ -68,3 +66,5 @@
 "Premium.Missed.Notice" = "When you open App after long delay (sleeping, studying, etc.), Nicegram will notify you about unread private messages and mentions.";
 "Folder.DeleteAsk" = "Delete Folder";
 "Folder.NeedPremium" = "This Folder is only available with Premium. You can get Premium or delete Folder with swipe.";
+"Common.SupportChatUsername" = "nicegramchat";
+"Common.FAQUrl" = "https://nicegram.app/faq/";
