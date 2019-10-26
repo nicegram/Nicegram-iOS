@@ -57,10 +57,12 @@
 
 /*Premium*/
 "Premium.Title" = "";
-"Premium.UnlimitedPins.Header" = "";
-"Premium.SyncPins" = "";
-"Premium.SyncPins.Notice.ON" = "";
-"Premium.SyncPins.Notice.OFF" = "";
+"Premium.UnlimitedPins.Header" = "SINIRSIZ SABİTLENMİŞ SOHBET";
+"Premium.SyncPins" = "Senkronize Sabitlenmiş Sohbetler";
+"Premium.SyncPins.Notice.ON" = "Eğer diğer sistemlerinizde sabit sohbetlerinizi değiştirirseniz, Nicegram’da da DEĞİŞECEKTİR.";
+"Premium.SyncPins.Notice.OFF" = "Eğer diğer sistemlerinizde sabit sohbetlerinizi değiştirirseniz, Nicegram’da DEĞİŞMEYECEKTİR.";
 "Premium.Missed.Header" = "";
 "Premium.Missed" = "";
 "Premium.Missed.Notice" = "";
+"Folder.DeleteAsk" = "";
+"Folder.NeedPremium" = "";
