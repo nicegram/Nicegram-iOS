@@ -93,7 +93,9 @@ public func showMissed() -> Bool {
     }
 }
 
-
+public func canUnlimFolders() -> Bool {
+    return isPremium()
+}
 
 
 public func utcnow() -> Int {

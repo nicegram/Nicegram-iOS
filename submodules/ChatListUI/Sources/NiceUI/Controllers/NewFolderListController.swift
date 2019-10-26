@@ -249,7 +249,7 @@ public func newFolderListController(context: AccountContext, parent: ChatListCon
     
     let arguments = NewFolderListControllerArguments(
     createNew: {
-        if getNiceFolders().count >= 3 {
+        if getNiceFolders().count >= 3 && !canUnlimFolders() {
             let controller = standardTextAlertController(theme: AlertControllerTheme(presentationTheme: presentationData.theme), title: nil, text: l("Folder.LimitExceeded", locale), actions: [TextAlertAction(type: .genericAction, title: "OK", action: {})])
             presentControllerImpl?(controller, nil)
         } else {

@@ -15,6 +15,7 @@
 "NiceFeatures.Tabs.ShowContacts" = "Show Contacts Tab";
 "NiceFeatures.ChatScreen.Header" = "CHAT SCREEN";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Animated Stickers";
+"NiceFeatures.HideNumber" = "Hide phone in settings";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "Save to Cloud";
@@ -43,8 +44,10 @@
 "Folder.Create" = "Create Folder...";
 "Folder.Create.Name" = "Folder Name";
 "Folder.Create.Placeholder" = "Folder...";
-"Folder.LimitExceeded" = "Sorry, you can create no more then 3 custom folders.\nMore folders will be available soon.";
-"NiceFeatures.HideNumber" = "Hide phone in settings";
+"Folder.LimitExceeded" = "Sorry, you can create no more then 3 custom folders.\nMore folders are available in Premium.";
+"Folder.DeleteAsk" = "Delete Folder";
+"Folder.NeedPremium" = "This Folder is only available with Premium. You can get Premium or delete Folder with swipe.";
+
 
 /*NGWeb*/
 "NGWeb.Blocked" = "Unavailable in Nicegram due to AppStore Guidelines";

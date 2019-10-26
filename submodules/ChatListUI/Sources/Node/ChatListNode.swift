@@ -54,11 +54,14 @@ public final class ChatListNodeInteraction {
     let deletePeer: (PeerId) -> Void
     let updatePeerGrouping: (PeerId, Bool) -> Void
     let togglePeerMarkedUnread: (PeerId, Bool) -> Void
+    let deleteFolder: (PeerGroupId, [PeerId]) -> Void
     let toggleArchivedFolderHiddenByDefault: () -> Void
+    
+
     
     var highlightedChatLocation: ChatListHighlightedLocation?
     
-    public init(activateSearch: @escaping () -> Void, peerSelected: @escaping (Peer) -> Void, togglePeerSelected: @escaping (PeerId) -> Void, messageSelected: @escaping (Peer, Message, Bool) -> Void, groupSelected: @escaping (PeerGroupId) -> Void, addContact: @escaping (String) -> Void, setPeerIdWithRevealedOptions: @escaping (PeerId?, PeerId?) -> Void, setItemPinned: @escaping (PinnedItemId, Bool) -> Void, setPeerMuted: @escaping (PeerId, Bool) -> Void, deletePeer: @escaping (PeerId) -> Void, updatePeerGrouping: @escaping (PeerId, Bool) -> Void, togglePeerMarkedUnread: @escaping (PeerId, Bool) -> Void, toggleArchivedFolderHiddenByDefault: @escaping () -> Void) {
+    public init(activateSearch: @escaping () -> Void, peerSelected: @escaping (Peer) -> Void, togglePeerSelected: @escaping (PeerId) -> Void, messageSelected: @escaping (Peer, Message, Bool) -> Void, groupSelected: @escaping (PeerGroupId) -> Void, addContact: @escaping (String) -> Void, setPeerIdWithRevealedOptions: @escaping (PeerId?, PeerId?) -> Void, setItemPinned: @escaping (PinnedItemId, Bool) -> Void, setPeerMuted: @escaping (PeerId, Bool) -> Void, deletePeer: @escaping (PeerId) -> Void, updatePeerGrouping: @escaping (PeerId, Bool) -> Void, togglePeerMarkedUnread: @escaping (PeerId, Bool) -> Void, deleteFolder: @escaping (PeerGroupId, [PeerId]) -> Void, toggleArchivedFolderHiddenByDefault: @escaping () -> Void) {
         self.activateSearch = activateSearch
         self.peerSelected = peerSelected
         self.togglePeerSelected = togglePeerSelected
@@ -71,6 +74,7 @@ public final class ChatListNodeInteraction {
         self.deletePeer = deletePeer
         self.updatePeerGrouping = updatePeerGrouping
         self.togglePeerMarkedUnread = togglePeerMarkedUnread
+        self.deleteFolder = deleteFolder
         self.toggleArchivedFolderHiddenByDefault = toggleArchivedFolderHiddenByDefault
     }
 }
@@ -317,6 +321,7 @@ public final class ChatListNode: ListView {
     public var deletePeerChat: ((PeerId) -> Void)?
     public var updatePeerGrouping: ((PeerId, Bool) -> Void)?
     public var presentAlert: ((String) -> Void)?
+    public var presentController: ((ViewController) -> Void)?
     public var toggleArchivedFolderHiddenByDefault: (() -> Void)?
     
     private var theme: PresentationTheme
@@ -419,6 +424,24 @@ public final class ChatListNode: ListView {
             }
         }, groupSelected: { [weak self] groupId in
             if let strongSelf = self, let groupSelected = strongSelf.groupSelected {
+                if !isNiceFolderCheck(groupId.rawValue) {
+                    groupSelected(groupId)
+                    return
+                }
+                let folders = getNiceFolders()
+                var c = 1
+                for folder in folders {
+                    if c > 3 {
+                        if folder.groupId == groupId.rawValue {
+                            if !canUnlimFolders() {
+                                strongSelf.presentAlert?(l("Folder.NeedPremium", strings.baseLanguageCode))
+                                return
+                            }
+                        }
+                    } else {
+                        c = c + 1
+                    }
+                }
                 groupSelected(groupId)
             }
         }, addContact: { _ in
@@ -472,6 +495,37 @@ public final class ChatListNode: ListView {
                     return state
                 }
             })
+        }, deleteFolder: { [weak self] groupId, peerIds in
+            if let strongSelf = self {
+                let locale = strings.baseLanguageCode
+                
+                let folder = getFolder(groupId.rawValue)
+                var deleteFolderQuestion = l("Folder.DeleteAsk", locale) + "?"
+                if let folder = folder {
+                    deleteFolderQuestion = l("Folder.DeleteAsk", locale) + " " + "«" + folder.name + "»" + "?"
+                }
+                
+                let controller = standardTextAlertController(theme: AlertControllerTheme(presentationTheme: theme), title: nil, text: deleteFolderQuestion, actions: [TextAlertAction(type: .destructiveAction, title: strings.Common_Yes, action: {
+                    if let _ = folder {
+                        deleteFolder(groupId.rawValue)
+                    }
+                    let _ = (context.account.postbox.transaction { transaction -> Void in
+                        for peerId in peerIds {
+                            updatePeerGroupIdInteractively(transaction: transaction, peerId: peerId, groupId: .root)
+                        }
+                        }
+                        |> deliverOnMainQueue).start(completed: {
+                            guard let strongSelf = self else {
+                                return
+                            }
+                            strongSelf.setCurrentRemovingPeerId(nil)
+                        })
+                
+                }), TextAlertAction(type: .genericAction, title: strings.Common_No, action: {})])
+                
+                
+                strongSelf.presentController?(controller)
+            }
         }, toggleArchivedFolderHiddenByDefault: { [weak self] in
             self?.toggleArchivedFolderHiddenByDefault?()
         })

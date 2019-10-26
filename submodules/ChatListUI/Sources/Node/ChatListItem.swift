@@ -192,6 +192,7 @@ private enum RevealOptionKey: Int32 {
     case unarchive
     case hide
     case unhide
+    case deleteFolder
 }
 
 private let itemHeight: CGFloat = 76.0
@@ -240,9 +241,12 @@ private func revealOptions(strings: PresentationStrings, theme: PresentationThem
     return options
 }
 
-private func groupReferenceRevealOptions(strings: PresentationStrings, theme: PresentationTheme, isEditing: Bool, hiddenByDefault: Bool) -> [ItemListRevealOption] {
+private func groupReferenceRevealOptions(groupId: PeerGroupId, strings: PresentationStrings, theme: PresentationTheme, isEditing: Bool, hiddenByDefault: Bool) -> [ItemListRevealOption] {
     var options: [ItemListRevealOption] = []
     if !isEditing {
+        if isNiceFolderCheck(groupId.rawValue) {
+            options.append(ItemListRevealOption(key: RevealOptionKey.deleteFolder.rawValue, title: strings.Common_Delete, icon: deleteIcon, color: theme.list.itemDisclosureActions.destructive.fillColor, textColor: theme.list.itemDisclosureActions.destructive.foregroundColor))
+        }
         if hiddenByDefault {
             options.append(ItemListRevealOption(key: RevealOptionKey.unhide.rawValue, title: strings.ChatList_UnhideAction, icon: unhideIcon, color: theme.list.itemDisclosureActions.constructive.fillColor, textColor: theme.list.itemDisclosureActions.constructive.foregroundColor))
         } else {
@@ -1113,8 +1117,8 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
                         peerRevealOptions = []
                         peerLeftRevealOptions = []
                     }
-                case .groupReference:
-                    peerRevealOptions = groupReferenceRevealOptions(strings: item.presentationData.strings, theme: item.presentationData.theme, isEditing: item.editing, hiddenByDefault: groupHiddenByDefault)
+                case let .groupReference(groupId, _, _, _, _):
+                    peerRevealOptions = groupReferenceRevealOptions(groupId: groupId, strings: item.presentationData.strings, theme: item.presentationData.theme, isEditing: item.editing, hiddenByDefault: groupHiddenByDefault)
                     peerLeftRevealOptions = []
             }
             
@@ -1716,6 +1720,17 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
                     close = false
                 case RevealOptionKey.delete.rawValue:
                     item.interaction.deletePeer(item.index.messageIndex.id.peerId)
+                case RevealOptionKey.deleteFolder.rawValue:
+                    switch (item.content) {
+                        case let .groupReference(groupId: groupId, peers: peers, _, _, _):
+                            var peerIds: [PeerId] = []
+                            for peerReference in peers {
+                                peerIds.append(peerReference.peer.peerId)
+                            }
+                            item.interaction.deleteFolder(groupId, peerIds)
+                        default:
+                            break
+                    }
                 case RevealOptionKey.archive.rawValue:
                     item.interaction.updatePeerGrouping(item.index.messageIndex.id.peerId, true)
                     close = false

@@ -846,6 +846,7 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
         }, deletePeer: { _ in
         }, updatePeerGrouping: { _, _ in
         }, togglePeerMarkedUnread: { _, _ in
+        }, deleteFolder: { _, _ in
         }, toggleArchivedFolderHiddenByDefault: {
         })
         
