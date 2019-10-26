@@ -53,14 +53,16 @@
 "NiceFeatures.Browser.Header" = "連結";
 "NiceFeatures.Browser.UseBrowser" = "在瀏覽器中開啟連結";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram 將在外部瀏覽器開啟連結而不是在 App 內開啟，必須安裝所選擇的瀏覽器。";
-"ChatFilter.Missed" = "";
+"ChatFilter.Missed" = "錯過的訊息";
 
 /*Premium*/
-"Premium.Title" = "";
-"Premium.UnlimitedPins.Header" = "";
-"Premium.SyncPins" = "";
-"Premium.SyncPins.Notice.ON" = "";
-"Premium.SyncPins.Notice.OFF" = "";
-"Premium.Missed.Header" = "";
-"Premium.Missed" = "";
-"Premium.Missed.Notice" = "";
+"Premium.Title" = "加值功能";
+"Premium.UnlimitedPins.Header" = "無限置頂";
+"Premium.SyncPins" = "同步置頂對話";
+"Premium.SyncPins.Notice.ON" = "如果您在其他客戶端中變更置頂對話，它們在 Nicegram 中將會同步。";
+"Premium.SyncPins.Notice.OFF" = "不如果您在其他客戶端中變更置頂對話，它們在 Nicegram 中將不會同步。";
+"Premium.Missed.Header" = "錯過的訊息";
+"Premium.Missed" = "通知錯過的訊息";
+"Premium.Missed.Notice" = "長時間未上線後開啟 App 時，Nicegram 會通知您未讀的對話及 TAG";
+"Folder.DeleteAsk" = "";
+"Folder.NeedPremium" = "";
