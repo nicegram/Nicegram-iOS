@@ -51,20 +51,22 @@
 "NiceFeatures.HideNumber" = "Nascondi il numero di telefono dalle impostazioni";
 
 /*NGWeb*/
-"NGWeb.Blocked" = "";
+"NGWeb.Blocked" = "Non disponibile su Nicegram a causa delle linee guida dell' AppStore";
 
 /*Browser*/
-"NiceFeatures.Browser.Header" = "";
-"NiceFeatures.Browser.UseBrowser" = "";
-"NiceFeatures.Browser.UseBrowserNotice" = "";
-"ChatFilter.Missed" = "";
+"NiceFeatures.Browser.Header" = "URLs";
+"NiceFeatures.Browser.UseBrowser" = "Apri link nel browser";
+"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram aprirà i link esterni in un browser esterno invece di aprirli nell'app.\nIl browser selezionato deve essere installato.";
+"ChatFilter.Missed" = "Mancato";
 
 /*Premium*/
-"Premium.Title" = "";
-"Premium.UnlimitedPins.Header" = "";
-"Premium.SyncPins" = "";
-"Premium.SyncPins.Notice.ON" = "";
-"Premium.SyncPins.Notice.OFF" = "";
-"Premium.Missed.Header" = "";
-"Premium.Missed" = "";
-"Premium.Missed.Notice" = "";
+"Premium.Title" = "Premium";
+"Premium.UnlimitedPins.Header" = "CHAT FISSATE ILLIMITATE";
+"Premium.SyncPins" = "Sincronizza chat pinnate";
+"Premium.SyncPins.Notice.ON" = "Se cambi le chat pinnate in un altro client, esse CAMBIERANNO in Nicegram.";
+"Premium.SyncPins.Notice.OFF" = "Se cambi le chat pinnate in un altro client, esse NON CAMBIERANNO in Nicegram.";
+"Premium.Missed.Header" = "Messaggi mancati";
+"Premium.Missed" = "Notifica per i messaggi mancati";
+"Premium.Missed.Notice" = "Quando apri l'app dopo un po' di tempo, Nicegram ti ricorderà delle chat private non lette e delle menzioni.";
+"Folder.DeleteAsk" = "";
+"Folder.NeedPremium" = "";
