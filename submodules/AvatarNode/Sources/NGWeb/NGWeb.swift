@@ -10,6 +10,7 @@ import Foundation
 import Postbox
 import TelegramCore
 import BuildConfig
+import NicegramLib
 
 public var NGAPI = BuildConfig(baseAppBundleId: Bundle.main.bundleIdentifier!).ngApiUrl
 
@@ -118,13 +119,14 @@ public func requestApi(_ path: String, pathParams: [String] = [], completion: @e
     task.resume()
 }
 
-public func getNGSettings(_ userId: Int64, completion: @escaping (_ sync: Bool, _ rreasons: [String], _ allowed: [Int64], _ restricted: [Int64], _ premiumStatus: Bool) -> Void) {
+public func getNGSettings(_ userId: Int64, completion: @escaping (_ sync: Bool, _ rreasons: [String], _ allowed: [Int64], _ restricted: [Int64], _ premiumStatus: Bool, _ betaPremiumStatus: Bool) -> Void) {
     requestApi("settings", pathParams: [String(userId)], completion: { (apiResponse) -> Void in
         var syncChats = NGAPISETTINGS().SYNC_CHATS
         var restricitionReasons = NGAPISETTINGS().RESTRICTION_REASONS
         var allowedChats = NGAPISETTINGS().ALLOWED
         var restrictedChats = NGAPISETTINGS().RESTRICTED
         var localPremium = PremiumSettings().isPremium
+        var betaPremium = SecureNiceSettings().isBetaPremium
         
         if let response = apiResponse {
             if let settings = response["settings"] {
@@ -145,25 +147,30 @@ public func getNGSettings(_ userId: Int64, completion: @escaping (_ sync: Bool, 
                 restrictedChats = restricted as! [Int64]
             }
             
-            if let premium = response["premium"]{
+            if let premium = response["premium"] {
                 localPremium = premium as! Bool
             }
             
+            if let remoteBetaPremium = response["beta_premium"] {
+                betaPremium = remoteBetaPremium as! Bool
+            }
+            
         }
-        completion(syncChats, restricitionReasons, allowedChats, restrictedChats, localPremium)
+        completion(syncChats, restricitionReasons, allowedChats, restrictedChats, localPremium, betaPremium)
     })
 }
 
 public func updateNGInfo(userId: Int64) {
-    getNGSettings(userId, completion: { (sync, rreasons, allowed, restricted, isPremium) -> Void in
+    getNGSettings(userId, completion: { (sync, rreasons, allowed, restricted, isPremium, isBetaPremium) -> Void in
         NGAPISETTINGS().SYNC_CHATS = sync
         NGAPISETTINGS().RESTRICTED = restricted
         NGAPISETTINGS().ALLOWED = allowed
         NGAPISETTINGS().RESTRICTION_REASONS = rreasons
         
-        PremiumSettings().isPremium = false //isPremium
+        PremiumSettings().isPremium = isPremium
+        SecureNiceSettings().isBetaPremium = isBetaPremium
         
-        ngApiLog("SYNC_CHATS \(NGAPISETTINGS().SYNC_CHATS)\nRESTRICTED \(NGAPISETTINGS().RESTRICTED)\nALLOWED \(NGAPISETTINGS().ALLOWED)\nRESTRICTED_REASONS count \(NGAPISETTINGS().RESTRICTION_REASONS.count)\nPREMIUM \(PremiumSettings().isPremium)")
+        ngApiLog("SYNC_CHATS \(NGAPISETTINGS().SYNC_CHATS)\nRESTRICTED \(NGAPISETTINGS().RESTRICTED)\nALLOWED \(NGAPISETTINGS().ALLOWED)\nRESTRICTED_REASONS count \(NGAPISETTINGS().RESTRICTION_REASONS.count)\nPREMIUM \(PremiumSettings().isPremium)\nBETA PREMIUM\(SecureNiceSettings().isBetaPremium)")
     })
 }
 
