@@ -16,12 +16,47 @@ import UIKit
 import AsyncDisplayKit
 import SwiftSignalKit
 import TelegramCore
+import AlertUI
 
+import StoreKit
 
+extension SKProduct {
+    
+    var localizedPrice: String? {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.locale = priceLocale
+        return formatter.string(from: price)
+    }
+    
+}
 
-public func getPremiumIntroController(context: AccountContext, presentationData: PresentationData) -> PremiumIntroController {
+public func getPremiumIntroController(context: AccountContext, presentationData: PresentationData, product: SKProduct) -> PremiumIntroController {
+    
+    
+    let locale = presentationData.strings.baseLanguageCode
+    
+    let title = l("IAP.Premium.Title", locale)
+    let subtitle = l("IAP.Premium.Subtitle", locale)
+    let text = l("IAP.Premium.Features", locale)
+    
+    let buttonTitle = product.localizedPrice ?? "Free"
+    
     
     let controller = PremiumIntroController(context: context, splashScreen: true)
-    controller.setState(.custom(icon: PremiumIntroControllerCustomIcon(light: UIImage(bundleImageName: "Chat/Intro/PremiumIntro"), dark: nil), title: "Premium", subtitle: "Unique features you can't refuse!", text: "Unlimited folders\nUnlimited pinned chats\nMissed messages notification (Digest)", buttonTitle: "Pay $0.00", footerText: nil), animated: true)
+    controller.setState(.custom(icon: PremiumIntroControllerCustomIcon(light: UIImage(bundleImageName: "Chat/Intro/PremiumIntro"), dark: nil), title: title, subtitle: subtitle, text: text, buttonTitle: buttonTitle, footerText: nil), animated: true)
+    
+    
+    
+    
     return controller
+}
+
+
+public func getIAPErrorController(context: AccountContext, _ text: String, _ presentationData: PresentationData) -> AlertController {
+    
+    let errorController = textAlertController(context: context, title: nil, text: l(text, presentationData.strings.baseLanguageCode), actions: [
+        TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {
+        })])
+    return errorController
 }

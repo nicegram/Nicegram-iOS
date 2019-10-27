@@ -32,6 +32,7 @@ import ItemListPeerActionItem
 import WebSearchUI
 import PeerAvatarGalleryUI
 import MapResourceToAvatarSizes
+import NicegramLib
 
 private let maximumNumberOfAccounts = 7
 
@@ -832,16 +833,49 @@ public func settingsController(context: AccountContext, accountManager: AccountM
             |> take(1)).start(next: { context in
                 let presentationData = context.sharedContext.currentPresentationData.with { $0 }
                 
-                let premiumIntroController = getPremiumIntroController(context: context, presentationData: presentationData)
-                
-                if !isPremium() {
-                    premiumIntroController.proceed = { result in
-                        replaceTopControllerImpl?(premiumController(context: context))
+                NicegramProducts.store.requestProducts{ success, products in
+                    if success {
+                        if let products = products {
+                            for product in products {
+                                print("IDENT \(product.productIdentifier) \(product)")
+                                if product.productIdentifier == "app.nicegram.Premium" {
+                                    let premiumIntroController = getPremiumIntroController(context: context, presentationData: presentationData, product: product)
+                                    
+                                    let canPay = true
+                                    
+                                    if !isPremium() {
+                                        premiumIntroController.proceed = { result in
+                                            if canPay {
+//                                                let observer = NotificationCenter.default.addObserver(premiumIntroController, name: .IAPHelperPurchaseNotification, object: nil, queue: .main, using: { _ in
+//                                                    print("TRANSACTION OK")
+//                                                })
+                                                let observer = NotificationCenter.default.addObserver(forName: .IAPHelperPurchaseNotification, object: nil, queue: .main, using: { _ in
+                                                    SecureNiceSettings().isPremium = true
+                                                    replaceTopControllerImpl?(premiumController(context: context))
+                                                })
+                                                NicegramProducts.store.buyProduct(product)
+                                            } else {
+                                                let alertController = textAlertController(context: context, title: nil, text: l("IAP.Common.CantPay", presentationData.strings.baseLanguageCode), actions: [
+                                                    TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {
+                                                    })])
+                                                premiumIntroController.present(alertController, in: .window(.root))
+                                            }
+                                        }
+                                        pushControllerImpl?(premiumIntroController)
+                                    } else {
+                                        pushControllerImpl?(premiumController(context: context))
+                                    }
+                                    return
+                                }
+                            }
+                             presentControllerImpl?(getIAPErrorController(context: context, "IAP.Common.ErrorFetch", presentationData), nil)
+                        }
+                    } else {
+                        presentControllerImpl?(getIAPErrorController(context: context, "IAP.Common.ErrorFetch", presentationData), nil)
                     }
-                    pushControllerImpl?(premiumIntroController)
-                } else {
-                    pushControllerImpl?(premiumController(context: context))
+                
                 }
+                
                  
             })
     }, openProxy: {
@@ -1021,7 +1055,7 @@ public func settingsController(context: AccountContext, accountManager: AccountM
         })
     }, openNgChat: {
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        presentControllerImpl?(textAlertController(context: context, title: nil, text: l("Common.FAQ.Intro"), actions: [
+        presentControllerImpl?(textAlertController(context: context, title: nil, text: l("Common.FAQ.Intro", presentationData.strings.baseLanguageCode), actions: [
             TextAlertAction(type: .genericAction, title: presentationData.strings.Settings_FAQ_Button, action: {
                 openNicegramFaq()
             }), TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {

@@ -192,7 +192,7 @@ public class SimplyNiceSettings {
             let array = UD?.array(forKey: "chatFilters") as? [Int32] ?? [1 << 6, 1 << 5]
             var res: [NiceChatListNodePeersFilter] = []
             for item in array {
-                if supportedFilters.contains(item) {
+                if supportedFilters.contains(item) && getAvailableFilters().contains(NiceChatListNodePeersFilter(rawValue: item)) {
                     res.append(NiceChatListNodePeersFilter(rawValue: item))
                 } else {
                     res.append(NiceChatListNodePeersFilter(rawValue: 1 << 5))
@@ -266,4 +266,17 @@ public func convertMessagesForEnqueueDict(_ messages: [Message]) -> [MessageId:E
         messagesToC[m.id] = enqMsg
     }
     return messagesToC
+}
+
+
+
+public func getAvailableFilters() -> [NiceChatListNodePeersFilter] {
+    if isPremium() {
+        return NiceChatListNodePeersFilter.all
+    } else {
+        let filters = [
+            NiceChatListNodePeersFilter.onlyAdmin, NiceChatListNodePeersFilter.onlyBots, NiceChatListNodePeersFilter.onlyChannels, NiceChatListNodePeersFilter.onlyGroups, NiceChatListNodePeersFilter.onlyPrivateChats, NiceChatListNodePeersFilter.onlyUnread, NiceChatListNodePeersFilter.onlyNonMuted,
+        ]
+        return filters
+    }
 }

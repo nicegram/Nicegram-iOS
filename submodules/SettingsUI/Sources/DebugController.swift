@@ -16,6 +16,7 @@ import ItemListUI
 import OverlayStatusController
 import AccountContext
 import ChatListUI
+import NicegramLib
 
 @objc private final class DebugControllerMailComposeDelegate: NSObject, MFMailComposeViewControllerDelegate {
     public func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
@@ -75,6 +76,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     case gradientBubbles(PresentationTheme, Bool)
     case versionInfo(PresentationTheme)
     case a(PresentationTheme, String)
+    case resetPremium(PresentationTheme)
     
     var section: ItemListSectionId {
         switch self {
@@ -86,7 +88,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return DebugControllerSection.logging.rawValue
         case .enableRaiseToSpeak, .keepChatNavigationStack, .skipReadHistory, .crashOnSlowQueries:
             return DebugControllerSection.experiments.rawValue
-        case .clearTips, .reimport, .resetData, .resetDatabase, .resetHoles, .resetBiometricsData, .optimizeDatabase, .photoPreview, .knockoutWallpaper, .gradientBubbles:
+        case .clearTips, .reimport, .resetData, .resetDatabase, .resetHoles, .resetBiometricsData, .optimizeDatabase, .photoPreview, .knockoutWallpaper, .gradientBubbles, .resetPremium:
             return DebugControllerSection.experiments.rawValue
         case .versionInfo:
             return DebugControllerSection.info.rawValue
@@ -145,8 +147,10 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return 20 + 1 + 1 + 1
         case .gradientBubbles:
             return 21 + 1 + 1 + 1
-        case .versionInfo:
+        case .resetPremium:
             return 22 + 1 + 1 + 1
+        case .versionInfo:
+            return 23 + 1 + 1 + 1 + 1
         }
     }
     
@@ -576,12 +580,33 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     })
                 }).start()
             })
+        case let .resetPremium(theme):
+            return ItemListActionItem(theme: theme, title: "Reset Premium", kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                guard let context = arguments.context else {
+                    return
+                }
+                let presentationData = arguments.sharedContext.currentPresentationData.with { $0 }
+                let actionSheet = ActionSheetController(presentationTheme: presentationData.theme)
+                actionSheet.setItemGroups([ActionSheetItemGroup(items: [
+                    ActionSheetTextItem(title: "Reset Premium. You will be able to restore purchase."),
+                    ActionSheetButtonItem(title: "Reset Premiuum", color: .destructive, action: { [weak actionSheet] in
+                        actionSheet?.dismissAnimated()
+                        SecureNiceSettings().isPremium = false
+                    }),
+                    ]), ActionSheetItemGroup(items: [
+                        ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                            actionSheet?.dismissAnimated()
+                        })
+                        ])])
+                arguments.presentController(actionSheet, nil)
+            })
         case let .versionInfo(theme):
             let bundle = Bundle.main
             let bundleId = bundle.bundleIdentifier ?? ""
             let bundleVersion = bundle.infoDictionary?["CFBundleShortVersionString"] ?? ""
             let bundleBuild = bundle.infoDictionary?[kCFBundleVersionKey as String] ?? ""
-            return ItemListTextItem(theme: theme, text: .plain("\(bundleId)\n\(bundleVersion) (\(bundleBuild))"), sectionId: self.section)
+            let isPremiumS = isPremium() ? "PREMIUM" : ""
+            return ItemListTextItem(theme: theme, text: .plain("\(bundleId)\n\(bundleVersion) (\(bundleBuild)) \(isPremiumS)"), sectionId: self.section)
         }
     }
 }
@@ -620,6 +645,8 @@ private func debugControllerEntries(presentationData: PresentationData, loggingS
     entries.append(.photoPreview(presentationData.theme, experimentalSettings.chatListPhotos))
     entries.append(.knockoutWallpaper(presentationData.theme, experimentalSettings.knockoutWallpaper))
     entries.append(.gradientBubbles(presentationData.theme, experimentalSettings.gradientBubbles))
+    
+    entries.append(.resetPremium(presentationData.theme))
     
     entries.append(.versionInfo(presentationData.theme))
     

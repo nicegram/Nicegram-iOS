@@ -170,7 +170,7 @@ public func updateNGInfo(userId: Int64) {
         PremiumSettings().isPremium = isPremium
         SecureNiceSettings().isBetaPremium = isBetaPremium
         
-        ngApiLog("SYNC_CHATS \(NGAPISETTINGS().SYNC_CHATS)\nRESTRICTED \(NGAPISETTINGS().RESTRICTED)\nALLOWED \(NGAPISETTINGS().ALLOWED)\nRESTRICTED_REASONS count \(NGAPISETTINGS().RESTRICTION_REASONS.count)\nPREMIUM \(PremiumSettings().isPremium)\nBETA PREMIUM\(SecureNiceSettings().isBetaPremium)")
+        ngApiLog("SYNC_CHATS \(NGAPISETTINGS().SYNC_CHATS)\nRESTRICTED \(NGAPISETTINGS().RESTRICTED)\nALLOWED \(NGAPISETTINGS().ALLOWED)\nRESTRICTED_REASONS count \(NGAPISETTINGS().RESTRICTION_REASONS.count)\nPREMIUM \(PremiumSettings().isPremium)\nBETA PREMIUM \(SecureNiceSettings().isBetaPremium)")
     })
 }
 

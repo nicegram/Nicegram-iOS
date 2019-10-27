@@ -103,7 +103,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
             return
         }
         
-        let controller = TabBarFilterSwitchController(sharedContext: self.context.sharedContext, current: self.filter, available: NiceChatListNodePeersFilter.all, switchToFilter: { [weak self] f in
+        let controller = TabBarFilterSwitchController(sharedContext: self.context.sharedContext, current: self.filter, available: getAvailableFilters(), switchToFilter: { [weak self] f in
             
             if let accountManager = self?.context.sharedContext.accountManager {
                 let _ = updateNiceSettingsInteractively(accountManager: accountManager, { settings in
