@@ -203,6 +203,7 @@
 		09FDAEE62140477F00BF856F /* MtProtoKitDynamic.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 09FDAEE52140477F00BF856F /* MtProtoKitDynamic.framework */; };
 		A55FCDF2235F9A400049C2C7 /* NiceLocalizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A55FCDF0235F9A400049C2C7 /* NiceLocalizable.strings */; };
 		A59E4E0922DBFD8200DCC1E4 /* NiceLocalizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A59E4E0722DBFD8200DCC1E4 /* NiceLocalizable.strings */; };
+		A5A724DB23663D5200A6ED62 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5A724DA23663D5200A6ED62 /* StoreKit.framework */; };
 		A5CC7E6322F0FCCC00B8CA21 /* NiceLocalizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A5CC7E6122F0FCCC00B8CA21 /* NiceLocalizable.strings */; };
 		A5E8799E22D61CA300AD2C2C /* NiceLocalizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A5E8799C22D61CA300AD2C2C /* NiceLocalizable.strings */; };
 		A5E879A122D61CEA00AD2C2C /* NiceLocalizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A5E8799F22D61CEA00AD2C2C /* NiceLocalizable.strings */; };
@@ -848,6 +849,7 @@
 		09FDAEE52140477F00BF856F /* MtProtoKitDynamic.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = MtProtoKitDynamic.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A55FCDF1235F9A400049C2C7 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = NiceLocalizable.strings; sourceTree = "<group>"; };
 		A59E4E0822DBFD8200DCC1E4 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/NiceLocalizable.strings; sourceTree = "<group>"; };
+		A5A724DA23663D5200A6ED62 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		A5CC7E6222F0FCCC00B8CA21 /* fa */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fa; path = NiceLocalizable.strings; sourceTree = "<group>"; };
 		A5E8799D22D61CA300AD2C2C /* ar */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ar; path = NiceLocalizable.strings; sourceTree = "<group>"; };
 		A5E879A022D61CEA00AD2C2C /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = NiceLocalizable.strings; sourceTree = "<group>"; };
@@ -1143,6 +1145,7 @@
 				D0CAD6A421C03BEB001E3055 /* FFMpeg.framework in Frameworks */,
 				09C50E88217385CF009E676F /* WatchConnectivity.framework in Frameworks */,
 				09FDAEE62140477F00BF856F /* MtProtoKitDynamic.framework in Frameworks */,
+				A5A724DB23663D5200A6ED62 /* StoreKit.framework in Frameworks */,
 				D0A18D631E149043004C6734 /* PushKit.framework in Frameworks */,
 				D0B844601DACF561005F29E1 /* libc++.tbd in Frameworks */,
 				D06706621D5118F500DED3E3 /* TelegramCore.framework in Frameworks */,
@@ -2023,6 +2026,7 @@
 		D00859C21B281E0000EAF753 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				A5A724DA23663D5200A6ED62 /* StoreKit.framework */,
 				D00818CE22B595DB008A895F /* LightweightAccountData.framework */,
 				D00818A422B58CCB008A895F /* WatchCommonWatch.framework */,
 				D008185922B57EF5008A895F /* WatchCommon.framework */,
@@ -2707,7 +2711,7 @@
 								enabled = 1;
 							};
 							com.apple.InAppPurchase = {
-								enabled = 0;
+								enabled = 1;
 							};
 							com.apple.Keychain = {
 								enabled = 1;

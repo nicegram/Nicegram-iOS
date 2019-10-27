@@ -3,6 +3,13 @@
    version = "1.0">
    <Group
       location = "container:"
+      name = "Nicegram">
+      <FileRef
+         location = "group:Nicegram/NicegramLib/NicegramLib.xcodeproj">
+      </FileRef>
+   </Group>
+   <Group
+      location = "container:"
       name = "Third Party">
       <FileRef
          location = "group:submodules/lottie-ios/Lottie_Xcode.xcodeproj">

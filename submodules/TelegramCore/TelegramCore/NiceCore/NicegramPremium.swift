@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import NicegramLib
 
 public func setPremiumDefaults() {
     let UD = UserDefaults(suiteName: "PremiumSettings")
@@ -77,7 +78,7 @@ public class PremiumSettings {
 
 
 public func isPremium() -> Bool {
-    return PremiumSettings().isPremium
+    return SecureNiceSettings().isPremium || SecureNiceSettings().isBetaPremium
 }
 
 public func showMissed() -> Bool {

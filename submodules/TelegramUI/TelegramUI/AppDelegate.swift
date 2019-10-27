@@ -24,6 +24,7 @@ import WatchBridge
 import LegacyDataImport
 import SettingsUI
 import AvatarNode
+import NicegramLib
 
 private let handleVoipNotifications = false
 
@@ -985,6 +986,8 @@ final class SharedApplicationContext {
             if let context = context {
                 network = context.context.account.network
                 syncFolders(context.context.account.postbox)
+                print("IS PREMIUM \(SecureNiceSettings().isPremium)")
+                print("IS BETA PREMIUM \(SecureNiceSettings().isBetaPremium)")
                 Queue().async {
                     updateNGInfo(userId: context.context.account.peerId.toInt64())
                 }
