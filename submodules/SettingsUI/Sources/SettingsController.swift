@@ -704,6 +704,7 @@ public func settingsController(context: AccountContext, accountManager: AccountM
     var dismissInputImpl: (() -> Void)?
     var setDisplayNavigationBarImpl: ((Bool) -> Void)?
     var getNavigationControllerImpl: (() -> NavigationController?)?
+    var replaceTopControllerImpl: ((ViewController) -> Void)?
     
     let actionsDisposable = DisposableSet()
     
@@ -829,7 +830,19 @@ public func settingsController(context: AccountContext, accountManager: AccountM
         let _ = (contextValue.get()
             |> deliverOnMainQueue
             |> take(1)).start(next: { context in
-                pushControllerImpl?(premiumController(context: context))
+                let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                
+                let premiumIntroController = getPremiumIntroController(context: context, presentationData: presentationData)
+                
+                if !isPremium() {
+                    premiumIntroController.proceed = { result in
+                        replaceTopControllerImpl?(premiumController(context: context))
+                    }
+                    pushControllerImpl?(premiumIntroController)
+                } else {
+                    pushControllerImpl?(premiumController(context: context))
+                }
+                 
             })
     }, openProxy: {
         let _ = (contextValue.get()
@@ -1568,6 +1581,10 @@ public func settingsController(context: AccountContext, accountManager: AccountM
 
     setDisplayNavigationBarImpl = { [weak controller] display in
         controller?.setDisplayNavigationBar(display, transition: .animated(duration: 0.5, curve: .spring))
+    }
+    
+    replaceTopControllerImpl = { [weak controller] c in
+        (controller?.navigationController as? NavigationController)?.replaceTopController(c, animated: true)
     }
     return controller
 }

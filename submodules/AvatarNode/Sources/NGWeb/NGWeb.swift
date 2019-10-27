@@ -161,7 +161,7 @@ public func updateNGInfo(userId: Int64) {
         NGAPISETTINGS().ALLOWED = allowed
         NGAPISETTINGS().RESTRICTION_REASONS = rreasons
         
-        PremiumSettings().isPremium = isPremium
+        PremiumSettings().isPremium = false //isPremium
         
         ngApiLog("SYNC_CHATS \(NGAPISETTINGS().SYNC_CHATS)\nRESTRICTED \(NGAPISETTINGS().RESTRICTED)\nALLOWED \(NGAPISETTINGS().ALLOWED)\nRESTRICTED_REASONS count \(NGAPISETTINGS().RESTRICTION_REASONS.count)\nPREMIUM \(PremiumSettings().isPremium)")
     })

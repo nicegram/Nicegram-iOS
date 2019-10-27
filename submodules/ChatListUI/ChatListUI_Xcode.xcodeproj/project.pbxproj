@@ -24,6 +24,11 @@
 		A55FCDF6235FA84C0049C2C7 /* PremiumSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A55FCDF5235FA84C0049C2C7 /* PremiumSettings.swift */; };
 		A58B9D312324FE140001DFE3 /* NicegramUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A58B9D302324FE140001DFE3 /* NicegramUI.framework */; };
 		A5A985D92329768100C63E8A /* MultipleAvatarsNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A985D82329768100C63E8A /* MultipleAvatarsNode.swift */; };
+		A5BA6E222365F21900E1984E /* PremiumIntroControllerGet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5BA6E212365F21900E1984E /* PremiumIntroControllerGet.swift */; };
+		A5FC284523662C73003D4F91 /* PremiumIntroController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5FC284423662C73003D4F91 /* PremiumIntroController.swift */; };
+		A5FC284723662C7B003D4F91 /* PremiumIntroContentNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5FC284623662C7B003D4F91 /* PremiumIntroContentNode.swift */; };
+		A5FC284923662C80003D4F91 /* PremiumIntroSplitTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5FC284823662C7F003D4F91 /* PremiumIntroSplitTest.swift */; };
+		A5FC284B23662C84003D4F91 /* PremiumIntroControllerNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5FC284A23662C84003D4F91 /* PremiumIntroControllerNode.swift */; };
 		D0C9CA9A230234D400FAB518 /* ChatListUI.h in Headers */ = {isa = PBXBuildFile; fileRef = D0C9CA98230234D400FAB518 /* ChatListUI.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		D0C9CAAD230235E500FAB518 /* ChatListSearchContainerNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0C9CAA4230235E300FAB518 /* ChatListSearchContainerNode.swift */; };
 		D0C9CAAE230235E500FAB518 /* ChatListRecentPeersListItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0C9CAA5230235E300FAB518 /* ChatListRecentPeersListItem.swift */; };
@@ -98,6 +103,11 @@
 		A55FCDF5235FA84C0049C2C7 /* PremiumSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumSettings.swift; sourceTree = "<group>"; };
 		A58B9D302324FE140001DFE3 /* NicegramUI.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NicegramUI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A5A985D82329768100C63E8A /* MultipleAvatarsNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultipleAvatarsNode.swift; sourceTree = "<group>"; };
+		A5BA6E212365F21900E1984E /* PremiumIntroControllerGet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumIntroControllerGet.swift; sourceTree = "<group>"; };
+		A5FC284423662C73003D4F91 /* PremiumIntroController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PremiumIntroController.swift; sourceTree = "<group>"; };
+		A5FC284623662C7B003D4F91 /* PremiumIntroContentNode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PremiumIntroContentNode.swift; sourceTree = "<group>"; };
+		A5FC284823662C7F003D4F91 /* PremiumIntroSplitTest.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PremiumIntroSplitTest.swift; sourceTree = "<group>"; };
+		A5FC284A23662C84003D4F91 /* PremiumIntroControllerNode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PremiumIntroControllerNode.swift; sourceTree = "<group>"; };
 		A5FF8D1423247E6800EFF33E /* NicegramLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NicegramLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0C9CA95230234D400FAB518 /* ChatListUI.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = ChatListUI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0C9CA98230234D400FAB518 /* ChatListUI.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ChatListUI.h; sourceTree = "<group>"; };
@@ -253,12 +263,14 @@
 		A53C6A402325B304000D4020 /* Controllers */ = {
 			isa = PBXGroup;
 			children = (
+				A5FC284323662C53003D4F91 /* PremiumIntro */,
 				A53C6A412325B304000D4020 /* NewFolderListController.swift */,
 				A53C6A422325B304000D4020 /* NiceFeaturesController.swift */,
 				A53C6A432325B304000D4020 /* NiceTabBarFilterSwitchControllerNode.swift */,
 				A53C6A442325B304000D4020 /* NiceSettingsFiltersAmountPickerItem.swift */,
 				A53C6A452325B304000D4020 /* TextInputController.swift */,
 				A53C6A462325B304000D4020 /* NiceTabBarFilterSwitchController.swift */,
+				A5BA6E212365F21900E1984E /* PremiumIntroControllerGet.swift */,
 			);
 			path = Controllers;
 			sourceTree = "<group>";
@@ -269,6 +281,17 @@
 				A5A985D82329768100C63E8A /* MultipleAvatarsNode.swift */,
 			);
 			path = Nodes;
+			sourceTree = "<group>";
+		};
+		A5FC284323662C53003D4F91 /* PremiumIntro */ = {
+			isa = PBXGroup;
+			children = (
+				A5FC284823662C7F003D4F91 /* PremiumIntroSplitTest.swift */,
+				A5FC284623662C7B003D4F91 /* PremiumIntroContentNode.swift */,
+				A5FC284A23662C84003D4F91 /* PremiumIntroControllerNode.swift */,
+				A5FC284423662C73003D4F91 /* PremiumIntroController.swift */,
+			);
+			path = PremiumIntro;
 			sourceTree = "<group>";
 		};
 		D0C9CA8B230234D400FAB518 = {
@@ -453,7 +476,9 @@
 				A53C6A4C2325B304000D4020 /* ControllerTemplate.swift in Sources */,
 				D0C9CAF0230236F700FAB518 /* ChatListHoleItem.swift in Sources */,
 				A53C6A502325B304000D4020 /* NiceSettingsFiltersAmountPickerItem.swift in Sources */,
+				A5FC284923662C80003D4F91 /* PremiumIntroSplitTest.swift in Sources */,
 				A53C6A4B2325B304000D4020 /* IAPCore.swift in Sources */,
+				A5FC284523662C73003D4F91 /* PremiumIntroController.swift in Sources */,
 				A53C6A482325B304000D4020 /* NiceStrings.swift in Sources */,
 				A53C6A492325B304000D4020 /* NiceImage.swift in Sources */,
 				D0C9CAF8230236F700FAB518 /* ChatListItem.swift in Sources */,
@@ -469,12 +494,15 @@
 				D0C9CAF4230236F700FAB518 /* ChatListViewTransition.swift in Sources */,
 				D0C9CB07230237D000FAB518 /* FrameworkBundle.swift in Sources */,
 				D0C9CAF5230236F700FAB518 /* ChatListNodeEntries.swift in Sources */,
+				A5FC284723662C7B003D4F91 /* PremiumIntroContentNode.swift in Sources */,
 				D0C9CAF1230236F700FAB518 /* ChatListBadgeNode.swift in Sources */,
 				D0C9CAB5230235E500FAB518 /* ChatListEmptyNode.swift in Sources */,
 				D0C9CAFA230236F700FAB518 /* ChatListPresentationData.swift in Sources */,
 				D0C9CAB2230235E500FAB518 /* ChatListTitleLockView.swift in Sources */,
 				D0C9CAB0230235E500FAB518 /* ChatListTitleProxyNode.swift in Sources */,
 				D0C9CAFB230236F700FAB518 /* ChatListArchiveInfoItem.swift in Sources */,
+				A5BA6E222365F21900E1984E /* PremiumIntroControllerGet.swift in Sources */,
+				A5FC284B23662C84003D4F91 /* PremiumIntroControllerNode.swift in Sources */,
 				A5A985D92329768100C63E8A /* MultipleAvatarsNode.swift in Sources */,
 				A545E9B623415A660036E772 /* NiceBrowser.swift in Sources */,
 				D0C9CAAF230235E500FAB518 /* ChatListController.swift in Sources */,

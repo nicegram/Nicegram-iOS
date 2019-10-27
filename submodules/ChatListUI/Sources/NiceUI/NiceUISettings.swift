@@ -24,7 +24,7 @@ public struct NiceSettings: PreferencesEntry, Equatable {
     public var fixNotifications: Bool
     
     public static var defaultSettings: NiceSettings {
-        return NiceSettings(foo: false, pinnedMessagesNotification: true, showContactsTab: true, chatFilters: NiceChatListNodePeersFilter.all.reversed(), maxFilters: 2, currentFilter: 0, fixNotifications: true)
+        return NiceSettings(foo: false, pinnedMessagesNotification: true, showContactsTab: true, chatFilters: NiceChatListNodePeersFilter.all.reversed(), maxFilters: 2, currentFilter: 0, fixNotifications: false)
     }
     
     init(foo: Bool, pinnedMessagesNotification: Bool, showContactsTab: Bool, chatFilters: [NiceChatListNodePeersFilter], maxFilters: Int32, currentFilter: Int32, fixNotifications: Bool) {
@@ -56,7 +56,7 @@ public struct NiceSettings: PreferencesEntry, Equatable {
         self.maxFilters = decoder.decodeInt32ForKey("nice:maxFilters", orElse: 2)
         self.currentFilter = decoder.decodeInt32ForKey("nice:currentFilterIndex", orElse: 0)
         
-        self.fixNotifications = decoder.decodeBoolForKey("nice:fixNotifications", orElse: true)
+        self.fixNotifications = decoder.decodeBoolForKey("nice:fixNotifications", orElse: false)
     }
     
     public func encode(_ encoder: PostboxEncoder) {
