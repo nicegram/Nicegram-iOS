@@ -1,4 +1,4 @@
-"AppName" = "Nicegram (Найсграм)";
+"AppName" = "Найсграм";
 
 /*ChatFilter*/
 "ChatFilter.Bots" = "Боты";
@@ -78,3 +78,4 @@
 "IAP.Common.CantPay" = "К сожалению, Вы не можете производить покупки ввиду ограничений вашего устройства или аккаунта.";
 "IAP.Common.ErrorFetch" = "Не удалось связаться с AppStore";
 "IAP.Common.Congrats" = "Поздравляем!";
+"IAP.Common.ValidateError" = "К сожалению, подтвердить покупку не удалось.";
