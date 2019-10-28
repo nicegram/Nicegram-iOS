@@ -43,7 +43,7 @@
 "Folder.Create" = "建立資料夾…";
 "Folder.Create.Name" = "資料夾名稱";
 "Folder.Create.Placeholder" = "資料夾…";
-"Folder.LimitExceeded" = "抱歉，您最多只能建立 3 個自訂資料夾。\n很快就可以建立更多。";
+"Folder.LimitExceeded" = "抱歉，您最多只能建立 3 個自訂資料夾。\n進階版將可建立更多資料夾。";
 "NiceFeatures.HideNumber" = "在設定中隱藏電話號碼";
 
 /*NGWeb*/
@@ -53,18 +53,28 @@
 "NiceFeatures.Browser.Header" = "連結";
 "NiceFeatures.Browser.UseBrowser" = "在瀏覽器中開啟連結";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram 將在外部瀏覽器開啟連結而不是在 App 內開啟，必須安裝所選擇的瀏覽器。";
-"ChatFilter.Missed" = "錯過的訊息";
+"ChatFilter.Missed" = "資料";
 
 /*Premium*/
-"Premium.Title" = "加值功能";
+"Premium.Title" = "進階版功能";
 "Premium.UnlimitedPins.Header" = "無限置頂";
 "Premium.SyncPins" = "同步置頂對話";
 "Premium.SyncPins.Notice.ON" = "如果您在其他客戶端中變更置頂對話，它們在 Nicegram 中將會同步。";
 "Premium.SyncPins.Notice.OFF" = "不如果您在其他客戶端中變更置頂對話，它們在 Nicegram 中將不會同步。";
 "Premium.Missed.Header" = "錯過的訊息";
-"Premium.Missed" = "通知錯過的訊息";
+"Premium.Missed" = "錯過的訊息通知";
 "Premium.Missed.Notice" = "長時間未上線後開啟 App 時，Nicegram 會通知您未讀的對話及 TAG";
-"Folder.DeleteAsk" = "";
-"Folder.NeedPremium" = "";
+"Folder.DeleteAsk" = "刪除資料夾";
+"Folder.NeedPremium" = "這個資料夾是進階版功能。您可以透過刷卡來升級，或是刪除一些對話夾。";
 "Common.SupportChatUsername" = "nicegram_tw";
 "Common.FAQUrl" = "https://nicegram-tw.gitbook.io/";
+"Common.FAQ.Button" = "Nicegram 常見問題";
+"Common.FAQ.Intro" = "注意：Nicegram 支援僅由開發人員和志願者提供。\n\n請先看一下 Nicegram 常見問題：它有故障排除指示和其他大多數問題的解答。";
+"IAP.Premium.Title" = "進階版功能";
+"IAP.Premium.Subtitle" = "您無法抗拒的獨特功能！";
+"IAP.Premium.Features" = "無限資料夾\n無限置頂對話\n錯過的訊息篩選標籤\nApp 開啟時提示錯過的訊息\n";
+"IAP.Premium.Activated" = "取得進階版！";
+"IAP.Common.Restore" = "恢復購買";
+"IAP.Common.CantPay" = "抱歉，由於您的設備或帳戶限制，您無法購買。";
+"IAP.Common.ErrorFetch" = "抱歉，無法取得 App Store 購買的商品。";
+"IAP.Common.Congrats" = "恭喜！";
