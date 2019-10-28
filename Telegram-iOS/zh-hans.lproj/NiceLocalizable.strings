@@ -54,7 +54,7 @@
 "NiceFeatures.HideNumber" = "设置中隐藏手机号码";
 
 /*NGWeb*/
-"NGWeb.Blocked" = "由于AppStore规则，在Nicegram中不可用";
+"NGWeb.Blocked" = "由于AppStore规则，在 Nicegram 中不可用";
 
 /*Browser*/
 "NiceFeatures.Browser.Header" = "连结";
@@ -66,12 +66,22 @@
 "Premium.Title" = "Premium";
 "Premium.UnlimitedPins.Header" = "无限置顶对话";
 "Premium.SyncPins" = "同步置顶对话";
-"Premium.SyncPins.Notice.ON" = "如果您更改其他客户端中的置顶对话,则它们在Nicegram中也会同步更改.";
-"Premium.SyncPins.Notice.OFF" = "如果您更改其他客户端中的置顶对话,则它们在Nicegram中也不会同步更改.";
+"Premium.SyncPins.Notice.ON" = "如果您更改其他客户端中的置顶对话,则它们在 Nicegram 中也会同步更改.";
+"Premium.SyncPins.Notice.OFF" = "如果您更改其他客户端中的置顶对话,则它们在 Nicegram 中也不会同步更改.";
 "Premium.Missed.Header" = "未读提醒消息";
 "Premium.Missed" = "未读提醒通知";
 "Premium.Missed.Notice" = "长时间未使用Nicegram(比如睡眠,学习等),下次打开Nicegram会通知您未读的私人和提及消息.";
-"Folder.DeleteAsk" = "";
-"Folder.NeedPremium" = "";
+"Folder.DeleteAsk" = "删除分组";
+"Folder.NeedPremium" = "此文件夹仅限 Premium 可用.您可以解锁 Premium 来使用,或删除此文件夹.";
 "Common.SupportChatUsername" = "nicegram_cn";
 "Common.FAQUrl" = "https://nicegram.app/cn/faq/";
+"Common.FAQ.Button" = "Nicegram 常见问题";
+"Common.FAQ.Intro" = "请注意, Nicegram 支持仅由一个开发人员和社区提供.\n\n首先,请看一下 Nicegram 常见问题:里面有重要的疑难解答提示和大多数问题的答案.";
+"IAP.Premium.Title" = "Premium";
+"IAP.Premium.Subtitle" = "您无法拒绝的独特功能！";
+"IAP.Premium.Features" = "无限分组\n无限置顶对话\n未读提醒消息过滤\nApp启动时未读提醒消息通知";
+"IAP.Premium.Activated" = "Premium 已激活!";
+"IAP.Common.Restore" = "恢复购买";
+"IAP.Common.CantPay" = "抱歉,由于您的设备或帐户限制,您无法购买.";
+"IAP.Common.ErrorFetch" = "抱歉,无法从 App Store 获取购买信息.";
+"IAP.Common.Congrats" = "恭喜!";
