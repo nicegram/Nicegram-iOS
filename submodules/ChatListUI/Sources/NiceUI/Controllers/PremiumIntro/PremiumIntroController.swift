@@ -7,6 +7,7 @@ import TelegramCore
 import TelegramPresentationData
 import DeviceAccess
 import AccountContext
+import NicegramLib
 
 public final class PremiumIntroController : ViewController {
     private let context: AccountContext
@@ -222,11 +223,18 @@ public final class PremiumIntroController : ViewController {
             self?.allow?()
         }
         self.controllerNode.openPrivacyPolicy = { [weak self] in
-            if let strongSelf = self {
-                let c = premiumController(context: strongSelf.context)
-                
-                (strongSelf.navigationController as? NavigationController)?.replaceAllButRootController(c, animated: true)
-            }
+            let observer = NotificationCenter.default.addObserver(forName: .IAPHelperPurchaseNotification, object: nil, queue: .main, using: { notification in
+                let productID = notification.object as? String
+                if productID == NicegramProducts.Premium {
+                    SecureNiceSettings().isPremium = true
+                    if let strongSelf = self {
+                        let c = premiumController(context: strongSelf.context)
+                        
+                        (strongSelf.navigationController as? NavigationController)?.replaceAllButRootController(c, animated: true)
+                    }
+                }
+                })
+              NicegramProducts.store.restorePurchases()
         }
     }
     

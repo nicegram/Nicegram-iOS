@@ -833,25 +833,31 @@ public func settingsController(context: AccountContext, accountManager: AccountM
             |> take(1)).start(next: { context in
                 let presentationData = context.sharedContext.currentPresentationData.with { $0 }
                 
+                
+                
+                if isPremium() {
+                    pushControllerImpl?(premiumController(context: context))
+                    return
+                }
+                
                 NicegramProducts.store.requestProducts{ success, products in
                     if success {
                         if let products = products {
                             for product in products {
-                                print("IDENT \(product.productIdentifier) \(product)")
                                 if product.productIdentifier == "app.nicegram.Premium" {
                                     let premiumIntroController = getPremiumIntroController(context: context, presentationData: presentationData, product: product)
                                     
-                                    let canPay = true
+                                    let canPay = IAPHelper.canMakePayments()
                                     
                                     if !isPremium() {
                                         premiumIntroController.proceed = { result in
                                             if canPay {
-//                                                let observer = NotificationCenter.default.addObserver(premiumIntroController, name: .IAPHelperPurchaseNotification, object: nil, queue: .main, using: { _ in
-//                                                    print("TRANSACTION OK")
-//                                                })
-                                                let observer = NotificationCenter.default.addObserver(forName: .IAPHelperPurchaseNotification, object: nil, queue: .main, using: { _ in
-                                                    SecureNiceSettings().isPremium = true
-                                                    replaceTopControllerImpl?(premiumController(context: context))
+                                                let observer = NotificationCenter.default.addObserver(forName: .IAPHelperPurchaseNotification, object: nil, queue: .main, using: {  notification in
+                                                    let productID = notification.object as? String
+                                                    if productID == NicegramProducts.Premium {
+                                                        SecureNiceSettings().isPremium = true
+                                                        replaceTopControllerImpl?(premiumController(context: context))
+                                                    }
                                                 })
                                                 NicegramProducts.store.buyProduct(product)
                                             } else {

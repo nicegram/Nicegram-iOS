@@ -60,3 +60,15 @@ public func getIAPErrorController(context: AccountContext, _ text: String, _ pre
         })])
     return errorController
 }
+
+
+public func getPremiumActivatedAlert(context: AccountContext, _ title: String, _ text: String, _ presentationData: PresentationData, action: @escaping () -> Void ) -> AlertController {
+    
+    
+    let Controller = textAlertController(context: context, title: title, text: l(text, presentationData.strings.baseLanguageCode), actions: [
+        TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {
+            action()
+        })])
+    return Controller
+    
+}

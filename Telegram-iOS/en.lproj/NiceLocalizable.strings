@@ -77,6 +77,9 @@
 "IAP.Premium.Subtitle" = "Unique features you can't refuse!";
 "IAP.Premium.Features" = "Unlimited Folders\nUnlimited Pinned Chats\nMissed messages Filter\nMissed messages digest on App launch";
 
+"IAP.Premium.Activated" = "Premium Activated!";
 "IAP.Common.Restore" = "Restore Purchases";
 "IAP.Common.CantPay" = "Sorry, but You can't make purchases because of your device or account restrictions.";
 "IAP.Common.ErrorFetch" = "Sorry, сan't fetch App Store purchases.";
+
+"IAP.Common.Congrats" = "Congratulations!";

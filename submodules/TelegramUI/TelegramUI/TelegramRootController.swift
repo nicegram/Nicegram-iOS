@@ -10,6 +10,8 @@ import ContactListUI
 import CallListUI
 import ChatListUI
 import SettingsUI
+import NicegramLib
+import AlertUI
 
 public final class TelegramRootController: NavigationController {
     private let context: AccountContext
@@ -219,6 +221,22 @@ public final class TelegramRootController: NavigationController {
         premiumLog("LAST OPENED \(PremiumSettings().lastOpened) | DIFF \(PremiumSettings().lastOpened - oldOpened) s")
         
         rootTabController.setControllers(controllers, selectedIndex: selectedIndex)
+        
+        let observer = NotificationCenter.default.addObserver(forName: .IAPHelperPurchaseNotification, object: nil, queue: .main, using: { notification in
+            let productID = notification.object as? String
+            if productID == NicegramProducts.Premium {
+                SecureNiceSettings().isPremium = true
+                print("TRIGGERED MAIN OBSERVERS")
+                if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
+                    let presentationData = sharedContext.currentPresentationData.with { $0 }
+                    
+                    let c = getPremiumActivatedAlert(context: self.context, "IAP.Common.Congrats", "IAP.Premium.Activated", presentationData, action: {
+                    })
+                    rootTabController.present(c, in: .window(.root))
+                }
+
+            }
+        })
     }
     
     public func openChatsController(activateSearch: Bool) {
