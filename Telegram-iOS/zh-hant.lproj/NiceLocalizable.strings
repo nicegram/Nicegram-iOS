@@ -13,14 +13,14 @@
 "NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "標籤";
 "NiceFeatures.Tabs.ShowContacts" = "顯示聯絡人標籤";
-"NiceFeatures.ChatScreen.Header" = "聊天畫面";
+"NiceFeatures.ChatScreen.Header" = "對話介面";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "動態貼圖";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "轉傳到儲存的訊息";
 
 /*Open Pin*/
-"Chat.OpenPin" = "開啟置頂";
+"Chat.OpenPin" = "顯示置頂";
 "ChatFilter.Admin" = "管理員";
 "NiceFeatures.Notifications.Fix" = "停用非必要通知";
 "NiceFeatures.Notifications.FixNotice" = "如果您想將「已關閉通知」的對話完全禁音，這將非常有用。\n來自回覆、@username、媒體預覽的通知將被停用。";
@@ -53,7 +53,7 @@
 "NiceFeatures.Browser.Header" = "連結";
 "NiceFeatures.Browser.UseBrowser" = "在瀏覽器中開啟連結";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram 將在外部瀏覽器開啟連結而不是在 App 內開啟，必須安裝所選擇的瀏覽器。";
-"ChatFilter.Missed" = "資料";
+"ChatFilter.Missed" = "錯過的訊息";
 
 /*Premium*/
 "Premium.Title" = "進階版功能";
@@ -73,9 +73,9 @@
 "IAP.Premium.Title" = "進階版功能";
 "IAP.Premium.Subtitle" = "您無法抗拒的獨特功能！";
 "IAP.Premium.Features" = "無限資料夾\n無限置頂對話\n錯過的訊息篩選標籤\nApp 開啟時提示錯過的訊息\n";
-"IAP.Premium.Activated" = "取得進階版！";
+"IAP.Premium.Activated" = "已升級進階版！";
 "IAP.Common.Restore" = "恢復購買";
 "IAP.Common.CantPay" = "抱歉，由於您的設備或帳戶限制，您無法購買。";
 "IAP.Common.ErrorFetch" = "抱歉，無法取得 App Store 購買的商品。";
 "IAP.Common.Congrats" = "恭喜！";
-"IAP.Common.ValidateError" = "";
+"IAP.Common.ValidateError" = "很抱歉，無法驗證您的購買。";
