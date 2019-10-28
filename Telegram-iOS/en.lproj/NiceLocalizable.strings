@@ -66,21 +66,16 @@
 "Premium.Missed.Notice" = "When you open App after long delay (sleeping, studying, etc.), Nicegram will notify you about unread private messages and mentions.";
 "Folder.DeleteAsk" = "Delete Folder";
 "Folder.NeedPremium" = "This Folder is only available with Premium. You can get Premium or delete Folder with swipe.";
-
 "Common.SupportChatUsername" = "nicegramchat";
-"Common.FAQ.Button" = "Nicegram FAQ";
 "Common.FAQUrl" = "https://nicegram.app/faq/";
+"Common.FAQ.Button" = "Nicegram FAQ";
 "Common.FAQ.Intro" = "Please note that Nicegram Support is done by the only one developer and community.\n\nFirstly, take a look at the Nicegram FAQ: it has important troubleshooting tips and answers to most questions.";
-
-
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Unique features you can't refuse!";
 "IAP.Premium.Features" = "Unlimited Folders\nUnlimited Pinned Chats\nMissed messages Filter\nMissed messages digest on App launch";
-
 "IAP.Premium.Activated" = "Premium Activated!";
 "IAP.Common.Restore" = "Restore Purchases";
 "IAP.Common.CantPay" = "Sorry, but You can't make purchases because of your device or account restrictions.";
 "IAP.Common.ErrorFetch" = "Sorry, сan't fetch App Store purchases.";
-"IAP.Common.ValidateError" = "Sorry, can't validate your purchase.";
-
 "IAP.Common.Congrats" = "Congratulations!";
+"IAP.Common.ValidateError" = "Sorry, can't validate your purchase.";
