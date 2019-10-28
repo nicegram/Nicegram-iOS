@@ -8,6 +8,7 @@ import TelegramPresentationData
 import DeviceAccess
 import AccountContext
 import NicegramLib
+import AvatarNode
 
 public final class PremiumIntroController : ViewController {
     private let context: AccountContext
@@ -226,11 +227,20 @@ public final class PremiumIntroController : ViewController {
             let observer = NotificationCenter.default.addObserver(forName: .IAPHelperPurchaseNotification, object: nil, queue: .main, using: { notification in
                 let productID = notification.object as? String
                 if productID == NicegramProducts.Premium {
-                    SecureNiceSettings().isPremium = true
-                    if let strongSelf = self {
-                        let c = premiumController(context: strongSelf.context)
-                        
-                        (strongSelf.navigationController as? NavigationController)?.replaceAllButRootController(c, animated: true)
+                    PremiumSettings().p = true
+                    validatePremium(isPremium())
+                    if (isPremium()) {
+                        if let strongSelf = self {
+                            let c = premiumController(context: strongSelf.context)
+                            
+                            (strongSelf.navigationController as? NavigationController)?.replaceAllButRootController(c, animated: true)
+                        }
+                    } else {
+                        if let strongSelf = self {
+                            let presentationData = strongSelf.context.sharedContext.currentPresentationData.with { $0 }
+                            let c = getIAPErrorController(context: strongSelf.context, "IAP.Common.ValidateError", presentationData)
+                            strongSelf.present(c, in: .window(.root))
+                        }
                     }
                 }
                 })

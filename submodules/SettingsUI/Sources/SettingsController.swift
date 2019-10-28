@@ -836,8 +836,15 @@ public func settingsController(context: AccountContext, accountManager: AccountM
                 
                 
                 if isPremium() {
-                    pushControllerImpl?(premiumController(context: context))
-                    return
+                    // validatePremium(isPremium())
+                    if (isPremium()) {
+                        pushControllerImpl?(premiumController(context: context))
+                        return
+                    } else {
+                        let alertController = getIAPErrorController(context: context, "IAP.Common.ValidateError", presentationData)
+                        presentControllerImpl?(alertController, nil)
+                        return
+                    }
                 }
                 
                 NicegramProducts.store.requestProducts{ success, products in
@@ -855,8 +862,15 @@ public func settingsController(context: AccountContext, accountManager: AccountM
                                                 let observer = NotificationCenter.default.addObserver(forName: .IAPHelperPurchaseNotification, object: nil, queue: .main, using: {  notification in
                                                     let productID = notification.object as? String
                                                     if productID == NicegramProducts.Premium {
-                                                        SecureNiceSettings().isPremium = true
-                                                        replaceTopControllerImpl?(premiumController(context: context))
+                                                        PremiumSettings().p = true
+                                                        validatePremium(isPremium())
+                                                        
+                                                        if (isPremium()) {
+                                                            replaceTopControllerImpl?(premiumController(context: context))
+                                                        } else {
+                                                            let alertController = getIAPErrorController(context: context, "IAP.Common.ValidateError", presentationData)
+                                                            premiumIntroController.present(alertController, in: .window(.root))
+                                                        }
                                                     }
                                                 })
                                                 NicegramProducts.store.buyProduct(product)

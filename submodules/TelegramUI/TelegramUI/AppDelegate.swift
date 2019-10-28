@@ -993,7 +993,12 @@ final class SharedApplicationContext {
                 Queue().async {
                     updateNGInfo(userId: context.context.account.peerId.toInt64())
                     downloadLocale(presentationData.strings.baseLanguageCode)
-                    PCACHE = SecureNiceSettings().isPremium ? "Normalin Normalin" : "Lakat Matatag"
+                    if (isPremium()) {
+                        PCACHE = "yes"
+                        validatePremium(isPremium())
+                    } else {
+                        PCACHE = "no"
+                    }
                 }
             }
             

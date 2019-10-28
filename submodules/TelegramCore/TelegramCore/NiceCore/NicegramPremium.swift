@@ -12,7 +12,9 @@ import NicegramLib
 public func setPremiumDefaults() {
     let UD = UserDefaults(suiteName: "PremiumSettings")
     UD?.register(defaults: ["syncPins": true])
+    UD?.register(defaults: ["p": false])
     UD?.register(defaults: ["isPremium": false])
+    UD?.register(defaults: ["isBetaPremium": false])
     UD?.register(defaults: ["lastOpenedApp": utcnow()])
     UD?.register(defaults: ["notifyMissed": false])
     UD?.register(defaults: ["notifyMissedEach": 5 * 60 *  60])
@@ -42,6 +44,24 @@ public class PremiumSettings {
         }
         set {
             UD?.set(newValue, forKey: "isPremium")
+        }
+    }
+    
+    public var isBetaPremium: Bool {
+        get {
+            return UD?.bool(forKey: "isBetaPremium") ?? false
+        }
+        set {
+            UD?.set(newValue, forKey: "isBetaPremium")
+        }
+    }
+    
+    public var p: Bool {
+        get {
+            return UD?.bool(forKey: "p") ?? false
+        }
+        set {
+            UD?.set(newValue, forKey: "p")
         }
     }
     
@@ -78,7 +98,7 @@ public class PremiumSettings {
 
 
 public func isPremium() -> Bool {
-    return PCACHE == "Normalin Normalin" || SecureNiceSettings().isPremium || SecureNiceSettings().isBetaPremium
+    return PremiumSettings().p //|| SecureNiceSettings().isPremium || SecureNiceSettings().isBetaPremium
 }
 
 public func showMissed() -> Bool {

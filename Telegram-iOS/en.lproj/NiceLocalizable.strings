@@ -81,5 +81,6 @@
 "IAP.Common.Restore" = "Restore Purchases";
 "IAP.Common.CantPay" = "Sorry, but You can't make purchases because of your device or account restrictions.";
 "IAP.Common.ErrorFetch" = "Sorry, сan't fetch App Store purchases.";
+"IAP.Common.ValidateError" = "Sorry, can't validate your purchase.";
 
 "IAP.Common.Congrats" = "Congratulations!";

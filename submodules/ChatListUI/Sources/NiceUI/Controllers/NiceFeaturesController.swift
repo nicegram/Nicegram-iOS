@@ -818,6 +818,7 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
     let updateState: ((BrowserSelectionState) -> BrowserSelectionState) -> Void = { f in
         statePromise.set(stateValue.modify { f($0) })
     }
+    var lastTabsCounter: Int32? = nil
     
     
     func updateTabs() {
@@ -864,6 +865,14 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
             let _ = ApplicationSpecificNotice.incrementCallsTabTips(accountManager: context.sharedContext.accountManager, count: 4).start()
         }
     }, changeFiltersAmount: { value in
+        if lastTabsCounter != nil {
+            if Int32(value) == SimplyNiceSettings().maxFilters {
+                print("Same value, returning")
+                return
+            } else {
+                lastTabsCounter = Int32(value)
+            }
+        }
         SimplyNiceSettings().maxFilters = Int32(value)
         if SimplyNiceSettings().maxFilters > SimplyNiceSettings().chatFilters.count {
             let delta = Int(SimplyNiceSettings().maxFilters) - SimplyNiceSettings().chatFilters.count
@@ -878,6 +887,7 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
             return settings
         }).start()
         
+        lastTabsCounter = Int32(value)
         updateTabs()
         
     }, toggleShowTabNames: { value, locale in

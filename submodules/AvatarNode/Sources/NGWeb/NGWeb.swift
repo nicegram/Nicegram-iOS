@@ -12,7 +12,9 @@ import TelegramCore
 import BuildConfig
 import NicegramLib
 
-public var NGAPI = BuildConfig(baseAppBundleId: Bundle.main.bundleIdentifier!).ngApiUrl
+let bconfig = BuildConfig(baseAppBundleId: Bundle.main.bundleIdentifier!)
+public let NGAPI = bconfig.ngApiUrl
+public let VALIDATORURL = bconfig.validatorUrl
 
 
 public func ngAPIsetDefaults() {
@@ -174,6 +176,63 @@ public func updateNGInfo(userId: Int64) {
     })
 }
 
+
+public func requestValidator(_ receipt: Data,  completion: @escaping (_ apiResult: String) -> Void) {
+    let startTime = CFAbsoluteTimeGetCurrent()
+    ngApiLog("DECLARING REQUEST VALIDATOR")
+    var urlString = VALIDATORURL
+    
+    let url = URL(string: urlString)!
+    var request : URLRequest = URLRequest(url: url)
+    request.httpBody = receipt
+    request.httpMethod = "POST"
+    let task = URLSession.shared.dataTask(with: request) { (data, response, error) in
+        let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
+        ngApiLog("PROCESSED REQUEST VALIDATOR IN \(timeElapsed) s.")
+        if let error = error {
+            ngApiLog("Error validating: \(error)")
+            completion("error")
+        } else {
+            if let response = response as? HTTPURLResponse {
+                if response.statusCode == 200 {
+                    if let data = data, let dataString = String(data: data, encoding: .utf8) {
+                        completion(dataString)
+                    }
+                }
+            }
+        }
+    }
+    task.resume()
+}
+
+
+
+public func validatePremium(_ current: Bool) {
+    let sem = DispatchSemaphore(value: 0)
+    if (current) {
+        guard let receiptURL = Bundle.main.appStoreReceiptURL,
+            let data = try? Data(contentsOf: receiptURL) else {
+                sem.signal()
+                return
+        }
+        let data2 = "Café".data(using: .utf8)!
+        let encodedData = data.base64EncodedData(options: [])
+        requestValidator(encodedData, completion: { validStatus in
+            if validStatus == "0" { // Hacker
+                PremiumSettings().p = false
+                ngApiLog("Hello hacker")
+                // preconditionFailure("Hello hacker")
+            } else if validStatus == "1" { // OK
+                ngApiLog("Okie-dokie")
+            } else { // Error
+            }
+            sem.signal()
+            return
+        })
+    }
+    sem.wait()
+    return
+}
 
 public func getTgId(_ peer: Peer?) -> Int64 {
     if let peer = peer {

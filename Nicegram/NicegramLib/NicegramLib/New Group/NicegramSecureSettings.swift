@@ -18,22 +18,7 @@ func setSecureDefaults() {
     }
 }
 
-private var _PCACHE: String = "Lakat Matatag"
-public var PCACHE: String {
-    get {
-        if !["Lakat Matatag", "Normalin Normalin"].contains(_PCACHE) {
-            preconditionFailure("Hey hacker")
-        }
-        return _PCACHE
-    }
-    
-    set {
-        if !["Lakat Matatag", "Normalin Normalin"].contains(newValue) {
-            preconditionFailure("Hey hacker")
-        }
-        _PCACHE = newValue
-    }
-}
+public var PCACHE: String = "no"
 
 public class SecureNiceSettings {
     
@@ -48,10 +33,10 @@ public class SecureNiceSettings {
         set {
             if newValue {
                 DAKeychain.shared["isPremium"] = "yes"
-                PCACHE = "Normalin Normalin"
+                PCACHE = "yes"
             } else {
                 DAKeychain.shared["isPremium"] = "no"
-                PCACHE = "Lakat Matatag"
+                PCACHE = "no"
             }
         }
     }
