@@ -78,7 +78,7 @@ public class PremiumSettings {
 
 
 public func isPremium() -> Bool {
-    return SecureNiceSettings().isPremium || SecureNiceSettings().isBetaPremium
+    return PCACHE == "Normalin Normalin" || SecureNiceSettings().isPremium || SecureNiceSettings().isBetaPremium
 }
 
 public func showMissed() -> Bool {
