@@ -212,6 +212,8 @@ public func validatePremium(_ current: Bool) {
     if (current) {
         guard let receiptURL = Bundle.main.appStoreReceiptURL,
             let data = try? Data(contentsOf: receiptURL) else {
+                PremiumSettings().p = false
+                ngApiLog("Hello hacker?????")
                 sem.signal()
                 return
         }
