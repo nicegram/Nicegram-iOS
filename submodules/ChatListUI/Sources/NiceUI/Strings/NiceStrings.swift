@@ -57,7 +57,9 @@ public func l(_ key: String, _ locale: String = "en") -> String {
     
     var result = "[MISSING STRING]"
     
-    if let res = niceLocales[lang]?[key], !res.isEmpty {
+    if let res = niceWebLocales[lang]?[key], !res.isEmpty {
+        result = res
+    } else if let res = niceLocales[lang]?[key], !res.isEmpty {
         result = res
     } else if let res = niceLocales[getLangFallback(lang)]?[key], !res.isEmpty {
         result = res
@@ -68,4 +70,32 @@ public func l(_ key: String, _ locale: String = "en") -> String {
     }
     
     return result
+}
+
+
+public func getStringsUrl(_ lang: String) -> String {
+    return "https://raw.githubusercontent.com/nicegram/Telegram-iOS/master/Telegram-iOS/" + lang + ".lproj/NiceLocalizable.strings"
+}
+
+
+var niceWebLocales: [String: [String: String]] = [:]
+
+func getWebDict(_ lang: String) -> [String : String]? {
+    return NSDictionary(contentsOf: URL(string: getStringsUrl(lang))!) as? [String : String]
+}
+
+public func downloadLocale(_ locale: String) -> Void {
+    do {
+        var lang = locale
+        let rawSuffix = "-raw"
+        if lang.hasSuffix(rawSuffix) {
+            lang = String(lang.dropLast(rawSuffix.count))
+        }
+        if let localeDict = try getWebDict(lang) {
+            niceWebLocales[lang] = localeDict
+            print("DOWNLOADED LOCALE \(lang)")
+        }
+    } catch {
+        return
+    }
 }

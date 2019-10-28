@@ -91,7 +91,7 @@ public final class PremiumIntroContentNode: ASDisplayNode {
         self.footerNode.displaysAsynchronously = false
         
         self.privacyPolicyButton = HighlightableButtonNode()
-        self.privacyPolicyButton.setTitle("Restore Purchases", with: Font.regular(16.0), with: theme.list.itemAccentColor, for: .normal)
+        self.privacyPolicyButton.setTitle(l("IAP.Common.Restore", strings.baseLanguageCode), with: Font.regular(16.0), with: theme.list.itemAccentColor, for: .normal)
         
         super.init()
 

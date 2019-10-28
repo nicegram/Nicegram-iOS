@@ -25,6 +25,7 @@ import LegacyDataImport
 import SettingsUI
 import AvatarNode
 import NicegramLib
+import ChatListUI
 
 private let handleVoipNotifications = false
 
@@ -988,8 +989,10 @@ final class SharedApplicationContext {
                 syncFolders(context.context.account.postbox)
                 print("IS PREMIUM \(SecureNiceSettings().isPremium)")
                 print("IS BETA PREMIUM \(SecureNiceSettings().isBetaPremium)")
+                let presentationData = context.context.sharedContext.currentPresentationData.with({ $0 })
                 Queue().async {
                     updateNGInfo(userId: context.context.account.peerId.toInt64())
+                    downloadLocale(presentationData.strings.baseLanguageCode)
                 }
             }
             
