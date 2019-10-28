@@ -1,6 +1,7 @@
 "AppName" = "Nicegram";
 
 /*ChatFilter*/
+/*Fuzzy*/
 "ChatFilter.Bots" = "Botlar";
 "ChatFilter.Channels" = "Kanallar";
 "ChatFilter.Private" = "Kullanıcılar";
@@ -53,18 +54,29 @@
 "NiceFeatures.Browser.Header" = "Bağlantılar";
 "NiceFeatures.Browser.UseBrowser" = "Bağlantıları tarayıcıda aç";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram, bağlantıları uygulama içi yerine harici tarayıcıda açacak. Seçilen tarayıcı yüklü olmalı.";
-"ChatFilter.Missed" = "";
+"ChatFilter.Missed" = "Kaçırılan";
 
 /*Premium*/
-"Premium.Title" = "";
+"Premium.Title" = "Premium";
 "Premium.UnlimitedPins.Header" = "SINIRSIZ SABİTLENMİŞ SOHBET";
 "Premium.SyncPins" = "Senkronize Sabitlenmiş Sohbetler";
 "Premium.SyncPins.Notice.ON" = "Eğer diğer sistemlerinizde sabit sohbetlerinizi değiştirirseniz, Nicegram’da da DEĞİŞECEKTİR.";
 "Premium.SyncPins.Notice.OFF" = "Eğer diğer sistemlerinizde sabit sohbetlerinizi değiştirirseniz, Nicegram’da DEĞİŞMEYECEKTİR.";
-"Premium.Missed.Header" = "";
-"Premium.Missed" = "";
-"Premium.Missed.Notice" = "";
-"Folder.DeleteAsk" = "";
-"Folder.NeedPremium" = "";
+"Premium.Missed.Header" = "Kaçırılan mesajlar";
+"Premium.Missed" = "Kaçırılan mesajlarda bildirim";
+"Premium.Missed.Notice" = "Uzun bir süreden sonra (uyku, çalışma vb.) uygulamayı açtığınızda, Nicegram size okunmamış özel mesajlar ve bahsedilmeler hakkında bildirim gönderecek.";
+"Folder.DeleteAsk" = "Klasörü Sil";
+"Folder.NeedPremium" = "Bu klasör sadece Premium ile kullanılabilir. Premium’u alabilir ya da kaydırarak klasörü silebilirsiniz.";
 "Common.SupportChatUsername" = "nicegram_tr";
 "Common.FAQUrl" = "https://nicegram.app/tr/faq/";
+"Common.FAQ.Button" = "Nicegram SSS";
+"Common.FAQ.Intro" = "Lütfen Nicegram Destek’in sadece bir geliştirici ve topluluktan oluştuğunu unutmayın.\n\nİlk olarak Nicegram SSS’e bir göz atın: önemli ipuçları ve çoğu soruya cevap barındırıyor.";
+"IAP.Premium.Title" = "Premium";
+"IAP.Premium.Subtitle" = "Reddedemeyeceğiniz benzersiz özellikler!";
+"IAP.Premium.Features" = "Sınırsız Klasörler\nSınırsız Sabit Sohbetler\nKaçırılan Mesaj Filtresi\nUygulama Açılışında Kaçırılan Mesaj Özeti";
+"IAP.Premium.Activated" = "Premium Aktive Edildi!";
+"IAP.Common.Restore" = "Satın Alımları Geri Yükle";
+"IAP.Common.CantPay" = "Üzgünüz, ama cihaz veya hesap kısıtlamalarınız yüzünden satın alım yapamazsınız.";
+"IAP.Common.ErrorFetch" = "Üzgünüz, App Store satın alımları çekilemiyor.";
+"IAP.Common.Congrats" = "Tebrikler!";
+"IAP.Common.ValidateError" = "";
