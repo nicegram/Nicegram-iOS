@@ -85,3 +85,4 @@
 "IAP.Common.CantPay" = "抱歉,由于您的设备或帐户限制,您无法购买.";
 "IAP.Common.ErrorFetch" = "抱歉,无法从 App Store 获取购买信息.";
 "IAP.Common.Congrats" = "恭喜!";
+"IAP.Common.ValidateError" = "";
