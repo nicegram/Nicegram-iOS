@@ -1,7 +1,7 @@
 "AppName" = "Nicegram";
 
 /*ChatFilter*/
-"ChatFilter.Bots" = "🤖机器人";
+"ChatFilter.Bots" = "机器人";
 "ChatFilter.Channels" = "频道";
 "ChatFilter.Private" = "用户";
 "ChatFilter.Groups" = "群组";
