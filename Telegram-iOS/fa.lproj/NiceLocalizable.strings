@@ -73,3 +73,14 @@
 "Folder.NeedPremium" = "";
 "Common.SupportChatUsername" = "nicegram_fa";
 "Common.FAQUrl" = "";
+"Common.FAQ.Button" = "";
+"Common.FAQ.Intro" = "";
+"IAP.Premium.Title" = "";
+"IAP.Premium.Subtitle" = "";
+"IAP.Premium.Features" = "";
+"IAP.Premium.Activated" = "";
+"IAP.Common.Restore" = "";
+"IAP.Common.CantPay" = "";
+"IAP.Common.ErrorFetch" = "";
+"IAP.Common.Congrats" = "";
+"IAP.Common.ValidateError" = "";
