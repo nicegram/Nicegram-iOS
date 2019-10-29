@@ -88,7 +88,7 @@ extension String {
             do {
                 return try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
             } catch {
-                ngApiLog("\(data) " + error.localizedDescription + " \(error)")
+                ngApiLog("\(String(data: data, encoding: .utf8)) " + error.localizedDescription + " \(error)")
             }
         }
         return nil
