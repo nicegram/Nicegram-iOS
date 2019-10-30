@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A54E4B992369FC530058A054 /* BuildConfig.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A54E4B982369FC530058A054 /* BuildConfig.framework */; };
 		A5A724C12366335100A6ED62 /* NicegramLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5A724B72366335100A6ED62 /* NicegramLib.framework */; };
 		A5A724C62366335100A6ED62 /* NicegramLibTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A724C52366335100A6ED62 /* NicegramLibTests.swift */; };
 		A5A724C82366335100A6ED62 /* NicegramLib.h in Headers */ = {isa = PBXBuildFile; fileRef = A5A724BA2366335100A6ED62 /* NicegramLib.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -28,6 +29,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A54E4B982369FC530058A054 /* BuildConfig.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = BuildConfig.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A5A724B72366335100A6ED62 /* NicegramLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = NicegramLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A5A724BA2366335100A6ED62 /* NicegramLib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = NicegramLib.h; sourceTree = "<group>"; };
 		A5A724BB2366335100A6ED62 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -46,6 +48,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A54E4B992369FC530058A054 /* BuildConfig.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -60,12 +63,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A54E4B972369FC530058A054 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A54E4B982369FC530058A054 /* BuildConfig.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		A5A724AD2366335100A6ED62 = {
 			isa = PBXGroup;
 			children = (
 				A5A724B92366335100A6ED62 /* NicegramLib */,
 				A5A724C42366335100A6ED62 /* NicegramLibTests */,
 				A5A724B82366335100A6ED62 /* Products */,
+				A54E4B972369FC530058A054 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
