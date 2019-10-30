@@ -575,7 +575,15 @@ private func settingsEntries(account: Account, presentationData: PresentationDat
             }
         }
         
-        entries.append(.premium(presentationData.theme, PresentationResourcesSettings.premiumIcon, l("Premium.Title", presentationData.strings.baseLanguageCode)))
+        
+        let bb = (Bundle.main.infoDictionary?[kCFBundleVersionKey as String] ?? "") as! String
+        if !NicegramProducts.Premium.isEmpty && bb.last == "1" {
+            entries.append(.premium(presentationData.theme, PresentationResourcesSettings.premiumIcon, l("Premium.Title", presentationData.strings.baseLanguageCode)))
+        }
+        
+        #if DEBUG
+            entries.append(.premium(presentationData.theme, PresentationResourcesSettings.premiumIcon, l("Premium.Title", presentationData.strings.baseLanguageCode)))
+        #endif
         
         if !proxySettings.servers.isEmpty {
             let valueString: String

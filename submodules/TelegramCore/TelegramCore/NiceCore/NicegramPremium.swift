@@ -98,6 +98,19 @@ public class PremiumSettings {
 
 
 public func isPremium() -> Bool {
+    #if DEBUG
+        return PremiumSettings().p
+    #endif
+    
+    if (NicegramProducts.Premium.isEmpty) {
+        return false
+    }
+    
+    let bb = (Bundle.main.infoDictionary?[kCFBundleVersionKey as String] ?? "") as! String
+    if bb.last != "1" {
+        return false
+    }
+    
     return PremiumSettings().p //|| SecureNiceSettings().isPremium || SecureNiceSettings().isBetaPremium
 }
 
