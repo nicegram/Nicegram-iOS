@@ -851,7 +851,7 @@ public func settingsController(context: AccountContext, accountManager: AccountM
                     if success {
                         if let products = products {
                             for product in products {
-                                if product.productIdentifier == "app.nicegram.Premium" {
+                                if product.productIdentifier == NicegramProducts.Premium {
                                     let premiumIntroController = getPremiumIntroController(context: context, presentationData: presentationData, product: product)
                                     
                                     let canPay = IAPHelper.canMakePayments()

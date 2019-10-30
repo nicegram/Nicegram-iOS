@@ -414,6 +414,10 @@ API_AVAILABLE(ios(10))
     return @(VALIDATOR_URL);
 }
 
+- (NSString *)premiumBundle {
+    return @(PREMIUM_BUNDLE);
+}
+
 + (NSString * _Nullable)bundleSeedId {
     NSDictionary *query = [NSDictionary dictionaryWithObjectsAndKeys:
        (__bridge NSString *)kSecClassGenericPassword, (__bridge NSString *)kSecClass,

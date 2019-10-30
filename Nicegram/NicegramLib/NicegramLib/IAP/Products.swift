@@ -7,10 +7,13 @@
 //
 
 import Foundation
+import BuildConfig
+
+let bconfig = BuildConfig(baseAppBundleId: Bundle.main.bundleIdentifier!)
 
 public struct NicegramProducts {
     
-    public static let Premium = "app.nicegram.Premium"
+    public static let Premium = bconfig.premiumBundle
     
     private static let productIdentifiers: Set<ProductIdentifier> = [NicegramProducts.Premium]
     
