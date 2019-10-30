@@ -81,8 +81,8 @@
 		A5A724B92366335100A6ED62 /* NicegramLib */ = {
 			isa = PBXGroup;
 			children = (
-				A5A724DC236641B000A6ED62 /* New Group1 */,
-				A5A724D12366337900A6ED62 /* New Group */,
+				A5A724DC236641B000A6ED62 /* IAP */,
+				A5A724D12366337900A6ED62 /* SecureSettings */,
 				A5A724BA2366335100A6ED62 /* NicegramLib.h */,
 				A5A724BB2366335100A6ED62 /* Info.plist */,
 			);
@@ -98,23 +98,23 @@
 			path = NicegramLibTests;
 			sourceTree = "<group>";
 		};
-		A5A724D12366337900A6ED62 /* New Group */ = {
+		A5A724D12366337900A6ED62 /* SecureSettings */ = {
 			isa = PBXGroup;
 			children = (
 				A5A724D22366339300A6ED62 /* SecureSettings.swift */,
 				A5A724D4236633DE00A6ED62 /* NicegramSecureSettings.swift */,
 				A5A724D8236637CD00A6ED62 /* DAKeychain.swift */,
 			);
-			path = "New Group";
+			path = SecureSettings;
 			sourceTree = "<group>";
 		};
-		A5A724DC236641B000A6ED62 /* New Group1 */ = {
+		A5A724DC236641B000A6ED62 /* IAP */ = {
 			isa = PBXGroup;
 			children = (
 				A5A724DD236641CF00A6ED62 /* Products.swift */,
 				A5A724DF2366422400A6ED62 /* IAPHelper.swift */,
 			);
-			path = "New Group1";
+			path = IAP;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
