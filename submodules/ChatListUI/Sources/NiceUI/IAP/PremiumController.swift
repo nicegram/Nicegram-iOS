@@ -24,10 +24,12 @@ private struct SelectionState: Equatable {
 private final class PremiumControllerArguments {
     let toggleSetting: (Bool, String) -> Void
     let openSetMissedInterval: () -> Void
+    let testAction: () -> Void
     
-    init(toggleSetting:@escaping (Bool, String) -> Void, openSetMissedInterval:@escaping () -> Void) {
+    init(toggleSetting:@escaping (Bool, String) -> Void, openSetMissedInterval:@escaping () -> Void, testAction:@escaping () -> Void) {
         self.toggleSetting = toggleSetting
         self.openSetMissedInterval = openSetMissedInterval
+        self.testAction = testAction
     }
 }
 
@@ -36,6 +38,7 @@ private enum premiumControllerSection: Int32 {
     case mainHeader
     case syncPins
     case notifyMissed
+    case test
 }
 
 private enum PremiumControllerEntityId: Equatable, Hashable {
@@ -52,6 +55,8 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
     case notifyMissed(PresentationTheme, String, String)
     case notifyMissedNotice(PresentationTheme, String)
     
+    case testButton(PresentationTheme, String)
+    
     var section: ItemListSectionId {
         switch self {
         case .header:
@@ -60,6 +65,8 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return premiumControllerSection.syncPins.rawValue
         case .notifyMissed, .notifyMissedNotice:
             return premiumControllerSection.notifyMissed.rawValue
+        case .testButton:
+            return premiumControllerSection.test.rawValue
         }
         
     }
@@ -78,6 +85,8 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return 2100
         case .notifyMissedNotice:
             return 2200
+        case .testButton:
+            return 999999
         }
     }
     
@@ -121,6 +130,13 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
+            
+        case let .testButton(lhsTheme, lhsText):
+            if case let .testButton(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
         }
         
     }
@@ -148,6 +164,10 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             })
         case let .notifyMissedNotice(theme, text):
             return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+        case let .testButton(theme, text):
+            return ItemListActionItem(theme: theme, title: "Test Button", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                arguments.testAction()
+            })
         }
     }
     
@@ -183,6 +203,10 @@ private func premiumControllerEntries(presentationData: PresentationData, premiu
     
     entries.append(.notifyMissed(theme, l("Premium.Missed", locale), timeoutString))
     entries.append(.notifyMissedNotice(theme, l("Premium.Missed.Notice", locale)))
+    
+    #if DEBUG
+    entries.append(.testButton(theme, "TEST"))
+    #endif
     
     return entries
 }
@@ -300,6 +324,11 @@ public func premiumController(context: AccountContext) -> ViewController {
             })
             ])])
         presentControllerImpl?(actionSheet, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+    }, testAction: {
+        //var p: RecentPeers? = nil
+        //let signal = recentPeers(account: context.account)
+        //print(signal)
+        print("TESTED!")
     }
     )
     
