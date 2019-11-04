@@ -68,7 +68,7 @@
 "Common.FAQ.Intro" = "注意：Nicegram 支援僅由開發人員和志願者提供。\n\n請先看一下 Nicegram 常見問題：它有故障排除指示和其他大多數問題的解答。";
 "IAP.Premium.Title" = "進階版功能";
 "IAP.Premium.Subtitle" = "您無法抗拒的獨特功能！";
-"IAP.Premium.Features" = "無限資料夾\n無限置頂對話\n錯過的訊息篩選標籤\nApp 開啟時提示錯過的訊息\n";
+"IAP.Premium.Features" = "無限資料夾\n無限置頂對話\n錯過的訊息篩選標籤\nApp 開啟時提示錯過的訊息";
 "IAP.Premium.Activated" = "已升級進階版！";
 "IAP.Common.Restore" = "恢復購買";
 "IAP.Common.CantPay" = "抱歉，由於您的設備或帳戶限制，您無法購買。";
