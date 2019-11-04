@@ -35,14 +35,14 @@
 "Chat.ForwardAsCopy" = "Als Kopie weiterleiten";
 
 /*Folder*/
-"Folder.DefaultName" = "Verzeichnis";
-"Folder.New" = "Neues Verzeichnis";
-"Folder.Created" = "Verzeichnis erstellt";
+"Folder.DefaultName" = "Ordner";
+"Folder.New" = "Neuer Ordner";
+"Folder.Created" = "Ordner erstellt";
 "Folder.AddToExisting" = "Zu vorhandenem Verzeichnis hinzufügen";
-"Folder.Updated" = "Verzeichnis aktualisiert";
-"Folder.Create" = "Verzeichnis erstellen...";
-"Folder.Create.Name" = "Name des Verzeichnisses";
-"Folder.Create.Placeholder" = "Verzeichnis...";
+"Folder.Updated" = "Ordner aktualisiert";
+"Folder.Create" = "Ordner erstellen...";
+"Folder.Create.Name" = "Ordnername";
+"Folder.Create.Placeholder" = "Ordner...";
 "Folder.LimitExceeded" = "Entschuldigung, Sie können nicht mehr als 3 benutzerdefinierte Ordner erstellen.\nWeitere Ordner sind in Premium verfügbar.";
 "NiceFeatures.HideNumber" = "Telefon in den Einstellungen ausblenden";
 
@@ -64,7 +64,7 @@
 "Premium.Missed.Header" = "Verpasste Nachrichten";
 "Premium.Missed" = "Bei verpassten Nachrichten benachrichtigen";
 "Premium.Missed.Notice" = "Wenn Sie die App nach langer Verzögerung öffnen (Schlafen, Studieren usw.), wird Nicegram Sie über ungelesene private Nachrichten und Erwähnungen informieren.";
-"Folder.DeleteAsk" = "Verzeichnis löschen";
+"Folder.DeleteAsk" = "Ordner löschen";
 "Folder.NeedPremium" = "Dieser Ordner ist nur mit Premium verfügbar. Sie können Premium erwerben oder den Ordner mit Wischen löschen.";
 "Common.SupportChatUsername" = "nicegram_de";
 "Common.FAQUrl" = "https://nicegram.app/faq/";
