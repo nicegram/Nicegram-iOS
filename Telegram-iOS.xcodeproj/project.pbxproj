@@ -3956,7 +3956,7 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.nicegram.Telegram-iOS.watchkitapp";
+				PRODUCT_BUNDLE_IDENTIFIER = app.nicegram.cn.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "match Development com.nicegram.Telegram-iOS.watchkitapp";
 				SDKROOT = watchos;
@@ -4024,7 +4024,7 @@
 				INFOPLIST_FILE = Watch/App/Info.plist;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.nicegram.Telegram-iOS.watchkitapp";
+				PRODUCT_BUNDLE_IDENTIFIER = app.nicegram.cn.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "match AppStore com.nicegram.Telegram-iOS.watchkitapp";
 				SDKROOT = watchos;
@@ -4558,7 +4558,7 @@
 					"-lz",
 				);
 				OTHER_SWIFT_FLAGS = "-D DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.nicegram.Telegram-iOS";
+				PRODUCT_BUNDLE_IDENTIFIER = app.nicegram.cn;
 				PRODUCT_NAME = Nicegram;
 				PROVISIONING_PROFILE = "d96d567f-e54a-4cae-b9d1-24a5397fa015";
 				PROVISIONING_PROFILE_SPECIFIER = "match Development com.nicegram.Telegram-iOS";
@@ -4588,7 +4588,7 @@
 				INFOPLIST_FILE = Share/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.nicegram.Telegram-iOS.Share";
+				PRODUCT_BUNDLE_IDENTIFIER = app.nicegram.cn.Share;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "388bbf37-24cd-44d4-b38d-9b1ad5006247";
 				PROVISIONING_PROFILE_SPECIFIER = "match Development com.nicegram.Telegram-iOS.Share";
@@ -4620,7 +4620,7 @@
 				INFOPLIST_FILE = SiriIntents/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.nicegram.Telegram-iOS.SiriIntents";
+				PRODUCT_BUNDLE_IDENTIFIER = app.nicegram.cn.SiriIntents;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "e393ec42-d75d-4bc2-a75b-97891ad4cae8";
 				PROVISIONING_PROFILE_SPECIFIER = "match Development com.nicegram.Telegram-iOS.SiriIntents";
@@ -4759,7 +4759,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.nicegram.Telegram-iOS.Widget";
+				PRODUCT_BUNDLE_IDENTIFIER = app.nicegram.cn.Widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "match Development com.nicegram.Telegram-iOS.Widget";
 				SDKROOT = iphoneos;
@@ -4849,7 +4849,7 @@
 					"-lz",
 				);
 				OTHER_SWIFT_FLAGS = "";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.nicegram.Telegram-iOS";
+				PRODUCT_BUNDLE_IDENTIFIER = app.nicegram.cn;
 				PRODUCT_NAME = Nicegram;
 				PROVISIONING_PROFILE = "d96d567f-e54a-4cae-b9d1-24a5397fa015";
 				PROVISIONING_PROFILE_SPECIFIER = "match AppStore com.nicegram.Telegram-iOS";
@@ -4880,7 +4880,7 @@
 				INFOPLIST_FILE = Share/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.nicegram.Telegram-iOS.Share";
+				PRODUCT_BUNDLE_IDENTIFIER = app.nicegram.cn.Share;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "57843657-7287-4a3d-b056-3bb7acbd6afb";
 				PROVISIONING_PROFILE_SPECIFIER = "match AppStore com.nicegram.Telegram-iOS.Share";
@@ -4910,7 +4910,7 @@
 				INFOPLIST_FILE = SiriIntents/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.nicegram.Telegram-iOS.SiriIntents";
+				PRODUCT_BUNDLE_IDENTIFIER = app.nicegram.cn.SiriIntents;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "d4d12f50-f43f-49fa-8f14-6e7b73b68d59";
 				PROVISIONING_PROFILE_SPECIFIER = "match AppStore com.nicegram.Telegram-iOS.SiriIntents";
@@ -5035,7 +5035,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
 				MTL_ENABLE_DEBUG_INFO = NO;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.nicegram.Telegram-iOS.Widget";
+				PRODUCT_BUNDLE_IDENTIFIER = app.nicegram.cn.Widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "17ef978a-2103-47cd-8cd3-9104312ade40";
 				PROVISIONING_PROFILE_SPECIFIER = "match AppStore com.nicegram.Telegram-iOS.Widget";
