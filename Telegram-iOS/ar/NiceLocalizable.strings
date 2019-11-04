@@ -1,26 +1,26 @@
 "AppName" = "Nicegram";
 
 /*ChatFilter*/
-"ChatFilter.Bots" = "Bots";
-"ChatFilter.Channels" = "Channels";
-"ChatFilter.Private" = "Users";
-"ChatFilter.Groups" = "Groups";
-"ChatFilter.Unread" = "Unread";
-"ChatFilter.Unmuted" = "Unmuted";
-"ChatFilter.Favourites" = "Favourites";
+"ChatFilter.Bots" = "السير";
+"ChatFilter.Channels" = "القنوات";
+"ChatFilter.Private" = "المستخدمين";
+"ChatFilter.Groups" = "مجموعات";
+"ChatFilter.Unread" = "غير المقروءه";
+"ChatFilter.Unmuted" = "اونموتيد";
+"ChatFilter.Favourites" = "المفضله";
 
 /*Nice Features*/
 "NiceFeatures.Title" = "Nicegram";
-"NiceFeatures.Tabs.Header" = "TABS";
-"NiceFeatures.Tabs.ShowContacts" = "Show Contacts Tab";
-"NiceFeatures.ChatScreen.Header" = "CHAT SCREEN";
-"NiceFeatures.ChatScreen.AnimatedStickers" = "Animated Stickers";
+"NiceFeatures.Tabs.Header" = "علامات التبويب";
+"NiceFeatures.Tabs.ShowContacts" = "إظهار علامة التبويب جات الاتصال";
+"NiceFeatures.ChatScreen.Header" = "شاشه الدردشة";
+"NiceFeatures.ChatScreen.AnimatedStickers" = "ملصقات الرسوم المتحركة";
 
 /*Save to Cloud*/
-"Chat.SaveToCloud" = "Save to Cloud";
+"Chat.SaveToCloud" = "حفظ إلى سحابه";
 
 /*Open Pin*/
-"Chat.OpenPin" = "Show Pin";
+"Chat.OpenPin" = "عرض دبوس";
 "ChatFilter.Admin" = "Admin";
 "NiceFeatures.Notifications.Fix" = "Disable Unwanted Notifications";
 "NiceFeatures.Notifications.FixNotice" = "Useful if you get notifications from muted chats.\nReply from notifications, account labels and media previews will be unavailable.";
