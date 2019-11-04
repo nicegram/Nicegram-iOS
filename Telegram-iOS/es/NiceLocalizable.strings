@@ -1,36 +1,36 @@
 "AppName" = "Nicegram";
 
 /*ChatFilter*/
-"ChatFilter.Bots" = "Bots";
-"ChatFilter.Channels" = "Channels";
-"ChatFilter.Private" = "Users";
-"ChatFilter.Groups" = "Groups";
-"ChatFilter.Unread" = "Unread";
-"ChatFilter.Unmuted" = "Unmuted";
-"ChatFilter.Favourites" = "Favourites";
+"ChatFilter.Bots" = "Robots";
+"ChatFilter.Channels" = "Canales";
+"ChatFilter.Private" = "Usuarios";
+"ChatFilter.Groups" = "Grupos";
+"ChatFilter.Unread" = "No leído";
+"ChatFilter.Unmuted" = "Desilenciar";
+"ChatFilter.Favourites" = "Favoritos";
 
 /*Nice Features*/
 "NiceFeatures.Title" = "Nicegram";
-"NiceFeatures.Tabs.Header" = "TABS";
-"NiceFeatures.Tabs.ShowContacts" = "Show Contacts Tab";
-"NiceFeatures.ChatScreen.Header" = "CHAT SCREEN";
-"NiceFeatures.ChatScreen.AnimatedStickers" = "Animated Stickers";
+"NiceFeatures.Tabs.Header" = "PESTAÑAS";
+"NiceFeatures.Tabs.ShowContacts" = "Mostrar pestaña de Contactos";
+"NiceFeatures.ChatScreen.Header" = "PANTALLA DE CHAT";
+"NiceFeatures.ChatScreen.AnimatedStickers" = "Calcamonias Animadas";
 
 /*Save to Cloud*/
-"Chat.SaveToCloud" = "Save to Cloud";
+"Chat.SaveToCloud" = "Guarda a la nube";
 
 /*Open Pin*/
-"Chat.OpenPin" = "Show Pin";
+"Chat.OpenPin" = "Muestra Estaquilla";
 "ChatFilter.Admin" = "Admin";
-"NiceFeatures.Notifications.Fix" = "Disable Unwanted Notifications";
-"NiceFeatures.Notifications.FixNotice" = "Useful if you get notifications from muted chats.\nReply from notifications, account labels and media previews will be unavailable.";
-"NiceFeatures.Filters.Header" = "FILTERS (TABS)";
-"NiceFeatures.Filters.Notice" = "Select the number of custom tabs.\nLongtap on tab to change filter.";
+"NiceFeatures.Notifications.Fix" = "Deshabilita notificaciones indeseadas";
+"NiceFeatures.Notifications.FixNotice" = "Util si obtienes notificaciones de chats silenciados.\nCorrespondencias desde notificaciones, etiquetas de cuenta y vistas previas de multimedias no estarán disponibles.";
+"NiceFeatures.Filters.Header" = "FILTROS (PESTAÑAS)";
+"NiceFeatures.Filters.Notice" = "Selecciona el número de pestañas personalizadas. \nMantiene presionado la pestaña para cambiar el filtro.";
 
 /*Common*/
-"Common.ExitNow" = "Exit Now";
-"Common.Later" = "Later";
-"Common.RestartRequired" = "Restart Required!";
+"Common.ExitNow" = "Salir Ahora";
+"Common.Later" = "Al rato";
+"Common.RestartRequired" = "Reinicio ";
 "NiceFeatures.Tabs.ShowNames" = "Show Tab Names";
 "Chat.ForwardAsCopy" = "Forward As Copy";
 
@@ -66,7 +66,7 @@
 "Premium.Missed.Notice" = "When you open App after long delay (sleeping, studying, etc.), Nicegram will notify you about unread private messages and mentions.";
 "Folder.DeleteAsk" = "Delete Folder";
 "Folder.NeedPremium" = "This Folder is only available with Premium. You can get Premium or delete Folder with swipe.";
-"Common.SupportChatUsername" = "nicegramchat";
+"Common.SupportChatUsername" = "nicegram_es";
 "Common.FAQUrl" = "https://nicegram.app/faq/";
 "Common.FAQ.Button" = "Nicegram FAQ";
 "Common.FAQ.Intro" = "Please note that Nicegram Support is done by the only one developer and community.\n\nFirstly, take a look at the Nicegram FAQ: it has important troubleshooting tips and answers to most questions.";
