@@ -2,25 +2,25 @@
 
 /*ChatFilter*/
 "ChatFilter.Bots" = "Bots";
-"ChatFilter.Channels" = "Channels";
-"ChatFilter.Private" = "Users";
-"ChatFilter.Groups" = "Groups";
-"ChatFilter.Unread" = "Unread";
-"ChatFilter.Unmuted" = "Unmuted";
-"ChatFilter.Favourites" = "Favourites";
+"ChatFilter.Channels" = "Kanäle";
+"ChatFilter.Private" = "Benutzer";
+"ChatFilter.Groups" = "Gruppen";
+"ChatFilter.Unread" = "Ungelesen";
+"ChatFilter.Unmuted" = "Laut";
+"ChatFilter.Favourites" = "Favoriten";
 
 /*Nice Features*/
 "NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "TABS";
-"NiceFeatures.Tabs.ShowContacts" = "Show Contacts Tab";
-"NiceFeatures.ChatScreen.Header" = "CHAT SCREEN";
-"NiceFeatures.ChatScreen.AnimatedStickers" = "Animated Stickers";
+"NiceFeatures.Tabs.ShowContacts" = "Kontakte Tab anzeigen";
+"NiceFeatures.ChatScreen.Header" = "CHAT ANZEIGE";
+"NiceFeatures.ChatScreen.AnimatedStickers" = "Animierte Stickers";
 
 /*Save to Cloud*/
-"Chat.SaveToCloud" = "Save to Cloud";
+"Chat.SaveToCloud" = "An Gespeichertes Senden";
 
 /*Open Pin*/
-"Chat.OpenPin" = "Show Pin";
+"Chat.OpenPin" = "Pin anzeigen";
 "ChatFilter.Admin" = "Admin";
 "NiceFeatures.Notifications.Fix" = "Disable Unwanted Notifications";
 "NiceFeatures.Notifications.FixNotice" = "Useful if you get notifications from muted chats.\nReply from notifications, account labels and media previews will be unavailable.";
@@ -66,7 +66,7 @@
 "Premium.Missed.Notice" = "When you open App after long delay (sleeping, studying, etc.), Nicegram will notify you about unread private messages and mentions.";
 "Folder.DeleteAsk" = "Delete Folder";
 "Folder.NeedPremium" = "This Folder is only available with Premium. You can get Premium or delete Folder with swipe.";
-"Common.SupportChatUsername" = "nicegramchat";
+"Common.SupportChatUsername" = "nicegram_de";
 "Common.FAQUrl" = "https://nicegram.app/faq/";
 "Common.FAQ.Button" = "Nicegram FAQ";
 "Common.FAQ.Intro" = "Please note that Nicegram Support is done by the only one developer and community.\n\nFirstly, take a look at the Nicegram FAQ: it has important troubleshooting tips and answers to most questions.";
