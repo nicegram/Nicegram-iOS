@@ -1,12 +1,10 @@
-"AppName" = "Nicegram";
+"AppName" = "Nicegram Chinese";
 
 /*ChatFilter*/
 "ChatFilter.Bots" = "机器人";
 "ChatFilter.Channels" = "频道";
 "ChatFilter.Private" = "用户";
 "ChatFilter.Groups" = "群组";
-
-/*未读消息*/
 "ChatFilter.Unread" = "未读信息";
 "ChatFilter.Unmuted" = "已启用通知";
 "ChatFilter.Favourites" = "收藏夹";
@@ -14,12 +12,7 @@
 /*Nice Features*/
 "NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "标签";
-
-/*显示<联系人>标签*/
 "NiceFeatures.Tabs.ShowContacts" = "显示<联系人>标签";
-
-/*对话界面*/
-/*Fuzzy*/
 "NiceFeatures.ChatScreen.Header" = "对话界面";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "动态贴纸";
 
