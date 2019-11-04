@@ -23,12 +23,8 @@
 "Chat.OpenPin" = "Apri pin";
 "ChatFilter.Admin" = "Amministratore";
 "NiceFeatures.Notifications.Fix" = "Disabilita notifiche inutili";
-
-/*questa frase è impossibile ridurla più di così*/
 "NiceFeatures.Notifications.FixNotice" = "Utile se ricevi notifiche da chat silenziate.\nLe risposte alle notifiche, le etichette degli account e le anteprime dei media non saranno disponibili.";
 "NiceFeatures.Filters.Header" = "FILTRI (TABS)";
-
-/*questa frase è impossibile ridurla più di così*/
 "NiceFeatures.Filters.Notice" = "Seleziona il numero di schede personalizzate.\nTocca a lungo la scheda per cambiare filtro.";
 
 /*Common*/
@@ -82,4 +78,4 @@
 "IAP.Common.CantPay" = "Spiacenti, ma non puoi fare acquisti a causa di un problema con il tuo telefono o con il tuo account";
 "IAP.Common.ErrorFetch" = "Spiacenti, non è stato possibile ottenere i tuoi acquisti dall'App Store";
 "IAP.Common.Congrats" = "Congratulazioni!";
-"IAP.Common.ValidateError" = "";
+"IAP.Common.ValidateError" = "Sorry, can't validate your purchase.";
