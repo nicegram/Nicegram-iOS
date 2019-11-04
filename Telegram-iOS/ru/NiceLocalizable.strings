@@ -1,81 +1,81 @@
-"AppName" = "Nicegram";
+"AppName" = "Найсграмчик";
 
 /*ChatFilter*/
-"ChatFilter.Bots" = "Bots";
-"ChatFilter.Channels" = "Channels";
-"ChatFilter.Private" = "Users";
-"ChatFilter.Groups" = "Groups";
-"ChatFilter.Unread" = "Unread";
-"ChatFilter.Unmuted" = "Unmuted";
-"ChatFilter.Favourites" = "Favourites";
+"ChatFilter.Bots" = "Боты";
+"ChatFilter.Channels" = "Каналы";
+"ChatFilter.Private" = "Пользователи";
+"ChatFilter.Groups" = "Группы";
+"ChatFilter.Unread" = "Непрочитанные";
+"ChatFilter.Unmuted" = "Со звуком";
+"ChatFilter.Favourites" = "Важные";
 
 /*Nice Features*/
-"NiceFeatures.Title" = "Nicegram";
-"NiceFeatures.Tabs.Header" = "TABS";
-"NiceFeatures.Tabs.ShowContacts" = "Show Contacts Tab";
-"NiceFeatures.ChatScreen.Header" = "CHAT SCREEN";
-"NiceFeatures.ChatScreen.AnimatedStickers" = "Animated Stickers";
+"NiceFeatures.Title" = "Найсграм";
+"NiceFeatures.Tabs.Header" = "ВКЛАДКИ";
+"NiceFeatures.Tabs.ShowContacts" = "Вкладка «Контакты»";
+"NiceFeatures.ChatScreen.Header" = "ЧАТ";
+"NiceFeatures.ChatScreen.AnimatedStickers" = "Анимированные Стикеры";
 
 /*Save to Cloud*/
-"Chat.SaveToCloud" = "Save to Cloud";
+"Chat.SaveToCloud" = "Сохранить в Избранное";
 
 /*Open Pin*/
-"Chat.OpenPin" = "Show Pin";
-"ChatFilter.Admin" = "Admin";
-"NiceFeatures.Notifications.Fix" = "Disable Unwanted Notifications";
-"NiceFeatures.Notifications.FixNotice" = "Useful if you get notifications from muted chats.\nReply from notifications, account labels and media previews will be unavailable.";
-"NiceFeatures.Filters.Header" = "FILTERS (TABS)";
-"NiceFeatures.Filters.Notice" = "Select the number of custom tabs.\nLongtap on tab to change filter.";
+"Chat.OpenPin" = "Показать Пин";
+"ChatFilter.Admin" = "Админ";
+"NiceFeatures.Notifications.Fix" = "Отключить нежелательные уведомления";
+"NiceFeatures.Notifications.FixNotice" = "Нужно, если вы получаете уведомления, даже если они отключены в чате. Ответ из уведомления, метки аккаунтов и предпросмотр медиа будут недоступны.";
+"NiceFeatures.Filters.Header" = "ФИЛЬТРЫ (ВКЛАДКИ)";
+"NiceFeatures.Filters.Notice" = "Выберите количество пользовательских вкладок.\nДолгое нажатие по вкладке позволит сменить фильтр.";
 
 /*Common*/
-"Common.ExitNow" = "Exit Now";
-"Common.Later" = "Later";
-"Common.RestartRequired" = "Restart Required!";
-"NiceFeatures.Tabs.ShowNames" = "Show Tab Names";
-"Chat.ForwardAsCopy" = "Forward As Copy";
+"Common.ExitNow" = "Выйти Сейчас";
+"Common.Later" = "Позже";
+"Common.RestartRequired" = "Необходим перезапуск!";
+"NiceFeatures.Tabs.ShowNames" = "Показывать Имена Вкладок";
+"Chat.ForwardAsCopy" = "Переслать без Автора";
 
 /*Folder*/
-"Folder.DefaultName" = "Folder";
-"Folder.New" = "New Folder";
-"Folder.Created" = "Folder created";
-"Folder.AddToExisting" = "Add to Existing Folder";
-"Folder.Updated" = "Folder updated";
-"Folder.Create" = "Create Folder...";
-"Folder.Create.Name" = "Folder Name";
-"Folder.Create.Placeholder" = "Folder...";
-"Folder.LimitExceeded" = "Sorry, you can create no more then 3 custom folders.\nMore folders are available in Premium.";
-"NiceFeatures.HideNumber" = "Hide phone in settings";
+"Folder.DefaultName" = "Папка";
+"Folder.New" = "Новая Папка";
+"Folder.Created" = "Папка создана";
+"Folder.AddToExisting" = "Добавить в Папку";
+"Folder.Updated" = "Папка обновлена";
+"Folder.Create" = "Создать Папку...";
+"Folder.Create.Name" = "Название Папки";
+"Folder.Create.Placeholder" = "Папка...";
+"Folder.LimitExceeded" = "К сожалению, создать можно не больше 3 папок. Совсем скоро можно будет создать больше.";
+"NiceFeatures.HideNumber" = "Скрыть номер в настройках";
 
 /*NGWeb*/
-"NGWeb.Blocked" = "Unavailable in Nicegram due to AppStore Guidelines";
+"NGWeb.Blocked" = "Недоступно в Nicegram по правилам AppStore";
 
 /*Browser*/
-"NiceFeatures.Browser.Header" = "URLs";
-"NiceFeatures.Browser.UseBrowser" = "Open links in browser";
-"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram will open links in external browser instead of in-app. Selected browser must be installed.";
-"ChatFilter.Missed" = "Missed";
+"NiceFeatures.Browser.Header" = "ССЫЛКИ";
+"NiceFeatures.Browser.UseBrowser" = "Открывать во внешнем браузере";
+"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram будет открывать ссылки во внешнем браузере вместо встроенного. Выбранный браузер должен быть установлен.";
+"ChatFilter.Missed" = "Новые";
 
 /*Premium*/
-"Premium.Title" = "Premium";
-"Premium.UnlimitedPins.Header" = "UNLIMITED PINNED CHATS";
-"Premium.SyncPins" = "Sync Pinned Chats";
-"Premium.SyncPins.Notice.ON" = "If you change pinned chats in other client, they WILL CHANGE in Nicegram.";
-"Premium.SyncPins.Notice.OFF" = "If you change pinned chats in other client, they WILL NOT CHANGE in Nicegram.";
-"Premium.Missed.Header" = "Missed messages";
-"Premium.Missed" = "Notify on missed messages";
-"Premium.Missed.Notice" = "When you open App after long delay (sleeping, studying, etc.), Nicegram will notify you about unread private messages and mentions.";
-"Folder.DeleteAsk" = "Delete Folder";
-"Folder.NeedPremium" = "This Folder is only available with Premium. You can get Premium or delete Folder with swipe.";
-"Common.SupportChatUsername" = "nicegramchat";
-"Common.FAQUrl" = "https://nicegram.app/faq/";
-"Common.FAQ.Button" = "Nicegram FAQ";
-"Common.FAQ.Intro" = "Please note that Nicegram Support is done by the only one developer and community.\n\nFirstly, take a look at the Nicegram FAQ: it has important troubleshooting tips and answers to most questions.";
-"IAP.Premium.Title" = "Premium";
-"IAP.Premium.Subtitle" = "Unique features you can't refuse!";
-"IAP.Premium.Features" = "Unlimited Folders\nUnlimited Pinned Chats\nMissed messages Filter\n«New Messages» digest on App launch";
-"IAP.Premium.Activated" = "Premium Activated!";
-"IAP.Common.Restore" = "Restore Purchases";
-"IAP.Common.CantPay" = "Sorry, but You can't make purchases because of your device or account restrictions.";
-"IAP.Common.ErrorFetch" = "Sorry, сan't fetch App Store purchases.";
-"IAP.Common.Congrats" = "Congratulations!";
-"IAP.Common.ValidateError" = "Sorry, can't validate your purchase.";
+"Premium.Title" = "Премиум";
+"Premium.UnlimitedPins.Header" = "НЕОГРАНИЧЕННЫЕ ЗАКРЕПЛЁННЫЕ ЧАТЫ";
+"Premium.SyncPins" = "Синхронизировать Чаты";
+"Premium.SyncPins.Notice.ON" = "Если вы измените закрепленные чаты в другом клиенте, они ИЗМЕНЯТСЯ в Nicegram.";
+"Premium.SyncPins.Notice.OFF" = "Если вы измените закрепленные чаты в другом клиенте, они НЕ ИЗМЕНЯТСЯ в Nicegram.";
+"Premium.Missed.Header" = "Новые сообщения";
+"Premium.Missed" = "Уведомлять о пропущенных";
+"Premium.Missed.Notice" = "Когда вы открываете приложение после долгого отсутствия (сон, работа и т.д.), Nicegram откроет вкладку с непрочитанными сообщениями и упоминаниями.";
+"Folder.DeleteAsk" = "Удалить папку";
+"Folder.NeedPremium" = "Эта Папка доступна только с Премиумом. Вы можете получить Премиум или удалить папку свайпом.";
+"Common.SupportChatUsername" = "nicegram_ru";
+"Common.FAQUrl" = "https://nicegram.app/ru/faq/";
+"Common.FAQ.Button" = "Вопросы о Nicegram";
+"Common.FAQ.Intro" = "Пожалуйста, обратите внимание, что поддержка Nicegram осуществляется одним единственным разработчиком и сообществом.\n\nВ первую очередь, ознакомьтесь с часто задаваемыми вопросами о Nicegram: там Вы найдёте ответы на большинство вопросов и важные советы по устранению неполадок.";
+"IAP.Premium.Title" = "Премиум";
+"IAP.Premium.Subtitle" = "Уникальные функции, от которых трудно отказаться!";
+"IAP.Premium.Features" = "Безлимитные Папки\nБезлимитные Закрепленные Чаты\nФильтр пропущенных сообщений\nОбзор новых сообщений при старте Приложения";
+"IAP.Premium.Activated" = "Премиум Активирован!";
+"IAP.Common.Restore" = "Восстановить Покупки";
+"IAP.Common.CantPay" = "К сожалению, Вы не можете производить покупки ввиду ограничений вашего устройства или аккаунта.";
+"IAP.Common.ErrorFetch" = "Не удалось связаться с AppStore";
+"IAP.Common.Congrats" = "Поздравляем!";
+"IAP.Common.ValidateError" = "К сожалению, подтвердить покупку не удалось.";
