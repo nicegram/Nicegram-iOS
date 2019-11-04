@@ -1,0 +1,3 @@
+files:
+  - source: /Telegram-iOS/en.lproj/NiceLocalizable.strings
+    translation: /Telegram-iOS/%two_letters_code%.lproj/NiceLocalizable.strings

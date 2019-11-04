@@ -1,4 +1,3 @@
-"AppName" = "Nicegram";
 
 /*ChatFilter*/
 "ChatFilter.Bots" = "機器人";
@@ -8,9 +7,6 @@
 "ChatFilter.Unread" = "未讀訊息";
 "ChatFilter.Unmuted" = "開啟通知";
 "ChatFilter.Favourites" = "常用";
-
-/*Nice Features*/
-"NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "標籤";
 "NiceFeatures.Tabs.ShowContacts" = "顯示聯絡人標籤";
 "NiceFeatures.ChatScreen.Header" = "對話介面";
