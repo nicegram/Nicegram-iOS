@@ -1,9 +1,17 @@
+"AppName" = "Nicegram";
+
+/*ChatFilter*/
+"ChatFilter.Bots" = "Bots";
 "ChatFilter.Channels" = "Kanäle";
 "ChatFilter.Private" = "Benutzer";
 "ChatFilter.Groups" = "Gruppen";
 "ChatFilter.Unread" = "Ungelesen";
 "ChatFilter.Unmuted" = "Laut";
 "ChatFilter.Favourites" = "Favoriten";
+
+/*Nice Features*/
+"NiceFeatures.Title" = "Nicegram";
+"NiceFeatures.Tabs.Header" = "Tabs";
 "NiceFeatures.Tabs.ShowContacts" = "Kontakte Tab anzeigen";
 "NiceFeatures.ChatScreen.Header" = "CHAT ANZEIGE";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Animierte Stickers";
@@ -13,4 +21,29 @@
 
 /*Open Pin*/
 "Chat.OpenPin" = "Pin anzeigen";
+"ChatFilter.Admin" = "Administrator";
+"NiceFeatures.Notifications.Fix" = "Ungewünschte Benachrichtigungen deaktivieren";
+"NiceFeatures.Filters.Header" = "Filter (Tabs)";
+"NiceFeatures.Filters.Notice" = "Wählen Sie die Anzahl der benutzerdefinierten Tabs.\nLanges Tippen auf Tab, um den Filter zu ändern.";
+
+/*Common*/
+"Common.ExitNow" = "Jetzt verlassen";
+"Common.Later" = "Später";
+"Premium.SyncPins" = "Synchronisiere angepinnte Chats";
+"Premium.SyncPins.Notice.ON" = "Wenn Sie gepinnte Chats in einem anderen Client ändern, werden sie auch in Nicegram geändert.";
+"Premium.SyncPins.Notice.OFF" = "Wenn Sie gepinnte Chats in einem anderen Client ändern, werden sie nicht in Nicegram geändert.";
+"Premium.Missed.Header" = "Verpasste Nachrichten";
+"Premium.Missed" = "Bei verpassten Nachrichten benachrichtigen";
+"Premium.Missed.Notice" = "Wenn Sie die App nach langer Verzögerung öffnen (Schlafen, Studieren usw.), wird Nicegram Sie über ungelesene private Nachrichten und Erwähnungen informieren.";
+"Folder.DeleteAsk" = "Verzeichnis löschen";
+"Folder.NeedPremium" = "Dieser Ordner ist nur mit Premium verfügbar. Sie können Premium erwerben oder den Ordner mit Wischen löschen.";
 "Common.SupportChatUsername" = "nicegram_de";
+"Common.FAQ.Button" = "Fragen und Antworten";
+"Common.FAQ.Intro" = "Bitte beachten Sie, dass der Nicegram Support von einem einzigen Entwickler und der Community durchgeführt wird.\n\nWerfen Sie einen Blick auf die Nicegram-FAQ: Sie enthält wichtige Tipps zur Fehlerbehebung und Antworten auf die meisten Fragen.";
+"IAP.Premium.Title" = "Premium";
+"IAP.Premium.Subtitle" = "Einzigartige Funktionen, die du nicht ablehnen kannst!";
+"IAP.Premium.Activated" = "Premium aktiviert!";
+"IAP.Common.Restore" = "Einkäufe wiederherstellen";
+"IAP.Common.CantPay" = "Leider können Sie aufgrund Ihres Geräts oder Ihres Kontos keine Einkäufe tätigen.";
+"IAP.Common.ErrorFetch" = "Entschuldigung, App Store Käufe können nicht abgerufen werden.";
+"IAP.Common.Congrats" = "Herzlichen Glückwunsch!";
