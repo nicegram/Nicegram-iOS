@@ -1,0 +1,81 @@
+"AppName" = "Nicegram";
+
+/*ChatFilter*/
+"ChatFilter.Bots" = "Botlar";
+"ChatFilter.Channels" = "Kanallar";
+"ChatFilter.Private" = "Kullanıcılar";
+"ChatFilter.Groups" = "Gruplar";
+"ChatFilter.Unread" = "Okunmamış";
+"ChatFilter.Unmuted" = "Sessize Alınmış";
+"ChatFilter.Favourites" = "Favoriler";
+
+/*Nice Features*/
+"NiceFeatures.Title" = "Nicegram";
+"NiceFeatures.Tabs.Header" = "SEKMELER";
+"NiceFeatures.Tabs.ShowContacts" = "Kişiler Sekmesini Göster";
+"NiceFeatures.ChatScreen.Header" = "SOHBET EKRANI";
+"NiceFeatures.ChatScreen.AnimatedStickers" = "Animasyonlu Çıkartmalar";
+
+/*Save to Cloud*/
+"Chat.SaveToCloud" = "Buluta Kaydet";
+
+/*Open Pin*/
+"Chat.OpenPin" = "Sabiti Göster";
+"ChatFilter.Admin" = "Yönetici";
+"NiceFeatures.Notifications.Fix" = "İstenmeyen Bildirimleri Devre Dışı Bırak";
+"NiceFeatures.Notifications.FixNotice" = "Sessiz sohbetlerden bildirim almak kullanışlıdır.\nBildirimlerden yanıtlama, hesap etiketleri ve medya önizlemeleri kullanılamayacak.";
+"NiceFeatures.Filters.Header" = "FİLTRELER (SEKMELER)";
+"NiceFeatures.Filters.Notice" = "Özel sekmelerin sayısını seçin.\nFiltreyi değiştirmek için sekmeye uzun basın.";
+
+/*Common*/
+"Common.ExitNow" = "Şimdi Çık";
+"Common.Later" = "Sonra";
+"Common.RestartRequired" = "Yeniden Başlatma Gerekli!";
+"NiceFeatures.Tabs.ShowNames" = "Sekme İsimlerini Göster";
+"Chat.ForwardAsCopy" = "Kopya Olarak İlet";
+
+/*Folder*/
+"Folder.DefaultName" = "Klasör";
+"Folder.New" = "Yeni Klasör";
+"Folder.Created" = "Klasör oluşturuldu";
+"Folder.AddToExisting" = "Var Olan Klasöre Ekle";
+"Folder.Updated" = "Klasör güncellendi";
+"Folder.Create" = "Klasör Oluştur...";
+"Folder.Create.Name" = "Klasör İsmi";
+"Folder.Create.Placeholder" = "Klasör...";
+"Folder.LimitExceeded" = "Üzgünüz, 3’ten fazla özel klasör oluşturamazsınız.\nDaha fazla klasör yakında kullanılabilir olacak.";
+"NiceFeatures.HideNumber" = "Ayarlarda numarayı gizle";
+
+/*NGWeb*/
+"NGWeb.Blocked" = "AppStore Kuralları yüzünden Nicegram’da kullanılamıyor";
+
+/*Browser*/
+"NiceFeatures.Browser.Header" = "Bağlantılar";
+"NiceFeatures.Browser.UseBrowser" = "Bağlantıları tarayıcıda aç";
+"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram, bağlantıları uygulama içi yerine harici tarayıcıda açacak. Seçilen tarayıcı yüklü olmalı.";
+"ChatFilter.Missed" = "Kaçırılan";
+
+/*Premium*/
+"Premium.Title" = "Premium";
+"Premium.UnlimitedPins.Header" = "SINIRSIZ SABİTLENMİŞ SOHBET";
+"Premium.SyncPins" = "Senkronize Sabitlenmiş Sohbetler";
+"Premium.SyncPins.Notice.ON" = "Eğer diğer sistemlerinizde sabit sohbetlerinizi değiştirirseniz, Nicegram’da da DEĞİŞECEKTİR.";
+"Premium.SyncPins.Notice.OFF" = "Eğer diğer sistemlerinizde sabit sohbetlerinizi değiştirirseniz, Nicegram’da DEĞİŞMEYECEKTİR.";
+"Premium.Missed.Header" = "Kaçırılan mesajlar";
+"Premium.Missed" = "Kaçırılan mesajlarda bildirim";
+"Premium.Missed.Notice" = "Uzun bir süreden sonra (uyku, çalışma vb.) uygulamayı açtığınızda, Nicegram size okunmamış özel mesajlar ve bahsedilmeler hakkında bildirim gönderecek.";
+"Folder.DeleteAsk" = "Klasörü Sil";
+"Folder.NeedPremium" = "Bu klasör sadece Premium ile kullanılabilir. Premium’u alabilir ya da kaydırarak klasörü silebilirsiniz.";
+"Common.SupportChatUsername" = "nicegram_tr";
+"Common.FAQUrl" = "https://nicegram.app/tr/faq/";
+"Common.FAQ.Button" = "Nicegram SSS";
+"Common.FAQ.Intro" = "Lütfen Nicegram Destek’in sadece bir geliştirici ve topluluktan oluştuğunu unutmayın.\n\nİlk olarak Nicegram SSS’e bir göz atın: önemli ipuçları ve çoğu soruya cevap barındırıyor.";
+"IAP.Premium.Title" = "Premium";
+"IAP.Premium.Subtitle" = "Reddedemeyeceğiniz benzersiz özellikler!";
+"IAP.Premium.Features" = "Sınırsız Klasörler\nSınırsız Sabit Sohbetler\nKaçırılan Mesaj Filtresi\nUygulama Açılışında Kaçırılan Mesaj Özeti";
+"IAP.Premium.Activated" = "Premium Aktive Edildi!";
+"IAP.Common.Restore" = "Satın Alımları Geri Yükle";
+"IAP.Common.CantPay" = "Üzgünüz, ama cihaz veya hesap kısıtlamalarınız yüzünden satın alım yapamazsınız.";
+"IAP.Common.ErrorFetch" = "Üzgünüz, App Store satın alımları çekilemiyor.";
+"IAP.Common.Congrats" = "Tebrikler!";
+"IAP.Common.ValidateError" = "Sorry, can't validate your purchase.";
