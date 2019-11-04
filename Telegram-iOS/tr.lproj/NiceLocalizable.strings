@@ -1,7 +1,6 @@
 "AppName" = "Nicegram";
 
 /*ChatFilter*/
-/*Fuzzy*/
 "ChatFilter.Bots" = "Botlar";
 "ChatFilter.Channels" = "Kanallar";
 "ChatFilter.Private" = "Kullanıcılar";
@@ -79,4 +78,4 @@
 "IAP.Common.CantPay" = "Üzgünüz, ama cihaz veya hesap kısıtlamalarınız yüzünden satın alım yapamazsınız.";
 "IAP.Common.ErrorFetch" = "Üzgünüz, App Store satın alımları çekilemiyor.";
 "IAP.Common.Congrats" = "Tebrikler!";
-"IAP.Common.ValidateError" = "";
+"IAP.Common.ValidateError" = "Sorry, can't validate your purchase.";
