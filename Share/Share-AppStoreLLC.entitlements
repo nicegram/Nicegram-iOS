@@ -8,7 +8,7 @@
 	</array>
 	<key>keychain-access-groups</key>
 	<array>
-		<string>$(AppIdentifierPrefix)com.nicegram.Telegram-iOS</string>
+		<string>$(AppIdentifierPrefix)app.nicegram.cn</string>
 	</array>
 </dict>
 </plist>

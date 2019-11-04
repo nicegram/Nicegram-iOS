@@ -23,16 +23,16 @@
 	<true/>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.com.nicegram.Telegram-iOS</string>
+		<string>group.app.nicegram.cn</string>
 	</array>
 	<key>com.apple.developer.in-app-payments</key>
 	<array>
 		<string>merchant.app.nicegram.cn</string>
-		<string>merchant.yandex.com.nicegram.Telegram-iOS</string>
-		<string>merchant.sberbank.com.nicegram.Telegram-iOS</string>
-		<string>merchant.sberbank.test.com.nicegram.Telegram-iOS</string>
-		<string>merchant.privatbank.test.com.nicegram.Telegram-iOS</string>
-		<string>merchant.privatbank.prod.com.nicegram.Telegram-iOS</string>
+		<string>merchant.yandex.app.nicegram.cn</string>
+		<string>merchant.sberbank.app.nicegram.cn</string>
+		<string>merchant.sberbank.test.app.nicegram.cn</string>
+		<string>merchant.privatbank.test.app.nicegram.cn</string>
+		<string>merchant.privatbank.prod.app.nicegram.cn</string>
 	</array>
 </dict>
 </plist>
