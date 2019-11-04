@@ -1,0 +1,81 @@
+"AppName" = "Найсграмчик";
+
+/*ChatFilter*/
+"ChatFilter.Bots" = "Боты";
+"ChatFilter.Channels" = "Каналы";
+"ChatFilter.Private" = "Пользователи";
+"ChatFilter.Groups" = "Группы";
+"ChatFilter.Unread" = "Непрочитанные";
+"ChatFilter.Unmuted" = "Со звуком";
+"ChatFilter.Favourites" = "Важные";
+
+/*Nice Features*/
+"NiceFeatures.Title" = "Найсграм";
+"NiceFeatures.Tabs.Header" = "ВКЛАДКИ";
+"NiceFeatures.Tabs.ShowContacts" = "Вкладка «Контакты»";
+"NiceFeatures.ChatScreen.Header" = "ЧАТ";
+"NiceFeatures.ChatScreen.AnimatedStickers" = "Анимированные Стикеры";
+
+/*Save to Cloud*/
+"Chat.SaveToCloud" = "Сохранить в Избранное";
+
+/*Open Pin*/
+"Chat.OpenPin" = "Показать Пин";
+"ChatFilter.Admin" = "Админ";
+"NiceFeatures.Notifications.Fix" = "Отключить нежелательные уведомления";
+"NiceFeatures.Notifications.FixNotice" = "Нужно, если вы получаете уведомления, даже если они отключены в чате. Ответ из уведомления, метки аккаунтов и предпросмотр медиа будут недоступны.";
+"NiceFeatures.Filters.Header" = "ФИЛЬТРЫ (ВКЛАДКИ)";
+"NiceFeatures.Filters.Notice" = "Выберите количество пользовательских вкладок.\nДолгое нажатие по вкладке позволит сменить фильтр.";
+
+/*Common*/
+"Common.ExitNow" = "Выйти Сейчас";
+"Common.Later" = "Позже";
+"Common.RestartRequired" = "Необходим перезапуск!";
+"NiceFeatures.Tabs.ShowNames" = "Показывать Имена Вкладок";
+"Chat.ForwardAsCopy" = "Переслать без Автора";
+
+/*Folder*/
+"Folder.DefaultName" = "Папка";
+"Folder.New" = "Новая Папка";
+"Folder.Created" = "Папка создана";
+"Folder.AddToExisting" = "Добавить в Папку";
+"Folder.Updated" = "Папка обновлена";
+"Folder.Create" = "Создать Папку...";
+"Folder.Create.Name" = "Название Папки";
+"Folder.Create.Placeholder" = "Папка...";
+"Folder.LimitExceeded" = "К сожалению, создать можно не больше 3 папок. Совсем скоро можно будет создать больше.";
+"NiceFeatures.HideNumber" = "Скрыть номер в настройках";
+
+/*NGWeb*/
+"NGWeb.Blocked" = "Недоступно в Nicegram по правилам AppStore";
+
+/*Browser*/
+"NiceFeatures.Browser.Header" = "ССЫЛКИ";
+"NiceFeatures.Browser.UseBrowser" = "Открывать во внешнем браузере";
+"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram будет открывать ссылки во внешнем браузере вместо встроенного. Выбранный браузер должен быть установлен.";
+"ChatFilter.Missed" = "Новые";
+
+/*Premium*/
+"Premium.Title" = "Премиум";
+"Premium.UnlimitedPins.Header" = "НЕОГРАНИЧЕННЫЕ ЗАКРЕПЛЁННЫЕ ЧАТЫ";
+"Premium.SyncPins" = "Синхронизировать Чаты";
+"Premium.SyncPins.Notice.ON" = "Если вы измените закрепленные чаты в другом клиенте, они ИЗМЕНЯТСЯ в Nicegram.";
+"Premium.SyncPins.Notice.OFF" = "Если вы измените закрепленные чаты в другом клиенте, они НЕ ИЗМЕНЯТСЯ в Nicegram.";
+"Premium.Missed.Header" = "Новые сообщения";
+"Premium.Missed" = "Уведомлять о пропущенных";
+"Premium.Missed.Notice" = "Когда вы открываете приложение после долгого отсутствия (сон, работа и т.д.), Nicegram откроет вкладку с непрочитанными сообщениями и упоминаниями.";
+"Folder.DeleteAsk" = "Удалить папку";
+"Folder.NeedPremium" = "Эта Папка доступна только с Премиумом. Вы можете получить Премиум или удалить папку свайпом.";
+"Common.SupportChatUsername" = "nicegram_ru";
+"Common.FAQUrl" = "https://nicegram.app/ru/faq/";
+"Common.FAQ.Button" = "Вопросы о Nicegram";
+"Common.FAQ.Intro" = "Пожалуйста, обратите внимание, что поддержка Nicegram осуществляется одним единственным разработчиком и сообществом.\n\nВ первую очередь, ознакомьтесь с часто задаваемыми вопросами о Nicegram: там Вы найдёте ответы на большинство вопросов и важные советы по устранению неполадок.";
+"IAP.Premium.Title" = "Премиум";
+"IAP.Premium.Subtitle" = "Уникальные функции, от которых трудно отказаться!";
+"IAP.Premium.Features" = "Безлимитные Папки\nБезлимитные Закрепленные Чаты\nФильтр пропущенных сообщений\nОбзор новых сообщений при старте Приложения";
+"IAP.Premium.Activated" = "Премиум Активирован!";
+"IAP.Common.Restore" = "Восстановить Покупки";
+"IAP.Common.CantPay" = "К сожалению, Вы не можете производить покупки ввиду ограничений вашего устройства или аккаунта.";
+"IAP.Common.ErrorFetch" = "Не удалось связаться с AppStore";
+"IAP.Common.Congrats" = "Поздравляем!";
+"IAP.Common.ValidateError" = "К сожалению, подтвердить покупку не удалось.";
