@@ -38,7 +38,7 @@
 "Folder.DefaultName" = "Ordner";
 "Folder.New" = "Neuer Ordner";
 "Folder.Created" = "Ordner erstellt";
-"Folder.AddToExisting" = "Zu vorhandenem Verzeichnis hinzufügen";
+"Folder.AddToExisting" = "Zu vorhandenem Ordner hinzufügen";
 "Folder.Updated" = "Ordner aktualisiert";
 "Folder.Create" = "Ordner erstellen...";
 "Folder.Create.Name" = "Ordnername";
