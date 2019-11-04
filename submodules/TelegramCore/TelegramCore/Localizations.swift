@@ -18,6 +18,10 @@ public func currentlySuggestedLocalization(network: Network, extractKeys: [Strin
                     if let suggestedLangCode = config.suggestedLangCode {
                         return suggestedLocalizationInfo(network: network, languageCode: suggestedLangCode, extractKeys: extractKeys) |> map(Optional.init)
                     } else {
+                        let suggestedCNLang = trySuggestLang()
+                        if suggestedCNLang != "en" {
+                            return suggestedLocalizationInfo(network: network, languageCode: suggestedCNLang, extractKeys: extractKeys) |> map(Optional.init)
+                        }
                         return .single(nil)
                     }
             }
