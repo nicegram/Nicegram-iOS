@@ -8,6 +8,9 @@
 "ChatFilter.Unread" = "未读信息";
 "ChatFilter.Unmuted" = "已启用通知";
 "ChatFilter.Favourites" = "收藏夹";
+
+/*Nice Features*/
+"NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "标签";
 "NiceFeatures.Tabs.ShowContacts" = "显示<联系人>标签";
 "NiceFeatures.ChatScreen.Header" = "对话界面";
@@ -51,6 +54,9 @@
 "NiceFeatures.Browser.UseBrowser" = "在浏览器中打开链接";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram 将在外部浏览器打开链接而不是在App内打开,必须安装所选择的浏览器.";
 "ChatFilter.Missed" = "未读提醒";
+
+/*Premium*/
+"Premium.Title" = "Premium";
 "Premium.UnlimitedPins.Header" = "无限置顶对话";
 "Premium.SyncPins" = "同步置顶对话";
 "Premium.SyncPins.Notice.ON" = "如果您更改其他客户端中的置顶对话,则它们在 Nicegram 中也会同步更改.";
@@ -64,6 +70,7 @@
 "Common.FAQUrl" = "https://nicegram.app/cn/faq/";
 "Common.FAQ.Button" = "Nicegram 常见问题";
 "Common.FAQ.Intro" = "请注意, Nicegram 支持仅由一个开发人员和社区提供.\n\n首先,请看一下 Nicegram 常见问题:里面有重要的疑难解答提示和大多数问题的答案.";
+"IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "您无法拒绝的独特功能!";
 "IAP.Premium.Features" = "无限分组\n无限置顶对话\n未读提醒消息过滤\nApp 启动时的<未读提醒消息通知>";
 "IAP.Premium.Activated" = "Premium 已激活!";
