@@ -1,0 +1,81 @@
+"AppName" = "Nicegram";
+
+/*ChatFilter*/
+"ChatFilter.Bots" = "Bots";
+"ChatFilter.Channels" = "Canali";
+"ChatFilter.Private" = "Utenti";
+"ChatFilter.Groups" = "Gruppi";
+"ChatFilter.Unread" = "Non letti";
+"ChatFilter.Unmuted" = "Non silenziate";
+"ChatFilter.Favourites" = "Preferiti";
+
+/*Nice Features*/
+"NiceFeatures.Title" = "Nicegram";
+"NiceFeatures.Tabs.Header" = "TABS";
+"NiceFeatures.Tabs.ShowContacts" = "Mostra lista contatti";
+"NiceFeatures.ChatScreen.Header" = "SCHERMATA DELLE CHAT";
+"NiceFeatures.ChatScreen.AnimatedStickers" = "Adesivi animati";
+
+/*Save to Cloud*/
+"Chat.SaveToCloud" = "Salva nel cloud";
+
+/*Open Pin*/
+"Chat.OpenPin" = "Apri pin";
+"ChatFilter.Admin" = "Amministratore";
+"NiceFeatures.Notifications.Fix" = "Disabilita notifiche inutili";
+"NiceFeatures.Notifications.FixNotice" = "Utile se ricevi notifiche da chat silenziate.\nLe risposte alle notifiche, le etichette degli account e le anteprime dei media non saranno disponibili.";
+"NiceFeatures.Filters.Header" = "FILTRI (TABS)";
+"NiceFeatures.Filters.Notice" = "Seleziona il numero di schede personalizzate.\nTocca a lungo la scheda per cambiare filtro.";
+
+/*Common*/
+"Common.ExitNow" = "Esci ora";
+"Common.Later" = "Dopo";
+"Common.RestartRequired" = "Riavvio richiesto!";
+"NiceFeatures.Tabs.ShowNames" = "Mostra i nomi delle tab";
+"Chat.ForwardAsCopy" = "Inoltra senza firma";
+
+/*Folder*/
+"Folder.DefaultName" = "Cartella";
+"Folder.New" = "Nuova cartella";
+"Folder.Created" = "Cartella creata";
+"Folder.AddToExisting" = "Aggiungi ad una cartella esistente";
+"Folder.Updated" = "Cartella aggiornata";
+"Folder.Create" = "Crea una cartella...";
+"Folder.Create.Name" = "Nome della cartella";
+"Folder.Create.Placeholder" = "Cartella...";
+"Folder.LimitExceeded" = "Spiacente, puoi creare solo 3 cartelle personalizzate.\nPotrai aggiungerne di più con Premium.";
+"NiceFeatures.HideNumber" = "Nascondi il numero di telefono dalle impostazioni";
+
+/*NGWeb*/
+"NGWeb.Blocked" = "Non disponibile su Nicegram a causa delle linee guida dell'App Store";
+
+/*Browser*/
+"NiceFeatures.Browser.Header" = "URLs";
+"NiceFeatures.Browser.UseBrowser" = "Apri link nel browser";
+"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram aprirà i link esterni in un browser esterno invece di aprirli nell'app.\nIl browser selezionato deve essere installato.";
+"ChatFilter.Missed" = "Non letti";
+
+/*Premium*/
+"Premium.Title" = "Premium";
+"Premium.UnlimitedPins.Header" = "CHAT FISSATE ILLIMITATE";
+"Premium.SyncPins" = "Sincronizza chat fissate";
+"Premium.SyncPins.Notice.ON" = "Se cambi le chat fissate in un altro client, esse CAMBIERANNO in Nicegram.";
+"Premium.SyncPins.Notice.OFF" = "Se cambi le chat fissate in un altro client, esse NON CAMBIERANNO in Nicegram.";
+"Premium.Missed.Header" = "Messaggi non letti";
+"Premium.Missed" = "Notifica per i messaggi non letti";
+"Premium.Missed.Notice" = "Quando apri l'app dopo un po' di tempo, Nicegram ti ricorderà delle chat private non lette e delle menzioni.";
+"Folder.DeleteAsk" = "Cancella cartella";
+"Folder.NeedPremium" = "Questa cartella è disponibile solo con Premium. Puoi ottenere Premium o dovrai cancellare la cartella con uno swipe";
+"Common.SupportChatUsername" = "nicegram_it";
+"Common.FAQUrl" = "https://nicegram.app/faq/";
+"Common.FAQ.Button" = "Nicegram FAQ";
+"Common.FAQ.Intro" = "Nota che Nicegram Support è operato solo dall'unico sviluppatore e dalla community.\n\nPrima di tutto, dai una occhiata alle FAQ di Nicegram: contiene molte soluzioni a problemi frequenti.";
+"IAP.Premium.Title" = "Premium";
+"IAP.Premium.Subtitle" = "Feature uniche che non potrai rifiutare";
+"IAP.Premium.Features" = "Cartelle illimitate\nChat fissate illimitate\nFiltra i messaggi non letti\nRiassunto dei messaggi non letti";
+"IAP.Premium.Activated" = "Premium attivato!";
+"IAP.Common.Restore" = "Ripristina acquisti";
+"IAP.Common.CantPay" = "Spiacenti, ma non puoi fare acquisti a causa di un problema con il tuo telefono o con il tuo account";
+"IAP.Common.ErrorFetch" = "Spiacenti, non è stato possibile ottenere i tuoi acquisti dall'App Store";
+"IAP.Common.Congrats" = "Congratulazioni!";
+"IAP.Common.ValidateError" = "Sorry, can't validate your purchase.";
