@@ -44,7 +44,7 @@
 "Folder.Create.Name" = "Nazwa folderu";
 "Folder.Create.Placeholder" = "Folder…";
 "Folder.LimitExceeded" = "Nie możesz utworzyć więcej niż 3 foldery niestandardowe.\nWięcej folderów będzie dostępnych wkrótce.";
-"NiceFeatures.HideNumber" = "Ukryj  numer telefonu w ustawieniach";
+"NiceFeatures.HideNumber" = "Ukryj numer telefonu w ustawieniach";
 
 /*NGWeb*/
 "NGWeb.Blocked" = "Niedostępne w Nicegram ze względu na wytyczne AppStore";
