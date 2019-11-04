@@ -1,4 +1,3 @@
-"AppName" = "Nicegram";
 
 /*ChatFilter*/
 "ChatFilter.Bots" = "Robots";
@@ -8,9 +7,6 @@
 "ChatFilter.Unread" = "No leído";
 "ChatFilter.Unmuted" = "Desilenciar";
 "ChatFilter.Favourites" = "Favoritos";
-
-/*Nice Features*/
-"NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "PESTAÑAS";
 "NiceFeatures.Tabs.ShowContacts" = "Mostrar pestaña de Contactos";
 "NiceFeatures.ChatScreen.Header" = "PANTALLA DE CHAT";
@@ -21,7 +17,6 @@
 
 /*Open Pin*/
 "Chat.OpenPin" = "Muestra Estaquilla";
-"ChatFilter.Admin" = "Admin";
 "NiceFeatures.Notifications.Fix" = "Deshabilita notificaciones indeseadas";
 "NiceFeatures.Notifications.FixNotice" = "Util si obtienes notificaciones de chats silenciados.\nCorrespondencias desde notificaciones, etiquetas de cuenta y vistas previas de multimedias no estarán disponibles.";
 "NiceFeatures.Filters.Header" = "FILTROS (PESTAÑAS)";
@@ -31,51 +26,4 @@
 "Common.ExitNow" = "Salir Ahora";
 "Common.Later" = "Al rato";
 "Common.RestartRequired" = "Reinicio ";
-"NiceFeatures.Tabs.ShowNames" = "";
-"Chat.ForwardAsCopy" = "";
-
-/*Folder*/
-"Folder.DefaultName" = "";
-"Folder.New" = "";
-"Folder.Created" = "";
-"Folder.AddToExisting" = "";
-"Folder.Updated" = "";
-"Folder.Create" = "";
-"Folder.Create.Name" = "";
-"Folder.Create.Placeholder" = "";
-"Folder.LimitExceeded" = "";
-"NiceFeatures.HideNumber" = "";
-
-/*NGWeb*/
-"NGWeb.Blocked" = "";
-
-/*Browser*/
-"NiceFeatures.Browser.Header" = "";
-"NiceFeatures.Browser.UseBrowser" = "";
-"NiceFeatures.Browser.UseBrowserNotice" = "";
-"ChatFilter.Missed" = "";
-
-/*Premium*/
-"Premium.Title" = "";
-"Premium.UnlimitedPins.Header" = "";
-"Premium.SyncPins" = "";
-"Premium.SyncPins.Notice.ON" = "";
-"Premium.SyncPins.Notice.OFF" = "";
-"Premium.Missed.Header" = "";
-"Premium.Missed" = "";
-"Premium.Missed.Notice" = "";
-"Folder.DeleteAsk" = "";
-"Folder.NeedPremium" = "";
 "Common.SupportChatUsername" = "nicegram_es";
-"Common.FAQUrl" = "";
-"Common.FAQ.Button" = "";
-"Common.FAQ.Intro" = "";
-"IAP.Premium.Title" = "";
-"IAP.Premium.Subtitle" = "";
-"IAP.Premium.Features" = "";
-"IAP.Premium.Activated" = "";
-"IAP.Common.Restore" = "";
-"IAP.Common.CantPay" = "";
-"IAP.Common.ErrorFetch" = "";
-"IAP.Common.Congrats" = "";
-"IAP.Common.ValidateError" = "";

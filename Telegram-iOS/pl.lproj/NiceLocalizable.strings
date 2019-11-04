@@ -1,4 +1,3 @@
-"AppName" = "Nicegram";
 
 /*ChatFilter*/
 "ChatFilter.Bots" = "Boty";
@@ -8,9 +7,6 @@
 "ChatFilter.Unread" = "Nie przecz.";
 "ChatFilter.Unmuted" = "Z powiad.";
 "ChatFilter.Favourites" = "Ulubione";
-
-/*Nice Features*/
-"NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "ZAKŁADKI";
 "NiceFeatures.Tabs.ShowContacts" = "Pokaż zakładkę kontakty";
 "NiceFeatures.ChatScreen.Header" = "Ekran czatu";
@@ -21,7 +17,6 @@
 
 /*Open Pin*/
 "Chat.OpenPin" = "Pokaż przypiętą";
-"ChatFilter.Admin" = "Admin";
 "NiceFeatures.Notifications.Fix" = "Wyłącz niechciane powiadomienia";
 "NiceFeatures.Notifications.FixNotice" = "Przydatne, jeśli otrzymujesz powiadomienia z czatów z wyłączonymi powiadomieniami.\nOpcja „Odpowiedz” nie będzie dostępna dla powiadomień, etykiet kont i podglądów multimediów.";
 "NiceFeatures.Filters.Header" = "FILTRY (ZAKŁADKI)";
@@ -33,9 +28,6 @@
 "Common.RestartRequired" = "Wymagane ponowne uruchomienie!";
 "NiceFeatures.Tabs.ShowNames" = "Pokaż nazwy kart";
 "Chat.ForwardAsCopy" = "Przekaż jako kopię";
-
-/*Folder*/
-"Folder.DefaultName" = "Folder";
 "Folder.New" = "Nowy folder";
 "Folder.Created" = "Utworzono folder";
 "Folder.AddToExisting" = "Dodaj do istniejącego folderu";
@@ -54,9 +46,6 @@
 "NiceFeatures.Browser.UseBrowser" = "Otwórz linki w przeglądarce";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram otworzy linki w zewnętrznej przeglądarce zamiast w aplikacji. Wybrana przeglądarka musi być zainstalowana.";
 "ChatFilter.Missed" = "Nieodebrane";
-
-/*Premium*/
-"Premium.Title" = "Premium";
 "Premium.UnlimitedPins.Header" = "NIEOGRANICZONE PRZYPIĘTE CZATY";
 "Premium.SyncPins" = "Synchronizuj przypięte czaty";
 "Premium.SyncPins.Notice.ON" = "Jeśli zmienisz przypięte czaty w innym kliencie, ZMIENIĄ SIĘ one też w Nicegram.";
@@ -64,18 +53,3 @@
 "Premium.Missed.Header" = "Nieodebrane wiadomości";
 "Premium.Missed" = "Powiadom o nieodebranych wiadomościach";
 "Premium.Missed.Notice" = "Gdy otworzysz aplikację po długim czasie (spanie, nauka itp.), Nicegram powiadomi cię o nieprzeczytanych wiadomościach prywatnych i wzmiankach.";
-"Folder.DeleteAsk" = "";
-"Folder.NeedPremium" = "";
-"Common.SupportChatUsername" = "";
-"Common.FAQUrl" = "";
-"Common.FAQ.Button" = "";
-"Common.FAQ.Intro" = "";
-"IAP.Premium.Title" = "";
-"IAP.Premium.Subtitle" = "";
-"IAP.Premium.Features" = "";
-"IAP.Premium.Activated" = "";
-"IAP.Common.Restore" = "";
-"IAP.Common.CantPay" = "";
-"IAP.Common.ErrorFetch" = "";
-"IAP.Common.Congrats" = "";
-"IAP.Common.ValidateError" = "";

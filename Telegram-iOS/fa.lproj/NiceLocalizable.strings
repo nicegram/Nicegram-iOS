@@ -6,19 +6,14 @@
 "ChatFilter.Private" = "کاربرها";
 "ChatFilter.Groups" = "گروه ها";
 "ChatFilter.Unread" = "خوانده نشده";
-
-/*Fuzzy*/
 "ChatFilter.Unmuted" = "بیصدا نشده ها";
 "ChatFilter.Favourites" = "علاقه‌ مندی‌ها";
 
 /*Nice Features*/
-/*Fuzzy*/
 "NiceFeatures.Title" = "نایس گرام";
 "NiceFeatures.Tabs.Header" = "برگه ها";
 "NiceFeatures.Tabs.ShowContacts" = "نمایش برگه مخاطبین";
 "NiceFeatures.ChatScreen.Header" = "صفحه چت";
-
-/*Fuzzy*/
 "NiceFeatures.ChatScreen.AnimatedStickers" = "استیکرهای انیمیشنی";
 
 /*Save to Cloud*/
@@ -50,37 +45,4 @@
 "Folder.Create.Placeholder" = "پوشه";
 "Folder.LimitExceeded" = "متاسفم،شما بیش از ۳ فایل نمی‌توانید ایجاد کنید.\nفایل های بیشتر بزودی";
 "NiceFeatures.HideNumber" = "پنهان کردن شماره موبایل در تنظیمات";
-
-/*NGWeb*/
-"NGWeb.Blocked" = "";
-
-/*Browser*/
-"NiceFeatures.Browser.Header" = "";
-"NiceFeatures.Browser.UseBrowser" = "";
-"NiceFeatures.Browser.UseBrowserNotice" = "";
-"ChatFilter.Missed" = "";
-
-/*Premium*/
-"Premium.Title" = "";
-"Premium.UnlimitedPins.Header" = "";
-"Premium.SyncPins" = "";
-"Premium.SyncPins.Notice.ON" = "";
-"Premium.SyncPins.Notice.OFF" = "";
-"Premium.Missed.Header" = "";
-"Premium.Missed" = "";
-"Premium.Missed.Notice" = "";
-"Folder.DeleteAsk" = "";
-"Folder.NeedPremium" = "";
 "Common.SupportChatUsername" = "nicegram_fa";
-"Common.FAQUrl" = "";
-"Common.FAQ.Button" = "";
-"Common.FAQ.Intro" = "";
-"IAP.Premium.Title" = "";
-"IAP.Premium.Subtitle" = "";
-"IAP.Premium.Features" = "";
-"IAP.Premium.Activated" = "";
-"IAP.Common.Restore" = "";
-"IAP.Common.CantPay" = "";
-"IAP.Common.ErrorFetch" = "";
-"IAP.Common.Congrats" = "";
-"IAP.Common.ValidateError" = "";
