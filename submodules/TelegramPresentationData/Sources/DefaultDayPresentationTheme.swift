@@ -380,7 +380,7 @@ private func makeDefaultDayPresentationTheme(accentColor: UIColor, serviceBackgr
     )
 }
 
-public let defaultPresentationTheme = makeDefaultDayPresentationTheme(accentColor: UIColor(rgb: 0x09B83E), serviceBackgroundColor: defaultServiceBackgroundColor, baseColor: nil, day: false, preview: false)
+public let defaultPresentationTheme = makeDefaultDayPresentationTheme(accentColor: UIColor(rgb: 0x09B83E), serviceBackgroundColor: defaultServiceBackgroundColor, baseColor: nil, day: true, preview: false)
 
 public let defaultDayAccentColor = UIColor(rgb: 0x09B83E)
 public let defaultServiceBackgroundColor = UIColor(rgb: 0x000000, alpha: 0.3)
