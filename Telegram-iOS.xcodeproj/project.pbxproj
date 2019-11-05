@@ -4248,7 +4248,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_ID).NotificationService";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "match Development com.nicegram.Telegram-iOS.NotificationService";
+				PROVISIONING_PROFILE_SPECIFIER = "match Development app.nicegram.cn.NotificationService";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -4317,7 +4317,7 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_ID).NotificationService";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "match AppStore com.nicegram.Telegram-iOS.NotificationService";
+				PROVISIONING_PROFILE_SPECIFIER = "match AppStore app.nicegram.cn.NotificationService";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "NotificationService/NotificationService-Bridging-Header.h";
@@ -4393,7 +4393,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "${APP_BUNDLE_ID}.NotificationContent";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "match Development com.nicegram.Telegram-iOS.NotificationContent";
+				PROVISIONING_PROFILE_SPECIFIER = "match Development app.nicegram.cn.NotificationContent";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -4462,7 +4462,7 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "${APP_BUNDLE_ID}.NotificationContent";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "match AppStore com.nicegram.Telegram-iOS.NotificationContent";
+				PROVISIONING_PROFILE_SPECIFIER = "match AppStore app.nicegram.cn.NotificationContent";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "NotificationContent/NotificationContent-Bridging-Header.h";
@@ -4561,7 +4561,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = app.nicegram.cn;
 				PRODUCT_NAME = Nicegram;
 				PROVISIONING_PROFILE = "d96d567f-e54a-4cae-b9d1-24a5397fa015";
-				PROVISIONING_PROFILE_SPECIFIER = "match Development com.nicegram.Telegram-iOS";
+				PROVISIONING_PROFILE_SPECIFIER = "match Development app.nicegram.cn";
 				SWIFT_OBJC_BRIDGING_HEADER = "Telegram-iOS/Telegram-Bridging-Header.h";
 				SWIFT_VERSION = 4.0;
 				USER_HEADER_SEARCH_PATHS = "";
@@ -4591,7 +4591,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = app.nicegram.cn.Share;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "388bbf37-24cd-44d4-b38d-9b1ad5006247";
-				PROVISIONING_PROFILE_SPECIFIER = "match Development com.nicegram.Telegram-iOS.Share";
+				PROVISIONING_PROFILE_SPECIFIER = "match Development app.nicegram.cn.Share";
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_INSTALL_OBJC_HEADER = NO;
@@ -4623,7 +4623,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = app.nicegram.cn.SiriIntents;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "e393ec42-d75d-4bc2-a75b-97891ad4cae8";
-				PROVISIONING_PROFILE_SPECIFIER = "match Development com.nicegram.Telegram-iOS.SiriIntents";
+				PROVISIONING_PROFILE_SPECIFIER = "match Development app.nicegram.cn.SiriIntents";
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OBJC_BRIDGING_HEADER = "SiriIntents/SiriIntents-Bridging-Header.h";
@@ -4761,7 +4761,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = app.nicegram.cn.Widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "match Development com.nicegram.Telegram-iOS.Widget";
+				PROVISIONING_PROFILE_SPECIFIER = "match Development app.nicegram.cn.Widget";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -4852,7 +4852,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = app.nicegram.cn;
 				PRODUCT_NAME = Nicegram;
 				PROVISIONING_PROFILE = "d96d567f-e54a-4cae-b9d1-24a5397fa015";
-				PROVISIONING_PROFILE_SPECIFIER = "match AppStore com.nicegram.Telegram-iOS";
+				PROVISIONING_PROFILE_SPECIFIER = "match AppStore app.nicegram.cn";
 				SWIFT_OBJC_BRIDGING_HEADER = "Telegram-iOS/Telegram-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
 				SWIFT_VERSION = 4.0;
@@ -4883,7 +4883,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = app.nicegram.cn.Share;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "57843657-7287-4a3d-b056-3bb7acbd6afb";
-				PROVISIONING_PROFILE_SPECIFIER = "match AppStore com.nicegram.Telegram-iOS.Share";
+				PROVISIONING_PROFILE_SPECIFIER = "match AppStore app.nicegram.cn.Share";
 				SKIP_INSTALL = YES;
 				SWIFT_INSTALL_OBJC_HEADER = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "Share/Share-Bridging-Header.h";
@@ -4913,7 +4913,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = app.nicegram.cn.SiriIntents;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "d4d12f50-f43f-49fa-8f14-6e7b73b68d59";
-				PROVISIONING_PROFILE_SPECIFIER = "match AppStore com.nicegram.Telegram-iOS.SiriIntents";
+				PROVISIONING_PROFILE_SPECIFIER = "match AppStore app.nicegram.cn.SiriIntents";
 				SKIP_INSTALL = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "SiriIntents/SiriIntents-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
@@ -5038,7 +5038,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = app.nicegram.cn.Widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "17ef978a-2103-47cd-8cd3-9104312ade40";
-				PROVISIONING_PROFILE_SPECIFIER = "match AppStore com.nicegram.Telegram-iOS.Widget";
+				PROVISIONING_PROFILE_SPECIFIER = "match AppStore app.nicegram.cn.Widget";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "Widget/Widget-Bridging-Header.h";
