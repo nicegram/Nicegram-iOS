@@ -3,9 +3,8 @@
 /*ChatFilter*/
 "ChatFilter.Bots" = "Bot";
 "ChatFilter.Channels" = "Kanały";
-"ChatFilter.Private" = "Użytkow.";
+"ChatFilter.Private" = "Użytk";
 "ChatFilter.Groups" = "Grupy";
-"ChatFilter.Unread" = "Nie przecz.";
 "ChatFilter.Unmuted" = "Z powiad.";
 "ChatFilter.Favourites" = "Ulubione";
 
@@ -43,7 +42,6 @@
 "Folder.Create" = "Utwórz folder...";
 "Folder.Create.Name" = "Nazwa folderu";
 "Folder.Create.Placeholder" = "Folder...";
-"Folder.LimitExceeded" = "Nie możesz utworzyć więcej niż 3 foldery niestandardowe.\nWięcej folderów będzie dostępnych wkrótce.";
 "NiceFeatures.HideNumber" = "Ukryj numer telefonu w ustawieniach";
 
 /*NGWeb*/
