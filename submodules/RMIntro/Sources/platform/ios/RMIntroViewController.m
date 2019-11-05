@@ -131,7 +131,7 @@ static void TGDispatchOnMainThread(dispatch_block_t block) {
         ];
         
         NSMutableDictionary *englishStrings = [[NSMutableDictionary alloc] init];
-        NSBundle *bundle = [NSBundle bundleWithPath:[[NSBundle mainBundle] pathForResource:@"en" ofType:@"lproj"]];
+        NSBundle *bundle = [NSBundle bundleWithPath:[[NSBundle mainBundle] pathForResource:@"zh-hans" ofType:@"lproj"]];
         for (NSString *key in stringKeys) {
             if (bundle != nil) {
                 NSString *value = [bundle localizedStringForKey:key value:key table:nil];

@@ -180,7 +180,7 @@ private func synchronizeLocalizationUpdates(accountManager: AccountManager, post
             return accountManager.transaction { transaction -> Signal<Void, SynchronizeLocalizationUpdatesError> in
                 let (primary, secondary) = getLocalization(transaction)
                 
-                var currentSettings = transaction.getSharedData(SharedDataKeys.localizationSettings) as? LocalizationSettings ?? LocalizationSettings(primaryComponent: LocalizationComponent(languageCode: "en", localizedName: "English", localization: Localization(version: 0, entries: []), customPluralizationCode: nil), secondaryComponent: nil)
+                var currentSettings = transaction.getSharedData(SharedDataKeys.localizationSettings) as? LocalizationSettings ?? LocalizationSettings(primaryComponent: LocalizationComponent(languageCode: "zhcncc", localizedName: "简体中文", localization: Localization(version: 0, entries: []), customPluralizationCode: nil), secondaryComponent: nil)
                 
                 for difference in parsedDifferences {
                     let current: (isPrimary: Bool, entries: [LocalizationEntry])

@@ -54,8 +54,8 @@ final class AuthorizationSequenceSplashController: ViewController {
                             break
                     }
                 }
-                
-                if let available = localization.availableLocalizations.first, available.languageCode != "en" {
+
+                if let available = localization.availableLocalizations.first {
                     let value = TGSuggestedLocalization(info: TGAvailableLocalization(title: available.title, localizedTitle: available.localizedTitle, code: available.languageCode), continueWithLanguageString: continueWithLanguageString, chooseLanguageString: "Choose Language", chooseLanguageOtherString: "Choose Language", englishLanguageNameString: "English")
                     subscriber?.putNext(value)
                 }
@@ -77,7 +77,7 @@ final class AuthorizationSequenceSplashController: ViewController {
         self.statusBar.statusBarStyle = theme.intro.statusBarStyle.style
         
         self.controller.startMessaging = { [weak self] in
-            self?.activateLocalization("en")
+            self?.activateLocalization("zhcncc")
         }
         self.controller.startMessagingInAlternativeLanguage = { [weak self] code in
             if let code = code {
@@ -191,7 +191,7 @@ final class AuthorizationSequenceSplashController: ViewController {
                     if let localizationSettings = localizationSettings {
                         stringsValue = PresentationStrings(primaryComponent: PresentationStringsComponent(languageCode: localizationSettings.primaryComponent.languageCode, localizedName: localizationSettings.primaryComponent.localizedName, pluralizationRulesCode: localizationSettings.primaryComponent.customPluralizationCode, dict: dictFromLocalization(localizationSettings.primaryComponent.localization)), secondaryComponent: localizationSettings.secondaryComponent.flatMap({ PresentationStringsComponent(languageCode: $0.languageCode, localizedName: $0.localizedName, pluralizationRulesCode: $0.customPluralizationCode, dict: dictFromLocalization($0.localization)) }), groupingSeparator: "")
                     } else {
-                        stringsValue = defaultPresentationStrings
+                        stringsValue = defaultCNPresentationStrings
                     }
                     return stringsValue
                 }

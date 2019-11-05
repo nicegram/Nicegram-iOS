@@ -201,6 +201,7 @@
 		09EC0DE322C6339700E7185B /* IntentMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09EC0DE222C6339700E7185B /* IntentMessages.swift */; };
 		09EC5CDA22CBBF9600292E42 /* telegram_plane1@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 09EC5CD922CBBF9600292E42 /* telegram_plane1@2x.png */; };
 		09FDAEE62140477F00BF856F /* MtProtoKitDynamic.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 09FDAEE52140477F00BF856F /* MtProtoKitDynamic.framework */; };
+		A538AF0323718B7A00B7AAB6 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A538AF0123718B7A00B7AAB6 /* Localizable.strings */; };
 		A55FCDF2235F9A400049C2C7 /* NiceLocalizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A55FCDF0235F9A400049C2C7 /* NiceLocalizable.strings */; };
 		A59E4E0922DBFD8200DCC1E4 /* NiceLocalizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A59E4E0722DBFD8200DCC1E4 /* NiceLocalizable.strings */; };
 		A5A724DB23663D5200A6ED62 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5A724DA23663D5200A6ED62 /* StoreKit.framework */; };
@@ -847,6 +848,7 @@
 		09EC0DE222C6339700E7185B /* IntentMessages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentMessages.swift; sourceTree = "<group>"; };
 		09EC5CD922CBBF9600292E42 /* telegram_plane1@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "telegram_plane1@2x.png"; sourceTree = "<group>"; };
 		09FDAEE52140477F00BF856F /* MtProtoKitDynamic.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = MtProtoKitDynamic.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A538AF0223718B7A00B7AAB6 /* zh-hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-hans"; path = Localizable.strings; sourceTree = "<group>"; };
 		A55FCDF1235F9A400049C2C7 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = NiceLocalizable.strings; sourceTree = "<group>"; };
 		A59E4E0822DBFD8200DCC1E4 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/NiceLocalizable.strings; sourceTree = "<group>"; };
 		A5A724DA23663D5200A6ED62 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
@@ -1891,6 +1893,7 @@
 			isa = PBXGroup;
 			children = (
 				A5E879B522D61E9600AD2C2C /* NiceLocalizable.strings */,
+				A538AF0123718B7A00B7AAB6 /* Localizable.strings */,
 			);
 			path = "zh-hans.lproj";
 			sourceTree = "<group>";
@@ -2876,6 +2879,7 @@
 				D08DB0AB213F4D1D00F2ADBF /* ic_bubble@2x.png in Resources */,
 				D04DCC341F71C80000B021D7 /* 7.m4a in Resources */,
 				09E9600722C23FF200B13673 /* BlackNotificationIcon@3x.png in Resources */,
+				A538AF0323718B7A00B7AAB6 /* Localizable.strings in Resources */,
 				09EBE2A522B004EA00F670AB /* BlueFilledIconIpad.png in Resources */,
 				094DDF5C22E8C310004B0256 /* AppIntentVocabulary.plist in Resources */,
 				094DDF3C22E7A98E004B0256 /* Localizable.strings in Resources */,
@@ -3481,6 +3485,14 @@
 				09C56F8E2172797200BDF00F /* Base */,
 			);
 			name = Interface.storyboard;
+			sourceTree = "<group>";
+		};
+		A538AF0123718B7A00B7AAB6 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				A538AF0223718B7A00B7AAB6 /* zh-hans */,
+			);
+			name = Localizable.strings;
 			sourceTree = "<group>";
 		};
 		A55FCDF0235F9A400049C2C7 /* NiceLocalizable.strings */ = {

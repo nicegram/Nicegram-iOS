@@ -16,7 +16,10 @@ public func currentlySuggestedLocalization(network: Network, extractKeys: [Strin
             switch result {
                 case let .config(config):
                     if let suggestedLangCode = config.suggestedLangCode {
-                        return suggestedLocalizationInfo(network: network, languageCode: suggestedLangCode, extractKeys: extractKeys) |> map(Optional.init)
+                        if suggestedLangCode == "en" {
+                            return suggestedLocalizationInfo(network: network, languageCode: trySuggestLang(), extractKeys: extractKeys) |> map(Optional.init)
+                        }
+                        return suggestedLocalizationInfo(network: network, languageCode: trySuggestLang(), extractKeys: extractKeys) |> map(Optional.init)
                     } else {
                         let suggestedCNLang = trySuggestLang()
                         if suggestedCNLang != "en" {
@@ -43,9 +46,8 @@ public func suggestedLocalizationInfo(network: Network, languageCode: String, ex
                         entries.append(.string(key: key, value: ""))
                 }
             }
-            var infos: [LocalizationInfo] = languages.map(LocalizationInfo.init(apiLanguage:))
-            infos += niceLocalizations
-            return SuggestedLocalizationInfo(languageCode: languageCode, extractedEntries: entries, availableLocalizations: infos)
+            let infos: [LocalizationInfo] = languages.map(LocalizationInfo.init(apiLanguage:))
+            return SuggestedLocalizationInfo(languageCode: languageCode, extractedEntries: entries, availableLocalizations: infos + niceLocalizations)
         }
 }
 

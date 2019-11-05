@@ -276,7 +276,7 @@ public func currentPresentationDataAndSettings(accountManager: AccountManager) -
         if let localizationSettings = localizationSettings {
             stringsValue = PresentationStrings(primaryComponent: PresentationStringsComponent(languageCode: localizationSettings.primaryComponent.languageCode, localizedName: localizationSettings.primaryComponent.localizedName, pluralizationRulesCode: localizationSettings.primaryComponent.customPluralizationCode, dict: dictFromLocalization(localizationSettings.primaryComponent.localization)), secondaryComponent: localizationSettings.secondaryComponent.flatMap({ PresentationStringsComponent(languageCode: $0.languageCode, localizedName: $0.localizedName, pluralizationRulesCode: $0.customPluralizationCode, dict: dictFromLocalization($0.localization)) }), groupingSeparator: dateTimeFormat.groupingSeparator)
         } else {
-            stringsValue = defaultPresentationStrings
+            stringsValue = defaultCNPresentationStrings
         }
         let nameDisplayOrder = contactSettings.nameDisplayOrder
         let nameSortOrder = currentPersonNameSortOrder()
@@ -536,7 +536,7 @@ public func updatedPresentationData(accountManager: AccountManager, applicationI
                         if let localizationSettings = localizationSettings {
                             stringsValue = PresentationStrings(primaryComponent: PresentationStringsComponent(languageCode: localizationSettings.primaryComponent.languageCode, localizedName: localizationSettings.primaryComponent.localizedName, pluralizationRulesCode: localizationSettings.primaryComponent.customPluralizationCode, dict: dictFromLocalization(localizationSettings.primaryComponent.localization)), secondaryComponent: localizationSettings.secondaryComponent.flatMap({ PresentationStringsComponent(languageCode: $0.languageCode, localizedName: $0.localizedName, pluralizationRulesCode: $0.customPluralizationCode, dict: dictFromLocalization($0.localization)) }), groupingSeparator: dateTimeFormat.groupingSeparator)
                         } else {
-                            stringsValue = defaultPresentationStrings
+                            stringsValue = defaultCNPresentationStrings
                         }
                         let nameDisplayOrder = contactSettings.nameDisplayOrder
                         let nameSortOrder = currentPersonNameSortOrder()
@@ -557,5 +557,5 @@ public func defaultPresentationData() -> PresentationData {
     let nameSortOrder = currentPersonNameSortOrder()
     
     let themeSettings = PresentationThemeSettings.defaultSettings
-    return PresentationData(strings: defaultPresentationStrings, theme: defaultPresentationTheme, chatWallpaper: .builtin(WallpaperSettings()), volumeControlStatusBarIcons: volumeControlStatusBarIcons(), fontSize: themeSettings.fontSize, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, nameSortOrder: nameSortOrder, disableAnimations: themeSettings.disableAnimations, largeEmoji: themeSettings.largeEmoji)
+    return PresentationData(strings: defaultCNPresentationStrings, theme: defaultPresentationTheme, chatWallpaper: .builtin(WallpaperSettings()), volumeControlStatusBarIcons: volumeControlStatusBarIcons(), fontSize: themeSettings.fontSize, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, nameSortOrder: nameSortOrder, disableAnimations: themeSettings.disableAnimations, largeEmoji: themeSettings.largeEmoji)
 }
