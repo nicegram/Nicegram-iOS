@@ -23,14 +23,14 @@
 "Chat.OpenPin" = "显示置顶";
 "ChatFilter.Admin" = "管理员";
 "NiceFeatures.Notifications.Fix" = "禁用多余通知";
-"NiceFeatures.Notifications.FixNotice" = "如果在已关闭通知群组/频道仍然会收到通知, 那开启此功能可以禁用此通知.\n开启此功能, 在通知界面回复消息, 帐户标签和媒体预览将会被禁用.";
+"NiceFeatures.Notifications.FixNotice" = "如果在已关闭通知群组/频道仍然会收到通知，那开启此功能可以禁用此通知.\n开启此功能，在通知界面回复消息，帐户标签和媒体预览将会被禁用。";
 "NiceFeatures.Filters.Header" = "标签过滤";
-"NiceFeatures.Filters.Notice" = "选择自定义标签的数量.\n长按标签更改标签选项.";
+"NiceFeatures.Filters.Notice" = "选择自定义标签的数量。\n长按标签更改标签选项。";
 
 /*Common*/
 "Common.ExitNow" = "立即退出";
 "Common.Later" = "稍后";
-"Common.RestartRequired" = "需要重启!";
+"Common.RestartRequired" = "需要重启！";
 "NiceFeatures.Tabs.ShowNames" = "显示标签名";
 "Chat.ForwardAsCopy" = "无引用转发";
 
@@ -43,27 +43,27 @@
 "Folder.Create" = "创建分组...";
 "Folder.Create.Name" = "分组名";
 "Folder.Create.Placeholder" = "分组...";
-"Folder.LimitExceeded" = "抱歉,您最多只能创建3个自定义分组.\n升级至 Premium 可创建更多分组.";
+"Folder.LimitExceeded" = "抱歉，您最多只能创建3个自定义分组。\n升级至 Premium 可创建更多分组。";
 "NiceFeatures.HideNumber" = "设置中隐藏手机号码";
 
 /*NGWeb*/
-"NGWeb.Blocked" = "依据 App Store 审核指南,在 Nicegram 中不可用";
+"NGWeb.Blocked" = "依据 App Store 审核指南，在 Nicegram 中不可用";
 
 /*Browser*/
 "NiceFeatures.Browser.Header" = "链接";
 "NiceFeatures.Browser.UseBrowser" = "在浏览器中打开链接";
-"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram 将在外部浏览器打开链接而不是在App内打开,必须安装所选择的浏览器.";
+"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram 将在外部浏览器打开链接而不是在App内打开，必须安装所选择的浏览器。";
 "ChatFilter.Missed" = "未读提醒";
 
 /*Premium*/
 "Premium.Title" = "Premium";
 "Premium.UnlimitedPins.Header" = "无限置顶对话";
 "Premium.SyncPins" = "同步置顶对话";
-"Premium.SyncPins.Notice.ON" = "如果您更改其他客户端中的置顶对话,则它们在 Nicegram 中也会同步更改.";
-"Premium.SyncPins.Notice.OFF" = "如果您更改其他客户端中的置顶对话,则它们在 Nicegram 中也不会同步更改.";
+"Premium.SyncPins.Notice.ON" = "如果您更改其他客户端中的置顶对话,则它们在 Nicegram 中也会同步更改。";
+"Premium.SyncPins.Notice.OFF" = "如果您更改其他客户端中的置顶对话，则它们在 Nicegram 中也不会同步更改。";
 "Premium.Missed.Header" = "未读提醒消息";
 "Premium.Missed" = "未读提醒消息通知";
-"Premium.Missed.Notice" = "长时间未使用Nicegram(比如睡眠,学习等),下次打开Nicegram会通知您未读的私人和提及消息.";
+"Premium.Missed.Notice" = "长时间未使用 Nicegram (比如睡眠/学习等)，下次打开Nicegram会通知您未读的私人和提及消息。";
 "Folder.DeleteAsk" = "删除分组";
 "Folder.NeedPremium" = "此文件夹仅限 Premium 可用。您可以解锁 Premium 来使用，或删除此文件夹。";
 "Common.SupportChatUsername" = "nicegram_cn";
@@ -75,7 +75,7 @@
 "IAP.Premium.Features" = "无限分组\n无限置顶对话\n未读提醒消息过滤\nApp 启动时的<未读提醒消息通知>";
 "IAP.Premium.Activated" = "Premium 已激活！";
 "IAP.Common.Restore" = "恢复购买";
-"IAP.Common.CantPay" = "抱歉，由于您的设备或帐户限制,您无法购买。";
-"IAP.Common.ErrorFetch" = "抱歉,无法从 App Store 获取购买信息.\n";
-"IAP.Common.Congrats" = "恭喜!";
-"IAP.Common.ValidateError" = "抱歉,无法验证您的购买.";
+"IAP.Common.CantPay" = "抱歉，由于您的设备或帐户限制，您无法购买。";
+"IAP.Common.ErrorFetch" = "抱歉，无法从 App Store 获取购买信息。";
+"IAP.Common.Congrats" = "恭喜！";
+"IAP.Common.ValidateError" = "抱歉，无法验证您的购买。";
