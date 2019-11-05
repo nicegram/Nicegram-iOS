@@ -1,3 +1,4 @@
+"AppName" = "Nicegram";
 
 /*ChatFilter*/
 "ChatFilter.Bots" = "Robots";
@@ -7,6 +8,9 @@
 "ChatFilter.Unread" = "No leído";
 "ChatFilter.Unmuted" = "Desilenciar";
 "ChatFilter.Favourites" = "Favoritos";
+
+/*Nice Features*/
+"NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "PESTAÑAS";
 "NiceFeatures.Tabs.ShowContacts" = "Mostrar pestaña de Contactos";
 "NiceFeatures.ChatScreen.Header" = "PANTALLA DE CHAT";
@@ -17,6 +21,7 @@
 
 /*Open Pin*/
 "Chat.OpenPin" = "Muestra Estaquilla";
+"ChatFilter.Admin" = "Admin";
 "NiceFeatures.Notifications.Fix" = "Deshabilita notificaciones indeseadas";
 "NiceFeatures.Notifications.FixNotice" = "Util si obtienes notificaciones de chats silenciados.\nCorrespondencias desde notificaciones, etiquetas de cuenta y vistas previas de multimedias no estarán disponibles.";
 "NiceFeatures.Filters.Header" = "FILTROS (PESTAÑAS)";
@@ -26,4 +31,5 @@
 "Common.ExitNow" = "Salir Ahora";
 "Common.Later" = "Al rato";
 "Common.RestartRequired" = "Reinicio ";
+"NiceFeatures.Tabs.ShowNames" = "Muestra nombre de pestañas";
 "Common.SupportChatUsername" = "nicegram_es";
