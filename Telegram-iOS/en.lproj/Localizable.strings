@@ -340,7 +340,7 @@
 "Tour.Title6" = "Functional";
 "Tour.Text6" = "**捷报 – Nicegram** provides **unique** features\nyou can't refuse.";
 
-"Tour.StartButton" = "开始聊天";
+"Tour.StartButton" = "Start Messaging";
 
 // Login
 "Login.PhoneAndCountryHelp" = "Please confirm your country code and enter your phone number.";
