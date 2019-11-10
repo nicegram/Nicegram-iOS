@@ -29,7 +29,7 @@
 
 /*Common*/
 "Common.ExitNow" = "Salir Ahora";
-"Common.Later" = "Al rato";
+"Common.Later" = "Después";
 "Common.RestartRequired" = "Reinicio es necesario!";
 "NiceFeatures.Tabs.ShowNames" = "Muestra nombre de pestañas";
 "Chat.ForwardAsCopy" = "Reenvia como copia";
@@ -72,7 +72,7 @@
 "Common.FAQ.Intro" = "Ten en cuenta que el soporte de Nicegram solo lo realiza un desarrollador y una comunidad.\n\n Primero, échale un vistazo a las preguntas frecuentes de Nicegram. Tiene consejos importantes para la solución de la mayoría de problemas.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "¡Características únicas que no podrás rechazar!";
-"IAP.Premium.Features" = "Archivos Ilimitadas\nChats fijados ilimitados\nFiltro de mensajes perdidos\nResumen de «mensajes nuevos» al inicio de la aplicación";
+"IAP.Premium.Features" = "Archivos Ilimitados\nChats fijados ilimitados\nFiltro de mensajes perdidos\nResumen de «mensajes nuevos» al inicio de la aplicación";
 "IAP.Premium.Activated" = "¡Premium activado!";
 "IAP.Common.Restore" = "Restaura Compras";
 "IAP.Common.CantPay" = "Lo siento, pero no se puede realizar compras debido a su dispositivo o las restricciones de su cuenta.";
