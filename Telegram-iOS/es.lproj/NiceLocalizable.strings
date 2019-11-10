@@ -30,7 +30,7 @@
 /*Common*/
 "Common.ExitNow" = "Salir Ahora";
 "Common.Later" = "Al rato";
-"Common.RestartRequired" = "Reinicio ";
+"Common.RestartRequired" = "Reinicio es necesario!";
 "NiceFeatures.Tabs.ShowNames" = "Muestra nombre de pestañas";
 "Chat.ForwardAsCopy" = "Reenvia como copia";
 
@@ -78,3 +78,4 @@
 "IAP.Common.CantPay" = "Lo siento, pero no se puede realizar compras debido a su dispositivo o las restricciones de su cuenta.";
 "IAP.Common.ErrorFetch" = "Lo siento, no se puede recuperar las compras del AppStore.";
 "IAP.Common.Congrats" = "¡Felicidades!";
+"IAP.Common.ValidateError" = "Lo siento, no se puede validar sus compras.";
