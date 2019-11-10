@@ -52,4 +52,9 @@
 /*Browser*/
 "NiceFeatures.Browser.Header" = "URL’s";
 "NiceFeatures.Browser.UseBrowser" = "Abre enlaces con navegador";
+"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram abrirá enlaces en un navegador externo envés del que está dentro del app. Navegador seleccionado debería estar instalado.";
+"ChatFilter.Missed" = "Perdido";
+
+/*Premium*/
+"Premium.Title" = "Premium";
 "Common.SupportChatUsername" = "nicegram_es";
