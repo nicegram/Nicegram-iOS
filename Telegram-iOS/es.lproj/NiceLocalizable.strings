@@ -69,3 +69,9 @@
 "Common.SupportChatUsername" = "nicegram_es";
 "Common.FAQUrl" = "https://nicegram.app/faq/";
 "Common.FAQ.Button" = "Preguntas Frecuentes de Nicegram";
+"Common.FAQ.Intro" = "Ten en cuenta que el soporte de Nicegram solo lo realiza un desarrollador y una comunidad.\n\n Primero, échale un vistazo a las preguntas frecuentes de Nicegram. Tiene consejos importantes para la solución de la mayoría de problemas.";
+"IAP.Premium.Title" = "Premium";
+"IAP.Premium.Subtitle" = "¡Características únicas que no podrás rechazar!";
+"IAP.Premium.Features" = "Archivos Ilimitadas\nChats fijados ilimitados\nFiltro de mensajes perdidos\nResumen de «mensajes nuevos» al inicio de la aplicación";
+"IAP.Premium.Activated" = "¡Premium activado!";
+"IAP.Common.Restore" = "Restaura Compras";
