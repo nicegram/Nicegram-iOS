@@ -17,7 +17,7 @@
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Animierte Stickers";
 
 /*Save to Cloud*/
-"Chat.SaveToCloud" = "An Gespeichertes Senden";
+"Chat.SaveToCloud" = "In Cloud speichern";
 
 /*Open Pin*/
 "Chat.OpenPin" = "Pin anzeigen";
