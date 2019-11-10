@@ -43,4 +43,13 @@
 "Folder.Create" = "Crear archivo...";
 "Folder.Create.Name" = "Nombre del archivo";
 "Folder.Create.Placeholder" = "Archivo...";
+"Folder.LimitExceeded" = "Lo siento pero no se puede crear más que 3 archivos personalizados.\nHay más archivos disponibles en Premium.";
+"NiceFeatures.HideNumber" = "Esconde tu numero de teléfono en los ajustes";
+
+/*NGWeb*/
+"NGWeb.Blocked" = "Indisponible con Nicegram por la razón de los directrices del AppStore";
+
+/*Browser*/
+"NiceFeatures.Browser.Header" = "URL’s";
+"NiceFeatures.Browser.UseBrowser" = "Abre enlaces con navegador";
 "Common.SupportChatUsername" = "nicegram_es";
