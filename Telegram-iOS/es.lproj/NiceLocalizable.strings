@@ -33,4 +33,14 @@
 "Common.RestartRequired" = "Reinicio ";
 "NiceFeatures.Tabs.ShowNames" = "Muestra nombre de pestañas";
 "Chat.ForwardAsCopy" = "Reenvia como copia";
+
+/*Folder*/
+"Folder.DefaultName" = "Archivo";
+"Folder.New" = "Archivo nuevo";
+"Folder.Created" = "Archivo creado";
+"Folder.AddToExisting" = "Agregar al archivo existente";
+"Folder.Updated" = "Archivo actualizado";
+"Folder.Create" = "Crear archivo...";
+"Folder.Create.Name" = "Nombre del archivo";
+"Folder.Create.Placeholder" = "Archivo...";
 "Common.SupportChatUsername" = "nicegram_es";
