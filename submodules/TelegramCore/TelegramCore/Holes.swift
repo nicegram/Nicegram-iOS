@@ -484,7 +484,7 @@ func fetchChatListHole(postbox: Postbox, network: Network, accountPeerId: PeerId
             
             if let replacePinnedItemIds = fetchedChats.pinnedItemIds {
                 if isPremium() && !PremiumSettings().syncPins {
-                    premiumLog("Ignored Pinned Items update from Fetch \(groupId) \(pinnedOperation)")
+                    premiumLog("Ignored Pinned Items update from Fetch \(groupId) \(replacePinnedItemIds.map(PinnedItemId.peer))")
                 } else {
                     transaction.setPinnedItemIds(groupId: groupId, itemIds: replacePinnedItemIds.map(PinnedItemId.peer))
                 }

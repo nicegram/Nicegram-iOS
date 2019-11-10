@@ -238,7 +238,7 @@ private func synchronizePinnedChats(transaction: Transaction, postbox: Postbox, 
                 return updated
             })
             if isPremium() && !PremiumSettings().syncPins {
-                premiumLog("Ignored Pinned Items update from Synchronize \(groupId) \(pinnedOperation)")
+                premiumLog("Ignored Pinned Items update from Synchronize \(groupId) \(resultingItemIds)")
             } else {
                 transaction.setPinnedItemIds(groupId: groupId, itemIds: resultingItemIds)
             }
