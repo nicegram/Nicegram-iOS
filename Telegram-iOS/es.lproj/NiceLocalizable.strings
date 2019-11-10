@@ -64,4 +64,8 @@
 "Premium.Missed.Header" = "Mensajes perdidos";
 "Premium.Missed" = "Notificar por los mensajes perdidos";
 "Premium.Missed.Notice" = "Cuando abres la aplicación después de un período largo (durmiendo, estudiando, etc), Nicegram te notificará sobre mensajes privados y menciones perdidos.";
+"Folder.DeleteAsk" = "Eliminar archivo";
+"Folder.NeedPremium" = "Este archivo solo está disponible con Premium. Puedes comprar Premium o eliminar el archivo usando movimiento para deslizar.";
 "Common.SupportChatUsername" = "nicegram_es";
+"Common.FAQUrl" = "https://nicegram.app/faq/";
+"Common.FAQ.Button" = "Preguntas Frecuentes de Nicegram";
