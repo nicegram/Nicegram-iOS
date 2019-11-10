@@ -75,3 +75,6 @@
 "IAP.Premium.Features" = "Archivos Ilimitadas\nChats fijados ilimitados\nFiltro de mensajes perdidos\nResumen de «mensajes nuevos» al inicio de la aplicación";
 "IAP.Premium.Activated" = "¡Premium activado!";
 "IAP.Common.Restore" = "Restaura Compras";
+"IAP.Common.CantPay" = "Lo siento, pero no se puede realizar compras debido a su dispositivo o las restricciones de su cuenta.";
+"IAP.Common.ErrorFetch" = "Lo siento, no se puede recuperar las compras del AppStore.";
+"IAP.Common.Congrats" = "¡Felicidades!";
