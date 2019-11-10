@@ -57,4 +57,11 @@
 
 /*Premium*/
 "Premium.Title" = "Premium";
+"Premium.UnlimitedPins.Header" = "CHATS FIJADOS ILIMITADOS";
+"Premium.SyncPins" = "Sincroniza chats fijados";
+"Premium.SyncPins.Notice.ON" = "Si intercambias chats fijados en otros clientes, SE CAMBIARÁN en Nicegram.";
+"Premium.SyncPins.Notice.OFF" = "Si intercambias chats fijados en otro cliente, NO SE CAMBIARÁN en Nicegram.";
+"Premium.Missed.Header" = "Mensajes perdidos";
+"Premium.Missed" = "Notificar por los mensajes perdidos";
+"Premium.Missed.Notice" = "Cuando abres la aplicación después de un período largo (durmiendo, estudiando, etc), Nicegram te notificará sobre mensajes privados y menciones perdidos.";
 "Common.SupportChatUsername" = "nicegram_es";
