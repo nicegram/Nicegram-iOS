@@ -237,8 +237,11 @@ private func synchronizePinnedChats(transaction: Transaction, postbox: Postbox, 
             updatePeers(transaction: transaction, peers: peers, update: { _, updated -> Peer in
                 return updated
             })
-            
-            transaction.setPinnedItemIds(groupId: groupId, itemIds: resultingItemIds)
+            if isPremium() && !PremiumSettings().syncPins {
+                premiumLog("Ignored Pinned Items update from Synchronize \(groupId) \(pinnedOperation)")
+            } else {
+                transaction.setPinnedItemIds(groupId: groupId, itemIds: resultingItemIds)
+            }
             
             updatePeerPresences(transaction: transaction, accountPeerId: accountPeerId, peerPresences: peerPresences)
             
