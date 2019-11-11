@@ -72,7 +72,7 @@
 "Common.FAQ.Intro" = "请注意，Nicegram 支持仅由一个开发人员和社区提供。\n\n首先，请看一下 Nicegram 常见问题：里面有重要的疑难解答提示和大多数问题的答案。";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "您无法拒绝的独特功能！";
-"IAP.Premium.Features" = "无限分组\n无限置顶对话\n未读提醒消息过滤\nApp 启动时的<未读提醒消息通知>";
+"IAP.Premium.Features" = "无限分组\n无限置顶对话\n未读提醒消息过滤\nApp 启动时提醒«新消息»";
 "IAP.Premium.Activated" = "Premium 已激活！";
 "IAP.Common.Restore" = "恢复购买";
 "IAP.Common.CantPay" = "抱歉，由于您的设备或帐户限制，您无法购买。";
