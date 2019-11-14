@@ -265,6 +265,9 @@ open class ItemListControllerNode<Entry: ItemListNodeEntry>: ASDisplayNode, UISc
         let previousState = Atomic<ItemListNodeState<Entry>?>(value: nil)
         self.transitionDisposable.set(((state |> map { theme, stateAndArguments -> ItemListNodeTransition<Entry> in
             let (state, arguments) = stateAndArguments
+            print(state.entries)
+            print("")
+            print(state.entries.sorted())
             assert(state.entries == state.entries.sorted())
             let previous = previousState.swap(state)
             let transition = preparedItemListNodeEntryTransition(from: previous?.entries ?? [], to: state.entries, arguments: arguments)

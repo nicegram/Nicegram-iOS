@@ -6,7 +6,7 @@ import TelegramCore
 import OverlayStatusController
 import AccountContext
 
-private let maximumNumberOfAccounts = 3
+private let maximumNumberOfAccounts = 7
 
 func openEditSettings(context: AccountContext, accountsAndPeers: Signal<((Account, Peer)?, [(Account, Peer, Int32)]), NoError>, focusOnItemTag: EditSettingsEntryTag? = nil, presentController: @escaping (ViewController, Any?) -> Void, pushController: @escaping (ViewController) -> Void) -> Disposable {
     let openEditingDisposable = MetaDisposable()

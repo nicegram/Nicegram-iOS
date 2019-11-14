@@ -235,6 +235,8 @@ public func getFilterTabName (filter: NiceChatListNodePeersFilter) -> String {
         return "ChatFilter.Admin"
     case .onlyMissed:
         return "ChatFilter.Missed"
+    case .custom1:
+        return "Custom"
     default:
         return "Chats*"
     }

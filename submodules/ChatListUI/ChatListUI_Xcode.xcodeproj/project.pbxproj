@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A50F7F3C2378B10100F31D36 /* ManageFilters.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50F7F3B2378B10100F31D36 /* ManageFilters.swift */; };
 		A53C6A482325B304000D4020 /* NiceStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53C6A382325B304000D4020 /* NiceStrings.swift */; };
 		A53C6A492325B304000D4020 /* NiceImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53C6A3A2325B304000D4020 /* NiceImage.swift */; };
 		A53C6A4A2325B304000D4020 /* IAPListController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53C6A3C2325B304000D4020 /* IAPListController.swift */; };
@@ -25,6 +26,7 @@
 		A58B9D312324FE140001DFE3 /* NicegramUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A58B9D302324FE140001DFE3 /* NicegramUI.framework */; };
 		A5A985D92329768100C63E8A /* MultipleAvatarsNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A985D82329768100C63E8A /* MultipleAvatarsNode.swift */; };
 		A5BA6E222365F21900E1984E /* PremiumIntroControllerGet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5BA6E212365F21900E1984E /* PremiumIntroControllerGet.swift */; };
+		A5DE8A172379BB1800B26E01 /* ConfigureCustomFilterController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5DE8A162379BB1800B26E01 /* ConfigureCustomFilterController.swift */; };
 		A5FC284523662C73003D4F91 /* PremiumIntroController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5FC284423662C73003D4F91 /* PremiumIntroController.swift */; };
 		A5FC284723662C7B003D4F91 /* PremiumIntroContentNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5FC284623662C7B003D4F91 /* PremiumIntroContentNode.swift */; };
 		A5FC284923662C80003D4F91 /* PremiumIntroSplitTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5FC284823662C7F003D4F91 /* PremiumIntroSplitTest.swift */; };
@@ -86,6 +88,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A50F7F3B2378B10100F31D36 /* ManageFilters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManageFilters.swift; sourceTree = "<group>"; };
 		A53C6A382325B304000D4020 /* NiceStrings.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NiceStrings.swift; sourceTree = "<group>"; };
 		A53C6A3A2325B304000D4020 /* NiceImage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NiceImage.swift; sourceTree = "<group>"; };
 		A53C6A3C2325B304000D4020 /* IAPListController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IAPListController.swift; sourceTree = "<group>"; };
@@ -104,6 +107,7 @@
 		A58B9D302324FE140001DFE3 /* NicegramUI.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NicegramUI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A5A985D82329768100C63E8A /* MultipleAvatarsNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultipleAvatarsNode.swift; sourceTree = "<group>"; };
 		A5BA6E212365F21900E1984E /* PremiumIntroControllerGet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumIntroControllerGet.swift; sourceTree = "<group>"; };
+		A5DE8A162379BB1800B26E01 /* ConfigureCustomFilterController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigureCustomFilterController.swift; sourceTree = "<group>"; };
 		A5FC284423662C73003D4F91 /* PremiumIntroController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PremiumIntroController.swift; sourceTree = "<group>"; };
 		A5FC284623662C7B003D4F91 /* PremiumIntroContentNode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PremiumIntroContentNode.swift; sourceTree = "<group>"; };
 		A5FC284823662C7F003D4F91 /* PremiumIntroSplitTest.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PremiumIntroSplitTest.swift; sourceTree = "<group>"; };
@@ -248,6 +252,8 @@
 				A53C6A3D2325B304000D4020 /* IAPCore.swift */,
 				A55FCDF3235FA1E00049C2C7 /* PremiumController.swift */,
 				A55FCDF5235FA84C0049C2C7 /* PremiumSettings.swift */,
+				A50F7F3B2378B10100F31D36 /* ManageFilters.swift */,
+				A5DE8A162379BB1800B26E01 /* ConfigureCustomFilterController.swift */,
 			);
 			path = IAP;
 			sourceTree = "<group>";
@@ -476,6 +482,7 @@
 				A53C6A4C2325B304000D4020 /* ControllerTemplate.swift in Sources */,
 				D0C9CAF0230236F700FAB518 /* ChatListHoleItem.swift in Sources */,
 				A53C6A502325B304000D4020 /* NiceSettingsFiltersAmountPickerItem.swift in Sources */,
+				A50F7F3C2378B10100F31D36 /* ManageFilters.swift in Sources */,
 				A5FC284923662C80003D4F91 /* PremiumIntroSplitTest.swift in Sources */,
 				A53C6A4B2325B304000D4020 /* IAPCore.swift in Sources */,
 				A5FC284523662C73003D4F91 /* PremiumIntroController.swift in Sources */,
@@ -485,6 +492,7 @@
 				A53C6A4F2325B304000D4020 /* NiceTabBarFilterSwitchControllerNode.swift in Sources */,
 				D0C9CAF7230236F700FAB518 /* ChatListItemStrings.swift in Sources */,
 				A55FCDF4235FA1E00049C2C7 /* PremiumController.swift in Sources */,
+				A5DE8A172379BB1800B26E01 /* ConfigureCustomFilterController.swift in Sources */,
 				D0C9CAAD230235E500FAB518 /* ChatListSearchContainerNode.swift in Sources */,
 				A53C6A4A2325B304000D4020 /* IAPListController.swift in Sources */,
 				A53C6A512325B304000D4020 /* TextInputController.swift in Sources */,
