@@ -56,7 +56,7 @@
 
 /*Premium*/
 "Premium.Title" = "Premium";
-"Premium.UnlimitedPins.Header" = "NIEOGRANICZONE PRZYPIĘTE CZATY";
+"Premium.UnlimitedPins.Header" = "NIELIMITOWANA LICZBA PRZYPIĘTYCH CZATÓW";
 "Premium.SyncPins" = "Synchronizuj przypięte czaty";
 "Premium.SyncPins.Notice.ON" = "Jeśli zmienisz przypięte czaty w innym kliencie, ZMIENIĄ SIĘ one też w Nicegram.";
 "Premium.SyncPins.Notice.OFF" = "Jeśli zmienisz przypięte czaty w innym kliencie, NIE ZMIENIĄ SIĘ one w Nicegram.";
