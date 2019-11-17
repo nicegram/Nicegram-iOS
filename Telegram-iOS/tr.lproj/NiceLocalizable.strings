@@ -79,3 +79,7 @@
 "IAP.Common.ErrorFetch" = "Üzgünüz, App Store satın alımları çekilemiyor.";
 "IAP.Common.Congrats" = "Tebrikler!";
 "IAP.Common.ValidateError" = "Üzgünüz, satın alımınız doğrulanamıyor.";
+
+
+/*Manage Filters*/
+"ManageFilters.Title" = "Sekmeleri Yönet";
