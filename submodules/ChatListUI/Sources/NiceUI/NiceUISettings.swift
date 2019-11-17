@@ -159,7 +159,7 @@ public func setDefaults() {
     UD?.register(defaults: ["browser": "safari"])
 }
 
-let supportedFilters: [Int32] = [1, 2, 8, 16, 32, 64, 256, 1 << 9, 1 << 10] // pow 2
+let supportedFilters: [Int32] = [1, 2, 8, 16, 32, 64, 256, 1 << 9] //, 1 << 10] // pow 2
 
 public class SimplyNiceSettings {
     let UD = UserDefaults(suiteName: "SimplyNiceSettings")

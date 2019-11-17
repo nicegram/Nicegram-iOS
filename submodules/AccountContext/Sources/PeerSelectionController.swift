@@ -26,7 +26,7 @@ public struct NiceChatListNodePeersFilter: OptionSet {
     
     // DON'T BREAK UPGRADE FROM OLDER VERSIONS!, DON'T REMOVE OLD VALUES
     // SEE "let supportedFilters: [Int32]"
-    public static let all: [NiceChatListNodePeersFilter] = [.onlyAdmin, .onlyBots, .onlyChannels, .onlyGroups, .onlyPrivateChats, .onlyUnread, .onlyNonMuted, .onlyMissed, .custom1]
+    public static let all: [NiceChatListNodePeersFilter] = [.onlyAdmin, .onlyBots, .onlyChannels, .onlyGroups, .onlyPrivateChats, .onlyUnread, .onlyNonMuted, .onlyMissed]//, .custom1]
 }
 
 public struct ChatListNodePeersFilter: OptionSet {

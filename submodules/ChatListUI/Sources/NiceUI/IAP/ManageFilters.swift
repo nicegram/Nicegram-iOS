@@ -125,7 +125,7 @@ private func manageFiltersEntries(presentationData: PresentationData) -> [Manage
     
     entries.append(.header(theme, l("ManageFilters.Header", locale)))
     
-    entries.append(.configureCustom(theme, l("ConfigureCustomFilterController.Title", locale)))
+    // entries.append(.configureCustom(theme, l("ConfigureCustomFilterController.Title", locale)))
     for (index, filter) in NiceChatListNodePeersFilter.all.reversed().enumerated() {
         entries.append(.filterSwitch(theme, l(getFilterTabName(filter: filter), locale), isEnabledFilter(filter.rawValue), filter.rawValue, Int32(index)))
     }
