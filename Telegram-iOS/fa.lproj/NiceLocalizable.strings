@@ -24,7 +24,6 @@
 "ChatFilter.Admin" = "مدیر";
 "NiceFeatures.Notifications.Fix" = "غیرفعال کردن اعلان های ناخواسته";
 "NiceFeatures.Notifications.FixNotice" = "در صورت دریافت اعلان از گپ های خاموش مفید است.\nپاسخ از اعلان ها، برچسب های حساب و پیش نمایش رسانه ها در دسترس نخواهد بود.";
-"NiceFeatures.Filters.Header" = "فیلترها( برگه ها)";
 "NiceFeatures.Filters.Notice" = "تعداد برگه ها را انتخاب کنید\nبرای تغییر فیلتر نوار را حرکت طولانی دهید";
 
 /*Common*/
