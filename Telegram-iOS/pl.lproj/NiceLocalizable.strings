@@ -5,7 +5,8 @@
 "ChatFilter.Channels" = "Kanały";
 "ChatFilter.Private" = "Użytk";
 "ChatFilter.Groups" = "Grupy";
-"ChatFilter.Unmuted" = "Z powiad.";
+"ChatFilter.Unread" = "Nieprzeczytane";
+"ChatFilter.Unmuted" = "Wyłączono wyciszenie";
 "ChatFilter.Favourites" = "Ulubione";
 
 /*Nice Features*/
@@ -30,7 +31,7 @@
 "Common.ExitNow" = "Wyjdź teraz";
 "Common.Later" = "Później";
 "Common.RestartRequired" = "Wymagane ponowne uruchomienie!";
-"NiceFeatures.Tabs.ShowNames" = "Pokaż nazwy kart";
+"NiceFeatures.Tabs.ShowNames" = "Pokaż nazwy zakładek";
 "Chat.ForwardAsCopy" = "Przekaż jako kopię";
 
 /*Folder*/
@@ -55,7 +56,7 @@
 
 /*Premium*/
 "Premium.Title" = "Premium";
-"Premium.UnlimitedPins.Header" = "NIEOGRANICZONE PRZYPIĘTE CZATY";
+"Premium.UnlimitedPins.Header" = "NIELIMITOWANA LICZBA PRZYPIĘTYCH CZATÓW";
 "Premium.SyncPins" = "Synchronizuj przypięte czaty";
 "Premium.SyncPins.Notice.ON" = "Jeśli zmienisz przypięte czaty w innym kliencie, ZMIENIĄ SIĘ one też w Nicegram.";
 "Premium.SyncPins.Notice.OFF" = "Jeśli zmienisz przypięte czaty w innym kliencie, NIE ZMIENIĄ SIĘ one w Nicegram.";
