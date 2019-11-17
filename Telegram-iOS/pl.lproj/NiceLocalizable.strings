@@ -25,7 +25,7 @@
 "NiceFeatures.Notifications.Fix" = "Wyłącz niechciane powiadomienia";
 "NiceFeatures.Notifications.FixNotice" = "Przydatne, jeśli otrzymujesz powiadomienia z czatów z wyłączonymi powiadomieniami.\nOpcja „Odpowiedz” nie będzie dostępna dla powiadomień, etykiet kont i podglądów multimediów.";
 "NiceFeatures.Filters.Header" = "FILTRY (ZAKŁADKI)";
-"NiceFeatures.Filters.Notice" = "Wybierz liczbę niestandardowych kart.\nPrzytrzymaj kartę, aby zmienić filtr.";
+"NiceFeatures.Filters.Notice" = "Wybierz liczbę własnych kart.\nPrzytrzymaj kartę, aby zmienić filtr.";
 
 /*Common*/
 "Common.ExitNow" = "Wyjdź teraz";
@@ -43,6 +43,7 @@
 "Folder.Create" = "Utwórz folder...";
 "Folder.Create.Name" = "Nazwa folderu";
 "Folder.Create.Placeholder" = "Folder...";
+"Folder.LimitExceeded" = "Nie możesz utworzyć więcej niż 3 własne foldery.\nWięcej folderów jest dostępnych w wersji Premium.";
 "NiceFeatures.HideNumber" = "Ukryj numer telefonu w ustawieniach";
 
 /*NGWeb*/
@@ -72,3 +73,7 @@
 "IAP.Premium.Subtitle" = "Unikalne funkcje, których nie można odmówić!";
 "IAP.Premium.Features" = "Nielimitowane foldery\nNielimitowana liczba przypiętych czatów\nFiltrowanie nieodebranych wiadomości\n«Nowe wiadomości» – podsumowanie po uruchomieniu aplikacji";
 "IAP.Common.Congrats" = "Gratulacje!";
+
+
+/*Manage Filters*/
+"ManageFilters.Title" = "Zarządzaj zakładkami";
