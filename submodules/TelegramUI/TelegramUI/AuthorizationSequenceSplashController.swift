@@ -170,10 +170,10 @@ final class AuthorizationSequenceSplashController: ViewController {
                 _ = markSuggestedLocalizationAsSeenInteractively(postbox: strongSelf.postbox, languageCode: suggestedCode).start()
             }
             
-            if currentCode == code {
-                strongSelf.pressNext(strings: nil)
-                return
-            }
+//            if currentCode == code {
+//                strongSelf.pressNext(strings: nil)
+//                return
+//            }
             
             strongSelf.controller.isEnabled = false
             let accountManager = strongSelf.accountManager
