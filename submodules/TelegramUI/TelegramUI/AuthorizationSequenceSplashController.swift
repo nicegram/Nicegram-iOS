@@ -179,6 +179,11 @@ final class AuthorizationSequenceSplashController: ViewController {
             let accountManager = strongSelf.accountManager
             let postbox = strongSelf.postbox
             
+            if code == "en" {
+                self?.controller.isEnabled = true
+                self?.pressNext(strings: defaultPresentationStrings)
+                return
+            }
             strongSelf.activateLocalizationDisposable.set(downloadAndApplyLocalization(accountManager: accountManager, postbox: postbox, network: strongSelf.network, languageCode: code).start(completed: {
                 let _ = (accountManager.transaction { transaction -> PresentationStrings? in
                     let localizationSettings: LocalizationSettings?
