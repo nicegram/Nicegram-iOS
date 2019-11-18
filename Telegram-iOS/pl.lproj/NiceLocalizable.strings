@@ -43,7 +43,7 @@
 "Folder.Create" = "Utwórz folder...";
 "Folder.Create.Name" = "Nazwa folderu";
 "Folder.Create.Placeholder" = "Folder...";
-"Folder.LimitExceeded" = "Nie możesz utworzyć więcej niż 3 własne foldery.\nWięcej folderów jest dostępnych w wersji Premium.";
+"Folder.LimitExceeded" = "Przepraszamy, nie możesz utworzyć więcej niż 3 niestandardowe foldery.\nWięcej folderów jest dostępnych w Premium.";
 "NiceFeatures.HideNumber" = "Ukryj numer telefonu w ustawieniach";
 
 /*NGWeb*/
