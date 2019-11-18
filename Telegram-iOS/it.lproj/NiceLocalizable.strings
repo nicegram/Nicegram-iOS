@@ -79,3 +79,8 @@
 "IAP.Common.ErrorFetch" = "Spiacenti, non è stato possibile ottenere i tuoi acquisti dall'App Store";
 "IAP.Common.Congrats" = "Congratulazioni!";
 "IAP.Common.ValidateError" = "Spiacente, non è stato possibile convalidare l'acquisto.";
+
+
+/*Manage Filters*/
+"ManageFilters.Title" = "Gestisci tab";
+"ManageFilters.Header" = "Configura filtri disponibili";
