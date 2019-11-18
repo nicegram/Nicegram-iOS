@@ -79,3 +79,8 @@
 "IAP.Common.ErrorFetch" = "抱歉，无法从 App Store 获取购买信息。";
 "IAP.Common.Congrats" = "恭喜！";
 "IAP.Common.ValidateError" = "抱歉，无法验证您的购买。";
+
+
+/*Manage Filters*/
+"ManageFilters.Title" = "管理标签";
+"ManageFilters.Header" = "配置可用的过滤器";
