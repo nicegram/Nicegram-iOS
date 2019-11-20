@@ -84,3 +84,7 @@
 /*Manage Filters*/
 "ManageFilters.Title" = "Управление вкладками";
 "ManageFilters.Header" = "РЕДАКТИРОВАНИЕ ДОСТУПНЫХ ФИЛЬТРОВ";
+
+"Messages.Translate" = "Перевод";
+"Messages.UndoTranslate" = "Отменить Перевод";
+"Messages.TranslateError" = "К сожалению, перевод недоступен.";
