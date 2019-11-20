@@ -16,7 +16,7 @@ import TelegramUIPreferences
 import ItemListUI
 import AccountContext
 import TelegramNotices
-
+import NicegramLib
 
 private struct SelectionState: Equatable {
 }
@@ -361,10 +361,11 @@ public func premiumController(context: AccountContext) -> ViewController {
             ])])
         presentControllerImpl?(actionSheet, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
     }, testAction: {
-        pushControllerImpl?(manageFilters(context: context))
-        //var p: RecentPeers? = nil
-        //let signal = recentPeers(account: context.account)
-        //print(signal)
+        let msg = "- 儒家 \n\n> - Dota"
+        let _ = (gtranslate(msg, presentationData.strings.baseLanguageCode)  |> deliverOnMainQueue).start(next: { translated in
+            print("Translated", translated)
+        },
+        error: {_ in print("error translating")})
         print("TESTED!")
     }, openManageFilters: {
         pushControllerImpl?(manageFilters(context: context))
