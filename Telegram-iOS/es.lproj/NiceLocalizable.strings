@@ -86,3 +86,4 @@
 "ManageFilters.Header" = "CONFIGURA FILTROS DISPONIBLES";
 
 "Messages.Translate" = "Traduce";
+"Messages.UndoTranslate" = "Deshacer traducción";
