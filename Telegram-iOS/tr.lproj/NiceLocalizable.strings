@@ -84,3 +84,7 @@
 /*Manage Filters*/
 "ManageFilters.Title" = "Sekmeleri Yönet";
 "ManageFilters.Header" = "KULLANILAN FİLTRELERİ ÖZELLEŞTİR";
+
+"Messages.Translate" = "Çevir";
+"Messages.UndoTranslate" = "Çeviriyi Geri Al";
+"Messages.TranslateError" = "Üzgünüz, çeviri kullanılamıyor.";

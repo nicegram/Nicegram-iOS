@@ -13,7 +13,7 @@ import LocalAuth
 import CallListUI
 import NotificationSoundSelectionUI
 
-private let maximumNumberOfAccounts = 3
+private let maximumNumberOfAccounts = 7
 
 enum SettingsSearchableItemIcon {
     case profile
