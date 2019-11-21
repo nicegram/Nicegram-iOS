@@ -84,3 +84,7 @@
 /*Manage Filters*/
 "ManageFilters.Title" = "管理標籤";
 "ManageFilters.Header" = "設定過濾器";
+
+"Messages.Translate" = "翻譯";
+"Messages.UndoTranslate" = "取消翻譯";
+"Messages.TranslateError" = "抱歉，無法翻譯。";
