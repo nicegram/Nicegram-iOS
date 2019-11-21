@@ -31,7 +31,7 @@
 "Common.ExitNow" = "Salir Ahora";
 "Common.Later" = "Después";
 "Common.RestartRequired" = "Reinicio es necesario!";
-"NiceFeatures.Tabs.ShowNames" = "Muestra nombre de pestañas";
+"NiceFeatures.Tabs.ShowNames" = "Muestra nombres de pestañas";
 "Chat.ForwardAsCopy" = "Reenvia como copia";
 
 /*Folder*/
@@ -87,3 +87,4 @@
 
 "Messages.Translate" = "Traduce";
 "Messages.UndoTranslate" = "Deshacer traducción";
+"Messages.TranslateError" = "Lo siento, la traducción no esta disponible.";
