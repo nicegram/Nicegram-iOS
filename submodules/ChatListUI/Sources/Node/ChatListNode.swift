@@ -669,6 +669,8 @@ public final class ChatListNode: ListView {
                                 
                                 
                                 return isMissed
+                            } else if filter.contains(.custom1) {
+                                return true
                             }
                             
                             return false

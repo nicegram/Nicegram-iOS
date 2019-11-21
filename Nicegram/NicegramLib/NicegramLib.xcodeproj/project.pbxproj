@@ -16,6 +16,8 @@
 		A5A724D9236637CD00A6ED62 /* DAKeychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A724D8236637CD00A6ED62 /* DAKeychain.swift */; };
 		A5A724DE236641CF00A6ED62 /* Products.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A724DD236641CF00A6ED62 /* Products.swift */; };
 		A5A724E02366422400A6ED62 /* IAPHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A724DF2366422400A6ED62 /* IAPHelper.swift */; };
+		A5EAC64723854589000DC4D0 /* GTranslate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5EAC64623854589000DC4D0 /* GTranslate.swift */; };
+		A5EAC649238551C3000DC4D0 /* SwiftSignalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5EAC648238551C3000DC4D0 /* SwiftSignalKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -41,6 +43,8 @@
 		A5A724D8236637CD00A6ED62 /* DAKeychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DAKeychain.swift; sourceTree = "<group>"; };
 		A5A724DD236641CF00A6ED62 /* Products.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Products.swift; sourceTree = "<group>"; };
 		A5A724DF2366422400A6ED62 /* IAPHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IAPHelper.swift; sourceTree = "<group>"; };
+		A5EAC64623854589000DC4D0 /* GTranslate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GTranslate.swift; sourceTree = "<group>"; };
+		A5EAC648238551C3000DC4D0 /* SwiftSignalKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = SwiftSignalKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -48,6 +52,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A5EAC649238551C3000DC4D0 /* SwiftSignalKit.framework in Frameworks */,
 				A54E4B992369FC530058A054 /* BuildConfig.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -66,6 +71,7 @@
 		A54E4B972369FC530058A054 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				A5EAC648238551C3000DC4D0 /* SwiftSignalKit.framework */,
 				A54E4B982369FC530058A054 /* BuildConfig.framework */,
 			);
 			name = Frameworks;
@@ -93,6 +99,7 @@
 		A5A724B92366335100A6ED62 /* NicegramLib */ = {
 			isa = PBXGroup;
 			children = (
+				A5EAC64523854567000DC4D0 /* Translate */,
 				A5A724DC236641B000A6ED62 /* IAP */,
 				A5A724D12366337900A6ED62 /* SecureSettings */,
 				A5A724BA2366335100A6ED62 /* NicegramLib.h */,
@@ -127,6 +134,14 @@
 				A5A724DF2366422400A6ED62 /* IAPHelper.swift */,
 			);
 			path = IAP;
+			sourceTree = "<group>";
+		};
+		A5EAC64523854567000DC4D0 /* Translate */ = {
+			isa = PBXGroup;
+			children = (
+				A5EAC64623854589000DC4D0 /* GTranslate.swift */,
+			);
+			path = Translate;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -241,6 +256,7 @@
 			files = (
 				A5A724D32366339300A6ED62 /* SecureSettings.swift in Sources */,
 				A5A724DE236641CF00A6ED62 /* Products.swift in Sources */,
+				A5EAC64723854589000DC4D0 /* GTranslate.swift in Sources */,
 				A5A724D5236633DE00A6ED62 /* NicegramSecureSettings.swift in Sources */,
 				A5A724E02366422400A6ED62 /* IAPHelper.swift in Sources */,
 				A5A724D9236637CD00A6ED62 /* DAKeychain.swift in Sources */,

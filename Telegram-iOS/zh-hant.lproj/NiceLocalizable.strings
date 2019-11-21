@@ -1,3 +1,4 @@
+"AppName" = "Nicegram";
 
 /*ChatFilter*/
 "ChatFilter.Bots" = "機器人";
@@ -7,6 +8,9 @@
 "ChatFilter.Unread" = "未讀訊息";
 "ChatFilter.Unmuted" = "開啟通知";
 "ChatFilter.Favourites" = "常用";
+
+/*Nice Features*/
+"NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "標籤";
 "NiceFeatures.Tabs.ShowContacts" = "顯示聯絡人標籤";
 "NiceFeatures.ChatScreen.Header" = "對話介面";
@@ -68,10 +72,15 @@
 "Common.FAQ.Intro" = "注意：Nicegram 支援僅由開發人員和志願者提供。\n\n請先看一下 Nicegram 常見問題：它有故障排除指示和其他大多數問題的解答。";
 "IAP.Premium.Title" = "進階版功能";
 "IAP.Premium.Subtitle" = "您無法抗拒的獨特功能！";
-"IAP.Premium.Features" = "無限資料夾\n無限置頂對話\n錯過的訊息篩選標籤\nApp 開啟時提示錯過的訊息\n";
+"IAP.Premium.Features" = "無限資料夾\n無限置頂對話\n錯過的訊息篩選標籤\n«新訊息» 在 App 啟動時顯示";
 "IAP.Premium.Activated" = "已升級進階版！";
 "IAP.Common.Restore" = "恢復購買";
 "IAP.Common.CantPay" = "抱歉，由於您的設備或帳戶限制，您無法購買。";
 "IAP.Common.ErrorFetch" = "抱歉，無法取得 App Store 購買的商品。";
 "IAP.Common.Congrats" = "恭喜！";
 "IAP.Common.ValidateError" = "很抱歉，無法驗證您的購買。";
+
+
+/*Manage Filters*/
+"ManageFilters.Title" = "管理標籤";
+"ManageFilters.Header" = "設定過濾器";

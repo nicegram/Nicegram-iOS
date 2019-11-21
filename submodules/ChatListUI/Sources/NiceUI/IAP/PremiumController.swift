@@ -16,7 +16,7 @@ import TelegramUIPreferences
 import ItemListUI
 import AccountContext
 import TelegramNotices
-
+import NicegramLib
 
 private struct SelectionState: Equatable {
 }
@@ -25,11 +25,13 @@ private final class PremiumControllerArguments {
     let toggleSetting: (Bool, String) -> Void
     let openSetMissedInterval: () -> Void
     let testAction: () -> Void
+    let openManageFilters: () -> Void
     
-    init(toggleSetting:@escaping (Bool, String) -> Void, openSetMissedInterval:@escaping () -> Void, testAction:@escaping () -> Void) {
+    init(toggleSetting:@escaping (Bool, String) -> Void, openSetMissedInterval:@escaping () -> Void, testAction:@escaping () -> Void, openManageFilters:@escaping () -> Void) {
         self.toggleSetting = toggleSetting
         self.openSetMissedInterval = openSetMissedInterval
         self.testAction = testAction
+        self.openManageFilters = openManageFilters
     }
 }
 
@@ -38,6 +40,7 @@ private enum premiumControllerSection: Int32 {
     case mainHeader
     case syncPins
     case notifyMissed
+    case manageFilters
     case test
 }
 
@@ -55,6 +58,9 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
     case notifyMissed(PresentationTheme, String, String)
     case notifyMissedNotice(PresentationTheme, String)
     
+    case manageFiltersHeader(PresentationTheme, String)
+    case manageFilters(PresentationTheme, String)
+    
     case testButton(PresentationTheme, String)
     
     var section: ItemListSectionId {
@@ -65,6 +71,8 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return premiumControllerSection.syncPins.rawValue
         case .notifyMissed, .notifyMissedNotice:
             return premiumControllerSection.notifyMissed.rawValue
+        case .manageFiltersHeader, .manageFilters:
+           return premiumControllerSection.manageFilters.rawValue
         case .testButton:
             return premiumControllerSection.test.rawValue
         }
@@ -85,6 +93,10 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return 2100
         case .notifyMissedNotice:
             return 2200
+        case .manageFiltersHeader:
+            return 3000
+        case .manageFilters:
+            return 3100
         case .testButton:
             return 999999
         }
@@ -130,6 +142,20 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
+
+        case let .manageFiltersHeader(lhsTheme, lhsText):
+            if case let .manageFiltersHeader(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
+            
+        case let .manageFilters(lhsTheme, lhsText):
+            if case let .manageFilters(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
             
         case let .testButton(lhsTheme, lhsText):
             if case let .testButton(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
@@ -164,6 +190,12 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             })
         case let .notifyMissedNotice(theme, text):
             return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+        case let .manageFiltersHeader(theme, text):
+            return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
+        case let .manageFilters(theme, text):
+            return ItemListDisclosureItem(theme: theme, icon: nil, title: text, label: "", sectionId: self.section, style: .blocks, action: {
+                arguments.openManageFilters()
+            })
         case let .testButton(theme, text):
             return ItemListActionItem(theme: theme, title: "Test Button", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 arguments.testAction()
@@ -204,6 +236,9 @@ private func premiumControllerEntries(presentationData: PresentationData, premiu
     entries.append(.notifyMissed(theme, l("Premium.Missed", locale), timeoutString))
     entries.append(.notifyMissedNotice(theme, l("Premium.Missed.Notice", locale)))
     
+    entries.append(.manageFiltersHeader(theme, l("NiceFeatures.Filters.Header", locale)))
+    entries.append(.manageFilters(theme, l("ManageFilters.Title", locale)))
+    
     #if DEBUG
     entries.append(.testButton(theme, "TEST"))
     #endif
@@ -233,6 +268,7 @@ public func premiumController(context: AccountContext) -> ViewController {
     var dismissImpl: (() -> Void)?
     var presentControllerImpl: ((ViewController, Any?) -> Void)?
     let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+    var pushControllerImpl: ((ViewController) -> Void)?
     
     var currentBrowser = Browser(rawValue: SimplyNiceSettings().browser) ?? Browser.Safari
     let statePromise = ValuePromise(SelectionState(), ignoreRepeated: false)
@@ -325,10 +361,14 @@ public func premiumController(context: AccountContext) -> ViewController {
             ])])
         presentControllerImpl?(actionSheet, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
     }, testAction: {
-        //var p: RecentPeers? = nil
-        //let signal = recentPeers(account: context.account)
-        //print(signal)
+        let msg = "- 儒家 \n\n> - Dota"
+        let _ = (gtranslate(msg, presentationData.strings.baseLanguageCode)  |> deliverOnMainQueue).start(next: { translated in
+            print("Translated", translated)
+        },
+        error: {_ in print("error translating")})
         print("TESTED!")
+    }, openManageFilters: {
+        pushControllerImpl?(manageFilters(context: context))
     }
     )
     
@@ -364,6 +404,9 @@ public func premiumController(context: AccountContext) -> ViewController {
     }
     presentControllerImpl = { [weak controller] c, a in
         controller?.present(c, in: .window(.root), with: a)
+    }
+    pushControllerImpl = { [weak controller] c in
+        (controller?.navigationController as? NavigationController)?.pushViewController(c)
     }
     return controller
 }

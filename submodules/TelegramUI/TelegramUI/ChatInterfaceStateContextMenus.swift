@@ -13,6 +13,7 @@ import ContextUI
 import LegacyUI
 import ChatListUI
 import PeerInfoUI
+import NicegramLib
 
 private struct MessageContextMenuData {
     let starStatus: Bool?
@@ -452,6 +453,54 @@ func contextMenuForChatPresentationIntefaceState(chatPresentationInterfaceState:
                 interfaceInteraction.setupEditMessage(messages[0].id, { transition in
                     f(.custom(transition))
                 })
+            })))
+        } else if !message.text.isEmpty {
+            var presentationData = context.sharedContext.currentPresentationData.with { $0 }
+            let locale = presentationData.strings.baseLanguageCode
+            var title = l("Messages.Translate", locale)
+            var mode = "translate"
+            if message.text.contains(gTranslateSeparator) {
+                title = l("Messages.UndoTranslate", locale)
+                mode = "undo-translate"
+            }
+            actions.append(.action(ContextMenuActionItem(text: title, icon: { theme in
+                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Translate"), color: theme.actionSheet.primaryTextColor)
+            }, action: { _, f in
+                if mode == "undo-translate" {
+                    var newMessageText = message.text
+                    if let dotRange = newMessageText.range(of: "\n\n" + gTranslateSeparator) {
+                        newMessageText.removeSubrange(dotRange.lowerBound..<newMessageText.endIndex)
+                    }
+                    let _ = (context.account.postbox.transaction { transaction -> Void in
+                        transaction.updateMessage(message.id, update: { currentMessage in
+                            var storeForwardInfo: StoreMessageForwardInfo?
+                            if let forwardInfo = currentMessage.forwardInfo {
+                                storeForwardInfo = StoreMessageForwardInfo(authorId: forwardInfo.author?.id, sourceId: forwardInfo.source?.id, sourceMessageId: forwardInfo.sourceMessageId, date: forwardInfo.date, authorSignature: forwardInfo.authorSignature)
+                            }
+                            
+                            return .update(StoreMessage(id: currentMessage.id, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: newMessageText, attributes: currentMessage.attributes, media: currentMessage.media))
+                        })
+                    }).start()
+                } else {
+                    let _ = (gtranslate(message.text, presentationData.strings.baseLanguageCode)  |> deliverOnMainQueue).start(next: { translated in
+                        let newMessageText = message.text + "\n\n\(gTranslateSeparator)\n" + translated
+                        let _ = (context.account.postbox.transaction { transaction -> Void in
+                            transaction.updateMessage(message.id, update: { currentMessage in
+                                var storeForwardInfo: StoreMessageForwardInfo?
+                                if let forwardInfo = currentMessage.forwardInfo {
+                                    storeForwardInfo = StoreMessageForwardInfo(authorId: forwardInfo.author?.id, sourceId: forwardInfo.source?.id, sourceMessageId: forwardInfo.sourceMessageId, date: forwardInfo.date, authorSignature: forwardInfo.authorSignature)
+                                }
+
+                                return .update(StoreMessage(id: currentMessage.id, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: newMessageText, attributes: currentMessage.attributes, media: currentMessage.media))
+                            })
+                        }).start()
+                    }, error: {_ in
+                        print("error translating")
+                        let c = getIAPErrorController(context: context, "Messages.TranslateError", presentationData)
+                        controllerInteraction.presentGlobalOverlayController(c, nil)
+                    })
+                }
+                f(.default)
             })))
         }
         

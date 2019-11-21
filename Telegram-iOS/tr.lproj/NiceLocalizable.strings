@@ -1,3 +1,4 @@
+"AppName" = "Nicegram";
 
 /*ChatFilter*/
 "ChatFilter.Bots" = "Botlar";
@@ -7,6 +8,9 @@
 "ChatFilter.Unread" = "Okunmamış";
 "ChatFilter.Unmuted" = "Sessize Alınmış";
 "ChatFilter.Favourites" = "Favoriler";
+
+/*Nice Features*/
+"NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "SEKMELER";
 "NiceFeatures.Tabs.ShowContacts" = "Kişiler Sekmesini Göster";
 "NiceFeatures.ChatScreen.Header" = "SOHBET EKRANI";
@@ -50,6 +54,9 @@
 "NiceFeatures.Browser.UseBrowser" = "Bağlantıları tarayıcıda aç";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram, bağlantıları uygulama içi yerine harici tarayıcıda açacak. Seçilen tarayıcı yüklü olmalı.";
 "ChatFilter.Missed" = "Kaçırılan";
+
+/*Premium*/
+"Premium.Title" = "Premium";
 "Premium.UnlimitedPins.Header" = "SINIRSIZ SABİTLENMİŞ SOHBET";
 "Premium.SyncPins" = "Senkronize Sabitlenmiş Sohbetler";
 "Premium.SyncPins.Notice.ON" = "Eğer diğer sistemlerinizde sabit sohbetlerinizi değiştirirseniz, Nicegram’da da DEĞİŞECEKTİR.";
@@ -63,6 +70,7 @@
 "Common.FAQUrl" = "https://nicegram.app/tr/faq/";
 "Common.FAQ.Button" = "Nicegram SSS";
 "Common.FAQ.Intro" = "Lütfen Nicegram Destek’in sadece bir geliştirici ve topluluktan oluştuğunu unutmayın.\n\nİlk olarak Nicegram SSS’e bir göz atın: önemli ipuçları ve çoğu soruya cevap barındırıyor.";
+"IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Reddedemeyeceğiniz benzersiz özellikler!";
 "IAP.Premium.Features" = "Sınırsız Klasörler\nSınırsız Sabit Sohbetler\nKaçırılan Mesaj Filtresi\nUygulama Açılışında Kaçırılan Mesaj Özeti";
 "IAP.Premium.Activated" = "Premium Aktive Edildi!";
@@ -70,3 +78,9 @@
 "IAP.Common.CantPay" = "Üzgünüz, ama cihaz veya hesap kısıtlamalarınız yüzünden satın alım yapamazsınız.";
 "IAP.Common.ErrorFetch" = "Üzgünüz, App Store satın alımları çekilemiyor.";
 "IAP.Common.Congrats" = "Tebrikler!";
+"IAP.Common.ValidateError" = "Üzgünüz, satın alımınız doğrulanamıyor.";
+
+
+/*Manage Filters*/
+"ManageFilters.Title" = "Sekmeleri Yönet";
+"ManageFilters.Header" = "KULLANILAN FİLTRELERİ ÖZELLEŞTİR";

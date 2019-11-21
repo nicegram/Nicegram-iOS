@@ -21,10 +21,12 @@ public struct NiceChatListNodePeersFilter: OptionSet {
     public static let onlyAdmin = NiceChatListNodePeersFilter(rawValue: 1 << 8)
     public static let onlyMissed = NiceChatListNodePeersFilter(rawValue: 1 << 9)
     
+    public static let custom1 = NiceChatListNodePeersFilter(rawValue: 1 << 10)
+    
     
     // DON'T BREAK UPGRADE FROM OLDER VERSIONS!, DON'T REMOVE OLD VALUES
     // SEE "let supportedFilters: [Int32]"
-    public static let all: [NiceChatListNodePeersFilter] = [.onlyAdmin, .onlyBots, .onlyChannels, .onlyGroups, .onlyPrivateChats, .onlyUnread, .onlyNonMuted, .onlyMissed]
+    public static let all: [NiceChatListNodePeersFilter] = [.onlyAdmin, .onlyBots, .onlyChannels, .onlyGroups, .onlyPrivateChats, .onlyUnread, .onlyNonMuted, .onlyMissed]//, .custom1]
 }
 
 public struct ChatListNodePeersFilter: OptionSet {

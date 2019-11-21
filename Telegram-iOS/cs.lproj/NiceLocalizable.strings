@@ -79,12 +79,3 @@
 "IAP.Common.ErrorFetch" = "Sorry, сan't fetch App Store purchases.";
 "IAP.Common.Congrats" = "Congratulations!";
 "IAP.Common.ValidateError" = "Sorry, can't validate your purchase.";
-
-
-/*Manage Filters*/
-"ManageFilters.Title" = "Manage Tabs";
-"ManageFilters.Header" = "CONFIGURE AVAILABLE FILTERS";
-
-"Messages.Translate" = "Translate";
-"Messages.UndoTranslate" = "Undo Translate";
-"Messages.TranslateError" = "Sorry, translation unavailable.";

@@ -3,7 +3,7 @@
 /*ChatFilter*/
 "ChatFilter.Bots" = "Boti";
 "ChatFilter.Channels" = "Kanály";
-"ChatFilter.Private" = "Ľudia";
+"ChatFilter.Private" = "Užívatelia";
 "ChatFilter.Groups" = "Skupiny";
 "ChatFilter.Unread" = "Neprečítané";
 "ChatFilter.Unmuted" = "Nestlmené";
@@ -11,71 +11,35 @@
 
 /*Nice Features*/
 "NiceFeatures.Title" = "Nicegram";
-"NiceFeatures.Tabs.Header" = "KARTY";
-"NiceFeatures.Tabs.ShowContacts" = "Zobraz kontakty";
-"NiceFeatures.ChatScreen.Header" = "CHATOVÁ OBRAZOVKA";
+"NiceFeatures.Tabs.Header" = "ZÁLOŽKY";
+"NiceFeatures.Tabs.ShowContacts" = "Zobraziť kontakty";
+"NiceFeatures.ChatScreen.Header" = "CHATY";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Animované nálepky";
 
 /*Save to Cloud*/
-"Chat.SaveToCloud" = "Ulož na Cloud";
+"Chat.SaveToCloud" = "Uložiť na Cloud";
 
 /*Open Pin*/
-"Chat.OpenPin" = "Zobraz špendlík";
-"ChatFilter.Admin" = "";
-"NiceFeatures.Notifications.Fix" = "";
-"NiceFeatures.Notifications.FixNotice" = "";
-"NiceFeatures.Filters.Header" = "";
-"NiceFeatures.Filters.Notice" = "";
+"Chat.OpenPin" = "Zobraziť pripnuté";
+"ChatFilter.Admin" = "Admin";
+"NiceFeatures.Notifications.Fix" = "Vypnúť nechcené notifikácie";
+"NiceFeatures.Notifications.FixNotice" = "Nápomocné, pri dostávaní notifikácií zo stlmených chatov.\nOdpovede z notifikácií, názvy účtov a náhľady médií nebudú dostupné.";
+"NiceFeatures.Filters.Header" = "FILTRE (ZÁLOŽKY)";
+"NiceFeatures.Filters.Notice" = "Zvoľ počet vlastných záložiek.\nPodrž záložku pre zmenenie jej filtra.";
 
 /*Common*/
-"Common.ExitNow" = "";
-"Common.Later" = "";
-"Common.RestartRequired" = "";
-"NiceFeatures.Tabs.ShowNames" = "";
-"Chat.ForwardAsCopy" = "";
+"Common.ExitNow" = "Ukončiť";
+"Common.Later" = "Neskôr";
+"Common.RestartRequired" = "Vyžadovaný reštart!";
+"NiceFeatures.Tabs.ShowNames" = "Zobraziť názvy záložiek";
+"Chat.ForwardAsCopy" = "Preposlať ako kópiu";
 
 /*Folder*/
-"Folder.DefaultName" = "";
-"Folder.New" = "";
-"Folder.Created" = "";
-"Folder.AddToExisting" = "";
-"Folder.Updated" = "";
-"Folder.Create" = "";
-"Folder.Create.Name" = "";
-"Folder.Create.Placeholder" = "";
-"Folder.LimitExceeded" = "";
-"NiceFeatures.HideNumber" = "";
-
-/*NGWeb*/
-"NGWeb.Blocked" = "";
-
-/*Browser*/
-"NiceFeatures.Browser.Header" = "";
-"NiceFeatures.Browser.UseBrowser" = "";
-"NiceFeatures.Browser.UseBrowserNotice" = "";
-"ChatFilter.Missed" = "";
-
-/*Premium*/
-"Premium.Title" = "";
-"Premium.UnlimitedPins.Header" = "";
-"Premium.SyncPins" = "";
-"Premium.SyncPins.Notice.ON" = "";
-"Premium.SyncPins.Notice.OFF" = "";
-"Premium.Missed.Header" = "";
-"Premium.Missed" = "";
-"Premium.Missed.Notice" = "";
-"Folder.DeleteAsk" = "";
-"Folder.NeedPremium" = "";
-"Common.SupportChatUsername" = "";
-"Common.FAQUrl" = "";
-"Common.FAQ.Button" = "";
-"Common.FAQ.Intro" = "";
-"IAP.Premium.Title" = "";
-"IAP.Premium.Subtitle" = "";
-"IAP.Premium.Features" = "";
-"IAP.Premium.Activated" = "";
-"IAP.Common.Restore" = "";
-"IAP.Common.CantPay" = "";
-"IAP.Common.ErrorFetch" = "";
-"IAP.Common.Congrats" = "";
-"IAP.Common.ValidateError" = "";
+"Folder.DefaultName" = "Priečinok";
+"Folder.New" = "Nový priečinok";
+"Folder.Created" = "Priečinok bol vytvorený";
+"Folder.AddToExisting" = "Pridať do existujúceho priečinku";
+"Folder.Updated" = "Priečinok aktualizovaný";
+"Folder.Create" = "Vytvoriť priečinok...";
+"Folder.Create.Name" = "Názov priečinku";
+"Folder.Create.Placeholder" = "Priečinok...";
