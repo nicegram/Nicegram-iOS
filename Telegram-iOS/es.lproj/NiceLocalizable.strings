@@ -79,3 +79,10 @@
 "IAP.Common.ErrorFetch" = "Lo siento, no se puede recuperar las compras del AppStore.";
 "IAP.Common.Congrats" = "¡Felicidades!";
 "IAP.Common.ValidateError" = "Lo siento, no se puede validar sus compras.";
+
+
+/*Manage Filters*/
+"ManageFilters.Title" = "Gestionar etiquetas";
+"ManageFilters.Header" = "CONFIGURA FILTROS DISPONIBLES";
+
+"Messages.Translate" = "Traduce";
