@@ -84,3 +84,7 @@
 /*Manage Filters*/
 "ManageFilters.Title" = "管理标签";
 "ManageFilters.Header" = "配置可用的过滤器";
+
+"Messages.Translate" = "翻译";
+"Messages.UndoTranslate" = "撤消翻译";
+"Messages.TranslateError" = "抱歉，翻译不可用。";
