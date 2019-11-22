@@ -45,4 +45,25 @@
 "Folder.Create.Placeholder" = "پوشه";
 "Folder.LimitExceeded" = "متاسفم،شما بیش از ۳ فایل نمی‌توانید ایجاد کنید.\nفایل های بیشتر بزودی";
 "NiceFeatures.HideNumber" = "پنهان کردن شماره موبایل در تنظیمات";
+
+/*NGWeb*/
+"NGWeb.Blocked" = "به دلیل دستورالعمل های AppStore در Nicegram دردسترس نیست";
+
+/*Browser*/
+"NiceFeatures.Browser.Header" = "لینک ها";
+"NiceFeatures.Browser.UseBrowser" = "بازکردن لینک ها در مرورگر";
+"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram بجای خود برنامه، لینک هارا در مرورگر خارجی باز میکند. مرورگر انتخاب شده باید نصب شده باشد.";
+"ChatFilter.Missed" = "از دست رفته";
+
+/*Premium*/
+"Premium.Title" = "ویژه";
+"Premium.UnlimitedPins.Header" = "گفتگو های سنجاق شده نامحدود";
+"Premium.SyncPins" = "همگام سازی گفتگوهای سنجاق شده";
+"Premium.SyncPins.Notice.ON" = "اگر در برنامه دیگری گفتگو های سنجاق شده را تغییر دهید، آن ها در Nicegram نیز تغییر خواهند کرد.";
+"Premium.SyncPins.Notice.OFF" = "اگر در برنامه دیگری گفتگو های سنجاق شده را تغییر دهید، آن ها در Nicegram نیز تغییر نخواهند کرد.";
+"Premium.Missed.Header" = "پیام های از دست رفته";
+"Premium.Missed" = "اطلاع رسانی پیام های از دست رفته";
+"Premium.Missed.Notice" = "هنگامی که برنامه را بعد از تأخیر طولانی (خواب ، مطالعه و غیره) باز می کنید، Nicegram در مورد پیام های خصوصی خوانده نشده و منشن شده به شما اطلاع می دهد.";
+"Folder.DeleteAsk" = "پاک کردن پوشه";
+"Folder.NeedPremium" = "این پوشه تنها در نسخه ویژه دردسترس است. شما میتوانید با کشیدن پوشه آن را حذف کنید یا نسخه ویژه را تهیه کنید.";
 "Common.SupportChatUsername" = "nicegram_fa";
