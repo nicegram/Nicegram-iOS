@@ -1,0 +1,6 @@
+
+/* A single strings file, whose title is specified in your preferences schema. The strings files provide the localized content to display to the user for each of your preferences. */
+
+"Reset.Title" = "РЕШЕНИЕ ПРОБЛЕМ";
+"Reset.Toggle" = "Сбросить кэш при следующем запуске";
+"Reset.Notice" = "Используйте, когда приложение не вылетает из-за проблем с сообщениями. Эта опция НЕ СБРАСЫВАЕТ ваши аккаунты.";

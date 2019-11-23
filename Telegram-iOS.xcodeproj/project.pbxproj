@@ -202,6 +202,7 @@
 		09EC5CDA22CBBF9600292E42 /* telegram_plane1@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 09EC5CD922CBBF9600292E42 /* telegram_plane1@2x.png */; };
 		09FDAEE62140477F00BF856F /* MtProtoKitDynamic.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 09FDAEE52140477F00BF856F /* MtProtoKitDynamic.framework */; };
 		A55FCDF2235F9A400049C2C7 /* NiceLocalizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A55FCDF0235F9A400049C2C7 /* NiceLocalizable.strings */; };
+		A574F59C2388CEBE0063E3F7 /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = A574F59B2388CEBE0063E3F7 /* Settings.bundle */; };
 		A59E4E0922DBFD8200DCC1E4 /* NiceLocalizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A59E4E0722DBFD8200DCC1E4 /* NiceLocalizable.strings */; };
 		A5A724DB23663D5200A6ED62 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5A724DA23663D5200A6ED62 /* StoreKit.framework */; };
 		A5CC7E6322F0FCCC00B8CA21 /* NiceLocalizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A5CC7E6122F0FCCC00B8CA21 /* NiceLocalizable.strings */; };
@@ -848,6 +849,7 @@
 		09EC5CD922CBBF9600292E42 /* telegram_plane1@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "telegram_plane1@2x.png"; sourceTree = "<group>"; };
 		09FDAEE52140477F00BF856F /* MtProtoKitDynamic.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = MtProtoKitDynamic.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A55FCDF1235F9A400049C2C7 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = NiceLocalizable.strings; sourceTree = "<group>"; };
+		A574F59B2388CEBE0063E3F7 /* Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = Settings.bundle; sourceTree = "<group>"; };
 		A59E4E0822DBFD8200DCC1E4 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/NiceLocalizable.strings; sourceTree = "<group>"; };
 		A5A724DA23663D5200A6ED62 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		A5CC7E6222F0FCCC00B8CA21 /* fa */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fa; path = NiceLocalizable.strings; sourceTree = "<group>"; };
@@ -1969,6 +1971,7 @@
 				D00859A81B28189D00EAF753 /* Images.xcassets */,
 				D00859AA1B28189D00EAF753 /* LaunchScreen.xib */,
 				D008599F1B28189D00EAF753 /* Supporting Files */,
+				A574F59B2388CEBE0063E3F7 /* Settings.bundle */,
 			);
 			path = "Telegram-iOS";
 			sourceTree = "<group>";
@@ -2989,6 +2992,7 @@
 				D0CE6F5C213EDA4400BCD44B /* InfoPlist.strings in Resources */,
 				D0CE6F5D213EDA4400BCD44B /* AppIntentVocabulary.plist in Resources */,
 				D0CE6F61213EDA4400BCD44B /* Localizable.strings in Resources */,
+				A574F59C2388CEBE0063E3F7 /* Settings.bundle in Resources */,
 				D04DCC311F71C80000B021D7 /* 4.m4a in Resources */,
 				D0FC1948201D2DA800FEDBB2 /* SFCompactRounded-Semibold.otf in Resources */,
 				D04DCC331F71C80000B021D7 /* 6.m4a in Resources */,

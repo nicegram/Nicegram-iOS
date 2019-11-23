@@ -985,6 +985,15 @@ final class SharedApplicationContext {
             
             var network: Network?
             if let context = context {
+                
+                if SystemNGSettings().dbReset {
+                    print("[System NG] ", "Resetting DB by system settings")
+                    Logger.shared.log("[System NG]", "Resetting DB by system settings")
+                    let databasePath = context.context.sharedContext.accountManager.basePath + "/db"
+                    let _ = try? FileManager.default.removeItem(atPath: databasePath)
+                    SystemNGSettings().dbReset = false
+                }
+                
                 network = context.context.account.network
                 syncFolders(context.context.account.postbox)
                 print("IS PREMIUM \(SecureNiceSettings().isPremium)")
