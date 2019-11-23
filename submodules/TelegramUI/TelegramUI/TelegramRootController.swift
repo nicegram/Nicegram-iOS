@@ -98,7 +98,6 @@ public final class TelegramRootController: NavigationController {
             self?.openChatsController(activateSearch: false)
         }
         // let niceSettings = getNiceSettings(accountManager: self.context.sharedContext.accountManager)
-        controllers.append(chatListController)
         if niceSettings.showContactsTab {
             controllers.append(contactsController)
         }
@@ -127,8 +126,8 @@ public final class TelegramRootController: NavigationController {
                 self.filterControllers = nil
             }
         }
-
         
+        controllers.append(chatListController)
         
         var restoreSettignsController: (ViewController & SettingsController)?
         if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
@@ -153,7 +152,7 @@ public final class TelegramRootController: NavigationController {
             controllers.insert(missedController, at: 0)
         }
         
-        tabBarController.setControllers(controllers, selectedIndex: restoreSettignsController != nil ? (controllers.count - 1) : (0))
+        tabBarController.setControllers(controllers, selectedIndex: restoreSettignsController != nil ? (controllers.count - 1) : (controllers.count - 2))
         
         self.contactsController = contactsController
         self.callListController = callListController
@@ -169,7 +168,6 @@ public final class TelegramRootController: NavigationController {
         }
         var controllers: [ViewController] = []
         // let niceSettings = getNiceSettings(accountManager: self.context.sharedContext.accountManager)
-        controllers.append(self.chatListController!)
         if niceSettings.showContactsTab {
             controllers.append(self.contactsController!)
         }
@@ -178,7 +176,7 @@ public final class TelegramRootController: NavigationController {
             controllers.append(self.callListController!)
         }
         
-        var selectedIndex: Int? = 0
+        var selectedIndex: Int? = nil
         
         if SimplyNiceSettings().maxFilters > 0 {
             var filControllers: [ChatListController] = []
@@ -204,7 +202,7 @@ public final class TelegramRootController: NavigationController {
         }
         
         
-        
+        controllers.append(self.chatListController!)
         controllers.append(self.accountSettingsController!)
         
         if showMissed() {
@@ -225,29 +223,29 @@ public final class TelegramRootController: NavigationController {
         
         rootTabController.setControllers(controllers, selectedIndex: selectedIndex)
         
-//        let observer = NotificationCenter.default.addObserver(forName: .IAPHelperPurchaseNotification, object: nil, queue: .main, using: { notification in
-//            let productID = notification.object as? String
-//            if productID == NicegramProducts.Premium {
-//                PremiumSettings().p = true
-//                validatePremium(isPremium())
-//                print("TRIGGERED MAIN OBSERVERS")
-//                if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
-//                    let presentationData = sharedContext.currentPresentationData.with { $0 }
-//                    if (isPremium()) {
-//                        let c = getPremiumActivatedAlert(context: self.context, "IAP.Common.Congrats", "IAP.Premium.Activated", presentationData, action: {
-//                        })
-//                        rootTabController.present(c, in: .window(.root))
-//                    } else {
-//                        let alertController = textAlertController(context: self.context, title: nil, text: l("IAP.Common.ValidateError", presentationData.strings.baseLanguageCode), actions: [
-//                            TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {
-//                            })])
-//                        rootTabController.present(alertController, in: .window(.root))
-//                    }
-//
-//                }
-//
-//            }
-//        })
+        //        let observer = NotificationCenter.default.addObserver(forName: .IAPHelperPurchaseNotification, object: nil, queue: .main, using: { notification in
+        //            let productID = notification.object as? String
+        //            if productID == NicegramProducts.Premium {
+        //                PremiumSettings().p = true
+        //                validatePremium(isPremium())
+        //                print("TRIGGERED MAIN OBSERVERS")
+        //                if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
+        //                    let presentationData = sharedContext.currentPresentationData.with { $0 }
+        //                    if (isPremium()) {
+        //                        let c = getPremiumActivatedAlert(context: self.context, "IAP.Common.Congrats", "IAP.Premium.Activated", presentationData, action: {
+        //                        })
+        //                        rootTabController.present(c, in: .window(.root))
+        //                    } else {
+        //                        let alertController = textAlertController(context: self.context, title: nil, text: l("IAP.Common.ValidateError", presentationData.strings.baseLanguageCode), actions: [
+        //                            TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {
+        //                            })])
+        //                        rootTabController.present(alertController, in: .window(.root))
+        //                    }
+        //
+        //                }
+        //
+        //            }
+        //        })
     }
     
     public func openChatsController(activateSearch: Bool) {
