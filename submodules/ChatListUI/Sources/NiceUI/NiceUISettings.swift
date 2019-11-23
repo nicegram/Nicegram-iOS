@@ -292,3 +292,27 @@ public func getEnabledFilters() -> [NiceChatListNodePeersFilter] {
     }
     return res
 }
+
+
+public func setSystemNGDefaults() {
+    let UD = UserDefaults.standard
+    UD.register(defaults: ["ng_db_reset": false])
+}
+
+public class SystemNGSettings {
+    let UD = UserDefaults.standard
+    
+    public init() {
+        // setSystemNGDefaults()
+    }
+    
+    public var dbReset: Bool {
+        get {
+            return UD.bool(forKey: "ng_db_reset")
+        }
+        set {
+            UD.set(newValue, forKey: "ng_db_reset")
+        }
+    }
+    
+}
