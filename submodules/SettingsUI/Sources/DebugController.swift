@@ -522,6 +522,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                 let controller = OverlayStatusController(theme: presentationData.theme, strings: presentationData.strings, type: .loading(cancelled: nil))
                 arguments.presentController(controller, nil)
                 let _ = (context.account.postbox.transaction { transaction -> Void in
+                    resetRegDateCache()
                     transaction.addHolesEverywhere(peerNamespaces: [Namespaces.Peer.CloudUser, Namespaces.Peer.CloudGroup, Namespaces.Peer.CloudChannel], holeNamespace: Namespaces.Message.Cloud)
                     }
                     |> deliverOnMainQueue).start(completed: {

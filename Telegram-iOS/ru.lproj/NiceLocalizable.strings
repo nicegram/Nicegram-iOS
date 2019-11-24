@@ -88,3 +88,11 @@
 "Messages.Translate" = "Перевод";
 "Messages.UndoTranslate" = "Отменить Перевод";
 "Messages.TranslateError" = "К сожалению, перевод недоступен.";
+
+
+/*NG Lab Registration Date*/
+"NGLab.RegDate.Btn" = "Узнать дату регистрации";
+"NGLab.RegDate.Title" = "Дата регистрации";
+"NGLab.RegDate.Notice" = "Это примерная дата";
+"NGLab.RegDate.MenuItem" = "регистрация";
+"NGLab.RegDate.FetchError" = "К сожалению, дата регистрации недоступна.";

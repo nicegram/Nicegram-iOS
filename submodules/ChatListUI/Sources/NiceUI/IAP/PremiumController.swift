@@ -362,10 +362,16 @@ public func premiumController(context: AccountContext) -> ViewController {
         presentControllerImpl?(actionSheet, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
     }, testAction: {
         let msg = "- 儒家 \n\n> - Dota"
-        let _ = (gtranslate(msg, presentationData.strings.baseLanguageCode)  |> deliverOnMainQueue).start(next: { translated in
-            print("Translated", translated)
+        let _ = (getRegDate(context.account.peerId.toInt64(), owner: context.account.peerId.toInt64())  |> deliverOnMainQueue).start(next: { response in
+            print("Regdate response", response)
+            let dateFormatter = DateFormatter()
+            dateFormatter.timeZone = TimeZone(abbreviation: "UTC") //Set timezone that you want
+            dateFormatter.locale = NSLocale.current
+            dateFormatter.setLocalizedDateFormatFromTemplate("MMMMy") 
+            let strDate = dateFormatter.string(from: response)
+            print(strDate)
         },
-        error: {_ in print("error translating")})
+        error: {_ in print("error regdate request")})
         print("TESTED!")
     }, openManageFilters: {
         pushControllerImpl?(manageFilters(context: context))
