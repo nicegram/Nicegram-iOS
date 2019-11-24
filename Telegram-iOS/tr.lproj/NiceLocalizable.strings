@@ -88,3 +88,10 @@
 "Messages.Translate" = "Çevir";
 "Messages.UndoTranslate" = "Çeviriyi Geri Al";
 "Messages.TranslateError" = "Üzgünüz, çeviri kullanılamıyor.";
+
+/*NG Lab Registration Date*/
+"NGLab.RegDate.Btn" = "Kayıt Tarihini Göster";
+"NGLab.RegDate.Title" = "Kayıt Tarihi";
+"NGLab.RegDate.Notice" = "Bu yaklaşık bir tarihtir";
+"NGLab.RegDate.MenuItem" = "kayıtlı";
+"NGLab.RegDate.FetchError" = "Üzgünüz, kayıt tarihi gösterilemiyor.";
