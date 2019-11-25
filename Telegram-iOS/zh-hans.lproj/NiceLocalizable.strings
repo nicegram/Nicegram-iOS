@@ -88,3 +88,10 @@
 "Messages.Translate" = "翻译";
 "Messages.UndoTranslate" = "撤消翻译";
 "Messages.TranslateError" = "抱歉，翻译不可用。";
+
+/*NG Lab Registration Date*/
+"NGLab.RegDate.Btn" = "获取注册日期";
+"NGLab.RegDate.Title" = "注册日期";
+"NGLab.RegDate.Notice" = "这是一个大致日期";
+"NGLab.RegDate.MenuItem" = "已注册";
+"NGLab.RegDate.FetchError" = "对不起，无法获得注册日期。";
