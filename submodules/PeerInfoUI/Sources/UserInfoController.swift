@@ -21,6 +21,8 @@ import ItemListAvatarAndNameInfoItem
 import PeerAvatarGalleryUI
 import NotificationMuteSettingsUI
 import NotificationSoundSelectionUI
+import NicegramLib
+import ChatListUI
 
 private final class UserInfoControllerArguments {
     let account: Account
@@ -39,6 +41,7 @@ private final class UserInfoControllerArguments {
     let updatePeerBlocked: (Bool) -> Void
     let deleteContact: () -> Void
     let displayUsernameContextMenu: (String) -> Void
+    let placeRegDate: () -> Void
     let displayCopyContextMenu: (UserInfoEntryTag, String) -> Void
     let call: () -> Void
     let openCallMenu: (String) -> Void
@@ -53,7 +56,7 @@ private final class UserInfoControllerArguments {
     let botPrivacy: () -> Void
     let report: () -> Void
     
-    init(account: Account, avatarAndNameInfoContext: ItemListAvatarAndNameInfoItemContext, updateEditingName: @escaping (ItemListAvatarAndNameInfoItemName) -> Void, tapAvatarAction: @escaping () -> Void, presentController: @escaping (ViewController, ViewControllerPresentationArguments) -> Void, openChat: @escaping () -> Void, addContact: @escaping () -> Void, shareContact: @escaping () -> Void, shareMyContact: @escaping () -> Void, startSecretChat: @escaping () -> Void, changeNotificationMuteSettings: @escaping () -> Void, openSharedMedia: @escaping () -> Void, openGroupsInCommon: @escaping () -> Void, updatePeerBlocked: @escaping (Bool) -> Void, deleteContact: @escaping () -> Void, displayUsernameContextMenu: @escaping (String) -> Void, displayCopyContextMenu: @escaping (UserInfoEntryTag, String) -> Void, call: @escaping () -> Void, openCallMenu: @escaping (String) -> Void, requestPhoneNumber: @escaping () -> Void, aboutLinkAction: @escaping (TextLinkItemActionType, TextLinkItem) -> Void, displayAboutContextMenu: @escaping (String) -> Void, openEncryptionKey: @escaping (SecretChatKeyFingerprint) -> Void, addBotToGroup: @escaping () -> Void, shareBot: @escaping () -> Void, botSettings: @escaping () -> Void, botHelp: @escaping () -> Void, botPrivacy: @escaping () -> Void, report: @escaping () -> Void) {
+    init(account: Account, avatarAndNameInfoContext: ItemListAvatarAndNameInfoItemContext, updateEditingName: @escaping (ItemListAvatarAndNameInfoItemName) -> Void, tapAvatarAction: @escaping () -> Void, presentController: @escaping (ViewController, ViewControllerPresentationArguments) -> Void, openChat: @escaping () -> Void, addContact: @escaping () -> Void, shareContact: @escaping () -> Void, shareMyContact: @escaping () -> Void, startSecretChat: @escaping () -> Void, changeNotificationMuteSettings: @escaping () -> Void, openSharedMedia: @escaping () -> Void, openGroupsInCommon: @escaping () -> Void, updatePeerBlocked: @escaping (Bool) -> Void, deleteContact: @escaping () -> Void, displayUsernameContextMenu: @escaping (String) -> Void, placeRegDate: @escaping () -> Void, displayCopyContextMenu: @escaping (UserInfoEntryTag, String) -> Void, call: @escaping () -> Void, openCallMenu: @escaping (String) -> Void, requestPhoneNumber: @escaping () -> Void, aboutLinkAction: @escaping (TextLinkItemActionType, TextLinkItem) -> Void, displayAboutContextMenu: @escaping (String) -> Void, openEncryptionKey: @escaping (SecretChatKeyFingerprint) -> Void, addBotToGroup: @escaping () -> Void, shareBot: @escaping () -> Void, botSettings: @escaping () -> Void, botHelp: @escaping () -> Void, botPrivacy: @escaping () -> Void, report: @escaping () -> Void) {
         self.account = account
         self.avatarAndNameInfoContext = avatarAndNameInfoContext
         self.updateEditingName = updateEditingName
@@ -71,6 +74,7 @@ private final class UserInfoControllerArguments {
         self.updatePeerBlocked = updatePeerBlocked
         self.deleteContact = deleteContact
         self.displayUsernameContextMenu = displayUsernameContextMenu
+        self.placeRegDate = placeRegDate
         self.displayCopyContextMenu = displayCopyContextMenu
         self.call = call
         self.openCallMenu = openCallMenu
@@ -99,6 +103,7 @@ private enum UserInfoEntryTag {
     case about
     case phoneNumber
     case username
+    case registerDate
 }
 
 private func areMessagesEqual(_ lhsMessage: Message, _ rhsMessage: Message) -> Bool {
@@ -118,6 +123,7 @@ private enum UserInfoEntry: ItemListNodeEntry {
     case phoneNumber(PresentationTheme, Int, String, String, Bool)
     case requestPhoneNumber(PresentationTheme, String, String)
     case userName(PresentationTheme, String, String)
+    case registerDate(PresentationTheme, String, String, Bool)
     case sendMessage(PresentationTheme, String)
     case addContact(PresentationTheme, String)
     case shareContact(PresentationTheme, String)
@@ -137,7 +143,7 @@ private enum UserInfoEntry: ItemListNodeEntry {
     
     var section: ItemListSectionId {
         switch self {
-            case .info, .calls, .about, .phoneNumber, .requestPhoneNumber, .userName:
+            case .info, .calls, .about, .phoneNumber, .requestPhoneNumber, .userName, .registerDate:
                 return UserInfoSection.info.rawValue
             case .sendMessage, .addContact, .shareContact, .shareMyContact, .startSecretChat, .botAddToGroup, .botShare:
                 return UserInfoSection.actions.rawValue
@@ -233,6 +239,12 @@ private enum UserInfoEntry: ItemListNodeEntry {
                 }
             case let .userName(lhsTheme, lhsText, lhsValue):
                 if case let .userName(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
+                    return true
+                } else {
+                    return false
+                }
+            case let .registerDate(lhsTheme, lhsText, lhsValue, lhsBool):
+                if case let .registerDate(rhsTheme, rhsText, rhsValue, rhsBool) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue, lhsBool == rhsBool {
                     return true
                 } else {
                     return false
@@ -350,38 +362,40 @@ private enum UserInfoEntry: ItemListNodeEntry {
                 return 999
             case .userName:
                 return 1000
-            case .sendMessage:
+            case .registerDate:
                 return 1001
+            case .sendMessage:
+                return 1001 + 1
             case .addContact:
-                return 1002
+                return 1002 + 1
             case .shareContact:
-                return 1003
+                return 1003 + 1
             case .shareMyContact:
-                return 1004
+                return 1004 + 1
             case .startSecretChat:
-                return 1005
+                return 1005 + 1
             case .botAddToGroup:
-                return 1006
+                return 1006 + 1
             case .botShare:
-                return 1007
+                return 1007 + 1
             case .botSettings:
-                return 1008
+                return 1008 + 1
             case .botHelp:
-                return 1009
+                return 1009 + 1
             case .botPrivacy:
-                return 1010
+                return 1010 + 1
             case .sharedMedia:
-                return 1011
+                return 1011 + 1
             case .notifications:
-                return 1012
+                return 1012 + 1
             case .secretEncryptionKey:
-                return 1014
+                return 1014 + 1
             case .groupsInCommon:
-                return 1015
+                return 1015 + 1
             case .botReport:
-                return 1016
+                return 1016 + 1
             case .block:
-                return 1017
+                return 1017 + 1
         }
     }
     
@@ -430,6 +444,13 @@ private enum UserInfoEntry: ItemListNodeEntry {
                 }, longTapAction: {
                     arguments.displayCopyContextMenu(.username, "@\(value)")
                 }, tag: UserInfoEntryTag.username)
+            case let .registerDate(theme, text, value, isAccent):
+                return ItemListTextWithLabelItem(theme: theme, label: text, text: value, textColor: isAccent ? .accent : .primary, enabledEntityTypes: [], multiline: false, sectionId: self.section, action: {
+                        arguments.placeRegDate()
+                        // arguments.displayUsernameContextMenu("@\(value)")
+                    }, longTapAction: {
+                        // arguments.displayCopyContextMenu(.username, "@\(value)")
+                    }, tag: UserInfoEntryTag.registerDate)
             case let .sendMessage(theme, text):
                 return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
                     arguments.openChat()
@@ -666,6 +687,17 @@ private func userInfoEntries(account: Account, presentationData: PresentationDat
             entries.append(UserInfoEntry.userName(presentationData.theme, presentationData.strings.Profile_Username, username))
         }
         
+        var regDateStr = l("NGLab.RegDate.Btn", presentationData.strings.baseLanguageCode)
+        var isCached = false
+        
+        if let registrationDate = getCachedRegDate(user.id.toInt64()) {
+            let cachedRegdateString = makeNiceRegDateStr(registrationDate)
+            regDateStr = cachedRegdateString
+            isCached = true
+        }
+        
+        entries.append(UserInfoEntry.registerDate(presentationData.theme, l("NGLab.RegDate.MenuItem", presentationData.strings.baseLanguageCode), regDateStr, !isCached))
+        
         if !(peer is TelegramSecretChat) {
             entries.append(UserInfoEntry.sendMessage(presentationData.theme, presentationData.strings.UserInfo_SendMessage))
         }
@@ -778,6 +810,12 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
     let stateValue = Atomic(value: UserInfoState())
     let updateState: ((UserInfoState) -> UserInfoState) -> Void = { f in
         statePromise.set(stateValue.modify { f($0) })
+    }
+    
+    let regStatePromise = ValuePromise(UserInfoState(), ignoreRepeated: false)
+    let regStateValue = Atomic(value: UserInfoState())
+    let regUpdateState: ((UserInfoState) -> UserInfoState) -> Void = { f in
+        regStatePromise.set(regStateValue.modify { f($0) })
     }
     
     var pushControllerImpl: ((ViewController) -> Void)?
@@ -1121,6 +1159,58 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
     }, displayUsernameContextMenu: { text in
         let shareController = ShareController(context: context, subject: .url("\(text)"))
         presentControllerImpl?(shareController, nil)
+    }, placeRegDate: {
+        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+        let userId = peerId.toInt64()
+        if let registrationDate = getCachedRegDate(userId) {
+            let regdateString = makeNiceRegDateStr(registrationDate)
+            let title = "NGLab.RegDate.Notice"
+            let regdateController = textAlertController(context: context, title: regdateString, text: l(title, presentationData.strings.baseLanguageCode), actions: [
+                TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {
+                })])
+            presentControllerImpl?(regdateController,ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+        } else {
+            let progressSignal = Signal<Never, NoError> { subscriber in
+                let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                let controller = OverlayStatusController(theme: presentationData.theme, strings: presentationData.strings, type: .loading(cancelled: nil))
+                presentControllerImpl?(controller, nil)
+                return ActionDisposable { [weak controller] in
+                    Queue.mainQueue().async() {
+                        controller?.dismiss()
+                    }
+                }
+                }
+                |> runOn(Queue.mainQueue())
+                //|> delay(0.05, queue: Queue.mainQueue())
+            let progressDisposable = progressSignal.start()
+            
+            var regdateSignal = (getRegDate(peerId.toInt64(), owner: context.account.peerId.toInt64())  |> deliverOnMainQueue).start(next: { response in
+                let regdateString = makeNiceRegDateStr(response)
+                let title = "NGLab.RegDate.Notice"
+                let regdateController = textAlertController(context: context, title: regdateString, text: l(title, presentationData.strings.baseLanguageCode), actions: [
+                    TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {
+                    })])
+                presentControllerImpl?(regdateController,ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+                
+                regUpdateState { state in
+                    return state.withUpdatedSavingData(false)
+                }
+            }, error: {_ in
+                let text = "NGLab.RegDate.FetchError"
+                let errorController = textAlertController(context: context, title: nil, text: l(text, presentationData.strings.baseLanguageCode), actions: [
+                    TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {
+                    })])
+                presentControllerImpl?(errorController, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+                Queue.mainQueue().async {
+                    progressDisposable.dispose()
+                }
+            }, completed: {
+                Queue.mainQueue().async {
+                    progressDisposable.dispose()
+                }
+            })
+        }
+        
     }, displayCopyContextMenu: { tag, phone in
         displayCopyContextMenuImpl?(tag, phone)
     }, call: {
@@ -1219,8 +1309,8 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
     }
     
     let globalNotificationsKey: PostboxViewKey = .preferences(keys: Set<ValueBoxKey>([PreferencesKeys.globalNotifications]))
-    let signal = combineLatest(context.sharedContext.presentationData, statePromise.get(), peerView.get(), deviceContacts, context.account.postbox.combinedView(keys: [.peerChatState(peerId: peerId), globalNotificationsKey]))
-    |> map { presentationData, state, view, deviceContacts, combinedView -> (ItemListControllerState, (ItemListNodeState<UserInfoEntry>, UserInfoEntry.ItemGenerationArguments)) in
+    let signal = combineLatest(context.sharedContext.presentationData, statePromise.get(), regStatePromise.get(), peerView.get(), deviceContacts, context.account.postbox.combinedView(keys: [.peerChatState(peerId: peerId), globalNotificationsKey]))
+    |> map { presentationData, state, regState, view, deviceContacts, combinedView -> (ItemListControllerState, (ItemListNodeState<UserInfoEntry>, UserInfoEntry.ItemGenerationArguments)) in
         let peer = peerViewMainPeer(view.0)
         
         var globalNotificationSettings: GlobalNotificationSettings = .defaultSettings

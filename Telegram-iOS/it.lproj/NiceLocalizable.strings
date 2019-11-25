@@ -84,3 +84,7 @@
 /*Manage Filters*/
 "ManageFilters.Title" = "Gestisci tab";
 "ManageFilters.Header" = "Configura filtri disponibili";
+
+"Messages.Translate" = "Traduci";
+"Messages.UndoTranslate" = "Annulla traduzione";
+"Messages.TranslateError" = "Spiacenti, questa traduzione non è disponibile.";

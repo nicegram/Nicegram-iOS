@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A515A4702389A4C7002BA6A5 /* RegDate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A515A46F2389A4C7002BA6A5 /* RegDate.swift */; };
 		A54E4B992369FC530058A054 /* BuildConfig.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A54E4B982369FC530058A054 /* BuildConfig.framework */; };
 		A5A724C12366335100A6ED62 /* NicegramLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5A724B72366335100A6ED62 /* NicegramLib.framework */; };
 		A5A724C62366335100A6ED62 /* NicegramLibTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A724C52366335100A6ED62 /* NicegramLibTests.swift */; };
@@ -31,6 +32,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A515A46F2389A4C7002BA6A5 /* RegDate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegDate.swift; sourceTree = "<group>"; };
 		A54E4B982369FC530058A054 /* BuildConfig.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = BuildConfig.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A5A724B72366335100A6ED62 /* NicegramLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = NicegramLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A5A724BA2366335100A6ED62 /* NicegramLib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = NicegramLib.h; sourceTree = "<group>"; };
@@ -68,6 +70,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A52E14E62389A434003BA756 /* NG Lab */ = {
+			isa = PBXGroup;
+			children = (
+				A515A46F2389A4C7002BA6A5 /* RegDate.swift */,
+			);
+			path = "NG Lab";
+			sourceTree = "<group>";
+		};
 		A54E4B972369FC530058A054 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -99,6 +109,7 @@
 		A5A724B92366335100A6ED62 /* NicegramLib */ = {
 			isa = PBXGroup;
 			children = (
+				A52E14E62389A434003BA756 /* NG Lab */,
 				A5EAC64523854567000DC4D0 /* Translate */,
 				A5A724DC236641B000A6ED62 /* IAP */,
 				A5A724D12366337900A6ED62 /* SecureSettings */,
@@ -255,6 +266,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A5A724D32366339300A6ED62 /* SecureSettings.swift in Sources */,
+				A515A4702389A4C7002BA6A5 /* RegDate.swift in Sources */,
 				A5A724DE236641CF00A6ED62 /* Products.swift in Sources */,
 				A5EAC64723854589000DC4D0 /* GTranslate.swift in Sources */,
 				A5A724D5236633DE00A6ED62 /* NicegramSecureSettings.swift in Sources */,

@@ -410,6 +410,11 @@ API_AVAILABLE(ios(10))
     return @(NG_API_URL);
 }
 
+- (NSString *)ngLabData {
+    return @(NG_LAB);
+}
+
+
 - (NSString *)validatorUrl {
     return @(VALIDATOR_URL);
 }

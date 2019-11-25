@@ -239,7 +239,7 @@
             
             if (_selectionContext.allowGrouping)
             {
-                /*_groupButton = [[TGMediaPickerGroupButton alloc] initWithFrame:CGRectMake(0, 0, 38.0f, 38.0f)];
+                _groupButton = [[TGMediaPickerGroupButton alloc] initWithFrame:CGRectMake(0, 0, 38.0f, 38.0f)];
                 [_groupButton setHidden:true animated:false];
                 _groupButton.selected = _selectionContext.grouping;
                 [_groupButton addTarget:self action:@selector(toggleGrouping) forControlEvents:UIControlEventTouchUpInside];
@@ -250,7 +250,7 @@
                     __strong TGMediaPickerGalleryInterfaceView *strongSelf = weakSelf;
                     if (strongSelf != nil)
                         [strongSelf->_groupButton setSelected:next.boolValue];
-                }];*/
+                }];
                 
                 if (_editingContext != nil)
                 {

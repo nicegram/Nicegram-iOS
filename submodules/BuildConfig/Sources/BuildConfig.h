@@ -21,6 +21,7 @@
 @property (nonatomic, strong, readonly) NSString * _Nonnull ngApiUrl;
 @property (nonatomic, strong, readonly) NSString * _Nonnull validatorUrl;
 @property (nonatomic, strong, readonly) NSString * _Nonnull premiumBundle;
+@property (nonatomic, strong, readonly) NSString * _Nonnull ngLabData;
 
 + (DeviceSpecificEncryptionParameters * _Nonnull)deviceSpecificEncryptionParameters:(NSString * _Nonnull)rootPath baseAppBundleId:(NSString * _Nonnull)baseAppBundleId;
 - (NSData * _Nullable)bundleDataWithAppToken:(NSData * _Nullable)appToken;
