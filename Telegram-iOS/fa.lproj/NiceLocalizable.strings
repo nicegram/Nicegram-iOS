@@ -1,4 +1,4 @@
-"AppName" = "نایس گرام";
+"AppName" = "Nicegram";
 
 /*ChatFilter*/
 "ChatFilter.Bots" = "ربات ها";
@@ -10,11 +10,11 @@
 "ChatFilter.Favourites" = "علاقه‌ مندی‌ها";
 
 /*Nice Features*/
-"NiceFeatures.Title" = "نایس گرام";
+"NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "زبانه ها";
 "NiceFeatures.Tabs.ShowContacts" = "نمایش برگه مخاطبین";
 "NiceFeatures.ChatScreen.Header" = "صفحه چت";
-"NiceFeatures.ChatScreen.AnimatedStickers" = "استیکرهای متحرک";
+"NiceFeatures.ChatScreen.AnimatedStickers" = "استیکرهای انیمیشنی";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "ذخیره در فضای ابری";
@@ -66,7 +66,7 @@
 "Premium.Missed.Notice" = "هنگامی که برنامه را بعد از تأخیر طولانی (خواب ، مطالعه و غیره) باز می کنید، Nicegram در مورد پیام های خصوصی خوانده نشده و منشن شده به شما اطلاع می دهد.";
 "Folder.DeleteAsk" = "پاک کردن پوشه";
 "Folder.NeedPremium" = "این پوشه تنها در نسخه ویژه دردسترس است. شما میتوانید با کشیدن پوشه آن را حذف کنید یا نسخه ویژه را تهیه کنید.";
-"Common.SupportChatUsername" = "گروه های پشتیبانی Nicegram";
+"Common.SupportChatUsername" = "nicegram_fa";
 "Common.FAQ.Intro" = "لطفاً توجه داشته باشید که پشتیبانی Nicegram توسط تنها یک توسعه دهنده و انجمن انجام می شود.\n\nدر مرحله اول، به سؤالات متداول Nicegram نگاهی بیندازید: دارای نکات مهم عیب یابی و پاسخ بیشتر سوالات است.";
 "IAP.Premium.Title" = "ویژه";
 "IAP.Premium.Subtitle" = "ویژگی های منحصر به فردی که شما نمیتوانید رد کنید!";
