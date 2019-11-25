@@ -88,3 +88,10 @@
 "Messages.Translate" = "Traduci";
 "Messages.UndoTranslate" = "Annulla traduzione";
 "Messages.TranslateError" = "Spiacenti, questa traduzione non è disponibile.";
+
+/*NG Lab Registration Date*/
+"NGLab.RegDate.Btn" = "Ottieni data di registrazione";
+"NGLab.RegDate.Title" = "Data di registrazione";
+"NGLab.RegDate.Notice" = "Questa è una data approssimativa";
+"NGLab.RegDate.MenuItem" = "registrato";
+"NGLab.RegDate.FetchError" = "Spiacenti, impossibile ottenere la data di registrazione.";
