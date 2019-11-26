@@ -88,3 +88,8 @@
 "Messages.Translate" = "Traduce";
 "Messages.UndoTranslate" = "Deshacer traducción";
 "Messages.TranslateError" = "Lo siento, la traducción no esta disponible.";
+
+/*NG Lab Registration Date*/
+"NGLab.RegDate.Btn" = "Obtiene la fecha de registro";
+"NGLab.RegDate.Title" = "Fecha de registro";
+"NGLab.RegDate.Notice" = "Esta fecha es aproximada";
