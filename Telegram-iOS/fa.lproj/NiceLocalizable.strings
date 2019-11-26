@@ -76,6 +76,7 @@
 "IAP.Premium.Activated" = "نسخه ویژه فعال شد!";
 "IAP.Common.Restore" = "بازیابی خریدها";
 "IAP.Common.CantPay" = "متأسفیم، اما به دلیل محدودیت دستگاه یا حساب خود نمی توانید خرید کنید.";
+"IAP.Common.ErrorFetch" = "متاسفانه خرید از اپ استور مقدور نیست.";
 "IAP.Common.Congrats" = "تبریک میگوییم!";
 "IAP.Common.ValidateError" = "متأسفیم، نمی توانید خرید خود را تأیید کنید.";
 
@@ -87,3 +88,10 @@
 "Messages.Translate" = "ترجمه";
 "Messages.UndoTranslate" = "بازگردانی ترجمه";
 "Messages.TranslateError" = "متأسفیم، ترجمه در دسترس نیست.";
+
+/*NG Lab Registration Date*/
+"NGLab.RegDate.Btn" = "دریافت تاریخ ثبت نام";
+"NGLab.RegDate.Title" = "تاریخ ثبت‌نام";
+"NGLab.RegDate.Notice" = "تاریخ به صورت تقریبی درج می شود";
+"NGLab.RegDate.MenuItem" = "ثبت شد";
+"NGLab.RegDate.FetchError" = "متاسفانه دریافت تاریخ ثبت نام مقدور نیست.";
