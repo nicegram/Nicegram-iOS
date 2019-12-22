@@ -359,22 +359,37 @@ public func resetFolders() {
     fLog("Folders RESET")
     let UD = UserDefaults(suiteName: "SimplyNiceFolders")
     UD?.removePersistentDomain(forName: "SimplyNiceFolders")
+    
+    let cloud = NSUbiquitousKeyValueStore.default
+    cloud.removeObject(forKey: "folders")
 }
 
 public class SimplyNiceFolders {
     let UD = UserDefaults(suiteName: "SimplyNiceFolders")
+    let cloud = NSUbiquitousKeyValueStore.default
+    
     
     public init() {
         setFoldersDefaults()
     }
     
+    deinit {
+        print("Syncing Settings!")
+        cloud.synchronize()
+    }
     
     public var folders: [NiceFolder] {
         get {
-            return NSKeyedUnarchiver.unarchiveObject(with: (UD?.data(forKey: "folders"))!) as! [NiceFolder]
+            // return NSKeyedUnarchiver.unarchiveObject(with: (UD?.data(forKey: "folders"))!) as! [NiceFolder]
+            if let foldersData = cloud.data(forKey: "folders") {
+                return NSKeyedUnarchiver.unarchiveObject(with: foldersData) as! [NiceFolder]
+            } else {
+                return NSKeyedUnarchiver.unarchiveObject(with: (UD?.data(forKey: "folders"))!) as! [NiceFolder]
+            }
         }
         set {
-            UD?.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "folders")
+            // UD?.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "folders")
+            cloud.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "folders")
         }
     }
     
@@ -490,3 +505,4 @@ public func syncFolders(_ postbox: Postbox) {
         }
     }
 }
+

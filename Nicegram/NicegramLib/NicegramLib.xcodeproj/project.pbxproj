@@ -109,6 +109,7 @@
 		A5A724B92366335100A6ED62 /* NicegramLib */ = {
 			isa = PBXGroup;
 			children = (
+				A5B1970523B0136000B74A59 /* New Group */,
 				A52E14E62389A434003BA756 /* NG Lab */,
 				A5EAC64523854567000DC4D0 /* Translate */,
 				A5A724DC236641B000A6ED62 /* IAP */,
@@ -145,6 +146,13 @@
 				A5A724DF2366422400A6ED62 /* IAPHelper.swift */,
 			);
 			path = IAP;
+			sourceTree = "<group>";
+		};
+		A5B1970523B0136000B74A59 /* New Group */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = "New Group";
 			sourceTree = "<group>";
 		};
 		A5EAC64523854567000DC4D0 /* Translate */ = {

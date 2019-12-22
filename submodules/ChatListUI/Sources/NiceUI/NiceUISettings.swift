@@ -163,33 +163,41 @@ let supportedFilters: [Int32] = [1, 2, 8, 16, 32, 64, 256, 1 << 9] //, 1 << 10] 
 
 public class SimplyNiceSettings {
     let UD = UserDefaults(suiteName: "SimplyNiceSettings")
+    let cloud = NSUbiquitousKeyValueStore.default
     
     public init() {
         setDefaults()
     }
     
+    deinit {
+        print("Syncing Settings!")
+        cloud.synchronize()
+    }
+    
     public var hideNumber: Bool {
         get {
-            return UD?.bool(forKey: "hideNumber") ?? false
+            return cloud.object(forKey: "hideNumber") as? Bool ?? UD?.bool(forKey: "hideNumber") ?? false
         }
         set {
-            UD?.set(newValue, forKey: "hideNumber")
+            cloud.set(newValue, forKey: "hideNumber")
+            //UD?.set(newValue, forKey: "hideNumber")
         }
     }
     
     public var maxFilters: Int32 {
         // let k = "maxFilters"
         get {
-            return Int32(UD?.integer(forKey: "maxFilters") ?? 2)
+            return cloud.object(forKey: "maxFilters") as? Int32 ?? Int32(UD?.integer(forKey: "maxFilters") ?? 2)
         }
         set {
-            UD?.set(newValue, forKey: "maxFilters")
+            cloud.set(newValue, forKey: "maxFilters")
+            //UD?.set(newValue, forKey: "maxFilters")
         }
     }
     
     public var chatFilters: [NiceChatListNodePeersFilter] {
         get {
-            let array = UD?.array(forKey: "chatFilters") as? [Int32] ?? [1 << 6, 1 << 5]
+            let array = cloud.object(forKey: "chatFilters") as? [Int32] ?? UD?.array(forKey: "chatFilters") as? [Int32] ?? [1 << 6, 1 << 5]
             var res: [NiceChatListNodePeersFilter] = []
             for item in array {
                 if supportedFilters.contains(item) && getAvailableFilters().contains(NiceChatListNodePeersFilter(rawValue: item)) {
@@ -205,35 +213,35 @@ public class SimplyNiceSettings {
             for item in newValue {
                 resSet.append(item.rawValue)
             }
-            UD?.set(resSet, forKey: "chatFilters")
+            cloud.set(resSet, forKey: "chatFilters")
         }
         
     }
     
     public var showTabNames: Bool {
         get {
-            return UD?.bool(forKey: "showTabNames") ?? true
+            return cloud.object(forKey: "showTabNames") as? Bool ?? UD?.bool(forKey: "showTabNames") ?? true
         }
         set {
-            UD?.set(newValue, forKey: "showTabNames")
+            cloud.set(newValue, forKey: "showTabNames")
         }
     }
     
     public var useBrowser: Bool {
         get {
-            return UD?.bool(forKey: "useBrowser") ?? false
+            return cloud.object(forKey: "useBrowser") as? Bool ?? UD?.bool(forKey: "useBrowser") ?? false
         }
         set {
-            UD?.set(newValue, forKey: "useBrowser")
+            cloud.set(newValue, forKey: "useBrowser")
         }
     }
     
     public var browser: String {
         get {
-            return String(UD?.string(forKey: "browser") ?? "safari")
+            return String(cloud.object(forKey: "browser") as? String ?? UD?.string(forKey: "browser") ?? "safari")
         }
         set {
-            UD?.set(newValue, forKey: "browser")
+            cloud.set(newValue, forKey: "browser")
         }
     }
 }

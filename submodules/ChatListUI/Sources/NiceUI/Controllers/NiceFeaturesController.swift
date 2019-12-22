@@ -20,7 +20,7 @@ import TelegramNotices
 
 private struct BrowserSelectionState: Equatable {
     let selectedBrowser: Browser
-    
+
     static func ==(lhs: BrowserSelectionState, rhs: BrowserSelectionState) -> Bool {
         return lhs.selectedBrowser == rhs.selectedBrowser
     }
@@ -34,11 +34,13 @@ private final class NiceFeaturesControllerArguments {
     let changeFiltersAmount: (Int32) -> Void
     let toggleShowTabNames: (Bool, String) -> Void
     let toggleHidePhone: (Bool, String) -> Void
-    
+
     let toggleUseBrowser: (Bool) -> Void
     let customizeBrowser: (Browser) -> Void
-    
-    init(togglePinnedMessage:@escaping (Bool) -> Void, toggleShowContactsTab:@escaping (Bool) -> Void, toggleFixNotifications:@escaping (Bool) -> Void, updateShowCallsTab:@escaping (Bool) -> Void, changeFiltersAmount:@escaping (Int32) -> Void, toggleShowTabNames:@escaping (Bool, String) -> Void, toggleHidePhone:@escaping (Bool, String) -> Void, toggleUseBrowser:@escaping (Bool) -> Void, customizeBrowser:@escaping (Browser) -> Void) {
+
+    let backupSettings: () -> Void
+
+    init(togglePinnedMessage: @escaping (Bool) -> Void, toggleShowContactsTab: @escaping (Bool) -> Void, toggleFixNotifications: @escaping (Bool) -> Void, updateShowCallsTab: @escaping (Bool) -> Void, changeFiltersAmount: @escaping (Int32) -> Void, toggleShowTabNames: @escaping (Bool, String) -> Void, toggleHidePhone: @escaping (Bool, String) -> Void, toggleUseBrowser: @escaping (Bool) -> Void, customizeBrowser: @escaping (Browser) -> Void, backupSettings: @escaping () -> Void) {
         self.togglePinnedMessage = togglePinnedMessage
         self.toggleShowContactsTab = toggleShowContactsTab
         self.toggleFixNotifications = toggleFixNotifications
@@ -48,6 +50,7 @@ private final class NiceFeaturesControllerArguments {
         self.toggleHidePhone = toggleHidePhone
         self.toggleUseBrowser = toggleUseBrowser
         self.customizeBrowser = customizeBrowser
+        self.backupSettings = backupSettings
     }
 }
 
@@ -69,27 +72,27 @@ private enum NiceFeaturesControllerEntityId: Equatable, Hashable {
 private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
     case messageNotificationsHeader(PresentationTheme, String)
     case pinnedMessageNotification(PresentationTheme, String, Bool)
-    
+
     case fixNotifications(PresentationTheme, String, Bool)
     case fixNotificationsNotice(PresentationTheme, String)
-    
+
     case chatsListHeader(PresentationTheme, String)
-    
+
     case tabsHeader(PresentationTheme, String)
     case showContactsTab(PresentationTheme, String, Bool)
     case duplicateShowCalls(PresentationTheme, String, Bool)
     case showTabNames(PresentationTheme, String, Bool, String)
-    
+
     case filtersHeader(PresentationTheme, String)
     case filtersAmount(PresentationTheme, String, Int32)
     case filtersNotice(PresentationTheme, String)
-    
+
     case chatScreenHeader(PresentationTheme, String)
-    
+
     case browsersHeader(PresentationTheme, String)
     case useBrowser(PresentationTheme, String, Bool)
     case useBrowserNotice(PresentationTheme, String)
-    
+
     // case browsers(PresentationTheme, String, Bool, Bool)
     case browserSafari(PresentationTheme, String, Bool, Bool)
     case browserChrome(PresentationTheme, String, Bool, Bool)
@@ -104,10 +107,13 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
     case browserOperaTouch(PresentationTheme, String, Bool, Bool)
     case browserOperaMini(PresentationTheme, String, Bool, Bool)
     case browserEdge(PresentationTheme, String, Bool, Bool)
-    
+
     case otherHeader(PresentationTheme, String)
     case hideNumber(PresentationTheme, String, Bool, String)
-    
+
+    case backupSettings(PresentationTheme, String)
+    case backupNotice(PresentationTheme, String)
+
     var section: ItemListSectionId {
         switch self {
         case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice:
@@ -122,12 +128,12 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return niceFeaturesControllerSection.chatScreen.rawValue
         case .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge:
             return niceFeaturesControllerSection.browsers.rawValue
-        case .otherHeader, .hideNumber:
+        case .otherHeader, .hideNumber, .backupNotice, .backupSettings:
             return niceFeaturesControllerSection.other.rawValue
         }
-        
+
     }
-    
+
     var stableId: NiceFeaturesControllerEntityId {
         switch self {
         case .messageNotificationsHeader:
@@ -192,9 +198,13 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return .index(37)
         case .hideNumber:
             return .index(38)
+        case .backupSettings:
+            return .index(39)
+        case .backupNotice:
+            return .index(40)
         }
     }
-    
+
     static func ==(lhs: NiceFeaturesControllerEntry, rhs: NiceFeaturesControllerEntry) -> Bool {
         switch lhs {
         case let .messageNotificationsHeader(lhsTheme, lhsText):
@@ -203,112 +213,112 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
-            
+
         case let .pinnedMessageNotification(lhsTheme, lhsText, lhsValue):
             if case let .pinnedMessageNotification(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
                 return true
             } else {
                 return false
             }
-            
+
         case let .fixNotifications(lhsTheme, lhsText, lhsValue):
             if case let .fixNotifications(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
                 return true
             } else {
                 return false
             }
-            
+
         case let .fixNotificationsNotice(lhsTheme, lhsText):
             if case let .fixNotificationsNotice(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
                 return true
             } else {
                 return false
             }
-            
+
         case let .chatsListHeader(lhsTheme, lhsText):
             if case let .chatsListHeader(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
                 return true
             } else {
                 return false
             }
-            
+
         case let .tabsHeader(lhsTheme, lhsText):
             if case let .tabsHeader(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
                 return true
             } else {
                 return false
             }
-            
+
         case let .showContactsTab(lhsTheme, lhsText, lhsValue):
             if case let .showContactsTab(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
                 return true
             } else {
                 return false
             }
-            
+
         case let .duplicateShowCalls(lhsTheme, lhsText, lhsValue):
             if case let .duplicateShowCalls(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
                 return true
             } else {
                 return false
             }
-            
+
         case let .showTabNames(lhsTheme, lhsText, lhsValue, lhsLanguage):
             if case let .showTabNames(rhsTheme, rhsText, rhsValue, rhsLanguage) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue, lhsLanguage == rhsLanguage {
                 return true
             } else {
                 return false
             }
-            
+
         case let .filtersHeader(lhsTheme, lhsText):
             if case let .filtersHeader(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
                 return true
             } else {
                 return false
             }
-            
+
         case let .filtersAmount(lhsTheme, lhsText, lhsAmount):
             if case let .filtersAmount(rhsTheme, rhsText, rhsAmount) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsAmount == rhsAmount {
                 return true
             } else {
                 return false
             }
-            
+
         case let .filtersNotice(lhsTheme, lhsText):
             if case let .filtersNotice(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
                 return true
             } else {
                 return false
             }
-            
+
         case let .chatScreenHeader(lhsTheme, lhsText):
             if case let .chatScreenHeader(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
                 return true
             } else {
                 return false
             }
-        
+
         case let .browsersHeader(lhsTheme, lhsText):
             if case let .browsersHeader(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
                 return true
             } else {
                 return false
             }
-            
+
         case let .useBrowser(lhsTheme, lhsText, lhsAmount):
             if case let .useBrowser(rhsTheme, rhsText, rhsAmount) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsAmount == rhsAmount {
                 return true
             } else {
                 return false
             }
-        
+
         case let .useBrowserNotice(lhsTheme, lhsText):
             if case let .useBrowserNotice(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
                 return true
             } else {
                 return false
             }
-        
+
         case let .browserChrome(lhsTheme, lhsText, lhsTick, lhsEnabled):
             if case let .browserChrome(rhsTheme, rhsText, rhsTick, rhsEnabled) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsTick == rhsTick, lhsEnabled == rhsEnabled {
                 return true
@@ -387,7 +397,7 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
-            
+
         case let .otherHeader(lhsTheme, lhsText):
             if case let .otherHeader(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
                 return true
@@ -400,9 +410,21 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
-       }
+        case let .backupSettings(lhsTheme, lhsText):
+            if case let .backupSettings(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
+        case let .backupNotice(lhsTheme, lhsText):
+            if case let .backupNotice(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
+        }
     }
-    
+
     static func <(lhs: NiceFeaturesControllerEntry, rhs: NiceFeaturesControllerEntry) -> Bool {
         switch lhs {
         case .messageNotificationsHeader:
@@ -616,10 +638,24 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
                 return true
             }
         case .hideNumber:
+            switch rhs {
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge, .otherHeader, .hideNumber:
+                return false
+            default:
+                return true
+            }
+        case .backupSettings:
+            switch rhs {
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge, .otherHeader, .hideNumber, .backupSettings:
+                return false
+            default:
+                return true
+            }
+        case .backupNotice:
             return false
         }
     }
-    
+
     func item(_ arguments: NiceFeaturesControllerArguments) -> ListViewItem {
         switch self {
         case let .messageNotificationsHeader(theme, text):
@@ -730,9 +766,17 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return ItemListSwitchItem(theme: theme, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.toggleHidePhone(value, locale)
             })
+//        case let .backupSettings(theme, text):
+//            return ItemList
+        case let .backupSettings(theme, text):
+            return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                arguments.backupSettings()
+            })
+        case let .backupNotice(theme, text):
+            return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
         }
     }
-    
+
 }
 
 
@@ -745,30 +789,30 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
 
 private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls: Bool, presentationData: PresentationData, simplyNiceSettings: SimplyNiceSettings) -> [NiceFeaturesControllerEntry] {
     var entries: [NiceFeaturesControllerEntry] = []
-    
+
     let locale = presentationData.strings.baseLanguageCode
     entries.append(.messageNotificationsHeader(presentationData.theme, presentationData.strings.Notifications_Title.uppercased()))
     //entries.append(.pinnedMessageNotification(presentationData.theme, "Pinned Messages", niceSettings.pinnedMessagesNotification))  //presentationData.strings.Nicegram_Settings_Features_PinnedMessages
     entries.append(.fixNotifications(presentationData.theme, l("NiceFeatures.Notifications.Fix", locale), niceSettings.fixNotifications))
     entries.append(.fixNotificationsNotice(presentationData.theme, l("NiceFeatures.Notifications.FixNotice", locale)))
-    
-    
+
+
     entries.append(.tabsHeader(presentationData.theme, l("NiceFeatures.Tabs.Header", locale)))
     entries.append(.showContactsTab(presentationData.theme, l("NiceFeatures.Tabs.ShowContacts", locale), niceSettings.showContactsTab))
     entries.append(.duplicateShowCalls(presentationData.theme, presentationData.strings.CallSettings_TabIcon, showCalls))
-    
+
     entries.append(.showTabNames(presentationData.theme, l("NiceFeatures.Tabs.ShowNames", locale), SimplyNiceSettings().showTabNames, locale))
-    
+
     entries.append(.filtersHeader(presentationData.theme, l("NiceFeatures.Filters.Header", locale)))
     entries.append(.filtersAmount(presentationData.theme, locale, simplyNiceSettings.maxFilters))
     entries.append(.filtersNotice(presentationData.theme, l("NiceFeatures.Filters.Notice", locale)))
     //entries.append(.chatScreenHeader(presentationData.theme, l(key: "NiceFeatures.ChatScreen.Header", locale: locale)))
     //entries.append(.animatedStickers(presentationData.theme, l(key:  "NiceFeatures.ChatScreen.AnimatedStickers", locale: locale), GlobalExperimentalSettings.animatedStickers))
-    
+
     entries.append(.browsersHeader(presentationData.theme, l("NiceFeatures.Browser.Header", locale)))
     entries.append(.useBrowser(presentationData.theme, l("NiceFeatures.Browser.UseBrowser", locale), simplyNiceSettings.useBrowser))
     entries.append(.useBrowserNotice(presentationData.theme, l("NiceFeatures.Browser.UseBrowserNotice", locale)))
-    
+
     entries.append(.browserSafari(presentationData.theme, "Safari", simplyNiceSettings.browser == Browser.Safari.rawValue, true))
     entries.append(.browserChrome(presentationData.theme, "Chrome", simplyNiceSettings.browser == Browser.Chrome.rawValue, true))
     entries.append(.browserYandex(presentationData.theme, "Yandex", simplyNiceSettings.browser == Browser.Yandex.rawValue, true))
@@ -782,10 +826,13 @@ private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls
     entries.append(.browserOperaTouch(presentationData.theme, "Opera Touch", simplyNiceSettings.browser == Browser.OperaTouch.rawValue, true))
     // entries.append(.browserOperaMini(presentationData.theme, "Opera Mini", simplyNiceSettings.browser == Browser.OperaMini.rawValue, true))
     entries.append(.browserEdge(presentationData.theme, "Microsoft Edge", simplyNiceSettings.browser == Browser.Edge.rawValue, true))
-    
+
     entries.append(.otherHeader(presentationData.theme, presentationData.strings.ChatSettings_Other))
     entries.append(.hideNumber(presentationData.theme, l("NiceFeatures.HideNumber", locale), simplyNiceSettings.hideNumber, locale))
-    
+
+    entries.append(.backupSettings(presentationData.theme, l("NiceFeatures.BackupSettings", locale)))
+    entries.append(.backupNotice(presentationData.theme, l("NiceFeatures.BackupSettings.Notice", locale)))
+
     return entries
 }
 
@@ -803,24 +850,28 @@ public enum FakeEntryTag: ItemListItemTag {
     public func isEqual(to other: ItemListItemTag) -> Bool {
         return true
     }
-    
+
 }
 
 public func niceFeaturesController(context: AccountContext) -> ViewController {
     // let statePromise = ValuePromise(NiceFeaturesSelectionState(), ignoreRepeated: true)
     var dismissImpl: (() -> Void)?
     var presentControllerImpl: ((ViewController, Any?) -> Void)?
-    let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-    
+    let presentationData = context.sharedContext.currentPresentationData.with {
+        $0
+    }
+
     var currentBrowser = Browser(rawValue: SimplyNiceSettings().browser) ?? Browser.Safari
     let statePromise = ValuePromise(BrowserSelectionState(selectedBrowser: currentBrowser), ignoreRepeated: true)
     let stateValue = Atomic(value: BrowserSelectionState(selectedBrowser: currentBrowser))
     let updateState: ((BrowserSelectionState) -> BrowserSelectionState) -> Void = { f in
-        statePromise.set(stateValue.modify { f($0) })
+        statePromise.set(stateValue.modify {
+            f($0)
+        })
     }
     var lastTabsCounter: Int32? = nil
-    
-    
+
+
     func updateTabs() {
         let _ = updateNiceSettingsInteractively(accountManager: context.sharedContext.accountManager, { settings in
             var settings = settings
@@ -836,7 +887,7 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
             })
         })
     }
-    
+
     let arguments = NiceFeaturesControllerArguments(togglePinnedMessage: { value in
         let _ = updateNiceSettingsInteractively(accountManager: context.sharedContext.accountManager, { settings in
             var settings = settings
@@ -860,7 +911,7 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
         let _ = updateCallListSettingsInteractively(accountManager: context.sharedContext.accountManager, {
             $0.withUpdatedShowTab(value)
         }).start()
-        
+
         if value {
             let _ = ApplicationSpecificNotice.incrementCallsTabTips(accountManager: context.sharedContext.accountManager, count: 4).start()
         }
@@ -876,7 +927,7 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
         SimplyNiceSettings().maxFilters = Int32(value)
         if SimplyNiceSettings().maxFilters > SimplyNiceSettings().chatFilters.count {
             let delta = Int(SimplyNiceSettings().maxFilters) - SimplyNiceSettings().chatFilters.count
-            
+
             for _ in 0...delta {
                 SimplyNiceSettings().chatFilters.append(.onlyNonMuted)
             }
@@ -886,22 +937,22 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
             settings.foo = !settings.foo
             return settings
         }).start()
-        
+
         lastTabsCounter = Int32(value)
         updateTabs()
-        
+
     }, toggleShowTabNames: { value, locale in
         SimplyNiceSettings().showTabNames = value
         updateTabs()
-        
-        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationTheme: presentationData.theme), title: nil, text: l("Common.RestartRequired", locale), actions: [TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: {preconditionFailure()}),TextAlertAction(type: .genericAction, title: l("Common.Later", locale), action: {})])
-        
+
+        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationTheme: presentationData.theme), title: nil, text: l("Common.RestartRequired", locale), actions: [TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: { preconditionFailure() }), TextAlertAction(type: .genericAction, title: l("Common.Later", locale), action: {})])
+
         presentControllerImpl?(controller, nil)
     }, toggleHidePhone: { value, locale in
         SimplyNiceSettings().hideNumber = value
-        
-        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationTheme: presentationData.theme), title: nil, text: l("Common.RestartRequired", locale), actions: [TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: {preconditionFailure()}),TextAlertAction(type: .genericAction, title: l("Common.Later", locale), action: {})])
-        
+
+        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationTheme: presentationData.theme), title: nil, text: l("Common.RestartRequired", locale), actions: [TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: { preconditionFailure() }), TextAlertAction(type: .genericAction, title: l("Common.Later", locale), action: {})])
+
         presentControllerImpl?(controller, nil)
     }, toggleUseBrowser: { value in
         SimplyNiceSettings().useBrowser = value
@@ -911,44 +962,72 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
             return BrowserSelectionState(selectedBrowser: value)
         }
         print("CUSTOMIZE BROWSER")
+    }, backupSettings: {
+        let library_path = NSSearchPathForDirectoriesInDomains(.libraryDirectory, .userDomainMask, true)[0]
+
+        let path = library_path + "/Preferences/SimplyNiceSettings.plist"
+
+        let id = arc4random64()
+        let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: LocalFileReferenceMediaResource(localFilePath: path, randomId: id), previewRepresentations: [], immediateThumbnailData: nil, mimeType: "application/xml", size: nil, attributes: [.FileName(fileName: "SimplyNiceSettings.plist")])
+        let message = EnqueueMessage.message(text: "", attributes: [], mediaReference: .standalone(media: file), replyToMessageId: nil, localGroupingKey: nil)
+
+
+        //SimplyNiceSettings().sync()
+
+        let pathF = library_path + "/Preferences/SimplyNiceFolders.plist"
+
+        let idF = arc4random64()
+        let fileF = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: idF), partialReference: nil, resource: LocalFileReferenceMediaResource(localFilePath: pathF, randomId: idF), previewRepresentations: [], immediateThumbnailData: nil, mimeType: "application/xml", size: nil, attributes: [.FileName(fileName: "SimplyNiceFolders.plist")])
+        let messageF = EnqueueMessage.message(text: "", attributes: [], mediaReference: .standalone(media: fileF), replyToMessageId: nil, localGroupingKey: nil)
+
+
+        let _ = enqueueMessages(account: context.account, peerId: context.account.peerId, messages: [message, messageF]).start()
+
+        //if let navigateToChat = navigateToChat {
+        let locale = "en"
+        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationTheme: presentationData.theme), title: nil, text: l("NiceFeatures.BackupSettings.Done", locale), actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {
+        })])
+
+        presentControllerImpl?(controller, nil)
+        //}
     }
     )
-    
+
     let showCallsTab = context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.callListSettings])
-        |> map { sharedData -> Bool in
-            var value = true
-            if let settings = sharedData.entries[ApplicationSpecificSharedDataKeys.callListSettings] as? CallListSettings {
-                value = settings.showTab
-            }
-            return value
+            |> map { sharedData -> Bool in
+        var value = true
+        if let settings = sharedData.entries[ApplicationSpecificSharedDataKeys.callListSettings] as? CallListSettings {
+            value = settings.showTab
+        }
+        return value
     }
-    
+
     let niceSettings = getNiceSettings(accountManager: context.sharedContext.accountManager)
-    
+
     let signal = combineLatest(context.sharedContext.presentationData, context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.niceSettings]), showCallsTab, statePromise.get())
-        |> map { presentationData, sharedData, showCalls, state -> (ItemListControllerState, (ItemListNodeState<NiceFeaturesControllerEntry>, NiceFeaturesControllerEntry.ItemGenerationArguments)) in
-            
-            let entries = niceFeaturesControllerEntries(niceSettings: niceSettings, showCalls: showCalls, presentationData: presentationData, simplyNiceSettings: SimplyNiceSettings())
-            
-            var index = 0
-            var scrollToItem: ListViewScrollToItem?
-            // workaround
-            let focusOnItemTag: FakeEntryTag? = nil
-            if let focusOnItemTag = focusOnItemTag {
-                for entry in entries {
-                    if entry.tag?.isEqual(to: focusOnItemTag) ?? false {
-                        scrollToItem = ListViewScrollToItem(index: index, position: .top(0.0), animated: false, curve: .Default(duration: 0.0), directionHint: .Up)
-                    }
-                    index += 1
+            |> map { presentationData, sharedData, showCalls, state -> (ItemListControllerState, (ItemListNodeState<NiceFeaturesControllerEntry>, NiceFeaturesControllerEntry.ItemGenerationArguments)) in
+
+        let entries = niceFeaturesControllerEntries(niceSettings: niceSettings, showCalls: showCalls, presentationData: presentationData, simplyNiceSettings: SimplyNiceSettings())
+
+        var index = 0
+        var scrollToItem: ListViewScrollToItem?
+        // workaround
+        let focusOnItemTag: FakeEntryTag? = nil
+        if let focusOnItemTag = focusOnItemTag {
+            for entry in entries {
+                if entry.tag?.isEqual(to: focusOnItemTag) ?? false {
+                    scrollToItem = ListViewScrollToItem(index: index, position: .top(0.0), animated: false, curve: .Default(duration: 0.0), directionHint: .Up)
                 }
+                index += 1
             }
-            
-            let controllerState = ItemListControllerState(theme: presentationData.theme, title: .text(l("NiceFeatures.Title", presentationData.strings.baseLanguageCode)), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-            let listState = ItemListNodeState(entries: entries, style: .blocks, ensureVisibleItemTag: focusOnItemTag, initialScrollToItem: scrollToItem)
-            
-            return (controllerState, (listState, arguments))
+        }
+
+        let controllerState = ItemListControllerState(theme: presentationData.theme, title: .text(l("NiceFeatures.Title", presentationData.strings.baseLanguageCode)), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
+        let listState = ItemListNodeState(entries: entries, style: .blocks, ensureVisibleItemTag: focusOnItemTag, initialScrollToItem: scrollToItem)
+
+        return (controllerState, (listState, arguments))
     }
-    
+
     let controller = ItemListController(context: context, state: signal)
     dismissImpl = { [weak controller] in
         controller?.dismiss()

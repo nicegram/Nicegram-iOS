@@ -1008,6 +1008,32 @@ final class SharedApplicationContext {
                     } else {
                         PCACHE = "no"
                     }
+                    
+                    if !UserDefaults.standard.bool(forKey: "isCloud") {
+                        Logger.shared.log("[System NG]", "MOVE TO CLOUD SETTINGS")
+                        let nf = SimplyNiceFolders()
+                        let ns = SimplyNiceSettings()
+                        
+                        let temp1 = nf.folders
+                        nf.folders = temp1
+                    
+                        let temp2 = ns.chatFilters
+                        ns.chatFilters = temp2
+                        
+                        let temp3 = ns.browser
+                        ns.browser = temp3
+                        
+                        let temp4 = ns.hideNumber
+                        ns.hideNumber = temp4
+                        
+                        let temp5 = ns.maxFilters
+                        ns.maxFilters = temp5
+                        
+                        let temp6 = ns.showTabNames
+                        ns.showTabNames = temp6
+                        
+                        UserDefaults.standard.set(true, forKey: "isCloud")
+                    }
                 }
             }
             
