@@ -98,3 +98,5 @@
 
 /*Backup Settings*/
 "NiceFeatures.BackupSettings" = "备份设置和分组";
+"NiceFeatures.BackupSettings.Notice" = "创建备份文件，存放在\"收藏夹\"里。";
+"NiceFeatures.BackupSettings.Done" = "备份已完成，存放在\"收藏夹\"里。";
