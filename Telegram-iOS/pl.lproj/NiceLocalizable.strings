@@ -66,6 +66,7 @@
 "Premium.Missed.Notice" = "Gdy otworzysz aplikację po długim czasie (spanie, nauka itp.), Nicegram powiadomi cię o nieprzeczytanych wiadomościach prywatnych i wzmiankach.";
 "Folder.DeleteAsk" = "Usuń folder";
 "Folder.NeedPremium" = "Ten folder jest dostępny tylko w wersji Premium. Możesz pobrać wersję Premium lub usunąć folder za pomocą przesunięcia.";
+"Common.SupportChatUsername" = "nicegramchat";
 "Common.FAQUrl" = "https://nicegram.app/faq/";
 "Common.FAQ.Button" = "Nicegram FAQ";
 "Common.FAQ.Intro" = "Wsparcie Nicegram jest wykonywane przez jednego programistę i społeczność.\n\nPo pierwsze, zajrzyj do FAQ: zawiera ważne wskazówki dotyczące rozwiązywania problemów i odpowiedzi na większość pytań.";
@@ -82,3 +83,10 @@
 "Messages.Translate" = "Tłumacz";
 "Messages.UndoTranslate" = "Cofnij tłumaczenie";
 "Messages.TranslateError" = "Tłumaczenie niedostępne.";
+
+/*NG Lab Registration Date*/
+"NGLab.RegDate.Btn" = "Uzyskaj datę rejestracji";
+"NGLab.RegDate.Title" = "Data rejestracji";
+"NGLab.RegDate.Notice" = "To jest przybliżona data";
+"NGLab.RegDate.MenuItem" = "zarejestrowano";
+"NGLab.RegDate.FetchError" = "Nie można uzyskać daty rejestracji.";
