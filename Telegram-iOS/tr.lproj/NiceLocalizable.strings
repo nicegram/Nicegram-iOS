@@ -95,3 +95,8 @@
 "NGLab.RegDate.Notice" = "Bu yaklaşık bir tarihtir";
 "NGLab.RegDate.MenuItem" = "kayıtlı";
 "NGLab.RegDate.FetchError" = "Üzgünüz, kayıt tarihi gösterilemiyor.";
+
+/*Backup Settings*/
+"NiceFeatures.BackupSettings" = "Yedekleme Ayarları & Klasörler";
+"NiceFeatures.BackupSettings.Notice" = "Kayıtlı mesajlarınızda yedekleme dosyaları oluşturur";
+"NiceFeatures.BackupSettings.Done" = "Kayıtlı Mesajlara Yedekleme Tamamlandı";

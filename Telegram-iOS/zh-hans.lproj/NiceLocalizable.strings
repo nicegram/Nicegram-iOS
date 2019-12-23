@@ -95,3 +95,8 @@
 "NGLab.RegDate.Notice" = "这是一个大致日期";
 "NGLab.RegDate.MenuItem" = "已注册";
 "NGLab.RegDate.FetchError" = "对不起，无法获得注册日期。";
+
+/*Backup Settings*/
+"NiceFeatures.BackupSettings" = "备份设置和分组";
+"NiceFeatures.BackupSettings.Notice" = "创建备份文件，存放在\"收藏夹\"里。";
+"NiceFeatures.BackupSettings.Done" = "备份已完成，存放在\"收藏夹\"里。";
