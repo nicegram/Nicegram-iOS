@@ -76,6 +76,7 @@
 "IAP.Premium.Activated" = "Aktywowano wersję Premium!";
 "IAP.Common.Restore" = "Odtwórz zakupione";
 "IAP.Common.CantPay" = "Nie możesz dokonywać zakupów z powodu ograniczeń dotyczących twojego urządzenia lub konta.";
+"IAP.Common.ErrorFetch" = "Nie mogę odebrać zakupów w App Store.";
 "IAP.Common.Congrats" = "Gratulacje!";
 "IAP.Common.ValidateError" = "Nie można zweryfikować twojego zakupu.";
 
