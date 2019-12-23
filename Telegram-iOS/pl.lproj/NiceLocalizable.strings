@@ -79,6 +79,7 @@
 
 /*Manage Filters*/
 "ManageFilters.Title" = "Zarządzaj zakładkami";
+"ManageFilters.Header" = "SKONFIGURUJ DOSTĘPNE FILTRY";
 
 "Messages.Translate" = "Tłumacz";
 "Messages.UndoTranslate" = "Cofnij tłumaczenie";
@@ -94,3 +95,4 @@
 /*Backup Settings*/
 "NiceFeatures.BackupSettings" = "Kopia zapasowa ustawień i folderów";
 "NiceFeatures.BackupSettings.Notice" = "Tworzy pliki kopii zapasowych w twoich „Zapisanych wiadomościach”";
+"NiceFeatures.BackupSettings.Done" = "Wykonano kopię zapasową w „Zapisanych wiadomościach”";
