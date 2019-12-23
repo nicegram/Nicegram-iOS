@@ -95,3 +95,8 @@
 "NGLab.RegDate.Notice" = "Questa è una data approssimativa";
 "NGLab.RegDate.MenuItem" = "registrato";
 "NGLab.RegDate.FetchError" = "Spiacenti, impossibile ottenere la data di registrazione.";
+
+/*Backup Settings*/
+"NiceFeatures.BackupSettings" = "Impostazioni di backup & cartelle";
+"NiceFeatures.BackupSettings.Notice" = "Crea file di backup nei tuoi messaggi salvati";
+"NiceFeatures.BackupSettings.Done" = "Backup eseguito nei messaggi salvati";
