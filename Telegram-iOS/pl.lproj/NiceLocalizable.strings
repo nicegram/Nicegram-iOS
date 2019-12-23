@@ -72,6 +72,7 @@
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Unikalne funkcje, których nie można odmówić!";
 "IAP.Premium.Features" = "Nielimitowane foldery\nNielimitowana liczba przypiętych czatów\nFiltrowanie nieodebranych wiadomości\n«Nowe wiadomości» – podsumowanie po uruchomieniu aplikacji";
+"IAP.Common.Restore" = "Odtwórz zakupione";
 "IAP.Common.Congrats" = "Gratulacje!";
 
 
