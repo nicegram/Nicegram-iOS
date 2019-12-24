@@ -66,18 +66,37 @@
 "Premium.Missed.Notice" = "Gdy otworzysz aplikację po długim czasie (spanie, nauka itp.), Nicegram powiadomi cię o nieprzeczytanych wiadomościach prywatnych i wzmiankach.";
 "Folder.DeleteAsk" = "Usuń folder";
 "Folder.NeedPremium" = "Ten folder jest dostępny tylko w wersji Premium. Możesz pobrać wersję Premium lub usunąć folder za pomocą przesunięcia.";
+"Common.SupportChatUsername" = "nicegramchat";
 "Common.FAQUrl" = "https://nicegram.app/faq/";
 "Common.FAQ.Button" = "Nicegram FAQ";
 "Common.FAQ.Intro" = "Wsparcie Nicegram jest wykonywane przez jednego programistę i społeczność.\n\nPo pierwsze, zajrzyj do FAQ: zawiera ważne wskazówki dotyczące rozwiązywania problemów i odpowiedzi na większość pytań.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Unikalne funkcje, których nie można odmówić!";
 "IAP.Premium.Features" = "Nielimitowane foldery\nNielimitowana liczba przypiętych czatów\nFiltrowanie nieodebranych wiadomości\n«Nowe wiadomości» – podsumowanie po uruchomieniu aplikacji";
+"IAP.Premium.Activated" = "Aktywowano wersję Premium!";
+"IAP.Common.Restore" = "Odtwórz zakupione";
+"IAP.Common.CantPay" = "Nie możesz dokonywać zakupów z powodu ograniczeń dotyczących twojego urządzenia lub konta.";
+"IAP.Common.ErrorFetch" = "Nie mogę odebrać zakupów w App Store.";
 "IAP.Common.Congrats" = "Gratulacje!";
+"IAP.Common.ValidateError" = "Nie można zweryfikować twojego zakupu.";
 
 
 /*Manage Filters*/
 "ManageFilters.Title" = "Zarządzaj zakładkami";
+"ManageFilters.Header" = "SKONFIGURUJ DOSTĘPNE FILTRY";
 
 "Messages.Translate" = "Tłumacz";
 "Messages.UndoTranslate" = "Cofnij tłumaczenie";
 "Messages.TranslateError" = "Tłumaczenie niedostępne.";
+
+/*NG Lab Registration Date*/
+"NGLab.RegDate.Btn" = "Uzyskaj datę rejestracji";
+"NGLab.RegDate.Title" = "Data rejestracji";
+"NGLab.RegDate.Notice" = "To jest przybliżona data";
+"NGLab.RegDate.MenuItem" = "zarejestrowano";
+"NGLab.RegDate.FetchError" = "Nie można uzyskać daty rejestracji.";
+
+/*Backup Settings*/
+"NiceFeatures.BackupSettings" = "Kopia zapasowa ustawień i folderów";
+"NiceFeatures.BackupSettings.Notice" = "Tworzy pliki kopii zapasowych w twoich „Zapisanych wiadomościach”";
+"NiceFeatures.BackupSettings.Done" = "Wykonano kopię zapasową w „Zapisanych wiadomościach”";
