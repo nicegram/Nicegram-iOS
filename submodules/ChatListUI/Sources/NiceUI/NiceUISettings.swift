@@ -164,14 +164,17 @@ let supportedFilters: [Int32] = [1, 2, 8, 16, 32, 64, 256, 1 << 9] //, 1 << 10] 
 public class SimplyNiceSettings {
     let UD = UserDefaults(suiteName: "SimplyNiceSettings")
     let cloud = NSUbiquitousKeyValueStore.default
+    var changed = false
     
     public init() {
         setDefaults()
     }
     
     deinit {
-        print("Syncing Settings!")
-        cloud.synchronize()
+        if changed {
+            print("Syncing Settings!")
+            cloud.synchronize()
+        }
     }
     
     public var hideNumber: Bool {
@@ -180,6 +183,7 @@ public class SimplyNiceSettings {
         }
         set {
             cloud.set(newValue, forKey: "hideNumber")
+            changed = true
             //UD?.set(newValue, forKey: "hideNumber")
         }
     }
@@ -191,6 +195,7 @@ public class SimplyNiceSettings {
         }
         set {
             cloud.set(newValue, forKey: "maxFilters")
+            changed = true
             //UD?.set(newValue, forKey: "maxFilters")
         }
     }
@@ -214,6 +219,7 @@ public class SimplyNiceSettings {
                 resSet.append(item.rawValue)
             }
             cloud.set(resSet, forKey: "chatFilters")
+            changed = true
         }
         
     }
@@ -224,6 +230,7 @@ public class SimplyNiceSettings {
         }
         set {
             cloud.set(newValue, forKey: "showTabNames")
+            changed = true
         }
     }
     
@@ -233,15 +240,17 @@ public class SimplyNiceSettings {
         }
         set {
             cloud.set(newValue, forKey: "useBrowser")
+            changed = true
         }
     }
     
     public var browser: String {
         get {
-            return String(cloud.object(forKey: "browser") as? String ?? UD?.string(forKey: "browser") ?? "safari")
+            return cloud.object(forKey: "browser") as? String ?? UD?.string(forKey: "browser") ?? "safari"
         }
         set {
             cloud.set(newValue, forKey: "browser")
+            changed = true
         }
     }
 }
@@ -292,13 +301,17 @@ public func getAvailableFilters() -> [NiceChatListNodePeersFilter] {
 
 public func getEnabledFilters() -> [NiceChatListNodePeersFilter] {
     let available = getAvailableFilters()
-    var res: [NiceChatListNodePeersFilter] = []
-    for filter in available {
-        if isEnabledFilter(filter.rawValue) {
-            res.append(filter)
+    if isPremium() {
+        var res: [NiceChatListNodePeersFilter] = []
+        for filter in available {
+            if isEnabledFilter(filter.rawValue) {
+                res.append(filter)
+            }
         }
+        return res
+    } else {
+        return available
     }
-    return res
 }
 
 

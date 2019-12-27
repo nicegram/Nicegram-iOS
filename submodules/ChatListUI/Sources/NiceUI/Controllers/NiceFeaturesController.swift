@@ -830,8 +830,8 @@ private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls
     entries.append(.otherHeader(presentationData.theme, presentationData.strings.ChatSettings_Other))
     entries.append(.hideNumber(presentationData.theme, l("NiceFeatures.HideNumber", locale), simplyNiceSettings.hideNumber, locale))
 
-    entries.append(.backupSettings(presentationData.theme, l("NiceFeatures.BackupSettings", locale)))
-    entries.append(.backupNotice(presentationData.theme, l("NiceFeatures.BackupSettings.Notice", locale)))
+//    entries.append(.backupSettings(presentationData.theme, l("NiceFeatures.BackupSettings", locale)))
+//    entries.append(.backupNotice(presentationData.theme, l("NiceFeatures.BackupSettings.Notice", locale)))
 
     return entries
 }

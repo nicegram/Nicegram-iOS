@@ -176,36 +176,53 @@ public class CustomFilter: NSObject, NSCoding {
 
 public class SimplyNiceFilters {
     let UD = UserDefaults(suiteName: "SimplyNiceFilters")
+    let cloud = NSUbiquitousKeyValueStore.default
+    var changed = false
     
     public init() {
         setFiltersDefault()
     }
     
+    deinit {
+        if changed {
+            print("Syncing Filters!")
+            cloud.synchronize()
+        }
+    }
+    
     public var disabledFilters: [Int32] {
         get {
-            let array = UD?.array(forKey: "disabledFilters") as? [Int32] ?? []
-            return array
+            if let arrayData = cloud.object(forKey: "disabledFilters") {
+                if let intArrayData = arrayData as? [Int32] {
+                    return intArrayData
+                }
+            }
+            return UD?.array(forKey: "disabledFilters") as? [Int32] ?? []
         }
         set {
             var resSet: [Int32] = []
             for item in newValue {
                 resSet.append(item)
             }
-            UD?.set(resSet, forKey: "disabledFilters")
+            // UD?.set(resSet, forKey: "disabledFilters")
+            cloud.set(resSet, forKey: "disabledFilters")
+            changed = true
         }
         
     }
     
     public var filters: [CustomFilter] {
         get {
-            if UD?.data(forKey: "customFilters") != nil {
-                return NSKeyedUnarchiver.unarchiveObject(with: (UD?.data(forKey: "customFilters"))!) as! [CustomFilter]
+            if let filtersData = cloud.data(forKey: "folders") {
+                return NSKeyedUnarchiver.unarchiveObject(with: filtersData) as? [CustomFilter] ?? NSKeyedUnarchiver.unarchiveObject(with: (UD?.data(forKey: "customFilters"))!) as? [CustomFilter] ?? []
             } else {
-                return []
+                return NSKeyedUnarchiver.unarchiveObject(with: (UD?.data(forKey: "customFilters"))!) as? [CustomFilter] ?? []
             }
         }
         set {
-            UD?.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "customFilters")
+            // UD?.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "customFilters")
+            cloud.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "customFilters")
+            changed = true
         }
     }
     

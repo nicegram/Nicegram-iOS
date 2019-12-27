@@ -1013,6 +1013,8 @@ final class SharedApplicationContext {
                         Logger.shared.log("[System NG]", "MOVE TO CLOUD SETTINGS")
                         let nf = SimplyNiceFolders()
                         let ns = SimplyNiceSettings()
+                        let nt = SimplyNiceFilters()
+                        let ps = PremiumSettings()
                         
                         let temp1 = nf.folders
                         nf.folders = temp1
@@ -1031,6 +1033,21 @@ final class SharedApplicationContext {
                         
                         let temp6 = ns.showTabNames
                         ns.showTabNames = temp6
+                        
+                        let temp7 = nt.filters
+                        nt.filters = temp7
+                        
+                        let temp8 = nt.disabledFilters
+                        nt.disabledFilters = temp8
+                        
+                        let temp9 = ps.notifyMissed
+                        ps.notifyMissed = temp9
+                        
+                        let temp10 = ps.notifyMissedEach
+                        ps.notifyMissedEach = temp10
+                        
+                        let temp11 = ps.syncPins
+                        ps.syncPins = temp11
                         
                         UserDefaults.standard.set(true, forKey: "isCloud")
                     }

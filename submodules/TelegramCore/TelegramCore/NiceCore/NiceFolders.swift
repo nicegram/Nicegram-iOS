@@ -367,15 +367,17 @@ public func resetFolders() {
 public class SimplyNiceFolders {
     let UD = UserDefaults(suiteName: "SimplyNiceFolders")
     let cloud = NSUbiquitousKeyValueStore.default
-    
+    var changed = false
     
     public init() {
         setFoldersDefaults()
     }
     
     deinit {
-        print("Syncing Settings!")
-        cloud.synchronize()
+        if changed {
+            print("Syncing Folders!")
+            cloud.synchronize()
+        }
     }
     
     public var folders: [NiceFolder] {
@@ -390,6 +392,7 @@ public class SimplyNiceFolders {
         set {
             // UD?.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "folders")
             cloud.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "folders")
+            changed = true
         }
     }
     
