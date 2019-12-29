@@ -213,11 +213,16 @@ public class SimplyNiceFilters {
     
     public var filters: [CustomFilter] {
         get {
-            if let filtersData = cloud.data(forKey: "folders") {
-                return NSKeyedUnarchiver.unarchiveObject(with: filtersData) as? [CustomFilter] ?? NSKeyedUnarchiver.unarchiveObject(with: (UD?.data(forKey: "customFilters"))!) as? [CustomFilter] ?? []
-            } else {
-                return NSKeyedUnarchiver.unarchiveObject(with: (UD?.data(forKey: "customFilters"))!) as? [CustomFilter] ?? []
+            if let filtersData = cloud.data(forKey: "customFilters") {
+                if let strongCloudFilters = NSKeyedUnarchiver.unarchiveObject(with: filtersData) as? [CustomFilter] {
+                    return strongCloudFilters
+                }
+            } else if let localFiltersData = UD?.data(forKey: "customFilters") {
+                if let strongLocalFilters = NSKeyedUnarchiver.unarchiveObject(with: localFiltersData) as? [CustomFilter] {
+                    return strongLocalFilters
+                }
             }
+            return []
         }
         set {
             // UD?.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "customFilters")
