@@ -5,7 +5,9 @@ import UIKit
 import Display
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
+import TelegramUIPreferences
 import AvatarNode
 import AccountContext
 
@@ -14,23 +16,25 @@ final class ChannelDiscussionGroupActionSheetItem: ActionSheetItem {
     let channelPeer: Peer
     let groupPeer: Peer
     let strings: PresentationStrings
+    let nameDisplayOrder: PresentationPersonNameOrder
     
-    init(context: AccountContext, channelPeer: Peer, groupPeer: Peer, strings: PresentationStrings) {
+    init(context: AccountContext, channelPeer: Peer, groupPeer: Peer, strings: PresentationStrings, nameDisplayOrder: PresentationPersonNameOrder) {
         self.context = context
         self.channelPeer = channelPeer
         self.groupPeer = groupPeer
         self.strings = strings
+        self.nameDisplayOrder = nameDisplayOrder
     }
     
     func node(theme: ActionSheetControllerTheme) -> ActionSheetItemNode {
-        return ChannelDiscussionGroupActionSheetItemNode(theme: theme, context: self.context, channelPeer: self.channelPeer, groupPeer: self.groupPeer, strings: self.strings)
+        return ChannelDiscussionGroupActionSheetItemNode(theme: theme, context: self.context, channelPeer: self.channelPeer, groupPeer: self.groupPeer, strings: self.strings, nameDisplayOrder: self.nameDisplayOrder)
     }
     
     func updateNode(_ node: ActionSheetItemNode) {
     }
 }
 
-private let avatarFont = UIFont(name: ".SFCompactRounded-Semibold", size: 26.0)!
+private let avatarFont = avatarPlaceholderFont(size: 26.0)
 
 private final class ChannelDiscussionGroupActionSheetItemNode: ActionSheetItemNode {
     private let theme: ActionSheetControllerTheme
@@ -40,7 +44,7 @@ private final class ChannelDiscussionGroupActionSheetItemNode: ActionSheetItemNo
     private let groupAvatarNode: AvatarNode
     private let textNode: ImmediateTextNode
     
-    init(theme: ActionSheetControllerTheme, context: AccountContext, channelPeer: Peer, groupPeer: Peer, strings: PresentationStrings) {
+    init(theme: ActionSheetControllerTheme, context: AccountContext, channelPeer: Peer, groupPeer: Peer, strings: PresentationStrings, nameDisplayOrder: PresentationPersonNameOrder) {
         self.theme = theme
         
         self.channelAvatarNode = AvatarNode(font: avatarFont)
@@ -62,18 +66,22 @@ private final class ChannelDiscussionGroupActionSheetItemNode: ActionSheetItemNo
         self.addSubnode(self.channelAvatarNode)
         self.addSubnode(self.textNode)
         
-        self.channelAvatarNode.setPeer(account: context.account, theme: (context.sharedContext.currentPresentationData.with { $0 }).theme, peer: channelPeer)
-        self.groupAvatarNode.setPeer(account: context.account, theme: (context.sharedContext.currentPresentationData.with { $0 }).theme, peer: groupPeer)
+        self.channelAvatarNode.setPeer(context: context, theme: (context.sharedContext.currentPresentationData.with { $0 }).theme, peer: channelPeer)
+        self.groupAvatarNode.setPeer(context: context, theme: (context.sharedContext.currentPresentationData.with { $0 }).theme, peer: groupPeer)
         
         let text: (String, [(Int, NSRange)])
         if let channelPeer = channelPeer as? TelegramChannel, let addressName = channelPeer.addressName, !addressName.isEmpty {
-            text = strings.Channel_DiscussionGroup_PublicChannelLink(groupPeer.displayTitle, channelPeer.displayTitle)
+            text = strings.Channel_DiscussionGroup_PublicChannelLink(groupPeer.displayTitle(strings: strings, displayOrder: nameDisplayOrder), channelPeer.displayTitle(strings: strings, displayOrder: nameDisplayOrder))
         } else {
-            text = strings.Channel_DiscussionGroup_PrivateChannelLink(groupPeer.displayTitle, channelPeer.displayTitle)
+            text = strings.Channel_DiscussionGroup_PrivateChannelLink(groupPeer.displayTitle(strings: strings, displayOrder: nameDisplayOrder), channelPeer.displayTitle(strings: strings, displayOrder: nameDisplayOrder))
         }
-        let attributedText = NSMutableAttributedString(attributedString: NSAttributedString(string: text.0, font: Font.regular(14.0), textColor: theme.primaryTextColor))
+        
+        let textFont = Font.regular(floor(theme.baseFontSize * 14.0 / 17.0))
+        let boldFont = Font.semibold(floor(theme.baseFontSize * 14.0 / 17.0))
+        
+        let attributedText = NSMutableAttributedString(attributedString: NSAttributedString(string: text.0, font: textFont, textColor: theme.primaryTextColor))
         for (_, range) in text.1 {
-            attributedText.addAttribute(.font, value: Font.semibold(14.0), range: range)
+            attributedText.addAttribute(.font, value: boldFont, range: range)
         }
         
         self.textNode.attributedText = attributedText

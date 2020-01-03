@@ -2,13 +2,14 @@ import Foundation
 import UIKit
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import Display
 import AccountContext
 
 func preloadedChatHistoryViewForLocation(_ location: ChatHistoryLocationInput, account: Account, chatLocation: ChatLocation, fixedCombinedReadStates: MessageHistoryViewReadState?, tagMask: MessageTags?, additionalData: [AdditionalMessageHistoryViewData], orderStatistics: MessageHistoryViewOrderStatistics = []) -> Signal<ChatHistoryViewUpdate, NoError> {
     return chatHistoryViewForLocation(location, account: account, chatLocation: chatLocation, scheduled: false, fixedCombinedReadStates: fixedCombinedReadStates, tagMask: tagMask, additionalData: additionalData, orderStatistics: orderStatistics)
-    |> introduceError(Bool.self)
+    |> castError(Bool.self)
     |> mapToSignal { update -> Signal<ChatHistoryViewUpdate, Bool> in
         switch update {
             case let .Loading(value):
@@ -205,7 +206,7 @@ func chatHistoryViewForLocation(_ location: ChatHistoryLocationInput, account: A
                 let directionHint: ListViewScrollToItemDirectionHint = sourceIndex > index ? .Down : .Up
                 let chatScrollPosition = ChatHistoryViewScrollPosition.index(index: index, position: scrollPosition, directionHint: directionHint, animated: animated)
                 var first = true
-                return account.viewTracker.aroundMessageHistoryViewForLocation(chatLocation, index: index, anchorIndex: anchorIndex, count: 100, fixedCombinedReadStates: fixedCombinedReadStates, tagMask: tagMask, orderStatistics: orderStatistics, additionalData: additionalData)
+                return account.viewTracker.aroundMessageHistoryViewForLocation(chatLocation, index: index, anchorIndex: anchorIndex, count: 128, fixedCombinedReadStates: fixedCombinedReadStates, tagMask: tagMask, orderStatistics: orderStatistics, additionalData: additionalData)
                 |> map { view, updateType, initialData -> ChatHistoryViewUpdate in
                     let (cachedData, cachedDataMessages, readStateData) = extractAdditionalData(view: view, chatLocation: chatLocation)
                     

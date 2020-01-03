@@ -3,11 +3,12 @@ import UIKit
 import LegacyComponents
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import Display
 import StickerResources
 
-func stickerFromLegacyDocument(_ documentAttachment: TGDocumentMediaAttachment) -> TelegramMediaFile? {
+public func stickerFromLegacyDocument(_ documentAttachment: TGDocumentMediaAttachment) -> TelegramMediaFile? {
     if documentAttachment.isSticker() {
         for case let sticker as TGDocumentAttributeSticker in documentAttachment.attributes {
             var attributes: [TelegramMediaFileAttribute] = []
@@ -65,7 +66,7 @@ func legacyComponentsStickers(postbox: Postbox, namespace: Int32) -> SSignal {
                         let encoder = PostboxEncoder()
                         encoder.encodeRootObject(thumbnail.resource)
                         let dataString = encoder.makeData().base64EncodedString(options: [])
-                        imageInfo.addImage(with: thumbnail.dimensions, url: dataString)
+                        imageInfo.addImage(with: thumbnail.dimensions.cgSize, url: dataString)
                         document.thumbnailInfo = imageInfo
                     }
                     var attributes: [Any] = []
@@ -76,7 +77,7 @@ func legacyComponentsStickers(postbox: Postbox, namespace: Int32) -> SSignal {
                                     return TGStickerMaskDescription(n: $0.n, point: CGPoint(x: CGFloat($0.x), y: CGFloat($0.y)), zoom: CGFloat($0.zoom))
                                 }))
                             case let .ImageSize(size):
-                                attributes.append(TGDocumentAttributeImageSize(size: size))
+                                attributes.append(TGDocumentAttributeImageSize(size: size.cgSize))
                             default:
                                 break
                         }
@@ -197,7 +198,7 @@ final class LegacyStickerImageDataSource: TGImageDataSource {
             var previewRepresentations: [TelegramMediaImageRepresentation] = []
             if let legacyThumbnailUri = args["legacyThumbnailUri"] as? String, let data = Data(base64Encoded: legacyThumbnailUri, options: []) {
                 if let resource = PostboxDecoder(buffer: MemoryBuffer(data: data)).decodeRootObject() as? TelegramMediaResource {
-                    previewRepresentations.append(TelegramMediaImageRepresentation(dimensions: CGSize(width: 140.0, height: 140.0), resource: resource))
+                    previewRepresentations.append(TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: 140, height: 140), resource: resource))
                 }
             }
             

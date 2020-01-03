@@ -10,6 +10,7 @@ public enum ItemListSingleLineInputItemType: Equatable {
     case password
     case email
     case number
+    case decimal
     case username
 }
 
@@ -29,8 +30,7 @@ public enum ItemListSingleLineInputClearType: Equatable {
 }
 
 public class ItemListSingleLineInputItem: ListViewItem, ItemListItem {
-    let theme: PresentationTheme
-    let strings: PresentationStrings
+    let presentationData: ItemListPresentationData
     let title: NSAttributedString
     let text: String
     let placeholder: String
@@ -47,9 +47,8 @@ public class ItemListSingleLineInputItem: ListViewItem, ItemListItem {
     let updatedFocus: ((Bool) -> Void)?
     public let tag: ItemListItemTag?
     
-    public init(theme: PresentationTheme, strings: PresentationStrings, title: NSAttributedString, text: String, placeholder: String, type: ItemListSingleLineInputItemType = .regular(capitalization: true, autocorrection: true), returnKeyType: UIReturnKeyType = .`default`, spacing: CGFloat = 0.0, clearType: ItemListSingleLineInputClearType = .none, enabled: Bool = true, tag: ItemListItemTag? = nil, sectionId: ItemListSectionId, textUpdated: @escaping (String) -> Void, shouldUpdateText: @escaping (String) -> Bool = { _ in return true }, processPaste: ((String) -> String)? = nil, updatedFocus: ((Bool) -> Void)? = nil, action: @escaping () -> Void) {
-        self.theme = theme
-        self.strings = strings
+    public init(presentationData: ItemListPresentationData, title: NSAttributedString, text: String, placeholder: String, type: ItemListSingleLineInputItemType = .regular(capitalization: true, autocorrection: true), returnKeyType: UIReturnKeyType = .`default`, spacing: CGFloat = 0.0, clearType: ItemListSingleLineInputClearType = .none, enabled: Bool = true, tag: ItemListItemTag? = nil, sectionId: ItemListSectionId, textUpdated: @escaping (String) -> Void, shouldUpdateText: @escaping (String) -> Bool = { _ in return true }, processPaste: ((String) -> String)? = nil, updatedFocus: ((Bool) -> Void)? = nil, action: @escaping () -> Void) {
+        self.presentationData = presentationData
         self.title = title
         self.text = text
         self.placeholder = placeholder
@@ -102,14 +101,14 @@ public class ItemListSingleLineInputItem: ListViewItem, ItemListItem {
     }
 }
 
-private let titleFont = Font.regular(17.0)
-
 public class ItemListSingleLineInputItemNode: ListViewItemNode, UITextFieldDelegate, ItemListItemNode, ItemListItemFocusableNode {
     private let backgroundNode: ASDisplayNode
     private let topStripeNode: ASDisplayNode
     private let bottomStripeNode: ASDisplayNode
+    private let maskNode: ASImageNode
     
     private let titleNode: TextNode
+    private let measureTitleSizeNode: TextNode
     private let textNode: TextFieldNode
     private let clearIconNode: ASImageNode
     private let clearButtonNode: HighlightableButtonNode
@@ -130,7 +129,10 @@ public class ItemListSingleLineInputItemNode: ListViewItemNode, UITextFieldDeleg
         self.bottomStripeNode = ASDisplayNode()
         self.bottomStripeNode.isLayerBacked = true
         
+        self.maskNode = ASImageNode()
+        
         self.titleNode = TextNode()
+        self.measureTitleSizeNode = TextNode()
         self.textNode = TextFieldNode()
         
         self.clearIconNode = ASImageNode()
@@ -164,14 +166,19 @@ public class ItemListSingleLineInputItemNode: ListViewItemNode, UITextFieldDeleg
     override public func didLoad() {
         super.didLoad()
         
-        self.textNode.textField.typingAttributes = [NSAttributedString.Key.font: Font.regular(17.0)]
-        self.textNode.textField.font = Font.regular(17.0)
         if let item = self.item {
-            self.textNode.textField.textColor = item.theme.list.itemPrimaryTextColor
-            self.textNode.textField.keyboardAppearance = item.theme.rootController.keyboardColor.keyboardAppearance
-            self.textNode.textField.tintColor = item.theme.list.itemAccentColor
+            self.textNode.textField.typingAttributes = [NSAttributedString.Key.font: Font.regular(item.presentationData.fontSize.itemListBaseFontSize)]
+            self.textNode.textField.font = Font.regular(item.presentationData.fontSize.itemListBaseFontSize)
+            
+            self.textNode.textField.textColor = item.presentationData.theme.list.itemPrimaryTextColor
+            self.textNode.textField.keyboardAppearance = item.presentationData.theme.rootController.keyboardColor.keyboardAppearance
+            self.textNode.textField.tintColor = item.presentationData.theme.list.itemAccentColor
             self.textNode.textField.accessibilityHint = item.placeholder
+        } else {
+            self.textNode.textField.typingAttributes = [NSAttributedString.Key.font: Font.regular(17.0)]
+            self.textNode.textField.font = Font.regular(17.0)
         }
+        
         self.textNode.clipsToBounds = true
         self.textNode.textField.delegate = self
         self.textNode.textField.addTarget(self, action: #selector(self.textFieldTextChanged(_:)), for: .editingChanged)
@@ -180,6 +187,7 @@ public class ItemListSingleLineInputItemNode: ListViewItemNode, UITextFieldDeleg
     
     public func asyncLayout() -> (_ item: ItemListSingleLineInputItem, _ params: ListViewItemLayoutParams, _ neighbors: ItemListNeighbors) -> (ListViewItemNodeLayout, () -> Void) {
         let makeTitleLayout = TextNode.asyncLayout(self.titleNode)
+        let makeMeasureTitleSizeLayout = TextNode.asyncLayout(self.measureTitleSizeNode)
         
         let currentItem = self.item
         
@@ -187,9 +195,14 @@ public class ItemListSingleLineInputItemNode: ListViewItemNode, UITextFieldDeleg
             var updatedTheme: PresentationTheme?
             
             var updatedClearIcon: UIImage?
-            if currentItem?.theme !== item.theme {
-                updatedTheme = item.theme
-                updatedClearIcon = PresentationResourcesItemList.itemListClearInputIcon(item.theme)
+            if currentItem?.presentationData.theme !== item.presentationData.theme {
+                updatedTheme = item.presentationData.theme
+                updatedClearIcon = PresentationResourcesItemList.itemListClearInputIcon(item.presentationData.theme)
+            }
+            
+            var fontUpdated = false
+            if currentItem?.presentationData.fontSize != item.presentationData.fontSize {
+                fontUpdated = true
             }
             
             let leftInset: CGFloat = 16.0 + params.leftInset
@@ -201,36 +214,44 @@ public class ItemListSingleLineInputItemNode: ListViewItemNode, UITextFieldDeleg
             
             let titleString = NSMutableAttributedString(attributedString: item.title)
             titleString.removeAttribute(NSAttributedString.Key.font, range: NSMakeRange(0, titleString.length))
-            titleString.addAttributes([NSAttributedString.Key.font: Font.regular(17.0)], range: NSMakeRange(0, titleString.length))
+            titleString.addAttributes([NSAttributedString.Key.font: Font.regular(item.presentationData.fontSize.itemListBaseFontSize)], range: NSMakeRange(0, titleString.length))
             
             let (titleLayout, titleApply) = makeTitleLayout(TextNodeLayoutArguments(attributedString: titleString, backgroundColor: nil, maximumNumberOfLines: 0, truncationType: .end, constrainedSize: CGSize(width: params.width - 32.0 - leftInset - rightInset, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
+            let (measureTitleLayout, measureTitleSizeApply) = makeMeasureTitleSizeLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: "A", font: Font.regular(item.presentationData.fontSize.itemListBaseFontSize)), backgroundColor: nil, maximumNumberOfLines: 0, truncationType: .end, constrainedSize: CGSize(width: params.width - 32.0 - leftInset - rightInset, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
+            
             let separatorHeight = UIScreenPixel
             
-            let contentSize = CGSize(width: params.width, height: 44.0)
+            let contentSize = CGSize(width: params.width, height: max(titleLayout.size.height, measureTitleLayout.size.height) + 22.0)
             let insets = itemListNeighborsGroupedInsets(neighbors)
             
             let layout = ListViewItemNodeLayout(contentSize: contentSize, insets: insets)
             let layoutSize = layout.size
             
-            let attributedPlaceholderText = NSAttributedString(string: item.placeholder, font: Font.regular(17.0), textColor: item.theme.list.itemPlaceholderTextColor)
+            let attributedPlaceholderText = NSAttributedString(string: item.placeholder, font: Font.regular(item.presentationData.fontSize.itemListBaseFontSize), textColor: item.presentationData.theme.list.itemPlaceholderTextColor)
             
             return (layout, { [weak self] in
                 if let strongSelf = self {
                     strongSelf.item = item
                     
                     if let _ = updatedTheme {
-                        strongSelf.topStripeNode.backgroundColor = item.theme.list.itemBlocksSeparatorColor
-                        strongSelf.bottomStripeNode.backgroundColor = item.theme.list.itemBlocksSeparatorColor
-                        strongSelf.backgroundNode.backgroundColor = item.theme.list.itemBlocksBackgroundColor
+                        strongSelf.topStripeNode.backgroundColor = item.presentationData.theme.list.itemBlocksSeparatorColor
+                        strongSelf.bottomStripeNode.backgroundColor = item.presentationData.theme.list.itemBlocksSeparatorColor
+                        strongSelf.backgroundNode.backgroundColor = item.presentationData.theme.list.itemBlocksBackgroundColor
                         
-                        strongSelf.textNode.textField.textColor = item.theme.list.itemPrimaryTextColor
-                        strongSelf.textNode.textField.keyboardAppearance = item.theme.rootController.keyboardColor.keyboardAppearance
-                        strongSelf.textNode.textField.tintColor = item.theme.list.itemAccentColor
+                        strongSelf.textNode.textField.textColor = item.presentationData.theme.list.itemPrimaryTextColor
+                        strongSelf.textNode.textField.keyboardAppearance = item.presentationData.theme.rootController.keyboardColor.keyboardAppearance
+                        strongSelf.textNode.textField.tintColor = item.presentationData.theme.list.itemAccentColor
+                    }
+                    
+                    if fontUpdated {
+                    strongSelf.textNode.textField.typingAttributes = [NSAttributedString.Key.font: Font.regular(item.presentationData.fontSize.itemListBaseFontSize)]
                     }
                     
                     let _ = titleApply()
                     strongSelf.titleNode.frame = CGRect(origin: CGPoint(x: leftInset, y: floor((layout.contentSize.height - titleLayout.size.height) / 2.0)), size: titleLayout.size)
+                    
+                    let _ = measureTitleSizeApply()
                     
                     let secureEntry: Bool
                     let capitalizationType: UITextAutocapitalizationType
@@ -238,35 +259,40 @@ public class ItemListSingleLineInputItemNode: ListViewItemNode, UITextFieldDeleg
                     let keyboardType: UIKeyboardType
                     
                     switch item.type {
-                        case let .regular(capitalization, autocorrection):
-                            secureEntry = false
-                            capitalizationType = capitalization ? .sentences : .none
-                            autocorrectionType = autocorrection ? .default : .no
-                            keyboardType = .default
-                        case .email:
-                            secureEntry = false
-                            capitalizationType = .none
-                            autocorrectionType = .no
-                            keyboardType = .emailAddress
-                        case .password:
-                            secureEntry = true
-                            capitalizationType = .none
-                            autocorrectionType = .no
-                            keyboardType = .default
-                        case .number:
-                            secureEntry = false
-                            capitalizationType = .none
-                            autocorrectionType = .no
-                            if #available(iOSApplicationExtension 10.0, iOS 10.0, *) {
-                                keyboardType = .asciiCapableNumberPad
-                            } else {
-                                keyboardType = .numberPad
-                            }
-                        case .username:
-                            secureEntry = false
-                            capitalizationType = .none
-                            autocorrectionType = .no
-                            keyboardType = .asciiCapable
+                    case let .regular(capitalization, autocorrection):
+                        secureEntry = false
+                        capitalizationType = capitalization ? .sentences : .none
+                        autocorrectionType = autocorrection ? .default : .no
+                        keyboardType = .default
+                    case .email:
+                        secureEntry = false
+                        capitalizationType = .none
+                        autocorrectionType = .no
+                        keyboardType = .emailAddress
+                    case .password:
+                        secureEntry = true
+                        capitalizationType = .none
+                        autocorrectionType = .no
+                        keyboardType = .default
+                    case .number:
+                        secureEntry = false
+                        capitalizationType = .none
+                        autocorrectionType = .no
+                        if #available(iOSApplicationExtension 10.0, iOS 10.0, *) {
+                            keyboardType = .asciiCapableNumberPad
+                        } else {
+                            keyboardType = .numberPad
+                        }
+                    case .decimal:
+                        secureEntry = false
+                        capitalizationType = .none
+                        autocorrectionType = .no
+                        keyboardType = .decimalPad
+                    case .username:
+                        secureEntry = false
+                        capitalizationType = .none
+                        autocorrectionType = .no
+                        keyboardType = .asciiCapable
                     }
                     
                     if strongSelf.textNode.textField.isSecureTextEntry != secureEntry {
@@ -293,7 +319,7 @@ public class ItemListSingleLineInputItemNode: ListViewItemNode, UITextFieldDeleg
                         strongSelf.textNode.textField.text = item.text
                     }
                     
-                    strongSelf.textNode.frame = CGRect(origin: CGPoint(x: leftInset + titleLayout.size.width + item.spacing, y: floor((layout.contentSize.height - 40.0) / 2.0)), size: CGSize(width: max(1.0, params.width - (leftInset + rightInset + titleLayout.size.width + item.spacing)), height: 40.0))
+                    strongSelf.textNode.frame = CGRect(origin: CGPoint(x: leftInset + titleLayout.size.width + item.spacing, y: 1.0), size: CGSize(width: max(1.0, params.width - (leftInset + rightInset + titleLayout.size.width + item.spacing)), height: layout.contentSize.height - 2.0))
                     
                     if let image = updatedClearIcon {
                         strongSelf.clearIconNode.image = image
@@ -316,11 +342,19 @@ public class ItemListSingleLineInputItemNode: ListViewItemNode, UITextFieldDeleg
                     if strongSelf.bottomStripeNode.supernode == nil {
                         strongSelf.insertSubnode(strongSelf.bottomStripeNode, at: 2)
                     }
+                    if strongSelf.maskNode.supernode == nil {
+                        strongSelf.insertSubnode(strongSelf.maskNode, at: 3)
+                    }
+                    
+                    let hasCorners = itemListHasRoundedBlockLayout(params)
+                    var hasTopCorners = false
+                    var hasBottomCorners = false
                     switch neighbors.top {
                         case .sameSection(false):
                             strongSelf.topStripeNode.isHidden = true
                         default:
-                            strongSelf.topStripeNode.isHidden = false
+                            hasTopCorners = true
+                            strongSelf.topStripeNode.isHidden = hasCorners
                     }
                     let bottomStripeInset: CGFloat
                     switch neighbors.bottom {
@@ -328,8 +362,14 @@ public class ItemListSingleLineInputItemNode: ListViewItemNode, UITextFieldDeleg
                             bottomStripeInset = leftInset
                         default:
                             bottomStripeInset = 0.0
+                            hasBottomCorners = true
+                            strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
+                    
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                    
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
+                    strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                     strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight))
                     strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - UIScreenPixel), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight))
                     
@@ -341,7 +381,7 @@ public class ItemListSingleLineInputItemNode: ListViewItemNode, UITextFieldDeleg
                     strongSelf.textNode.isUserInteractionEnabled = item.enabled
                     strongSelf.textNode.alpha = item.enabled ? 1.0 : 0.4
                     
-                    strongSelf.clearButtonNode.accessibilityLabel = item.strings.VoiceOver_Editing_ClearText
+                    strongSelf.clearButtonNode.accessibilityLabel = item.presentationData.strings.VoiceOver_Editing_ClearText
                 }
             })
         }
@@ -393,8 +433,11 @@ public class ItemListSingleLineInputItemNode: ListViewItemNode, UITextFieldDeleg
     }
     
     @objc public func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
-        if let item = self.item, !item.shouldUpdateText(string) {
-            return false
+        if let item = self.item {
+            let newText = ((textField.text ?? "") as NSString).replacingCharacters(in: range, with: string)
+            if !item.shouldUpdateText(newText) {
+                return false
+            }
         }
         
         if string.count > 1, let item = self.item, let processPaste = item.processPaste {

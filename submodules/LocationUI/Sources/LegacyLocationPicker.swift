@@ -3,22 +3,28 @@ import UIKit
 import Display
 import LegacyComponents
 import TelegramCore
+import SyncCore
 import Postbox
 import SwiftSignalKit
 import TelegramPresentationData
 import AccountContext
 import LegacyUI
+import AppBundle
 
 private func generateClearIcon(color: UIColor) -> UIImage? {
     return generateTintedImage(image: UIImage(bundleImageName: "Components/Search Bar/Clear"), color: color)
 }
 
 public func legacyLocationPickerController(context: AccountContext, selfPeer: Peer, peer: Peer, sendLocation: @escaping (CLLocationCoordinate2D, MapVenue?, String?) -> Void, sendLiveLocation: @escaping (CLLocationCoordinate2D, Int32) -> Void, theme: PresentationTheme, customLocationPicker: Bool = false, hasLiveLocation: Bool = true, presentationCompleted: @escaping () -> Void = {}) -> ViewController {
-    let legacyController = LegacyController(presentation: .modal(animateIn: true), theme: theme)
-    legacyController.presentationCompleted = {
-        presentationCompleted()
-    }
+    let legacyController = LegacyController(presentation: .navigation, theme: theme)
+    legacyController.navigationPresentation = .modal
     let controller = TGLocationPickerController(context: legacyController.context, intent: customLocationPicker ? TGLocationPickerControllerCustomLocationIntent : TGLocationPickerControllerDefaultIntent)!
+    legacyController.presentationCompleted = { [weak controller] in
+        presentationCompleted()
+        
+        controller?.view.disablesInteractiveModalDismiss = true
+        controller?.view.disablesInteractiveTransitionGestureRecognizer = true
+    }
     controller.peer = makeLegacyPeer(selfPeer)
     controller.receivingPeer = makeLegacyPeer(peer)
     controller.pallete = legacyLocationPalette(from: theme)

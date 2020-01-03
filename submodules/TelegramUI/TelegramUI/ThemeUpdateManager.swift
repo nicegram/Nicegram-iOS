@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -66,7 +67,7 @@ final class ThemeUpdateManagerImpl: ThemeUpdateManager {
             validIds.insert(themeSettings.theme.index)
             themes[themeSettings.theme.index] = (themeSettings.theme, false)
         }
-        if case .cloud = themeSettings.automaticThemeSwitchSetting.theme, themeSettings.automaticThemeSwitchSetting.trigger != .none {
+        if case .cloud = themeSettings.automaticThemeSwitchSetting.theme, themeSettings.automaticThemeSwitchSetting.trigger != .explicitNone {
             validIds.insert(themeSettings.automaticThemeSwitchSetting.theme.index)
             themes[themeSettings.automaticThemeSwitchSetting.theme.index] = (themeSettings.automaticThemeSwitchSetting.theme, true)
         }
@@ -83,7 +84,7 @@ final class ThemeUpdateManagerImpl: ThemeUpdateManager {
                         guard let file = theme.file else {
                             return .complete()
                         }
-                        return telegramThemeData(account: account, accountManager: accountManager, resource: file.resource)
+                        return telegramThemeData(account: account, accountManager: accountManager, reference: .standalone(resource: file.resource))
                         |> mapToSignal { data -> Signal<(PresentationThemeReference, PresentationTheme?), NoError> in
                             guard let data = data, let presentationTheme = makePresentationTheme(data: data) else {
                                 return .complete()
@@ -103,13 +104,13 @@ final class ThemeUpdateManagerImpl: ThemeUpdateManager {
                             |> mapToSignal { wallpaper -> Signal<(PresentationThemeReference, PresentationTheme?), NoError> in
                                 if let wallpaper = wallpaper, case let .file(file) = wallpaper {
                                     var convertedRepresentations: [ImageRepresentationWithReference] = []
-                                    convertedRepresentations.append(ImageRepresentationWithReference(representation: TelegramMediaImageRepresentation(dimensions: CGSize(width: 100.0, height: 100.0), resource: file.file.resource), reference: .media(media: .standalone(media: file.file), resource: file.file.resource)))
+                                    convertedRepresentations.append(ImageRepresentationWithReference(representation: TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: 100, height: 100), resource: file.file.resource), reference: .wallpaper(wallpaper: .slug(file.slug), resource: file.file.resource)))
                                     return wallpaperDatas(account: account, accountManager: accountManager, fileReference: .standalone(media: file.file), representations: convertedRepresentations, alwaysShowThumbnailFirst: false, thumbnail: false, onlyFullSize: true, autoFetchFullSize: true, synchronousLoad: false)
                                     |> mapToSignal { _, fullSizeData, complete -> Signal<(PresentationThemeReference, PresentationTheme?), NoError> in
                                         guard complete, let fullSizeData = fullSizeData else {
                                             return .complete()
                                         }
-                                        accountManager.mediaBox.storeResourceData(file.file.resource.id, data: fullSizeData)
+                                        accountManager.mediaBox.storeResourceData(file.file.resource.id, data: fullSizeData, synchronous: true)
                                         return .single((.cloud(PresentationCloudTheme(theme: theme, resolvedWallpaper: wallpaper)), presentationTheme))
                                     }
                                 } else {
@@ -130,25 +131,15 @@ final class ThemeUpdateManagerImpl: ThemeUpdateManager {
                                         current = PresentationThemeSettings.defaultSettings
                                     }
                                     
-                                    var chatWallpaper = current.chatWallpaper
+                                    var theme = current.theme
                                     var automaticThemeSwitchSetting = current.automaticThemeSwitchSetting
                                     if isAutoNight {
                                         automaticThemeSwitchSetting.theme = updatedTheme
                                     } else {
-                                        if let themeSpecificWallpaper = current.themeSpecificChatWallpapers[updatedTheme.index] {
-                                            chatWallpaper = themeSpecificWallpaper
-                                        } else if let presentationTheme = presentationTheme {
-                                            if case let .cloud(info) = updatedTheme, let resolvedWallpaper = info.resolvedWallpaper {
-                                                chatWallpaper = resolvedWallpaper
-                                            } else {
-                                                chatWallpaper = presentationTheme.chat.defaultWallpaper
-                                            }
-                                        } else {
-                                            chatWallpaper = current.chatWallpaper
-                                        }
+                                        theme = updatedTheme
                                     }
                                     
-                                    return PresentationThemeSettings(chatWallpaper: chatWallpaper, theme: updatedTheme, themeSpecificAccentColors: current.themeSpecificAccentColors, themeSpecificChatWallpapers: current.themeSpecificChatWallpapers, fontSize: current.fontSize, automaticThemeSwitchSetting: automaticThemeSwitchSetting, largeEmoji: current.largeEmoji, disableAnimations: current.disableAnimations)
+                                    return PresentationThemeSettings(theme: theme, themeSpecificAccentColors: current.themeSpecificAccentColors, themeSpecificChatWallpapers: current.themeSpecificChatWallpapers, useSystemFont: current.useSystemFont, fontSize: current.fontSize, automaticThemeSwitchSetting: automaticThemeSwitchSetting, largeEmoji: current.largeEmoji, disableAnimations: current.disableAnimations)
                                 })
                             }).start()
                         }

@@ -3,6 +3,7 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import Postbox
 import TelegramPresentationData
@@ -50,17 +51,10 @@ final class ChannelStatsController: ViewController {
                 return
             }
             if value {
-                strongSelf.navigationItem.rightBarButtonItem = UIBarButtonItem(customDisplayNode: ProgressNavigationButtonNode(theme: strongSelf.presentationData.theme))
+                strongSelf.navigationItem.rightBarButtonItem = UIBarButtonItem(customDisplayNode: ProgressNavigationButtonNode(color: strongSelf.presentationData.theme.rootController.navigationBar.controlColor))
             } else {
                 strongSelf.navigationItem.rightBarButtonItem = nil
             }
-        })
-    }
-    
-    override func dismiss(completion: (() -> Void)? = nil) {
-        self.controllerNode.animateOut(completion: { [weak self] in
-            self?.presentingViewController?.dismiss(animated: false, completion: nil)
-            completion?()
         })
     }
     

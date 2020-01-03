@@ -295,6 +295,9 @@
                     if (!found)
                         fileName = asset.fileName;
                 }
+                if (fileName == nil) {
+                    fileName = asset.fileName;
+                }
                 
                 if (iosMajorVersion() >= 10 && [dataUTI rangeOfString:@"heic"].location != NSNotFound)
                 {
@@ -732,7 +735,16 @@
     {
         PHImageRequestID token = PHInvalidImageRequestID;
         
-        if (asset.subtypes & TGMediaAssetSubtypePhotoLive)
+        bool processLive = false;
+        if (asset.subtypes & TGMediaAssetSubtypePhotoLive) {
+            if (iosMajorVersion() < 9 || (iosMajorVersion() == 9 && iosMinorVersion() < 1)) {
+                processLive = false;
+            } else {
+                processLive = true;
+            }
+        }
+        
+        if (processLive)
         {
             PHLivePhotoRequestOptions *requestOptions = [[PHLivePhotoRequestOptions alloc] init];
             requestOptions.networkAccessAllowed = true;
@@ -827,7 +839,16 @@
         {
             PHImageRequestID token = PHInvalidImageRequestID;
             
-            if (asset.subtypes & TGMediaAssetSubtypePhotoLive)
+            bool processLive = false;
+            if (asset.subtypes & TGMediaAssetSubtypePhotoLive) {
+                if (iosMajorVersion() < 9 || (iosMajorVersion() == 9 && iosMinorVersion() < 1)) {
+                    processLive = false;
+                } else {
+                    processLive = true;
+                }
+            }
+            
+            if (processLive)
             {
                 NSString *filePath = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.mov", asset.identifier]];
                 NSURL *fileUrl = [NSURL fileURLWithPath:filePath];

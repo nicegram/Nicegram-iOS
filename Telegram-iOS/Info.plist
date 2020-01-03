@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER).refresh</string>
+	</array>
 	<key>CFBundleAllowMixedLocalizations</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
@@ -125,7 +129,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>5.12.3</string>
+	<string>$(PRODUCT_BUNDLE_SHORT_VERSION)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleURLTypes</key>
@@ -142,7 +146,7 @@
 		</dict>
 		<dict>
 			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
+			<string>Viewer</string>
 			<key>CFBundleURLName</key>
 			<string>$(PRODUCT_BUNDLE_IDENTIFIER).compatibility</string>
 			<key>CFBundleURLSchemes</key>
@@ -155,10 +159,10 @@
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
 			<key>CFBundleURLName</key>
-			<string>$(PRODUCT_BUNDLE_IDENTIFIER).dropbox</string>
+			<string>$(PRODUCT_BUNDLE_IDENTIFIER).ton</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>db-pa9wtoz9l514anx</string>
+				<string>ton</string>
 			</array>
 		</dict>
 	</array>
@@ -180,10 +184,8 @@
 		<string>vk</string>
 		<string>waze</string>
 		<string>googlechrome</string>
-		<string>googlechromes</string>
 		<string>firefox</string>
 		<string>touch-http</string>
-		<string>touch-https</string>
 		<string>yandexbrowser-open-url</string>
 		<string>vimeo</string>
 		<string>vine</string>
@@ -192,10 +194,16 @@
 		<string>citymapper</string>
 		<string>lyft</string>
 		<string>opera-http</string>
-		<string>opera-https</string>
 		<string>firefox-focus</string>
 		<string>ddgQuickLink</string>
 		<string>moovit</string>
+		<string>alook</string>
+		<string>dgis</string>
+		<string>microsoft-edge-http</string>
+		<string>brave</string>
+		<string>onionhttp</string>
+		<string>ucbrowser</string>
+		<string>dolphin</string>
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
@@ -240,6 +248,11 @@
 		<string>location</string>
 		<string>remote-notification</string>
 		<string>voip</string>
+	</array>
+	<key>UIDeviceFamily</key>
+	<array>
+		<integer>1</integer>
+		<integer>2</integer>
 	</array>
 	<key>UIFileSharingEnabled</key>
 	<false/>

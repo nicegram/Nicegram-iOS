@@ -4,18 +4,22 @@ import Display
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import TelegramUIPreferences
 import ItemListUI
+import PresentationDataUtils
 import OverlayStatusController
 import AccountContext
 import ShareController
 import AlertUI
+import PresentationDataUtils
 import TelegramNotices
 import ItemListPeerItem
+import AccountContext
 
 private final class ChannelVisibilityControllerArguments {
-    let account: Account
+    let context: AccountContext
     
     let updateCurrentType: (CurrentChannelType) -> Void
     let updatePublicLinkText: (String?, String) -> Void
@@ -27,8 +31,8 @@ private final class ChannelVisibilityControllerArguments {
     let revokePrivateLink: () -> Void
     let sharePrivateLink: () -> Void
     
-    init(account: Account, updateCurrentType: @escaping (CurrentChannelType) -> Void, updatePublicLinkText: @escaping (String?, String) -> Void, scrollToPublicLinkText: @escaping () -> Void, displayPrivateLinkMenu: @escaping (String) -> Void, setPeerIdWithRevealedOptions: @escaping (PeerId?, PeerId?) -> Void, revokePeerId: @escaping (PeerId) -> Void, copyPrivateLink: @escaping () -> Void, revokePrivateLink: @escaping () -> Void, sharePrivateLink: @escaping () -> Void) {
-        self.account = account
+    init(context: AccountContext, updateCurrentType: @escaping (CurrentChannelType) -> Void, updatePublicLinkText: @escaping (String?, String) -> Void, scrollToPublicLinkText: @escaping () -> Void, displayPrivateLinkMenu: @escaping (String) -> Void, setPeerIdWithRevealedOptions: @escaping (PeerId?, PeerId?) -> Void, revokePeerId: @escaping (PeerId) -> Void, copyPrivateLink: @escaping () -> Void, revokePrivateLink: @escaping () -> Void, sharePrivateLink: @escaping () -> Void) {
+        self.context = context
         self.updateCurrentType = updateCurrentType
         self.updatePublicLinkText = updatePublicLinkText
         self.scrollToPublicLinkText = scrollToPublicLinkText
@@ -260,34 +264,35 @@ private enum ChannelVisibilityEntry: ItemListNodeEntry {
         return lhs.stableId < rhs.stableId
     }
     
-    func item(_ arguments: ChannelVisibilityControllerArguments) -> ListViewItem {
+    func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
+        let arguments = arguments as! ChannelVisibilityControllerArguments
         switch self {
             case let .typeHeader(theme, title):
-                return ItemListSectionHeaderItem(theme: theme, text: title, sectionId: self.section)
+                return ItemListSectionHeaderItem(presentationData: presentationData, text: title, sectionId: self.section)
             case let .typePublic(theme, text, selected):
-                return ItemListCheckboxItem(theme: theme, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
                     arguments.updateCurrentType(.publicChannel)
                 })
             case let .typePrivate(theme, text, selected):
-                return ItemListCheckboxItem(theme: theme, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
                     arguments.updateCurrentType(.privateChannel)
                 })
             case let .typeInfo(theme, text):
-                return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+                return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .publicLinkHeader(theme, title):
-                return ItemListSectionHeaderItem(theme: theme, text: title, sectionId: self.section)
+                return ItemListSectionHeaderItem(presentationData: presentationData, text: title, sectionId: self.section)
             case let .publicLinkAvailability(theme, text, value):
                 let attr = NSMutableAttributedString(string: text, textColor: value ? theme.list.freeTextColor : theme.list.freeTextErrorColor)
                 attr.addAttribute(.font, value: Font.regular(13), range: NSMakeRange(0, attr.length))
-                return ItemListActivityTextItem(displayActivity: value, theme: theme, text: attr, sectionId: self.section)
+                return ItemListActivityTextItem(displayActivity: value, presentationData: presentationData, text: attr, sectionId: self.section)
             case let .privateLink(theme, text, value):
-                return ItemListActionItem(theme: theme, title: text, kind: value != nil ? .neutral : .disabled, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: value != nil ? .neutral : .disabled, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     if let value = value {
                         arguments.displayPrivateLinkMenu(value)
                     }
                 }, tag: ChannelVisibilityEntryTag.privateLink)
             case let .editablePublicLink(theme, strings, placeholder, currentText):
-                return ItemListSingleLineInputItem(theme: theme, strings: strings, title: NSAttributedString(string: "t.me/", textColor: theme.list.itemPrimaryTextColor), text: currentText, placeholder: placeholder, type: .regular(capitalization: false, autocorrection: false), clearType: .always, tag: ChannelVisibilityEntryTag.publicLink, sectionId: self.section, textUpdated: { updatedText in
+                return ItemListSingleLineInputItem(presentationData: presentationData, title: NSAttributedString(string: "t.me/", textColor: theme.list.itemPrimaryTextColor), text: currentText, placeholder: placeholder, type: .regular(capitalization: false, autocorrection: false), clearType: .always, tag: ChannelVisibilityEntryTag.publicLink, sectionId: self.section, textUpdated: { updatedText in
                     arguments.updatePublicLinkText(currentText, updatedText)
                 }, updatedFocus: { focus in
                     if focus {
@@ -296,21 +301,21 @@ private enum ChannelVisibilityEntry: ItemListNodeEntry {
                 }, action: {
                 })
             case let .privateLinkInfo(theme, text):
-                return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+                return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .privateLinkCopy(theme, text):
-                return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     arguments.copyPrivateLink()
                 })
             case let .privateLinkRevoke(theme, text):
-                return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     arguments.revokePrivateLink()
                 })
             case let .privateLinkShare(theme, text):
-                return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     arguments.sharePrivateLink()
                 })
             case let .publicLinkInfo(theme, text):
-                return ItemListTextItem(theme: theme, text: .markdown(text), sectionId: self.section)
+                return ItemListTextItem(presentationData: presentationData, text: .markdown(text), sectionId: self.section)
             case let .publicLinkStatus(theme, text, status):
                 var displayActivity = false
                 let color: UIColor
@@ -330,15 +335,15 @@ private enum ChannelVisibilityEntry: ItemListNodeEntry {
                         color = theme.list.freeTextColor
                         displayActivity = true
                 }
-                return ItemListActivityTextItem(displayActivity: displayActivity, theme: theme, text: NSAttributedString(string: text, textColor: color), sectionId: self.section)
+                return ItemListActivityTextItem(displayActivity: displayActivity, presentationData: presentationData, text: NSAttributedString(string: text, textColor: color), sectionId: self.section)
             case let .existingLinksInfo(theme, text):
-                return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+                return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .existingLinkPeerItem(_, theme, strings, dateTimeFormat, nameDisplayOrder, peer, editing, enabled):
                 var label = ""
                 if let addressName = peer.addressName {
                     label = "t.me/" + addressName
                 }
-                return ItemListPeerItem(theme: theme, strings: strings, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, account: arguments.account, peer: peer, presence: nil, text: .text(label), label: .none, editing: editing, switchValue: nil, enabled: enabled, selectable: true, sectionId: self.section, action: nil, setPeerIdWithRevealedOptions: { previousId, id in
+                return ItemListPeerItem(presentationData: presentationData, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, context: arguments.context, peer: peer, presence: nil, text: .text(label), label: .none, editing: editing, switchValue: nil, enabled: enabled, selectable: true, sectionId: self.section, action: nil, setPeerIdWithRevealedOptions: { previousId, id in
                     arguments.setPeerIdWithRevealedOptions(previousId, id)
                 }, removePeer: { peerId in
                     arguments.revokePeerId(peerId)
@@ -461,7 +466,7 @@ private func channelVisibilityControllerEntries(presentationData: PresentationDa
                 } else if let cachedChannelData = view.cachedData as? CachedChannelData, cachedChannelData.peerGeoLocation != nil  {
                     selectedType = .publicChannel
                 } else {
-                    selectedType = .privateChannel
+                    selectedType = .publicChannel
                 }
             }
         }
@@ -508,7 +513,7 @@ private func channelVisibilityControllerEntries(presentationData: PresentationDa
             case .publicChannel:
                 var displayAvailability = false
                 if peer.addressName == nil {
-                    displayAvailability = publicChannelsToRevoke == nil || !(publicChannelsToRevoke!.isEmpty)
+                    displayAvailability = publicChannelsToRevoke != nil && !(publicChannelsToRevoke!.isEmpty)
                 }
                 
                 if displayAvailability {
@@ -633,7 +638,7 @@ private func channelVisibilityControllerEntries(presentationData: PresentationDa
                 if let current = state.selectedType {
                     selectedType = current
                 } else {
-                    selectedType = .privateChannel
+                    selectedType = .publicChannel
                 }
                 
                 let currentAddressName: String
@@ -647,7 +652,12 @@ private func channelVisibilityControllerEntries(presentationData: PresentationDa
                 entries.append(.typePublic(presentationData.theme, presentationData.strings.Channel_Setup_TypePublic, selectedType == .publicChannel))
                 entries.append(.typePrivate(presentationData.theme, presentationData.strings.Channel_Setup_TypePrivate, selectedType == .privateChannel))
                 
-                entries.append(.typeInfo(presentationData.theme, presentationData.strings.Group_Setup_TypePublicHelp))
+                switch selectedType {
+                case .publicChannel:
+                    entries.append(.typeInfo(presentationData.theme, presentationData.strings.Group_Setup_TypePublicHelp))
+                case .privateChannel:
+                    entries.append(.typeInfo(presentationData.theme, presentationData.strings.Group_Setup_TypePrivateHelp))
+                }
                 
                 switch selectedType {
                     case .publicChannel:
@@ -824,6 +834,7 @@ public func channelVisibilityController(context: AccountContext, peerId: PeerId,
     var displayPrivateLinkMenuImpl: ((String) -> Void)?
     var scrollToPublicLinkTextImpl: (() -> Void)?
     var presentControllerImpl: ((ViewController, Any?) -> Void)?
+    var pushControllerImpl: ((ViewController) -> Void)?
     var clearHighlightImpl: (() -> Void)?
     
     let actionsDisposable = DisposableSet()
@@ -844,7 +855,7 @@ public func channelVisibilityController(context: AccountContext, peerId: PeerId,
         return ensuredExistingPeerExportedInvitation(account: context.account, peerId: peerId)
     }).start())
     
-    let arguments = ChannelVisibilityControllerArguments(account: context.account, updateCurrentType: { type in
+    let arguments = ChannelVisibilityControllerArguments(context: context, updateCurrentType: { type in
         updateState { state in
             return state.withUpdatedSelectedType(type)
         }
@@ -913,12 +924,12 @@ public func channelVisibilityController(context: AccountContext, peerId: PeerId,
             if let link = link {
                 UIPasteboard.general.string = link
                 let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                presentControllerImpl?(OverlayStatusController(theme: presentationData.theme, strings: presentationData.strings, type: .genericSuccess(presentationData.strings.Username_LinkCopied, false)), nil)
+                presentControllerImpl?(OverlayStatusController(theme: presentationData.theme, type: .genericSuccess(presentationData.strings.Username_LinkCopied, false)), nil)
             }
         })
     }, revokePrivateLink: {
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        let controller = ActionSheetController(presentationTheme: presentationData.theme)
+        let controller = ActionSheetController(presentationData: presentationData)
         let dismissAction: () -> Void = { [weak controller] in
             controller?.dismissAnimated()
         }
@@ -974,7 +985,7 @@ public func channelVisibilityController(context: AccountContext, peerId: PeerId,
     
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get() |> deliverOnMainQueue, peerView, peersDisablingAddressNameAssignment.get() |> deliverOnMainQueue)
     |> deliverOnMainQueue
-    |> map { presentationData, state, view, publicChannelsToRevoke -> (ItemListControllerState, (ItemListNodeState<ChannelVisibilityEntry>, ChannelVisibilityEntry.ItemGenerationArguments)) in
+    |> map { presentationData, state, view, publicChannelsToRevoke -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let peer = peerViewMainPeer(view)
         
         var rightNavigationButton: ItemListNavigationButton?
@@ -1089,14 +1100,7 @@ public func channelVisibilityController(context: AccountContext, peerId: PeerId,
                         _ = ApplicationSpecificNotice.markAsSeenSetPublicChannelLink(accountManager: context.sharedContext.accountManager).start()
                         
                         let signal = convertGroupToSupergroup(account: context.account, peerId: peerId)
-                        |> map(Optional.init)
-                        |> `catch` { _ -> Signal<PeerId?, NoError> in
-                            return .single(nil)
-                        }
-                        |> mapToSignal { upgradedPeerId -> Signal<PeerId?, NoError> in
-                            guard let upgradedPeerId = upgradedPeerId else {
-                                return .single(nil)
-                            }
+                        |> mapToSignal { upgradedPeerId -> Signal<PeerId?, ConvertGroupToSupergroupError> in
                             return updateAddressName(account: context.account, domain: .peer(upgradedPeerId), name: updatedAddressNameValue.isEmpty ? nil : updatedAddressNameValue)
                             |> `catch` { _ -> Signal<Void, NoError> in
                                 return .complete()
@@ -1105,6 +1109,7 @@ public func channelVisibilityController(context: AccountContext, peerId: PeerId,
                                 return .complete()
                             }
                             |> then(.single(upgradedPeerId))
+                            |> castError(ConvertGroupToSupergroupError.self)
                         }
                         |> deliverOnMainQueue
                         
@@ -1117,11 +1122,16 @@ public func channelVisibilityController(context: AccountContext, peerId: PeerId,
                             } else {
                                 dismissImpl?()
                             }
-                        }, error: { _ in
+                        }, error: { error in
                             updateState { state in
                                 return state.withUpdatedUpdatingAddressName(false)
                             }
-                            presentControllerImpl?(textAlertController(context: context, title: nil, text: presentationData.strings.Login_UnknownError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), nil)
+                            switch error {
+                            case .tooManyChannels:
+                                pushControllerImpl?(oldChannelsController(context: context, intent: .upgrade))
+                            default:
+                                presentControllerImpl?(textAlertController(context: context, title: nil, text: presentationData.strings.Login_UnknownError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), nil)
+                            }
                         }))
                     }
                     
@@ -1210,8 +1220,8 @@ public func channelVisibilityController(context: AccountContext, peerId: PeerId,
             focusItemTag = ChannelVisibilityEntryTag.publicLink
         }
         
-        let controllerState = ItemListControllerState(theme: presentationData.theme, title: .text(title), leftNavigationButton: leftNavigationButton, rightNavigationButton: rightNavigationButton, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: false)
-        let listState = ItemListNodeState(entries: entries, style: .blocks, focusItemTag: focusItemTag, crossfadeState: crossfade, animateChanges: false)
+        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(title), leftNavigationButton: leftNavigationButton, rightNavigationButton: rightNavigationButton, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: false)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, focusItemTag: focusItemTag, crossfadeState: crossfade, animateChanges: false)
         
         return (controllerState, (listState, arguments))
     } |> afterDisposed {
@@ -1322,6 +1332,9 @@ public func channelVisibilityController(context: AccountContext, peerId: PeerId,
     }
     presentControllerImpl = { [weak controller] c, a in
         controller?.present(c, in: .window(.root), with: a)
+    }
+    pushControllerImpl = { [weak controller] c in
+        controller?.push(c)
     }
     clearHighlightImpl = { [weak controller] in
         controller?.clearItemNodesHighlight(animated: true)

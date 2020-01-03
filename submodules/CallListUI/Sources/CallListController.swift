@@ -4,11 +4,16 @@ import Display
 import AsyncDisplayKit
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import ItemListUI
+import PresentationDataUtils
 import AccountContext
 import AlertUI
+import PresentationDataUtils
+import AppBundle
+import LocalizedPeerData
 
 public enum CallListControllerMode {
     case tab
@@ -45,7 +50,7 @@ public final class CallListController: ViewController {
         self.mode = mode
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
         
-        self.segmentedTitleView = ItemListControllerSegmentedTitleView(segments: [self.presentationData.strings.Calls_All, self.presentationData.strings.Calls_Missed], index: 0, color: self.presentationData.theme.rootController.navigationBar.accentTextColor)
+        self.segmentedTitleView = ItemListControllerSegmentedTitleView(theme: self.presentationData.theme, segments: [self.presentationData.strings.Calls_All, self.presentationData.strings.Calls_Missed], selectedIndex: 0)
         
         super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData))
         
@@ -54,8 +59,7 @@ public final class CallListController: ViewController {
         if case .tab = self.mode {
             self.navigationItem.rightBarButtonItem = UIBarButtonItem(image: PresentationResourcesRootController.navigationCallIcon(self.presentationData.theme), style: .plain, target: self, action: #selector(self.callPressed))
             
-            let icon: UIImage? = UIImage(bundleImageName: "Chat List/Tabs/IconCalls")
-            
+            let icon = UIImage(bundleImageName: "Chat List/Tabs/IconCalls")
             self.tabBarItem.title = self.presentationData.strings.Calls_TabTitle
             self.tabBarItem.image = icon
             self.tabBarItem.selectedImage = icon
@@ -101,7 +105,7 @@ public final class CallListController: ViewController {
     private func updateThemeAndStrings() {
         let index = self.segmentedTitleView.index
         self.segmentedTitleView.segments = [self.presentationData.strings.Calls_All, self.presentationData.strings.Calls_Missed]
-        self.segmentedTitleView.color = self.presentationData.theme.rootController.navigationBar.accentTextColor
+        self.segmentedTitleView.theme = self.presentationData.theme
         self.segmentedTitleView.index = index
             
         self.tabBarItem.title = self.presentationData.strings.Calls_TabTitle
@@ -130,7 +134,7 @@ public final class CallListController: ViewController {
         self.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationData: self.presentationData))
         
         if self.isNodeLoaded {
-            self.controllerNode.updateThemeAndStrings(theme: self.presentationData.theme, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, disableAnimations: self.presentationData.disableAnimations)
+            self.controllerNode.updateThemeAndStrings(presentationData: self.presentationData)
         }
         
     }
@@ -193,6 +197,7 @@ public final class CallListController: ViewController {
     
     @objc func callPressed() {
         let controller = self.context.sharedContext.makeContactSelectionController(ContactSelectionControllerParams(context: self.context, title: { $0.Calls_NewCall }))
+        controller.navigationPresentation = .modal
         self.createActionDisposable.set((controller.result
         |> take(1)
         |> deliverOnMainQueue).start(next: { [weak controller, weak self] peer in

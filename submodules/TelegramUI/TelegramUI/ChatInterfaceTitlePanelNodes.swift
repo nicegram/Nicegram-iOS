@@ -1,6 +1,7 @@
 import Foundation
 import UIKit
 import TelegramCore
+import SyncCore
 import AccountContext
 import AvatarNode
 
@@ -8,7 +9,7 @@ func titlePanelForChatPresentationInterfaceState(_ chatPresentationInterfaceStat
     if case .overlay = chatPresentationInterfaceState.mode {
         return nil
     }
-    if chatPresentationInterfaceState.renderedPeer?.peer?.restrictionText(platform: "ios") != nil {
+    if chatPresentationInterfaceState.renderedPeer?.peer?.restrictionText(platform: "ios", contentSettings: context.currentContentSettings.with { $0 }) != nil {
         if (isAllowedChat(peer: chatPresentationInterfaceState.renderedPeer?.peer)) {
         } else {
             return nil

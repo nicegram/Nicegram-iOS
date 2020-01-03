@@ -5,9 +5,11 @@ import AsyncDisplayKit
 import Display
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import TelegramVoip
 import AccountContext
+import AppBundle
 
 private final class CallRatingAlertContentNode: AlertContentNode {
     private let strings: PresentationStrings
@@ -264,7 +266,7 @@ func rateCallAndSendLogs(account: Account, callId: CallId, starsCount: Int, comm
     }
 }
 
-public func callRatingController(sharedContext: SharedAccountContext, account: Account, callId: CallId, userInitiated: Bool, present: @escaping (ViewController, Any) -> Void) -> AlertController {
+public func callRatingController(sharedContext: SharedAccountContext, account: Account, callId: CallId, userInitiated: Bool, present: @escaping (ViewController, Any) -> Void, push: @escaping (ViewController) -> Void) -> AlertController {
     let presentationData = sharedContext.currentPresentationData.with { $0 }
     let theme = presentationData.theme
     let strings = presentationData.strings
@@ -275,19 +277,18 @@ public func callRatingController(sharedContext: SharedAccountContext, account: A
         dismissImpl?(true)
     })]
     
-    contentNode = CallRatingAlertContentNode(theme: AlertControllerTheme(presentationTheme: theme), ptheme: theme, strings: strings, actions: actions, dismiss: {
+    contentNode = CallRatingAlertContentNode(theme: AlertControllerTheme(presentationData: presentationData), ptheme: theme, strings: strings, actions: actions, dismiss: {
         dismissImpl?(true)
     }, apply: { rating in
         dismissImpl?(true)
         if rating < 4 {
-            let controller = callFeedbackController(sharedContext: sharedContext, account: account, callId: callId, rating: rating, userInitiated: userInitiated)
-            present(controller, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+            push(callFeedbackController(sharedContext: sharedContext, account: account, callId: callId, rating: rating, userInitiated: userInitiated))
         } else {
             let _ = rateCallAndSendLogs(account: account, callId: callId, starsCount: rating, comment: "", userInitiated: userInitiated, includeLogs: false).start()
         }
     })
     
-    let controller = AlertController(theme: AlertControllerTheme(presentationTheme: theme), contentNode: contentNode!)
+    let controller = AlertController(theme: AlertControllerTheme(presentationData: presentationData), contentNode: contentNode!)
     dismissImpl = { [weak controller] animated in
         if animated {
             controller?.dismissAnimated()

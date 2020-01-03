@@ -2,11 +2,13 @@ import Foundation
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import Contacts
 import AddressBook
 import TelegramUIPreferences
 import DeviceAccess
 import AccountContext
+import PhoneNumberFormat
 
 private protocol DeviceContactDataContext {
     func personNameDisplayOrder() -> PresentationPersonNameOrder
@@ -414,7 +416,7 @@ private final class DeviceContactDataLegacyContext: DeviceContactDataContext {
     func getExtendedContactData(stableId: DeviceContactStableId) -> DeviceContactExtendedData? {
         if let contact = self.getContactById(stableId: stableId) {
             let basicData = DeviceContactDataLegacyContext.parseContact(contact).1
-            return DeviceContactExtendedData(basicData: basicData, middleName: "", prefix: "", suffix: "", organization: "", jobTitle: "", department: "", emailAddresses: [], urls: [], addresses: [], birthdayDate: nil, socialProfiles: [], instantMessagingProfiles: [])
+            return DeviceContactExtendedData(basicData: basicData, middleName: "", prefix: "", suffix: "", organization: "", jobTitle: "", department: "", emailAddresses: [], urls: [], addresses: [], birthdayDate: nil, socialProfiles: [], instantMessagingProfiles: [], note: "")
         } else {
             return nil
         }
@@ -447,7 +449,7 @@ private final class DeviceContactDataLegacyContext: DeviceContactDataContext {
                 let stableId = "ab-\(ABRecordGetRecordID(contact))"
                 if let contact = self.getContactById(stableId: stableId) {
                     let parsedContact = DeviceContactDataLegacyContext.parseContact(contact).1
-                    result = (stableId, DeviceContactExtendedData(basicData: parsedContact, middleName: "", prefix: "", suffix: "", organization: "", jobTitle: "", department: "", emailAddresses: [], urls: [], addresses: [], birthdayDate: nil, socialProfiles: [], instantMessagingProfiles: []))
+                    result = (stableId, DeviceContactExtendedData(basicData: parsedContact, middleName: "", prefix: "", suffix: "", organization: "", jobTitle: "", department: "", emailAddresses: [], urls: [], addresses: [], birthdayDate: nil, socialProfiles: [], instantMessagingProfiles: [], note: ""))
                 }
             }
         }

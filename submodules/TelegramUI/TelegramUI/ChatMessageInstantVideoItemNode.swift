@@ -5,12 +5,14 @@ import Display
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import TelegramUIPreferences
 import TextFormat
 import AccountContext
 import LocalizedPeerData
 import ContextUI
+import Markdown
 
 private let nameFont = Font.medium(14.0)
 
@@ -18,7 +20,7 @@ private let inlineBotPrefixFont = Font.regular(14.0)
 private let inlineBotNameFont = nameFont
 
 class ChatMessageInstantVideoItemNode: ChatMessageItemView {
-    private let contextSourceNode: ContextContentContainingNode
+    private let contextSourceNode: ContextExtractedContentContainingNode
     private let interactiveVideoNode: ChatMessageInteractiveInstantVideoNode
     
     private var selectionNode: ChatMessageSelectionNode?
@@ -54,7 +56,7 @@ class ChatMessageInstantVideoItemNode: ChatMessageItemView {
     }
     
     required init() {
-        self.contextSourceNode = ContextContentContainingNode()
+        self.contextSourceNode = ContextExtractedContentContainingNode()
         self.interactiveVideoNode = ChatMessageInteractiveInstantVideoNode()
         
         super.init(layerBacked: false)
@@ -113,6 +115,7 @@ class ChatMessageInstantVideoItemNode: ChatMessageItemView {
         let currentForwardInfo = self.appliedForwardInfo
         
         return { item, params, mergedTop, mergedBottom, dateHeaderAtBottom in
+            let layoutConstants = chatMessageItemLayoutConstants(layoutConstants, params: params)
             let incoming = item.message.effectivelyIncoming(item.context.account.peerId)
             
             let avatarInset: CGFloat
@@ -264,7 +267,7 @@ class ChatMessageInstantVideoItemNode: ChatMessageItemView {
                             if let sourcePeer = item.message.peers[attribute.messageId.peerId] {
                                 let inlineBotNameColor = serviceMessageColorComponents(theme: item.presentationData.theme.theme, wallpaper: item.presentationData.theme.wallpaper).primaryText
                                 
-                                let nameString = NSAttributedString(string: sourcePeer.displayTitle, font: inlineBotPrefixFont, textColor: inlineBotNameColor)
+                                let nameString = NSAttributedString(string: sourcePeer.displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder), font: inlineBotPrefixFont, textColor: inlineBotNameColor)
                                 
                                 viaBotApply = viaBotLayout(TextNodeLayoutArguments(attributedString: nameString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: max(0, availableWidth), height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
                             }
@@ -346,7 +349,7 @@ class ChatMessageInstantVideoItemNode: ChatMessageItemView {
                 } else {
                     if let currentForwardInfo = currentForwardInfo, forwardInfo.author == nil && currentForwardInfo.0 != nil {
                         forwardSource = nil
-                        forwardAuthorSignature = currentForwardInfo.0?.displayTitle
+                        forwardAuthorSignature = currentForwardInfo.0?.displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder)
                     } else {
                         forwardSource = forwardInfo.author
                         forwardAuthorSignature = forwardInfo.authorSignature
@@ -761,17 +764,20 @@ class ChatMessageInstantVideoItemNode: ChatMessageItemView {
             let offset: CGFloat = incoming ? 42.0 : 0.0
             
             if let selectionNode = self.selectionNode {
+                let selectionFrame = CGRect(origin: CGPoint(x: -offset, y: 0.0), size: CGSize(width: self.contentBounds.size.width, height: self.contentBounds.size.height))
+                selectionNode.frame = selectionFrame
+                selectionNode.updateLayout(size: selectionFrame.size)
                 selectionNode.updateSelected(selected, animated: animated)
-                selectionNode.frame = CGRect(origin: CGPoint(x: -offset, y: 0.0), size: CGSize(width: self.contentBounds.size.width, height: self.contentBounds.size.height))
                 self.subnodeTransform = CATransform3DMakeTranslation(offset, 0.0, 0.0);
             } else {
-                let selectionNode = ChatMessageSelectionNode(theme: item.presentationData.theme.theme, toggle: { [weak self] value in
+                let selectionNode = ChatMessageSelectionNode(wallpaper: item.presentationData.theme.wallpaper, theme: item.presentationData.theme.theme, toggle: { [weak self] value in
                     if let strongSelf = self, let item = strongSelf.item {
                         item.controllerInteraction.toggleMessagesSelection([item.message.id], value)
                     }
                 })
-                
-                selectionNode.frame = CGRect(origin: CGPoint(x: -offset, y: 0.0), size: CGSize(width: self.contentBounds.size.width, height: self.contentBounds.size.height))
+                let selectionFrame = CGRect(origin: CGPoint(x: -offset, y: 0.0), size: CGSize(width: self.contentBounds.size.width, height: self.contentBounds.size.height))
+                selectionNode.frame = selectionFrame
+                selectionNode.updateLayout(size: selectionFrame.size)
                 self.addSubnode(selectionNode)
                 self.selectionNode = selectionNode
                 selectionNode.updateSelected(selected, animated: false)
@@ -830,7 +836,7 @@ class ChatMessageInstantVideoItemNode: ChatMessageItemView {
         return self.interactiveVideoNode.playMediaWithSound()
     }
     
-    override func getMessageContextSourceNode() -> ContextContentContainingNode? {
+    override func getMessageContextSourceNode() -> ContextExtractedContentContainingNode? {
         return self.contextSourceNode
     }
     

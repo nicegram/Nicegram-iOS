@@ -4,6 +4,7 @@ import AsyncDisplayKit
 import Display
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import AccountContext
@@ -89,7 +90,7 @@ final class InstantPageFeedbackNode: ASDisplayNode, InstantPageNode {
     func updateLayout(size: CGSize, transition: ContainedViewLayoutTransition) {
     }
     
-    func transitionNode(media: InstantPageMedia) -> (ASDisplayNode, () -> (UIView?, UIView?))? {
+    func transitionNode(media: InstantPageMedia) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         return nil
     }
     

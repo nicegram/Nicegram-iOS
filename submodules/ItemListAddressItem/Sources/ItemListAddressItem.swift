@@ -5,8 +5,10 @@ import AsyncDisplayKit
 import SwiftSignalKit
 import TelegramPresentationData
 import ItemListUI
+import PresentationDataUtils
 import AccountContext
 import TextFormat
+import AppBundle
 
 public final class ItemListAddressItem: ListViewItem, ItemListItem {
     let theme: PresentationTheme

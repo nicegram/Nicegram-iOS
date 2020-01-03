@@ -4,10 +4,12 @@ import Display
 import AsyncDisplayKit
 import SwiftSignalKit
 import TelegramCore
+import SyncCore
 import TelegramUIPreferences
 import TelegramPresentationData
 import LegacyComponents
 import ItemListUI
+import PresentationDataUtils
 
 class ChatSlowmodeItem: ListViewItem, ItemListItem {
     let theme: PresentationTheme
@@ -101,6 +103,12 @@ class ChatSlowmodeItemNode: ListViewItemNode {
         super.init(layerBacked: false, dynamicBounce: false)
         
         self.textNodes.forEach(self.addSubnode)
+    }
+    
+    func forceSetValue(_ value: Int32) {
+        if let sliderView = self.sliderView {
+            sliderView.value = CGFloat(value)
+        }
     }
     
     func updateSliderView() {

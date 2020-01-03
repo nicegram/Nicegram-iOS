@@ -4,15 +4,18 @@ import Display
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import LegacyComponents
 import LocalAuthentication
 import TelegramPresentationData
 import TelegramUIPreferences
 import ItemListUI
+import PresentationDataUtils
 import AccountContext
 import LocalAuth
 import PasscodeUI
 import TelegramStringFormatting
+import TelegramIntents
 
 private final class PasscodeOptionsControllerArguments {
     let turnPasscodeOff: () -> Void
@@ -104,26 +107,27 @@ private enum PasscodeOptionsEntry: ItemListNodeEntry {
         return lhs.stableId < rhs.stableId
     }
     
-    func item(_ arguments: PasscodeOptionsControllerArguments) -> ListViewItem {
+    func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
+        let arguments = arguments as! PasscodeOptionsControllerArguments
         switch self {
             case let .togglePasscode(theme, title, value):
-                return ItemListActionItem(theme: theme, title: title, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, title: title, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     if value {
                         arguments.turnPasscodeOff()
                     }
                 })
             case let .changePasscode(theme, title):
-                return ItemListActionItem(theme: theme, title: title, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, title: title, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     arguments.changePasscode()
                 })
             case let .settingInfo(theme, text):
-                return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+                return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .autoLock(theme, title, value):
-                return ItemListDisclosureItem(theme: theme, title: title, label: value, sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, title: title, label: value, sectionId: self.section, style: .blocks, action: {
                     arguments.changePasscodeTimeout()
                 })
             case let .touchId(theme, title, value):
-                return ItemListSwitchItem(theme: theme, title: title, value: value, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, title: title, value: value, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.changeTouchId(value)
                 })
         }
@@ -230,7 +234,7 @@ func passcodeOptionsController(context: AccountContext) -> ViewController {
     
     let arguments = PasscodeOptionsControllerArguments(turnPasscodeOff: {
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        let actionSheet = ActionSheetController(presentationTheme: presentationData.theme)
+        let actionSheet = ActionSheetController(presentationData: presentationData)
         actionSheet.setItemGroups([ActionSheetItemGroup(items: [
             ActionSheetButtonItem(title: presentationData.strings.PasscodeSettings_TurnPasscodeOff, color: .destructive, action: { [weak actionSheet] in
                 actionSheet?.dismissAnimated()
@@ -251,9 +255,9 @@ func passcodeOptionsController(context: AccountContext) -> ViewController {
                         let _ = (context.sharedContext.accountManager.transaction({ transaction -> Void in
                             var data = transaction.getAccessChallengeData()
                             if numerical {
-                                data = PostboxAccessChallengeData.numericalPassword(value: passcode, timeout: data.autolockDeadline, attempts: nil)
+                                data = PostboxAccessChallengeData.numericalPassword(value: passcode)
                             } else {
-                                data = PostboxAccessChallengeData.plaintextPassword(value: passcode, timeout: data.autolockDeadline, attempts: nil)
+                                data = PostboxAccessChallengeData.plaintextPassword(value: passcode)
                             }
                             transaction.setAccessChallengeData(data)
                             
@@ -275,7 +279,7 @@ func passcodeOptionsController(context: AccountContext) -> ViewController {
                 }
             })
             ]), ActionSheetItemGroup(items: [
-                ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
                     actionSheet?.dismissAnimated()
                 })
             ])])
@@ -295,9 +299,9 @@ func passcodeOptionsController(context: AccountContext) -> ViewController {
                 let _ = (context.sharedContext.accountManager.transaction({ transaction -> Void in
                     var data = transaction.getAccessChallengeData()
                     if numerical {
-                        data = PostboxAccessChallengeData.numericalPassword(value: passcode, timeout: data.autolockDeadline, attempts: nil)
+                        data = PostboxAccessChallengeData.numericalPassword(value: passcode)
                     } else {
-                        data = PostboxAccessChallengeData.plaintextPassword(value: passcode, timeout: data.autolockDeadline, attempts: nil)
+                        data = PostboxAccessChallengeData.plaintextPassword(value: passcode)
                     }
                     transaction.setAccessChallengeData(data)
                 }) |> deliverOnMainQueue).start(next: { _ in
@@ -310,7 +314,7 @@ func passcodeOptionsController(context: AccountContext) -> ViewController {
         })
     }, changePasscodeTimeout: {
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        let actionSheet = ActionSheetController(presentationTheme: presentationData.theme)
+        let actionSheet = ActionSheetController(presentationData: presentationData)
         var items: [ActionSheetItem] = []
         let setAction: (Int32?) -> Void = { value in
             let _ = (passcodeOptionsDataPromise.get()
@@ -342,7 +346,7 @@ func passcodeOptionsController(context: AccountContext) -> ViewController {
         }
         
         actionSheet.setItemGroups([ActionSheetItemGroup(items: items), ActionSheetItemGroup(items: [
-                ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
                     actionSheet?.dismissAnimated()
                 })
             ])])
@@ -358,10 +362,10 @@ func passcodeOptionsController(context: AccountContext) -> ViewController {
     })
     
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get(), passcodeOptionsDataPromise.get()) |> deliverOnMainQueue
-        |> map { presentationData, state, passcodeOptionsData -> (ItemListControllerState, (ItemListNodeState<PasscodeOptionsEntry>, PasscodeOptionsEntry.ItemGenerationArguments)) in
+        |> map { presentationData, state, passcodeOptionsData -> (ItemListControllerState, (ItemListNodeState, Any)) in
             
-            let controllerState = ItemListControllerState(theme: presentationData.theme, title: .text(presentationData.strings.PasscodeSettings_Title), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: false)
-            let listState = ItemListNodeState(entries: passcodeOptionsControllerEntries(presentationData: presentationData, state: state, passcodeOptionsData: passcodeOptionsData), style: .blocks, emptyStateItem: nil, animateChanges: false)
+            let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(presentationData.strings.PasscodeSettings_Title), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: false)
+            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: passcodeOptionsControllerEntries(presentationData: presentationData, state: state, passcodeOptionsData: passcodeOptionsData), style: .blocks, emptyStateItem: nil, animateChanges: false)
             
             return (controllerState, (listState, arguments))
         } |> afterDisposed {
@@ -400,9 +404,9 @@ public func passcodeOptionsAccessController(context: AccountContext, animateIn: 
                     let _ = (context.sharedContext.accountManager.transaction({ transaction -> Void in
                         var data = transaction.getAccessChallengeData()
                         if numerical {
-                            data = PostboxAccessChallengeData.numericalPassword(value: passcode, timeout: data.autolockDeadline, attempts: nil)
+                            data = PostboxAccessChallengeData.numericalPassword(value: passcode)
                         } else {
-                            data = PostboxAccessChallengeData.plaintextPassword(value: passcode, timeout: data.autolockDeadline, attempts: nil)
+                            data = PostboxAccessChallengeData.plaintextPassword(value: passcode)
                         }
                         transaction.setAccessChallengeData(data)
                         
@@ -411,6 +415,7 @@ public func passcodeOptionsAccessController(context: AccountContext, animateIn: 
                     }, error: { _ in
                     }, completed: {
                         completion(true)
+                        deleteAllSendMessageIntents()
                     })
                 }
                 pushController?(setupController)
@@ -423,9 +428,9 @@ public func passcodeOptionsAccessController(context: AccountContext, animateIn: 
                 switch challenge {
                     case .none:
                         succeed = true
-                    case let .numericalPassword(code, _, _):
+                    case let .numericalPassword(code):
                         succeed = passcode == normalizeArabicNumeralString(code, type: .western)
-                    case let .plaintextPassword(code, _, _):
+                    case let .plaintextPassword(code):
                         succeed = passcode == code
                 }
                 if succeed {
@@ -438,7 +443,7 @@ public func passcodeOptionsAccessController(context: AccountContext, animateIn: 
     }
 }
 
-public func passcodeEntryController(context: AccountContext, animateIn: Bool = true, completion: @escaping (Bool) -> Void) -> Signal<ViewController?, NoError> {
+public func passcodeEntryController(context: AccountContext, animateIn: Bool = true, modalPresentation: Bool = false, completion: @escaping (Bool) -> Void) -> Signal<ViewController?, NoError> {
     return context.sharedContext.accountManager.transaction { transaction -> PostboxAccessChallengeData in
         return transaction.getAccessChallengeData()
     }
@@ -455,14 +460,18 @@ public func passcodeEntryController(context: AccountContext, animateIn: Bool = t
             return nil
         } else {
             let biometrics: PasscodeEntryControllerBiometricsMode
+            #if targetEnvironment(simulator)
+            biometrics = .enabled(nil)
+            #else
             if let passcodeSettings = passcodeSettings, passcodeSettings.enableBiometrics {
                 biometrics = .enabled(context.sharedContext.applicationBindings.isMainApp ? passcodeSettings.biometricsDomainState : passcodeSettings.shareBiometricsDomainState)
             } else {
                 biometrics = .none
             }
-            let controller = PasscodeEntryController(context: context, challengeData: challenge, biometrics: biometrics, arguments: PasscodeEntryControllerPresentationArguments(animated: false, fadeIn: true, cancel: {
+            #endif
+            let controller = PasscodeEntryController(applicationBindings: context.sharedContext.applicationBindings, accountManager: context.sharedContext.accountManager, appLockContext: context.sharedContext.appLockContext, presentationData: context.sharedContext.currentPresentationData.with { $0 }, presentationDataSignal: context.sharedContext.presentationData, challengeData: challenge, biometrics: biometrics, arguments: PasscodeEntryControllerPresentationArguments(animated: false, fadeIn: true, cancel: {
                 completion(false)
-            }))
+            }, modalPresentation: modalPresentation))
             controller.presentationCompleted = { [weak controller] in
                 Queue.mainQueue().after(0.5, { [weak controller] in
                     controller?.requestBiometrics()

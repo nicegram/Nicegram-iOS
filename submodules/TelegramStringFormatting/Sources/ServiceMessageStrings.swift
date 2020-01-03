@@ -1,11 +1,13 @@
 import Foundation
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import TelegramUIPreferences
 import TextFormat
 import LocalizedPeerData
 import Display
+import Markdown
 
 private let titleFont = Font.regular(13.0)
 private let titleBoldFont = Font.bold(13.0)
@@ -65,10 +67,15 @@ public func universalServiceMessageString(presentationData: (PresentationTheme, 
                     }
                 } else {
                     var attributePeerIds: [(Int, PeerId?)] = [(0, message.author?.id)]
+                    let resultTitleString: (String, [(Int, NSRange)])
                     if peerIds.count == 1 {
                         attributePeerIds.append((1, peerIds.first))
+                        resultTitleString = strings.Notification_Invited(authorName, peerDebugDisplayTitles(peerIds, message.peers))
+                    } else {
+                        resultTitleString = strings.Notification_InvitedMultiple(authorName, peerDebugDisplayTitles(peerIds, message.peers))
                     }
-                    attributedString = addAttributesToStringWithRanges(strings.Notification_Invited(authorName, peerDebugDisplayTitles(peerIds, message.peers)), body: bodyAttributes, argumentAttributes: peerMentionsAttributes(primaryTextColor: primaryTextColor, peerIds: attributePeerIds))
+                    
+                    attributedString = addAttributesToStringWithRanges(resultTitleString, body: bodyAttributes, argumentAttributes: peerMentionsAttributes(primaryTextColor: primaryTextColor, peerIds: attributePeerIds))
                 }
             case let .removedMembers(peerIds):
                 if peerIds.first == message.author?.id {

@@ -5,6 +5,7 @@ import Display
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import CoreImage
 import TelegramPresentationData
 import Compression
@@ -13,8 +14,10 @@ import AccountContext
 import MediaResources
 import StickerResources
 import ContextUI
-import AnimationUI
+import AnimatedStickerNode
+import TelegramAnimatedStickerNode
 import Emoji
+import Markdown
 
 private let nameFont = Font.medium(14.0)
 private let inlineBotPrefixFont = Font.regular(14.0)
@@ -107,7 +110,7 @@ private class ChatMessageHeartbeatHaptic {
 }
 
 class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
-    private let contextSourceNode: ContextContentContainingNode
+    private let contextSourceNode: ContextExtractedContentContainingNode
     let imageNode: TransformImageNode
     private let animationNode: AnimatedStickerNode
     private var didSetUpAnimationNode = false
@@ -138,7 +141,7 @@ class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
     private var currentSwipeToReplyTranslation: CGFloat = 0.0
     
     required init() {
-        self.contextSourceNode = ContextContentContainingNode()
+        self.contextSourceNode = ContextExtractedContentContainingNode()
         self.imageNode = TransformImageNode()
         self.animationNode = AnimatedStickerNode()
         self.dateAndStatusNode = ChatMessageDateAndStatusNode()
@@ -241,8 +244,8 @@ class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
             if let telegramFile = media as? TelegramMediaFile {
                 if self.telegramFile?.id != telegramFile.id {
                     self.telegramFile = telegramFile
-                    let dimensions = telegramFile.dimensions ?? CGSize(width: 512.0, height: 512.0)
-                    self.imageNode.setSignal(chatMessageAnimatedSticker(postbox: item.context.account.postbox, file: telegramFile, small: false, size: dimensions.aspectFitted(CGSize(width: 384.0, height: 384.0)), thumbnail: false))
+                    let dimensions = telegramFile.dimensions ?? PixelDimensions(width: 512, height: 512)
+                    self.imageNode.setSignal(chatMessageAnimatedSticker(postbox: item.context.account.postbox, file: telegramFile, small: false, size: dimensions.cgSize.aspectFitted(CGSize(width: 384.0, height: 384.0)), thumbnail: false))
                     self.updateVisibility()
                     self.disposable.set(freeMediaFileInteractiveFetched(account: item.context.account, fileReference: .message(message: MessageReference(item.message), media: telegramFile)).start())
                 }
@@ -254,12 +257,12 @@ class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
         if self.telegramFile == nil, let emojiFile = item.associatedData.animatedEmojiStickers[emoji]?.file {
             if self.emojiFile?.id != emojiFile.id {
                 self.emojiFile = emojiFile
-                let dimensions = emojiFile.dimensions ?? CGSize(width: 512.0, height: 512.0)
+                let dimensions = emojiFile.dimensions ?? PixelDimensions(width: 512, height: 512)
                 var fitzModifier: EmojiFitzModifier?
                 if let fitz = fitz {
                     fitzModifier = EmojiFitzModifier(emoji: fitz)
                 }
-                self.imageNode.setSignal(chatMessageAnimatedSticker(postbox: item.context.account.postbox, file: emojiFile, small: false, size: dimensions.aspectFilled(CGSize(width: 384.0, height: 384.0)), fitzModifier: fitzModifier, thumbnail: false))
+                self.imageNode.setSignal(chatMessageAnimatedSticker(postbox: item.context.account.postbox, file: emojiFile, small: false, size: dimensions.cgSize.aspectFilled(CGSize(width: 384.0, height: 384.0)), fitzModifier: fitzModifier, thumbnail: false))
                 self.disposable.set(freeMediaFileInteractiveFetched(account: item.context.account, fileReference: .standalone(media: emojiFile)).start())
                 self.updateVisibility()
             }
@@ -311,9 +314,9 @@ class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                 }
                 
                 if let file = file {
-                    let dimensions = file.dimensions ?? CGSize(width: 512.0, height: 512.0)
-                    let fittedSize = isEmoji ? dimensions.aspectFilled(CGSize(width: 384.0, height: 384.0)) : dimensions.aspectFitted(CGSize(width: 384.0, height: 384.0))
-                    self.animationNode.setup(account: item.context.account, resource: .resource(file.resource), fitzModifier: fitzModifier, width: Int(fittedSize.width), height: Int(fittedSize.height), playbackMode: playbackMode, mode: .cached)
+                    let dimensions = file.dimensions ?? PixelDimensions(width: 512, height: 512)
+                    let fittedSize = isEmoji ? dimensions.cgSize.aspectFilled(CGSize(width: 384.0, height: 384.0)) : dimensions.cgSize.aspectFitted(CGSize(width: 384.0, height: 384.0))
+                    self.animationNode.setup(source: AnimatedStickerResourceSource(account: item.context.account, resource: file.resource, fitzModifier: fitzModifier), width: Int(fittedSize.width), height: Int(fittedSize.height), playbackMode: playbackMode, mode: .cached)
                 }
             }
         }
@@ -339,23 +342,24 @@ class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
         let currentItem = self.item
         
         return { item, params, mergedTop, mergedBottom, dateHeaderAtBottom in
+            let layoutConstants = chatMessageItemLayoutConstants(layoutConstants, params: params)
             let incoming = item.message.effectivelyIncoming(item.context.account.peerId)
             var imageSize: CGSize = CGSize(width: 200.0, height: 200.0)
             var isEmoji = false
             if let telegramFile = telegramFile {
                 if let dimensions = telegramFile.dimensions {
-                    imageSize = dimensions.aspectFitted(displaySize)
+                    imageSize = dimensions.cgSize.aspectFitted(displaySize)
                 } else if let thumbnailSize = telegramFile.previewRepresentations.first?.dimensions {
-                    imageSize = thumbnailSize.aspectFitted(displaySize)
+                    imageSize = thumbnailSize.cgSize.aspectFitted(displaySize)
                 }
             } else if let emojiFile = emojiFile {
                 isEmoji = true
                 
                 let displaySize = CGSize(width: floor(displaySize.width * item.presentationData.animatedEmojiScale), height: floor(displaySize.height * item.presentationData.animatedEmojiScale))
                 if let dimensions = emojiFile.dimensions {
-                    imageSize = CGSize(width: displaySize.width * dimensions.width / 512.0, height: displaySize.height * dimensions.height / 512.0)
+                    imageSize = CGSize(width: displaySize.width * CGFloat(dimensions.width) / 512.0, height: displaySize.height * CGFloat(dimensions.height) / 512.0)
                 } else if let thumbnailSize = emojiFile.previewRepresentations.first?.dimensions {
-                    imageSize = thumbnailSize.aspectFitted(displaySize)
+                    imageSize = thumbnailSize.cgSize.aspectFitted(displaySize)
                 }
             }
             
@@ -468,9 +472,12 @@ class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                 }
             }
             
+            var edited = false
             var viewCount: Int? = nil
             for attribute in item.message.attributes {
-                if let attribute = attribute as? ViewCountMessageAttribute {
+                if let _ = attribute as? EditedMessageAttribute, isEmoji {
+                    edited = true
+                } else if let attribute = attribute as? ViewCountMessageAttribute {
                     viewCount = attribute.count
                 }
             }
@@ -490,7 +497,7 @@ class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
             
             let dateText = stringForMessageTimestampStatus(accountPeerId: item.context.account.peerId, message: item.message, dateTimeFormat: item.presentationData.dateTimeFormat, nameDisplayOrder: item.presentationData.nameDisplayOrder, strings: item.presentationData.strings, format: .minimal, reactionCount: dateReactionCount)
             
-            let (dateAndStatusSize, dateAndStatusApply) = makeDateAndStatusLayout(item.context, item.presentationData, false, viewCount, dateText, statusType, CGSize(width: params.width, height: CGFloat.greatestFiniteMagnitude), dateReactions)
+            let (dateAndStatusSize, dateAndStatusApply) = makeDateAndStatusLayout(item.context, item.presentationData, edited, viewCount, dateText, statusType, CGSize(width: params.width, height: CGFloat.greatestFiniteMagnitude), dateReactions)
             
             var viaBotApply: (TextNodeLayout, () -> TextNode)?
             var replyInfoApply: (CGSize, () -> ChatMessageReplyInfoNode)?
@@ -532,8 +539,7 @@ class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                         if let sourcePeer = item.message.peers[attribute.messageId.peerId] {
                             let inlineBotNameColor = serviceMessageColorComponents(theme: item.presentationData.theme.theme, wallpaper: item.presentationData.theme.wallpaper).primaryText
                             
-                            let nameString = NSAttributedString(string: sourcePeer.displayTitle, font: inlineBotPrefixFont, textColor: inlineBotNameColor)
-                            
+                            let nameString = NSAttributedString(string: sourcePeer.displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder), font: inlineBotPrefixFont, textColor: inlineBotNameColor)
                             viaBotApply = viaBotLayout(TextNodeLayoutArguments(attributedString: nameString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: max(0, availableWidth), height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
                         }
                     }
@@ -658,15 +664,43 @@ class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                         strongSelf.replyBackgroundNode = nil
                     }
                     
+                    if let (viaBotLayout, viaBotApply) = viaBotApply {
+                        let viaBotNode = viaBotApply()
+                        if strongSelf.viaBotNode == nil {
+                            strongSelf.viaBotNode = viaBotNode
+                            strongSelf.addSubnode(viaBotNode)
+                        }
+                        let viaBotFrame = CGRect(origin: CGPoint(x: (!incoming ? (params.leftInset + layoutConstants.bubble.edgeInset + 15.0) : (params.width - params.rightInset - viaBotLayout.size.width - layoutConstants.bubble.edgeInset - 14.0)), y: 8.0), size: viaBotLayout.size)
+                        viaBotNode.frame = viaBotFrame
+                        strongSelf.replyBackgroundNode?.frame = CGRect(origin: CGPoint(x: viaBotFrame.minX - 6.0, y: viaBotFrame.minY - 2.0 - UIScreenPixel), size: CGSize(width: viaBotFrame.size.width + 11.0, height: viaBotFrame.size.height + 5.0))
+                    } else if let viaBotNode = strongSelf.viaBotNode {
+                        viaBotNode.removeFromSupernode()
+                        strongSelf.viaBotNode = nil
+                    }
+                    
                     if let (replyInfoSize, replyInfoApply) = replyInfoApply {
                         let replyInfoNode = replyInfoApply()
                         if strongSelf.replyInfoNode == nil {
                             strongSelf.replyInfoNode = replyInfoNode
                             strongSelf.addSubnode(replyInfoNode)
                         }
-                        let replyInfoFrame = CGRect(origin: CGPoint(x: (!incoming ? (params.leftInset + layoutConstants.bubble.edgeInset + 10.0) : (params.width - params.rightInset - replyInfoSize.width - layoutConstants.bubble.edgeInset - 10.0)), y: 8.0), size: replyInfoSize)
+                        var viaBotSize = CGSize()
+                        if let viaBotNode = strongSelf.viaBotNode {
+                            viaBotSize = viaBotNode.frame.size
+                        }
+                        let replyInfoFrame = CGRect(origin: CGPoint(x: (!incoming ? (params.leftInset + layoutConstants.bubble.edgeInset + 10.0) : (params.width - params.rightInset - max(replyInfoSize.width, viaBotSize.width) - layoutConstants.bubble.edgeInset - 10.0)), y: 8.0 + viaBotSize.height), size: replyInfoSize)
+                        if let viaBotNode = strongSelf.viaBotNode {
+                            if replyInfoFrame.minX < viaBotNode.frame.minX {
+                                viaBotNode.frame = viaBotNode.frame.offsetBy(dx: replyInfoFrame.minX - viaBotNode.frame.minX, dy: 0.0)
+                            }
+                        }
                         replyInfoNode.frame = replyInfoFrame
-                        strongSelf.replyBackgroundNode?.frame = CGRect(origin: CGPoint(x: replyInfoFrame.minX - 4.0, y: replyInfoFrame.minY - 2.0), size: CGSize(width: replyInfoFrame.size.width + 8.0, height: replyInfoFrame.size.height + 5.0))
+                        strongSelf.replyBackgroundNode?.frame = CGRect(origin: CGPoint(x: replyInfoFrame.minX - 4.0, y: replyInfoFrame.minY - viaBotSize.height - 2.0), size: CGSize(width: max(replyInfoFrame.size.width, viaBotSize.width) + 8.0, height: replyInfoFrame.size.height + viaBotSize.height + 5.0))
+                        
+                        if let _ = item.controllerInteraction.selectionState, isEmoji {
+                            replyInfoNode.alpha = 0.0
+                            strongSelf.replyBackgroundNode?.alpha = 0.0
+                        }
                     } else if let replyInfoNode = strongSelf.replyInfoNode {
                         replyInfoNode.removeFromSupernode()
                         strongSelf.replyInfoNode = nil
@@ -865,7 +899,7 @@ class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
             self.item?.controllerInteraction.clickThroughMessage()
         case .longTap, .doubleTap:
             if let item = self.item, self.imageNode.frame.contains(location) {
-                item.controllerInteraction.openMessageContextMenu(item.message, false, self, self.imageNode.frame, nil)
+                item.controllerInteraction.openMessageContextMenu(item.message, false, self, self.imageNode.frame, recognizer)
                 return false
             }
         case .hold:
@@ -976,16 +1010,20 @@ class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
             
             if let selectionNode = self.selectionNode {
                 selectionNode.updateSelected(selected, animated: false)
-                selectionNode.frame = CGRect(origin: CGPoint(x: -offset, y: 0.0), size: CGSize(width: self.contentBounds.size.width, height: self.contentBounds.size.height))
+                let selectionFrame = CGRect(origin: CGPoint(x: -offset, y: 0.0), size: CGSize(width: self.contentBounds.size.width, height: self.contentBounds.size.height))
+                selectionNode.frame = selectionFrame
+                selectionNode.updateLayout(size: selectionFrame.size)
                 self.subnodeTransform = CATransform3DMakeTranslation(offset, 0.0, 0.0);
             } else {
-                let selectionNode = ChatMessageSelectionNode(theme: item.presentationData.theme.theme, toggle: { [weak self] value in
+                let selectionNode = ChatMessageSelectionNode(wallpaper: item.presentationData.theme.wallpaper, theme: item.presentationData.theme.theme, toggle: { [weak self] value in
                     if let strongSelf = self, let item = strongSelf.item {
                         item.controllerInteraction.toggleMessagesSelection([item.message.id], value)
                     }
                 })
                 
-                selectionNode.frame = CGRect(origin: CGPoint(x: -offset, y: 0.0), size: CGSize(width: self.contentBounds.size.width, height: self.contentBounds.size.height))
+                let selectionFrame = CGRect(origin: CGPoint(x: -offset, y: 0.0), size: CGSize(width: self.contentBounds.size.width, height: self.contentBounds.size.height))
+                selectionNode.frame = selectionFrame
+                selectionNode.updateLayout(size: selectionFrame.size)
                 self.addSubnode(selectionNode)
                 self.selectionNode = selectionNode
                 selectionNode.updateSelected(selected, animated: false)
@@ -1063,7 +1101,7 @@ class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
         self.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
     }
     
-    override func getMessageContextSourceNode() -> ContextContentContainingNode? {
+    override func getMessageContextSourceNode() -> ContextExtractedContentContainingNode? {
         return self.contextSourceNode
     }
     

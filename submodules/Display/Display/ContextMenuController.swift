@@ -12,7 +12,7 @@ public final class ContextMenuControllerPresentationArguments {
     }
 }
 
-public final class ContextMenuController: ViewController, KeyShortcutResponder {
+public final class ContextMenuController: ViewController, KeyShortcutResponder, StandalonePresentableController {
     private var contextMenuNode: ContextMenuNode {
         return self.displayNode as! ContextMenuNode
     }
@@ -38,6 +38,8 @@ public final class ContextMenuController: ViewController, KeyShortcutResponder {
         self.hasHapticFeedback = hasHapticFeedback
         
         super.init(navigationBarPresentationData: nil)
+        
+        self.statusBar.statusBarStyle = .Ignore
     }
     
     required public init(coder aDecoder: NSCoder) {

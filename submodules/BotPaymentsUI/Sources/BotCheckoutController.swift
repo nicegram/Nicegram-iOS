@@ -3,6 +3,7 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import Postbox
 import TelegramPresentationData
@@ -86,11 +87,7 @@ public final class BotCheckoutController: ViewController {
     override public func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {
         super.containerLayoutUpdated(layout, transition: transition)
         
-        self.controllerNode.containerLayoutUpdated(layout, navigationBarHeight: self.navigationHeight, transition: transition)
-    }
-    
-    override public func dismiss(completion: (() -> Void)? = nil) {
-        self.controllerNode.animateOut(completion: completion)
+        self.controllerNode.containerLayoutUpdated(layout, navigationBarHeight: self.navigationHeight, transition: transition, additionalInsets: UIEdgeInsets())
     }
     
     @objc private func cancelPressed() {

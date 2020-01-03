@@ -1,6 +1,7 @@
 import Foundation
 import UIKit
 import TelegramCore
+import SyncCore
 import AccountContext
 
 private func inputQueryResultPriority(_ result: ChatPresentationInputQueryResult) -> (Int, Bool) {
@@ -58,7 +59,7 @@ func inputContextPanelForChatPresentationIntefaceState(_ chatPresentationInterfa
                 if let currentPanel = currentPanel as? DisabledContextResultsChatInputContextPanelNode {
                     return currentPanel
                 } else {
-                    let panel = DisabledContextResultsChatInputContextPanelNode(context: context, theme: chatPresentationInterfaceState.theme, strings: chatPresentationInterfaceState.strings)
+                    let panel = DisabledContextResultsChatInputContextPanelNode(context: context, theme: chatPresentationInterfaceState.theme, strings: chatPresentationInterfaceState.strings, fontSize: chatPresentationInterfaceState.fontSize)
                     panel.interfaceInteraction = interfaceInteraction
                     return panel
             }
@@ -74,7 +75,7 @@ func inputContextPanelForChatPresentationIntefaceState(_ chatPresentationInterfa
                     currentPanel.updateResults(results.map({ $0.file }))
                     return currentPanel
                 } else {
-                    let panel = HorizontalStickersChatContextPanelNode(context: context, theme: chatPresentationInterfaceState.theme, strings: chatPresentationInterfaceState.strings)
+                    let panel = HorizontalStickersChatContextPanelNode(context: context, theme: chatPresentationInterfaceState.theme, strings: chatPresentationInterfaceState.strings, fontSize: chatPresentationInterfaceState.fontSize)
                     panel.controllerInteraction = controllerInteraction
                     panel.interfaceInteraction = interfaceInteraction
                     panel.updateResults(results.map({ $0.file }))
@@ -87,7 +88,7 @@ func inputContextPanelForChatPresentationIntefaceState(_ chatPresentationInterfa
                     currentPanel.updateResults(results)
                     return currentPanel
                 } else {
-                    let panel = HashtagChatInputContextPanelNode(context: context, theme: chatPresentationInterfaceState.theme, strings: chatPresentationInterfaceState.strings)
+                    let panel = HashtagChatInputContextPanelNode(context: context, theme: chatPresentationInterfaceState.theme, strings: chatPresentationInterfaceState.strings, fontSize: chatPresentationInterfaceState.fontSize)
                     panel.interfaceInteraction = interfaceInteraction
                     panel.updateResults(results)
                     return panel
@@ -99,7 +100,7 @@ func inputContextPanelForChatPresentationIntefaceState(_ chatPresentationInterfa
                     currentPanel.updateResults(results)
                     return currentPanel
                 } else {
-                    let panel = EmojisChatInputContextPanelNode(context: context, theme: chatPresentationInterfaceState.theme, strings: chatPresentationInterfaceState.strings)
+                    let panel = EmojisChatInputContextPanelNode(context: context, theme: chatPresentationInterfaceState.theme, strings: chatPresentationInterfaceState.strings, fontSize: chatPresentationInterfaceState.fontSize)
                     panel.interfaceInteraction = interfaceInteraction
                     panel.updateResults(results)
                     return panel
@@ -111,7 +112,7 @@ func inputContextPanelForChatPresentationIntefaceState(_ chatPresentationInterfa
                     currentPanel.updateResults(peers)
                     return currentPanel
                 } else {
-                    let panel = MentionChatInputContextPanelNode(context: context, theme: chatPresentationInterfaceState.theme, strings: chatPresentationInterfaceState.strings, mode: .input)
+                    let panel = MentionChatInputContextPanelNode(context: context, theme: chatPresentationInterfaceState.theme, strings: chatPresentationInterfaceState.strings, fontSize: chatPresentationInterfaceState.fontSize, mode: .input)
                     panel.interfaceInteraction = interfaceInteraction
                     panel.updateResults(peers)
                     return panel
@@ -125,7 +126,7 @@ func inputContextPanelForChatPresentationIntefaceState(_ chatPresentationInterfa
                     currentPanel.updateResults(commands)
                     return currentPanel
                 } else {
-                    let panel = CommandChatInputContextPanelNode(context: context, theme: chatPresentationInterfaceState.theme, strings: chatPresentationInterfaceState.strings)
+                    let panel = CommandChatInputContextPanelNode(context: context, theme: chatPresentationInterfaceState.theme, strings: chatPresentationInterfaceState.strings, fontSize: chatPresentationInterfaceState.fontSize)
                     panel.interfaceInteraction = interfaceInteraction
                     panel.updateResults(commands)
                     return panel
@@ -141,7 +142,7 @@ func inputContextPanelForChatPresentationIntefaceState(_ chatPresentationInterfa
                             currentPanel.updateResults(results)
                             return currentPanel
                         } else {
-                            let panel = VerticalListContextResultsChatInputContextPanelNode(context: context, theme: chatPresentationInterfaceState.theme, strings: chatPresentationInterfaceState.strings)
+                            let panel = VerticalListContextResultsChatInputContextPanelNode(context: context, theme: chatPresentationInterfaceState.theme, strings: chatPresentationInterfaceState.strings, fontSize: chatPresentationInterfaceState.fontSize)
                             panel.interfaceInteraction = interfaceInteraction
                             panel.updateResults(results)
                             return panel
@@ -151,7 +152,7 @@ func inputContextPanelForChatPresentationIntefaceState(_ chatPresentationInterfa
                             currentPanel.updateResults(results)
                             return currentPanel
                         } else {
-                            let panel = HorizontalListContextResultsChatInputContextPanelNode(context: context, theme: chatPresentationInterfaceState.theme, strings: chatPresentationInterfaceState.strings)
+                            let panel = HorizontalListContextResultsChatInputContextPanelNode(context: context, theme: chatPresentationInterfaceState.theme, strings: chatPresentationInterfaceState.strings, fontSize: chatPresentationInterfaceState.fontSize)
                             panel.interfaceInteraction = interfaceInteraction
                             panel.updateResults(results)
                             return panel
@@ -177,7 +178,7 @@ func chatOverlayContextPanelForChatPresentationIntefaceState(_ chatPresentationI
                     currentPanel.updateResults(peers)
                     return currentPanel
                 } else {
-                    let panel = MentionChatInputContextPanelNode(context: context, theme: chatPresentationInterfaceState.theme, strings: chatPresentationInterfaceState.strings, mode: .search)
+                    let panel = MentionChatInputContextPanelNode(context: context, theme: chatPresentationInterfaceState.theme, strings: chatPresentationInterfaceState.strings, fontSize: chatPresentationInterfaceState.fontSize, mode: .search)
                     panel.interfaceInteraction = interfaceInteraction
                     panel.updateResults(peers)
                     return panel

@@ -18,18 +18,57 @@ private func generateHandleBackground(color: UIColor) -> UIImage? {
     })?.stretchableImage(withLeftCapWidth: 0, topCapHeight: 2)
 }
 
-private final class MediaPlayerScrubbingNodeButton: ASDisplayNode {
+private final class MediaPlayerScrubbingNodeButton: ASDisplayNode, UIGestureRecognizerDelegate {
     var beginScrubbing: (() -> Void)?
     var endScrubbing: ((Bool) -> Void)?
-    var updateScrubbing: ((CGFloat) -> Void)?
+    var updateScrubbing: ((CGFloat, Double) -> Void)?
+    var updateMultiplier: ((Double) -> Void)?
     
+    var highlighted: ((Bool) -> Void)?
+    
+    var verticalPanEnabled = false
+    var hapticFeedback = HapticFeedback()
+    
+    private var scrubbingMultiplier: Double = 1.0
     private var scrubbingStartLocation: CGPoint?
     
     override func didLoad() {
         super.didLoad()
         
         self.view.disablesInteractiveTransitionGestureRecognizer = true
-        self.view.addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(self.panGesture(_:))))
+        
+        let gestureRecognizer = UIPanGestureRecognizer(target: self, action: #selector(self.panGesture(_:)))
+        gestureRecognizer.delegate = self
+        self.view.addGestureRecognizer(gestureRecognizer)
+    }
+    
+    override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        guard let gestureRecognizer = gestureRecognizer as? UIPanGestureRecognizer else {
+            return !self.verticalPanEnabled
+        }
+        return true
+    }
+    
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesBegan(touches, with: event)
+        
+        self.highlighted?(true)
+    }
+    
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesEnded(touches, with: event)
+        
+        if self.scrubbingStartLocation == nil {
+            self.highlighted?(false)
+        }
+    }
+    
+    override func touchesCancelled(_ touches: Set<UITouch>?, with event: UIEvent?) {
+        super.touchesCancelled(touches, with: event)
+        
+        if self.scrubbingStartLocation == nil {
+            self.highlighted?(false)
+        }
     }
     
     @objc func panGesture(_ recognizer: UIPanGestureRecognizer) {
@@ -42,14 +81,38 @@ private final class MediaPlayerScrubbingNodeButton: ASDisplayNode {
             case .changed:
                 if let scrubbingStartLocation = self.scrubbingStartLocation {
                     let delta = location.x - scrubbingStartLocation.x
-                    self.updateScrubbing?(delta / self.bounds.size.width)
+                    var multiplier: Double = 1.0
+                    var skipUpdate = false
+                    if self.verticalPanEnabled, location.y > scrubbingStartLocation.y {
+                        let verticalDelta = abs(location.y - scrubbingStartLocation.y)
+                        if verticalDelta > 150.0 {
+                            multiplier = 0.01
+                        } else if verticalDelta > 100.0 {
+                            multiplier = 0.25
+                        } else if verticalDelta > 50.0 {
+                            multiplier = 0.5
+                        }
+                        if multiplier != self.scrubbingMultiplier {
+                            skipUpdate = true
+                            self.scrubbingMultiplier = multiplier
+                            self.scrubbingStartLocation = CGPoint(x: location.x, y: scrubbingStartLocation.y)
+                            self.updateMultiplier?(multiplier)
+                            
+                            self.hapticFeedback.impact()
+                        }
+                    }
+                    if !skipUpdate {
+                        self.updateScrubbing?(delta / self.bounds.size.width, multiplier)
+                    }
                 }
             case .ended, .cancelled:
                 if let scrubbingStartLocation = self.scrubbingStartLocation {
                     self.scrubbingStartLocation = nil
                     let delta = location.x - scrubbingStartLocation.x
-                    self.updateScrubbing?(delta / self.bounds.size.width)
+                    self.updateScrubbing?(delta / self.bounds.size.width, self.scrubbingMultiplier)
                     self.endScrubbing?(recognizer.state == .ended)
+                    self.highlighted?(false)
+                    self.scrubbingMultiplier = 1.0
                 }
             default:
                 break
@@ -81,7 +144,7 @@ public enum MediaPlayerScrubbingNodeHandle {
 }
 
 public enum MediaPlayerScrubbingNodeContent {
-    case standard(lineHeight: CGFloat, lineCap: MediaPlayerScrubbingNodeCap, scrubberHandle: MediaPlayerScrubbingNodeHandle, backgroundColor: UIColor, foregroundColor: UIColor)
+    case standard(lineHeight: CGFloat, lineCap: MediaPlayerScrubbingNodeCap, scrubberHandle: MediaPlayerScrubbingNodeHandle, backgroundColor: UIColor, foregroundColor: UIColor, bufferingColor: UIColor)
     case custom(backgroundNode: ASDisplayNode, foregroundContentNode: ASDisplayNode)
 }
 
@@ -94,9 +157,10 @@ private final class StandardMediaPlayerScrubbingNodeContentNode {
     let foregroundNode: MediaPlayerScrubbingForegroundNode
     let handle: MediaPlayerScrubbingNodeHandle
     let handleNode: ASDisplayNode?
+    let highlightedHandleNode: ASDisplayNode?
     let handleNodeContainer: MediaPlayerScrubbingNodeButton?
     
-    init(lineHeight: CGFloat, lineCap: MediaPlayerScrubbingNodeCap, backgroundNode: ASImageNode, bufferingNode: MediaPlayerScrubbingBufferingNode, foregroundContentNode: ASImageNode, foregroundNode: MediaPlayerScrubbingForegroundNode, handle: MediaPlayerScrubbingNodeHandle, handleNode: ASDisplayNode?, handleNodeContainer: MediaPlayerScrubbingNodeButton?) {
+    init(lineHeight: CGFloat, lineCap: MediaPlayerScrubbingNodeCap, backgroundNode: ASImageNode, bufferingNode: MediaPlayerScrubbingBufferingNode, foregroundContentNode: ASImageNode, foregroundNode: MediaPlayerScrubbingForegroundNode, handle: MediaPlayerScrubbingNodeHandle, handleNode: ASDisplayNode?, highlightedHandleNode: ASDisplayNode?, handleNodeContainer: MediaPlayerScrubbingNodeButton?) {
         self.lineHeight = lineHeight
         self.lineCap = lineCap
         self.backgroundNode = backgroundNode
@@ -105,6 +169,7 @@ private final class StandardMediaPlayerScrubbingNodeContentNode {
         self.foregroundNode = foregroundNode
         self.handle = handle
         self.handleNode = handleNode
+        self.highlightedHandleNode = highlightedHandleNode
         self.handleNodeContainer = handleNodeContainer
     }
 }
@@ -167,10 +232,12 @@ private final class MediaPlayerScrubbingBufferingNode: ASDisplayNode {
             for range in ranges.0.rangeView {
                 let rangeWidth = min(size.width, (CGFloat(range.count) / CGFloat(ranges.1)) * size.width)
                 transition.updateFrame(node: self.containerNode, frame: CGRect(origin: CGPoint(), size: CGSize(width: rangeWidth, height: size.height)))
+                transition.updateAlpha(node: self.foregroundNode, alpha: abs(size.width - rangeWidth) < 1.0 ? 0.0 : 1.0)
                 break
             }
         } else {
             transition.updateFrame(node: self.containerNode, frame: CGRect(origin: CGPoint(), size: CGSize(width: 0.0, height: size.height)))
+            transition.updateAlpha(node: self.foregroundNode, alpha: 0.0)
         }
     }
 }
@@ -195,6 +262,11 @@ public final class MediaPlayerScrubbingNode: ASDisplayNode {
         return self._scrubbingTimestamp.get()
     }
     
+    private let _scrubbingPosition = Promise<Double?>(nil)
+    public var scrubbingPosition: Signal<Double?, NoError> {
+        return self._scrubbingPosition.get()
+    }
+    
     public var ignoreSeekId: Int?
     
     public var enableScrubbing: Bool = true {
@@ -204,6 +276,17 @@ public final class MediaPlayerScrubbingNode: ASDisplayNode {
                     node.handleNodeContainer?.isUserInteractionEnabled = self.enableScrubbing
                 case let .custom(node):
                     node.handleNodeContainer?.isUserInteractionEnabled = self.enableScrubbing
+            }
+        }
+    }
+    
+    public var enableFineScrubbing: Bool = false {
+        didSet {
+            switch self.contentNodes {
+                case let .standard(node):
+                    node.handleNodeContainer?.verticalPanEnabled = self.enableFineScrubbing
+                case let .custom(node):
+                    node.handleNodeContainer?.verticalPanEnabled = self.enableFineScrubbing
             }
         }
     }
@@ -261,13 +344,13 @@ public final class MediaPlayerScrubbingNode: ASDisplayNode {
     
     private static func contentNodesFromContent(_ content: MediaPlayerScrubbingNodeContent, enableScrubbing: Bool) -> MediaPlayerScrubbingNodeContentNodes {
         switch content {
-            case let .standard(lineHeight, lineCap, scrubberHandle, backgroundColor, foregroundColor):
+            case let .standard(lineHeight, lineCap, scrubberHandle, backgroundColor, foregroundColor, bufferingColor):
                 let backgroundNode = ASImageNode()
                 backgroundNode.isLayerBacked = true
                 backgroundNode.displaysAsynchronously = false
                 backgroundNode.displayWithoutProcessing = true
                 
-                let bufferingNode = MediaPlayerScrubbingBufferingNode(color: foregroundColor.withAlphaComponent(0.5), lineCap: lineCap, lineHeight: lineHeight)
+                let bufferingNode = MediaPlayerScrubbingBufferingNode(color: bufferingColor, lineCap: lineCap, lineHeight: lineHeight)
                 
                 let foregroundContentNode = ASImageNode()
                 foregroundContentNode.isLayerBacked = true
@@ -288,6 +371,7 @@ public final class MediaPlayerScrubbingNode: ASDisplayNode {
                 foregroundNode.clipsToBounds = true
                 
                 var handleNodeImpl: ASImageNode?
+                var highlightedHandleNodeImpl: ASImageNode?
                 var handleNodeContainerImpl: MediaPlayerScrubbingNodeButton?
                 
                 switch scrubberHandle {
@@ -304,18 +388,27 @@ public final class MediaPlayerScrubbingNode: ASDisplayNode {
                         handleNodeContainerImpl = handleNodeContainer
                     case .circle:
                         let handleNode = ASImageNode()
-                        handleNode.image = generateFilledCircleImage(diameter: lineHeight + 4.0, color: foregroundColor)
+                        handleNode.image = generateFilledCircleImage(diameter: lineHeight + 3.0, color: foregroundColor)
                         handleNode.isLayerBacked = true
                         handleNodeImpl = handleNode
                         
+                        let highlightedHandleNode = ASImageNode()
+                        let highlightedHandleImage = generateFilledCircleImage(diameter: lineHeight + 3.0 + 20.0, color: foregroundColor)!
+                        highlightedHandleNode.image = highlightedHandleImage
+                        highlightedHandleNode.bounds = CGRect(origin: CGPoint(), size: highlightedHandleImage.size)
+                        highlightedHandleNode.isLayerBacked = true
+                        highlightedHandleNode.transform = CATransform3DMakeScale(0.1875, 0.1875, 1.0)
+                        highlightedHandleNodeImpl = highlightedHandleNode
+                        
                         let handleNodeContainer = MediaPlayerScrubbingNodeButton()
                         handleNodeContainer.addSubnode(handleNode)
+                        handleNodeContainer.addSubnode(highlightedHandleNode)
                         handleNodeContainerImpl = handleNodeContainer
                 }
                 
                 handleNodeContainerImpl?.isUserInteractionEnabled = enableScrubbing
                 
-                return .standard(StandardMediaPlayerScrubbingNodeContentNode(lineHeight: lineHeight, lineCap: lineCap, backgroundNode: backgroundNode, bufferingNode: bufferingNode, foregroundContentNode: foregroundContentNode, foregroundNode: foregroundNode, handle: scrubberHandle, handleNode: handleNodeImpl, handleNodeContainer: handleNodeContainerImpl))
+                return .standard(StandardMediaPlayerScrubbingNodeContentNode(lineHeight: lineHeight, lineCap: lineCap, backgroundNode: backgroundNode, bufferingNode: bufferingNode, foregroundContentNode: foregroundContentNode, foregroundNode: foregroundNode, handle: scrubberHandle, handleNode: handleNodeImpl, highlightedHandleNode: highlightedHandleNodeImpl, handleNodeContainer: handleNodeContainerImpl))
             case let .custom(backgroundNode, foregroundContentNode):
                 let foregroundNode = MediaPlayerScrubbingForegroundNode()
                 foregroundNode.isLayerBacked = true
@@ -373,34 +466,70 @@ public final class MediaPlayerScrubbingNode: ASDisplayNode {
                 
                 if let handleNodeContainer = node.handleNodeContainer {
                     self.addSubnode(handleNodeContainer)
+                    handleNodeContainer.highlighted = { [weak self] highlighted in
+                        if let strongSelf = self, let highlightedHandleNode = node.highlightedHandleNode, let statusValue = strongSelf.statusValue, Double(0.0).isLess(than: statusValue.duration) {
+                            if highlighted {
+                                strongSelf.displayLink?.isPaused = true
+                                
+                                var timestamp = statusValue.timestamp
+                                if statusValue.generationTimestamp > 0 && statusValue.status == .playing {
+                                    let currentTimestamp = CACurrentMediaTime()
+                                    timestamp = timestamp + (currentTimestamp - statusValue.generationTimestamp) * statusValue.baseRate
+                                }
+                                strongSelf.scrubbingTimestampValue = timestamp
+                                strongSelf._scrubbingTimestamp.set(.single(strongSelf.scrubbingTimestampValue))
+                                strongSelf._scrubbingPosition.set(.single(strongSelf.scrubbingTimestampValue.flatMap { $0 / statusValue.duration }))
+                                
+                                highlightedHandleNode.layer.animateSpring(from: 0.1875 as NSNumber, to: 1.0 as NSNumber, keyPath: "transform.scale", duration: 0.65, initialVelocity: 0.0, damping: 80.0, removeOnCompletion: false)
+                            } else {
+                                strongSelf.scrubbingTimestampValue = nil
+                                strongSelf._scrubbingTimestamp.set(.single(nil))
+                                strongSelf._scrubbingPosition.set(.single(nil))
+                                strongSelf.updateProgressAnimations()
+                                
+                                highlightedHandleNode.layer.animateSpring(from: 1.0 as NSNumber, to: 0.1875 as NSNumber, keyPath: "transform.scale", duration: 0.65, initialVelocity: 0.0, damping: 120.0, removeOnCompletion: false)
+                            }
+                        }
+                    }
                     handleNodeContainer.beginScrubbing = { [weak self] in
                         if let strongSelf = self {
                             if let statusValue = strongSelf.statusValue, Double(0.0).isLess(than: statusValue.duration) {
                                 strongSelf.scrubbingBeginTimestamp = statusValue.timestamp
                                 strongSelf.scrubbingTimestampValue = statusValue.timestamp
                                 strongSelf._scrubbingTimestamp.set(.single(strongSelf.scrubbingTimestampValue))
+                                strongSelf._scrubbingPosition.set(.single(strongSelf.scrubbingTimestampValue.flatMap { $0 / statusValue.duration }))
                                 strongSelf.update?(strongSelf.scrubbingTimestampValue, CGFloat(statusValue.timestamp / statusValue.duration))
                                 strongSelf.updateProgressAnimations()
                             }
                         }
                     }
-                    handleNodeContainer.updateScrubbing = { [weak self] addedFraction in
+                    handleNodeContainer.updateScrubbing = { [weak self] addedFraction, multiplier in
                         if let strongSelf = self {
                             if let statusValue = strongSelf.statusValue, let scrubbingBeginTimestamp = strongSelf.scrubbingBeginTimestamp, Double(0.0).isLess(than: statusValue.duration) {
-                                let timestampValue = max(0.0, min(statusValue.duration, scrubbingBeginTimestamp + statusValue.duration * Double(addedFraction)))
+                                let delta: Double = (statusValue.duration * Double(addedFraction)) * multiplier
+                                let timestampValue = max(0.0, min(statusValue.duration, scrubbingBeginTimestamp + delta))
                                 strongSelf.scrubbingTimestampValue = timestampValue
                                 strongSelf._scrubbingTimestamp.set(.single(strongSelf.scrubbingTimestampValue))
+                                strongSelf._scrubbingPosition.set(.single(strongSelf.scrubbingTimestampValue.flatMap { $0 / statusValue.duration }))
                                 strongSelf.update?(timestampValue, CGFloat(timestampValue / statusValue.duration))
                                 strongSelf.updateProgressAnimations()
                             }
                         }
                     }
+                    handleNodeContainer.updateMultiplier = { [weak self] multiplier in
+                           if let strongSelf = self {
+                               if let statusValue = strongSelf.statusValue, let scrubbingBeginTimestamp = strongSelf.scrubbingBeginTimestamp, Double(0.0).isLess(than: statusValue.duration) {
+                                   strongSelf.scrubbingBeginTimestamp = strongSelf.scrubbingTimestampValue
+                               }
+                           }
+                       }
                     handleNodeContainer.endScrubbing = { [weak self] apply in
                         if let strongSelf = self {
                             strongSelf.scrubbingBeginTimestamp = nil
                             let scrubbingTimestampValue = strongSelf.scrubbingTimestampValue
                             strongSelf.scrubbingTimestampValue = nil
                             strongSelf._scrubbingTimestamp.set(.single(nil))
+                            strongSelf._scrubbingPosition.set(.single(nil))
                             if let scrubbingTimestampValue = scrubbingTimestampValue, apply {
                                 if let statusValue = strongSelf.statusValue {
                                     switch statusValue.status {
@@ -442,11 +571,18 @@ public final class MediaPlayerScrubbingNode: ASDisplayNode {
                             }
                         }
                     }
-                    handleNodeContainer.updateScrubbing = { [weak self] addedFraction in
+                    handleNodeContainer.updateScrubbing = { [weak self] addedFraction, multiplier in
                         if let strongSelf = self {
                             if let statusValue = strongSelf.statusValue, let scrubbingBeginTimestamp = strongSelf.scrubbingBeginTimestamp, Double(0.0).isLess(than: statusValue.duration) {
-                                strongSelf.scrubbingTimestampValue = scrubbingBeginTimestamp + statusValue.duration * Double(addedFraction)
+                                strongSelf.scrubbingTimestampValue = scrubbingBeginTimestamp + (statusValue.duration * Double(addedFraction)) * multiplier
                                 strongSelf.updateProgressAnimations()
+                            }
+                        }
+                    }
+                    handleNodeContainer.updateMultiplier = { [weak self] multiplier in
+                        if let strongSelf = self {
+                            if let statusValue = strongSelf.statusValue, let scrubbingBeginTimestamp = strongSelf.scrubbingBeginTimestamp, Double(0.0).isLess(than: statusValue.duration) {
+                                strongSelf.scrubbingBeginTimestamp = strongSelf.scrubbingTimestampValue
                             }
                         }
                     }
@@ -508,7 +644,14 @@ public final class MediaPlayerScrubbingNode: ASDisplayNode {
                         node.foregroundContentNode.backgroundColor = foregroundColor
                 }
                 if let handleNode = node.handleNode as? ASImageNode {
-                    handleNode.image = generateHandleBackground(color: foregroundColor)
+                    switch node.handle {
+                        case .line:
+                            handleNode.image = generateHandleBackground(color: foregroundColor)
+                        case .circle:
+                            handleNode.image = generateFilledCircleImage(diameter: node.lineHeight + 3.0, color: foregroundColor)
+                        case .none:
+                            break
+                    }
                 }
             case .custom:
                 break
@@ -522,7 +665,7 @@ public final class MediaPlayerScrubbingNode: ASDisplayNode {
         
         if !self.isInHierarchyValue {
             needsAnimation = false
-        } else if let _ = scrubbingTimestampValue {
+        } else if let _ = self.scrubbingTimestampValue {
             needsAnimation = false
         } else if let statusValue = self.statusValue {
             if case .buffering(true, _) = statusValue.status {
@@ -594,10 +737,16 @@ public final class MediaPlayerScrubbingNode: ASDisplayNode {
                 
                 if let handleNode = node.handleNode {
                     var handleSize: CGSize = CGSize(width: 2.0, height: bounds.size.height)
+                    var handleOffset: CGFloat = 0.0
                     if case .circle = node.handle, let handleNode = handleNode as? ASImageNode, let image = handleNode.image {
                         handleSize = image.size
+                        handleOffset = -1.0 + UIScreenPixel
                     }
-                    handleNode.frame = CGRect(origin: CGPoint(x: -handleSize.width / 2.0, y: floor((bounds.size.height - handleSize.height) / 2.0)), size: handleSize)
+                    handleNode.frame = CGRect(origin: CGPoint(x: -handleSize.width / 2.0, y: floor((bounds.size.height - handleSize.height) / 2.0) + handleOffset), size: handleSize)
+                    
+                    if let highlightedHandleNode = node.highlightedHandleNode {
+                        highlightedHandleNode.position = handleNode.position
+                    }
                 }
                 
                 if let handleNodeContainer = node.handleNodeContainer {
@@ -605,7 +754,7 @@ public final class MediaPlayerScrubbingNode: ASDisplayNode {
                 }
                 
                 if let (timestamp, duration) = timestampAndDuration {
-                    if let scrubbingTimestampValue = scrubbingTimestampValue {
+                    if let scrubbingTimestampValue = self.scrubbingTimestampValue {
                         var progress = CGFloat(scrubbingTimestampValue / duration)
                         if progress.isNaN || !progress.isFinite {
                             progress = 0.0
@@ -698,8 +847,12 @@ public final class MediaPlayerScrubbingNode: ASDisplayNode {
     override public func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         switch self.contentNodes {
         case let .standard(node):
-            if let handleNodeContainer = node.handleNodeContainer, handleNodeContainer.isUserInteractionEnabled, handleNodeContainer.frame.insetBy(dx: 0.0, dy: -5.0).contains(point) {
-                return handleNodeContainer.view
+            if let handleNodeContainer = node.handleNodeContainer, handleNodeContainer.isUserInteractionEnabled, handleNodeContainer.frame.insetBy(dx: 0.0, dy: -16.0).contains(point) {
+                if let handleNode = node.handleNode, handleNode.convert(handleNode.bounds, to: self).insetBy(dx: -32.0, dy: -16.0).contains(point) {
+                    return handleNodeContainer.view
+                } else {
+                    return nil
+                }
             } else {
                 return nil
             }

@@ -4,6 +4,7 @@ import Display
 import AsyncDisplayKit
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -11,6 +12,7 @@ import TelegramVoip
 import TelegramAudio
 import AccountContext
 import TelegramNotices
+import AppBundle
 
 public final class CallController: ViewController {
     private var controllerNode: CallControllerNode {
@@ -130,7 +132,7 @@ public final class CallController: ViewController {
                     }
                 }
             } else {
-                let actionSheet = ActionSheetController(presentationTheme: strongSelf.presentationData.theme)
+                let actionSheet = ActionSheetController(presentationData: strongSelf.presentationData)
                 var items: [ActionSheetItem] = []
                 for output in availableOutputs {
                     let title: String
@@ -156,7 +158,7 @@ public final class CallController: ViewController {
                 }
                 
                 actionSheet.setItemGroups([ActionSheetItemGroup(items: items), ActionSheetItemGroup(items: [
-                        ActionSheetButtonItem(title: strongSelf.presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                        ActionSheetButtonItem(title: strongSelf.presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
                             actionSheet?.dismissAnimated()
                         })
                     ])
@@ -187,6 +189,10 @@ public final class CallController: ViewController {
                         if let window = window {
                             c.presentationArguments = a
                             window.present(c, on: .root, blockInteraction: false, completion: {})
+                        }
+                    }, push: { [weak self] c in
+                        if let strongSelf = self {
+                            strongSelf.push(c)
                         }
                     })
                     strongSelf.present(controller, in: .window(.root))

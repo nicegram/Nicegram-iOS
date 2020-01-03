@@ -5,12 +5,15 @@ import AsyncDisplayKit
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import TelegramUIPreferences
 import ItemListUI
+import PresentationDataUtils
 import AvatarNode
 import TelegramStringFormatting
 import LocalizedPeerData
+import AccountContext
 
 struct ItemListWebsiteItemEditing: Equatable {
     let editing: Bool
@@ -28,7 +31,7 @@ struct ItemListWebsiteItemEditing: Equatable {
 }
 
 final class ItemListWebsiteItem: ListViewItem, ItemListItem {
-    let account: Account
+    let context: AccountContext
     let theme: PresentationTheme
     let strings: PresentationStrings
     let dateTimeFormat: PresentationDateTimeFormat
@@ -42,8 +45,8 @@ final class ItemListWebsiteItem: ListViewItem, ItemListItem {
     let setSessionIdWithRevealedOptions: (Int64?, Int64?) -> Void
     let removeSession: (Int64) -> Void
     
-    init(account: Account, theme: PresentationTheme, strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat, nameDisplayOrder: PresentationPersonNameOrder, website: WebAuthorization, peer: Peer?, enabled: Bool, editing: Bool, revealed: Bool, sectionId: ItemListSectionId, setSessionIdWithRevealedOptions: @escaping (Int64?, Int64?) -> Void, removeSession: @escaping (Int64) -> Void) {
-        self.account = account
+    init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat, nameDisplayOrder: PresentationPersonNameOrder, website: WebAuthorization, peer: Peer?, enabled: Bool, editing: Bool, revealed: Bool, sectionId: ItemListSectionId, setSessionIdWithRevealedOptions: @escaping (Int64?, Int64?) -> Void, removeSession: @escaping (Int64) -> Void) {
+        self.context = context
         self.theme = theme
         self.strings = strings
         self.dateTimeFormat = dateTimeFormat
@@ -97,7 +100,7 @@ final class ItemListWebsiteItem: ListViewItem, ItemListItem {
     }
 }
 
-private let avatarFont = UIFont(name: ".SFCompactRounded-Semibold", size: 9.0)!
+private let avatarFont = avatarPlaceholderFont(size: 9.0)
 private let titleFont = Font.medium(15.0)
 private let textFont = Font.regular(13.0)
 
@@ -107,6 +110,7 @@ class ItemListWebsiteItemNode: ItemListRevealOptionsItemNode {
     private let bottomStripeNode: ASDisplayNode
     private let highlightedBackgroundNode: ASDisplayNode
     private var disabledOverlayNode: ASDisplayNode?
+    private let maskNode: ASImageNode
     
     private let avatarNode: AvatarNode
     private let titleNode: TextNode
@@ -127,6 +131,8 @@ class ItemListWebsiteItemNode: ItemListRevealOptionsItemNode {
         
         self.bottomStripeNode = ASDisplayNode()
         self.bottomStripeNode.isLayerBacked = true
+        
+        self.maskNode = ASImageNode()
         
         self.avatarNode = AvatarNode(font: avatarFont)
         
@@ -221,13 +227,13 @@ class ItemListWebsiteItemNode: ItemListRevealOptionsItemNode {
             
             let leftInset: CGFloat = 15.0 + params.leftInset
             
-            var editableControlSizeAndApply: (CGSize, () -> ItemListEditableControlNode)?
+            var editableControlSizeAndApply: (CGFloat, (CGFloat) -> ItemListEditableControlNode)?
             
             let editingOffset: CGFloat
             if item.editing {
-                let sizeAndApply = editableControlLayout(75.0, item.theme, false)
+                let sizeAndApply = editableControlLayout(item.theme, false)
                 editableControlSizeAndApply = sizeAndApply
-                editingOffset = sizeAndApply.0.width
+                editingOffset = sizeAndApply.0
             } else {
                 editingOffset = 0.0
             }
@@ -265,7 +271,7 @@ class ItemListWebsiteItemNode: ItemListRevealOptionsItemNode {
                     }
                     
                     if let peer = item.peer {
-                        strongSelf.avatarNode.setPeer(account: item.account, theme: item.theme, peer: peer, authorOfMessage: nil, overrideImage: nil, emptyColor: nil, clipStyle: .none, synchronousLoad: false)
+                        strongSelf.avatarNode.setPeer(context: item.context, theme: item.theme, peer: peer, authorOfMessage: nil, overrideImage: nil, emptyColor: nil, clipStyle: .none, synchronousLoad: false)
                     }
                     
                     let revealOffset = strongSelf.revealOffset
@@ -295,9 +301,9 @@ class ItemListWebsiteItemNode: ItemListRevealOptionsItemNode {
                     }
                     
                     if let editableControlSizeAndApply = editableControlSizeAndApply {
-                        let editableControlFrame = CGRect(origin: CGPoint(x: params.leftInset + revealOffset, y: 0.0), size: editableControlSizeAndApply.0)
+                        let editableControlFrame = CGRect(origin: CGPoint(x: params.leftInset + revealOffset, y: 0.0), size: CGSize(width: editableControlSizeAndApply.0, height: layout.contentSize.height))
                         if strongSelf.editableControlNode == nil {
-                            let editableControlNode = editableControlSizeAndApply.1()
+                            let editableControlNode = editableControlSizeAndApply.1(layout.contentSize.height)
                             editableControlNode.tapped = {
                                 if let strongSelf = self {
                                     strongSelf.setRevealOptionsOpened(true, animated: true)
@@ -338,11 +344,19 @@ class ItemListWebsiteItemNode: ItemListRevealOptionsItemNode {
                     if strongSelf.bottomStripeNode.supernode == nil {
                         strongSelf.insertSubnode(strongSelf.bottomStripeNode, at: 2)
                     }
+                    if strongSelf.maskNode.supernode == nil {
+                        strongSelf.insertSubnode(strongSelf.maskNode, at: 3)
+                    }
+                    
+                    let hasCorners = itemListHasRoundedBlockLayout(params)
+                    var hasTopCorners = false
+                    var hasBottomCorners = false
                     switch neighbors.top {
                         case .sameSection(false):
                             strongSelf.topStripeNode.isHidden = true
                         default:
-                            strongSelf.topStripeNode.isHidden = false
+                            hasTopCorners = true
+                            strongSelf.topStripeNode.isHidden = hasCorners
                     }
                     let bottomStripeInset: CGFloat
                     let bottomStripeOffset: CGFloat
@@ -353,8 +367,14 @@ class ItemListWebsiteItemNode: ItemListRevealOptionsItemNode {
                         default:
                             bottomStripeInset = 0.0
                             bottomStripeOffset = 0.0
+                            hasBottomCorners = true
+                            strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
+                    
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                    
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
+                    strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                     transition.updateFrame(node: strongSelf.topStripeNode, frame: CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight)))
                     transition.updateFrame(node: strongSelf.bottomStripeNode, frame: CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight)))
                     

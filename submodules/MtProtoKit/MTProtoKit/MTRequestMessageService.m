@@ -291,6 +291,9 @@
     
     if (initializeApi && _apiEnvironment != nil)
     {
+        if (MTLogEnabled()) {
+            MTLog(@"apiEnvironment: %d", (int)_apiEnvironment.systemCode.length);
+        }
         MTBuffer *buffer = [[MTBuffer alloc] init];
         
         // invokeWithLayer
@@ -349,9 +352,12 @@
         NSUInteger index = [_requests indexOfObject:request];
         if (index != NSNotFound)
         {
-            for (NSInteger i = ((NSInteger)index) - 1; i >= 0; i--)
+            for (MTRequest *anotherRequest in _requests)
             {
-                MTRequest *anotherRequest = _requests[(NSUInteger)i];
+                if (request == anotherRequest) {
+                    continue;
+                }
+                
                 if (request.shouldDependOnRequest(anotherRequest))
                 {
                     if (anotherRequest.requestContext != nil)

@@ -4,18 +4,23 @@ import AsyncDisplayKit
 import Display
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
+import TelegramUIPreferences
 import AvatarNode
+import AppBundle
+import AccountContext
 
-private let avatarFont = UIFont(name: ".SFCompactRounded-Semibold", size: 26.0)!
+private let avatarFont = avatarPlaceholderFont(size: 26.0)
 private let titleFont = Font.semibold(14.0)
 private let textFont = Font.regular(14.0)
 
 final class SecureIdAuthHeaderNode: ASDisplayNode {
-    private let account: Account
+    private let context: AccountContext
     private let theme: PresentationTheme
     private let strings: PresentationStrings
+    private let nameDisplayOrder: PresentationPersonNameOrder
     
     private let serviceAvatarNode: AvatarNode
     private let titleNode: ImmediateTextNode
@@ -23,10 +28,11 @@ final class SecureIdAuthHeaderNode: ASDisplayNode {
     
     private var verificationState: SecureIdAuthControllerVerificationState?
     
-    init(account: Account, theme: PresentationTheme, strings: PresentationStrings) {
-        self.account = account
+    init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, nameDisplayOrder: PresentationPersonNameOrder) {
+        self.context = context
         self.theme = theme
         self.strings = strings
+        self.nameDisplayOrder = nameDisplayOrder
         
         self.serviceAvatarNode = AvatarNode(font: avatarFont)
         self.titleNode = ImmediateTextNode()
@@ -48,8 +54,8 @@ final class SecureIdAuthHeaderNode: ASDisplayNode {
     
     func updateState(formData: SecureIdEncryptedFormData?, verificationState: SecureIdAuthControllerVerificationState) {
         if let formData = formData {
-            self.serviceAvatarNode.setPeer(account: self.account, theme: self.theme, peer: formData.servicePeer)
-            let titleData = self.strings.Passport_RequestHeader(formData.servicePeer.displayTitle)
+            self.serviceAvatarNode.setPeer(context: self.context, theme: self.theme, peer: formData.servicePeer)
+            let titleData = self.strings.Passport_RequestHeader(formData.servicePeer.displayTitle(strings: self.strings, displayOrder: self.nameDisplayOrder))
             
             let titleString = NSMutableAttributedString()
             titleString.append(NSAttributedString(string: titleData.0, font: textFont, textColor: self.theme.list.freeTextColor))

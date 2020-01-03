@@ -4,6 +4,7 @@ import Display
 import AsyncDisplayKit
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import LegacyComponents
 import TelegramPresentationData
@@ -13,6 +14,7 @@ import AccountContext
 import ShareController
 import SearchUI
 import HexColor
+import PresentationDataUtils
 
 final class ThemeGridController: ViewController {
     private var controllerNode: ThemeGridControllerNode {
@@ -165,7 +167,7 @@ final class ThemeGridController: ViewController {
             }
         }, deleteWallpapers: { [weak self] wallpapers, completed in
             if let strongSelf = self {
-                let actionSheet = ActionSheetController(presentationTheme: strongSelf.presentationData.theme)
+                let actionSheet = ActionSheetController(presentationData: strongSelf.presentationData)
                 var items: [ActionSheetItem] = []
                 items.append(ActionSheetButtonItem(title: strongSelf.presentationData.strings.Wallpaper_DeleteConfirmation(Int32(wallpapers.count)), color: .destructive, action: { [weak self, weak actionSheet] in
    
@@ -179,13 +181,16 @@ final class ThemeGridController: ViewController {
                         if wallpaper == strongSelf.presentationData.chatWallpaper {
                             let presentationData = strongSelf.presentationData
                             let _ = (updatePresentationThemeSettingsInteractively(accountManager: strongSelf.context.sharedContext.accountManager, { current in
-                                var fallbackWallpaper = presentationData.theme.chat.defaultWallpaper
-                                if case let .cloud(info) = current.theme, let resolvedWallpaper = info.resolvedWallpaper {
-                                    fallbackWallpaper = resolvedWallpaper
-                                }
                                 var themeSpecificChatWallpapers = current.themeSpecificChatWallpapers
-                                themeSpecificChatWallpapers[current.theme.index] = nil
-                                return PresentationThemeSettings(chatWallpaper: fallbackWallpaper, theme: current.theme, themeSpecificAccentColors: current.themeSpecificAccentColors, themeSpecificChatWallpapers: themeSpecificChatWallpapers, fontSize: current.fontSize, automaticThemeSwitchSetting: current.automaticThemeSwitchSetting, largeEmoji: current.largeEmoji, disableAnimations: current.disableAnimations)
+                                let themeReference: PresentationThemeReference
+                                if presentationData.autoNightModeTriggered {
+                                    themeReference = current.automaticThemeSwitchSetting.theme
+                                } else {
+                                    themeReference = current.theme
+                                }
+                                themeSpecificChatWallpapers[themeReference.index] = nil
+                                themeSpecificChatWallpapers[coloredThemeIndex(reference: themeReference, accentColor: current.themeSpecificAccentColors[themeReference.index])] = nil
+                                return current.withUpdatedThemeSpecificChatWallpapers(themeSpecificChatWallpapers)
                             })).start()
                             break
                         }
@@ -209,7 +214,7 @@ final class ThemeGridController: ViewController {
                 actionSheet.setItemGroups([
                     ActionSheetItemGroup(items: items),
                     ActionSheetItemGroup(items: [
-                        ActionSheetButtonItem(title: strongSelf.presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                        ActionSheetButtonItem(title: strongSelf.presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
                             actionSheet?.dismissAnimated()
                         })
                     ])
@@ -222,7 +227,7 @@ final class ThemeGridController: ViewController {
             }
         }, resetWallpapers: { [weak self] in
             if let strongSelf = self {
-                let actionSheet = ActionSheetController(presentationTheme: strongSelf.presentationData.theme)
+                let actionSheet = ActionSheetController(presentationData: strongSelf.presentationData)
                 let items: [ActionSheetItem] = [
                     ActionSheetButtonItem(title: strongSelf.presentationData.strings.Wallpaper_ResetWallpapersConfirmation, color: .destructive, action: { [weak self, weak actionSheet] in
                         actionSheet?.dismissAnimated()
@@ -230,27 +235,13 @@ final class ThemeGridController: ViewController {
                         if let strongSelf = self {
                             strongSelf.scrollToTop?()
                             
-                            let controller = OverlayStatusController(theme: strongSelf.presentationData.theme, strings: strongSelf.presentationData.strings, type: .loading(cancelled: nil))
+                            let controller = OverlayStatusController(theme: strongSelf.presentationData.theme, type: .loading(cancelled: nil))
                             strongSelf.present(controller, in: .window(.root))
                             
                             let _ = resetWallpapers(account: strongSelf.context.account).start(completed: { [weak self, weak controller] in
                                 let presentationData = strongSelf.presentationData
-                                let _ = (strongSelf.context.sharedContext.accountManager.transaction { transaction -> Void in
-                                    transaction.updateSharedData(ApplicationSpecificSharedDataKeys.presentationThemeSettings, { entry in
-                                        let current: PresentationThemeSettings
-                                        if let entry = entry as? PresentationThemeSettings {
-                                            current = entry
-                                        } else {
-                                            current = PresentationThemeSettings.defaultSettings
-                                        }
-                                        var fallbackWallpaper = presentationData.theme.chat.defaultWallpaper
-                                        if case let .cloud(info) = current.theme, let resolvedWallpaper = info.resolvedWallpaper {
-                                            fallbackWallpaper = resolvedWallpaper
-                                        }
-                                        var themeSpecificChatWallpapers = current.themeSpecificChatWallpapers
-                                        themeSpecificChatWallpapers[current.theme.index] = nil
-                                        return PresentationThemeSettings(chatWallpaper: fallbackWallpaper, theme: current.theme, themeSpecificAccentColors: current.themeSpecificAccentColors, themeSpecificChatWallpapers: [:], fontSize: current.fontSize, automaticThemeSwitchSetting: current.automaticThemeSwitchSetting, largeEmoji: current.largeEmoji, disableAnimations: current.disableAnimations)
-                                    })
+                                let _ = updatePresentationThemeSettingsInteractively(accountManager: strongSelf.context.sharedContext.accountManager, { current in
+                                    return current.withUpdatedThemeSpecificChatWallpapers([:])
                                 }).start()
                                 
                                 let _ = (telegramWallpapers(postbox: strongSelf.context.account.postbox, network: strongSelf.context.account.network)
@@ -266,7 +257,7 @@ final class ThemeGridController: ViewController {
                 ]
                 actionSheet.setItemGroups([ActionSheetItemGroup(items: items),
                     ActionSheetItemGroup(items: [
-                        ActionSheetButtonItem(title: strongSelf.presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                        ActionSheetButtonItem(title: strongSelf.presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
                             actionSheet?.dismissAnimated()
                         })
                     ])
@@ -309,7 +300,7 @@ final class ThemeGridController: ViewController {
                     var options: [String] = []
                     if isPattern {
                         if let color = settings.color {
-                            options.append("bg_color=\(UIColor(rgb: UInt32(bitPattern: color)).hexString)")
+                            options.append("bg_color=\(UIColor(rgb: color).hexString)")
                         }
                         if let intensity = settings.intensity {
                             options.append("intensity=\(intensity)")
@@ -322,7 +313,7 @@ final class ThemeGridController: ViewController {
                     }
                     item = slug + optionsString
                 case let .color(color):
-                    item = "\(UIColor(rgb: UInt32(bitPattern: color)).hexString)"
+                    item = "\(UIColor(rgb: color).hexString)"
                 default:
                     break
             }

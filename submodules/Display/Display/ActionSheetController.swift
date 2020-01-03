@@ -1,7 +1,7 @@
 import Foundation
 import UIKit
 
-open class ActionSheetController: ViewController, PresentableController {
+open class ActionSheetController: ViewController, PresentableController, StandalonePresentableController {
     private var actionSheetNode: ActionSheetControllerNode {
         return self.displayNode as! ActionSheetControllerNode
     }
@@ -25,6 +25,7 @@ open class ActionSheetController: ViewController, PresentableController {
         
         super.init(navigationBarPresentationData: nil)
         
+        self.statusBar.statusBarStyle = .Ignore
         self.blocksBackgroundWhenInOverlay = true
     }
     

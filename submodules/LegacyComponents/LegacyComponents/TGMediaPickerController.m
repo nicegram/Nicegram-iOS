@@ -51,6 +51,10 @@
 {
     [super loadView];
     
+    if (self.intrinsicSize.width > FLT_EPSILON) {
+        self.view.frame = CGRectMake(0.0f, 0.0f, self.intrinsicSize.width, self.intrinsicSize.height);
+    }
+    
     self.view.backgroundColor = self.pallete != nil ? self.pallete.backgroundColor : [UIColor whiteColor];
     
     _wrapperView = [[UIView alloc] initWithFrame:self.view.bounds];
@@ -260,7 +264,15 @@
 
 - (void)_adjustContentOffsetToBottom
 {
+    if (!self.isViewLoaded) {
+        return;
+    }
+    
     UIEdgeInsets contentInset = [self controllerInsetForInterfaceOrientation:self.interfaceOrientation];
+    
+    bool hasOnScreenNavigation = false;
+    if (iosMajorVersion() >= 11)
+        hasOnScreenNavigation = (self.viewLoaded && self.view.safeAreaInsets.bottom > FLT_EPSILON) || self.context.safeAreaInset.bottom > FLT_EPSILON;
     
     CGPoint contentOffset = CGPointMake(0, _collectionView.contentSize.height - _collectionView.frame.size.height + contentInset.bottom);
     if (contentOffset.y < -contentInset.top)
@@ -300,7 +312,10 @@
     _collectionViewWidth = frame.size.width;
     _collectionView.frame = frame;
     
-    if (lastInverseOffset < 2)
+    [_collectionView.collectionViewLayout invalidateLayout];
+    [_collectionView layoutSubviews];
+    
+    if (lastInverseOffset < 45)
     {
         [self _adjustContentOffsetToBottom];
     }
@@ -311,9 +326,6 @@
         CGPoint contentOffset = CGPointMake(0, -contentInset.top);
         [_collectionView setContentOffset:contentOffset animated:false];
     }
-    
-    [_collectionView.collectionViewLayout invalidateLayout];
-    [_collectionView layoutSubviews];
 }
 
 #pragma mark - Gallery

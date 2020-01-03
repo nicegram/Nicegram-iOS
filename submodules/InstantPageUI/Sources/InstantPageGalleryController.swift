@@ -6,6 +6,7 @@ import Postbox
 import SwiftSignalKit
 import AsyncDisplayKit
 import TelegramCore
+import SyncCore
 import SafariServices
 import TelegramPresentationData
 import AccountContext
@@ -112,19 +113,19 @@ public struct InstantPageGalleryEntry: Equatable {
                     nativeId = .instantPage(self.pageId, file.fileId)
                 }
                 
-                return UniversalVideoGalleryItem(context: context, presentationData: presentationData, content: NativeVideoContent(id: nativeId, fileReference: .webPage(webPage: WebpageReference(webPage), media: file), streamVideo: isMediaStreamable(media: file) ? .conservative : .none), originData: nil, indexData: indexData, contentInfo: .webPage(webPage, file), caption: caption, credit: credit, fromPlayingVideo: fromPlayingVideo, landscape: landscape, performAction: { _ in }, openActionOptions: { _ in })
+                return UniversalVideoGalleryItem(context: context, presentationData: presentationData, content: NativeVideoContent(id: nativeId, fileReference: .webPage(webPage: WebpageReference(webPage), media: file), streamVideo: isMediaStreamable(media: file) ? .conservative : .none), originData: nil, indexData: indexData, contentInfo: .webPage(webPage, file), caption: caption, credit: credit, fromPlayingVideo: fromPlayingVideo, landscape: landscape, performAction: { _ in }, openActionOptions: { _ in }, storeMediaPlaybackState: { _, _ in })
             } else {
                 var representations: [TelegramMediaImageRepresentation] = []
                 representations.append(contentsOf: file.previewRepresentations)
                 if let dimensions = file.dimensions {
                     representations.append(TelegramMediaImageRepresentation(dimensions: dimensions, resource: file.resource))
                 }
-                let image = TelegramMediaImage(imageId: MediaId(namespace: 0, id: 0), representations: representations, immediateThumbnailData: file.immediateThumbnailData, reference: nil, partialReference: nil)
+                let image = TelegramMediaImage(imageId: MediaId(namespace: 0, id: 0), representations: representations, immediateThumbnailData: file.immediateThumbnailData, reference: nil, partialReference: nil, flags: [])
                  return InstantImageGalleryItem(context: context, presentationData: presentationData, imageReference: .webPage(webPage: WebpageReference(webPage), media: image), caption: caption, credit: credit, location: self.location, openUrl: openUrl, openUrlOptions: openUrlOptions)
             }
         } else if let embedWebpage = self.media.media as? TelegramMediaWebpage, case let .Loaded(webpageContent) = embedWebpage.content {
             if let content = WebEmbedVideoContent(webPage: embedWebpage, webpageContent: webpageContent) {
-                return UniversalVideoGalleryItem(context: context, presentationData: presentationData, content: content, originData: nil, indexData: nil, contentInfo: .webPage(webPage, embedWebpage), caption: NSAttributedString(string: ""), fromPlayingVideo: fromPlayingVideo, landscape: landscape, performAction: { _ in }, openActionOptions: { _ in })
+                return UniversalVideoGalleryItem(context: context, presentationData: presentationData, content: content, originData: nil, indexData: nil, contentInfo: .webPage(webPage, embedWebpage), caption: NSAttributedString(string: ""), fromPlayingVideo: fromPlayingVideo, landscape: landscape, performAction: { _ in }, openActionOptions: { _ in }, storeMediaPlaybackState: { _, _ in })
             } else {
                 preconditionFailure()
             }
@@ -142,7 +143,7 @@ public final class InstantPageGalleryControllerPresentationArguments {
     }
 }
 
-public class InstantPageGalleryController: ViewController {
+public class InstantPageGalleryController: ViewController, StandalonePresentableController {
     private var galleryNode: GalleryControllerNode {
         return self.displayNode as! GalleryControllerNode
     }
@@ -259,7 +260,7 @@ public class InstantPageGalleryController: ViewController {
             if let strongSelf = self {
                 let canOpenIn = availableOpenInOptions(context: context, item: .url(url: url.url)).count > 1
                 let openText = canOpenIn ? strongSelf.presentationData.strings.Conversation_FileOpenIn : strongSelf.presentationData.strings.Conversation_LinkDialogOpen
-                let actionSheet = ActionSheetController(presentationTheme: strongSelf.presentationData.theme)
+                let actionSheet = ActionSheetController(presentationData: strongSelf.presentationData)
                 actionSheet.setItemGroups([ActionSheetItemGroup(items: [
                     ActionSheetTextItem(title: url.url),
                     ActionSheetButtonItem(title: openText, color: .accent, action: { [weak actionSheet] in
@@ -277,7 +278,7 @@ public class InstantPageGalleryController: ViewController {
                         }
                     })
                     ]), ActionSheetItemGroup(items: [
-                        ActionSheetButtonItem(title: strongSelf.presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                        ActionSheetButtonItem(title: strongSelf.presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
                             actionSheet?.dismissAnimated()
                         })
                     ])])

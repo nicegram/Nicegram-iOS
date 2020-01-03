@@ -6,6 +6,7 @@ import Display
 import AVFoundation
 import ImageIO
 import TelegramCore
+import SyncCore
 #if BUCK
 import WebPImage
 #else
@@ -18,6 +19,7 @@ import Tuples
 import ImageBlur
 import TinyThumbnail
 import ImageTransparency
+import AppBundle
 
 private enum ResourceFileData {
     case data(Data)
@@ -25,11 +27,11 @@ private enum ResourceFileData {
 }
 
 public func largestRepresentationForPhoto(_ photo: TelegramMediaImage) -> TelegramMediaImageRepresentation? {
-    return photo.representationForDisplayAtSize(CGSize(width: 1280.0, height: 1280.0))
+    return photo.representationForDisplayAtSize(PixelDimensions(width: 1280, height: 1280))
 }
 
 public func chatMessagePhotoDatas(postbox: Postbox, photoReference: ImageMediaReference, fullRepresentationSize: CGSize = CGSize(width: 1280.0, height: 1280.0), autoFetchFullSize: Bool = false, tryAdditionalRepresentations: Bool = false, synchronousLoad: Bool = false) -> Signal<Tuple3<Data?, Data?, Bool>, NoError> {
-    if let smallestRepresentation = smallestImageRepresentation(photoReference.media.representations), let largestRepresentation = photoReference.media.representationForDisplayAtSize(fullRepresentationSize) {
+    if let smallestRepresentation = smallestImageRepresentation(photoReference.media.representations), let largestRepresentation = photoReference.media.representationForDisplayAtSize(PixelDimensions(width: Int32(fullRepresentationSize.width), height: Int32(fullRepresentationSize.height))) {
         let maybeFullSize = postbox.mediaBox.resourceData(largestRepresentation.resource, option: .complete(waitUntilFetchStatus: false), attemptSynchronously: synchronousLoad)
         
         let signal = maybeFullSize
@@ -214,7 +216,7 @@ private func chatMessageImageFileThumbnailDatas(account: Account, fileReference:
     
     if !thumbnailGenerationMimeTypes.contains(fileReference.media.mimeType) {
         if let decodedThumbnailData = decodedThumbnailData {
-            if autoFetchFullSizeThumbnail, let thumbnailRepresentation = thumbnailRepresentation, (thumbnailRepresentation.dimensions.width > 200.0 || thumbnailRepresentation.dimensions.height > 200.0) {
+            if autoFetchFullSizeThumbnail, let thumbnailRepresentation = thumbnailRepresentation, (thumbnailRepresentation.dimensions.width > 200 || thumbnailRepresentation.dimensions.height > 200) {
                 return Signal { subscriber in
                     let fetchedDisposable = fetchedMediaResource(mediaBox: account.postbox.mediaBox, reference: fileReference.resourceReference(thumbnailRepresentation.resource), statsCategory: .video).start()
                     let thumbnailDisposable = account.postbox.mediaBox.resourceData(thumbnailRepresentation.resource, attemptSynchronously: false).start(next: { next in
@@ -333,7 +335,7 @@ private func chatMessageVideoDatas(postbox: Postbox, fileReference: FileMediaRef
             if onlyFullSize {
                 thumbnail = .single(nil)
             } else if let decodedThumbnailData = fileReference.media.immediateThumbnailData.flatMap(decodeTinyThumbnail) {
-                if autoFetchFullSizeThumbnail, let thumbnailRepresentation = thumbnailRepresentation, (thumbnailRepresentation.dimensions.width > 200.0 || thumbnailRepresentation.dimensions.height > 200.0) {
+                if autoFetchFullSizeThumbnail, let thumbnailRepresentation = thumbnailRepresentation, (thumbnailRepresentation.dimensions.width > 200 || thumbnailRepresentation.dimensions.height > 200) {
                     thumbnail = Signal { subscriber in
                         let fetchedDisposable = fetchedMediaResource(mediaBox: postbox.mediaBox, reference: fileReference.resourceReference(thumbnailRepresentation.resource), statsCategory: .video).start()
                         let thumbnailDisposable = postbox.mediaBox.resourceData(thumbnailRepresentation.resource, attemptSynchronously: synchronousLoad).start(next: { next in
@@ -399,270 +401,6 @@ private func chatMessageVideoDatas(postbox: Postbox, fileReference: FileMediaRef
     })
     
     return signal
-}
-
-private enum Corner: Hashable {
-    case TopLeft(Int), TopRight(Int), BottomLeft(Int), BottomRight(Int)
-    
-    var hashValue: Int {
-        switch self {
-            case let .TopLeft(radius):
-                return radius | (1 << 24)
-            case let .TopRight(radius):
-                return radius | (2 << 24)
-            case let .BottomLeft(radius):
-                return radius | (3 << 24)
-            case let .BottomRight(radius):
-                return radius | (4 << 24)
-        }
-    }
-    
-    var radius: Int {
-        switch self {
-            case let .TopLeft(radius):
-                return radius
-            case let .TopRight(radius):
-                return radius
-            case let .BottomLeft(radius):
-                return radius
-            case let .BottomRight(radius):
-                return radius
-        }
-    }
-}
-
-private func ==(lhs: Corner, rhs: Corner) -> Bool {
-    switch lhs {
-        case let .TopLeft(lhsRadius):
-            switch rhs {
-                case let .TopLeft(rhsRadius) where rhsRadius == lhsRadius:
-                    return true
-                default:
-                    return false
-            }
-        case let .TopRight(lhsRadius):
-            switch rhs {
-                case let .TopRight(rhsRadius) where rhsRadius == lhsRadius:
-                    return true
-                default:
-                    return false
-            }
-        case let .BottomLeft(lhsRadius):
-            switch rhs {
-                case let .BottomLeft(rhsRadius) where rhsRadius == lhsRadius:
-                    return true
-                default:
-                    return false
-            }
-        case let .BottomRight(lhsRadius):
-            switch rhs {
-                case let .BottomRight(rhsRadius) where rhsRadius == lhsRadius:
-                    return true
-                default:
-                    return false
-            }
-    }
-}
-
-private enum Tail: Hashable {
-    case BottomLeft(Int)
-    case BottomRight(Int)
-    
-    var hashValue: Int {
-        switch self {
-            case let .BottomLeft(radius):
-                return radius | (1 << 24)
-            case let .BottomRight(radius):
-                return radius | (2 << 24)
-        }
-    }
-    
-    var radius: Int {
-        switch self {
-            case let .BottomLeft(radius):
-                return radius
-            case let .BottomRight(radius):
-                return radius
-        }
-    }
-}
-
-private func ==(lhs: Tail, rhs: Tail) -> Bool {
-    switch lhs {
-        case let .BottomLeft(lhsRadius):
-            switch rhs {
-                case let .BottomLeft(rhsRadius) where rhsRadius == lhsRadius:
-                    return true
-                default:
-                    return false
-            }
-        case let .BottomRight(lhsRadius):
-            switch rhs {
-                case let .BottomRight(rhsRadius) where rhsRadius == lhsRadius:
-                    return true
-                default:
-                    return false
-            }
-    }
-}
-
-private var cachedCorners = Atomic<[Corner: DrawingContext]>(value: [:])
-private var cachedTails = Atomic<[Tail: DrawingContext]>(value: [:])
-
-private func cornerContext(_ corner: Corner) -> DrawingContext {
-    let cached: DrawingContext? = cachedCorners.with {
-        return $0[corner]
-    }
-    
-    if let cached = cached {
-        return cached
-    } else {
-        let context = DrawingContext(size: CGSize(width: CGFloat(corner.radius), height: CGFloat(corner.radius)), clear: true)
-        
-        context.withContext { c in
-            c.setBlendMode(.copy)
-            c.setFillColor(UIColor.black.cgColor)
-            let rect: CGRect
-            switch corner {
-                case let .TopLeft(radius):
-                    rect = CGRect(origin: CGPoint(), size: CGSize(width: CGFloat(radius << 1), height: CGFloat(radius << 1)))
-                case let .TopRight(radius):
-                    rect = CGRect(origin: CGPoint(x: -CGFloat(radius), y: 0.0), size: CGSize(width: CGFloat(radius << 1), height: CGFloat(radius << 1)))
-                case let .BottomLeft(radius):
-                    rect = CGRect(origin: CGPoint(x: 0.0, y: -CGFloat(radius)), size: CGSize(width: CGFloat(radius << 1), height: CGFloat(radius << 1)))
-                case let .BottomRight(radius):
-                    rect = CGRect(origin: CGPoint(x: -CGFloat(radius), y: -CGFloat(radius)), size: CGSize(width: CGFloat(radius << 1), height: CGFloat(radius << 1)))
-            }
-            c.fillEllipse(in: rect)
-        }
-        
-        let _ = cachedCorners.modify { current in
-            var current = current
-            current[corner] = context
-            return current
-        }
-        
-        return context
-    }
-}
-
-private func tailContext(_ tail: Tail) -> DrawingContext {
-    let cached: DrawingContext? = cachedTails.with {
-        return $0[tail]
-    }
-    
-    if let cached = cached {
-        return cached
-    } else {
-        let context = DrawingContext(size: CGSize(width: CGFloat(tail.radius) + 3.0, height: CGFloat(tail.radius)), clear: true)
-        
-        context.withContext { c in
-            c.setBlendMode(.copy)
-            c.setFillColor(UIColor.black.cgColor)
-            let rect: CGRect
-            switch tail {
-                case let .BottomLeft(radius):
-                    rect = CGRect(origin: CGPoint(x: 3.0, y: -CGFloat(radius)), size: CGSize(width: CGFloat(radius << 1), height: CGFloat(radius << 1)))
-                
-                    c.move(to: CGPoint(x: 3.0, y: 1.0))
-                    c.addLine(to: CGPoint(x: 3.0, y: 11.0))
-                    c.addLine(to: CGPoint(x: 2.3, y: 13.0))
-                    c.addLine(to: CGPoint(x: 0.0, y: 16.6))
-                    c.addLine(to: CGPoint(x: 4.5, y: 15.5))
-                    c.addLine(to: CGPoint(x: 6.5, y: 14.3))
-                    c.addLine(to: CGPoint(x: 9.0, y: 12.5))
-                    c.closePath()
-                    c.fillPath()
-                case let .BottomRight(radius):
-                    rect = CGRect(origin: CGPoint(x: 3.0, y: -CGFloat(radius)), size: CGSize(width: CGFloat(radius << 1), height: CGFloat(radius << 1)))
-                
-                    c.translateBy(x: context.size.width / 2.0, y: context.size.height / 2.0)
-                    c.scaleBy(x: -1.0, y: 1.0)
-                    c.translateBy(x: -context.size.width / 2.0, y: -context.size.height / 2.0)
-                
-                    c.move(to: CGPoint(x: 3.0, y: 1.0))
-                    c.addLine(to: CGPoint(x: 3.0, y: 11.0))
-                    c.addLine(to: CGPoint(x: 2.3, y: 13.0))
-                    c.addLine(to: CGPoint(x: 0.0, y: 16.6))
-                    c.addLine(to: CGPoint(x: 4.5, y: 15.5))
-                    c.addLine(to: CGPoint(x: 6.5, y: 14.3))
-                    c.addLine(to: CGPoint(x: 9.0, y: 12.5))
-                    c.closePath()
-                    c.fillPath()
-            }
-            c.fillEllipse(in: rect)
-        }
-        
-        let _ = cachedTails.modify { current in
-            var current = current
-            current[tail] = context
-            return current
-        }
-        return context
-    }
-}
-
-public func addCorners(_ context: DrawingContext, arguments: TransformImageArguments) {
-    let corners = arguments.corners
-    let drawingRect = arguments.drawingRect
-    if case let .Corner(radius) = corners.topLeft, radius > CGFloat.ulpOfOne {
-        let corner = cornerContext(.TopLeft(Int(radius)))
-        context.blt(corner, at: CGPoint(x: drawingRect.minX, y: drawingRect.minY))
-    }
-    
-    if case let .Corner(radius) = corners.topRight, radius > CGFloat.ulpOfOne {
-        let corner = cornerContext(.TopRight(Int(radius)))
-        context.blt(corner, at: CGPoint(x: drawingRect.maxX - radius, y: drawingRect.minY))
-    }
-    
-    switch corners.bottomLeft {
-        case let .Corner(radius):
-            if radius > CGFloat.ulpOfOne {
-                let corner = cornerContext(.BottomLeft(Int(radius)))
-                context.blt(corner, at: CGPoint(x: drawingRect.minX, y: drawingRect.maxY - radius))
-            }
-        case let .Tail(radius, enabled):
-            if radius > CGFloat.ulpOfOne {
-                if enabled {
-                    let tail = tailContext(.BottomLeft(Int(radius)))
-                    let color = context.colorAt(CGPoint(x: drawingRect.minX, y: drawingRect.maxY - 1.0))
-                    context.withContext { c in
-                        c.clear(CGRect(x: drawingRect.minX - 3.0, y: 0.0, width: 3.0, height: drawingRect.maxY - 6.0))
-                        c.setFillColor(color.cgColor)
-                        c.fill(CGRect(x: 0.0, y: drawingRect.maxY - 6.0, width: 3.0, height: 6.0))
-                    }
-                    context.blt(tail, at: CGPoint(x: drawingRect.minX - 3.0, y: drawingRect.maxY - radius))
-                } else {
-                    let corner = cornerContext(.BottomLeft(Int(radius)))
-                    context.blt(corner, at: CGPoint(x: drawingRect.minX, y: drawingRect.maxY - radius))
-                }
-            }
-        
-    }
-    
-    switch corners.bottomRight {
-        case let .Corner(radius):
-            if radius > CGFloat.ulpOfOne {
-                let corner = cornerContext(.BottomRight(Int(radius)))
-                context.blt(corner, at: CGPoint(x: drawingRect.maxX - radius, y: drawingRect.maxY - radius))
-            }
-        case let .Tail(radius, enabled):
-            if radius > CGFloat.ulpOfOne {
-                if enabled {
-                    let tail = tailContext(.BottomRight(Int(radius)))
-                    let color = context.colorAt(CGPoint(x: drawingRect.maxX - 1.0, y: drawingRect.maxY - 1.0))
-                    context.withContext { c in
-                        c.clear(CGRect(x: drawingRect.maxX, y: 0.0, width: 3.0, height: drawingRect.maxY - 6.0))
-                        c.setFillColor(color.cgColor)
-                        c.fill(CGRect(x: drawingRect.maxX, y: drawingRect.maxY - 6.0, width: 3.0, height: 6.0))
-                    }
-                    context.blt(tail, at: CGPoint(x: drawingRect.maxX - radius, y: drawingRect.maxY - radius))
-                } else {
-                    let corner = cornerContext(.BottomRight(Int(radius)))
-                    context.blt(corner, at: CGPoint(x: drawingRect.maxX - radius, y: drawingRect.maxY - radius))
-                }
-            }
-    }
 }
 
 public func rawMessagePhoto(postbox: Postbox, photoReference: ImageMediaReference) -> Signal<UIImage?, NoError> {
@@ -874,7 +612,7 @@ public func chatMessagePhotoInternal(photoData: Signal<Tuple3<Data?, Data?, Bool
 
 private func chatMessagePhotoThumbnailDatas(account: Account, photoReference: ImageMediaReference, onlyFullSize: Bool = false) -> Signal<Tuple3<Data?, Data?, Bool>, NoError> {
     let fullRepresentationSize: CGSize = CGSize(width: 1280.0, height: 1280.0)
-    if let smallestRepresentation = smallestImageRepresentation(photoReference.media.representations), let largestRepresentation = photoReference.media.representationForDisplayAtSize(fullRepresentationSize) {
+    if let smallestRepresentation = smallestImageRepresentation(photoReference.media.representations), let largestRepresentation = photoReference.media.representationForDisplayAtSize(PixelDimensions(width: Int32(fullRepresentationSize.width), height: Int32(fullRepresentationSize.height))) {
         
         let maybeFullSize = account.postbox.mediaBox.cachedResourceRepresentation(largestRepresentation.resource, representation: CachedScaledImageRepresentation(size: CGSize(width: 180.0, height: 180.0), mode: .aspectFit), complete: onlyFullSize, fetch: false)
         let fetchedFullSize = account.postbox.mediaBox.cachedResourceRepresentation(largestRepresentation.resource, representation: CachedScaledImageRepresentation(size: CGSize(width: 180.0, height: 180.0), mode: .aspectFit), complete: onlyFullSize, fetch: true)
@@ -1218,7 +956,7 @@ public func chatSecretPhoto(account: Account, photoReference: ImageMediaReferenc
 }
 
 private func avatarGalleryThumbnailDatas(postbox: Postbox, representations: [ImageRepresentationWithReference], fullRepresentationSize: CGSize = CGSize(width: 1280.0, height: 1280.0), autoFetchFullSize: Bool = false) -> Signal<Tuple3<Data?, Data?, Bool>, NoError> {
-    if let smallestRepresentation = smallestImageRepresentation(representations.map({ $0.representation })), let largestRepresentation = imageRepresentationLargerThan(representations.map({ $0.representation }), size: fullRepresentationSize), let smallestIndex = representations.firstIndex(where: { $0.representation == smallestRepresentation }), let largestIndex = representations.firstIndex(where: { $0.representation == largestRepresentation }) {
+    if let smallestRepresentation = smallestImageRepresentation(representations.map({ $0.representation })), let largestRepresentation = imageRepresentationLargerThan(representations.map({ $0.representation }), size: PixelDimensions(width: Int32(fullRepresentationSize.width), height: Int32(fullRepresentationSize.height))), let smallestIndex = representations.firstIndex(where: { $0.representation == smallestRepresentation }), let largestIndex = representations.firstIndex(where: { $0.representation == largestRepresentation }) {
         let maybeFullSize = postbox.mediaBox.resourceData(largestRepresentation.resource)
         
         let signal = maybeFullSize
@@ -1759,7 +1497,7 @@ public func chatMessagePhotoInteractiveFetched(context: AccountContext, photoRef
         |> mapToSignal { type -> Signal<FetchResourceSourceType, FetchResourceError> in
             if case .remote = type, let peerType = storeToDownloadsPeerType {
                 return storeDownloadedMedia(storeManager: context.downloadedMediaStoreManager, media: photoReference.abstract, peerType: peerType)
-                |> introduceError(FetchResourceError.self)
+                |> castError(FetchResourceError.self)
                 |> mapToSignal { _ -> Signal<FetchResourceSourceType, FetchResourceError> in
                     return .complete()
                 }
@@ -1807,7 +1545,7 @@ public func chatWebpageSnippetFileData(account: Account, fileReference: FileMedi
 }
 
 public func chatWebpageSnippetPhotoData(account: Account, photoReference: ImageMediaReference) -> Signal<Data?, NoError> {
-    if let closestRepresentation = photoReference.media.representationForDisplayAtSize(CGSize(width: 120.0, height: 120.0)) {
+    if let closestRepresentation = photoReference.media.representationForDisplayAtSize(PixelDimensions(width: 120, height: 120)) {
         let resourceData = account.postbox.mediaBox.resourceData(closestRepresentation.resource)
         |> map { next in
             return next.size == 0 ? nil : try? Data(contentsOf: URL(fileURLWithPath: next.path), options: .mappedIfSafe)
@@ -2467,92 +2205,6 @@ public func chatAvatarGalleryPhoto(account: Account, representations: [ImageRepr
     }
 }
 
-public func chatMapSnapshotData(account: Account, resource: MapSnapshotMediaResource) -> Signal<Data?, NoError> {
-    return Signal<Data?, NoError> { subscriber in
-        let fetchedDisposable = account.postbox.mediaBox.fetchedResource(resource, parameters: nil).start()
-        let dataDisposable = account.postbox.mediaBox.resourceData(resource).start(next: { next in
-            if next.size != 0 {
-                subscriber.putNext(next.size == 0 ? nil : try? Data(contentsOf: URL(fileURLWithPath: next.path), options: []))
-            }
-        }, error: subscriber.putError, completed: subscriber.putCompletion)
-        
-        return ActionDisposable {
-            fetchedDisposable.dispose()
-            dataDisposable.dispose()
-        }
-    }
-}
-
-private let locationPinImage = UIImage(named: "ModernMessageLocationPin")?.precomposed()
-
-public func chatMapSnapshotImage(account: Account, resource: MapSnapshotMediaResource) -> Signal<(TransformImageArguments) -> DrawingContext?, NoError> {
-    let signal = chatMapSnapshotData(account: account, resource: resource)
-    
-    return signal |> map { fullSizeData in
-        return { arguments in
-            let context = DrawingContext(size: arguments.drawingSize, clear: true)
-            
-            var fullSizeImage: CGImage?
-            var imageOrientation: UIImage.Orientation = .up
-            if let fullSizeData = fullSizeData {
-                let options = NSMutableDictionary()
-                options[kCGImageSourceShouldCache as NSString] = false as NSNumber
-                if let imageSource = CGImageSourceCreateWithData(fullSizeData as CFData, nil), let image = CGImageSourceCreateImageAtIndex(imageSource, 0, options as CFDictionary) {
-                    imageOrientation = imageOrientationFromSource(imageSource)
-                    fullSizeImage = image
-                }
-                
-                if let fullSizeImage = fullSizeImage {
-                    let drawingRect = arguments.drawingRect
-                    var fittedSize = CGSize(width: CGFloat(fullSizeImage.width), height: CGFloat(fullSizeImage.height)).aspectFilled(drawingRect.size)
-                    if abs(fittedSize.width - arguments.boundingSize.width).isLessThanOrEqualTo(CGFloat(1.0)) {
-                        fittedSize.width = arguments.boundingSize.width
-                    }
-                    if abs(fittedSize.height - arguments.boundingSize.height).isLessThanOrEqualTo(CGFloat(1.0)) {
-                        fittedSize.height = arguments.boundingSize.height
-                    }
-                    
-                    let fittedRect = CGRect(origin: CGPoint(x: drawingRect.origin.x + (drawingRect.size.width - fittedSize.width) / 2.0, y: drawingRect.origin.y + (drawingRect.size.height - fittedSize.height) / 2.0), size: fittedSize)
-                    
-                    context.withFlippedContext { c in
-                        c.setBlendMode(.copy)
-                        if arguments.imageSize.width < arguments.boundingSize.width || arguments.imageSize.height < arguments.boundingSize.height {
-                            c.fill(arguments.drawingRect)
-                        }
-                        
-                        c.setBlendMode(.copy)
-                        
-                        c.interpolationQuality = .medium
-                        drawImage(context: c, image: fullSizeImage, orientation: imageOrientation, in: fittedRect)
-                        
-                        c.setBlendMode(.normal)
-                        
-                        if let locationPinImage = locationPinImage {
-                            c.draw(locationPinImage.cgImage!, in: CGRect(origin: CGPoint(x: floor((arguments.drawingSize.width - locationPinImage.size.width) / 2.0), y: floor((arguments.drawingSize.height - locationPinImage.size.height) / 2.0) - 5.0), size: locationPinImage.size))
-                        }
-                    }
-                } else {
-                    context.withFlippedContext { c in
-                        c.setBlendMode(.copy)
-                        c.setFillColor((arguments.emptyColor ?? UIColor.white).cgColor)
-                        c.fill(arguments.drawingRect)
-                        
-                        c.setBlendMode(.normal)
-                        
-                        if let locationPinImage = locationPinImage {
-                            c.draw(locationPinImage.cgImage!, in: CGRect(origin: CGPoint(x: floor((arguments.drawingSize.width - locationPinImage.size.width) / 2.0), y: floor((arguments.drawingSize.height - locationPinImage.size.height) / 2.0) - 5.0), size: locationPinImage.size))
-                        }
-                    }
-                }
-            }
-            
-            addCorners(context, arguments: arguments)
-            
-            return context
-        }
-    }
-}
-
 public func chatWebFileImage(account: Account, file: TelegramMediaWebFile) -> Signal<(TransformImageArguments) -> DrawingContext?, NoError> {
     return account.postbox.mediaBox.resourceData(file.resource)
     |> map { fullSizeData in
@@ -2953,15 +2605,17 @@ private func openInAppIconData(postbox: Postbox, appIcon: MediaResource) -> Sign
 
 private func drawOpenInAppIconBorder(into c: CGContext, arguments: TransformImageArguments) {
     c.setBlendMode(.normal)
-    c.setStrokeColor(UIColor(rgb: 0xeeeeee).cgColor)
-    c.setLineWidth(1.0)
+    c.setStrokeColor(UIColor(rgb: 0xe5e5e5).cgColor)
+    
+    let lineWidth: CGFloat = arguments.drawingRect.size.width < 30.0 ? 1.0 - UIScreenPixel : 1.0
+    c.setLineWidth(lineWidth)
     
     var radius: CGFloat = 0.0
     if case let .Corner(cornerRadius) = arguments.corners.topLeft, cornerRadius > CGFloat.ulpOfOne {
         radius = max(0, cornerRadius - 0.5)
     }
     
-    let rect = arguments.drawingRect.insetBy(dx: 0.5, dy: 0.5)
+    let rect = arguments.drawingRect.insetBy(dx: lineWidth / 2.0, dy: lineWidth / 2.0)
     c.move(to: CGPoint(x: rect.minX, y: rect.midY))
     c.addArc(tangent1End: CGPoint(x: rect.minX, y: rect.minY), tangent2End: CGPoint(x: rect.midX, y: rect.minY), radius: radius)
     c.addArc(tangent1End: CGPoint(x: rect.maxX, y: rect.minY), tangent2End: CGPoint(x: rect.maxX, y: rect.midY), radius: radius)
@@ -2989,9 +2643,8 @@ public func openInAppIcon(postbox: Postbox, appIcon: OpenInAppIcon) -> Signal<(T
                     }
                     
                     if let sourceImage = sourceImage, let cgImage = sourceImage.cgImage {
-                        let imageSize = sourceImage.size.aspectFilled(arguments.drawingRect.size)
                         context.withFlippedContext { c in
-                            c.draw(cgImage, in: CGRect(origin: CGPoint(x: floor((arguments.drawingRect.size.width - imageSize.width) / 2.0), y: floor((arguments.drawingRect.size.height - imageSize.height) / 2.0)), size: imageSize))
+                            c.draw(cgImage, in: CGRect(origin: CGPoint(), size: arguments.drawingRect.size))
                             drawOpenInAppIconBorder(into: c, arguments: arguments)
                         }
                     } else {

@@ -3,6 +3,7 @@ import UIKit
 import Display
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import AccountContext
@@ -13,6 +14,7 @@ import SettingsUI
 import NicegramLib
 import AlertUI
 import AvatarNode
+import AppBundle
 
 public final class TelegramRootController: NavigationController {
     private let context: AccountContext
@@ -61,15 +63,14 @@ public final class TelegramRootController: NavigationController {
                         }
                         strongSelf.updateBackgroundDetailsMode(navigationDetailsBackgroundMode, transition: .immediate)
                     }
-                    
-                    let previousTheme = strongSelf.presentationData.theme
-                    strongSelf.presentationData = presentationData
-                    if previousTheme !== presentationData.theme {
-                        strongSelf.rootTabController?.updateTheme(navigationBarPresentationData: NavigationBarPresentationData(presentationData: presentationData), theme: TabBarControllerTheme(rootControllerTheme: presentationData.theme))
-                        strongSelf.rootTabController?.statusBar.statusBarStyle = presentationData.theme.rootController.statusBarStyle.style
-                        
-                        
-                    }
+                    strongSelf.updateBackgroundDetailsMode(navigationDetailsBackgroundMode, transition: .immediate)
+                }
+
+                let previousTheme = strongSelf.presentationData.theme
+                strongSelf.presentationData = presentationData
+                if previousTheme !== presentationData.theme {
+                    strongSelf.rootTabController?.updateTheme(navigationBarPresentationData: NavigationBarPresentationData(presentationData: presentationData), theme: TabBarControllerTheme(rootControllerTheme: presentationData.theme))
+                    strongSelf.rootTabController?.statusBar.statusBarStyle = presentationData.theme.rootController.statusBarStyle.style
                 }
             })
     }
@@ -83,9 +84,10 @@ public final class TelegramRootController: NavigationController {
         self.presentationDataDisposable?.dispose()
     }
     
-    public func addRootControllers(showCallsTab: Bool, niceSettings: NiceSettings) {
-        let tabBarController = TabBarController(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData), theme: TabBarControllerTheme(rootControllerTheme: self.presentationData.theme), showTabNames: SimplyNiceSettings().showTabNames)
-        let chatListController = self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: nil, filterIndex: nil, isMissed: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
+    public func addRootControllers(showCallsTab: Bool) {
+        let tabBarController = TabBarController(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData), theme: TabBarControllerTheme(rootControllerTheme: self.presentationData.theme))
+        tabBarController.navigationPresentation = .master
+        let chatListController = self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: nil, filterIndex: nil, isMissed: false, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
         if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
             chatListController.tabBarItem.badgeValue = sharedContext.switchingData.chatListBadge
         }

@@ -4,6 +4,7 @@ import AsyncDisplayKit
 import UIKit
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -11,6 +12,8 @@ import DeviceAccess
 import AccountContext
 import SearchBarNode
 import SearchUI
+import AppBundle
+import ContextUI
 
 private final class ContactsControllerNodeView: UITracingLayerView, PreviewingHostView {
     var previewingDelegate: PreviewingHostViewDelegate? {
@@ -22,6 +25,34 @@ private final class ContactsControllerNodeView: UITracingLayerView, PreviewingHo
     }
     
     weak var controller: ContactsController?
+}
+
+private final class ContextControllerContentSourceImpl: ContextControllerContentSource {
+    let controller: ViewController
+    weak var sourceNode: ASDisplayNode?
+    
+    let navigationController: NavigationController? = nil
+    
+    let passthroughTouches: Bool = true
+    
+    init(controller: ViewController, sourceNode: ASDisplayNode?) {
+        self.controller = controller
+        self.sourceNode = sourceNode
+    }
+    
+    func transitionInfo() -> ContextControllerTakeControllerInfo? {
+        let sourceNode = self.sourceNode
+        return ContextControllerTakeControllerInfo(contentAreaInScreenSpace: CGRect(origin: CGPoint(), size: CGSize(width: 10.0, height: 10.0)), sourceNode: { [weak sourceNode] in
+            if let sourceNode = sourceNode {
+                return (sourceNode, sourceNode.bounds)
+            } else {
+                return nil
+            }
+        })
+    }
+    
+    func animatedIn() {
+    }
 }
 
 final class ContactsControllerNode: ASDisplayNode {
@@ -68,7 +99,11 @@ final class ContactsControllerNode: ASDisplayNode {
             }
         }
         
-        self.contactListNode = ContactListNode(context: context, presentation: presentation, displaySortOptions: true)
+        var contextAction: ((Peer, ASDisplayNode, ContextGesture?) -> Void)?
+        
+        self.contactListNode = ContactListNode(context: context, presentation: presentation, displaySortOptions: true, contextAction: { peer, node, gesture in
+            contextAction?(peer, node, gesture)
+        })
         
         super.init()
         
@@ -104,6 +139,10 @@ final class ContactsControllerNode: ASDisplayNode {
             if let strongSelf = self {
                 strongSelf.openInvite?()
             }
+        }
+        
+        contextAction = { [weak self] peer, node, gesture in
+            self?.contextAction(peer: peer, node: node, gesture: gesture)
         }
     }
     
@@ -148,6 +187,16 @@ final class ContactsControllerNode: ASDisplayNode {
         self.contactListNode.frame = CGRect(origin: CGPoint(), size: layout.size)
     }
     
+    private func contextAction(peer: Peer, node: ASDisplayNode, gesture: ContextGesture?) {
+        guard let contactsController = self.controller else {
+            return
+        }
+        let chatController = self.context.sharedContext.makeChatController(context: self.context, chatLocation: .peer(peer.id), subject: nil, botStart: nil, mode: .standard(previewing: true))
+        chatController.canReadHistory.set(false)
+        let contextController = ContextController(account: self.context.account, presentationData: self.presentationData, source: .controller(ContextControllerContentSourceImpl(controller: chatController, sourceNode: node)), items: contactContextMenuItems(context: self.context, peerId: peer.id, contactsController: contactsController), reactionItems: [], gesture: gesture)
+        contactsController.presentInGlobalOverlay(contextController)
+    }
+    
     func activateSearch(placeholderNode: SearchBarPlaceholderNode) {
         guard let (containerLayout, navigationBarHeight) = self.containerLayout, let navigationBar = self.navigationBar, self.searchDisplayController == nil else {
             return
@@ -157,6 +206,8 @@ final class ContactsControllerNode: ASDisplayNode {
             if let requestOpenPeerFromSearch = self?.requestOpenPeerFromSearch {
                 requestOpenPeerFromSearch(peer)
             }
+        }, contextAction: { [weak self] peer, node, gesture in
+            self?.contextAction(peer: peer, node: node, gesture: gesture)
         }), cancel: { [weak self] in
             if let requestDeactivateSearch = self?.requestDeactivateSearch {
                 requestDeactivateSearch()

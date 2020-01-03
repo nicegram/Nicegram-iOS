@@ -2,12 +2,14 @@ import Foundation
 import UIKit
 import Display
 import TelegramCore
+import SyncCore
 import Postbox
 import AsyncDisplayKit
 import UIKit
 import SwiftSignalKit
 import TelegramPresentationData
 import QrCode
+import ShareController
 
 public final class ShareProxyServerActionSheetController: ActionSheetController {
     private var presentationDisposable: Disposable?
@@ -19,8 +21,8 @@ public final class ShareProxyServerActionSheetController: ActionSheetController 
     
     private var isDismissed: Bool = false
         
-    public init(theme: PresentationTheme, strings: PresentationStrings, updatedPresentationData: Signal<(theme: PresentationTheme, strings: PresentationStrings), NoError>, link: String) {
-        let sheetTheme = ActionSheetControllerTheme(presentationTheme: theme)
+    public init(presentationData: PresentationData, updatedPresentationData: Signal<PresentationData, NoError>, link: String) {
+        let sheetTheme = ActionSheetControllerTheme(presentationData: presentationData)
         super.init(theme: sheetTheme)
         
         let presentActivityController: (Any) -> Void = { [weak self] item in
@@ -33,15 +35,15 @@ public final class ShareProxyServerActionSheetController: ActionSheetController 
         }
         
         var items: [ActionSheetItem] = []
-        items.append(ProxyServerQRCodeItem(strings: strings, link: link, ready: { [weak self] in
+        items.append(ProxyServerQRCodeItem(strings: presentationData.strings, link: link, ready: { [weak self] in
             self?._ready.set(.single(true))
         }))
-        items.append(ActionSheetButtonItem(title: strings.SocksProxySetup_ShareQRCode, action: { [weak self] in
+        items.append(ActionSheetButtonItem(title: presentationData.strings.SocksProxySetup_ShareQRCode, action: { [weak self] in
             self?.dismissAnimated()
-            let _ = (qrCode(string: link, color: .black, backgroundColor: .white, scale: 1.0)
-            |> map { generator -> UIImage? in
-                let imageSize = CGSize(width: 512.0, height: 512.0)
-                let context = generator(TransformImageArguments(corners: ImageCorners(), imageSize: imageSize, boundingSize: imageSize, intrinsicInsets: UIEdgeInsets()))
+            let _ = (qrCode(string: link, color: .black, backgroundColor: .white, icon: .proxy)
+            |> map { _, generator -> UIImage? in
+                let imageSize = CGSize(width: 768.0, height: 768.0)
+                let context = generator(TransformImageArguments(corners: ImageCorners(), imageSize: imageSize, boundingSize: imageSize, intrinsicInsets: UIEdgeInsets(), scale: 1.0))
                 return context?.generateImage()
             }
             |> deliverOnMainQueue).start(next: { image in
@@ -50,22 +52,22 @@ public final class ShareProxyServerActionSheetController: ActionSheetController 
                 }
             })
         }))
-        items.append(ActionSheetButtonItem(title: strings.SocksProxySetup_ShareLink, action: { [weak self] in
+        items.append(ActionSheetButtonItem(title: presentationData.strings.SocksProxySetup_ShareLink, action: { [weak self] in
             self?.dismissAnimated()
             presentActivityController(link)
         }))
         self.setItemGroups([
             ActionSheetItemGroup(items: items),
             ActionSheetItemGroup(items: [
-                ActionSheetButtonItem(title: strings.Common_Cancel, action: { [weak self] in
+                ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, action: { [weak self] in
                     self?.dismissAnimated()
                 })
                 ])
             ])
         
-        self.presentationDisposable = updatedPresentationData.start(next: { [weak self] theme, strings in
+        self.presentationDisposable = updatedPresentationData.start(next: { [weak self] presentationData in
             if let strongSelf = self {
-                strongSelf.theme = ActionSheetControllerTheme(presentationTheme: theme)
+                strongSelf.theme = ActionSheetControllerTheme(presentationData: presentationData)
             }
         })
     }
@@ -117,17 +119,21 @@ private final class ProxyServerQRCodeItemNode: ActionSheetItemNode {
         self.link = link
         self.ready = ready
         
+        let textFont = Font.regular(floor(theme.baseFontSize * 13.0 / 17.0))
+        
         self.label = ASTextNode()
         self.label.isUserInteractionEnabled = false
         self.label.maximumNumberOfLines = 0
         self.label.displaysAsynchronously = false
         self.label.truncationMode = .byTruncatingTail
         self.label.isUserInteractionEnabled = false
-        self.label.attributedText = NSAttributedString(string: strings.SocksProxySetup_ShareQRCodeInfo, font: ActionSheetTextNode.defaultFont, textColor: self.theme.secondaryTextColor, paragraphAlignment: .center)
+        self.label.attributedText = NSAttributedString(string: strings.SocksProxySetup_ShareQRCodeInfo, font: textFont, textColor: self.theme.secondaryTextColor, paragraphAlignment: .center)
         
         self.imageNode = TransformImageNode()
-        self.imageNode.setSignal(qrCode(string: link, color: .black, backgroundColor: .white), attemptSynchronously: true)
-
+        self.imageNode.clipsToBounds = true
+        self.imageNode.setSignal(qrCode(string: link, color: .black, backgroundColor: .white, icon: .proxy) |> map { $0.1 }, attemptSynchronously: true)
+        self.imageNode.cornerRadius = 14.0
+        
         super.init(theme: theme)
         
         self.addSubnode(self.label)

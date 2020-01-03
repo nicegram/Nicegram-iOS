@@ -243,6 +243,12 @@
         case PHAssetCollectionSubtypeAlbumMyPhotoStream:
             return TGMediaAssetGroupSubtypeMyPhotoStream;
             
+        case PHAssetCollectionSubtypeSmartAlbumAnimated:
+            return TGMediaAssetGroupSubtypeAnimated;
+            
+        case PHAssetCollectionSubtypeSmartAlbumAllHidden:
+            return TGMediaAssetGroupSubtypeHidden;
+            
         default:
             return TGMediaAssetGroupSubtypeRegular;
     }
@@ -345,6 +351,24 @@
                     return true;
             }
         }
+            
+        case PHAssetCollectionSubtypeSmartAlbumAnimated:
+        {
+            switch (assetType)
+            {
+                case TGMediaAssetAnyType:
+                    return true;
+                    
+                default:
+                    return false;
+            }
+        }
+            
+        case PHAssetCollectionSubtypeSmartAlbumAllHidden:
+        {
+            return true;
+        }
+            break;
             
         default:
         {

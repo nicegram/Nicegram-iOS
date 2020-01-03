@@ -1,9 +1,11 @@
 import Foundation
 import Postbox
 import TelegramCore
+import SyncCore
 import WatchCommon
 import TelegramPresentationData
 import LegacyUI
+import PhoneNumberFormat
 
 func makePeerIdFromBridgeIdentifier(_ identifier: Int64) -> PeerId? {
     if identifier < 0 && identifier > Int32.min {
@@ -44,7 +46,7 @@ private func makeBridgeImage(_ image: TelegramMediaImage?) -> TGBridgeImageMedia
     if let image = image, let representation = largestImageRepresentation(image.representations) {
         let bridgeImage = TGBridgeImageMediaAttachment()
         bridgeImage.imageId = image.imageId.id
-        bridgeImage.dimensions = representation.dimensions
+        bridgeImage.dimensions = representation.dimensions.cgSize
         return bridgeImage
     } else {
         return nil
@@ -63,7 +65,7 @@ func makeBridgeDocument(_ file: TelegramMediaFile?) -> TGBridgeDocumentMediaAtta
                 case .Animated:
                     bridgeDocument.isAnimated = true
                 case let .ImageSize(size):
-                    bridgeDocument.imageSize = NSValue(cgSize: size)
+                    bridgeDocument.imageSize = NSValue(cgSize: size.cgSize)
                 case let .Sticker(displayText, packReference, _):
                     bridgeDocument.isSticker = true
                     bridgeDocument.stickerAlt = displayText
@@ -166,7 +168,7 @@ func makeBridgeMedia(message: Message, strings: PresentationStrings, chatPeer: P
                     switch attribute {
                         case let .Video(duration, size, flags):
                             bridgeVideo.duration = Int32(clamping: duration)
-                            bridgeVideo.dimensions = size
+                            bridgeVideo.dimensions = size.cgSize
                             bridgeVideo.round = flags.contains(.instantRoundVideo)
                         default:
                             break
@@ -288,7 +290,7 @@ func makeBridgeMedia(message: Message, strings: PresentationStrings, chatPeer: P
                 bridgeWebpage.photo = makeBridgeImage(content.image)
                 bridgeWebpage.embedUrl = content.embedUrl
                 bridgeWebpage.embedType = content.embedType
-                bridgeWebpage.embedSize = content.embedSize ?? CGSize()
+                bridgeWebpage.embedSize = content.embedSize?.cgSize ?? CGSize()
                 bridgeWebpage.duration = NSNumber(integerLiteral: content.duration ?? 0)
                 bridgeWebpage.author = content.author
                 bridgeMedia.append(bridgeWebpage)
@@ -317,7 +319,7 @@ func makeBridgeMedia(message: Message, strings: PresentationStrings, chatPeer: P
 }
 
 func makeBridgeChat(_ entry: ChatListEntry, strings: PresentationStrings) -> (TGBridgeChat, [Int64 : TGBridgeUser])? {
-    if case let .MessageEntry(index, message, readState, _, _, renderedPeer, _, _) = entry {
+    if case let .MessageEntry(index, message, readState, _, _, renderedPeer, _, _, hasFailed) = entry {
         guard index.messageIndex.id.peerId.namespace != Namespaces.Peer.SecretChat else {
             return nil
         }
@@ -330,7 +332,7 @@ func makeBridgeChat(_ entry: ChatListEntry, strings: PresentationStrings) -> (TG
             bridgeChat.text = message.text
             bridgeChat.outgoing = !message.flags.contains(.Incoming)
             bridgeChat.deliveryState = makeBridgeDeliveryState(message)
-            bridgeChat.deliveryError = message.flags.contains(.Failed)
+            bridgeChat.deliveryError = hasFailed
             bridgeChat.media = makeBridgeMedia(message: message, strings: strings, filterUnsupportedActions: false)
         }
         bridgeChat.unread = readState?.isUnread ?? false

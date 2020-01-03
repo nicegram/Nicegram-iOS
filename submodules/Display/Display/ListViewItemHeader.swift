@@ -2,10 +2,6 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 
-#if BUCK
-import DisplayPrivate
-#endif
-
 public enum ListViewItemHeaderStickDirection {
     case top
     case bottom
@@ -19,6 +15,7 @@ public protocol ListViewItemHeader: class {
     var height: CGFloat { get }
     
     func node() -> ListViewItemHeaderNode
+    func updateNode(_ node: ListViewItemHeaderNode, previous: ListViewItemHeader?, next: ListViewItemHeader?)
 }
 
 open class ListViewItemHeaderNode: ASDisplayNode {
@@ -28,6 +25,8 @@ open class ListViewItemHeaderNode: ASDisplayNode {
     final private(set) var internalStickLocationDistanceFactor: CGFloat = 0.0
     final var internalStickLocationDistance: CGFloat = 0.0
     private var isFlashingOnScrolling = false
+    
+    var item: ListViewItemHeader?
     
     func updateInternalStickLocationDistanceFactor(_ factor: CGFloat, animated: Bool) {
         self.internalStickLocationDistanceFactor = factor
@@ -59,7 +58,7 @@ open class ListViewItemHeaderNode: ASDisplayNode {
             } else {
                 super.init()
         
-        self.setViewBlock({
+                self.setViewBlock({
                     return CASeeThroughTracingView()
                 })
             }

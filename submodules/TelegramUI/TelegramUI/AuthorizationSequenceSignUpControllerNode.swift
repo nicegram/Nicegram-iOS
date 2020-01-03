@@ -4,6 +4,7 @@ import AsyncDisplayKit
 import Display
 import TelegramPresentationData
 import TextFormat
+import Markdown
 
 private func roundCorners(diameter: CGFloat) -> UIImage {
     UIGraphicsBeginImageContextWithOptions(CGSize(width: diameter, height: diameter), false, 0.0)
@@ -190,11 +191,7 @@ final class AuthorizationSequenceSignUpControllerNode: ASDisplayNode, UITextFiel
         
         var insets = layout.insets(options: [.statusBar])
         if let inputHeight = layout.inputHeight {
-            if abs(inputHeight - (layout.standardInputHeight - 44.0)) < 2.0 {
-                insets.bottom += layout.standardInputHeight
-            } else {
-                insets.bottom += inputHeight
-            }
+            insets.bottom += max(inputHeight, layout.standardInputHeight)
         }
         
         let availableHeight = max(1.0, layout.size.height - insets.top - insets.bottom)

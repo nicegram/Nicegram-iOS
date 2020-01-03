@@ -3,9 +3,11 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import Postbox
 import TelegramPresentationData
+import StickerPackPreviewUI
 
 final class StickerPaneSearchGlobalSection: GridSection {
     let height: CGFloat = 0.0
@@ -37,22 +39,30 @@ final class StickerPaneSearchGlobalItem: GridItem {
     let strings: PresentationStrings
     let info: StickerPackCollectionInfo
     let topItems: [StickerPackItem]
+    let grid: Bool
+    let topSeparator: Bool
     let installed: Bool
+    let installing: Bool
     let unread: Bool
     let open: () -> Void
     let install: () -> Void
     let getItemIsPreviewed: (StickerPackItem) -> Bool
     
     let section: GridSection? = StickerPaneSearchGlobalSection()
-    let fillsRowWithHeight: CGFloat? = 128.0
+    var fillsRowWithHeight: CGFloat? {
+        return self.grid ? nil : (128.0 + (self.topSeparator ? 12.0 : 0.0))
+    }
     
-    init(account: Account, theme: PresentationTheme, strings: PresentationStrings, info: StickerPackCollectionInfo, topItems: [StickerPackItem], installed: Bool, unread: Bool, open: @escaping () -> Void, install: @escaping () -> Void, getItemIsPreviewed: @escaping (StickerPackItem) -> Bool) {
+    init(account: Account, theme: PresentationTheme, strings: PresentationStrings, info: StickerPackCollectionInfo, topItems: [StickerPackItem], grid: Bool, topSeparator: Bool, installed: Bool, installing: Bool = false, unread: Bool, open: @escaping () -> Void, install: @escaping () -> Void, getItemIsPreviewed: @escaping (StickerPackItem) -> Bool) {
         self.account = account
         self.theme = theme
         self.strings = strings
         self.info = info
         self.topItems = topItems
+        self.grid = grid
+        self.topSeparator = topSeparator
         self.installed = installed
+        self.installing = installing
         self.unread = unread
         self.open = open
         self.install = install
@@ -76,7 +86,7 @@ final class StickerPaneSearchGlobalItem: GridItem {
 
 private let titleFont = Font.bold(16.0)
 private let statusFont = Font.regular(15.0)
-private let buttonFont = Font.medium(13.0)
+private let buttonFont = Font.semibold(13.0)
 
 class StickerPaneSearchGlobalItemNode: GridItemNode {
     private let titleNode: TextNode
@@ -86,16 +96,26 @@ class StickerPaneSearchGlobalItemNode: GridItemNode {
     private let installBackgroundNode: ASImageNode
     private let installButtonNode: HighlightTrackingButtonNode
     private var itemNodes: [TrendingTopItemNode]
+    private let topSeparatorNode: ASDisplayNode
     
     private var item: StickerPaneSearchGlobalItem?
     private var appliedItem: StickerPaneSearchGlobalItem?
     private let preloadDisposable = MetaDisposable()
+    private let preloadedStickerPackThumbnailDisposable = MetaDisposable()
+    
+    private var preloadedThumbnail = false
     
     override var isVisibleInGrid: Bool {
         didSet {
             if oldValue != self.isVisibleInGrid {
                 for node in self.itemNodes {
                     node.visibility = self.isVisibleInGrid
+                }
+                
+                if let item = self.item, self.isVisibleInGrid, !self.preloadedThumbnail {
+                    self.preloadedThumbnail = true
+                    
+                    self.preloadedStickerPackThumbnailDisposable.set(preloadedStickerPackThumbnail(account: item.account, info: item.info, items: item.topItems).start())
                 }
             }
         }
@@ -129,6 +149,9 @@ class StickerPaneSearchGlobalItemNode: GridItemNode {
         
         self.installButtonNode = HighlightTrackingButtonNode()
         
+        self.topSeparatorNode = ASDisplayNode()
+        self.topSeparatorNode.isLayerBacked = true
+        
         self.itemNodes = []
         
         super.init()
@@ -139,6 +162,7 @@ class StickerPaneSearchGlobalItemNode: GridItemNode {
         self.addSubnode(self.installBackgroundNode)
         self.addSubnode(self.installTextNode)
         self.addSubnode(self.installButtonNode)
+        self.addSubnode(self.topSeparatorNode)
         
         self.installButtonNode.highligthedChanged = { [weak self] highlighted in
             if let strongSelf = self {
@@ -161,6 +185,7 @@ class StickerPaneSearchGlobalItemNode: GridItemNode {
     
     deinit {
         self.preloadDisposable.dispose()
+        self.preloadedStickerPackThumbnailDisposable.dispose()
     }
     
     override func didLoad() {
@@ -170,6 +195,10 @@ class StickerPaneSearchGlobalItemNode: GridItemNode {
     }
     
     func setup(item: StickerPaneSearchGlobalItem) {
+        if item.topItems.count < Int(item.info.count) && item.topItems.count < 5 && self.item?.info.id != item.info.id {
+            self.preloadDisposable.set(preloadedFeaturedStickerSet(network: item.account.network, postbox: item.account.postbox, id: item.info.id).start())
+        }
+        
         self.item = item
         self.setNeedsLayout()
         
@@ -182,7 +211,16 @@ class StickerPaneSearchGlobalItemNode: GridItemNode {
             return
         }
         
-        let params = ListViewItemLayoutParams(width: self.bounds.size.width, leftInset: 0.0, rightInset: 0.0)
+        let params = ListViewItemLayoutParams(width: self.bounds.size.width, leftInset: 0.0, rightInset: 0.0, availableHeight: self.bounds.height)
+        
+        var topOffset: CGFloat = 12.0
+        if item.topSeparator {
+            topOffset += 12.0
+        }
+        
+        self.topSeparatorNode.isHidden = !item.topSeparator
+        self.topSeparatorNode.frame = CGRect(origin: CGPoint(x: 16.0, y: 16.0), size: CGSize(width: params.width - 16.0 * 2.0, height: UIScreenPixel))
+        self.topSeparatorNode.backgroundColor = item.theme.chat.inputMediaPanel.stickersSectionTextColor.withAlphaComponent(0.3)
         
         let makeInstallLayout = TextNode.asyncLayout(self.installTextNode)
         let makeTitleLayout = TextNode.asyncLayout(self.titleNode)
@@ -199,24 +237,14 @@ class StickerPaneSearchGlobalItemNode: GridItemNode {
         
         let leftInset: CGFloat = 14.0
         let rightInset: CGFloat = 16.0
-        let topOffset: CGFloat = 12.0
         
-        let (installLayout, installApply) = makeInstallLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: item.strings.Stickers_Install, font: buttonFont, textColor: item.theme.list.itemAccentColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - params.leftInset - params.rightInset - leftInset - rightInset, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
+        let (installLayout, installApply) = makeInstallLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: item.strings.Stickers_Install, font: buttonFont, textColor: item.theme.list.itemCheckColors.foregroundColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - params.leftInset - params.rightInset - leftInset - rightInset, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
         
         let (titleLayout, titleApply) = makeTitleLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: item.info.title, font: titleFont, textColor: item.theme.list.itemPrimaryTextColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - params.leftInset - params.rightInset - leftInset - rightInset - 20.0 - installLayout.size.width, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
         
         let (descriptionLayout, descriptionApply) = makeDescriptionLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: item.strings.StickerPack_StickerCount(item.info.count), font: statusFont, textColor: item.theme.chat.inputMediaPanel.stickersSectionTextColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - params.leftInset - params.rightInset - leftInset - rightInset - 20.0, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
-        
-        var topItems = item.topItems
-        if topItems.count > 5 {
-            topItems.removeSubrange(5 ..< topItems.count)
-        }
-        
+                
         let strongSelf = self
-        if item.topItems.count < Int(item.info.count) && item.topItems.count < 5 && strongSelf.item?.info.id != item.info.id {
-            strongSelf.preloadDisposable.set(preloadedFeaturedStickerSet(network: item.account.network, postbox: item.account.postbox, id: item.info.id).start())
-        }
-        strongSelf.item = item
     
         let _ = installApply()
         let _ = titleApply()
@@ -226,8 +254,8 @@ class StickerPaneSearchGlobalItemNode: GridItemNode {
             strongSelf.installBackgroundNode.image = updateButtonBackgroundImage
         }
     
-        let installWidth: CGFloat = installLayout.size.width + 20.0
-        let buttonFrame = CGRect(origin: CGPoint(x: params.width - params.rightInset - rightInset - installWidth, y: 4.0 + topOffset), size: CGSize(width: installWidth, height: 26.0))
+        let installWidth: CGFloat = installLayout.size.width + 32.0
+        let buttonFrame = CGRect(origin: CGPoint(x: params.width - params.rightInset - rightInset - installWidth, y: 4.0 + topOffset), size: CGSize(width: installWidth, height: 28.0))
         strongSelf.installBackgroundNode.frame = buttonFrame
         strongSelf.installTextNode.frame = CGRect(origin: CGPoint(x: buttonFrame.minX + floor((buttonFrame.width - installLayout.size.width) / 2.0), y: buttonFrame.minY + floor((buttonFrame.height - installLayout.size.height) / 2.0) + 1.0), size: installLayout.size)
         strongSelf.installButtonNode.frame = buttonFrame
@@ -264,6 +292,11 @@ class StickerPaneSearchGlobalItemNode: GridItemNode {
         var offset = sideInset
         let itemSpacing = (max(0, availableWidth - 5.0 * itemSide - sideInset * 2.0)) / 4.0
         
+        var topItems = item.topItems
+        if topItems.count > 5 {
+            topItems.removeSubrange(5 ..< topItems.count)
+        }
+        
         for i in 0 ..< topItems.count {
             let file = topItems[i].file
             let node: TrendingTopItemNode
@@ -279,7 +312,7 @@ class StickerPaneSearchGlobalItemNode: GridItemNode {
                 node.setup(account: item.account, item: topItems[i], itemSize: itemSize, synchronousLoads: false)
             }
             if let dimensions = file.dimensions {
-                let imageSize = dimensions.aspectFitted(itemSize)
+                let imageSize = dimensions.cgSize.aspectFitted(itemSize)
                 node.frame = CGRect(origin: CGPoint(x: offset, y: 48.0 + topOffset), size: imageSize)
                 offset += itemSize.width + itemSpacing
             }

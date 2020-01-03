@@ -3,9 +3,11 @@ import UIKit
 import AsyncDisplayKit
 import Postbox
 import TelegramCore
+import SyncCore
 import Display
 import SwiftSignalKit
 import TelegramPresentationData
+import TelegramUIPreferences
 import MergeLists
 import AccountContext
 import StickerPackPreviewUI
@@ -72,14 +74,14 @@ final class StickersChatInputContextPanelNode: ChatInputContextPanelNode {
     private var currentEntries: [StickersChatInputContextPanelEntry]?
     
     private var enqueuedTransitions: [(StickersChatInputContextPanelTransition, Bool)] = []
-    private var validLayout: (CGSize, CGFloat, CGFloat, ChatPresentationInterfaceState)?
+    private var validLayout: (CGSize, CGFloat, CGFloat, CGFloat, ChatPresentationInterfaceState)?
     
     public var controllerInteraction: ChatControllerInteraction?
     private let stickersInteraction: StickersChatInputContextPanelInteraction
     
     private var stickerPreviewController: StickerPreviewController?
     
-    override init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings) {
+    override init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, fontSize: PresentationFontSize) {
         self.strings = strings
         
         self.listView = ListView()
@@ -91,7 +93,7 @@ final class StickersChatInputContextPanelNode: ChatInputContextPanelNode {
         
         self.stickersInteraction = StickersChatInputContextPanelInteraction()
         
-        super.init(context: context, theme: theme, strings: strings)
+        super.init(context: context, theme: theme, strings: strings, fontSize: fontSize)
         
         self.isOpaque = false
         self.clipsToBounds = true
@@ -146,14 +148,14 @@ final class StickersChatInputContextPanelNode: ChatInputContextPanelNode {
                                                 switch attribute {
                                                 case let .Sticker(_, packReference, _):
                                                     if let packReference = packReference {
-                                                        let controller = StickerPackPreviewController(context: strongSelf.context, stickerPack: packReference, parentNavigationController: controllerInteraction.navigationController())
-                                                        controller.sendSticker = { file, sourceNode, sourceRect in
+                                                        let controller = StickerPackScreen(context: strongSelf.context, mainStickerPack: packReference, stickerPacks: [packReference], parentNavigationController: controllerInteraction.navigationController(), sendSticker: { file, sourceNode, sourceRect in
                                                             if let strongSelf = self, let controllerInteraction = strongSelf.controllerInteraction {
                                                                 return controllerInteraction.sendSticker(file, true, sourceNode, sourceRect)
                                                             } else {
                                                                 return false
                                                             }
-                                                        }
+                                                            
+                                                        })
                                                         
                                                         controllerInteraction.navigationController()?.view.window?.endEditing(true)
                                                         controllerInteraction.presentController(controller, nil)
@@ -166,7 +168,7 @@ final class StickersChatInputContextPanelNode: ChatInputContextPanelNode {
                                         }
                                         return true
                                     }),
-                                    PeekControllerMenuItem(title: strongSelf.strings.Common_Cancel, color: .accent, action: { _, _ in return true })
+                                    PeekControllerMenuItem(title: strongSelf.strings.Common_Cancel, color: .accent, font: .bold, action: { _, _ in return true })
                                 ]
                                 return (itemNode, StickerPreviewPeekContent(account: strongSelf.context.account, item: .pack(item), menu: menuItems))
                             } else {
@@ -240,7 +242,7 @@ final class StickersChatInputContextPanelNode: ChatInputContextPanelNode {
         }
         
         if updateLayout {
-            self.updateLayout(size: validLayout.0, leftInset: validLayout.1, rightInset: validLayout.2, transition: .immediate, interfaceState: validLayout.3)
+            self.updateLayout(size: validLayout.0, leftInset: validLayout.1, rightInset: validLayout.2, bottomInset: validLayout.3, transition: .immediate, interfaceState: validLayout.4)
         }
         
         self.prepareTransition(from: self.currentEntries, to: entries)
@@ -307,9 +309,9 @@ final class StickersChatInputContextPanelNode: ChatInputContextPanelNode {
         return max(size.height - minimumItemHeights, 0.0)
     }
     
-    override func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState) {
+    override func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState) {
         let hadValidLayout = self.validLayout != nil
-        self.validLayout = (size, leftInset, rightInset, interfaceState)
+        self.validLayout = (size, leftInset, rightInset, bottomInset, interfaceState)
         
         var insets = UIEdgeInsets()
         insets.top = self.topInsetForLayout(size: size)
@@ -318,29 +320,8 @@ final class StickersChatInputContextPanelNode: ChatInputContextPanelNode {
         
         transition.updateFrame(node: self.listView, frame: CGRect(x: 0.0, y: 0.0, width: size.width, height: size.height))
         
-        var duration: Double = 0.0
-        var curve: UInt = 0
-        switch transition {
-            case .immediate:
-                break
-            case let .animated(animationDuration, animationCurve):
-                duration = animationDuration
-                switch animationCurve {
-                    case .easeInOut, .custom:
-                        break
-                    case .spring:
-                        curve = 7
-                }
-        }
-        
-        let listViewCurve: ListViewAnimationCurve
-        if curve == 7 {
-            listViewCurve = .Spring(duration: duration)
-        } else {
-            listViewCurve = .Default(duration: duration)
-        }
-        
-        let updateSizeAndInsets = ListViewUpdateSizeAndInsets(size: size, insets: insets, duration: duration, curve: listViewCurve)
+        let (duration, curve) = listViewAnimationDurationAndCurve(transition: transition)
+        let updateSizeAndInsets = ListViewUpdateSizeAndInsets(size: size, insets: insets, duration: duration, curve: curve)
         
         self.listView.transaction(deleteIndices: [], insertIndicesAndItems: [], updateIndicesAndItems: [], options: [.Synchronous, .LowLatency], scrollToItem: nil, updateSizeAndInsets: updateSizeAndInsets, stationaryItemRange: nil, updateOpaqueState: nil, completion: { _ in })
         

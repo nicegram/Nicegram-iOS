@@ -4,11 +4,14 @@ import Display
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import ItemListUI
+import PresentationDataUtils
 import AccountContext
 import ContextUI
 import AlertUI
+import PresentationDataUtils
 
 public enum PeerReportSubject {
     case peer(PeerId)
@@ -89,24 +92,26 @@ public func presentPeerReportOptions(context: AccountContext, parent: ViewContro
                         })
                     }
                 } else {
-                    parent?.present(peerReportController(context: context, subject: subject, completion: completion), in: .window(.root), with: ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+                    parent?.push(peerReportController(context: context, subject: subject, completion: completion))
                 }
                 f(.dismissWithoutContent)
             })))
         }
-        contextController.setItems(items)
+        contextController.setItems(.single(items))
     } else {
         contextController?.dismiss()
         parent.view.endEditing(true)
         parent.present(peerReportOptionsController(context: context, subject: subject, present: { [weak parent] c, a in
             parent?.present(c, in: .window(.root), with: a)
+        }, push: { [weak parent] c in
+            parent?.push(c)
         }, completion: completion), in: .window(.root))
     }
 }
 
-public func peerReportOptionsController(context: AccountContext, subject: PeerReportSubject, present: @escaping (ViewController, Any?) -> Void, completion: @escaping (Bool) -> Void) -> ViewController {
+public func peerReportOptionsController(context: AccountContext, subject: PeerReportSubject, present: @escaping (ViewController, Any?) -> Void, push: @escaping (ViewController) -> Void, completion: @escaping (Bool) -> Void) -> ViewController {
     let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-    let controller = ActionSheetController(theme: ActionSheetControllerTheme(presentationTheme: presentationData.theme))
+    let controller = ActionSheetController(theme: ActionSheetControllerTheme(presentationData: presentationData))
     
     let options: [PeerReportOption] = [
         .spam,
@@ -167,7 +172,7 @@ public func peerReportOptionsController(context: AccountContext, subject: PeerRe
                         })
                 }
             } else {
-                controller?.present(peerReportController(context: context, subject: subject, completion: completion), in: .window(.root), with: ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+                push(peerReportController(context: context, subject: subject, completion: completion))
             }
             
             controller?.dismissAnimated()
@@ -249,12 +254,13 @@ private enum PeerReportControllerEntry: ItemListNodeEntry {
         return lhs.stableId < rhs.stableId
     }
     
-    func item(_ arguments: PeerReportControllerArguments) -> ListViewItem {
+    func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
+        let arguments = arguments as! PeerReportControllerArguments
         switch self {
             case let .text(theme, title, value):
-                return ItemListMultilineInputItem(theme: theme, text: value, placeholder: title, maxLength: nil, sectionId: self.section, style: .blocks, textUpdated: { text in
+                return ItemListMultilineInputItem(presentationData: presentationData, text: value, placeholder: title, maxLength: nil, sectionId: self.section, style: .blocks, textUpdated: { text in
                     arguments.updateText(text)
-                }, tag: PeerReportControllerEntryTag.text, action: {})
+                }, tag: PeerReportControllerEntryTag.text)
         }
     }
 }
@@ -293,7 +299,7 @@ private func peerReportController(context: AccountContext, subject: PeerReportSu
     let reportDisposable = MetaDisposable()
     
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get())
-    |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState<PeerReportControllerEntry>, PeerReportControllerEntry.ItemGenerationArguments)) in
+    |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let rightButton: ItemListNavigationButton
         if state.isReporting {
             rightButton = ItemListNavigationButton(content: .none, style: .activity, enabled: true, action: {})
@@ -332,11 +338,11 @@ private func peerReportController(context: AccountContext, subject: PeerReportSu
             })
         }
         
-        let controllerState = ItemListControllerState(theme: presentationData.theme, title: .text(presentationData.strings.ReportPeer_ReasonOther_Title), leftNavigationButton: ItemListNavigationButton(content: .text(presentationData.strings.Common_Cancel), style: .regular, enabled: true, action: {
+        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(presentationData.strings.ReportPeer_ReasonOther_Title), leftNavigationButton: ItemListNavigationButton(content: .text(presentationData.strings.Common_Cancel), style: .regular, enabled: true, action: {
             dismissImpl?()
             completion(false)
         }), rightNavigationButton: rightButton, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-        let listState = ItemListNodeState(entries: peerReportControllerEntries(presentationData: presentationData, state: state), style: .blocks, focusItemTag: PeerReportControllerEntryTag.text)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: peerReportControllerEntries(presentationData: presentationData, state: state), style: .blocks, focusItemTag: PeerReportControllerEntryTag.text)
         
         return (controllerState, (listState, arguments))
     }
@@ -345,6 +351,7 @@ private func peerReportController(context: AccountContext, subject: PeerReportSu
     }
     
     let controller = ItemListController(context: context, state: signal)
+    controller.navigationPresentation = .modal
     presentControllerImpl = { [weak controller] c, a in
         controller?.present(c, in: .window(.root), with: a)
     }

@@ -4,14 +4,19 @@ import Display
 import AsyncDisplayKit
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import ItemListUI
+import PresentationDataUtils
 import ActivityIndicator
 import AvatarNode
 import TelegramStringFormatting
 import PeerPresenceStatusManager
 import ChatListUI
+import AppBundle
+import PhoneNumberFormat
+import AccountContext
 
 private let updatingAvatarOverlayImage = generateFilledCircleImage(diameter: 66.0, color: UIColor(white: 0.0, alpha: 0.4), backgroundColor: nil)
 
@@ -25,13 +30,13 @@ public enum ItemListAvatarAndNameInfoItemTitleType {
 }
 
 public enum ItemListAvatarAndNameInfoItemName: Equatable {
-    case personName(firstName: String, lastName: String)
+    case personName(firstName: String, lastName: String, phone: String)
     case title(title: String, type: ItemListAvatarAndNameInfoItemTitleType)
     
     public init(_ peer: Peer) {
         switch peer.indexName {
-        case let .personName(first, last, _, _):
-            self = .personName(firstName: first, lastName: last)
+        case let .personName(first, last, _, phone):
+            self = .personName(firstName: first, lastName: last, phone: phone ?? "")
         case let .title(title, _):
             let type: ItemListAvatarAndNameInfoItemTitleType
             if let peer = peer as? TelegramChannel, case .broadcast = peer.info {
@@ -45,7 +50,7 @@ public enum ItemListAvatarAndNameInfoItemName: Equatable {
     
     public var composedTitle: String {
         switch self {
-        case let .personName(firstName, lastName):
+        case let .personName(firstName, lastName, phone):
             if !firstName.isEmpty && !lastName.isEmpty {
                 return firstName + " " + lastName
             } else if !firstName.isEmpty {
@@ -60,7 +65,21 @@ public enum ItemListAvatarAndNameInfoItemName: Equatable {
     
     public func composedDisplayTitle(strings: PresentationStrings) -> String {
         switch self {
-        case let .personName(firstName, lastName):
+        case let .personName(firstName, lastName, phone):
+            if !firstName.isEmpty {
+                if !lastName.isEmpty {
+                    return "\(firstName) \(lastName)"
+                } else {
+                    return firstName
+                }
+            } else if !lastName.isEmpty {
+                return lastName
+            } else if !phone.isEmpty {
+                return formatPhoneNumber("+\(phone)")
+            } else {
+                return strings.User_DeletedAccount
+            }
+            
             if !firstName.isEmpty && !lastName.isEmpty {
                 return firstName + " " + lastName
             } else if !firstName.isEmpty {
@@ -75,10 +94,10 @@ public enum ItemListAvatarAndNameInfoItemName: Equatable {
         }
     }
     
-    public  var isEmpty: Bool {
+    public var isEmpty: Bool {
         switch self {
-        case let .personName(firstName, _):
-            return firstName.isEmpty
+        case let .personName(firstName, lastName, phone):
+            return firstName.isEmpty && lastName.isEmpty && phone.isEmpty
         case let .title(title, _):
             return title.isEmpty
         }
@@ -121,9 +140,8 @@ public enum ItemListAvatarAndNameInfoItemMode {
 }
 
 public class ItemListAvatarAndNameInfoItem: ListViewItem, ItemListItem {
-    let account: Account
-    let theme: PresentationTheme
-    let strings: PresentationStrings
+    let accountContext: AccountContext
+    let presentationData: ItemListPresentationData
     let dateTimeFormat: PresentationDateTimeFormat
     let mode: ItemListAvatarAndNameInfoItemMode
     let peer: Peer?
@@ -146,10 +164,9 @@ public class ItemListAvatarAndNameInfoItem: ListViewItem, ItemListItem {
     
     public let selectable: Bool
 
-    public init(account: Account, theme: PresentationTheme, strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat, mode: ItemListAvatarAndNameInfoItemMode, peer: Peer?, presence: PeerPresence?, label: String? = nil, cachedData: CachedPeerData?, state: ItemListAvatarAndNameInfoItemState, sectionId: ItemListSectionId, style: ItemListAvatarAndNameInfoItemStyle, editingNameUpdated: @escaping (ItemListAvatarAndNameInfoItemName) -> Void, editingNameCompleted: @escaping () -> Void = {}, avatarTapped: @escaping () -> Void, idTapped: @escaping (String) -> Void, context: ItemListAvatarAndNameInfoItemContext? = nil, updatingImage: ItemListAvatarAndNameInfoItemUpdatingAvatar? = nil, call: (() -> Void)? = nil, action: (() -> Void)? = nil, longTapAction: (() -> Void)? = nil, tag: ItemListItemTag? = nil) {
-        self.account = account
-        self.theme = theme
-        self.strings = strings
+    public init(accountContext: AccountContext, presentationData: ItemListPresentationData, dateTimeFormat: PresentationDateTimeFormat, mode: ItemListAvatarAndNameInfoItemMode, peer: Peer?, presence: PeerPresence?, label: String? = nil, cachedData: CachedPeerData?, state: ItemListAvatarAndNameInfoItemState, sectionId: ItemListSectionId, style: ItemListAvatarAndNameInfoItemStyle, editingNameUpdated: @escaping (ItemListAvatarAndNameInfoItemName) -> Void, editingNameCompleted: @escaping () -> Void = {}, avatarTapped: @escaping () -> Void, context: ItemListAvatarAndNameInfoItemContext? = nil, updatingImage: ItemListAvatarAndNameInfoItemUpdatingAvatar? = nil, call: (() -> Void)? = nil, action: (() -> Void)? = nil, longTapAction: (() -> Void)? = nil, tag: ItemListItemTag? = nil) {
+        self.accountContext = accountContext
+        self.presentationData = presentationData
         self.dateTimeFormat = dateTimeFormat
         self.mode = mode
         self.peer = peer
@@ -218,15 +235,14 @@ public class ItemListAvatarAndNameInfoItem: ListViewItem, ItemListItem {
     }
 }
 
-private let avatarFont = UIFont(name: ".SFCompactRounded-Semibold", size: 28.0)!
-private let nameFont = Font.medium(19.0)
-private let statusFont = Font.regular(15.0)
+private let avatarFont = avatarPlaceholderFont(size: 28.0)
 
 public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNode, ItemListItemFocusableNode, UITextFieldDelegate {
     private let backgroundNode: ASDisplayNode
     private let highlightedBackgroundNode: ASDisplayNode
     private let topStripeNode: ASDisplayNode
     private let bottomStripeNode: ASDisplayNode
+    private let maskNode: ASImageNode
     
     private let avatarNode: AvatarNode
     private let updatingAvatarOverlay: ASImageNode
@@ -279,6 +295,8 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
         
         self.bottomStripeNode = ASDisplayNode()
         self.bottomStripeNode.isLayerBacked = true
+        
+        self.maskNode = ASImageNode()
         
         self.avatarNode = AvatarNode(font: avatarFont)
         
@@ -356,20 +374,23 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
         return { item, params, neighbors in
             let baseWidth = params.width - params.leftInset - params.rightInset
             
+            let nameFont = Font.medium(floor(item.presentationData.fontSize.itemListBaseFontSize * 19.0 / 17.0))
+            let statusFont = Font.regular(floor(item.presentationData.fontSize.itemListBaseFontSize * 15.0 / 17.0))
+            
             var updatedTheme: PresentationTheme?
             
-            if currentItem?.theme !== item.theme {
-                updatedTheme = item.theme
+            if currentItem?.presentationData.theme !== item.presentationData.theme {
+                updatedTheme = item.presentationData.theme
             }
             
             var credibilityIconImage: UIImage?
             var credibilityIconOffset: CGFloat = 4.0
             if let peer = item.peer {
                 if peer.isScam {
-                    credibilityIconImage = PresentationResourcesChatList.scamIcon(item.theme, type: .regular)
+                    credibilityIconImage = PresentationResourcesChatList.scamIcon(item.presentationData.theme, type: .regular)
                     credibilityIconOffset = 6.0
                 } else if peer.isVerified {
-                    credibilityIconImage = PresentationResourcesItemList.verifiedPeerIcon(item.theme)
+                    credibilityIconImage = PresentationResourcesItemList.verifiedPeerIcon(item.presentationData.theme)
                 }
             }
             
@@ -392,10 +413,10 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                 nameMaximumNumberOfLines = 2
             }
             
-            let (nameNodeLayout, nameNodeApply) = layoutNameNode(TextNodeLayoutArguments(attributedString: NSAttributedString(string: displayTitle.composedDisplayTitle(strings: item.strings), font: nameFont, textColor: item.theme.list.itemPrimaryTextColor), backgroundColor: nil, maximumNumberOfLines: nameMaximumNumberOfLines, truncationType: .end, constrainedSize: CGSize(width: baseWidth - 20 - 94.0 - (item.call != nil ? 36.0 : 0.0) - additionalTitleInset, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
+            let (nameNodeLayout, nameNodeApply) = layoutNameNode(TextNodeLayoutArguments(attributedString: NSAttributedString(string: displayTitle.composedDisplayTitle(strings: item.presentationData.strings), font: nameFont, textColor: item.presentationData.theme.list.itemPrimaryTextColor), backgroundColor: nil, maximumNumberOfLines: nameMaximumNumberOfLines, truncationType: .end, constrainedSize: CGSize(width: baseWidth - 20 - 94.0 - (item.call != nil ? 36.0 : 0.0) - additionalTitleInset, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
             var idText: String = "ID: "
-            let idColor: UIColor = item.theme.list.itemSecondaryTextColor
+            let idColor: UIColor = item.presentationData.theme.list.itemSecondaryTextColor
             var statusText: String = ""
             let statusColor: UIColor
             if let peer = item.peer as? TelegramUser {
@@ -415,30 +436,30 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                         }
                         statusText += "@\(username)"
                     }
-                    statusColor = item.theme.list.itemSecondaryTextColor
+                    statusColor = item.presentationData.theme.list.itemSecondaryTextColor
                 case .generic, .contact, .editSettings:
                     if let label = item.label {
                         statusText = label
-                        statusColor = item.theme.list.itemSecondaryTextColor
+                        statusColor = item.presentationData.theme.list.itemSecondaryTextColor
                     } else if peer.flags.contains(.isSupport), !servicePeer {
                         statusText = item.strings.Bot_GenericSupportStatus
-                        statusColor = item.theme.list.itemSecondaryTextColor
+                        statusColor = item.presentationData.theme.list.itemSecondaryTextColor
                     } else if let _ = peer.botInfo {
                         statusText = item.strings.Bot_GenericBotStatus
-                        statusColor = item.theme.list.itemSecondaryTextColor
+                        statusColor = item.presentationData.theme.list.itemSecondaryTextColor
                     } else if case .generic = item.mode, !servicePeer {
                         let presence = (item.presence as? TelegramUserPresence) ?? TelegramUserPresence(status: .none, lastActivity: 0)
                         let timestamp = CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970
                         let (string, activity) = stringAndActivityForUserPresence(strings: item.strings, dateTimeFormat: item.dateTimeFormat, presence: presence, relativeTo: Int32(timestamp), expanded: true)
                         statusText = string
                         if activity {
-                            statusColor = item.theme.list.itemAccentColor
+                            statusColor = item.presentationData.theme.list.itemAccentColor
                         } else {
-                            statusColor = item.theme.list.itemSecondaryTextColor
+                            statusColor = item.presentationData.theme.list.itemSecondaryTextColor
                         }
                     } else {
                         statusText = ""
-                        statusColor = item.theme.list.itemPrimaryTextColor
+                        statusColor = item.presentationData.theme.list.itemPrimaryTextColor
                     }
                 }
             } else if let channel = item.peer as? TelegramChannel {
@@ -447,38 +468,38 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                 if let cachedChannelData = item.cachedData as? CachedChannelData, let memberCount = cachedChannelData.participantsSummary.memberCount {
                     if case .group = channel.info {
                         if memberCount == 0 {
-                            statusText = item.strings.Group_Status
+                            statusText = item.presentationData.strings.Group_Status
                         } else {
-                            statusText = item.strings.Conversation_StatusMembers(memberCount)
+                            statusText = item.presentationData.strings.Conversation_StatusMembers(memberCount)
                         }
                     } else {
                         if memberCount == 0 {
-                            statusText = item.strings.Channel_Status
+                            statusText = item.presentationData.strings.Channel_Status
                         } else {
-                            statusText = item.strings.Conversation_StatusSubscribers(memberCount)
+                            statusText = item.presentationData.strings.Conversation_StatusSubscribers(memberCount)
                         }
                     }
-                    statusColor = item.theme.list.itemSecondaryTextColor
+                    statusColor = item.presentationData.theme.list.itemSecondaryTextColor
                 } else {
                     switch channel.info {
                         case .broadcast:
-                            statusText = item.strings.Channel_Status
-                            statusColor = item.theme.list.itemSecondaryTextColor
+                            statusText = item.presentationData.strings.Channel_Status
+                            statusColor = item.presentationData.theme.list.itemSecondaryTextColor
                         case .group:
-                            statusText = item.strings.Group_Status
-                            statusColor = item.theme.list.itemSecondaryTextColor
+                            statusText = item.presentationData.strings.Group_Status
+                            statusColor = item.presentationData.theme.list.itemSecondaryTextColor
                     }
                 }
             } else if let group = item.peer as? TelegramGroup {
                 self.idValue = String(group.id.hashValue)
                 idText += self.idValue
                 statusText = item.strings.GroupInfo_ParticipantCount(Int32(group.participantCount))
-                statusColor = item.theme.list.itemSecondaryTextColor
+                statusColor = item.presentationData.list.itemSecondaryTextColor
             } else {
                 self.idValue = ""
                 idText += "Unknown"
                 statusText = ""
-                statusColor = item.theme.list.itemPrimaryTextColor
+                statusColor = item.presentationData.theme.list.itemPrimaryTextColor
             }
             
             var availableStatusWidth = baseWidth - 20
@@ -492,35 +513,42 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
             
             let separatorHeight = UIScreenPixel
             
+            let nameSpacing: CGFloat = 3.0
+            
+            let hasCorners = itemListHasRoundedBlockLayout(params)
             let contentSize: CGSize
             var insets: UIEdgeInsets
             let itemBackgroundColor: UIColor
             let itemSeparatorColor: UIColor
             switch item.style {
-                case .plain:
-                    itemBackgroundColor = item.theme.list.plainBackgroundColor
-                    itemSeparatorColor = item.theme.list.itemPlainSeparatorColor
-                    contentSize = CGSize(width: params.width, height: 96.0 + 4.0)
-                    insets = itemListNeighborsPlainInsets(neighbors)
-                case let .blocks(withTopInset, withExtendedBottomInset):
-                    itemBackgroundColor = item.theme.list.itemBlocksBackgroundColor
-                    itemSeparatorColor = item.theme.list.itemBlocksSeparatorColor
-                    contentSize = CGSize(width: params.width, height: 92.0 + 4.0)
-                    if withTopInset {
-                        insets = itemListNeighborsGroupedInsets(neighbors)
-                    } else {
-                        let topInset: CGFloat
-                        switch neighbors.top {
-                            case .sameSection, .none:
-                                topInset = 0.0
-                            case .otherSection:
-                                topInset = separatorHeight + 35.0
-                        }
-                        insets = UIEdgeInsets(top: topInset, left: 0.0, bottom: separatorHeight, right: 0.0)
-                        if withExtendedBottomInset {
-                            insets.bottom += 12.0
-                        }
+            case .plain:
+                let verticalInset: CGFloat = 15.0
+                itemBackgroundColor = item.presentationData.theme.list.plainBackgroundColor
+                itemSeparatorColor = item.presentationData.theme.list.itemPlainSeparatorColor
+                let baseHeight = nameNodeLayout.size.height + nameSpacing + statusNodeLayout.size.height + 40.0
+                contentSize = CGSize(width: params.width, height: max(baseHeight, verticalInset * 2.0 + 66.0))
+                insets = itemListNeighborsPlainInsets(neighbors)
+            case let .blocks(withTopInset, withExtendedBottomInset):
+                let verticalInset: CGFloat = 13.0
+                itemBackgroundColor = item.presentationData.theme.list.itemBlocksBackgroundColor
+                itemSeparatorColor = item.presentationData.theme.list.itemBlocksSeparatorColor
+                let baseHeight = nameNodeLayout.size.height + nameSpacing + statusNodeLayout.size.height + 30.0
+                contentSize = CGSize(width: params.width, height: max(baseHeight, verticalInset * 2.0 + 66.0))
+                if withTopInset || hasCorners {
+                    insets = itemListNeighborsGroupedInsets(neighbors)
+                } else {
+                    let topInset: CGFloat
+                    switch neighbors.top {
+                        case .sameSection, .none:
+                            topInset = 0.0
+                        case .otherSection:
+                            topInset = separatorHeight + 35.0
                     }
+                    insets = UIEdgeInsets(top: topInset, left: 0.0, bottom: separatorHeight, right: 0.0)
+                    if withExtendedBottomInset {
+                        insets.bottom += 12.0
+                    }
+                }
             }
             
             var updateAvatarOverlayImage: UIImage?
@@ -545,15 +573,15 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                         strongSelf.topStripeNode.backgroundColor = itemSeparatorColor
                         strongSelf.bottomStripeNode.backgroundColor = itemSeparatorColor
                         strongSelf.backgroundNode.backgroundColor = itemBackgroundColor
-                        strongSelf.highlightedBackgroundNode.backgroundColor = item.theme.list.itemHighlightedBackgroundColor
+                        strongSelf.highlightedBackgroundNode.backgroundColor = item.presentationData.theme.list.itemHighlightedBackgroundColor
                         
                         strongSelf.inputSeparator?.backgroundColor = itemSeparatorColor
-                        strongSelf.callButton.setImage(PresentationResourcesChat.chatInfoCallButtonImage(item.theme), for: [])
+                        strongSelf.callButton.setImage(PresentationResourcesChat.chatInfoCallButtonImage(item.presentationData.theme), for: [])
                         
-                        strongSelf.inputFirstClearButton?.setImage(generateClearIcon(color: item.theme.list.inputClearButtonColor), for: [])
-                        strongSelf.inputSecondClearButton?.setImage(generateClearIcon(color: item.theme.list.inputClearButtonColor), for: [])
+                        strongSelf.inputFirstClearButton?.setImage(generateClearIcon(color: item.presentationData.theme.list.inputClearButtonColor), for: [])
+                        strongSelf.inputSecondClearButton?.setImage(generateClearIcon(color: item.presentationData.theme.list.inputClearButtonColor), for: [])
                         
-                        updatedArrowImage = PresentationResourcesItemList.disclosureArrowImage(item.theme)
+                        updatedArrowImage = PresentationResourcesItemList.disclosureArrowImage(item.presentationData.theme)
                     }
                     
                     if item.updatingImage != nil {
@@ -582,18 +610,17 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                     }
                     
                     if item.call != nil {
-                        strongSelf.addSubnode(strongSelf.callButton)
+                        if strongSelf.callButton.supernode == nil {
+                            strongSelf.addSubnode(strongSelf.callButton)
+                        }
                         
                         strongSelf.callButton.frame = CGRect(origin: CGPoint(x: params.width - params.rightInset - 44.0 - 10.0, y: floor((contentSize.height - 44.0) / 2.0) - 2.0), size: CGSize(width: 44.0, height: 44.0))
                     } else if strongSelf.callButton.supernode != nil {
                         strongSelf.callButton.removeFromSupernode()
                     }
                     
-                    let avatarOriginY: CGFloat
                     switch item.style {
                         case .plain:
-                            avatarOriginY = 15.0
-                            
                             if strongSelf.backgroundNode.supernode != nil {
                                strongSelf.backgroundNode.removeFromSupernode()
                             }
@@ -603,9 +630,10 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                             if strongSelf.bottomStripeNode.supernode != nil {
                                 strongSelf.bottomStripeNode.removeFromSupernode()
                             }
+                            if strongSelf.maskNode.supernode != nil {
+                                strongSelf.maskNode.removeFromSupernode()
+                        }
                         case .blocks:
-                            avatarOriginY = 13.0
-                            
                             if strongSelf.backgroundNode.supernode == nil {
                                 strongSelf.insertSubnode(strongSelf.backgroundNode, at: 0)
                             }
@@ -615,11 +643,18 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                             if strongSelf.bottomStripeNode.supernode == nil {
                                 strongSelf.insertSubnode(strongSelf.bottomStripeNode, at: 2)
                             }
+                            if strongSelf.maskNode.supernode == nil {
+                                strongSelf.insertSubnode(strongSelf.maskNode, at: 3)
+                            }
+                            
+                            var hasTopCorners = false
+                            var hasBottomCorners = false
                             switch neighbors.top {
                                 case .sameSection(false):
                                     strongSelf.topStripeNode.isHidden = true
                                 default:
-                                    strongSelf.topStripeNode.isHidden = false
+                                    hasTopCorners = true
+                                    strongSelf.topStripeNode.isHidden = hasCorners
                             }
                             
                             let bottomStripeInset: CGFloat
@@ -628,9 +663,14 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                                     bottomStripeInset = params.leftInset + 16.0
                                 default:
                                     bottomStripeInset = 0.0
+                                    hasBottomCorners = true
+                                    strongSelf.bottomStripeNode.isHidden = hasCorners
                             }
+                            
+                            strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
                         
                             strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: params.width, height: contentSize.height))
+                            strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                             strongSelf.highlightedBackgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -UIScreenPixel), size: CGSize(width: params.width, height: contentSize.height + UIScreenPixel))
                             strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: layoutSize.width, height: separatorHeight))
                             strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: layoutSize.height - insets.top - insets.bottom), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight))
@@ -659,10 +699,10 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                             overrideImage = .deletedIcon
                         }
                         
-                        strongSelf.avatarNode.setPeer(account: item.account, theme: item.theme, peer: peer, overrideImage: overrideImage, emptyColor: ignoreEmpty ? nil : item.theme.list.mediaPlaceholderColor, synchronousLoad: synchronousLoads)
+                        strongSelf.avatarNode.setPeer(context: item.accountContext, theme: item.presentationData.theme, peer: peer, overrideImage: overrideImage, emptyColor: ignoreEmpty ? nil : item.presentationData.theme.list.mediaPlaceholderColor, synchronousLoad: synchronousLoads)
                     }
                     
-                    let avatarFrame = CGRect(origin: CGPoint(x: params.leftInset + 15.0, y: avatarOriginY), size: CGSize(width: 66.0, height: 66.0))
+                    let avatarFrame = CGRect(origin: CGPoint(x: params.leftInset + 15.0, y: floor((layout.contentSize.height - 66.0) / 2.0)), size: CGSize(width: 66.0, height: 66.0))
                     strongSelf.avatarNode.frame = avatarFrame
                     strongSelf.updatingAvatarOverlay.frame = avatarFrame
                     
@@ -709,9 +749,9 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                         if strongSelf.inputSeparator == nil {
                             animateIn = true
                         }
-                        let keyboardAppearance = item.theme.rootController.keyboardColor.keyboardAppearance
+                        let keyboardAppearance = item.presentationData.theme.rootController.keyboardColor.keyboardAppearance
                         switch editingName {
-                            case let .personName(firstName, lastName):
+                            case let .personName(firstName, lastName, _):
                                 if strongSelf.inputSeparator == nil {
                                     let inputSeparator = ASDisplayNode()
                                     inputSeparator.isLayerBacked = true
@@ -723,10 +763,10 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                                 if strongSelf.inputFirstField == nil {
                                     let inputFirstField = TextFieldNodeView()
                                     inputFirstField.delegate = self
-                                    inputFirstField.font = Font.regular(17.0)
+                                    inputFirstField.font = Font.regular(item.presentationData.fontSize.itemListBaseFontSize)
                                     inputFirstField.autocorrectionType = .no
                                     inputFirstField.returnKeyType = .next
-                                    inputFirstField.attributedText = NSAttributedString(string: firstName, font: Font.regular(17.0), textColor: item.theme.list.itemPrimaryTextColor)
+                                    inputFirstField.attributedText = NSAttributedString(string: firstName, font: Font.regular(item.presentationData.fontSize.itemListBaseFontSize), textColor: item.presentationData.theme.list.itemPrimaryTextColor)
                                     strongSelf.inputFirstField = inputFirstField
                                     strongSelf.view.addSubview(inputFirstField)
                                     inputFirstField.addTarget(self, action: #selector(strongSelf.textFieldDidChange(_:)), for: .editingChanged)
@@ -734,8 +774,8 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                                     strongSelf.inputFirstField?.text = firstName
                                 }
                                 
-                                strongSelf.inputFirstField?.textColor = item.theme.list.itemPrimaryTextColor
-                                strongSelf.inputFirstField?.attributedPlaceholder = NSAttributedString(string: item.strings.UserInfo_FirstNamePlaceholder, font: Font.regular(17.0), textColor: item.theme.list.itemPlaceholderTextColor)
+                                strongSelf.inputFirstField?.textColor = item.presentationData.theme.list.itemPrimaryTextColor
+                                strongSelf.inputFirstField?.attributedPlaceholder = NSAttributedString(string: item.presentationData.strings.UserInfo_FirstNamePlaceholder, font: Font.regular(item.presentationData.fontSize.itemListBaseFontSize), textColor: item.presentationData.theme.list.itemPlaceholderTextColor)
                                 if strongSelf.inputFirstField?.keyboardAppearance != keyboardAppearance {
                                     strongSelf.inputFirstField?.keyboardAppearance = keyboardAppearance
                                 }
@@ -745,7 +785,7 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                                     strongSelf.inputFirstClearButton?.imageNode.displaysAsynchronously = false
                                     strongSelf.inputFirstClearButton?.imageNode.displayWithoutProcessing = true
                                     strongSelf.inputFirstClearButton?.displaysAsynchronously = false
-                                    strongSelf.inputFirstClearButton?.setImage(generateClearIcon(color: item.theme.list.inputClearButtonColor), for: [])
+                                    strongSelf.inputFirstClearButton?.setImage(generateClearIcon(color: item.presentationData.theme.list.inputClearButtonColor), for: [])
                                     strongSelf.inputFirstClearButton?.addTarget(strongSelf, action: #selector(strongSelf.firstClearPressed), forControlEvents: .touchUpInside)
                                     strongSelf.inputFirstClearButton?.isHidden = true
                                     strongSelf.addSubnode(strongSelf.inputFirstClearButton!)
@@ -754,10 +794,10 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                                 if strongSelf.inputSecondField == nil {
                                     let inputSecondField = TextFieldNodeView()
                                     inputSecondField.delegate = self
-                                    inputSecondField.font = Font.regular(17.0)
+                                    inputSecondField.font = Font.regular(item.presentationData.fontSize.itemListBaseFontSize)
                                     inputSecondField.autocorrectionType = .no
                                     inputSecondField.returnKeyType = .done
-                                    inputSecondField.attributedText = NSAttributedString(string: lastName, font: Font.regular(17.0), textColor: item.theme.list.itemPrimaryTextColor)
+                                    inputSecondField.attributedText = NSAttributedString(string: lastName, font: Font.regular(item.presentationData.fontSize.itemListBaseFontSize), textColor: item.presentationData.theme.list.itemPrimaryTextColor)
                                     strongSelf.inputSecondField = inputSecondField
                                     strongSelf.view.addSubview(inputSecondField)
                                     inputSecondField.addTarget(self, action: #selector(strongSelf.textFieldDidChange(_:)), for: .editingChanged)
@@ -765,8 +805,8 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                                     strongSelf.inputSecondField?.text = lastName
                                 }
                                 
-                                strongSelf.inputSecondField?.textColor = item.theme.list.itemPrimaryTextColor
-                                strongSelf.inputSecondField?.attributedPlaceholder = NSAttributedString(string: item.strings.UserInfo_LastNamePlaceholder, font: Font.regular(17.0), textColor: item.theme.list.itemPlaceholderTextColor)
+                                strongSelf.inputSecondField?.textColor = item.presentationData.theme.list.itemPrimaryTextColor
+                                strongSelf.inputSecondField?.attributedPlaceholder = NSAttributedString(string: item.presentationData.strings.UserInfo_LastNamePlaceholder, font: Font.regular(item.presentationData.fontSize.itemListBaseFontSize), textColor: item.presentationData.theme.list.itemPlaceholderTextColor)
                                 if strongSelf.inputSecondField?.keyboardAppearance != keyboardAppearance {
                                     strongSelf.inputSecondField?.keyboardAppearance = keyboardAppearance
                                 }
@@ -776,7 +816,7 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                                     strongSelf.inputSecondClearButton?.imageNode.displaysAsynchronously = false
                                     strongSelf.inputSecondClearButton?.imageNode.displayWithoutProcessing = true
                                     strongSelf.inputSecondClearButton?.displaysAsynchronously = false
-                                    strongSelf.inputSecondClearButton?.setImage(generateClearIcon(color: item.theme.list.inputClearButtonColor), for: [])
+                                    strongSelf.inputSecondClearButton?.setImage(generateClearIcon(color: item.presentationData.theme.list.inputClearButtonColor), for: [])
                                     strongSelf.inputSecondClearButton?.addTarget(strongSelf, action: #selector(strongSelf.secondClearPressed), forControlEvents: .touchUpInside)
                                     strongSelf.inputSecondClearButton?.isHidden = true
                                     strongSelf.addSubnode(strongSelf.inputSecondClearButton!)
@@ -805,29 +845,29 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                                     strongSelf.addSubnode(inputSeparator)
                                     strongSelf.inputSeparator = inputSeparator
                                 }
-                                strongSelf.inputSeparator?.backgroundColor = itemSeparatorColor
+                                strongSelf.inputSeparator?.backgroundColor = .clear
                                 
                                 if strongSelf.inputFirstField == nil {
                                     let inputFirstField = TextFieldNodeView()
                                     inputFirstField.delegate = self
-                                    inputFirstField.font = Font.regular(17.0)
+                                    inputFirstField.font = Font.regular(floor(item.presentationData.fontSize.itemListBaseFontSize * 19.0 / 17.0))
                                     inputFirstField.autocorrectionType = .no
-                                    inputFirstField.attributedText = NSAttributedString(string: title, font: Font.regular(19.0), textColor: item.theme.list.itemPrimaryTextColor)
+                                    inputFirstField.attributedText = NSAttributedString(string: title, font: Font.regular(floor(item.presentationData.fontSize.itemListBaseFontSize * 19.0 / 17.0)), textColor: item.presentationData.theme.list.itemPrimaryTextColor)
                                     strongSelf.inputFirstField = inputFirstField
                                     strongSelf.view.addSubview(inputFirstField)
                                     inputFirstField.addTarget(self, action: #selector(strongSelf.textFieldDidChange(_:)), for: .editingChanged)
                                 } else if strongSelf.inputFirstField?.text != title {
                                     strongSelf.inputFirstField?.text = title
                                 }
-                                strongSelf.inputFirstField?.textColor = item.theme.list.itemPrimaryTextColor
+                                strongSelf.inputFirstField?.textColor = item.presentationData.theme.list.itemPrimaryTextColor
                                 let placeholder: String
                                 switch type {
                                     case .group:
-                                        placeholder = item.strings.GroupInfo_GroupNamePlaceholder
+                                        placeholder = item.presentationData.strings.GroupInfo_GroupNamePlaceholder
                                     case .channel:
-                                        placeholder = item.strings.GroupInfo_ChannelListNamePlaceholder
+                                        placeholder = item.presentationData.strings.GroupInfo_ChannelListNamePlaceholder
                                 }
-                                strongSelf.inputFirstField?.attributedPlaceholder = NSAttributedString(string: placeholder, font: Font.regular(19.0), textColor: item.theme.list.itemPlaceholderTextColor)
+                                strongSelf.inputFirstField?.attributedPlaceholder = NSAttributedString(string: placeholder, font: Font.regular(floor(item.presentationData.fontSize.itemListBaseFontSize * 19.0 / 17.0)), textColor: item.presentationData.theme.list.itemPlaceholderTextColor)
                                 if strongSelf.inputFirstField?.keyboardAppearance != keyboardAppearance {
                                     strongSelf.inputFirstField?.keyboardAppearance = keyboardAppearance
                                 }
@@ -837,14 +877,14 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                                     strongSelf.inputFirstClearButton?.imageNode.displaysAsynchronously = false
                                     strongSelf.inputFirstClearButton?.imageNode.displayWithoutProcessing = true
                                     strongSelf.inputFirstClearButton?.displaysAsynchronously = false
-                                    strongSelf.inputFirstClearButton?.setImage(generateClearIcon(color: item.theme.list.inputClearButtonColor), for: [])
+                                    strongSelf.inputFirstClearButton?.setImage(generateClearIcon(color: item.presentationData.theme.list.inputClearButtonColor), for: [])
                                     strongSelf.inputFirstClearButton?.addTarget(strongSelf, action: #selector(strongSelf.firstClearPressed), forControlEvents: .touchUpInside)
                                     strongSelf.inputFirstClearButton?.isHidden = true
                                     strongSelf.addSubnode(strongSelf.inputFirstClearButton!)
                                 }
                                 
-                                strongSelf.inputSeparator?.frame = CGRect(origin: CGPoint(x: params.leftInset + 100.0, y: 62.0), size: CGSize(width: params.width - params.leftInset - params.rightInset - 100.0, height: separatorHeight))
-                                strongSelf.inputFirstField?.frame = CGRect(origin: CGPoint(x: params.leftInset + 111.0, y: 26.0), size: CGSize(width: params.width - params.leftInset - params.rightInset - 111.0 - 36.0, height: 35.0))
+                                strongSelf.inputSeparator?.frame = CGRect(origin: CGPoint(x: params.leftInset + 100.0, y: 64.0), size: CGSize(width: params.width - params.leftInset - params.rightInset - 100.0, height: separatorHeight))
+                                strongSelf.inputFirstField?.frame = CGRect(origin: CGPoint(x: params.leftInset + 111.0, y: 28.0), size: CGSize(width: params.width - params.leftInset - params.rightInset - 111.0 - 36.0, height: 35.0))
                                 
                                 if let image = strongSelf.inputFirstClearButton?.image(for: []), let inputFieldFrame = strongSelf.inputFirstField?.frame {
                                     strongSelf.inputFirstClearButton?.frame = CGRect(origin: CGPoint(x: inputFieldFrame.maxX, y: inputFieldFrame.minY + floor((inputFieldFrame.size.height - image.size.height) / 2.0) - 1.0 + UIScreenPixel), size: image.size)
@@ -1029,7 +1069,7 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
         if let item = self.item, let currentEditingName = item.state.editingName {
             var editingName: ItemListAvatarAndNameInfoItemName?
             if let inputFirstField = self.inputFirstField, let inputSecondField = self.inputSecondField {
-                editingName = .personName(firstName: inputFirstField.text ?? "", lastName: inputSecondField.text ?? "")
+                editingName = .personName(firstName: inputFirstField.text ?? "", lastName: inputSecondField.text ?? "", phone: "")
             } else if let inputFirstField = self.inputFirstField {
                 if case let .title(_, type) = currentEditingName {
                     editingName = .title(title: inputFirstField.text ?? "", type: type)
@@ -1088,9 +1128,9 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
         }
     }
     
-    public func avatarTransitionNode() -> ((ASDisplayNode, () -> (UIView?, UIView?)), CGRect) {
+    public func avatarTransitionNode() -> ((ASDisplayNode, CGRect, () -> (UIView?, UIView?)), CGRect) {
         let avatarNode = self.avatarNode
-        return ((self.avatarNode, { [weak avatarNode] in
+        return ((self.avatarNode, self.avatarNode.bounds, { [weak avatarNode] in
             return (avatarNode?.view.snapshotContentTree(unhide: true), nil)
         }), self.avatarNode.bounds)
     }

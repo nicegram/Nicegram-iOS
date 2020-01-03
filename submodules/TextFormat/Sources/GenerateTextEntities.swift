@@ -1,6 +1,7 @@
 import Foundation
 import UIKit
 import TelegramCore
+import SyncCore
 
 private let dataDetector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType([.link]).rawValue)
 private let dataAndPhoneNumberDetector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType([.link, .phoneNumber]).rawValue)
@@ -20,11 +21,12 @@ private let validIdentifierSet: CharacterSet = {
 private let identifierDelimiterSet: CharacterSet = {
     var set = CharacterSet.punctuationCharacters
     set.formUnion(CharacterSet.whitespacesAndNewlines)
+    set.insert("|")
+    set.insert("/")
     return set
 }()
 private let externalIdentifierDelimiterSet: CharacterSet = {
-    var set = CharacterSet.punctuationCharacters
-    set.formUnion(CharacterSet.whitespacesAndNewlines)
+    var set = identifierDelimiterSet
     set.remove(".")
     return set
 }()
@@ -193,8 +195,10 @@ public func generateTextEntities(_ text: String, enabledTypes: EnabledEntityType
         if let scalar = scalar {
             if scalar == "/" {
                 notFound = false
-                if previousScalar != nil && !delimiterSet.contains(previousScalar!) {
-                    currentEntity = nil
+                if let previousScalar = previousScalar, !delimiterSet.contains(previousScalar) {
+                    if let entity = currentEntity, entity.0 == .command {
+                        currentEntity = nil
+                    }
                 } else {
                     if let (type, range) = currentEntity {
                         commitEntity(utf16, type, range, enabledTypes, &entities)

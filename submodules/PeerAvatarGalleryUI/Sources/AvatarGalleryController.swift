@@ -6,6 +6,7 @@ import Postbox
 import SwiftSignalKit
 import AsyncDisplayKit
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import AccountContext
 import GalleryUI
@@ -91,7 +92,7 @@ public func fetchedAvatarGalleryEntries(account: Account, peer: Peer) -> Signal<
     }
 }
 
-public class AvatarGalleryController: ViewController {
+public class AvatarGalleryController: ViewController, StandalonePresentableController {
     private var galleryNode: GalleryControllerNode {
         return self.displayNode as! GalleryControllerNode
     }
@@ -397,6 +398,14 @@ public class AvatarGalleryController: ViewController {
         }
     }
     
+    override public func preferredContentSizeForLayout(_ layout: ContainerViewLayout) -> CGSize? {
+        if let centralItemNode = self.galleryNode.pager.centralItemNode(), let itemSize = centralItemNode.contentSize() {
+            return itemSize.aspectFitted(layout.size)
+        } else {
+            return nil
+        }
+    }
+    
     override public func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {
         super.containerLayoutUpdated(layout, transition: transition)
         
@@ -444,7 +453,7 @@ public class AvatarGalleryController: ViewController {
                     }
                 } else {
                     if let messageId = messageId {
-                        let _ = deleteMessagesInteractively(postbox: self.context.account.postbox, messageIds: [messageId], type: .forEveryone).start()
+                        let _ = deleteMessagesInteractively(account: self.context.account, messageIds: [messageId], type: .forEveryone).start()
                     }
                     
                     if entry == self.entries.first {

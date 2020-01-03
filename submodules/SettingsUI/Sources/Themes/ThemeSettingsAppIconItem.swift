@@ -4,8 +4,11 @@ import Display
 import AsyncDisplayKit
 import SwiftSignalKit
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import ItemListUI
+import PresentationDataUtils
+import AppBundle
 
 private func generateBorderImage(theme: PresentationTheme, bordered: Bool, selected: Bool) -> UIImage? {
     return generateImage(CGSize(width: 30.0, height: 30.0), rotatedContext: { size, context in
@@ -157,6 +160,7 @@ class ThemeSettingsAppIconItemNode: ListViewItemNode, ItemListItemNode {
     private let backgroundNode: ASDisplayNode
     private let topStripeNode: ASDisplayNode
     private let bottomStripeNode: ASDisplayNode
+    private let maskNode: ASImageNode
     
     private let scrollNode: ASScrollNode
     private var nodes: [ThemeSettingsAppIconNode] = []
@@ -177,6 +181,8 @@ class ThemeSettingsAppIconItemNode: ListViewItemNode, ItemListItemNode {
         
         self.bottomStripeNode = ASDisplayNode()
         self.bottomStripeNode.isLayerBacked = true
+        
+        self.maskNode = ASImageNode()
         
         self.scrollNode = ASScrollNode()
         
@@ -233,11 +239,19 @@ class ThemeSettingsAppIconItemNode: ListViewItemNode, ItemListItemNode {
                     if strongSelf.bottomStripeNode.supernode == nil {
                         strongSelf.insertSubnode(strongSelf.bottomStripeNode, at: 2)
                     }
+                    if strongSelf.maskNode.supernode == nil {
+                        strongSelf.insertSubnode(strongSelf.maskNode, at: 3)
+                    }
+                    
+                    let hasCorners = itemListHasRoundedBlockLayout(params)
+                    var hasTopCorners = false
+                    var hasBottomCorners = false
                     switch neighbors.top {
                         case .sameSection(false):
                             strongSelf.topStripeNode.isHidden = true
                         default:
-                            strongSelf.topStripeNode.isHidden = false
+                            hasTopCorners = true
+                            strongSelf.topStripeNode.isHidden = hasCorners
                     }
                     let bottomStripeInset: CGFloat
                     let bottomStripeOffset: CGFloat
@@ -248,8 +262,14 @@ class ThemeSettingsAppIconItemNode: ListViewItemNode, ItemListItemNode {
                         default:
                             bottomStripeInset = 0.0
                             bottomStripeOffset = 0.0
+                            hasBottomCorners = true
+                            strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
+                    
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                    
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
+                    strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                     strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight))
                     strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight))
                     
@@ -274,7 +294,7 @@ class ThemeSettingsAppIconItemNode: ListViewItemNode, ItemListItemNode {
                             updated = true
                         }
                         
-                        if let image = UIImage(named: icon.imageName, in: Bundle.main, compatibleWith: nil) {
+                        if let image = UIImage(named: icon.imageName, in: getAppBundle(), compatibleWith: nil) {
                             let selected = icon.name == item.currentIconName
                             if selected {
                                 selectedNode = imageNode

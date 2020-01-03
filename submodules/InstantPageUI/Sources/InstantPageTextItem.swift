@@ -1,10 +1,12 @@
 import Foundation
 import UIKit
 import TelegramCore
+import SyncCore
 import Display
 import Postbox
 import AsyncDisplayKit
 import TelegramPresentationData
+import TelegramUIPreferences
 import TextFormat
 import AccountContext
 
@@ -153,7 +155,16 @@ final class InstantPageTextItem: InstantPageItem {
             if self.opaqueBackground {
                 context.setBlendMode(.normal)
             }
-            CTLineDraw(line.line, context)
+            
+            let glyphRuns = CTLineGetGlyphRuns(line.line) as NSArray
+            if glyphRuns.count != 0 {
+                for run in glyphRuns {
+                    let run = run as! CTRun
+                    let glyphCount = CTRunGetGlyphCount(run)
+                    CTRunDraw(run, context, CFRangeMake(0, glyphCount))
+                }
+            }
+                        
             if self.opaqueBackground {
                 context.setBlendMode(.copy)
             }
@@ -331,7 +342,7 @@ final class InstantPageTextItem: InstantPageItem {
         return false
     }
     
-    func node(context: AccountContext, strings: PresentationStrings, theme: InstantPageTheme, openMedia: @escaping (InstantPageMedia) -> Void, longPressMedia: @escaping (InstantPageMedia) -> Void, openPeer: @escaping (PeerId) -> Void, openUrl: @escaping (InstantPageUrlItem) -> Void, updateWebEmbedHeight: @escaping (CGFloat) -> Void, updateDetailsExpanded: @escaping (Bool) -> Void, currentExpandedDetails: [Int : Bool]?) -> (InstantPageNode & ASDisplayNode)? {
+    func node(context: AccountContext, strings: PresentationStrings, nameDisplayOrder: PresentationPersonNameOrder, theme: InstantPageTheme, openMedia: @escaping (InstantPageMedia) -> Void, longPressMedia: @escaping (InstantPageMedia) -> Void, openPeer: @escaping (PeerId) -> Void, openUrl: @escaping (InstantPageUrlItem) -> Void, updateWebEmbedHeight: @escaping (CGFloat) -> Void, updateDetailsExpanded: @escaping (Bool) -> Void, currentExpandedDetails: [Int : Bool]?) -> (InstantPageNode & ASDisplayNode)? {
         return nil
     }
     
@@ -380,11 +391,11 @@ final class InstantPageScrollableTextItem: InstantPageScrollableItem {
         context.restoreGState()
     }
     
-    func node(context: AccountContext, strings: PresentationStrings, theme: InstantPageTheme, openMedia: @escaping (InstantPageMedia) -> Void, longPressMedia: @escaping (InstantPageMedia) -> Void, openPeer: @escaping (PeerId) -> Void, openUrl: @escaping (InstantPageUrlItem) -> Void, updateWebEmbedHeight: @escaping (CGFloat) -> Void, updateDetailsExpanded: @escaping (Bool) -> Void, currentExpandedDetails: [Int : Bool]?) -> (ASDisplayNode & InstantPageNode)? {
+    func node(context: AccountContext, strings: PresentationStrings, nameDisplayOrder: PresentationPersonNameOrder, theme: InstantPageTheme, openMedia: @escaping (InstantPageMedia) -> Void, longPressMedia: @escaping (InstantPageMedia) -> Void, openPeer: @escaping (PeerId) -> Void, openUrl: @escaping (InstantPageUrlItem) -> Void, updateWebEmbedHeight: @escaping (CGFloat) -> Void, updateDetailsExpanded: @escaping (Bool) -> Void, currentExpandedDetails: [Int : Bool]?) -> (InstantPageNode & ASDisplayNode)? {
         var additionalNodes: [InstantPageNode] = []
         for item in additionalItems {
             if item.wantsNode {
-                if let node = item.node(context: context, strings: strings, theme: theme, openMedia: { _ in }, longPressMedia: { _ in }, openPeer: { _ in }, openUrl: { _ in}, updateWebEmbedHeight: { _ in }, updateDetailsExpanded: { _ in }, currentExpandedDetails: nil) {
+                if let node = item.node(context: context, strings: strings, nameDisplayOrder: nameDisplayOrder, theme: theme, openMedia: { _ in }, longPressMedia: { _ in }, openPeer: { _ in }, openUrl: { _ in}, updateWebEmbedHeight: { _ in }, updateDetailsExpanded: { _ in }, currentExpandedDetails: nil) {
                     node.frame = item.frame
                     additionalNodes.append(node)
                 }
@@ -509,10 +520,10 @@ func attributedStringForRichText(_ text: RichText, styleStack: InstantPageTextSt
             }
             var dimensions = dimensions
             if let boundingWidth = boundingWidth {
-                dimensions = dimensions.fittedToWidthOrSmaller(boundingWidth)
+                dimensions = PixelDimensions(dimensions.cgSize.fittedToWidthOrSmaller(boundingWidth))
             }
             let extentBuffer = UnsafeMutablePointer<RunStruct>.allocate(capacity: 1)
-            extentBuffer.initialize(to: RunStruct(ascent: 0.0, descent: 0.0, width: dimensions.width))
+            extentBuffer.initialize(to: RunStruct(ascent: 0.0, descent: 0.0, width: dimensions.cgSize.width))
             var callbacks = CTRunDelegateCallbacks(version: kCTRunDelegateVersion1, dealloc: { (pointer) in
             }, getAscent: { (pointer) -> CGFloat in
                 let d = pointer.assumingMemoryBound(to: RunStruct.self)

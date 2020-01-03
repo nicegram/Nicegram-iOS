@@ -4,6 +4,7 @@ import Display
 import AsyncDisplayKit
 import SwiftSignalKit
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import AccountContext
 
@@ -88,11 +89,11 @@ final class SecureIdDocumentTypeSelectionController: ActionSheetController {
         
         self.completion = completion
         
-        super.init(theme: ActionSheetControllerTheme(presentationTheme: theme))
+        super.init(theme: ActionSheetControllerTheme(presentationData: presentationData))
         
         self.presentationDisposable = context.sharedContext.presentationData.start(next: { [weak self] presentationData in
             if let strongSelf = self {
-                strongSelf.theme = ActionSheetControllerTheme(presentationTheme: presentationData.theme)
+                strongSelf.theme = ActionSheetControllerTheme(presentationData: presentationData)
             }
         })
         

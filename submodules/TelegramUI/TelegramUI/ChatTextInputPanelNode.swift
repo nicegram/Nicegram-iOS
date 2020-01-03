@@ -4,6 +4,7 @@ import Display
 import AsyncDisplayKit
 import Postbox
 import TelegramCore
+import SyncCore
 import MobileCoreServices
 import TelegramPresentationData
 import TextFormat
@@ -199,7 +200,7 @@ private func textInputBackgroundImage(backgroundColor: UIColor, strokeColor: UIC
 enum ChatTextInputPanelPasteData {
     case images([UIImage])
     case gif(Data)
-    case sticker(UIImage)
+    case sticker(UIImage, Bool)
 }
 
 class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
@@ -224,7 +225,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
     
     private var accessoryItemButtons: [(ChatTextInputAccessoryItem, AccessoryItemIconButton)] = []
     
-    private var validLayout: (CGFloat, CGFloat, CGFloat, CGFloat, LayoutMetrics)?
+    private var validLayout: (CGFloat, CGFloat, CGFloat, CGFloat, LayoutMetrics, Bool)?
     
     var displayAttachmentMenu: () -> Void = { }
     var sendMessage: () -> Void = { }
@@ -263,6 +264,14 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
             return textInputNode.textInputMode.primaryLanguage
         } else {
             return self.storedInputLanguage
+        }
+    }
+    
+    var enablePredictiveInput: Bool = true {
+        didSet {
+            if let textInputNode = self.textInputNode {
+                textInputNode.textView.autocorrectionType = self.enablePredictiveInput ? .default : .no
+            }
         }
     }
     
@@ -395,8 +404,8 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
         
         self.addSubnode(self.actionButtons)
         
-        self.actionButtons.sendButtonLongPressed = { [weak self] in
-            self?.interfaceInteraction?.displaySendMessageOptions()
+        self.actionButtons.sendButtonLongPressed = { [weak self] node, gesture in
+            self?.interfaceInteraction?.displaySendMessageOptions(node, gesture)
         }
         
         self.actionButtons.micButton.recordingDisabled = { [weak self] in
@@ -430,8 +439,8 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
         }
         self.actionButtons.micButton.offsetRecordingControls = { [weak self] in
             if let strongSelf = self, let presentationInterfaceState = strongSelf.presentationInterfaceState {
-                if let (width, leftInset, rightInset, maxHeight, metrics) = strongSelf.validLayout {
-                    let _ = strongSelf.updateLayout(width: width, leftInset: leftInset, rightInset: rightInset, maxHeight: maxHeight, transition: .immediate, interfaceState: presentationInterfaceState, metrics: metrics)
+                if let (width, leftInset, rightInset, maxHeight, metrics, isSecondary) = strongSelf.validLayout {
+                    let _ = strongSelf.updateLayout(width: width, leftInset: leftInset, rightInset: rightInset, maxHeight: maxHeight, isSecondary: isSecondary, transition: .immediate, interfaceState: presentationInterfaceState, metrics: metrics)
                 }
             }
         }
@@ -451,7 +460,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
             }
         }
         
-        self.actionButtons.sendButton.addTarget(self, action: #selector(self.sendButtonPressed), for: .touchUpInside)
+        self.actionButtons.sendButton.addTarget(self, action: #selector(self.sendButtonPressed), forControlEvents: .touchUpInside)
         self.actionButtons.sendButton.alpha = 0.0
         self.actionButtons.updateAccessibility()
         
@@ -632,8 +641,8 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
         return minimalHeight
     }
     
-    override func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, maxHeight: CGFloat, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics) -> CGFloat {
-        self.validLayout = (width, leftInset, rightInset, maxHeight, metrics)
+    override func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, maxHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics) -> CGFloat {
+        self.validLayout = (width, leftInset, rightInset, maxHeight, metrics, isSecondary)
         let baseWidth = width - leftInset - rightInset
         
         var wasEditingMedia = false
@@ -715,7 +724,15 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
                 
                 let textFieldMinHeight = calclulateTextFieldMinHeight(interfaceState, metrics: metrics)
                 let minimalInputHeight: CGFloat = 2.0 + textFieldMinHeight
-                self.textInputBackgroundNode.image = textInputBackgroundImage(backgroundColor: interfaceState.theme.chat.inputPanel.panelBackgroundColor, strokeColor: interfaceState.theme.chat.inputPanel.inputStrokeColor, diameter: minimalInputHeight)
+                
+                let backgroundColor: UIColor
+                if case let .color(color) = interfaceState.chatWallpaper, UIColor(rgb: color).isEqual(interfaceState.theme.chat.inputPanel.panelBackgroundColorNoWallpaper) {
+                    backgroundColor = interfaceState.theme.chat.inputPanel.panelBackgroundColorNoWallpaper
+                } else {
+                    backgroundColor = interfaceState.theme.chat.inputPanel.panelBackgroundColor
+                }
+                
+                self.textInputBackgroundNode.image = textInputBackgroundImage(backgroundColor: backgroundColor, strokeColor: interfaceState.theme.chat.inputPanel.inputStrokeColor, diameter: minimalInputHeight)
                 
                 self.searchLayoutClearButton.setImage(PresentationResourcesChat.chatInputTextFieldClearImage(interfaceState.theme), for: [])
                 
@@ -784,17 +801,19 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
             
             if updateSendButtonIcon {
                 if !self.actionButtons.animatingSendButton {
-                    if transition.isAnimated && !self.actionButtons.sendButton.alpha.isZero && self.actionButtons.sendButton.layer.animation(forKey: "opacity") == nil, let imageView = self.actionButtons.sendButton.imageView, let previousImage = imageView.image {
+                    let imageNode = self.actionButtons.sendButton.imageNode
+                    
+                    if transition.isAnimated && !self.actionButtons.sendButton.alpha.isZero && self.actionButtons.sendButton.layer.animation(forKey: "opacity") == nil, let previousImage = imageNode.image {
                         let tempView = UIImageView(image: previousImage)
-                        self.actionButtons.sendButton.addSubview(tempView)
-                        tempView.frame = imageView.frame
+                        self.actionButtons.sendButton.view.addSubview(tempView)
+                        tempView.frame = imageNode.frame
                         tempView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false, completion: { [weak tempView] _ in
                             tempView?.removeFromSuperview()
                         })
                         tempView.layer.animateScale(from: 1.0, to: 0.2, duration: 0.2, removeOnCompletion: false)
                         
-                        imageView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
-                        imageView.layer.animateScale(from: 0.2, to: 1.0, duration: 0.2)
+                        imageNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
+                        imageNode.layer.animateScale(from: 0.2, to: 1.0, duration: 0.2)
                     }
                     self.actionButtons.sendButtonHasApplyIcon = sendButtonHasApplyIcon
                     if self.actionButtons.sendButtonHasApplyIcon {
@@ -1394,7 +1413,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
     }
     
     private func updateTextHeight(animated: Bool) {
-        if let (width, leftInset, rightInset, maxHeight, metrics) = self.validLayout {
+        if let (width, leftInset, rightInset, maxHeight, metrics, _) = self.validLayout {
             let (_, textFieldHeight) = self.calculateTextFieldMetrics(width: width - leftInset - rightInset, maxHeight: maxHeight, metrics: metrics)
             let panelHeight = self.panelHeight(textFieldHeight: textFieldHeight, metrics: metrics)
             if !self.bounds.size.height.isEqual(to: panelHeight) {
@@ -1404,7 +1423,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
     }
     
     @objc func editableTextNodeShouldReturn(_ editableTextNode: ASEditableTextNode) -> Bool {
-        if self.actionButtons.sendButton.superview != nil && !self.actionButtons.sendButton.isHidden && !self.actionButtons.sendButton.alpha.isZero {
+        if self.actionButtons.sendButton.supernode != nil && !self.actionButtons.sendButton.isHidden && !self.actionButtons.sendButton.alpha.isZero {
             self.sendButtonPressed()
         }
         return false
@@ -1436,6 +1455,12 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
         }
         
         if let textInputNode = self.textInputNode, let presentationInterfaceState = self.presentationInterfaceState {
+            
+            if case .format = self.inputMenu.state {
+                self.inputMenu.deactivate()
+                UIMenuController.shared.update()
+            }
+            
             let baseFontSize = max(17.0, presentationInterfaceState.fontSize.baseDisplaySize)
             refreshChatTextInputTypingAttributes(textInputNode, theme: presentationInterfaceState.theme, baseFontSize: baseFontSize)
         }
@@ -1477,7 +1502,9 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
     }
     
     @objc func _showTextStyleOptions(_ sender: Any) {
-        self.inputMenu.format()
+        if let textInputNode = self.textInputNode {
+            self.inputMenu.format(view: textInputNode.view, rect: textInputNode.selectionRect.offsetBy(dx: 0.0, dy: -textInputNode.textView.contentOffset.y).insetBy(dx: 0.0, dy: -1.0))
+        }
     }
     
     @objc func formatAttributesBold(_ sender: Any) {
@@ -1575,7 +1602,8 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
             self.interfaceInteraction?.updateTextInputStateAndMode { current, inputMode in
                 if let inputText = current.inputText.mutableCopy() as? NSMutableAttributedString {
                     inputText.replaceCharacters(in: NSMakeRange(current.selectionRange.lowerBound, current.selectionRange.count), with: attributedString)
-                    return (ChatTextInputState(inputText: inputText), inputMode)
+                    let updatedRange = current.selectionRange.lowerBound + attributedString.length
+                    return (ChatTextInputState(inputText: inputText, selectionRange: updatedRange ..< updatedRange), inputMode)
                 } else {
                     return (ChatTextInputState(inputText: attributedString), inputMode)
                 }
@@ -1589,8 +1617,13 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
             return false
         } else {
             var isPNG = false
+            var isMemoji = false
             for item in pasteboard.items {
-                if let image = item[kUTTypePNG as String] as? UIImage {
+                if let image = item["com.apple.png-sticker"] as? UIImage {
+                    images.append(image)
+                    isPNG = true
+                    isMemoji = true
+                } else if let image = item[kUTTypePNG as String] as? UIImage {
                     images.append(image)
                     isPNG = true
                 } else if let image = item["com.apple.uikit.image"] as? UIImage {
@@ -1604,9 +1637,14 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
             }
             
             if isPNG && images.count == 1, let image = images.first, let cgImage = image.cgImage {
-                if imageHasTransparency(cgImage) {
-                    self.paste(.sticker(image))
+                let maxSide = max(image.size.width, image.size.height)
+                if maxSide.isZero {
                     return false
+                }
+                let aspectRatio = min(image.size.width, image.size.height) / maxSide
+                if isMemoji || (imageHasTransparency(cgImage) && aspectRatio > 0.85) {
+                    self.paste(.sticker(image, isMemoji))
+                    return true
                 }
             }
             

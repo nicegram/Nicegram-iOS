@@ -1,8 +1,9 @@
 import Foundation
 import AsyncDisplayKit
 import Display
-import AnimationUI
+import AnimatedStickerNode
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 
 public final class ReactionContextItem {
@@ -34,7 +35,7 @@ private func generateBackgroundImage(foreground: UIColor, diameter: CGFloat, sha
 private func generateBackgroundShadowImage(shadow: UIColor, diameter: CGFloat, shadowBlur: CGFloat) -> UIImage? {
     return generateImage(CGSize(width: diameter * 2.0 + shadowBlur * 2.0, height: diameter + shadowBlur * 2.0), rotatedContext: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
-        context.setFillColor(UIColor.white.cgColor)
+        context.setFillColor(shadow.cgColor)
         context.setShadow(offset: CGSize(), blur: shadowBlur, color: shadow.cgColor)
         
         context.fillEllipse(in: CGRect(origin: CGPoint(x: shadowBlur, y: shadowBlur), size: CGSize(width: diameter, height: diameter)))
@@ -61,7 +62,7 @@ private func generateBubbleImage(foreground: UIColor, diameter: CGFloat, shadowB
 private func generateBubbleShadowImage(shadow: UIColor, diameter: CGFloat, shadowBlur: CGFloat) -> UIImage? {
     return generateImage(CGSize(width: diameter + shadowBlur * 2.0, height: diameter + shadowBlur * 2.0), rotatedContext: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
-        context.setFillColor(UIColor.white.cgColor)
+        context.setFillColor(shadow.cgColor)
         context.setShadow(offset: CGSize(), blur: shadowBlur, color: shadow.cgColor)
         context.fillEllipse(in: CGRect(origin: CGPoint(x: shadowBlur, y: shadowBlur), size: CGSize(width: diameter, height: diameter)))
         context.setShadow(offset: CGSize(), blur: 1.0, color: shadow.cgColor)
@@ -376,14 +377,12 @@ public final class ReactionContextNode: ASDisplayNode {
         }
     }
     
-    public func animateOutToReaction(value: String, targetNode: ASImageNode, hideNode: Bool, completion: @escaping () -> Void) {
+    public func animateOutToReaction(value: String, targetNode: ASDisplayNode, hideNode: Bool, completion: @escaping () -> Void) {
         for itemNode in self.itemNodes {
             switch itemNode.reaction {
             case let .reaction(itemValue, _, _):
                 if itemValue == value {
-                    if let snapshotView = itemNode.view.snapshotContentTree(keepTransform: true) {
-                        let targetSnapshotView = UIImageView()
-                        targetSnapshotView.image = targetNode.image
+                    if let snapshotView = itemNode.view.snapshotContentTree(keepTransform: true), let targetSnapshotView = targetNode.view.snapshotContentTree() {
                         targetSnapshotView.frame = self.view.convert(targetNode.bounds, from: targetNode.view)
                         itemNode.isHidden = true
                         self.view.addSubview(targetSnapshotView)

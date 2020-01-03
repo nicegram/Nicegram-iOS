@@ -5,9 +5,10 @@ import AsyncDisplayKit
 import TelegramPresentationData
 import TelegramStringFormatting
 import SearchBarNode
+import AppBundle
 
 private func loadCountryCodes() -> [(String, Int)] {
-    guard let filePath = frameworkBundle.path(forResource: "PhoneCountries", ofType: "txt") else {
+    guard let filePath = getAppBundle().path(forResource: "PhoneCountries", ofType: "txt") else {
         return []
     }
     guard let stringData = try? Data(contentsOf: URL(fileURLWithPath: filePath)) else {
@@ -82,7 +83,7 @@ private final class AuthorizationSequenceCountrySelectionNavigationContentNode: 
         self.addSubnode(self.searchBar)
         
         self.searchBar.cancel = { [weak self] in
-            self?.searchBar.deactivate(clear: false)
+            //self?.searchBar.deactivate(clear: false)
             self?.cancel()
         }
         
@@ -156,7 +157,9 @@ public final class AuthorizationSequenceCountrySelectionController: ViewControll
         self.strings = strings
         self.displayCodes = displayCodes
         
-        super.init(navigationBarPresentationData:  NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: theme), strings: NavigationBarStrings(presentationStrings: strings)))
+        super.init(navigationBarPresentationData: NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: theme), strings: NavigationBarStrings(presentationStrings: strings)))
+        
+        self.navigationPresentation = .modal
         
         self.statusBar.statusBarStyle = theme.rootController.statusBarStyle.style
         
@@ -190,7 +193,6 @@ public final class AuthorizationSequenceCountrySelectionController: ViewControll
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-        self.controllerNode.animateIn()
         self.navigationContentNode?.activate()
     }
     
@@ -203,12 +205,5 @@ public final class AuthorizationSequenceCountrySelectionController: ViewControll
     private func cancelPressed() {
         self.dismissed?()
         self.dismiss(completion: nil)
-    }
-    
-    override public func dismiss(completion: (() -> Void)? = nil) {
-        self.navigationContentNode?.deactivate()
-        self.controllerNode.animateOut(completion: { [weak self] in
-            self?.presentingViewController?.dismiss(animated: true, completion: nil)
-        })
     }
 }

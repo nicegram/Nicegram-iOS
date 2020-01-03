@@ -4,15 +4,19 @@ import AsyncDisplayKit
 import Display
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import Photos
 import TelegramPresentationData
+import TelegramUIPreferences
 import TextFormat
 import TelegramStringFormatting
 import AccountContext
 import RadialStatusNode
 import ShareController
 import OpenInExternalAppUI
+import AppBundle
+import LocalizedPeerData
 
 private let deleteImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionTrash"), color: .white)
 private let actionImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionAction"), color: .white)
@@ -104,8 +108,10 @@ class CaptionScrollWrapperNode: ASDisplayNode {
 
 final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScrollViewDelegate {
     private let context: AccountContext
+    private var presentationData: PresentationData
     private var theme: PresentationTheme
     private var strings: PresentationStrings
+    private var nameOrder: PresentationPersonNameOrder
     private var dateTimeFormat: PresentationDateTimeFormat
     
     private let deleteButton: UIButton
@@ -240,8 +246,10 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
     
     init(context: AccountContext, presentationData: PresentationData) {
         self.context = context
+        self.presentationData = presentationData
         self.theme = presentationData.theme
         self.strings = presentationData.strings
+        self.nameOrder = presentationData.nameDisplayOrder
         self.dateTimeFormat = presentationData.dateTimeFormat
         
         self.deleteButton = UIButton()
@@ -410,15 +418,16 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
             self.requestLayout?(.immediate)
         }
         
-        self.deleteButton.isHidden = origin == nil
+        if origin == nil {
+            self.deleteButton.isHidden = true
+        }
     }
     
     func setMessage(_ message: Message) {
         self.currentMessage = message
         
-        self.actionButton.isHidden = message.containsSecretMedia || Namespaces.Message.allScheduled.contains(message.id.namespace)
-        
         let canDelete: Bool
+        var canShare = !message.containsSecretMedia && !Namespaces.Message.allScheduled.contains(message.id.namespace)
         if let peer = message.peers[message.id.peerId] {
             if peer is TelegramUser || peer is TelegramSecretChat {
                 canDelete = true
@@ -435,14 +444,15 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
             }
         } else {
             canDelete = false
+            canShare = false
         }
         
         var authorNameText: String?
         
         if let author = message.effectiveAuthor {
-            authorNameText = author.displayTitle
+            authorNameText = author.displayTitle(strings: self.strings, displayOrder: self.nameOrder)
         } else if let peer = message.peers[message.id.peerId] {
-            authorNameText = peer.displayTitle
+            authorNameText = peer.displayTitle(strings: self.strings, displayOrder: self.nameOrder)
         }
         
         let dateText = humanReadableStringForTimestamp(strings: self.strings, dateTimeFormat: self.dateTimeFormat, timestamp: message.timestamp)
@@ -467,7 +477,10 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
             messageText = galleryCaptionStringWithAppliedEntities(message.text, entities: entities)
         }
         
-        if self.currentMessageText != messageText || canDelete != !self.deleteButton.isHidden || self.currentAuthorNameText != authorNameText || self.currentDateText != dateText {
+        self.actionButton.isHidden = message.containsSecretMedia || Namespaces.Message.allScheduled.contains(message.id.namespace)
+        
+        
+        if self.currentMessageText != messageText || canDelete != !self.deleteButton.isHidden || canShare != !self.actionButton.isHidden || self.currentAuthorNameText != authorNameText || self.currentDateText != dateText {
             self.currentMessageText = messageText
             
             if messageText.length == 0 {
@@ -486,6 +499,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
             self.dateNode.attributedText = NSAttributedString(string: dateText, font: dateFont, textColor: .white)
             
             self.deleteButton.isHidden = !canDelete
+            self.actionButton.isHidden = !canShare
             
             self.requestLayout?(.immediate)
         }
@@ -594,7 +608,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
             }
             
             let scrubberFrame = CGRect(origin: CGPoint(x: leftInset, y: scrubberY), size: CGSize(width: width - leftInset - rightInset, height: 34.0))
-            scrubberView.updateLayout(size: size, leftInset: leftInset, rightInset: rightInset)
+            scrubberView.updateLayout(size: size, leftInset: leftInset, rightInset: rightInset, transition: .immediate)
             transition.updateFrame(layer: scrubberView.layer, frame: scrubberFrame)
         }
         transition.updateAlpha(node: self.textNode, alpha: displayCaption ? 1.0 : 0.0)
@@ -716,7 +730,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
                         let presentationData = strongSelf.context.sharedContext.currentPresentationData.with { $0 }
                         var generalMessageContentKind: MessageContentKind?
                         for message in messages {
-                            let currentKind = messageContentKind(message, strings: presentationData.strings, nameDisplayOrder: presentationData.nameDisplayOrder, accountPeerId: strongSelf.context.account.peerId)
+                            let currentKind = messageContentKind(contentSettings: strongSelf.context.currentContentSettings.with { $0 }, message: message, strings: presentationData.strings, nameDisplayOrder: presentationData.nameDisplayOrder, accountPeerId: strongSelf.context.account.peerId)
                             if generalMessageContentKind == nil || generalMessageContentKind == currentKind {
                                 generalMessageContentKind = currentKind
                             } else {
@@ -747,7 +761,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
                             }
                         }
                     
-                        let actionSheet = ActionSheetController(presentationTheme: presentationData.theme)
+                        let actionSheet = ActionSheetController(presentationData: presentationData)
                         let items: [ActionSheetItem] = [
                             ActionSheetButtonItem(title: singleText, color: .destructive, action: { [weak actionSheet] in
                                 actionSheet?.dismissAnimated()
@@ -762,7 +776,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
                         actionSheet.setItemGroups([
                             ActionSheetItemGroup(items: items),
                             ActionSheetItemGroup(items: [
-                                ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                                ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
                                     actionSheet?.dismissAnimated()
                                 })
                             ])
@@ -777,7 +791,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
     private func commitDeleteMessages(_ messages: [Message], ask: Bool) {
         self.messageContextDisposable.set((self.context.sharedContext.chatAvailableMessageActions(postbox: self.context.account.postbox, accountPeerId: self.context.account.peerId, messageIds: Set(messages.map { $0.id })) |> deliverOnMainQueue).start(next: { [weak self] actions in
             if let strongSelf = self, let controllerInteration = strongSelf.controllerInteraction, !actions.options.isEmpty {
-                let actionSheet = ActionSheetController(presentationTheme: strongSelf.theme)
+                let actionSheet = ActionSheetController(presentationData: strongSelf.presentationData)
                 var items: [ActionSheetItem] = []
                 var personalPeerName: String?
                 var isChannel = false
@@ -800,7 +814,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
                     items.append(ActionSheetButtonItem(title: globalTitle, color: .destructive, action: { [weak actionSheet] in
                         actionSheet?.dismissAnimated()
                         if let strongSelf = self {
-                            let _ = deleteMessagesInteractively(postbox: strongSelf.context.account.postbox, messageIds: messages.map { $0.id }, type: .forEveryone).start()
+                            let _ = deleteMessagesInteractively(account: strongSelf.context.account, messageIds: messages.map { $0.id }, type: .forEveryone).start()
                             strongSelf.controllerInteraction?.dismissController()
                         }
                     }))
@@ -815,17 +829,17 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
                     items.append(ActionSheetButtonItem(title: localOptionText, color: .destructive, action: { [weak actionSheet] in
                         actionSheet?.dismissAnimated()
                         if let strongSelf = self {
-                            let _ = deleteMessagesInteractively(postbox: strongSelf.context.account.postbox, messageIds: messages.map { $0.id }, type: .forLocalPeer).start()
+                            let _ = deleteMessagesInteractively(account: strongSelf.context.account, messageIds: messages.map { $0.id }, type: .forLocalPeer).start()
                             strongSelf.controllerInteraction?.dismissController()
                         }
                     }))
                 }
                 if !ask && items.count == 1 {
-                    let _ = deleteMessagesInteractively(postbox: strongSelf.context.account.postbox, messageIds: messages.map { $0.id }, type: .forEveryone).start()
+                    let _ = deleteMessagesInteractively(account: strongSelf.context.account, messageIds: messages.map { $0.id }, type: .forEveryone).start()
                     strongSelf.controllerInteraction?.dismissController()
-                } else {
+                } else if !items.isEmpty {
                     actionSheet.setItemGroups([ActionSheetItemGroup(items: items), ActionSheetItemGroup(items: [
-                        ActionSheetButtonItem(title: strongSelf.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                        ActionSheetButtonItem(title: strongSelf.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
                             actionSheet?.dismissAnimated()
                         })
                     ])])
@@ -844,7 +858,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
                     let presentationData = strongSelf.context.sharedContext.currentPresentationData.with { $0 }
                     var generalMessageContentKind: MessageContentKind?
                     for message in messages {
-                        let currentKind = messageContentKind(message, strings: presentationData.strings, nameDisplayOrder: presentationData.nameDisplayOrder, accountPeerId: strongSelf.context.account.peerId)
+                        let currentKind = messageContentKind(contentSettings: strongSelf.context.currentContentSettings.with { $0 }, message: message, strings: presentationData.strings, nameDisplayOrder: presentationData.nameDisplayOrder, accountPeerId: strongSelf.context.account.peerId)
                         if generalMessageContentKind == nil || generalMessageContentKind == currentKind {
                             generalMessageContentKind = currentKind
                         } else {
@@ -937,7 +951,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
                             }
                         }
                         
-                        let actionSheet = ActionSheetController(presentationTheme: presentationData.theme)
+                        let actionSheet = ActionSheetController(presentationData: presentationData)
                         let items: [ActionSheetItem] = [
                             ActionSheetButtonItem(title: singleText, color: .accent, action: { [weak actionSheet] in
                                 actionSheet?.dismissAnimated()
@@ -951,7 +965,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
                         
                         actionSheet.setItemGroups([ActionSheetItemGroup(items: items),
                             ActionSheetItemGroup(items: [
-                                ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                                ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
                                     actionSheet?.dismissAnimated()
                                 })
                             ])

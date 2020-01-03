@@ -4,6 +4,7 @@ import Display
 import AsyncDisplayKit
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import AccountContext
@@ -69,7 +70,7 @@ final class ChatButtonKeyboardInputNode: ChatInputNode {
         }
     }
     
-    override func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, standardInputHeight: CGFloat, inputHeight: CGFloat, maximumHeight: CGFloat, inputPanelHeight: CGFloat, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, isVisible: Bool) -> (CGFloat, CGFloat) {
+    override func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, standardInputHeight: CGFloat, inputHeight: CGFloat, maximumHeight: CGFloat, inputPanelHeight: CGFloat, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, deviceMetrics: DeviceMetrics, isVisible: Bool) -> (CGFloat, CGFloat) {
         transition.updateFrame(node: self.separatorNode, frame: CGRect(origin: CGPoint(), size: CGSize(width: width, height: UIScreenPixel)))
         
         if self.theme !== interfaceState.theme {
@@ -161,11 +162,13 @@ final class ChatButtonKeyboardInputNode: ChatInputNode {
     
     @objc func buttonPressed(_ button: ASButtonNode) {
         if let button = button as? ChatButtonKeyboardInputButtonNode, let markupButton = button.button {
+            var dismissIfOnce = false
             switch markupButton.action {
                 case .text:
                     self.controllerInteraction.sendMessage(markupButton.title)
+                    dismissIfOnce = true
                 case let .url(url):
-                    self.controllerInteraction.openUrl(url, true, nil)
+                    self.controllerInteraction.openUrl(url, true, nil, nil)
                 case .requestMap:
                     self.controllerInteraction.shareCurrentLocation()
                 case .requestPhone:
@@ -207,6 +210,18 @@ final class ChatButtonKeyboardInputNode: ChatInputNode {
                     if let message = self.message {
                         self.controllerInteraction.requestMessageActionUrlAuth(url, message.id, buttonId)
                     }
+            }
+            if dismissIfOnce {
+                if let message = self.message {
+                    for attribute in message.attributes {
+                        if let attribute = attribute as? ReplyMarkupMessageAttribute {
+                            if attribute.flags.contains(.once) {
+                                self.controllerInteraction.dismissReplyMarkupMessage(message)
+                            }
+                            break
+                        }
+                    }
+                }
             }
         }
     }

@@ -2,10 +2,6 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 
-#if BUCK
-import DisplayPrivate
-#endif
-
 public class StatusBarSurface {
     var statusBars: [StatusBar] = []
     
@@ -68,11 +64,23 @@ private final class StatusBarView: UITracingLayerView {
 }
 
 public final class StatusBar: ASDisplayNode {
-    public var statusBarStyle: StatusBarStyle = .Black {
-        didSet {
-            if self.statusBarStyle != oldValue {
-                self.layer.invalidateUpTheTree()
+    private var _statusBarStyle: StatusBarStyle = .Black
+    
+    public var statusBarStyle: StatusBarStyle {
+        get {
+            return self._statusBarStyle
+        } set(value) {
+            if self._statusBarStyle != value {
+                self._statusBarStyle = value
+                self.alphaUpdated?(.immediate)
             }
+        }
+    }
+    
+    public func updateStatusBarStyle(_ statusBarStyle: StatusBarStyle, animated: Bool) {
+        if self._statusBarStyle != statusBarStyle {
+            self._statusBarStyle = statusBarStyle
+            self.alphaUpdated?(animated ? .animated(duration: 0.3, curve: .easeInOut) : .immediate)
         }
     }
     
@@ -96,6 +104,13 @@ public final class StatusBar: ASDisplayNode {
                 self.layer.invalidateUpTheTree()
             }
         }
+    }
+    
+    var alphaUpdated: ((ContainedViewLayoutTransition) -> Void)?
+    
+    public func updateAlpha(_ alpha: CGFloat, transition: ContainedViewLayoutTransition) {
+        self.alpha = alpha
+        self.alphaUpdated?(transition)
     }
     
     public override init() {

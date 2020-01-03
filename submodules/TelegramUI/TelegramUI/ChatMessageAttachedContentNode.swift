@@ -5,6 +5,7 @@ import Display
 import AsyncDisplayKit
 import SwiftSignalKit
 import TelegramCore
+import SyncCore
 import Postbox
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -13,13 +14,6 @@ import AccountContext
 import UrlEscaping
 import PhotoResources
 
-private let titleFont = Font.semibold(15.0)
-private let textFont = Font.regular(15.0)
-private let textBoldFont = Font.semibold(15.0)
-private let textItalicFont = Font.italic(15.0)
-private let textBoldItalicFont = Font.semiboldItalic(15.0)
-private let textFixedFont = Font.regular(15.0)
-private let textBlockQuoteFont = Font.regular(15.0)
 private let buttonFont = Font.semibold(13.0)
 
 enum ChatMessageAttachedContentActionIcon {
@@ -288,6 +282,16 @@ final class ChatMessageAttachedContentNode: ASDisplayNode {
         let currentAdditionalImageBadgeNode = self.additionalImageBadgeNode
         
         return { presentationData, automaticDownloadSettings, associatedData, context, controllerInteraction, message, messageRead, title, subtitle, text, entities, mediaAndFlags, mediaBadge, actionIcon, actionTitle, displayLine, layoutConstants, constrainedSize in
+            let fontSize: CGFloat = floor(presentationData.fontSize.baseDisplaySize * 15.0 / 17.0)
+            
+            let titleFont = Font.semibold(fontSize)
+            let textFont = Font.regular(fontSize)
+            let textBoldFont = Font.semibold(fontSize)
+            let textItalicFont = Font.italic(fontSize)
+            let textBoldItalicFont = Font.semiboldItalic(fontSize)
+            let textFixedFont = Font.regular(fontSize)
+            let textBlockQuoteFont = Font.regular(fontSize)
+            
             let incoming = message.effectivelyIncoming(context.account.peerId)
             
             var horizontalInsets = UIEdgeInsets(top: 0.0, left: 12.0, bottom: 0.0, right: 12.0)
@@ -374,6 +378,7 @@ final class ChatMessageAttachedContentNode: ASDisplayNode {
                 let updatedSubtitle = NSMutableAttributedString()
                 updatedSubtitle.append(subtitle)
                 updatedSubtitle.addAttribute(.foregroundColor, value: messageTheme.primaryTextColor, range: NSMakeRange(0, subtitle.length))
+                updatedSubtitle.addAttribute(.font, value: titleFont, range: NSMakeRange(0, subtitle.length))
                 string.append(updatedSubtitle)
                 notEmpty = true
             }
@@ -467,7 +472,7 @@ final class ChatMessageAttachedContentNode: ASDisplayNode {
                         initialWidth = initialImageWidth + horizontalInsets.left + horizontalInsets.right
                         refineContentImageLayout = refineLayout
                     } else if let dimensions = largestImageRepresentation(image.representations)?.dimensions {
-                        inlineImageDimensions = dimensions
+                        inlineImageDimensions = dimensions.cgSize
                         
                         if image != currentImage {
                             updateInlineImageSignal = chatWebpageSnippetPhoto(account: context.account, photoReference: .message(message: MessageReference(message), media: image))
@@ -482,7 +487,7 @@ final class ChatMessageAttachedContentNode: ASDisplayNode {
                     let (_, initialImageWidth, refineLayout) = contentImageLayout(context, presentationData.theme.theme, presentationData.strings, presentationData.dateTimeFormat, message, wallpaper, .full, associatedData.automaticDownloadPeerType, .constrained(CGSize(width: constrainedSize.width - horizontalInsets.left - horizontalInsets.right, height: constrainedSize.height)), layoutConstants, contentMode)
                     initialWidth = initialImageWidth + horizontalInsets.left + horizontalInsets.right
                     refineContentImageLayout = refineLayout
-                    if case let .file(_, _, isTheme, _) = wallpaper.content, isTheme {
+                    if case let .file(_, _, _, _, isTheme, _) = wallpaper.content, isTheme {
                         skipStandardStatus = true
                     }
                 }
@@ -762,7 +767,7 @@ final class ChatMessageAttachedContentNode: ASDisplayNode {
                             var hasAnimation = true
                             var transition: ContainedViewLayoutTransition = .immediate
                             switch animation {
-                                case .None:
+                                case .None, .Crossfade:
                                     hasAnimation = false
                                 case let .System(duration):
                                     hasAnimation = true
@@ -955,13 +960,13 @@ final class ChatMessageAttachedContentNode: ASDisplayNode {
         return false
     }
     
-    func transitionNode(media: Media) -> (ASDisplayNode, () -> (UIView?, UIView?))? {
+    func transitionNode(media: Media) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         if let contentImageNode = self.contentImageNode, let image = self.media as? TelegramMediaImage, image.isEqual(to: media) {
-            return (contentImageNode, { [weak contentImageNode] in
+            return (contentImageNode, contentImageNode.bounds, { [weak contentImageNode] in
                 return (contentImageNode?.view.snapshotContentTree(unhide: true), nil)
             })
         } else if let contentImageNode = self.contentImageNode, let file = self.media as? TelegramMediaFile, file.isEqual(to: media) {
-            return (contentImageNode, { [weak contentImageNode] in
+            return (contentImageNode, contentImageNode.bounds, { [weak contentImageNode] in
                 return (contentImageNode?.view.snapshotContentTree(unhide: true), nil)
             })
         }
@@ -1052,7 +1057,7 @@ final class ChatMessageAttachedContentNode: ASDisplayNode {
         return self.contentImageNode?.playMediaWithSound()
     }
     
-    func reactionTargetNode(value: String) -> (ASImageNode, Int)? {
+    func reactionTargetNode(value: String) -> (ASDisplayNode, Int)? {
         if !self.statusNode.isHidden {
             return self.statusNode.reactionNode(value: value)
         }

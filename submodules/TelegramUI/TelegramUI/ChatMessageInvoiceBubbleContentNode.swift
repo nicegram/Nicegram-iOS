@@ -5,6 +5,7 @@ import Display
 import AsyncDisplayKit
 import SwiftSignalKit
 import TelegramCore
+import SyncCore
 import TelegramUIPreferences
 import TelegramStringFormatting
 
@@ -129,14 +130,14 @@ final class ChatMessageInvoiceBubbleContentNode: ChatMessageBubbleContentNode {
         return self.contentNode.updateHiddenMedia(media)
     }
     
-    override func transitionNode(messageId: MessageId, media: Media) -> (ASDisplayNode, () -> (UIView?, UIView?))? {
+    override func transitionNode(messageId: MessageId, media: Media) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         if self.item?.message.id != messageId {
             return nil
         }
         return self.contentNode.transitionNode(media: media)
     }
     
-    override func reactionTargetNode(value: String) -> (ASImageNode, Int)? {
+    override func reactionTargetNode(value: String) -> (ASDisplayNode, Int)? {
         return self.contentNode.reactionTargetNode(value: value)
     }
 }

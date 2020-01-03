@@ -2,13 +2,15 @@ import Foundation
 import UIKit
 import Display
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import AsyncDisplayKit
 import Postbox
 import TelegramPresentationData
 import StickerResources
 import AccountContext
-import AnimationUI
+import AnimatedStickerNode
+import TelegramAnimatedStickerNode
 
 final class StickerPaneSearchStickerSection: GridSection {
     let code: String
@@ -162,9 +164,9 @@ final class StickerPaneSearchStickerItemNode: GridItemNode {
                         self.animationNode = animationNode
                         self.addSubnode(animationNode)
                     }
-                    let dimensions = stickerItem.file.dimensions ?? CGSize(width: 512.0, height: 512.0)
-                    let fittedDimensions = dimensions.aspectFitted(CGSize(width: 160.0, height: 160.0))
-                    self.animationNode?.setup(account: account, resource: .resource(stickerItem.file.resource), width: Int(fittedDimensions.width), height: Int(fittedDimensions.height), mode: .cached)
+                    let dimensions = stickerItem.file.dimensions ?? PixelDimensions(width: 512, height: 512)
+                    let fittedDimensions = dimensions.cgSize.aspectFitted(CGSize(width: 160.0, height: 160.0))
+                    self.animationNode?.setup(source: AnimatedStickerResourceSource(account: account, resource: stickerItem.file.resource), width: Int(fittedDimensions.width), height: Int(fittedDimensions.height), mode: .cached)
                     self.animationNode?.visibility = self.isVisibleInGrid
                     self.stickerFetchedDisposable.set(freeMediaFileResourceInteractiveFetched(account: account, fileReference: stickerPackFileReference(stickerItem.file), resource: stickerItem.file.resource).start())
                 } else {
@@ -177,7 +179,7 @@ final class StickerPaneSearchStickerItemNode: GridItemNode {
                     self.stickerFetchedDisposable.set(freeMediaFileResourceInteractiveFetched(account: account, fileReference: stickerPackFileReference(stickerItem.file), resource: chatMessageStickerResource(file: stickerItem.file, small: true)).start())
                 }
                 
-                self.currentState = (account, stickerItem, dimensions)
+                self.currentState = (account, stickerItem, dimensions.cgSize)
                 self.setNeedsLayout()
             }
         }

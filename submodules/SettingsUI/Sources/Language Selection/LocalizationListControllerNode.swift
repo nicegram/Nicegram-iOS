@@ -4,14 +4,17 @@ import Display
 import AsyncDisplayKit
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import MergeLists
 import ItemListUI
+import PresentationDataUtils
 import AccountContext
 import ShareController
 import SearchBarNode
 import SearchUI
+import ActivityIndicator
 
 private enum LanguageListSection: ItemListSectionId {
     case official
@@ -49,10 +52,10 @@ private enum LanguageListEntry: Comparable, Identifiable {
        return lhs.index() < rhs.index()
     }
     
-    func item(theme: PresentationTheme, strings: PresentationStrings, searchMode: Bool, openSearch: @escaping () -> Void, selectLocalization: @escaping (LocalizationInfo) -> Void, setItemWithRevealedOptions: @escaping (String?, String?) -> Void, removeItem: @escaping (String) -> Void) -> ListViewItem {
+    func item(presentationData: PresentationData, searchMode: Bool, openSearch: @escaping () -> Void, selectLocalization: @escaping (LocalizationInfo) -> Void, setItemWithRevealedOptions: @escaping (String?, String?) -> Void, removeItem: @escaping (String) -> Void) -> ListViewItem {
         switch self {
             case let .localization(_, info, type, selected, activity, revealed, editing):
-                return LocalizationListItem(theme: theme, strings: strings, id: info.languageCode, title: info.title, subtitle: info.localizedTitle, checked: selected, activity: activity, editing: LocalizationListItemEditing(editable: !selected && !searchMode && !info.isOfficial, editing: editing, revealed: !selected && revealed, reorderable: false), sectionId: type == .official ? LanguageListSection.official.rawValue : LanguageListSection.unofficial.rawValue, alwaysPlain: searchMode, action: {
+                return LocalizationListItem(presentationData: ItemListPresentationData(presentationData), id: info.languageCode, title: info.title, subtitle: info.localizedTitle, checked: selected, activity: activity, editing: LocalizationListItemEditing(editable: !selected && !searchMode && !info.isOfficial, editing: editing, revealed: !selected && revealed, reorderable: false), sectionId: type == .official ? LanguageListSection.official.rawValue : LanguageListSection.unofficial.rawValue, alwaysPlain: searchMode, action: {
                     selectLocalization(info)
                 }, setItemWithRevealedOptions: setItemWithRevealedOptions, removeItem: removeItem)
         }
@@ -66,12 +69,12 @@ private struct LocalizationListSearchContainerTransition {
     let isSearching: Bool
 }
 
-private func preparedLanguageListSearchContainerTransition(theme: PresentationTheme, strings: PresentationStrings, from fromEntries: [LanguageListEntry], to toEntries: [LanguageListEntry], selectLocalization: @escaping (LocalizationInfo) -> Void, isSearching: Bool, forceUpdate: Bool) -> LocalizationListSearchContainerTransition {
+private func preparedLanguageListSearchContainerTransition(presentationData: PresentationData, from fromEntries: [LanguageListEntry], to toEntries: [LanguageListEntry], selectLocalization: @escaping (LocalizationInfo) -> Void, isSearching: Bool, forceUpdate: Bool) -> LocalizationListSearchContainerTransition {
     let (deleteIndices, indicesAndItems, updateIndices) = mergeListsStableWithUpdates(leftList: fromEntries, rightList: toEntries, allUpdated: forceUpdate)
     
     let deletions = deleteIndices.map { ListViewDeleteItem(index: $0, directionHint: nil) }
-    let insertions = indicesAndItems.map { ListViewInsertItem(index: $0.0, previousIndex: $0.2, item: $0.1.item(theme: theme, strings: strings, searchMode: true, openSearch: {}, selectLocalization: selectLocalization, setItemWithRevealedOptions: { _, _ in }, removeItem: { _ in }), directionHint: nil) }
-    let updates = updateIndices.map { ListViewUpdateItem(index: $0.0, previousIndex: $0.2, item: $0.1.item(theme: theme, strings: strings, searchMode: true, openSearch: {}, selectLocalization: selectLocalization, setItemWithRevealedOptions: { _, _ in }, removeItem: { _ in }), directionHint: nil) }
+    let insertions = indicesAndItems.map { ListViewInsertItem(index: $0.0, previousIndex: $0.2, item: $0.1.item(presentationData: presentationData, searchMode: true, openSearch: {}, selectLocalization: selectLocalization, setItemWithRevealedOptions: { _, _ in }, removeItem: { _ in }), directionHint: nil) }
+    let updates = updateIndices.map { ListViewUpdateItem(index: $0.0, previousIndex: $0.2, item: $0.1.item(presentationData: presentationData, searchMode: true, openSearch: {}, selectLocalization: selectLocalization, setItemWithRevealedOptions: { _, _ in }, removeItem: { _ in }), directionHint: nil) }
     
     return LocalizationListSearchContainerTransition(deletions: deletions, insertions: insertions, updates: updates, isSearching: isSearching)
 }
@@ -89,12 +92,12 @@ private final class LocalizationListSearchContainerNode: SearchDisplayController
     private var presentationData: PresentationData
     private var presentationDataDisposable: Disposable?
     
-    private let themeAndStringsPromise: Promise<(PresentationTheme, PresentationStrings)>
+    private let presentationDataPromise: Promise<PresentationData>
     
     init(context: AccountContext, listState: LocalizationListState, selectLocalization: @escaping (LocalizationInfo) -> Void, applyingCode: Signal<String?, NoError>) {
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
         
-        self.themeAndStringsPromise = Promise((self.presentationData.theme, self.presentationData.strings))
+        self.presentationDataPromise = Promise(self.presentationData)
         
         self.dimNode = ASDisplayNode()
         self.dimNode.backgroundColor = UIColor.black.withAlphaComponent(0.5)
@@ -131,18 +134,18 @@ private final class LocalizationListSearchContainerNode: SearchDisplayController
         }
         
         let previousEntriesHolder = Atomic<([LanguageListEntry], PresentationTheme, PresentationStrings)?>(value: nil)
-        self.searchDisposable.set(combineLatest(queue: .mainQueue(), foundItems, self.themeAndStringsPromise.get(), applyingCode).start(next: { [weak self] items, themeAndStrings, applyingCode in
+        self.searchDisposable.set(combineLatest(queue: .mainQueue(), foundItems, self.presentationDataPromise.get(), applyingCode).start(next: { [weak self] items, presentationData, applyingCode in
             guard let strongSelf = self else {
                 return
             }
             var entries: [LanguageListEntry] = []
             if let items = items {
                 for item in items {
-                    entries.append(.localization(index: entries.count, info: item, type: .official, selected: themeAndStrings.1.primaryComponent.languageCode == item.languageCode, activity: applyingCode == item.languageCode, revealed: false, editing: false))
+                    entries.append(.localization(index: entries.count, info: item, type: .official, selected: presentationData.strings.primaryComponent.languageCode == item.languageCode, activity: applyingCode == item.languageCode, revealed: false, editing: false))
                 }
             }
-            let previousEntriesAndPresentationData = previousEntriesHolder.swap((entries, themeAndStrings.0, themeAndStrings.1))
-            let transition = preparedLanguageListSearchContainerTransition(theme: themeAndStrings.0, strings: themeAndStrings.1, from: previousEntriesAndPresentationData?.0 ?? [], to: entries, selectLocalization: selectLocalization, isSearching: items != nil, forceUpdate: previousEntriesAndPresentationData?.1 !== themeAndStrings.0 || previousEntriesAndPresentationData?.2 !== themeAndStrings.1)
+            let previousEntriesAndPresentationData = previousEntriesHolder.swap((entries, presentationData.theme, presentationData.strings))
+            let transition = preparedLanguageListSearchContainerTransition(presentationData: presentationData, from: previousEntriesAndPresentationData?.0 ?? [], to: entries, selectLocalization: selectLocalization, isSearching: items != nil, forceUpdate: previousEntriesAndPresentationData?.1 !== presentationData.theme || previousEntriesAndPresentationData?.2 !== presentationData.strings)
             strongSelf.enqueueTransition(transition)
         }))
         
@@ -156,7 +159,7 @@ private final class LocalizationListSearchContainerNode: SearchDisplayController
                     
                     if previousTheme !== presentationData.theme || previousStrings !== presentationData.strings {
                         strongSelf.updateThemeAndStrings(theme: presentationData.theme, strings: presentationData.strings)
-                        strongSelf.themeAndStringsPromise.set(.single((presentationData.theme, presentationData.strings)))
+                        strongSelf.presentationDataPromise.set(.single(presentationData))
                     }
                 }
             })
@@ -194,12 +197,12 @@ private final class LocalizationListSearchContainerNode: SearchDisplayController
         
         if self.hasValidLayout {
             while !self.enqueuedTransitions.isEmpty {
-                self.dequeueTransition()
+                self.dequeueTransitions()
             }
         }
     }
     
-    private func dequeueTransition() {
+    private func dequeueTransitions() {
         if let transition = self.enqueuedTransitions.first {
             self.enqueuedTransitions.remove(at: 0)
             
@@ -220,35 +223,15 @@ private final class LocalizationListSearchContainerNode: SearchDisplayController
         let topInset = navigationBarHeight
         transition.updateFrame(node: self.dimNode, frame: CGRect(origin: CGPoint(x: 0.0, y: topInset), size: CGSize(width: layout.size.width, height: layout.size.height - topInset)))
         
-        var duration: Double = 0.0
-        var curve: UInt = 0
-        switch transition {
-            case .immediate:
-                break
-            case let .animated(animationDuration, animationCurve):
-                duration = animationDuration
-                switch animationCurve {
-                    case .easeInOut, .custom:
-                        break
-                    case .spring:
-                        curve = 7
-                }
-        }
-        
-        let listViewCurve: ListViewAnimationCurve
-        if curve == 7 {
-            listViewCurve = .Spring(duration: duration)
-        } else {
-            listViewCurve = .Default(duration: nil)
-        }
+        let (duration, curve) = listViewAnimationDurationAndCurve(transition: transition)
         
         self.listNode.frame = CGRect(origin: CGPoint(), size: layout.size)
-        self.listNode.transaction(deleteIndices: [], insertIndicesAndItems: [], updateIndicesAndItems: [], options: [.Synchronous], scrollToItem: nil, updateSizeAndInsets: ListViewUpdateSizeAndInsets(size: layout.size, insets: UIEdgeInsets(top: navigationBarHeight, left: 0.0, bottom: layout.insets(options: [.input]).bottom, right: 0.0), duration: duration, curve: listViewCurve), stationaryItemRange: nil, updateOpaqueState: nil, completion: { _ in })
+        self.listNode.transaction(deleteIndices: [], insertIndicesAndItems: [], updateIndicesAndItems: [], options: [.Synchronous], scrollToItem: nil, updateSizeAndInsets: ListViewUpdateSizeAndInsets(size: layout.size, insets: UIEdgeInsets(top: navigationBarHeight, left: 0.0, bottom: layout.insets(options: [.input]).bottom, right: 0.0), duration: duration, curve: curve), stationaryItemRange: nil, updateOpaqueState: nil, completion: { _ in })
         
         if !self.hasValidLayout {
             self.hasValidLayout = true
             while !self.enqueuedTransitions.isEmpty {
-                self.dequeueTransition()
+                self.dequeueTransitions()
             }
         }
     }
@@ -265,17 +248,18 @@ private struct LanguageListNodeTransition {
     let insertions: [ListViewInsertItem]
     let updates: [ListViewUpdateItem]
     let firstTime: Bool
+    let isLoading: Bool
     let animated: Bool
 }
 
-private func preparedLanguageListNodeTransition(theme: PresentationTheme, strings: PresentationStrings, from fromEntries: [LanguageListEntry], to toEntries: [LanguageListEntry], openSearch: @escaping () -> Void, selectLocalization: @escaping (LocalizationInfo) -> Void, setItemWithRevealedOptions: @escaping (String?, String?) -> Void, removeItem: @escaping (String) -> Void, firstTime: Bool, forceUpdate: Bool, animated: Bool) -> LanguageListNodeTransition {
+private func preparedLanguageListNodeTransition(presentationData: PresentationData, from fromEntries: [LanguageListEntry], to toEntries: [LanguageListEntry], openSearch: @escaping () -> Void, selectLocalization: @escaping (LocalizationInfo) -> Void, setItemWithRevealedOptions: @escaping (String?, String?) -> Void, removeItem: @escaping (String) -> Void, firstTime: Bool, isLoading: Bool, forceUpdate: Bool, animated: Bool) -> LanguageListNodeTransition {
     let (deleteIndices, indicesAndItems, updateIndices) = mergeListsStableWithUpdates(leftList: fromEntries, rightList: toEntries, allUpdated: forceUpdate)
     
     let deletions = deleteIndices.map { ListViewDeleteItem(index: $0, directionHint: nil) }
-    let insertions = indicesAndItems.map { ListViewInsertItem(index: $0.0, previousIndex: $0.2, item: $0.1.item(theme: theme, strings: strings, searchMode: false, openSearch: openSearch, selectLocalization: selectLocalization, setItemWithRevealedOptions: setItemWithRevealedOptions, removeItem: removeItem), directionHint: nil) }
-    let updates = updateIndices.map { ListViewUpdateItem(index: $0.0, previousIndex: $0.2, item: $0.1.item(theme: theme, strings: strings, searchMode: false, openSearch: openSearch, selectLocalization: selectLocalization, setItemWithRevealedOptions: setItemWithRevealedOptions, removeItem: removeItem), directionHint: nil) }
+    let insertions = indicesAndItems.map { ListViewInsertItem(index: $0.0, previousIndex: $0.2, item: $0.1.item(presentationData: presentationData, searchMode: false, openSearch: openSearch, selectLocalization: selectLocalization, setItemWithRevealedOptions: setItemWithRevealedOptions, removeItem: removeItem), directionHint: nil) }
+    let updates = updateIndices.map { ListViewUpdateItem(index: $0.0, previousIndex: $0.2, item: $0.1.item(presentationData: presentationData, searchMode: false, openSearch: openSearch, selectLocalization: selectLocalization, setItemWithRevealedOptions: setItemWithRevealedOptions, removeItem: removeItem), directionHint: nil) }
     
-    return LanguageListNodeTransition(deletions: deletions, insertions: insertions, updates: updates, firstTime: firstTime, animated: animated)
+    return LanguageListNodeTransition(deletions: deletions, insertions: insertions, updates: updates, firstTime: firstTime, isLoading: isLoading, animated: animated)
 }
 
 final class LocalizationListControllerNode: ViewControllerTracingNode {
@@ -292,10 +276,10 @@ final class LocalizationListControllerNode: ViewControllerTracingNode {
     private var containerLayout: (ContainerViewLayout, CGFloat)?
     let listNode: ListView
     private var queuedTransitions: [LanguageListNodeTransition] = []
-    
+    private var activityIndicator: ActivityIndicator?
     private var searchDisplayController: SearchDisplayController?
     
-    private let presentationDataValue = Promise<(PresentationTheme, PresentationStrings)>()
+    private let presentationDataValue = Promise<PresentationData>()
     private var updatedDisposable: Disposable?
     private var listDisposable: Disposable?
     private let applyDisposable = MetaDisposable()
@@ -312,7 +296,7 @@ final class LocalizationListControllerNode: ViewControllerTracingNode {
     init(context: AccountContext, presentationData: PresentationData, navigationBar: NavigationBar, requestActivateSearch: @escaping () -> Void, requestDeactivateSearch: @escaping () -> Void, updateCanStartEditing: @escaping (Bool?) -> Void, present: @escaping (ViewController, Any?) -> Void) {
         self.context = context
         self.presentationData = presentationData
-        self.presentationDataValue.set(.single((presentationData.theme, presentationData.strings)))
+        self.presentationDataValue.set(.single(presentationData))
         self.navigationBar = navigationBar
         self.requestActivateSearch = requestActivateSearch
         self.requestDeactivateSearch = requestDeactivateSearch
@@ -414,8 +398,8 @@ final class LocalizationListControllerNode: ViewControllerTracingNode {
                     entries.append(.localization(index: entries.count, info: info, type: .official, selected: info.languageCode == activeLanguageCode, activity: applyingCode == info.languageCode, revealed: revealedCode == info.languageCode, editing: false))
                 }
             }
-            let previousEntriesAndPresentationData = previousEntriesHolder.swap((entries, presentationData.0, presentationData.1))
-            let transition = preparedLanguageListNodeTransition(theme: presentationData.0, strings: presentationData.1, from: previousEntriesAndPresentationData?.0 ?? [], to: entries, openSearch: openSearch, selectLocalization: { [weak self] info in self?.selectLocalization(info) }, setItemWithRevealedOptions: setItemWithRevealedOptions, removeItem: removeItem, firstTime: previousEntriesAndPresentationData == nil, forceUpdate: previousEntriesAndPresentationData?.1 !== presentationData.0 || previousEntriesAndPresentationData?.2 !== presentationData.1, animated: (previousEntriesAndPresentationData?.0.count ?? 0) >= entries.count)
+            let previousEntriesAndPresentationData = previousEntriesHolder.swap((entries, presentationData.theme, presentationData.strings))
+            let transition = preparedLanguageListNodeTransition(presentationData: presentationData, from: previousEntriesAndPresentationData?.0 ?? [], to: entries, openSearch: openSearch, selectLocalization: { [weak self] info in self?.selectLocalization(info) }, setItemWithRevealedOptions: setItemWithRevealedOptions, removeItem: removeItem, firstTime: previousEntriesAndPresentationData == nil, isLoading: entries.isEmpty, forceUpdate: previousEntriesAndPresentationData?.1 !== presentationData.theme || previousEntriesAndPresentationData?.2 !== presentationData.strings, animated: (previousEntriesAndPresentationData?.0.count ?? 0) >= entries.count)
             strongSelf.enqueueTransition(transition)
         })
         self.updatedDisposable = synchronizedLocalizationListState(postbox: context.account.postbox, network: context.account.network).start()
@@ -429,7 +413,7 @@ final class LocalizationListControllerNode: ViewControllerTracingNode {
     
     func updatePresentationData(_ presentationData: PresentationData) {
         self.presentationData = presentationData
-        self.presentationDataValue.set(.single((presentationData.theme, presentationData.strings)))
+        self.presentationDataValue.set(.single(presentationData))
         self.backgroundColor = presentationData.theme.list.blocksBackgroundColor
         self.listNode.keepTopItemOverscrollBackground = ListViewKeepTopItemOverscrollBackground(color: presentationData.theme.chatList.backgroundColor, direction: true)
         self.searchDisplayController?.updatePresentationData(presentationData)
@@ -450,31 +434,15 @@ final class LocalizationListControllerNode: ViewControllerTracingNode {
         self.listNode.bounds = CGRect(x: 0.0, y: 0.0, width: layout.size.width, height: layout.size.height)
         self.listNode.position = CGPoint(x: layout.size.width / 2.0, y: layout.size.height / 2.0)
         
-        var duration: Double = 0.0
-        var curve: UInt = 0
-        switch transition {
-            case .immediate:
-                break
-            case let .animated(animationDuration, animationCurve):
-                duration = animationDuration
-                switch animationCurve {
-                    case .easeInOut, .custom:
-                        break
-                    case .spring:
-                        curve = 7
-                }
-        }
-        
-        let listViewCurve: ListViewAnimationCurve
-        if curve == 7 {
-            listViewCurve = .Spring(duration: duration)
-        } else {
-            listViewCurve = .Default(duration: duration)
-        }
-        
-        let updateSizeAndInsets = ListViewUpdateSizeAndInsets(size: layout.size, insets: listInsets, duration: duration, curve: listViewCurve)
+        let (duration, curve) = listViewAnimationDurationAndCurve(transition: transition)
+        let updateSizeAndInsets = ListViewUpdateSizeAndInsets(size: layout.size, insets: listInsets, duration: duration, curve: curve)
         
         self.listNode.transaction(deleteIndices: [], insertIndicesAndItems: [], updateIndicesAndItems: [], options: [.Synchronous, .LowLatency], scrollToItem: nil, updateSizeAndInsets: updateSizeAndInsets, stationaryItemRange: nil, updateOpaqueState: nil, completion: { _ in })
+        
+        if let activityIndicator = self.activityIndicator {
+            let indicatorSize = activityIndicator.measure(CGSize(width: 100.0, height: 100.0))
+            transition.updateFrame(node: activityIndicator, frame: CGRect(origin: CGPoint(x: floor((layout.size.width - indicatorSize.width) / 2.0), y: updateSizeAndInsets.insets.top + 50.0 + floor((layout.size.height - updateSizeAndInsets.insets.top - updateSizeAndInsets.insets.bottom - indicatorSize.height - 50.0) / 2.0)), size: indicatorSize))
+        }
         
         if !hadValidLayout {
             self.dequeueTransitions()
@@ -490,26 +458,38 @@ final class LocalizationListControllerNode: ViewControllerTracingNode {
     }
     
     private func dequeueTransitions() {
-        if self.containerLayout != nil {
-            while !self.queuedTransitions.isEmpty {
-                let transition = self.queuedTransitions.removeFirst()
-                
-                var options = ListViewDeleteAndInsertOptions()
-                if transition.firstTime {
-                    options.insert(.Synchronous)
-                    options.insert(.LowLatency)
-                } else if transition.animated {
-                    options.insert(.AnimateInsertion)
-                }
-                self.listNode.transaction(deleteIndices: transition.deletions, insertIndicesAndItems: transition.insertions, updateIndicesAndItems: transition.updates, options: options, updateOpaqueState: nil, completion: { [weak self] _ in
-                    if let strongSelf = self {
-                        if !strongSelf.didSetReady {
-                            strongSelf.didSetReady = true
-                            strongSelf._ready.set(true)
-                        }
-                    }
-                })
+        guard let (layout, navigationBarHeight) = self.containerLayout else {
+            return
+        }
+        while !self.queuedTransitions.isEmpty {
+            let transition = self.queuedTransitions.removeFirst()
+            
+            var options = ListViewDeleteAndInsertOptions()
+            if transition.firstTime {
+                options.insert(.Synchronous)
+                options.insert(.LowLatency)
+            } else if transition.animated {
+                options.insert(.AnimateInsertion)
             }
+            self.listNode.transaction(deleteIndices: transition.deletions, insertIndicesAndItems: transition.insertions, updateIndicesAndItems: transition.updates, options: options, updateOpaqueState: nil, completion: { [weak self] _ in
+                if let strongSelf = self {
+                    if !strongSelf.didSetReady {
+                        strongSelf.didSetReady = true
+                        strongSelf._ready.set(true)
+                    }
+                    
+                    if transition.isLoading, strongSelf.activityIndicator == nil {
+                        let activityIndicator = ActivityIndicator(type: .custom(strongSelf.presentationData.theme.list.itemAccentColor, 22.0, 1.0, false))
+                        strongSelf.activityIndicator = activityIndicator
+                        strongSelf.insertSubnode(activityIndicator, aboveSubnode: strongSelf.listNode)
+                        
+                        strongSelf.containerLayoutUpdated(layout, navigationBarHeight: navigationBarHeight, transition: .immediate)
+                    } else if !transition.isLoading, let activityIndicator = strongSelf.activityIndicator {
+                        strongSelf.activityIndicator = nil
+                        activityIndicator.removeFromSupernode()
+                    }
+                }
+            })
         }
     }
     
@@ -528,7 +508,7 @@ final class LocalizationListControllerNode: ViewControllerTracingNode {
             applyImpl()
             return
         }
-        let controller = ActionSheetController(presentationTheme: presentationData.theme)
+        let controller = ActionSheetController(presentationData: presentationData)
         let dismissAction: () -> Void = { [weak controller] in
             controller?.dismissAnimated()
         }

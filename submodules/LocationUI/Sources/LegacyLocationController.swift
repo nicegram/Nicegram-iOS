@@ -3,12 +3,15 @@ import UIKit
 import Display
 import LegacyComponents
 import TelegramCore
+import SyncCore
 import Postbox
 import TelegramPresentationData
 import AccountContext
 import ShareController
 import LegacyUI
 import OpenInExternalAppUI
+import AppBundle
+import LocationResources
 
 private func generateClearIcon(color: UIColor) -> UIImage? {
     return generateTintedImage(image: UIImage(bundleImageName: "Components/Search Bar/Clear"), color: color)
@@ -126,7 +129,7 @@ func legacyLocationPalette(from theme: PresentationTheme) -> TGLocationPallete {
     return TGLocationPallete(backgroundColor: listTheme.plainBackgroundColor, selectionColor: listTheme.itemHighlightedBackgroundColor, separatorColor: listTheme.itemPlainSeparatorColor, textColor: listTheme.itemPrimaryTextColor, secondaryTextColor: listTheme.itemSecondaryTextColor, accentColor: listTheme.itemAccentColor, destructiveColor: listTheme.itemDestructiveColor, locationColor: UIColor(rgb: 0x008df2), liveLocationColor: UIColor(rgb: 0xff6464), iconColor: searchTheme.backgroundColor, sectionHeaderBackgroundColor: theme.chatList.sectionHeaderFillColor, sectionHeaderTextColor: theme.chatList.sectionHeaderTextColor, searchBarPallete: TGSearchBarPallete(dark: theme.overallDarkAppearance, backgroundColor: searchTheme.backgroundColor, highContrastBackgroundColor: searchTheme.backgroundColor, textColor: searchTheme.inputTextColor, placeholderColor: searchTheme.inputPlaceholderTextColor, clearIcon: generateClearIcon(color: theme.rootController.navigationSearchBar.inputClearButtonColor), barBackgroundColor: searchTheme.backgroundColor, barSeparatorColor: searchTheme.separatorColor, plainBackgroundColor: searchTheme.backgroundColor, accentColor: searchTheme.accentColor, accentContrastColor: searchTheme.backgroundColor, menuBackgroundColor: searchTheme.backgroundColor, segmentedControlBackgroundImage: nil, segmentedControlSelectedImage: nil, segmentedControlHighlightedImage: nil, segmentedControlDividerImage: nil), avatarPlaceholder: nil)
 }
 
-public func legacyLocationController(message: Message?, mapMedia: TelegramMediaMap, context: AccountContext, isModal: Bool, openPeer: @escaping (Peer) -> Void, sendLiveLocation: @escaping (CLLocationCoordinate2D, Int32) -> Void, stopLiveLocation: @escaping () -> Void, openUrl: @escaping (String) -> Void) -> ViewController {
+public func legacyLocationController(message: Message?, mapMedia: TelegramMediaMap, context: AccountContext, openPeer: @escaping (Peer) -> Void, sendLiveLocation: @escaping (CLLocationCoordinate2D, Int32) -> Void, stopLiveLocation: @escaping () -> Void, openUrl: @escaping (String) -> Void) -> ViewController {
     let legacyLocation = TGLocationMediaAttachment()
     legacyLocation.latitude = mapMedia.latitude
     legacyLocation.longitude = mapMedia.longitude
@@ -136,9 +139,11 @@ public func legacyLocationController(message: Message?, mapMedia: TelegramMediaM
     
     let presentationData = context.sharedContext.currentPresentationData.with { $0 }
     
-    let legacyController = LegacyController(presentation: isModal ? .modal(animateIn: true) : .navigation, theme: presentationData.theme, strings: presentationData.strings)
+    let legacyController = LegacyController(presentation: .navigation, theme: presentationData.theme, strings: presentationData.strings)
+    legacyController.navigationPresentation = .modal
     let controller: TGLocationViewController
     
+    let venueColor = mapMedia.venue?.type.flatMap { venueIconColor(type: $0) }
     if let message = message {
         let legacyMessage = makeLegacyMessage(message)
         let legacyAuthor: AnyObject? = message.author.flatMap(makeLegacyPeer)
@@ -196,9 +201,12 @@ public func legacyLocationController(message: Message?, mapMedia: TelegramMediaM
                 controller.setLiveLocationsSignal(.single(freezeLocations))
             } else {
                 controller.setLiveLocationsSignal(updatedLocations)
+                if message.flags.contains(.Incoming) {
+                    context.account.viewTracker.updateSeenLiveLocationForMessageIds(messageIds: Set([message.id]))
+                }
             }
         } else {
-            controller = TGLocationViewController(context: legacyController.context, message: legacyMessage, peer: legacyAuthor)!
+            controller = TGLocationViewController(context: legacyController.context, message: legacyMessage, peer: legacyAuthor, color: venueColor)!
             controller.receivingPeer = message.peers[message.id.peerId].flatMap(makeLegacyPeer)
             controller.setLiveLocationsSignal(updatedLocations)
         }
@@ -215,7 +223,7 @@ public func legacyLocationController(message: Message?, mapMedia: TelegramMediaM
         let attachment = TGLocationMediaAttachment()
         attachment.latitude = mapMedia.latitude
         attachment.longitude = mapMedia.longitude
-        controller = TGLocationViewController(context: legacyController.context, locationAttachment: attachment, peer: nil)
+        controller = TGLocationViewController(context: legacyController.context, locationAttachment: attachment, peer: nil, color: venueColor)
     }
     
     controller.remainingTimeForMessage = { message in
@@ -233,7 +241,7 @@ public func legacyLocationController(message: Message?, mapMedia: TelegramMediaM
     let theme = (context.sharedContext.currentPresentationData.with { $0 }).theme
     controller.pallete = legacyLocationPalette(from: theme)
     
-    controller.modalMode = isModal
+    controller.modalMode = true
     controller.presentActionsMenu = { [weak legacyController] legacyLocation, directions in
         if let strongLegacyController = legacyController, let location = legacyLocation {
             let map = telegramMap(for: location)
@@ -249,29 +257,23 @@ public func legacyLocationController(message: Message?, mapMedia: TelegramMediaM
     
     controller.onViewDidAppear = { [weak controller] in
         if let strongController = controller {
+            strongController.view.disablesInteractiveModalDismiss = true
+            strongController.view.disablesInteractiveTransitionGestureRecognizer = true
             strongController.locationMapView.interactiveTransitionGestureRecognizerTest = { point -> Bool in
                 return point.x > 30.0
             }
         }
     }
     
-    if isModal {
-        let navigationController = TGNavigationController(controllers: [controller])!
-        legacyController.bind(controller: navigationController)
-        controller.navigation_setDismiss({ [weak legacyController] in
-            legacyController?.dismiss()
-        }, rootController: nil)
-    } else {
-        legacyController.navigationItem.title = controller.navigationItem.title
-        controller.updateRightBarItem = { item, action, animated in
-            if action {
-                legacyController.navigationItem.rightBarButtonItem = UIBarButtonItem(image: PresentationResourcesRootController.navigationShareIcon(theme), style: .plain, target: controller, action: #selector(controller.actionsButtonPressed))
-            } else {
-                legacyController.navigationItem.setRightBarButton(item, animated: animated)
-            }
+    legacyController.navigationItem.title = controller.navigationItem.title
+    controller.updateRightBarItem = { item, action, animated in
+        if action {
+            legacyController.navigationItem.rightBarButtonItem = UIBarButtonItem(image: PresentationResourcesRootController.navigationShareIcon(theme), style: .plain, target: controller, action: #selector(controller.actionsButtonPressed))
+        } else {
+            legacyController.navigationItem.setRightBarButton(item, animated: animated)
         }
-        legacyController.bind(controller: controller)
     }
+    legacyController.bind(controller: controller)
     
     let presentationDisposable = context.sharedContext.presentationData.start(next: { [weak controller] presentationData in
         if let controller = controller  {

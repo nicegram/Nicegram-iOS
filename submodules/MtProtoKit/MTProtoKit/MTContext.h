@@ -1,12 +1,8 @@
 #import <Foundation/Foundation.h>
 
-#if defined(MtProtoKitDynamicFramework)
-#   import <MTProtoKitDynamic/MTDatacenterAuthInfo.h>
-#elif defined(MtProtoKitMacFramework)
-#   import <MTProtoKitMac/MTDatacenterAuthInfo.h>
-#else
-#   import <MtProtoKit/MTDatacenterAuthInfo.h>
-#endif
+#import <MtProtoKit/MTDatacenterAuthInfo.h>
+
+#import <EncryptionProvider/EncryptionProvider.h>
 
 @class MTDatacenterAddress;
 @class MTDatacenterAddressSet;
@@ -17,6 +13,7 @@
 @class MTSessionInfo;
 @class MTApiEnvironment;
 @class MTSignal;
+@class MTQueue;
 
 @protocol MTContextChangeListener <NSObject>
 
@@ -25,12 +22,13 @@
 - (void)contextDatacenterAddressSetUpdated:(MTContext *)context datacenterId:(NSInteger)datacenterId addressSet:(MTDatacenterAddressSet *)addressSet;
 - (void)contextDatacenterAuthInfoUpdated:(MTContext *)context datacenterId:(NSInteger)datacenterId authInfo:(MTDatacenterAuthInfo *)authInfo;
 - (void)contextDatacenterAuthTokenUpdated:(MTContext *)context datacenterId:(NSInteger)datacenterId authToken:(id)authToken;
-- (void)contextDatacenterTransportSchemesUpdated:(MTContext *)context datacenterId:(NSInteger)datacenterId;
+- (void)contextDatacenterTransportSchemesUpdated:(MTContext *)context datacenterId:(NSInteger)datacenterId shouldReset:(bool)shouldReset;
 - (void)contextIsPasswordRequiredUpdated:(MTContext *)context datacenterId:(NSInteger)datacenterId;
 - (void)contextDatacenterPublicKeysUpdated:(MTContext *)context datacenterId:(NSInteger)datacenterId publicKeys:(NSArray<NSDictionary *> *)publicKeys;
 - (MTSignal *)fetchContextDatacenterPublicKeys:(MTContext *)context datacenterId:(NSInteger)datacenterId;
 - (void)contextApiEnvironmentUpdated:(MTContext *)context apiEnvironment:(MTApiEnvironment *)apiEnvironment;
 - (MTSignal *)isContextNetworkAccessAllowed:(MTContext *)context;
+- (void)contextLoggedOut:(MTContext *)context;
 
 @end
 
@@ -47,11 +45,17 @@
 @property (nonatomic, strong) id<MTKeychain> keychain;
 
 @property (nonatomic, strong, readonly) id<MTSerialization> serialization;
+@property (nonatomic, strong) id<EncryptionProvider> encryptionProvider;
 @property (nonatomic, strong, readonly) MTApiEnvironment *apiEnvironment;
 @property (nonatomic, readonly) bool isTestingEnvironment;
 @property (nonatomic, readonly) bool useTempAuthKeys;
 
-- (instancetype)initWithSerialization:(id<MTSerialization>)serialization apiEnvironment:(MTApiEnvironment *)apiEnvironment isTestingEnvironment:(bool)isTestingEnvironment useTempAuthKeys:(bool)useTempAuthKeys;
++ (int32_t)fixedTimeDifference;
++ (void)setFixedTimeDifference:(int32_t)fixedTimeDifference;
+
++ (MTQueue *)contextQueue;
+
+- (instancetype)initWithSerialization:(id<MTSerialization>)serialization encryptionProvider:(id<EncryptionProvider>)encryptionProvider apiEnvironment:(MTApiEnvironment *)apiEnvironment isTestingEnvironment:(bool)isTestingEnvironment useTempAuthKeys:(bool)useTempAuthKeys;
 
 - (void)performBatchUpdates:(void (^)())block;
 
@@ -98,6 +102,7 @@
 - (void)publicKeysForDatacenterWithIdRequired:(NSInteger)datacenterId;
 
 - (void)removeAllAuthTokens;
+- (void)removeTokenForDatacenterWithId:(NSInteger)datacenterId;
 - (id)authTokenForDatacenterWithId:(NSInteger)datacenterId;
 - (void)updateAuthTokenForDatacenterWithId:(NSInteger)datacenterId authToken:(id)authToken;
 
@@ -111,5 +116,7 @@
 - (void)updateApiEnvironment:(MTApiEnvironment *(^)(MTApiEnvironment *))f;
 
 - (void)beginExplicitBackupAddressDiscovery;
+
+- (void)checkIfLoggedOut:(NSInteger)datacenterId;
 
 @end

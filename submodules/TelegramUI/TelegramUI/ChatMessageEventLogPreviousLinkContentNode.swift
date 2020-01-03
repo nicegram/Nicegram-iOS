@@ -5,6 +5,7 @@ import Display
 import AsyncDisplayKit
 import SwiftSignalKit
 import TelegramCore
+import SyncCore
 
 final class ChatMessageEventLogPreviousLinkContentNode: ChatMessageBubbleContentNode {
     private let contentNode: ChatMessageAttachedContentNode
@@ -93,7 +94,7 @@ final class ChatMessageEventLogPreviousLinkContentNode: ChatMessageBubbleContent
         return self.contentNode.updateHiddenMedia(media)
     }
     
-    override func transitionNode(messageId: MessageId, media: Media) -> (ASDisplayNode, () -> (UIView?, UIView?))? {
+    override func transitionNode(messageId: MessageId, media: Media) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         if self.item?.message.id != messageId {
             return nil
         }

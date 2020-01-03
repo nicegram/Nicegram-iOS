@@ -4,6 +4,7 @@ import AsyncDisplayKit
 import UIKit
 import SwiftSignalKit
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import TelegramStringFormatting
 import AccountContext
@@ -21,11 +22,11 @@ final class ThemeAutoNightTimeSelectionActionSheet: ActionSheetController {
         let theme = presentationData.theme
         let strings = presentationData.strings
         
-        super.init(theme: ActionSheetControllerTheme(presentationTheme: theme))
+        super.init(theme: ActionSheetControllerTheme(presentationData: presentationData))
         
         self.presentationDisposable = context.sharedContext.presentationData.start(next: { [weak self] presentationData in
             if let strongSelf = self {
-                strongSelf.theme = ActionSheetControllerTheme(presentationTheme: presentationData.theme)
+                strongSelf.theme = ActionSheetControllerTheme(presentationData: presentationData)
             }
         })
         
@@ -98,12 +99,12 @@ private final class ThemeAutoNightTimeSelectionActionSheetItemNode: ActionSheetI
         self.valueChanged = valueChanged
         
         self.pickerView = UIDatePicker()
+        self.pickerView.setValue(theme.primaryTextColor, forKey: "textColor")
+        self.pickerView.datePickerMode = .countDownTimer
         self.pickerView.datePickerMode = .time
         self.pickerView.timeZone = TimeZone(secondsFromGMT: 0)
         self.pickerView.date = Date(timeIntervalSince1970: Double(currentValue))
         self.pickerView.locale = Locale.current
-        
-        self.pickerView.setValue(theme.primaryTextColor, forKey: "textColor")
         
         super.init(theme: theme)
         

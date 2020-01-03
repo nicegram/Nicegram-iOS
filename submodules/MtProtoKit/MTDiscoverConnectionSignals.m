@@ -1,39 +1,19 @@
 #import "MTDiscoverConnectionSignals.h"
 
 #import "MTTcpConnection.h"
-
-#if defined(MtProtoKitDynamicFramework)
-#   import <MTProtoKitDynamic/MTTransportScheme.h>
-#   import <MTProtoKitDynamic/MTTcpTransport.h>
-#   import <MTProtoKitDynamic/MTQueue.h>
-#   import <MTProtoKitDynamic/MTProtoKitDynamic.h>
-#elif defined(MtProtoKitMacFramework)
-#   import <MTProtoKitMac/MTTransportScheme.h>
-#   import <MTProtoKitMac/MTTcpTransport.h>
-#   import <MTProtoKitMac/MTQueue.h>
-#   import <MTProtoKitMac/MTProtoKitMac.h>
-#else
-#   import <MtProtoKit/MTTransportScheme.h>
-#   import <MtProtoKit/MTTcpTransport.h>
-#   import <MtProtoKit/MTQueue.h>
-#   import <MtProtoKit/MTProtoKit.h>
-#endif
+#import "MTTransportScheme.h"
+#import "MTTcpTransport.h"
+#import "MTQueue.h"
 
 #import "MTDatacenterAddress.h"
 
-#if defined(MtProtoKitDynamicFramework)
-#   import <MTProtoKitDynamic/MTDisposable.h>
-#   import <MTProtoKitDynamic/MTSignal.h>
-#   import <MTProtoKitDynamic/MTAtomic.h>
-#elif defined(MtProtoKitMacFramework)
-#   import <MTProtoKitMac/MTDisposable.h>
-#   import <MTProtoKitMac/MTSignal.h>
-#   import <MTProtoKitMac/MTAtomic.h>
-#else
-#   import <MtProtoKit/MTDisposable.h>
-#   import <MtProtoKit/MTSignal.h>
-#   import <MtProtoKit/MTAtomic.h>
-#endif
+#import "MTDisposable.h"
+#import "MTSignal.h"
+#import "MTAtomic.h"
+#import "MTContext.h"
+#import "MTApiEnvironment.h"
+#import "MTLogging.h"
+#import "MTDatacenterAuthAction.h"
 
 #import <netinet/in.h>
 #import <arpa/inet.h>
@@ -263,6 +243,27 @@
     
     return [signal catch:^MTSignal *(id error) {
         return [MTSignal complete];
+    }];
+}
+
++ (MTSignal * _Nonnull)checkIfAuthKeyRemovedWithContext:(MTContext * _Nonnull)context datacenterId:(NSInteger)datacenterId authKey:(MTDatacenterAuthKey *)authKey {
+    return [[MTSignal alloc] initWithGenerator:^id<MTDisposable>(MTSubscriber *subscriber) {
+        MTMetaDisposable *disposable = [[MTMetaDisposable alloc] init];
+        
+        [[MTContext contextQueue] dispatchOnQueue:^{
+            MTDatacenterAuthAction *action = [[MTDatacenterAuthAction alloc] initWithTempAuth:true tempAuthKeyType:MTDatacenterAuthTempKeyTypeMain bindKey:authKey];
+            action.completedWithResult = ^(bool success) {
+                [subscriber putNext:@(!success)];
+                [subscriber putCompletion];
+            };
+            [action execute:context datacenterId:datacenterId isCdn:false];
+            
+            [disposable setDisposable:[[MTBlockDisposable alloc] initWithBlock:^{
+                [action cancel];
+            }]];
+        }];
+        
+        return disposable;
     }];
 }
 

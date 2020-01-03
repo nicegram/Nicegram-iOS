@@ -3,6 +3,7 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import TelegramCore
+import SyncCore
 import Postbox
 import TextFormat
 import UrlEscaping
@@ -63,7 +64,7 @@ class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
         self.addSubnode(self.textAccessibilityOverlayNode)
         
         self.textAccessibilityOverlayNode.openUrl = { [weak self] url in
-            self?.item?.controllerInteraction.openUrl(url, false, false)
+            self?.item?.controllerInteraction.openUrl(url, false, false, nil)
         }
         
         self.statusNode.openReactions = { [weak self] in
@@ -168,8 +169,7 @@ class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                     }
                     if let webpage = media as? TelegramMediaWebpage, case let .Loaded(content) = webpage.content, webEmbedType(content: content).supportsSeeking {
                         isSeekableWebMedia = true
-                    }
-                    else if media is TelegramMediaUnsupported {
+                    } else if media is TelegramMediaUnsupported {
                         isUnsupportedMedia = true
                     }
                 }
@@ -215,7 +215,7 @@ class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                         if mediaDuration != nil || isSeekableWebMedia {
                             enabledTypes.insert(.timecode)
                             if mediaDuration == nil {
-                                mediaDuration = 60.0 * 60.0 * 3.0
+                                mediaDuration = 60.0 * 60.0 * 24.0
                             }
                         }
                         if let result = addLocallyGeneratedEntities(rawText, enabledTypes: enabledTypes, entities: entitiesValue, mediaDuration: mediaDuration) {
@@ -503,12 +503,12 @@ class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
         return nil
     }
     
-    override func updateSearchTextHighlightState(text: String?) {
+    override func updateSearchTextHighlightState(text: String?, messages: [MessageIndex]?) {
         guard let item = self.item else {
             return
         }
         let rectsSet: [[CGRect]]
-        if let text = text, !text.isEmpty {
+        if let text = text, let messages = messages, !text.isEmpty, messages.contains(item.message.index) {
             rectsSet = self.textNode.textRangesRects(text: text)
         } else {
             rectsSet = []
@@ -585,7 +585,7 @@ class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
         }
     }
     
-    override func reactionTargetNode(value: String) -> (ASImageNode, Int)? {
+    override func reactionTargetNode(value: String) -> (ASDisplayNode, Int)? {
         if !self.statusNode.isHidden {
             return self.statusNode.reactionNode(value: value)
         }

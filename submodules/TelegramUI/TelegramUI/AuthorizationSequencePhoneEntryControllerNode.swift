@@ -3,10 +3,15 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import PhoneInputNode
 import CountrySelectionUI
 import AuthorizationUI
+import QrCode
+import SwiftSignalKit
+import Postbox
+import AccountContext
 
 private func emojiFlagForISOCountryCode(_ countryCode: NSString) -> String {
     if countryCode.length != 2 {
@@ -200,6 +205,8 @@ private final class ContactSyncNode: ASDisplayNode {
 }
 
 final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
+    private let sharedContext: SharedAccountContext
+    private var account: UnauthorizedAccount
     private let strings: PresentationStrings
     private let theme: PresentationTheme
     private let hasOtherAccounts: Bool
@@ -208,6 +215,11 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
     private let noticeNode: ASTextNode
     private let phoneAndCountryNode: PhoneAndCountryNode
     private let contactSyncNode: ContactSyncNode
+    
+    private var qrNode: ASImageNode?
+    private let exportTokenDisposable = MetaDisposable()
+    private let tokenEventsDisposable = MetaDisposable()
+    var accountUpdated: ((UnauthorizedAccount) -> Void)?
     
     private let debugAction: () -> Void
     
@@ -244,7 +256,10 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         }
     }
     
-    init(strings: PresentationStrings, theme: PresentationTheme, debugAction: @escaping () -> Void, hasOtherAccounts: Bool) {
+    init(sharedContext: SharedAccountContext, account: UnauthorizedAccount, strings: PresentationStrings, theme: PresentationTheme, debugAction: @escaping () -> Void, hasOtherAccounts: Bool) {
+        self.sharedContext = sharedContext
+        self.account = account
+        
         self.strings = strings
         self.theme = theme
         self.debugAction = debugAction
@@ -256,7 +271,7 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         self.titleNode.attributedText = NSAttributedString(string: strings.Login_PhoneTitle, font: Font.light(30.0), textColor: theme.list.itemPrimaryTextColor)
         
         self.noticeNode = ASTextNode()
-        self.noticeNode.isUserInteractionEnabled = false
+        self.noticeNode.isUserInteractionEnabled = true
         self.noticeNode.displaysAsynchronously = false
         self.noticeNode.attributedText = NSAttributedString(string: strings.Login_PhoneAndCountryHelp, font: Font.regular(16.0), textColor: theme.list.itemPrimaryTextColor, paragraphAlignment: .center)
         
@@ -284,24 +299,33 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         self.phoneAndCountryNode.checkPhone = { [weak self] in
             self?.checkPhone?()
         }
+        
+        self.tokenEventsDisposable.set((account.updateLoginTokenEvents
+        |> deliverOnMainQueue).start(next: { [weak self] _ in
+            self?.refreshQrToken()
+        }))
+    }
+    
+    deinit {
+        self.exportTokenDisposable.dispose()
+        self.tokenEventsDisposable.dispose()
     }
     
     override func didLoad() {
         super.didLoad()
         
         self.titleNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.debugTap(_:))))
+        #if DEBUG
+        self.noticeNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.debugQrTap(_:))))
+        #endif
     }
     
     func containerLayoutUpdated(_ layout: ContainerViewLayout, navigationBarHeight: CGFloat, transition: ContainedViewLayoutTransition) {
         var insets = layout.insets(options: [])
         insets.top = navigationBarHeight
         
-        if let inputHeight = layout.inputHeight {
-            if abs(inputHeight - (layout.standardInputHeight - 44.0)) < 2.0 {
-                insets.bottom += layout.standardInputHeight
-            } else {
-                insets.bottom += inputHeight
-            }
+        if let inputHeight = layout.inputHeight, !inputHeight.isZero {
+            insets.bottom += max(inputHeight, layout.standardInputHeight)
         }
         
         if max(layout.size.width, layout.size.height) > 1023.0 {
@@ -358,5 +382,81 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
                 self.debugAction()
             }
         }
+    }
+    
+    @objc private func debugQrTap(_ recognizer: UITapGestureRecognizer) {
+        if self.qrNode == nil {
+            let qrNode = ASImageNode()
+            qrNode.frame = CGRect(origin: CGPoint(x: 16.0, y: 64.0 + 16.0), size: CGSize(width: 200.0, height: 200.0))
+            self.qrNode = qrNode
+            self.addSubnode(qrNode)
+            
+            self.refreshQrToken()
+        }
+    }
+    
+    private func refreshQrToken() {
+        let sharedContext = self.sharedContext
+        let account = self.account
+        let tokenSignal = sharedContext.activeAccounts
+            |> castError(ExportAuthTransferTokenError.self)
+        |> take(1)
+        |> mapToSignal { activeAccountsAndInfo -> Signal<ExportAuthTransferTokenResult, ExportAuthTransferTokenError> in
+            let (primary, activeAccounts, _) = activeAccountsAndInfo
+            var activeProductionUserIds = activeAccounts.map({ $0.1 }).filter({ !$0.testingEnvironment }).map({ $0.peerId.id })
+            var activeTestingUserIds = activeAccounts.map({ $0.1 }).filter({ $0.testingEnvironment }).map({ $0.peerId.id })
+            
+            let allProductionUserIds = activeProductionUserIds
+            let allTestingUserIds = activeTestingUserIds
+            
+            return exportAuthTransferToken(accountManager: sharedContext.accountManager, account: account, otherAccountUserIds: account.testingEnvironment ? allTestingUserIds : allProductionUserIds, syncContacts: true)
+        }
+        
+        self.exportTokenDisposable.set((tokenSignal
+        |> deliverOnMainQueue).start(next: { [weak self] result in
+            guard let strongSelf = self else {
+                return
+            }
+            switch result {
+            case let .displayToken(token):
+                var tokenString = token.value.base64EncodedString()
+                print("export token \(tokenString)")
+                tokenString = tokenString.replacingOccurrences(of: "+", with: "-")
+                tokenString = tokenString.replacingOccurrences(of: "/", with: "_")
+                let urlString = "tg://login?token=\(tokenString)"
+                let _ = (qrCode(string: urlString, color: .black, backgroundColor: .white, icon: .none)
+                |> deliverOnMainQueue).start(next: { _, generate in
+                    guard let strongSelf = self else {
+                        return
+                    }
+                    
+                    let context = generate(TransformImageArguments(corners: ImageCorners(), imageSize: CGSize(width: 200.0, height: 200.0), boundingSize: CGSize(width: 200.0, height: 200.0), intrinsicInsets: UIEdgeInsets()))
+                    if let image = context?.generateImage() {
+                        strongSelf.qrNode?.image = image
+                    }
+                })
+                
+                let timestamp = Int32(Date().timeIntervalSince1970)
+                let timeout = max(5, token.validUntil - timestamp)
+                strongSelf.exportTokenDisposable.set((Signal<Never, NoError>.complete()
+                |> delay(Double(timeout), queue: .mainQueue())).start(completed: {
+                    guard let strongSelf = self else {
+                        return
+                    }
+                    strongSelf.refreshQrToken()
+                }))
+            case let .changeAccountAndRetry(account):
+                strongSelf.exportTokenDisposable.set(nil)
+                strongSelf.account = account
+                strongSelf.accountUpdated?(account)
+                strongSelf.tokenEventsDisposable.set((account.updateLoginTokenEvents
+                |> deliverOnMainQueue).start(next: { _ in
+                    self?.refreshQrToken()
+                }))
+                strongSelf.refreshQrToken()
+            case .loggedIn, .passwordRequested:
+                strongSelf.exportTokenDisposable.set(nil)
+            }
+        }))
     }
 }

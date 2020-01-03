@@ -1,10 +1,12 @@
 import Foundation
 import UIKit
 import TelegramCore
+import SyncCore
 import AsyncDisplayKit
 import Display
 import TelegramPresentationData
 import TelegramStringFormatting
+import TelegramUIPreferences
 import AccountContext
 
 final class DisabledContextResultsChatInputContextPanelNode: ChatInputContextPanelNode {
@@ -12,16 +14,16 @@ final class DisabledContextResultsChatInputContextPanelNode: ChatInputContextPan
     private let separatorNode: ASDisplayNode
     private let textNode: ImmediateTextNode
     
-    private var validLayout: (CGSize, CGFloat, CGFloat)?
+    private var validLayout: (CGSize, CGFloat, CGFloat, CGFloat)?
     
-    override init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings) {
+    override init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, fontSize: PresentationFontSize) {
         self.containerNode = ASDisplayNode()
         self.separatorNode = ASDisplayNode()
         self.textNode = ImmediateTextNode()
         self.textNode.maximumNumberOfLines = 0
         self.textNode.textAlignment = .center
         
-        super.init(context: context, theme: theme, strings: strings)
+        super.init(context: context, theme: theme, strings: strings, fontSize: fontSize)
         
         self.isOpaque = false
         self.clipsToBounds = true
@@ -31,10 +33,10 @@ final class DisabledContextResultsChatInputContextPanelNode: ChatInputContextPan
         self.addSubnode(self.containerNode)
     }
     
-    override func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState) {
+    override func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState) {
         let firstLayout = self.validLayout == nil
         
-        self.validLayout = (size, leftInset, rightInset)
+        self.validLayout = (size, leftInset, rightInset, bottomInset)
         
         self.containerNode.backgroundColor = interfaceState.theme.list.plainBackgroundColor
         self.separatorNode.backgroundColor = interfaceState.theme.list.itemPlainSeparatorColor

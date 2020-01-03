@@ -7,6 +7,8 @@ import TextFormat
 import TelegramPermissions
 import PeersNearbyIconNode
 import SolidRoundedButtonNode
+import PresentationDataUtils
+import Markdown
 
 public enum PermissionContentIcon {
     case image(UIImage?)
@@ -83,7 +85,7 @@ public final class PermissionContentNode: ASDisplayNode {
         self.textNode.maximumNumberOfLines = 0
         self.textNode.displaysAsynchronously = false
         
-        self.actionButton = SolidRoundedButtonNode(theme: theme, height: 48.0, cornerRadius: 9.0, gloss: true)
+        self.actionButton = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(theme: theme), height: 48.0, cornerRadius: 9.0, gloss: true)
         
         self.footerNode = ImmediateTextNode()
         self.footerNode.textAlignment = .center

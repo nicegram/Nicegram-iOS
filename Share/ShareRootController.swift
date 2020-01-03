@@ -6,6 +6,16 @@ import BuildConfig
 class ShareRootController: UIViewController {
     private var impl: ShareRootControllerImpl?
     
+    override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
+        super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
+        
+        self.modalPresentationStyle = .fullScreen
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
     override func loadView() {
         super.loadView()
         
@@ -35,7 +45,7 @@ class ShareRootController: UIViewController {
             
             let appVersion = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "unknown"
             
-            self.impl = ShareRootControllerImpl(initializationData: ShareRootControllerInitializationData(appGroupPath: appGroupUrl.path, apiId: buildConfig.apiId, languagesCategory: languagesCategory, encryptionParameters: encryptionParameters, appVersion: appVersion, bundleData: buildConfig.bundleData(withAppToken: nil)), getExtensionContext: { [weak self] in
+            self.impl = ShareRootControllerImpl(initializationData: ShareRootControllerInitializationData(appGroupPath: appGroupUrl.path, apiId: buildConfig.apiId, apiHash: buildConfig.apiHash, languagesCategory: languagesCategory, encryptionParameters: encryptionParameters, appVersion: appVersion, bundleData: buildConfig.bundleData(withAppToken: nil, signatureDict: nil)), getExtensionContext: { [weak self] in
                 return self?.extensionContext
             })
         }
@@ -55,6 +65,6 @@ class ShareRootController: UIViewController {
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        self.impl?.viewDidLayoutSubviews(view: self.view)
+        self.impl?.viewDidLayoutSubviews(view: self.view, traitCollection: self.traitCollection)
     }
 }

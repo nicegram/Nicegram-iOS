@@ -5,11 +5,13 @@ import Display
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import AvatarNode
 import AccountContext
+import PhoneNumberFormat
 
-private let avatarFont = UIFont(name: ".SFCompactRounded-Semibold", size: 16.0)!
+private let avatarFont = avatarPlaceholderFont(size: 16.0)
 
 private let titleFont = Font.medium(14.0)
 private let textFont = Font.regular(14.0)
@@ -300,7 +302,7 @@ class ChatMessageContactBubbleContentNode: ChatMessageBubbleContentNode {
                             }
                             
                             if let peerId = selectedContact?.peerId, let peer = item.message.peers[peerId] {
-                                strongSelf.avatarNode.setPeer(account: item.context.account, theme: item.presentationData.theme.theme, peer: peer, emptyColor: avatarPlaceholderColor, synchronousLoad: synchronousLoads)
+                                strongSelf.avatarNode.setPeer(context: item.context, theme: item.presentationData.theme.theme, peer: peer, emptyColor: avatarPlaceholderColor, synchronousLoad: synchronousLoads)
                             } else {
                                 strongSelf.avatarNode.setCustomLetters(customLetters)
                             }
@@ -344,7 +346,7 @@ class ChatMessageContactBubbleContentNode: ChatMessageBubbleContentNode {
         }
     }
     
-    override func reactionTargetNode(value: String) -> (ASImageNode, Int)? {
+    override func reactionTargetNode(value: String) -> (ASDisplayNode, Int)? {
         if !self.dateAndStatusNode.isHidden {
             return self.dateAndStatusNode.reactionNode(value: value)
         }

@@ -4,13 +4,16 @@ import AsyncDisplayKit
 import Display
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import AccountContext
 import RadialStatusNode
 import PhotoResources
 import MediaResources
+import LocationResources
 import LiveLocationPositionNode
+import AppBundle
 
 private struct FetchControls {
     let fetch: (Bool) -> Void
@@ -197,7 +200,7 @@ final class InstantPageImageNode: ASDisplayNode, InstantPageNode {
             self.statusNode.frame = CGRect(x: floorToScreenPixels((size.width - radialStatusSize) / 2.0), y: floorToScreenPixels((size.height - radialStatusSize) / 2.0), width: radialStatusSize, height: radialStatusSize)
             
             if let image = self.media.media as? TelegramMediaImage, let largest = largestImageRepresentation(image.representations) {
-                let imageSize = largest.dimensions.aspectFilled(size)
+                let imageSize = largest.dimensions.cgSize.aspectFilled(size)
                 let boundingSize = size
                 let radius: CGFloat = self.roundCorners ? floor(min(imageSize.width, imageSize.height) / 2.0) : 0.0
                 let makeLayout = self.imageNode.asyncLayout()
@@ -208,7 +211,7 @@ final class InstantPageImageNode: ASDisplayNode, InstantPageNode {
             } else if let file = self.media.media as? TelegramMediaFile, let dimensions = file.dimensions {
                 let emptyColor = file.mimeType.hasPrefix("image/") ? self.theme.imageTintColor : nil
 
-                let imageSize = dimensions.aspectFilled(size)
+                let imageSize = dimensions.cgSize.aspectFilled(size)
                 let boundingSize = size
                 let makeLayout = self.imageNode.asyncLayout()
                 let apply = makeLayout(TransformImageArguments(corners: ImageCorners(), imageSize: imageSize, boundingSize: boundingSize, intrinsicInsets: UIEdgeInsets(), emptyColor: emptyColor))
@@ -228,11 +231,11 @@ final class InstantPageImageNode: ASDisplayNode, InstantPageNode {
                 
                 let makePinLayout = self.pinNode.asyncLayout()
                 let theme = self.context.sharedContext.currentPresentationData.with { $0 }.theme
-                let (pinSize, pinApply) = makePinLayout(self.context.account, theme, nil, false)
+                let (pinSize, pinApply) = makePinLayout(self.context, theme, .location(nil))
                 self.pinNode.frame = CGRect(origin: CGPoint(x: floor((size.width - pinSize.width) / 2.0), y: floor(size.height * 0.5 - 10.0 - pinSize.height / 2.0)), size: pinSize)
                 pinApply()
             } else if let webPage = media.media as? TelegramMediaWebpage, case let .Loaded(content) = webPage.content, let image = content.image, let largest = largestImageRepresentation(image.representations) {
-                let imageSize = largest.dimensions.aspectFilled(size)
+                let imageSize = largest.dimensions.cgSize.aspectFilled(size)
                 let boundingSize = size
                 let radius: CGFloat = self.roundCorners ? floor(min(imageSize.width, imageSize.height) / 2.0) : 0.0
                 let makeLayout = self.imageNode.asyncLayout()
@@ -242,10 +245,10 @@ final class InstantPageImageNode: ASDisplayNode, InstantPageNode {
         }
     }
     
-    func transitionNode(media: InstantPageMedia) -> (ASDisplayNode, () -> (UIView?, UIView?))? {
+    func transitionNode(media: InstantPageMedia) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         if media == self.media {
             let imageNode = self.imageNode
-            return (self.imageNode, { [weak imageNode] in
+            return (self.imageNode, self.imageNode.bounds, { [weak imageNode] in
                 return (imageNode?.view.snapshotContentTree(unhide: true), nil)
             })
         } else {

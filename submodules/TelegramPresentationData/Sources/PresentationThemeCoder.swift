@@ -1,5 +1,8 @@
 import Foundation
+import UIKit
 import TelegramCore
+import SyncCore
+import TelegramUIPreferences
 
 public func encodePresentationTheme(_ theme: PresentationTheme) -> String? {
     let encoding = PresentationThemeEncoding()
@@ -111,6 +114,23 @@ fileprivate class PresentationThemeEncoding: Encoder {
         return container
     }
     
+    private func dictionaryForNodes(_ nodes: [Node]) -> [String: Any] {
+        var dictionary: [String: Any] = [:]
+        for node in nodes {
+            var value: Any?
+            switch node.value {
+                case let .string(string):
+                    value = string
+                case let .subnode(subnodes):
+                    value = dictionaryForNodes(subnodes)
+            }
+            if let key = node.key {
+                dictionary[key] = value
+            }
+        }
+        return dictionary
+    }
+    
     func entry(for codingKey: [String]) -> Any? {
         var currentNode: Node = self.data.rootNode
         for component in codingKey {
@@ -121,8 +141,8 @@ fileprivate class PresentationThemeEncoding: Encoder {
                             if component == codingKey.last {
                                 if case let .string(string) = node.value {
                                     return string
-                                } else {
-                                    return nil
+                                } else if case let .subnode(nodes) = node.value {
+                                    return dictionaryForNodes(nodes)
                                 }
                             } else {
                                 currentNode = node
@@ -322,7 +342,7 @@ private class PresentationThemeDecodingLevel {
     }
 }
 
-public func makePresentationTheme(data: Data, resolvedWallpaper: TelegramWallpaper? = nil) -> PresentationTheme? {
+public func makePresentationTheme(data: Data, themeReference: PresentationThemeReference? = nil, resolvedWallpaper: TelegramWallpaper? = nil) -> PresentationTheme? {
     guard let string = String(data: data, encoding: .utf8) else {
         return nil
     }
@@ -332,6 +352,10 @@ public func makePresentationTheme(data: Data, resolvedWallpaper: TelegramWallpap
     var currentLevel = topLevel
     
     for line in lines {
+        let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+        if trimmedLine.hasPrefix("#") || trimmedLine.hasPrefix("//") {
+            continue
+        }
         if let rangeOfColon = line.firstIndex(of: ":") {
             let key = line.prefix(upTo: rangeOfColon)
             
@@ -379,6 +403,7 @@ public func makePresentationTheme(data: Data, resolvedWallpaper: TelegramWallpap
     }
     
     let decoder = PresentationThemeDecoding(referencing: topLevel.data)
+    decoder.reference = themeReference
     decoder.resolvedWallpaper = resolvedWallpaper
     if let value = try? decoder.unbox(topLevel.data, as: PresentationTheme.self) {
         return value
@@ -395,9 +420,11 @@ class PresentationThemeDecoding: Decoder {
         return [:]
     }
     
+    var reference: PresentationThemeReference?
     var referenceTheme: PresentationTheme?
     var serviceBackgroundColor: UIColor?
     var resolvedWallpaper: TelegramWallpaper?
+    var fallbackKeys: [String: String] = [:]
 
     private var _referenceCoding: PresentationThemeEncoding?
     fileprivate var referenceCoding: PresentationThemeEncoding? {
@@ -504,14 +531,43 @@ fileprivate struct PresentationThemeKeyedDecodingContainer<K : CodingKey>: Keyed
 
         return entry is NSNull
     }
-
-    public func decode(_ type: Bool.Type, forKey key: Key) throws -> Bool {
+        
+    private func storageEntry(forKey key: [String]) -> Any? {
+        if let container = self.decoder.storage.containers.first as? [String: Any] {
+            func entry(container: [String: Any], forKey key: [String]) -> Any? {
+                if let keyComponent = key.first, let value = container[keyComponent] {
+                    if key.count == 1 {
+                        return value
+                    } else if let subContainer = value as? [String: Any] {
+                        return entry(container: subContainer, forKey: Array(key.suffix(from: 1)))
+                    }
+                }
+                return nil
+            }
+            return entry(container: container, forKey: key)
+        } else {
+            return nil
+        }
+    }
+    
+    private func containerEntry(forKey key: Key) -> Any? {
         var containerEntry: Any? = self.container[key.stringValue]
         if containerEntry == nil {
-            containerEntry = self.decoder.referenceCoding?.entry(for: self.codingPath.map { $0.stringValue } + [key.stringValue])
+            let initialKey = self.codingPath.map { $0.stringValue } + [key.stringValue]
+            let initialKeyString = initialKey.joined(separator: ".")
+            if let fallbackKeyString = self.decoder.fallbackKeys[initialKeyString] {
+                let fallbackKey = fallbackKeyString.components(separatedBy: ".")
+                containerEntry = self.storageEntry(forKey: fallbackKey)
+            }
+            if containerEntry == nil {
+                containerEntry = self.decoder.referenceCoding?.entry(for: initialKey)
+            }
         }
-        
-        guard let entry = containerEntry else {
+        return containerEntry
+    }
+    
+    public func decode(_ type: Bool.Type, forKey key: Key) throws -> Bool {
+        guard let entry = self.containerEntry(forKey: key) else {
             throw PresentationThemeDecodingError.keyNotFound
         }
 
@@ -526,12 +582,7 @@ fileprivate struct PresentationThemeKeyedDecodingContainer<K : CodingKey>: Keyed
     }
 
     public func decode(_ type: Int32.Type, forKey key: Key) throws -> Int32 {
-        var containerEntry: Any? = self.container[key.stringValue]
-        if containerEntry == nil {
-            containerEntry = self.decoder.referenceCoding?.entry(for: self.codingPath.map { $0.stringValue } + [key.stringValue])
-        }
-        
-        guard let entry = containerEntry else {
+        guard let entry = self.containerEntry(forKey: key) else {
             throw PresentationThemeDecodingError.keyNotFound
         }
 
@@ -546,12 +597,7 @@ fileprivate struct PresentationThemeKeyedDecodingContainer<K : CodingKey>: Keyed
     }
 
     public func decode(_ type: String.Type, forKey key: Key) throws -> String {
-        var containerEntry: Any? = self.container[key.stringValue]
-        if containerEntry == nil {
-            containerEntry = self.decoder.referenceCoding?.entry(for: self.codingPath.map { $0.stringValue } + [key.stringValue])
-        }
-        
-        guard let entry = containerEntry else {
+        guard let entry = self.containerEntry(forKey: key) else {
             throw PresentationThemeDecodingError.keyNotFound
         }
 
@@ -566,12 +612,7 @@ fileprivate struct PresentationThemeKeyedDecodingContainer<K : CodingKey>: Keyed
     }
 
     public func decode<T : Decodable>(_ type: T.Type, forKey key: Key) throws -> T {
-        var containerEntry: Any? = self.container[key.stringValue]
-        if containerEntry == nil {
-            containerEntry = self.decoder.referenceCoding?.entry(for: self.codingPath.map { $0.stringValue } + [key.stringValue])
-        }
-        
-        guard let entry = containerEntry else {
+        guard let entry = self.containerEntry(forKey: key) else {
             throw PresentationThemeDecodingError.keyNotFound
         }
 

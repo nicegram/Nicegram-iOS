@@ -3,12 +3,14 @@ import UIKit
 import AsyncDisplayKit
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import AccountContext
 import SearchBarNode
 import SearchUI
 import ContactListUI
+import AppBundle
 
 final class ComposeControllerNode: ASDisplayNode {
     let contactListNode: ContactListNode
@@ -120,7 +122,7 @@ final class ComposeControllerNode: ASDisplayNode {
             if let requestOpenPeerFromSearch = self?.requestOpenPeerFromSearch, case let .peer(peer, _, _) = peer {
                 requestOpenPeerFromSearch(peer.id)
             }
-        }), cancel: { [weak self] in
+        }, contextAction: nil), cancel: { [weak self] in
             self?.requestDeactivateSearch?()
         })
         

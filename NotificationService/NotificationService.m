@@ -1,12 +1,20 @@
 #import "NotificationService.h"
 
+#import <mach/mach.h>
+
 #import <UIKit/UIKit.h>
 #import <BuildConfig/BuildConfig.h>
+
+#ifdef __IPHONE_13_0
+#import <BackgroundTasks/BackgroundTasks.h>
+#endif
 
 #import "StoredAccountInfos.h"
 #import "Attachments.h"
 #import "Api.h"
 #import "FetchImage.h"
+
+#import "NotificationService-Bridging-Header.h"
 
 static NSData * _Nullable parseBase64(NSString *string) {
     string = [string stringByReplacingOccurrencesOfString:@"-" withString:@"+"];
@@ -28,21 +36,51 @@ static int64_t makePeerId(int32_t namespace, int32_t value) {
     return (((int64_t)(namespace)) << 32) | ((int64_t)((uint64_t)((uint32_t)value)));
 }
 
-@interface NotificationService () {
+#if DEBUG
+static void reportMemory() {
+    struct task_basic_info info;
+    mach_msg_type_number_t size = TASK_BASIC_INFO_COUNT;
+    kern_return_t kerr = task_info(mach_task_self(), TASK_BASIC_INFO, (task_info_t)&info, &size);
+    if (kerr == KERN_SUCCESS) {
+        NSLog(@"Memory in use (in bytes): %lu", info.resident_size);
+        NSLog(@"Memory in use (in MiB): %f", ((CGFloat)info.resident_size / 1048576));
+    } else {
+        NSLog(@"Error with task_info(): %s", mach_error_string(kerr));
+    }
+}
+#endif
+
+@interface NotificationServiceImpl () {
+    void (^_serialDispatch)(dispatch_block_t);
+    void (^_countIncomingMessage)(NSString *, int64_t, DeviceSpecificEncryptionParameters *, int64_t, int32_t);
+    
     NSString * _Nullable _rootPath;
+    DeviceSpecificEncryptionParameters * _Nullable _deviceSpecificEncryptionParameters;
+    bool _isLockedValue;
+    NSString *_lockedMessageTextValue;
     NSString * _Nullable _baseAppBundleId;
     void (^_contentHandler)(UNNotificationContent *);
     UNMutableNotificationContent * _Nullable _bestAttemptContent;
     void (^_cancelFetch)(void);
+    
+    NSNumber * _Nullable _updatedUnreadCount;
+    bool _contentReady;
 }
 
 @end
 
-@implementation NotificationService
+@implementation NotificationServiceImpl
 
-- (instancetype)init {
+- (instancetype)initWithSerialDispatch:(void (^)(dispatch_block_t))serialDispatch countIncomingMessage:(void (^)(NSString *, int64_t, DeviceSpecificEncryptionParameters *, int64_t, int32_t))countIncomingMessage isLocked:(nonnull bool (^)(NSString * _Nonnull))isLocked lockedMessageText:(NSString *(^)(NSString *))lockedMessageText {
     self = [super init];
     if (self != nil) {
+        #if DEBUG
+        reportMemory();
+        #endif
+        
+        _serialDispatch = [serialDispatch copy];
+        _countIncomingMessage = [countIncomingMessage copy];
+        
         NSString *appBundleIdentifier = [NSBundle mainBundle].bundleIdentifier;
         NSRange lastDotRange = [appBundleIdentifier rangeOfString:@"." options:NSBackwardsSearch];
         if (lastDotRange.location != NSNotFound) {
@@ -53,6 +91,14 @@ static int64_t makePeerId(int32_t namespace, int32_t value) {
             if (appGroupUrl != nil) {
                 NSString *rootPath = [[appGroupUrl path] stringByAppendingPathComponent:@"telegram-data"];
                 _rootPath = rootPath;
+                if (rootPath != nil) {
+                    _deviceSpecificEncryptionParameters = [BuildConfig deviceSpecificEncryptionParameters:rootPath baseAppBundleId:_baseAppBundleId];
+                    
+                    _isLockedValue = isLocked(rootPath);
+                    if (_isLockedValue) {
+                        _lockedMessageTextValue = lockedMessageText(rootPath);
+                    }
+                }
             } else {
                 NSAssert(false, @"appGroupUrl == nil");
             }
@@ -63,9 +109,58 @@ static int64_t makePeerId(int32_t namespace, int32_t value) {
     return self;
 }
 
+- (void)completeWithBestAttemptContent {
+    _contentReady = true;
+    _updatedUnreadCount = @(-1);
+    if (_contentReady && _updatedUnreadCount) {
+        [self _internalComplete];
+    }
+}
+
+- (void)updateUnreadCount:(int32_t)unreadCount {
+    _updatedUnreadCount = @(unreadCount);
+    if (_contentReady && _updatedUnreadCount) {
+        [self _internalComplete];
+    }
+}
+ 
+- (void)_internalComplete {
+    #if DEBUG
+    reportMemory();
+    #endif
+    
+    NSString *baseAppBundleId = _baseAppBundleId;
+    void (^contentHandler)(UNNotificationContent *) = [_contentHandler copy];
+    UNMutableNotificationContent *bestAttemptContent = _bestAttemptContent;
+    NSNumber *updatedUnreadCount = updatedUnreadCount;
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        #ifdef __IPHONE_13_0
+        if (baseAppBundleId != nil && false) {
+            BGAppRefreshTaskRequest *request = [[BGAppRefreshTaskRequest alloc] initWithIdentifier:[baseAppBundleId stringByAppendingString:@".refresh"]];
+            request.earliestBeginDate = nil;
+            NSError *error = nil;
+            [[BGTaskScheduler sharedScheduler] submitTaskRequest:request error:&error];
+            if (error != nil) {
+                NSLog(@"Error: %@", error);
+            }
+        }
+        #endif
+        
+        if (updatedUnreadCount != nil) {
+            int32_t unreadCount = (int32_t)[updatedUnreadCount intValue];
+            if (unreadCount > 0) {
+                bestAttemptContent.badge = @(unreadCount);
+            }
+        }
+        contentHandler(bestAttemptContent);
+    });
+}
+
 - (void)didReceiveNotificationRequest:(UNNotificationRequest *)request withContentHandler:(void (^)(UNNotificationContent * _Nonnull))contentHandler {
     if (_rootPath == nil) {
-        contentHandler(request.content);
+        _bestAttemptContent = request.content;
+        [self completeWithBestAttemptContent];
         return;
     }
     
@@ -122,18 +217,25 @@ static int64_t makePeerId(int32_t namespace, int32_t value) {
             peerId = makePeerId(PeerNamespaceCloudChannel, [channelIdString intValue]);
         }
         
+        /*if (_countIncomingMessage && _deviceSpecificEncryptionParameters) {
+            _countIncomingMessage(_rootPath, account.accountId, _deviceSpecificEncryptionParameters, peerId, messageId);
+        }*/
+        
         NSString *silentString = decryptedPayload[@"silent"];
         if ([silentString isKindOfClass:[NSString class]]) {
             silent = [silentString intValue] != 0;
         }
         
-        NSString *attachmentDataString = decryptedPayload[@"attachb64"];
         NSData *attachmentData = nil;
         id parsedAttachment = nil;
-        if ([attachmentDataString isKindOfClass:[NSString class]]) {
-            attachmentData = parseBase64(attachmentDataString);
-            if (attachmentData != nil) {
-                parsedAttachment = parseAttachment(attachmentData);
+        
+        if (!_isLockedValue) {
+            NSString *attachmentDataString = decryptedPayload[@"attachb64"];
+            if ([attachmentDataString isKindOfClass:[NSString class]]) {
+                attachmentData = parseBase64(attachmentDataString);
+                if (attachmentData != nil) {
+                    parsedAttachment = parseAttachment(attachmentData);
+                }
             }
         }
         
@@ -224,45 +326,71 @@ static int64_t makePeerId(int32_t namespace, int32_t value) {
                     title = [title stringByAppendingString:@" 🔕"];
                 }
                 _bestAttemptContent.title = title;
-                _bestAttemptContent.subtitle = subtitle;
-                _bestAttemptContent.body = body;
+                if (_isLockedValue) {
+                    _bestAttemptContent.title = @"";
+                    _bestAttemptContent.subtitle = @"";
+                    if (_lockedMessageTextValue != nil) {
+                        _bestAttemptContent.body = _lockedMessageTextValue;
+                    } else {
+                        _bestAttemptContent.body = @"^You have a new message";
+                    }
+                } else {
+                    _bestAttemptContent.subtitle = subtitle;
+                    _bestAttemptContent.body = body;
+                }
             } else if ([alert isKindOfClass:[NSString class]]) {
                 _bestAttemptContent.title = @"";
                 _bestAttemptContent.subtitle = @"";
-                _bestAttemptContent.body = alert;
+                if (_isLockedValue) {
+                    if (_lockedMessageTextValue != nil) {
+                        _bestAttemptContent.body = _lockedMessageTextValue;
+                    } else {
+                        _bestAttemptContent.body = @"^You have a new message";
+                    }
+                } else {
+                    _bestAttemptContent.body = alert;
+                }
             }
             
-            NSString *threadIdString = aps[@"thread-id"];
-            if ([threadIdString isKindOfClass:[NSString class]]) {
-                _bestAttemptContent.threadIdentifier = threadIdString;
+            if (_isLockedValue) {
+                _bestAttemptContent.threadIdentifier = @"locked";
+            } else {
+                NSString *threadIdString = aps[@"thread-id"];
+                if ([threadIdString isKindOfClass:[NSString class]]) {
+                    _bestAttemptContent.threadIdentifier = threadIdString;
+                }
             }
             NSString *soundString = aps[@"sound"];
             if ([soundString isKindOfClass:[NSString class]]) {
                 _bestAttemptContent.sound = [UNNotificationSound soundNamed:soundString];
             }
-            NSString *categoryString = aps[@"category"];
-            if ([categoryString isKindOfClass:[NSString class]]) {
-                _bestAttemptContent.categoryIdentifier = categoryString;
-                if (peerId != 0 && messageId != 0 && parsedAttachment != nil && attachmentData != nil) {
-                    userInfo[@"peerId"] = @(peerId);
-                    userInfo[@"messageId.namespace"] = @(0);
-                    userInfo[@"messageId.id"] = @(messageId);
-                    
-                    userInfo[@"media"] = [attachmentData base64EncodedStringWithOptions:0];
-                    
-                    if (isExpandableMedia) {
-                        if ([categoryString isEqualToString:@"r"]) {
-                            _bestAttemptContent.categoryIdentifier = @"withReplyMedia";
-                        } else if ([categoryString isEqualToString:@"m"]) {
-                            _bestAttemptContent.categoryIdentifier = @"withMuteMedia";
+            if (_isLockedValue) {
+                _bestAttemptContent.categoryIdentifier = @"locked";
+            } else {
+                NSString *categoryString = aps[@"category"];
+                if ([categoryString isKindOfClass:[NSString class]]) {
+                    _bestAttemptContent.categoryIdentifier = categoryString;
+                    if (peerId != 0 && messageId != 0 && parsedAttachment != nil && attachmentData != nil) {
+                        userInfo[@"peerId"] = @(peerId);
+                        userInfo[@"messageId.namespace"] = @(0);
+                        userInfo[@"messageId.id"] = @(messageId);
+                        
+                        userInfo[@"media"] = [attachmentData base64EncodedStringWithOptions:0];
+                        
+                        if (isExpandableMedia) {
+                            if ([categoryString isEqualToString:@"r"]) {
+                                _bestAttemptContent.categoryIdentifier = @"withReplyMedia";
+                            } else if ([categoryString isEqualToString:@"m"]) {
+                                _bestAttemptContent.categoryIdentifier = @"withMuteMedia";
+                            }
                         }
                     }
                 }
-            }
-            
-            if (accountInfos.accounts.count > 1) {
-                if (_bestAttemptContent.title.length != 0 && account.peerName.length != 0) {
-                    _bestAttemptContent.title = [NSString stringWithFormat:@"%@ → %@", _bestAttemptContent.title, account.peerName];
+                
+                if (accountInfos.accounts.count > 1) {
+                    if (_bestAttemptContent.title.length != 0 && account.peerName.length != 0) {
+                        _bestAttemptContent.title = [NSString stringWithFormat:@"%@ → %@", _bestAttemptContent.title, account.peerName];
+                    }
                 }
             }
         }
@@ -289,16 +417,16 @@ static int64_t makePeerId(int32_t namespace, int32_t value) {
                         _bestAttemptContent.attachments = @[attachment];
                     }
                 }
-                if (_contentHandler && _bestAttemptContent != nil) {
-                    _contentHandler(_bestAttemptContent);
-                }
+                [self completeWithBestAttemptContent];
             } else {
                 BuildConfig *buildConfig = [[BuildConfig alloc] initWithBaseAppBundleId:_baseAppBundleId];
                 
-                __weak NotificationService *weakSelf = self;
+                void (^serialDispatch)(dispatch_block_t) = _serialDispatch;
+                
+                __weak typeof(self) weakSelf = self;
                 _cancelFetch = fetchImage(buildConfig, accountInfos.proxy, account, inputFileLocation, fileDatacenterId, ^(NSData * _Nullable data) {
-                    dispatch_async(dispatch_get_main_queue(), ^{
-                        __strong NotificationService *strongSelf = weakSelf;
+                    serialDispatch(^{
+                        __strong typeof(weakSelf) strongSelf = weakSelf;
                         if (strongSelf == nil) {
                             return;
                         }
@@ -321,23 +449,16 @@ static int64_t makePeerId(int32_t namespace, int32_t value) {
                                     }
                                 }
                             }
-                            
-                            if (strongSelf->_contentHandler && strongSelf->_bestAttemptContent != nil) {
-                                strongSelf->_contentHandler(strongSelf->_bestAttemptContent);
-                            }
+                            [strongSelf completeWithBestAttemptContent];
                         }
                     });
                 });
             }
         } else {
-            if (_contentHandler && _bestAttemptContent != nil) {
-                _contentHandler(_bestAttemptContent);
-            }
+            [self completeWithBestAttemptContent];
         }
     } else {
-        if (_contentHandler && _bestAttemptContent != nil) {
-            _contentHandler(_bestAttemptContent);
-        }
+        [self completeWithBestAttemptContent];
     }
 }
 
@@ -349,8 +470,10 @@ static int64_t makePeerId(int32_t namespace, int32_t value) {
     
     if (_contentHandler) {
         if(_bestAttemptContent) {
-            _contentHandler(_bestAttemptContent);
-            _bestAttemptContent = nil;
+            if (_updatedUnreadCount == nil) {
+                _updatedUnreadCount = @(-1);
+            }
+            [self completeWithBestAttemptContent];
         }
         _contentHandler = nil;
     }

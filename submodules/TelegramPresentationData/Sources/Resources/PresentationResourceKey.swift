@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 public struct PresentationResources {
 }
@@ -26,16 +27,12 @@ public enum PresentationResourceKey: Int32 {
     
     case navigationPlayerPlayIcon
     case navigationPlayerPauseIcon
-    case navigationPlayerMaximizedPlayIcon
-    case navigationPlayerMaximizedPauseIcon
-    case navigationPlayerMaximizedPreviousIcon
-    case navigationPlayerMaximizedNextIcon
-    case navigationPlayerMaximizedShuffleIcon
-    case navigationPlayerMaximizedRepeatIcon
-    case navigationPlayerHandleIcon
     case navigationPlayerRateActiveIcon
     case navigationPlayerRateInactiveIcon
+    case navigationPlayerMaximizedRateActiveIcon
+    case navigationPlayerMaximizedRateInactiveIcon
     
+    case itemListDownArrow
     case itemListDisclosureArrow
     case itemListCheckIcon
     case itemListSecondaryCheckIcon
@@ -47,13 +44,13 @@ public enum PresentationResourceKey: Int32 {
     case itemListAddExceptionIcon
     case itemListAddPhoneIcon
     case itemListClearInputIcon
-    
     case itemListStickerItemUnreadDot
     case itemListVerifiedPeerIcon
-    
     case itemListCloudFetchIcon
-    
     case itemListCloseIconImage
+    case itemListCornersTop
+    case itemListCornersBottom
+    case itemListCornersBoth
     
     case chatListLockTopUnlockedImage
     case chatListLockBottomUnlockedImage
@@ -210,9 +207,7 @@ public enum PresentationResourceKey: Int32 {
     
     case chatBubbleIncomingCallButtonImage
     case chatBubbleOutgoingCallButtonImage
-    
-    case chatBubbleMapPinImage
-    
+        
     case callListOutgoingIcon
     case callListInfoButton
     
@@ -228,4 +223,19 @@ public enum PresentationResourceKey: Int32 {
     
     case emptyChatListCheckIcon
     case archiveIcon
+}
+
+public enum PresentationResourceParameterKey: Hashable {
+    case chatOutgoingFullCheck(CGFloat)
+    case chatOutgoingPartialCheck(CGFloat)
+    case chatMediaFullCheck(CGFloat)
+    case chatMediaPartialCheck(CGFloat)
+    case chatFreeFullCheck(CGFloat, Bool)
+    case chatFreePartialCheck(CGFloat, Bool)
+    
+    case chatListBadgeBackgroundActive(CGFloat)
+    case chatListBadgeBackgroundInactive(CGFloat)
+    case chatListBadgeBackgroundMention(CGFloat)
+    case chatListBadgeBackgroundInactiveMention(CGFloat)
+    case chatListBadgeBackgroundPinned(CGFloat)
 }

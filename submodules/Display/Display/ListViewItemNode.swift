@@ -3,10 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import SwiftSignalKit
 
-#if BUCK
-import DisplayPrivate
-#endif
-
 var testSpringFrictionLimits: (CGFloat, CGFloat) = (3.0, 60.0)
 var testSpringFriction: CGFloat = 31.8211269378662
 
@@ -77,11 +73,13 @@ public struct ListViewItemLayoutParams {
     public let width: CGFloat
     public let leftInset: CGFloat
     public let rightInset: CGFloat
+    public let availableHeight: CGFloat
     
-    public init(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat) {
+    public init(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, availableHeight: CGFloat) {
         self.width = width
         self.leftInset = leftInset
         self.rightInset = rightInset
+        self.availableHeight = availableHeight
     }
 }
 
@@ -563,5 +561,9 @@ open class ListViewItemNode: ASDisplayNode {
     }
     
     open func applyAbsoluteOffset(value: CGFloat, animationCurve: ContainedViewLayoutTransitionCurve, duration: Double) {
+    }
+    
+    open func snapshotForReordering() -> UIView? {
+        return self.view.snapshotContentTree()
     }
 }

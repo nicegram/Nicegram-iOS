@@ -3,6 +3,7 @@ import UIKit
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import FFMpeg
 import UniversalMediaPlayer
 
@@ -24,7 +25,7 @@ func preloadVideoResource(postbox: Postbox, resourceReference: MediaResourceRefe
                 if let videoBuffer = result?.buffers.videoBuffer, let impl = source.syncWith({ $0 }) {
                     return impl.ensureHasFrames(until: min(duration, videoBuffer.duration.seconds))
                     |> ignoreValues
-                    |> introduceError(MediaFrameSourceSeekError.self)
+                    |> castError(MediaFrameSourceSeekError.self)
                 } else {
                     return .complete()
                 }

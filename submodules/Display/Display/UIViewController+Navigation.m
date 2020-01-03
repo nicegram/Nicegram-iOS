@@ -35,12 +35,14 @@ static const void *UIViewControllerNavigationControllerKey = &UIViewControllerNa
 static const void *UIViewControllerPresentingControllerKey = &UIViewControllerPresentingControllerKey;
 static const void *UIViewControllerPresentingProxyControllerKey = &UIViewControllerPresentingProxyControllerKey;
 static const void *disablesInteractiveTransitionGestureRecognizerKey = &disablesInteractiveTransitionGestureRecognizerKey;
+static const void *disablesInteractiveKeyboardGestureRecognizerKey = &disablesInteractiveKeyboardGestureRecognizerKey;
 static const void *disablesInteractiveTransitionGestureRecognizerNowKey = &disablesInteractiveTransitionGestureRecognizerNowKey;
 static const void *disableAutomaticKeyboardHandlingKey = &disableAutomaticKeyboardHandlingKey;
 static const void *setNeedsStatusBarAppearanceUpdateKey = &setNeedsStatusBarAppearanceUpdateKey;
 static const void *inputAccessoryHeightProviderKey = &inputAccessoryHeightProviderKey;
 static const void *interactiveTransitionGestureRecognizerTestKey = &interactiveTransitionGestureRecognizerTestKey;
 static const void *UIViewControllerHintWillBePresentedInPreviewingContextKey = &UIViewControllerHintWillBePresentedInPreviewingContextKey;
+static const void *disablesInteractiveModalDismissKey = &disablesInteractiveModalDismissKey;
 
 static bool notyfyingShiftState = false;
 
@@ -233,12 +235,28 @@ static bool notyfyingShiftState = false;
     [self setAssociatedObject:@(disablesInteractiveTransitionGestureRecognizer) forKey:disablesInteractiveTransitionGestureRecognizerKey];
 }
 
+- (bool)disablesInteractiveKeyboardGestureRecognizer {
+    return [[self associatedObjectForKey:disablesInteractiveKeyboardGestureRecognizerKey] boolValue];
+}
+
+- (void)setDisablesInteractiveKeyboardGestureRecognizer:(bool)disablesInteractiveKeyboardGestureRecognizer {
+    [self setAssociatedObject:@(disablesInteractiveKeyboardGestureRecognizer) forKey:disablesInteractiveKeyboardGestureRecognizerKey];
+}
+
 - (bool (^)())disablesInteractiveTransitionGestureRecognizerNow {
     return [self associatedObjectForKey:disablesInteractiveTransitionGestureRecognizerNowKey];
 }
 
 - (void)setDisablesInteractiveTransitionGestureRecognizerNow:(bool (^)())disablesInteractiveTransitionGestureRecognizerNow {
     [self setAssociatedObject:[disablesInteractiveTransitionGestureRecognizerNow copy] forKey:disablesInteractiveTransitionGestureRecognizerNowKey];
+}
+
+- (bool)disablesInteractiveModalDismiss {
+    return [self associatedObjectForKey:disablesInteractiveModalDismissKey];
+}
+
+- (void)setDisablesInteractiveModalDismiss:(bool)disablesInteractiveModalDismiss {
+    [self setAssociatedObject:@(disablesInteractiveModalDismiss) forKey:disablesInteractiveModalDismissKey];
 }
 
 - (BOOL (^)(CGPoint))interactiveTransitionGestureRecognizerTest {

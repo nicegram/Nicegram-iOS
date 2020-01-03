@@ -11,7 +11,7 @@ open class GalleryControllerNode: ASDisplayNode, UIScrollViewDelegate, UIGesture
     public let footerNode: GalleryFooterNode
     public var currentThumbnailContainerNode: GalleryThumbnailContainerNode?
     public var overlayNode: ASDisplayNode?
-    public var transitionDataForCentralItem: (() -> ((ASDisplayNode, () -> (UIView?, UIView?))?, (UIView) -> Void)?)?
+    public var transitionDataForCentralItem: (() -> ((ASDisplayNode, CGRect, () -> (UIView?, UIView?))?, (UIView) -> Void)?)?
     public var dismiss: (() -> Void)?
     
     public var containerLayout: (CGFloat, ContainerViewLayout)?
@@ -28,6 +28,8 @@ open class GalleryControllerNode: ASDisplayNode, UIScrollViewDelegate, UIGesture
     private var isDismissed = false
     
     public var areControlsHidden = false
+    public var controlsVisibilityChanged: ((Bool) -> Void)?
+    
     public var isBackgroundExtendedOverNavigationBar = true {
         didSet {
             if let (navigationBarHeight, layout) = self.containerLayout {
@@ -268,18 +270,19 @@ open class GalleryControllerNode: ASDisplayNode, UIScrollViewDelegate, UIGesture
     
     open func setControlsHidden(_ hidden: Bool, animated: Bool) {
         self.areControlsHidden = hidden
+        self.controlsVisibilityChanged?(!hidden)
         if animated {
             UIView.animate(withDuration: 0.3, animations: {
                 let alpha: CGFloat = self.areControlsHidden ? 0.0 : 1.0
                 self.navigationBar?.alpha = alpha
-                self.statusBar?.alpha = alpha
+                self.statusBar?.updateAlpha(alpha, transition: .animated(duration: 0.3, curve: .easeInOut))
                 self.footerNode.alpha = alpha
                 self.updateThumbnailContainerNodeAlpha(.immediate)
             })
         } else {
             let alpha: CGFloat = self.areControlsHidden ? 0.0 : 1.0
             self.navigationBar?.alpha = alpha
-            self.statusBar?.alpha = alpha
+            self.statusBar?.updateAlpha(alpha, transition: .immediate)
             self.footerNode.alpha = alpha
             self.updateThumbnailContainerNodeAlpha(.immediate)
         }
@@ -371,7 +374,11 @@ open class GalleryControllerNode: ASDisplayNode, UIScrollViewDelegate, UIGesture
         self.updateThumbnailContainerNodeAlpha(.immediate)
         
         if !self.areControlsHidden {
-            self.statusBar?.alpha = transition
+            if transition < 0.5 {
+                self.statusBar?.statusBarStyle = .Ignore
+            } else {
+                self.statusBar?.statusBarStyle = .White
+            }
             self.navigationBar?.alpha = transition
             self.footerNode.alpha = transition
             

@@ -1,6 +1,7 @@
 import Foundation
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import Postbox
 import TelegramUIPreferences
@@ -218,7 +219,7 @@ private final class FetchManagerCategoryContext {
                     |> mapToSignal { type -> Signal<FetchResourceSourceType, FetchResourceError> in
                         if let storeManager = storeManager, let mediaReference = entry.mediaReference, case .remote = type, let peerType = entry.storeToDownloadsPeerType {
                             return storeDownloadedMedia(storeManager: storeManager, media: mediaReference, peerType: peerType)
-                            |> introduceError(FetchResourceError.self)
+                            |> castError(FetchResourceError.self)
                             |> mapToSignal { _ -> Signal<FetchResourceSourceType, FetchResourceError> in
                                 return .complete()
                             }
@@ -347,7 +348,7 @@ private final class FetchManagerCategoryContext {
                     activeContext.disposable?.dispose()
                     if isVideoPreload {
                         activeContext.disposable = (preloadVideoResource(postbox: self.postbox, resourceReference: entry.resourceReference, duration: 4.0)
-                        |> introduceError(FetchResourceError.self)
+                        |> castError(FetchResourceError.self)
                         |> map { _ -> FetchResourceSourceType in return .local }
                         |> then(.single(.local))
                         |> deliverOnMainQueue).start(next: { _ in
@@ -359,7 +360,7 @@ private final class FetchManagerCategoryContext {
                         |> mapToSignal { type -> Signal<FetchResourceSourceType, FetchResourceError> in
                             if let storeManager = storeManager, let mediaReference = entry.mediaReference, case .remote = type, let peerType = entry.storeToDownloadsPeerType {
                                 return storeDownloadedMedia(storeManager: storeManager, media: mediaReference, peerType: peerType)
-                                |> introduceError(FetchResourceError.self)
+                                |> castError(FetchResourceError.self)
                                 |> mapToSignal { _ -> Signal<FetchResourceSourceType, FetchResourceError> in
                                     return .complete()
                                 }

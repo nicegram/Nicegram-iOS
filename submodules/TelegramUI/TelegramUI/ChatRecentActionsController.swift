@@ -2,12 +2,14 @@ import Foundation
 import UIKit
 import Display
 import TelegramCore
+import SyncCore
 import Postbox
 import SwiftSignalKit
 import TelegramPresentationData
 import TelegramBaseController
 import AccountContext
 import AlertUI
+import PresentationDataUtils
 
 final class ChatRecentActionsController: TelegramBaseController {
     private var controllerNode: ChatRecentActionsControllerNode {
@@ -38,7 +40,13 @@ final class ChatRecentActionsController: TelegramBaseController {
         
         self.interaction = ChatRecentActionsInteraction(displayInfoAlert: { [weak self] in
             if let strongSelf = self {
-                self?.present(textAlertController(context: strongSelf.context, title: strongSelf.presentationData.strings.Channel_AdminLog_InfoPanelAlertTitle, text: strongSelf.presentationData.strings.Channel_AdminLog_InfoPanelAlertText, actions: [TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_OK, action: {})]), in: .window(.root))
+                let text: String
+                if let channel = peer as? TelegramChannel, case .broadcast = channel.info {
+                    text = strongSelf.presentationData.strings.Channel_AdminLog_InfoPanelAlertText
+                } else {
+                    text = strongSelf.presentationData.strings.Channel_AdminLog_InfoPanelChannelAlertText
+                }
+                self?.present(textAlertController(context: strongSelf.context, title: strongSelf.presentationData.strings.Channel_AdminLog_InfoPanelAlertTitle, text: text, actions: [TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_OK, action: {})]), in: .window(.root))
             }
         })
         
@@ -65,6 +73,7 @@ final class ChatRecentActionsController: TelegramBaseController {
         }, beginMessageSearch: { _, _ in
         }, dismissMessageSearch: {
         }, updateMessageSearch: { _ in
+        }, openSearchResults: {
         }, navigateMessageSearch: { _ in
         }, openCalendarSearch: {
         }, toggleMembersSearch: { _ in
@@ -115,8 +124,9 @@ final class ChatRecentActionsController: TelegramBaseController {
         }, openLinkEditing: {  
         }, reportPeerIrrelevantGeoLocation: {
         }, displaySlowmodeTooltip: { _, _ in
-        }, displaySendMessageOptions: {
+        }, displaySendMessageOptions: { _, _ in
         }, openScheduledMessages: {
+        }, displaySearchResultsTooltip: { _, _ in
         }, statuses: nil)
         
         self.navigationItem.titleView = self.titleView

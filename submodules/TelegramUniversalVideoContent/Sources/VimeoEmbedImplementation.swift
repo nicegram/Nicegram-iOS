@@ -2,6 +2,7 @@ import Foundation
 import WebKit
 import SwiftSignalKit
 import UniversalMediaPlayer
+import AppBundle
 
 func extractVimeoVideoIdAndTimestamp(url: String) -> (String, Int)? {
     guard let url = URL(string: url), let host = url.host?.lowercased() else {
@@ -100,7 +101,7 @@ final class VimeoEmbedImplementation: WebEmbedImplementation {
     }
     
     func setup(_ webView: WKWebView, userContentController: WKUserContentController, evaluateJavaScript: @escaping (String) -> Void, updateStatus: @escaping (MediaPlayerStatus) -> Void, onPlaybackStarted: @escaping () -> Void) {
-        let bundle = Bundle(for: type(of: self))
+        let bundle = getAppBundle()
         guard let userScriptPath = bundle.path(forResource: "VimeoUserScript", ofType: "js") else {
             return
         }
@@ -133,7 +134,7 @@ final class VimeoEmbedImplementation: WebEmbedImplementation {
     }
     
     func play() {
-        if let eval = evalImpl {
+        if let eval = self.evalImpl {
             eval("play();")
         }
         
@@ -141,7 +142,7 @@ final class VimeoEmbedImplementation: WebEmbedImplementation {
     }
     
     func pause() {
-        if let eval = evalImpl {
+        if let eval = self.evalImpl {
             eval("pause();")
         }
     }
@@ -155,7 +156,7 @@ final class VimeoEmbedImplementation: WebEmbedImplementation {
     }
     
     func seek(timestamp: Double) {
-        if let eval = evalImpl {
+        if let eval = self.evalImpl {
             eval("seek(\(timestamp));")
         }
         
@@ -164,7 +165,7 @@ final class VimeoEmbedImplementation: WebEmbedImplementation {
             updateStatus(self.status)
         }
         
-        ignorePosition = 2
+        self.ignorePosition = 2
     }
     
     func pageReady() {

@@ -3,6 +3,7 @@ import SwiftSignalKit
 import CoreMedia
 import AVFoundation
 import TelegramCore
+import SyncCore
 import TelegramAudio
 
 private enum AudioPlayerRendererState {
@@ -334,6 +335,8 @@ private final class AudioPlayerRendererContext {
         assert(audioPlayerRendererQueue.isCurrent())
         
         if self.audioGraph == nil {
+            let startTime = CFAbsoluteTimeGetCurrent()
+            
             var maybeAudioGraph: AUGraph?
             guard NewAUGraph(&maybeAudioGraph) == noErr, let audioGraph = maybeAudioGraph else {
                 return
@@ -427,6 +430,8 @@ private final class AudioPlayerRendererContext {
                 return
             }
             
+            print("\(CFAbsoluteTimeGetCurrent()) MediaPlayerAudioRenderer initialize audio unit: \((CFAbsoluteTimeGetCurrent() - startTime) * 1000.0) ms")
+            
             self.audioGraph = audioGraph
             self.timePitchAudioUnit = timePitchAudioUnit
             self.outputAudioUnit = outputAudioUnit
@@ -496,10 +501,14 @@ private final class AudioPlayerRendererContext {
         assert(audioPlayerRendererQueue.isCurrent())
         
         if let audioGraph = self.audioGraph {
+            let startTime = CFAbsoluteTimeGetCurrent()
+            
             guard AUGraphStart(audioGraph) == noErr else {
                 self.closeAudioUnit()
                 return
             }
+            
+            print("\(CFAbsoluteTimeGetCurrent()) MediaPlayerAudioRenderer start audio unit: \((CFAbsoluteTimeGetCurrent() - startTime) * 1000.0) ms")
         }
     }
     
@@ -703,6 +712,9 @@ public final class MediaPlayerAudioRenderer {
     public init(audioSession: MediaPlayerAudioSessionControl, playAndRecord: Bool, forceAudioToSpeaker: Bool, baseRate: Double, updatedRate: @escaping () -> Void, audioPaused: @escaping () -> Void) {
         var audioClock: CMClock?
         CMAudioClockCreate(allocator: nil, clockOut: &audioClock)
+        if audioClock == nil {
+            audioClock = CMClockGetHostTimeClock()
+        }
         self.audioClock = audioClock!
         
         var audioTimebase: CMTimebase?

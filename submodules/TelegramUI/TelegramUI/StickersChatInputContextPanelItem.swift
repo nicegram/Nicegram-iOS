@@ -3,6 +3,7 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import Postbox
 import TelegramPresentationData
@@ -223,7 +224,7 @@ final class StickersChatInputContextPanelItemNode: ListViewItemNode {
                         
                         var imageSize = itemSize
                         if let dimensions = file.dimensions {
-                            imageSize = dimensions.aspectFitted(CGSize(width: itemSize.width - 4.0, height: itemSize.height - 4.0))
+                            imageSize = dimensions.cgSize.aspectFitted(CGSize(width: itemSize.width - 4.0, height: itemSize.height - 4.0))
                             imageNode.asyncLayout()(TransformImageArguments(corners: ImageCorners(), imageSize: imageSize, boundingSize: imageSize, intrinsicInsets: UIEdgeInsets()))()
                         }
                         

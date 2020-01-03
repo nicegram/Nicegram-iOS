@@ -3,18 +3,25 @@ import UIKit
 import Display
 
 struct PasscodeKeyboardLayout {
-    let buttonSize: CGFloat
-    let horizontalSecond: CGFloat
-    let horizontalThird: CGFloat
-    let verticalSecond: CGFloat
-    let verticalThird: CGFloat
-    let verticalFourth: CGFloat
-    let size: CGSize
-    let topOffset: CGFloat
-    let biometricsOffset: CGFloat
-    let deleteOffset: CGFloat
+    var buttonSize: CGFloat
+    var horizontalSecond: CGFloat
+    var horizontalThird: CGFloat
+    var verticalSecond: CGFloat
+    var verticalThird: CGFloat
+    var verticalFourth: CGFloat
+    var size: CGSize
+    var topOffset: CGFloat
+    var biometricsOffset: CGFloat
+    var deleteOffset: CGFloat
     
-    fileprivate init(layout: ContainerViewLayout) {
+    fileprivate init(layout: ContainerViewLayout, modalPresentation: Bool) {
+        var modalOffset: CGFloat = 0.0
+        var modalBiometricsOffset: CGFloat = 0.0
+        if modalPresentation {
+            modalOffset -= 20.0
+            modalBiometricsOffset -= 8.0
+        }
+        
         switch layout.deviceMetrics {
             case .iPhone4:
                 self.buttonSize = 75.0
@@ -101,24 +108,32 @@ struct PasscodeKeyboardLayout {
                 self.verticalThird = 176.0
                 self.verticalFourth = 264.0
                 self.size = CGSize(width: 265.0, height: 339.0)
-                self.topOffset =  0.0
+                self.topOffset = 120.0 + (layout.size.height - self.size.height - 120.0) / 2.0
                 self.biometricsOffset = 30.0
                 self.deleteOffset = 20.0
         }
+        
+        self.topOffset += modalOffset * 2.0
+        self.biometricsOffset += modalBiometricsOffset
     }
 }
 
-struct PasscodeLayout {
-    let layout: ContainerViewLayout
-    let keyboard: PasscodeKeyboardLayout
-    let titleOffset: CGFloat
-    let subtitleOffset: CGFloat
-    let inputFieldOffset: CGFloat
+public struct PasscodeLayout {
+    var layout: ContainerViewLayout
+    var keyboard: PasscodeKeyboardLayout
+    var titleOffset: CGFloat
+    var subtitleOffset: CGFloat
+    var inputFieldOffset: CGFloat
     
-    init(layout: ContainerViewLayout) {
+    init(layout: ContainerViewLayout, modalPresentation: Bool) {
         self.layout = layout
         
-        self.keyboard = PasscodeKeyboardLayout(layout: layout)
+        var modalOffset: CGFloat = 0.0
+        if modalPresentation {
+            modalOffset -= 20.0
+        }
+        
+        self.keyboard = PasscodeKeyboardLayout(layout: layout, modalPresentation: modalPresentation)
         switch layout.deviceMetrics {
             case .iPhone4:
                 self.titleOffset = 30.0
@@ -153,11 +168,15 @@ struct PasscodeLayout {
                 self.subtitleOffset = 0.0
                 self.inputFieldOffset = 140.0
         }
+        
+        self.titleOffset += modalOffset
+        self.subtitleOffset += modalOffset
+        self.inputFieldOffset += modalOffset
     }
     
-    init(layout: ContainerViewLayout, titleOffset: CGFloat, subtitleOffset: CGFloat, inputFieldOffset: CGFloat) {
+    public init(layout: ContainerViewLayout, titleOffset: CGFloat, subtitleOffset: CGFloat, inputFieldOffset: CGFloat, modalPresentation: Bool) {
         self.layout = layout
-        self.keyboard = PasscodeKeyboardLayout(layout: layout)
+        self.keyboard = PasscodeKeyboardLayout(layout: layout, modalPresentation: modalPresentation)
         self.titleOffset = titleOffset
         self.subtitleOffset = subtitleOffset
         self.inputFieldOffset = inputFieldOffset

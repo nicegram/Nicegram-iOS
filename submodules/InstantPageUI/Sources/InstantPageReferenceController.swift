@@ -4,6 +4,7 @@ import Display
 import AsyncDisplayKit
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import AccountContext
 
@@ -52,8 +53,6 @@ final class InstantPageReferenceController: ViewController {
     
     override public func loadView() {
         super.loadView()
-        
-        self.statusBar.removeFromSupernode()
     }
     
     override public func viewDidAppear(_ animated: Bool) {

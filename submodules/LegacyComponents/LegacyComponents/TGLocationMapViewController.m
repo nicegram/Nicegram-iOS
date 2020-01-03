@@ -179,7 +179,7 @@ const CGFloat TGLocationMapInset = 100.0f;
         return;
     
     [self updateMapHeightAnimated:false];
-    _optionsView.frame = CGRectMake(self.view.bounds.size.width - 45.0f - 6.0f - self.controllerSafeAreaInset.right, self.controllerInset.top + 6.0f, 45.0f, 90.0f);
+    _optionsView.frame = CGRectMake(self.view.bounds.size.width - 45.0f - 6.0f - self.controllerSafeAreaInset.right, 56.0f + 6.0f, 45.0f, 90.0f);
     _tableView.contentOffset = CGPointMake(0.0f, -_tableViewTopInset - self.controllerInset.top);
 }
 
@@ -259,7 +259,7 @@ const CGFloat TGLocationMapInset = 100.0f;
         [scrollView setContentOffset:contentOffset animated:false];
     }
     
-    _optionsView.frame = CGRectMake(self.view.bounds.size.width - 45.0f - 6.0f, self.controllerInset.top + 6.0f, 45.0f, 90.0f);
+    _optionsView.frame = CGRectMake(self.view.bounds.size.width - 45.0f - 6.0f, 56.0f + 6.0f, 45.0f, 90.0f);
 }
 
 - (NSInteger)tableView:(UITableView *)__unused tableView numberOfRowsInSection:(NSInteger)__unused section
@@ -491,7 +491,7 @@ const CGFloat TGLocationMapInset = 100.0f;
         [itemViews addObject:titleItem];
         
         __weak TGMenuSheetController *weakController = controller;
-        TGMenuSheetButtonItemView *for15MinutesItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Map.LiveLocationFor15Minutes") type:TGMenuSheetButtonTypeDefault action:^
+        TGMenuSheetButtonItemView *for15MinutesItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Map.LiveLocationFor15Minutes") type:TGMenuSheetButtonTypeDefault fontSize:20.0 action:^
         {
             __strong TGLocationMapViewController *strongSelf = weakSelf;
             if (strongSelf == nil)
@@ -508,7 +508,7 @@ const CGFloat TGLocationMapInset = 100.0f;
         }];
         [itemViews addObject:for15MinutesItem];
         
-        TGMenuSheetButtonItemView *for1HourItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Map.LiveLocationFor1Hour") type:TGMenuSheetButtonTypeDefault action:^
+        TGMenuSheetButtonItemView *for1HourItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Map.LiveLocationFor1Hour") type:TGMenuSheetButtonTypeDefault fontSize:20.0 action:^
         {
             __strong TGLocationMapViewController *strongSelf = weakSelf;
             if (strongSelf == nil)
@@ -525,7 +525,7 @@ const CGFloat TGLocationMapInset = 100.0f;
         }];
         [itemViews addObject:for1HourItem];
         
-        TGMenuSheetButtonItemView *for8HoursItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Map.LiveLocationFor8Hours") type:TGMenuSheetButtonTypeDefault action:^
+        TGMenuSheetButtonItemView *for8HoursItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Map.LiveLocationFor8Hours") type:TGMenuSheetButtonTypeDefault fontSize:20.0 action:^
         {
             __strong TGLocationMapViewController *strongSelf = weakSelf;
             if (strongSelf == nil)
@@ -542,7 +542,7 @@ const CGFloat TGLocationMapInset = 100.0f;
         }];
         [itemViews addObject:for8HoursItem];
         
-        TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeCancel action:^
+        TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeCancel fontSize:20.0 action:^
         {
             __strong TGMenuSheetController *strongController = weakController;
             if (strongController == nil)

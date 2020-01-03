@@ -5,6 +5,7 @@ import AsyncDisplayKit
 import Display
 import TelegramPresentationData
 import ActivityIndicator
+import AppBundle
 
 private func generateLoupeIcon(color: UIColor) -> UIImage? {
     return generateTintedImage(image: UIImage(bundleImageName: "Components/Search Bar/Loupe"), color: color)
@@ -346,6 +347,7 @@ public class SearchBarNode: ASDisplayNode, UITextFieldDelegate {
         self.iconNode.displayWithoutProcessing = true
         
         self.textField = SearchBarTextField()
+        self.textField.accessibilityTraits = .searchField
         self.textField.autocorrectionType = .no
         self.textField.returnKeyType = .search
         self.textField.font = self.fieldStyle.font

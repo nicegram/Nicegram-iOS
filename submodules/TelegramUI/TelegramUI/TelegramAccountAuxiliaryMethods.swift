@@ -1,11 +1,13 @@
 import Foundation
 import TelegramCore
+import SyncCore
 import Postbox
 import MediaResources
 import PassportUI
 import OpenInExternalAppUI
 import MusicAlbumArtResources
 import LocalMediaResources
+import LocationResources
 
 public let telegramAccountAuxiliaryMethods = AccountAuxiliaryMethods(updatePeerChatInputState: { interfaceState, inputState -> PeerChatInterfaceState? in
     if interfaceState == nil {
@@ -24,8 +26,6 @@ public let telegramAccountAuxiliaryMethods = AccountAuxiliaryMethods(updatePeerC
         return fetchLocalFileGifMediaResource(resource: resource)
     } else if let photoLibraryResource = resource as? PhotoLibraryMediaResource {
         return fetchPhotoLibraryResource(localIdentifier: photoLibraryResource.localIdentifier)
-    } else if let mapSnapshotResource = resource as? MapSnapshotMediaResource {
-        return fetchMapSnapshotResource(resource: mapSnapshotResource)
     } else if let resource = resource as? ExternalMusicAlbumArtResource {
         return fetchExternalMusicAlbumArtResource(account: account, resource: resource)
     } else if let resource = resource as? ICloudFileResource {
@@ -36,6 +36,8 @@ public let telegramAccountAuxiliaryMethods = AccountAuxiliaryMethods(updatePeerC
         return fetchOpenInAppIconResource(resource: resource)
     } else if let resource = resource as? EmojiSpriteResource {
         return fetchEmojiSpriteResource(postbox: account.postbox, network: account.network, resource: resource)
+    } else if let resource = resource as? VenueIconResource {
+        return fetchVenueIconResource(account: account, resource: resource)
     }
     return nil
 }, fetchResourceMediaReferenceHash: { resource in
@@ -44,5 +46,7 @@ public let telegramAccountAuxiliaryMethods = AccountAuxiliaryMethods(updatePeerC
     }
     return .single(nil)
 }, prepareSecretThumbnailData: { data in
-    return prepareSecretThumbnailData(data)
+    return prepareSecretThumbnailData(data).flatMap { size, data in
+        return (PixelDimensions(size), data)
+    }
 })

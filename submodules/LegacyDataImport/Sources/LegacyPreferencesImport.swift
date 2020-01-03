@@ -1,6 +1,7 @@
 import Foundation
 import UIKit
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import Postbox
 #if BUCK
@@ -148,9 +149,9 @@ func importLegacyPreferences(accountManager: AccountManager, account: TemporaryA
                 }
                 
                 if mode == 3 {
-                    passcodeChallenge = .numericalPassword(value: passwordText, timeout: lockTimeout, attempts: nil)
+                    passcodeChallenge = .numericalPassword(value: passwordText)
                 } else if mode == 4 {
-                    passcodeChallenge = PostboxAccessChallengeData.plaintextPassword(value: passwordText, timeout: lockTimeout, attempts: nil)
+                    passcodeChallenge = PostboxAccessChallengeData.plaintextPassword(value: passwordText)
                 }
             }
         }
@@ -177,16 +178,16 @@ func importLegacyPreferences(accountManager: AccountManager, account: TemporaryA
                                 //themeSpecificAccentColors: current.themeSpecificAccentColors
                                 //settings.themeAccentColor = presentationState.userInfo
                             }
-                            settings.chatWallpaper = .color(0xffffff)
+                            settings.themeSpecificChatWallpapers[settings.theme.index] = .color(0xffffff)
                         case 2:
                             settings.theme = .builtin(.night)
-                            settings.chatWallpaper = .color(0x00000)
+                            settings.themeSpecificChatWallpapers[settings.theme.index] = .color(0x000000)
                         case 3:
                             settings.theme = .builtin(.nightAccent)
-                            settings.chatWallpaper = .color(0x18222D)
+                            settings.themeSpecificChatWallpapers[settings.theme.index] = .color(0x18222d)
                         default:
                             settings.theme = .builtin(.dayClassic)
-                            settings.chatWallpaper = .builtin(WallpaperSettings())
+                            settings.themeSpecificChatWallpapers[settings.theme.index] = .builtin(WallpaperSettings())
                     }
                     let fontSizeMap: [Int32: PresentationFontSize] = [
                         14: .extraSmall,
@@ -287,14 +288,6 @@ func importLegacyPreferences(accountManager: AccountManager, account: TemporaryA
                 var settings: PresentationPasscodeSettings = current as? PresentationPasscodeSettings ?? .defaultSettings
                 if let passcodeChallenge = passcodeChallenge {
                     transaction.setAccessChallengeData(passcodeChallenge)
-                    switch passcodeChallenge {
-                        case .none:
-                            break
-                        case let .numericalPassword(_, timeout, _):
-                            settings.autolockTimeout = timeout
-                        case let .plaintextPassword(_, timeout, _):
-                            settings.autolockTimeout = timeout
-                    }
                     settings.enableBiometrics = passcodeEnableBiometrics
                 }
                 return settings

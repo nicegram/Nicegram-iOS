@@ -7,16 +7,20 @@ public final class TabBarControllerTheme {
     public let backgroundColor: UIColor
     public let tabBarBackgroundColor: UIColor
     public let tabBarSeparatorColor: UIColor
+    public let tabBarIconColor: UIColor
+    public let tabBarSelectedIconColor: UIColor
     public let tabBarTextColor: UIColor
     public let tabBarSelectedTextColor: UIColor
     public let tabBarBadgeBackgroundColor: UIColor
     public let tabBarBadgeStrokeColor: UIColor
     public let tabBarBadgeTextColor: UIColor
-    
-    public init(backgroundColor: UIColor, tabBarBackgroundColor: UIColor, tabBarSeparatorColor: UIColor, tabBarTextColor: UIColor, tabBarSelectedTextColor: UIColor, tabBarBadgeBackgroundColor: UIColor, tabBarBadgeStrokeColor: UIColor, tabBarBadgeTextColor: UIColor) {
+
+    public init(backgroundColor: UIColor, tabBarBackgroundColor: UIColor, tabBarSeparatorColor: UIColor, tabBarIconColor: UIColor, tabBarSelectedIconColor: UIColor, tabBarTextColor: UIColor, tabBarSelectedTextColor: UIColor, tabBarBadgeBackgroundColor: UIColor, tabBarBadgeStrokeColor: UIColor, tabBarBadgeTextColor: UIColor) {
         self.backgroundColor = backgroundColor
         self.tabBarBackgroundColor = tabBarBackgroundColor
         self.tabBarSeparatorColor = tabBarSeparatorColor
+        self.tabBarIconColor = tabBarIconColor
+        self.tabBarSelectedIconColor = tabBarSelectedIconColor
         self.tabBarTextColor = tabBarTextColor
         self.tabBarSelectedTextColor = tabBarSelectedTextColor
         self.tabBarBadgeBackgroundColor = tabBarBadgeBackgroundColor
@@ -125,6 +129,15 @@ open class TabBarController: ViewController {
         self.showTabNames = showTabNames
         
         super.init(navigationBarPresentationData: navigationBarPresentationData)
+        
+        self.scrollToTop = { [weak self] in
+            guard let strongSelf = self else {
+                return
+            }
+            if let controller = strongSelf.currentController {
+                controller.scrollToTop?()
+            }
+        }
     }
 
     required public init(coder aDecoder: NSCoder) {

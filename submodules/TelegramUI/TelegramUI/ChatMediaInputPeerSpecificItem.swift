@@ -3,13 +3,15 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import Postbox
 import TelegramPresentationData
 import AvatarNode
+import AccountContext
 
 final class ChatMediaInputPeerSpecificItem: ListViewItem {
-    let account: Account
+    let context: AccountContext
     let inputNodeInteraction: ChatMediaInputNodeInteraction
     let collectionId: ItemCollectionId
     let peer: Peer
@@ -20,8 +22,8 @@ final class ChatMediaInputPeerSpecificItem: ListViewItem {
         return true
     }
     
-    init(account: Account, inputNodeInteraction: ChatMediaInputNodeInteraction, collectionId: ItemCollectionId, peer: Peer, theme: PresentationTheme, selected: @escaping () -> Void) {
-        self.account = account
+    init(context: AccountContext, inputNodeInteraction: ChatMediaInputNodeInteraction, collectionId: ItemCollectionId, peer: Peer, theme: PresentationTheme, selected: @escaping () -> Void) {
+        self.context = context
         self.inputNodeInteraction = inputNodeInteraction
         self.collectionId = collectionId
         self.peer = peer
@@ -38,7 +40,7 @@ final class ChatMediaInputPeerSpecificItem: ListViewItem {
             Queue.mainQueue().async {
                 completion(node, {
                     return (nil, { _ in
-                        node.updateItem(account: self.account, peer: self.peer, collectionId: self.collectionId, theme: self.theme)
+                        node.updateItem(context: self.context, peer: self.peer, collectionId: self.collectionId, theme: self.theme)
                         node.updateAppearanceTransition(transition: .immediate)
                     })
                 })
@@ -49,7 +51,7 @@ final class ChatMediaInputPeerSpecificItem: ListViewItem {
     public func updateNode(async: @escaping (@escaping () -> Void) -> Void, node: @escaping () -> ListViewItemNode, params: ListViewItemLayoutParams, previousItem: ListViewItem?, nextItem: ListViewItem?, animation: ListViewItemUpdateAnimation, completion: @escaping (ListViewItemNodeLayout, @escaping (ListViewItemApply) -> Void) -> Void) {
         Queue.mainQueue().async {
             completion(ListViewItemNodeLayout(contentSize: node().contentSize, insets: ChatMediaInputNode.setupPanelIconInsets(item: self, previousItem: previousItem, nextItem: nextItem)), { _ in
-                (node() as? ChatMediaInputPeerSpecificItemNode)?.updateItem(account: self.account, peer: self.peer, collectionId: self.collectionId, theme: self.theme)
+                (node() as? ChatMediaInputPeerSpecificItemNode)?.updateItem(context: self.context, peer: self.peer, collectionId: self.collectionId, theme: self.theme)
             })
         }
     }
@@ -59,7 +61,7 @@ final class ChatMediaInputPeerSpecificItem: ListViewItem {
     }
 }
 
-private let avatarFont = UIFont(name: ".SFCompactRounded-Semibold", size: 12.0)!
+private let avatarFont = avatarPlaceholderFont(size: 12.0)
 private let boundingSize = CGSize(width: 41.0, height: 41.0)
 private let boundingImageSize = CGSize(width: 28.0, height: 28.0)
 private let highlightSize = CGSize(width: 35.0, height: 35.0)
@@ -99,7 +101,7 @@ final class ChatMediaInputPeerSpecificItemNode: ListViewItemNode {
         self.stickerFetchedDisposable.dispose()
     }
     
-    func updateItem(account: Account, peer: Peer, collectionId: ItemCollectionId, theme: PresentationTheme) {
+    func updateItem(context: AccountContext, peer: Peer, collectionId: ItemCollectionId, theme: PresentationTheme) {
         self.currentCollectionId = collectionId
         
         if self.theme !== theme {
@@ -108,7 +110,7 @@ final class ChatMediaInputPeerSpecificItemNode: ListViewItemNode {
             self.highlightNode.image = PresentationResourcesChat.chatMediaInputPanelHighlightedIconImage(theme)
         }
         
-        self.avatarNode.setPeer(account: account, theme: theme, peer: peer)
+        self.avatarNode.setPeer(context: context, theme: theme, peer: peer)
     }
     
     func updateIsHighlighted() {

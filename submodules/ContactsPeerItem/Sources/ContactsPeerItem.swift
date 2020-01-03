@@ -5,15 +5,19 @@ import Postbox
 import Display
 import SwiftSignalKit
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import TelegramUIPreferences
 import ItemListUI
+import PresentationDataUtils
 import CheckNode
 import AvatarNode
 import TelegramStringFormatting
 import AccountContext
 import PeerPresenceStatusManager
 import ItemListPeerItem
+import ContextUI
+import AccountContext
 
 public final class ContactItemHighlighting {
     public var chatLocation: ChatLocation?
@@ -23,11 +27,6 @@ public final class ContactItemHighlighting {
         self.chatLocation = chatLocation
     }
 }
-
-private let titleFont = Font.regular(17.0)
-private let titleBoldFont = Font.medium(17.0)
-private let statusFont = Font.regular(13.0)
-private let badgeFont = Font.regular(14.0)
 
 public enum ContactsPeerItemStatus {
     case none
@@ -106,12 +105,13 @@ public enum ContactsPeerItemPeer: Equatable {
     }
 }
 
-public class ContactsPeerItem: ListViewItem, ListViewItemWithHeader {
-    let theme: PresentationTheme
-    let strings: PresentationStrings
+public class ContactsPeerItem: ItemListItem, ListViewItemWithHeader {
+    let presentationData: ItemListPresentationData
+    let style: ItemListStyle
+    public let sectionId: ItemListSectionId
     let sortOrder: PresentationPersonNameOrder
     let displayOrder: PresentationPersonNameOrder
-    let account: Account
+    let context: AccountContext
     let peerMode: ContactsPeerItemPeerMode
     public let peer: ContactsPeerItemPeer
     let status: ContactsPeerItemStatus
@@ -125,6 +125,7 @@ public class ContactsPeerItem: ListViewItem, ListViewItemWithHeader {
     let setPeerIdWithRevealedOptions: ((PeerId?, PeerId?) -> Void)?
     let deletePeer: ((PeerId) -> Void)?
     let itemHighlighting: ContactItemHighlighting?
+    let contextAction: ((ASDisplayNode, ContextGesture?) -> Void)?
     
     public let selectable: Bool
     
@@ -132,12 +133,13 @@ public class ContactsPeerItem: ListViewItem, ListViewItemWithHeader {
     
     public let header: ListViewItemHeader?
     
-    public init(theme: PresentationTheme, strings: PresentationStrings, sortOrder: PresentationPersonNameOrder, displayOrder: PresentationPersonNameOrder, account: Account, peerMode: ContactsPeerItemPeerMode, peer: ContactsPeerItemPeer, status: ContactsPeerItemStatus, badge: ContactsPeerItemBadge? = nil, enabled: Bool, selection: ContactsPeerItemSelection, editing: ContactsPeerItemEditing, options: [ItemListPeerItemRevealOption] = [], actionIcon: ContactsPeerItemActionIcon = .none, index: PeerNameIndex?, header: ListViewItemHeader?, action: @escaping (ContactsPeerItemPeer) -> Void, setPeerIdWithRevealedOptions: ((PeerId?, PeerId?) -> Void)? = nil, deletePeer: ((PeerId) -> Void)? = nil, itemHighlighting: ContactItemHighlighting? = nil) {
-        self.theme = theme
-        self.strings = strings
+    public init(presentationData: ItemListPresentationData, style: ItemListStyle = .plain, sectionId: ItemListSectionId = 0, sortOrder: PresentationPersonNameOrder, displayOrder: PresentationPersonNameOrder, context: AccountContext, peerMode: ContactsPeerItemPeerMode, peer: ContactsPeerItemPeer, status: ContactsPeerItemStatus, badge: ContactsPeerItemBadge? = nil, enabled: Bool, selection: ContactsPeerItemSelection, editing: ContactsPeerItemEditing, options: [ItemListPeerItemRevealOption] = [], actionIcon: ContactsPeerItemActionIcon = .none, index: PeerNameIndex?, header: ListViewItemHeader?, action: @escaping (ContactsPeerItemPeer) -> Void, setPeerIdWithRevealedOptions: ((PeerId?, PeerId?) -> Void)? = nil, deletePeer: ((PeerId) -> Void)? = nil, itemHighlighting: ContactItemHighlighting? = nil, contextAction: ((ASDisplayNode, ContextGesture?) -> Void)? = nil) {
+        self.presentationData = presentationData
+        self.style = style
+        self.sectionId = sectionId
         self.sortOrder = sortOrder
         self.displayOrder = displayOrder
-        self.account = account
+        self.context = context
         self.peerMode = peerMode
         self.peer = peer
         self.status = status
@@ -153,6 +155,7 @@ public class ContactsPeerItem: ListViewItem, ListViewItemWithHeader {
         self.header = header
         self.itemHighlighting = itemHighlighting
         self.selectable = enabled
+        self.contextAction = contextAction
         
         if let index = index {
             var letter: String = "#"
@@ -198,7 +201,7 @@ public class ContactsPeerItem: ListViewItem, ListViewItemWithHeader {
                             }
                     }
             }
-            self.headerAccessoryItem = ContactsSectionHeaderAccessoryItem(sectionHeader: .letter(letter), theme: theme)
+            self.headerAccessoryItem = ContactsSectionHeaderAccessoryItem(sectionHeader: .letter(letter), theme: presentationData.theme)
         } else {
             self.headerAccessoryItem = nil
         }
@@ -209,7 +212,7 @@ public class ContactsPeerItem: ListViewItem, ListViewItemWithHeader {
             let node = ContactsPeerItemNode()
             let makeLayout = node.asyncLayout()
             let (first, last, firstWithHeader) = ContactsPeerItem.mergeType(item: self, previousItem: previousItem, nextItem: nextItem)
-            let (nodeLayout, nodeApply) = makeLayout(self, params, first, last, firstWithHeader)
+            let (nodeLayout, nodeApply) = makeLayout(self, params, first, last, firstWithHeader, itemListNeighbors(item: self, topItem: previousItem as? ItemListItem, bottomItem: nextItem as? ItemListItem))
             node.contentSize = nodeLayout.contentSize
             node.insets = nodeLayout.insets
             
@@ -230,7 +233,7 @@ public class ContactsPeerItem: ListViewItem, ListViewItemWithHeader {
                 let layout = nodeValue.asyncLayout()
                 async {
                     let (first, last, firstWithHeader) = ContactsPeerItem.mergeType(item: self, previousItem: previousItem, nextItem: nextItem)
-                    let (nodeLayout, apply) = layout(self, params, first, last, firstWithHeader)
+                    let (nodeLayout, apply) = layout(self, params, first, last, firstWithHeader, itemListNeighbors(item: self, topItem: previousItem as? ItemListItem, bottomItem: nextItem as? ItemListItem))
                     Queue.mainQueue().async {
                         completion(nodeLayout, { _ in
                             apply().1(animation.isAnimated, false)
@@ -276,12 +279,15 @@ public class ContactsPeerItem: ListViewItem, ListViewItemWithHeader {
     }
 }
 
-private let avatarFont = UIFont(name: ".SFCompactRounded-Semibold", size: 16.0)!
+private let avatarFont = avatarPlaceholderFont(size: 16.0)
 
 public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
     private let backgroundNode: ASDisplayNode
+    private let topSeparatorNode: ASDisplayNode
     private let separatorNode: ASDisplayNode
     private let highlightedBackgroundNode: ASDisplayNode
+    
+    private let containerNode: ContextControllerSourceNode
     
     private let avatarNode: AvatarNode
     private let titleNode: TextNode
@@ -292,12 +298,10 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
     private var selectionNode: CheckNode?
     private var actionIconNode: ASImageNode?
     
-    private var avatarState: (Account, Peer?)?
-    
     private var isHighlighted: Bool = false
 
     private var peerPresenceManager: PeerPresenceStatusManager?
-    private var layoutParams: (ContactsPeerItem, ListViewItemLayoutParams, Bool, Bool, Bool)?
+    private var layoutParams: (ContactsPeerItem, ListViewItemLayoutParams, Bool, Bool, Bool, ItemListNeighbors)?
     public var chatPeer: Peer? {
         if let peer = self.layoutParams?.0.peer {
             switch peer {
@@ -319,11 +323,16 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
         self.backgroundNode = ASDisplayNode()
         self.backgroundNode.isLayerBacked = true
         
+        self.topSeparatorNode = ASDisplayNode()
+        self.topSeparatorNode.isLayerBacked = true
+        
         self.separatorNode = ASDisplayNode()
         self.separatorNode.isLayerBacked = true
         
         self.highlightedBackgroundNode = ASDisplayNode()
         self.highlightedBackgroundNode.isLayerBacked = true
+        
+        self.containerNode = ContextControllerSourceNode()
         
         self.avatarNode = AvatarNode(font: avatarFont)
         self.avatarNode.isLayerBacked = !smartInvertColorsEnabled()
@@ -336,25 +345,35 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
         self.isAccessibilityElement = true
         
         self.addSubnode(self.backgroundNode)
+        self.addSubnode(self.topSeparatorNode)
         self.addSubnode(self.separatorNode)
-        self.addSubnode(self.avatarNode)
-        self.addSubnode(self.titleNode)
-        self.addSubnode(self.statusNode)
+        self.addSubnode(self.containerNode)
+        self.containerNode.addSubnode(self.avatarNode)
+        self.containerNode.addSubnode(self.titleNode)
+        self.containerNode.addSubnode(self.statusNode)
         
         self.peerPresenceManager = PeerPresenceStatusManager(update: { [weak self] in
             if let strongSelf = self, let layoutParams = strongSelf.layoutParams {
-                let (_, apply) = strongSelf.asyncLayout()(layoutParams.0, layoutParams.1, layoutParams.2, layoutParams.3, layoutParams.4)
+                let (_, apply) = strongSelf.asyncLayout()(layoutParams.0, layoutParams.1, layoutParams.2, layoutParams.3, layoutParams.4, layoutParams.5)
                 let _ = apply()
             }
         })
+        
+        self.containerNode.activated = { [weak self] gesture in
+            guard let strongSelf = self, let item = strongSelf.item, let contextAction = item.contextAction else {
+                gesture.cancel()
+                return
+            }
+            contextAction(strongSelf.containerNode, gesture)
+        }
     }
     
     override public func layoutForParams(_ params: ListViewItemLayoutParams, item: ListViewItem, previousItem: ListViewItem?, nextItem: ListViewItem?) {
-        if let (item, _, _, _, _) = self.layoutParams {
+        if let (item, _, _, _, _, _) = self.layoutParams {
             let (first, last, firstWithHeader) = ContactsPeerItem.mergeType(item: item, previousItem: previousItem, nextItem: nextItem)
-            self.layoutParams = (item, params, first, last, firstWithHeader)
+            self.layoutParams = (item, params, first, last, firstWithHeader, itemListNeighbors(item: item, topItem: previousItem as? ItemListItem, bottomItem: nextItem as? ItemListItem))
             let makeLayout = self.asyncLayout()
-            let (nodeLayout, nodeApply) = makeLayout(item, params, first, last, firstWithHeader)
+            let (nodeLayout, nodeApply) = makeLayout(item, params, first, last, firstWithHeader, itemListNeighbors(item: item, topItem: previousItem as? ItemListItem, bottomItem: nextItem as? ItemListItem))
             self.contentSize = nodeLayout.contentSize
             self.insets = nodeLayout.insets
             let _ = nodeApply()
@@ -409,7 +428,7 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
         }
     }
     
-    public func asyncLayout() -> (_ item: ContactsPeerItem, _ params: ListViewItemLayoutParams, _ first: Bool, _ last: Bool, _ firstWithHeader: Bool) -> (ListViewItemNodeLayout, () -> (Signal<Void, NoError>?, (Bool, Bool) -> Void)) {
+    public func asyncLayout() -> (_ item: ContactsPeerItem, _ params: ListViewItemLayoutParams, _ first: Bool, _ last: Bool, _ firstWithHeader: Bool, _ neighbors: ItemListNeighbors) -> (ListViewItemNodeLayout, () -> (Signal<Void, NoError>?, (Bool, Bool) -> Void)) {
         let makeTitleLayout = TextNode.asyncLayout(self.titleNode)
         let makeStatusLayout = TextNode.asyncLayout(self.statusNode)
         let currentSelectionNode = self.selectionNode
@@ -418,11 +437,17 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
         
         let currentItem = self.layoutParams?.0
         
-        return { [weak self] item, params, first, last, firstWithHeader in
+        return { [weak self] item, params, first, last, firstWithHeader, neighbors in
             var updatedTheme: PresentationTheme?
             
-            if currentItem?.theme !== item.theme {
-                updatedTheme = item.theme
+            let titleFont = Font.regular(item.presentationData.fontSize.itemListBaseFontSize)
+            let titleBoldFont = Font.medium(item.presentationData.fontSize.itemListBaseFontSize)
+            let statusFont = Font.regular(floor(item.presentationData.fontSize.itemListBaseFontSize * 13.0 / 17.0))
+            let badgeFont = Font.regular(14.0)
+            let avatarDiameter = min(40.0, floor(item.presentationData.fontSize.itemListBaseFontSize * 40.0 / 17.0))
+            
+            if currentItem?.presentationData.theme !== item.presentationData.theme {
+                updatedTheme = item.presentationData.theme
             }
             var leftInset: CGFloat = 65.0 + params.leftInset
             let rightInset: CGFloat = 10.0 + params.rightInset
@@ -430,39 +455,39 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
             let updatedSelectionNode: CheckNode?
             var isSelected = false
             switch item.selection {
-                case .none:
-                    updatedSelectionNode = nil
-                case let .selectable(selected):
-                    leftInset += 28.0
-                    isSelected = selected
-                    
-                    let selectionNode: CheckNode
-                    if let current = currentSelectionNode {
-                        selectionNode = current
-                        updatedSelectionNode = selectionNode
-                    } else {
-                        selectionNode = CheckNode(strokeColor: item.theme.list.itemCheckColors.strokeColor, fillColor: item.theme.list.itemCheckColors.fillColor, foregroundColor: item.theme.list.itemCheckColors.foregroundColor, style: .plain)
-                        selectionNode.isUserInteractionEnabled = false
-                        updatedSelectionNode = selectionNode
-                    }
+            case .none:
+                updatedSelectionNode = nil
+            case let .selectable(selected):
+                leftInset += 28.0
+                isSelected = selected
+                
+                let selectionNode: CheckNode
+                if let current = currentSelectionNode {
+                    selectionNode = current
+                    updatedSelectionNode = selectionNode
+                } else {
+                    selectionNode = CheckNode(strokeColor: item.presentationData.theme.list.itemCheckColors.strokeColor, fillColor: item.presentationData.theme.list.itemCheckColors.fillColor, foregroundColor: item.presentationData.theme.list.itemCheckColors.foregroundColor, style: .plain)
+                    selectionNode.isUserInteractionEnabled = false
+                    updatedSelectionNode = selectionNode
+                }
             }
             
             var verificationIconImage: UIImage?
             switch item.peer {
-                case let .peer(peer, _):
-                    if let peer = peer, peer.isVerified {
-                        verificationIconImage = PresentationResourcesChatList.verifiedIcon(item.theme)
-                    }
-                case .deviceContact:
-                    break
+            case let .peer(peer, _):
+                if let peer = peer, peer.isVerified {
+                    verificationIconImage = PresentationResourcesChatList.verifiedIcon(item.presentationData.theme)
+                }
+            case .deviceContact:
+                break
             }
             
             let actionIconImage: UIImage?
             switch item.actionIcon {
-                case .none:
-                    actionIconImage = nil
-                case .add:
-                    actionIconImage = PresentationResourcesItemList.plusIconImage(item.theme)
+            case .none:
+                actionIconImage = nil
+            case .add:
+                actionIconImage = PresentationResourcesItemList.plusIconImage(item.presentationData.theme)
             }
             
             var titleAttributedString: NSAttributedString?
@@ -470,94 +495,94 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
             var userPresence: TelegramUserPresence?
             
             switch item.peer {
-                case let .peer(peer, chatPeer):
-                    if let peer = peer {
-                        let textColor: UIColor
-                        if let _ = chatPeer as? TelegramSecretChat {
-                            textColor = item.theme.chatList.secretTitleColor
-                        } else {
-                            textColor = item.theme.list.itemPrimaryTextColor
-                        }
-                        if let user = peer as? TelegramUser {
-                            if peer.id == item.account.peerId, case .generalSearch = item.peerMode {
-                                titleAttributedString = NSAttributedString(string: item.strings.DialogList_SavedMessages, font: titleBoldFont, textColor: textColor)
-                            } else if let firstName = user.firstName, let lastName = user.lastName, !firstName.isEmpty, !lastName.isEmpty {
-                                let string = NSMutableAttributedString()
-                                switch item.displayOrder {
-                                    case .firstLast:
-                                        string.append(NSAttributedString(string: firstName, font: item.sortOrder == .firstLast ? titleBoldFont : titleFont, textColor: textColor))
-                                        string.append(NSAttributedString(string: " ", font: titleFont, textColor: textColor))
-                                        string.append(NSAttributedString(string: lastName, font: item.sortOrder == .firstLast ? titleFont : titleBoldFont, textColor: textColor))
-                                    case .lastFirst:
-                                        string.append(NSAttributedString(string: lastName, font: item.sortOrder == .firstLast ? titleFont : titleBoldFont, textColor: textColor))
-                                        string.append(NSAttributedString(string: " ", font: titleFont, textColor: textColor))
-                                        string.append(NSAttributedString(string: firstName, font: item.sortOrder == .firstLast ? titleBoldFont : titleFont, textColor: textColor))
-                                }
-                                titleAttributedString = string
-                            } else if let firstName = user.firstName, !firstName.isEmpty {
-                                titleAttributedString = NSAttributedString(string: firstName, font: titleBoldFont, textColor: textColor)
-                            } else if let lastName = user.lastName, !lastName.isEmpty {
-                                titleAttributedString = NSAttributedString(string: lastName, font: titleBoldFont, textColor: textColor)
-                            } else {
-                                titleAttributedString = NSAttributedString(string: item.strings.User_DeletedAccount, font: titleBoldFont, textColor: textColor)
-                            }
-                        } else if let group = peer as? TelegramGroup {
-                            titleAttributedString = NSAttributedString(string: group.title, font: titleBoldFont, textColor: item.theme.list.itemPrimaryTextColor)
-                        } else if let channel = peer as? TelegramChannel {
-                            titleAttributedString = NSAttributedString(string: channel.title, font: titleBoldFont, textColor: item.theme.list.itemPrimaryTextColor)
-                        }
-                        
-                        switch item.status {
-                            case .none:
-                                break
-                            case let .presence(presence, dateTimeFormat):
-                                let presence = (presence as? TelegramUserPresence) ?? TelegramUserPresence(status: .none, lastActivity: 0)
-                                userPresence = presence
-                                let timestamp = CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970
-                                let (string, activity) = stringAndActivityForUserPresence(strings: item.strings, dateTimeFormat: dateTimeFormat, presence: presence, relativeTo: Int32(timestamp))
-                                statusAttributedString = NSAttributedString(string: string, font: statusFont, textColor: activity ? item.theme.list.itemAccentColor : item.theme.list.itemSecondaryTextColor)
-                            case let .addressName(suffix):
-                                if let addressName = peer.addressName {
-                                    let addressNameString = NSAttributedString(string: "@" + addressName, font: statusFont, textColor: item.theme.list.itemAccentColor)
-                                    if !suffix.isEmpty {
-                                        let suffixString = NSAttributedString(string: suffix, font: statusFont, textColor: item.theme.list.itemSecondaryTextColor)
-                                        let finalString = NSMutableAttributedString()
-                                        finalString.append(addressNameString)
-                                        finalString.append(suffixString)
-                                        statusAttributedString = finalString
-                                    } else {
-                                        statusAttributedString = addressNameString
-                                    }
-                                } else if !suffix.isEmpty {
-                                    statusAttributedString = NSAttributedString(string: suffix, font: statusFont, textColor: item.theme.list.itemSecondaryTextColor)
-                                }
-                            case let .custom(text):
-                                statusAttributedString = NSAttributedString(string: text, font: statusFont, textColor: item.theme.list.itemSecondaryTextColor)
-                        }
-                    }
-                case let .deviceContact(_, contact):
-                    let textColor: UIColor = item.theme.list.itemPrimaryTextColor
-                    
-                    if !contact.firstName.isEmpty, !contact.lastName.isEmpty {
-                        let string = NSMutableAttributedString()
-                        string.append(NSAttributedString(string: contact.firstName, font: titleFont, textColor: textColor))
-                        string.append(NSAttributedString(string: " ", font: titleFont, textColor: textColor))
-                        string.append(NSAttributedString(string: contact.lastName, font: titleBoldFont, textColor: textColor))
-                        titleAttributedString = string
-                    } else if !contact.firstName.isEmpty {
-                        titleAttributedString = NSAttributedString(string: contact.firstName, font: titleBoldFont, textColor: textColor)
-                    } else if !contact.lastName.isEmpty {
-                        titleAttributedString = NSAttributedString(string: contact.lastName, font: titleBoldFont, textColor: textColor)
+            case let .peer(peer, chatPeer):
+                if let peer = peer {
+                    let textColor: UIColor
+                    if let _ = chatPeer as? TelegramSecretChat {
+                        textColor = item.presentationData.theme.chatList.secretTitleColor
                     } else {
-                        titleAttributedString = NSAttributedString(string: item.strings.User_DeletedAccount, font: titleBoldFont, textColor: textColor)
+                        textColor = item.presentationData.theme.list.itemPrimaryTextColor
+                    }
+                    if let user = peer as? TelegramUser {
+                        if peer.id == item.context.account.peerId, case .generalSearch = item.peerMode {
+                            titleAttributedString = NSAttributedString(string: item.presentationData.strings.DialogList_SavedMessages, font: titleBoldFont, textColor: textColor)
+                        } else if let firstName = user.firstName, let lastName = user.lastName, !firstName.isEmpty, !lastName.isEmpty {
+                            let string = NSMutableAttributedString()
+                            switch item.displayOrder {
+                            case .firstLast:
+                                string.append(NSAttributedString(string: firstName, font: item.sortOrder == .firstLast ? titleBoldFont : titleFont, textColor: textColor))
+                                string.append(NSAttributedString(string: " ", font: titleFont, textColor: textColor))
+                                string.append(NSAttributedString(string: lastName, font: item.sortOrder == .firstLast ? titleFont : titleBoldFont, textColor: textColor))
+                            case .lastFirst:
+                                string.append(NSAttributedString(string: lastName, font: item.sortOrder == .firstLast ? titleFont : titleBoldFont, textColor: textColor))
+                                string.append(NSAttributedString(string: " ", font: titleFont, textColor: textColor))
+                                string.append(NSAttributedString(string: firstName, font: item.sortOrder == .firstLast ? titleBoldFont : titleFont, textColor: textColor))
+                            }
+                            titleAttributedString = string
+                        } else if let firstName = user.firstName, !firstName.isEmpty {
+                            titleAttributedString = NSAttributedString(string: firstName, font: titleBoldFont, textColor: textColor)
+                        } else if let lastName = user.lastName, !lastName.isEmpty {
+                            titleAttributedString = NSAttributedString(string: lastName, font: titleBoldFont, textColor: textColor)
+                        } else {
+                            titleAttributedString = NSAttributedString(string: item.presentationData.strings.User_DeletedAccount, font: titleBoldFont, textColor: textColor)
+                        }
+                    } else if let group = peer as? TelegramGroup {
+                        titleAttributedString = NSAttributedString(string: group.title, font: titleBoldFont, textColor: item.presentationData.theme.list.itemPrimaryTextColor)
+                    } else if let channel = peer as? TelegramChannel {
+                        titleAttributedString = NSAttributedString(string: channel.title, font: titleBoldFont, textColor: item.presentationData.theme.list.itemPrimaryTextColor)
                     }
                     
                     switch item.status {
-                        case let .custom(text):
-                            statusAttributedString = NSAttributedString(string: text, font: statusFont, textColor: item.theme.list.itemSecondaryTextColor)
-                        default:
-                            break
+                    case .none:
+                        break
+                    case let .presence(presence, dateTimeFormat):
+                        let presence = (presence as? TelegramUserPresence) ?? TelegramUserPresence(status: .none, lastActivity: 0)
+                        userPresence = presence
+                        let timestamp = CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970
+                        let (string, activity) = stringAndActivityForUserPresence(strings: item.presentationData.strings, dateTimeFormat: dateTimeFormat, presence: presence, relativeTo: Int32(timestamp))
+                        statusAttributedString = NSAttributedString(string: string, font: statusFont, textColor: activity ? item.presentationData.theme.list.itemAccentColor : item.presentationData.theme.list.itemSecondaryTextColor)
+                    case let .addressName(suffix):
+                        if let addressName = peer.addressName {
+                            let addressNameString = NSAttributedString(string: "@" + addressName, font: statusFont, textColor: item.presentationData.theme.list.itemAccentColor)
+                            if !suffix.isEmpty {
+                                let suffixString = NSAttributedString(string: suffix, font: statusFont, textColor: item.presentationData.theme.list.itemSecondaryTextColor)
+                                let finalString = NSMutableAttributedString()
+                                finalString.append(addressNameString)
+                                finalString.append(suffixString)
+                                statusAttributedString = finalString
+                            } else {
+                                statusAttributedString = addressNameString
+                            }
+                        } else if !suffix.isEmpty {
+                            statusAttributedString = NSAttributedString(string: suffix, font: statusFont, textColor: item.presentationData.theme.list.itemSecondaryTextColor)
+                        }
+                    case let .custom(text):
+                        statusAttributedString = NSAttributedString(string: text, font: statusFont, textColor: item.presentationData.theme.list.itemSecondaryTextColor)
                     }
+                }
+            case let .deviceContact(_, contact):
+                let textColor: UIColor = item.presentationData.theme.list.itemPrimaryTextColor
+                
+                if !contact.firstName.isEmpty, !contact.lastName.isEmpty {
+                    let string = NSMutableAttributedString()
+                    string.append(NSAttributedString(string: contact.firstName, font: titleFont, textColor: textColor))
+                    string.append(NSAttributedString(string: " ", font: titleFont, textColor: textColor))
+                    string.append(NSAttributedString(string: contact.lastName, font: titleBoldFont, textColor: textColor))
+                    titleAttributedString = string
+                } else if !contact.firstName.isEmpty {
+                    titleAttributedString = NSAttributedString(string: contact.firstName, font: titleBoldFont, textColor: textColor)
+                } else if !contact.lastName.isEmpty {
+                    titleAttributedString = NSAttributedString(string: contact.lastName, font: titleBoldFont, textColor: textColor)
+                } else {
+                    titleAttributedString = NSAttributedString(string: item.presentationData.strings.User_DeletedAccount, font: titleBoldFont, textColor: textColor)
+                }
+                
+                switch item.status {
+                case let .custom(text):
+                    statusAttributedString = NSAttributedString(string: text, font: statusFont, textColor: item.presentationData.theme.list.itemSecondaryTextColor)
+                default:
+                    break
+                }
             }
             
             var badgeTextLayoutAndApply: (TextNodeLayout, () -> TextNode)?
@@ -566,11 +591,11 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                 let badgeTextColor: UIColor
                 switch badge.type {
                     case .inactive:
-                        currentBadgeBackgroundImage = PresentationResourcesChatList.badgeBackgroundInactive(item.theme)
-                        badgeTextColor = item.theme.chatList.unreadBadgeInactiveTextColor
+                        currentBadgeBackgroundImage = PresentationResourcesChatList.badgeBackgroundInactive(item.presentationData.theme, diameter: 20.0)
+                        badgeTextColor = item.presentationData.theme.chatList.unreadBadgeInactiveTextColor
                     case .active:
-                        currentBadgeBackgroundImage = PresentationResourcesChatList.badgeBackgroundActive(item.theme)
-                        badgeTextColor = item.theme.chatList.unreadBadgeActiveTextColor
+                        currentBadgeBackgroundImage = PresentationResourcesChatList.badgeBackgroundActive(item.presentationData.theme, diameter: 20.0)
+                        badgeTextColor = item.presentationData.theme.chatList.unreadBadgeActiveTextColor
                 }
                 let badgeAttributedString = NSAttributedString(string: badge.count > 0 ? "\(badge.count)" : " ", font: badgeFont, textColor: badgeTextColor)
                 badgeTextLayoutAndApply = makeBadgeTextLayout(TextNodeLayoutArguments(attributedString: badgeAttributedString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: 50.0, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
@@ -595,13 +620,23 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
             
             let (statusLayout, statusApply) = makeStatusLayout(TextNodeLayoutArguments(attributedString: statusAttributedString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: max(0.0, params.width - leftInset - rightInset - badgeSize), height: CGFloat.infinity), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
-            let nodeLayout = ListViewItemNodeLayout(contentSize: CGSize(width: params.width, height: 50.0), insets: UIEdgeInsets(top: firstWithHeader ? 29.0 : 0.0, left: 0.0, bottom: 0.0, right: 0.0))
+            let titleVerticalInset: CGFloat = statusAttributedString == nil ? 13.0 : 6.0
+            let verticalInset: CGFloat = statusAttributedString == nil ? 13.0 : 6.0
+            
+            let statusHeightComponent: CGFloat
+            if statusAttributedString == nil {
+                statusHeightComponent = 0.0
+            } else {
+                statusHeightComponent = -1.0 + statusLayout.size.height
+            }
+            
+            let nodeLayout = ListViewItemNodeLayout(contentSize: CGSize(width: params.width, height: verticalInset * 2.0 + titleLayout.size.height + statusHeightComponent), insets: UIEdgeInsets(top: firstWithHeader ? 29.0 : 0.0, left: 0.0, bottom: 0.0, right: 0.0))
             
             let titleFrame: CGRect
             if statusAttributedString != nil {
-                titleFrame = CGRect(origin: CGPoint(x: leftInset, y: 6.0), size: titleLayout.size)
+                titleFrame = CGRect(origin: CGPoint(x: leftInset, y: titleVerticalInset), size: titleLayout.size)
             } else {
-                titleFrame = CGRect(origin: CGPoint(x: leftInset, y: 14.0), size: titleLayout.size)
+                titleFrame = CGRect(origin: CGPoint(x: leftInset, y: floor((nodeLayout.contentSize.height - titleLayout.size.height) / 2.0)), size: titleLayout.size)
             }
             
             let peerRevealOptions: [ItemListRevealOption]
@@ -613,14 +648,14 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                     let textColor: UIColor
                     switch option.type {
                         case .neutral:
-                            color = item.theme.list.itemDisclosureActions.constructive.fillColor
-                            textColor = item.theme.list.itemDisclosureActions.constructive.foregroundColor
+                            color = item.presentationData.theme.list.itemDisclosureActions.constructive.fillColor
+                            textColor = item.presentationData.theme.list.itemDisclosureActions.constructive.foregroundColor
                         case .warning:
-                            color = item.theme.list.itemDisclosureActions.warning.fillColor
-                            textColor = item.theme.list.itemDisclosureActions.warning.foregroundColor
+                            color = item.presentationData.theme.list.itemDisclosureActions.warning.fillColor
+                            textColor = item.presentationData.theme.list.itemDisclosureActions.warning.foregroundColor
                         case .destructive:
-                            color = item.theme.list.itemDisclosureActions.destructive.fillColor
-                            textColor = item.theme.list.itemDisclosureActions.destructive.foregroundColor
+                            color = item.presentationData.theme.list.itemDisclosureActions.destructive.fillColor
+                            textColor = item.presentationData.theme.list.itemDisclosureActions.destructive.foregroundColor
                     }
                     mappedOptions.append(ItemListRevealOption(key: index, title: option.title, icon: .none, color: color, textColor: textColor))
                     index += 1
@@ -634,21 +669,24 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                 if let strongSelf = self {
                     return (.complete(), { [weak strongSelf] animated, synchronousLoads in
                         if let strongSelf = strongSelf {
-                            strongSelf.layoutParams = (item, params, first, last, firstWithHeader)
+                            strongSelf.layoutParams = (item, params, first, last, firstWithHeader, neighbors)
                             
                             strongSelf.accessibilityLabel = titleAttributedString?.string
                             strongSelf.accessibilityValue = statusAttributedString?.string
+                            
+                            strongSelf.containerNode.frame = CGRect(origin: CGPoint(), size: nodeLayout.contentSize)
+                            strongSelf.containerNode.isGestureEnabled = item.contextAction != nil
                             
                             switch item.peer {
                                 case let .peer(peer, _):
                                     if let peer = peer {
                                         var overrideImage: AvatarNodeImageOverride?
-                                        if peer.id == item.account.peerId, case .generalSearch = item.peerMode {
+                                        if peer.id == item.context.account.peerId, case .generalSearch = item.peerMode {
                                             overrideImage = .savedMessagesIcon
                                         } else if peer.isDeleted {
                                             overrideImage = .deletedIcon
                                         }
-                                        strongSelf.avatarNode.setPeer(account: item.account, theme: item.theme, peer: peer, overrideImage: overrideImage, emptyColor: item.theme.list.mediaPlaceholderColor, synchronousLoad: synchronousLoads)
+                                        strongSelf.avatarNode.setPeer(context: item.context, theme: item.presentationData.theme, peer: peer, overrideImage: overrideImage, emptyColor: item.presentationData.theme.list.mediaPlaceholderColor, synchronousLoad: synchronousLoads)
                                     }
                                 case let .deviceContact(_, contact):
                                     let letters: [String]
@@ -674,12 +712,32 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                             let revealOffset = strongSelf.revealOffset
                             
                             if let _ = updatedTheme {
-                                strongSelf.separatorNode.backgroundColor = item.theme.list.itemPlainSeparatorColor
-                                strongSelf.backgroundNode.backgroundColor = item.theme.list.plainBackgroundColor
-                                strongSelf.highlightedBackgroundNode.backgroundColor = item.theme.list.itemHighlightedBackgroundColor
+                                switch item.style {
+                                case .plain:
+                                    strongSelf.topSeparatorNode.backgroundColor = item.presentationData.theme.list.itemPlainSeparatorColor
+                                    strongSelf.separatorNode.backgroundColor = item.presentationData.theme.list.itemPlainSeparatorColor
+                                    strongSelf.backgroundNode.backgroundColor = item.presentationData.theme.list.plainBackgroundColor
+                                case .blocks:
+                                    strongSelf.topSeparatorNode.backgroundColor = item.presentationData.theme.list.itemBlocksSeparatorColor
+                                    strongSelf.separatorNode.backgroundColor = item.presentationData.theme.list.itemBlocksSeparatorColor
+                                    strongSelf.backgroundNode.backgroundColor = item.presentationData.theme.list.itemBlocksBackgroundColor
+                                }
+                                strongSelf.highlightedBackgroundNode.backgroundColor = item.presentationData.theme.list.itemHighlightedBackgroundColor
                             }
                             
-                            transition.updateFrame(node: strongSelf.avatarNode, frame: CGRect(origin: CGPoint(x: revealOffset + leftInset - 50.0, y: 5.0), size: CGSize(width: 40.0, height: 40.0)))
+                            switch item.style {
+                            case .plain:
+                                strongSelf.topSeparatorNode.isHidden = true
+                            case .blocks:
+                                switch neighbors.top {
+                                case .sameSection(false):
+                                    strongSelf.topSeparatorNode.isHidden = true
+                                default:
+                                    strongSelf.topSeparatorNode.isHidden = false
+                                }
+                            }
+                            
+                            transition.updateFrame(node: strongSelf.avatarNode, frame: CGRect(origin: CGPoint(x: revealOffset + leftInset - 50.0, y: floor((nodeLayout.contentSize.height - avatarDiameter) / 2.0)), size: CGSize(width: avatarDiameter, height: avatarDiameter)))
                             
                             let _ = titleApply()
                             transition.updateFrame(node: strongSelf.titleNode, frame: titleFrame.offsetBy(dx: revealOffset, dy: 0.0))
@@ -688,7 +746,7 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                             strongSelf.statusNode.alpha = item.enabled ? 1.0 : 1.0
                             
                             let _ = statusApply()
-                            let statusFrame = CGRect(origin: CGPoint(x: revealOffset + leftInset, y: 27.0), size: statusLayout.size)
+                            let statusFrame = CGRect(origin: CGPoint(x: revealOffset + leftInset, y: strongSelf.titleNode.frame.maxY - 1.0), size: statusLayout.size)
                             let previousStatusFrame = strongSelf.statusNode.frame
                             
                             strongSelf.statusNode.frame = statusFrame
@@ -701,7 +759,7 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                                     verificationIconNode.displayWithoutProcessing = true
                                     verificationIconNode.displaysAsynchronously = false
                                     strongSelf.verificationIconNode = verificationIconNode
-                                    strongSelf.addSubnode(verificationIconNode)
+                                    strongSelf.containerNode.addSubnode(verificationIconNode)
                                 }
                                 if let verificationIconNode = strongSelf.verificationIconNode {
                                     verificationIconNode.image = verificationIconImage
@@ -720,7 +778,7 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                                     actionIconNode.displayWithoutProcessing = true
                                     actionIconNode.displaysAsynchronously = false
                                     strongSelf.actionIconNode = actionIconNode
-                                    strongSelf.addSubnode(actionIconNode)
+                                    strongSelf.containerNode.addSubnode(actionIconNode)
                                 }
                                 if let actionIconNode = strongSelf.actionIconNode {
                                     actionIconNode.image = actionIconImage
@@ -744,7 +802,7 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                                     badgeBackgroundNode.isLayerBacked = true
                                     badgeBackgroundNode.displaysAsynchronously = false
                                     badgeBackgroundNode.displayWithoutProcessing = true
-                                    strongSelf.addSubnode(badgeBackgroundNode)
+                                    strongSelf.containerNode.addSubnode(badgeBackgroundNode)
                                     strongSelf.badgeBackgroundNode = badgeBackgroundNode
                                     badgeTransition = .immediate
                                 }
@@ -758,7 +816,7 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                                 let badgeTextNode = badgeTextApply()
                                 if badgeTextNode !== strongSelf.badgeTextNode {
                                     strongSelf.badgeTextNode?.removeFromSupernode()
-                                    strongSelf.addSubnode(badgeTextNode)
+                                    strongSelf.containerNode.addSubnode(badgeTextNode)
                                     strongSelf.badgeTextNode = badgeTextNode
                                 }
                                 
@@ -795,6 +853,7 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                             let topHighlightInset: CGFloat = (first || !nodeLayout.insets.top.isZero) ? 0.0 : separatorHeight
                             strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: nodeLayout.contentSize.width, height: nodeLayout.contentSize.height))
                             strongSelf.highlightedBackgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -nodeLayout.insets.top - topHighlightInset), size: CGSize(width: nodeLayout.size.width, height: nodeLayout.size.height + topHighlightInset))
+                            strongSelf.topSeparatorNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(nodeLayout.insets.top, separatorHeight)), size: CGSize(width: nodeLayout.contentSize.width, height: separatorHeight))
                             strongSelf.separatorNode.frame = CGRect(origin: CGPoint(x: leftInset, y: nodeLayout.contentSize.height - separatorHeight), size: CGSize(width: max(0.0, nodeLayout.size.width - leftInset), height: separatorHeight))
                             strongSelf.separatorNode.isHidden = last
                             
@@ -805,7 +864,7 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                             strongSelf.updateLayout(size: nodeLayout.contentSize, leftInset: params.leftInset, rightInset: params.rightInset)
                             
                             if item.editing.editable {
-                                strongSelf.setRevealOptions((left: [], right: [ItemListRevealOption(key: 0, title: item.strings.Common_Delete, icon: .none, color: item.theme.list.itemDisclosureActions.destructive.fillColor, textColor: item.theme.list.itemDisclosureActions.destructive.foregroundColor)]))
+                                strongSelf.setRevealOptions((left: [], right: [ItemListRevealOption(key: 0, title: item.presentationData.strings.Common_Delete, icon: .none, color: item.presentationData.theme.list.itemDisclosureActions.destructive.fillColor, textColor: item.presentationData.theme.list.itemDisclosureActions.destructive.foregroundColor)]))
                                 strongSelf.setRevealOptionsOpened(item.editing.revealed, animated: animated)
                             } else {
                                 strongSelf.setRevealOptions((left: [], right: peerRevealOptions))
@@ -926,7 +985,7 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
     }
     
     override public func header() -> ListViewItemHeader? {
-        if let (item, _, _, _, _) = self.layoutParams {
+        if let (item, _, _, _, _, _) = self.layoutParams {
             return item.header
         } else {
             return nil

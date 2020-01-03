@@ -4,6 +4,7 @@ import SwiftSignalKit
 import Postbox
 import TelegramApi
 import TelegramCore
+import SyncCore
 import TelegramUIPreferences
 import PersistentStringHash
 
@@ -36,7 +37,7 @@ public func cachedWallpaper(account: Account, slug: String, settings: WallpaperS
                 return .single(entry)
             }
         } else {
-            return getWallpaper(account: account, slug: slug)
+            return getWallpaper(network: account.network, slug: slug)
             |> map(Optional.init)
             |> `catch` { _ -> Signal<TelegramWallpaper?, NoError> in
                 return .single(nil)

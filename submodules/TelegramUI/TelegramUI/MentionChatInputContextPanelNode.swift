@@ -3,11 +3,14 @@ import UIKit
 import AsyncDisplayKit
 import Postbox
 import TelegramCore
+import SyncCore
 import Display
 import TelegramPresentationData
+import TelegramUIPreferences
 import MergeLists
 import TextFormat
 import AccountContext
+import LocalizedPeerData
 
 private struct MentionChatInputContextPanelEntry: Comparable, Identifiable {
     let index: Int
@@ -25,8 +28,8 @@ private struct MentionChatInputContextPanelEntry: Comparable, Identifiable {
         return lhs.index < rhs.index
     }
     
-    func item(account: Account, theme: PresentationTheme, inverted: Bool, peerSelected: @escaping (Peer) -> Void) -> ListViewItem {
-        return MentionChatInputPanelItem(account: account, theme: theme, inverted: inverted, peer: self.peer, peerSelected: peerSelected)
+    func item(context: AccountContext, theme: PresentationTheme, fontSize: PresentationFontSize, inverted: Bool, peerSelected: @escaping (Peer) -> Void) -> ListViewItem {
+        return MentionChatInputPanelItem(context: context, theme: theme, fontSize: fontSize, inverted: inverted, peer: self.peer, peerSelected: peerSelected)
     }
 }
 
@@ -36,12 +39,12 @@ private struct CommandChatInputContextPanelTransition {
     let updates: [ListViewUpdateItem]
 }
 
-private func preparedTransition(from fromEntries: [MentionChatInputContextPanelEntry], to toEntries: [MentionChatInputContextPanelEntry], account: Account, theme: PresentationTheme, inverted: Bool, forceUpdate: Bool, peerSelected: @escaping (Peer) -> Void) -> CommandChatInputContextPanelTransition {
+private func preparedTransition(from fromEntries: [MentionChatInputContextPanelEntry], to toEntries: [MentionChatInputContextPanelEntry], context: AccountContext, theme: PresentationTheme, fontSize: PresentationFontSize, inverted: Bool, forceUpdate: Bool, peerSelected: @escaping (Peer) -> Void) -> CommandChatInputContextPanelTransition {
     let (deleteIndices, indicesAndItems, updateIndices) = mergeListsStableWithUpdates(leftList: fromEntries, rightList: toEntries, allUpdated: forceUpdate)
     
     let deletions = deleteIndices.map { ListViewDeleteItem(index: $0, directionHint: nil) }
-    let insertions = indicesAndItems.map { ListViewInsertItem(index: $0.0, previousIndex: $0.2, item: $0.1.item(account: account, theme: theme, inverted: inverted, peerSelected: peerSelected), directionHint: nil) }
-    let updates = updateIndices.map { ListViewUpdateItem(index: $0.0, previousIndex: $0.2, item: $0.1.item(account: account, theme: theme, inverted: inverted, peerSelected: peerSelected), directionHint: nil) }
+    let insertions = indicesAndItems.map { ListViewInsertItem(index: $0.0, previousIndex: $0.2, item: $0.1.item(context: context, theme: theme, fontSize: fontSize, inverted: inverted, peerSelected: peerSelected), directionHint: nil) }
+    let updates = updateIndices.map { ListViewUpdateItem(index: $0.0, previousIndex: $0.2, item: $0.1.item(context: context, theme: theme, fontSize: fontSize, inverted: inverted, peerSelected: peerSelected), directionHint: nil) }
     
     return CommandChatInputContextPanelTransition(deletions: deletions, insertions: insertions, updates: updates)
 }
@@ -58,9 +61,9 @@ final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
     private var currentEntries: [MentionChatInputContextPanelEntry]?
     
     private var enqueuedTransitions: [(CommandChatInputContextPanelTransition, Bool)] = []
-    private var validLayout: (CGSize, CGFloat, CGFloat)?
+    private var validLayout: (CGSize, CGFloat, CGFloat, CGFloat)?
     
-    init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, mode: MentionChatInputContextPanelMode) {
+    init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, fontSize: PresentationFontSize, mode: MentionChatInputContextPanelMode) {
         self.mode = mode
         
         self.listView = ListView()
@@ -70,7 +73,7 @@ final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
         self.listView.limitHitTestToNodes = true
         self.listView.view.disablesInteractiveTransitionGestureRecognizer = true
         
-        super.init(context: context, theme: theme, strings: strings)
+        super.init(context: context, theme: theme, strings: strings, fontSize: fontSize)
         
         self.isOpaque = false
         self.clipsToBounds = true
@@ -100,7 +103,7 @@ final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
     
     private func updateToEntries(entries: [MentionChatInputContextPanelEntry], forceUpdate: Bool) {
         let firstTime = self.currentEntries == nil
-        let transition = preparedTransition(from: self.currentEntries ?? [], to: entries, account: self.context.account, theme: self.theme, inverted: self.mode == .search, forceUpdate: forceUpdate, peerSelected: { [weak self] peer in
+        let transition = preparedTransition(from: self.currentEntries ?? [], to: entries, context: self.context, theme: self.theme, fontSize: self.fontSize, inverted: self.mode == .search, forceUpdate: forceUpdate, peerSelected: { [weak self] peer in
             if let strongSelf = self, let interfaceInteraction = strongSelf.interfaceInteraction {
                 switch strongSelf.mode {
                     case .input:
@@ -203,9 +206,9 @@ final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
         return max(size.height - minimumItemHeights, 0.0)
     }
     
-    override func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState) {
+    override func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState) {
         let hadValidLayout = self.validLayout != nil
-        self.validLayout = (size, leftInset, rightInset)
+        self.validLayout = (size, leftInset, rightInset, bottomInset)
         
         if self.theme !== interfaceState.theme {
             self.theme = interfaceState.theme
@@ -223,29 +226,8 @@ final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
         
         transition.updateFrame(node: self.listView, frame: CGRect(x: 0.0, y: 0.0, width: size.width, height: size.height))
         
-        var duration: Double = 0.0
-        var curve: UInt = 0
-        switch transition {
-            case .immediate:
-                break
-            case let .animated(animationDuration, animationCurve):
-                duration = animationDuration
-                switch animationCurve {
-                    case .easeInOut, .custom:
-                        break
-                    case .spring:
-                        curve = 7
-                }
-        }
-        
-        let listViewCurve: ListViewAnimationCurve
-        if curve == 7 {
-            listViewCurve = .Spring(duration: duration)
-        } else {
-            listViewCurve = .Default(duration: duration)
-        }
-        
-        let updateSizeAndInsets = ListViewUpdateSizeAndInsets(size: size, insets: insets, duration: duration, curve: listViewCurve)
+        let (duration, curve) = listViewAnimationDurationAndCurve(transition: transition)
+        let updateSizeAndInsets = ListViewUpdateSizeAndInsets(size: size, insets: insets, duration: duration, curve: curve)
         
         self.listView.transaction(deleteIndices: [], insertIndicesAndItems: [], updateIndicesAndItems: [], options: [.Synchronous, .LowLatency], scrollToItem: nil, updateSizeAndInsets: updateSizeAndInsets, stationaryItemRange: nil, updateOpaqueState: nil, completion: { _ in })
         

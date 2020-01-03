@@ -446,7 +446,7 @@
     textSize = [displayedComponents sizeForConstrainedWidth:constrainedSize.width];
   }
   
-  CGFloat width = std::ceil(textSize.width + _textContainerInset.left + _textContainerInset.right);
+  CGFloat width = std::ceil(constrainedSize.width);
   CGFloat height = std::ceil(textSize.height + _textContainerInset.top + _textContainerInset.bottom);
   return CGSizeMake(std::fmin(width, constrainedSize.width), std::fmin(height, constrainedSize.height));
 }
@@ -566,6 +566,15 @@
   _textKitComponents.textView.selectedRange = selectedRange;
 }
 
+- (CGRect)selectionRect {
+    UITextRange *range = [_textKitComponents.textView selectedTextRange];
+    if (range != nil) {
+        return [_textKitComponents.textView firstRectForRange:range];
+    } else {
+        return [_textKitComponents.textView bounds];
+    }
+}
+
 #pragma mark - Placeholder
 - (BOOL)isDisplayingPlaceholder
 {
@@ -647,6 +656,7 @@
 }
 
 - (void)setInitialPrimaryLanguage:(NSString *)initialPrimaryLanguage {
+  _initialPrimaryLanguage = initialPrimaryLanguage;
   ((ASPanningOverriddenUITextView *)_textKitComponents.textView).initialPrimaryLanguage = initialPrimaryLanguage;
 }
 

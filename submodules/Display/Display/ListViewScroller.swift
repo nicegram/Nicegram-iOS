@@ -6,7 +6,7 @@ class ListViewScroller: UIScrollView, UIGestureRecognizerDelegate {
         
         #if os(iOS)
         self.scrollsToTop = false
-        if #available(iOSApplicationExtension 11.0, *) {
+        if #available(iOSApplicationExtension 11.0, iOS 11.0, *) {
             self.contentInsetAdjustmentBehavior = .never
         }
         #endif
@@ -21,6 +21,19 @@ class ListViewScroller: UIScrollView, UIGestureRecognizerDelegate {
             return true
         }
         return false
+    }
+    
+    override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        if gestureRecognizer is UIPanGestureRecognizer, let gestureRecognizers = gestureRecognizer.view?.gestureRecognizers {
+            for otherGestureRecognizer in gestureRecognizers {
+                if otherGestureRecognizer !== gestureRecognizer, let panGestureRecognizer = otherGestureRecognizer as? UIPanGestureRecognizer, panGestureRecognizer.minimumNumberOfTouches == 2 {
+                    return gestureRecognizer.numberOfTouches < 2
+                }
+            }
+            return true
+        } else {
+            return true
+        }
     }
     
     #if os(iOS)

@@ -4,9 +4,11 @@ import Display
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import TelegramUIPreferences
 import ItemListUI
+import PresentationDataUtils
 import AccountContext
 import StickerPackPreviewUI
 import ItemListStickerPackItem
@@ -115,10 +117,11 @@ private enum FeaturedStickerPacksEntry: ItemListNodeEntry {
         }
     }
     
-    func item(_ arguments: FeaturedStickerPacksControllerArguments) -> ListViewItem {
+    func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
+        let arguments = arguments as! FeaturedStickerPacksControllerArguments
         switch self {
             case let .pack(_, theme, strings, info, unread, topItem, count, playAnimatedStickers, installed):
-                return ItemListStickerPackItem(theme: theme, strings: strings, account: arguments.account, packInfo: info, itemCount: count, topItem: topItem, unread: unread, control: .installation(installed: installed), editing: ItemListStickerPackItemEditing(editable: false, editing: false, revealed: false, reorderable: false), enabled: true, playAnimatedStickers: playAnimatedStickers, sectionId: self.section, action: {
+                return ItemListStickerPackItem(presentationData: presentationData, account: arguments.account, packInfo: info, itemCount: count, topItem: topItem, unread: unread, control: .installation(installed: installed), editing: ItemListStickerPackItemEditing(editable: false, editing: false, revealed: false, reorderable: false), enabled: true, playAnimatedStickers: playAnimatedStickers, sectionId: self.section, action: {
                     arguments.openStickerPack(info)
                 }, setPackIdWithRevealedOptions: { _, _ in
                 }, addPack: {
@@ -205,7 +208,7 @@ public func featuredStickerPacksController(context: AccountContext) -> ViewContr
     
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get() |> deliverOnMainQueue, stickerPacks.get() |> deliverOnMainQueue, featured.get() |> deliverOnMainQueue, context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.stickerSettings]) |> deliverOnMainQueue)
         |> deliverOnMainQueue
-        |> map { presentationData, state, view, featured, sharedData -> (ItemListControllerState, (ItemListNodeState<FeaturedStickerPacksEntry>, FeaturedStickerPacksEntry.ItemGenerationArguments)) in
+        |> map { presentationData, state, view, featured, sharedData -> (ItemListControllerState, (ItemListNodeState, Any)) in
             var stickerSettings = StickerSettings.defaultSettings
             if let value = sharedData.entries[ApplicationSpecificSharedDataKeys.stickerSettings] as? StickerSettings {
                 stickerSettings = value
@@ -223,9 +226,9 @@ public func featuredStickerPacksController(context: AccountContext) -> ViewContr
             let previous = previousPackCount
             previousPackCount = packCount
             
-            let controllerState = ItemListControllerState(theme: presentationData.theme, title: .text(presentationData.strings.FeaturedStickerPacks_Title), leftNavigationButton: nil, rightNavigationButton: rightNavigationButton, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: true)
+            let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(presentationData.strings.FeaturedStickerPacks_Title), leftNavigationButton: nil, rightNavigationButton: rightNavigationButton, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: true)
             
-            let listState = ItemListNodeState(entries: featuredStickerPacksControllerEntries(presentationData: presentationData, state: state, view: view, featured: featured, unreadPacks: initialUnreadPacks, stickerSettings: stickerSettings), style: .blocks, animateChanges: false)
+            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: featuredStickerPacksControllerEntries(presentationData: presentationData, state: state, view: view, featured: featured, unreadPacks: initialUnreadPacks, stickerSettings: stickerSettings), style: .blocks, animateChanges: false)
             return (controllerState, (listState, arguments))
         } |> afterDisposed {
             actionsDisposable.dispose()
@@ -238,11 +241,13 @@ public func featuredStickerPacksController(context: AccountContext) -> ViewContr
     controller.visibleEntriesUpdated = { entries in
         var unreadIds: [ItemCollectionId] = []
         for entry in entries {
-            switch entry {
-                case let .pack(_, _, _, info, unread, _, _, _, _):
-                    if unread && !alreadyReadIds.contains(info.id) {
-                        unreadIds.append(info.id)
-                    }
+            if let entry = entry as? FeaturedStickerPacksEntry {
+                switch entry {
+                    case let .pack(_, _, _, info, unread, _, _, _, _):
+                        if unread && !alreadyReadIds.contains(info.id) {
+                            unreadIds.append(info.id)
+                        }
+                }
             }
         }
         if !unreadIds.isEmpty {
@@ -259,7 +264,8 @@ public func featuredStickerPacksController(context: AccountContext) -> ViewContr
     }
     
     presentStickerPackController = { [weak controller] info in
-        presentControllerImpl?(StickerPackPreviewController(context: context, stickerPack: .id(id: info.id.id, accessHash: info.accessHash), mode: .settings, parentNavigationController: controller?.navigationController as? NavigationController), ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+        let packReference: StickerPackReference = .id(id: info.id.id, accessHash: info.accessHash)
+        presentControllerImpl?(StickerPackScreen(context: context, mainStickerPack: packReference, stickerPacks: [packReference], parentNavigationController: controller?.navigationController as? NavigationController), nil)
     }
     
     return controller

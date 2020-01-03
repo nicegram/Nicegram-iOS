@@ -4,10 +4,12 @@ import Display
 import AsyncDisplayKit
 import SwiftSignalKit
 import TelegramCore
+import SyncCore
 import Postbox
 import TelegramPresentationData
 import TelegramUIPreferences
 import ItemListUI
+import PresentationDataUtils
 import AccountContext
 
 struct ChatPreviewMessageItem: Equatable {
@@ -94,11 +96,15 @@ class ThemeSettingsChatPreviewItemNode: ListViewItemNode {
     private let backgroundNode: ASImageNode
     private let topStripeNode: ASDisplayNode
     private let bottomStripeNode: ASDisplayNode
+    private let maskNode: ASImageNode
     
     private let containerNode: ASDisplayNode
     private var messageNodes: [ListViewItemNode]?
     
     private var item: ThemeSettingsChatPreviewItem?
+    private var finalImage = true
+    
+    private let disposable = MetaDisposable()
     
     init() {
         self.backgroundNode = ASImageNode()
@@ -113,12 +119,20 @@ class ThemeSettingsChatPreviewItemNode: ListViewItemNode {
         self.bottomStripeNode = ASDisplayNode()
         self.bottomStripeNode.isLayerBacked = true
         
+        self.maskNode = ASImageNode()
+        
         self.containerNode = ASDisplayNode()
         self.containerNode.subnodeTransform = CATransform3DMakeRotation(CGFloat.pi, 0.0, 0.0, 1.0)
         
         super.init(layerBacked: false, dynamicBounce: false)
         
+        self.clipsToBounds = true
+        
         self.addSubnode(self.containerNode)
+    }
+    
+    deinit {
+        self.disposable.dispose()
     }
     
     func asyncLayout() -> (_ item: ThemeSettingsChatPreviewItem, _ params: ListViewItemLayoutParams, _ neighbors: ItemListNeighbors) -> (ListViewItemNodeLayout, () -> Void) {
@@ -127,9 +141,9 @@ class ThemeSettingsChatPreviewItemNode: ListViewItemNode {
         let currentNodes = self.messageNodes
         
         return { item, params, neighbors in
-            var updatedBackgroundImage: UIImage?
+            var updatedBackgroundSignal: Signal<(UIImage?, Bool)?, NoError>?
             if currentItem?.wallpaper != item.wallpaper {
-                updatedBackgroundImage = chatControllerBackgroundImage(theme: item.theme, wallpaper: item.wallpaper, mediaBox: item.context.sharedContext.accountManager.mediaBox, knockoutMode: item.context.sharedContext.immediateExperimentalUISettings.knockoutWallpaper)
+                updatedBackgroundSignal = chatControllerBackgroundImageSignal(wallpaper: item.wallpaper, mediaBox: item.context.account.postbox.mediaBox)
             }
             
             let insets: UIEdgeInsets
@@ -149,7 +163,7 @@ class ThemeSettingsChatPreviewItemNode: ListViewItemNode {
                 }
                 
                 let message = Message(stableId: 1, stableVersion: 0, id: MessageId(peerId: messageItem.outgoing ? otherPeerId : peerId, namespace: 0, id: 1), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, timestamp: 66000, flags: messageItem.outgoing ? [] : [.Incoming], tags: [], globalTags: [], localTags: [], forwardInfo: nil, author: messageItem.outgoing ? TelegramUser(id: otherPeerId, accessHash: nil, firstName: "", lastName: "", username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: []) : nil, text: messageItem.text, attributes: messageItem.reply != nil ? [ReplyMessageAttribute(messageId: replyMessageId)] : [], media: [], peers: peers, associatedMessages: messages, associatedMessageIds: [])
-                items.append(item.context.sharedContext.makeChatMessagePreviewItem(context: item.context, message: message, theme: item.componentTheme, strings: item.strings, wallpaper: item.wallpaper, fontSize: item.fontSize, dateTimeFormat: item.dateTimeFormat, nameOrder: item.nameDisplayOrder, forcedResourceStatus: nil))
+                items.append(item.context.sharedContext.makeChatMessagePreviewItem(context: item.context, message: message, theme: item.componentTheme, strings: item.strings, wallpaper: item.wallpaper, fontSize: item.fontSize, dateTimeFormat: item.dateTimeFormat, nameOrder: item.nameDisplayOrder, forcedResourceStatus: nil, tapMessage: nil, clickThroughMessage: nil))
             }
             
             var nodes: [ListViewItemNode] = []
@@ -209,8 +223,23 @@ class ThemeSettingsChatPreviewItemNode: ListViewItemNode {
                         topOffset += node.frame.size.height
                     }
                     
-                    if let updatedBackgroundImage = updatedBackgroundImage {
-                        strongSelf.backgroundNode.image = updatedBackgroundImage
+                    if let updatedBackgroundSignal = updatedBackgroundSignal {
+                        strongSelf.disposable.set((updatedBackgroundSignal
+                        |> deliverOnMainQueue).start(next: { [weak self] image in
+                            if let strongSelf = self, let (image, final) = image {
+                                if final && !strongSelf.finalImage {
+                                    let tempLayer = CALayer()
+                                    tempLayer.frame = strongSelf.backgroundNode.bounds
+                                    tempLayer.contentsGravity = strongSelf.backgroundNode.layer.contentsGravity
+                                    tempLayer.contents = strongSelf.contents
+                                    strongSelf.layer.addSublayer(tempLayer)
+                                    tempLayer.animateAlpha(from: 1.0, to: 0.0, duration: 0.15, removeOnCompletion: false, completion: { [weak tempLayer] _ in
+                                        tempLayer?.removeFromSuperlayer()
+                                    })
+                                }
+                                strongSelf.backgroundNode.image = image
+                            }
+                        }))
                     }
                     strongSelf.topStripeNode.backgroundColor = item.theme.list.itemBlocksSeparatorColor
                     strongSelf.bottomStripeNode.backgroundColor = item.theme.list.itemBlocksSeparatorColor
@@ -224,11 +253,19 @@ class ThemeSettingsChatPreviewItemNode: ListViewItemNode {
                     if strongSelf.bottomStripeNode.supernode == nil {
                         strongSelf.insertSubnode(strongSelf.bottomStripeNode, at: 2)
                     }
+                    if strongSelf.maskNode.supernode == nil {
+                        strongSelf.insertSubnode(strongSelf.maskNode, at: 3)
+                    }
+                    
+                    let hasCorners = itemListHasRoundedBlockLayout(params)
+                    var hasTopCorners = false
+                    var hasBottomCorners = false
                     switch neighbors.top {
                         case .sameSection(false):
                             strongSelf.topStripeNode.isHidden = true
                         default:
-                            strongSelf.topStripeNode.isHidden = false
+                            hasTopCorners = true
+                            strongSelf.topStripeNode.isHidden = hasCorners
                     }
                     let bottomStripeInset: CGFloat
                     let bottomStripeOffset: CGFloat
@@ -239,8 +276,15 @@ class ThemeSettingsChatPreviewItemNode: ListViewItemNode {
                         default:
                             bottomStripeInset = 0.0
                             bottomStripeOffset = 0.0
+                            hasBottomCorners = true
+                            strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
-                    strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
+                    
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                    
+                    let backgroundFrame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
+                    strongSelf.backgroundNode.frame = backgroundFrame.insetBy(dx: 0.0, dy: -100.0)
+                    strongSelf.maskNode.frame = backgroundFrame.insetBy(dx: params.leftInset, dy: 0.0)
                     strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight))
                     strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight))
                 }

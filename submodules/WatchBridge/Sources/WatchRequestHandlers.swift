@@ -3,6 +3,7 @@ import SwiftSignalKit
 import Postbox
 import Display
 import TelegramCore
+import SyncCore
 import LegacyComponents
 import WatchCommon
 import TelegramPresentationData
@@ -401,7 +402,7 @@ final class WatchMediaHandler: WatchRequestHandler {
                             if let peer = peer, let representation = peer.smallProfileImage {
                                 let imageData = peerAvatarImageData(account: context.account, peer: peer, authorOfMessage: nil, representation: representation, synchronousLoad: false)
                                 if let imageData = imageData {
-                                    return imageData |> deliverOn(Queue.concurrentDefaultQueue())
+                                    return imageData
                                     |> map { data -> UIImage? in
                                         if let data = data, let image = generateImage(targetSize, contextGenerator: { size, context -> Void in
                                             if let imageSource = CGImageSourceCreateWithData(data as CFData, nil), let dataImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
@@ -428,7 +429,7 @@ final class WatchMediaHandler: WatchRequestHandler {
                 
                 let disposable = signal.start(next: { image in
                     if let image = image, let imageData = image.jpegData(compressionQuality: compressionRate) {
-                        sendData(manager: manager, data: imageData, key: key, ext: ".jpg", type: TGBridgeIncomingFileTypeImage)
+                        sendData(manager: manager, data: imageData, key: key, ext: ".jpg", type: TGBridgeIncomingFileTypeImage, forceAsData: true)
                     }
                     subscriber?.putNext(key)
                 }, completed: {
@@ -477,7 +478,7 @@ final class WatchMediaHandler: WatchRequestHandler {
                             |> mapToSignal { mediaAndFileReference -> Signal<(TransformImageArguments) -> DrawingContext?, NoError> in
                                 if let (media, fileReference) = mediaAndFileReference {
                                     if let dimensions = media.dimensions {
-                                        size = dimensions
+                                        size = dimensions.cgSize
                                     }
                                     self.disposable.add(freeMediaFileInteractiveFetched(account: context.account, fileReference: fileReference).start())
                                     return chatMessageSticker(account: context.account, file: media, small: false, fetched: true, onlyFullSize: true)
@@ -540,12 +541,12 @@ final class WatchMediaHandler: WatchRequestHandler {
                                 if let imageReference = candidateMediaReference?.concrete(TelegramMediaImage.self) {
                                     updatedMediaReference = imageReference.abstract
                                     if let representation = largestRepresentationForPhoto(imageReference.media) {
-                                        imageDimensions = representation.dimensions
+                                        imageDimensions = representation.dimensions.cgSize
                                     }
                                 } else if let fileReference = candidateMediaReference?.concrete(TelegramMediaFile.self) {
                                     updatedMediaReference = fileReference.abstract
                                     if let representation = largestImageRepresentation(fileReference.media.previewRepresentations), !fileReference.media.isSticker {
-                                        imageDimensions = representation.dimensions
+                                        imageDimensions = representation.dimensions.cgSize
                                     }
                                 }
                                 if let updatedMediaReference = updatedMediaReference, imageDimensions != nil {

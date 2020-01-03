@@ -3,6 +3,7 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import Postbox
 import TelegramPresentationData
@@ -69,13 +70,6 @@ final class BotCheckoutWebInteractionController: ViewController {
             self.didPlayPresentationAnimation = true
             self.controllerNode.animateIn()
         }
-    }
-    
-    override func dismiss(completion: (() -> Void)? = nil) {
-        self.controllerNode.animateOut(completion: { [weak self] in
-            self?.presentingViewController?.dismiss(animated: false, completion: nil)
-            completion?()
-        })
     }
     
     override func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {

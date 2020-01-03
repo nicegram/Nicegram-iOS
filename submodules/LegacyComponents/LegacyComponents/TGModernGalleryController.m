@@ -93,13 +93,15 @@
 
 - (BOOL)prefersStatusBarHidden
 {
-    if (!TGIsPad() && iosMajorVersion() >= 11 && UIInterfaceOrientationIsLandscape([[LegacyComponentsGlobals provider] applicationStatusBarOrientation]))
+    return true;
+    
+    /*if (!TGIsPad() && iosMajorVersion() >= 11 && UIInterfaceOrientationIsLandscape([[LegacyComponentsGlobals provider] applicationStatusBarOrientation]))
         return true;
     
     if (self.childViewControllers.count > 0)
         return [self.childViewControllers.lastObject prefersStatusBarHidden];
     
-    return [super prefersStatusBarHidden];
+    return [super prefersStatusBarHidden];*/
 }
 
 - (UIRectEdge)preferredScreenEdgesDeferringSystemGestures
@@ -262,7 +264,7 @@
                         {
                             [UIView animateWithDuration:0.2 animations:^
                             {
-                                [strongSelf->_context setApplicationStatusBarAlpha:1.0f];
+                                //[strongSelf->_context setApplicationStatusBarAlpha:1.0f];
                             }];
                         }
                         
@@ -533,7 +535,7 @@
                     {
                         [UIView animateWithDuration:0.2 animations:^
                         {
-                            [strongSelf->_context setApplicationStatusBarAlpha:1.0f];
+                            //[strongSelf->_context setApplicationStatusBarAlpha:1.0f];
                         }];
                     }
                     
@@ -1155,7 +1157,7 @@ static CGFloat transformRotation(CGAffineTransform transform)
     {
         [UIView animateWithDuration:0.2 animations:^
         {
-            [_context setApplicationStatusBarAlpha:1.0f];
+            //[_context setApplicationStatusBarAlpha:1.0f];
         }];
     }
 }
@@ -1189,6 +1191,13 @@ static CGFloat transformRotation(CGAffineTransform transform)
         else
             [_model _transitionCompleted];
     }
+    
+    if (!_previewMode) {
+        if (self.adjustsStatusBarVisibility && (!_showInterface || [_view.interfaceView prefersStatusBarHidden]))
+        {
+            [_context setApplicationStatusBarAlpha:0.0f];
+        }
+    }
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -1201,14 +1210,6 @@ static CGFloat transformRotation(CGAffineTransform transform)
     if (!_showInterface)
     {
         _view.interfaceView.alpha = 0.0f;
-        
-        if (self.adjustsStatusBarVisibility)
-            [_context setApplicationStatusBarAlpha:0.0f];
-    }
-    else if ([_view.interfaceView prefersStatusBarHidden])
-    {
-        if (self.adjustsStatusBarVisibility)
-            [_context setApplicationStatusBarAlpha:0.0f];
     }
 }
 
@@ -1228,7 +1229,7 @@ static CGFloat transformRotation(CGAffineTransform transform)
 
     if (self.adjustsStatusBarVisibility)
     {
-        [_context setApplicationStatusBarAlpha:1.0f];
+        //[_context setApplicationStatusBarAlpha:1.0f];
     }
 }
 

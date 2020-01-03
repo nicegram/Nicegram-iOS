@@ -5,6 +5,7 @@ import Postbox
 import SwiftSignalKit
 import Display
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import TelegramUIPreferences
 import UniversalMediaPlayer
@@ -16,7 +17,8 @@ import PhotoResources
 import TelegramUniversalVideoContent
 import TelegramStringFormatting
 import GalleryUI
-import AnimationUI
+import AnimatedStickerNode
+import TelegramAnimatedStickerNode
 import LocalMediaResources
 import WallpaperResources
 
@@ -273,16 +275,16 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTransitio
             
             var unboundSize: CGSize
             if let image = media as? TelegramMediaImage, let dimensions = largestImageRepresentation(image.representations)?.dimensions {
-                unboundSize = CGSize(width: max(10.0, floor(dimensions.width * 0.5)), height: max(10.0, floor(dimensions.height * 0.5)))
+                unboundSize = CGSize(width: max(10.0, floor(dimensions.cgSize.width * 0.5)), height: max(10.0, floor(dimensions.cgSize.height * 0.5)))
             } else if let file = media as? TelegramMediaFile, var dimensions = file.dimensions {
                 if let thumbnail = file.previewRepresentations.first {
                     let dimensionsVertical = dimensions.width < dimensions.height
                     let thumbnailVertical = thumbnail.dimensions.width < thumbnail.dimensions.height
                     if dimensionsVertical != thumbnailVertical {
-                        dimensions = CGSize(width: dimensions.height, height: dimensions.width)
+                        dimensions = PixelDimensions(CGSize(width: dimensions.cgSize.height, height: dimensions.cgSize.width))
                     }
                 }
-                unboundSize = CGSize(width: floor(dimensions.width * 0.5), height: floor(dimensions.height * 0.5))
+                unboundSize = CGSize(width: floor(dimensions.cgSize.width * 0.5), height: floor(dimensions.cgSize.height * 0.5))
                 if file.isAnimated {
                     unboundSize = unboundSize.aspectFilled(CGSize(width: 480.0, height: 480.0))
                 } else if file.isVideo && !file.isAnimated, case let .constrained(constrainedSize) = sizeCalculation {
@@ -298,29 +300,34 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTransitio
                 }
                 isInlinePlayableVideo = file.isVideo && !isSecretMedia
             } else if let image = media as? TelegramMediaWebFile, let dimensions = image.dimensions {
-                unboundSize = CGSize(width: floor(dimensions.width * 0.5), height: floor(dimensions.height * 0.5))
+                unboundSize = CGSize(width: floor(dimensions.cgSize.width * 0.5), height: floor(dimensions.cgSize.height * 0.5))
             } else if let wallpaper = media as? WallpaperPreviewMedia {
                 switch wallpaper.content {
-                    case let .file(file, _, isTheme, isSupported):
+                    case let .file(file, _, _, _, isTheme, isSupported):
                         if let thumbnail = file.previewRepresentations.first, var dimensions = file.dimensions {
                             let dimensionsVertical = dimensions.width < dimensions.height
                             let thumbnailVertical = thumbnail.dimensions.width < thumbnail.dimensions.height
                             if dimensionsVertical != thumbnailVertical {
-                                dimensions = CGSize(width: dimensions.height, height: dimensions.width)
+                                dimensions = PixelDimensions(CGSize(width: dimensions.cgSize.height, height: dimensions.cgSize.width))
                             }
+                            unboundSize = CGSize(width: floor(dimensions.cgSize.width * 0.5), height: floor(dimensions.cgSize.height * 0.5)).fitted(CGSize(width: 240.0, height: 240.0))
+                        } else if file.mimeType == "image/svg+xml" || file.mimeType == "application/x-tgwallpattern" {
+                            let dimensions = CGSize(width: 1440.0, height: 2960.0)
                             unboundSize = CGSize(width: floor(dimensions.width * 0.5), height: floor(dimensions.height * 0.5)).fitted(CGSize(width: 240.0, height: 240.0))
                         } else if isTheme {
                             if isSupported {
                                 unboundSize = CGSize(width: 160.0, height: 240.0).fitted(CGSize(width: 240.0, height: 240.0))
                             } else if let thumbnail = file.previewRepresentations.first {
-                                unboundSize = CGSize(width: floor(thumbnail.dimensions.width), height: floor(thumbnail.dimensions.height)).fitted(CGSize(width: 240.0, height: 240.0))
+                                unboundSize = CGSize(width: floor(thumbnail.dimensions.cgSize.width), height: floor(thumbnail.dimensions.cgSize.height)).fitted(CGSize(width: 240.0, height: 240.0))
                             } else {
                                 unboundSize = CGSize(width: 54.0, height: 54.0)
                             }
                         } else {
                             unboundSize = CGSize(width: 54.0, height: 54.0)
                         }
-                    case .color:
+                    case .themeSettings:
+                        unboundSize = CGSize(width: 160.0, height: 240.0).fitted(CGSize(width: 240.0, height: 240.0))
+                    case .color, .gradient:
                         unboundSize = CGSize(width: 128.0, height: 128.0)
                 }
             } else {
@@ -431,13 +438,21 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTransitio
                     var onlyFullSizeVideoThumbnail: Bool?
                     
                     var emptyColor: UIColor
+                    var patternArguments: PatternWallpaperArguments?
                     if isSticker {
                         emptyColor = .clear
                     } else {
                         emptyColor = message.effectivelyIncoming(context.account.peerId) ? theme.chat.message.incoming.mediaPlaceholderColor : theme.chat.message.outgoing.mediaPlaceholderColor
                     }
-                    if let wallpaper = media as? WallpaperPreviewMedia, case let .file(_, patternColor, _, _) = wallpaper.content {
-                        emptyColor = patternColor ?? UIColor(rgb: 0xd6e2ee, alpha: 0.5)
+                    if let wallpaper = media as? WallpaperPreviewMedia {
+                        if case let .file(_, patternColor, patternBottomColor, rotation, _, _) = wallpaper.content {
+                            var colors: [UIColor] = []
+                            colors.append(patternColor ?? UIColor(rgb: 0xd6e2ee, alpha: 0.5))
+                            if let patternBottomColor = patternBottomColor {
+                                colors.append(patternBottomColor)
+                            }
+                            patternArguments = PatternWallpaperArguments(colors: colors, rotation: rotation)
+                        }
                     }
                     
                     if mediaUpdated || isSendingUpdated || automaticPlaybackUpdated {
@@ -497,9 +512,9 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTransitio
                                 }
                             } else {
                                 if file.isAnimatedSticker {
-                                    let dimensions = file.dimensions ?? CGSize(width: 512.0, height: 512.0)
+                                    let dimensions = file.dimensions ?? PixelDimensions(width: 512, height: 512)
                                     updateImageSignal = { synchronousLoad in
-                                        return chatMessageAnimatedSticker(postbox: context.account.postbox, file: file, small: false, size: dimensions.aspectFitted(CGSize(width: 400.0, height: 400.0)))
+                                        return chatMessageAnimatedSticker(postbox: context.account.postbox, file: file, small: false, size: dimensions.cgSize.aspectFitted(CGSize(width: 400.0, height: 400.0)))
                                     }
                                 } else if file.isSticker {
                                     updateImageSignal = { synchronousLoad in
@@ -521,8 +536,12 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTransitio
                             if file.isVideo && !isSecretMedia && automaticPlayback && !uploading {
                                 updateVideoFile = file
                                 if hasCurrentVideoNode {
-                                    if let currentFile = currentMedia as? TelegramMediaFile, currentFile.resource is EmptyMediaResource {
-                                        replaceVideoNode = true
+                                    if let currentFile = currentMedia as? TelegramMediaFile {
+                                        if currentFile.resource is EmptyMediaResource {
+                                            replaceVideoNode = true
+                                        } else if currentFile.fileId.namespace == Namespaces.Media.CloudFile && file.fileId.namespace == Namespaces.Media.CloudFile && currentFile.fileId != file.fileId {
+                                            replaceVideoNode = true
+                                        }
                                     }
                                 } else if !(file.resource is LocalFileVideoMediaResource) {
                                     replaceVideoNode = true
@@ -566,23 +585,30 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTransitio
                         } else if let wallpaper = media as? WallpaperPreviewMedia {
                             updateImageSignal = { synchronousLoad in
                                 switch wallpaper.content {
-                                    case let .file(file, _, isTheme, _):
+                                    case let .file(file, _, _, _, isTheme, _):
                                         if isTheme {
-                                            return themeImage(account: context.account, accountManager: context.sharedContext.accountManager, fileReference: FileMediaReference.message(message: MessageReference(message), media: file))
+                                            return themeImage(account: context.account, accountManager: context.sharedContext.accountManager, source: .file(FileMediaReference.message(message: MessageReference(message), media: file)))
                                         } else {
-                                            let representations: [ImageRepresentationWithReference] = file.previewRepresentations.map({ ImageRepresentationWithReference(representation: $0, reference: AnyMediaReference.message(message: MessageReference(message), media: file).resourceReference($0.resource)) })
-                                            if file.mimeType == "image/png" {
+                                            var representations: [ImageRepresentationWithReference] = file.previewRepresentations.map({ ImageRepresentationWithReference(representation: $0, reference: AnyMediaReference.message(message: MessageReference(message), media: file).resourceReference($0.resource)) })
+                                            if file.mimeType == "image/svg+xml" || file.mimeType == "application/x-tgwallpattern" {
+                                                representations.append(ImageRepresentationWithReference(representation: .init(dimensions: PixelDimensions(width: 1440, height: 2960), resource: file.resource), reference: AnyMediaReference.message(message: MessageReference(message), media: file).resourceReference(file.resource)))
+                                            }
+                                            if ["image/png", "image/svg+xml", "application/x-tgwallpattern"].contains(file.mimeType) {
                                                 return patternWallpaperImage(account: context.account, accountManager: context.sharedContext.accountManager, representations: representations, mode: .thumbnail)
                                             } else {
                                                 return wallpaperImage(account: context.account, accountManager: context.sharedContext.accountManager, fileReference: FileMediaReference.message(message: MessageReference(message), media: file), representations: representations, alwaysShowThumbnailFirst: false, thumbnail: true, autoFetchFullSize: true)
                                             }
                                         }
+                                    case let .themeSettings(settings):
+                                        return themeImage(account: context.account, accountManager: context.sharedContext.accountManager, source: .settings(settings))
                                     case let .color(color):
-                                        return solidColor(color)
+                                        return solidColorImage(color)
+                                    case let .gradient(topColor, bottomColor, rotation):
+                                        return gradientImage([topColor, bottomColor], rotation: rotation ?? 0)
                                 }
                             }
                             
-                            if case let .file(file, _, _, _) = wallpaper.content {
+                            if case let .file(file, _, _, _, _, _) = wallpaper.content {
                                 updatedFetchControls = FetchControls(fetch: { manual in
                                     if let strongSelf = self {
                                         strongSelf.fetchDisposable.set(messageMediaFileInteractiveFetched(context: context, message: message, file: file, userInitiated: manual).start())
@@ -590,6 +616,7 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTransitio
                                 }, cancel: {
                                     messageMediaFileCancelInteractiveFetch(context: context, messageId: message.id, file: file)
                                 })
+                            } else if case .themeSettings = wallpaper.content {
                             } else {
                                 boundingSize = CGSize(width: boundingSize.width, height: boundingSize.width)
                             }
@@ -626,18 +653,18 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTransitio
                             }
                         } else if let wallpaper = media as? WallpaperPreviewMedia {
                             switch wallpaper.content {
-                                case let .file(file, _, _, _):
+                                case let .file(file, _, _, _, _, _):
                                     updatedStatusSignal = messageMediaFileStatus(context: context, messageId: message.id, file: file)
                                     |> map { resourceStatus -> (MediaResourceStatus, MediaResourceStatus?) in
                                         return (resourceStatus, nil)
                                     }
-                                case .color:
+                                case .themeSettings, .color, .gradient:
                                     updatedStatusSignal = .single((.Local, nil))
                             }
                         }
                     }
                     
-                    let arguments = TransformImageArguments(corners: corners, imageSize: drawingSize, boundingSize: boundingSize, intrinsicInsets: UIEdgeInsets(), resizeMode: isInlinePlayableVideo ? .fill(.black) : .blurBackground, emptyColor: emptyColor)
+                    let arguments = TransformImageArguments(corners: corners, imageSize: drawingSize, boundingSize: boundingSize, intrinsicInsets: UIEdgeInsets(), resizeMode: isInlinePlayableVideo ? .fill(.black) : .blurBackground, emptyColor: emptyColor, custom: patternArguments)
                     
                     let imageFrame = CGRect(origin: CGPoint(x: -arguments.insets.left, y: -arguments.insets.top), size: arguments.drawingSize)
                     
@@ -729,9 +756,9 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTransitio
                                         strongSelf.imageNode.isHidden = true
                                     }
                                     strongSelf.animatedStickerNode = animatedStickerNode
-                                    let dimensions = updatedAnimatedStickerFile.dimensions ?? CGSize(width: 512.0, height: 512.0)
-                                    let fittedDimensions = dimensions.aspectFitted(CGSize(width: 384.0, height: 384.0))
-                                    animatedStickerNode.setup(account: context.account, resource: .resource(updatedAnimatedStickerFile.resource), width: Int(fittedDimensions.width), height: Int(fittedDimensions.height), mode: .cached)
+                                    let dimensions = updatedAnimatedStickerFile.dimensions ?? PixelDimensions(width: 512, height: 512)
+                                    let fittedDimensions = dimensions.cgSize.aspectFitted(CGSize(width: 384.0, height: 384.0))
+                                    animatedStickerNode.setup(source: AnimatedStickerResourceSource(account: context.account, resource: updatedAnimatedStickerFile.resource), width: Int(fittedDimensions.width), height: Int(fittedDimensions.height), mode: .cached)
                                     strongSelf.insertSubnode(animatedStickerNode, aboveSubnode: strongSelf.imageNode)
                                     animatedStickerNode.visibility = strongSelf.visibility
                                 }
@@ -832,7 +859,7 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTransitio
                                         }
                                         strongSelf.fetchDisposable.set(visibilityAwareFetchSignal.start())
                                     }
-                                } else if case .prefetch = automaticDownload, message.id.namespace != Namespaces.Message.SecretIncoming && message.id.namespace != Namespaces.Message.Local {
+                                } else if case .prefetch = automaticDownload, message.id.namespace != Namespaces.Message.SecretIncoming /*&& message.id.namespace != Namespaces.Message.Local*/ {
                                     if let file = media as? TelegramMediaFile {
                                         let fetchSignal = preloadVideoResource(postbox: context.account.postbox, resourceReference: AnyMediaReference.message(message: MessageReference(message), media: file).resourceReference(file.resource), duration: 4.0)
                                         let visibilityAwareFetchSignal = strongSelf.visibilityPromise.get()
@@ -1014,6 +1041,10 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTransitio
             
             if let file = self.media as? TelegramMediaFile, file.isAnimated {
                 muted = false
+                
+                if case .Fetching = fetchStatus, message.flags.isSending, file.resource is CloudDocumentMediaResource {
+                    fetchStatus = .Local
+                }
             }
             
             if message.flags.contains(.Unsent) {
@@ -1307,8 +1338,14 @@ final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTransitio
         }
     }
     
-    func transitionNode() -> (ASDisplayNode, () -> (UIView?, UIView?))? {
-        return (self, { [weak self] in
+    func transitionNode() -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
+        let bounds: CGRect
+        if let currentImageArguments = self.currentImageArguments {
+            bounds = currentImageArguments.imageRect
+        } else {
+            bounds = self.bounds
+        }
+        return (self, bounds, { [weak self] in
             var badgeNodeHidden: Bool?
             if let badgeNode = self?.badgeNode {
                 badgeNodeHidden = badgeNode.isHidden

@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 import TelegramCore
+import SyncCore
 import Postbox
 import SwiftSignalKit
 import Display
@@ -143,7 +144,7 @@ final class EditAccessoryPanelNode: AccessoryPanelNode {
             if let currentEditMediaReference = self.currentEditMediaReference {
                 effectiveMessage = effectiveMessage.withUpdatedMedia([currentEditMediaReference.media])
             }
-            (text, _) = descriptionStringForMessage(effectiveMessage, strings: self.strings, nameDisplayOrder: self.nameDisplayOrder, accountPeerId: self.context.account.peerId)
+            (text, _) = descriptionStringForMessage(contentSettings: context.currentContentSettings.with { $0 }, message: effectiveMessage, strings: self.strings, nameDisplayOrder: self.nameDisplayOrder, accountPeerId: self.context.account.peerId)
         }
         
         var updatedMediaReference: AnyMediaReference?
@@ -164,12 +165,12 @@ final class EditAccessoryPanelNode: AccessoryPanelNode {
             if let imageReference = candidateMediaReference?.concrete(TelegramMediaImage.self) {
                 updatedMediaReference = imageReference.abstract
                 if let representation = largestRepresentationForPhoto(imageReference.media) {
-                    imageDimensions = representation.dimensions
+                    imageDimensions = representation.dimensions.cgSize
                 }
             } else if let fileReference = candidateMediaReference?.concrete(TelegramMediaFile.self) {
                 updatedMediaReference = fileReference.abstract
                 if !fileReference.media.isInstantVideo, let representation = largestImageRepresentation(fileReference.media.previewRepresentations), !fileReference.media.isSticker {
-                    imageDimensions = representation.dimensions
+                    imageDimensions = representation.dimensions.cgSize
                 }
             }
         }
@@ -212,7 +213,7 @@ final class EditAccessoryPanelNode: AccessoryPanelNode {
             if let currentEditMediaReference = self.currentEditMediaReference {
                 effectiveMessage = effectiveMessage.withUpdatedMedia([currentEditMediaReference.media])
             }
-            switch messageContentKind(effectiveMessage, strings: strings, nameDisplayOrder: nameDisplayOrder, accountPeerId: self.context.account.peerId) {
+            switch messageContentKind(contentSettings: self.context.currentContentSettings.with { $0 }, message: effectiveMessage, strings: strings, nameDisplayOrder: nameDisplayOrder, accountPeerId: self.context.account.peerId) {
                 case .text:
                     isMedia = false
                 default:
@@ -316,7 +317,7 @@ final class EditAccessoryPanelNode: AccessoryPanelNode {
         self.statusNode.frame = CGRect(origin: CGPoint(x: 18.0, y: 15.0), size: indicatorSize).insetBy(dx: -2.0, dy: -2.0)
         
         let closeButtonSize = CGSize(width: 44.0, height: bounds.height)
-        let closeButtonFrame = CGRect(origin: CGPoint(x: bounds.width - rightInset - closeButtonSize.width + 12.0, y: 2.0), size: closeButtonSize)
+        let closeButtonFrame = CGRect(origin: CGPoint(x: bounds.width - rightInset - closeButtonSize.width + 16.0, y: 2.0), size: closeButtonSize)
         self.closeButton.frame = closeButtonFrame
         
         self.actionArea.frame = CGRect(origin: CGPoint(x: leftInset, y: 2.0), size: CGSize(width: closeButtonFrame.minX - leftInset, height: bounds.height))

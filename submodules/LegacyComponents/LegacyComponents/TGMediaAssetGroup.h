@@ -16,7 +16,9 @@ typedef enum
     TGMediaAssetGroupSubtypeTimelapses,
     TGMediaAssetGroupSubtypeBursts,
     TGMediaAssetGroupSubtypeScreenshots,
-    TGMediaAssetGroupSubtypeRegular
+    TGMediaAssetGroupSubtypeAnimated,
+    TGMediaAssetGroupSubtypeRegular,
+    TGMediaAssetGroupSubtypeHidden
 } TGMediaAssetGroupSubtype;
 
 @interface TGMediaAssetGroup : NSObject

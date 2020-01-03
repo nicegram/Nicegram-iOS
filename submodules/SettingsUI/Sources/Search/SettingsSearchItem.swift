@@ -4,10 +4,12 @@ import Display
 import AsyncDisplayKit
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import MergeLists
 import ItemListUI
+import PresentationDataUtils
 import AccountContext
 import SearchBarNode
 import SearchUI
@@ -51,6 +53,8 @@ extension SettingsSearchableItemIcon {
                 return PresentationResourcesSettings.watch
             case .passport:
                 return PresentationResourcesSettings.passport
+            case .wallet:
+                return PresentationResourcesSettings.wallet
             case .support:
                 return PresentationResourcesSettings.support
             case .faq:
@@ -71,12 +75,13 @@ final class SettingsSearchItem: ItemListControllerSearch {
     let exceptionsList: Signal<NotificationExceptionsList?, NoError>
     let archivedStickerPacks: Signal<[ArchivedStickerPackItem]?, NoError>
     let privacySettings: Signal<AccountPrivacySettings?, NoError>
+    let hasWallet: Signal<Bool, NoError>
     
     private var updateActivity: ((Bool) -> Void)?
     private var activity: ValuePromise<Bool> = ValuePromise(ignoreRepeated: false)
     private let activityDisposable = MetaDisposable()
     
-    init(context: AccountContext, theme: PresentationTheme, placeholder: String, activated: Bool, updateActivated: @escaping (Bool) -> Void, presentController: @escaping (ViewController, Any?) -> Void, pushController: @escaping (ViewController) -> Void, getNavigationController: (() -> NavigationController?)?, exceptionsList: Signal<NotificationExceptionsList?, NoError>, archivedStickerPacks: Signal<[ArchivedStickerPackItem]?, NoError>, privacySettings: Signal<AccountPrivacySettings?, NoError>) {
+    init(context: AccountContext, theme: PresentationTheme, placeholder: String, activated: Bool, updateActivated: @escaping (Bool) -> Void, presentController: @escaping (ViewController, Any?) -> Void, pushController: @escaping (ViewController) -> Void, getNavigationController: (() -> NavigationController?)?, exceptionsList: Signal<NotificationExceptionsList?, NoError>, archivedStickerPacks: Signal<[ArchivedStickerPackItem]?, NoError>, privacySettings: Signal<AccountPrivacySettings?, NoError>, hasWallet: Signal<Bool, NoError>) {
         self.context = context
         self.theme = theme
         self.placeholder = placeholder
@@ -88,6 +93,7 @@ final class SettingsSearchItem: ItemListControllerSearch {
         self.exceptionsList = exceptionsList
         self.archivedStickerPacks = archivedStickerPacks
         self.privacySettings = privacySettings
+        self.hasWallet = hasWallet
         self.activityDisposable.set((activity.get() |> mapToSignal { value -> Signal<Bool, NoError> in
             if value {
                 return .single(value) |> delay(0.2, queue: Queue.mainQueue())
@@ -151,7 +157,7 @@ final class SettingsSearchItem: ItemListControllerSearch {
                 pushController(c)
             }, presentController: { c, a in
                 presentController(c, a)
-            }, getNavigationController: self.getNavigationController, exceptionsList: self.exceptionsList, archivedStickerPacks: self.archivedStickerPacks, privacySettings: self.privacySettings)
+            }, getNavigationController: self.getNavigationController, exceptionsList: self.exceptionsList, archivedStickerPacks: self.archivedStickerPacks, privacySettings: self.privacySettings, hasWallet: self.hasWallet)
         }
     }
 }
@@ -325,7 +331,7 @@ private final class SettingsSearchContainerNode: SearchDisplayControllerContentN
     private var presentationDataDisposable: Disposable?
     private let presentationDataPromise: Promise<PresentationData>
     
-    init(context: AccountContext, openResult: @escaping (SettingsSearchableItem) -> Void, exceptionsList: Signal<NotificationExceptionsList?, NoError>, archivedStickerPacks: Signal<[ArchivedStickerPackItem]?, NoError>, privacySettings: Signal<AccountPrivacySettings?, NoError>) {
+    init(context: AccountContext, openResult: @escaping (SettingsSearchableItem) -> Void, exceptionsList: Signal<NotificationExceptionsList?, NoError>, archivedStickerPacks: Signal<[ArchivedStickerPackItem]?, NoError>, privacySettings: Signal<AccountPrivacySettings?, NoError>, hasWallet: Signal<Bool, NoError>) {
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
         self.presentationDataPromise = Promise(self.presentationData)
         
@@ -349,7 +355,7 @@ private final class SettingsSearchContainerNode: SearchDisplayControllerContentN
         })
         
         let searchableItems = Promise<[SettingsSearchableItem]>()
-        searchableItems.set(settingsSearchableItems(context: context, notificationExceptionsList: exceptionsList, archivedStickerPacks: archivedStickerPacks, privacySettings: privacySettings))
+        searchableItems.set(settingsSearchableItems(context: context, notificationExceptionsList: exceptionsList, archivedStickerPacks: archivedStickerPacks, privacySettings: privacySettings, hasWallet: hasWallet))
         
         let queryAndFoundItems = combineLatest(searchableItems.get(), faqSearchableItems(context: context))
         |> mapToSignal { searchableItems, faqSearchableItems -> Signal<(String, [SettingsSearchableItem])?, NoError> in
@@ -562,27 +568,7 @@ private final class SettingsSearchContainerNode: SearchDisplayControllerContentN
     override func containerLayoutUpdated(_ layout: ContainerViewLayout, navigationBarHeight: CGFloat, transition: ContainedViewLayoutTransition) {
         super.containerLayoutUpdated(layout, navigationBarHeight: navigationBarHeight, transition: transition)
                 
-        var duration: Double = 0.0
-        var curve: UInt = 0
-        switch transition {
-            case .immediate:
-                break
-            case let .animated(animationDuration, animationCurve):
-                duration = animationDuration
-                switch animationCurve {
-                    case .easeInOut, .custom:
-                        break
-                    case .spring:
-                        curve = 7
-                }
-        }
-        
-        let listViewCurve: ListViewAnimationCurve
-        if curve == 7 {
-            listViewCurve = .Spring(duration: duration)
-        } else {
-            listViewCurve = .Default(duration: nil)
-        }
+        let (duration, curve) = listViewAnimationDurationAndCurve(transition: transition)
         
         var insets = layout.insets(options: [.input])
         insets.top += navigationBarHeight
@@ -590,10 +576,10 @@ private final class SettingsSearchContainerNode: SearchDisplayControllerContentN
         insets.right += layout.safeInsets.right
         
         self.recentListNode.frame = CGRect(origin: CGPoint(), size: layout.size)
-        self.recentListNode.transaction(deleteIndices: [], insertIndicesAndItems: [], updateIndicesAndItems: [], options: [.Synchronous], scrollToItem: nil, updateSizeAndInsets: ListViewUpdateSizeAndInsets(size: layout.size, insets: insets, duration: duration, curve: listViewCurve), stationaryItemRange: nil, updateOpaqueState: nil, completion: { _ in })
+        self.recentListNode.transaction(deleteIndices: [], insertIndicesAndItems: [], updateIndicesAndItems: [], options: [.Synchronous], scrollToItem: nil, updateSizeAndInsets: ListViewUpdateSizeAndInsets(size: layout.size, insets: insets, duration: duration, curve: curve), stationaryItemRange: nil, updateOpaqueState: nil, completion: { _ in })
         
         self.listNode.frame = CGRect(origin: CGPoint(), size: layout.size)
-        self.listNode.transaction(deleteIndices: [], insertIndicesAndItems: [], updateIndicesAndItems: [], options: [.Synchronous], scrollToItem: nil, updateSizeAndInsets: ListViewUpdateSizeAndInsets(size: layout.size, insets: insets, duration: duration, curve: listViewCurve), stationaryItemRange: nil, updateOpaqueState: nil, completion: { _ in })
+        self.listNode.transaction(deleteIndices: [], insertIndicesAndItems: [], updateIndicesAndItems: [], options: [.Synchronous], scrollToItem: nil, updateSizeAndInsets: ListViewUpdateSizeAndInsets(size: layout.size, insets: insets, duration: duration, curve: curve), stationaryItemRange: nil, updateOpaqueState: nil, completion: { _ in })
         
         if !self.hasValidLayout {
             self.hasValidLayout = true
@@ -632,10 +618,11 @@ private final class SettingsSearchItemNode: ItemListControllerSearchNode {
     let exceptionsList: Signal<NotificationExceptionsList?, NoError>
     let archivedStickerPacks: Signal<[ArchivedStickerPackItem]?, NoError>
     let privacySettings: Signal<AccountPrivacySettings?, NoError>
+    let hasWallet: Signal<Bool, NoError>
     
     var cancel: () -> Void
     
-    init(context: AccountContext, cancel: @escaping () -> Void, updateActivity: @escaping(Bool) -> Void, pushController: @escaping (ViewController) -> Void, presentController: @escaping (ViewController, Any?) -> Void, getNavigationController: (() -> NavigationController?)?, exceptionsList: Signal<NotificationExceptionsList?, NoError>, archivedStickerPacks: Signal<[ArchivedStickerPackItem]?, NoError>, privacySettings: Signal<AccountPrivacySettings?, NoError>) {
+    init(context: AccountContext, cancel: @escaping () -> Void, updateActivity: @escaping(Bool) -> Void, pushController: @escaping (ViewController) -> Void, presentController: @escaping (ViewController, Any?) -> Void, getNavigationController: (() -> NavigationController?)?, exceptionsList: Signal<NotificationExceptionsList?, NoError>, archivedStickerPacks: Signal<[ArchivedStickerPackItem]?, NoError>, privacySettings: Signal<AccountPrivacySettings?, NoError>, hasWallet: Signal<Bool, NoError>) {
         self.context = context
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
         self.cancel = cancel
@@ -645,6 +632,7 @@ private final class SettingsSearchItemNode: ItemListControllerSearchNode {
         self.exceptionsList = exceptionsList
         self.archivedStickerPacks = archivedStickerPacks
         self.privacySettings = privacySettings
+        self.hasWallet = hasWallet
         
         super.init()
     }
@@ -686,7 +674,7 @@ private final class SettingsSearchItemNode: ItemListControllerSearchNode {
                     }
                 })
             }
-        }, exceptionsList: self.exceptionsList, archivedStickerPacks: self.archivedStickerPacks, privacySettings: self.privacySettings), cancel: { [weak self] in
+        }, exceptionsList: self.exceptionsList, archivedStickerPacks: self.archivedStickerPacks, privacySettings: self.privacySettings, hasWallet: self.hasWallet), cancel: { [weak self] in
             self?.cancel()
         })
         

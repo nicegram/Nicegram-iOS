@@ -4,6 +4,7 @@ import AsyncDisplayKit
 import Display
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import AccountContext
@@ -11,6 +12,7 @@ import SearchBarNode
 import SearchUI
 import ContactListUI
 import ChatListUI
+import SegmentedControlNode
 
 final class PeerSelectionControllerNode: ASDisplayNode {
     private let context: AccountContext
@@ -28,7 +30,7 @@ final class PeerSelectionControllerNode: ASDisplayNode {
     
     private let toolbarBackgroundNode: ASDisplayNode?
     private let toolbarSeparatorNode: ASDisplayNode?
-    private let segmentedControl: UISegmentedControl?
+    private let segmentedControlNode: SegmentedControlNode?
     
     var contactListNode: ContactListNode?
     let chatListNode: ChatListNode
@@ -71,17 +73,19 @@ final class PeerSelectionControllerNode: ASDisplayNode {
             self.toolbarSeparatorNode = ASDisplayNode()
             self.toolbarSeparatorNode?.backgroundColor = self.presentationData.theme.rootController.navigationBar.separatorColor
             
-            self.segmentedControl = UISegmentedControl(items: [self.presentationData.strings.DialogList_TabTitle, self.presentationData.strings.Contacts_TabTitle])
-            self.segmentedControl?.tintColor = self.presentationData.theme.rootController.navigationBar.accentTextColor
-            self.segmentedControl?.selectedSegmentIndex = 0
+            let items = [
+                self.presentationData.strings.DialogList_TabTitle,
+                self.presentationData.strings.Contacts_TabTitle
+            ]
+            self.segmentedControlNode = SegmentedControlNode(theme: SegmentedControlTheme(theme: self.presentationData.theme), items: items.map { SegmentedControlItem(title: $0) }, selectedIndex: 0)
         } else {
             self.toolbarBackgroundNode = nil
             self.toolbarSeparatorNode = nil
-            self.segmentedControl = nil
+            self.segmentedControlNode = nil
         }
        
         
-        self.chatListNode = ChatListNode(context: context, groupId: .root, controlsHistoryPreload: false, mode: .peers(filter: filter), theme: presentationData.theme, strings: presentationData.strings, dateTimeFormat: presentationData.dateTimeFormat, nameSortOrder: presentationData.nameSortOrder, nameDisplayOrder: presentationData.nameDisplayOrder, disableAnimations: presentationData.disableAnimations)
+        self.chatListNode = ChatListNode(context: context, groupId: .root, controlsHistoryPreload: false, mode: .peers(filter: filter), theme: presentationData.theme, fontSize: presentationData.fontSize, strings: presentationData.strings, dateTimeFormat: presentationData.dateTimeFormat, nameSortOrder: presentationData.nameSortOrder, nameDisplayOrder: presentationData.nameDisplayOrder, disableAnimations: presentationData.disableAnimations)
         
         super.init()
         
@@ -121,10 +125,13 @@ final class PeerSelectionControllerNode: ASDisplayNode {
         })
         
         if hasContactSelector {
+            self.segmentedControlNode!.selectedIndexChanged = { [weak self] index in
+                self?.indexChanged(index)
+            }
+            
             self.addSubnode(self.toolbarBackgroundNode!)
             self.addSubnode(self.toolbarSeparatorNode!)
-            self.view.addSubview(self.segmentedControl!)
-            self.segmentedControl!.addTarget(self, action: #selector(indexChanged), for: .valueChanged)
+            self.addSubnode(self.segmentedControlNode!)
         }
         
         
@@ -138,11 +145,11 @@ final class PeerSelectionControllerNode: ASDisplayNode {
     private func updateThemeAndStrings() {
         self.backgroundColor = self.presentationData.theme.chatList.backgroundColor
         self.searchDisplayController?.updatePresentationData(self.presentationData)
-        self.chatListNode.updateThemeAndStrings(theme: self.presentationData.theme, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, nameSortOrder: self.presentationData.nameSortOrder, nameDisplayOrder: self.presentationData.nameDisplayOrder, disableAnimations: self.presentationData.disableAnimations)
+        self.chatListNode.updateThemeAndStrings(theme: self.presentationData.theme, fontSize: self.presentationData.fontSize, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, nameSortOrder: self.presentationData.nameSortOrder, nameDisplayOrder: self.presentationData.nameDisplayOrder, disableAnimations: self.presentationData.disableAnimations)
         
         self.toolbarBackgroundNode?.backgroundColor = self.presentationData.theme.rootController.navigationBar.backgroundColor
         self.toolbarSeparatorNode?.backgroundColor = self.presentationData.theme.rootController.navigationBar.separatorColor
-        self.segmentedControl?.tintColor = self.presentationData.theme.rootController.navigationBar.accentTextColor
+        self.segmentedControlNode?.updateTheme(SegmentedControlTheme(theme: self.presentationData.theme))
     }
     
     func containerLayoutUpdated(_ layout: ContainerViewLayout, navigationBarHeight: CGFloat, actualNavigationBarHeight: CGFloat, transition: ContainedViewLayoutTransition) {
@@ -152,19 +159,18 @@ final class PeerSelectionControllerNode: ASDisplayNode {
         
         var toolbarHeight: CGFloat = cleanInsets.bottom
 
-        if let segmentedControl = segmentedControl, let toolbarBackgroundNode = toolbarBackgroundNode, let toolbarSeparatorNode = toolbarSeparatorNode {
-            toolbarHeight += 44
+        if let segmentedControlNode = self.segmentedControlNode, let toolbarBackgroundNode = self.toolbarBackgroundNode, let toolbarSeparatorNode = self.toolbarSeparatorNode {
+            toolbarHeight += 44.0
             transition.updateFrame(node: toolbarBackgroundNode, frame: CGRect(origin: CGPoint(x: 0.0, y: layout.size.height - toolbarHeight), size: CGSize(width: layout.size.width, height: toolbarHeight)))
             transition.updateFrame(node: toolbarSeparatorNode, frame: CGRect(origin: CGPoint(x: 0.0, y: layout.size.height - toolbarHeight), size: CGSize(width: layout.size.width, height: UIScreenPixel)))
             
-            var controlSize = segmentedControl.sizeThatFits(layout.size)
-            controlSize.width = min(layout.size.width, max(200.0, controlSize.width))
-            transition.updateFrame(view: segmentedControl, frame: CGRect(origin: CGPoint(x: floor((layout.size.width - controlSize.width) / 2.0), y: layout.size.height - toolbarHeight + floor((44.0 - controlSize.height) / 2.0)), size: controlSize))
+            let controlSize = segmentedControlNode.updateLayout(.sizeToFit(maximumWidth: layout.size.width, minimumWidth: 200.0), transition: transition)
+            transition.updateFrame(node: segmentedControlNode, frame: CGRect(origin: CGPoint(x: floor((layout.size.width - controlSize.width) / 2.0), y: layout.size.height - toolbarHeight + floor((44.0 - controlSize.height) / 2.0)), size: controlSize))
         }
         
         var insets = layout.insets(options: [.input])
         insets.top += navigationBarHeight
-        insets.bottom = max(insets.bottom, cleanInsets.bottom)
+        insets.bottom = max(insets.bottom, cleanInsets.bottom + 44.0)
         insets.left += layout.safeInsets.left
         insets.right += layout.safeInsets.right
         
@@ -177,29 +183,8 @@ final class PeerSelectionControllerNode: ASDisplayNode {
         self.chatListNode.bounds = CGRect(x: 0.0, y: 0.0, width: layout.size.width, height: layout.size.height)
         self.chatListNode.position = CGPoint(x: layout.size.width / 2.0, y: layout.size.height / 2.0)
         
-        var duration: Double = 0.0
-        var curve: UInt = 0
-        switch transition {
-            case .immediate:
-                break
-            case let .animated(animationDuration, animationCurve):
-                duration = animationDuration
-                switch animationCurve {
-                    case .easeInOut, .custom:
-                        break
-                    case .spring:
-                        curve = 7
-                }
-        }
-        
-        let listViewCurve: ListViewAnimationCurve
-        if curve == 7 {
-            listViewCurve = .Spring(duration: duration)
-        } else {
-            listViewCurve = .Default(duration: duration)
-        }
-        
-        let updateSizeAndInsets = ListViewUpdateSizeAndInsets(size: layout.size, insets: insets, headerInsets: headerInsets, duration: duration, curve: listViewCurve)
+        let (duration, curve) = listViewAnimationDurationAndCurve(transition: transition)
+        let updateSizeAndInsets = ListViewUpdateSizeAndInsets(size: layout.size, insets: insets, headerInsets: headerInsets, duration: duration, curve: curve)
         
         self.chatListNode.updateLayout(transition: transition, updateSizeAndInsets: updateSizeAndInsets)
         
@@ -232,7 +217,7 @@ final class PeerSelectionControllerNode: ASDisplayNode {
                 if let requestOpenMessageFromSearch = self?.requestOpenMessageFromSearch {
                     requestOpenMessageFromSearch(peer, messageId)
                 }
-            }, addContact: nil), cancel: { [weak self] in
+            }, addContact: nil, peerContextAction: nil), cancel: { [weak self] in
                 if let requestDeactivateSearch = self?.requestDeactivateSearch {
                     requestDeactivateSearch()
                 }
@@ -265,7 +250,7 @@ final class PeerSelectionControllerNode: ASDisplayNode {
                             break
                     }
                 }
-            }), cancel: { [weak self] in
+            }, contextAction: nil), cancel: { [weak self] in
                 if let requestDeactivateSearch = self?.requestDeactivateSearch {
                     requestDeactivateSearch()
                 }
@@ -318,12 +303,12 @@ final class PeerSelectionControllerNode: ASDisplayNode {
         })
     }
     
-    @objc func indexChanged() {
-        guard let (layout, navigationHeight, actualNavigationHeight) = self.containerLayout, let segmentedControl = self.segmentedControl else {
+    private func indexChanged(_ index: Int) {
+        guard let (layout, navigationHeight, actualNavigationHeight) = self.containerLayout else {
             return
         }
             
-        let contactListActive = segmentedControl.selectedSegmentIndex == 1
+        let contactListActive = index == 1
         if contactListActive != self.contactListActive {
             self.contactListActive = contactListActive
             if contactListActive {

@@ -5,6 +5,7 @@ import AsyncDisplayKit
 import Display
 import SwiftSignalKit
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import TelegramUIPreferences
 import AccountContext
@@ -370,7 +371,7 @@ public final class ChatMessageItem: ListViewItem, CustomStringConvertible {
         
         loop: for media in self.message.media {
             if let telegramFile = media as? TelegramMediaFile {
-                if telegramFile.isAnimatedSticker, !telegramFile.previewRepresentations.isEmpty, let size = telegramFile.size, size > 0 && size <= 128 * 1024 {
+                if telegramFile.isAnimatedSticker, (self.message.id.peerId.namespace == Namespaces.Peer.SecretChat || !telegramFile.previewRepresentations.isEmpty), let size = telegramFile.size, size > 0 && size <= 128 * 1024 {
                     if self.message.id.peerId.namespace == Namespaces.Peer.SecretChat {
                         if telegramFile.fileId.namespace == Namespaces.Media.CloudFile {
                             viewClassName = ChatMessageAnimatedStickerItemNode.self
@@ -404,10 +405,15 @@ public final class ChatMessageItem: ListViewItem, CustomStringConvertible {
         }
         
         if viewClassName == ChatMessageBubbleItemNode.self && self.presentationData.largeEmoji && self.message.media.isEmpty {
-            if self.message.text.count == 1, let _ = self.associatedData.animatedEmojiStickers[self.message.text.basicEmoji.0] {
-                viewClassName = ChatMessageAnimatedStickerItemNode.self
-            } else if messageIsElligibleForLargeEmoji(self.message) {
-                viewClassName = ChatMessageStickerItemNode.self
+            if case let .message(_, _, _, attributes) = self.content {
+                switch attributes.contentTypeHint {
+                    case .largeEmoji:
+                        viewClassName = ChatMessageStickerItemNode.self
+                    case .animatedEmoji:
+                        viewClassName = ChatMessageAnimatedStickerItemNode.self
+                    default:
+                        break
+                }
             }
         }
         

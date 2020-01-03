@@ -5,7 +5,9 @@ import Display
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramUIPreferences
+import TelegramPresentationData
 import AccountContext
 import GridMessageSelectionNode
 
@@ -115,7 +117,17 @@ class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
             switch preparePosition {
                 case .linear:
                     if case .color = item.presentationData.theme.wallpaper {
-                        bubbleInsets = UIEdgeInsets()
+                        let colors: PresentationThemeBubbleColorComponents
+                        if item.message.effectivelyIncoming(item.context.account.peerId) {
+                            colors = item.presentationData.theme.theme.chat.message.incoming.bubble.withoutWallpaper
+                        } else {
+                            colors = item.presentationData.theme.theme.chat.message.outgoing.bubble.withoutWallpaper
+                        }
+                        if colors.fill == colors.stroke {
+                            bubbleInsets = UIEdgeInsets()
+                        } else {
+                            bubbleInsets = layoutConstants.bubble.strokeInsets
+                        }
                     } else {
                         bubbleInsets = layoutConstants.image.bubbleInsets
                     }
@@ -285,7 +297,7 @@ class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
         }
     }
     
-    override func transitionNode(messageId: MessageId, media: Media) -> (ASDisplayNode, () -> (UIView?, UIView?))? {
+    override func transitionNode(messageId: MessageId, media: Media) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         if self.item?.message.id == messageId, let currentMedia = self.media, currentMedia.isSemanticallyEqual(to: media) {
             return self.interactiveImageNode.transitionNode()
         }
@@ -374,7 +386,7 @@ class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
         return false
     }
     
-    override func reactionTargetNode(value: String) -> (ASImageNode, Int)? {
+    override func reactionTargetNode(value: String) -> (ASDisplayNode, Int)? {
         if !self.dateAndStatusNode.isHidden {
             return self.dateAndStatusNode.reactionNode(value: value)
         }

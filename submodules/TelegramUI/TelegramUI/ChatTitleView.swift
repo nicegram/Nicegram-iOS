@@ -4,6 +4,7 @@ import AsyncDisplayKit
 import Display
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import LegacyComponents
 import TelegramPresentationData
@@ -12,6 +13,8 @@ import ActivityIndicator
 import TelegramStringFormatting
 import PeerPresenceStatusManager
 import ChatTitleActivityNode
+import LocalizedPeerData
+import PhoneNumberFormat
 
 enum ChatTitleContent {
     case peer(peerView: PeerView, onlineMemberCount: Int32?, isScheduledMessages: Bool)
@@ -666,7 +669,6 @@ final class ChatTitleView: UIView, NavigationBarTitleView {
     
     func animateLayoutTransition() {
         UIView.transition(with: self, duration: 0.25, options: [.transitionCrossDissolve], animations: {
-            
         }, completion: nil)
     }
 }

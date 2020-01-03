@@ -4,13 +4,17 @@ import AsyncDisplayKit
 import Display
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import AvatarNode
 import PeerOnlineMarkerNode
 import LegacyComponents
+import ContextUI
+import LocalizedPeerData
+import AccountContext
 
-private let avatarFont = UIFont(name: ".SFCompactRounded-Semibold", size: 24.0)!
+private let avatarFont = avatarPlaceholderFont(size: 24.0)
 private let textFont = Font.regular(11.0)
 
 public final class SelectablePeerNodeTheme {
@@ -62,6 +66,7 @@ public final class SelectablePeerNodeTheme {
 }
 
 public final class SelectablePeerNode: ASDisplayNode {
+    private let contextContainer: ContextControllerSourceNode
     private let avatarSelectionNode: ASImageNode
     private let avatarNodeContainer: ASDisplayNode
     private let avatarNode: AvatarNode
@@ -70,7 +75,11 @@ public final class SelectablePeerNode: ASDisplayNode {
     private let textNode: ASTextNode
 
     public var toggleSelection: (() -> Void)?
-    public var longTapAction: (() -> Void)?
+    public var contextAction: ((ASDisplayNode, ContextGesture?) -> Void)? {
+        didSet {
+            self.contextContainer.isGestureEnabled = self.contextAction != nil
+        }
+    }
     
     private var currentSelected = false
     
@@ -80,13 +89,16 @@ public final class SelectablePeerNode: ASDisplayNode {
         didSet {
             if !self.theme.isEqual(to: oldValue) {
                 if let peer = self.peer, let mainPeer = peer.chatMainPeer {
-                    self.textNode.attributedText = NSAttributedString(string: mainPeer.displayTitle, font: textFont, textColor: self.currentSelected ? self.theme.selectedTextColor : (peer.peerId.namespace == Namespaces.Peer.SecretChat ? self.theme.secretTextColor : self.theme.textColor), paragraphAlignment: .center)
+                    self.textNode.attributedText = NSAttributedString(string: mainPeer.debugDisplayTitle, font: textFont, textColor: self.currentSelected ? self.theme.selectedTextColor : (peer.peerId.namespace == Namespaces.Peer.SecretChat ? self.theme.secretTextColor : self.theme.textColor), paragraphAlignment: .center)
                 }
             }
         }
     }
     
     override public init() {
+        self.contextContainer = ContextControllerSourceNode()
+        self.contextContainer.isGestureEnabled = false
+        
         self.avatarNodeContainer = ASDisplayNode()
         
         self.avatarSelectionNode = ASImageNode()
@@ -108,14 +120,23 @@ public final class SelectablePeerNode: ASDisplayNode {
         
         super.init()
         
+        self.addSubnode(self.contextContainer)
         self.avatarNodeContainer.addSubnode(self.avatarSelectionNode)
         self.avatarNodeContainer.addSubnode(self.avatarNode)
-        self.addSubnode(self.avatarNodeContainer)
-        self.addSubnode(self.textNode)
-        self.addSubnode(self.onlineNode)
+        self.contextContainer.addSubnode(self.avatarNodeContainer)
+        self.contextContainer.addSubnode(self.textNode)
+        self.contextContainer.addSubnode(self.onlineNode)
+        
+        self.contextContainer.activated = { [weak self] gesture in
+            guard let strongSelf = self, let contextAction = strongSelf.contextAction else {
+                gesture.cancel()
+                return
+            }
+            contextAction(strongSelf.contextContainer, gesture)
+        }
     }
     
-    public func setup(account: Account, theme: PresentationTheme, strings: PresentationStrings, peer: RenderedPeer, online: Bool = false, numberOfLines: Int = 2, synchronousLoad: Bool) {
+    public func setup(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, peer: RenderedPeer, online: Bool = false, numberOfLines: Int = 2, synchronousLoad: Bool) {
         self.peer = peer
         guard let mainPeer = peer.chatMainPeer else {
             return
@@ -125,7 +146,7 @@ public final class SelectablePeerNode: ASDisplayNode {
         
         let text: String
         var overrideImage: AvatarNodeImageOverride?
-        if peer.peerId == account.peerId {
+        if peer.peerId == context.account.peerId {
             text = strings.DialogList_SavedMessages
             overrideImage = .savedMessagesIcon
         } else {
@@ -136,7 +157,7 @@ public final class SelectablePeerNode: ASDisplayNode {
         }
         self.textNode.maximumNumberOfLines = UInt(numberOfLines)
         self.textNode.attributedText = NSAttributedString(string: text, font: textFont, textColor: self.currentSelected ? self.theme.selectedTextColor : defaultColor, paragraphAlignment: .center)
-        self.avatarNode.setPeer(account: account, theme: theme, peer: mainPeer, overrideImage: overrideImage, emptyColor: self.theme.avatarPlaceholderColor, synchronousLoad: synchronousLoad)
+        self.avatarNode.setPeer(context: context, theme: theme, peer: mainPeer, overrideImage: overrideImage, emptyColor: self.theme.avatarPlaceholderColor, synchronousLoad: synchronousLoad)
         
         let onlineLayout = self.onlineNode.asyncLayout()
         let (onlineSize, onlineApply) = onlineLayout(online)
@@ -210,16 +231,6 @@ public final class SelectablePeerNode: ASDisplayNode {
         super.didLoad()
         
         self.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.tapGesture(_:))))
-        
-        let longTapRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(self.longTapGesture(_:)))
-        longTapRecognizer.minimumPressDuration = 0.3
-        self.view.addGestureRecognizer(longTapRecognizer)
-    }
-    
-    @objc private func longTapGesture(_ recognizer: UILongPressGestureRecognizer) {
-        if case .began = recognizer.state {
-            self.longTapAction?()
-        }
     }
     
     @objc private func tapGesture(_ recognizer: UITapGestureRecognizer) {
@@ -232,6 +243,8 @@ public final class SelectablePeerNode: ASDisplayNode {
         super.layout()
         
         let bounds = self.bounds
+        
+        self.contextContainer.frame = bounds
         
         self.avatarNodeContainer.frame = CGRect(origin: CGPoint(x: floor((bounds.size.width - 60.0) / 2.0), y: 4.0), size: CGSize(width: 60.0, height: 60.0))
         self.textNode.frame = CGRect(origin: CGPoint(x: 2.0, y: 4.0 + 60.0 + 4.0), size: CGSize(width: bounds.size.width - 4.0, height: 34.0))

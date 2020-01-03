@@ -4,6 +4,7 @@ import Display
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 #if BUCK
 import MtProtoKit
 #else
@@ -11,9 +12,11 @@ import MtProtoKitDynamic
 #endif
 import TelegramPresentationData
 import ItemListUI
+import PresentationDataUtils
 import AccountContext
 import UrlEscaping
 import UrlHandling
+import ShareController
 
 private func shareLink(for server: ProxyServerSettings) -> String {
     var link: String
@@ -115,16 +118,17 @@ private enum ProxySettingsEntry: ItemListNodeEntry {
         return lhs.stableId < rhs.stableId
     }
     
-    func item(_ arguments: proxyServerSettingsControllerArguments) -> ListViewItem {
+    func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
+        let arguments = arguments as! proxyServerSettingsControllerArguments
         switch self {
             case let .usePasteboardSettings(theme, title):
-                return ItemListActionItem(theme: theme, title: title, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, title: title, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     arguments.usePasteboardSettings()
                 })
             case let .usePasteboardInfo(theme, text):
-                return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+                return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .modeSocks5(theme, text, value):
-                return ItemListCheckboxItem(theme: theme, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                     arguments.updateState { state in
                         var state = state
                         state.mode = .socks5
@@ -132,7 +136,7 @@ private enum ProxySettingsEntry: ItemListNodeEntry {
                     }
                 })
             case let .modeMtp(theme, text, value):
-                return ItemListCheckboxItem(theme: theme, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                     arguments.updateState { state in
                         var state = state
                         state.mode = .mtp
@@ -140,9 +144,9 @@ private enum ProxySettingsEntry: ItemListNodeEntry {
                     }
                 })
             case let .connectionHeader(theme, text):
-                return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
+                return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .connectionServer(theme, strings, placeholder, text):
-                return ItemListSingleLineInputItem(theme: theme, strings: strings, title: NSAttributedString(), text: text, placeholder: placeholder, type: .regular(capitalization: false, autocorrection: false), sectionId: self.section, textUpdated: { value in
+                return ItemListSingleLineInputItem(presentationData: presentationData, title: NSAttributedString(), text: text, placeholder: placeholder, type: .regular(capitalization: false, autocorrection: false), sectionId: self.section, textUpdated: { value in
                     arguments.updateState { current in
                         var state = current
                         state.host = value
@@ -150,7 +154,7 @@ private enum ProxySettingsEntry: ItemListNodeEntry {
                     }
                 }, action: {})
             case let .connectionPort(theme, strings, placeholder, text):
-                return ItemListSingleLineInputItem(theme: theme, strings: strings, title: NSAttributedString(), text: text, placeholder: placeholder, type: .number, sectionId: self.section, textUpdated: { value in
+                return ItemListSingleLineInputItem(presentationData: presentationData, title: NSAttributedString(), text: text, placeholder: placeholder, type: .number, sectionId: self.section, textUpdated: { value in
                     arguments.updateState { current in
                         var state = current
                         state.port = value
@@ -158,9 +162,9 @@ private enum ProxySettingsEntry: ItemListNodeEntry {
                     }
                 }, action: {})
             case let .credentialsHeader(theme, text):
-                return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
+                return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .credentialsUsername(theme, strings, placeholder, text):
-                return ItemListSingleLineInputItem(theme: theme, strings: strings, title: NSAttributedString(), text: text, placeholder: placeholder, sectionId: self.section, textUpdated: { value in
+                return ItemListSingleLineInputItem(presentationData: presentationData, title: NSAttributedString(), text: text, placeholder: placeholder, sectionId: self.section, textUpdated: { value in
                     arguments.updateState { current in
                         var state = current
                         state.username = value
@@ -168,7 +172,7 @@ private enum ProxySettingsEntry: ItemListNodeEntry {
                     }
                 }, action: {})
             case let .credentialsPassword(theme, strings, placeholder, text):
-                return ItemListSingleLineInputItem(theme: theme, strings: strings, title: NSAttributedString(), text: text, placeholder: placeholder, type: .password, sectionId: self.section, textUpdated: { value in
+                return ItemListSingleLineInputItem(presentationData: presentationData, title: NSAttributedString(), text: text, placeholder: placeholder, type: .password, sectionId: self.section, textUpdated: { value in
                     arguments.updateState { current in
                         var state = current
                         state.password = value
@@ -176,7 +180,7 @@ private enum ProxySettingsEntry: ItemListNodeEntry {
                     }
                 }, action: {})
             case let .credentialsSecret(theme, strings, placeholder, text):
-                return ItemListSingleLineInputItem(theme: theme, strings: strings, title: NSAttributedString(), text: text, placeholder: placeholder, type: .regular(capitalization: false, autocorrection: false), sectionId: self.section, textUpdated: { value in
+                return ItemListSingleLineInputItem(presentationData: presentationData, title: NSAttributedString(), text: text, placeholder: placeholder, type: .regular(capitalization: false, autocorrection: false), sectionId: self.section, textUpdated: { value in
                     arguments.updateState { current in
                         var state = current
                         state.secret = value
@@ -184,7 +188,7 @@ private enum ProxySettingsEntry: ItemListNodeEntry {
                     }
                 }, action: {})
             case let .share(theme, text, enabled):
-                return ItemListActionItem(theme: theme, title: text, kind: enabled ? .generic : .disabled, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: enabled ? .generic : .disabled, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     arguments.share()
                 })
         }
@@ -221,7 +225,7 @@ private struct ProxyServerSettingsControllerState: Equatable {
     }
 }
 
-private func proxyServerSettingsControllerEntries(presentationData: (theme: PresentationTheme, strings: PresentationStrings), state: ProxyServerSettingsControllerState, pasteboardSettings: ProxyServerSettings?) -> [ProxySettingsEntry] {
+private func proxyServerSettingsControllerEntries(presentationData: PresentationData, state: ProxyServerSettingsControllerState, pasteboardSettings: ProxyServerSettings?) -> [ProxySettingsEntry] {
     var entries: [ProxySettingsEntry] = []
     
     if let _ = pasteboardSettings {
@@ -267,10 +271,10 @@ private func proxyServerSettings(with state: ProxyServerSettingsControllerState)
 
 public func proxyServerSettingsController(context: AccountContext, currentSettings: ProxyServerSettings? = nil) -> ViewController {
     let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-    return proxyServerSettingsController(theme: presentationData.theme, strings: presentationData.strings, updatedPresentationData: context.sharedContext.presentationData |> map { ($0.theme, $0.strings) }, accountManager: context.sharedContext.accountManager, postbox: context.account.postbox, network: context.account.network, currentSettings: currentSettings)
+    return proxyServerSettingsController(context: context, presentationData: presentationData, updatedPresentationData: context.sharedContext.presentationData, accountManager: context.sharedContext.accountManager, postbox: context.account.postbox, network: context.account.network, currentSettings: currentSettings)
 }
 
-func proxyServerSettingsController(theme: PresentationTheme, strings: PresentationStrings, updatedPresentationData: Signal<(theme: PresentationTheme, strings: PresentationStrings), NoError>, accountManager: AccountManager, postbox: Postbox, network: Network, currentSettings: ProxyServerSettings?) -> ViewController {
+func proxyServerSettingsController(context: AccountContext? = nil, presentationData: PresentationData, updatedPresentationData: Signal<PresentationData, NoError>, accountManager: AccountManager, postbox: Postbox, network: Network, currentSettings: ProxyServerSettings?) -> ViewController {
     var currentMode: ProxyServerSettingsControllerMode = .socks5
     var currentUsername: String?
     var currentPassword: String?
@@ -303,7 +307,7 @@ func proxyServerSettingsController(theme: PresentationTheme, strings: Presentati
         statePromise.set(stateValue.modify { f($0) })
     }
     
-    var presentImpl: ((ViewController, Any?) -> Void)?
+    var presentControllerImpl: ((ViewController, Any?) -> Void)?
     var dismissImpl: (() -> Void)?
     
     var shareImpl: (() -> Void)?
@@ -334,7 +338,7 @@ func proxyServerSettingsController(theme: PresentationTheme, strings: Presentati
     
     let signal = combineLatest(updatedPresentationData, statePromise.get())
     |> deliverOnMainQueue
-    |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState<ProxySettingsEntry>, ProxySettingsEntry.ItemGenerationArguments)) in
+    |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let leftNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Cancel), style: .regular, enabled: true, action: {
             dismissImpl?()
         })
@@ -362,14 +366,15 @@ func proxyServerSettingsController(theme: PresentationTheme, strings: Presentati
             }
         })
         
-        let controllerState = ItemListControllerState(theme: presentationData.theme, title: .text(presentationData.strings.SocksProxySetup_Title), leftNavigationButton: leftNavigationButton, rightNavigationButton: rightNavigationButton, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: false)
-        let listState = ItemListNodeState(entries: proxyServerSettingsControllerEntries(presentationData: presentationData, state: state, pasteboardSettings: pasteboardSettings), style: .blocks, emptyStateItem: nil, animateChanges: false)
+        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(presentationData.strings.SocksProxySetup_Title), leftNavigationButton: leftNavigationButton, rightNavigationButton: rightNavigationButton, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: false)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: proxyServerSettingsControllerEntries(presentationData: presentationData, state: state, pasteboardSettings: pasteboardSettings), style: .blocks, emptyStateItem: nil, animateChanges: false)
         
         return (controllerState, (listState, arguments))
     }
     
-    let controller = ItemListController(theme: theme, strings: strings, updatedPresentationData: updatedPresentationData, state: signal, tabBarItem: nil)
-    presentImpl = { [weak controller] c, d in
+    let controller = ItemListController(presentationData: ItemListPresentationData(presentationData), updatedPresentationData: updatedPresentationData |> map(ItemListPresentationData.init(_:)), state: signal, tabBarItem: nil)
+    controller.navigationPresentation = .modal
+    presentControllerImpl = { [weak controller] c, d in
         controller?.present(c, in: .window(.root), with: d)
     }
     dismissImpl = { [weak controller] in
@@ -384,16 +389,11 @@ func proxyServerSettingsController(theme: PresentationTheme, strings: Presentati
         let link = shareLink(for: server)
         controller?.view.endEditing(true)
         if #available(iOSApplicationExtension 9.0, iOS 9.0, *) {
-            let controller = ShareProxyServerActionSheetController(theme: theme, strings: strings, updatedPresentationData: updatedPresentationData, link: link)
-            presentImpl?(controller, nil)
-        } else {
-            let activityController = UIActivityViewController(activityItems: [link], applicationActivities: nil)
-            
-            if let window = strongController.view.window, let rootViewController = window.rootViewController {
-                activityController.popoverPresentationController?.sourceView = window
-                activityController.popoverPresentationController?.sourceRect = CGRect(origin: CGPoint(x: window.bounds.width / 2.0, y: window.bounds.size.height - 1.0), size: CGSize(width: 1.0, height: 1.0))
-                rootViewController.present(activityController, animated: true, completion: nil)
-            }
+            let controller = ShareProxyServerActionSheetController(presentationData: presentationData, updatedPresentationData: updatedPresentationData, link: link)
+            presentControllerImpl?(controller, nil)
+        } else if let context = context {
+            let controller = ShareController(context: context, subject: .url(link), preferredAction: .default, showInChat: nil, externalShare: true, immediateExternalShare: true, switchableAccounts: [])
+            presentControllerImpl?(controller, nil)
         }
     }
     

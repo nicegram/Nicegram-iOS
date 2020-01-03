@@ -10,18 +10,6 @@ public func doesUrlMatchText(url: String, text: String, fullText: String) -> Boo
     return false
 }
 
-private let whitelistedHosts: Set<String> = Set([
-    "t.me",
-    "telegram.me"
-])
-
-public func isConcealedUrlWhitelisted(_ url: URL) -> Bool {
-    if let host = url.host, whitelistedHosts.contains(host) {
-        return true
-    }
-    return false
-}
-
 public extension CharacterSet {
     static let urlQueryValueAllowed: CharacterSet = {
         let generalDelimitersToEncode = ":#[]@"
@@ -34,12 +22,14 @@ public extension CharacterSet {
     }()
 }
 
-public func isValidUrl(_ url: String) -> Bool {
-    if let escapedUrl = url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed), let url = URL(string: escapedUrl), ["http", "https"].contains(url.scheme), let host = url.host, host.contains(".") && url.user == nil {
-        let components = host.components(separatedBy: ".")
-        let domain = (components.first ?? "")
-        if domain.isEmpty {
-            return false
+public func isValidUrl(_ url: String, validSchemes: [String: Bool] = ["http": true, "https": true]) -> Bool {
+    if let escapedUrl = url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed), let url = URL(string: escapedUrl), let scheme = url.scheme, let requiresTopLevelDomain = validSchemes[scheme], let host = url.host, (!requiresTopLevelDomain || host.contains(".")) && url.user == nil {
+        if requiresTopLevelDomain {
+            let components = host.components(separatedBy: ".")
+            let domain = (components.first ?? "")
+            if domain.isEmpty {
+                return false
+            }
         }
         return true
     } else {
@@ -49,7 +39,7 @@ public func isValidUrl(_ url: String) -> Bool {
 
 public func explicitUrl(_ url: String) -> String {
     var url = url
-    if !url.hasPrefix("http") && !url.hasPrefix("https") {
+    if !url.hasPrefix("http") && !url.hasPrefix("https") && url.range(of: "://") == nil {
         url = "https://\(url)"
     }
     return url

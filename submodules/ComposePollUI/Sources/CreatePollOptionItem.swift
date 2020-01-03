@@ -5,6 +5,7 @@ import AsyncDisplayKit
 import SwiftSignalKit
 import TelegramPresentationData
 import ItemListUI
+import PresentationDataUtils
 
 struct CreatePollOptionItemEditing {
     let editable: Bool
@@ -86,6 +87,7 @@ class CreatePollOptionItemNode: ItemListRevealOptionsItemNode, ItemListItemNode,
     private let backgroundNode: ASDisplayNode
     private let topStripeNode: ASDisplayNode
     private let bottomStripeNode: ASDisplayNode
+    private let maskNode: ASImageNode
     
     private let textClippingNode: ASDisplayNode
     private let textNode: EditableTextNode
@@ -112,6 +114,8 @@ class CreatePollOptionItemNode: ItemListRevealOptionsItemNode, ItemListItemNode,
         
         self.bottomStripeNode = ASDisplayNode()
         self.bottomStripeNode.isLayerBacked = true
+        
+        self.maskNode = ASImageNode()
         
         self.editableControlNode = ItemListEditableControlNode()
         self.reorderControlNode = ItemListEditableReorderControlNode()
@@ -231,8 +235,8 @@ class CreatePollOptionItemNode: ItemListRevealOptionsItemNode, ItemListItemNode,
                 updatedTheme = item.theme
             }
             
-            let controlSizeAndApply = editableControlLayout(44.0, item.theme, false)
-            let reorderSizeAndApply = reorderControlLayout(44.0, item.theme)
+            let controlSizeAndApply = editableControlLayout(item.theme, false)
+            let reorderSizeAndApply = reorderControlLayout(item.theme)
             
             let separatorHeight = UIScreenPixel
             
@@ -335,11 +339,19 @@ class CreatePollOptionItemNode: ItemListRevealOptionsItemNode, ItemListItemNode,
                     if strongSelf.bottomStripeNode.supernode == nil {
                         strongSelf.insertSubnode(strongSelf.bottomStripeNode, at: 2)
                     }
+                    if strongSelf.maskNode.supernode == nil {
+                        strongSelf.insertSubnode(strongSelf.maskNode, at: 3)
+                    }
+                    
+                    let hasCorners = itemListHasRoundedBlockLayout(params)
+                    var hasTopCorners = false
+                    var hasBottomCorners = false
                     switch neighbors.top {
                         case .sameSection(false):
                             strongSelf.topStripeNode.isHidden = true
                         default:
-                            strongSelf.topStripeNode.isHidden = false
+                            hasTopCorners = true
+                            strongSelf.topStripeNode.isHidden = hasCorners
                     }
                     let bottomStripeInset: CGFloat
                     switch neighbors.bottom {
@@ -347,17 +359,23 @@ class CreatePollOptionItemNode: ItemListRevealOptionsItemNode, ItemListItemNode,
                             bottomStripeInset = leftInset
                         default:
                             bottomStripeInset = 0.0
+                            hasBottomCorners = true
+                            strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
+                    
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                    
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
+                    strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                     strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layout.contentSize.width, height: separatorHeight))
                     strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - UIScreenPixel), size: CGSize(width: layout.contentSize.width - bottomStripeInset, height: separatorHeight))
                     
-                    let _ = controlSizeAndApply.1()
-                    let editableControlFrame = CGRect(origin: CGPoint(x: params.leftInset + 6.0 + revealOffset, y: 0.0), size: controlSizeAndApply.0)
+                    let _ = controlSizeAndApply.1(layout.contentSize.height)
+                    let editableControlFrame = CGRect(origin: CGPoint(x: params.leftInset + 6.0 + revealOffset, y: 0.0), size: CGSize(width: controlSizeAndApply.0, height: contentSize.height))
                     strongSelf.editableControlNode.frame = editableControlFrame
                     
-                    let _ = reorderSizeAndApply.1(displayTextLimit && layout.contentSize.height <= 44.0)
-                    let reorderControlFrame = CGRect(origin: CGPoint(x: params.width + revealOffset - params.rightInset - reorderSizeAndApply.0.width, y: 0.0), size: reorderSizeAndApply.0)
+                    let _ = reorderSizeAndApply.1(layout.contentSize.height, displayTextLimit && layout.contentSize.height <= 44.0)
+                    let reorderControlFrame = CGRect(origin: CGPoint(x: params.width + revealOffset - params.rightInset - reorderSizeAndApply.0, y: 0.0), size: CGSize(width: reorderSizeAndApply.0, height: layout.contentSize.height))
                     strongSelf.reorderControlNode.frame = reorderControlFrame
                     
                     let _ = textLimitApply()

@@ -29,16 +29,8 @@
 
 #import "MTTransportSchemeStats.h"
 
-#if defined(MtProtoKitDynamicFramework)
-#   import <MTProtoKitDynamic/MTDisposable.h>
-#   import <MTProtoKitDynamic/MTSignal.h>
-#elif defined(MtProtoKitMacFramework)
-#   import <MTProtoKitMac/MTDisposable.h>
-#   import <MTProtoKitMac/MTSignal.h>
-#else
-#   import <MtProtoKit/MTDisposable.h>
-#   import <MtProtoKit/MTSignal.h>
-#endif
+#import <MtProtoKit/MTDisposable.h>
+#import <MtProtoKit/MTSignal.h>
 
 @implementation MTContextBlockChangeListener
 
@@ -151,6 +143,9 @@
     NSMutableDictionary *_datacenterTempAuthActions;
     NSMutableDictionary *_datacenterTransferAuthActions;
     
+    NSMutableDictionary<NSNumber *, NSNumber *> *_datacenterCheckKeyRemovedActionTimestamps;
+    NSMutableDictionary<NSNumber *, id<MTDisposable> > *_datacenterCheckKeyRemovedActions;
+    
     NSMutableDictionary *_cleanupSessionIdsByAuthKeyId;
     NSMutableArray *_currentSessionInfos;
     
@@ -169,7 +164,17 @@
 
 @end
 
+static int32_t fixedTimeDifferenceValue = 0;
+
 @implementation MTContext
+
++ (int32_t)fixedTimeDifference {
+    return fixedTimeDifferenceValue;
+}
+
++ (void)setFixedTimeDifference:(int32_t)fixedTimeDifference {
+    fixedTimeDifferenceValue = fixedTimeDifference;
+}
 
 - (instancetype)init
 {
@@ -181,12 +186,11 @@
     return self;
 }
 
-- (instancetype)initWithSerialization:(id<MTSerialization>)serialization apiEnvironment:(MTApiEnvironment *)apiEnvironment isTestingEnvironment:(bool)isTestingEnvironment useTempAuthKeys:(bool)useTempAuthKeys
+- (instancetype)initWithSerialization:(id<MTSerialization>)serialization encryptionProvider:(id<EncryptionProvider>)encryptionProvider apiEnvironment:(MTApiEnvironment *)apiEnvironment isTestingEnvironment:(bool)isTestingEnvironment useTempAuthKeys:(bool)useTempAuthKeys
 {
-#ifdef DEBUG
     NSAssert(serialization != nil, @"serialization should not be nil");
     NSAssert(apiEnvironment != nil, @"apiEnvironment should not be nil");
-#endif
+    NSAssert(encryptionProvider != nil, @"encryptionProvider should not be nil");
     
     self = [super init];
     if (self != nil)
@@ -194,6 +198,7 @@
         arc4random_buf(&_uniqueId, sizeof(_uniqueId));
         
         _serialization = serialization;
+        _encryptionProvider = encryptionProvider;
         _apiEnvironment = apiEnvironment;
         _isTestingEnvironment = isTestingEnvironment;
         _useTempAuthKeys = useTempAuthKeys;
@@ -216,6 +221,8 @@
         _datacenterAuthActions = [[NSMutableDictionary alloc] init];
         _datacenterTempAuthActions = [[NSMutableDictionary alloc] init];
         _datacenterTransferAuthActions = [[NSMutableDictionary alloc] init];
+        _datacenterCheckKeyRemovedActionTimestamps = [[NSMutableDictionary alloc] init];
+        _datacenterCheckKeyRemovedActions = [[NSMutableDictionary alloc] init];
         
         _cleanupSessionIdsByAuthKeyId = [[NSMutableDictionary alloc] init];
         _currentSessionInfos = [[NSMutableArray alloc] init];
@@ -261,6 +268,9 @@
     NSDictionary *datacenterTransferAuthActions = _datacenterTransferAuthActions;
     _datacenterTransferAuthActions = nil;
     
+    NSDictionary *datacenterCheckKeyRemovedActions = _datacenterCheckKeyRemovedActions;
+    _datacenterCheckKeyRemovedActions = nil;
+    
     NSDictionary *fetchPublicKeysActions = _fetchPublicKeysActions;
     _fetchPublicKeysActions = nil;
     
@@ -302,6 +312,10 @@
             [disposable dispose];
         }
         
+        for (NSNumber *nDatacenterId in datacenterCheckKeyRemovedActions) {
+            [datacenterCheckKeyRemovedActions[nDatacenterId] dispose];
+        }
+        
         [cleanupSessionInfoDisposables dispose];
     }];
 }
@@ -340,14 +354,14 @@
                 }
             }
             
-            
             [_apiEnvironment.datacenterAddressOverrides enumerateKeysAndObjectsUsingBlock:^(NSNumber *nDatacenterId, MTDatacenterAddress *address, __unused BOOL *stop) {
                 _datacenterAddressSetById[nDatacenterId] = [[MTDatacenterAddressSet alloc] initWithAddressList:@[address]];
             }];
             
             NSDictionary *datacenterAuthInfoById = [keychain objectForKey:@"datacenterAuthInfoById" group:@"persistent"];
-            if (datacenterAuthInfoById != nil)
+            if (datacenterAuthInfoById != nil) {
                 _datacenterAuthInfoById = [[NSMutableDictionary alloc] initWithDictionary:datacenterAuthInfoById];
+            }
             
             NSDictionary *datacenterPublicKeysById = [keychain objectForKey:@"datacenterPublicKeysById" group:@"ephemeral"];
             if (datacenterPublicKeysById != nil) {
@@ -477,10 +491,11 @@
                     [listener contextDatacenterAddressSetUpdated:self datacenterId:datacenterId addressSet:addressSet];
             }
             
-            if (previousAddressSetWasEmpty || updateSchemes || true) {
+            if (true) {
+                bool shouldReset = previousAddressSetWasEmpty || updateSchemes;
                 for (id<MTContextChangeListener> listener in currentListeners) {
-                    if ([listener respondsToSelector:@selector(contextDatacenterTransportSchemesUpdated:datacenterId:)]) {
-                        [listener contextDatacenterTransportSchemesUpdated:self datacenterId:datacenterId];
+                    if ([listener respondsToSelector:@selector(contextDatacenterTransportSchemesUpdated:datacenterId:shouldReset:)]) {
+                        [listener contextDatacenterTransportSchemesUpdated:self datacenterId:datacenterId shouldReset:shouldReset];
                     }
                 }
             } else {
@@ -572,13 +587,17 @@
 {
     [[MTContext contextQueue] dispatchOnQueue:^
     {
-        if (authInfo != nil && datacenterId != 0)
+        if (datacenterId != 0)
         {
             if (MTLogEnabled()) {
-                MTLog(@"[MTContext#%x: auth info updated for %d]", (int)self, datacenterId);
+                MTLog(@"[MTContext#%x: auth info updated for %d to %@]", (int)self, datacenterId, authInfo);
             }
             
-            _datacenterAuthInfoById[@(datacenterId)] = authInfo;
+            if (authInfo != nil) {
+                _datacenterAuthInfoById[@(datacenterId)] = authInfo;
+            } else {
+                [_datacenterAuthInfoById removeObjectForKey:@(datacenterId)];
+            }
             [_keychain setObject:_datacenterAuthInfoById forKey:@"datacenterAuthInfoById" group:@"persistent"];
             
             NSArray *currentListeners = [[NSArray alloc] initWithArray:_changeListeners];
@@ -646,8 +665,8 @@
             }
             
             for (id<MTContextChangeListener> listener in currentListeners) {
-                if ([listener respondsToSelector:@selector(contextDatacenterTransportSchemesUpdated:datacenterId:)])
-                    [listener contextDatacenterTransportSchemesUpdated:self datacenterId:datacenterId];
+                if ([listener respondsToSelector:@selector(contextDatacenterTransportSchemesUpdated:datacenterId:shouldReset:)])
+                    [listener contextDatacenterTransportSchemesUpdated:self datacenterId:datacenterId shouldReset:true];
             }
         }
     }];
@@ -809,6 +828,9 @@
                 return current;
             }];
         }
+        if (MTLogEnabled()) {
+            MTLog(@"[MTContext has chosen a scheme for DC%d: %@]", datacenterId, schemeWithEarliestFailure);
+        }
         result = schemeWithEarliestFailure;
     } synchronous:true];
     
@@ -917,6 +939,21 @@
             [action cancel];
         }
         [_datacenterTransferAuthActions removeAllObjects];
+    }];
+}
+
+- (void)removeTokenForDatacenterWithId:(NSInteger)datacenterId
+{
+    [[MTContext contextQueue] dispatchOnQueue:^{
+        [_authTokenById removeObjectForKey:@(datacenterId)];
+        [_keychain setObject:_authTokenById forKey:@"authTokenById" group:@"persistent"];
+        
+        MTDatacenterTransferAuthAction *action = _datacenterTransferAuthActions[@(datacenterId)];
+        if (action != nil) {
+            action.delegate = nil;
+            [action cancel];
+            [_datacenterTransferAuthActions removeObjectForKey:@(datacenterId)];
+        }
     }];
 }
 
@@ -1221,7 +1258,7 @@
     {
         if (_datacenterAuthActions[@(datacenterId)] == nil)
         {
-            MTDatacenterAuthAction *authAction = [[MTDatacenterAuthAction alloc] initWithTempAuth:false tempAuthKeyType:MTDatacenterAuthTempKeyTypeMain];
+            MTDatacenterAuthAction *authAction = [[MTDatacenterAuthAction alloc] initWithTempAuth:false tempAuthKeyType:MTDatacenterAuthTempKeyTypeMain bindKey:nil];
             authAction.delegate = self;
             _datacenterAuthActions[@(datacenterId)] = authAction;
             [authAction execute:self datacenterId:datacenterId isCdn:isCdn];
@@ -1232,7 +1269,7 @@
 - (void)tempAuthKeyForDatacenterWithIdRequired:(NSInteger)datacenterId keyType:(MTDatacenterAuthTempKeyType)keyType {
     [[MTContext contextQueue] dispatchOnQueue:^{
         if (_datacenterTempAuthActions[@(datacenterId)] == nil) {
-            MTDatacenterAuthAction *authAction = [[MTDatacenterAuthAction alloc] initWithTempAuth:true tempAuthKeyType:keyType];
+            MTDatacenterAuthAction *authAction = [[MTDatacenterAuthAction alloc] initWithTempAuth:true tempAuthKeyType:keyType bindKey:nil];
             authAction.delegate = self;
             _datacenterTempAuthActions[@(datacenterId)] = authAction;
             [authAction execute:self datacenterId:datacenterId isCdn:false];
@@ -1330,6 +1367,39 @@
             if ([authInfo authSaltForMessageId:saltsRequiredAtLeastUntilMessageId == 0]) {
             }
         }];
+    }];
+}
+
+- (void)checkIfLoggedOut:(NSInteger)datacenterId {
+    [[MTContext contextQueue] dispatchOnQueue:^{
+        MTDatacenterAuthInfo *authInfo = [self authInfoForDatacenterWithId:datacenterId];
+        if (authInfo == nil || authInfo.authKey == nil) {
+            return;
+        }
+        
+        int32_t timestamp = (int32_t)CFAbsoluteTimeGetCurrent();
+        NSNumber *currentTimestamp = _datacenterCheckKeyRemovedActionTimestamps[@(datacenterId)];
+        if (currentTimestamp == nil || [currentTimestamp intValue] + 60 < timestamp) {
+            _datacenterCheckKeyRemovedActionTimestamps[@(datacenterId)] = currentTimestamp;
+            [_datacenterCheckKeyRemovedActions[@(datacenterId)] dispose];
+            __weak MTContext *weakSelf = self;
+            _datacenterCheckKeyRemovedActions[@(datacenterId)] = [[MTDiscoverConnectionSignals checkIfAuthKeyRemovedWithContext:self datacenterId:datacenterId authKey:authInfo.authKey] startWithNext:^(NSNumber *isRemoved) {
+                [[MTContext contextQueue] dispatchOnQueue:^{
+                    __strong MTContext *strongSelf = weakSelf;
+                    if (strongSelf == nil) {
+                        return;
+                    }
+                    
+                    if ([isRemoved boolValue]) {
+                        NSArray *currentListeners = [[NSArray alloc] initWithArray:strongSelf->_changeListeners];
+                        for (id<MTContextChangeListener> listener in currentListeners) {
+                            if ([listener respondsToSelector:@selector(contextLoggedOut:)])
+                                [listener contextLoggedOut:self];
+                        }
+                    }
+                }];
+            }];
+        }
     }];
 }
 

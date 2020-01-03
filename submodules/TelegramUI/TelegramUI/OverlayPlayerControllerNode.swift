@@ -5,6 +5,7 @@ import AsyncDisplayKit
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import TelegramUIPreferences
 import AccountContext
@@ -63,8 +64,9 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, UIGestu
         }, openPeer: { _, _, _ in
         }, openPeerMention: { _ in
         }, openMessageContextMenu: { _, _, _, _, _ in
+        }, openMessageContextActions: { _, _, _, _ in
         }, navigateToMessage: { _, _ in
-        }, clickThroughMessage: {
+        }, tapMessage: nil, clickThroughMessage: {
         }, toggleMessagesSelection: { _, _ in
         }, sendCurrentMessage: { _ in
         }, sendMessage: { _ in
@@ -75,7 +77,7 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, UIGestu
         }, requestMessageActionCallback: { _, _, _ in
         }, requestMessageActionUrlAuth: { _, _, _ in
         }, activateSwitchInline: { _, _ in
-        }, openUrl: { _, _, _ in
+        }, openUrl: { _, _, _, _ in
         }, shareCurrentLocation: {
         }, shareAccountContact: {
         }, sendBotCommand: { _, _ in
@@ -115,6 +117,8 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, UIGestu
         }, performTextSelectionAction: { _, _, _ in
         }, updateMessageReaction: { _, _ in
         }, openMessageReactions: { _ in
+        }, displaySwipeToReplyHint: {
+        }, dismissReplyMarkupMessage: { _ in
         }, requestMessageUpdate: { _ in
         }, cancelInteractiveKeyboardGestures: {
         }, automaticMediaDownloadSettings: MediaAutoDownloadSettings.defaultSettings, pollActionState: ChatInterfacePollActionState(), stickerSettings: ChatInterfaceStickerSettings(loopAnimatedStickers: false))
@@ -124,7 +128,7 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, UIGestu
         
         self.contentNode = ASDisplayNode()
         
-        self.controlsNode = OverlayPlayerControlsNode(account: context.account, accountManager: context.sharedContext.accountManager, theme: self.presentationData.theme, status: context.sharedContext.mediaManager.musicMediaPlayerState)
+        self.controlsNode = OverlayPlayerControlsNode(account: context.account, accountManager: context.sharedContext.accountManager, presentationData: self.presentationData, status: context.sharedContext.mediaManager.musicMediaPlayerState)
         
         self.historyBackgroundNode = ASDisplayNode()
         self.historyBackgroundNode.isLayerBacked = true
@@ -143,7 +147,7 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, UIGestu
                 tagMask = .voiceOrInstantVideo
         }
         
-        self.historyNode = ChatHistoryListNode(context: context, chatLocation: .peer(peerId), tagMask: tagMask, subject: .message(initialMessageId), controllerInteraction: self.controllerInteraction, selectedMessages: .single(nil), mode: .list(search: false, reversed: currentIsReversed))
+        self.historyNode = ChatHistoryListNode(context: context, chatLocation: .peer(peerId), tagMask: tagMask, subject: .message(initialMessageId), controllerInteraction: self.controllerInteraction, selectedMessages: .single(nil), updatingMedia: .single([:]), mode: .list(search: false, reversed: currentIsReversed))
         
         super.init()
         
@@ -155,6 +159,20 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, UIGestu
         self.historyNode.updateFloatingHeaderOffset = { [weak self] offset, transition in
             if let strongSelf = self {
                 strongSelf.updateFloatingHeaderOffset(offset: offset, transition: transition)
+            }
+        }
+        
+        self.historyNode.endedInteractiveDragging = { [weak self] in
+            guard let strongSelf = self else {
+                return
+            }
+            switch strongSelf.historyNode.visibleContentOffset() {
+            case let .known(value):
+                if value <= -10.0 {
+                    strongSelf.requestDismiss()
+                }
+            default:
+                break
             }
         }
         
@@ -239,14 +257,14 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, UIGestu
         panRecognizer.delegate = self
         panRecognizer.delaysTouchesBegan = false
         panRecognizer.cancelsTouchesInView = true
-        self.view.addGestureRecognizer(panRecognizer)
+        //self.view.addGestureRecognizer(panRecognizer)
     }
     
     func updatePresentationData(_ presentationData: PresentationData) {
         self.presentationData = presentationData
         
         self.historyBackgroundContentNode.backgroundColor = self.presentationData.theme.list.plainBackgroundColor
-        self.controlsNode.updateTheme(self.presentationData.theme)
+        self.controlsNode.updatePresentationData(self.presentationData)
     }
     
     func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {
@@ -278,29 +296,8 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, UIGestu
         
         transition.updateFrame(node: self.historyNode, frame: CGRect(origin: CGPoint(x: 0.0, y: listTopInset), size: listNodeSize))
         
-        var duration: Double = 0.0
-        var curve: UInt = 0
-        switch transition {
-            case .immediate:
-                break
-            case let .animated(animationDuration, animationCurve):
-                duration = animationDuration
-                switch animationCurve {
-                    case .easeInOut, .custom:
-                        break
-                    case .spring:
-                        curve = 7
-                }
-        }
-        
-        let listViewCurve: ListViewAnimationCurve
-        if curve == 7 {
-            listViewCurve = .Spring(duration: duration)
-        } else {
-            listViewCurve = .Default(duration: duration)
-        }
-        
-        let updateSizeAndInsets = ListViewUpdateSizeAndInsets(size: listNodeSize, insets: insets, duration: duration, curve: listViewCurve)
+        let (duration, curve) = listViewAnimationDurationAndCurve(transition: transition)
+        let updateSizeAndInsets = ListViewUpdateSizeAndInsets(size: listNodeSize, insets: insets, duration: duration, curve: curve)
         self.historyNode.updateLayout(transition: transition, updateSizeAndInsets: updateSizeAndInsets)
         if let replacementHistoryNode = replacementHistoryNode {
             let updateSizeAndInsets = ListViewUpdateSizeAndInsets(size: listNodeSize, insets: insets, duration: 0.0, curve: .Default(duration: nil))
@@ -323,17 +320,18 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, UIGestu
     }
     
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        let result = super.hitTest(point, with: event)
+        if self.controlsNode.bounds.contains(self.view.convert(point, to: self.controlsNode.view)) {
+            if result == nil {
+                return self.historyNode.view
+            }
+        }
+        
         if !self.bounds.contains(point) {
             return nil
         }
         if point.y < self.controlsNode.frame.minY {
             return self.dimNode.view
-        }
-        let result = super.hitTest(point, with: event)
-        if self.controlsNode.frame.contains(point) {
-//            if result == self.historyNode.view {
-//                return self.view
-//            }
         }
         return result
     }
@@ -351,8 +349,10 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, UIGestu
                 if let gestureRecognizers = view.gestureRecognizers, view != self.view {
                     for gestureRecognizer in gestureRecognizers {
                         if let panGestureRecognizer = gestureRecognizer as? UIPanGestureRecognizer, gestureRecognizer.isEnabled {
-                            panGestureRecognizer.isEnabled = false
-                            panGestureRecognizer.isEnabled = true
+                            if panGestureRecognizer.state != .began {
+                                panGestureRecognizer.isEnabled = false
+                                panGestureRecognizer.isEnabled = true
+                            }
                         }
                     }
                 }
@@ -462,7 +462,7 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, UIGestu
                 tagMask = .voiceOrInstantVideo
         }
         
-        let historyNode = ChatHistoryListNode(context: self.context, chatLocation: .peer(self.peerId), tagMask: tagMask, subject: .message(messageId), controllerInteraction: self.controllerInteraction, selectedMessages: .single(nil), mode: .list(search: false, reversed: self.currentIsReversed))
+        let historyNode = ChatHistoryListNode(context: self.context, chatLocation: .peer(self.peerId), tagMask: tagMask, subject: .message(messageId), controllerInteraction: self.controllerInteraction, selectedMessages: .single(nil), updatingMedia: .single([:]), mode: .list(search: false, reversed: self.currentIsReversed))
         historyNode.preloadPages = true
         historyNode.stackFromBottom = true
         historyNode.updateFloatingHeaderOffset = { [weak self] offset, _ in
@@ -545,6 +545,20 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, UIGestu
             self.historyNode.updateFloatingHeaderOffset = { [weak self] offset, transition in
                 if let strongSelf = self {
                     strongSelf.updateFloatingHeaderOffset(offset: offset, transition: transition)
+                }
+            }
+            
+            self.historyNode.endedInteractiveDragging = { [weak self] in
+                guard let strongSelf = self else {
+                    return
+                }
+                switch strongSelf.historyNode.visibleContentOffset() {
+                case let .known(value):
+                    if value <= -10.0 {
+                        strongSelf.requestDismiss()
+                    }
+                default:
+                    break
                 }
             }
             

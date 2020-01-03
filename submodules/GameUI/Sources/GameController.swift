@@ -3,6 +3,7 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import Postbox
 import TelegramPresentationData
@@ -73,13 +74,6 @@ public final class GameController: ViewController {
         self.displayNode = GameControllerNode(context: self.context, presentationData: self.presentationData, url: self.url, present: { [weak self] c, a in
             self?.present(c, in: .window(.root), with: a)
         }, message: self.message)
-    }
-    
-    override public func dismiss(completion: (() -> Void)? = nil) {
-        self.controllerNode.animateOut(completion: { [weak self] in
-            self?.presentingViewController?.dismiss(animated: false, completion: nil)
-            completion?()
-        })
     }
     
     override public func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {
