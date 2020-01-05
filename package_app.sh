@@ -329,7 +329,7 @@ done
 
 if [ "$APP_TYPE" != "wallet" ]; then
 	WATCH_EXTENSION_DSYM_PATH="buck-out/gen/WatchAppExtension#dwarf-and-dsym,no-include-frameworks,watchos-arm64_32,watchos-armv7k/WatchAppExtension.appex.dSYM"
-	cp -r "$WATCH_EXTENSION_DSYM_PATH" "$DSYMS_DIR/"
+	# cp -r "$WATCH_EXTENSION_DSYM_PATH" "$DSYMS_DIR/"
 fi
 
 TEMP_DYLIB_DIR="$TEMP_PATH/SwiftSupport"
@@ -434,54 +434,54 @@ for PLUGIN in $PLUGINS; do
 	/usr/bin/codesign ${VERBOSE} -f -s "$COMMON_IDENTITY_HASH" --entitlements "${!ENTITLEMENTS_PATH_VAR}" "$PLUGIN_PATH"
 done
 
-if [ "$APP_TYPE" != "wallet" ]; then
-	WATCH_APP_PATH="$APP_PATH/Watch/WatchApp.app"
-	WATCH_EXTENSION_PATH="$WATCH_APP_PATH/PlugIns/WatchAppExtension.appex"
+# if [ "$APP_TYPE" != "wallet" ]; then
+# 	WATCH_APP_PATH="$APP_PATH/Watch/WatchApp.app"
+# 	WATCH_EXTENSION_PATH="$WATCH_APP_PATH/PlugIns/WatchAppExtension.appex"
 
-	WATCH_EXTENSION_PROFILE_PATH_VAR="PROFILE_PATH_WATCH_EXTENSION"
-	if [ -z "${!WATCH_EXTENSION_PROFILE_PATH_VAR}" ]; then
-		echo "$WATCH_EXTENSION_PROFILE_PATH_VAR is not defined"
-		exit 1
-	fi
-	if [ ! -f "${!WATCH_EXTENSION_PROFILE_PATH_VAR}" ]; then
-		echo "${!WATCH_EXTENSION_PROFILE_PATH_VAR} does not exist"
-		exit 1
-	fi
-	WATCH_EXTENSION_ENTITLEMENTS_PATH_VAR="ENTITLEMENTS_PATH_WATCH_EXTENSION"
-	if [ -z "${!WATCH_EXTENSION_ENTITLEMENTS_PATH_VAR}" ]; then
-		echo "$WATCH_EXTENSION_ENTITLEMENTS_PATH_VAR is not defined"
-		exit 1
-	fi
-	if [ ! -f "${!WATCH_EXTENSION_ENTITLEMENTS_PATH_VAR}" ]; then
-		echo "${!WATCH_EXTENSION_ENTITLEMENTS_PATH_VAR} does not exist"
-		exit 1
-	fi
+# 	WATCH_EXTENSION_PROFILE_PATH_VAR="PROFILE_PATH_WATCH_EXTENSION"
+# 	if [ -z "${!WATCH_EXTENSION_PROFILE_PATH_VAR}" ]; then
+# 		echo "$WATCH_EXTENSION_PROFILE_PATH_VAR is not defined"
+# 		exit 1
+# 	fi
+# 	if [ ! -f "${!WATCH_EXTENSION_PROFILE_PATH_VAR}" ]; then
+# 		echo "${!WATCH_EXTENSION_PROFILE_PATH_VAR} does not exist"
+# 		exit 1
+# 	fi
+# 	WATCH_EXTENSION_ENTITLEMENTS_PATH_VAR="ENTITLEMENTS_PATH_WATCH_EXTENSION"
+# 	if [ -z "${!WATCH_EXTENSION_ENTITLEMENTS_PATH_VAR}" ]; then
+# 		echo "$WATCH_EXTENSION_ENTITLEMENTS_PATH_VAR is not defined"
+# 		exit 1
+# 	fi
+# 	if [ ! -f "${!WATCH_EXTENSION_ENTITLEMENTS_PATH_VAR}" ]; then
+# 		echo "${!WATCH_EXTENSION_ENTITLEMENTS_PATH_VAR} does not exist"
+# 		exit 1
+# 	fi
 
-	cp "${!WATCH_EXTENSION_PROFILE_PATH_VAR}" "$WATCH_EXTENSION_PATH/embedded.mobileprovision"
-	/usr/bin/codesign ${VERBOSE} -f -s "$COMMON_IDENTITY_HASH" --entitlements "${!WATCH_EXTENSION_ENTITLEMENTS_PATH_VAR}" "$WATCH_EXTENSION_PATH" 2>/dev/null
+# 	cp "${!WATCH_EXTENSION_PROFILE_PATH_VAR}" "$WATCH_EXTENSION_PATH/embedded.mobileprovision"
+# 	/usr/bin/codesign ${VERBOSE} -f -s "$COMMON_IDENTITY_HASH" --entitlements "${!WATCH_EXTENSION_ENTITLEMENTS_PATH_VAR}" "$WATCH_EXTENSION_PATH" 2>/dev/null
 
-	WATCH_APP_PROFILE_PATH_VAR="PROFILE_PATH_WATCH_APP"
-	if [ -z "${!WATCH_APP_PROFILE_PATH_VAR}" ]; then
-		echo "$WATCH_APP_PROFILE_PATH_VAR is not defined"
-		exit 1
-	fi
-	if [ ! -f "${!WATCH_APP_PROFILE_PATH_VAR}" ]; then
-		echo "${!WATCH_APP_PROFILE_PATH_VAR} does not exist"
-		exit 1
-	fi
-	WATCH_APP_ENTITLEMENTS_PATH_VAR="ENTITLEMENTS_PATH_WATCH_APP"
-	if [ -z "${!WATCH_APP_ENTITLEMENTS_PATH_VAR}" ]; then
-		echo "$WATCH_APP_ENTITLEMENTS_PATH_VAR is not defined"
-		exit 1
-	fi
-	if [ ! -f "${!WATCH_APP_ENTITLEMENTS_PATH_VAR}" ]; then
-		echo "${!WATCH_APP_ENTITLEMENTS_PATH_VAR} does not exist"
-		exit 1
-	fi
+# 	WATCH_APP_PROFILE_PATH_VAR="PROFILE_PATH_WATCH_APP"
+# 	if [ -z "${!WATCH_APP_PROFILE_PATH_VAR}" ]; then
+# 		echo "$WATCH_APP_PROFILE_PATH_VAR is not defined"
+# 		exit 1
+# 	fi
+# 	if [ ! -f "${!WATCH_APP_PROFILE_PATH_VAR}" ]; then
+# 		echo "${!WATCH_APP_PROFILE_PATH_VAR} does not exist"
+# 		exit 1
+# 	fi
+# 	WATCH_APP_ENTITLEMENTS_PATH_VAR="ENTITLEMENTS_PATH_WATCH_APP"
+# 	if [ -z "${!WATCH_APP_ENTITLEMENTS_PATH_VAR}" ]; then
+# 		echo "$WATCH_APP_ENTITLEMENTS_PATH_VAR is not defined"
+# 		exit 1
+# 	fi
+# 	if [ ! -f "${!WATCH_APP_ENTITLEMENTS_PATH_VAR}" ]; then
+# 		echo "${!WATCH_APP_ENTITLEMENTS_PATH_VAR} does not exist"
+# 		exit 1
+# 	fi
 
-	cp "${!WATCH_APP_PROFILE_PATH_VAR}" "$WATCH_APP_PATH/embedded.mobileprovision"
-	/usr/bin/codesign ${VERBOSE} -f -s "$COMMON_IDENTITY_HASH" --entitlements "${!WATCH_APP_ENTITLEMENTS_PATH_VAR}" "$WATCH_APP_PATH" 2>/dev/null
-fi
+# 	cp "${!WATCH_APP_PROFILE_PATH_VAR}" "$WATCH_APP_PATH/embedded.mobileprovision"
+# 	/usr/bin/codesign ${VERBOSE} -f -s "$COMMON_IDENTITY_HASH" --entitlements "${!WATCH_APP_ENTITLEMENTS_PATH_VAR}" "$WATCH_APP_PATH" 2>/dev/null
+# fi
 
 APP_PROFILE_PATH_VAR="PROFILE_PATH_APP"
 if [ -z "${!APP_PROFILE_PATH_VAR}" ]; then

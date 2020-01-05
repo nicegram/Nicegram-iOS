@@ -176,7 +176,7 @@ apple_bundle(
         ":NotificationContentExtension",
         ":NotificationServiceExtension",
         ":IntentsExtension",
-        ":WatchApp#watch",
+        # ":WatchApp#watch",
     ]
     + framework_bundle_dependencies(framework_dependencies),
 )
