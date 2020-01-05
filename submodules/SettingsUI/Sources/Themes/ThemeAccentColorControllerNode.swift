@@ -193,7 +193,7 @@ final class ThemeAccentColorControllerNode: ASDisplayNode, UIScrollViewDelegate 
     private let serviceBackgroundColorPromise = Promise<UIColor>()
     private var wallpaperDisposable = MetaDisposable()
     
-    private var currentBackgroundColors: (UIColor, UIColor?)?
+    private var currentBackgroundColors: (UIColor, UIColor?, Int32?)?
     private var currentBackgroundPromise = Promise<(UIColor, UIColor?)?>()
     
     private var patternWallpaper: TelegramWallpaper?
@@ -569,8 +569,12 @@ final class ThemeAccentColorControllerNode: ASDisplayNode, UIScrollViewDelegate 
             strongSelf.patternArguments = patternArguments
             
             if !preview {
-                strongSelf.currentBackgroundColors = backgroundColors
-                strongSelf.patternPanelNode.backgroundColors = backgroundColors
+                if let backgroundColors = backgroundColors {
+                    strongSelf.currentBackgroundColors = (backgroundColors.0, backgroundColors.1, strongSelf.state.rotation)
+                } else {
+                    strongSelf.currentBackgroundColors = nil
+                }
+                strongSelf.patternPanelNode.backgroundColors = strongSelf.currentBackgroundColors
             }
             
             if let _ = theme, let (layout, navigationBarHeight, messagesBottomInset) = strongSelf.validLayout {
@@ -764,7 +768,7 @@ final class ThemeAccentColorControllerNode: ASDisplayNode, UIScrollViewDelegate 
         let interaction = ChatListNodeInteraction(activateSearch: {}, peerSelected: { _ in }, togglePeerSelected: { _ in }, messageSelected: { _, _, _ in}, groupSelected: { _ in }, addContact: { _ in }, setPeerIdWithRevealedOptions: { _, _ in }, setItemPinned: { _, _ in }, setPeerMuted: { _, _ in }, deletePeer: { _ in }, updatePeerGrouping: { _, _ in }, togglePeerMarkedUnread: { _, _ in}, toggleArchivedFolderHiddenByDefault: {}, deleteFolder:  { _, _ in }, activateChatPreview: { _, _, gesture in
             gesture?.cancel()
         })
-        let chatListPresentationData = ChatListPresentationData(theme: self.theme, fontSize: self.presentationData.fontSize, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, nameSortOrder: self.presentationData.nameSortOrder, nameDisplayOrder: self.presentationData.nameDisplayOrder, disableAnimations: true)
+        let chatListPresentationData = ChatListPresentationData(theme: self.theme, fontSize: self.presentationData.listsFontSize, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, nameSortOrder: self.presentationData.nameSortOrder, nameDisplayOrder: self.presentationData.nameDisplayOrder, disableAnimations: true)
         
         let peers = SimpleDictionary<PeerId, Peer>()
         let messages = SimpleDictionary<MessageId, Message>()
@@ -832,7 +836,7 @@ final class ThemeAccentColorControllerNode: ASDisplayNode, UIScrollViewDelegate 
     }
     
     private func updateMessagesLayout(layout: ContainerViewLayout, bottomInset: CGFloat, transition: ContainedViewLayoutTransition) {
-        let headerItem = self.context.sharedContext.makeChatMessageDateHeaderItem(context: self.context, timestamp:  self.referenceTimestamp, theme: self.theme, strings: self.presentationData.strings, wallpaper: self.wallpaper, fontSize: self.presentationData.fontSize, dateTimeFormat: self.presentationData.dateTimeFormat, nameOrder: self.presentationData.nameDisplayOrder)
+        let headerItem = self.context.sharedContext.makeChatMessageDateHeaderItem(context: self.context, timestamp:  self.referenceTimestamp, theme: self.theme, strings: self.presentationData.strings, wallpaper: self.wallpaper, fontSize: self.presentationData.chatFontSize, dateTimeFormat: self.presentationData.dateTimeFormat, nameOrder: self.presentationData.nameDisplayOrder)
         
         var items: [ListViewItem] = []
         let peerId = PeerId(namespace: Namespaces.Peer.CloudUser, id: 1)
@@ -874,7 +878,7 @@ final class ThemeAccentColorControllerNode: ASDisplayNode, UIScrollViewDelegate 
         sampleMessages.append(message8)
         
         items = sampleMessages.reversed().map { message in
-            let item = self.context.sharedContext.makeChatMessagePreviewItem(context: self.context, message: message, theme: self.theme, strings: self.presentationData.strings, wallpaper: self.wallpaper, fontSize: self.presentationData.fontSize, dateTimeFormat: self.presentationData.dateTimeFormat, nameOrder: self.presentationData.nameDisplayOrder, forcedResourceStatus: !message.media.isEmpty ? FileMediaResourceStatus(mediaStatus: .playbackStatus(.paused), fetchStatus: .Local) : nil, tapMessage: { [weak self] message in
+            let item = self.context.sharedContext.makeChatMessagePreviewItem(context: self.context, message: message, theme: self.theme, strings: self.presentationData.strings, wallpaper: self.wallpaper, fontSize: self.presentationData.chatFontSize, dateTimeFormat: self.presentationData.dateTimeFormat, nameOrder: self.presentationData.nameDisplayOrder, forcedResourceStatus: !message.media.isEmpty ? FileMediaResourceStatus(mediaStatus: .playbackStatus(.paused), fetchStatus: .Local) : nil, tapMessage: { [weak self] message in
                 if message.flags.contains(.Incoming) {
                     self?.updateSection(.accent)
                     self?.requestSectionUpdate?(.accent)
@@ -1089,7 +1093,11 @@ final class ThemeAccentColorControllerNode: ASDisplayNode, UIScrollViewDelegate 
                 if current.patternWallpaper == nil, let wallpaper = wallpaper {
                     updated.patternWallpaper = wallpaper
                     if updated.backgroundColors == nil {
-                        updated.backgroundColors = backgroundColors
+                        if let backgroundColors = backgroundColors {
+                            updated.backgroundColors = (backgroundColors.0, backgroundColors.1)
+                        } else {
+                            updated.backgroundColors = nil
+                        }
                     }
                     appeared = true
                 }

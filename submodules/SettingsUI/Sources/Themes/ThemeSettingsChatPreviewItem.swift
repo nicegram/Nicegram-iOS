@@ -143,7 +143,7 @@ class ThemeSettingsChatPreviewItemNode: ListViewItemNode {
         return { item, params, neighbors in
             var updatedBackgroundSignal: Signal<(UIImage?, Bool)?, NoError>?
             if currentItem?.wallpaper != item.wallpaper {
-                updatedBackgroundSignal = chatControllerBackgroundImageSignal(wallpaper: item.wallpaper, mediaBox: item.context.account.postbox.mediaBox)
+                updatedBackgroundSignal = chatControllerBackgroundImageSignal(wallpaper: item.wallpaper, mediaBox: item.context.sharedContext.accountManager.mediaBox, accountMediaBox: item.context.account.postbox.mediaBox)
             }
             
             let insets: UIEdgeInsets
@@ -238,6 +238,7 @@ class ThemeSettingsChatPreviewItemNode: ListViewItemNode {
                                     })
                                 }
                                 strongSelf.backgroundNode.image = image
+                                strongSelf.finalImage = final
                             }
                         }))
                     }

@@ -220,7 +220,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         
         self.inputContextPanelContainer = ChatControllerTitlePanelNodeContainer()
         
-        self.historyNode = ChatHistoryListNode(context: context, chatLocation: chatLocation, tagMask: nil, subject: subject, controllerInteraction: controllerInteraction, selectedMessages: self.selectedMessagesPromise.get(), updatingMedia: .single([:]))
+        self.historyNode = ChatHistoryListNode(context: context, chatLocation: chatLocation, tagMask: nil, subject: subject, controllerInteraction: controllerInteraction, selectedMessages: self.selectedMessagesPromise.get())
         self.historyNode.rotated = true
         self.historyNodeContainer = ASDisplayNode()
         self.historyNodeContainer.addSubnode(self.historyNode)
@@ -2277,9 +2277,9 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                             textInputPanelNode.text = ""
                             strongSelf.requestUpdateChatInterfaceState(false, true, { $0.withUpdatedReplyMessageId(nil).withUpdatedForwardMessageIds(nil).withUpdatedComposeDisableUrlPreview(nil).withUpdatedForwardAsCopy(false) })
                             strongSelf.ignoreUpdateHeight = false
-                            completion()
                         }
                     })
+                    completion()
                     
                     if let forwardMessageIds = self.chatPresentationInterfaceState.interfaceState.forwardMessageIds, self.chatPresentationInterfaceState.interfaceState.forwardAsCopy {
                         for id in forwardMessageIds {
