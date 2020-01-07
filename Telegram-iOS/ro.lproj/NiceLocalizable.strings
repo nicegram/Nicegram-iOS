@@ -69,6 +69,12 @@
 "Common.FAQ.Button" = "Nicegram Întrebări frecvente";
 "Common.FAQ.Intro" = "Vă rugăm să rețineți că asistența Nicegram este realizată de un singur dezvoltator și de comunitate.";
 "IAP.Premium.Title" = "Premium";
+"IAP.Premium.Subtitle" = "Funcții unice pe care nu le poți refuza!";
+"IAP.Premium.Features" = "Dosare Nelimitate\nChat-uri fixate(Pinned) Nelimitate\nFiltru de mesaje pierdute\n«Mesaje Noi» la pornirea aplicatiei";
+"IAP.Premium.Activated" = "Premium Activat!";
+"IAP.Common.Restore" = "Restabiliţi cumpărăturile";
+"IAP.Common.CantPay" = "Ne pare rău, dar nu puteți face achiziții din cauza restricțiilor de pe dispozitiv sau cont.";
+"IAP.Common.Congrats" = "Felicitări!";
 
 "Messages.Translate" = "Traduceți";
 "NGLab.RegDate.MenuItem" = "înregistrat";
