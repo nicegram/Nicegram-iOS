@@ -43,6 +43,7 @@
 "Folder.Create" = "Creaţi folderul...";
 "Folder.Create.Name" = "Nume folder";
 "Folder.Create.Placeholder" = "Folder...";
+"Folder.LimitExceeded" = "Ne pare rău, nu puteți crea mai mult de 3 foldere personalizate.\nMai multe foldere sunt disponibile achiziţionând varianta Premium.";
 "NiceFeatures.HideNumber" = "Ascunde telefonul din setări";
 
 /*NGWeb*/
@@ -62,6 +63,7 @@
 "Premium.SyncPins.Notice.OFF" = "Dacă schimbați chat-urile fixate(pinned) în alt client, acestea nu se vor schimba în Nicegram.";
 "Premium.Missed.Header" = "Mesaje ratate";
 "Premium.Missed" = "Notificare la mesaje noi";
+"Premium.Missed.Notice" = "Când deschideți aplicația după o întârziere lungă (dormit, studiat, etc.), Nicegram vă va anunța despre mesaje și mențiuni private necitite.";
 "Folder.DeleteAsk" = "Șterge dosar";
 "Folder.NeedPremium" = "Acest Dosar este destina doar utilizatorilor Premium. Poți obtine Premium sau șterge Dosarul glisând.";
 "Common.SupportChatUsername" = "nicegramchat";
@@ -74,7 +76,27 @@
 "IAP.Premium.Activated" = "Premium Activat!";
 "IAP.Common.Restore" = "Restabiliţi cumpărăturile";
 "IAP.Common.CantPay" = "Ne pare rău, dar nu puteți face achiziții din cauza restricțiilor de pe dispozitiv sau cont.";
+"IAP.Common.ErrorFetch" = "Ne pare rău, nu putem prelua achizițiile din App Store.";
 "IAP.Common.Congrats" = "Felicitări!";
+"IAP.Common.ValidateError" = "Ne pare rău, nu putem valida achiziția.";
+
+
+/*Manage Filters*/
+"ManageFilters.Title" = "Administrează Ferestre";
+"ManageFilters.Header" = "CONFIGURĂ FILTRELE DISPONIBILE";
 
 "Messages.Translate" = "Traduceți";
+"Messages.UndoTranslate" = "Anulează Traducerea";
+"Messages.TranslateError" = "Ne pare rău, traducere indisponibilă.";
+
+/*NG Lab Registration Date*/
+"NGLab.RegDate.Btn" = "Data înregistrării";
+"NGLab.RegDate.Title" = "Data înregistrării";
+"NGLab.RegDate.Notice" = "Aceasta este o dată aproximată";
 "NGLab.RegDate.MenuItem" = "înregistrat";
+"NGLab.RegDate.FetchError" = "Ne pare rău, nu putem obține data înregistrării.";
+
+/*Backup Settings*/
+"NiceFeatures.BackupSettings" = "Copie de rezerva(Backup) Setări & Dosare";
+"NiceFeatures.BackupSettings.Notice" = "Creează o copie de rezervă(backup) a fișierelor din mesajele salvate";
+"NiceFeatures.BackupSettings.Done" = "Copie de rezervă(Backup) facută pentru Mesajele Salvate";
