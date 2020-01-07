@@ -97,6 +97,6 @@
 "NGLab.RegDate.FetchError" = "No se pudo obtener la fecha de registro.";
 
 /*Backup Settings*/
-"NiceFeatures.BackupSettings" = "Copia de segurida de ajustes y carpetas";
+"NiceFeatures.BackupSettings" = "Copia de seguridad de ajustes y carpetas";
 "NiceFeatures.BackupSettings.Notice" = "Crea archivos de copia de seguridad en tus mensajes guardados";
 "NiceFeatures.BackupSettings.Done" = "Copia de seguridad hecha en Mensajes guardados";
