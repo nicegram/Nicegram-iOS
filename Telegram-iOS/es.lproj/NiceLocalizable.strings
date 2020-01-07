@@ -93,3 +93,5 @@
 "NGLab.RegDate.Btn" = "Obtiene la fecha de registro";
 "NGLab.RegDate.Title" = "Fecha de registro";
 "NGLab.RegDate.Notice" = "Esta fecha es aproximada";
+"NGLab.RegDate.MenuItem" = "registrado";
+"NGLab.RegDate.FetchError" = "No se pudo obtener la fecha de registro.";
