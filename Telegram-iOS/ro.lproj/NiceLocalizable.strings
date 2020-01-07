@@ -58,3 +58,17 @@
 "Premium.Title" = "Premium";
 "Premium.UnlimitedPins.Header" = "CHAT-uri cu FIXATE(Pinned) NELIMITATE";
 "Premium.SyncPins" = "Sincronizați chat-urile fixate (Pinned)";
+"Premium.SyncPins.Notice.ON" = "Dacă schimbați chat-urile fixate(pinned) în alt client, acestea se vor schimba în Nicegram.";
+"Premium.SyncPins.Notice.OFF" = "Dacă schimbați chat-urile fixate(pinned) în alt client, acestea nu se vor schimba în Nicegram.";
+"Premium.Missed.Header" = "Mesaje ratate";
+"Premium.Missed" = "Notificare la mesaje noi";
+"Folder.DeleteAsk" = "Șterge dosar";
+"Folder.NeedPremium" = "Acest Dosar este destina doar utilizatorilor Premium. Poți obtine Premium sau șterge Dosarul glisând.";
+"Common.SupportChatUsername" = "nicegramchat";
+"Common.FAQUrl" = "https://nicegram.app/faq/";
+"Common.FAQ.Button" = "Nicegram Întrebări frecvente";
+"Common.FAQ.Intro" = "Vă rugăm să rețineți că asistența Nicegram este realizată de un singur dezvoltator și de comunitate.";
+"IAP.Premium.Title" = "Premium";
+
+"Messages.Translate" = "Traduceți";
+"NGLab.RegDate.MenuItem" = "înregistrat";
