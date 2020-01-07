@@ -1,8 +1,20 @@
+"AppName" = "Nicegram";
+
+/*ChatFilter*/
+"ChatFilter.Bots" = "Boți";
 "ChatFilter.Channels" = "Canale";
+"ChatFilter.Private" = "Utilizatori";
 "ChatFilter.Groups" = "Grupuri";
 "ChatFilter.Unread" = "Necitit";
+"ChatFilter.Unmuted" = "Deblochează";
 "ChatFilter.Favourites" = "Favorite";
+
+/*Nice Features*/
+"NiceFeatures.Title" = "Nicegram";
+"NiceFeatures.Tabs.Header" = "FERESTRE";
 "NiceFeatures.Tabs.ShowContacts" = "Vizualizare contacte";
+"NiceFeatures.ChatScreen.Header" = "AFISARE CHAT";
+"NiceFeatures.ChatScreen.AnimatedStickers" = "Stickere Animate";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "Distribuie în Cloud";
@@ -11,6 +23,9 @@
 "Chat.OpenPin" = "Afișare Pin";
 "ChatFilter.Admin" = "Administratori";
 "NiceFeatures.Notifications.Fix" = "Dezactivare notificări standard";
+"NiceFeatures.Notifications.FixNotice" = "Este util dacă primiți notificări de la chat-urile dezactivate.\nRăspunsul de la notificări, etichetele contului și previzualizările media nu vor fi disponibile.";
+"NiceFeatures.Filters.Header" = "FILTRE (FERESTRE)";
+"NiceFeatures.Filters.Notice" = "Selectați numărul de file personalizate.\nApăsați lung pe filă pentru a schimba filtrul.";
 
 /*Common*/
 "Common.ExitNow" = "Ieșiți acum";
@@ -22,6 +37,24 @@
 /*Folder*/
 "Folder.DefaultName" = "Dosar";
 "Folder.New" = "Dosar nou";
+"Folder.Created" = "Dosar creat";
+"Folder.AddToExisting" = "Adaugă la un contact existent";
+"Folder.Updated" = "Dosar actualizat";
 "Folder.Create" = "Creaţi folderul...";
 "Folder.Create.Name" = "Nume folder";
 "Folder.Create.Placeholder" = "Folder...";
+"NiceFeatures.HideNumber" = "Ascunde telefonul din setări";
+
+/*NGWeb*/
+"NGWeb.Blocked" = "Indisponibil în Nicegram datorită Instrucțiunilor din App Store";
+
+/*Browser*/
+"NiceFeatures.Browser.Header" = "URL-UL";
+"NiceFeatures.Browser.UseBrowser" = "Deschideți în navigator";
+"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram va deschide legături în browser externe în afara aplicație. Browserul selectat trebuie instalat.";
+"ChatFilter.Missed" = "Pierdute";
+
+/*Premium*/
+"Premium.Title" = "Premium";
+"Premium.UnlimitedPins.Header" = "CHAT-uri cu FIXATE(Pinned) NELIMITATE";
+"Premium.SyncPins" = "Sincronizați chat-urile fixate (Pinned)";
