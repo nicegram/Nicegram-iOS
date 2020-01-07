@@ -1,0 +1,27 @@
+"ChatFilter.Channels" = "Canale";
+"ChatFilter.Groups" = "Grupuri";
+"ChatFilter.Unread" = "Necitit";
+"ChatFilter.Favourites" = "Favorite";
+"NiceFeatures.Tabs.ShowContacts" = "Vizualizare contacte";
+
+/*Save to Cloud*/
+"Chat.SaveToCloud" = "Distribuie în Cloud";
+
+/*Open Pin*/
+"Chat.OpenPin" = "Afișare Pin";
+"ChatFilter.Admin" = "Administratori";
+"NiceFeatures.Notifications.Fix" = "Dezactivare notificări standard";
+
+/*Common*/
+"Common.ExitNow" = "Ieșiți acum";
+"Common.Later" = "Mai târziu";
+"Common.RestartRequired" = "Repornire Necesară!";
+"NiceFeatures.Tabs.ShowNames" = "Arată Fereastra cu Nume";
+"Chat.ForwardAsCopy" = "Redirecționeaza ca o Copie";
+
+/*Folder*/
+"Folder.DefaultName" = "Dosar";
+"Folder.New" = "Dosar nou";
+"Folder.Create" = "Creaţi folderul...";
+"Folder.Create.Name" = "Nume folder";
+"Folder.Create.Placeholder" = "Folder...";
