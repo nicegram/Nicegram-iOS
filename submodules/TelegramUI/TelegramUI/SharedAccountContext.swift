@@ -1156,7 +1156,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
     }
     
     public func makeChatListController(context: AccountContext, groupId: PeerGroupId, controlsHistoryPreload: Bool, hideNetworkActivityStatus: Bool, filter: NiceChatListNodePeersFilter? = nil, filterIndex: Int32? = nil, isMissed: Bool = false, previewing: Bool, enableDebugActions: Bool) -> ChatListController {
-        return ChatListControllerImpl(context: context, groupId: groupId, controlsHistoryPreload: controlsHistoryPreload, hideNetworkActivityStatus: hideNetworkActivityStatus, previewing: previewing, enableDebugActions: enableDebugActions)
+        return ChatListControllerImpl(context: context, groupId: groupId, controlsHistoryPreload: controlsHistoryPreload, hideNetworkActivityStatus: hideNetworkActivityStatus, previewing: previewing, filter: filter, filterIndex: filterIndex, isMissed: isMissed, enableDebugActions: enableDebugActions)
     }
     
     public func makePeerSelectionController(_ params: PeerSelectionControllerParams) -> PeerSelectionController {

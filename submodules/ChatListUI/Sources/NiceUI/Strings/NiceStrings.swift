@@ -7,9 +7,10 @@
 //
 
 import Foundation
+import AppBundle
 
 private func gd(locale: String) -> [String : String] {
-    return NSDictionary(contentsOf: URL(fileURLWithPath: Bundle.main.path(forResource: "NiceLocalizable", ofType: "strings", inDirectory: nil, forLocalization: locale)!)) as! [String : String]
+    return NSDictionary(contentsOf: URL(fileURLWithPath: getAppBundle().path(forResource: "NiceLocalizable", ofType: "strings", inDirectory: nil, forLocalization: locale)!)) as! [String : String]
 }
 
 let niceLocales: [String : [String : String]] = [

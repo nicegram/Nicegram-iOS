@@ -78,6 +78,7 @@ apple_resource(
     files = [],
     variants = glob([
         "Telegram-iOS/*.lproj/Localizable.strings",
+        "Telegram-iOS/*.lproj/NiceLocalizable.strings",
     ]),
     visibility = ["PUBLIC"],
 )

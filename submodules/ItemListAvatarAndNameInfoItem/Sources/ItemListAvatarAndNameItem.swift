@@ -13,7 +13,6 @@ import ActivityIndicator
 import AvatarNode
 import TelegramStringFormatting
 import PeerPresenceStatusManager
-import ChatListUI
 import AppBundle
 import PhoneNumberFormat
 import AccountContext
@@ -426,7 +425,9 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                 switch item.mode {
                 case .settings:
                     if let phone = peer.phone, !phone.isEmpty {
-                        if !SimplyNiceSettings().hideNumber {
+                        let UD = UserDefaults(suiteName: "SimplyNiceSettings")
+                        let cloud = NSUbiquitousKeyValueStore.default
+                        if !(cloud.object(forKey: "hideNumber") as? Bool ?? UD?.bool(forKey: "hideNumber") ?? false) {
                             statusText += formatPhoneNumber(phone)
                         }
                     }

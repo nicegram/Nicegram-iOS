@@ -40,7 +40,7 @@
 	<array>
 		<string>group.com.nicegram.Telegram-iOS</string>
 	</array>
-	<key>com.apple.developer.pushkit.unrestricted-voip</key>
-	<true/>
+	<!-- <key>com.apple.developer.pushkit.unrestricted-voip</key>
+	<true/> -->
 </dict>
 </plist>
