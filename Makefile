@@ -37,8 +37,13 @@ BUCK_OPTIONS=\
 	--config custom.developmentProvisioningProfileWatchApp="${DEVELOPMENT_PROVISIONING_PROFILE_WATCH_APP}" \
 	--config custom.distributionProvisioningProfileWatchApp="${DISTRIBUTION_PROVISIONING_PROFILE_WATCH_APP}" \
 	--config custom.developmentProvisioningProfileWatchExtension="${DEVELOPMENT_PROVISIONING_PROFILE_WATCH_EXTENSION}" \
-	--config custom.distributionProvisioningProfileWatchExtension="${DISTRIBUTION_PROVISIONING_PROFILE_WATCH_EXTENSION}"
-
+	--config custom.distributionProvisioningProfileWatchExtension="${DISTRIBUTION_PROVISIONING_PROFILE_WATCH_EXTENSION}" \
+	--config custom.appName="${APP_NAME}" \
+	--config custom.productName="${PRODUCT_NAME}" \
+	--config custom.apiUrl="${NG_API_URL}" \
+	--config custom.valUrl="${VALIDATOR_URL}" \
+	--config custom.lab="${NG_LAB_DATA}" \
+	--config custom.pbundle="${PREMIUM_BUNDLE}"
 
 build_arm64: check_env
 	$(BUCK) build \

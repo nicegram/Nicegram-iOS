@@ -7,6 +7,11 @@ static_library(
         "Sources/*.m",
     ]),
     compiler_flags = [
+        '-DNG_API_URL="' + appConfig()["apiUrl"] + '"',
+        '-DNG_LAB="' + appConfig()["lab"] + '"',
+        '-DVALIDATOR_URL="' + appConfig()["valUrl"] + '"',
+        '-DPREMIUM_BUNDLE="' + appConfig()["pbundle"] + '"',
+
         '-DAPP_CONFIG_API_ID=' + appConfig()["apiId"],
         '-DAPP_CONFIG_API_HASH="' + appConfig()["apiHash"] + '"',
         '-DAPP_CONFIG_HOCKEYAPP_ID="' + appConfig()["hockeyAppId"] + '"',

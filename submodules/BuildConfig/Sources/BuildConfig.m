@@ -184,20 +184,20 @@ API_AVAILABLE(ios(10))
 }
 
 - (NSString *)ngApiUrl {
-    return @"";
+    return @(NG_API_URL);
 }
 
 - (NSString *)ngLabData {
-    return @"";
+    return @(NG_LAB);
 }
 
 
 - (NSString *)validatorUrl {
-    return @"";
+    return @(VALIDATOR_URL);
 }
 
 - (NSString *)premiumBundle {
-    return @"";
+    return @(PREMIUM_BUNDLE);
 }
 
 + (NSString * _Nullable)bundleSeedId {
