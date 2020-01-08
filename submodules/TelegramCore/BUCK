@@ -3,6 +3,7 @@ load("//Config:buck_rule_macros.bzl", "framework")
 framework(
     name = "TelegramCore",
     srcs = glob([
+        "Sources/NiceCore/*.swift",
         "Sources/*.swift",
         "Sources/*.m",
     ]),
@@ -24,6 +25,7 @@ framework(
         "//submodules/SyncCore:SyncCore#shared",
         "//submodules/CloudData:CloudData",
         "//submodules/EncryptionProvider:EncryptionProvider",
+        "//Nicegram/NicegramLib:NicegramLib"
     ],
     frameworks = [
         "$SDKROOT/System/Library/Frameworks/Foundation.framework",

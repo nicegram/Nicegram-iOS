@@ -130,26 +130,27 @@ private enum ConigureCustomFilterControllerEntry: ItemListNodeEntry {
         return lhs.stableId < rhs.stableId
     }
     
-    func item(_ arguments: ConigureCustomFilterControllerArguments) -> ListViewItem {
+    func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
+        let arguments = arguments as! ConigureCustomFilterControllerArguments
         switch self {
         case let .includeHeader(theme, text, _, section):
-            return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: section)
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: section)
         case let .unIncludeHeader(theme, text, section):
-            return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: section)
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: section)
         case let .toggleIncludeFilter(theme, title, value, filter, _, section):
-            return ItemListSwitchItem(theme: theme, title: title, value: value, maximumNumberOfLines: 1, sectionId: section, style: .blocks, updated: { value in
+            return ItemListSwitchItem(presentationData: presentationData, title: title, value: value, maximumNumberOfLines: 1, sectionId: section, style: .blocks, updated: { value in
                 arguments.toggleIncludeFilter(value, filter)
             })
         case let .toggleUnincludeFilter(theme, title, value, filter, _, section):
-            return ItemListSwitchItem(theme: theme, title: title, value: value, maximumNumberOfLines: 1, sectionId: section, style: .blocks, updated: { value in
+            return ItemListSwitchItem(presentationData: presentationData, title: title, value: value, maximumNumberOfLines: 1, sectionId: section, style: .blocks, updated: { value in
                 arguments.toggleUnincludeFilter(value, filter)
             })
         case let .soundPicker(theme, title, label, filter, rawValue, _, section):
-            return ItemListDisclosureItem(theme: theme, title: title, label: label, sectionId: section, style: .blocks, action: {
+            return ItemListDisclosureItem(presentationData: presentationData, title: title, label: label, sectionId: section, style: .blocks, action: {
                 arguments.openSoundPicker(filter, rawValue)
             })
         case let .testButton(theme, text, section):
-            return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .natural, sectionId: section, style: .blocks, action: {
+            return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: section, style: .blocks, action: {
                 arguments.testAction()
             })
         }
@@ -261,7 +262,7 @@ public func conigureCustomFilterController(context: AccountContext, customFilter
         
     }, openSoundPicker: { filter, rawSoundValue in
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        let actionSheet = ActionSheetController(presentationTheme: presentationData.theme)
+        let actionSheet = ActionSheetController(presentationData: presentationData)
         var items: [ActionSheetItem] = []
         let setAction: (String?) -> Void = { value in
             
@@ -290,13 +291,13 @@ public func conigureCustomFilterController(context: AccountContext, customFilter
     
     
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get())
-        |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState<ConigureCustomFilterControllerEntry>, ConigureCustomFilterControllerEntry.ItemGenerationArguments)) in
+        |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
             
             let entries = conigureCustomFilterControllerEntries(presentationData: presentationData, filterId: customFilterId)
             
             
-            let controllerState = ItemListControllerState(theme: presentationData.theme, title: .text(l("ConfigureCustomFilterController.Title", presentationData.strings.baseLanguageCode)), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-            let listState = ItemListNodeState(entries: entries, style: .blocks, ensureVisibleItemTag: nil, initialScrollToItem: nil)
+            let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("ConfigureCustomFilterController.Title", presentationData.strings.baseLanguageCode)), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
+            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, ensureVisibleItemTag: nil, initialScrollToItem: nil)
             
             return (controllerState, (listState, arguments))
     }

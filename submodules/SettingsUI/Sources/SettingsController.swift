@@ -86,7 +86,7 @@ private final class SettingsItemArguments {
     let avatarAndNameInfoContext: ItemListAvatarAndNameInfoItemContext
     
     let avatarTapAction: () -> Void
-    let presentController: (ViewController, Any?) -> Void
+    let presentController: ((ViewController, Any?) -> Void)
     
     let changeProfilePhoto: () -> Void
     let openUsername: () -> Void
@@ -125,10 +125,13 @@ private final class SettingsItemArguments {
         avatarAndNameInfoContext: ItemListAvatarAndNameInfoItemContext,
     
         avatarTapAction: @escaping () -> Void,
+        presentController: @escaping ((ViewController, Any?) -> Void),
     
         changeProfilePhoto: @escaping () -> Void,
         openUsername: @escaping () -> Void,
+        openPremium: @escaping() -> Void,
         openProxy: @escaping () -> Void,
+        openNiceFeatures: @escaping () -> Void,
         openSavedMessages: @escaping () -> Void,
         openRecentCalls: @escaping () -> Void,
         openPrivacyAndSecurity: @escaping (AccountPrivacySettings?) -> Void,
@@ -160,10 +163,13 @@ private final class SettingsItemArguments {
         self.avatarAndNameInfoContext = avatarAndNameInfoContext
         
         self.avatarTapAction = avatarTapAction
+        self.presentController = presentController
         
         self.changeProfilePhoto = changeProfilePhoto
         self.openUsername = openUsername
+        self.openPremium = openPremium
         self.openProxy = openProxy
+        self.openNiceFeatures = openNiceFeatures
         self.openSavedMessages = openSavedMessages
         self.openRecentCalls = openRecentCalls
         self.openPrivacyAndSecurity = openPrivacyAndSecurity
@@ -259,9 +265,11 @@ private indirect enum SettingsEntry: ItemListNodeEntry {
                 return SettingsSection.nicegram.rawValue
             case .ngFaq, .ngChat:
                 return SettingsSection.ngHelp.rawValue
+            case .devices:
+                return SettingsSection.media.rawValue
             case .savedMessages, .recentCalls, .stickers:
                 return SettingsSection.media.rawValue
-            case .notificationsAndSounds, .privacyAndSecurity, .dataAndStorage, .themes, .language:
+            case .notificationsAndSounds, .privacyAndSecurity, .dataAndStorage, .themes, .language, .contentStickers:
                 return SettingsSection.generalSettings.rawValue
             case .passport, .wallet, .watch :
                 return SettingsSection.advanced.rawValue
@@ -288,38 +296,46 @@ private indirect enum SettingsEntry: ItemListNodeEntry {
             return 6 + Int32(account.0)
         case .addAccount:
             return 1002
-        case .proxy:
+        case .premium:
             return 1003
-        case .savedMessages:
+        case .proxy:
             return 1004
-        case .recentCalls:
+        case .niceFeatures:
             return 1005
-        case .stickers:
-            return 1006
-        case .devices:
+        case .savedMessages:
+            return 1005
+        case .recentCalls:
             return 1007
-        case .notificationsAndSounds:
+        case .stickers:
             return 1008
-        case .privacyAndSecurity:
+        case .devices:
             return 1009
-        case .dataAndStorage:
+        case .notificationsAndSounds:
             return 1010
-        case .themes:
+        case .privacyAndSecurity:
             return 1011
-        case .language:
+        case .dataAndStorage:
             return 1012
-        case .contentStickers:
+        case .themes:
             return 1013
-        case .wallet:
+        case .language:
             return 1014
-        case .passport:
+        case .contentStickers:
             return 1015
-        case .watch:
+        case .wallet:
             return 1016
-        case .askAQuestion:
+        case .passport:
             return 1017
-        case .faq:
+        case .watch:
             return 1018
+        case .ngChat:
+            return 1019
+        case .ngFaq:
+            return 1020
+        case .askAQuestion:
+            return 1021
+        case .faq:
+            return 1022
         }
     }
     
@@ -431,6 +447,10 @@ private indirect enum SettingsEntry: ItemListNodeEntry {
                 }
             case let .ngChat(lhsTheme, lhsImage, lhsText):
                 if case let .ngChat(rhsTheme, rhsImage, rhsText) = rhs, lhsTheme === rhsTheme, lhsImage === rhsImage, lhsText == rhsText {
+                    return true
+                } else {
+                    return false
+                }
             case let .devices(lhsTheme, lhsImage, lhsText, lhsValue):
                 if case let .devices(rhsTheme, rhsImage, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsImage === rhsImage, lhsText == rhsText, lhsValue == rhsValue {
                     return true
@@ -537,7 +557,7 @@ private indirect enum SettingsEntry: ItemListNodeEntry {
                     arguments.avatarTapAction()
                 }, idTapped: { value in
                     UIPasteboard.general.string = value
-                    arguments.presentController(OverlayStatusController(theme: theme, strings: strings, type: .success), ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+                    arguments.presentController(OverlayStatusController(theme: presentationData.theme, type: .success), ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
                 }, context: arguments.avatarAndNameInfoContext, updatingImage: updatingImage, action: {
                     arguments.openEditing()
                 }, longTapAction: {
@@ -592,7 +612,7 @@ private indirect enum SettingsEntry: ItemListNodeEntry {
                     arguments.addAccount()
                 })
             case let .premium(theme, image, text):
-                return ItemListDisclosureItem(theme: theme, icon: image, title: text, label: "", sectionId: ItemListSectionId(self.section), style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, icon: image, title: text, label: "", sectionId: ItemListSectionId(self.section), style: .blocks, action: {
                     arguments.openPremium()
                 })
             case let .proxy(theme, image, text, value):
@@ -600,15 +620,15 @@ private indirect enum SettingsEntry: ItemListNodeEntry {
                     arguments.openProxy()
                 }, clearHighlightAutomatically: false)
             case let .niceFeatures(theme, image, text):
-                return ItemListDisclosureItem(theme: theme, icon: image, title: text, label: "", sectionId: ItemListSectionId(self.section), style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, icon: image, title: text, label: "", sectionId: ItemListSectionId(self.section), style: .blocks, action: {
                     arguments.openNiceFeatures()
                 })
             case let .ngFaq(theme, image, text):
-                return ItemListDisclosureItem(theme: theme, icon: image, title: text, label: "", sectionId: ItemListSectionId(self.section), style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, icon: image, title: text, label: "", sectionId: ItemListSectionId(self.section), style: .blocks, action: {
                     arguments.openNgFaq()
                 })
             case let .ngChat(theme, image, text):
-                return ItemListDisclosureItem(theme: theme, icon: image, title: text, label: "", sectionId: ItemListSectionId(self.section), style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, icon: image, title: text, label: "", sectionId: ItemListSectionId(self.section), style: .blocks, action: {
                     arguments.openNgChat()
                 })
             case let .devices(theme, image, text, value):
@@ -1248,16 +1268,6 @@ public func settingsController(context: AccountContext, accountManager: AccountM
                 pushControllerImpl?(ChangePhoneNumberIntroController(context: context, phoneNumber: formatPhoneNumber(phoneNumber)))
             })
         })
-    }, openNgChat: {
-        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        presentControllerImpl?(textAlertController(context: context, title: nil, text: l("Common.FAQ.Intro", presentationData.strings.baseLanguageCode), actions: [
-            TextAlertAction(type: .genericAction, title: presentationData.strings.Settings_FAQ_Button, action: {
-                openNicegramFaq()
-            }), TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {
-                context.sharedContext.openExternalUrl(context: context, urlContext: .generic, url: "tg://resolve?domain=" + l("Common.SupportChatUsername", presentationData.strings.baseLanguageCode), forceExternal: false, presentationData: presentationData, navigationController: getNavigationControllerImpl?(), dismissInput: {})
-            })]), nil)
-    }, openNgFaq: {
-        openNicegramFaq()
     }, accountContextAction: { id, node, gesture in
         var selectedAccount: Account?
         let _ = (accountsAndPeers.get()
@@ -1278,7 +1288,7 @@ public func settingsController(context: AccountContext, accountManager: AccountM
         })
         if let selectedAccount = selectedAccount, let sharedContext = sharedContext {
             let accountContext = sharedContext.makeTempAccountContext(account: selectedAccount)
-            let chatListController = accountContext.sharedContext.makeChatListController(context: accountContext, groupId: .root, controlsHistoryPreload: false, hideNetworkActivityStatus: true, previewing: true, enableDebugActions: enableDebugActions)
+            let chatListController = accountContext.sharedContext.makeChatListController(context: accountContext, groupId: .root, controlsHistoryPreload: false, hideNetworkActivityStatus: true, filter: nil, filterIndex: nil, isMissed: false, previewing: true, enableDebugActions: enableDebugActions)
             
             let presentationData = accountContext.sharedContext.currentPresentationData.with { $0 }
             
@@ -1302,6 +1312,16 @@ public func settingsController(context: AccountContext, accountManager: AccountM
                 pushControllerImpl?(recentSessionsController(context: context, activeSessionsContext: activeSessionsContext, webSessionsContext: webSessionsContext, websitesOnly: false))
             }
         })
+    }, openNgChat: {
+        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+        presentControllerImpl?(textAlertController(context: context, title: nil, text: l("Common.FAQ.Intro", presentationData.strings.baseLanguageCode), actions: [
+            TextAlertAction(type: .genericAction, title: presentationData.strings.Settings_FAQ_Button, action: {
+                openNicegramFaq()
+            }), TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {
+                context.sharedContext.openExternalUrl(context: context, urlContext: .generic, url: "tg://resolve?domain=" + l("Common.SupportChatUsername", presentationData.strings.baseLanguageCode), forceExternal: false, presentationData: presentationData, navigationController: getNavigationControllerImpl?(), dismissInput: {})
+            })]), nil)
+    }, openNgFaq: {
+        openNicegramFaq()
     })
     
     changeProfilePhotoImpl = {
@@ -1878,7 +1898,7 @@ public func settingsController(context: AccountContext, accountManager: AccountM
             if let selectedAccount = selectedAccount, let sharedContext = sharedContext {
                 let accountContext = sharedContext.makeTempAccountContext(account: selectedAccount)
                 let chatListController = accountContext.sharedContext.makeChatListController(context: accountContext, groupId: .root, controlsHistoryPreload: false, hideNetworkActivityStatus: true,
-                filter: nil, filterIndex: nil, isMissed: false, previewing: true, enableDebugActions: enableDebugActions)
+                                                                                             filter: nil, filterIndex: nil, isMissed: false, previewing: true, enableDebugActions: enableDebugActions)
                 return chatListController
             }
         }

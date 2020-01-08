@@ -1,0 +1,15 @@
+load("//Config:buck_rule_macros.bzl", "static_library")
+
+static_library(
+    name = "NicegramLib",
+    srcs = glob([
+        "NicegramLib/**/*.swift",
+    ]),
+    deps = [
+    	"//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit#shared",
+        "//submodules/BuildConfig:BuildConfig"
+    ],
+    frameworks = [
+        "$SDKROOT/System/Library/Frameworks/Foundation.framework",
+    ]
+)

@@ -1013,7 +1013,7 @@ final class SharedApplicationContext {
                 return accountAndSettings.flatMap { account, limitsConfiguration, callListSettings, contentSettings in
                     let tonContext = StoredTonContext(basePath: account.basePath, postbox: account.postbox, network: account.network, keychain: tonKeychain)
                     let context = AccountContextImpl(sharedContext: sharedApplicationContext.sharedContext, account: account, tonContext: tonContext, limitsConfiguration: limitsConfiguration, contentSettings: contentSettings)
-                    return AuthorizedApplicationContext(sharedApplicationContext: sharedApplicationContext, mainWindow: self.mainWindow, watchManagerArguments: watchManagerArgumentsPromise.get(), context: context, accountManager: sharedApplicationContext.sharedContext.accountManager, foo: foo, showCallsTab: callListSettings.showTab, showFilteredChatTabs: showFilteredChatTabs, maxFilters: maxFilters, reinitializedNotificationSettings: {
+                    return AuthorizedApplicationContext(sharedApplicationContext: sharedApplicationContext, mainWindow: self.mainWindow, watchManagerArguments: watchManagerArgumentsPromise.get(), context: context, accountManager: sharedApplicationContext.sharedContext.accountManager, foo: foo, showCallsTab: callListSettings.showTab, showFilteredChatTabs: showFilteredChatTabs, showContactsTab: showContactsTab, maxFilters: maxFilters, reinitializedNotificationSettings: {
                         let _ = (self.context.get()
                         |> take(1)
                         |> deliverOnMainQueue).start(next: { context in

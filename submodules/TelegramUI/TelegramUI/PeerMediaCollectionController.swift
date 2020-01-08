@@ -773,7 +773,7 @@ public class PeerMediaCollectionController: TelegramBaseController {
                                 strongSelf.navigationActionDisposable.set((strongSelf.context.account.postbox.loadedPeerWithId(peerId)
                                 |> take(1)
                                 |> deliverOnMainQueue).start(next: { [weak self] peer in
-                                    if let strongSelf = self, peer.restrictionText(platform: "ios", contentSettings: strongSelf.context.currentContentSettings.with { $0 }) == nil || isAllowedChat(peer: peer) {
+                                    if let strongSelf = self, peer.restrictionText(platform: "ios", contentSettings: strongSelf.context.currentContentSettings.with { $0 }) == nil || isAllowedChat(peer: peer, contentSettings: strongSelf.context.currentContentSettings.with { $0 }) {
                                         if let infoController = strongSelf.context.sharedContext.makePeerInfoController(context: strongSelf.context, peer: peer, mode: .generic) {
                                             (strongSelf.navigationController as? NavigationController)?.pushViewController(infoController)
                                         }

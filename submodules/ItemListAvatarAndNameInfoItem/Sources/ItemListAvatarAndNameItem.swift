@@ -164,7 +164,7 @@ public class ItemListAvatarAndNameInfoItem: ListViewItem, ItemListItem {
     
     public let selectable: Bool
 
-    public init(accountContext: AccountContext, presentationData: ItemListPresentationData, dateTimeFormat: PresentationDateTimeFormat, mode: ItemListAvatarAndNameInfoItemMode, peer: Peer?, presence: PeerPresence?, label: String? = nil, cachedData: CachedPeerData?, state: ItemListAvatarAndNameInfoItemState, sectionId: ItemListSectionId, style: ItemListAvatarAndNameInfoItemStyle, editingNameUpdated: @escaping (ItemListAvatarAndNameInfoItemName) -> Void, editingNameCompleted: @escaping () -> Void = {}, avatarTapped: @escaping () -> Void, context: ItemListAvatarAndNameInfoItemContext? = nil, updatingImage: ItemListAvatarAndNameInfoItemUpdatingAvatar? = nil, call: (() -> Void)? = nil, action: (() -> Void)? = nil, longTapAction: (() -> Void)? = nil, tag: ItemListItemTag? = nil) {
+    public init(accountContext: AccountContext, presentationData: ItemListPresentationData, dateTimeFormat: PresentationDateTimeFormat, mode: ItemListAvatarAndNameInfoItemMode, peer: Peer?, presence: PeerPresence?, label: String? = nil, cachedData: CachedPeerData?, state: ItemListAvatarAndNameInfoItemState, sectionId: ItemListSectionId, style: ItemListAvatarAndNameInfoItemStyle, editingNameUpdated: @escaping (ItemListAvatarAndNameInfoItemName) -> Void, editingNameCompleted: @escaping () -> Void = {}, avatarTapped: @escaping () -> Void, idTapped: @escaping (String) -> Void, context: ItemListAvatarAndNameInfoItemContext? = nil, updatingImage: ItemListAvatarAndNameInfoItemUpdatingAvatar? = nil, call: (() -> Void)? = nil, action: (() -> Void)? = nil, longTapAction: (() -> Void)? = nil, tag: ItemListItemTag? = nil) {
         self.accountContext = accountContext
         self.presentationData = presentationData
         self.dateTimeFormat = dateTimeFormat
@@ -442,15 +442,15 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                         statusText = label
                         statusColor = item.presentationData.theme.list.itemSecondaryTextColor
                     } else if peer.flags.contains(.isSupport), !servicePeer {
-                        statusText = item.strings.Bot_GenericSupportStatus
+                        statusText = item.presentationData.strings.Bot_GenericSupportStatus
                         statusColor = item.presentationData.theme.list.itemSecondaryTextColor
                     } else if let _ = peer.botInfo {
-                        statusText = item.strings.Bot_GenericBotStatus
+                        statusText = item.presentationData.strings.Bot_GenericBotStatus
                         statusColor = item.presentationData.theme.list.itemSecondaryTextColor
                     } else if case .generic = item.mode, !servicePeer {
                         let presence = (item.presence as? TelegramUserPresence) ?? TelegramUserPresence(status: .none, lastActivity: 0)
                         let timestamp = CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970
-                        let (string, activity) = stringAndActivityForUserPresence(strings: item.strings, dateTimeFormat: item.dateTimeFormat, presence: presence, relativeTo: Int32(timestamp), expanded: true)
+                        let (string, activity) = stringAndActivityForUserPresence(strings: item.presentationData.strings, dateTimeFormat: item.dateTimeFormat, presence: presence, relativeTo: Int32(timestamp), expanded: true)
                         statusText = string
                         if activity {
                             statusColor = item.presentationData.theme.list.itemAccentColor
@@ -493,8 +493,8 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
             } else if let group = item.peer as? TelegramGroup {
                 self.idValue = String(group.id.hashValue)
                 idText += self.idValue
-                statusText = item.strings.GroupInfo_ParticipantCount(Int32(group.participantCount))
-                statusColor = item.presentationData.list.itemSecondaryTextColor
+                statusText = item.presentationData.strings.GroupInfo_ParticipantCount(Int32(group.participantCount))
+                statusColor = item.presentationData.theme.list.itemSecondaryTextColor
             } else {
                 self.idValue = ""
                 idText += "Unknown"

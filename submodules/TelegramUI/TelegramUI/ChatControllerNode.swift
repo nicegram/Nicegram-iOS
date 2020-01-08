@@ -1498,7 +1498,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
             }
             
             if (restrictionText != chatPresentationInterfaceState.strings.Channel_ErrorAccessDenied || restrictionText != chatPresentationInterfaceState.strings.Group_ErrorAccessDenied) {
-                if (isAllowedChat(peer: chatPresentationInterfaceState.renderedPeer?.peer)) {
+                if (isAllowedChat(peer: chatPresentationInterfaceState.renderedPeer?.peer, contentSettings: context.currentContentSettings.with { $0 })) {
                     restrictionText = nil
                 }
             }

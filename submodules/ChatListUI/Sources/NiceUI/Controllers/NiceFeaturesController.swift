@@ -16,6 +16,7 @@ import TelegramUIPreferences
 import ItemListUI
 import AccountContext
 import TelegramNotices
+import SyncCore
 
 
 private struct BrowserSelectionState: Equatable {
@@ -656,124 +657,125 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
         }
     }
 
-    func item(_ arguments: NiceFeaturesControllerArguments) -> ListViewItem {
+    func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
+        let arguments = arguments as! NiceFeaturesControllerArguments
         switch self {
         case let .messageNotificationsHeader(theme, text):
-            return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .pinnedMessageNotification(theme, text, value):
-            return ItemListSwitchItem(theme: theme, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.togglePinnedMessage(value)
             })
         case let .fixNotifications(theme, text, value):
-            return ItemListSwitchItem(theme: theme, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.toggleFixNotifications(value)
             })
         case let .fixNotificationsNotice(theme, text):
-            return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+            return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         case let .chatsListHeader(theme, text):
-            return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .tabsHeader(theme, text):
-            return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .showContactsTab(theme, text, value):
-            return ItemListSwitchItem(theme: theme, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.toggleShowContactsTab(value)
             })
         case let .duplicateShowCalls(theme, text, value):
-            return ItemListSwitchItem(theme: theme, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.updateShowCallsTab(value)
             })
         case let .showTabNames(theme, text, value, locale):
-            return ItemListSwitchItem(theme: theme, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.toggleShowTabNames(value, locale)
             })
         case let .filtersHeader(theme, text):
-            return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .filtersAmount(theme, lang, value):
             return NiceSettingsFiltersAmountPickerItem(theme: theme, lang: lang, value: value, customPosition: nil, enabled: true, sectionId: self.section, updated: { preset in
                 arguments.changeFiltersAmount(preset)
             })
         case let .filtersNotice(theme, text):
-            return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+            return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         case let .chatScreenHeader(theme, text):
-            return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .browsersHeader(theme, text):
-            return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .useBrowser(theme, text, value):
-            return ItemListSwitchItem(theme: theme, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.toggleUseBrowser(value)
             })
         case let .browserSafari(theme, text, value, _):
-            return ItemListCheckboxItem(theme: theme, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.customizeBrowser(.Safari)
             })
         case let .browserChrome(theme, text, value, _):
-            return ItemListCheckboxItem(theme: theme, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.customizeBrowser(.Chrome)
             })
         case let .browserYandex(theme, text, value, _):
-            return ItemListCheckboxItem(theme: theme, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.customizeBrowser(.Yandex)
             })
         case let .browserDuckDuckGo(theme, text, value, _):
-            return ItemListCheckboxItem(theme: theme, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.customizeBrowser(.DuckDuckGo)
             })
         case let .browserAlook(theme, text, value, _):
-            return ItemListCheckboxItem(theme: theme, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.customizeBrowser(.Alook)
             })
         case let .browserOpenerAuto(theme, text, value, _):
-            return ItemListCheckboxItem(theme: theme, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.customizeBrowser(.OpenerAuto)
             })
         case let .browserOpenerOptions(theme, text, value, _):
-            return ItemListCheckboxItem(theme: theme, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.customizeBrowser(.OpenerOptions)
             })
         case let .browserBrave(theme, text, value, _):
-            return ItemListCheckboxItem(theme: theme, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.customizeBrowser(.Brave)
             })
         case let .browserAlook(theme, text, value, _):
-            return ItemListCheckboxItem(theme: theme, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.customizeBrowser(.Alook)
             })
         case let .browserFirefox(theme, text, value, _):
-            return ItemListCheckboxItem(theme: theme, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.customizeBrowser(.Firefox)
             })
         case let .browserFirefoxFocus(theme, text, value, _):
-            return ItemListCheckboxItem(theme: theme, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.customizeBrowser(.FirefoxFocus)
             })
         case let .browserOperaTouch(theme, text, value, _):
-            return ItemListCheckboxItem(theme: theme, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.customizeBrowser(.OperaTouch)
             })
         case let .browserOperaMini(theme, text, value, _):
-            return ItemListCheckboxItem(theme: theme, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.customizeBrowser(.OperaMini)
             })
         case let .browserEdge(theme, text, value, _):
-            return ItemListCheckboxItem(theme: theme, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.customizeBrowser(.Edge)
             })
         case let .useBrowserNotice(theme, text):
-            return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+            return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         case let .otherHeader(theme, text):
-            return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .hideNumber(theme, text, value, locale):
-            return ItemListSwitchItem(theme: theme, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.toggleHidePhone(value, locale)
             })
 //        case let .backupSettings(theme, text):
 //            return ItemList
         case let .backupSettings(theme, text):
-            return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+            return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 arguments.backupSettings()
             })
         case let .backupNotice(theme, text):
-            return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+            return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         }
     }
 
@@ -945,13 +947,13 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
         SimplyNiceSettings().showTabNames = value
         updateTabs()
 
-        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationTheme: presentationData.theme), title: nil, text: l("Common.RestartRequired", locale), actions: [TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: { preconditionFailure() }), TextAlertAction(type: .genericAction, title: l("Common.Later", locale), action: {})])
+        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: l("Common.RestartRequired", locale), actions: [TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: { preconditionFailure() }), TextAlertAction(type: .genericAction, title: l("Common.Later", locale), action: {})])
 
         presentControllerImpl?(controller, nil)
     }, toggleHidePhone: { value, locale in
         SimplyNiceSettings().hideNumber = value
 
-        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationTheme: presentationData.theme), title: nil, text: l("Common.RestartRequired", locale), actions: [TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: { preconditionFailure() }), TextAlertAction(type: .genericAction, title: l("Common.Later", locale), action: {})])
+        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: l("Common.RestartRequired", locale), actions: [TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: { preconditionFailure() }), TextAlertAction(type: .genericAction, title: l("Common.Later", locale), action: {})])
 
         presentControllerImpl?(controller, nil)
     }, toggleUseBrowser: { value in
@@ -985,7 +987,7 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
 
         //if let navigateToChat = navigateToChat {
         let locale = "en"
-        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationTheme: presentationData.theme), title: nil, text: l("NiceFeatures.BackupSettings.Done", locale), actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {
+        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: l("NiceFeatures.BackupSettings.Done", locale), actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {
         })])
 
         presentControllerImpl?(controller, nil)
@@ -1005,7 +1007,7 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
     let niceSettings = getNiceSettings(accountManager: context.sharedContext.accountManager)
 
     let signal = combineLatest(context.sharedContext.presentationData, context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.niceSettings]), showCallsTab, statePromise.get())
-            |> map { presentationData, sharedData, showCalls, state -> (ItemListControllerState, (ItemListNodeState<NiceFeaturesControllerEntry>, NiceFeaturesControllerEntry.ItemGenerationArguments)) in
+        |> map { presentationData, sharedData, showCalls, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
 
         let entries = niceFeaturesControllerEntries(niceSettings: niceSettings, showCalls: showCalls, presentationData: presentationData, simplyNiceSettings: SimplyNiceSettings())
 
@@ -1022,8 +1024,8 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
             }
         }
 
-        let controllerState = ItemListControllerState(theme: presentationData.theme, title: .text(l("NiceFeatures.Title", presentationData.strings.baseLanguageCode)), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-        let listState = ItemListNodeState(entries: entries, style: .blocks, ensureVisibleItemTag: focusOnItemTag, initialScrollToItem: scrollToItem)
+        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("NiceFeatures.Title", presentationData.strings.baseLanguageCode)), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
+            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, ensureVisibleItemTag: focusOnItemTag, initialScrollToItem: scrollToItem)
 
         return (controllerState, (listState, arguments))
     }

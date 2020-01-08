@@ -55,7 +55,7 @@ public func getPremiumIntroController(context: AccountContext, presentationData:
 
 public func getIAPErrorController(context: AccountContext, _ text: String, _ presentationData: PresentationData) -> AlertController {
     
-    let errorController = textAlertController(context: context, title: nil, text: l(text, presentationData.strings.baseLanguageCode), actions: [
+    let errorController = textAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: NSAttributedString(string: l(text, presentationData.strings.baseLanguageCode)), actions: [
         TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {
         })])
     return errorController
@@ -65,7 +65,7 @@ public func getIAPErrorController(context: AccountContext, _ text: String, _ pre
 public func getPremiumActivatedAlert(context: AccountContext, _ title: String, _ text: String, _ presentationData: PresentationData, action: @escaping () -> Void ) -> AlertController {
     
     
-    let Controller = textAlertController(context: context, title: title, text: l(text, presentationData.strings.baseLanguageCode), actions: [
+    let Controller = textAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: NSAttributedString(string: title), text: NSAttributedString(string: l(text, presentationData.strings.baseLanguageCode)), actions: [
         TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {
             action()
         })])

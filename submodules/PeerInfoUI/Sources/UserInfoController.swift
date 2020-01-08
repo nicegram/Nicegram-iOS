@@ -63,7 +63,7 @@ private final class UserInfoControllerArguments {
     let botPrivacy: () -> Void
     let report: () -> Void
     
-    init(context: AccountContext, avatarAndNameInfoContext: ItemListAvatarAndNameInfoItemContext, updateEditingName: @escaping (ItemListAvatarAndNameInfoItemName) -> Void, tapAvatarAction: @escaping () -> Void, openChat: @escaping () -> Void, addContact: @escaping () -> Void, shareContact: @escaping () -> Void, shareMyContact: @escaping () -> Void, startSecretChat: @escaping () -> Void, changeNotificationMuteSettings: @escaping () -> Void, openSharedMedia: @escaping () -> Void, openGroupsInCommon: @escaping () -> Void, updatePeerBlocked: @escaping (Bool) -> Void, deleteContact: @escaping () -> Void, displayUsernameContextMenu: @escaping (String) -> Void, displayCopyContextMenu: @escaping (UserInfoEntryTag, String) -> Void, call: @escaping () -> Void, openCallMenu: @escaping (String) -> Void, requestPhoneNumber: @escaping () -> Void, aboutLinkAction: @escaping (TextLinkItemActionType, TextLinkItem) -> Void, displayAboutContextMenu: @escaping (String) -> Void, openEncryptionKey: @escaping (SecretChatKeyFingerprint) -> Void, addBotToGroup: @escaping () -> Void, shareBot: @escaping () -> Void, botSettings: @escaping () -> Void, botHelp: @escaping () -> Void, botPrivacy: @escaping () -> Void, report: @escaping () -> Void) {
+    init(context: AccountContext, avatarAndNameInfoContext: ItemListAvatarAndNameInfoItemContext, updateEditingName: @escaping (ItemListAvatarAndNameInfoItemName) -> Void, tapAvatarAction: @escaping () -> Void, presentController: @escaping (ViewController, ViewControllerPresentationArguments) -> Void,  openChat: @escaping () -> Void, addContact: @escaping () -> Void, shareContact: @escaping () -> Void, shareMyContact: @escaping () -> Void, startSecretChat: @escaping () -> Void, changeNotificationMuteSettings: @escaping () -> Void, openSharedMedia: @escaping () -> Void, openGroupsInCommon: @escaping () -> Void, updatePeerBlocked: @escaping (Bool) -> Void, deleteContact: @escaping () -> Void, displayUsernameContextMenu: @escaping (String) -> Void, placeRegDate : @escaping () -> Void,  displayCopyContextMenu: @escaping (UserInfoEntryTag, String) -> Void, call: @escaping () -> Void, openCallMenu: @escaping (String) -> Void, requestPhoneNumber: @escaping () -> Void, aboutLinkAction: @escaping (TextLinkItemActionType, TextLinkItem) -> Void, displayAboutContextMenu: @escaping (String) -> Void, openEncryptionKey: @escaping (SecretChatKeyFingerprint) -> Void, addBotToGroup: @escaping () -> Void, shareBot: @escaping () -> Void, botSettings: @escaping () -> Void, botHelp: @escaping () -> Void, botPrivacy: @escaping () -> Void, report: @escaping () -> Void) {
         self.context = context
         self.avatarAndNameInfoContext = avatarAndNameInfoContext
         self.updateEditingName = updateEditingName
@@ -420,7 +420,8 @@ private enum UserInfoEntry: ItemListNodeEntry {
                     arguments.tapAvatarAction()
                 }, idTapped: { value in
                     UIPasteboard.general.string = value
-                    arguments.presentController(OverlayStatusController(theme: theme, strings: strings, type: .success), ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+                    let pc = OverlayStatusController(theme: theme, type: .success)
+                    arguments.presentController(pc, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
                 }, context: arguments.avatarAndNameInfoContext, call: displayCall ? {
                     arguments.call()
                 } : nil)
@@ -453,7 +454,7 @@ private enum UserInfoEntry: ItemListNodeEntry {
                     arguments.displayCopyContextMenu(.username, "@\(value)")
                 }, tag: UserInfoEntryTag.username)
             case let .registerDate(theme, text, value, isAccent):
-                return ItemListTextWithLabelItem(theme: theme, label: text, text: value, textColor: isAccent ? .accent : .primary, enabledEntityTypes: [], multiline: false, sectionId: self.section, action: {
+                return ItemListTextWithLabelItem(presentationData: presentationData, label: text, text: value, textColor: isAccent ? .accent : .primary, enabledEntityTypes: [], multiline: false, sectionId: self.section, action: {
                         arguments.placeRegDate()
                         // arguments.displayUsernameContextMenu("@\(value)")
                     }, longTapAction: {
@@ -980,7 +981,7 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
         shareContactImpl?()
     }, shareMyContact: {
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        let actionSheet = ActionSheetController(presentationTheme: presentationData.theme)
+        let actionSheet = ActionSheetController(presentationData: presentationData)
         actionSheet.setItemGroups([ActionSheetItemGroup(items: [
             ActionSheetButtonItem(title: presentationData.strings.UserInfo_ShareMyContactInfo, color: .destructive, action: { [weak actionSheet] in
                 actionSheet?.dismissAnimated()
@@ -994,7 +995,7 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
         presentControllerImpl?(actionSheet, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
     }, startSecretChat: {
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        let actionSheet = ActionSheetController(presentationTheme: presentationData.theme)
+        let actionSheet = ActionSheetController(presentationData: presentationData)
         actionSheet.setItemGroups([ActionSheetItemGroup(items: [
             ActionSheetButtonItem(title: presentationData.strings.UserInfo_StartSecretChat, color: .destructive, action: { [weak actionSheet] in
                 actionSheet?.dismissAnimated()
@@ -1192,7 +1193,7 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
         } else {
             let progressSignal = Signal<Never, NoError> { subscriber in
                 let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                let controller = OverlayStatusController(theme: presentationData.theme, strings: presentationData.strings, type: .loading(cancelled: nil))
+                let controller = OverlayStatusController(theme: presentationData.theme, type: .loading(cancelled: nil))
                 presentControllerImpl?(controller, nil)
                 return ActionDisposable { [weak controller] in
                     Queue.mainQueue().async() {

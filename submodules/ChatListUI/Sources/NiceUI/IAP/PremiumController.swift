@@ -171,33 +171,34 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
         return lhs.stableId < rhs.stableId
     }
     
-    func item(_ arguments: PremiumControllerArguments) -> ListViewItem {
+    func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
+        let arguments = arguments as! PremiumControllerArguments
         switch self {
         case let .header(theme, text):
-            return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .syncPinsHeader(theme, text):
-            return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .syncPinsToggle(theme, text, value):
-            return ItemListSwitchItem(theme: theme, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.toggleSetting(value, "syncPins")
             })
         case let .syncPinsNotice(theme, text):
-            return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+            return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             
         case let .notifyMissed(theme, title, value):
-            return ItemListDisclosureItem(theme: theme, title: title, label: value, sectionId: self.section, style: .blocks, action: {
+            return ItemListDisclosureItem(presentationData: presentationData, title: title, label: value, sectionId: self.section, style: .blocks, action: {
                 arguments.openSetMissedInterval()
             })
         case let .notifyMissedNotice(theme, text):
-            return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+            return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         case let .manageFiltersHeader(theme, text):
-            return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .manageFilters(theme, text):
-            return ItemListDisclosureItem(theme: theme, icon: nil, title: text, label: "", sectionId: self.section, style: .blocks, action: {
+            return ItemListDisclosureItem(presentationData: presentationData, icon: nil, title: text, label: "", sectionId: self.section, style: .blocks, action: {
                 arguments.openManageFilters()
             })
         case let .testButton(theme, text):
-            return ItemListActionItem(theme: theme, title: "Test Button", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+            return ItemListActionItem(presentationData: presentationData, title: "Test Button", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 arguments.testAction()
             })
         }
@@ -307,7 +308,7 @@ public func premiumController(context: AccountContext) -> ViewController {
         }
     }, openSetMissedInterval: {
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        let actionSheet = ActionSheetController(presentationTheme: presentationData.theme)
+        let actionSheet = ActionSheetController(presentationData: presentationData)
         var items: [ActionSheetItem] = []
         let setAction: (Int32?) -> Void = { value in
             if let value = value {
@@ -381,7 +382,7 @@ public func premiumController(context: AccountContext) -> ViewController {
     
     
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get())
-        |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState<PremiumControllerEntry>, PremiumControllerEntry.ItemGenerationArguments)) in
+        |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
             
             let entries = premiumControllerEntries(presentationData: presentationData, premiumSettings: PremiumSettings())
             
@@ -398,8 +399,8 @@ public func premiumController(context: AccountContext) -> ViewController {
             //                }
             //            }
             
-            let controllerState = ItemListControllerState(theme: presentationData.theme, title: .text(l("Premium.Title", presentationData.strings.baseLanguageCode)), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-            let listState = ItemListNodeState(entries: entries, style: .blocks, ensureVisibleItemTag: nil, initialScrollToItem: scrollToItem)
+            let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("Premium.Title", presentationData.strings.baseLanguageCode)), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
+            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, ensureVisibleItemTag: nil, initialScrollToItem: scrollToItem)
             
             return (controllerState, (listState, arguments))
     }

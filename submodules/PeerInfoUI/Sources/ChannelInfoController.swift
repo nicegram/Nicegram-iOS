@@ -51,7 +51,7 @@ private final class ChannelInfoControllerArguments {
     let aboutLinkAction: (TextLinkItemActionType, TextLinkItem) -> Void
     let toggleSignatures: (Bool) -> Void
     
-    init(context: AccountContext, avatarAndNameInfoContext: ItemListAvatarAndNameInfoItemContext, tapAvatarAction: @escaping () -> Void, changeProfilePhoto: @escaping () -> Void, updateEditingName: @escaping (ItemListAvatarAndNameInfoItemName) -> Void, updateEditingDescriptionText: @escaping (String) -> Void, openChannelTypeSetup: @escaping () -> Void, openDiscussionGroupSetup: @escaping () -> Void, changeNotificationMuteSettings: @escaping () -> Void, openSharedMedia: @escaping () -> Void, openStats: @escaping () -> Void, openAdmins: @escaping () -> Void, openMembers: @escaping () -> Void, openBanned: @escaping () -> Void, reportChannel: @escaping () -> Void, leaveChannel: @escaping () -> Void, deleteChannel: @escaping () -> Void, displayAddressNameContextMenu: @escaping (String) -> Void, displayContextMenu: @escaping (ChannelInfoEntryTag, String) -> Void, aboutLinkAction: @escaping (TextLinkItemActionType, TextLinkItem) -> Void, toggleSignatures: @escaping(Bool)->Void) {
+    init(context: AccountContext, avatarAndNameInfoContext: ItemListAvatarAndNameInfoItemContext, tapAvatarAction: @escaping () -> Void, presentController: @escaping (ViewController, ViewControllerPresentationArguments) -> Void, changeProfilePhoto: @escaping () -> Void, updateEditingName: @escaping (ItemListAvatarAndNameInfoItemName) -> Void, updateEditingDescriptionText: @escaping (String) -> Void, openChannelTypeSetup: @escaping () -> Void, openDiscussionGroupSetup: @escaping () -> Void, changeNotificationMuteSettings: @escaping () -> Void, openSharedMedia: @escaping () -> Void, openStats: @escaping () -> Void, openAdmins: @escaping () -> Void, openMembers: @escaping () -> Void, openBanned: @escaping () -> Void, reportChannel: @escaping () -> Void, leaveChannel: @escaping () -> Void, deleteChannel: @escaping () -> Void, displayAddressNameContextMenu: @escaping (String) -> Void, displayContextMenu: @escaping (ChannelInfoEntryTag, String) -> Void, aboutLinkAction: @escaping (TextLinkItemActionType, TextLinkItem) -> Void, toggleSignatures: @escaping(Bool)->Void) {
         self.context = context
         self.avatarAndNameInfoContext = avatarAndNameInfoContext
         self.tapAvatarAction = tapAvatarAction
@@ -335,7 +335,8 @@ private enum ChannelInfoEntry: ItemListNodeEntry {
                     arguments.tapAvatarAction()
                 }, idTapped: { value in
                     UIPasteboard.general.string = value
-                    arguments.presentController(OverlayStatusController(theme: theme, strings: strings, type: .success), ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+                    let pc = OverlayStatusController(theme: theme, type: .success)
+                    arguments.presentController(pc, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
                 }, context: arguments.avatarAndNameInfoContext, updatingImage: updatingAvatar)
             case let .about(theme, text, value):
                 return ItemListTextWithLabelItem(presentationData: presentationData, label: text, text: foldMultipleLineBreaks(value), enabledEntityTypes: [.url, .mention, .hashtag], multiline: true, sectionId: self.section, action: nil, longTapAction: {

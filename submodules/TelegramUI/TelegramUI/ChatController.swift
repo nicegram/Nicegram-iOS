@@ -1174,7 +1174,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
             if let strongSelf = self {
                 switch action {
                     case let .code(code):
-                        let actionSheet = ActionSheetController(presentationTheme: strongSelf.presentationData.theme)
+                        let actionSheet = ActionSheetController(presentationData: strongSelf.presentationData)
                         actionSheet.setItemGroups([ActionSheetItemGroup(items: [
                             ActionSheetTextItem(title: code),
                             ActionSheetButtonItem(title: strongSelf.presentationData.strings.Conversation_LinkDialogCopy, color: .accent, action: { [weak actionSheet] in
@@ -1189,7 +1189,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                         strongSelf.chatDisplayNode.dismissInput()
                         strongSelf.present(actionSheet, in: .window(.root))
                     case let .pre(pre):
-                        let actionSheet = ActionSheetController(presentationTheme: strongSelf.presentationData.theme)
+                        let actionSheet = ActionSheetController(presentationData: strongSelf.presentationData)
                         let prefixedNode = ActionSheetTextItem(title: pre, alignment: .left)
                         actionSheet.setItemGroups([ActionSheetItemGroup(items: [
                             prefixedNode,
@@ -6915,7 +6915,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                                     guard let strongSelf = self else {
                                         return
                                     }
-                                    strongSelf.present(OverlayStatusController(theme: strongSelf.presentationData.theme, strings: strongSelf.presentationData.strings, type: .success), in: .window(.root))
+                                    strongSelf.present(OverlayStatusController(theme: strongSelf.presentationData.theme, type: .success), in: .window(.root))
                                 }))
                         }
                     })
@@ -6980,7 +6980,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                     }
                     self.shareStatusDisposable?.set((combineLatest(signals)
                         |> deliverOnMainQueue).start(completed: {
-                            self.present(OverlayStatusController(theme: self.presentationData.theme, strings: self.presentationData.strings, type: .success), in: .window(.root))
+                            self.present(OverlayStatusController(theme: self.presentationData.theme, type: .success), in: .window(.root))
                         }))
                 })
             self.updateChatPresentationInterfaceState(animated: false, interactive: true, { $0.updatedInterfaceState({ $0.withoutSelectionState() }) })
@@ -7526,7 +7526,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                                 if let infoController = strongSelf.context.sharedContext.makePeerInfoController(context: strongSelf.context, peer: peer, mode: .generic) {
                                     (strongSelf.navigationController as? NavigationController)?.pushViewController(infoController)
                                 }
-                            } else if let strongSelf = self, isAllowedChat(peer: peer) {
+                            } else if let strongSelf = self, isAllowedChat(peer: peer, contentSettings: strongSelf.context.currentContentSettings.with { $0 }) {
                                 if let infoController = strongSelf.context.sharedContext.makePeerInfoController(context: strongSelf.context, peer: peer, mode: .generic) {
                                     strongSelf.effectiveNavigationController?.pushViewController(infoController)
                                 }

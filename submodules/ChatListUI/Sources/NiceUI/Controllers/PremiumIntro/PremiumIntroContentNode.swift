@@ -7,6 +7,7 @@ import TextFormat
 import TelegramPermissions
 import PeersNearbyIconNode
 import SolidRoundedButtonNode
+import Markdown
 
 public enum PremiumIntroContentIcon {
     case image(UIImage?)
@@ -83,7 +84,7 @@ public final class PremiumIntroContentNode: ASDisplayNode {
         self.textNode.maximumNumberOfLines = 0
         self.textNode.displaysAsynchronously = false
         
-        self.actionButton = SolidRoundedButtonNode(theme: theme, height: 48.0, cornerRadius: 9.0, gloss: true)
+        self.actionButton = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(theme: theme), height: 48.0, cornerRadius: 9.0, gloss: true)
         
         self.footerNode = ImmediateTextNode()
         self.footerNode.textAlignment = .center

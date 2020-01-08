@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import SyncCore
 
 public let niceLocalizations: [LocalizationInfo] = [
     LocalizationInfo(languageCode: "zhcncc", baseLanguageCode: "zh-hans-raw", customPluralizationCode: "zh", title: "Chinese (Simplified) @congcong", localizedTitle: "简体中文 (聪聪)", isOfficial: false, totalStringCount: 3178, translatedStringCount: 3173, platformUrl: "https://translations.telegram.org/zhcncc/"),

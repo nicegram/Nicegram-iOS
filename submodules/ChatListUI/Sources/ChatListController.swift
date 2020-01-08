@@ -266,7 +266,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
             if case .root = groupId {
                 self.tabBarItem.title = title
             
-                let icon: UIImage?
+                var icon: UIImage?
                 if (self.filter != nil) {
                     icon = UIImage(bundleImageName: getFilterIconPath(filter: self.filter!))
                 } else if (useSpecialTabBarIcons()) {
@@ -1847,11 +1847,11 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                         }
                         strongSelf.chatListDisplayNode.chatListNode.setCurrentRemovingPeerId(nil)
                         
-                        let action: (Bool) -> Void = { shouldCommit in
+                        let action: (UndoOverlayAction) -> Bool = { value in
                             guard let strongSelf = self else {
-                                return
+                                return false
                             }
-                            if !shouldCommit {
+                            if value == .undo {
                                 if existingFolder == nil {
                                     deleteFolder(folder.groupId)
                                 } else {
@@ -1870,6 +1870,9 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                                         }
                                         strongSelf.chatListDisplayNode.chatListNode.setCurrentRemovingPeerId(nil)
                                     })
+                                return true
+                            } else {
+                                return false
                             }
                         }
                         
@@ -1896,7 +1899,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                             title = ""
                             undo = true
                         }
-                        strongSelf.present(UndoOverlayController(context: strongSelf.context, content: .archivedChat(peerId: peerIds[0], title: title, text: text, undo: undo), elevatedLayout: false, animateInAsReplacement: true, action: action), in: .current)
+                        strongSelf.present(UndoOverlayController(presentationData: strongSelf.presentationData, content: .archivedChat(peerId: peerIds[0].toInt64(), title: title, text: text, undo: undo), elevatedLayout: false, animateInAsReplacement: true, action: action), animated: true)
                         
                         strongSelf.chatListDisplayNode.playArchiveAnimation()
                     })

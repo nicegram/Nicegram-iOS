@@ -4,6 +4,7 @@ import SwiftSignalKit
 import Postbox
 import TelegramCore
 import TelegramPermissions
+import SyncCore
 
 extension PermissionKind {
     fileprivate static var defaultOrder: [PermissionKind] {

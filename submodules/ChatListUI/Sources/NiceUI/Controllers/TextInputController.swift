@@ -413,7 +413,7 @@ func textInputController(sharedContext: SharedAccountContext, account: Account, 
         applyImpl?()
     })]
     
-    let contentNode = NiceTextAlertContentNode(theme: AlertControllerTheme(presentationTheme: presentationData.theme), ptheme: presentationData.theme, strings: presentationData.strings, actions: actions, text: text, input: input, title: title, subtitle: subtitle, placeholder: placeholder)
+    let contentNode = NiceTextAlertContentNode(theme: AlertControllerTheme(presentationData: presentationData), ptheme: presentationData.theme, strings: presentationData.strings, actions: actions, text: text, input: input, title: title, subtitle: subtitle, placeholder: placeholder)
     contentNode.complete = {
         applyImpl?()
     }
@@ -430,9 +430,9 @@ func textInputController(sharedContext: SharedAccountContext, account: Account, 
         }
     }
     
-    let controller = AlertController(theme: AlertControllerTheme(presentationTheme: presentationData.theme), contentNode: contentNode)
+    let controller = AlertController(theme: AlertControllerTheme(presentationData: presentationData), contentNode: contentNode)
     let presentationDataDisposable = sharedContext.presentationData.start(next: { [weak controller, weak contentNode] presentationData in
-        controller?.theme = AlertControllerTheme(presentationTheme: presentationData.theme)
+        controller?.theme = AlertControllerTheme(presentationData: presentationData)
         contentNode?.inputFieldNode.updateTheme(presentationData.theme)
     })
     controller.dismissed = {

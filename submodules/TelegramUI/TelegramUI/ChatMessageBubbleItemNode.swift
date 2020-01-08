@@ -23,6 +23,8 @@ import GridMessageSelectionNode
 import OverlayStatusController
 import AppBundle
 import Markdown
+import PresentationDataUtils
+
 
 private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> [(Message, AnyClass, ChatMessageEntryAttributes)] {
     var result: [(Message, AnyClass, ChatMessageEntryAttributes)] = []
@@ -2318,12 +2320,12 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePrevewItemNode 
                         case let .pre(pre):
                             foundTapAction = true
                             UIPasteboard.general.string = pre
-                            self.item?.controllerInteraction.presentController(OverlayStatusController(theme: (self.item?.presentationData.theme.theme)!, strings: (self.item?.presentationData.strings)!, type: .success), nil)
+                            self.item?.controllerInteraction.presentController(OverlayStatusController(theme: (self.item?.presentationData.theme.theme)!, type: .success), nil)
                             break loop
                         case let .code(code):
                             foundTapAction = true
                             UIPasteboard.general.string = code
-                            self.item?.controllerInteraction.presentController(OverlayStatusController(theme: (self.item?.presentationData.theme.theme)!, strings: (self.item?.presentationData.strings)!, type: .success), nil)
+                            self.item?.controllerInteraction.presentController(OverlayStatusController(theme: (self.item?.presentationData.theme.theme)!, type: .success), nil)
                             break loop
                         case let .url(url, concealed):
                             foundTapAction = true

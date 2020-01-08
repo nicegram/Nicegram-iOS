@@ -92,7 +92,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return DebugControllerSection.logging.rawValue
         case .enableRaiseToSpeak, .keepChatNavigationStack, .skipReadHistory, .crashOnSlowQueries:
             return DebugControllerSection.experiments.rawValue
-        case .clearTips, .reimport, .resetData, .resetDatabase, .resetHoles, .reindexUnread, .resetBiometricsData, .optimizeDatabase, .photoPreview, .knockoutWallpaper:
+        case .clearTips, .reimport, .resetData, .resetDatabase, .resetHoles, .reindexUnread, .resetBiometricsData, .optimizeDatabase, .photoPreview, .knockoutWallpaper, .resetPremium:
             return DebugControllerSection.experiments.rawValue
         case .hostInfo, .versionInfo:
             return DebugControllerSection.info.rawValue
@@ -110,51 +110,53 @@ private enum DebugControllerEntry: ItemListNodeEntry {
         case .sendApiLogs:
             return 3
         case .sendPremiumLogs:
-            return 3 + 1
+            return 4
         case .sendCriticalLogs:
-            return 3 + 1 + 1
+            return 5
         case .accounts:
-            return 4 + 1 + 1
+            return 6
         case .logToFile:
-            return 5 + 1 + 1
+            return 7
         case .logToConsole:
-            return 6 + 1 + 1
+            return 8
         case .redactSensitiveData:
-            return 7 + 1 + 1
+            return 9
         case .a:
-            return 8 + 1 + 1
+            return 10
         case .enableRaiseToSpeak:
-            return 8 + 1 + 1 + 1
+            return 11
         case .keepChatNavigationStack:
-            return 9 + 1 + 1 + 1
+            return 12
         case .skipReadHistory:
-            return 10 + 1 + 1 + 1
+            return 13
         case .crashOnSlowQueries:
-            return 11 + 1 + 1 + 1
+            return 14
         case .clearTips:
-            return 12 + 1 + 1 + 1
+            return 15
         case .reimport:
-            return 13 + 1 + 1 + 1
-        case .resetData:
-            return 14 + 1 + 1 + 1
-        case .resetDatabase:
-            return 15 + 1 + 1 + 1
-        case .resetHoles:
             return 16
-        case .reindexUnread:
+        case .resetData:
             return 17
-        case .resetBiometricsData:
+        case .resetDatabase:
             return 18
-        case .optimizeDatabase:
+        case .resetHoles:
+            return 19
+        case .reindexUnread:
             return 20
-        case .photoPreview:
+        case .resetBiometricsData:
             return 21
-        case .knockoutWallpaper:
+        case .optimizeDatabase:
             return 22
-        case .hostInfo:
+        case .photoPreview:
+            return 23
+        case .knockoutWallpaper:
             return 24
-        case .versionInfo:
+        case .hostInfo:
             return 25
+        case .resetPremium:
+            return 26
+        case .versionInfo:
+            return 27
         }
     }
     
@@ -294,6 +296,52 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                         arguments.pushController(controller)
                     })
             })
+        case let .sendApiLogs(theme):
+            return ItemListDisclosureItem(presentationData: presentationData, title: "Send Nicegram API Logs", label: "", sectionId: self.section, style: .blocks, action: {
+                let _ = (Logger(basePath: arguments.sharedContext.basePath + "/ngApiLogs").collectLogs()
+                    |> deliverOnMainQueue).start(next: { logs in
+                        guard let context = arguments.context else {
+                            return
+                        }
+                        let controller = context.sharedContext.makePeerSelectionController(PeerSelectionControllerParams(context: context, filter: [.onlyWriteable, .excludeDisabled]))
+                        controller.peerSelected = { [weak controller] peerId in
+                            if let strongController = controller {
+                                strongController.dismiss()
+                                
+                                let messages = logs.map { (name, path) -> EnqueueMessage in
+                                    let id = arc4random64()
+                                    let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: LocalFileReferenceMediaResource(localFilePath: path, randomId: id), previewRepresentations: [], immediateThumbnailData: nil, mimeType: "application/text", size: nil, attributes: [.FileName(fileName: name)])
+                                    return .message(text: "", attributes: [], mediaReference: .standalone(media: file), replyToMessageId: nil, localGroupingKey: nil)
+                                }
+                                let _ = enqueueMessages(account: context.account, peerId: peerId, messages: messages).start()
+                            }
+                        }
+                        arguments.presentController(controller, ViewControllerPresentationArguments(presentationAnimation: ViewControllerPresentationAnimation.modalSheet))
+                    })
+            })
+        case let .sendPremiumLogs(theme):
+            return ItemListDisclosureItem(presentationData: presentationData, title: "Send Premium Logs", label: "", sectionId: self.section, style: .blocks, action: {
+                let _ = (Logger(basePath: arguments.sharedContext.basePath + "/premiumLogs").collectLogs()
+                    |> deliverOnMainQueue).start(next: { logs in
+                        guard let context = arguments.context else {
+                            return
+                        }
+                        let controller = context.sharedContext.makePeerSelectionController(PeerSelectionControllerParams(context: context, filter: [.onlyWriteable, .excludeDisabled]))
+                        controller.peerSelected = { [weak controller] peerId in
+                            if let strongController = controller {
+                                strongController.dismiss()
+                                
+                                let messages = logs.map { (name, path) -> EnqueueMessage in
+                                    let id = arc4random64()
+                                    let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: LocalFileReferenceMediaResource(localFilePath: path, randomId: id), previewRepresentations: [], immediateThumbnailData: nil, mimeType: "application/text", size: nil, attributes: [.FileName(fileName: name)])
+                                    return .message(text: "", attributes: [], mediaReference: .standalone(media: file), replyToMessageId: nil, localGroupingKey: nil)
+                                }
+                                let _ = enqueueMessages(account: context.account, peerId: peerId, messages: messages).start()
+                            }
+                        }
+                        arguments.presentController(controller, ViewControllerPresentationArguments(presentationAnimation: ViewControllerPresentationAnimation.modalSheet))
+                    })
+            })
         case let .sendCriticalLogs(theme):
             return ItemListDisclosureItem(presentationData: presentationData, title: "Send Critical Logs", label: "", sectionId: self.section, style: .blocks, action: {
                 let _ = (Logger.shared.collectShortLogFiles()
@@ -353,7 +401,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                 arguments.pushController(debugAccountsController(context: context, accountManager: arguments.sharedContext.accountManager))
             })
         case let .a(theme, lang):
-            return ItemListActionItem(theme: theme, title: " ", kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+            return ItemListActionItem(presentationData: presentationData, title: " ", kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: {
             })
         case let .logToFile(theme, value):
             return ItemListSwitchItem(presentationData: presentationData, title: "Log to File", value: value, sectionId: self.section, style: .blocks, updated: { value in
@@ -542,6 +590,26 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             })
         case let .hostInfo(theme, string):
             return ItemListTextItem(presentationData: presentationData, text: .plain(string), sectionId: self.section)
+        case let .resetPremium(theme):
+        return ItemListActionItem(presentationData: presentationData, title: "Reset Premium", kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+            guard let context = arguments.context else {
+                return
+            }
+            let presentationData = arguments.sharedContext.currentPresentationData.with { $0 }
+            let actionSheet = ActionSheetController(presentationData: presentationData)
+            actionSheet.setItemGroups([ActionSheetItemGroup(items: [
+                ActionSheetTextItem(title: "Reset Premium. You will be able to restore purchase."),
+                ActionSheetButtonItem(title: "Reset Premiuum", color: .destructive, action: { [weak actionSheet] in
+                    actionSheet?.dismissAnimated()
+                    PremiumSettings().p = false
+                }),
+                ]), ActionSheetItemGroup(items: [
+                    ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                        actionSheet?.dismissAnimated()
+                    })
+                    ])])
+            arguments.presentController(actionSheet, nil)
+        })
         case let .versionInfo(theme):
             let bundle = Bundle.main
             let bundleId = bundle.bundleIdentifier ?? ""

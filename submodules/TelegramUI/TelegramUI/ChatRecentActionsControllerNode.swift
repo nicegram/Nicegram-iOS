@@ -246,7 +246,7 @@ final class ChatRecentActionsControllerNode: ViewControllerTracingNode {
             if let strongSelf = self {
                 switch action {
                     case let .code(code):
-                        let actionSheet = ActionSheetController(presentationTheme: strongSelf.presentationData.theme)
+                        let actionSheet = ActionSheetController(presentationData: strongSelf.presentationData)
                         actionSheet.setItemGroups([ActionSheetItemGroup(items: [
                             ActionSheetTextItem(title: code),
                             ActionSheetButtonItem(title: strongSelf.presentationData.strings.Conversation_LinkDialogCopy, color: .accent, action: { [weak actionSheet] in
@@ -260,7 +260,7 @@ final class ChatRecentActionsControllerNode: ViewControllerTracingNode {
                                 ])])
                         strongSelf.presentController(actionSheet, nil)
                     case let .pre(pre):
-                        let actionSheet = ActionSheetController(presentationTheme: strongSelf.presentationData.theme)
+                        let actionSheet = ActionSheetController(presentationData: strongSelf.presentationData)
                         let prefixedNode = ActionSheetTextItem(title: pre, alignment: .left)
                         actionSheet.setItemGroups([ActionSheetItemGroup(items: [
                             prefixedNode,

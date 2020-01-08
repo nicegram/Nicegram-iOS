@@ -30,7 +30,8 @@ let niceLocales: [String : [String : String]] = [
     "fa": gd(locale: "fa"),
     "pl": gd(locale: "pl"),
     "sk": gd(locale: "sk"),
-    "tr": gd(locale: "tr")
+    "tr": gd(locale: "tr"),
+    "ro": gd(locale: "ro")
 ]
 
 public func getLangFallback(_ lang: String) -> String {

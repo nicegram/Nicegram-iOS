@@ -892,7 +892,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                             if controller.filterIndex == filterIndex {
                                 var controllers = tabsController.controllers
                                 controllers[index] = self.makeChatListController(context: chatListController.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false,
-                                                                                 filter: filter, filterIndex: filterIndex, isMissed: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
+                                                                                 filter: filter, filterIndex: filterIndex, isMissed: false, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
 //                                controllers[index] = ChatListController(context: chatListController.context, groupId: .root, controlsHistoryPreload: chatListController.controlsHistoryPreload, hideNetworkActivityStatus: chatListController.hideNetworkActivityStatus, filter: filter, filterIndex: filterIndex)
                                 tabsController.setControllers(controllers, selectedIndex: index)
                                 break
@@ -921,7 +921,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                     }
                 }
                 var controllers = tabsController.controllers
-                controllers[tabsController.controllers.endIndex - 2] = self.makeChatListController(context: chatListController.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: nil, filterIndex: nil, isMissed: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
+                controllers[tabsController.controllers.endIndex - 2] = self.makeChatListController(context: chatListController.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: nil, filterIndex: nil, isMissed: false, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
                 tabsController.setControllers(controllers, selectedIndex: tabsController.controllers.endIndex - 2)
             }
         }

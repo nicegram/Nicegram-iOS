@@ -22,14 +22,6 @@ import ImageBlur
 import WatchBridge
 import SettingsUI
 import ChatListUI
-
-func isAccessLocked(data: PostboxAccessChallengeData, at timestamp: Int32) -> Bool {
-    if data.isLockable, let autolockDeadline = data.autolockDeadline, autolockDeadline <= timestamp {
-        return true
-    } else {
-        return false
-    }
-}
 import AppLock
 import AccountUtils
 import ContextUI
@@ -234,7 +226,8 @@ final class AuthorizedApplicationContext {
         }
         
         if self.rootController.rootTabController == nil {
-            self.rootController.addRootControllers(showCallsTab: self.showCallsTab)
+            let niceSettings = getNiceSettings(accountManager: self.context.sharedContext.accountManager)
+            self.rootController.addRootControllers(showCallsTab: self.showCallsTab, niceSettings: niceSettings)
         }
         if let tabsController = self.rootController.viewControllers.first as? TabBarController, !tabsController.controllers.isEmpty, tabsController.selectedIndex >= 0 {
             let controller = tabsController.controllers[tabsController.selectedIndex]

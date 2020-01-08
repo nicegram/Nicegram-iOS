@@ -714,9 +714,9 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
                     inputActivities = inputActivitiesValue
                     isPeerGroup = false
                     isAd = isAdValue
-                case let .groupReference(groupId, peers, messageValue, unreadState, hiddenByDefault):
                     displayAsMessage = displayAsMessageValue
                     hasFailedMessages = hasFailedMessagesValue
+                case let .groupReference(groupId, peers, messageValue, unreadState, hiddenByDefault):
                     if let _ = messageValue, !peers.isEmpty {
                         contentPeer = .chat(peers[0].peer)
                     } else {
@@ -737,7 +737,7 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
                                 reallyPeers.append(reallyPeer)
                             }
                         }
-                        multipleAvatarsApply = multipleAvatarsLayout(item.context.account, item.presentationData.theme, reallyPeers, CGSize(width: 60.0, height: 60.0))
+                        multipleAvatarsApply = multipleAvatarsLayout(item.context, item.presentationData.theme, reallyPeers, CGSize(width: 60.0, height: 60.0))
                     }
                     groupHiddenByDefault = hiddenByDefault
                     let allCount = unreadState.count(countingCategory: .chats, mutedCategory: .all)

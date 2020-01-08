@@ -518,7 +518,8 @@ public final class ChatListNode: ListView {
                     deleteFolderQuestion = l("Folder.DeleteAsk", locale) + " " + "«" + folder.name + "»" + "?"
                 }
                 
-                let controller = standardTextAlertController(theme: AlertControllerTheme(presentationTheme: theme), title: nil, text: deleteFolderQuestion, actions: [TextAlertAction(type: .destructiveAction, title: strings.Common_Yes, action: {
+                let presentationData = strongSelf.context.sharedContext.currentPresentationData.with { $0 }
+                let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: deleteFolderQuestion, actions: [TextAlertAction(type: .destructiveAction, title: strings.Common_Yes, action: {
                     if let _ = folder {
                         deleteFolder(groupId.rawValue)
                     }
@@ -614,7 +615,7 @@ public final class ChatListNode: ListView {
             let (rawEntries, isLoading) = chatListNodeEntriesForView(update.view, state: state, savedMessagesPeer: savedMessagesPeer, hideArchivedFolderByDefault: hideArchivedFolderByDefault, displayArchiveIntro: displayArchiveIntro, mode: mode)
             let entries = rawEntries.filter { entry in
                 switch entry {
-                case let .PeerEntry(_, _, _, readState, notificationSettings, _, peer, _, summaryInfo, _, _, _, _, isAd):
+                case let .PeerEntry(_, _, _, readState, notificationSettings, _, peer, _, summaryInfo, _, _, _, _, isAd, _):
                     if isAd {
                         return false
                     }

@@ -17,6 +17,7 @@ static_library(
     	"//submodules/TelegramCore:TelegramCore#shared",
         "//submodules/SyncCore:SyncCore#shared",
         "//submodules/WalletCore:WalletCore",
+        "//Nicegram/NicegramLib:NicegramLib"
     ],
     frameworks = [
         "$SDKROOT/System/Library/Frameworks/Foundation.framework",

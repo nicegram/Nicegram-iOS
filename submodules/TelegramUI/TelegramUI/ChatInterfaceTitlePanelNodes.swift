@@ -10,7 +10,7 @@ func titlePanelForChatPresentationInterfaceState(_ chatPresentationInterfaceStat
         return nil
     }
     if chatPresentationInterfaceState.renderedPeer?.peer?.restrictionText(platform: "ios", contentSettings: context.currentContentSettings.with { $0 }) != nil {
-        if (isAllowedChat(peer: chatPresentationInterfaceState.renderedPeer?.peer)) {
+        if isAllowedChat(peer: chatPresentationInterfaceState.renderedPeer?.peer, contentSettings: context.currentContentSettings.with { $0 }) {
         } else {
             return nil
         }

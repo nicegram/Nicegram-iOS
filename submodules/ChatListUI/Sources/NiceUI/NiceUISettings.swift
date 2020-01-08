@@ -12,6 +12,7 @@ import SwiftSignalKit
 import TelegramUIPreferences
 import TelegramCore
 import AccountContext
+import SyncCore
 
 public struct NiceSettings: PreferencesEntry, Equatable {
     public var foo: Bool

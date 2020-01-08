@@ -64,13 +64,12 @@ public final class TelegramRootController: NavigationController {
                         strongSelf.updateBackgroundDetailsMode(navigationDetailsBackgroundMode, transition: .immediate)
                     }
                     strongSelf.updateBackgroundDetailsMode(navigationDetailsBackgroundMode, transition: .immediate)
-                }
-
-                let previousTheme = strongSelf.presentationData.theme
-                strongSelf.presentationData = presentationData
-                if previousTheme !== presentationData.theme {
-                    strongSelf.rootTabController?.updateTheme(navigationBarPresentationData: NavigationBarPresentationData(presentationData: presentationData), theme: TabBarControllerTheme(rootControllerTheme: presentationData.theme))
-                    strongSelf.rootTabController?.statusBar.statusBarStyle = presentationData.theme.rootController.statusBarStyle.style
+                    let previousTheme = strongSelf.presentationData.theme
+                    strongSelf.presentationData = presentationData
+                    if previousTheme !== presentationData.theme {
+                        strongSelf.rootTabController?.updateTheme(navigationBarPresentationData: NavigationBarPresentationData(presentationData: presentationData), theme: TabBarControllerTheme(rootControllerTheme: presentationData.theme))
+                        strongSelf.rootTabController?.statusBar.statusBarStyle = presentationData.theme.rootController.statusBarStyle.style
+                    }
                 }
             })
     }
@@ -84,8 +83,8 @@ public final class TelegramRootController: NavigationController {
         self.presentationDataDisposable?.dispose()
     }
     
-    public func addRootControllers(showCallsTab: Bool) {
-        let tabBarController = TabBarController(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData), theme: TabBarControllerTheme(rootControllerTheme: self.presentationData.theme))
+    public func addRootControllers(showCallsTab: Bool, niceSettings: NiceSettings) {
+        let tabBarController = TabBarController(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData), theme: TabBarControllerTheme(rootControllerTheme: self.presentationData.theme), showTabNames: SimplyNiceSettings().showTabNames)
         tabBarController.navigationPresentation = .master
         let chatListController = self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: nil, filterIndex: nil, isMissed: false, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
         if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
@@ -113,7 +112,7 @@ public final class TelegramRootController: NavigationController {
                 if index + 1 > SimplyNiceSettings().maxFilters {
                     break
                 }
-                filControllers.append(self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: filter, filterIndex: Int32(index), isMissed: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild))
+                filControllers.append(self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: filter, filterIndex: Int32(index), isMissed: false, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild))
             }
             
             if !filControllers.isEmpty {
@@ -145,7 +144,7 @@ public final class TelegramRootController: NavigationController {
         
         
         if showMissed() {
-            let missedController = self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: .onlyMissed, filterIndex: nil, isMissed: true, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
+            let missedController = self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: .onlyMissed, filterIndex: nil, isMissed: true, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
             
             if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
                 missedController.tabBarItem.badgeValue = sharedContext.switchingData.chatListBadge
@@ -187,7 +186,7 @@ public final class TelegramRootController: NavigationController {
                 if index + 1 > SimplyNiceSettings().maxFilters {
                     break
                 }
-                filControllers.append(self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: filter, filterIndex: Int32(index), isMissed: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild))
+                filControllers.append(self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: filter, filterIndex: Int32(index), isMissed: false, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild))
             }
             
             if !filControllers.isEmpty {
@@ -209,7 +208,7 @@ public final class TelegramRootController: NavigationController {
         
         if showMissed() {
             selectedIndex = 0
-            let missedController = self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: .onlyMissed, filterIndex: nil, isMissed: true, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
+            let missedController = self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: .onlyMissed, filterIndex: nil, isMissed: true, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
             
             if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
                 missedController.tabBarItem.badgeValue = sharedContext.switchingData.chatListBadge
