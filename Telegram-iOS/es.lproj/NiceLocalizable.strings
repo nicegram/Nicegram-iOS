@@ -47,7 +47,7 @@
 "NiceFeatures.HideNumber" = "Esconde tu numero de teléfono en los ajustes";
 
 /*NGWeb*/
-"NGWeb.Blocked" = "Indisponible con Nicegram por la razón de los directrices del AppStore";
+"NGWeb.Blocked" = "No disponible en Nicegram debido a las normas del App Store";
 
 /*Browser*/
 "NiceFeatures.Browser.Header" = "URL’s";
@@ -60,12 +60,12 @@
 "Premium.UnlimitedPins.Header" = "CHATS ANCLADOS ILIMITADOS";
 "Premium.SyncPins" = "Sincroniza chats fijados";
 "Premium.SyncPins.Notice.ON" = "Si intercambias chats fijados en otros clientes, SE CAMBIARÁN en Nicegram.";
-"Premium.SyncPins.Notice.OFF" = "Si intercambias chats fijados en otro cliente, NO SE CAMBIARÁN en Nicegram.";
+"Premium.SyncPins.Notice.OFF" = "Si cambias chats anclados en otro cliente, NO CAMBIARÁN en Nicegram.";
 "Premium.Missed.Header" = "Mensajes perdidos";
 "Premium.Missed" = "Notificar por los mensajes perdidos";
 "Premium.Missed.Notice" = "Cuando abres la aplicación después de un período largo (durmiendo, estudiando, etc), Nicegram te notificará sobre mensajes privados y menciones perdidos.";
-"Folder.DeleteAsk" = "Eliminar archivo";
-"Folder.NeedPremium" = "Este archivo solo está disponible con Premium. Puedes comprar Premium o eliminar el archivo usando movimiento para deslizar.";
+"Folder.DeleteAsk" = "Eliminar carpeta";
+"Folder.NeedPremium" = "Esta carpeta solo está disponible con Premium. Puedes comprar Premium o eliminar la carpeta con el gesto de deslizar.";
 "Common.SupportChatUsername" = "nicegram_es";
 "Common.FAQUrl" = "https://nicegram.app/faq/";
 "Common.FAQ.Button" = "Preguntas Frecuentes de Nicegram";
@@ -94,7 +94,7 @@
 "NGLab.RegDate.Title" = "Fecha de registro";
 "NGLab.RegDate.Notice" = "Esta fecha es aproximada";
 "NGLab.RegDate.MenuItem" = "registrado";
-"NGLab.RegDate.FetchError" = "No se pudo obtener la fecha de registro.";
+"NGLab.RegDate.FetchError" = "Lo sentimos, no se pudo obtener la fecha de registro.";
 
 /*Backup Settings*/
 "NiceFeatures.BackupSettings" = "Copia de seguridad de ajustes y carpetas";
