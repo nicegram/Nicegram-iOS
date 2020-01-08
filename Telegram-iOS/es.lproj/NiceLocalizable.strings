@@ -14,22 +14,22 @@
 "NiceFeatures.Tabs.Header" = "PESTAÑAS";
 "NiceFeatures.Tabs.ShowContacts" = "Mostrar pestaña de Contactos";
 "NiceFeatures.ChatScreen.Header" = "PANTALLA DE CHAT";
-"NiceFeatures.ChatScreen.AnimatedStickers" = "Calcamonias Animadas";
+"NiceFeatures.ChatScreen.AnimatedStickers" = "Stickers animados";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "Guarda a la nube";
 
 /*Open Pin*/
-"Chat.OpenPin" = "Muestra Estaquilla";
+"Chat.OpenPin" = "Mostrar anclado";
 "ChatFilter.Admin" = "Admin";
 "NiceFeatures.Notifications.Fix" = "Deshabilita notificaciones indeseadas";
 "NiceFeatures.Notifications.FixNotice" = "Util si obtienes notificaciones de chats silenciados.\nCorrespondencias desde notificaciones, etiquetas de cuenta y vistas previas de multimedias no estarán disponibles.";
 "NiceFeatures.Filters.Header" = "FILTROS (PESTAÑAS)";
-"NiceFeatures.Filters.Notice" = "Selecciona el número de pestañas personalizadas. \nMantiene presionado la pestaña para cambiar el filtro.";
+"NiceFeatures.Filters.Notice" = "Selecciona el número de pestañas personalizadas. \nMantén pulsado en una pestaña para cambiar el filtro.";
 
 /*Common*/
 "Common.ExitNow" = "Salir Ahora";
-"Common.Later" = "Después";
+"Common.Later" = "Más tarde";
 "Common.RestartRequired" = "Reinicio es necesario!";
 "NiceFeatures.Tabs.ShowNames" = "Muestra nombres de pestañas";
 "Chat.ForwardAsCopy" = "Reenvia como copia";
@@ -39,8 +39,8 @@
 "Folder.New" = "Archivo nuevo";
 "Folder.Created" = "Archivo creado";
 "Folder.AddToExisting" = "Agregar al archivo existente";
-"Folder.Updated" = "Archivo actualizado";
-"Folder.Create" = "Crear archivo...";
+"Folder.Updated" = "Carpeta actualizada";
+"Folder.Create" = "Crear carpeta…";
 "Folder.Create.Name" = "Nombre del archivo";
 "Folder.Create.Placeholder" = "Archivo...";
 "Folder.LimitExceeded" = "Lo siento pero no se puede crear más que 3 archivos personalizados.\nHay más archivos disponibles en Premium.";
