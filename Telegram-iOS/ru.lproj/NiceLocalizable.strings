@@ -95,3 +95,8 @@
 "NGLab.RegDate.Notice" = "Это примерная дата";
 "NGLab.RegDate.MenuItem" = "регистрация";
 "NGLab.RegDate.FetchError" = "К сожалению, дата регистрации недоступна.";
+
+/*Backup Settings*/
+"NiceFeatures.BackupSettings" = "Резервное копирование настроек и папок";
+"NiceFeatures.BackupSettings.Notice" = "Создает файлы резервных копий в сохраненных сообщениях";
+"NiceFeatures.BackupSettings.Done" = "Резервное копирование выполнено в сохраненные сообщения";

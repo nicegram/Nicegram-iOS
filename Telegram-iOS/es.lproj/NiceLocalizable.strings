@@ -14,22 +14,22 @@
 "NiceFeatures.Tabs.Header" = "PESTAÑAS";
 "NiceFeatures.Tabs.ShowContacts" = "Mostrar pestaña de Contactos";
 "NiceFeatures.ChatScreen.Header" = "PANTALLA DE CHAT";
-"NiceFeatures.ChatScreen.AnimatedStickers" = "Calcamonias Animadas";
+"NiceFeatures.ChatScreen.AnimatedStickers" = "Stickers animados";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "Guarda a la nube";
 
 /*Open Pin*/
-"Chat.OpenPin" = "Muestra Estaquilla";
+"Chat.OpenPin" = "Mostrar anclado";
 "ChatFilter.Admin" = "Admin";
 "NiceFeatures.Notifications.Fix" = "Deshabilita notificaciones indeseadas";
 "NiceFeatures.Notifications.FixNotice" = "Util si obtienes notificaciones de chats silenciados.\nCorrespondencias desde notificaciones, etiquetas de cuenta y vistas previas de multimedias no estarán disponibles.";
 "NiceFeatures.Filters.Header" = "FILTROS (PESTAÑAS)";
-"NiceFeatures.Filters.Notice" = "Selecciona el número de pestañas personalizadas. \nMantiene presionado la pestaña para cambiar el filtro.";
+"NiceFeatures.Filters.Notice" = "Selecciona el número de pestañas personalizadas. \nMantén pulsado en una pestaña para cambiar el filtro.";
 
 /*Common*/
 "Common.ExitNow" = "Salir Ahora";
-"Common.Later" = "Después";
+"Common.Later" = "Más tarde";
 "Common.RestartRequired" = "Reinicio es necesario!";
 "NiceFeatures.Tabs.ShowNames" = "Muestra nombres de pestañas";
 "Chat.ForwardAsCopy" = "Reenvia como copia";
@@ -39,15 +39,15 @@
 "Folder.New" = "Archivo nuevo";
 "Folder.Created" = "Archivo creado";
 "Folder.AddToExisting" = "Agregar al archivo existente";
-"Folder.Updated" = "Archivo actualizado";
-"Folder.Create" = "Crear archivo...";
+"Folder.Updated" = "Carpeta actualizada";
+"Folder.Create" = "Crear carpeta…";
 "Folder.Create.Name" = "Nombre del archivo";
 "Folder.Create.Placeholder" = "Archivo...";
 "Folder.LimitExceeded" = "Lo siento pero no se puede crear más que 3 archivos personalizados.\nHay más archivos disponibles en Premium.";
 "NiceFeatures.HideNumber" = "Esconde tu numero de teléfono en los ajustes";
 
 /*NGWeb*/
-"NGWeb.Blocked" = "Indisponible con Nicegram por la razón de los directrices del AppStore";
+"NGWeb.Blocked" = "No disponible en Nicegram debido a las normas del App Store";
 
 /*Browser*/
 "NiceFeatures.Browser.Header" = "URL’s";
@@ -57,15 +57,15 @@
 
 /*Premium*/
 "Premium.Title" = "Premium";
-"Premium.UnlimitedPins.Header" = "CHATS FIJADOS ILIMITADOS";
+"Premium.UnlimitedPins.Header" = "CHATS ANCLADOS ILIMITADOS";
 "Premium.SyncPins" = "Sincroniza chats fijados";
 "Premium.SyncPins.Notice.ON" = "Si intercambias chats fijados en otros clientes, SE CAMBIARÁN en Nicegram.";
-"Premium.SyncPins.Notice.OFF" = "Si intercambias chats fijados en otro cliente, NO SE CAMBIARÁN en Nicegram.";
+"Premium.SyncPins.Notice.OFF" = "Si cambias chats anclados en otro cliente, NO CAMBIARÁN en Nicegram.";
 "Premium.Missed.Header" = "Mensajes perdidos";
 "Premium.Missed" = "Notificar por los mensajes perdidos";
 "Premium.Missed.Notice" = "Cuando abres la aplicación después de un período largo (durmiendo, estudiando, etc), Nicegram te notificará sobre mensajes privados y menciones perdidos.";
-"Folder.DeleteAsk" = "Eliminar archivo";
-"Folder.NeedPremium" = "Este archivo solo está disponible con Premium. Puedes comprar Premium o eliminar el archivo usando movimiento para deslizar.";
+"Folder.DeleteAsk" = "Eliminar carpeta";
+"Folder.NeedPremium" = "Esta carpeta solo está disponible con Premium. Puedes comprar Premium o eliminar la carpeta con el gesto de deslizar.";
 "Common.SupportChatUsername" = "nicegram_es";
 "Common.FAQUrl" = "https://nicegram.app/faq/";
 "Common.FAQ.Button" = "Preguntas Frecuentes de Nicegram";
@@ -93,3 +93,10 @@
 "NGLab.RegDate.Btn" = "Obtiene la fecha de registro";
 "NGLab.RegDate.Title" = "Fecha de registro";
 "NGLab.RegDate.Notice" = "Esta fecha es aproximada";
+"NGLab.RegDate.MenuItem" = "registrado";
+"NGLab.RegDate.FetchError" = "Lo sentimos, no se pudo obtener la fecha de registro.";
+
+/*Backup Settings*/
+"NiceFeatures.BackupSettings" = "Copia de seguridad de ajustes y carpetas";
+"NiceFeatures.BackupSettings.Notice" = "Crea archivos de copia de seguridad en tus mensajes guardados";
+"NiceFeatures.BackupSettings.Done" = "Copia de seguridad hecha en Mensajes guardados";
