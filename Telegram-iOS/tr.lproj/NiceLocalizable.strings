@@ -48,8 +48,6 @@
 
 /*NGWeb*/
 "NGWeb.Blocked" = "AppStore Kuralları yüzünden Nicegram’da kullanılamıyor";
-
-/*Browser*/
 "NiceFeatures.Browser.Header" = "Bağlantılar";
 "NiceFeatures.Browser.UseBrowser" = "Bağlantıları tarayıcıda aç";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram, bağlantıları uygulama içi yerine harici tarayıcıda açacak. Seçilen tarayıcı yüklü olmalı.";
