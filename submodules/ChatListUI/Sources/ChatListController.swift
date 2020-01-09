@@ -271,6 +271,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                     icon = UIImage(bundleImageName: getFilterIconPath(filter: self.filter!))
                 } else if (useSpecialTabBarIcons()) {
                     icon = UIImage(bundleImageName: "Chat List/Tabs/NY/IconChats")
+                } else {
+                    icon = UIImage(bundleImageName: "Chat List/Tabs/IconChats")
                 }
                 
                 self.tabBarItem.image = icon
