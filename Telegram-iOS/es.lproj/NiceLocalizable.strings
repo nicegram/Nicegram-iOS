@@ -17,32 +17,32 @@
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Stickers animados";
 
 /*Save to Cloud*/
-"Chat.SaveToCloud" = "Guarda a la nube";
+"Chat.SaveToCloud" = "Guardar en la nube";
 
 /*Open Pin*/
 "Chat.OpenPin" = "Mostrar anclado";
 "ChatFilter.Admin" = "Admin";
-"NiceFeatures.Notifications.Fix" = "Deshabilita notificaciones indeseadas";
-"NiceFeatures.Notifications.FixNotice" = "Util si obtienes notificaciones de chats silenciados.\nCorrespondencias desde notificaciones, etiquetas de cuenta y vistas previas de multimedias no estarán disponibles.";
+"NiceFeatures.Notifications.Fix" = "Desactivar notificaciones no deseadas";
+"NiceFeatures.Notifications.FixNotice" = "Útil si recibes notificaciones de chats silenciados.\nResponder desde la notificación, etiquetas de cuenta y vistas previas de multimedia no estarán disponibles.";
 "NiceFeatures.Filters.Header" = "FILTROS (PESTAÑAS)";
 "NiceFeatures.Filters.Notice" = "Selecciona el número de pestañas personalizadas. \nMantén pulsado en una pestaña para cambiar el filtro.";
 
 /*Common*/
-"Common.ExitNow" = "Salir Ahora";
+"Common.ExitNow" = "Salir ahora";
 "Common.Later" = "Más tarde";
-"Common.RestartRequired" = "Reinicio es necesario!";
-"NiceFeatures.Tabs.ShowNames" = "Muestra nombres de pestañas";
-"Chat.ForwardAsCopy" = "Reenvia como copia";
+"Common.RestartRequired" = "¡Reinicio necesario!";
+"NiceFeatures.Tabs.ShowNames" = "Mostrar nombres de pestañas";
+"Chat.ForwardAsCopy" = "Reenviar como copia";
 
 /*Folder*/
-"Folder.DefaultName" = "Archivo";
-"Folder.New" = "Archivo nuevo";
-"Folder.Created" = "Archivo creado";
+"Folder.DefaultName" = "Carpeta";
+"Folder.New" = "Nueva carpeta";
+"Folder.Created" = "Carpeta creada";
 "Folder.AddToExisting" = "Agregar al archivo existente";
 "Folder.Updated" = "Carpeta actualizada";
 "Folder.Create" = "Crear carpeta…";
-"Folder.Create.Name" = "Nombre del archivo";
-"Folder.Create.Placeholder" = "Archivo...";
+"Folder.Create.Name" = "Nombre de la carpeta";
+"Folder.Create.Placeholder" = "Carpeta…";
 "Folder.LimitExceeded" = "Lo siento pero no se puede crear más que 3 archivos personalizados.\nHay más archivos disponibles en Premium.";
 "NiceFeatures.HideNumber" = "Esconde tu numero de teléfono en los ajustes";
 
