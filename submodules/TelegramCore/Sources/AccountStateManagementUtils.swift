@@ -2323,9 +2323,15 @@ func replayFinalState(accountManager: AccountManager, postbox: Postbox, accountP
                     default:
                         break
                 }
-                transaction.updatePeerChatListInclusion(peerId, inclusion: .ifHasMessagesOrOneOf(groupId: groupId, pinningIndex: currentPinningIndex, minTimestamp: currentMinTimestamp))
-                if changedGroup {
-                    invalidateGroupStats.insert(Namespaces.PeerGroup.archive)
+                let folder = getPeerFolder(peerId.toInt64())
+                if folder != nil {
+                    fLog("Ignoring peer folder update")
+                    break
+                } else {
+                    transaction.updatePeerChatListInclusion(peerId, inclusion: .ifHasMessagesOrOneOf(groupId: groupId, pinningIndex: currentPinningIndex, minTimestamp: currentMinTimestamp))
+                    if changedGroup {
+                        invalidateGroupStats.insert(Namespaces.PeerGroup.archive)
+                    }
                 }
             case let .EditMessage(id, message):
                 transaction.updateMessage(id, update: { previousMessage in
@@ -2582,6 +2588,10 @@ func replayFinalState(accountManager: AccountManager, postbox: Postbox, accountP
                     updatedSecretChatTypingActivities.insert(chatPeerId)
                 }
             case let .UpdatePinnedItemIds(groupId, pinnedOperation):
+                if isPremium() && !PremiumSettings().syncPins {
+                    premiumLog("Ignored Pinned Items update \(groupId) \(pinnedOperation)")
+                    break
+                }
                 switch pinnedOperation {
                     case let .pin(itemId):
                         switch itemId {

@@ -232,7 +232,11 @@ func fetchChatList(postbox: Postbox, network: Network, location: FetchChatListLo
                     case .general:
                         folderId = 0
                     case let .group(groupId):
-                        folderId = groupId.rawValue
+                        if !isNiceFolderCheck(groupId.rawValue) {
+                            folderId = groupId.rawValue
+                        } else {
+                            folderId = 0
+                    }
                 }
                 additionalPinnedChats = network.request(Api.functions.messages.getPinnedDialogs(folderId: folderId))
                 |> retryRequest
@@ -244,12 +248,21 @@ func fetchChatList(postbox: Postbox, network: Network, location: FetchChatListLo
             var flags: Int32 = 1 << 1
             let requestFolderId: Int32
             
+            var isNiceFolder = false
+            var niceFolderId: Int32? = nil
+            
             switch location {
                 case .general:
                     requestFolderId = 0
                 case let .group(groupId):
-                    flags |= 1 << 0
-                    requestFolderId = groupId.rawValue
+                    if !isNiceFolderCheck(groupId.rawValue) {
+                        flags |= 1 << 0
+                        requestFolderId = groupId.rawValue
+                    } else {
+                        requestFolderId = 0
+                        isNiceFolder = true
+                        niceFolderId = groupId.rawValue
+                }
             }
             let requestChats = network.request(Api.functions.messages.getDialogs(flags: flags, folderId: requestFolderId, offsetDate: timestamp, offsetId: id, offsetPeer: peer, limit: limit, hash: hash))
             |> retryRequest
@@ -360,6 +373,26 @@ func fetchChatList(postbox: Postbox, network: Network, location: FetchChatListLo
                         for (groupId, summary) in parsedPinnedChats.referencedFolders {
                             folderSummaries[groupId] = summary
                         }
+                    }
+                    
+                    if isNiceFolder {
+                        return FetchedChatList(
+                            chatPeerIds: [],
+                            peers: [],
+                            peerPresences: [:],
+                            notificationSettings: [:],
+                            readStates: [:],
+                            mentionTagSummaries: [:],
+                            chatStates: [:],
+                            storeMessages: [],
+                            topMessageIds: [:],
+                            
+                            lowerNonPinnedIndex: nil,
+                            
+                            pinnedItemIds: [],
+                            folderSummaries: [:],
+                            peerGroupIds: [:]
+                        )
                     }
                     
                     return FetchedChatList(

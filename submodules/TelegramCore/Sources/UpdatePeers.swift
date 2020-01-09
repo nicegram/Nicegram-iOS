@@ -26,6 +26,10 @@ func updatePeerChatInclusionWithMinTimestamp(transaction: Transaction, id: PeerI
             }
     }
     if let updatedInclusion = updatedInclusion {
+        if let niceFolder = getFolder(updatedInclusion.groupId?.rawValue ?? 0) {
+            fLog("Ignoring mintimestamp update id \(id.toInt64()) group \(updatedInclusion.groupId?.rawValue) force \(forceRootGroupIfNotExists)")
+            return
+        }
         transaction.updatePeerChatListInclusion(id, inclusion: updatedInclusion)
     }
 }
