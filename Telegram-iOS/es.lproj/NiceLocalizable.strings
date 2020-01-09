@@ -25,7 +25,7 @@
 "NiceFeatures.Notifications.Fix" = "Desactivar notificaciones no deseadas";
 "NiceFeatures.Notifications.FixNotice" = "Útil si recibes notificaciones de chats silenciados.\nResponder desde la notificación, etiquetas de cuenta y vistas previas de multimedia no estarán disponibles.";
 "NiceFeatures.Filters.Header" = "FILTROS (PESTAÑAS)";
-"NiceFeatures.Filters.Notice" = "Selecciona el número de pestañas personalizadas. \nMantiene presionado la pestaña para cambiar el filtro.";
+"NiceFeatures.Filters.Notice" = "Selecciona el número de pestañas personalizadas. \nMantén pulsado en una pestaña para cambiar el filtro.";
 
 /*Common*/
 "Common.ExitNow" = "Salir ahora";
