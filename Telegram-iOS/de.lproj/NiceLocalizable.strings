@@ -48,8 +48,6 @@
 
 /*NGWeb*/
 "NGWeb.Blocked" = "Nicht verfügbar in Nicegram wegen AppStore Richtlinien";
-
-/*Browser*/
 "NiceFeatures.Browser.Header" = "URLs";
 "NiceFeatures.Browser.UseBrowser" = "Im Browser öffnen";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram öffnet Links im externen Browser anstelle von In-App. Der ausgewählte Browser muss installiert sein.";

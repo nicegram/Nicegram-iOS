@@ -48,8 +48,6 @@
 
 /*NGWeb*/
 "NGWeb.Blocked" = "به دلیل دستورالعمل های اپ استور ، انجام عملیات در نایس گرام مقدور نیست";
-
-/*Browser*/
 "NiceFeatures.Browser.Header" = "نشانی های اینترنتی";
 "NiceFeatures.Browser.UseBrowser" = "بازکردن لینک ها در مرورگر";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram بجای خود برنامه، لینک هارا در مرورگر خارجی باز میکند. مرورگر انتخاب شده باید نصب شده باشد.";
