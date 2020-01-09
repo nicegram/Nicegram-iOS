@@ -45,7 +45,7 @@ public func getPremiumIntroController(context: AccountContext, presentationData:
     
     let controller = PremiumIntroController(context: context, splashScreen: true)
     controller.setState(.custom(icon: PremiumIntroControllerCustomIcon(light: UIImage(bundleImageName: "Chat/Intro/PremiumIntro"), dark: nil), title: title, subtitle: subtitle, text: text, buttonTitle: buttonTitle, footerText: nil), animated: true)
-    
+    controller.navigationPresentation = .master
     
     
     

@@ -1901,7 +1901,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                             title = ""
                             undo = true
                         }
-                        strongSelf.present(UndoOverlayController(presentationData: strongSelf.presentationData, content: .archivedChat(peerId: peerIds[0].toInt64(), title: title, text: text, undo: undo), elevatedLayout: false, animateInAsReplacement: true, action: action), animated: true)
+                        strongSelf.present(UndoOverlayController(presentationData: strongSelf.presentationData, content: .archivedChat(peerId: peerIds[0].toInt64(), title: title, text: text, undo: undo), elevatedLayout: false, animateInAsReplacement: true, action: action), in: .current)
                         
                         strongSelf.chatListDisplayNode.playArchiveAnimation()
                     })

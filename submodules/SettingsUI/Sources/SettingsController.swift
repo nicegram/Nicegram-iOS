@@ -303,7 +303,7 @@ private indirect enum SettingsEntry: ItemListNodeEntry {
         case .niceFeatures:
             return 1005
         case .savedMessages:
-            return 1005
+            return 1006
         case .recentCalls:
             return 1007
         case .stickers:
@@ -759,8 +759,6 @@ private func settingsEntries(account: Account, presentationData: PresentationDat
         
         
         entries.append(.niceFeatures(presentationData.theme, PresentationResourcesSettings.nicegramIcon, l("NiceFeatures.Title", presentationData.strings.baseLanguageCode)))
-        entries.append(.ngFaq(presentationData.theme, PresentationResourcesSettings.faq, l("Common.FAQ.Button", presentationData.strings.baseLanguageCode)))
-        entries.append(.ngChat(presentationData.theme, PresentationResourcesSettings.support, presentationData.strings.Settings_Support))
         
         entries.append(.savedMessages(presentationData.theme, PresentationResourcesSettings.savedMessages, presentationData.strings.Settings_SavedMessages))
         entries.append(.recentCalls(presentationData.theme, PresentationResourcesSettings.recentCalls, presentationData.strings.CallSettings_RecentCalls))
@@ -789,6 +787,9 @@ private func settingsEntries(account: Account, presentationData: PresentationDat
         if hasWatchApp {
             entries.append(.watch(presentationData.theme, PresentationResourcesSettings.watch, presentationData.strings.Settings_AppleWatch, ""))
         }
+        
+        entries.append(.ngChat(presentationData.theme, PresentationResourcesSettings.support, presentationData.strings.Settings_Support))
+        entries.append(.ngFaq(presentationData.theme, PresentationResourcesSettings.faq, l("Common.FAQ.Button", presentationData.strings.baseLanguageCode)))
         
         entries.append(.askAQuestion(presentationData.theme, PresentationResourcesSettings.support, presentationData.strings.Settings_Support))
         entries.append(.faq(presentationData.theme, PresentationResourcesSettings.faq, presentationData.strings.Settings_FAQ))
@@ -1046,6 +1047,7 @@ public func settingsController(context: AccountContext, accountManager: AccountM
                 }
                 
                 NicegramProducts.store.requestProducts{ success, products in
+                    Queue.mainQueue().async {
                     if success {
                         if let products = products {
                             for product in products {
@@ -1093,6 +1095,7 @@ public func settingsController(context: AccountContext, accountManager: AccountM
                     }
                 
                 }
+            }
                 
                  
             })

@@ -36,11 +36,12 @@ private enum NewFolderListSection: Int32 {
     case folders
 }
 
-private enum NewFolderListEntryStableId: Hashable {
-    case create
-    case archive
-    case foldersHeader
-    case folder(Int32)
+private enum NewFolderListEntryStableId: Equatable, Hashable {
+    case index(Int)
+//    case create
+//    case archive
+//    case foldersHeader
+//    case folder(Int32)
 }
 
 private enum NewFolderListEntry: ItemListNodeEntry {
@@ -60,16 +61,16 @@ private enum NewFolderListEntry: ItemListNodeEntry {
         }
     }
     
-    var stableId: NewFolderListEntryStableId {
+    var stableId: Int32 {
         switch self {
         case .create:
-            return .create
+            return 0
         case .archive:
-            return .archive
+            return 1
         case .foldersHeader:
-            return .foldersHeader
+            return 2
         case let .folderItem(_, _, _, folder):
-            return .folder(folder.groupId)
+            return 100 + folder.groupId
         }
     }
     
@@ -115,37 +116,7 @@ private enum NewFolderListEntry: ItemListNodeEntry {
     }
     
     static func <(lhs: NewFolderListEntry, rhs: NewFolderListEntry) -> Bool {
-        switch lhs {
-        case .create:
-            if case .create = rhs {
-                return true
-            } else {
-                return false
-            }
-        case .archive:
-            if case .archive = rhs {
-                return true
-            } else {
-                return false
-            }
-        case .foldersHeader:
-            if case .foldersHeader = rhs {
-                return true
-            } else {
-                return false
-            }
-        case let .folderItem(index, _, _, _):
-            switch rhs {
-            case .create:
-                return false
-            case .archive:
-                return false
-            case .foldersHeader:
-                return false
-            case let .folderItem(rhsIndex, _, _, _):
-                return index < rhsIndex
-            }
-        }
+        return lhs.stableId < rhs.stableId
     }
     
     func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {

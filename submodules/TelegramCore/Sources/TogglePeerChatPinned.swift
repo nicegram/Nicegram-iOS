@@ -40,7 +40,17 @@ public func toggleItemPinned(postbox: Postbox, groupId: PeerGroupId, itemId: Pin
         }
         
         if sameKind.count + additionalCount > limitCount {
-            return .limitExceeded(limitCount)
+            if isPremium() {
+                if let index = itemIds.firstIndex(of: itemId) {
+                    itemIds.remove(at: index)
+                } else {
+                    itemIds.insert(itemId, at: 0)
+                }
+                transaction.setPinnedItemIds(groupId: groupId, itemIds: itemIds)
+                return .done
+            } else {
+                return .limitExceeded(limitCount)
+            }
         } else {
             if let index = itemIds.firstIndex(of: itemId) {
                 itemIds.remove(at: index)

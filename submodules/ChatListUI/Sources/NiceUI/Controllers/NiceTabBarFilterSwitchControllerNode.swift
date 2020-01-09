@@ -323,6 +323,15 @@ final class TabBarFilterSwitchControllerNode: ViewControllerTracingNode {
         self.dimNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.dimTapGesture(_:))))
     }
     
+    deinit {
+        if let propertyAnimator = self.propertyAnimator {
+            if #available(iOSApplicationExtension 10.0, iOS 10.0, *) {
+                let propertyAnimator = propertyAnimator as? UIViewPropertyAnimator
+                propertyAnimator?.stopAnimation(true)
+            }
+        }
+    }
+    
     func animateIn() {
         self.dimNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
         
