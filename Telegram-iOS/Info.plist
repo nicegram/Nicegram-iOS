@@ -204,6 +204,8 @@
 		<string>onionhttp</string>
 		<string>ucbrowser</string>
 		<string>dolphin</string>
+		<string>opener</string>
+		<string>alohabrowser</string>
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>

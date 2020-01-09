@@ -160,6 +160,29 @@ private func allOpenInOptions(context: AccountContext, item: OpenInItem) -> [Ope
             options.append(OpenInOption(identifier: "alook", application: .other(title: "Alook Browser", identifier: 1261944766, scheme: "alook", store: nil), action: {
                 return .openUrl(url: "alook://\(url)")
             }))
+            options.append(OpenInOption(identifier: "aloha", application: .other(title: "Aloha Browser", identifier: 1105317682, scheme: "alohabrowser", store: nil), action: {
+                if let escapedUrl = url.addingPercentEncoding(withAllowedCharacters: .urlQueryValueAllowed) {
+                    return .openUrl(url: "alohabrowser://open?link=\(escapedUrl)")
+                }
+                return .none
+            }))
+            
+            
+            options.append(OpenInOption(identifier: "openerAuto", application: .other(title: "Opener (Auto)", identifier: 989565871, scheme: "opener", store: nil), action: {
+                    if let escapedUrl = url.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) {
+                        return .openUrl(url: "opener://x-callback-url/show-options?&url=\(escapedUrl)")
+                    }
+                    return .none
+            }))
+            
+            options.append(OpenInOption(identifier: "openerOptions", application: .other(title: "Opener (Manual)", identifier: 989565871, scheme: "opener", store: nil), action: {
+                if let escapedUrl = url.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) {
+                    return .openUrl(url: "opener://x-callback-url/show-options?allow-auto-open=falseurl=\(escapedUrl)")
+                }
+                return .none
+            }))
+
+        
         case let .location(location, withDirections):
             let lat = location.latitude
             let lon = location.longitude

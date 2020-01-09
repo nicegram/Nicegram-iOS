@@ -17,6 +17,7 @@ import ItemListUI
 import AccountContext
 import TelegramNotices
 import SyncCore
+import OpenInExternalAppUI
 
 
 private struct BrowserSelectionState: Equatable {
@@ -38,10 +39,12 @@ private final class NiceFeaturesControllerArguments {
 
     let toggleUseBrowser: (Bool) -> Void
     let customizeBrowser: (Browser) -> Void
+    
+    let openBrowserSelection: () -> Void
 
     let backupSettings: () -> Void
 
-    init(togglePinnedMessage: @escaping (Bool) -> Void, toggleShowContactsTab: @escaping (Bool) -> Void, toggleFixNotifications: @escaping (Bool) -> Void, updateShowCallsTab: @escaping (Bool) -> Void, changeFiltersAmount: @escaping (Int32) -> Void, toggleShowTabNames: @escaping (Bool, String) -> Void, toggleHidePhone: @escaping (Bool, String) -> Void, toggleUseBrowser: @escaping (Bool) -> Void, customizeBrowser: @escaping (Browser) -> Void, backupSettings: @escaping () -> Void) {
+    init(togglePinnedMessage: @escaping (Bool) -> Void, toggleShowContactsTab: @escaping (Bool) -> Void, toggleFixNotifications: @escaping (Bool) -> Void, updateShowCallsTab: @escaping (Bool) -> Void, changeFiltersAmount: @escaping (Int32) -> Void, toggleShowTabNames: @escaping (Bool, String) -> Void, toggleHidePhone: @escaping (Bool, String) -> Void, toggleUseBrowser: @escaping (Bool) -> Void, customizeBrowser: @escaping (Browser) -> Void, openBrowserSelection: @escaping () -> Void, backupSettings: @escaping () -> Void) {
         self.togglePinnedMessage = togglePinnedMessage
         self.toggleShowContactsTab = toggleShowContactsTab
         self.toggleFixNotifications = toggleFixNotifications
@@ -51,6 +54,7 @@ private final class NiceFeaturesControllerArguments {
         self.toggleHidePhone = toggleHidePhone
         self.toggleUseBrowser = toggleUseBrowser
         self.customizeBrowser = customizeBrowser
+        self.openBrowserSelection = openBrowserSelection
         self.backupSettings = backupSettings
     }
 }
@@ -109,6 +113,9 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
     case browserOperaMini(PresentationTheme, String, Bool, Bool)
     case browserEdge(PresentationTheme, String, Bool, Bool)
 
+    
+    case telegramBrowsers(PresentationTheme, String, String)
+    
     case otherHeader(PresentationTheme, String)
     case hideNumber(PresentationTheme, String, Bool, String)
 
@@ -127,7 +134,7 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return niceFeaturesControllerSection.filters.rawValue
         case .chatScreenHeader:
             return niceFeaturesControllerSection.chatScreen.rawValue
-        case .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge:
+        case .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge, .telegramBrowsers:
             return niceFeaturesControllerSection.browsers.rawValue
         case .otherHeader, .hideNumber, .backupNotice, .backupSettings:
             return niceFeaturesControllerSection.other.rawValue
@@ -195,14 +202,16 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return .index(35)
         case .browserEdge:
             return .index(36)
-        case .otherHeader:
+        case .telegramBrowsers:
             return .index(37)
-        case .hideNumber:
+        case .otherHeader:
             return .index(38)
-        case .backupSettings:
+        case .hideNumber:
             return .index(39)
-        case .backupNotice:
+        case .backupSettings:
             return .index(40)
+        case .backupNotice:
+            return .index(41)
         }
     }
 
@@ -398,7 +407,12 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
-
+        case let .telegramBrowsers(lhsTheme, lhsText, lhsValue):
+        if case let .telegramBrowsers(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
+            return true
+        } else {
+            return false
+        }
         case let .otherHeader(lhsTheme, lhsText):
             if case let .otherHeader(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
                 return true
@@ -626,28 +640,35 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             }
         case .browserEdge:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge, .telegramBrowsers:
+                return false
+            default:
+                return true
+            }
+        case .telegramBrowsers:
+            switch rhs {
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge, .telegramBrowsers:
                 return false
             default:
                 return true
             }
         case .otherHeader:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge, .otherHeader:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge, .telegramBrowsers, .otherHeader:
                 return false
             default:
                 return true
             }
         case .hideNumber:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge, .otherHeader, .hideNumber:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge, .telegramBrowsers, .otherHeader, .hideNumber:
                 return false
             default:
                 return true
             }
         case .backupSettings:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge, .otherHeader, .hideNumber, .backupSettings:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge, .telegramBrowsers, .otherHeader, .hideNumber, .backupSettings:
                 return false
             default:
                 return true
@@ -762,6 +783,10 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             })
         case let .useBrowserNotice(theme, text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
+        case let .telegramBrowsers(theme, text, value):
+            return ItemListDisclosureItem(presentationData: presentationData, title: text, label: value, sectionId: self.section, style: .blocks, action: {
+                arguments.openBrowserSelection()
+            })
         case let .otherHeader(theme, text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .hideNumber(theme, text, value, locale):
@@ -789,7 +814,7 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
  }
  */
 
-private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls: Bool, presentationData: PresentationData, simplyNiceSettings: SimplyNiceSettings) -> [NiceFeaturesControllerEntry] {
+private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls: Bool, presentationData: PresentationData, simplyNiceSettings: SimplyNiceSettings, defaultWebBrowser: String) -> [NiceFeaturesControllerEntry] {
     var entries: [NiceFeaturesControllerEntry] = []
 
     let locale = presentationData.strings.baseLanguageCode
@@ -811,7 +836,8 @@ private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls
     //entries.append(.chatScreenHeader(presentationData.theme, l(key: "NiceFeatures.ChatScreen.Header", locale: locale)))
     //entries.append(.animatedStickers(presentationData.theme, l(key:  "NiceFeatures.ChatScreen.AnimatedStickers", locale: locale), GlobalExperimentalSettings.animatedStickers))
 
-//    entries.append(.browsersHeader(presentationData.theme, l("NiceFeatures.Browser.Header", locale)))
+    entries.append(.browsersHeader(presentationData.theme, l("NiceFeatures.Browser.Header", locale)))
+    entries.append(.telegramBrowsers(presentationData.theme, presentationData.strings.ChatSettings_OpenLinksIn, defaultWebBrowser))
 //    entries.append(.useBrowser(presentationData.theme, l("NiceFeatures.Browser.UseBrowser", locale), simplyNiceSettings.useBrowser))
 //    entries.append(.useBrowserNotice(presentationData.theme, l("NiceFeatures.Browser.UseBrowserNotice", locale)))
 //
@@ -964,6 +990,11 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
             return BrowserSelectionState(selectedBrowser: value)
         }
         print("CUSTOMIZE BROWSER")
+    }, openBrowserSelection: {
+        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: l("NiceFeatures.Use.DataStorage", presentationData.strings.baseLanguageCode).replacingOccurrences(of: "%1", with: presentationData.strings.Settings_ChatSettings, range: nil), actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})])
+         presentControllerImpl?(controller, nil)
+//        let controller = webBrowserSettingsController(context: context)
+//        presentControllerImpl?(controller, nil)
     }, backupSettings: {
         let library_path = NSSearchPathForDirectoriesInDomains(.libraryDirectory, .userDomainMask, true)[0]
 
@@ -1008,8 +1039,8 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
 
     let signal = combineLatest(context.sharedContext.presentationData, context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.niceSettings]), showCallsTab, statePromise.get())
         |> map { presentationData, sharedData, showCalls, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
-
-        let entries = niceFeaturesControllerEntries(niceSettings: niceSettings, showCalls: showCalls, presentationData: presentationData, simplyNiceSettings: SimplyNiceSettings())
+            
+            let entries = niceFeaturesControllerEntries(niceSettings: niceSettings, showCalls: showCalls, presentationData: presentationData, simplyNiceSettings: SimplyNiceSettings(), defaultWebBrowser: "")
 
         var index = 0
         var scrollToItem: ListViewScrollToItem?

@@ -144,13 +144,25 @@ public final class TelegramRootController: NavigationController {
         
         
         if showMissed() {
-            let missedController = self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: .onlyMissed, filterIndex: nil, isMissed: true, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
-            
-            if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
-                missedController.tabBarItem.badgeValue = sharedContext.switchingData.chatListBadge
+            var missedControllerIndex: Int? = nil
+            for (index, testController) in controllers.enumerated() {
+                if let strongController = testController as? ChatListController {
+                    if strongController.filter == .onlyMissed {
+                        missedControllerIndex = index
+                    }
+                }
             }
-            
-            controllers.insert(missedController, at: 0)
+            if let hasMissedControllerIndex = missedControllerIndex {
+                // Use existing tab
+            } else {
+                let missedController = self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: .onlyMissed, filterIndex: nil, isMissed: true, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
+                
+                if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
+                    missedController.tabBarItem.badgeValue = sharedContext.switchingData.chatListBadge
+                }
+                
+                controllers.insert(missedController, at: 0)
+            }
         }
         
         tabBarController.setControllers(controllers, selectedIndex: restoreSettignsController != nil ? (controllers.count - 1) : (controllers.count - 2))
@@ -207,14 +219,26 @@ public final class TelegramRootController: NavigationController {
         controllers.append(self.accountSettingsController!)
         
         if showMissed() {
-            selectedIndex = 0
-            let missedController = self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: .onlyMissed, filterIndex: nil, isMissed: true, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
-            
-            if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
-                missedController.tabBarItem.badgeValue = sharedContext.switchingData.chatListBadge
+            for (index, testController) in controllers.enumerated() {
+                if let strongController = testController as? ChatListController {
+                    if strongController.filter == .onlyMissed {
+                        selectedIndex = index
+                        break
+                    }
+                }
             }
-            
-            controllers.insert(missedController, at: 0)
+            if let hasMissedControllerIndex = selectedIndex {
+                // Use existing tab
+            } else {
+                selectedIndex = 0
+                let missedController = self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: .onlyMissed, filterIndex: nil, isMissed: true, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
+                
+                if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
+                    missedController.tabBarItem.badgeValue = sharedContext.switchingData.chatListBadge
+                }
+                
+                controllers.insert(missedController, at: 0)
+            }
         }
         
         // Updating start data

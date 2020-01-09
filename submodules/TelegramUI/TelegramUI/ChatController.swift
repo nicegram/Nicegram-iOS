@@ -6952,7 +6952,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
             }
         }
         self.chatDisplayNode.dismissInput()
-        self.present(controller, in: .window(.root), blockInteraction: true)
+        self.effectiveNavigationController?.pushViewController(controller)
     }
     
     private func forwardMessages(messageIds: [MessageId], resetCurrent: Bool = false, cloud: Bool = false) {
