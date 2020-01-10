@@ -269,7 +269,7 @@ public func isNGForceAllowed(_ peer: Peer?) -> Bool {
 public func isNGAllowedReason(_ peer: Peer?, _ contentSettings: ContentSettings) -> Bool {
     var isAllowedReason = true
     if let peer = peer {
-        if let restrictionReason = peer.restrictionText(platform: "ios", contentSettings: contentSettings) {
+        if let restrictionReason = peer.restrictionText(platform: "ios", contentSettings: contentSettings, extractReason: true) {
             if !NGAPISETTINGS().RESTRICTION_REASONS.contains(restrictionReason)  {
                 ngApiLog("REASON NOT ALLOWED \(restrictionReason)")
                 isAllowedReason = false
