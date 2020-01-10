@@ -48,6 +48,10 @@
 
 /*NGWeb*/
 "NGWeb.Blocked" = "由於 App Store 審核指南，在 Nicegram 中不可用";
+
+/*Browser*/
+/*Please, Go to «Data & Storage» to configure default browser*/
+"NiceFeatures.Use.DataStorage" = "請使用 «%1» 設定預設瀏覽器";
 "NiceFeatures.Browser.Header" = "連結";
 "NiceFeatures.Browser.UseBrowser" = "在瀏覽器中開啟連結";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram 將在外部瀏覽器開啟連結而不是在 App 內開啟，必須安裝所選擇的瀏覽器。";

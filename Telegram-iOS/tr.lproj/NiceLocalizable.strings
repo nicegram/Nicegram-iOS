@@ -51,7 +51,7 @@
 
 /*Browser*/
 /*Please, Go to «Data & Storage» to configure default browser*/
-"NiceFeatures.Use.DataStorage" = "Lütfen, varsayılan tarayıcıyı ayarlamak için «%1» kullanın";
+"NiceFeatures.Use.DataStorage" = "Lütfen, varsayılan tarayıcıyı ayarlamak için «%1» kısmını kullanın";
 "NiceFeatures.Browser.Header" = "Bağlantılar";
 "NiceFeatures.Browser.UseBrowser" = "Bağlantıları tarayıcıda aç";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram, bağlantıları uygulama içi yerine harici tarayıcıda açacak. Seçilen tarayıcı yüklü olmalı.";
