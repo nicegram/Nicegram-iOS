@@ -1,8 +1,0 @@
-{
-    "buck.projectConfig": {
-        "projectPath": "/Users/mac-zen/Telegram-iOS",
-        "flavor": [],
-        "target": "",
-        "platform": "linux-x86_64"
-    }
-}
