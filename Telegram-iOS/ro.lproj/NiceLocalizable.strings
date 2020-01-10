@@ -48,6 +48,10 @@
 
 /*NGWeb*/
 "NGWeb.Blocked" = "Indisponibil în Nicegram datorită Instrucțiunilor din App Store";
+
+/*Browser*/
+/*Please, Go to «Data & Storage» to configure default browser*/
+"NiceFeatures.Use.DataStorage" = "Pentru a putea folosi, %1 configurațiva browser-ul prestabilit";
 "NiceFeatures.Browser.Header" = "URL-UL";
 "NiceFeatures.Browser.UseBrowser" = "Deschideți în navigator";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram va deschide legături în browser externe în afara aplicație. Browserul selectat trebuie instalat.";
