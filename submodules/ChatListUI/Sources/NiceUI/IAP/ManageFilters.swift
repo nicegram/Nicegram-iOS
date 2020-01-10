@@ -16,6 +16,7 @@ import TelegramUIPreferences
 import ItemListUI
 import AccountContext
 import OverlayStatusController
+import NicegramLib
 
 
 private struct SelectionState: Equatable {

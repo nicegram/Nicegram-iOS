@@ -17,7 +17,7 @@ import AsyncDisplayKit
 import SwiftSignalKit
 import TelegramCore
 import AlertUI
-
+import NicegramLib
 import StoreKit
 
 extension SKProduct {

@@ -8,6 +8,7 @@ import TelegramPermissions
 import PeersNearbyIconNode
 import SolidRoundedButtonNode
 import Markdown
+import NicegramLib
 
 public enum PremiumIntroContentIcon {
     case image(UIImage?)

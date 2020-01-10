@@ -25,7 +25,6 @@ import PeerAvatarGalleryUI
 import NotificationMuteSettingsUI
 import NotificationSoundSelectionUI
 import NicegramLib
-import ChatListUI
 import Markdown
 import LocalizedPeerData
 import PhoneNumberFormat

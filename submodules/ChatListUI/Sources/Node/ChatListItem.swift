@@ -18,6 +18,7 @@ import PeerPresenceStatusManager
 import PhotoResources
 import ChatListSearchItemNode
 import ContextUI
+import NicegramLib
 
 public enum ChatListItemContent {
     case peer(message: Message?, peer: RenderedPeer, combinedReadState: CombinedPeerReadState?, notificationSettings: PeerNotificationSettings?, presence: PeerPresence?, summaryInfo: ChatListMessageTagSummaryInfo, embeddedState: PeerChatListEmbeddedInterfaceState?, inputActivities: [(Peer, PeerInputActivity)]?, isAd: Bool, ignoreUnreadBadge: Bool, displayAsMessage: Bool, hasFailedMessages: Bool)

@@ -13,6 +13,7 @@ import Postbox
 import TelegramCore
 import TelegramPresentationData
 import AccountContext
+import NicegramLib
 
 private let animationDurationFactor: Double = 1.0
 private let avatarFont: UIFont = UIFont(name: ".SFCompactRounded-Semibold", size: 16.0)!

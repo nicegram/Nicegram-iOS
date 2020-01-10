@@ -7,7 +7,8 @@ static_library(
     ]),
     deps = [
     	"//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit#shared",
-        "//submodules/BuildConfig:BuildConfig"
+        "//submodules/BuildConfig:BuildConfig",
+        "//submodules/AppBundle:AppBundle",
     ],
     frameworks = [
         "$SDKROOT/System/Library/Frameworks/Foundation.framework",

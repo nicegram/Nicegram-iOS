@@ -132,7 +132,7 @@ if [ "$APP_TYPE" == "wallet" ]; then
 	APP_ITEMS_WITH_PROVISIONING_PROFILE="APP"
 	APP_ITEMS_WITH_ENTITLEMENTS="APP"
 else
-	APP_ITEMS_WITH_PROVISIONING_PROFILE="APP EXTENSION_Share EXTENSION_Widget EXTENSION_NotificationService EXTENSION_NotificationContent EXTENSION_Intents WATCH_APP WATCH_EXTENSION"
+	APP_ITEMS_WITH_PROVISIONING_PROFILE="APP EXTENSION_Share EXTENSION_Widget EXTENSION_NotificationService EXTENSION_NotificationContent EXTENSION_Intents"
 	APP_ITEMS_WITH_ENTITLEMENTS="APP EXTENSION_Share EXTENSION_Widget EXTENSION_NotificationService EXTENSION_NotificationContent EXTENSION_Intents"
 fi
 
@@ -146,7 +146,7 @@ REMOVE_ENTITLEMENT_KEYS=(\
 COPY_ENTITLEMENT_KEYS=(\
 	"com.apple.developer.associated-domains" \
 	"com.apple.developer.icloud-services" \
-	"com.apple.developer.pushkit.unrestricted-voip" \
+	#"com.apple.developer.pushkit.unrestricted-voip" \
 )
 
 REPLACE_TO_PRODUCTION_ENTITLEMENT_KEYS=(\

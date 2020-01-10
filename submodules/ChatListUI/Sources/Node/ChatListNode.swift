@@ -13,6 +13,7 @@ import TelegramNotices
 import ContactsPeerItem
 import ContextUI
 import ItemListUI
+import NicegramLib
 
 public enum ChatListNodeMode {
     case chatList

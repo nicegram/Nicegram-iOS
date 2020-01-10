@@ -22,6 +22,7 @@ import ContextUI
 import AppBundle
 import LocalizedPeerData
 import TelegramIntents
+import NicegramLib
 
 public func useSpecialTabBarIcons() -> Bool {
     return (Date(timeIntervalSince1970: 1545642000)...Date(timeIntervalSince1970: 1546387200)).contains(Date())

@@ -17,7 +17,7 @@ import ItemListUI
 import AccountContext
 import TelegramNotices
 import SyncCore
-import OpenInExternalAppUI
+import NicegramLib
 
 
 private struct BrowserSelectionState: Equatable {

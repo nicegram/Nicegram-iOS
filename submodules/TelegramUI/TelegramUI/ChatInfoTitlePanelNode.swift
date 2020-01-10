@@ -7,6 +7,7 @@ import TelegramCore
 import SyncCore
 import TelegramPresentationData
 import ChatListUI
+import NicegramLib
 
 private enum ChatInfoTitleButton {
     case search

@@ -17,6 +17,7 @@ import TelegramUIPreferences
 import ItemListUI
 import ItemListPeerActionItem
 import AccountContext
+import NicegramLib
 
 private final class NewFolderListControllerArguments {
     let createNew: () -> (Void)
