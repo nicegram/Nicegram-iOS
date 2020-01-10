@@ -171,7 +171,6 @@ build: check_env
 	//submodules/Display:Display#shared,iphoneos-arm64,iphoneos-armv7 \
 	//submodules/TelegramUI:TelegramUI#dwarf-and-dsym,shared,iphoneos-arm64,iphoneos-armv7 \
 	//submodules/TelegramUI:TelegramUI#shared,iphoneos-arm64,iphoneos-armv7 \
-	//:WatchAppExtension#dwarf-and-dsym,watchos-arm64_32,watchos-armv7k \
 	//:ShareExtension#dwarf-and-dsym,iphoneos-arm64,iphoneos-armv7 \
     //:WidgetExtension#dwarf-and-dsym,iphoneos-arm64,iphoneos-armv7 \
     //:NotificationContentExtension#dwarf-and-dsym,iphoneos-arm64,iphoneos-armv7 \
