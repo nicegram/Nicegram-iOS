@@ -6,7 +6,7 @@
 "ChatFilter.Private" = "Utilizatori";
 "ChatFilter.Groups" = "Grupuri";
 "ChatFilter.Unread" = "Necitit";
-"ChatFilter.Unmuted" = "Deblochează";
+"ChatFilter.Unmuted" = "Înlătură modul silențios";
 "ChatFilter.Favourites" = "Favorite";
 
 /*Nice Features*/
@@ -51,7 +51,7 @@
 
 /*Browser*/
 /*Please, Go to «Data & Storage» to configure default browser*/
-"NiceFeatures.Use.DataStorage" = "Pentru a putea folosi, %1 configurațiva browser-ul prestabilit";
+"NiceFeatures.Use.DataStorage" = "Pentru a putea folosi, «%1» configurați-vă browser-ul prestabilit";
 "NiceFeatures.Browser.Header" = "URL-UL";
 "NiceFeatures.Browser.UseBrowser" = "Deschideți în navigator";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram va deschide legături în browser externe în afara aplicație. Browserul selectat trebuie instalat.";
@@ -59,14 +59,14 @@
 
 /*Premium*/
 "Premium.Title" = "Premium";
-"Premium.UnlimitedPins.Header" = "CHAT-uri cu FIXATE(Pinned) NELIMITATE";
+"Premium.UnlimitedPins.Header" = "CHAT-URI FIXATE NELIMITATE";
 "Premium.SyncPins" = "Sincronizați chat-urile fixate (Pinned)";
-"Premium.SyncPins.Notice.ON" = "Dacă schimbați chat-urile fixate(pinned) în alt client, acestea se vor schimba în Nicegram.";
-"Premium.SyncPins.Notice.OFF" = "Dacă schimbați chat-urile fixate(pinned) în alt client, acestea nu se vor schimba în Nicegram.";
+"Premium.SyncPins.Notice.ON" = "Dacă schimbați chat-urile fixate în alt client, acestea se vor schimba în Nicegram.";
+"Premium.SyncPins.Notice.OFF" = "Dacă schimbați chat-urile fixate în alt client, acestea NU SE VOR SCHIMBA în Nicegram.";
 "Premium.Missed.Header" = "Mesaje ratate";
 "Premium.Missed" = "Notificare la mesaje noi";
 "Premium.Missed.Notice" = "Când deschideți aplicația după o întârziere lungă (dormit, studiat, etc.), Nicegram vă va anunța despre mesaje și mențiuni private necitite.";
-"Folder.DeleteAsk" = "Șterge dosar";
+"Folder.DeleteAsk" = "Șterge Dosar";
 "Folder.NeedPremium" = "Acest Dosar este destina doar utilizatorilor Premium. Poți obtine Premium sau șterge Dosarul glisând.";
 "Common.SupportChatUsername" = "nicegramchat";
 "Common.FAQUrl" = "https://nicegram.app/faq/";
@@ -101,4 +101,4 @@
 /*Backup Settings*/
 "NiceFeatures.BackupSettings" = "Copie de rezerva(Backup) Setări & Dosare";
 "NiceFeatures.BackupSettings.Notice" = "Creează o copie de rezervă(backup) a fișierelor din mesajele salvate";
-"NiceFeatures.BackupSettings.Done" = "Copie de rezervă(Backup) facută pentru Mesajele Salvate";
+"NiceFeatures.BackupSettings.Done" = "Copie de rezervă facută pentru Mesajele Salvate";
