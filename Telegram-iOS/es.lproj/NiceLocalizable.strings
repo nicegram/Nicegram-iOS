@@ -51,7 +51,7 @@
 
 /*Browser*/
 /*Please, Go to «Data & Storage» to configure default browser*/
-"NiceFeatures.Use.DataStorage" = "Favor de usar «%1» para configurar el navegador predeterminado";
+"NiceFeatures.Use.DataStorage" = "Ve a “%1” para configurar el navegador por omisión";
 "NiceFeatures.Browser.Header" = "URLs";
 "NiceFeatures.Browser.UseBrowser" = "Abrir enlaces en el navegador";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram abrirá los enlaces en un navegador externo en lugar del interno. El navegador seleccionado debe estar instalado.";
