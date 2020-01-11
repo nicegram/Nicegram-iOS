@@ -6,7 +6,7 @@
 "ChatFilter.Private" = "Utilizatori";
 "ChatFilter.Groups" = "Grupuri";
 "ChatFilter.Unread" = "Necitit";
-"ChatFilter.Unmuted" = "Înlătură modul silențios";
+"ChatFilter.Unmuted" = "Unmute";
 "ChatFilter.Favourites" = "Favorite";
 
 /*Nice Features*/
