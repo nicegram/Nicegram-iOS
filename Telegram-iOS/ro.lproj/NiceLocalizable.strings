@@ -13,11 +13,11 @@
 "NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "FERESTRE";
 "NiceFeatures.Tabs.ShowContacts" = "Vizualizare contacte";
-"NiceFeatures.ChatScreen.Header" = "AFISARE CHAT";
+"NiceFeatures.ChatScreen.Header" = "AFIȘARE CHAT";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Stickere Animate";
 
 /*Save to Cloud*/
-"Chat.SaveToCloud" = "Distribuie în Cloud";
+"Chat.SaveToCloud" = "Salvează în Cloud";
 
 /*Open Pin*/
 "Chat.OpenPin" = "Afișare Pin";
@@ -28,17 +28,17 @@
 "NiceFeatures.Filters.Notice" = "Selectați numărul de file personalizate.\nApăsați lung pe filă pentru a schimba filtrul.";
 
 /*Common*/
-"Common.ExitNow" = "Ieșiți acum";
+"Common.ExitNow" = "Ieșiți Acum";
 "Common.Later" = "Mai târziu";
 "Common.RestartRequired" = "Repornire Necesară!";
-"NiceFeatures.Tabs.ShowNames" = "Arată Fereastra cu Nume";
+"NiceFeatures.Tabs.ShowNames" = "Arată Fereastra cu Numele";
 "Chat.ForwardAsCopy" = "Redirecționeaza ca o Copie";
 
 /*Folder*/
 "Folder.DefaultName" = "Dosar";
 "Folder.New" = "Dosar nou";
 "Folder.Created" = "Dosar creat";
-"Folder.AddToExisting" = "Adaugă la un contact existent";
+"Folder.AddToExisting" = "Adaugă la un dosar existent";
 "Folder.Updated" = "Dosar actualizat";
 "Folder.Create" = "Creaţi folderul...";
 "Folder.Create.Name" = "Nume folder";
