@@ -34,17 +34,17 @@ public class PremiumSettings {
     deinit {
         if changed {
             print("Syncing Premium Settings!")
-            cloud.synchronize()
+            // cloud.synchronize()
         }
     }
     
     public var syncPins: Bool {
         get {
-            return cloud.object(forKey: "syncPins") as? Bool ?? UD?.bool(forKey: "syncPins") ?? true
+            return /* cloud.object(forKey: "syncPins") as? Bool ??*/ UD?.bool(forKey: "syncPins") ?? true
         }
         set {
-            //UD?.set(newValue, forKey: "notifyMissed")
-            cloud.set(newValue, forKey: "syncPins")
+            UD?.set(newValue, forKey: "notifyMissed")
+            // cloud.set(newValue, forKey: "syncPins")
             changed = true
         }
     }
@@ -87,22 +87,22 @@ public class PremiumSettings {
     
     public var notifyMissed: Bool {
         get {
-            return cloud.object(forKey: "notifyMissed") as? Bool ?? UD?.bool(forKey: "notifyMissed") ?? false
+            return /*cloud.object(forKey: "notifyMissed") as? Bool ??*/ UD?.bool(forKey: "notifyMissed") ?? false
         }
         set {
-            //UD?.set(newValue, forKey: "notifyMissed")
-            cloud.set(newValue, forKey: "notifyMissed")
+            UD?.set(newValue, forKey: "notifyMissed")
+            // cloud.set(newValue, forKey: "notifyMissed")
             changed = true
         }
     }
     
     public var notifyMissedEach: Int {
         get {
-            return cloud.object(forKey: "notifyMissedEach") as? Int ?? UD?.integer(forKey: "notifyMissedEach") ?? 5 * 60 * 60 // 5 hours
+            return /*cloud.object(forKey: "notifyMissedEach") as? Int ??*/ UD?.integer(forKey: "notifyMissedEach") ?? 5 * 60 * 60 // 5 hours
         }
         set {
-            // UD?.set(newValue, forKey: "notifyMissedEach")
-            cloud.set(newValue, forKey: "notifyMissedEach")
+            UD?.set(newValue, forKey: "notifyMissedEach")
+            // cloud.set(newValue, forKey: "notifyMissedEach")
             changed = true
         }
     }

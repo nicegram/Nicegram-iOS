@@ -946,7 +946,7 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
     }, changeFiltersAmount: { value in
         if lastTabsCounter != nil {
             if Int32(value) == SimplyNiceSettings().maxFilters {
-                print("Same value, returning")
+                //print("Same value, returning")
                 return
             } else {
                 lastTabsCounter = Int32(value)
@@ -972,14 +972,16 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
     }, toggleShowTabNames: { value, locale in
         SimplyNiceSettings().showTabNames = value
         updateTabs()
-
-        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: l("Common.RestartRequired", locale), actions: [TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: { preconditionFailure() }), TextAlertAction(type: .genericAction, title: l("Common.Later", locale), action: {})])
+        // NSUbiquitousKeyValueStore.default.synchronize()
+        
+        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: l("Common.RestartRequired", locale), actions: [/* TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: { preconditionFailure() }),*/ TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})])
 
         presentControllerImpl?(controller, nil)
     }, toggleHidePhone: { value, locale in
         SimplyNiceSettings().hideNumber = value
-
-        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: l("Common.RestartRequired", locale), actions: [TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: { preconditionFailure() }), TextAlertAction(type: .genericAction, title: l("Common.Later", locale), action: {})])
+        // NSUbiquitousKeyValueStore.default.synchronize()
+        
+        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: l("Common.RestartRequired", locale), actions: [/*TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: { preconditionFailure() }),*/ TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})])
 
         presentControllerImpl?(controller, nil)
     }, toggleUseBrowser: { value in

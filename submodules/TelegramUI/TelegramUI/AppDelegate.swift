@@ -234,6 +234,8 @@ final class SharedApplicationContext {
         precondition(!testIsLaunched)
         testIsLaunched = true
         
+        // let initialIcloudSync = NSUbiquitousKeyValueStore.default.synchronize()
+        // print("Initially Synced iCLoud \(initialIcloudSync)")
         let _ = voipTokenPromise.get().start(next: { token in
             self.deviceToken.set(.single(token))
         })
@@ -1127,48 +1129,48 @@ final class SharedApplicationContext {
                         PCACHE = "no"
                     }
                     
-                    if !UserDefaults.standard.bool(forKey: "isCloud") {
-                        Logger.shared.log("[System NG]", "MOVE TO CLOUD SETTINGS")
-                        let nf = SimplyNiceFolders()
-                        let ns = SimplyNiceSettings()
-                        let nt = SimplyNiceFilters()
-                        let ps = PremiumSettings()
-                        
-                        let temp1 = nf.folders
-                        nf.folders = temp1
-                    
-                        let temp2 = ns.chatFilters
-                        ns.chatFilters = temp2
-                        
-                        let temp3 = ns.browser
-                        ns.browser = temp3
-                        
-                        let temp4 = ns.hideNumber
-                        ns.hideNumber = temp4
-                        
-                        let temp5 = ns.maxFilters
-                        ns.maxFilters = temp5
-                        
-                        let temp6 = ns.showTabNames
-                        ns.showTabNames = temp6
-                        
-                        let temp7 = nt.filters
-                        nt.filters = temp7
-                        
-                        let temp8 = nt.disabledFilters
-                        nt.disabledFilters = temp8
-                        
-                        let temp9 = ps.notifyMissed
-                        ps.notifyMissed = temp9
-                        
-                        let temp10 = ps.notifyMissedEach
-                        ps.notifyMissedEach = temp10
-                        
-                        let temp11 = ps.syncPins
-                        ps.syncPins = temp11
-                        
-                        UserDefaults.standard.set(true, forKey: "isCloud")
-                    }
+//                    if !UserDefaults.standard.bool(forKey: "isCloud") {
+//                        Logger.shared.log("[System NG]", "MOVE TO CLOUD SETTINGS")
+//                        let nf = SimplyNiceFolders()
+//                        let ns = SimplyNiceSettings()
+//                        let nt = SimplyNiceFilters()
+//                        let ps = PremiumSettings()
+//
+//                        let temp1 = nf.folders
+//                        nf.folders = temp1
+//
+//                        let temp2 = ns.chatFilters
+//                        ns.chatFilters = temp2
+//
+//                        let temp3 = ns.browser
+//                        ns.browser = temp3
+//
+//                        let temp4 = ns.hideNumber
+//                        ns.hideNumber = temp4
+//
+//                        let temp5 = ns.maxFilters
+//                        ns.maxFilters = temp5
+//
+//                        let temp6 = ns.showTabNames
+//                        ns.showTabNames = temp6
+//
+//                        let temp7 = nt.filters
+//                        nt.filters = temp7
+//
+//                        let temp8 = nt.disabledFilters
+//                        nt.disabledFilters = temp8
+//
+//                        let temp9 = ps.notifyMissed
+//                        ps.notifyMissed = temp9
+//
+//                        let temp10 = ps.notifyMissedEach
+//                        ps.notifyMissedEach = temp10
+//
+//                        let temp11 = ps.syncPins
+//                        ps.syncPins = temp11
+//
+//                        UserDefaults.standard.set(true, forKey: "isCloud")
+//                    }
                 }
             }
             
@@ -1542,6 +1544,8 @@ final class SharedApplicationContext {
     }
 
     func applicationWillEnterForeground(_ application: UIApplication) {
+        //let fgIcloudSync = NSUbiquitousKeyValueStore.default.synchronize()
+        //print("FG iCloud Synced \(fgIcloudSync)")
         if self.isActiveValue {
             self.isInForegroundValue = true
             self.isInForegroundPromise.set(true)

@@ -186,17 +186,17 @@ public class SimplyNiceFilters {
     deinit {
         if changed {
             print("Syncing Filters!")
-            cloud.synchronize()
+            // cloud.synchronize()
         }
     }
     
     public var disabledFilters: [Int32] {
         get {
-            if let arrayData = cloud.object(forKey: "disabledFilters") {
-                if let intArrayData = arrayData as? [Int32] {
-                    return intArrayData
-                }
-            }
+//            if let arrayData = cloud.object(forKey: "disabledFilters") {
+//                if let intArrayData = arrayData as? [Int32] {
+//                    return intArrayData
+//                }
+//            }
             return UD?.array(forKey: "disabledFilters") as? [Int32] ?? []
         }
         set {
@@ -204,8 +204,8 @@ public class SimplyNiceFilters {
             for item in newValue {
                 resSet.append(item)
             }
-            // UD?.set(resSet, forKey: "disabledFilters")
-            cloud.set(resSet, forKey: "disabledFilters")
+            UD?.set(resSet, forKey: "disabledFilters")
+            // cloud.set(resSet, forKey: "disabledFilters")
             changed = true
         }
         
@@ -213,11 +213,11 @@ public class SimplyNiceFilters {
     
     public var filters: [CustomFilter] {
         get {
-            if let filtersData = cloud.data(forKey: "customFilters") {
+            /*if let filtersData = cloud.data(forKey: "customFilters") {
                 if let strongCloudFilters = NSKeyedUnarchiver.unarchiveObject(with: filtersData) as? [CustomFilter] {
                     return strongCloudFilters
                 }
-            } else if let localFiltersData = UD?.data(forKey: "customFilters") {
+            } else*/ if let localFiltersData = UD?.data(forKey: "customFilters") {
                 if let strongLocalFilters = NSKeyedUnarchiver.unarchiveObject(with: localFiltersData) as? [CustomFilter] {
                     return strongLocalFilters
                 }
@@ -225,8 +225,8 @@ public class SimplyNiceFilters {
             return []
         }
         set {
-            // UD?.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "customFilters")
-            cloud.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "customFilters")
+            UD?.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "customFilters")
+            // cloud.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "customFilters")
             changed = true
         }
     }

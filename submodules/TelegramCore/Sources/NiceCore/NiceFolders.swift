@@ -376,22 +376,22 @@ public class SimplyNiceFolders {
     deinit {
         if changed {
             print("Syncing Folders!")
-            cloud.synchronize()
+            // cloud.synchronize()
         }
     }
     
     public var folders: [NiceFolder] {
         get {
             // return NSKeyedUnarchiver.unarchiveObject(with: (UD?.data(forKey: "folders"))!) as! [NiceFolder]
-            if let foldersData = cloud.data(forKey: "folders") {
-                return NSKeyedUnarchiver.unarchiveObject(with: foldersData) as! [NiceFolder]
-            } else {
+//            if let foldersData = cloud.data(forKey: "folders") {
+//                return NSKeyedUnarchiver.unarchiveObject(with: foldersData) as! [NiceFolder]
+//            } else {
                 return NSKeyedUnarchiver.unarchiveObject(with: (UD?.data(forKey: "folders"))!) as! [NiceFolder]
-            }
+            //}
         }
         set {
-            // UD?.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "folders")
-            cloud.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "folders")
+            UD?.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "folders")
+            //cloud.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "folders")
             changed = true
         }
     }
