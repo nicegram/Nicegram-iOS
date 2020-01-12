@@ -67,6 +67,11 @@ public func toggleItemPinned(postbox: Postbox, groupId: PeerGroupId, itemId: Pin
 public func reorderPinnedItemIds(transaction: Transaction, groupId: PeerGroupId, itemIds: [PinnedItemId]) -> Bool {
     if transaction.getPinnedItemIds(groupId: groupId) != itemIds {
         transaction.setPinnedItemIds(groupId: groupId, itemIds: itemIds)
+        if isPremium() {
+            if !PremiumSettings().syncPins {
+                return true
+            }
+        }
         addSynchronizePinnedChatsOperation(transaction: transaction, groupId: groupId)
         return true
     } else {
