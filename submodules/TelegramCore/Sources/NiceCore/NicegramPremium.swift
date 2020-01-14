@@ -43,7 +43,7 @@ public class PremiumSettings {
             return /* cloud.object(forKey: "syncPins") as? Bool ??*/ UD?.bool(forKey: "syncPins") ?? true
         }
         set {
-            UD?.set(newValue, forKey: "notifyMissed")
+            UD?.set(newValue, forKey: "syncPins")
             // cloud.set(newValue, forKey: "syncPins")
             changed = true
         }
