@@ -48,6 +48,10 @@
 
 /*NGWeb*/
 "NGWeb.Blocked" = "Недоступно в Nicegram по правилам AppStore";
+
+/*Browser*/
+/*Please, Go to «Data & Storage» to configure default browser*/
+"NiceFeatures.Use.DataStorage" = "Пожалуйста, используйте «%1» для настройки браузера по умолчанию";
 "NiceFeatures.Browser.Header" = "ССЫЛКИ";
 "NiceFeatures.Browser.UseBrowser" = "Открывать во внешнем браузере";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram будет открывать ссылки во внешнем браузере вместо встроенного. Выбранный браузер должен быть установлен.";

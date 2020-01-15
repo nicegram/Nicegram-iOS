@@ -48,6 +48,10 @@
 
 /*NGWeb*/
 "NGWeb.Blocked" = "Nicht verfügbar in Nicegram wegen AppStore Richtlinien";
+
+/*Browser*/
+/*Please, Go to «Data & Storage» to configure default browser*/
+"NiceFeatures.Use.DataStorage" = "Bitte verwenden Sie «%1» um den Standardbrowser zu konfigurieren";
 "NiceFeatures.Browser.Header" = "URLs";
 "NiceFeatures.Browser.UseBrowser" = "Im Browser öffnen";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram öffnet Links im externen Browser anstelle von In-App. Der ausgewählte Browser muss installiert sein.";
@@ -77,3 +81,12 @@
 "IAP.Common.ErrorFetch" = "Entschuldigung, App Store Käufe können nicht abgerufen werden.";
 "IAP.Common.Congrats" = "Herzlichen Glückwunsch!";
 "IAP.Common.ValidateError" = "Es tut uns leid, kann Ihren Kauf nicht validieren.";
+
+
+/*Manage Filters*/
+"ManageFilters.Title" = "Tabs verwalten";
+
+"Messages.Translate" = "Übersetzen";
+"Messages.UndoTranslate" = "Übersetzung rückgängig machen";
+"Messages.TranslateError" = "Die Übersetzung ist leider nicht verfügbar.";
+"NGLab.RegDate.MenuItem" = "registriert";

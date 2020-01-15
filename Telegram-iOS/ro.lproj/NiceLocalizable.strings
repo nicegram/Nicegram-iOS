@@ -6,18 +6,18 @@
 "ChatFilter.Private" = "Utilizatori";
 "ChatFilter.Groups" = "Grupuri";
 "ChatFilter.Unread" = "Necitit";
-"ChatFilter.Unmuted" = "Deblochează";
+"ChatFilter.Unmuted" = "Unmute";
 "ChatFilter.Favourites" = "Favorite";
 
 /*Nice Features*/
 "NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "FERESTRE";
 "NiceFeatures.Tabs.ShowContacts" = "Vizualizare contacte";
-"NiceFeatures.ChatScreen.Header" = "AFISARE CHAT";
+"NiceFeatures.ChatScreen.Header" = "AFIȘARE CHAT";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Stickere Animate";
 
 /*Save to Cloud*/
-"Chat.SaveToCloud" = "Distribuie în Cloud";
+"Chat.SaveToCloud" = "Salvează în Cloud";
 
 /*Open Pin*/
 "Chat.OpenPin" = "Afișare Pin";
@@ -28,17 +28,17 @@
 "NiceFeatures.Filters.Notice" = "Selectați numărul de file personalizate.\nApăsați lung pe filă pentru a schimba filtrul.";
 
 /*Common*/
-"Common.ExitNow" = "Ieșiți acum";
+"Common.ExitNow" = "Ieșiți Acum";
 "Common.Later" = "Mai târziu";
 "Common.RestartRequired" = "Repornire Necesară!";
-"NiceFeatures.Tabs.ShowNames" = "Arată Fereastra cu Nume";
+"NiceFeatures.Tabs.ShowNames" = "Arată Fereastra cu Numele";
 "Chat.ForwardAsCopy" = "Redirecționeaza ca o Copie";
 
 /*Folder*/
 "Folder.DefaultName" = "Dosar";
 "Folder.New" = "Dosar nou";
 "Folder.Created" = "Dosar creat";
-"Folder.AddToExisting" = "Adaugă la un contact existent";
+"Folder.AddToExisting" = "Adaugă la un dosar existent";
 "Folder.Updated" = "Dosar actualizat";
 "Folder.Create" = "Creaţi folderul...";
 "Folder.Create.Name" = "Nume folder";
@@ -48,6 +48,10 @@
 
 /*NGWeb*/
 "NGWeb.Blocked" = "Indisponibil în Nicegram datorită Instrucțiunilor din App Store";
+
+/*Browser*/
+/*Please, Go to «Data & Storage» to configure default browser*/
+"NiceFeatures.Use.DataStorage" = "Pentru a putea folosi, «%1» configurați-vă browser-ul prestabilit";
 "NiceFeatures.Browser.Header" = "URL-UL";
 "NiceFeatures.Browser.UseBrowser" = "Deschideți în navigator";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram va deschide legături în browser externe în afara aplicație. Browserul selectat trebuie instalat.";
@@ -55,14 +59,14 @@
 
 /*Premium*/
 "Premium.Title" = "Premium";
-"Premium.UnlimitedPins.Header" = "CHAT-uri cu FIXATE(Pinned) NELIMITATE";
+"Premium.UnlimitedPins.Header" = "CHAT-URI FIXATE NELIMITATE";
 "Premium.SyncPins" = "Sincronizați chat-urile fixate (Pinned)";
-"Premium.SyncPins.Notice.ON" = "Dacă schimbați chat-urile fixate(pinned) în alt client, acestea se vor schimba în Nicegram.";
-"Premium.SyncPins.Notice.OFF" = "Dacă schimbați chat-urile fixate(pinned) în alt client, acestea nu se vor schimba în Nicegram.";
+"Premium.SyncPins.Notice.ON" = "Dacă schimbați chat-urile fixate în alt client, acestea se vor schimba în Nicegram.";
+"Premium.SyncPins.Notice.OFF" = "Dacă schimbați chat-urile fixate în alt client, acestea NU SE VOR SCHIMBA în Nicegram.";
 "Premium.Missed.Header" = "Mesaje ratate";
 "Premium.Missed" = "Notificare la mesaje noi";
 "Premium.Missed.Notice" = "Când deschideți aplicația după o întârziere lungă (dormit, studiat, etc.), Nicegram vă va anunța despre mesaje și mențiuni private necitite.";
-"Folder.DeleteAsk" = "Șterge dosar";
+"Folder.DeleteAsk" = "Șterge Dosar";
 "Folder.NeedPremium" = "Acest Dosar este destina doar utilizatorilor Premium. Poți obtine Premium sau șterge Dosarul glisând.";
 "Common.SupportChatUsername" = "nicegramchat";
 "Common.FAQUrl" = "https://nicegram.app/faq/";
@@ -97,4 +101,4 @@
 /*Backup Settings*/
 "NiceFeatures.BackupSettings" = "Copie de rezerva(Backup) Setări & Dosare";
 "NiceFeatures.BackupSettings.Notice" = "Creează o copie de rezervă(backup) a fișierelor din mesajele salvate";
-"NiceFeatures.BackupSettings.Done" = "Copie de rezervă(Backup) facută pentru Mesajele Salvate";
+"NiceFeatures.BackupSettings.Done" = "Copie de rezervă facută pentru Mesajele Salvate";
