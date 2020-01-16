@@ -26,6 +26,7 @@
 "NiceFeatures.Notifications.FixNotice" = "Przydatne, jeśli otrzymujesz powiadomienia z czatów z wyłączonymi powiadomieniami.\nOpcja „Odpowiedz” nie będzie dostępna dla powiadomień, etykiet kont i podglądów multimediów.";
 "NiceFeatures.Filters.Header" = "FILTRY (ZAKŁADKI)";
 "NiceFeatures.Filters.Notice" = "Wybierz liczbę własnych kart.\nPrzytrzymaj kartę, aby zmienić filtr.";
+"NiceFeatures.Filters.ShowBadge" = "Pokaż plakietki (filtry)";
 
 /*Common*/
 "Common.ExitNow" = "Wyjdź teraz";
