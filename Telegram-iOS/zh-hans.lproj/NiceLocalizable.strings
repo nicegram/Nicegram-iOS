@@ -26,6 +26,7 @@
 "NiceFeatures.Notifications.FixNotice" = "如果在已关闭通知群组/频道仍然会收到通知，那开启此功能可以禁用此通知.\n开启此功能，在通知界面回复消息，帐户标签和媒体预览将会被禁用。";
 "NiceFeatures.Filters.Header" = "标签过滤";
 "NiceFeatures.Filters.Notice" = "选择自定义标签的数量。\n长按标签更改标签选项。";
+"NiceFeatures.Filters.ShowBadge" = "标签上显示角标";
 
 /*Common*/
 "Common.ExitNow" = "立即退出";
