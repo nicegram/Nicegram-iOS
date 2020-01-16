@@ -26,6 +26,7 @@
 "NiceFeatures.Notifications.FixNotice" = "Sessiz sohbetlerden bildirim almak kullanışlıdır.\nBildirimlerden yanıtlama, hesap etiketleri ve medya önizlemeleri kullanılamayacak.";
 "NiceFeatures.Filters.Header" = "FİLTRELER (SEKMELER)";
 "NiceFeatures.Filters.Notice" = "Özel sekmelerin sayısını seçin.\nFiltreyi değiştirmek için sekmeye uzun basın.";
+"NiceFeatures.Filters.ShowBadge" = "Rozetleri Göster (Filtreler)";
 
 /*Common*/
 "Common.ExitNow" = "Şimdi Çık";
