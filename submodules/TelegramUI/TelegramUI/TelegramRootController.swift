@@ -15,6 +15,7 @@ import NicegramLib
 import AlertUI
 import AvatarNode
 import AppBundle
+import TelegramUIPreferences
 
 public final class TelegramRootController: NavigationController {
     private let context: AccountContext
@@ -143,7 +144,21 @@ public final class TelegramRootController: NavigationController {
         controllers.append(accountSettingsController)
         
         
-        if showMissed() {
+//        var hasUnreads = false
+//
+//        let semaphore = DispatchSemaphore(value: 0)
+//        let signal = renderedTotalUnreadCount(accountManager: self.context.sharedContext.accountManager, postbox: self.context.account.postbox)
+//        signal.start(next: { count in
+//            if count.0 != 0 {
+//                hasUnreads = true
+//            }
+//            print("unread count \(count.0)")
+//            semaphore.signal()
+//        })
+//
+//        semaphore.wait()
+        
+        if showMissed() /*&& hasUnreads*/ {
             var missedControllerIndex: Int? = nil
             for (index, testController) in controllers.enumerated() {
                 if let strongController = testController as? ChatListController {
@@ -218,7 +233,21 @@ public final class TelegramRootController: NavigationController {
         controllers.append(self.chatListController!)
         controllers.append(self.accountSettingsController!)
         
-        if showMissed() {
+//        var hasUnreads = false
+//
+//        let semaphore = DispatchSemaphore(value: 0)
+//        let signal = renderedTotalUnreadCount(accountManager: self.context.sharedContext.accountManager, postbox: self.context.account.postbox)
+//        signal.start(next: { count in
+//            if count.0 != 0 {
+//                hasUnreads = true
+//            }
+//            print("unread count \(count.0)")
+//            semaphore.signal()
+//        })
+//
+//        semaphore.wait()
+        
+        if showMissed() /*&& hasUnreads*/ {
             for (index, testController) in controllers.enumerated() {
                 if let strongController = testController as? ChatListController {
                     if strongController.filter == .onlyMissed {

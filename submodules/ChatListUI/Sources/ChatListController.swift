@@ -453,9 +453,198 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
             })
         }
         
-        self.badgeDisposable = (combineLatest(renderedTotalUnreadCount(accountManager: context.sharedContext.accountManager, postbox: context.account.postbox), self.presentationDataValue.get()) |> deliverOnMainQueue).start(next: { [weak self] count, presentationData in
+        self.badgeDisposable = (combineLatest(renderedTotalUnreadCount(accountManager: context.sharedContext.accountManager, postbox: context.account.postbox), self.presentationDataValue.get(), context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.inAppNotificationSettings])) |> deliverOnMainQueue).start(next: { [weak self] count, presentationData, sharedData in
             if let strongSelf = self {
-                if count.0 == 0 || strongSelf.filter != nil {
+                if strongSelf.filter != nil {
+                    print("Change filter badge")
+                    if !SimplyNiceSettings().filtersBadge {
+                        strongSelf.tabBarItem.badgeValue = ""
+                    } else {
+                        let inAppSettings: InAppNotificationSettings
+                        if let value = sharedData.entries[ApplicationSpecificSharedDataKeys.inAppNotificationSettings] as? InAppNotificationSettings {
+                            inAppSettings = value
+                        } else {
+                            inAppSettings = .defaultSettings
+                        }
+                        
+                        
+                        let _ = (chatListViewForLocation(groupId: strongSelf.groupId, location: .initial(count: 300), account: strongSelf.context.account)
+                        |> take(1)
+                        /*|> deliverOnMainQueue*/).start(next: { update in
+                            let _ = (strongSelf.chatListDisplayNode.chatListNode.state).start(next: { state in
+                                let (rawEntries, isLoading) = chatListNodeEntriesForView(update.view, state: state, savedMessagesPeer: nil, hideArchivedFolderByDefault: true, displayArchiveIntro: false, mode: .chatList)
+                                
+                                let thisMode: ChatListNodeMode = .filteredChatList(filter: strongSelf.filter!)
+                                let currentPeerId: PeerId = context.account.peerId
+
+                                
+                                var unreadChats: Int32 = 0
+                                var unreadMessages: Int32 = 0
+                                
+                                let entries = rawEntries.filter { entry in
+                                    switch entry {
+                                    case let .PeerEntry(_, _, _, readState, notificationSettings, _, peer, _, summaryInfo, _, _, _, _, isAd, _):
+                                        if isAd {
+                                            return false
+                                        }
+                                        switch thisMode {
+                                            case .chatList:
+                                                return true
+                                            case let .filteredChatList(filter):
+                                                if filter.contains(.onlyPrivateChats) {
+                                                    var isBot: Bool = false
+                                                    if let p = peer.peers[peer.peerId] as? TelegramUser {
+                                                        if (p.botInfo != nil) {
+                                                            isBot = true
+                                                        }
+                                                    }
+                                                    if (peer.peerId.namespace == Namespaces.Peer.CloudUser || peer.peerId.namespace == Namespaces.Peer.SecretChat) && !isBot {
+                                                        return true
+                                                    }
+                                                } else if filter.contains(.onlyNonMuted) {
+                                                    return !(notificationSettings?.isRemovedFromTotalUnreadCount ?? TelegramPeerNotificationSettings.defaultSettings.isRemovedFromTotalUnreadCount)
+                                                    
+                                                } else if filter.contains(.onlyBots) {
+                                                    var isBot: Bool = false
+                                                    if let p = peer.peers[peer.peerId] as? TelegramUser {
+                                                        if (p.botInfo != nil) {
+                                                            isBot = true
+                                                        }
+                                                    }
+                                                    return isBot
+                                                } else if filter.contains(.onlyGroups) {
+                                                    var isGroup: Bool = false
+                                                    if let peer = peer.chatMainPeer as? TelegramChannel, case .group = peer.info {
+                                                        isGroup = true
+                                                    } else if peer.peerId.namespace == Namespaces.Peer.CloudGroup {
+                                                        isGroup = true
+                                                    }
+                                                    return isGroup
+                                                } else if filter.contains(.onlyChannels) {
+                                                    if let peer = peer.chatMainPeer as? TelegramChannel, case .broadcast = peer.info {
+                                                        return true
+                                                    } else {
+                                                        return false
+                                                    }
+                                                } else if filter.contains(.onlyUnread) {
+                                                    if (readState != nil) {
+                                                        return readState!.isUnread
+                                                    }
+                                                } else if filter.contains(.onlyAdmin) {
+                                                    var isAdmin: Bool = false
+                                                    if let peer = peer.chatMainPeer as? TelegramChannel {
+                                                        if peer.adminRights != nil || peer.flags == TelegramChannelFlags.isCreator {
+                                                            isAdmin = true
+                                                        }
+                                                    }
+                                                    return isAdmin
+                                                } else if filter.contains(.onlyMissed) {
+                                                    var isMissed: Bool = false
+                                                    
+                                                    // New Msgs
+                                                    if let readState = readState {
+                                                        if readState.isUnread && !(notificationSettings?.isRemovedFromTotalUnreadCount ?? TelegramPeerNotificationSettings.defaultSettings.isRemovedFromTotalUnreadCount) {
+                                                            isMissed = true
+                                                        }
+                                                    }
+                                                    
+                                                
+                                                    // Tags
+                                                    let tagSummaryCount = summaryInfo.tagSummaryCount ?? 0
+                                                    let actionsSummaryCount = summaryInfo.actionsSummaryCount ?? 0
+                                                    let totalMentionCount = tagSummaryCount - actionsSummaryCount
+                                                    
+                                                    if totalMentionCount > 0 {
+                                                        isMissed = true
+                                                    }
+                                                    
+                                                    
+                                                    return isMissed
+                                                } else if filter.contains(.custom1) {
+                                                    return true
+                                                }
+                                                
+                                                return false
+                                            case let .peers(filter):
+                                                return false
+                                            }
+                                        default:
+                                            return false
+                                    }
+                                }
+                                
+                                // Bage
+                                for entry in entries {
+                                    switch entry {
+                                    case let .PeerEntry(_, _, message, readState, notificationSettings, _, peer, _, summaryInfo, _, _, _, _, isAd, _):
+                                        
+                                        var totalUnread: Int32 = 0
+                                        let tagSummaryCount = summaryInfo.tagSummaryCount ?? 0
+                                        let actionsSummaryCount = summaryInfo.actionsSummaryCount ?? 0
+                                        let totalMentionCount = tagSummaryCount - actionsSummaryCount
+        
+        
+                                        if let readState = readState {
+                                            if readState.isUnread && !(notificationSettings?.isRemovedFromTotalUnreadCount ?? TelegramPeerNotificationSettings.defaultSettings.isRemovedFromTotalUnreadCount) {
+                                                totalUnread += readState.count
+                                            }
+                                        }
+                                        
+                                        if totalUnread != 0 {
+                                            unreadMessages += totalUnread
+                                            unreadChats += 1
+                                            
+    //                                        if let peer = peer.chatMainPeer as? TelegramChannel {
+    //                                                                               print(peer.title + " has \(totalUnread) unread (mentions - \(totalMentionCount)")
+    //                                                                           } else if let p = peer.peers[peer.peerId] as? TelegramUser {
+    //                                                                               print((p.firstName ?? "USER") + " has \(totalUnread) unread")
+    //                                                                           } else {
+    //                                                                               print("some chat" + " has \(totalUnread) unread")
+    //                                                                           }
+                                        }
+                                        /*else if totalMentionCount != 0 {
+                                            unreadMessages += totalMentionCount
+                                            unreadChats += 1
+                                        }*/
+                                            
+                                       
+
+                                        break
+                                        default:
+                                            continue
+                                    }
+                                }
+                                // END Bage
+                                
+    //                            print("\(strongSelf.filter) Total chats \(entries.count) has \(unreadChats) chats and \(unreadMessages) msgs")
+                                                        
+                                let badge: Int32
+                                 switch inAppSettings.totalUnreadCountDisplayCategory {
+                                     case .chats:
+                                         badge = unreadChats
+                                     case .messages:
+                                         badge = unreadMessages
+                                     @unknown default:
+                                         badge = unreadMessages
+                                 }
+                                 
+
+                                 if badge != 0 {
+                                    Queue.mainQueue().async {
+                                        strongSelf.tabBarItem.badgeValue = compactNumericCountString(Int(badge), decimalSeparator: presentationData.dateTimeFormat.decimalSeparator)
+                                    }
+                                 } else {
+                                    Queue.mainQueue().async {
+                                      strongSelf.tabBarItem.badgeValue = ""
+                                    }
+                                 }
+                            })
+
+                        })
+                    }
+                    
+                
+                } else if count.0 == 0 {
                     strongSelf.tabBarItem.badgeValue = ""
                 } else {
                     strongSelf.tabBarItem.badgeValue = compactNumericCountString(Int(count.0), decimalSeparator: presentationData.dateTimeFormat.decimalSeparator)

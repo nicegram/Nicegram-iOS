@@ -26,6 +26,7 @@
 "NiceFeatures.Notifications.FixNotice" = "Useful if you get notifications from muted chats.\nReply from notifications, account labels and media previews will be unavailable.";
 "NiceFeatures.Filters.Header" = "FILTERS (TABS)";
 "NiceFeatures.Filters.Notice" = "Select the number of custom tabs.\nLongtap on tab to change filter.";
+"NiceFeatures.Filters.ShowBadge" = "Show Badges (Filters)";
 
 /*Common*/
 "Common.ExitNow" = "Exit Now";

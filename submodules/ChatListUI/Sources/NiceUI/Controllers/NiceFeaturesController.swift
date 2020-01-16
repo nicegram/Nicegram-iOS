@@ -36,7 +36,9 @@ private final class NiceFeaturesControllerArguments {
     let changeFiltersAmount: (Int32) -> Void
     let toggleShowTabNames: (Bool, String) -> Void
     let toggleHidePhone: (Bool, String) -> Void
-
+    
+    let toggleFiltersBadge: (Bool) -> Void
+    
     let toggleUseBrowser: (Bool) -> Void
     let customizeBrowser: (Browser) -> Void
     
@@ -44,7 +46,7 @@ private final class NiceFeaturesControllerArguments {
 
     let backupSettings: () -> Void
 
-    init(togglePinnedMessage: @escaping (Bool) -> Void, toggleShowContactsTab: @escaping (Bool) -> Void, toggleFixNotifications: @escaping (Bool) -> Void, updateShowCallsTab: @escaping (Bool) -> Void, changeFiltersAmount: @escaping (Int32) -> Void, toggleShowTabNames: @escaping (Bool, String) -> Void, toggleHidePhone: @escaping (Bool, String) -> Void, toggleUseBrowser: @escaping (Bool) -> Void, customizeBrowser: @escaping (Browser) -> Void, openBrowserSelection: @escaping () -> Void, backupSettings: @escaping () -> Void) {
+    init(togglePinnedMessage: @escaping (Bool) -> Void, toggleShowContactsTab: @escaping (Bool) -> Void, toggleFixNotifications: @escaping (Bool) -> Void, updateShowCallsTab: @escaping (Bool) -> Void, changeFiltersAmount: @escaping (Int32) -> Void, toggleShowTabNames: @escaping (Bool, String) -> Void, toggleHidePhone: @escaping (Bool, String) -> Void, toggleUseBrowser: @escaping (Bool) -> Void, customizeBrowser: @escaping (Browser) -> Void, openBrowserSelection: @escaping () -> Void, backupSettings: @escaping () -> Void, toggleFiltersBadge: @escaping (Bool) -> Void) {
         self.togglePinnedMessage = togglePinnedMessage
         self.toggleShowContactsTab = toggleShowContactsTab
         self.toggleFixNotifications = toggleFixNotifications
@@ -56,6 +58,7 @@ private final class NiceFeaturesControllerArguments {
         self.customizeBrowser = customizeBrowser
         self.openBrowserSelection = openBrowserSelection
         self.backupSettings = backupSettings
+        self.toggleFiltersBadge = toggleFiltersBadge
     }
 }
 
@@ -91,6 +94,7 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
     case filtersHeader(PresentationTheme, String)
     case filtersAmount(PresentationTheme, String, Int32)
     case filtersNotice(PresentationTheme, String)
+    case filtersBadge(PresentationTheme, String, Bool)
 
     case chatScreenHeader(PresentationTheme, String)
 
@@ -130,7 +134,7 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return niceFeaturesControllerSection.chatsList.rawValue
         case .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames:
             return niceFeaturesControllerSection.tabs.rawValue
-        case .filtersHeader, .filtersAmount, .filtersNotice:
+        case .filtersHeader, .filtersAmount, .filtersNotice, .filtersBadge:
             return niceFeaturesControllerSection.filters.rawValue
         case .chatScreenHeader:
             return niceFeaturesControllerSection.chatScreen.rawValue
@@ -168,6 +172,8 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return .index(10)
         case .filtersNotice:
             return .index(11)
+        case .filtersBadge:
+            return .index(12)
         case .chatScreenHeader:
             return .index(20)
         case .browsersHeader:
@@ -437,6 +443,12 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
+        case let .filtersBadge(lhsTheme, lhsText, lhsValue):
+            if case let .filtersBadge(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
+                return true
+            } else {
+                return false
+            }
         }
     }
 
@@ -526,149 +538,156 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             default:
                 return true
             }
+        case .filtersBadge:
+            switch rhs {
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .filtersBadge:
+                return false
+            default:
+                return true
+            }
         case .chatScreenHeader:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .filtersBadge, .chatScreenHeader:
                 return false
             default:
                 return true
             }
         case .browsersHeader:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .filtersBadge, .chatScreenHeader, .browsersHeader:
                 return false
             default:
                 return true
             }
         case .useBrowser:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .filtersBadge, .chatScreenHeader, .browsersHeader, .useBrowser:
                 return false
             default:
                 return true
             }
         case .useBrowserNotice:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .filtersBadge, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice:
                 return false
             default:
                 return true
             }
         case .browserSafari:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .filtersBadge, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari:
                 return false
             default:
                 return true
             }
         case .browserChrome:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .filtersBadge, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome:
                 return false
             default:
                 return true
             }
         case .browserYandex:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .filtersBadge, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex:
                 return false
             default:
                 return true
             }
         case .browserDuckDuckGo:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .filtersBadge, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo:
                 return false
             default:
                 return true
             }
         case .browserOpenerOptions:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .filtersBadge, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions:
                 return false
             default:
                 return true
             }
         case .browserOpenerAuto:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .filtersBadge, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto:
                 return false
             default:
                 return true
             }
         case .browserBrave:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .filtersBadge, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave:
                 return false
             default:
                 return true
             }
         case .browserAlook:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .filtersBadge, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook:
                 return false
             default:
                 return true
             }
         case .browserFirefox:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .filtersBadge, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox:
                 return false
             default:
                 return true
             }
         case .browserFirefoxFocus:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .filtersBadge, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus:
                 return false
             default:
                 return true
             }
         case .browserOperaTouch:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .filtersBadge, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch:
                 return false
             default:
                 return true
             }
         case .browserOperaMini:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .filtersBadge, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini:
                 return false
             default:
                 return true
             }
         case .browserEdge:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge, .telegramBrowsers:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .filtersBadge, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge, .telegramBrowsers:
                 return false
             default:
                 return true
             }
         case .telegramBrowsers:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge, .telegramBrowsers:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .filtersBadge, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge, .telegramBrowsers:
                 return false
             default:
                 return true
             }
         case .otherHeader:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge, .telegramBrowsers, .otherHeader:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .filtersBadge, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge, .telegramBrowsers, .otherHeader:
                 return false
             default:
                 return true
             }
         case .hideNumber:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge, .telegramBrowsers, .otherHeader, .hideNumber:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .filtersBadge, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge, .telegramBrowsers, .otherHeader, .hideNumber:
                 return false
             default:
                 return true
             }
         case .backupSettings:
             switch rhs {
-            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge, .telegramBrowsers, .otherHeader, .hideNumber, .backupSettings:
+            case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .chatsListHeader, .tabsHeader, .showContactsTab, .duplicateShowCalls, .showTabNames, .filtersHeader, .filtersAmount, .filtersNotice, .filtersBadge, .chatScreenHeader, .browsersHeader, .useBrowser, .useBrowserNotice, .browserSafari, .browserChrome, .browserYandex, .browserDuckDuckGo, .browserOpenerOptions, .browserOpenerAuto, .browserBrave, .browserAlook, .browserFirefox, .browserFirefoxFocus, .browserOperaTouch, .browserOperaMini, .browserEdge, .telegramBrowsers, .otherHeader, .hideNumber, .backupSettings:
                 return false
             default:
                 return true
@@ -717,6 +736,10 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             })
         case let .filtersNotice(theme, text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
+        case let .filtersBadge(theme, text, value):
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                arguments.toggleFiltersBadge(value)
+            })
         case let .chatScreenHeader(theme, text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .browsersHeader(theme, text):
@@ -833,6 +856,7 @@ private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls
     entries.append(.filtersHeader(presentationData.theme, l("NiceFeatures.Filters.Header", locale)))
     entries.append(.filtersAmount(presentationData.theme, locale, simplyNiceSettings.maxFilters))
     entries.append(.filtersNotice(presentationData.theme, l("NiceFeatures.Filters.Notice", locale)))
+    entries.append(.filtersBadge(presentationData.theme, l("NiceFeatures.Filters.ShowBadge", locale), simplyNiceSettings.filtersBadge))
     //entries.append(.chatScreenHeader(presentationData.theme, l(key: "NiceFeatures.ChatScreen.Header", locale: locale)))
     //entries.append(.animatedStickers(presentationData.theme, l(key:  "NiceFeatures.ChatScreen.AnimatedStickers", locale: locale), GlobalExperimentalSettings.animatedStickers))
 
@@ -1025,6 +1049,9 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
 
         presentControllerImpl?(controller, nil)
         //}
+    }, toggleFiltersBadge: { value in
+        SimplyNiceSettings().filtersBadge = value
+        updateTabs()
     }
     )
 

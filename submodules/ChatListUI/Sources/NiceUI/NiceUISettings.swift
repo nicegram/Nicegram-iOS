@@ -258,6 +258,17 @@ public class SimplyNiceSettings {
             changed = true
         }
     }
+    
+    public var filtersBadge: Bool {
+        get {
+            return /*cloud.object(forKey: "useBrowser") as? Bool ??*/ UD?.bool(forKey: "filtersBadge") ?? true
+        }
+        set {
+            UD?.set(newValue, forKey: "filtersBadge")
+            //cloud.set(newValue, forKey: "useBrowser")
+            changed = true
+        }
+    }
 }
 
 public var MessagesToCopy: [EnqueueMessage] = []
