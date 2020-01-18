@@ -20,6 +20,9 @@ private func stringForKeepMediaTimeout(strings: PresentationStrings, timeout: In
 }
 
 private let keepMediaTimeoutValues: [Int32] = [
+    1 * 60 * 60,
+    3 * 60 * 60,
+    1 * 24 * 60 * 60,
     3 * 24 * 60 * 60,
     7 * 24 * 60 * 60,
     1 * 31 * 24 * 60 * 60,
