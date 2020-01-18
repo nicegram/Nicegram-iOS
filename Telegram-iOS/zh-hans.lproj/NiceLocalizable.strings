@@ -81,6 +81,7 @@
 "IAP.Common.ErrorFetch" = "抱歉，无法从 App Store 获取购买信息。";
 "IAP.Common.Congrats" = "恭喜！";
 "IAP.Common.ValidateError" = "抱歉，无法验证您的购买。";
+"Premium.OnetapTranslate" = "快速翻译按钮";
 
 
 /*Manage Filters*/
