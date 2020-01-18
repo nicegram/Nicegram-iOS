@@ -627,7 +627,7 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePrevewItemNode 
                 mosaicStatusLayout: mosaicStatusLayout,
                 currentShareButtonNode: currentShareButtonNode,
                 currentTrButtonNode: currentTrButtonNode,
-                wantTrButton: usetrButton(),
+                wantTrButton: self.wantTrButton,
                 layoutConstants: layoutConstants,
                 currentItem: currentItem,
                 currentForwardInfo: currentForwardInfo,
