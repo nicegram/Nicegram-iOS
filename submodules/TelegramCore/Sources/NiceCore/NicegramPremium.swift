@@ -18,6 +18,7 @@ public func setPremiumDefaults() {
     UD?.register(defaults: ["lastOpenedApp": utcnow()])
     UD?.register(defaults: ["notifyMissed": false])
     UD?.register(defaults: ["notifyMissedEach": 5 * 60 *  60])
+    UD?.register(defaults: ["oneTapTr": true])
     
 }
 
@@ -107,7 +108,15 @@ public class PremiumSettings {
         }
     }
     
-    
+    public var oneTapTr: Bool {
+        get {
+            return UD?.bool(forKey: "oneTapTr") ?? true
+        }
+        set {
+            UD?.set(newValue, forKey: "oneTapTr")
+            changed = true
+        }
+    }
 }
 
 
@@ -127,6 +136,13 @@ public func isPremium() -> Bool {
     }
     
     return PremiumSettings().p //|| SecureNiceSettings().isPremium || SecureNiceSettings().isBetaPremium
+}
+
+public func usetrButton() -> Bool {
+    if isPremium() {
+        return PremiumSettings().oneTapTr
+    }
+    return false
 }
 
 public func showMissed() -> Bool {

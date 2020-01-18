@@ -55,20 +55,15 @@ public func getPremiumIntroController(context: AccountContext, presentationData:
 
 public func getIAPErrorController(context: AccountContext, _ text: String, _ presentationData: PresentationData) -> AlertController {
     
-    let errorController = textAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: NSAttributedString(string: l(text, presentationData.strings.baseLanguageCode)), actions: [
-        TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {
-        })])
+    let errorController =
+        standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: l(text, presentationData.strings.baseLanguageCode), actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})])
     return errorController
 }
 
 
 public func getPremiumActivatedAlert(context: AccountContext, _ title: String, _ text: String, _ presentationData: PresentationData, action: @escaping () -> Void ) -> AlertController {
-    
-    
-    let Controller = textAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: NSAttributedString(string: title), text: NSAttributedString(string: l(text, presentationData.strings.baseLanguageCode)), actions: [
-        TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {
-            action()
-        })])
+
+    let Controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: title, text: l(text, presentationData.strings.baseLanguageCode), actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {action()})])
     return Controller
     
 }

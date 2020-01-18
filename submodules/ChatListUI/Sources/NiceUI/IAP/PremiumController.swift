@@ -41,6 +41,7 @@ private enum premiumControllerSection: Int32 {
     case syncPins
     case notifyMissed
     case manageFilters
+    case other
     case test
 }
 
@@ -61,6 +62,10 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
     case manageFiltersHeader(PresentationTheme, String)
     case manageFilters(PresentationTheme, String)
     
+    case otherHeader(PresentationTheme, String)
+    
+    case onetaptr(PresentationTheme, String, Bool)
+    
     case testButton(PresentationTheme, String)
     
     var section: ItemListSectionId {
@@ -73,6 +78,8 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return premiumControllerSection.notifyMissed.rawValue
         case .manageFiltersHeader, .manageFilters:
            return premiumControllerSection.manageFilters.rawValue
+        case .otherHeader, .onetaptr:
+            return premiumControllerSection.other.rawValue
         case .testButton:
             return premiumControllerSection.test.rawValue
         }
@@ -97,6 +104,10 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return 3000
         case .manageFilters:
             return 3100
+        case .otherHeader:
+            return 10000
+        case .onetaptr:
+            return 11000
         case .testButton:
             return 999999
         }
@@ -157,6 +168,20 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
                 return false
             }
             
+        case let .onetaptr(lhsTheme, lhsText, lhsValue):
+            if case let .onetaptr(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
+                return true
+            } else {
+                return false
+            }
+            
+        case let .otherHeader(lhsTheme, lhsText):
+            if case let .otherHeader(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
+            
         case let .testButton(lhsTheme, lhsText):
             if case let .testButton(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
                 return true
@@ -197,6 +222,13 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return ItemListDisclosureItem(presentationData: presentationData, icon: nil, title: text, label: "", sectionId: self.section, style: .blocks, action: {
                 arguments.openManageFilters()
             })
+        case let .otherHeader(theme, text):
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
+        case let .onetaptr(theme, text, value):
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                arguments.toggleSetting(value, "oneTapTr")
+            })
+            
         case let .testButton(theme, text):
             return ItemListActionItem(presentationData: presentationData, title: "Test Button", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 arguments.testAction()
@@ -239,6 +271,9 @@ private func premiumControllerEntries(presentationData: PresentationData, premiu
     
     entries.append(.manageFiltersHeader(theme, l("NiceFeatures.Filters.Header", locale)))
     entries.append(.manageFilters(theme, l("ManageFilters.Title", locale)))
+    
+    entries.append(.otherHeader(theme, presentationData.strings.ChatSettings_Other))
+    entries.append(.onetaptr(theme, l("Premium.OnetapTranslate", locale), premiumSettings.oneTapTr))
     
     #if DEBUG
     entries.append(.testButton(theme, "TEST"))
@@ -299,6 +334,9 @@ public func premiumController(context: AccountContext) -> ViewController {
         switch (setting) {
         case "syncPins":
             PremiumSettings().syncPins = value
+            break
+        case "oneTapTr":
+            PremiumSettings().oneTapTr = value
             break
         default:
             break
