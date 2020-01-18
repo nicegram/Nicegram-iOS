@@ -74,7 +74,6 @@
 "Common.FAQ.Intro" = "Ten en cuenta que el soporte de Nicegram sólo lo realiza un desarrollador y una comunidad.\n\nPrimero, echa un vistazo a las preguntas frecuentes de Nicegram: Tiene consejos importantes para la solución de la mayoría de problemas.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "¡Características únicas que no puedes rechazar!";
-"IAP.Premium.Features" = "Carpetas ilimitadas\nChats anclados ilimitados\nFiltro de mensajes perdidos\nResumen de «Mensajes nuevos» al abrir la app";
 "IAP.Premium.Activated" = "¡Premium activado!";
 "IAP.Common.Restore" = "Restaurar compras";
 "IAP.Common.CantPay" = "Lo sentimos, pero no se puede realizar compras debido a tu dispositivo o las restricciones de tu cuenta.";
