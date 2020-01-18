@@ -86,6 +86,6 @@
 "ManageFilters.Title" = "Tabs verwalten";
 
 "Messages.Translate" = "Übersetzen";
-"Messages.UndoTranslate" = "Übersetzung rückgängig machen";
+"Messages.UndoTranslate" = "Rückgängig übersetzen";
 "Messages.TranslateError" = "Die Übersetzung ist leider nicht verfügbar.";
 "NGLab.RegDate.MenuItem" = "registriert";
