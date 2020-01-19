@@ -192,20 +192,25 @@ public class SimplyNiceFilters {
     
     public var disabledFilters: [Int32] {
         get {
-//            if let arrayData = cloud.object(forKey: "disabledFilters") {
-//                if let intArrayData = arrayData as? [Int32] {
-//                    return intArrayData
-//                }
-//            }
-            return UD?.array(forKey: "disabledFilters") as? [Int32] ?? []
+            if useIcloud() {
+                if let arrayData = cloud.object(forKey: "disabledFilters") {
+                    if let intArrayData = arrayData as? [Int32] {
+                        return intArrayData
+                    }
+                }
+                return []
+            } else {
+                return UD?.array(forKey: "disabledFilters") as? [Int32] ?? []
+            }
         }
         set {
             var resSet: [Int32] = []
             for item in newValue {
                 resSet.append(item)
             }
+            cloud.set(resSet, forKey: "disabledFilters")
+            cloud.synchronize()
             UD?.set(resSet, forKey: "disabledFilters")
-            // cloud.set(resSet, forKey: "disabledFilters")
             changed = true
         }
         
@@ -213,20 +218,26 @@ public class SimplyNiceFilters {
     
     public var filters: [CustomFilter] {
         get {
-            /*if let filtersData = cloud.data(forKey: "customFilters") {
-                if let strongCloudFilters = NSKeyedUnarchiver.unarchiveObject(with: filtersData) as? [CustomFilter] {
-                    return strongCloudFilters
+            if useIcloud() {
+                if let filtersData = cloud.data(forKey: "customFilters") {
+                    if let strongCloudFilters = NSKeyedUnarchiver.unarchiveObject(with: filtersData) as? [CustomFilter] {
+                        return strongCloudFilters
+                    }
                 }
-            } else*/ if let localFiltersData = UD?.data(forKey: "customFilters") {
-                if let strongLocalFilters = NSKeyedUnarchiver.unarchiveObject(with: localFiltersData) as? [CustomFilter] {
-                    return strongLocalFilters
+                return []
+            } else {
+                if let localFiltersData = UD?.data(forKey: "customFilters") {
+                    if let strongLocalFilters = NSKeyedUnarchiver.unarchiveObject(with: localFiltersData) as? [CustomFilter] {
+                        return strongLocalFilters
+                    }
                 }
+                return []
             }
-            return []
         }
         set {
+            cloud.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "customFilters")
+            cloud.synchronize()
             UD?.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "customFilters")
-            // cloud.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "customFilters")
             changed = true
         }
     }

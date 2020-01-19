@@ -180,10 +180,14 @@ public class SimplyNiceSettings {
     
     public var hideNumber: Bool {
         get {
-            return /*cloud.object(forKey: "hideNumber") as? Bool ??*/ UD?.bool(forKey: "hideNumber") ?? false
+            if useIcloud() {
+                return cloud.object(forKey: "hideNumber") as? Bool ?? false
+            }
+            return UD?.bool(forKey: "hideNumber") ?? false
         }
         set {
-            // cloud.set(newValue, forKey: "hideNumber")
+            cloud.set(newValue, forKey: "hideNumber")
+            cloud.synchronize()
             changed = true
             UD?.set(newValue, forKey: "hideNumber")
         }
@@ -192,10 +196,14 @@ public class SimplyNiceSettings {
     public var maxFilters: Int32 {
         // let k = "maxFilters"
         get {
-            return /*cloud.object(forKey: "maxFilters") as? Int32 ??*/ Int32(UD?.integer(forKey: "maxFilters") ?? 2)
+            if useIcloud() {
+                return cloud.object(forKey: "maxFilters") as? Int32 ?? 2
+            }
+            return Int32(UD?.integer(forKey: "maxFilters") ?? 2)
         }
         set {
-            //cloud.set(newValue, forKey: "maxFilters")
+            cloud.set(newValue, forKey: "maxFilters")
+            cloud.synchronize()
             changed = true
             UD?.set(newValue, forKey: "maxFilters")
         }
@@ -203,7 +211,12 @@ public class SimplyNiceSettings {
     
     public var chatFilters: [NiceChatListNodePeersFilter] {
         get {
-            let array = /*cloud.object(forKey: "chatFilters") as? [Int32] ??*/ UD?.array(forKey: "chatFilters") as? [Int32] ?? [1 << 6, 1 << 5]
+            let array: [Int32]
+            if useIcloud() {
+                array = cloud.object(forKey: "chatFilters") as? [Int32] ?? [1 << 6, 1 << 5]
+            } else {
+                array = UD?.array(forKey: "chatFilters") as? [Int32] ?? [1 << 6, 1 << 5]
+            }
             var res: [NiceChatListNodePeersFilter] = []
             for item in array {
                 if supportedFilters.contains(item) && getAvailableFilters().contains(NiceChatListNodePeersFilter(rawValue: item)) {
@@ -219,8 +232,9 @@ public class SimplyNiceSettings {
             for item in newValue {
                 resSet.append(item.rawValue)
             }
+            cloud.set(resSet, forKey: "chatFilters")
+            cloud.synchronize()
             UD?.set(resSet, forKey: "chatFilters")
-            // cloud.set(resSet, forKey: "chatFilters")
             changed = true
         }
         
@@ -228,11 +242,17 @@ public class SimplyNiceSettings {
     
     public var showTabNames: Bool {
         get {
-            return /*cloud.object(forKey: "showTabNames") as? Bool ??*/ UD?.bool(forKey: "showTabNames") ?? true
+            if useIcloud() {
+                return cloud.object(forKey: "showTabNames") as? Bool ?? true
+            } else {
+                return UD?.bool(forKey: "showTabNames") ?? true
+            }
+             
         }
         set {
+            cloud.set(newValue, forKey: "showTabNames")
+            cloud.synchronize()
             UD?.set(newValue, forKey: "showTabNames")
-            //cloud.set(newValue, forKey: "showTabNames")
             changed = true
         }
     }
@@ -261,11 +281,16 @@ public class SimplyNiceSettings {
     
     public var filtersBadge: Bool {
         get {
-            return /*cloud.object(forKey: "useBrowser") as? Bool ??*/ UD?.bool(forKey: "filtersBadge") ?? true
+            if useIcloud() {
+                return cloud.object(forKey: "filtersBadge") as? Bool ?? true
+            } else {
+                return UD?.bool(forKey: "filtersBadge") ?? true
+            }
         }
         set {
+            cloud.set(newValue, forKey: "filtersBadge")
+            cloud.synchronize()
             UD?.set(newValue, forKey: "filtersBadge")
-            //cloud.set(newValue, forKey: "useBrowser")
             changed = true
         }
     }

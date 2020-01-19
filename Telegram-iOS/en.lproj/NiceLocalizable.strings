@@ -101,6 +101,7 @@
 "NGLab.RegDate.FetchError" = "Sorry, can't get registration date.";
 
 /*Backup Settings*/
+"NiceFeatures.BackupIcloud" = "Sync Settings & Folders with iCloud";
 "NiceFeatures.BackupSettings" = "Backup Settings & Folders";
 "NiceFeatures.BackupSettings.Notice" = "Creates backup files in your saved messages";
 "NiceFeatures.BackupSettings.Done" = "Backup Done to Saved Messages";

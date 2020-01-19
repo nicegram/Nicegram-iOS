@@ -382,16 +382,20 @@ public class SimplyNiceFolders {
     
     public var folders: [NiceFolder] {
         get {
-            // return NSKeyedUnarchiver.unarchiveObject(with: (UD?.data(forKey: "folders"))!) as! [NiceFolder]
-//            if let foldersData = cloud.data(forKey: "folders") {
-//                return NSKeyedUnarchiver.unarchiveObject(with: foldersData) as! [NiceFolder]
-//            } else {
+            if useIcloud() {
+                if let foldersData = cloud.data(forKey: "folders") {
+                    return NSKeyedUnarchiver.unarchiveObject(with: foldersData) as! [NiceFolder]
+                } else {
+                    return []
+                }
+            } else {
                 return NSKeyedUnarchiver.unarchiveObject(with: (UD?.data(forKey: "folders"))!) as! [NiceFolder]
-            //}
+            }
         }
         set {
             UD?.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "folders")
-            //cloud.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "folders")
+            cloud.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "folders")
+            cloud.synchronize()
             changed = true
         }
     }

@@ -41,11 +41,16 @@ public class PremiumSettings {
     
     public var syncPins: Bool {
         get {
-            return /* cloud.object(forKey: "syncPins") as? Bool ??*/ UD?.bool(forKey: "syncPins") ?? true
+            if useIcloud() {
+                return cloud.object(forKey: "syncPins") as? Bool ?? true
+            } else {
+                return UD?.bool(forKey: "syncPins") ?? true
+            }
         }
         set {
+            cloud.set(newValue, forKey: "syncPins")
+            cloud.synchronize()
             UD?.set(newValue, forKey: "syncPins")
-            // cloud.set(newValue, forKey: "syncPins")
             changed = true
         }
     }
@@ -88,38 +93,61 @@ public class PremiumSettings {
     
     public var notifyMissed: Bool {
         get {
-            return /*cloud.object(forKey: "notifyMissed") as? Bool ??*/ UD?.bool(forKey: "notifyMissed") ?? false
+            if useIcloud() {
+                return cloud.object(forKey: "notifyMissed") as? Bool ?? false
+            } else {
+                return UD?.bool(forKey: "notifyMissed") ?? false
+            }
         }
         set {
+            cloud.set(newValue, forKey: "notifyMissed")
+            cloud.synchronize()
             UD?.set(newValue, forKey: "notifyMissed")
-            // cloud.set(newValue, forKey: "notifyMissed")
             changed = true
         }
     }
     
     public var notifyMissedEach: Int {
         get {
-            return /*cloud.object(forKey: "notifyMissedEach") as? Int ??*/ UD?.integer(forKey: "notifyMissedEach") ?? 5 * 60 * 60 // 5 hours
+            if useIcloud() {
+                return cloud.object(forKey: "notifyMissedEach") as? Int ?? 5 * 60 * 60 // 5 hours
+            } else {
+                return UD?.integer(forKey: "notifyMissedEach") ?? 5 * 60 * 60 // 5 hours
+            }
         }
         set {
+            cloud.set(newValue, forKey: "notifyMissedEach")
+            cloud.synchronize()
             UD?.set(newValue, forKey: "notifyMissedEach")
-            // cloud.set(newValue, forKey: "notifyMissedEach")
             changed = true
         }
     }
     
     public var oneTapTr: Bool {
         get {
-            return UD?.bool(forKey: "oneTapTr") ?? true
+            if useIcloud() {
+                return cloud.object(forKey: "oneTapTr") as? Bool ?? true
+            } else {
+                return UD?.bool(forKey: "oneTapTr") ?? true
+            }
+            
         }
         set {
+            cloud.set(newValue, forKey: "oneTapTr")
+            cloud.synchronize()
             UD?.set(newValue, forKey: "oneTapTr")
             changed = true
         }
     }
 }
 
+public func useIcloud() -> Bool {
+    return UserDefaults.standard.bool(forKey: "useIcloud")
+}
 
+public func setUseIcloud(_ value: Bool) {
+    return UserDefaults.standard.set(value, forKey: "useIcloud")
+}
 
 public func isPremium() -> Bool {
     #if DEBUG

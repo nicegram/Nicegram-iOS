@@ -234,8 +234,8 @@ final class SharedApplicationContext {
         precondition(!testIsLaunched)
         testIsLaunched = true
         
-        // let initialIcloudSync = NSUbiquitousKeyValueStore.default.synchronize()
-        // print("Initially Synced iCLoud \(initialIcloudSync)")
+        let initialIcloudSync = NSUbiquitousKeyValueStore.default.synchronize()
+        print("Initially Synced iCLoud \(initialIcloudSync)")
         let _ = voipTokenPromise.get().start(next: { token in
             self.deviceToken.set(.single(token))
         })
@@ -1129,48 +1129,81 @@ final class SharedApplicationContext {
                         PCACHE = "no"
                     }
                     
-//                    if !UserDefaults.standard.bool(forKey: "isCloud") {
-//                        Logger.shared.log("[System NG]", "MOVE TO CLOUD SETTINGS")
-//                        let nf = SimplyNiceFolders()
-//                        let ns = SimplyNiceSettings()
-//                        let nt = SimplyNiceFilters()
-//                        let ps = PremiumSettings()
-//
-//                        let temp1 = nf.folders
-//                        nf.folders = temp1
-//
-//                        let temp2 = ns.chatFilters
-//                        ns.chatFilters = temp2
-//
-//                        let temp3 = ns.browser
-//                        ns.browser = temp3
-//
-//                        let temp4 = ns.hideNumber
-//                        ns.hideNumber = temp4
-//
-//                        let temp5 = ns.maxFilters
-//                        ns.maxFilters = temp5
-//
-//                        let temp6 = ns.showTabNames
-//                        ns.showTabNames = temp6
-//
-//                        let temp7 = nt.filters
-//                        nt.filters = temp7
-//
-//                        let temp8 = nt.disabledFilters
-//                        nt.disabledFilters = temp8
-//
-//                        let temp9 = ps.notifyMissed
-//                        ps.notifyMissed = temp9
-//
-//                        let temp10 = ps.notifyMissedEach
-//                        ps.notifyMissedEach = temp10
-//
-//                        let temp11 = ps.syncPins
-//                        ps.syncPins = temp11
-//
-//                        UserDefaults.standard.set(true, forKey: "isCloud")
-//                    }
+                    //if !UserDefaults.standard.bool(forKey: "isCloud") {
+                        let cloud = NSUbiquitousKeyValueStore.default
+                        Logger.shared.log("[System NG]", "MOVE TO CLOUD SETTINGS")
+                        let nf = SimplyNiceFolders()
+                        let ns = SimplyNiceSettings()
+                        let nt = SimplyNiceFilters()
+                        let ps = PremiumSettings()
+                        
+                        if cloud.object(forKey: "folders") == nil {
+                            cloud.set(NSKeyedArchiver.archivedData(withRootObject: nf.folders), forKey: "folders")
+                            cloud.synchronize()
+                        }
+                        
+                        if cloud.object(forKey: "chatFilters") == nil {
+                            var resSet: [Int32] = []
+                            for item in ns.chatFilters {
+                                resSet.append(item.rawValue)
+                            }
+                            cloud.set(resSet, forKey: "chatFilters")
+                            cloud.synchronize()
+                        }
+                    
+                        if cloud.object(forKey: "filtersBadge") == nil {
+                            cloud.set(ns.filtersBadge, forKey: "filtersBadge")
+                            cloud.synchronize()
+                        }
+                    
+                        if cloud.object(forKey: "hideNumber") == nil {
+                            cloud.set(ns.hideNumber, forKey: "hideNumber")
+                            cloud.synchronize()
+                        }
+                    
+                        if cloud.object(forKey: "maxFilters") == nil {
+                            cloud.set(ns.maxFilters, forKey: "maxFilters")
+                            cloud.synchronize()
+                        }
+
+                    
+                        if cloud.object(forKey: "showTabNames") == nil {
+                            cloud.set(ns.showTabNames, forKey: "showTabNames")
+                            cloud.synchronize()
+                        }
+                        
+                        if cloud.object(forKey: "customFilters") == nil {
+                            cloud.set(NSKeyedArchiver.archivedData(withRootObject: nt.filters), forKey: "customFilters")
+                            cloud.synchronize()
+                        }
+                    
+                        if cloud.object(forKey: "disabledFilters") == nil {
+                            cloud.set(nt.disabledFilters, forKey: "disabledFilters")
+                            cloud.synchronize()
+                        }
+                    
+                        if cloud.object(forKey: "notifyMissed") == nil {
+                            cloud.set(ps.notifyMissed, forKey: "notifyMissed")
+                            cloud.synchronize()
+                        }
+                    
+                        if cloud.object(forKey: "notifyMissedEach") == nil {
+                            cloud.set(ps.notifyMissedEach, forKey: "notifyMissedEach")
+                            cloud.synchronize()
+                        }
+                    
+                        if cloud.object(forKey: "syncPins") == nil {
+                            cloud.set(ps.syncPins, forKey: "syncPins")
+                            cloud.synchronize()
+                        }
+                        
+                        if cloud.object(forKey: "oneTapTr") == nil {
+                            cloud.set(ps.oneTapTr, forKey: "oneTapTr")
+                            cloud.synchronize()
+                        }
+                    
+                       // UserDefaults.standard.set(true, forKey: "isCloud")
+                    //}
                 }
             }
             
