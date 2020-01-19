@@ -6,7 +6,7 @@
 "ChatFilter.Private" = "Usuarios";
 "ChatFilter.Groups" = "Grupos";
 "ChatFilter.Unread" = "No leído";
-"ChatFilter.Unmuted" = "Desilenciar";
+"ChatFilter.Unmuted" = "Desilenciad@";
 "ChatFilter.Favourites" = "Favoritos";
 
 /*Nice Features*/
@@ -44,7 +44,7 @@
 "Folder.Create" = "Crear carpeta…";
 "Folder.Create.Name" = "Nombre de la carpeta";
 "Folder.Create.Placeholder" = "Carpeta…";
-"Folder.LimitExceeded" = "No puedes crear más de 3 carpetas personalizadas.\nHazte Premium para tener más carpetas.";
+"Folder.LimitExceeded" = "Lo siento pero no se puede crear más que 3 archivos personalizados.\nHay más archivos disponibles en Premium.";
 "NiceFeatures.HideNumber" = "Ocultar número en ajustes";
 
 /*NGWeb*/
@@ -62,10 +62,10 @@
 "Premium.Title" = "Premium";
 "Premium.UnlimitedPins.Header" = "CHATS ANCLADOS ILIMITADOS";
 "Premium.SyncPins" = "Sincronizar chats anclados";
-"Premium.SyncPins.Notice.ON" = "Si cambias chats anclados en otro cliente, CAMBIARÁN en Nicegram.";
-"Premium.SyncPins.Notice.OFF" = "Si cambias chats anclados en otro cliente, NO CAMBIARÁN en Nicegram.";
+"Premium.SyncPins.Notice.ON" = "Si cambias chats anclados en otro cliente, SE CAMBIARÁN en Nicegram.";
+"Premium.SyncPins.Notice.OFF" = "Si cambias chats anclados en otro cliente, NO SE CAMBIARÁN en Nicegram.";
 "Premium.Missed.Header" = "Mensajes perdidos";
-"Premium.Missed" = "Notificar los mensajes perdidos";
+"Premium.Missed" = "Notificación a mensajes perdidos";
 "Premium.Missed.Notice" = "Cuando abres la aplicación después de un período largo (durmiendo, estudiando, etc), Nicegram te notificará sobre mensajes privados y menciones perdidos.";
 "Folder.DeleteAsk" = "Eliminar carpeta";
 "Folder.NeedPremium" = "Esta carpeta solo está disponible con Premium. Puedes comprar Premium o eliminar la carpeta con el gesto de deslizar.";
@@ -92,7 +92,7 @@
 "Messages.TranslateError" = "Lo sentimos, la traducción no está disponible.";
 
 /*NG Lab Registration Date*/
-"NGLab.RegDate.Btn" = "Obtener fecha de registro";
+"NGLab.RegDate.Btn" = "Obtiene fecha de registro";
 "NGLab.RegDate.Title" = "Fecha de registro";
 "NGLab.RegDate.Notice" = "Esta es una fecha aproximada";
 "NGLab.RegDate.MenuItem" = "registrado";
