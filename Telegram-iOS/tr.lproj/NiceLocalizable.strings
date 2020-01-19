@@ -75,6 +75,7 @@
 "Common.FAQ.Intro" = "Lütfen Nicegram Destek’in sadece bir geliştirici ve topluluktan oluştuğunu unutmayın.\n\nİlk olarak Nicegram SSS’e bir göz atın: önemli ipuçları ve çoğu soruya cevap barındırıyor.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Reddedemeyeceğiniz benzersiz özellikler!";
+"IAP.Premium.Features" = "Sınırsız Klasörler & Sabit Sohbetler\nHızlı Mesaj Çevirmeni\nKaçırılan Mesaj Filtresi & Sekme Yönetimi\nUygulama Açılışında Yeni Mesajlar Özeti";
 "IAP.Premium.Activated" = "Premium Aktive Edildi!";
 "IAP.Common.Restore" = "Satın Alımları Geri Yükle";
 "IAP.Common.CantPay" = "Üzgünüz, ama cihaz veya hesap kısıtlamalarınız yüzünden satın alım yapamazsınız.";
