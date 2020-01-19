@@ -6,7 +6,7 @@
 "ChatFilter.Private" = "Usuarios";
 "ChatFilter.Groups" = "Grupos";
 "ChatFilter.Unread" = "No leído";
-"ChatFilter.Unmuted" = "No silenciado";
+"ChatFilter.Unmuted" = "Desilenciar";
 "ChatFilter.Favourites" = "Favoritos";
 
 /*Nice Features*/
@@ -25,11 +25,12 @@
 "NiceFeatures.Notifications.Fix" = "Desactivar notificaciones no deseadas";
 "NiceFeatures.Notifications.FixNotice" = "Útil si recibes notificaciones de chats silenciados.\nResponder desde la notificación, etiquetas de cuenta y vistas previas de multimedia no estarán disponibles.";
 "NiceFeatures.Filters.Header" = "FILTROS (PESTAÑAS)";
-"NiceFeatures.Filters.Notice" = "Selecciona el número de pestañas personalizadas. \nMantén pulsado en una pestaña para cambiar el filtro.";
+"NiceFeatures.Filters.Notice" = "Selecciona el número de pestañas personalizadas. \nMantén pulsado una pestaña para cambiar el filtro.";
+"NiceFeatures.Filters.ShowBadge" = "Ver medallas (Filtros)";
 
 /*Common*/
 "Common.ExitNow" = "Salir ahora";
-"Common.Later" = "Más tarde";
+"Common.Later" = "Después";
 "Common.RestartRequired" = "¡Reinicio necesario!";
 "NiceFeatures.Tabs.ShowNames" = "Mostrar nombres de pestañas";
 "Chat.ForwardAsCopy" = "Reenviar como copia";
