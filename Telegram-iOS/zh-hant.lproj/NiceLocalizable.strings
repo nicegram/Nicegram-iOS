@@ -99,8 +99,6 @@
 "NGLab.RegDate.Notice" = "這是一個大概的日期";
 "NGLab.RegDate.MenuItem" = "已註冊";
 "NGLab.RegDate.FetchError" = "抱歉，無法取得註冊日期。";
-
-/*Backup Settings*/
 "NiceFeatures.BackupSettings" = "備份設定與資料夾";
 "NiceFeatures.BackupSettings.Notice" = "在已儲存的訊息中建立備份檔";
 "NiceFeatures.BackupSettings.Done" = "備份已儲存";
