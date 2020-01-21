@@ -186,7 +186,7 @@ public class SimplyNiceFilters {
     deinit {
         if changed {
             print("Syncing Filters!")
-            // cloud.synchronize()
+            // // cloud.synchronize()
         }
     }
     
@@ -208,8 +208,8 @@ public class SimplyNiceFilters {
             for item in newValue {
                 resSet.append(item)
             }
-            cloud.set(resSet, forKey: "disabledFilters")
-            cloud.synchronize()
+            // cloud.set(resSet, forKey: "disabledFilters")
+            // cloud.synchronize()
             UD?.set(resSet, forKey: "disabledFilters")
             changed = true
         }
@@ -235,8 +235,8 @@ public class SimplyNiceFilters {
             }
         }
         set {
-            cloud.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "customFilters")
-            cloud.synchronize()
+            // cloud.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "customFilters")
+            // cloud.synchronize()
             UD?.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "customFilters")
             changed = true
         }

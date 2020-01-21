@@ -174,7 +174,7 @@ public class SimplyNiceSettings {
     deinit {
         if changed {
             print("Syncing Settings!")
-            // cloud.synchronize()
+            // // cloud.synchronize()
         }
     }
     
@@ -186,8 +186,8 @@ public class SimplyNiceSettings {
             return UD?.bool(forKey: "hideNumber") ?? false
         }
         set {
-            cloud.set(newValue, forKey: "hideNumber")
-            cloud.synchronize()
+            // cloud.set(newValue, forKey: "hideNumber")
+            // cloud.synchronize()
             changed = true
             UD?.set(newValue, forKey: "hideNumber")
         }
@@ -202,8 +202,8 @@ public class SimplyNiceSettings {
             return Int32(UD?.integer(forKey: "maxFilters") ?? 2)
         }
         set {
-            cloud.set(newValue, forKey: "maxFilters")
-            cloud.synchronize()
+            // cloud.set(newValue, forKey: "maxFilters")
+            // cloud.synchronize()
             changed = true
             UD?.set(newValue, forKey: "maxFilters")
         }
@@ -232,8 +232,8 @@ public class SimplyNiceSettings {
             for item in newValue {
                 resSet.append(item.rawValue)
             }
-            cloud.set(resSet, forKey: "chatFilters")
-            cloud.synchronize()
+            // cloud.set(resSet, forKey: "chatFilters")
+            // cloud.synchronize()
             UD?.set(resSet, forKey: "chatFilters")
             changed = true
         }
@@ -250,8 +250,8 @@ public class SimplyNiceSettings {
              
         }
         set {
-            cloud.set(newValue, forKey: "showTabNames")
-            cloud.synchronize()
+            // cloud.set(newValue, forKey: "showTabNames")
+            // cloud.synchronize()
             UD?.set(newValue, forKey: "showTabNames")
             changed = true
         }
@@ -263,7 +263,7 @@ public class SimplyNiceSettings {
         }
         set {
             UD?.set(newValue, forKey: "useBrowser")
-            //cloud.set(newValue, forKey: "useBrowser")
+            //// cloud.set(newValue, forKey: "useBrowser")
             changed = true
         }
     }
@@ -274,7 +274,7 @@ public class SimplyNiceSettings {
         }
         set {
             UD?.set(newValue, forKey: "browser")
-            //cloud.set(newValue, forKey: "browser")
+            //// cloud.set(newValue, forKey: "browser")
             changed = true
         }
     }
@@ -288,8 +288,8 @@ public class SimplyNiceSettings {
             }
         }
         set {
-            cloud.set(newValue, forKey: "filtersBadge")
-            cloud.synchronize()
+            // cloud.set(newValue, forKey: "filtersBadge")
+            // cloud.synchronize()
             UD?.set(newValue, forKey: "filtersBadge")
             changed = true
         }

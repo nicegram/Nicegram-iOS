@@ -376,7 +376,7 @@ public class SimplyNiceFolders {
     deinit {
         if changed {
             print("Syncing Folders!")
-            // cloud.synchronize()
+            // // cloud.synchronize()
         }
     }
     
@@ -394,8 +394,8 @@ public class SimplyNiceFolders {
         }
         set {
             UD?.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "folders")
-            cloud.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "folders")
-            cloud.synchronize()
+            // cloud.set(NSKeyedArchiver.archivedData(withRootObject: newValue), forKey: "folders")
+            // cloud.synchronize()
             changed = true
         }
     }

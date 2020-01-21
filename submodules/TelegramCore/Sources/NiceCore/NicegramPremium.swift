@@ -19,6 +19,7 @@ public func setPremiumDefaults() {
     UD?.register(defaults: ["notifyMissed": false])
     UD?.register(defaults: ["notifyMissedEach": 5 * 60 *  60])
     UD?.register(defaults: ["oneTapTr": true])
+    UD?.register(defaults: ["ignoreTranslate": [])
     
 }
 
@@ -35,7 +36,7 @@ public class PremiumSettings {
     deinit {
         if changed {
             print("Syncing Premium Settings!")
-            // cloud.synchronize()
+            // // cloud.synchronize()
         }
     }
     
@@ -48,8 +49,8 @@ public class PremiumSettings {
             }
         }
         set {
-            cloud.set(newValue, forKey: "syncPins")
-            cloud.synchronize()
+            // cloud.set(newValue, forKey: "syncPins")
+            // cloud.synchronize()
             UD?.set(newValue, forKey: "syncPins")
             changed = true
         }
@@ -100,8 +101,8 @@ public class PremiumSettings {
             }
         }
         set {
-            cloud.set(newValue, forKey: "notifyMissed")
-            cloud.synchronize()
+            // cloud.set(newValue, forKey: "notifyMissed")
+            // cloud.synchronize()
             UD?.set(newValue, forKey: "notifyMissed")
             changed = true
         }
@@ -116,8 +117,8 @@ public class PremiumSettings {
             }
         }
         set {
-            cloud.set(newValue, forKey: "notifyMissedEach")
-            cloud.synchronize()
+            // cloud.set(newValue, forKey: "notifyMissedEach")
+            // cloud.synchronize()
             UD?.set(newValue, forKey: "notifyMissedEach")
             changed = true
         }
@@ -133,9 +134,19 @@ public class PremiumSettings {
             
         }
         set {
-            cloud.set(newValue, forKey: "oneTapTr")
-            cloud.synchronize()
+            // cloud.set(newValue, forKey: "oneTapTr")
+            // cloud.synchronize()
             UD?.set(newValue, forKey: "oneTapTr")
+            changed = true
+        }
+    }
+    
+    public var ignoreTranslate: [String] {
+        get {
+            return UD?.array(forKey: "ignoreTranslate") as? [String] ?? []
+        }
+        set {
+            UD?.set(newValue, forKey: "ignoreTranslate")
             changed = true
         }
     }
