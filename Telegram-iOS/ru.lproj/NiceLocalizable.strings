@@ -84,7 +84,6 @@
 "IAP.Common.ValidateError" = "К сожалению, подтвердить покупку не удалось.";
 "Premium.OnetapTranslate" = "Кнопка быстрого перевода";
 
-
 /*Manage Filters*/
 "ManageFilters.Title" = "Управление вкладками";
 "ManageFilters.Header" = "РЕДАКТИРОВАНИЕ ДОСТУПНЫХ ФИЛЬТРОВ";
