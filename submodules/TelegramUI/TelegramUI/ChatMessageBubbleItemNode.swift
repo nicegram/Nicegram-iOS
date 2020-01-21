@@ -30,6 +30,16 @@ import TelegramCore
 import SwiftSignalKit
 
 
+import NaturalLanguage
+
+@available(iOS 12.0, *)
+func detectedLanguage(for string: String) -> String? {
+    let recognizer = NLLanguageRecognizer()
+    recognizer.processString(string)
+    guard let languageCode = recognizer.dominantLanguage?.rawValue else { return nil }
+    return languageCode
+}
+
 private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> [(Message, AnyClass, ChatMessageEntryAttributes)] {
     var result: [(Message, AnyClass, ChatMessageEntryAttributes)] = []
     var skipText = false
@@ -758,6 +768,22 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePrevewItemNode 
                 if item.message.id.peerId != item.context.account.peerId {
                     if !item.message.text.isEmpty {
                         needTrButton = true
+                        if #available(iOS 12.0, *) {
+                            if let msgLang = detectedLanguage(for: item.message.text) {
+                                var lang = item.presentationData.strings.baseLanguageCode
+                                let rawSuffix = "-raw"
+                                if lang.hasSuffix(rawSuffix) {
+                                    lang = String(lang.dropLast(rawSuffix.count))
+                                }
+                                if lang.lowercased() == msgLang.lowercased() {
+                                    needTrButton = false
+                                } else {
+                                    // print("Msg Lang \(msgLang.lowercased()) - current lang \(lang.lowercased())")
+                                }
+                            }
+                        } else {
+                            // Fallback on earlier versions
+                        }
                     }
                 }
             }
