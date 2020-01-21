@@ -19,7 +19,7 @@ public func setPremiumDefaults() {
     UD?.register(defaults: ["notifyMissed": false])
     UD?.register(defaults: ["notifyMissedEach": 5 * 60 *  60])
     UD?.register(defaults: ["oneTapTr": true])
-    UD?.register(defaults: ["ignoreTranslate": [])
+    UD?.register(defaults: ["ignoreTranslate": []])
     
 }
 
@@ -178,11 +178,12 @@ public func isPremium() -> Bool {
     return PremiumSettings().p //|| SecureNiceSettings().isPremium || SecureNiceSettings().isBetaPremium
 }
 
-public func usetrButton() -> Bool {
+public func usetrButton() -> [(Bool, [String])] {
     if isPremium() {
-        return PremiumSettings().oneTapTr
+        let ps = PremiumSettings()
+        return [(ps.oneTapTr, ps.ignoreTranslate)]
     }
-    return false
+    return [(false, [])]
 }
 
 public func showMissed() -> Bool {

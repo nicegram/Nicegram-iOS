@@ -656,7 +656,7 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePrevewItemNode 
         mosaicStatusLayout: (AccountContext, ChatPresentationData, Bool, Int?, String, ChatMessageDateAndStatusType, CGSize, [MessageReaction]) -> (CGSize, (Bool) -> ChatMessageDateAndStatusNode),
         currentShareButtonNode: HighlightableButtonNode?,
         currentTrButtonNode: HighlightableButtonNode?,
-        wantTrButton: Bool,
+        wantTrButton: [(Bool, [String])],
         layoutConstants: ChatMessageItemLayoutConstants,
         currentItem: ChatMessageItem?,
         currentForwardInfo: (Peer?, String?)?,
@@ -764,7 +764,7 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePrevewItemNode 
         var needTrButton = false
         
         if !isFailed || Namespaces.Message.allScheduled.contains(item.message.id.namespace) {
-            if wantTrButton {
+            if wantTrButton[0].0 {
                 if item.message.id.peerId != item.context.account.peerId {
                     if !item.message.text.isEmpty {
                         needTrButton = true
@@ -775,14 +775,21 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePrevewItemNode 
                                 if lang.hasSuffix(rawSuffix) {
                                     lang = String(lang.dropLast(rawSuffix.count))
                                 }
-                                if lang.lowercased() == msgLang.lowercased() {
-                                    needTrButton = false
-                                } else {
-                                    // print("Msg Lang \(msgLang.lowercased()) - current lang \(lang.lowercased())")
+                                for ignoreLang in wantTrButton[0].1 {
+                                    if ignoreLang.lowercased() == msgLang.lowercased() {
+                                        needTrButton = false
+                                        break
+                                    }
+                                }
+                                if needTrButton {
+                                    // print("Msg Lang \(msgLang.lowercased())")
                                 }
                             }
                         } else {
                             // Fallback on earlier versions
+                        }
+                        if !needTrButton && item.message.text.contains(gTranslateSeparator) {
+                            needTrButton = true
                         }
                     }
                 }

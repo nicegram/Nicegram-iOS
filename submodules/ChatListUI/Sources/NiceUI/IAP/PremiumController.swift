@@ -26,12 +26,14 @@ private final class PremiumControllerArguments {
     let openSetMissedInterval: () -> Void
     let testAction: () -> Void
     let openManageFilters: () -> Void
+    let openIgnoreTranslations: () -> Void
     
-    init(toggleSetting:@escaping (Bool, String) -> Void, openSetMissedInterval:@escaping () -> Void, testAction:@escaping () -> Void, openManageFilters:@escaping () -> Void) {
+    init(toggleSetting:@escaping (Bool, String) -> Void, openSetMissedInterval:@escaping () -> Void, testAction:@escaping () -> Void, openManageFilters:@escaping () -> Void, openIgnoreTranslations:@escaping () -> Void) {
         self.toggleSetting = toggleSetting
         self.openSetMissedInterval = openSetMissedInterval
         self.testAction = testAction
         self.openManageFilters = openManageFilters
+        self.openIgnoreTranslations = openIgnoreTranslations
     }
 }
 
@@ -67,6 +69,7 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
     case onetaptr(PresentationTheme, String, Bool)
     
     case testButton(PresentationTheme, String)
+    case ignoretr(PresentationTheme, String)
     
     var section: ItemListSectionId {
         switch self {
@@ -78,7 +81,7 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return premiumControllerSection.notifyMissed.rawValue
         case .manageFiltersHeader, .manageFilters:
            return premiumControllerSection.manageFilters.rawValue
-        case .otherHeader, .onetaptr:
+        case .otherHeader, .onetaptr, .ignoretr:
             return premiumControllerSection.other.rawValue
         case .testButton:
             return premiumControllerSection.test.rawValue
@@ -108,6 +111,8 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return 10000
         case .onetaptr:
             return 11000
+        case .ignoretr:
+            return 12000
         case .testButton:
             return 999999
         }
@@ -188,6 +193,12 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
+        case let .ignoretr(lhsTheme, lhsText):
+            if case let .ignoretr(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
         }
         
     }
@@ -233,6 +244,10 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return ItemListActionItem(presentationData: presentationData, title: "Test Button", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 arguments.testAction()
             })
+        case let .ignoretr(theme, text):
+            return ItemListDisclosureItem(presentationData: presentationData, title: text, label: "", sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
+                arguments.openIgnoreTranslations()
+            })
         }
     }
     
@@ -274,6 +289,8 @@ private func premiumControllerEntries(presentationData: PresentationData, premiu
     
     entries.append(.otherHeader(theme, presentationData.strings.ChatSettings_Other))
     entries.append(.onetaptr(theme, l("Premium.OnetapTranslate", locale), premiumSettings.oneTapTr))
+    
+    entries.append(.ignoretr(theme, l("Premium.IgnoreTranslate.Title", locale)))
     
     #if DEBUG
     entries.append(.testButton(theme, "TEST"))
@@ -414,6 +431,8 @@ public func premiumController(context: AccountContext) -> ViewController {
         print("TESTED!")
     }, openManageFilters: {
         pushControllerImpl?(manageFilters(context: context))
+    }, openIgnoreTranslations: {
+        presentControllerImpl?(ignoreTranslateController(context: context), ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
     }
     )
     

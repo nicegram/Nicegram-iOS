@@ -276,7 +276,7 @@ public final class ChatMessageItem: ListViewItem, CustomStringConvertible {
     let effectiveAuthorId: PeerId?
     let additionalContent: ChatMessageItemAdditionalContent?
     
-    let wantTrButton: Bool
+    let wantTrButton: [(Bool, [String])]
     
     public let accessoryItem: ListViewAccessoryItem?
     let header: ChatMessageDateHeader
@@ -299,7 +299,7 @@ public final class ChatMessageItem: ListViewItem, CustomStringConvertible {
         }
     }
     
-    public init(presentationData: ChatPresentationData, context: AccountContext, chatLocation: ChatLocation, associatedData: ChatMessageItemAssociatedData, controllerInteraction: ChatControllerInteraction, content: ChatMessageItemContent, disableDate: Bool = false, additionalContent: ChatMessageItemAdditionalContent? = nil, wantTrButton: Bool = false) {
+    public init(presentationData: ChatPresentationData, context: AccountContext, chatLocation: ChatLocation, associatedData: ChatMessageItemAssociatedData, controllerInteraction: ChatControllerInteraction, content: ChatMessageItemContent, disableDate: Bool = false, additionalContent: ChatMessageItemAdditionalContent? = nil, wantTrButton: [(Bool, [String])] = [(false, [])]) {
         self.presentationData = presentationData
         self.context = context
         self.chatLocation = chatLocation

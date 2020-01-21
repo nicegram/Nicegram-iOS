@@ -83,7 +83,8 @@
 "IAP.Common.Congrats" = "Congratulations!";
 "IAP.Common.ValidateError" = "Sorry, can't validate your purchase.";
 "Premium.OnetapTranslate" = "Quick Translate button";
-
+"Premium.IgnoreTranslate.Title" = "Ignored Languages";
+"Premium.IgnoreTranslate.Header" = "App will try to detect language of each message. Quick Translate button will be DISABLED for languages you choose below.";
 
 /*Manage Filters*/
 "ManageFilters.Title" = "Manage Tabs";
