@@ -98,6 +98,9 @@
 "NGLab.RegDate.Notice" = "To jest przybliżona data";
 "NGLab.RegDate.MenuItem" = "zarejestrowano";
 "NGLab.RegDate.FetchError" = "Nie można uzyskać daty rejestracji.";
+
+/*Backup Settings*/
+"NiceFeatures.BackupIcloud" = "Synchronizuj ustawienia i foldery z iCloud";
 "NiceFeatures.BackupSettings" = "Kopia zapasowa ustawień i folderów";
 "NiceFeatures.BackupSettings.Notice" = "Tworzy pliki kopii zapasowych w twoich „Zapisanych wiadomościach”";
 "NiceFeatures.BackupSettings.Done" = "Wykonano kopię zapasową w „Zapisanych wiadomościach”";
