@@ -84,7 +84,6 @@
 "IAP.Common.ValidateError" = "Spiacente, non è stato possibile convalidare l'acquisto.";
 "Premium.OnetapTranslate" = "Bottone di traduzione veloce";
 
-
 /*Manage Filters*/
 "ManageFilters.Title" = "Gestisci tab";
 "ManageFilters.Header" = "Configura filtri disponibili";
