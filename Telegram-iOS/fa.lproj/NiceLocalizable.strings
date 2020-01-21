@@ -96,8 +96,6 @@
 "NGLab.RegDate.Notice" = "تاریخ به صورت تقریبی درج می شود";
 "NGLab.RegDate.MenuItem" = "ثبت شد";
 "NGLab.RegDate.FetchError" = "متاسفانه دریافت تاریخ ثبت نام مقدور نیست.";
-
-/*Backup Settings*/
 "NiceFeatures.BackupSettings" = "تنظیمات پشتیبان گیری و پوشه ها";
 "NiceFeatures.BackupSettings.Notice" = "فایل های پشتیبان را در پیام های ذخیره شده شما ایجاد می کند";
 "NiceFeatures.BackupSettings.Done" = "تهیه نسخه پشتیبان از پیام های ذخیره شده کامل شد";
