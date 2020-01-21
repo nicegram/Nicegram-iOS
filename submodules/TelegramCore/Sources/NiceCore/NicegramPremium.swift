@@ -142,6 +142,7 @@ public class PremiumSettings {
 }
 
 public func useIcloud() -> Bool {
+    return false
     return UserDefaults.standard.bool(forKey: "useIcloud")
 }
 
