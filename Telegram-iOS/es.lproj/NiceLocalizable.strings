@@ -82,7 +82,6 @@
 "IAP.Common.Congrats" = "¡Felicidades!";
 "IAP.Common.ValidateError" = "Lo sentimos, no se puede validar tu compra.";
 
-
 /*Manage Filters*/
 "ManageFilters.Title" = "Administrar pestañas";
 "ManageFilters.Header" = "CONFIGURAR FILTROS DISPONIBLES";
