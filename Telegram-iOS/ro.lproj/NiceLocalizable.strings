@@ -96,8 +96,6 @@
 "NGLab.RegDate.Notice" = "Aceasta este o dată aproximată";
 "NGLab.RegDate.MenuItem" = "înregistrat";
 "NGLab.RegDate.FetchError" = "Ne pare rău, nu putem obține data înregistrării.";
-
-/*Backup Settings*/
 "NiceFeatures.BackupSettings" = "Copie de rezerva(Backup) Setări & Dosare";
 "NiceFeatures.BackupSettings.Notice" = "Creează o copie de rezervă(backup) a fișierelor din mesajele salvate";
 "NiceFeatures.BackupSettings.Done" = "Copie de rezervă facută pentru Mesajele Salvate";
