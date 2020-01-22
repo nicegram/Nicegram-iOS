@@ -83,6 +83,8 @@
 "IAP.Common.Congrats" = "Gratulacje!";
 "IAP.Common.ValidateError" = "Nie można zweryfikować twojego zakupu.";
 "Premium.OnetapTranslate" = "Przycisk Szybkie tłumaczenie";
+"Premium.IgnoreTranslate.Title" = "Ignorowane języki";
+"Premium.IgnoreTranslate.Header" = "Aplikacja spróbuje wykryć język każdej wiadomości. Przycisk Szybkie tłumaczenie będzie WYŁĄCZONY dla wybranych języków.";
 
 /*Manage Filters*/
 "ManageFilters.Title" = "Zarządzaj zakładkami";
