@@ -83,6 +83,7 @@
 "IAP.Common.Congrats" = "Tebrikler!";
 "IAP.Common.ValidateError" = "Üzgünüz, satın alımınız doğrulanamıyor.";
 "Premium.OnetapTranslate" = "Hızlı Çeviri butonu";
+"Premium.IgnoreTranslate.Title" = "İstenmeyen Diller";
 "Premium.IgnoreTranslate.Header" = "Uygulama her mesajın dilini tanımlamaya çalışacak. Hızlı Çeviri butonu aşağıda seçtiğiniz diller için DEVRE DIŞI olacak.";
 
 /*Manage Filters*/
