@@ -83,6 +83,8 @@
 "IAP.Common.Congrats" = "恭喜！";
 "IAP.Common.ValidateError" = "很抱歉，無法驗證您的購買。";
 "Premium.OnetapTranslate" = "快速翻譯按鈕";
+"Premium.IgnoreTranslate.Title" = "忽略的語言";
+"Premium.IgnoreTranslate.Header" = "應用程序將嘗試檢測每則訊息的語言。對於以下選擇的語言，「快速翻譯」按鈕將被停用。";
 
 /*Manage Filters*/
 "ManageFilters.Title" = "管理標籤";
