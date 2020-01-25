@@ -48,6 +48,7 @@ final class ChatListHighlightedLocation {
 public final class ChatListNodeInteraction {
     let activateSearch: () -> Void
     let peerSelected: (Peer) -> Void
+    let disabledPeerSelected: (Peer) -> Void
     let togglePeerSelected: (PeerId) -> Void
     let messageSelected: (Peer, Message, Bool) -> Void
     let groupSelected: (PeerGroupId) -> Void
@@ -67,9 +68,10 @@ public final class ChatListNodeInteraction {
     public var searchTextHighightState: String?
     var highlightedChatLocation: ChatListHighlightedLocation?
     
-    public init(activateSearch: @escaping () -> Void, peerSelected: @escaping (Peer) -> Void, togglePeerSelected: @escaping (PeerId) -> Void, messageSelected: @escaping (Peer, Message, Bool) -> Void, groupSelected: @escaping (PeerGroupId) -> Void, addContact: @escaping (String) -> Void, setPeerIdWithRevealedOptions: @escaping (PeerId?, PeerId?) -> Void, setItemPinned: @escaping (PinnedItemId, Bool) -> Void, setPeerMuted: @escaping (PeerId, Bool) -> Void, deletePeer: @escaping (PeerId) -> Void, updatePeerGrouping: @escaping (PeerId, Bool) -> Void, togglePeerMarkedUnread: @escaping (PeerId, Bool) -> Void, deleteFolder: @escaping (PeerGroupId, [PeerId]) -> Void, toggleArchivedFolderHiddenByDefault: @escaping () -> Void, activateChatPreview: @escaping (ChatListItem, ASDisplayNode, ContextGesture?) -> Void) {
+    public init(activateSearch: @escaping () -> Void, peerSelected: @escaping (Peer) -> Void, disabledPeerSelected: @escaping (Peer) -> Void, togglePeerSelected: @escaping (PeerId) -> Void, messageSelected: @escaping (Peer, Message, Bool) -> Void, groupSelected: @escaping (PeerGroupId) -> Void, addContact: @escaping (String) -> Void, setPeerIdWithRevealedOptions: @escaping (PeerId?, PeerId?) -> Void, setItemPinned: @escaping (PinnedItemId, Bool) -> Void, setPeerMuted: @escaping (PeerId, Bool) -> Void, deletePeer: @escaping (PeerId) -> Void, updatePeerGrouping: @escaping (PeerId, Bool) -> Void, togglePeerMarkedUnread: @escaping (PeerId, Bool) -> Void, deleteFolder: @escaping (PeerGroupId, [PeerId]) -> Void, toggleArchivedFolderHiddenByDefault: @escaping () -> Void, activateChatPreview: @escaping (ChatListItem, ASDisplayNode, ContextGesture?) -> Void) {
         self.activateSearch = activateSearch
         self.peerSelected = peerSelected
+        self.disabledPeerSelected = disabledPeerSelected
         self.togglePeerSelected = togglePeerSelected
         self.messageSelected = messageSelected
         self.groupSelected = groupSelected
@@ -210,10 +212,21 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
                                 enabled = false
                             }
                         }
+                        if filter.contains(.excludeChannels) {
+                            if let peer = peer.peers[peer.peerId] {
+                                if let peer = peer as? TelegramChannel, case .broadcast = peer.info {
+                                    enabled = false
+                                }
+                            }
+                        }
 
                         return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: ContactsPeerItem(presentationData: ItemListPresentationData(theme: presentationData.theme, fontSize: presentationData.fontSize, strings: presentationData.strings), sortOrder: presentationData.nameSortOrder, displayOrder: presentationData.nameDisplayOrder, context: context, peerMode: .generalSearch, peer: .peer(peer: itemPeer, chatPeer: chatPeer), status: .none, enabled: enabled, selection: .none, editing: ContactsPeerItemEditing(editable: false, editing: false, revealed: false), index: nil, header: nil, action: { _ in
                             if let chatPeer = chatPeer {
                                 nodeInteraction.peerSelected(chatPeer)
+                            }
+                        }, disabledAction: { _ in
+                            if let chatPeer = chatPeer {
+                                nodeInteraction.disabledPeerSelected(chatPeer)
                             }
                         }), directionHint: entry.directionHint)
                 }
@@ -252,9 +265,18 @@ private func mappedUpdateEntries(context: AccountContext, nodeInteraction: ChatL
                                 enabled = false
                             }
                         }
+                        if filter.contains(.excludeChannels) {
+                            if let peer = peer.chatMainPeer as? TelegramChannel, case .broadcast = peer.info {
+                                enabled = false
+                            }
+                        }
                         return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: ContactsPeerItem(presentationData: ItemListPresentationData(theme: presentationData.theme, fontSize: presentationData.fontSize, strings: presentationData.strings), sortOrder: presentationData.nameSortOrder, displayOrder: presentationData.nameDisplayOrder, context: context, peerMode: .generalSearch, peer: .peer(peer: itemPeer, chatPeer: chatPeer), status: .none, enabled: enabled, selection: .none, editing: ContactsPeerItemEditing(editable: false, editing: false, revealed: false), index: nil, header: nil, action: { _ in
                             if let chatPeer = chatPeer {
                                 nodeInteraction.peerSelected(chatPeer)
+                            }
+                        }, disabledAction: { _ in
+                            if let chatPeer = chatPeer {
+                                nodeInteraction.disabledPeerSelected(chatPeer)
                             }
                         }), directionHint: entry.directionHint)
                 }
@@ -328,6 +350,7 @@ public final class ChatListNode: ListView {
     }
     
     public var peerSelected: ((PeerId, Bool, Bool) -> Void)?
+    public var disabledPeerSelected: ((Peer) -> Void)?
     public var groupSelected: ((PeerGroupId) -> Void)?
     public var addContact: ((String) -> Void)?
     public var activateSearch: (() -> Void)?
@@ -419,6 +442,10 @@ public final class ChatListNode: ListView {
         }, peerSelected: { [weak self] peer in
             if let strongSelf = self, let peerSelected = strongSelf.peerSelected {
                 peerSelected(peer.id, true, false)
+            }
+        }, disabledPeerSelected: { [weak self] peer in
+            if let strongSelf = self, let disabledPeerSelected = strongSelf.disabledPeerSelected {
+                disabledPeerSelected(peer)
             }
         }, togglePeerSelected: { [weak self] peerId in
             self?.updateState { state in
@@ -720,6 +747,11 @@ public final class ChatListNode: ListView {
                                     return true
                                 } else {
                                     return false
+                                }
+                            }
+                            
+                            if filter.contains(.excludeChannels) {
+                                if let peer = peer.chatMainPeer as? TelegramChannel, case .broadcast = peer.info {
                                 }
                             }
                             

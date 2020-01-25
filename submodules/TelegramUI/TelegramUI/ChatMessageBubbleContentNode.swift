@@ -41,11 +41,13 @@ enum ChatMessageBubbleMergeStatus {
 
 enum ChatMessageBubbleRelativePosition {
     case None(ChatMessageBubbleMergeStatus)
+    case BubbleNeighbour
     case Neighbour
 }
 
 enum ChatMessageBubbleContentMosaicNeighbor {
     case merged
+    case mergedBubble
     case none(tail: Bool)
 }
 
@@ -164,7 +166,7 @@ class ChatMessageBubbleContentNode: ASDisplayNode {
         return nil
     }
     
-    func tapActionAtPoint(_ point: CGPoint, gesture: TapLongTapOrDoubleTapGesture) -> ChatMessageBubbleContentTapAction {
+    func tapActionAtPoint(_ point: CGPoint, gesture: TapLongTapOrDoubleTapGesture, isEstimating: Bool) -> ChatMessageBubbleContentTapAction {
         return .none
     }
     

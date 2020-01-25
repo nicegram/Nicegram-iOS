@@ -51,6 +51,8 @@ public struct ChatListNodePeersFilter: OptionSet {
     
     public static let excludeDisabled = ChatListNodePeersFilter(rawValue: 1 << 10)
     public static let includeSavedMessages = ChatListNodePeersFilter(rawValue: 1 << 11)
+    
+    public static let excludeChannels = ChatListNodePeersFilter(rawValue: 1 << 12)
 }
 
 public final class PeerSelectionControllerParams {
@@ -58,12 +60,14 @@ public final class PeerSelectionControllerParams {
     public let filter: ChatListNodePeersFilter
     public let hasContactSelector: Bool
     public let title: String?
+    public let attemptSelection: ((Peer) -> Void)?
     
-    public init(context: AccountContext, filter: ChatListNodePeersFilter = [.onlyWriteable], hasContactSelector: Bool = true, title: String? = nil) {
+    public init(context: AccountContext, filter: ChatListNodePeersFilter = [.onlyWriteable], hasContactSelector: Bool = true, title: String? = nil, attemptSelection: ((Peer) -> Void)? = nil) {
         self.context = context
         self.filter = filter
         self.hasContactSelector = hasContactSelector
         self.title = title
+        self.attemptSelection = attemptSelection
     }
 }
 
