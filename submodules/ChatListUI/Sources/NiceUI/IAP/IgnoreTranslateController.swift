@@ -122,10 +122,12 @@ private func ignoreTranslateControllerEntries(presentationData: PresentationData
             langCode = langCode + addScript
         }
         
-        preLangs.append(langCode)
-        let screenName = getLocaleName(langCode, Locale.current)
-        entries.append(.commonlanguageToggle(theme, screenName, langCode, ignoredTranslations.contains(langCode), counter))
-        counter += 1
+        if !preLangs.contains(langCode) {
+            let screenName = getLocaleName(langCode, Locale.current)
+            entries.append(.commonlanguageToggle(theme, screenName, langCode, ignoredTranslations.contains(langCode), counter))
+            preLangs.append(langCode)
+            counter += 1
+        }
     }
     
     
