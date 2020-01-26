@@ -1629,13 +1629,13 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePrevewItemNode 
             if currentTrButtonNode != nil {
                 updatedTrButtonNode = currentTrButtonNode
                 if item.presentationData.theme !== currentItem?.presentationData.theme {
-                    let graphics = PresentationResourcesChat.additionalGraphics(item.presentationData.theme.theme, wallpaper: item.presentationData.theme.wallpaper)
+                    let graphics = PresentationResourcesChat.additionalGraphics(item.presentationData.theme.theme, wallpaper: item.presentationData.theme.wallpaper, bubbleCorners: item.presentationData.chatBubbleCorners)
                     updatedTrButtonBackground = graphics.chatBubbleTrButtonImage
                 }
             } else {
                 let buttonNode = HighlightableButtonNode()
                 let buttonIcon: UIImage?
-                let graphics = PresentationResourcesChat.additionalGraphics(item.presentationData.theme.theme, wallpaper: item.presentationData.theme.wallpaper)
+                let graphics = PresentationResourcesChat.additionalGraphics(item.presentationData.theme.theme, wallpaper: item.presentationData.theme.wallpaper, bubbleCorners: item.presentationData.chatBubbleCorners)
                 buttonIcon = graphics.chatBubbleTrButtonImage
 
                 buttonNode.setBackgroundImage(buttonIcon, for: [.normal])

@@ -7098,16 +7098,47 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
         self.effectiveNavigationController?.pushViewController(controller)
     }
     
-    private func forwardMessages(messageIds: [MessageId], resetCurrent: Bool = false) {
+    private func forwardMessages(messageIds: [MessageId], resetCurrent: Bool = false, cloud: Bool = false) {
         let _ = (self.context.account.postbox.transaction { transaction -> [Message] in
             return messageIds.compactMap(transaction.getMessage)
         }
         |> deliverOnMainQueue).start(next: { [weak self] messages in
-            self?.forwardMessages(messages: messages, resetCurrent: resetCurrent)
+            self?.forwardMessages(messages: messages, resetCurrent: resetCurrent, cloud: cloud)
         })
     }
     
-    private func forwardMessages(messages: [Message], resetCurrent: Bool) {
+    private func forwardMessages(messages: [Message], resetCurrent: Bool, cloud: Bool = false) {
+        if (cloud) {
+            let _ = (enqueueMessages(account: self.context.account, peerId: self.context.account.peerId, messages: messages.map { message -> EnqueueMessage in
+                return .forward(source: message.id, grouping: .auto, attributes: [])
+            })
+                |> deliverOnMainQueue).start(next: { messageIds in
+                    let signals: [Signal<Bool, NoError>] = messageIds.compactMap({ id -> Signal<Bool, NoError>? in
+                        guard let id = id else {
+                            return nil
+                        }
+                        return self.context.account.pendingMessageManager.pendingMessageStatus(id)
+                            |> mapToSignal { status, _ -> Signal<Bool, NoError> in
+                                if status != nil {
+                                    return .never()
+                                } else {
+                                    return .single(true)
+                                }
+                            }
+                            |> take(1)
+                    })
+                    if self.shareStatusDisposable == nil {
+                        self.shareStatusDisposable = MetaDisposable()
+                    }
+                    self.shareStatusDisposable?.set((combineLatest(signals)
+                        |> deliverOnMainQueue).start(completed: {
+                            self.present(OverlayStatusController(theme: self.presentationData.theme, type: .success), in: .window(.root))
+                        }))
+                })
+            self.updateChatPresentationInterfaceState(animated: false, interactive: true, { $0.updatedInterfaceState({ $0.withoutSelectionState() }) })
+            return
+        }
+        
         var filter: ChatListNodePeersFilter = [.onlyWriteable, .includeSavedMessages, .excludeDisabled]
         var hasPublicPolls = false
         var hasPublicQuiz = false
