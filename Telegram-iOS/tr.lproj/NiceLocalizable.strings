@@ -104,5 +104,4 @@
 /*Backup Settings*/
 "NiceFeatures.BackupIcloud" = "Ayarları & Klasörleri iCloud ile Senkronize Et";
 "NiceFeatures.BackupSettings" = "Ayarları & Klasörleri Yedekle";
-"NiceFeatures.BackupSettings.Notice" = "Kayıtlı mesajlarınızda yedekleme dosyaları oluşturur";
 "NiceFeatures.BackupSettings.Done" = "Kayıtlı Mesajlara Yedekleme Tamamlandı";
