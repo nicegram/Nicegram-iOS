@@ -439,8 +439,8 @@ private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls
     entries.append(.hideNumber(presentationData.theme, l("NiceFeatures.HideNumber", locale), simplyNiceSettings.hideNumber, locale))
     // entries.append(.backupIcloud(presentationData.theme, l("NiceFeatures.BackupIcloud", locale), useIcloud()))
 
-//    entries.append(.backupSettings(presentationData.theme, l("NiceFeatures.BackupSettings", locale)))
-//    entries.append(.backupNotice(presentationData.theme, l("NiceFeatures.BackupSettings.Notice", locale)))
+    entries.append(.backupSettings(presentationData.theme, l("NiceFeatures.BackupSettings", locale)))
+    entries.append(.backupNotice(presentationData.theme, l("NiceFeatures.BackupSettings.Notice", locale)))
 
     return entries
 }
@@ -579,33 +579,20 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
 //        let controller = webBrowserSettingsController(context: context)
 //        presentControllerImpl?(controller, nil)
     }, backupSettings: {
-        let library_path = NSSearchPathForDirectoriesInDomains(.libraryDirectory, .userDomainMask, true)[0]
-
-        let path = library_path + "/Preferences/SimplyNiceSettings.plist"
-
-        let id = arc4random64()
-        let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: LocalFileReferenceMediaResource(localFilePath: path, randomId: id), previewRepresentations: [], immediateThumbnailData: nil, mimeType: "application/xml", size: nil, attributes: [.FileName(fileName: "SimplyNiceSettings.plist")])
-        let message = EnqueueMessage.message(text: "", attributes: [], mediaReference: .standalone(media: file), replyToMessageId: nil, localGroupingKey: nil)
-
-
-        //SimplyNiceSettings().sync()
-
-        let pathF = library_path + "/Preferences/SimplyNiceFolders.plist"
-
-        let idF = arc4random64()
-        let fileF = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: idF), partialReference: nil, resource: LocalFileReferenceMediaResource(localFilePath: pathF, randomId: idF), previewRepresentations: [], immediateThumbnailData: nil, mimeType: "application/xml", size: nil, attributes: [.FileName(fileName: "SimplyNiceFolders.plist")])
-        let messageF = EnqueueMessage.message(text: "", attributes: [], mediaReference: .standalone(media: fileF), replyToMessageId: nil, localGroupingKey: nil)
-
-
-        let _ = enqueueMessages(account: context.account, peerId: context.account.peerId, messages: [message, messageF]).start()
-
-        //if let navigateToChat = navigateToChat {
-        let locale = "en"
-        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: l("Common.RestartRequired", locale), actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {
-        })])
-
-        presentControllerImpl?(controller, nil)
-        //}
+        if let exportPath = NicegramSettings().exportSettings() {
+            var messages: [EnqueueMessage] = []
+            let id = arc4random64()
+            let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: LocalFileReferenceMediaResource(localFilePath: exportPath, randomId: id), previewRepresentations: [], immediateThumbnailData: nil, mimeType: "application/json", size: nil, attributes: [.FileName(fileName: BACKUP_NAME)])
+            messages.append(.message(text: "", attributes: [], mediaReference: .standalone(media: file), replyToMessageId: nil, localGroupingKey: nil))
+            let _ = enqueueMessages(account: context.account, peerId: context.account.peerId, messages: messages).start()
+            let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: l("NiceFeatures.BackupSettings.Done", presentationData.strings.baseLanguageCode), actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {
+            })])
+            presentControllerImpl?(controller, nil)
+        } else {
+            let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: l("NiceFeatures.BackupSettings.Error", presentationData.strings.baseLanguageCode), actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {
+            })])
+            presentControllerImpl?(controller, nil)
+        }
     }, toggleFiltersBadge: { value in
         SimplyNiceSettings().filtersBadge = value
         updateTabs()

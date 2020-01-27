@@ -21,6 +21,8 @@ import AlertUI
 import PresentationDataUtils
 import ShareController
 import UndoUI
+import ChatListUI
+import NicegramLib
 
 private enum ChatMessageGalleryControllerData {
     case url(String)
@@ -34,6 +36,7 @@ private enum ChatMessageGalleryControllerData {
     case secretGallery(SecretMediaPreviewController)
     case chatAvatars(AvatarGalleryController, Media)
     case theme(TelegramMediaFile)
+    case ngSettings(TelegramMediaFile)
     case other(Media)
 }
 
@@ -159,6 +162,10 @@ private func chatMessageGalleryControllerData(context: AccountContext, message: 
                     if ext == "mkv" {
                         return .document(file, true)
                     }
+                    
+                    if ext == "ng-settings" {
+                        return .ngSettings(file)
+                    }
                 }
                 
                 if internalDocumentItemSupportsMimeType(file.mimeType, fileName: file.fileName ?? "file") {
@@ -242,9 +249,80 @@ func chatMediaListPreviewControllerData(context: AccountContext, message: Messag
     return .single(nil)
 }
 
+func getBoolEmoji(_ value: Bool) -> String {
+    if value {
+        return "✓" //"+" //return "✅"
+    }
+    return "x" //"-" //return "❌"
+}
+
 func openChatMessageImpl(_ params: OpenChatMessageParams) -> Bool {
     if let mediaData = chatMessageGalleryControllerData(context: params.context, message: params.message, navigationController: params.navigationController, standalone: params.standalone, reverseMessageGalleryOrder: params.reverseMessageGalleryOrder, mode: params.mode, synchronousLoad: false, actionInteraction: params.actionInteraction) {
         switch mediaData {
+            case let .ngSettings(media):
+                params.dismissInput()
+                let presentationData = params.context.sharedContext.currentPresentationData.with { $0 }
+                let lang = presentationData.strings.baseLanguageCode
+                let path = params.context.account.postbox.mediaBox.completedResourcePath(media.resource)
+                if let path = path, let data = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedIfSafe) {
+                    let jsonData: Any
+                    do {
+                        try jsonData = JSONSerialization.jsonObject(with: data, options: [])
+                        if let jsonArray = jsonData as? [String:Any] {
+                            let askController = textAlertController(context: params.context, title: nil, text: l("NiceFeatures.RestoreSettings.Confirm", lang), actions: [
+                                TextAlertAction(
+                                    type: .destructiveAction,
+                                    title: presentationData.strings.Common_Yes,
+                                    action: {
+                                        var importResult = NicegramSettings().importSettings(json: jsonArray)
+                                        var debugString = ""
+                                        for result in importResult {
+                                            if !debugString.isEmpty {
+                                                debugString += "\n"
+                                            }
+                                            debugString += "\(getBoolEmoji(result.2)) \(result.0)"
+                                            if !result.1.isEmpty {
+                                                debugString += " - \(result.1)"
+                                            }
+                                        }
+                                        print("debugStringImport", debugString)
+                                        
+                                        let debugImportController = textAlertController(context: params.context, title: presentationData.strings.Conversation_Info, text: debugString, actions: [
+                                            TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})
+                                        ])
+                                        
+                                        if importResult.count > 0 {
+                                            let resultController = textAlertController(context: params.context, title: nil, text: l("NiceFeatures.RestoreSettings.Done", lang) + "\n\n" + l("Common.RestartRequired", lang), actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Conversation_Info, action: {
+                                                params.present(debugImportController, nil)
+                                            }), TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})])
+                                            params.present(resultController, nil)
+                                        } else {
+                                            let resultController = textAlertController(context: params.context, title: nil, text: l("NiceFeatures.RestoreSettings.Error", lang), actions: [
+                                                TextAlertAction(type: .defaultAction, title: presentationData.strings.Conversation_Info, action: {
+                                                    params.present(debugImportController, nil)
+                                                }),
+                                                TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})
+                                            ])
+                                            params.present(resultController, nil)
+                                        }
+                                }
+                                ),
+                                TextAlertAction(
+                                    type: .genericAction,
+                                    title: presentationData.strings.Common_No,
+                                    action: {}
+                                )
+                            ])
+                            params.present(askController, nil)
+                            return true
+                        }
+                    } catch {
+                    }
+                    
+                    let errorController = textAlertController(context: params.context, title: nil, text: l("NiceSettings.Restore.Error", lang), actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})])
+                    params.present(errorController, nil)
+                    return false
+                }
             case let .url(url):
                 params.openUrl(url)
                 return true

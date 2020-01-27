@@ -310,6 +310,27 @@
 				</array>
 			</dict>
 		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>Nicegram iOS Settings File</string>
+			<key>UTTypeIconFiles</key>
+			<array>
+				<string>BlueIcon@3x.png</string>
+			</array>
+			<key>UTTypeIdentifier</key>
+			<string>com.nicegram.Telegram-iOS.settings</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>ng-settings</string>
+				</array>
+			</dict>
+		</dict>
 	</array>
 </dict>
 </plist>

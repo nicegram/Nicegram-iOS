@@ -242,6 +242,20 @@ public class SimplyNiceFilters {
         }
     }
     
+    public var jsonFilters: [[String:Any]] {
+           var result: [[String:Any]] = []
+           for filter in self.filters {
+               let filterData: [String: Any] = [
+                   "id": filter.id,
+                   "name": filter.name,
+                   "includeItems": filter.includeItems,
+                   "unIncludeItems": filter.unIncludeItems
+               ]
+               result.append(filterData)
+           }
+           return result
+       }
+    
 }
 
 

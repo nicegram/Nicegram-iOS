@@ -104,5 +104,10 @@
 /*Backup Settings*/
 "NiceFeatures.BackupIcloud" = "Sync Settings & Folders with iCloud";
 "NiceFeatures.BackupSettings" = "Backup Settings & Folders";
-"NiceFeatures.BackupSettings.Notice" = "Creates backup files in your saved messages";
+"NiceFeatures.BackupSettings.Notice" = "Creates backup file. Tap on file for restore.";
 "NiceFeatures.BackupSettings.Done" = "Backup Done to Saved Messages";
+"NiceFeatures.BackupSettings.Error" = "Error creating backup";
+
+"NiceFeatures.RestoreSettings.Confirm" = "Are you sure you want to restore Folders & Settings from file?\n⚠️ It will override current data";
+"NiceFeatures.RestoreSettings.Done" = "Folders & Settings succesfully restored";
+"NiceFeatures.RestoreSettings.Error" = "Error restoring settings. File may be corrupted";
