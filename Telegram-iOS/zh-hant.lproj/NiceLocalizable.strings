@@ -104,5 +104,4 @@
 /*Backup Settings*/
 "NiceFeatures.BackupIcloud" = "從 iCloud 同步設定與資料夾";
 "NiceFeatures.BackupSettings" = "備份設定與資料夾";
-"NiceFeatures.BackupSettings.Notice" = "在已儲存的訊息中建立備份檔";
 "NiceFeatures.BackupSettings.Done" = "備份已儲存";
