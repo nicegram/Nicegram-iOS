@@ -104,5 +104,4 @@
 /*Backup Settings*/
 "NiceFeatures.BackupIcloud" = "Sincronizza impostazioni e cartelle con iCloud";
 "NiceFeatures.BackupSettings" = "Impostazioni di backup & cartelle";
-"NiceFeatures.BackupSettings.Notice" = "Crea file di backup nei tuoi messaggi salvati";
 "NiceFeatures.BackupSettings.Done" = "Backup eseguito nei messaggi salvati";
