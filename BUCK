@@ -60,6 +60,7 @@ resource_dependencies = [
     "//:Icons",
     "//:AdditionalIcons",
     "//:LaunchScreen",
+    "//:SettingsBundle"
 ]
 
 build_phase_scripts = [
@@ -123,6 +124,14 @@ apple_resource(
     name = "LaunchScreen",
     files = [
         "Telegram-iOS/Base.lproj/LaunchScreen.xib",
+    ],
+    visibility = ["PUBLIC"],
+)
+
+apple_resource(
+    name = "SettingsBundle",
+    dirs = [
+        "Telegram-iOS/Settings.bundle",
     ],
     visibility = ["PUBLIC"],
 )
