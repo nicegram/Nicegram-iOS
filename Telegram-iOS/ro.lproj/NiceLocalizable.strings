@@ -104,5 +104,4 @@
 /*Backup Settings*/
 "NiceFeatures.BackupIcloud" = "Sincronizați Setările și Dosarele cu iCloud";
 "NiceFeatures.BackupSettings" = "Copie de rezerva(Backup) Setări & Dosare";
-"NiceFeatures.BackupSettings.Notice" = "Creează o copie de rezervă(backup) a fișierelor din mesajele salvate";
 "NiceFeatures.BackupSettings.Done" = "Copie de rezervă facută pentru Mesajele Salvate";
