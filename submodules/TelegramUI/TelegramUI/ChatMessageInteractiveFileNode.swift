@@ -435,13 +435,19 @@ final class ChatMessageInteractiveFileNode: ASDisplayNode {
                     cloudFetchedIconImage = incoming ? PresentationResourcesChat.chatBubbleFileCloudFetchedIncomingIcon(presentationData.theme.theme) : PresentationResourcesChat.chatBubbleFileCloudFetchedOutgoingIcon(presentationData.theme.theme)
                 }
                 
-                let fileIconImage: UIImage?
+                var fileIconImage: UIImage?
                 if hasThumbnail {
                     fileIconImage = nil
                 } else {
                     let principalGraphics = PresentationResourcesChat.principalGraphics(mediaBox: context.account.postbox.mediaBox, knockoutWallpaper: context.sharedContext.immediateExperimentalUISettings.knockoutWallpaper, theme: presentationData.theme.theme, wallpaper: presentationData.theme.wallpaper, bubbleCorners: presentationData.chatBubbleCorners)
                     
                     fileIconImage = incoming ? principalGraphics.radialIndicatorFileIconIncoming : principalGraphics.radialIndicatorFileIconOutgoing
+                    if let fileName = file.fileName {
+                    let ext = (fileName as NSString).pathExtension.lowercased()
+                        if ext == "ng-settings" {
+                            fileIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/NicegramBackup"), color: .black)!
+                        }
+                    }
                 }
                 
                 return (minLayoutWidth, { boundingWidth in
