@@ -400,6 +400,19 @@ public class SimplyNiceFolders {
         }
     }
     
+    public var json: [[String:Any]] {
+        var result: [[String:Any]] = []
+        for folder in self.folders {
+            let folderData: [String: Any] = [
+                "groupId": folder.groupId,
+                "name": folder.name,
+                "items": folder.items
+            ]
+            result.append(folderData)
+        }
+        return result
+    }
+    
 }
 
 public func isNiceFolderCheck(_ groupId: Int32) -> Bool {

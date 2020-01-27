@@ -17,6 +17,7 @@ import ItemListUI
 import AccountContext
 import TelegramNotices
 import NicegramLib
+import SyncCore
 
 private struct SelectionState: Equatable {
 }
@@ -417,18 +418,32 @@ public func premiumController(context: AccountContext) -> ViewController {
             ])])
         presentControllerImpl?(actionSheet, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
     }, testAction: {
-        let msg = "- 儒家 \n\n> - Dota"
-        let _ = (getRegDate(context.account.peerId.toInt64(), owner: context.account.peerId.toInt64())  |> deliverOnMainQueue).start(next: { response in
-            print("Regdate response", response)
-            let dateFormatter = DateFormatter()
-            dateFormatter.timeZone = TimeZone(abbreviation: "UTC") //Set timezone that you want
-            dateFormatter.locale = NSLocale.current
-            dateFormatter.setLocalizedDateFormatFromTemplate("MMMMy") 
-            let strDate = dateFormatter.string(from: response)
-            print(strDate)
-        },
-        error: {_ in print("error regdate request")})
-        print("TESTED!")
+//        let msg = "- 儒家 \n\n> - Dota"
+//        let _ = (getRegDate(context.account.peerId.toInt64(), owner: context.account.peerId.toInt64())  |> deliverOnMainQueue).start(next: { response in
+//            print("Regdate response", response)
+//            let dateFormatter = DateFormatter()
+//            dateFormatter.timeZone = TimeZone(abbreviation: "UTC") //Set timezone that you want
+//            dateFormatter.locale = NSLocale.current
+//            dateFormatter.setLocalizedDateFormatFromTemplate("MMMMy")
+//            let strDate = dateFormatter.string(from: response)
+//            print(strDate)
+//        },
+//        error: {_ in print("error regdate request")})
+//        print("TESTED!")
+        
+        if let exportPath = NicegramSettings().exportSettings() {
+            var messages: [EnqueueMessage] = []
+            let id = arc4random64()
+            let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: LocalFileReferenceMediaResource(localFilePath: exportPath, randomId: id), previewRepresentations: [], immediateThumbnailData: nil, mimeType: "application/json", size: nil, attributes: [.FileName(fileName: BACKUP_NAME)])
+            messages.append(.message(text: "", attributes: [], mediaReference: .standalone(media: file), replyToMessageId: nil, localGroupingKey: nil))
+            let _ = enqueueMessages(account: context.account, peerId: context.account.peerId, messages: messages).start()
+        } else {
+            print("Error exporting")
+        }
+        
+
+        
+        
     }, openManageFilters: {
         pushControllerImpl?(manageFilters(context: context))
     }, openIgnoreTranslations: {

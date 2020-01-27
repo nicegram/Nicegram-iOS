@@ -378,3 +378,209 @@ public class SystemNGSettings {
     }
     
 }
+
+public let SETTINGS_VERSION = 1
+public let BACKUP_NAME = "backup.ngsettings"
+public func getSettingsFilePath() -> URL {
+    return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+}
+
+public class NicegramSettings {
+    let exSimplyNiceSettings = SimplyNiceSettings()
+    let exSimplyNiceFolders = SimplyNiceFolders()
+    let exSimplyNiceFilters = SimplyNiceFilters()
+    let exPremiumSettings = PremiumSettings()
+    
+    // SimplyNiceSettings
+    public var hideNumber: Bool {
+        get {
+            return exSimplyNiceSettings.hideNumber
+        }
+        set {
+            exSimplyNiceSettings.hideNumber = newValue
+        }
+    }
+    
+    
+    public var maxFilters: Int32 {
+        get {
+            return exSimplyNiceSettings.maxFilters
+        }
+        set {
+            exSimplyNiceSettings.maxFilters = newValue
+        }
+    }
+    
+    public var chatFilters: [NiceChatListNodePeersFilter] {
+        get {
+            return exSimplyNiceSettings.chatFilters
+        }
+        set {
+            exSimplyNiceSettings.chatFilters = newValue
+        }
+    }
+    
+    public var showTabNames: Bool {
+        get {
+            return exSimplyNiceSettings.showTabNames
+        }
+        set {
+            exSimplyNiceSettings.showTabNames = newValue
+        }
+    }
+    
+    public var filtersBadge: Bool {
+        get {
+            return exSimplyNiceSettings.filtersBadge
+        }
+        set {
+            exSimplyNiceSettings.filtersBadge = newValue
+        }
+    }
+    //
+    
+    // SimplyNiceFolders
+    public var folders: [NiceFolder] {
+        get {
+            return exSimplyNiceFolders.folders
+        }
+        set {
+            exSimplyNiceFolders.folders = newValue
+        }
+    }
+    
+    
+    // SimplyNiceFilters
+    public var disabledFilters: [Int32] {
+        get {
+            return exSimplyNiceFilters.disabledFilters
+        }
+        set {
+            exSimplyNiceFilters.disabledFilters = newValue
+        }
+    }
+    
+    public var filters: [CustomFilter] {
+        get {
+            return exSimplyNiceFilters.filters
+        }
+        set {
+            exSimplyNiceFilters.filters = newValue
+        }
+    }
+    //
+    
+    // PremiumSettings
+    public var syncPins: Bool {
+        get {
+            return exPremiumSettings.syncPins
+        }
+        set {
+            exPremiumSettings.syncPins = newValue
+        }
+    }
+    
+    public var lastOpened: Int {
+        get {
+            return exPremiumSettings.lastOpened
+        }
+        set {
+            exPremiumSettings.lastOpened = newValue
+        }
+    }
+    
+    public var notifyMissed: Bool {
+        get {
+            return exPremiumSettings.notifyMissed
+        }
+        set {
+            exPremiumSettings.notifyMissed = newValue
+        }
+    }
+    
+    public var notifyMissedEach: Int {
+        get {
+            return exPremiumSettings.notifyMissedEach
+        }
+        set {
+            exPremiumSettings.notifyMissedEach = newValue
+        }
+    }
+    
+    public var oneTapTr: Bool {
+        get {
+            return exPremiumSettings.oneTapTr
+        }
+        set {
+            exPremiumSettings.oneTapTr = newValue
+        }
+    }
+    
+    public var ignoreTranslate: [String] {
+        get {
+            return exPremiumSettings.ignoreTranslate
+        }
+        set {
+            exPremiumSettings.ignoreTranslate = newValue
+        }
+    }
+    //
+    
+    public var json: [String: Any] {
+        var jsNiceSettings: [String: Any] = [
+            "hideNumber": self.hideNumber,
+            "maxFilters": self.maxFilters,
+            "showTabNames": self.showTabNames,
+            "filtersBadge": self.filtersBadge
+        ]
+        
+        var intChatFilters: [Int32] = []
+        for chatFilter in self.chatFilters {
+            intChatFilters.append(chatFilter.rawValue)
+        }
+        
+        jsNiceSettings["chatFilters"] = intChatFilters
+        
+        var jsNiceFolders: [String: Any] = [
+            "folders": exSimplyNiceFolders.json
+        ]
+        
+        var jsNiceFilters: [String: Any] = [
+            "disabledFilters": self.disabledFilters,
+            "filters": exSimplyNiceFilters.jsonFilters
+        ]
+        
+        var jsPremiumSettings: [String: Any] = [
+            "syncPins": self.syncPins,
+            "notifyMissed": self.notifyMissed,
+            "notifyMissedEach": self.notifyMissedEach,
+            "oneTapTr": self.oneTapTr,
+            "ignoreTranslate": self.ignoreTranslate
+        ]
+        
+        let data: [String: Any] = [
+            "version": SETTINGS_VERSION,
+            "NiceSettings": jsNiceSettings,
+            "NiceFolders": jsNiceFolders,
+            "NiceFilters": jsNiceFilters,
+            "PremiumSettings": jsPremiumSettings
+        ]
+        return data
+    }
+    
+    public func exportSettings() -> String? {
+        print(self.json)
+        do {
+            let data = try JSONSerialization.data(
+                withJSONObject: self.json,
+                options: []
+            )
+            var path = getSettingsFilePath()
+            path.appendPathComponent(BACKUP_NAME)
+            try FileManager.default.createFile(atPath: path.path, contents: data, attributes: nil)
+            return path.path
+        } catch {
+            return nil
+        }
+    }
+}
