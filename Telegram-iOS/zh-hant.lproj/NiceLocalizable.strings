@@ -105,3 +105,8 @@
 "NiceFeatures.BackupIcloud" = "從 iCloud 同步設定與資料夾";
 "NiceFeatures.BackupSettings" = "備份設定與資料夾";
 "NiceFeatures.BackupSettings.Done" = "備份已儲存";
+"NiceFeatures.BackupSettings.Error" = "建立備份時發生錯誤";
+
+"NiceFeatures.RestoreSettings.Confirm" = "您確定要從檔案還原「文件夾和設定」？\n⚠️它將覆蓋當前數據";
+"NiceFeatures.RestoreSettings.Done" = "文件夾與設定已成功還原";
+"NiceFeatures.RestoreSettings.Error" = "恢復設定錯誤，文件可能已損壞";
