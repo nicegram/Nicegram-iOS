@@ -5,8 +5,8 @@
 "ChatFilter.Channels" = "Kanały";
 "ChatFilter.Private" = "Użytk";
 "ChatFilter.Groups" = "Grupy";
-"ChatFilter.Unread" = "Nieprzeczytane";
-"ChatFilter.Unmuted" = "Wyłączono wyciszenie";
+"ChatFilter.Unread" = "Nieprzeczyt";
+"ChatFilter.Unmuted" = "Wyłącz. wycisz.";
 "ChatFilter.Favourites" = "Ulubione";
 
 /*Nice Features*/
