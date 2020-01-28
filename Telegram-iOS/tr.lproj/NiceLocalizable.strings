@@ -104,8 +104,10 @@
 /*Backup Settings*/
 "NiceFeatures.BackupIcloud" = "Ayarları & Klasörleri iCloud ile Senkronize Et";
 "NiceFeatures.BackupSettings" = "Ayarları & Klasörleri Yedekle";
-"NiceFeatures.BackupSettings.Notice" = "Yedekleme dosyası oluşturur. Kurtarmak için dosyaya dokunun.";
+"NiceFeatures.BackupSettings.Notice" = "Yedekleme dosyası oluşturur. Geri yüklemek için dosyaya dokunun.";
 "NiceFeatures.BackupSettings.Done" = "Kayıtlı Mesajlara Yedekleme Tamamlandı";
 "NiceFeatures.BackupSettings.Error" = "Yedekleme oluşturulurken hata";
 
 "NiceFeatures.RestoreSettings.Confirm" = "Klasör & Ayarları dosyadan geri yüklemek istediğinize emin misiniz?\n⚠️ Şu ankinin üzerine yazılacak";
+"NiceFeatures.RestoreSettings.Done" = "Klasör & Ayarlar başarılı bir şekilde geri yüklendi";
+"NiceFeatures.RestoreSettings.Error" = "Ayarlar geri yüklenirken hata. Dosya bozulmuş olabilir";
