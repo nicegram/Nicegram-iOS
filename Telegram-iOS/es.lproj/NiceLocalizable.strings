@@ -31,7 +31,7 @@
 /*Common*/
 "Common.ExitNow" = "Salir ahora";
 "Common.Later" = "Después";
-"Common.RestartRequired" = "¡Reinicio necesario!";
+"Common.RestartRequired" = "¡Reinicio requerido!";
 "NiceFeatures.Tabs.ShowNames" = "Mostrar nombres de pestañas";
 "Chat.ForwardAsCopy" = "Reenviar como copia";
 
