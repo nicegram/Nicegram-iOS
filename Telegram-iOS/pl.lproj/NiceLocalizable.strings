@@ -6,7 +6,7 @@
 "ChatFilter.Private" = "Użytk";
 "ChatFilter.Groups" = "Grupy";
 "ChatFilter.Unread" = "Nieprzeczyt";
-"ChatFilter.Unmuted" = "Wyłącz. wycisz.";
+"ChatFilter.Unmuted" = "Wyłącz. pow.";
 "ChatFilter.Favourites" = "Ulubione";
 
 /*Nice Features*/
@@ -104,4 +104,10 @@
 /*Backup Settings*/
 "NiceFeatures.BackupIcloud" = "Synchronizuj ustawienia i foldery z iCloud";
 "NiceFeatures.BackupSettings" = "Kopia zapasowa ustawień i folderów";
+"NiceFeatures.BackupSettings.Notice" = "Tworzy plik kopii zapasowej. Stuknij plik, aby przywrócić.";
 "NiceFeatures.BackupSettings.Done" = "Wykonano kopię zapasową w „Zapisanych wiadomościach”";
+"NiceFeatures.BackupSettings.Error" = "Błąd tworzenia kopii zapasowej.";
+
+"NiceFeatures.RestoreSettings.Confirm" = "Czy na pewno chcesz przywrócić foldery i ustawienia z pliku?\n⚠ Zastąpi to bieżące dane";
+"NiceFeatures.RestoreSettings.Done" = "Foldery i ustawienia zostały pomyślnie przywrócone";
+"NiceFeatures.RestoreSettings.Error" = "Błąd podczas przywracania ustawień. Plik może być uszkodzony";
