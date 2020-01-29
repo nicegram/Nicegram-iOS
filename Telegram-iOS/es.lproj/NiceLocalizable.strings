@@ -104,6 +104,10 @@
 /*Backup Settings*/
 "NiceFeatures.BackupIcloud" = "Sincronizar ajustes y carpetas con iCloud";
 "NiceFeatures.BackupSettings" = "Copia de seguridad de ajustes y carpetas";
+"NiceFeatures.BackupSettings.Notice" = "Crea un archivo de copia de seguridad. Pulsa en el archivo para restaurarlo.";
 "NiceFeatures.BackupSettings.Done" = "Copia de seguridad hecha en Mensajes guardados";
 "NiceFeatures.BackupSettings.Error" = "Error al crear la copia de seguridad";
+
+"NiceFeatures.RestoreSettings.Confirm" = "¿Quieres restaurar las carpetas y ajustes desde un archivo?\n⚠️ Sobreescribirá los datos actuales";
+"NiceFeatures.RestoreSettings.Done" = "Carpetas y ajustes restaurados con éxito";
 "NiceFeatures.RestoreSettings.Error" = "Error al restaurar los ajustes. El archivo podría estar corrupto";
