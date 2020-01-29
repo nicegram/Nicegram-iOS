@@ -105,3 +105,5 @@
 "NiceFeatures.BackupIcloud" = "Sincronizar ajustes y carpetas con iCloud";
 "NiceFeatures.BackupSettings" = "Copia de seguridad de ajustes y carpetas";
 "NiceFeatures.BackupSettings.Done" = "Copia de seguridad hecha en Mensajes guardados";
+"NiceFeatures.BackupSettings.Error" = "Error al crear la copia de seguridad";
+"NiceFeatures.RestoreSettings.Error" = "Error al restaurar los ajustes. El archivo podría estar corrupto";
