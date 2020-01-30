@@ -5,8 +5,8 @@
 "ChatFilter.Channels" = "Kanały";
 "ChatFilter.Private" = "Użytk";
 "ChatFilter.Groups" = "Grupy";
-"ChatFilter.Unread" = "Nieprzeczytane";
-"ChatFilter.Unmuted" = "Wyłączono wyciszenie";
+"ChatFilter.Unread" = "Nieprzeczyt";
+"ChatFilter.Unmuted" = "Wyłącz. pow.";
 "ChatFilter.Favourites" = "Ulubione";
 
 /*Nice Features*/
@@ -75,14 +75,16 @@
 "Common.FAQ.Intro" = "Wsparcie Nicegram jest wykonywane przez jednego programistę i społeczność.\n\nPo pierwsze, zajrzyj do FAQ: zawiera ważne wskazówki dotyczące rozwiązywania problemów i odpowiedzi na większość pytań.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Unikalne funkcje, których nie można odmówić!";
-"IAP.Premium.Features" = "Nielimitowane foldery\nNielimitowana liczba przypiętych czatów\nFiltrowanie nieodebranych wiadomości\n«Nowe wiadomości» – podsumowanie po uruchomieniu aplikacji";
+"IAP.Premium.Features" = "Nielimitowane foldery i przypięte czaty\nSzybkie tłumaczenie wiadomości\nFiltr nieodebranych wiadomości i zarządzanie zakładkami\n«Nowe wiadomości» – podsumowanie po uruchomieniu aplikacji";
 "IAP.Premium.Activated" = "Aktywowano wersję Premium!";
 "IAP.Common.Restore" = "Odtwórz zakupione";
 "IAP.Common.CantPay" = "Nie możesz dokonywać zakupów z powodu ograniczeń dotyczących twojego urządzenia lub konta.";
 "IAP.Common.ErrorFetch" = "Nie mogę odebrać zakupów w App Store.";
 "IAP.Common.Congrats" = "Gratulacje!";
 "IAP.Common.ValidateError" = "Nie można zweryfikować twojego zakupu.";
-
+"Premium.OnetapTranslate" = "Przycisk Szybkie tłumaczenie";
+"Premium.IgnoreTranslate.Title" = "Ignorowane języki";
+"Premium.IgnoreTranslate.Header" = "Aplikacja spróbuje wykryć język każdej wiadomości. Przycisk Szybkie tłumaczenie będzie WYŁĄCZONY dla wybranych języków.";
 
 /*Manage Filters*/
 "ManageFilters.Title" = "Zarządzaj zakładkami";
@@ -100,6 +102,12 @@
 "NGLab.RegDate.FetchError" = "Nie można uzyskać daty rejestracji.";
 
 /*Backup Settings*/
+"NiceFeatures.BackupIcloud" = "Synchronizuj ustawienia i foldery z iCloud";
 "NiceFeatures.BackupSettings" = "Kopia zapasowa ustawień i folderów";
-"NiceFeatures.BackupSettings.Notice" = "Tworzy pliki kopii zapasowych w twoich „Zapisanych wiadomościach”";
+"NiceFeatures.BackupSettings.Notice" = "Tworzy plik kopii zapasowej. Stuknij plik, aby przywrócić.";
 "NiceFeatures.BackupSettings.Done" = "Wykonano kopię zapasową w „Zapisanych wiadomościach”";
+"NiceFeatures.BackupSettings.Error" = "Błąd tworzenia kopii zapasowej.";
+
+"NiceFeatures.RestoreSettings.Confirm" = "Czy na pewno chcesz przywrócić foldery i ustawienia z pliku?\n⚠ Zastąpi to bieżące dane";
+"NiceFeatures.RestoreSettings.Done" = "Foldery i ustawienia zostały pomyślnie przywrócone";
+"NiceFeatures.RestoreSettings.Error" = "Błąd podczas przywracania ustawień. Plik może być uszkodzony";

@@ -74,14 +74,12 @@
 "Common.FAQ.Intro" = "لطفاً توجه داشته باشید که پشتیبانی Nicegram توسط تنها یک توسعه دهنده و انجمن انجام می شود.\n\nدر مرحله اول، به سؤالات متداول Nicegram نگاهی بیندازید: دارای نکات مهم عیب یابی و پاسخ بیشتر سوالات است.";
 "IAP.Premium.Title" = "ویژه";
 "IAP.Premium.Subtitle" = "ویژگی های منحصر به فردی که شما نمیتوانید رد کنید!";
-"IAP.Premium.Features" = "پوشه های نامحدود\nگفتگو های سنجاق شده نامحدود\nفیلتر پیام های ازدست رفته\nپیام های ازدست رفته هنگام راه اندازی برنامه";
 "IAP.Premium.Activated" = "نسخه ویژه فعال شد!";
 "IAP.Common.Restore" = "بازیابی خریدها";
 "IAP.Common.CantPay" = "متأسفیم، اما به دلیل محدودیت دستگاه یا حساب خود نمی توانید خرید کنید.";
 "IAP.Common.ErrorFetch" = "متاسفانه خرید از اپ استور مقدور نیست.";
 "IAP.Common.Congrats" = "تبریک میگوییم!";
 "IAP.Common.ValidateError" = "متأسفیم، نمی توانید خرید خود را تأیید کنید.";
-
 
 /*Manage Filters*/
 "ManageFilters.Title" = "مدیریت زبانه ها";
@@ -97,8 +95,5 @@
 "NGLab.RegDate.Notice" = "تاریخ به صورت تقریبی درج می شود";
 "NGLab.RegDate.MenuItem" = "ثبت شد";
 "NGLab.RegDate.FetchError" = "متاسفانه دریافت تاریخ ثبت نام مقدور نیست.";
-
-/*Backup Settings*/
 "NiceFeatures.BackupSettings" = "تنظیمات پشتیبان گیری و پوشه ها";
-"NiceFeatures.BackupSettings.Notice" = "فایل های پشتیبان را در پیام های ذخیره شده شما ایجاد می کند";
 "NiceFeatures.BackupSettings.Done" = "تهیه نسخه پشتیبان از پیام های ذخیره شده کامل شد";

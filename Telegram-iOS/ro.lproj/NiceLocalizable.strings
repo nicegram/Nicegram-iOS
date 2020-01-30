@@ -26,6 +26,7 @@
 "NiceFeatures.Notifications.FixNotice" = "Este util dacă primiți notificări de la chat-urile dezactivate.\nRăspunsul de la notificări, etichetele contului și previzualizările media nu vor fi disponibile.";
 "NiceFeatures.Filters.Header" = "FILTRE (FERESTRE)";
 "NiceFeatures.Filters.Notice" = "Selectați numărul de file personalizate.\nApăsați lung pe filă pentru a schimba filtrul.";
+"NiceFeatures.Filters.ShowBadge" = "Afișați Insigne (Filtre)";
 
 /*Common*/
 "Common.ExitNow" = "Ieșiți Acum";
@@ -74,14 +75,16 @@
 "Common.FAQ.Intro" = "Vă rugăm să rețineți că asistența Nicegram este realizată de un singur dezvoltator și de comunitate.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Funcții unice pe care nu le poți refuza!";
-"IAP.Premium.Features" = "Dosare Nelimitate\nChat-uri fixate(Pinned) Nelimitate\nFiltru de mesaje pierdute\n«Mesaje Noi» la pornirea aplicatiei";
+"IAP.Premium.Features" = "Dosare și chat-uri nelimitate\nTraducere rapidă de mesaje\nMesaje pierdute Filtrare și Gestionarea Filelor\n„Mesaje noi” la lansarea aplicației";
 "IAP.Premium.Activated" = "Premium Activat!";
 "IAP.Common.Restore" = "Restabiliţi cumpărăturile";
 "IAP.Common.CantPay" = "Ne pare rău, dar nu puteți face achiziții din cauza restricțiilor de pe dispozitiv sau cont.";
 "IAP.Common.ErrorFetch" = "Ne pare rău, nu putem prelua achizițiile din App Store.";
 "IAP.Common.Congrats" = "Felicitări!";
 "IAP.Common.ValidateError" = "Ne pare rău, nu putem valida achiziția.";
-
+"Premium.OnetapTranslate" = "Butonul Traducere Rapidă";
+"Premium.IgnoreTranslate.Title" = "Limbi Ignorate";
+"Premium.IgnoreTranslate.Header" = "App will try to detect language of each message. Butonul Traducere rapidă va fi DEZACTIVAT pentru toate limbile pe care le alegeți mai jos.";
 
 /*Manage Filters*/
 "ManageFilters.Title" = "Administrează Ferestre";
@@ -99,6 +102,6 @@
 "NGLab.RegDate.FetchError" = "Ne pare rău, nu putem obține data înregistrării.";
 
 /*Backup Settings*/
+"NiceFeatures.BackupIcloud" = "Sincronizați Setările și Dosarele cu iCloud";
 "NiceFeatures.BackupSettings" = "Copie de rezerva(Backup) Setări & Dosare";
-"NiceFeatures.BackupSettings.Notice" = "Creează o copie de rezervă(backup) a fișierelor din mesajele salvate";
 "NiceFeatures.BackupSettings.Done" = "Copie de rezervă facută pentru Mesajele Salvate";

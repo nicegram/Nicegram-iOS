@@ -75,14 +75,16 @@
 "Common.FAQ.Intro" = "Lütfen Nicegram Destek’in sadece bir geliştirici ve topluluktan oluştuğunu unutmayın.\n\nİlk olarak Nicegram SSS’e bir göz atın: önemli ipuçları ve çoğu soruya cevap barındırıyor.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Reddedemeyeceğiniz benzersiz özellikler!";
-"IAP.Premium.Features" = "Sınırsız Klasörler\nSınırsız Sabit Sohbetler\nKaçırılan Mesaj Filtresi\nUygulama Açılışında Kaçırılan Mesaj Özeti";
+"IAP.Premium.Features" = "Sınırsız Klasörler & Sabit Sohbetler\nHızlı Mesaj Çevirmeni\nKaçırılan Mesaj Filtresi & Sekme Yönetimi\nUygulama Açılışında Yeni Mesajlar Özeti";
 "IAP.Premium.Activated" = "Premium Aktive Edildi!";
 "IAP.Common.Restore" = "Satın Alımları Geri Yükle";
 "IAP.Common.CantPay" = "Üzgünüz, ama cihaz veya hesap kısıtlamalarınız yüzünden satın alım yapamazsınız.";
 "IAP.Common.ErrorFetch" = "Üzgünüz, App Store satın alımları çekilemiyor.";
 "IAP.Common.Congrats" = "Tebrikler!";
 "IAP.Common.ValidateError" = "Üzgünüz, satın alımınız doğrulanamıyor.";
-
+"Premium.OnetapTranslate" = "Hızlı Çeviri butonu";
+"Premium.IgnoreTranslate.Title" = "İstenmeyen Diller";
+"Premium.IgnoreTranslate.Header" = "Uygulama her mesajın dilini tanımlamaya çalışacak. Hızlı Çeviri butonu aşağıda seçtiğiniz diller için DEVRE DIŞI olacak.";
 
 /*Manage Filters*/
 "ManageFilters.Title" = "Sekmeleri Yönet";
@@ -100,6 +102,12 @@
 "NGLab.RegDate.FetchError" = "Üzgünüz, kayıt tarihi gösterilemiyor.";
 
 /*Backup Settings*/
+"NiceFeatures.BackupIcloud" = "Ayarları & Klasörleri iCloud ile Senkronize Et";
 "NiceFeatures.BackupSettings" = "Ayarları & Klasörleri Yedekle";
-"NiceFeatures.BackupSettings.Notice" = "Kayıtlı mesajlarınızda yedekleme dosyaları oluşturur";
+"NiceFeatures.BackupSettings.Notice" = "Yedekleme dosyası oluşturur. Geri yüklemek için dosyaya dokunun.";
 "NiceFeatures.BackupSettings.Done" = "Kayıtlı Mesajlara Yedekleme Tamamlandı";
+"NiceFeatures.BackupSettings.Error" = "Yedekleme oluşturulurken hata";
+
+"NiceFeatures.RestoreSettings.Confirm" = "Klasör & Ayarları dosyadan geri yüklemek istediğinize emin misiniz?\n⚠️ Şu ankinin üzerine yazılacak";
+"NiceFeatures.RestoreSettings.Done" = "Klasör & Ayarlar başarılı bir şekilde geri yüklendi";
+"NiceFeatures.RestoreSettings.Error" = "Ayarlar geri yüklenirken hata. Dosya bozulmuş olabilir";
