@@ -329,7 +329,7 @@ func passcodeOptionsController(context: AccountContext) -> ViewController {
                 }).start()
             })
         }
-        var values: [Int32] = [0, 1, 1 * 60, 5 * 60, 1 * 60 * 60, 5 * 60 * 60]
+        var values: [Int32] = [0, 2, 1 * 60, 5 * 60, 1 * 60 * 60, 5 * 60 * 60]
         
         #if DEBUG
             values.append(10)
