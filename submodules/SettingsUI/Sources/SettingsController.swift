@@ -330,9 +330,9 @@ private indirect enum SettingsEntry: ItemListNodeEntry {
         case .wallet:
             return 1014
         #endif
-        case .passport:
+        case .language:
             return 1015
-        case .wallet:
+        case .contentStickers:
             return 1016
         case .passport:
             return 1017
