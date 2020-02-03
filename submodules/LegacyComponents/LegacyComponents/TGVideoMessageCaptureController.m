@@ -146,7 +146,7 @@ typedef enum
 
 @implementation TGVideoMessageCaptureController
 
-- (instancetype)initWithContext:(id<LegacyComponentsContext>)context assets:(TGVideoMessageCaptureControllerAssets *)assets transitionInView:(UIView *(^)(void))transitionInView parentController:(TGViewController *)parentController controlsFrame:(CGRect)controlsFrame isAlreadyLocked:(bool (^)(void))isAlreadyLocked liveUploadInterface:(id<TGLiveUploadInterface>)liveUploadInterface pallete:(TGModernConversationInputMicPallete *)pallete slowmodeTimestamp:(int32_t)slowmodeTimestamp slowmodeView:(UIView *(^)(void))slowmodeView canSendSilently:(bool)canSendSilently canSchedule:(bool)canSchedule reminder:(bool)reminder useSelfieCam:(bool)useSelfieCam
+- (instancetype)initWithContext:(id<LegacyComponentsContext>)context assets:(TGVideoMessageCaptureControllerAssets *)assets transitionInView:(UIView *(^)(void))transitionInView parentController:(TGViewController *)parentController controlsFrame:(CGRect)controlsFrame isAlreadyLocked:(bool (^)(void))isAlreadyLocked liveUploadInterface:(id<TGLiveUploadInterface>)liveUploadInterface pallete:(TGModernConversationInputMicPallete *)pallete slowmodeTimestamp:(int32_t)slowmodeTimestamp slowmodeView:(UIView *(^)(void))slowmodeView canSendSilently:(bool)canSendSilently canSchedule:(bool)canSchedule reminder:(bool)reminder useBackCam:(bool)useBackCam
 {
     self = [super initWithContext:context];
     if (self != nil)
@@ -167,7 +167,7 @@ typedef enum
         _queue = [[SQueue alloc] init];
         
         _previousDuration = 0.0;
-        if (useSelfieCam) {
+        if (useBackCam) {
             _preferredPosition = AVCaptureDevicePositionBack;
         } else {
             _preferredPosition = AVCaptureDevicePositionFront;

@@ -48,9 +48,9 @@ private final class NiceFeaturesControllerArguments {
     
     let toggleBackupIcloud: (Bool) -> Void
     
-    let toggleBackCam: (Bool) -> Void
+    let togglebackCam: (Bool) -> Void
 
-    init(togglePinnedMessage: @escaping (Bool) -> Void, toggleShowContactsTab: @escaping (Bool) -> Void, toggleFixNotifications: @escaping (Bool) -> Void, updateShowCallsTab: @escaping (Bool) -> Void, changeFiltersAmount: @escaping (Int32) -> Void, toggleShowTabNames: @escaping (Bool, String) -> Void, toggleHidePhone: @escaping (Bool, String) -> Void, toggleUseBrowser: @escaping (Bool) -> Void, customizeBrowser: @escaping (Browser) -> Void, openBrowserSelection: @escaping () -> Void, backupSettings: @escaping () -> Void, toggleFiltersBadge: @escaping (Bool) -> Void, toggleBackupIcloud: @escaping (Bool) -> Void, toggleBackCam: @escaping (Bool) -> Void) {
+    init(togglePinnedMessage: @escaping (Bool) -> Void, toggleShowContactsTab: @escaping (Bool) -> Void, toggleFixNotifications: @escaping (Bool) -> Void, updateShowCallsTab: @escaping (Bool) -> Void, changeFiltersAmount: @escaping (Int32) -> Void, toggleShowTabNames: @escaping (Bool, String) -> Void, toggleHidePhone: @escaping (Bool, String) -> Void, toggleUseBrowser: @escaping (Bool) -> Void, customizeBrowser: @escaping (Browser) -> Void, openBrowserSelection: @escaping () -> Void, backupSettings: @escaping () -> Void, toggleFiltersBadge: @escaping (Bool) -> Void, toggleBackupIcloud: @escaping (Bool) -> Void, togglebackCam: @escaping (Bool) -> Void) {
         self.togglePinnedMessage = togglePinnedMessage
         self.toggleShowContactsTab = toggleShowContactsTab
         self.toggleFixNotifications = toggleFixNotifications
@@ -64,7 +64,7 @@ private final class NiceFeaturesControllerArguments {
         self.backupSettings = backupSettings
         self.toggleFiltersBadge = toggleFiltersBadge
         self.toggleBackupIcloud = toggleBackupIcloud
-        self.toggleBackCam = toggleBackCam
+        self.togglebackCam = togglebackCam
     }
 }
 
@@ -174,14 +174,14 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return 38
         case .hideNumber:
             return 39
-        case .backupSettings:
-            return 40
-        case .backupNotice:
+        case .backCam:
             return 41
         case .backupIcloud:
-            return 42
-        case .backCam:
-            return 43
+            return 100000 - 1
+        case .backupSettings:
+            return 100000
+        case .backupNotice:
+            return 100001
         }
     }
 
@@ -326,8 +326,8 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
-        case let .backupCam(lhsTheme, lhsText, lhsValue):
-            if case let .backupCam(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
+        case let .backCam(lhsTheme, lhsText, lhsValue):
+            if case let .backCam(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
                 return true
             } else {
                 return false
@@ -410,7 +410,7 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             })
         case let .backCam(theme, text, value):
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
-                arguments.toggleBackCam(value)
+                arguments.togglebackCam(value)
             })
         }
     }
@@ -425,7 +425,7 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
  }
  */
 
-private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls: Bool, presentationData: PresentationData, simplyNiceSettings: SimplyNiceSettings, defaultWebBrowser: String) -> [NiceFeaturesControllerEntry] {
+private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls: Bool, presentationData: PresentationData, simplyNiceSettings: SimplyNiceSettings, nicegramSettings: NicegramSettings, defaultWebBrowser: String) -> [NiceFeaturesControllerEntry] {
     var entries: [NiceFeaturesControllerEntry] = []
 
     let locale = presentationData.strings.baseLanguageCode
@@ -454,11 +454,11 @@ private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls
     entries.append(.otherHeader(presentationData.theme, presentationData.strings.ChatSettings_Other))
     entries.append(.hideNumber(presentationData.theme, l("NiceFeatures.HideNumber", locale), simplyNiceSettings.hideNumber, locale))
     // entries.append(.backupIcloud(presentationData.theme, l("NiceFeatures.BackupIcloud", locale), useIcloud()))
+    entries.append(.backCam(presentationData.theme, l("NiceFeatures.useBackCam", locale), nicegramSettings.useBackCam))
 
     entries.append(.backupSettings(presentationData.theme, l("NiceFeatures.BackupSettings", locale)))
     entries.append(.backupNotice(presentationData.theme, l("NiceFeatures.BackupSettings.Notice", locale)))
-    entries.append(.backCam(presentationData.theme, l("NiceFeatures.UseSelfieCam", locale)))
-
+    
     return entries
 }
 
@@ -618,8 +618,8 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
         let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: l("Common.RestartRequired", presentationData.strings.baseLanguageCode), actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {
         })])
         presentControllerImpl?(controller, nil)
-    }, toggleBackCam: { value in
-        NicegramSettings().useSelfieCam = value
+    }, togglebackCam: { value in
+        NicegramSettings().useBackCam = value
     }
     )
 
@@ -637,7 +637,7 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
     let signal = combineLatest(context.sharedContext.presentationData, context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.niceSettings]), showCallsTab, statePromise.get())
         |> map { presentationData, sharedData, showCalls, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
             
-            let entries = niceFeaturesControllerEntries(niceSettings: niceSettings, showCalls: showCalls, presentationData: presentationData, simplyNiceSettings: SimplyNiceSettings(), defaultWebBrowser: "")
+            let entries = niceFeaturesControllerEntries(niceSettings: niceSettings, showCalls: showCalls, presentationData: presentationData, simplyNiceSettings: SimplyNiceSettings(), nicegramSettings: NicegramSettings(), defaultWebBrowser: "")
 
         var index = 0
         var scrollToItem: ListViewScrollToItem?

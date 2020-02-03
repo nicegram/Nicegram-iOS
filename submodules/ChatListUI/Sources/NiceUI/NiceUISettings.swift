@@ -393,7 +393,7 @@ public class NicegramSettings {
     let exPremiumSettings = PremiumSettings()
     
     public init() {
-        UD?.register(defaults: ["useSelfieCam": false])
+        UD?.register(defaults: ["useBackCam": false])
     }
     
     // SimplyNiceSettings
@@ -531,12 +531,12 @@ public class NicegramSettings {
     }
     //
     
-    public var useSelfieCam: Bool {
+    public var useBackCam: Bool {
         get {
-            return UD?.bool(forKey: "useSelfieCam") ?? false
+            return UD?.bool(forKey: "useBackCam") ?? false
         }
         set {
-            UD?.set("useSelfieCam", newValue)
+            UD?.set(newValue, forKey: "useBackCam")
         }
     }
     
@@ -546,7 +546,7 @@ public class NicegramSettings {
             "maxFilters": self.maxFilters,
             "showTabNames": self.showTabNames,
             "filtersBadge": self.filtersBadge,
-            "useSelfieCam": self.useSelfieCam
+            "useBackCam": self.useBackCam
         ]
         
         var intChatFilters: [Int32] = []
@@ -649,11 +649,11 @@ public class NicegramSettings {
                 result.append(("chatFilters", "", false))
             }
             
-            if let useSelfieCam = niceSettings["useSelfieCam"] as? Bool {
-                self.useSelfieCam = useSelfieCam
-                result.append(("useSelfieCam", String(useSelfieCam), true))
+            if let useBackCam = niceSettings["useBackCam"] as? Bool {
+                self.useBackCam = useBackCam
+                result.append(("useBackCam", String(useBackCam), true))
             } else {
-                result.append(("useSelfieCam", "", false))
+                result.append(("useBackCam", "", false))
             }
         } else {
              result.append(("NiceSettings", "", false))
