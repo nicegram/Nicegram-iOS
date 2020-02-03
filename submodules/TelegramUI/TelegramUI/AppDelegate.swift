@@ -5,7 +5,7 @@ import TelegramCore
 import SyncCore
 import UserNotifications
 import Intents
-import HockeySDK
+//import HockeySDK
 import Postbox
 import PushKit
 import AsyncDisplayKit
@@ -29,10 +29,14 @@ import AvatarNode
 import NicegramLib
 import ChatListUI
 import AppBundle
+#if ENABLE_WALLET
 import WalletUI
+#endif
 import UrlHandling
+#if ENABLE_WALLET
 import WalletUrl
 import WalletCore
+#endif
 import OpenSSLEncryptionProvider
 import AppLock
 import PresentationDataUtils
@@ -160,7 +164,7 @@ final class SharedApplicationContext {
     }
 }
 
-@objc(AppDelegate) class AppDelegate: UIResponder, UIApplicationDelegate, PKPushRegistryDelegate, BITHockeyManagerDelegate, UNUserNotificationCenterDelegate, UIAlertViewDelegate {
+@objc(AppDelegate) class AppDelegate: UIResponder, UIApplicationDelegate, PKPushRegistryDelegate/*, BITHockeyManagerDelegate*/, UNUserNotificationCenterDelegate, UIAlertViewDelegate {
     @objc var window: UIWindow?
     var nativeWindow: (UIWindow & WindowHost)?
     var mainWindow: Window1!
@@ -690,6 +694,7 @@ final class SharedApplicationContext {
             })
         }
         
+        #if ENABLE_WALLET
         let tonKeychain: TonKeychain
         
         #if targetEnvironment(simulator)
@@ -750,6 +755,7 @@ final class SharedApplicationContext {
                 return EmptyDisposable
             }
         })
+        #endif
         #endif
         
         let sharedContextSignal = accountManagerSignal
@@ -1013,8 +1019,9 @@ final class SharedApplicationContext {
             |> deliverOnMainQueue
             |> map { accountAndSettings -> AuthorizedApplicationContext? in
                 return accountAndSettings.flatMap { account, limitsConfiguration, callListSettings, contentSettings in
+                    #if ENABLE_WALLET
                     let tonContext = StoredTonContext(basePath: account.basePath, postbox: account.postbox, network: account.network, keychain: tonKeychain)
-                    let context = AccountContextImpl(sharedContext: sharedApplicationContext.sharedContext, account: account, tonContext: tonContext, limitsConfiguration: limitsConfiguration, contentSettings: contentSettings)
+                    let context = AccountContextImpl(sharedContext: sharedApplicationContext.sharedContext, account: account/*, tonContext: tonContext,*/, limitsConfiguration: limitsConfiguration, contentSettings: contentSettings)
                     return AuthorizedApplicationContext(sharedApplicationContext: sharedApplicationContext, mainWindow: self.mainWindow, watchManagerArguments: watchManagerArgumentsPromise.get(), context: context, accountManager: sharedApplicationContext.sharedContext.accountManager, foo: foo, showCallsTab: callListSettings.showTab, showFilteredChatTabs: showFilteredChatTabs, showContactsTab: showContactsTab, maxFilters: maxFilters, reinitializedNotificationSettings: {
                         let _ = (self.context.get()
                         |> take(1)
@@ -1447,7 +1454,7 @@ final class SharedApplicationContext {
             self.isActivePromise.set(true)
         }
         
-        BITHockeyBaseManager.setPresentAlert({ [weak self] alert in
+        /*BITHockeyBaseManager.setPresentAlert({ [weak self] alert in
             if let strongSelf = self, let alert = alert {
                 var actions: [TextAlertAction] = []
                 for action in alert.actions {
@@ -1485,7 +1492,7 @@ final class SharedApplicationContext {
             #else
             BITHockeyManager.shared().authenticator.authenticateInstallation()
             #endif
-        }
+        }*/
         
         if UIApplication.shared.isStatusBarHidden {
             UIApplication.shared.setStatusBarHidden(false, with: .none)
@@ -1853,10 +1860,13 @@ final class SharedApplicationContext {
                     }), TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), on: .root, blockInteraction: false, completion: {})
                 } else if let confirmationCode = parseConfirmationCodeUrl(url) {
                     authContext.rootController.applyConfirmationCode(confirmationCode)
-                } else if let _ = parseWalletUrl(url) {
+                }
+                #if ENABLE_WALLET
+                if let _ = parseWalletUrl(url) {
                     let presentationData = authContext.sharedContext.currentPresentationData.with { $0 }
                     authContext.rootController.currentWindow?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: "Please log in to your account to use Gram Wallet.", actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), on: .root, blockInteraction: false, completion: {})
                 }
+                #endif
             }
         })
     }

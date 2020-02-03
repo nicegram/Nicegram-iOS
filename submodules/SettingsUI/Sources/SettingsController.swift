@@ -33,7 +33,9 @@ import PeerAvatarGalleryUI
 import MapResourceToAvatarSizes
 import AppBundle
 import ContextUI
+#if ENABLE_WALLET
 import WalletUI
+#endif
 import PhoneNumberFormat
 import AccountUtils
 import AuthTransferUI
@@ -245,7 +247,9 @@ private indirect enum SettingsEntry: ItemListNodeEntry {
     case themes(PresentationTheme, UIImage?, String)
     case language(PresentationTheme, UIImage?, String, String)
     case passport(PresentationTheme, UIImage?, String, String)
+    #if ENABLE_WALLET
     case wallet(PresentationTheme, UIImage?, String, String)
+    #endif
     case watch(PresentationTheme, UIImage?, String, String)
     
     case askAQuestion(PresentationTheme, UIImage?, String)
@@ -253,28 +257,32 @@ private indirect enum SettingsEntry: ItemListNodeEntry {
     
     var section: ItemListSectionId {
         switch self {
-            case .userInfo, .setProfilePhoto, .setUsername:
-                return SettingsSection.info.rawValue
-            case .phoneInfo, .keepPhone, .changePhone:
-                return SettingsSection.phone.rawValue
-            case .account, .addAccount:
-                return SettingsSection.accounts.rawValue
-            case .proxy, .premium:
-                return SettingsSection.proxy.rawValue
-            case .niceFeatures:
-                return SettingsSection.nicegram.rawValue
-            case .ngFaq, .ngChat:
-                return SettingsSection.ngHelp.rawValue
-            case .devices:
-                return SettingsSection.media.rawValue
-            case .savedMessages, .recentCalls, .stickers:
-                return SettingsSection.media.rawValue
-            case .notificationsAndSounds, .privacyAndSecurity, .dataAndStorage, .themes, .language, .contentStickers:
-                return SettingsSection.generalSettings.rawValue
-            case .passport, .wallet, .watch :
-                return SettingsSection.advanced.rawValue
-            case .askAQuestion, .faq:
-                return SettingsSection.help.rawValue
+        case .userInfo, .setProfilePhoto, .setUsername:
+            return SettingsSection.info.rawValue
+        case .phoneInfo, .keepPhone, .changePhone:
+            return SettingsSection.phone.rawValue
+        case .account, .addAccount:
+            return SettingsSection.accounts.rawValue
+        case .proxy, .premium:
+            return SettingsSection.proxy.rawValue
+        case .niceFeatures:
+            return SettingsSection.nicegram.rawValue
+        case .ngFaq, .ngChat:
+            return SettingsSection.ngHelp.rawValue
+        case .devices:
+            return SettingsSection.media.rawValue
+        case .savedMessages, .recentCalls, .stickers:
+            return SettingsSection.media.rawValue
+        case .notificationsAndSounds, .privacyAndSecurity, .dataAndStorage, .themes, .language, .contentStickers:
+            return SettingsSection.generalSettings.rawValue
+        case .passport, .watch:
+            return SettingsSection.advanced.rawValue
+        #if ENABLE_WALLET
+        case .wallet:
+            return SettingsSection.advanced.rawValue
+        #endif
+        case .askAQuestion, .faq:
+            return SettingsSection.help.rawValue
         }
     }
     
@@ -318,9 +326,11 @@ private indirect enum SettingsEntry: ItemListNodeEntry {
             return 1012
         case .themes:
             return 1013
-        case .language:
+        #if ENABLE_WALLET
+        case .wallet:
             return 1014
-        case .contentStickers:
+        #endif
+        case .passport:
             return 1015
         case .wallet:
             return 1016
@@ -517,12 +527,14 @@ private indirect enum SettingsEntry: ItemListNodeEntry {
                 } else {
                     return false
                 }
+            #if ENABLE_WALLET
             case let .wallet(lhsTheme, lhsImage, lhsText, lhsValue):
                 if case let .wallet(rhsTheme, rhsImage, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsImage === rhsImage, lhsText == rhsText, lhsValue == rhsValue {
                     return true
                 } else {
                     return false
                 }
+            #endif
             case let .watch(lhsTheme, lhsImage, lhsText, lhsValue):
                 if case let .watch(rhsTheme, rhsImage, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsImage === rhsImage, lhsText == rhsText, lhsValue == rhsValue {
                     return true
@@ -675,10 +687,12 @@ private indirect enum SettingsEntry: ItemListNodeEntry {
                 return ItemListDisclosureItem(presentationData: presentationData, icon: image, title: text, label: value, sectionId: ItemListSectionId(self.section), style: .blocks, action: {
                     arguments.openPassport()
                 })
+            #if ENABLE_WALLET
             case let .wallet(theme, image, text, value):
                 return ItemListDisclosureItem(presentationData: presentationData, icon: image, title: text, label: value, sectionId: ItemListSectionId(self.section), style: .blocks, action: {
                     arguments.openWallet()
                 })
+            #endif
             case let .watch(theme, image, text, value):
                 return ItemListDisclosureItem(presentationData: presentationData, icon: image, title: text, label: value, sectionId: ItemListSectionId(self.section), style: .blocks, action: {
                     arguments.openWatch()
@@ -777,9 +791,11 @@ private func settingsEntries(account: Account, presentationData: PresentationDat
         entries.append(.language(presentationData.theme, PresentationResourcesSettings.language, presentationData.strings.Settings_AppLanguage, languageName.isEmpty ? presentationData.strings.Localization_LanguageName : languageName))
         entries.append(.contentStickers(presentationData.theme, PresentationResourcesSettings.stickers, presentationData.strings.ChatSettings_Stickers, unreadTrendingStickerPacks == 0 ? "" : "\(unreadTrendingStickerPacks)", archivedPacks))
         
+        #if ENABLE_WALLET
         if hasWallet {
             entries.append(.wallet(presentationData.theme, PresentationResourcesSettings.wallet, "Gram Wallet", ""))
         }
+        #endif
         if hasPassport {
             entries.append(.passport(presentationData.theme, PresentationResourcesSettings.passport, presentationData.strings.Settings_Passport, ""))
         }
@@ -1177,6 +1193,7 @@ public func settingsController(context: AccountContext, accountManager: AccountM
             pushControllerImpl?(SecureIdAuthController(context: context, mode: .list))
         })
     }, openWallet: {
+        #if ENABLE_WALLET
         let _ = (contextValue.get()
         |> deliverOnMainQueue
         |> take(1)).start(next: { context in
@@ -1184,6 +1201,7 @@ public func settingsController(context: AccountContext, accountManager: AccountM
                 pushControllerImpl?(c)
             })
         })
+        #endif
     }, openWatch: {
         let _ = (contextValue.get()
         |> deliverOnMainQueue
@@ -1450,11 +1468,14 @@ public func settingsController(context: AccountContext, accountManager: AccountM
             }
         )
     )
-    
+    #if ENABLE_WALLET
     let hasWallet = contextValue.get()
     |> mapToSignal { context in
         return context.hasWalletAccess
     }
+    #else
+    let hasWallet: Signal<Bool, NoError> = .single(false)
+    #endif
     
     let hasPassport = ValuePromise<Bool>(false)
     let updatePassport: () -> Void = {

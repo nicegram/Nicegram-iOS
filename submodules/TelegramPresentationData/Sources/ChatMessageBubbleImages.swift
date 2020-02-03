@@ -79,7 +79,7 @@ func mediaBubbleCornerImage(incoming: Bool, radius: CGFloat, inset: CGFloat) -> 
     return formContext.generateImage()!
 }
 
-public func messageBubbleImage(maxCornerRadius: CGFloat, minCornerRadius: CGFloat, incoming: Bool, fillColor: UIColor, strokeColor: UIColor, neighbors: MessageBubbleImageNeighbors, theme: PresentationThemeChat, wallpaper: TelegramWallpaper, knockout knockoutValue: Bool, mask: Bool = false, extendedEdges: Bool = false, onlyOutline: Bool = false) -> UIImage {
+public func messageBubbleImage(maxCornerRadius: CGFloat, minCornerRadius: CGFloat, incoming: Bool, fillColor: UIColor, strokeColor: UIColor, neighbors: MessageBubbleImageNeighbors, theme: PresentationThemeChat, wallpaper: TelegramWallpaper, knockout knockoutValue: Bool, mask: Bool = false, extendedEdges: Bool = false, onlyOutline: Bool = false, onlyShadow: Bool = false) -> UIImage {
     let topLeftRadius: CGFloat
     let topRightRadius: CGFloat
     let bottomLeftRadius: CGFloat
@@ -123,10 +123,10 @@ public func messageBubbleImage(maxCornerRadius: CGFloat, minCornerRadius: CGFloa
     let innerSize = CGSize(width: fixedMainDiameter + 6.0, height: fixedMainDiameter)
     let strokeInset: CGFloat = 1.0
     let sourceRawSize = CGSize(width: innerSize.width + strokeInset * 2.0, height: innerSize.height + strokeInset * 2.0)
-    let additionalInset: CGFloat = 1.0
+    let additionalInset: CGFloat = onlyShadow ? 10.0 : 1.0
     let imageSize = CGSize(width: sourceRawSize.width + additionalInset * 2.0, height: sourceRawSize.height + additionalInset * 2.0)
     let outgoingStretchPoint: (x: Int, y: Int) = (Int(additionalInset + strokeInset + round(fixedMainDiameter / 2.0)) - 1, Int(additionalInset + strokeInset + round(fixedMainDiameter / 2.0)))
-    let incomingStretchPoint: (x: Int, y: Int) = (Int(sourceRawSize.width) - outgoingStretchPoint.x + 1, outgoingStretchPoint.y)
+    let incomingStretchPoint: (x: Int, y: Int) = (Int(sourceRawSize.width) - outgoingStretchPoint.x + Int(additionalInset), outgoingStretchPoint.y)
     
     let knockout = knockoutValue && !mask
     
@@ -177,14 +177,23 @@ public func messageBubbleImage(maxCornerRadius: CGFloat, minCornerRadius: CGFloa
         
         context.setStrokeColor(UIColor.black.cgColor)
         let borderWidth: CGFloat
-        if abs(UIScreenPixel - 0.5) < CGFloat.ulpOfOne {
-            borderWidth = UIScreenPixel
+        let borderOffset: CGFloat
+        
+        let innerExtension: CGFloat
+        if knockout && !mask {
+            innerExtension = 0.25
         } else {
-            borderWidth = UIScreenPixel * 2.0
+            innerExtension = 0.25
+        }
+        
+        if abs(UIScreenPixel - 0.5) < CGFloat.ulpOfOne {
+            borderWidth = UIScreenPixel + innerExtension
+            borderOffset = -innerExtension / 2.0 + UIScreenPixel / 2.0
+        } else {
+            borderWidth = UIScreenPixel * 2.0 + innerExtension
+            borderOffset = -innerExtension / 2.0 + UIScreenPixel * 2.0 / 2.0
         }
         context.setLineWidth(borderWidth)
-        
-        let borderOffset: CGFloat = borderWidth / 2.0
         
         context.move(to: CGPoint(x: -borderOffset, y: topLeftRadius + borderOffset))
         context.addArc(tangent1End: CGPoint(x: -borderOffset, y: -borderOffset), tangent2End: CGPoint(x: topLeftRadius + borderOffset, y: -borderOffset), radius: topLeftRadius + borderOffset * 2.0)
@@ -278,50 +287,68 @@ public func messageBubbleImage(maxCornerRadius: CGFloat, minCornerRadius: CGFloa
         context.setBlendMode(.copy)
         let image = outlineContext.generateImage()!
         context.draw(image.cgImage!, in: CGRect(origin: CGPoint(), size: size))
-        context.setBlendMode(.normal)
-        context.draw(image.cgImage!, in: CGRect(origin: CGPoint(), size: size))
     })!
     
     let drawingContext = DrawingContext(size: imageSize)
     drawingContext.withFlippedContext { context in
-        var drawWithClearColor = false
-        
-        if knockout {
-            drawWithClearColor = !mask
-            if case let .color(color) = wallpaper {
-                context.setFillColor(UIColor(rgb: UInt32(color)).cgColor)
+        if onlyShadow {
+            context.clear(CGRect(origin: CGPoint(), size: rawSize))
+            
+            let bubbleColors = incoming ? theme.message.incoming : theme.message.outgoing
+            
+            if let shadow = bubbleColors.bubble.withWallpaper.shadow {
+                context.translateBy(x: rawSize.width / 2.0, y: rawSize.height / 2.0)
+                context.scaleBy(x: incoming ? -1.0 : 1.0, y: -1.0)
+                context.translateBy(x: -rawSize.width / 2.0, y: -rawSize.height / 2.0)
+                
+                context.setShadow(offset: CGSize(width: 0.0, height: -shadow.verticalOffset), blur: shadow.radius, color: shadow.color.cgColor)
+                context.draw(formImage.cgImage!, in: CGRect(origin: CGPoint(), size: rawSize))
+                
+                context.setBlendMode(.copy)
+                context.setFillColor(UIColor.clear.cgColor)
+                context.clip(to: CGRect(origin: CGPoint(), size: rawSize), mask: formImage.cgImage!)
                 context.fill(CGRect(origin: CGPoint(), size: rawSize))
+            }
+        } else {
+            var drawWithClearColor = false
+            
+            if knockout {
+                drawWithClearColor = !mask
+                if case let .color(color) = wallpaper {
+                    context.setFillColor(UIColor(rgb: UInt32(color)).cgColor)
+                    context.fill(CGRect(origin: CGPoint(), size: rawSize))
+                } else {
+                    context.clear(CGRect(origin: CGPoint(), size: rawSize))
+                }
             } else {
                 context.clear(CGRect(origin: CGPoint(), size: rawSize))
             }
-        } else {
-            context.clear(CGRect(origin: CGPoint(), size: rawSize))
+            
+            if drawWithClearColor {
+                context.setBlendMode(.copy)
+                context.setFillColor(UIColor.clear.cgColor)
+            } else {
+                context.setBlendMode(.normal)
+                context.setFillColor(fillColor.cgColor)
+            }
+            
+            context.saveGState()
+            
+            context.translateBy(x: rawSize.width / 2.0, y: rawSize.height / 2.0)
+            context.scaleBy(x: incoming ? -1.0 : 1.0, y: -1.0)
+            context.translateBy(x: -rawSize.width / 2.0, y: -rawSize.height / 2.0)
+            
+            if !onlyOutline {
+                context.clip(to: CGRect(origin: CGPoint(), size: rawSize), mask: formImage.cgImage!)
+                context.fill(CGRect(origin: CGPoint(), size: rawSize))
+            } else {
+                context.setFillColor(strokeColor.cgColor)
+                context.clip(to: CGRect(origin: CGPoint(), size: rawSize), mask: outlineImage.cgImage!)
+                context.fill(CGRect(origin: CGPoint(), size: rawSize))
+            }
+            
+            context.restoreGState()
         }
-        
-        if drawWithClearColor {
-            context.setBlendMode(.copy)
-            context.setFillColor(UIColor.clear.cgColor)
-        } else {
-            context.setBlendMode(.normal)
-            context.setFillColor(fillColor.cgColor)
-        }
-        
-        context.saveGState()
-        
-        context.translateBy(x: rawSize.width / 2.0, y: rawSize.height / 2.0)
-        context.scaleBy(x: incoming ? -1.0 : 1.0, y: -1.0)
-        context.translateBy(x: -rawSize.width / 2.0, y: -rawSize.height / 2.0)
-        
-        if !onlyOutline {
-            context.clip(to: CGRect(origin: CGPoint(), size: rawSize), mask: formImage.cgImage!)
-            context.fill(CGRect(origin: CGPoint(), size: rawSize))
-        } else {
-            context.setFillColor(strokeColor.cgColor)
-            context.clip(to: CGRect(origin: CGPoint(), size: rawSize), mask: outlineImage.cgImage!)
-            context.fill(CGRect(origin: CGPoint(), size: rawSize))
-        }
-        
-        context.restoreGState()
     }
     
     return drawingContext.generateImage()!.stretchableImage(withLeftCapWidth: incoming ? incomingStretchPoint.x : outgoingStretchPoint.x, topCapHeight: incoming ? incomingStretchPoint.y : outgoingStretchPoint.y)
