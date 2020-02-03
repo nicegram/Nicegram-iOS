@@ -6,7 +6,7 @@
 "ChatFilter.Private" = "Usuarios";
 "ChatFilter.Groups" = "Grupos";
 "ChatFilter.Unread" = "No leído";
-"ChatFilter.Unmuted" = "Desilenciad@";
+"ChatFilter.Unmuted" = "No silenciado";
 "ChatFilter.Favourites" = "Favoritos";
 
 /*Nice Features*/
@@ -15,6 +15,7 @@
 "NiceFeatures.Tabs.ShowContacts" = "Mostrar pestaña de Contactos";
 "NiceFeatures.ChatScreen.Header" = "PANTALLA DE CHAT";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Stickers animados";
+"NiceFeatures.useBackCam" = "Usar cámara trasera (Videomensajes)";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "Guardar en la nube";
@@ -65,7 +66,7 @@
 "Premium.SyncPins.Notice.ON" = "Si cambias chats anclados en otro cliente, SE CAMBIARÁN en Nicegram.";
 "Premium.SyncPins.Notice.OFF" = "Si cambias chats anclados en otro cliente, NO SE CAMBIARÁN en Nicegram.";
 "Premium.Missed.Header" = "Mensajes perdidos";
-"Premium.Missed" = "Notificación a mensajes perdidos";
+"Premium.Missed" = "Notificación de mensajes perdidos";
 "Premium.Missed.Notice" = "Cuando abres la aplicación después de un período largo (durmiendo, estudiando, etc), Nicegram te notificará sobre mensajes privados y menciones perdidos.";
 "Folder.DeleteAsk" = "Eliminar carpeta";
 "Folder.NeedPremium" = "Esta carpeta solo está disponible con Premium. Puedes comprar Premium o eliminar la carpeta con el gesto de deslizar.";
