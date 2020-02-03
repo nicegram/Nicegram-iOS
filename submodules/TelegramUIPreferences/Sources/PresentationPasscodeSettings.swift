@@ -22,6 +22,11 @@ public struct PresentationPasscodeSettings: PreferencesEntry, Equatable {
     public init(decoder: PostboxDecoder) {
         self.enableBiometrics = decoder.decodeInt32ForKey("s", orElse: 0) != 0
         self.autolockTimeout = decoder.decodeOptionalInt32ForKey("al")
+        if let strongAutoLockTimeout = self.autolockTimeout {
+            if strongAutoLockTimeout == 1 {
+                self.autolockTimeout = strongAutoLockTimeout + 1
+            }
+        }
         self.biometricsDomainState = decoder.decodeDataForKey("ds")
         self.shareBiometricsDomainState = decoder.decodeDataForKey("sds")
     }
