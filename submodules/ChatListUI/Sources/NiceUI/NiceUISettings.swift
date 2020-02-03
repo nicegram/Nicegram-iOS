@@ -394,6 +394,7 @@ public class NicegramSettings {
     
     public init() {
         UD?.register(defaults: ["useBackCam": false])
+        UD?.register(defaults: ["useTgFilters": false])
     }
     
     // SimplyNiceSettings
@@ -539,6 +540,15 @@ public class NicegramSettings {
             UD?.set(newValue, forKey: "useBackCam")
         }
     }
+    
+    public var useTgFilters: Bool {
+        get {
+            return UD?.bool(forKey: "useTgFilters") ?? true
+            }
+        set {
+            UD?.set(newValue, forKey: "useTgFilters")
+        }
+        }
     
     public var json: [String: Any] {
         var jsNiceSettings: [String: Any] = [

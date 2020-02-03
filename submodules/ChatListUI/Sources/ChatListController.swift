@@ -129,40 +129,40 @@ private final class ContextControllerContentSourceImpl: ContextControllerContent
 
 public class ChatListControllerImpl: TelegramBaseController, ChatListController, UIViewControllerPreviewingDelegate, TabBarContainedController {
     
-    public func presentTabBarPreviewingController(sourceNodes: [ASDisplayNode]) {
-        if (self.filter == nil || self.isMissed || self.filterIndex == nil) {
-            if self.chatListDisplayNode.searchDisplayController != nil {
-                self.deactivateSearch(animated: true)
-            } else {
-                if let searchContentNode = self.searchContentNode {
-                    searchContentNode.updateExpansionProgress(1.0, animated: true)
-                }
-                self.chatListDisplayNode.chatListNode.scrollToPosition(.auto)
-            }
-            return
-        }
-        
-        let controller = TabBarFilterSwitchController(sharedContext: self.context.sharedContext, current: self.filter, available: getEnabledFilters(), switchToFilter: { [weak self] f in
-            
-            if let accountManager = self?.context.sharedContext.accountManager {
-                let _ = updateNiceSettingsInteractively(accountManager: accountManager, { settings in
-                    var settings = settings
-                    let index = self?.filterIndex ?? 0
-                    SimplyNiceSettings().chatFilters[Int(index)] = f
-                    settings.chatFilters[Int(index)] = f
-                    settings.currentFilter = index
-                    return settings
-                }).start()
-            }
-            
-            self?.context.sharedContext.switchToFilter(filter: f, withChatListController: self)
-            }, sourceNodes: sourceNodes)
-        self.switchController = controller
-        self.context.sharedContext.mainWindow?.present(controller, on: .root)
-    }
-    
-    public func updateTabBarPreviewingControllerPresentation(_ update: TabBarContainedControllerPresentationUpdate) {
-    }
+//    public func presentTabBarPreviewingController(sourceNodes: [ASDisplayNode]) {
+//        if (self.filter == nil || self.isMissed || self.filterIndex == nil) {
+//            if self.chatListDisplayNode.searchDisplayController != nil {
+//                self.deactivateSearch(animated: true)
+//            } else {
+//                if let searchContentNode = self.searchContentNode {
+//                    searchContentNode.updateExpansionProgress(1.0, animated: true)
+//                }
+//                self.chatListDisplayNode.chatListNode.scrollToPosition(.auto)
+//            }
+//            return
+//        }
+//
+//        let controller = TabBarFilterSwitchController(sharedContext: self.context.sharedContext, current: self.filter, available: getEnabledFilters(), switchToFilter: { [weak self] f in
+//
+//            if let accountManager = self?.context.sharedContext.accountManager {
+//                let _ = updateNiceSettingsInteractively(accountManager: accountManager, { settings in
+//                    var settings = settings
+//                    let index = self?.filterIndex ?? 0
+//                    SimplyNiceSettings().chatFilters[Int(index)] = f
+//                    settings.chatFilters[Int(index)] = f
+//                    settings.currentFilter = index
+//                    return settings
+//                }).start()
+//            }
+//
+//            self?.context.sharedContext.switchToFilter(filter: f, withChatListController: self)
+//            }, sourceNodes: sourceNodes)
+//        self.switchController = controller
+//        self.context.sharedContext.mainWindow?.present(controller, on: .root)
+//    }
+//
+//    public func updateTabBarPreviewingControllerPresentation(_ update: TabBarContainedControllerPresentationUpdate) {
+//    }
     
     private var validLayout: ContainerViewLayout?
     
@@ -371,10 +371,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                     var defaultTitle: String
                     if case .root = strongSelf.groupId {
                         defaultTitle = strongSelf.presentationData.strings.DialogList_Title
-                        // if (strongSelf.filter != nil) {
-                        //     // Title
-                        //     defaultTitle = l(getFilterTabName(filter: strongSelf.filter!), strongSelf.presentationData.strings.baseLanguageCode)
-                        // }
                         if let chatListFilter = chatListFilter {
                             let title: String
                             switch chatListFilter.name {
@@ -385,7 +381,10 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                             }
                             defaultTitle = title
                         } else {
-                            defaultTitle = strongSelf.presentationData.strings.DialogList_Title
+                            if (strongSelf.filter != nil) {
+                                // Title
+                                defaultTitle = l(getFilterTabName(filter: strongSelf.filter!), strongSelf.presentationData.strings.baseLanguageCode)
+                            }
                         }
                     } else {
                         defaultTitle = strongSelf.presentationData.strings.ChatList_ArchivedChatsTitle
@@ -486,7 +485,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                         }
                         
                         
-                        let _ = (chatListViewForLocation(groupId: strongSelf.groupId, location: .initial(count: 300), account: strongSelf.context.account)
+                        let _ = (chatListViewForLocation(groupId: strongSelf.groupId, location: .initial(count: 300, filter: strongSelf.chatListDisplayNode.chatListNode.chatListFilter), account: strongSelf.context.account)
                         |> take(1)
                         /*|> deliverOnMainQueue*/).start(next: { update in
                             let _ = (strongSelf.chatListDisplayNode.chatListNode.state).start(next: { state in
@@ -2228,7 +2227,38 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
         }
     }
     
-    /*public func presentTabBarPreviewingController(sourceNodes: [ASDisplayNode]) {
+    public func presentTabBarPreviewingController(sourceNodes: [ASDisplayNode]) {
+        if NicegramSettings().useTgFilters {
+            if (self.filter == nil || self.isMissed || self.filterIndex == nil) {
+                if self.chatListDisplayNode.searchDisplayController != nil {
+                    self.deactivateSearch(animated: true)
+                } else {
+                    if let searchContentNode = self.searchContentNode {
+                        searchContentNode.updateExpansionProgress(1.0, animated: true)
+                    }
+                    self.chatListDisplayNode.chatListNode.scrollToPosition(.auto)
+                }
+                return
+            }
+    
+            let controller = TabBarFilterSwitchController(sharedContext: self.context.sharedContext, current: self.filter, available: getEnabledFilters(), switchToFilter: { [weak self] f in
+    
+                if let accountManager = self?.context.sharedContext.accountManager {
+                    let _ = updateNiceSettingsInteractively(accountManager: accountManager, { settings in
+                        var settings = settings
+                        let index = self?.filterIndex ?? 0
+                        SimplyNiceSettings().chatFilters[Int(index)] = f
+                        settings.chatFilters[Int(index)] = f
+                        settings.currentFilter = index
+                        return settings
+                    }).start()
+                }
+    
+                self?.context.sharedContext.switchToFilter(filter: f, withChatListController: self)
+                }, sourceNodes: sourceNodes)
+            self.switchController = controller
+            self.context.sharedContext.mainWindow?.present(controller, on: .root)
+        } else {
         if self.isNodeLoaded {
             let _ = (self.context.account.postbox.transaction { transaction -> [ChatListFilterPreset] in
                 let settings = transaction.getPreferencesEntry(key: ApplicationSpecificPreferencesKeys.chatListFilterSettings) as? ChatListFilterSettings ?? ChatListFilterSettings.default
@@ -2268,9 +2298,10 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                 strongSelf.context.sharedContext.mainWindow?.present(controller, on: .root)
             })
         }
+        }
     }
     
     public func updateTabBarPreviewingControllerPresentation(_ update: TabBarContainedControllerPresentationUpdate) {
         
-    }*/
+    }
 }
