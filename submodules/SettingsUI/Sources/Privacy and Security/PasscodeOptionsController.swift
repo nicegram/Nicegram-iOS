@@ -164,7 +164,7 @@ private struct PasscodeOptionsData: Equatable {
 
 private func autolockStringForTimeout(strings: PresentationStrings, timeout: Int32?) -> String {
     if let timeout = timeout {
-        if timeout == 1 {
+        if timeout == 2 {
             return "Instantly"
         }
         if timeout == 10 {
