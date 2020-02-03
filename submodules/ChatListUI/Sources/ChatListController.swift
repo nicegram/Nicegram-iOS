@@ -2228,7 +2228,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
     }
     
     public func presentTabBarPreviewingController(sourceNodes: [ASDisplayNode]) {
-        if NicegramSettings().useTgFilters {
+        if !NicegramSettings().useTgFilters {
             if (self.filter == nil || self.isMissed || self.filterIndex == nil) {
                 if self.chatListDisplayNode.searchDisplayController != nil {
                     self.deactivateSearch(animated: true)
