@@ -379,19 +379,22 @@ public class SystemNGSettings {
     
 }
 
-public let SETTINGS_VERSION = 1
+public let SETTINGS_VERSION = 2
 public let BACKUP_NAME = "backup.ng-settings"
 public func getSettingsFilePath() -> URL {
     return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
 }
 
 public class NicegramSettings {
+    let UD = UserDefaults(suiteName: "NicegramSettings")
     let exSimplyNiceSettings = SimplyNiceSettings()
     let exSimplyNiceFolders = SimplyNiceFolders()
     let exSimplyNiceFilters = SimplyNiceFilters()
     let exPremiumSettings = PremiumSettings()
     
-    public init() {}
+    public init() {
+        UD?.register(defaults: ["useSelfieCam": false])
+    }
     
     // SimplyNiceSettings
     public var hideNumber: Bool {
@@ -528,12 +531,22 @@ public class NicegramSettings {
     }
     //
     
+    public var useSelfieCam: Bool {
+        get {
+            return UD?.bool(forKey: "useSelfieCam") ?? false
+        }
+        set {
+            UD?.set("useSelfieCam", newValue)
+        }
+    }
+    
     public var json: [String: Any] {
         var jsNiceSettings: [String: Any] = [
             "hideNumber": self.hideNumber,
             "maxFilters": self.maxFilters,
             "showTabNames": self.showTabNames,
-            "filtersBadge": self.filtersBadge
+            "filtersBadge": self.filtersBadge,
+            "useSelfieCam": self.useSelfieCam
         ]
         
         var intChatFilters: [Int32] = []
@@ -634,6 +647,13 @@ public class NicegramSettings {
                 result.append(("chatFilters", String(converted.count), true))
             } else {
                 result.append(("chatFilters", "", false))
+            }
+            
+            if let useSelfieCam = niceSettings["useSelfieCam"] as? Bool {
+                self.useSelfieCam = useSelfieCam
+                result.append(("useSelfieCam", String(useSelfieCam), true))
+            } else {
+                result.append(("useSelfieCam", "", false))
             }
         } else {
              result.append(("NiceSettings", "", false))

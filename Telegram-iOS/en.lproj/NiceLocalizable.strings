@@ -15,6 +15,7 @@
 "NiceFeatures.Tabs.ShowContacts" = "Show Contacts Tab";
 "NiceFeatures.ChatScreen.Header" = "CHAT SCREEN";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Animated Stickers";
+"NiceFeatures.UseSelfieCam" = "Selfie Camera (Round Videos)";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "Save to Cloud";
