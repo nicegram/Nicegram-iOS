@@ -15,6 +15,7 @@
 "NiceFeatures.Tabs.ShowContacts" = "顯示聯絡人標籤";
 "NiceFeatures.ChatScreen.Header" = "對話介面";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "動態貼圖";
+"NiceFeatures.useBackCam" = "使用後置鏡頭 (圓形影片)";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "轉傳到儲存的訊息";

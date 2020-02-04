@@ -15,6 +15,7 @@
 "NiceFeatures.Tabs.ShowContacts" = "Pokaż zakładkę kontakty";
 "NiceFeatures.ChatScreen.Header" = "Ekran czatu";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Animowane naklejki";
+"NiceFeatures.useBackCam" = "Użyj tylnej kamery (okrągłe wideo)";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "Zapisz w chmurze";
