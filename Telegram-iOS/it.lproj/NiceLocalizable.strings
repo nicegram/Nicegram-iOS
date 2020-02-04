@@ -15,6 +15,7 @@
 "NiceFeatures.Tabs.ShowContacts" = "Mostra lista contatti";
 "NiceFeatures.ChatScreen.Header" = "SCHERMATA DELLE CHAT";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Adesivi animati";
+"NiceFeatures.useBackCam" = "Usa la fotocamera posteriore (Videomessaggi)";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "Salva nel cloud";
