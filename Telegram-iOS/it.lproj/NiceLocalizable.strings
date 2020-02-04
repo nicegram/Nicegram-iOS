@@ -15,7 +15,7 @@
 "NiceFeatures.Tabs.ShowContacts" = "Mostra lista contatti";
 "NiceFeatures.ChatScreen.Header" = "SCHERMATA DELLE CHAT";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Adesivi animati";
-"NiceFeatures.useBackCam" = "Usa la fotocamera posteriore (Videomessaggi)";
+"NiceFeatures.useBackCam" = "Usa camera posteriore (Videomessaggi)";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "Salva nel cloud";
@@ -105,4 +105,9 @@
 /*Backup Settings*/
 "NiceFeatures.BackupIcloud" = "Sincronizza impostazioni e cartelle con iCloud";
 "NiceFeatures.BackupSettings" = "Impostazioni di backup & cartelle";
+"NiceFeatures.BackupSettings.Notice" = "Crea un backup. Tocca il file per ripristinarlo.";
 "NiceFeatures.BackupSettings.Done" = "Backup eseguito nei messaggi salvati";
+"NiceFeatures.BackupSettings.Error" = "Errore creazione backup";
+
+"NiceFeatures.RestoreSettings.Confirm" = "Sicuro di voler ripristinare cartelle e impostazioni da file?\n⚠️ Questo sovrascriverà i dati attuali";
+"NiceFeatures.RestoreSettings.Error" = "Errore ripristino impostazioni. Il file potrebbe essere danneggiato";
