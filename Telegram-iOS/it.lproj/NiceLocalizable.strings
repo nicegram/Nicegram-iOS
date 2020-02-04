@@ -110,4 +110,5 @@
 "NiceFeatures.BackupSettings.Error" = "Errore creazione backup";
 
 "NiceFeatures.RestoreSettings.Confirm" = "Sicuro di voler ripristinare cartelle e impostazioni da file?\n⚠️ Questo sovrascriverà i dati attuali";
+"NiceFeatures.RestoreSettings.Done" = "Cartelle e impostazioni ripristinate ✔️";
 "NiceFeatures.RestoreSettings.Error" = "Errore ripristino impostazioni. Il file potrebbe essere danneggiato";
