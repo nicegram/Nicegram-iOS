@@ -15,6 +15,7 @@
 "NiceFeatures.Tabs.ShowContacts" = "Kişiler Sekmesini Göster";
 "NiceFeatures.ChatScreen.Header" = "SOHBET EKRANI";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Animasyonlu Çıkartmalar";
+"NiceFeatures.useBackCam" = "Arka kamerayı kullan (Yuvarlak Videolar)";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "Buluta Kaydet";

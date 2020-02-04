@@ -101,9 +101,14 @@
 "NGLab.RegDate.Notice" = "Это примерная дата";
 "NGLab.RegDate.MenuItem" = "регистрация";
 "NGLab.RegDate.FetchError" = "К сожалению, дата регистрации недоступна.";
+
+/*Backup Settings*/
+"NiceFeatures.BackupIcloud" = "Синхронизация Настроек и Папок в iCloud";
 "NiceFeatures.BackupSettings" = "Резервное копирование настроек и папок";
 "NiceFeatures.BackupSettings.Notice" = "Создает бэкап файл. Тапни на файл для восстановления.";
 "NiceFeatures.BackupSettings.Done" = "Резервное копирование выполнено в сохраненные сообщения";
 "NiceFeatures.BackupSettings.Error" = "Ошибка при создании бэкапа";
 
 "NiceFeatures.RestoreSettings.Confirm" = "Восстановить Папки и Настройки из файла?\n⚠️ Текущие данные будут перезаписаны";
+"NiceFeatures.RestoreSettings.Done" = "Папки и настройки успешно восстановлены";
+"NiceFeatures.RestoreSettings.Error" = "Ошибка при восстановлении настроек. Возможно, файл повреждён";
