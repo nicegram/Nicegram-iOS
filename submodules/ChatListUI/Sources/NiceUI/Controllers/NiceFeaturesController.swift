@@ -30,6 +30,9 @@ private struct BrowserSelectionState: Equatable {
 
 private final class NiceFeaturesControllerArguments {
     let togglePinnedMessage: (Bool) -> Void
+    let toggleMuteSilent: (Bool) -> Void
+    let toggleHideNotifyAccount: (Bool) -> Void
+    
     let toggleShowContactsTab: (Bool) -> Void
     let toggleFixNotifications: (Bool) -> Void
     let updateShowCallsTab: (Bool) -> Void
@@ -51,8 +54,10 @@ private final class NiceFeaturesControllerArguments {
     let togglebackCam: (Bool) -> Void
     let toggletgFilters: (Bool) -> Void
 
-    init(togglePinnedMessage: @escaping (Bool) -> Void, toggleShowContactsTab: @escaping (Bool) -> Void, toggleFixNotifications: @escaping (Bool) -> Void, updateShowCallsTab: @escaping (Bool) -> Void, changeFiltersAmount: @escaping (Int32) -> Void, toggleShowTabNames: @escaping (Bool, String) -> Void, toggleHidePhone: @escaping (Bool, String) -> Void, toggleUseBrowser: @escaping (Bool) -> Void, customizeBrowser: @escaping (Browser) -> Void, openBrowserSelection: @escaping () -> Void, backupSettings: @escaping () -> Void, toggleFiltersBadge: @escaping (Bool) -> Void, toggleBackupIcloud: @escaping (Bool) -> Void, togglebackCam: @escaping (Bool) -> Void, toggletgFilters: @escaping (Bool) -> Void) {
+    init(togglePinnedMessage: @escaping (Bool) -> Void, toggleMuteSilent: @escaping (Bool) -> Void, toggleHideNotifyAccount: @escaping (Bool) -> Void, toggleShowContactsTab: @escaping (Bool) -> Void, toggleFixNotifications: @escaping (Bool) -> Void, updateShowCallsTab: @escaping (Bool) -> Void, changeFiltersAmount: @escaping (Int32) -> Void, toggleShowTabNames: @escaping (Bool, String) -> Void, toggleHidePhone: @escaping (Bool, String) -> Void, toggleUseBrowser: @escaping (Bool) -> Void, customizeBrowser: @escaping (Browser) -> Void, openBrowserSelection: @escaping () -> Void, backupSettings: @escaping () -> Void, toggleFiltersBadge: @escaping (Bool) -> Void, toggleBackupIcloud: @escaping (Bool) -> Void, togglebackCam: @escaping (Bool) -> Void, toggletgFilters: @escaping (Bool) -> Void) {
         self.togglePinnedMessage = togglePinnedMessage
+        self.toggleMuteSilent = toggleMuteSilent
+        self.toggleHideNotifyAccount = toggleHideNotifyAccount
         self.toggleShowContactsTab = toggleShowContactsTab
         self.toggleFixNotifications = toggleFixNotifications
         self.updateShowCallsTab = updateShowCallsTab
@@ -88,6 +93,10 @@ private enum NiceFeaturesControllerEntityId: Equatable, Hashable {
 private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
     case messageNotificationsHeader(PresentationTheme, String)
     case pinnedMessageNotification(PresentationTheme, String, Bool)
+    case muteSilentNotifications(PresentationTheme, String, Bool)
+    case muteSilentNotificationsNotice(PresentationTheme, String)
+    case hideNotifyAccount(PresentationTheme, String, Bool)
+    case hideNotifyAccountNotice(PresentationTheme, String)
 
     case fixNotifications(PresentationTheme, String, Bool)
     case fixNotificationsNotice(PresentationTheme, String)
@@ -121,7 +130,7 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
 
     var section: ItemListSectionId {
         switch self {
-        case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice:
+        case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .muteSilentNotifications, .muteSilentNotificationsNotice, .hideNotifyAccount, .hideNotifyAccountNotice:
             return niceFeaturesControllerSection.messageNotifications.rawValue
         case .chatsListHeader:
             return niceFeaturesControllerSection.chatsList.rawValue
@@ -145,28 +154,36 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return 0
         case .pinnedMessageNotification:
             return 1
-        case .fixNotifications:
+        case .muteSilentNotifications:
             return 2
-        case .fixNotificationsNotice:
+        case .muteSilentNotificationsNotice:
             return 3
-        case .chatsListHeader:
+        case .hideNotifyAccount:
             return 4
-        case .tabsHeader:
+        case .hideNotifyAccountNotice:
             return 5
-        case .showContactsTab:
+        case .fixNotifications:
             return 6
-        case .duplicateShowCalls:
+        case .fixNotificationsNotice:
             return 7
-        case .showTabNames:
+        case .chatsListHeader:
             return 8
-        case .filtersHeader:
+        case .tabsHeader:
             return 9
-        case .filtersAmount:
+        case .showContactsTab:
             return 10
-        case .filtersNotice:
+        case .duplicateShowCalls:
             return 11
-        case .filtersBadge:
+        case .showTabNames:
             return 12
+        case .filtersHeader:
+            return 13
+        case .filtersAmount:
+            return 14
+        case .filtersNotice:
+            return 15
+        case .filtersBadge:
+            return 16
         case .chatScreenHeader:
             return 20
         case .browsersHeader:
@@ -343,6 +360,30 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
+        case let .muteSilentNotifications(lhsTheme, lhsText, lhsValue):
+            if case let .muteSilentNotifications(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
+                return true
+            } else {
+                return false
+            }
+        case let .muteSilentNotificationsNotice(lhsTheme, lhsText):
+            if case let .muteSilentNotificationsNotice(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
+        case let .hideNotifyAccount(lhsTheme, lhsText, lhsValue):
+            if case let .hideNotifyAccount(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
+                return true
+            } else {
+                return false
+            }
+        case let .hideNotifyAccountNotice(lhsTheme, lhsText):
+            if case let .hideNotifyAccountNotice(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
         }
     }
 
@@ -359,6 +400,18 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.togglePinnedMessage(value)
             })
+        case let .muteSilentNotifications(theme, text, value):
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                arguments.toggleMuteSilent(value)
+            })
+        case let .muteSilentNotificationsNotice(theme, text):
+            return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
+        case let .hideNotifyAccount(theme, text, value):
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                arguments.toggleHideNotifyAccount(value)
+            })
+        case let .hideNotifyAccountNotice(theme, text):
+            return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         case let .fixNotifications(theme, text, value):
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.toggleFixNotifications(value)
@@ -446,6 +499,13 @@ private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls
     let locale = presentationData.strings.baseLanguageCode
     entries.append(.messageNotificationsHeader(presentationData.theme, presentationData.strings.Notifications_Title.uppercased()))
     //entries.append(.pinnedMessageNotification(presentationData.theme, "Pinned Messages", niceSettings.pinnedMessagesNotification))  //presentationData.strings.Nicegram_Settings_Features_PinnedMessages
+    
+//    entries.append(.muteSilentNotifications(presentationData.theme, l("NiceFeatures.Notifications.MuteSilent", locale), nicegramSettings.muteSoundSilent))
+//    entries.append(.muteSilentNotificationsNotice(presentationData.theme, l("NiceFeatures.Notifications.MuteSilentNotice", locale)))
+    
+    entries.append(.hideNotifyAccount(presentationData.theme, l("NiceFeatures.Notifications.HideNotifyAccount", locale), nicegramSettings.hideNotifyAccountName))
+    entries.append(.hideNotifyAccountNotice(presentationData.theme, l("NiceFeatures.Notifications.HideNotifyAccountNotice", locale)))
+    
     entries.append(.fixNotifications(presentationData.theme, l("NiceFeatures.Notifications.Fix", locale), niceSettings.fixNotifications))
     entries.append(.fixNotificationsNotice(presentationData.theme, l("NiceFeatures.Notifications.FixNotice", locale)))
 
@@ -537,6 +597,10 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
             settings.pinnedMessagesNotification = value
             return settings
         }).start()
+    }, toggleMuteSilent: { value in
+        NicegramSettings().muteSoundSilent = value
+    }, toggleHideNotifyAccount: { value in
+        NicegramSettings().hideNotifyAccountName = value
     }, toggleShowContactsTab: { value in
         let _ = updateNiceSettingsInteractively(accountManager: context.sharedContext.accountManager, { settings in
             var settings = settings

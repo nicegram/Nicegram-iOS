@@ -23,6 +23,8 @@
 /*Open Pin*/
 "Chat.OpenPin" = "Show Pin";
 "ChatFilter.Admin" = "Admin";
+"NiceFeatures.Notifications.HideNotifyAccount" = "Hide account in notification";
+"NiceFeatures.Notifications.HideNotifyAccountNotice" = "Instead of «User → Account» you will see only «User». For multiple accounts only.";
 "NiceFeatures.Notifications.Fix" = "Disable Unwanted Notifications";
 "NiceFeatures.Notifications.FixNotice" = "Useful if you get notifications from muted chats.\nReply from notifications, account labels and media previews will be unavailable.";
 "NiceFeatures.Filters.Header" = "FILTERS (TABS)";

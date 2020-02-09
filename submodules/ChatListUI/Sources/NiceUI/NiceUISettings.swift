@@ -387,6 +387,7 @@ public func getSettingsFilePath() -> URL {
 
 public class NicegramSettings {
     let UD = UserDefaults(suiteName: "NicegramSettings")
+    let shared = UserDefaults(suiteName: "group.\(Bundle.main.bundleIdentifier!)")
     let exSimplyNiceSettings = SimplyNiceSettings()
     let exSimplyNiceFolders = SimplyNiceFolders()
     let exSimplyNiceFilters = SimplyNiceFilters()
@@ -395,6 +396,8 @@ public class NicegramSettings {
     public init() {
         UD?.register(defaults: ["useBackCam": false])
         UD?.register(defaults: ["useTgFilters": false])
+        shared?.register(defaults: ["muteSoundSilent": true])
+        shared?.register(defaults: ["hideNotifyAccountName": false])
     }
     
     // SimplyNiceSettings
@@ -548,7 +551,25 @@ public class NicegramSettings {
         set {
             UD?.set(newValue, forKey: "useTgFilters")
         }
+    }
+    
+    public var muteSoundSilent: Bool {
+        get {
+            return shared?.bool(forKey: "muteSoundSilent") ?? false
         }
+        set {
+            shared?.set(newValue, forKey: "muteSoundSilent")
+        }
+    }
+    
+    public var hideNotifyAccountName: Bool {
+        get {
+            return shared?.bool(forKey: "hideNotifyAccountName") ?? false
+        }
+        set {
+            shared?.set(newValue, forKey: "hideNotifyAccountName")
+        }
+    }
     
     public var json: [String: Any] {
         var jsNiceSettings: [String: Any] = [
@@ -556,7 +577,8 @@ public class NicegramSettings {
             "maxFilters": self.maxFilters,
             "showTabNames": self.showTabNames,
             "filtersBadge": self.filtersBadge,
-            "useBackCam": self.useBackCam
+            "useBackCam": self.useBackCam,
+            "hideNotifyAccountName": self.hideNotifyAccountName
         ]
         
         var intChatFilters: [Int32] = []
@@ -664,6 +686,13 @@ public class NicegramSettings {
                 result.append(("useBackCam", String(useBackCam), true))
             } else {
                 result.append(("useBackCam", "", false))
+            }
+            
+            if let hideNotifyAccountName = niceSettings["hideNotifyAccountName"] as? Bool {
+                self.hideNotifyAccountName = hideNotifyAccountName
+                result.append(("hideNotifyAccountName", String(hideNotifyAccountName), true))
+            } else {
+                result.append(("hideNotifyAccountName", "", false))
             }
         } else {
              result.append(("NiceSettings", "", false))
