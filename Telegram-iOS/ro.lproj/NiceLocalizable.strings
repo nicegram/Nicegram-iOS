@@ -107,7 +107,10 @@
 /*Backup Settings*/
 "NiceFeatures.BackupIcloud" = "Sincronizați Setările și Dosarele cu iCloud";
 "NiceFeatures.BackupSettings" = "Copie de rezerva(Backup) Setări & Dosare";
+"NiceFeatures.BackupSettings.Notice" = "Creează copie de siguranță fișiere. Atingeți fișierul pentru restaurare.";
 "NiceFeatures.BackupSettings.Done" = "Copie de rezervă facută pentru Mesajele Salvate";
 "NiceFeatures.BackupSettings.Error" = "Eroare la crearea copiei de rezervă";
+
+"NiceFeatures.RestoreSettings.Confirm" = "Sigur doriți să restaurați folderele și setările din fișier?\n⚠️ Va anula datele actuale";
 "NiceFeatures.RestoreSettings.Done" = "Dosare & Setarile restaurat cu succes";
 "NiceFeatures.RestoreSettings.Error" = "Eroare restabilire setări. Fișierle pot fi corupte";
