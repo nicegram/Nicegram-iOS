@@ -23,6 +23,7 @@
 /*Open Pin*/
 "Chat.OpenPin" = "顯示置頂";
 "ChatFilter.Admin" = "管理員";
+"NiceFeatures.Notifications.HideNotifyAccount" = "在通知中隱藏帳號";
 "NiceFeatures.Notifications.Fix" = "停用非必要通知";
 "NiceFeatures.Notifications.FixNotice" = "如果您想將「已關閉通知」的對話完全禁音，這將非常有用。\n來自回覆、@username、媒體預覽的通知將被停用。";
 "NiceFeatures.Filters.Header" = "篩選標籤";
