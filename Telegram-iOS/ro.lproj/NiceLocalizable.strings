@@ -15,6 +15,7 @@
 "NiceFeatures.Tabs.ShowContacts" = "Vizualizare contacte";
 "NiceFeatures.ChatScreen.Header" = "AFIȘARE CHAT";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Stickere Animate";
+"NiceFeatures.useBackCam" = "Utilizați camera din spate (videoclipuri rotunde)";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "Salvează în Cloud";
@@ -22,6 +23,8 @@
 /*Open Pin*/
 "Chat.OpenPin" = "Afișare Pin";
 "ChatFilter.Admin" = "Administratori";
+"NiceFeatures.Notifications.HideNotifyAccount" = "Ascundeți contul în notificare";
+"NiceFeatures.Notifications.HideNotifyAccountNotice" = "În loc de «Utilizator → Cont», veți vedea doar «Utilizator». Numai pentru mai multe conturi.";
 "NiceFeatures.Notifications.Fix" = "Dezactivare notificări standard";
 "NiceFeatures.Notifications.FixNotice" = "Este util dacă primiți notificări de la chat-urile dezactivate.\nRăspunsul de la notificări, etichetele contului și previzualizările media nu vor fi disponibile.";
 "NiceFeatures.Filters.Header" = "FILTRE (FERESTRE)";
@@ -104,4 +107,10 @@
 /*Backup Settings*/
 "NiceFeatures.BackupIcloud" = "Sincronizați Setările și Dosarele cu iCloud";
 "NiceFeatures.BackupSettings" = "Copie de rezerva(Backup) Setări & Dosare";
+"NiceFeatures.BackupSettings.Notice" = "Creează copie de siguranță fișiere. Atingeți fișierul pentru restaurare.";
 "NiceFeatures.BackupSettings.Done" = "Copie de rezervă facută pentru Mesajele Salvate";
+"NiceFeatures.BackupSettings.Error" = "Eroare la crearea copiei de rezervă";
+
+"NiceFeatures.RestoreSettings.Confirm" = "Sigur doriți să restaurați folderele și setările din fișier?\n⚠️ Va anula datele actuale";
+"NiceFeatures.RestoreSettings.Done" = "Dosare & Setarile restaurat cu succes";
+"NiceFeatures.RestoreSettings.Error" = "Eroare restabilire setări. Fișierle pot fi corupte";

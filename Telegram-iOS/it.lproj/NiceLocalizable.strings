@@ -23,6 +23,8 @@
 /*Open Pin*/
 "Chat.OpenPin" = "Apri pin";
 "ChatFilter.Admin" = "Amministratore";
+"NiceFeatures.Notifications.HideNotifyAccount" = "Nascondi account nella notifica";
+"NiceFeatures.Notifications.HideNotifyAccountNotice" = "Invece di «Utente → Account» vedrai solo «Utente». Solo per account multipli.";
 "NiceFeatures.Notifications.Fix" = "Disabilita notifiche inutili";
 "NiceFeatures.Notifications.FixNotice" = "Utile se ricevi notifiche da chat silenziate.\nLe risposte alle notifiche, le etichette degli account e le anteprime dei media non saranno disponibili.";
 "NiceFeatures.Filters.Header" = "FILTRI (TABS)";
