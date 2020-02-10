@@ -68,7 +68,7 @@
 "Premium.SyncPins.Notice.ON" = "Dacă schimbați chat-urile fixate în alt client, acestea se vor schimba în Nicegram.";
 "Premium.SyncPins.Notice.OFF" = "Dacă schimbați chat-urile fixate în alt client, acestea NU SE VOR SCHIMBA în Nicegram.";
 "Premium.Missed.Header" = "Mesaje ratate";
-"Premium.Missed" = "Notificare la mesaje noi";
+"Premium.Missed" = "Notificarea mesajelor pierdute";
 "Premium.Missed.Notice" = "Când deschideți aplicația după o întârziere lungă (dormit, studiat, etc.), Nicegram vă va anunța despre mesaje și mențiuni private necitite.";
 "Folder.DeleteAsk" = "Șterge Dosar";
 "Folder.NeedPremium" = "Acest Dosar este destina doar utilizatorilor Premium. Poți obtine Premium sau șterge Dosarul glisând.";
