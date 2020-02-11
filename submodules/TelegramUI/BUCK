@@ -23,6 +23,7 @@ framework(
         "TelegramUI/**/*.swift",
     ]),
     deps = [
+        "//Nicegram/NicegramUI:NicegramUI",
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit#shared",
         "//submodules/SSignalKit/SSignalKit:SSignalKit",
         "//submodules/AsyncDisplayKit:AsyncDisplayKit#shared",

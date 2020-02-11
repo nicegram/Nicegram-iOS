@@ -240,7 +240,7 @@ public final class WindowKeyboardGestureRecognizerDelegate: NSObject, UIGestureR
 public class Window1 {
     public let hostView: WindowHostView
     
-    private var deviceMetrics: DeviceMetrics
+    public var deviceMetrics: DeviceMetrics
     
     private let statusBarHost: StatusBarHost?
     private let keyboardManager: KeyboardManager?

@@ -16,6 +16,7 @@ import AlertUI
 import AvatarNode
 import AppBundle
 import TelegramUIPreferences
+import NicegramUI
 
 public final class TelegramRootController: NavigationController {
     private let context: AccountContext
@@ -28,6 +29,7 @@ public final class TelegramRootController: NavigationController {
     public var accountSettingsController: ViewController?
     
     public var filterControllers: [ChatListController]?
+    public var topChatsController: ViewController?
     
     private var permissionsDisposable: Disposable?
     private var presentationDataDisposable: Disposable?
@@ -180,6 +182,14 @@ public final class TelegramRootController: NavigationController {
             }
         }
         
+        #if DEBUG
+        let topChatsController = TopChatsViewController(context: self.context)
+        
+        
+        controllers.insert(topChatsController, at: 0)
+        self.topChatsController = topChatsController
+        #endif
+        
         tabBarController.setControllers(controllers, selectedIndex: restoreSettignsController != nil ? (controllers.count - 1) : (controllers.count - 2))
         
         self.contactsController = contactsController
@@ -288,6 +298,9 @@ public final class TelegramRootController: NavigationController {
         PremiumSettings().lastOpened = utcnow()
         premiumLog("LAST OPENED \(PremiumSettings().lastOpened) | DIFF \(PremiumSettings().lastOpened - oldOpened) s")
         
+        #if DEBUG
+        controllers.insert(self.topChatsController!, at: 0)
+        #endif
         rootTabController.setControllers(controllers, selectedIndex: selectedIndex)
         
 //        let observer = NotificationCenter.default.addObserver(forName: .IAPHelperPurchaseNotification, object: nil, queue: .main, using: { notification in
