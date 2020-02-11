@@ -19,7 +19,8 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
     public var pushControllerImpl: ((ViewController) -> Void)?
     
     var tableView: UITableView = UITableView()
-    let animals = ["Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 "]
+//    let animals = ["Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 "]
+    var topChats: [TopChat] = []
     let cellReuseIdentifier = "TopChatsCell"
 
     
@@ -62,6 +63,29 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
         self.tableView.delegate = self
         self.tableView.backgroundColor = self.presentationData.theme.chatList.pinnedItemBackgroundColor
         self.tableView.separatorColor = self.presentationData.theme.chatList.itemSeparatorColor
+        
+        
+        // Load all data at once
+        URLSession(configuration: URLSessionConfiguration.default).dataTask(with: URL(string: JSON_URL)!) { data, response, error in
+            // ensure there is data returned from this HTTP response
+            guard let data = data else {
+                print("No data")
+                return
+            }
+            
+            // Parse JSON into Post array struct using JSONDecoder
+            guard let parsedTopChats = try? JSONDecoder().decode([TopChat].self, from: data) else {
+                print("Error: Couldn't decode data into topchats model")
+                return
+            }
+            
+            self.topChats = parsedTopChats
+            
+            // Make sure to update UI in main thread
+            DispatchQueue.main.async {
+                self.tableView.reloadData()
+            }
+        }.resume()
 
     }
     
@@ -73,15 +97,16 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
 
     public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int
     {
-        return animals.count
+        return topChats.count
     }
 
     public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell
     {
         let cell:UITableViewCell = tableView.dequeueReusableCell(withIdentifier: cellReuseIdentifier) as! UITableViewCell
 
-        cell.textLabel?.text = animals[indexPath.row]
+        cell.textLabel?.text = topChats[indexPath.row].title
         cell.textLabel?.textColor = self.presentationData.theme.chatList.titleColor
+        cell.imageView?.image = UIImage()
         cell.backgroundColor = self.presentationData.theme.chatList.pinnedItemBackgroundColor
         let view = UIView()
         view.backgroundColor = self.presentationData.theme.chatList.itemSelectedBackgroundColor
@@ -102,8 +127,8 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
     }
 
     public func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        print("You tapped cell number \(indexPath.row).")
-        let _ = (self.context.sharedContext.resolveUrl(account: self.context.account, url: "https://t.me/joinchat/AAAAAFiJxkS94Ir1WnLl_g") |> deliverOnMainQueue).start(next: { resolvedUrl in
+        print("You tapped cell \(topChats[indexPath.row]).")
+        let _ = (self.context.sharedContext.resolveUrl(account: self.context.account, url: "https://t.me/\(topChats[indexPath.row].username)") |> deliverOnMainQueue).start(next: { resolvedUrl in
             let openUrlSignal = self.context.sharedContext.openResolvedUrl(resolvedUrl, context: self.context, urlContext: .generic, navigationController: self.getNavigationController(), openPeer: { peerId, navigation in
                 switch navigation {
                     case let .chat(_, subject):
@@ -150,6 +175,25 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
         return nil
     }
     
+    public func scrollToTop() {
+        self.tableView.scrollToTop()
+    }
+    
+}
+
+extension UITableView{
+
+    func hasRowAtIndexPath(indexPath: IndexPath) -> Bool {
+        return indexPath.section < numberOfSections && indexPath.row < numberOfRows(inSection: indexPath.section)
+    }
+
+    func scrollToTop(_ animated: Bool = false) {
+        let indexPath = IndexPath(row: 0, section: 0)
+        if hasRowAtIndexPath(indexPath: indexPath) {
+            scrollToRow(at: indexPath, at: .top, animated: animated)
+        }
+    }
+
 }
 
 //public func getTopChatsController(/*context: AccountContext? = nil,*/ theme: PresentationTheme? = nil, strings: PresentationStrings? = nil, initialLayout: ContainerViewLayout? = nil) -> ViewController {
@@ -265,6 +309,13 @@ public class TopChatsViewController: ViewController {
                 }
             }
         })
+        
+        self.scrollToTopWithTabBar = { [weak self] in
+            guard let strongSelf = self else {
+                return
+            }
+            strongSelf.innerController.scrollToTop()
+        }
         
     }
     
