@@ -11,6 +11,7 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
     
     private let context: AccountContext
     
+    var rootNavigationController: NavigationController?
     var presentationData: PresentationData
     private var presentationDataDisposable: Disposable?
     var dismiss: (() -> Void)?
@@ -63,6 +64,12 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
         self.tableView.separatorColor = self.presentationData.theme.chatList.itemSeparatorColor
 
     }
+    
+    override public func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        print("APPEAR TABLEVIEW")
+        self.getNavigationController()
+    }
 
     public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int
     {
@@ -96,31 +103,29 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
 
     public func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         print("You tapped cell number \(indexPath.row).")
-//        print("Parent parent", (self.parent?.parent as? TopChatsViewController)?.innerNavigationController)
-//        print("Parent parent", (self.parent?.parent as? TopChatsViewController)?.innerNavigationController as? NavigationController)
-        let _ = (self.context.sharedContext.resolveUrl(account: self.context.account, url: "https://t.me/nicegramchat") |> deliverOnMainQueue).start(next: { resolvedUrl in
-            let openUrlSignal = self.context.sharedContext.openResolvedUrl(resolvedUrl, context: self.context, urlContext: .generic, navigationController: self.navigationController as? NavigationController, openPeer: { peerId, navigation in
+        let _ = (self.context.sharedContext.resolveUrl(account: self.context.account, url: "https://t.me/joinchat/AAAAAFiJxkS94Ir1WnLl_g") |> deliverOnMainQueue).start(next: { resolvedUrl in
+            let openUrlSignal = self.context.sharedContext.openResolvedUrl(resolvedUrl, context: self.context, urlContext: .generic, navigationController: self.getNavigationController(), openPeer: { peerId, navigation in
                 switch navigation {
                     case let .chat(_, subject):
-                        if let navigationController = self.navigationController as? NavigationController {
+                        if let navigationController = self.getNavigationController() {
                             self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(peerId), subject: subject))
                         }
                     case let .withBotStartPayload(botStart):
-                        if let navigationController = self.navigationController as? NavigationController {
+                        if let navigationController = self.getNavigationController() {
                             self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(peerId), botStart: botStart, keepStack: .always))
                         }
                     case .info:
                         let _ = (self.context.account.postbox.loadedPeerWithId(peerId)
                         |> deliverOnMainQueue).start(next: { peer in
                             if let controller = self.context.sharedContext.makePeerInfoController(context: self.context, peer: peer, mode: .generic) {
-                                 (self.navigationController as? NavigationController)?.pushViewController(controller)
+                                self.getNavigationController()?.pushViewController(controller)
                             }
                         })
                     default:
                         break
                 }
             }, sendFile: nil, sendSticker: nil, present: {c, a in
-                self.present(c, animated: true, completion: nil)
+                (self.parent?.parent as? TopChatsViewController)?.present(c, in: .window(.root), with: a)
             }, dismissInput: {
                 self.dismiss?()
             }, contentContext: nil)
@@ -130,6 +135,19 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
     
     @objc func cancelPressed() {
         self.dismiss?()
+    }
+    
+    func getNavigationController() -> NavigationController? {
+        if let strongRootNavigationController = self.rootNavigationController {
+            return strongRootNavigationController
+        }
+        
+        if let strongParentRootNVC = (self.parent?.parent as? TopChatsViewController)?.navigationController as? NavigationController {
+            self.rootNavigationController = strongParentRootNVC
+            return strongParentRootNVC
+        }
+        
+        return nil
     }
     
 }
@@ -272,9 +290,6 @@ public class TopChatsViewController: ViewController {
         self.displayNode.view.addSubview(self.innerNavigationController.view)
         self.innerNavigationController.didMove(toParent: self)
         
-        print("VC", self.navigationController)
-        print(self as? NavigationController)
-        
         self.controllerNode.dismiss = { [weak self] in
             self?.presentingViewController?.dismiss(animated: true, completion: nil)
         }
@@ -285,7 +300,6 @@ public class TopChatsViewController: ViewController {
         
         self.innerNavigationController.viewWillAppear(false)
         self.innerNavigationController.viewDidAppear(false)
-        
         //self.controllerNode.animateIn()
     }
     
