@@ -15,6 +15,8 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
     private var presentationDataDisposable: Disposable?
     var dismiss: (() -> Void)?
     
+    public var pushControllerImpl: ((ViewController) -> Void)?
+    
     var tableView: UITableView = UITableView()
     let animals = ["Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 "]
     let cellReuseIdentifier = "TopChatsCell"
@@ -94,8 +96,35 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
 
     public func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         print("You tapped cell number \(indexPath.row).")
-        self.context.sharedContext.applicationBindings.openUrl("https://t.me/nicegramchat")
-//        self.context.sharedContext.openExternalUrl(context: self.context, urlContext: .generic, url: "https://t.me/nicegramchat", forceExternal: true, presentationData: self.presentationData, navigationController: nil, dismissInput: {})
+//        print("Parent parent", (self.parent?.parent as? TopChatsViewController)?.innerNavigationController)
+//        print("Parent parent", (self.parent?.parent as? TopChatsViewController)?.innerNavigationController as? NavigationController)
+        let _ = (self.context.sharedContext.resolveUrl(account: self.context.account, url: "https://t.me/nicegramchat") |> deliverOnMainQueue).start(next: { resolvedUrl in
+            let openUrlSignal = self.context.sharedContext.openResolvedUrl(resolvedUrl, context: self.context, urlContext: .generic, navigationController: self.navigationController as? NavigationController, openPeer: { peerId, navigation in
+                switch navigation {
+                    case let .chat(_, subject):
+                        if let navigationController = self.navigationController as? NavigationController {
+                            self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(peerId), subject: subject))
+                        }
+                    case let .withBotStartPayload(botStart):
+                        if let navigationController = self.navigationController as? NavigationController {
+                            self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(peerId), botStart: botStart, keepStack: .always))
+                        }
+                    case .info:
+                        let _ = (self.context.account.postbox.loadedPeerWithId(peerId)
+                        |> deliverOnMainQueue).start(next: { peer in
+                            if let controller = self.context.sharedContext.makePeerInfoController(context: self.context, peer: peer, mode: .generic) {
+                                 (self.navigationController as? NavigationController)?.pushViewController(controller)
+                            }
+                        })
+                    default:
+                        break
+                }
+            }, sendFile: nil, sendSticker: nil, present: {c, a in
+                self.present(c, animated: true, completion: nil)
+            }, dismissInput: {
+                self.dismiss?()
+            }, contentContext: nil)
+    })
         self.tableView.deselectRow(at: indexPath, animated: true)
     }
     
@@ -142,24 +171,6 @@ final class TopChatsControllerNode: ASDisplayNode {
     }
     
     func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {
-//        var tabBarHeight: CGFloat
-//        var options: ContainerViewLayoutInsetOptions = []
-//        if layout.metrics.widthClass == .regular {
-//            options.insert(.input)
-//        }
-//        let bottomInset: CGFloat = layout.insets(options: options).bottom
-//        if !layout.safeInsets.left.isZero {
-//            tabBarHeight = 34.0 + bottomInset
-//        } else {
-//            tabBarHeight = 49.0 + bottomInset
-//        }
-//
-//        let tabBarFrame = CGRect(origin: CGPoint(x: 0.0, y: layout.size.height - tabBarHeight), size: CGSize(width: layout.size.width, height: tabBarHeight))
-//
-//        print("FRAME", tabBarFrame)
-//
-//        self.bounds = CGRect(x: 0.0, y: 0.0, width: layout.size.width, height: layout.size.height)
-//        self.position =  CGPoint(x: layout.size.width / 2.0, y: layout.size.height / 2.0)
     }
     
 //    func animateIn() {
@@ -186,11 +197,19 @@ public class TopChatsViewController: ViewController {
     private var presentationData: PresentationData
     private var presentationDataDisposable: Disposable?
     
+    
+    
+    public var pushControllerImpl: ((ViewController) -> Void)?
+    //public var presentControllerImpl: ((ViewController, Any?) -> Void)?
+    
     public init(context: AccountContext) {
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
         
         self.innerController = TopChatsController(context: context)
         self.innerNavigationController = UINavigationController(rootViewController: self.innerController)
+//        self.innerController.pushControllerImpl = { value in
+//            (self.innerNavigationController as? NavigationController)?.pushViewController(value)
+//        }
         
         super.init(navigationBarPresentationData: nil)
         
@@ -252,6 +271,9 @@ public class TopChatsViewController: ViewController {
         self.addChild(self.innerNavigationController)
         self.displayNode.view.addSubview(self.innerNavigationController.view)
         self.innerNavigationController.didMove(toParent: self)
+        
+        print("VC", self.navigationController)
+        print(self as? NavigationController)
         
         self.controllerNode.dismiss = { [weak self] in
             self?.presentingViewController?.dismiss(animated: true, completion: nil)
