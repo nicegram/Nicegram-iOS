@@ -6,6 +6,20 @@ import TelegramPresentationData
 import SwiftSignalKit
 import AccountContext
 
+private class TopChatsCell: UITableViewCell {
+    
+    override public func layoutSubviews() {
+       super.layoutSubviews()
+       if let frameWidth = self.imageView?.frame.width {
+           self.imageView?.layer.cornerRadius = frameWidth / 2.0
+           self.imageView?.clipsToBounds = true
+       }
+        let padding = UIEdgeInsets(top: 0, left: 0, bottom: 10, right: 0)
+        bounds = bounds.inset(by: padding)
+    }
+}
+
+
 final class TopChatsController: UIViewController, UITableViewDelegate, UITableViewDataSource
 {
     
@@ -15,47 +29,59 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
     var presentationData: PresentationData
     private var presentationDataDisposable: Disposable?
     var dismiss: (() -> Void)?
+    var imageLoader: ImageCacheLoader
     
     public var pushControllerImpl: ((ViewController) -> Void)?
     
     var tableView: UITableView = UITableView()
-//    let animals = ["Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 ", "Nicegram 🇷🇺", "Nicegram 🇬🇧", "Nicegram 🇨🇳 🇹🇼", "Nicegram 🇮🇹", "Nicegram 🇮🇷 🇪🇸 🇹🇷 "]
     var topChats: [TopChat] = []
+    var filteredTopChats: [TopChat] = []
     let cellReuseIdentifier = "TopChatsCell"
-
+    
+    
+//    let loadingView = UIView()
+//
+//    /// Spinner shown during load the TableView
+//    let spinner = UIActivityIndicatorView()
+//
+//    /// Text shown during load the TableView
+//    let loadingLabel = UILabel()
     
     public init(context: AccountContext) {
         self.context = context
         self.presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
+        self.imageLoader = ImageCacheLoader()
         
         super.init(nibName: nil, bundle: nil)
         
         self.presentationDataDisposable = (context.sharedContext.presentationData
-        |> deliverOnMainQueue).start(next: { [weak self] presentationData in
-            if let strongSelf = self {
-                let previousTheme = strongSelf.presentationData.theme
-                let previousStrings = strongSelf.presentationData.strings
-                
-                strongSelf.presentationData = presentationData
-                
-                if previousTheme !== presentationData.theme || previousStrings !== presentationData.strings {
-                    strongSelf.updateThemeAndStrings()
+            |> deliverOnMainQueue).start(next: { [weak self] presentationData in
+                if let strongSelf = self {
+                    let previousTheme = strongSelf.presentationData.theme
+                    let previousStrings = strongSelf.presentationData.strings
+                    
+                    strongSelf.presentationData = presentationData
+                    
+                    if previousTheme !== presentationData.theme || previousStrings !== presentationData.strings {
+                        strongSelf.updateThemeAndStrings()
+                    }
                 }
-            }
-        })
+            })
+
+        self.loadData()
     }
     
     required init?(coder aDecoder: NSCoder) {
-           fatalError("init(coder:) has not been implemented")
+        fatalError("init(coder:) has not been implemented")
     }
     
     override public func viewDidLoad()
     {
         super.viewDidLoad()
         
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: cellReuseIdentifier)
+        tableView.register(TopChatsCell.self, forCellReuseIdentifier: cellReuseIdentifier)
         
-
+        
         self.view.addSubview(self.tableView)
         self.tableView.frame = self.view.bounds
         self.tableView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -64,29 +90,10 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
         self.tableView.backgroundColor = self.presentationData.theme.chatList.pinnedItemBackgroundColor
         self.tableView.separatorColor = self.presentationData.theme.chatList.itemSeparatorColor
         
+//        if self.topChats.isEmpty {
+//            setLoadingScreen()
+//        }
         
-        // Load all data at once
-        URLSession(configuration: URLSessionConfiguration.default).dataTask(with: URL(string: JSON_URL)!) { data, response, error in
-            // ensure there is data returned from this HTTP response
-            guard let data = data else {
-                print("No data")
-                return
-            }
-            
-            // Parse JSON into Post array struct using JSONDecoder
-            guard let parsedTopChats = try? JSONDecoder().decode([TopChat].self, from: data) else {
-                print("Error: Couldn't decode data into topchats model")
-                return
-            }
-            
-            self.topChats = parsedTopChats
-            
-            // Make sure to update UI in main thread
-            DispatchQueue.main.async {
-                self.tableView.reloadData()
-            }
-        }.resume()
-
     }
     
     override public func viewDidAppear(_ animated: Bool) {
@@ -94,24 +101,33 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
         print("APPEAR TABLEVIEW")
         self.getNavigationController()
     }
-
+    
     public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int
     {
         return topChats.count
     }
-
+    
     public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell
     {
-        let cell:UITableViewCell = tableView.dequeueReusableCell(withIdentifier: cellReuseIdentifier) as! UITableViewCell
-
-        cell.textLabel?.text = topChats[indexPath.row].title
+        let cell: TopChatsCell = tableView.dequeueReusableCell(withIdentifier: cellReuseIdentifier) as! TopChatsCell
+        
+        let topChat = topChats[indexPath.row]
+        
+        cell.textLabel?.text = topChat.title
         cell.textLabel?.textColor = self.presentationData.theme.chatList.titleColor
-        cell.imageView?.image = UIImage()
         cell.backgroundColor = self.presentationData.theme.chatList.pinnedItemBackgroundColor
         let view = UIView()
         view.backgroundColor = self.presentationData.theme.chatList.itemSelectedBackgroundColor
         cell.selectedBackgroundView = view
-
+        
+        imageLoader.obtainImageWithPath(imagePath: AVATAR_URL + topChat.image) { (image) in
+            // Before assigning the image, check whether the current cell is visible
+            if let updateCell = tableView.cellForRow(at: indexPath) as? TopChatsCell {
+                updateCell.imageView?.image = image
+                updateCell.setNeedsLayout()
+            }
+        }
+        
         return cell
     }
     
@@ -122,39 +138,46 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
         if self.isViewLoaded {
             self.tableView.backgroundColor = self.presentationData.theme.chatList.pinnedItemBackgroundColor
             self.tableView.separatorColor = self.presentationData.theme.chatList.itemSeparatorColor
+//            loadingLabel.textColor = self.presentationData.theme.chatList.titleColor
+//            //loadingLabel.text = "Loading..."
+//            spinner.color = self.presentationData.theme.chatList.titleColor
             self.tableView.reloadData()
         }
     }
-
+    
     public func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        print("You tapped cell \(topChats[indexPath.row]).")
-        let _ = (self.context.sharedContext.resolveUrl(account: self.context.account, url: "https://t.me/\(topChats[indexPath.row].username)") |> deliverOnMainQueue).start(next: { resolvedUrl in
+        let topChat = topChats[indexPath.row]
+         
+        print("TTOPCHAT A \(topChat.a)")
+        
+        print("You tapped cell \(topChat).")
+        let _ = (self.context.sharedContext.resolveUrl(account: self.context.account, url: "https://t.me/\(topChat.username)") |> deliverOnMainQueue).start(next: { resolvedUrl in
             let openUrlSignal = self.context.sharedContext.openResolvedUrl(resolvedUrl, context: self.context, urlContext: .generic, navigationController: self.getNavigationController(), openPeer: { peerId, navigation in
                 switch navigation {
-                    case let .chat(_, subject):
-                        if let navigationController = self.getNavigationController() {
-                            self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(peerId), subject: subject))
-                        }
-                    case let .withBotStartPayload(botStart):
-                        if let navigationController = self.getNavigationController() {
-                            self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(peerId), botStart: botStart, keepStack: .always))
-                        }
-                    case .info:
-                        let _ = (self.context.account.postbox.loadedPeerWithId(peerId)
+                case let .chat(_, subject):
+                    if let navigationController = self.getNavigationController() {
+                        self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(peerId), subject: subject))
+                    }
+                case let .withBotStartPayload(botStart):
+                    if let navigationController = self.getNavigationController() {
+                        self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(peerId), botStart: botStart, keepStack: .always))
+                    }
+                case .info:
+                    let _ = (self.context.account.postbox.loadedPeerWithId(peerId)
                         |> deliverOnMainQueue).start(next: { peer in
                             if let controller = self.context.sharedContext.makePeerInfoController(context: self.context, peer: peer, mode: .generic) {
                                 self.getNavigationController()?.pushViewController(controller)
                             }
                         })
-                    default:
-                        break
+                default:
+                    break
                 }
             }, sendFile: nil, sendSticker: nil, present: {c, a in
                 (self.parent?.parent as? TopChatsViewController)?.present(c, in: .window(.root), with: a)
             }, dismissInput: {
                 self.dismiss?()
             }, contentContext: nil)
-    })
+        })
         self.tableView.deselectRow(at: indexPath, animated: true)
     }
     
@@ -176,24 +199,95 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     public func scrollToTop() {
-        self.tableView.scrollToTop()
+        self.tableView.scrollToTop(true)
     }
+    
+    private func loadData() {
+        // Load all data at once
+        URLSession(configuration: URLSessionConfiguration.default).dataTask(with: URL(string: JSON_URL)!) { data, response, error in
+            // ensure there is data returned from this HTTP response
+            guard let data = data else {
+                print("No data")
+                return
+            }
+            
+            // Parse JSON into Post array struct using JSONDecoder
+            guard let parsedTopChats = try? JSONDecoder().decode([TopChat].self, from: data) else {
+                print("Error: Couldn't decode data into topchats model")
+                return
+            }
+            
+            for topChat in parsedTopChats {
+                if topChat.a.isEmpty {
+                    self.topChats.append(topChat)
+                }
+            }
+            
+            // Make sure to update UI in main thread
+            DispatchQueue.main.async {
+                self.tableView.reloadData()
+                // self.removeLoadingScreen()
+            }
+        }.resume()
+    }
+    
+    // Set the activity indicator into the main view
+//    private func setLoadingScreen() {
+//
+//        // Sets the view which contains the loading text and the spinner
+//        let width: CGFloat = 120
+//        let height: CGFloat = 30
+//        let x = (tableView.frame.width / 2) - (width / 2)
+//        let y = (tableView.frame.height / 2) - (height / 2) - (navigationController?.navigationBar.frame.height)!
+//        loadingView.frame = CGRect(x: x, y: y, width: width, height: height)
+//
+//        // Sets loading text
+//        loadingLabel.textColor = self.presentationData.theme.chatList.titleColor
+//        loadingLabel.textAlignment = .center
+//        loadingLabel.text = "Loading..."
+//        loadingLabel.frame = CGRect(x: 0, y: 0, width: 140, height: 30)
+//
+//        // Sets spinner
+//        spinner.style = .gray
+//        spinner.color = self.presentationData.theme.chatList.titleColor
+//        spinner.frame = CGRect(x: 0, y: 0, width: 30, height: 30)
+//        spinner.startAnimating()
+//
+//        // Adds text and spinner to the view
+//        loadingView.addSubview(spinner)
+//        loadingView.addSubview(loadingLabel)
+//
+//        tableView.addSubview(loadingView)
+//
+//    }
+//
+//    // Remove the activity indicator from the main view
+//    private func removeLoadingScreen() {
+//
+//        // Hides and stops the text and the spinner
+//        if spinner.isAnimating {
+//            spinner.stopAnimating()
+//        }
+//        spinner.isHidden = true
+//        loadingLabel.isHidden = true
+//
+//    }
     
 }
 
 extension UITableView{
-
+    
     func hasRowAtIndexPath(indexPath: IndexPath) -> Bool {
         return indexPath.section < numberOfSections && indexPath.row < numberOfRows(inSection: indexPath.section)
     }
-
+    
     func scrollToTop(_ animated: Bool = false) {
         let indexPath = IndexPath(row: 0, section: 0)
         if hasRowAtIndexPath(indexPath: indexPath) {
             scrollToRow(at: indexPath, at: .top, animated: animated)
         }
     }
-
+    
 }
 
 //public func getTopChatsController(/*context: AccountContext? = nil,*/ theme: PresentationTheme? = nil, strings: PresentationStrings? = nil, initialLayout: ContainerViewLayout? = nil) -> ViewController {
@@ -235,17 +329,17 @@ final class TopChatsControllerNode: ASDisplayNode {
     func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {
     }
     
-//    func animateIn() {
-//        self.layer.animatePosition(from: CGPoint(x: self.layer.position.x, y: self.layer.position.y + self.layer.bounds.size.height), to: self.layer.position, duration: 0.5, timingFunction: kCAMediaTimingFunctionSpring)
-//    }
-//
-//    func animateOut() {
-//        self.layer.animatePosition(from: self.layer.position, to: CGPoint(x: self.layer.position.x, y: self.layer.position.y + self.layer.bounds.size.height), duration: 0.2, timingFunction: CAMediaTimingFunctionName.easeInEaseOut.rawValue, removeOnCompletion: false, completion: { [weak self] _ in
-//            if let strongSelf = self {
-//                strongSelf.dismiss?()
-//            }
-//        })
-//    }
+    //    func animateIn() {
+    //        self.layer.animatePosition(from: CGPoint(x: self.layer.position.x, y: self.layer.position.y + self.layer.bounds.size.height), to: self.layer.position, duration: 0.5, timingFunction: kCAMediaTimingFunctionSpring)
+    //    }
+    //
+    //    func animateOut() {
+    //        self.layer.animatePosition(from: self.layer.position, to: CGPoint(x: self.layer.position.x, y: self.layer.position.y + self.layer.bounds.size.height), duration: 0.2, timingFunction: CAMediaTimingFunctionName.easeInEaseOut.rawValue, removeOnCompletion: false, completion: { [weak self] _ in
+    //            if let strongSelf = self {
+    //                strongSelf.dismiss?()
+    //            }
+    //        })
+    //    }
 }
 
 
@@ -269,9 +363,9 @@ public class TopChatsViewController: ViewController {
         
         self.innerController = TopChatsController(context: context)
         self.innerNavigationController = UINavigationController(rootViewController: self.innerController)
-//        self.innerController.pushControllerImpl = { value in
-//            (self.innerNavigationController as? NavigationController)?.pushViewController(value)
-//        }
+        //        self.innerController.pushControllerImpl = { value in
+        //            (self.innerNavigationController as? NavigationController)?.pushViewController(value)
+        //        }
         
         super.init(navigationBarPresentationData: nil)
         
@@ -297,18 +391,18 @@ public class TopChatsViewController: ViewController {
         }
         
         self.presentationDataDisposable = (context.sharedContext.presentationData
-        |> deliverOnMainQueue).start(next: { [weak self] presentationData in
-            if let strongSelf = self {
-                let previousTheme = strongSelf.presentationData.theme
-                let previousStrings = strongSelf.presentationData.strings
-                
-                strongSelf.presentationData = presentationData
-                
-                if previousTheme !== presentationData.theme || previousStrings !== presentationData.strings {
-                    strongSelf.updateThemeAndStrings()
+            |> deliverOnMainQueue).start(next: { [weak self] presentationData in
+                if let strongSelf = self {
+                    let previousTheme = strongSelf.presentationData.theme
+                    let previousStrings = strongSelf.presentationData.strings
+                    
+                    strongSelf.presentationData = presentationData
+                    
+                    if previousTheme !== presentationData.theme || previousStrings !== presentationData.strings {
+                        strongSelf.updateThemeAndStrings()
+                    }
                 }
-            }
-        })
+            })
         
         self.scrollToTopWithTabBar = { [weak self] in
             guard let strongSelf = self else {
@@ -320,7 +414,7 @@ public class TopChatsViewController: ViewController {
     }
     
     required init(coder aDecoder: NSCoder) {
-           fatalError("init(coder:) has not been implemented")
+        fatalError("init(coder:) has not been implemented")
     }
     
     deinit {
@@ -369,7 +463,7 @@ public class TopChatsViewController: ViewController {
         } else {
             tabBarHeight = 49.0 + bottomInset
         }
-
+        
         let tabBarFrame = CGRect(origin: CGPoint(x: 0.0, y: layout.size.height - tabBarHeight), size: CGSize(width: layout.size.width, height: tabBarHeight))
         
         var finalLayout = layout.size
