@@ -5,6 +5,7 @@ import Display
 import TelegramPresentationData
 import SwiftSignalKit
 import AccountContext
+import Zip
 
 private class TopChatsCell: UITableViewCell {
     
@@ -67,8 +68,49 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
                     }
                 }
             })
-
-        self.loadData()
+        print("DOWNLOADING ARCHIVE")
+        URLSession(configuration: URLSessionConfiguration.default).dataTask(with: URL(string: ARCHIVE_URL)!) { data, response, error in
+            print("RESPONSE", response, "ERROR", error)
+             // ensure there is data returned from this HTTP response
+            guard let data = data else {
+                 print("No data")
+                 return
+            }
+    
+            guard let archive = Archive(data: data, accessMode: .read) else  {
+                print("Can't get archive data")
+                return
+            }
+            
+            guard let entry = archive[FILE_NAME] else {
+                print("topchats.json missing")
+                return
+            }
+            do  {
+                try archive.extract(entry, consumer: { (data) in
+                    print("DATA COUNT", data.count)
+                })
+            } catch {
+                print("Error extracting \(FILE_NAME)")
+            }
+//             // Parse JSON into Post array struct using JSONDecoder
+//             guard let parsedTopChats = try? JSONDecoder().decode([TopChat].self, from: data) else {
+//                 print("Error: Couldn't decode data into topchats model")
+//                 return
+//             }
+//
+//             for topChat in parsedTopChats {
+//                 if topChat.a.isEmpty {
+//                     self.topChats.append(topChat)
+//                 }
+//             }
+//
+//             // Make sure to update UI in main thread
+//             DispatchQueue.main.async {
+//                 self.tableView.reloadData()
+//                 // self.removeLoadingScreen()
+//             }
+         }.resume()
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -202,34 +244,10 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
         self.tableView.scrollToTop(true)
     }
     
-    private func loadData() {
-        // Load all data at once
-        URLSession(configuration: URLSessionConfiguration.default).dataTask(with: URL(string: JSON_URL)!) { data, response, error in
-            // ensure there is data returned from this HTTP response
-            guard let data = data else {
-                print("No data")
-                return
-            }
-            
-            // Parse JSON into Post array struct using JSONDecoder
-            guard let parsedTopChats = try? JSONDecoder().decode([TopChat].self, from: data) else {
-                print("Error: Couldn't decode data into topchats model")
-                return
-            }
-            
-            for topChat in parsedTopChats {
-                if topChat.a.isEmpty {
-                    self.topChats.append(topChat)
-                }
-            }
-            
-            // Make sure to update UI in main thread
-            DispatchQueue.main.async {
-                self.tableView.reloadData()
-                // self.removeLoadingScreen()
-            }
-        }.resume()
-    }
+//    private func loadData() {
+//        // Load all data at once
+//
+//    }
     
     // Set the activity indicator into the main view
 //    private func setLoadingScreen() {
