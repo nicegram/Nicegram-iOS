@@ -8,7 +8,7 @@
 import Foundation
 import UIKit
 
-let JSON_URL = "https://combot.org/telegram/top/chats/langs/all.json"
+let JSON_URL = "https://github.com/Kylmakalle/topchats/raw/master/topchats.json"
 let AVATAR_URL = "https://ant.combot.org/a/ch/"
 
 struct TopChat: Decodable {
