@@ -80,6 +80,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     case versionInfo(PresentationTheme)
     case a(PresentationTheme, String)
     case resetPremium(PresentationTheme)
+    case exportdb(PresentationTheme)
     
     var section: ItemListSectionId {
         switch self {
@@ -91,7 +92,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return DebugControllerSection.logging.rawValue
         case .enableRaiseToSpeak, .keepChatNavigationStack, .skipReadHistory, .crashOnSlowQueries:
             return DebugControllerSection.experiments.rawValue
-        case .clearTips, .reimport, .resetData, .resetDatabase, .resetHoles, .reindexUnread, .resetBiometricsData, .optimizeDatabase, .photoPreview, .knockoutWallpaper, .resetPremium:
+        case .clearTips, .reimport, .resetData, .resetDatabase, .resetHoles, .reindexUnread, .resetBiometricsData, .optimizeDatabase, .photoPreview, .knockoutWallpaper, .resetPremium, .exportdb:
             return DebugControllerSection.experiments.rawValue
         case .hostInfo, .versionInfo:
             return DebugControllerSection.info.rawValue
@@ -134,28 +135,30 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return 15
         case .reimport:
             return 16
-        case .resetData:
+        case .exportdb:
             return 17
-        case .resetDatabase:
+        case .resetData:
             return 18
-        case .resetHoles:
+        case .resetDatabase:
             return 19
-        case .reindexUnread:
+        case .resetHoles:
             return 20
-        case .resetBiometricsData:
+        case .reindexUnread:
             return 21
-        case .optimizeDatabase:
+        case .resetBiometricsData:
             return 22
-        case .photoPreview:
+        case .optimizeDatabase:
             return 23
-        case .knockoutWallpaper:
+        case .photoPreview:
             return 24
-        case .hostInfo:
+        case .knockoutWallpaper:
             return 25
-        case .resetPremium:
+        case .hostInfo:
             return 26
-        case .versionInfo:
+        case .resetPremium:
             return 27
+        case .versionInfo:
+            return 28
         }
     }
     
@@ -476,6 +479,24 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     exit(0)
                 }
             })
+        case let .exportdb(theme):
+            return ItemListActionItem(presentationData: presentationData, title: "Reset Data", kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                let presentationData = arguments.sharedContext.currentPresentationData.with { $0 }
+                let actionSheet = ActionSheetController(presentationData: presentationData)
+                actionSheet.setItemGroups([ActionSheetItemGroup(items: [
+                    ActionSheetTextItem(title: "All data will be exported"),
+                    ActionSheetButtonItem(title: "Export", color: .destructive, action: { [weak actionSheet] in
+                        actionSheet?.dismissAnimated()
+                        let databasePath = arguments.sharedContext.accountManager.basePath + "/db"
+                        
+                    }),
+                    ]), ActionSheetItemGroup(items: [
+                        ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
+                            actionSheet?.dismissAnimated()
+                        })
+                        ])])
+                arguments.presentController(actionSheet, nil)
+            })
         case let .resetData(theme):
             return ItemListActionItem(presentationData: presentationData, title: "Reset Data", kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 let presentationData = arguments.sharedContext.currentPresentationData.with { $0 }
@@ -652,6 +673,7 @@ private func debugControllerEntries(presentationData: PresentationData, loggingS
     if hasLegacyAppData {
         entries.append(.reimport(presentationData.theme))
     }
+    entries.append(.exportdb(presentationData.theme))
     entries.append(.resetData(presentationData.theme))
     entries.append(.resetDatabase(presentationData.theme))
     entries.append(.resetHoles(presentationData.theme))
