@@ -15,8 +15,8 @@ private class TopChatsCell: UITableViewCell {
            self.imageView?.layer.cornerRadius = frameWidth / 2.0
            self.imageView?.clipsToBounds = true
        }
-        let padding = UIEdgeInsets(top: 0, left: 0, bottom: 10, right: 0)
-        bounds = bounds.inset(by: padding)
+//       let padding = UIEdgeInsets(top: 0, left: 0, bottom: 10, right: 0)
+//       bounds = bounds.inset(by: padding)
     }
 }
 
@@ -45,15 +45,6 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
     var filteredTopChats: [TopChat] = []
     let cellReuseIdentifier = "TopChatsCell"
     
-    
-//    let loadingView = UIView()
-//
-//    /// Spinner shown during load the TableView
-//    let spinner = UIActivityIndicatorView()
-//
-//    /// Text shown during load the TableView
-//    let loadingLabel = UILabel()
-    
     public init(context: AccountContext) {
         self.context = context
         self.presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
@@ -74,83 +65,10 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
                     }
                 }
             })
-        print("DOWNLOADING ARCHIVE")
-        URLSession(configuration: URLSessionConfiguration.default).dataTask(with: URL(string: ARCHIVE_URL)!) { data, response, error in
-            print("RESPONSE", response, "ERROR", error)
-             // ensure there is data returned from this HTTP response
-            guard let data = data else {
-                 print("No data")
-                 return
-            }
-    
-            guard let archive = Archive(data: data, accessMode: .read) else  {
-                print("Can't get archive data")
-                return
-            }
-            
-//            let name = "archive.zip"
-//            let fileManager = FileManager.default
-//
-//            do {
-//                let documentDirectory = try fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor:nil, create:false)
-//                let fileURL = documentDirectory.appendingPathComponent(name)
-//                try data.write(to: fileURL)
-//            } catch {
-//                print("ERROR WRITING", error)
-//            }
-//             do {
-//                let currentWorkingPath = try fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor:nil, create:false)
-//                var sourceURL = URL(fileURLWithPath: currentWorkingPath.path)
-//                sourceURL.appendPathComponent("archive.zip")
-//                var destinationURL = URL(fileURLWithPath: currentWorkingPath.path)
-//                destinationURL.appendPathComponent("directory")
-//                try fileManager.removeItem(at: destinationURL)
-//                try fileManager.createDirectory(at: destinationURL, withIntermediateDirectories: true, attributes: nil)
-//                try fileManager.unzipItem(at: sourceURL, to: destinationURL)
-//                destinationURL.appendPathComponent("topchats-latest")
-//                print(fileManager.listurls(directory: destinationURL.path))
-//            } catch {
-//                print("Extraction of ZIP archive failed with error:\(error)")
-//            }
-            
-            
-            
-            
-            guard let entry = archive["topchats-latest/" + FILE_NAME] else {
-                print("topchats.json missing")
-                return
-            }
-            var jsonData = Data()
-            do  {
-                try archive.extract(entry, consumer: { (data) in
-                    print("DATA COUNT", data.count)
-                    jsonData.append(data)
-                })
-            } catch {
-                print("Error extracting \(FILE_NAME)")
-            }
-            print("READY DECOMPILE")
-             // Parse JSON into Post array struct using JSONDecoder
-             guard let parsedTopChats = try? JSONDecoder().decode([TopChat].self, from: jsonData) else {
-                 print("Error: Couldn't decode data into topchats model")
-                 return
-             }
-            
-            self.topChats = parsedTopChats
-            print("Chats parsed!")
-//             for topChat in parsedTopChats {
-//                print(topChat)
-//                 if topChat.a.isEmpty {
-//                     self.topChats.append(topChat)
-//                 }
-//             }
-            
-             // Make sure to update UI in main thread
-//             DispatchQueue.main.async {
-//                 self.tableView.reloadData()
-//                 // self.removeLoadingScreen()
-//             }
-         }.resume()
+        
+        self.loadData()
+        self.loadRawData(JSON_URL)
+        self.loadRawData(ORIG_JSON_URL)
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -172,25 +90,12 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
         self.tableView.backgroundColor = self.presentationData.theme.chatList.pinnedItemBackgroundColor
         self.tableView.separatorColor = self.presentationData.theme.chatList.itemSeparatorColor
         
-//        if self.topChats.isEmpty {
-//            setLoadingScreen()
-//        }
-        
-        
     }
     
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         print("APPEAR TABLEVIEW")
         self.getNavigationController()
-        if !self.topChats.isEmpty {
-            print("reloading table")
-        DispatchQueue.main.async {
-            self.tableView.reloadData()
-            // self.removeLoadingScreen()
-         }
-            
-        }
     }
     
     public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int
@@ -293,53 +198,78 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
         self.tableView.scrollToTop(true)
     }
     
-//    private func loadData() {
-//        // Load all data at once
-//
-//    }
+    func loadData() {
+         let startTime = CFAbsoluteTimeGetCurrent()
+         print("DOWNLOADING ARCHIVE")
+         URLSession(configuration: URLSessionConfiguration.default).dataTask(with: URL(string: ARCHIVE_URL)!) { data, response, error in
+             print("Loaded ZIP in \(CFAbsoluteTimeGetCurrent() - startTime)")
+              // ensure there is data returned from this HTTP response
+             guard let data = data else {
+                  print("No data")
+                  return
+             }
+
+             guard let archive = Archive(data: data, accessMode: .read) else  {
+                 print("Can't get archive data")
+                 return
+             }
+
+             guard let entry = archive["topchats-latest/" + FILE_NAME] else {
+                 print("topchats.json missing")
+                 return
+             }
+             var jsonData = Data()
+             do  {
+                 try archive.extract(entry, bufferSize: UINT32_MAX, consumer: { (data) in
+                     // print("DATA COUNT", data.count)
+                     jsonData.append(data)
+                 })
+             } catch {
+                 print("Error extracting \(FILE_NAME)")
+             }
+             print("Unpacked JSON in \(CFAbsoluteTimeGetCurrent() - startTime)")
+             print("READY DECOMPILE")
+              // Parse JSON into Post array struct using JSONDecoder
+              guard let parsedTopChats = try? JSONDecoder().decode([TopChat].self, from: jsonData) else {
+                  print("Error: Couldn't decode data into topchats model")
+                  return
+              }
+
+             self.topChats = parsedTopChats
+
+              // Make sure to update UI in main thread
+              DispatchQueue.main.async {
+                 self.tableView.reloadData()
+              }
+        }.resume()
+    }
     
-    // Set the activity indicator into the main view
-//    private func setLoadingScreen() {
-//
-//        // Sets the view which contains the loading text and the spinner
-//        let width: CGFloat = 120
-//        let height: CGFloat = 30
-//        let x = (tableView.frame.width / 2) - (width / 2)
-//        let y = (tableView.frame.height / 2) - (height / 2) - (navigationController?.navigationBar.frame.height)!
-//        loadingView.frame = CGRect(x: x, y: y, width: width, height: height)
-//
-//        // Sets loading text
-//        loadingLabel.textColor = self.presentationData.theme.chatList.titleColor
-//        loadingLabel.textAlignment = .center
-//        loadingLabel.text = "Loading..."
-//        loadingLabel.frame = CGRect(x: 0, y: 0, width: 140, height: 30)
-//
-//        // Sets spinner
-//        spinner.style = .gray
-//        spinner.color = self.presentationData.theme.chatList.titleColor
-//        spinner.frame = CGRect(x: 0, y: 0, width: 30, height: 30)
-//        spinner.startAnimating()
-//
-//        // Adds text and spinner to the view
-//        loadingView.addSubview(spinner)
-//        loadingView.addSubview(loadingLabel)
-//
-//        tableView.addSubview(loadingView)
-//
-//    }
-//
-//    // Remove the activity indicator from the main view
-//    private func removeLoadingScreen() {
-//
-//        // Hides and stops the text and the spinner
-//        if spinner.isAnimating {
-//            spinner.stopAnimating()
-//        }
-//        spinner.isHidden = true
-//        loadingLabel.isHidden = true
-//
-//    }
-    
+    func loadRawData(_ url: String) {
+        let startTime = CFAbsoluteTimeGetCurrent()
+        print("DOWNLOADING JSON \(url)")
+         URLSession(configuration: URLSessionConfiguration.default).dataTask(with: URL(string: url)!) { data, response, error in
+             print("Loaded JSON \(url) in \(CFAbsoluteTimeGetCurrent() - startTime)")
+              // ensure there is data returned from this HTTP response
+             guard let data = data else {
+                  print("No data")
+                  return
+             }
+
+
+              // Parse JSON into Post array struct using JSONDecoder
+              guard let parsedTopChats = try? JSONDecoder().decode([TopChat].self, from: data) else {
+                  print("Error: Couldn't decode data into topchats model")
+                  return
+              }
+
+             self.topChats = parsedTopChats
+
+              // Make sure to update UI in main thread
+              DispatchQueue.main.async {
+                 self.tableView.reloadData()
+              }
+        }.resume()
+    }
 }
 
 extension UITableView{
