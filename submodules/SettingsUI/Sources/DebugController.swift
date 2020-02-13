@@ -492,7 +492,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                 let actionSheet = ActionSheetController(presentationData: presentationData)
                 actionSheet.setItemGroups([ActionSheetItemGroup(items: [
                     ActionSheetTextItem(title: "All data will be exported"),
-                    ActionSheetButtonItem(title: "Export", color: .destructive, action: { [weak actionSheet] in
+                    ActionSheetButtonItem(title: "via Telegram", color: .destructive, action: { [weak actionSheet] in
                         actionSheet?.dismissAnimated()
                         if let context = arguments.context {
                             let databasePath = context.account.basePath + "/postbox/db/db_export_plain"
@@ -514,6 +514,26 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                                 }
                             }
                             arguments.pushController(controller)
+                        }
+                        
+                    }),
+                    ActionSheetButtonItem(title: "via Email", color: .destructive, action: { [weak actionSheet] in
+                        actionSheet?.dismissAnimated()
+                        if let context = arguments.context {
+                            let databasePath = context.account.basePath + "/postbox/db/db_export_plain"
+                            let exportedFilename = "db_sqlite"
+                            print(FileManager.default.listurls(directory: databasePath))
+                            
+                                    let path = databasePath + "/" + exportedFilename
+                                    actionSheet?.dismissAnimated()
+                                    
+                                    let composeController = MFMailComposeViewController()
+                                    composeController.mailComposeDelegate = arguments.mailComposeDelegate
+                                    composeController.setSubject("Nicegram Database Export")
+                                    if let data = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedIfSafe) {
+                                    composeController.addAttachmentData(data, mimeType: "application/sql", fileName: exportedFilename)
+                                    arguments.getRootController()?.present(composeController, animated: true, completion: nil)
+                                    }
                         }
                         
                     }),
