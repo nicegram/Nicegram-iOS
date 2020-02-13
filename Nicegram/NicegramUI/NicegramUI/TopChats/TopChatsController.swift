@@ -1,11 +1,10 @@
 import Foundation
 import UIKit
 import Display
-//import LegacyUI
 import TelegramPresentationData
 import SwiftSignalKit
 import AccountContext
-import Zip
+// import Zip
 
 private class TopChatsCell: UITableViewCell {
     
@@ -198,51 +197,51 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
         self.tableView.scrollToTop(true)
     }
     
-    func loadData() {
-         let startTime = CFAbsoluteTimeGetCurrent()
-         print("DOWNLOADING ARCHIVE")
-         URLSession(configuration: URLSessionConfiguration.default).dataTask(with: URL(string: ARCHIVE_URL)!) { data, response, error in
-             print("Loaded ZIP in \(CFAbsoluteTimeGetCurrent() - startTime)")
-              // ensure there is data returned from this HTTP response
-             guard let data = data else {
-                  print("No data")
-                  return
-             }
-
-             guard let archive = Archive(data: data, accessMode: .read) else  {
-                 print("Can't get archive data")
-                 return
-             }
-
-             guard let entry = archive["topchats-latest/" + FILE_NAME] else {
-                 print("topchats.json missing")
-                 return
-             }
-             var jsonData = Data()
-             do  {
-                 try archive.extract(entry, bufferSize: UINT32_MAX, consumer: { (data) in
-                     // print("DATA COUNT", data.count)
-                     jsonData.append(data)
-                 })
-             } catch {
-                 print("Error extracting \(FILE_NAME)")
-             }
-             print("Unpacked JSON in \(CFAbsoluteTimeGetCurrent() - startTime)")
-             print("READY DECOMPILE")
-              // Parse JSON into Post array struct using JSONDecoder
-              guard let parsedTopChats = try? JSONDecoder().decode([TopChat].self, from: jsonData) else {
-                  print("Error: Couldn't decode data into topchats model")
-                  return
-              }
-
-             self.topChats = parsedTopChats
-
-              // Make sure to update UI in main thread
-              DispatchQueue.main.async {
-                 self.tableView.reloadData()
-              }
-        }.resume()
-    }
+//    func loadData() {
+//         let startTime = CFAbsoluteTimeGetCurrent()
+//         print("DOWNLOADING ARCHIVE")
+//         URLSession(configuration: URLSessionConfiguration.default).dataTask(with: URL(string: ARCHIVE_URL)!) { data, response, error in
+//             print("Loaded ZIP in \(CFAbsoluteTimeGetCurrent() - startTime)")
+//              // ensure there is data returned from this HTTP response
+//             guard let data = data else {
+//                  print("No data")
+//                  return
+//             }
+//
+//             guard let archive = Archive(data: data, accessMode: .read) else  {
+//                 print("Can't get archive data")
+//                 return
+//             }
+//
+//             guard let entry = archive["topchats-latest/" + FILE_NAME] else {
+//                 print("topchats.json missing")
+//                 return
+//             }
+//             var jsonData = Data()
+//             do  {
+//                 try archive.extract(entry, bufferSize: UINT32_MAX, consumer: { (data) in
+//                     // print("DATA COUNT", data.count)
+//                     jsonData.append(data)
+//                 })
+//             } catch {
+//                 print("Error extracting \(FILE_NAME)")
+//             }
+//             print("Unpacked JSON in \(CFAbsoluteTimeGetCurrent() - startTime)")
+//             print("READY DECOMPILE")
+//              // Parse JSON into Post array struct using JSONDecoder
+//              guard let parsedTopChats = try? JSONDecoder().decode([TopChat].self, from: jsonData) else {
+//                  print("Error: Couldn't decode data into topchats model")
+//                  return
+//              }
+//
+//             self.topChats = parsedTopChats
+//
+//              // Make sure to update UI in main thread
+//              DispatchQueue.main.async {
+//                 self.tableView.reloadData()
+//              }
+//        }.resume()
+//    }
     
     func loadRawData(_ url: String) {
         let startTime = CFAbsoluteTimeGetCurrent()

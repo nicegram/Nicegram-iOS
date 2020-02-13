@@ -4,11 +4,8 @@ static_library(
     name = "Zip",
     exported_headers = glob([
         "Sources/CZLib/*.h",
-    ], exclude = [
     ]),
     srcs = glob([
         "Sources/ZIPFoundation/*.swift"
-    ], exclude = [
-
     ])
 )

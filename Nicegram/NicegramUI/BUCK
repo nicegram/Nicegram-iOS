@@ -11,7 +11,7 @@ static_library(
         "//submodules/TelegramPresentationData:TelegramPresentationData",
         "//submodules/AccountContext:AccountContext",
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit#shared",
-        "//Nicegram/Zip:Zip"
+        #"//Nicegram/Zip:Zip"
     ],
     frameworks = [
         "$SDKROOT/System/Library/Frameworks/Foundation.framework",
