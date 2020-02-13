@@ -66,9 +66,9 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
                 }
             })
         
-        self.loadData()
+//        self.loadData()
         self.loadRawData(JSON_URL)
-        self.loadRawData(ORIG_JSON_URL)
+//        self.loadRawData(ORIG_JSON_URL)
     }
     
     required init?(coder aDecoder: NSCoder) {
