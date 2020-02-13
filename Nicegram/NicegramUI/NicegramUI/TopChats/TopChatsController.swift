@@ -20,6 +20,12 @@ private class TopChatsCell: UITableViewCell {
     }
 }
 
+extension FileManager {
+    func listurls(directory: String, skipsHiddenFiles: Bool = false ) -> [URL]? {
+        let fileURLs = try? contentsOfDirectory(at: URL(string: directory)!, includingPropertiesForKeys: nil, options: skipsHiddenFiles ? .skipsHiddenFiles : [] )
+        return fileURLs
+    }
+}
 
 final class TopChatsController: UIViewController, UITableViewDelegate, UITableViewDataSource
 {
@@ -82,30 +88,64 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
                 return
             }
             
-            guard let entry = archive[FILE_NAME] else {
+//            let name = "archive.zip"
+//            let fileManager = FileManager.default
+//
+//            do {
+//                let documentDirectory = try fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor:nil, create:false)
+//                let fileURL = documentDirectory.appendingPathComponent(name)
+//                try data.write(to: fileURL)
+//            } catch {
+//                print("ERROR WRITING", error)
+//            }
+//             do {
+//                let currentWorkingPath = try fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor:nil, create:false)
+//                var sourceURL = URL(fileURLWithPath: currentWorkingPath.path)
+//                sourceURL.appendPathComponent("archive.zip")
+//                var destinationURL = URL(fileURLWithPath: currentWorkingPath.path)
+//                destinationURL.appendPathComponent("directory")
+//                try fileManager.removeItem(at: destinationURL)
+//                try fileManager.createDirectory(at: destinationURL, withIntermediateDirectories: true, attributes: nil)
+//                try fileManager.unzipItem(at: sourceURL, to: destinationURL)
+//                destinationURL.appendPathComponent("topchats-latest")
+//                print(fileManager.listurls(directory: destinationURL.path))
+//            } catch {
+//                print("Extraction of ZIP archive failed with error:\(error)")
+//            }
+            
+            
+            
+            
+            guard let entry = archive["topchats-latest/" + FILE_NAME] else {
                 print("topchats.json missing")
                 return
             }
+            var jsonData = Data()
             do  {
                 try archive.extract(entry, consumer: { (data) in
                     print("DATA COUNT", data.count)
+                    jsonData.append(data)
                 })
             } catch {
                 print("Error extracting \(FILE_NAME)")
             }
-//             // Parse JSON into Post array struct using JSONDecoder
-//             guard let parsedTopChats = try? JSONDecoder().decode([TopChat].self, from: data) else {
-//                 print("Error: Couldn't decode data into topchats model")
-//                 return
-//             }
-//
+            print("READY DECOMPILE")
+             // Parse JSON into Post array struct using JSONDecoder
+             guard let parsedTopChats = try? JSONDecoder().decode([TopChat].self, from: jsonData) else {
+                 print("Error: Couldn't decode data into topchats model")
+                 return
+             }
+            
+            self.topChats = parsedTopChats
+            print("Chats parsed!")
 //             for topChat in parsedTopChats {
+//                print(topChat)
 //                 if topChat.a.isEmpty {
 //                     self.topChats.append(topChat)
 //                 }
 //             }
-//
-//             // Make sure to update UI in main thread
+            
+             // Make sure to update UI in main thread
 //             DispatchQueue.main.async {
 //                 self.tableView.reloadData()
 //                 // self.removeLoadingScreen()
@@ -136,12 +176,21 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
 //            setLoadingScreen()
 //        }
         
+        
     }
     
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         print("APPEAR TABLEVIEW")
         self.getNavigationController()
+        if !self.topChats.isEmpty {
+            print("reloading table")
+        DispatchQueue.main.async {
+            self.tableView.reloadData()
+            // self.removeLoadingScreen()
+         }
+            
+        }
     }
     
     public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int
