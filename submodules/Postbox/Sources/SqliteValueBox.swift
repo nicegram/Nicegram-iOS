@@ -370,6 +370,14 @@ public final class SqliteValueBox: ValueBox {
             }
         }
         
+        if UserDefaults.standard.bool(forKey: "ng_db_export") {
+            if let encryptionParameters = encryptionParameters {
+                print("EXPORTING!")
+                self.exportPlain(database: database, to: self.basePath + "/db_export_plain", encryptionParameters: encryptionParameters)
+                print("EXPORTED TO \(self.basePath + "/db_export_plain")")
+            }
+        }
+        
         sqlite3_busy_timeout(database.handle, 1000 * 10000)
         
         //database.execute("PRAGMA cache_size=-2097152")
@@ -2046,6 +2054,32 @@ public final class SqliteValueBox: ValueBox {
         resultCode = database.execute("PRAGMA encrypted.user_version=\(userVersion)")
         resultCode = database.execute("DETACH DATABASE encrypted")
         assert(resultCode)
+    }
+    
+    public func exportPlain(to exportBasePath: String, encryptionParameters: ValueBoxEncryptionParameters) {
+        self.exportPlain(database: self.database, to: exportBasePath, encryptionParameters: encryptionParameters)
+    }
+        
+    private func exportPlain(database: Database, to exportBasePath: String, encryptionParameters: ValueBoxEncryptionParameters) {
+        let _ = try? FileManager.default.createDirectory(atPath: exportBasePath, withIntermediateDirectories: true, attributes: nil)
+        let exportFilePath = "\(exportBasePath)/db_sqlite"
+        let _ = try? FileManager.default.removeItem(atPath: exportFilePath)
+        
+        let hexKey = hexString(encryptionParameters.key.data + encryptionParameters.salt.data)
+        
+        precondition(encryptionParameters.salt.data.count == 16)
+        precondition(encryptionParameters.key.data.count == 32)
+        
+        var resultCode = database.execute("ATTACH DATABASE '\(exportFilePath)' AS plaintext KEY ''")
+        assert(resultCode)
+        resultCode = database.execute("SELECT sqlcipher_export('plaintext')")
+        assert(resultCode)
+        let userVersion = self.getUserVersion(database)
+        resultCode = database.execute("PRAGMA encrypted.user_version=\(userVersion)")
+        resultCode = database.execute("DETACH DATABASE plaintext")
+        assert(resultCode)
+        
+        print("EXPORTED?")
     }
     
     private func reencryptInPlace(database: Database, encryptionParameters: ValueBoxEncryptionParameters) -> Database {

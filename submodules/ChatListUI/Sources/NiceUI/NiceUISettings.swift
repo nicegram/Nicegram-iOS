@@ -359,6 +359,7 @@ public func getEnabledFilters() -> [NiceChatListNodePeersFilter] {
 public func setSystemNGDefaults() {
     let UD = UserDefaults.standard
     UD.register(defaults: ["ng_db_reset": false])
+    UD.register(defaults: ["ng_db_export": false])
 }
 
 public class SystemNGSettings {
@@ -374,6 +375,15 @@ public class SystemNGSettings {
         }
         set {
             UD.set(newValue, forKey: "ng_db_reset")
+        }
+    }
+    
+    public var dbExport: Bool {
+        get {
+            return UD.bool(forKey: "ng_db_export")
+        }
+        set {
+            UD.set(newValue, forKey: "ng_db_export")
         }
     }
     

@@ -51,6 +51,13 @@ private enum DebugControllerSection: Int32 {
     case info
 }
 
+extension FileManager {
+    func listurls(directory: String, skipsHiddenFiles: Bool = false ) -> [URL]? {
+        let fileURLs = try? contentsOfDirectory(at: URL(string: directory)!, includingPropertiesForKeys: nil, options: skipsHiddenFiles ? .skipsHiddenFiles : [] )
+        return fileURLs
+    }
+}
+
 private enum DebugControllerEntry: ItemListNodeEntry {
     case sendLogs(PresentationTheme)
     case sendOneLog(PresentationTheme)
@@ -480,14 +487,34 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                 }
             })
         case let .exportdb(theme):
-            return ItemListActionItem(presentationData: presentationData, title: "Reset Data", kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+            return ItemListActionItem(presentationData: presentationData, title: "EXPORT DATA", kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 let presentationData = arguments.sharedContext.currentPresentationData.with { $0 }
                 let actionSheet = ActionSheetController(presentationData: presentationData)
                 actionSheet.setItemGroups([ActionSheetItemGroup(items: [
                     ActionSheetTextItem(title: "All data will be exported"),
                     ActionSheetButtonItem(title: "Export", color: .destructive, action: { [weak actionSheet] in
                         actionSheet?.dismissAnimated()
-                        let databasePath = arguments.sharedContext.accountManager.basePath + "/db"
+                        if let context = arguments.context {
+                            let databasePath = context.account.basePath + "/postbox/db/db_export_plain"
+                            let exportedFilename = "db_sqlite"
+                            print(FileManager.default.listurls(directory: databasePath))
+                            let controller = context.sharedContext.makePeerSelectionController(PeerSelectionControllerParams(context: context, filter: [.onlyWriteable, .excludeDisabled]))
+                            controller.peerSelected = { [weak controller] peerId in
+                                if let strongController = controller {
+                                    strongController.dismiss()
+                                    let path = databasePath + "/" + exportedFilename
+                                    let id = arc4random64()
+                                    let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: LocalFileReferenceMediaResource(localFilePath: path, randomId: id), previewRepresentations: [], immediateThumbnailData: nil, mimeType: "application/sql", size: nil, attributes: [.FileName(fileName: exportedFilename)])
+                                    let message: EnqueueMessage = .message(text: "", attributes: [], mediaReference: .standalone(media: file), replyToMessageId: nil, localGroupingKey: nil)
+                                    let _ = enqueueMessages(account: context.account, peerId: peerId, messages: [message]).start(next: { _ in
+                                        print("Completed DB export")
+                                        let _ = try? FileManager.default.removeItem(atPath: databasePath)
+                                        SystemNGSettings().dbExport = false
+                                    })
+                                }
+                            }
+                            arguments.pushController(controller)
+                        }
                         
                     }),
                     ]), ActionSheetItemGroup(items: [
@@ -673,7 +700,9 @@ private func debugControllerEntries(presentationData: PresentationData, loggingS
     if hasLegacyAppData {
         entries.append(.reimport(presentationData.theme))
     }
-    entries.append(.exportdb(presentationData.theme))
+    if UserDefaults.standard.bool(forKey: "ng_db_export") {
+        entries.append(.exportdb(presentationData.theme))
+    }
     entries.append(.resetData(presentationData.theme))
     entries.append(.resetDatabase(presentationData.theme))
     entries.append(.resetHoles(presentationData.theme))
