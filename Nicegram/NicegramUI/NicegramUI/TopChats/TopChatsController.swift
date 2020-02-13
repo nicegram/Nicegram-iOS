@@ -44,6 +44,14 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
     var filteredTopChats: [TopChat] = []
     let cellReuseIdentifier = "TopChatsCell"
     
+    let loadingView = UIView()
+
+    /// Spinner shown during load the TableView
+    let spinner = UIActivityIndicatorView()
+
+    /// Text shown during load the TableView
+    let loadingLabel = UILabel()
+    
     public init(context: AccountContext) {
         self.context = context
         self.presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
@@ -65,9 +73,7 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
                 }
             })
         
-//        self.loadData()
         self.loadRawData(JSON_URL)
-//        self.loadRawData(ORIG_JSON_URL)
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -133,9 +139,9 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
         if self.isViewLoaded {
             self.tableView.backgroundColor = self.presentationData.theme.chatList.pinnedItemBackgroundColor
             self.tableView.separatorColor = self.presentationData.theme.chatList.itemSeparatorColor
-//            loadingLabel.textColor = self.presentationData.theme.chatList.titleColor
-//            //loadingLabel.text = "Loading..."
-//            spinner.color = self.presentationData.theme.chatList.titleColor
+            loadingLabel.textColor = self.presentationData.theme.chatList.titleColor
+            //loadingLabel.text = "Loading..."
+            spinner.color = self.presentationData.theme.chatList.titleColor
             self.tableView.reloadData()
         }
     }
@@ -195,6 +201,48 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
     
     public func scrollToTop() {
         self.tableView.scrollToTop(true)
+    }
+    
+        // Set the activity indicator into the main view
+    private func setLoadingScreen() {
+
+        // Sets the view which contains the loading text and the spinner
+        let width: CGFloat = 120
+        let height: CGFloat = 30
+        let x = (tableView.frame.width / 2) - (width / 2)
+        let y = (tableView.frame.height / 2) - (height / 2) - (navigationController?.navigationBar.frame.height)!
+        loadingView.frame = CGRect(x: x, y: y, width: width, height: height)
+
+        // Sets loading text
+        loadingLabel.textColor = self.presentationData.theme.chatList.titleColor
+        loadingLabel.textAlignment = .center
+        loadingLabel.text = "Loading..."
+        loadingLabel.frame = CGRect(x: 0, y: 0, width: 140, height: 30)
+
+        // Sets spinner
+        spinner.style = .gray
+        spinner.color = self.presentationData.theme.chatList.titleColor
+        spinner.frame = CGRect(x: 0, y: 0, width: 30, height: 30)
+        spinner.startAnimating()
+
+        // Adds text and spinner to the view
+        loadingView.addSubview(spinner)
+        loadingView.addSubview(loadingLabel)
+
+        tableView.addSubview(loadingView)
+
+    }
+
+    // Remove the activity indicator from the main view
+    private func removeLoadingScreen() {
+
+        // Hides and stops the text and the spinner
+        if spinner.isAnimating {
+            spinner.stopAnimating()
+        }
+        spinner.isHidden = true
+        loadingLabel.isHidden = true
+
     }
     
 //    func loadData() {
@@ -266,6 +314,7 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
               // Make sure to update UI in main thread
               DispatchQueue.main.async {
                  self.tableView.reloadData()
+                 self.removeLoadingScreen()
               }
         }.resume()
     }
