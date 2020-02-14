@@ -125,40 +125,40 @@ private final class ContextControllerContentSourceImpl: ContextControllerContent
 
 public class ChatListControllerImpl: TelegramBaseController, ChatListController, UIViewControllerPreviewingDelegate, TabBarContainedController {
     
-//    public func presentTabBarPreviewingController(sourceNodes: [ASDisplayNode]) {
-//        if (self.filter == nil || self.isMissed || self.filterIndex == nil) {
-//            if self.chatListDisplayNode.searchDisplayController != nil {
-//                self.deactivateSearch(animated: true)
-//            } else {
-//                if let searchContentNode = self.searchContentNode {
-//                    searchContentNode.updateExpansionProgress(1.0, animated: true)
-//                }
-//                self.chatListDisplayNode.chatListNode.scrollToPosition(.auto)
-//            }
-//            return
-//        }
-//
-//        let controller = TabBarFilterSwitchController(sharedContext: self.context.sharedContext, current: self.filter, available: getEnabledFilters(), switchNGFilter: { [weak self] f in
-//
-//            if let accountManager = self?.context.sharedContext.accountManager {
-//                let _ = updateNiceSettingsInteractively(accountManager: accountManager, { settings in
-//                    var settings = settings
-//                    let index = self?.filterIndex ?? 0
-//                    SimplyNiceSettings().chatFilters[Int(index)] = f
-//                    settings.chatFilters[Int(index)] = f
-//                    settings.currentFilter = index
-//                    return settings
-//                }).start()
-//            }
-//
-//            self?.context.sharedContext.switchNGFilter(filter: f, withChatListController: self)
-//            }, sourceNodes: sourceNodes)
-//        self.switchController = controller
-//        self.context.sharedContext.mainWindow?.present(controller, on: .root)
-//    }
-//
-//    public func updateTabBarPreviewingControllerPresentation(_ update: TabBarContainedControllerPresentationUpdate) {
-//    }
+    public func presentTabBarPreviewingController(sourceNodes: [ASDisplayNode]) {
+        if (self.ngfilter == nil || self.isMissed || self.filterIndex == nil) {
+            if self.chatListDisplayNode.searchDisplayController != nil {
+                self.deactivateSearch(animated: true)
+            } else {
+                if let searchContentNode = self.searchContentNode {
+                    searchContentNode.updateExpansionProgress(1.0, animated: true)
+                }
+                self.chatListDisplayNode.chatListNode.scrollToPosition(.auto)
+            }
+            return
+        }
+
+        let controller = TabBarFilterSwitchController(sharedContext: self.context.sharedContext, current: self.ngfilter, available: getEnabledFilters(), switchToNGFilter: { [weak self] f in
+
+            if let accountManager = self?.context.sharedContext.accountManager {
+                let _ = updateNiceSettingsInteractively(accountManager: accountManager, { settings in
+                    var settings = settings
+                    let index = self?.filterIndex ?? 0
+                    SimplyNiceSettings().chatFilters[Int(index)] = f
+                    settings.chatFilters[Int(index)] = f
+                    settings.currentFilter = index
+                    return settings
+                }).start()
+            }
+
+            self?.context.sharedContext.switchToNGFilter(filter: f, withChatListController: self)
+            }, sourceNodes: sourceNodes)
+        self.switchController = controller
+        self.context.sharedContext.mainWindow?.present(controller, on: .root)
+    }
+
+    public func updateTabBarPreviewingControllerPresentation(_ update: TabBarContainedControllerPresentationUpdate) {
+    }
     
     private var validLayout: ContainerViewLayout?
     
@@ -171,7 +171,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
     public var isMissed: Bool
     
     public let groupId: PeerGroupId
-    //public let filter: ChatListFilter?
+    public let filter: ChatListFilter?
     public let previewing: Bool
     
     let openMessageFromSearchDisposable: MetaDisposable = MetaDisposable()
@@ -204,7 +204,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
     
     private var searchContentNode: NavigationBarSearchContentNode?
     
-    var switchNGFilter: ((NiceChatListNodePeersFilter) -> Void)?
+    var switchToNGFilter: ((NiceChatListNodePeersFilter) -> Void)?
     
     weak var switchController: TabBarFilterSwitchController?
     
@@ -214,11 +214,11 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
         }
     }
     
-    public init(context: AccountContext, groupId: PeerGroupId, filter: ChatListFilter? = nil, controlsHistoryPreload: Bool, hideNetworkActivityStatus: Bool = false, previewing: Bool = false, filter: NiceChatListNodePeersFilter? = nil, filterIndex: Int32? = nil, isMissed: Bool = false, enableDebugActions: Bool) {
+    public init(context: AccountContext, groupId: PeerGroupId, filter: ChatListFilter? = nil, controlsHistoryPreload: Bool, hideNetworkActivityStatus: Bool = false, previewing: Bool = false, ngfilter: NiceChatListNodePeersFilter? = nil, filterIndex: Int32? = nil, isMissed: Bool = false, enableDebugActions: Bool) {
         self.context = context
         self.controlsHistoryPreload = controlsHistoryPreload
         self.hideNetworkActivityStatus = hideNetworkActivityStatus
-        self.ngfilter = filter
+        self.ngfilter = ngfilter
         self.filterIndex = filterIndex
         
         self.isMissed = isMissed
@@ -240,10 +240,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
         if let filter = self.filter {
             title = filter.title ?? ""
         } else if (self.ngfilter != nil) {
-                title = l(getFilterTabName(filter: self.ngfilter!), self.presentationData.strings.baseLanguageCode)
-            } else {
-                title = self.presentationData.strings.DialogList_Title
-            }
+            title = l(getFilterTabName(filter: self.ngfilter!), self.presentationData.strings.baseLanguageCode)
         } else if self.groupId == .root {
             title = self.presentationData.strings.DialogList_Title
             self.navigationBar?.item = nil
@@ -270,7 +267,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                 let icon: UIImage?
                 if (self.ngfilter != nil) {
                     icon = UIImage(bundleImageName: getFilterIconPath(filter: self.ngfilter!))
-                }if useSpecialTabBarIcons() {
+                } else if useSpecialTabBarIcons() {
                     icon = UIImage(bundleImageName: "Chat List/Tabs/Holiday/IconChats")
                 } else {
                     icon = UIImage(bundleImageName: "Chat List/Tabs/IconChats")
@@ -368,7 +365,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                 self.chatListDisplayNode.chatListNode.chatListFilterSignal
             ).start(next: { [weak self] networkState, proxy, passcode, state, chatListFilter in
                 if let strongSelf = self {
-                    let defaultTitle: String
+                    var defaultTitle: String = "Chats"
                     if strongSelf.groupId == .root {
                         if let chatListFilter = chatListFilter {
                             let title: String = chatListFilter.title ?? ""
@@ -2222,82 +2219,82 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
         }
     }
     
-    public func presentTabBarPreviewingController(sourceNodes: [ASDisplayNode]) {
-        if !NicegramSettings().useTgFilters {
-            if (self.ngfilter == nil || self.isMissed || self.filterIndex == nil) {
-                if self.chatListDisplayNode.searchDisplayController != nil {
-                    self.deactivateSearch(animated: true)
-                } else {
-                    if let searchContentNode = self.searchContentNode {
-                        searchContentNode.updateExpansionProgress(1.0, animated: true)
-                    }
-                    self.chatListDisplayNode.chatListNode.scrollToPosition(.auto)
-                }
-                return
-            }
-    
-            let controller = TabBarFilterSwitchController(sharedContext: self.context.sharedContext, current: self.ngfilter, available: getEnabledFilters(), switchNGFilter: { [weak self] f in
-    
-                if let accountManager = self?.context.sharedContext.accountManager {
-                    let _ = updateNiceSettingsInteractively(accountManager: accountManager, { settings in
-                        var settings = settings
-                        let index = self?.filterIndex ?? 0
-                        SimplyNiceSettings().chatFilters[Int(index)] = f
-                        settings.chatFilters[Int(index)] = f
-                        settings.currentFilter = index
-                        return settings
-                    }).start()
-                }
-    
-                self?.context.sharedContext.switchToNGFilter(filter: f, withChatListController: self)
-                }, sourceNodes: sourceNodes)
-            self.switchController = controller
-            self.context.sharedContext.mainWindow?.present(controller, on: .root)
-        } else {
-        if self.isNodeLoaded {
-            let _ = (self.context.account.postbox.transaction { transaction -> [ChatListFilter] in
-                let settings = transaction.getPreferencesEntry(key: PreferencesKeys.chatListFilters) as? ChatListFiltersState ?? ChatListFiltersState.default
-                return settings.filters
-            }
-            |> deliverOnMainQueue).start(next: { [weak self] presetList in
-                guard let strongSelf = self else {
-                    return
-                }
-                let controller = TabBarChatListFilterController(context: strongSelf.context, sourceNodes: sourceNodes, presetList: presetList, currentPreset: strongSelf.chatListDisplayNode.chatListNode.chatListFilter, setup: {
-                    guard let strongSelf = self else {
-                        return
-                    }
-                    strongSelf.push(chatListFilterPresetListController(context: strongSelf.context, updated: { presets in
-                        guard let strongSelf = self else {
-                            return
-                        }
-                        /*if let currentPreset = strongSelf.chatListDisplayNode.chatListNode.chatListFilter {
-                            var found = false
-                            if let index = presets.index(where: { $0.id == currentPreset.id }) {
-                                found = true
-                                if currentPreset != presets[index] {
-                                    strongSelf.chatListDisplayNode.chatListNode.chatListFilter = presets[index]
-                                }
-                            }
-                            if !found {
-                                strongSelf.chatListDisplayNode.chatListNode.chatListFilter = nil
-                            }
-                        }*/
-                    }))
-                }, updatePreset: { value in
-                    guard let strongSelf = self else {
-                        return
-                    }
-                    strongSelf.push(ChatListControllerImpl(context: strongSelf.context, groupId: .root, filter: value, controlsHistoryPreload: false, hideNetworkActivityStatus: true, previewing: false, enableDebugActions: false))
-                    //strongSelf.chatListDisplayNode.chatListNode.chatListFilter = value
-                })
-                strongSelf.context.sharedContext.mainWindow?.present(controller, on: .root)
-            })
-        }
-        }
-    }
-    
-    public func updateTabBarPreviewingControllerPresentation(_ update: TabBarContainedControllerPresentationUpdate) {
-        
-    }
+//    public func presentTabBarPreviewingController(sourceNodes: [ASDisplayNode]) {
+//        if !NicegramSettings().useTgFilters {
+//            if (self.ngfilter == nil || self.isMissed || self.filterIndex == nil) {
+//                if self.chatListDisplayNode.searchDisplayController != nil {
+//                    self.deactivateSearch(animated: true)
+//                } else {
+//                    if let searchContentNode = self.searchContentNode {
+//                        searchContentNode.updateExpansionProgress(1.0, animated: true)
+//                    }
+//                    self.chatListDisplayNode.chatListNode.scrollToPosition(.auto)
+//                }
+//                return
+//            }
+//
+//            let controller = TabBarFilterSwitchController(sharedContext: self.context.sharedContext, current: self.ngfilter, available: getEnabledFilters(), switchToNGFilter: { [weak self] f in
+//
+//                if let accountManager = self?.context.sharedContext.accountManager {
+//                    let _ = updateNiceSettingsInteractively(accountManager: accountManager, { settings in
+//                        var settings = settings
+//                        let index = self?.filterIndex ?? 0
+//                        SimplyNiceSettings().chatFilters[Int(index)] = f
+//                        settings.chatFilters[Int(index)] = f
+//                        settings.currentFilter = index
+//                        return settings
+//                    }).start()
+//                }
+//
+//                self?.context.sharedContext.switchToNGFilter(filter: f, withChatListController: self)
+//                }, sourceNodes: sourceNodes)
+//            self.switchController = controller
+//            self.context.sharedContext.mainWindow?.present(controller, on: .root)
+//        } else {
+//        if self.isNodeLoaded {
+//            let _ = (self.context.account.postbox.transaction { transaction -> [ChatListFilter] in
+//                let settings = transaction.getPreferencesEntry(key: PreferencesKeys.chatListFilters) as? ChatListFiltersState ?? ChatListFiltersState.default
+//                return settings.filters
+//            }
+//            |> deliverOnMainQueue).start(next: { [weak self] presetList in
+//                guard let strongSelf = self else {
+//                    return
+//                }
+//                let controller = TabBarChatListFilterController(context: strongSelf.context, sourceNodes: sourceNodes, presetList: presetList, currentPreset: strongSelf.chatListDisplayNode.chatListNode.chatListFilter, setup: {
+//                    guard let strongSelf = self else {
+//                        return
+//                    }
+//                    strongSelf.push(chatListFilterPresetListController(context: strongSelf.context, updated: { presets in
+//                        guard let strongSelf = self else {
+//                            return
+//                        }
+//                        /*if let currentPreset = strongSelf.chatListDisplayNode.chatListNode.chatListFilter {
+//                            var found = false
+//                            if let index = presets.index(where: { $0.id == currentPreset.id }) {
+//                                found = true
+//                                if currentPreset != presets[index] {
+//                                    strongSelf.chatListDisplayNode.chatListNode.chatListFilter = presets[index]
+//                                }
+//                            }
+//                            if !found {
+//                                strongSelf.chatListDisplayNode.chatListNode.chatListFilter = nil
+//                            }
+//                        }*/
+//                    }))
+//                }, updatePreset: { value in
+//                    guard let strongSelf = self else {
+//                        return
+//                    }
+//                    strongSelf.push(ChatListControllerImpl(context: strongSelf.context, groupId: .root, filter: value, controlsHistoryPreload: false, hideNetworkActivityStatus: true, previewing: false, enableDebugActions: false))
+//                    //strongSelf.chatListDisplayNode.chatListNode.chatListFilter = value
+//                })
+//                strongSelf.context.sharedContext.mainWindow?.present(controller, on: .root)
+//            })
+//        }
+//        }
+//    }
+//
+//    public func updateTabBarPreviewingControllerPresentation(_ update: TabBarContainedControllerPresentationUpdate) {
+//
+//    }
 }

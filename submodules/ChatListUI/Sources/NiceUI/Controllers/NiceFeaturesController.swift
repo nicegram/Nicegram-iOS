@@ -531,7 +531,7 @@ private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls
     // entries.append(.backupIcloud(presentationData.theme, l("NiceFeatures.BackupIcloud", locale), useIcloud()))
     entries.append(.backCam(presentationData.theme, l("NiceFeatures.useBackCam", locale), nicegramSettings.useBackCam))
     
-    entries.append(.tgFilters(presentationData.theme, "Use Telegram Filters", nicegramSettings.useTgFilters))
+    //entries.append(.tgFilters(presentationData.theme, "Use Telegram Filters", nicegramSettings.useTgFilters))
 
     entries.append(.backupSettings(presentationData.theme, l("NiceFeatures.BackupSettings", locale)))
     entries.append(.backupNotice(presentationData.theme, l("NiceFeatures.BackupSettings.Notice", locale)))

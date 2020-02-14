@@ -166,7 +166,7 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
                 case .info:
                     let _ = (self.context.account.postbox.loadedPeerWithId(peerId)
                         |> deliverOnMainQueue).start(next: { peer in
-                            if let controller = self.context.sharedContext.makePeerInfoController(context: self.context, peer: peer, mode: .generic) {
+                            if let controller = self.context.sharedContext.makePeerInfoController(context: self.context, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false) {
                                 self.getNavigationController()?.pushViewController(controller)
                             }
                         })

@@ -27,7 +27,7 @@ public final class TabBarFilterSwitchController: ViewController {
     }
     
     private let sharedContext: SharedAccountContext
-    private let switchNGFilter: (NiceChatListNodePeersFilter) -> Void
+    private let switchToNGFilter: (NiceChatListNodePeersFilter) -> Void
     private let sourceNodes: [ASDisplayNode]
     
     private var presentationData: PresentationData
@@ -39,9 +39,9 @@ public final class TabBarFilterSwitchController: ViewController {
     private let current: NiceChatListNodePeersFilter?
     private let available: [NiceChatListNodePeersFilter]
     
-    public init(sharedContext: SharedAccountContext, current: NiceChatListNodePeersFilter?, available: [NiceChatListNodePeersFilter], switchNGFilter: @escaping (NiceChatListNodePeersFilter) -> Void, sourceNodes: [ASDisplayNode]) {
+    public init(sharedContext: SharedAccountContext, current: NiceChatListNodePeersFilter?, available: [NiceChatListNodePeersFilter], switchToNGFilter: @escaping (NiceChatListNodePeersFilter) -> Void, sourceNodes: [ASDisplayNode]) {
         self.sharedContext = sharedContext
-        self.switchNGFilter = switchNGFilter
+        self.switchToNGFilter = switchToNGFilter
         self.sourceNodes = sourceNodes
         
         self.current = current
@@ -65,12 +65,12 @@ public final class TabBarFilterSwitchController: ViewController {
     }
     
     override public func loadDisplayNode() {
-        self.displayNode = TabBarFilterSwitchControllerNode(sharedContext: self.sharedContext, presentationData: self.presentationData, current: current, available: available, switchNGFilter: { [weak self] f in
+        self.displayNode = TabBarFilterSwitchControllerNode(sharedContext: self.sharedContext, presentationData: self.presentationData, current: current, available: available, switchToNGFilter: { [weak self] f in
             guard let strongSelf = self, !strongSelf.changedFilter else {
                 return
             }
             strongSelf.changedFilter = true
-            strongSelf.switchNGFilter(f)
+            strongSelf.switchToNGFilter(f)
             }, cancel: { [weak self] in
                 self?.dismiss()
             }, sourceNodes: self.sourceNodes)

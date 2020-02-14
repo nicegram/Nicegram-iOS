@@ -5501,7 +5501,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                 self.navigationActionDisposable.set((peerView.get()
                 |> take(1)
                 |> deliverOnMainQueue).start(next: { [weak self] peerView in
-                    if let strongSelf = self, let peer = peerView.peers[peerView.peerId], peer.restrictionText(platform: "ios", contentSettings: strongSelf.context.currentContentSettings.with { $0 }) == nil || isAllowedChat(peer: peer, contentSettings: strongSelf.context.currentContentSettings.with { $0 })) && !strongSelf.presentationInterfaceState.isNotAccessible {
+                    if let strongSelf = self, let peer = peerView.peers[peerView.peerId], peer.restrictionText(platform: "ios", contentSettings: strongSelf.context.currentContentSettings.with { $0 }) == nil || isAllowedChat(peer: peer, contentSettings: strongSelf.context.currentContentSettings.with { $0 }) && !strongSelf.presentationInterfaceState.isNotAccessible {
                         if peer.id == strongSelf.context.account.peerId {
                             strongSelf.effectiveNavigationController?.pushViewController(PeerMediaCollectionController(context: strongSelf.context, peerId: strongSelf.context.account.peerId))
                         } else {
