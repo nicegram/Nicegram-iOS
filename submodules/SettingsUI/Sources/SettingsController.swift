@@ -1309,7 +1309,7 @@ public func settingsController(context: AccountContext, accountManager: AccountM
         })
         if let selectedAccount = selectedAccount, let sharedContext = sharedContext {
             let accountContext = sharedContext.makeTempAccountContext(account: selectedAccount)
-            let chatListController = accountContext.sharedContext.makeChatListController(context: accountContext, groupId: .root, controlsHistoryPreload: false, hideNetworkActivityStatus: true, filter: nil, filterIndex: nil, isMissed: false, previewing: true, enableDebugActions: enableDebugActions)
+            let chatListController = accountContext.sharedContext.makeChatListController(context: accountContext, groupId: .root, controlsHistoryPreload: false, hideNetworkActivityStatus: true, ngfilter: nil, filterIndex: nil, isMissed: false, previewing: true, enableDebugActions: enableDebugActions)
             
             let presentationData = accountContext.sharedContext.currentPresentationData.with { $0 }
             
@@ -1922,7 +1922,7 @@ public func settingsController(context: AccountContext, accountManager: AccountM
             if let selectedAccount = selectedAccount, let sharedContext = sharedContext {
                 let accountContext = sharedContext.makeTempAccountContext(account: selectedAccount)
                 let chatListController = accountContext.sharedContext.makeChatListController(context: accountContext, groupId: .root, controlsHistoryPreload: false, hideNetworkActivityStatus: true,
-                                                                                             filter: nil, filterIndex: nil, isMissed: false, previewing: true, enableDebugActions: enableDebugActions)
+                                                                                             ngfilter: nil, filterIndex: nil, isMissed: false, previewing: true, enableDebugActions: enableDebugActions)
                 return chatListController
             }
         }

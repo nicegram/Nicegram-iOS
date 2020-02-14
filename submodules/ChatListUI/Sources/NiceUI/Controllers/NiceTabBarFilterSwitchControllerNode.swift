@@ -260,7 +260,7 @@ final class TabBarFilterSwitchControllerNode: ViewControllerTracingNode {
     
     private var validLayout: ContainerViewLayout?
     
-    init(sharedContext: SharedAccountContext, presentationData: PresentationData, current: NiceChatListNodePeersFilter?, available: [NiceChatListNodePeersFilter], switchToFilter: @escaping (NiceChatListNodePeersFilter) -> Void, cancel: @escaping () -> Void, sourceNodes: [ASDisplayNode]) {
+    init(sharedContext: SharedAccountContext, presentationData: PresentationData, current: NiceChatListNodePeersFilter?, available: [NiceChatListNodePeersFilter], switchNGFilter: @escaping (NiceChatListNodePeersFilter) -> Void, cancel: @escaping () -> Void, sourceNodes: [ASDisplayNode]) {
         self.presentationData = presentationData
         self.cancel = cancel
         self.sourceNodes = sourceNodes
@@ -308,7 +308,7 @@ final class TabBarFilterSwitchControllerNode: ViewControllerTracingNode {
                     return cancel()
                 } else {
                     cancel()
-                    switchToFilter(filter)
+                    switchNGFilter(filter)
                 }
             }))
         }

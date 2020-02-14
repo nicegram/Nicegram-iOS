@@ -869,16 +869,16 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         })
     }
     
-    public func switchToFilter(filter: NiceChatListNodePeersFilter, withChatListController chatListController: ChatListController? = nil) {
+    public func switchToNGFilter(filter: NiceChatListNodePeersFilter, withChatListController chatListController: ChatListController? = nil) {
         
         assert(Queue.mainQueue().isCurrent())
         var chatsBadge: String?
         if let rootController = self.mainWindow?.viewController as? TelegramRootController {
-            if (chatListController?.filter == filter) {
+            if (chatListController?.ngfilter == filter) {
                 return
             }
             
-            chatListController?.filter = filter
+            chatListController?.ngfilter = filter
             if let tabsController = rootController.viewControllers.first as? TabBarController {
                 for controller in tabsController.controllers {
                     if let controller = controller as? ChatListController {
@@ -893,7 +893,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                             if controller.filterIndex == filterIndex {
                                 var controllers = tabsController.controllers
                                 controllers[index] = self.makeChatListController(context: chatListController.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false,
-                                                                                 filter: filter, filterIndex: filterIndex, isMissed: false, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
+                                                                                 ngfilter: filter, filterIndex: filterIndex, isMissed: false, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
 //                                controllers[index] = ChatListController(context: chatListController.context, groupId: .root, controlsHistoryPreload: chatListController.controlsHistoryPreload, hideNetworkActivityStatus: chatListController.hideNetworkActivityStatus, filter: filter, filterIndex: filterIndex)
                                 tabsController.setControllers(controllers, selectedIndex: index)
                                 break
@@ -922,7 +922,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                     }
                 }
                 var controllers = tabsController.controllers
-                controllers[tabsController.controllers.endIndex - 2] = self.makeChatListController(context: chatListController.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: nil, filterIndex: nil, isMissed: false, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
+                controllers[tabsController.controllers.endIndex - 2] = self.makeChatListController(context: chatListController.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, ngfilter: nil, filterIndex: nil, isMissed: false, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
                 tabsController.setControllers(controllers, selectedIndex: tabsController.controllers.endIndex - 2)
             }
         }
@@ -1156,8 +1156,8 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return createGroupControllerImpl(context: context, peerIds: peerIds, initialTitle: initialTitle, mode: mode, completion: completion)
     }
     
-    public func makeChatListController(context: AccountContext, groupId: PeerGroupId, controlsHistoryPreload: Bool, hideNetworkActivityStatus: Bool, filter: NiceChatListNodePeersFilter? = nil, filterIndex: Int32? = nil, isMissed: Bool = false, previewing: Bool, enableDebugActions: Bool) -> ChatListController {
-        return ChatListControllerImpl(context: context, groupId: groupId, controlsHistoryPreload: controlsHistoryPreload, hideNetworkActivityStatus: hideNetworkActivityStatus, previewing: previewing, filter: filter, filterIndex: filterIndex, isMissed: isMissed, enableDebugActions: enableDebugActions)
+    public func makeChatListController(context: AccountContext, groupId: PeerGroupId, controlsHistoryPreload: Bool, hideNetworkActivityStatus: Bool, ngfilter: NiceChatListNodePeersFilter? = nil, filterIndex: Int32? = nil, isMissed: Bool = false, previewing: Bool, enableDebugActions: Bool) -> ChatListController {
+        return ChatListControllerImpl(context: context, groupId: groupId, controlsHistoryPreload: controlsHistoryPreload, hideNetworkActivityStatus: hideNetworkActivityStatus, previewing: previewing, filter: ngfilter, filterIndex: filterIndex, isMissed: isMissed, enableDebugActions: enableDebugActions)
     }
     
     public func makePeerSelectionController(_ params: PeerSelectionControllerParams) -> PeerSelectionController {

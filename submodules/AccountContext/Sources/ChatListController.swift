@@ -11,7 +11,7 @@ public protocol ChatListController: ViewController {
     func activateCompose()
     func maybeAskForPeerChatRemoval(peer: RenderedPeer, deleteGloballyIfPossible: Bool, completion: @escaping (Bool) -> Void, removed: @escaping () -> Void)
     
-    var filter: NiceChatListNodePeersFilter? { get set }
+    var ngfilter: NiceChatListNodePeersFilter? { get set }
     var filterIndex: Int32? { get set }
     var isMissed: Bool { get set }
 }

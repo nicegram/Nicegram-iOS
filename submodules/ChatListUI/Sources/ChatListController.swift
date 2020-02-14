@@ -142,7 +142,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
 //            return
 //        }
 //
-//        let controller = TabBarFilterSwitchController(sharedContext: self.context.sharedContext, current: self.filter, available: getEnabledFilters(), switchToFilter: { [weak self] f in
+//        let controller = TabBarFilterSwitchController(sharedContext: self.context.sharedContext, current: self.filter, available: getEnabledFilters(), switchNGFilter: { [weak self] f in
 //
 //            if let accountManager = self?.context.sharedContext.accountManager {
 //                let _ = updateNiceSettingsInteractively(accountManager: accountManager, { settings in
@@ -155,7 +155,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
 //                }).start()
 //            }
 //
-//            self?.context.sharedContext.switchToFilter(filter: f, withChatListController: self)
+//            self?.context.sharedContext.switchNGFilter(filter: f, withChatListController: self)
 //            }, sourceNodes: sourceNodes)
 //        self.switchController = controller
 //        self.context.sharedContext.mainWindow?.present(controller, on: .root)
@@ -169,7 +169,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
     public let context: AccountContext
     private let controlsHistoryPreload: Bool
     private let hideNetworkActivityStatus: Bool
-    public var filter: NiceChatListNodePeersFilter?
+    public var ngfilter: NiceChatListNodePeersFilter?
     public var filterIndex: Int32?
     
     public var isMissed: Bool
@@ -207,7 +207,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
     
     private var searchContentNode: NavigationBarSearchContentNode?
     
-    var switchToFilter: ((NiceChatListNodePeersFilter) -> Void)?
+    var switchNGFilter: ((NiceChatListNodePeersFilter) -> Void)?
     
     weak var switchController: TabBarFilterSwitchController?
     
@@ -221,7 +221,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
         self.context = context
         self.controlsHistoryPreload = controlsHistoryPreload
         self.hideNetworkActivityStatus = hideNetworkActivityStatus
-        self.filter = filter
+        self.ngfilter = filter
         self.filterIndex = filterIndex
         
         self.isMissed = isMissed
@@ -241,8 +241,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
         var title: String
         if case .root = self.groupId {
             // TODO: Chat tab names
-            if (self.filter != nil) {
-                title = l(getFilterTabName(filter: self.filter!), self.presentationData.strings.baseLanguageCode)
+            if (self.ngfilter != nil) {
+                title = l(getFilterTabName(filter: self.ngfilter!), self.presentationData.strings.baseLanguageCode)
             } else {
                 title = self.presentationData.strings.DialogList_Title
             }
@@ -268,8 +268,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                 self.tabBarItem.title = title
             
                 var icon: UIImage?
-                if (self.filter != nil) {
-                    icon = UIImage(bundleImageName: getFilterIconPath(filter: self.filter!))
+                if (self.ngfilter != nil) {
+                    icon = UIImage(bundleImageName: getFilterIconPath(filter: self.ngfilter!))
                 } else if (useSpecialTabBarIcons()) {
                     icon = UIImage(bundleImageName: "Chat List/Tabs/NY/IconChats")
                 } else {
@@ -328,7 +328,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                 print("LONGTAP MISSED")
             }
             
-            if (strongSelf.filter != nil) {
+            if (strongSelf.ngfilter != nil) {
                 return
             }
             if strongSelf.chatListDisplayNode.searchDisplayController != nil {
@@ -381,9 +381,9 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                             }
                             defaultTitle = title
                         } else {
-                            if (strongSelf.filter != nil) {
+                            if (strongSelf.ngfilter != nil) {
                                 // Title
-                                defaultTitle = l(getFilterTabName(filter: strongSelf.filter!), strongSelf.presentationData.strings.baseLanguageCode)
+                                defaultTitle = l(getFilterTabName(filter: strongSelf.ngfilter!), strongSelf.presentationData.strings.baseLanguageCode)
                             }
                         }
                     } else {
@@ -433,9 +433,9 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                                 strongSelf.titleView.title = NetworkStatusTitle(text: strongSelf.presentationData.strings.State_Updating, activity: true, hasProxy: isRoot && hasProxy, connectsViaProxy: connectsViaProxy, isPasscodeSet: isRoot && isPasscodeSet, isManuallyLocked: isRoot && isManuallyLocked)
                             case .online:
                                 let title: String
-                                if (strongSelf.filter != nil) {
+                                if (strongSelf.ngfilter != nil) {
                                     // Title
-                                    title = l(getFilterTabName(filter: strongSelf.filter!), strongSelf.presentationData.strings.baseLanguageCode)
+                                    title = l(getFilterTabName(filter: strongSelf.ngfilter!), strongSelf.presentationData.strings.baseLanguageCode)
                                 } else {
                                     title = strongSelf.presentationData.strings.DialogList_Title
                                 }
@@ -472,7 +472,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
         
         self.badgeDisposable = (combineLatest(renderedTotalUnreadCount(accountManager: context.sharedContext.accountManager, postbox: context.account.postbox), self.presentationDataValue.get(), context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.inAppNotificationSettings])) |> deliverOnMainQueue).start(next: { [weak self] count, presentationData, sharedData in
             if let strongSelf = self {
-                if strongSelf.filter != nil {
+                if strongSelf.ngfilter != nil {
                     print("Change filter badge")
                     if !SimplyNiceSettings().filtersBadge {
                         strongSelf.tabBarItem.badgeValue = ""
@@ -491,7 +491,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                             let _ = (strongSelf.chatListDisplayNode.chatListNode.state).start(next: { state in
                                 let (rawEntries, isLoading) = chatListNodeEntriesForView(update.view, state: state, savedMessagesPeer: nil, hideArchivedFolderByDefault: true, displayArchiveIntro: false, mode: .chatList)
                                 
-                                let thisMode: ChatListNodeMode = .filteredChatList(filter: strongSelf.filter!)
+                                let thisMode: ChatListNodeMode = .filteredChatList(filter: strongSelf.ngfilter!)
                                 let currentPeerId: PeerId = context.account.peerId
 
                                 
@@ -730,8 +730,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
         if case .root = self.groupId {
             
             var title: String
-            if (self.filter != nil) {
-                title = l(getFilterTabName(filter: self.filter!), self.presentationData.strings.baseLanguageCode)
+            if (self.ngfilter != nil) {
+                title = l(getFilterTabName(filter: self.ngfilter!), self.presentationData.strings.baseLanguageCode)
             } else {
                 title = self.presentationData.strings.DialogList_Title
             }
@@ -2229,7 +2229,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
     
     public func presentTabBarPreviewingController(sourceNodes: [ASDisplayNode]) {
         if !NicegramSettings().useTgFilters {
-            if (self.filter == nil || self.isMissed || self.filterIndex == nil) {
+            if (self.ngfilter == nil || self.isMissed || self.filterIndex == nil) {
                 if self.chatListDisplayNode.searchDisplayController != nil {
                     self.deactivateSearch(animated: true)
                 } else {
@@ -2241,7 +2241,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                 return
             }
     
-            let controller = TabBarFilterSwitchController(sharedContext: self.context.sharedContext, current: self.filter, available: getEnabledFilters(), switchToFilter: { [weak self] f in
+            let controller = TabBarFilterSwitchController(sharedContext: self.context.sharedContext, current: self.ngfilter, available: getEnabledFilters(), switchNGFilter: { [weak self] f in
     
                 if let accountManager = self?.context.sharedContext.accountManager {
                     let _ = updateNiceSettingsInteractively(accountManager: accountManager, { settings in
@@ -2254,7 +2254,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                     }).start()
                 }
     
-                self?.context.sharedContext.switchToFilter(filter: f, withChatListController: self)
+                self?.context.sharedContext.switchToNGFilter(filter: f, withChatListController: self)
                 }, sourceNodes: sourceNodes)
             self.switchController = controller
             self.context.sharedContext.mainWindow?.present(controller, on: .root)
