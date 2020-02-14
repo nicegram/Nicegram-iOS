@@ -263,7 +263,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
         
         if !previewing {
             if self.groupId == .root && self.filter == nil {
-                self.tabBarItem.title = self.presentationData.strings.DialogList_Title
+                self.tabBarItem.title = title
                 
                 let icon: UIImage?
                 if (self.ngfilter != nil) {

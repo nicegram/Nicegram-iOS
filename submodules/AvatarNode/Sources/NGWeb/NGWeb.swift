@@ -208,7 +208,7 @@ public func requestValidator(_ receipt: Data,  completion: @escaping (_ apiResul
 
 
 
-public func validatePremium(_ current: Bool) {
+public func validatePremium(_ current: Bool, forceValid: Bool = false) {
     let sem = DispatchSemaphore(value: 0)
     if (current) {
         guard let receiptURL = Bundle.main.appStoreReceiptURL,
@@ -228,6 +228,10 @@ public func validatePremium(_ current: Bool) {
             } else if validStatus == "1" { // OK
                 ngApiLog("Okie-dokie")
             } else { // Error
+                if forceValid {
+                    PremiumSettings().p = false
+                    ngApiLog("Hello hacker?")
+                }
             }
             sem.signal()
             return

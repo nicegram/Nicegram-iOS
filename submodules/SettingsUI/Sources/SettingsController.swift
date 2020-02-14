@@ -1078,7 +1078,7 @@ public func settingsController(context: AccountContext, accountManager: AccountM
                                                     let productID = notification.object as? String
                                                     if productID == NicegramProducts.Premium {
                                                         PremiumSettings().p = true
-                                                        validatePremium(isPremium())
+                                                        validatePremium(isPremium(), forceValid: true)
                                                         
                                                         if (isPremium()) {
                                                             replaceTopControllerImpl?(premiumController(context: context))
