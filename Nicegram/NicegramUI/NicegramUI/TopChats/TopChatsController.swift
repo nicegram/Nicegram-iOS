@@ -14,17 +14,15 @@ private class TopChatsCell: UITableViewCell {
            self.imageView?.layer.cornerRadius = frameWidth / 2.0
            self.imageView?.clipsToBounds = true
        }
-//       let padding = UIEdgeInsets(top: 0, left: 0, bottom: 10, right: 0)
-//       bounds = bounds.inset(by: padding)
     }
 }
 
-extension FileManager {
-    func listurls(directory: String, skipsHiddenFiles: Bool = false ) -> [URL]? {
-        let fileURLs = try? contentsOfDirectory(at: URL(string: directory)!, includingPropertiesForKeys: nil, options: skipsHiddenFiles ? .skipsHiddenFiles : [] )
-        return fileURLs
-    }
-}
+//extension FileManager {
+//    func listurls(directory: String, skipsHiddenFiles: Bool = false ) -> [URL]? {
+//        let fileURLs = try? contentsOfDirectory(at: URL(string: directory)!, includingPropertiesForKeys: nil, options: skipsHiddenFiles ? .skipsHiddenFiles : [] )
+//        return fileURLs
+//    }
+//}
 
 final class TopChatsController: UIViewController, UITableViewDelegate, UITableViewDataSource
 {
