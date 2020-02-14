@@ -29,6 +29,7 @@
 "NiceFeatures.Filters.Header" = "篩選標籤";
 "NiceFeatures.Filters.Notice" = "選擇篩選標籤的數量。\n長按標籤來更改篩選器。";
 "NiceFeatures.Filters.ShowBadge" = "顯示標記 (小紅點)";
+"NiceFeatures.UseClassicInfoUi" = "使用經典版介面";
 
 /*Common*/
 "Common.ExitNow" = "立即結束";
