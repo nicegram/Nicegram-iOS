@@ -432,6 +432,8 @@ class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                 return .code(code)
             } else if let pre = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.Pre)] as? String {
                 return .pre(pre)
+            } else if let bankCard = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.BankCard)] as? String {
+                return .bankCard(bankCard)
             } else {
                 return .none
             }
@@ -457,7 +459,8 @@ class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                         TelegramTextAttributes.Hashtag,
                         TelegramTextAttributes.Timecode,
                         TelegramTextAttributes.Code,
-                        TelegramTextAttributes.Pre
+                        TelegramTextAttributes.Pre,
+                        TelegramTextAttributes.BankCard
                     ]
                     for name in possibleNames {
                         if let _ = attributes[NSAttributedString.Key(rawValue: name)] {
