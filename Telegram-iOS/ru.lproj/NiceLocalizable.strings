@@ -23,6 +23,8 @@
 /*Open Pin*/
 "Chat.OpenPin" = "Показать Пин";
 "ChatFilter.Admin" = "Админ";
+"NiceFeatures.Notifications.HideNotifyAccount" = "Скрыть аккаунт в уведомлении";
+"NiceFeatures.Notifications.HideNotifyAccountNotice" = "Вместо «Пользователь → Аккаунт» вы будете видеть только «Пользователь». Только для нескольких аккаунтов.";
 "NiceFeatures.Notifications.Fix" = "Отключить нежелательные уведомления";
 "NiceFeatures.Notifications.FixNotice" = "Нужно, если вы получаете уведомления, даже если они отключены в чате. Ответ из уведомления, метки аккаунтов и предпросмотр медиа будут недоступны.";
 "NiceFeatures.Filters.Header" = "ФИЛЬТРЫ (ВКЛАДКИ)";
