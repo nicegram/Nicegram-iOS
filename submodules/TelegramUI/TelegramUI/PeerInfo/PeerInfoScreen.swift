@@ -36,6 +36,7 @@ import LocationResources
 import LocationUI
 import Geocoding
 import TextFormat
+import NicegramLib
 
 protocol PeerInfoScreenItem: class {
     var id: AnyHashable { get }
@@ -2046,6 +2047,26 @@ private final class PeerInfoScreenNode: ViewControllerTracingNode, UIScrollViewD
                 if channel.flags.contains(.isCreator) {
                     canReport = false
                 }
+                
+//                items.append(ActionSheetButtonItem(title: l("Chat.OpenPin", presentationData.strings.baseLanguageCode), color: .accent, action: { [weak self] in
+//                       dismissAction()
+//                    if let strongSelf = self {
+//                       if let pinnedMessage = strongSelf.presentationInterfaceState.pinnedMessage {
+//                           strongSelf.navigateToMessage(from: nil, to: .id(pinnedMessage.id))
+//                           strongSelf.updateChatPresentationInterfaceState(animated: true, interactive: true, { current in
+//                               return current.updatedPinnedMessageId(pinnedMessage.id)
+//                           })
+//                           strongSelf.updateChatPresentationInterfaceState(animated: true, interactive: true, {
+//                               return $0.updatedInterfaceState({ $0.withUpdatedMessageActionsState({ value in
+//                                   var value = value
+//                                   value.closedPinnedMessageId = nil
+//                                   return value
+//                               }) })
+//                           })
+//                       }
+//                    }
+//                }))
+                
                 if canReport {
                     items.append(ActionSheetButtonItem(title: presentationData.strings.ReportPeer_Report, color: .destructive, action: { [weak self] in
                         dismissAction()
