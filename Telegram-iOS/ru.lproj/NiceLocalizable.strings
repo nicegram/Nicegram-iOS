@@ -28,6 +28,7 @@
 "NiceFeatures.Filters.Header" = "ФИЛЬТРЫ (ВКЛАДКИ)";
 "NiceFeatures.Filters.Notice" = "Выберите количество пользовательских вкладок.\nДолгое нажатие по вкладке позволит сменить фильтр.";
 "NiceFeatures.Filters.ShowBadge" = "Показывать бейджи (Фильтры)";
+"NiceFeatures.UseClassicInfoUi" = "Классический интерфейс «о чате»";
 
 /*Common*/
 "Common.ExitNow" = "Выйти Сейчас";
