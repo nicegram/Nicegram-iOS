@@ -30,6 +30,7 @@
 "NiceFeatures.Filters.Header" = "FİLTRELER (SEKMELER)";
 "NiceFeatures.Filters.Notice" = "Özel sekmelerin sayısını seçin.\nFiltreyi değiştirmek için sekmeye uzun basın.";
 "NiceFeatures.Filters.ShowBadge" = "Rozetleri Göster (Filtreler)";
+"NiceFeatures.UseClassicInfoUi" = "Klasik Sohbet Bilgisi Arayüzünü Kullan";
 
 /*Common*/
 "Common.ExitNow" = "Şimdi Çık";
