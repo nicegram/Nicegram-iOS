@@ -30,6 +30,7 @@
 "NiceFeatures.Filters.Header" = "FILTRI (TABS)";
 "NiceFeatures.Filters.Notice" = "Seleziona il numero di schede personalizzate.\nTocca a lungo la scheda per cambiare filtro.";
 "NiceFeatures.Filters.ShowBadge" = "Mostra badge (Filtri)";
+"NiceFeatures.UseClassicInfoUi" = "Usa l'interfaccia delle info classica";
 
 /*Common*/
 "Common.ExitNow" = "Esci ora";
