@@ -1326,7 +1326,12 @@ private func peerInfoControllerImpl(context: AccountContext, peer: Peer, mode: P
         return PeerInfoScreen(context: context, peerId: peer.id, avatarInitiallyExpanded: avatarInitiallyExpanded, keepExpandedButtons: keepExpandedButtons)
     } else if let channel = peer as? TelegramChannel {
         if useClassicUi {
-            return channelInfoController(context: context, peerId: peer.id)
+            if case .broadcast = channel.info {
+                return channelInfoController(context: context, peerId: peer.id)
+            } else {
+                return groupInfoController(context: context, peerId: peer.id)
+            }
+            
         }
         return PeerInfoScreen(context: context, peerId: peer.id, avatarInitiallyExpanded: avatarInitiallyExpanded, keepExpandedButtons: keepExpandedButtons)
     } else if peer is TelegramUser {
