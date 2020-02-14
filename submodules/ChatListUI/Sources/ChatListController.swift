@@ -237,12 +237,13 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
         
         var title: String
-        if let filter = self.filter {
-            title = filter.title ?? ""
-        } else if (self.ngfilter != nil) {
-            title = l(getFilterTabName(filter: self.ngfilter!), self.presentationData.strings.baseLanguageCode)
-        } else if self.groupId == .root {
-            title = self.presentationData.strings.DialogList_Title
+        if case .root = self.groupId {
+            // TODO: Chat tab names
+            if (self.ngfilter != nil) {
+                title = l(getFilterTabName(filter: self.ngfilter!), self.presentationData.strings.baseLanguageCode)
+            } else {
+                title = self.presentationData.strings.DialogList_Title
+            }
             self.navigationBar?.item = nil
         } else {
             title = self.presentationData.strings.ChatList_ArchivedChatsTitle
