@@ -21,6 +21,8 @@ enum PeerInfoHeaderButtonKey: Hashable {
     case mute
     case more
     case addMember
+    
+    case ngsearch
 }
 
 enum PeerInfoHeaderButtonIcon {
@@ -30,6 +32,8 @@ enum PeerInfoHeaderButtonIcon {
     case unmute
     case more
     case addMember
+    
+    case ngsearch
 }
 
 final class PeerInfoHeaderButtonNode: HighlightableButtonNode {
@@ -92,6 +96,8 @@ final class PeerInfoHeaderButtonNode: HighlightableButtonNode {
                 context.setFillColor(presentationData.theme.list.itemCheckColors.foregroundColor.cgColor)
                 let imageName: String
                 switch icon {
+                case .ngsearch:
+                    imageName = "Chat/Title Panels/SearchIcon"
                 case .message:
                     imageName = "Peer Info/ButtonMessage"
                 case .call:
@@ -1876,6 +1882,9 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             let buttonText: String
             let buttonIcon: PeerInfoHeaderButtonIcon
             switch buttonKey {
+            case .ngsearch:
+                buttonText = presentationData.strings.ChatSearch_SearchPlaceholder
+                buttonIcon = .ngsearch
             case .message:
                 buttonText = presentationData.strings.PeerInfo_ButtonMessage
                 buttonIcon = .message

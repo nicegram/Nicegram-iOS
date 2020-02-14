@@ -634,6 +634,7 @@ func peerInfoHeaderButtons(peer: Peer?, cachedData: CachedPeerData?) -> [PeerInf
             result.append(.call)
         }
         result.append(.mute)
+        result.append(.ngsearch)
         result.append(.more)
     } else if let channel = peer as? TelegramChannel {
         switch channel.info {
@@ -650,6 +651,7 @@ func peerInfoHeaderButtons(peer: Peer?, cachedData: CachedPeerData?) -> [PeerInf
         }
         
         result.append(.mute)
+        result.append(.ngsearch)
         result.append(.more)
     } else if let group = peer as? TelegramGroup {
         var canEditGroupInfo = false
@@ -681,6 +683,7 @@ func peerInfoHeaderButtons(peer: Peer?, cachedData: CachedPeerData?) -> [PeerInf
         }
         
         result.append(.mute)
+        result.append(.ngsearch)
         result.append(.more)
     }
     return result

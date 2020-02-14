@@ -1957,6 +1957,8 @@ private final class PeerInfoScreenNode: ViewControllerTracingNode, UIScrollViewD
             return
         }
         switch key {
+        case .ngsearch:
+            self.openChatWithMessageSearch()
         case .message:
             if let navigationController = controller.navigationController as? NavigationController {
                 self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(self.peerId)))
