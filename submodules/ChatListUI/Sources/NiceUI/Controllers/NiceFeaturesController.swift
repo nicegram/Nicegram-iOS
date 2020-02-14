@@ -53,8 +53,9 @@ private final class NiceFeaturesControllerArguments {
     
     let togglebackCam: (Bool) -> Void
     let toggletgFilters: (Bool) -> Void
+    let toggleClassicInfoUi: (Bool) -> Void
 
-    init(togglePinnedMessage: @escaping (Bool) -> Void, toggleMuteSilent: @escaping (Bool) -> Void, toggleHideNotifyAccount: @escaping (Bool) -> Void, toggleShowContactsTab: @escaping (Bool) -> Void, toggleFixNotifications: @escaping (Bool) -> Void, updateShowCallsTab: @escaping (Bool) -> Void, changeFiltersAmount: @escaping (Int32) -> Void, toggleShowTabNames: @escaping (Bool, String) -> Void, toggleHidePhone: @escaping (Bool, String) -> Void, toggleUseBrowser: @escaping (Bool) -> Void, customizeBrowser: @escaping (Browser) -> Void, openBrowserSelection: @escaping () -> Void, backupSettings: @escaping () -> Void, toggleFiltersBadge: @escaping (Bool) -> Void, toggleBackupIcloud: @escaping (Bool) -> Void, togglebackCam: @escaping (Bool) -> Void, toggletgFilters: @escaping (Bool) -> Void) {
+    init(togglePinnedMessage: @escaping (Bool) -> Void, toggleMuteSilent: @escaping (Bool) -> Void, toggleHideNotifyAccount: @escaping (Bool) -> Void, toggleShowContactsTab: @escaping (Bool) -> Void, toggleFixNotifications: @escaping (Bool) -> Void, updateShowCallsTab: @escaping (Bool) -> Void, changeFiltersAmount: @escaping (Int32) -> Void, toggleShowTabNames: @escaping (Bool, String) -> Void, toggleHidePhone: @escaping (Bool, String) -> Void, toggleUseBrowser: @escaping (Bool) -> Void, customizeBrowser: @escaping (Browser) -> Void, openBrowserSelection: @escaping () -> Void, backupSettings: @escaping () -> Void, toggleFiltersBadge: @escaping (Bool) -> Void, toggleBackupIcloud: @escaping (Bool) -> Void, togglebackCam: @escaping (Bool) -> Void, toggletgFilters: @escaping (Bool) -> Void, toggleClassicInfoUi: @escaping (Bool) -> Void) {
         self.togglePinnedMessage = togglePinnedMessage
         self.toggleMuteSilent = toggleMuteSilent
         self.toggleHideNotifyAccount = toggleHideNotifyAccount
@@ -72,6 +73,7 @@ private final class NiceFeaturesControllerArguments {
         self.toggleBackupIcloud = toggleBackupIcloud
         self.togglebackCam = togglebackCam
         self.toggletgFilters = toggletgFilters
+        self.toggleClassicInfoUi = toggleClassicInfoUi
     }
 }
 
@@ -127,6 +129,7 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
     case backupIcloud(PresentationTheme, String, Bool)
     case backCam(PresentationTheme, String, Bool)
     case tgFilters(PresentationTheme, String, Bool)
+    case toggleClassicInfoUi(PresentationTheme, String, Bool)
 
     var section: ItemListSectionId {
         switch self {
@@ -142,7 +145,7 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return niceFeaturesControllerSection.chatScreen.rawValue
         case .browsersHeader, .telegramBrowsers:
             return niceFeaturesControllerSection.browsers.rawValue
-        case .otherHeader, .hideNumber, .backupNotice, .backupSettings, .backupIcloud, .backCam, .tgFilters:
+        case .otherHeader, .hideNumber, .backupNotice, .backupSettings, .backupIcloud, .backCam, .tgFilters, .toggleClassicInfoUi:
             return niceFeaturesControllerSection.other.rawValue
         }
 
@@ -198,6 +201,8 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return 41
         case .tgFilters:
             return 42
+        case .toggleClassicInfoUi:
+            return 43
         case .backupIcloud:
             return 100000 - 1
         case .backupSettings:
@@ -384,6 +389,12 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
+        case let .toggleClassicInfoUi(lhsTheme, lhsText, lhsValue):
+            if case let .toggleClassicInfoUi(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
+                return true
+            } else {
+                return false
+            }
         }
     }
 
@@ -480,6 +491,10 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.toggletgFilters(value)
             })
+        case let .toggleClassicInfoUi(theme, text, value):
+        return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                arguments.toggleClassicInfoUi(value)
+        })
         }
     }
 
@@ -532,6 +547,7 @@ private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls
     entries.append(.backCam(presentationData.theme, l("NiceFeatures.useBackCam", locale), nicegramSettings.useBackCam))
     
     //entries.append(.tgFilters(presentationData.theme, "Use Telegram Filters", nicegramSettings.useTgFilters))
+    entries.append(.toggleClassicInfoUi(presentationData.theme, l("NiceFeatures.UseClassicInfoUi", locale), nicegramSettings.useClassicInfoUi))
 
     entries.append(.backupSettings(presentationData.theme, l("NiceFeatures.BackupSettings", locale)))
     entries.append(.backupNotice(presentationData.theme, l("NiceFeatures.BackupSettings.Notice", locale)))
@@ -703,6 +719,8 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
         NicegramSettings().useBackCam = value
     }, toggletgFilters: { value in
         NicegramSettings().useTgFilters = value
+    }, toggleClassicInfoUi: { value in
+        NicegramSettings().useClassicInfoUi = value
     }
     )
 

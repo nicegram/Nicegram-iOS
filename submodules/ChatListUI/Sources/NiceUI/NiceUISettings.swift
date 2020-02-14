@@ -389,7 +389,7 @@ public class SystemNGSettings {
     
 }
 
-public let SETTINGS_VERSION = 2
+public let SETTINGS_VERSION = 4
 public let BACKUP_NAME = "backup.ng-settings"
 public func getSettingsFilePath() -> URL {
     return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
@@ -408,6 +408,7 @@ public class NicegramSettings {
         UD?.register(defaults: ["useTgFilters": false])
         shared?.register(defaults: ["muteSoundSilent": true])
         shared?.register(defaults: ["hideNotifyAccountName": false])
+        UD?.register(defaults: ["useClassicInfoUi": false])
     }
     
     // SimplyNiceSettings
@@ -581,6 +582,15 @@ public class NicegramSettings {
         }
     }
     
+    public var useClassicInfoUi: Bool {
+        get {
+            return UD?.bool(forKey: "useClassicInfoUi") ?? false
+        }
+        set {
+            UD?.set(newValue, forKey: "useClassicInfoUi")
+        }
+    }
+    
     public var json: [String: Any] {
         var jsNiceSettings: [String: Any] = [
             "hideNumber": self.hideNumber,
@@ -588,7 +598,8 @@ public class NicegramSettings {
             "showTabNames": self.showTabNames,
             "filtersBadge": self.filtersBadge,
             "useBackCam": self.useBackCam,
-            "hideNotifyAccountName": self.hideNotifyAccountName
+            "hideNotifyAccountName": self.hideNotifyAccountName,
+            "useClassicInfoUi": self.useClassicInfoUi
         ]
         
         var intChatFilters: [Int32] = []
@@ -703,6 +714,13 @@ public class NicegramSettings {
                 result.append(("hideNotifyAccountName", String(hideNotifyAccountName), true))
             } else {
                 result.append(("hideNotifyAccountName", "", false))
+            }
+            
+            if let useClassicInfoUi = niceSettings["useClassicInfoUi"] as? Bool {
+                self.useClassicInfoUi = useClassicInfoUi
+                result.append(("useClassicInfoUi", String(useClassicInfoUi), true))
+            } else {
+                result.append(("useClassicInfoUi", "", false))
             }
         } else {
              result.append(("NiceSettings", "", false))
