@@ -72,7 +72,7 @@ final class ChatListControllerNode: ASDisplayNode {
 
     let debugListView = ListView()
     
-    init(context: AccountContext, groupId: PeerGroupId, previewing: Bool, controlsHistoryPreload: Bool, presentationData: PresentationData, controller: ChatListControllerImpl) {
+    init(context: AccountContext, groupId: PeerGroupId, filter: ChatListFilter?, previewing: Bool, controlsHistoryPreload: Bool, presentationData: PresentationData, controller: ChatListControllerImpl) {
         self.context = context
         self.groupId = groupId
         self.presentationData = presentationData
@@ -84,7 +84,7 @@ final class ChatListControllerNode: ASDisplayNode {
             mode = .chatList
         }
         
-        self.chatListNode = ChatListNode(context: context, groupId: groupId, previewing: previewing, controlsHistoryPreload: controlsHistoryPreload, mode: mode, theme: presentationData.theme, fontSize: presentationData.listsFontSize, strings: presentationData.strings, dateTimeFormat: presentationData.dateTimeFormat, nameSortOrder: presentationData.nameSortOrder, nameDisplayOrder: presentationData.nameDisplayOrder, disableAnimations: presentationData.disableAnimations)
+        self.chatListNode = ChatListNode(context: context, groupId: groupId, chatListFilter: filter, previewing: previewing, controlsHistoryPreload: controlsHistoryPreload, mode: mode, theme: presentationData.theme, fontSize: presentationData.listsFontSize, strings: presentationData.strings, dateTimeFormat: presentationData.dateTimeFormat, nameSortOrder: presentationData.nameSortOrder, nameDisplayOrder: presentationData.nameDisplayOrder, disableAnimations: presentationData.disableAnimations)
         
         self.controller = controller
         

@@ -9,7 +9,7 @@ def appConfig():
 
     apiId = native.read_config("custom", "apiId")
     apiHash = native.read_config("custom", "apiHash")
-    hockeyAppId = native.read_config("custom", "hockeyAppId")
+    appCenterId = native.read_config("custom", "appCenterId")
     isInternalBuild = native.read_config("custom", "isInternalBuild")
     isAppStoreBuild = native.read_config("custom", "isAppStoreBuild")
     appStoreId = native.read_config("custom", "appStoreId")
@@ -25,7 +25,7 @@ def appConfig():
 
         "apiId": apiId,
         "apiHash": apiHash,
-        "hockeyAppId": hockeyAppId,
+        "appCenterId": appCenterId,
         "isInternalBuild": isInternalBuild,
         "isAppStoreBuild": isAppStoreBuild,
         "appStoreId": appStoreId,

@@ -1025,7 +1025,8 @@ final class ChatMessageAttachedContentNode: ASDisplayNode {
                         TelegramTextAttributes.BotCommand,
                         TelegramTextAttributes.Hashtag,
                         TelegramTextAttributes.Code,
-                        TelegramTextAttributes.Pre
+                        TelegramTextAttributes.Pre,
+                        TelegramTextAttributes.BankCard
                     ]
                     for name in possibleNames {
                         if let _ = attributes[NSAttributedString.Key(rawValue: name)] {

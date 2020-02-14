@@ -3,14 +3,14 @@
 include Utils.makefile
 
 BUCK_OPTIONS=\
-	--config custom.appVersion="5.14.1" \
+	--config custom.appVersion="5.15" \
 	--config custom.developmentCodeSignIdentity="${DEVELOPMENT_CODE_SIGN_IDENTITY}" \
 	--config custom.distributionCodeSignIdentity="${DISTRIBUTION_CODE_SIGN_IDENTITY}" \
 	--config custom.developmentTeam="${DEVELOPMENT_TEAM}" \
 	--config custom.baseApplicationBundleId="${BUNDLE_ID}" \
 	--config custom.apiId="${API_ID}" \
 	--config custom.apiHash="${API_HASH}" \
-	--config custom.hockeyAppId="${HOCKEYAPP_ID}" \
+	--config custom.appCenterId="${APP_CENTER_ID}" \
 	--config custom.isInternalBuild="${IS_INTERNAL_BUILD}" \
 	--config custom.isAppStoreBuild="${IS_APPSTORE_BUILD}" \
 	--config custom.appStoreId="${APPSTORE_ID}" \

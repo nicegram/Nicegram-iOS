@@ -391,7 +391,7 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePrevewItemNode 
                             break
                         case .ignore:
                             return .fail
-                        case .url, .peerMention, .textMention, .botCommand, .code, .pre, .hashtag, .instantPage, .wallpaper, .theme, .call, .openMessage, .timecode, .tooltip:
+                        case .url, .peerMention, .textMention, .botCommand, .code, .pre, .hashtag, .instantPage, .wallpaper, .theme, .call, .openMessage, .timecode, .bankCard, .tooltip:
                             return .waitForSingleTap
                     }
                 }
@@ -2594,6 +2594,11 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePrevewItemNode 
                                 item.controllerInteraction.seekToTimecode(mediaMessage, timecode, forceOpen)
                             }
                             break loop
+                        case let .bankCard(number):
+                            foundTapAction = true
+                            if let item = self.item {
+                                item.controllerInteraction.longTap(.bankCard(number), item.message)
+                            }
                         case let .tooltip(text, node, rect):
                             foundTapAction = true
                             if let item = self.item {
@@ -2662,6 +2667,9 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePrevewItemNode 
                                     item.controllerInteraction.longTap(.timecode(timecode, text), mediaMessage)
                                 }
                                 break loop
+                            case let .bankCard(number):
+                                foundTapAction = true
+                                item.controllerInteraction.longTap(.bankCard(number), message)
                             case .tooltip:
                                 break
                         }
