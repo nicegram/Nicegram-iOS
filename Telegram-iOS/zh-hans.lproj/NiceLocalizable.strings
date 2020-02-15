@@ -15,6 +15,7 @@
 "NiceFeatures.Tabs.ShowContacts" = "显示<联系人>标签";
 "NiceFeatures.ChatScreen.Header" = "对话界面";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "动态贴纸";
+"NiceFeatures.useBackCam" = "使用后置摄像头(圆形视频)";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "保存到收藏夹";
@@ -22,11 +23,14 @@
 /*Open Pin*/
 "Chat.OpenPin" = "显示置顶";
 "ChatFilter.Admin" = "管理员";
+"NiceFeatures.Notifications.HideNotifyAccount" = "在通知中隐藏帐户";
+"NiceFeatures.Notifications.HideNotifyAccountNotice" = "当您在设置添加了多个账户时，通知中就不会显示你的账户信息。";
 "NiceFeatures.Notifications.Fix" = "禁用多余通知";
 "NiceFeatures.Notifications.FixNotice" = "如果在已关闭通知群组/频道仍然会收到通知，那开启此功能可以禁用此通知.\n开启此功能，在通知界面回复消息，帐户标签和媒体预览将会被禁用。";
 "NiceFeatures.Filters.Header" = "标签过滤";
 "NiceFeatures.Filters.Notice" = "选择自定义标签的数量。\n长按标签更改标签选项。";
 "NiceFeatures.Filters.ShowBadge" = "标签上显示角标";
+"NiceFeatures.UseClassicInfoUi" = "使用经典对话信息界面";
 
 /*Common*/
 "Common.ExitNow" = "立即退出";
@@ -83,6 +87,8 @@
 "IAP.Common.Congrats" = "恭喜！";
 "IAP.Common.ValidateError" = "抱歉，无法验证您的购买。";
 "Premium.OnetapTranslate" = "快速翻译按钮";
+"Premium.IgnoreTranslate.Title" = "忽略的语言";
+"Premium.IgnoreTranslate.Header" = "应用会尝试检测每一条消息的语言。如果你在下面选择了忽略的语言，快捷翻译按钮将不会显示。";
 
 /*Manage Filters*/
 "ManageFilters.Title" = "管理标签";
@@ -98,5 +104,14 @@
 "NGLab.RegDate.Notice" = "这是一个大致日期";
 "NGLab.RegDate.MenuItem" = "已注册";
 "NGLab.RegDate.FetchError" = "对不起，无法获得注册日期。";
+
+/*Backup Settings*/
+"NiceFeatures.BackupIcloud" = "使用 iCloud 同步设置和分组";
 "NiceFeatures.BackupSettings" = "备份设置和分组";
+"NiceFeatures.BackupSettings.Notice" = "创建备份文件。点击备份文件恢复。";
 "NiceFeatures.BackupSettings.Done" = "备份已完成，存放在\"收藏夹\"里。";
+"NiceFeatures.BackupSettings.Error" = "创建备份出错";
+
+"NiceFeatures.RestoreSettings.Confirm" = "您确定要从备份文件中恢复分组和设置吗？\n⚠️ 这将会覆盖当前的数据";
+"NiceFeatures.RestoreSettings.Done" = "分组和设置已恢复成功";
+"NiceFeatures.RestoreSettings.Error" = "恢复设置出错，备份文件可能已损坏。";
