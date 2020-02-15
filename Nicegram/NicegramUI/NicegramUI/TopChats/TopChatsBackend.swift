@@ -34,6 +34,60 @@ struct TopChat: Decodable {
     }
 }
 
+func code_to_lang_emoji(_ lang: String) -> (String, String) {
+    switch (lang) {
+    case "RU":
+        return ("Русский", "🇷🇺")
+    case "EN":
+        return ("English", "🇬🇧")
+    case "UZ":
+        return ("Oʻzbek", "🇺🇿")
+    case "ES":
+        return ("Español", "🇪🇸")
+    case "IT":
+        return ("Italiano", "🇮🇹")
+    case "PT":
+        return ("Português", "🇵🇹")
+    case "ID":
+        return ("Indonesia", "🇮🇩")
+    case "TR":
+        return ("Türkçe", "🇹🇷")
+    case "ZH":
+        return ("中文", "ZH")
+    case "DE":
+        return ("Deutsch", "🇩🇪")
+    case "VI":
+        return ("Tiếng Việt", "🇻🇳")
+    case "KO":
+        return ("한국어", "🇰🇷")
+    case "UK":
+        return ("Українська", "🇺🇦")
+    case "FA":
+        return ("فارسی", "🇮🇷")
+    case "AR":
+        return ("العربية","🇦🇪/🇸🇦")
+    case "HI":
+        return ("हिंदी", "🇮🇳")
+    case "NL":
+        return ("Nederlands", "🇳🇱")
+    case "FR":
+        return ("Français","🇫🇷")
+    case "JA":
+        return ("日本語", "🇯🇵")
+    case "MA":
+        return ("Malay", "🇲🇾")
+    case "IW":
+        return ("עברית", "🇮🇱")
+    case "PL":
+        return ("Polski","🇵🇱")
+    case "ML":
+        return ("മലയാളം", "ML")
+    default:
+        return (lang, lang)
+    }
+}
+
+
 typealias ImageCacheLoaderCompletionHandler = ((UIImage) -> ())
 
 class ImageCacheLoader {

@@ -6,14 +6,31 @@ import SwiftSignalKit
 import AccountContext
 // import Zip
 
+let leftTCTableinset: CGFloat = 20
+
 private class TopChatsCell: UITableViewCell {
     
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: .subtitle, reuseIdentifier: reuseIdentifier)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
     override public func layoutSubviews() {
-       super.layoutSubviews()
-       if let frameWidth = self.imageView?.frame.width {
-           self.imageView?.layer.cornerRadius = frameWidth / 2.0
-           self.imageView?.clipsToBounds = true
-       }
+        super.layoutSubviews()
+        // Make images frame smaller
+        let kf : CGFloat = 0.8
+        self.imageView?.frame = CGRect(origin: CGPoint(x: 10.0 + leftTCTableinset, y: 10.0), size: CGSize(width: (self.imageView?.frame.width ?? 53.9)
+            * kf, height: (self.imageView?.frame.height ?? 53.9)
+            * kf))
+        
+        // Applying rounding
+        if let frameWidth = self.imageView?.frame.width {
+            self.imageView?.layer.cornerRadius = frameWidth / 2.0
+            self.imageView?.clipsToBounds = true
+        }
     }
 }
 
@@ -49,7 +66,7 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
 
     /// Text shown during load the TableView
     let loadingLabel = UILabel()
-    
+
     public init(context: AccountContext) {
         self.context = context
         self.presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
@@ -71,6 +88,7 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
                 }
             })
         
+        tableView.contentInset = UIEdgeInsets(top: 0, left: -leftTCTableinset, bottom: 0, right: 0)
         self.loadRawData(JSON_URL)
     }
     
@@ -87,6 +105,12 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
         
         self.view.addSubview(self.tableView)
         self.tableView.frame = self.view.bounds
+
+        // Make table wider
+        var frameRect = self.tableView.frame
+        frameRect.size.width = frameRect.width + leftTCTableinset
+        self.tableView.frame = frameRect
+
         self.tableView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         self.tableView.dataSource = self
         self.tableView.delegate = self
@@ -111,7 +135,8 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
         let cell: TopChatsCell = tableView.dequeueReusableCell(withIdentifier: cellReuseIdentifier) as! TopChatsCell
         
         let topChat = topChats[indexPath.row]
-        
+
+        cell.detailTextLabel?.text = code_to_lang_emoji(topChat.lang).1 + " @" + topChat.username
         cell.textLabel?.text = topChat.title
         cell.textLabel?.textColor = self.presentationData.theme.chatList.titleColor
         cell.backgroundColor = self.presentationData.theme.chatList.pinnedItemBackgroundColor
