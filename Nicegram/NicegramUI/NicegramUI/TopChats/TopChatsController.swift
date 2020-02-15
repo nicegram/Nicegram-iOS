@@ -21,8 +21,8 @@ private class TopChatsCell: UITableViewCell {
     override public func layoutSubviews() {
         super.layoutSubviews()
         // Make images frame smaller
-        let kf : CGFloat = 0.8
-        self.imageView?.frame = CGRect(origin: CGPoint(x: 10.0 + leftTCTableinset, y: 10.0), size: CGSize(width: (self.imageView?.frame.width ?? 53.9)
+        let kf : CGFloat = 0.9
+        self.imageView?.frame = CGRect(origin: CGPoint(x: 10.0 + leftTCTableinset, y: 5.0), size: CGSize(width: (self.imageView?.frame.width ?? 53.9)
             * kf, height: (self.imageView?.frame.height ?? 53.9)
             * kf))
         
@@ -137,6 +137,7 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
         let topChat = topChats[indexPath.row]
 
         cell.detailTextLabel?.text = code_to_lang_emoji(topChat.lang).1 + " @" + topChat.username
+        cell.detailTextLabel?.textColor = self.presentationData.theme.chatList.messageTextColor
         cell.textLabel?.text = topChat.title
         cell.textLabel?.textColor = self.presentationData.theme.chatList.titleColor
         cell.backgroundColor = self.presentationData.theme.chatList.pinnedItemBackgroundColor
