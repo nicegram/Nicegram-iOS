@@ -8,7 +8,7 @@
 
 [swift]
   version = 5
-  compiler_flags = -g -DBUCK $(config custom.optimization) $(config custom.config_swift_compiler_flags) $(config custom.other_swift_compiler_flags)
+  compiler_flags = -g -DBUCK -DCN $(config custom.optimization) $(config custom.config_swift_compiler_flags) $(config custom.other_swift_compiler_flags)
   use_filelist = true
 
 [apple]
