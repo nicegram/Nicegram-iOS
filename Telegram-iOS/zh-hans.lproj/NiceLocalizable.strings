@@ -88,7 +88,7 @@
 "IAP.Common.ValidateError" = "抱歉，无法验证您的购买。";
 "Premium.OnetapTranslate" = "快速翻译按钮";
 "Premium.IgnoreTranslate.Title" = "忽略的语言";
-"Premium.IgnoreTranslate.Header" = "应用会尝试检测每一条消息的语言。如果你在下面选择了忽略的语言，快捷翻译按钮将不会显示。";
+"Premium.IgnoreTranslate.Header" = "应用会尝试检测每一条消息的语言。如果你在下面选择了忽略的语言，快速翻译按钮将不会显示。";
 
 /*Manage Filters*/
 "ManageFilters.Title" = "管理标签";
