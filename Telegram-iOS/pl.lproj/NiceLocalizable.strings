@@ -30,6 +30,7 @@
 "NiceFeatures.Filters.Header" = "FILTRY (ZAKŁADKI)";
 "NiceFeatures.Filters.Notice" = "Wybierz liczbę własnych kart.\nPrzytrzymaj kartę, aby zmienić filtr.";
 "NiceFeatures.Filters.ShowBadge" = "Pokaż plakietki (filtry)";
+"NiceFeatures.UseClassicInfoUi" = "Użyj klasycznego wyglądu Informacji o czacie";
 
 /*Common*/
 "Common.ExitNow" = "Wyjdź teraz";
