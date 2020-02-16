@@ -1,3 +1,4 @@
+#if CN
 //
 //  TopChatsBackend.swift
 //  AsyncUI#shared
@@ -130,3 +131,4 @@ class ImageCacheLoader {
         }
     }
 }
+#endif

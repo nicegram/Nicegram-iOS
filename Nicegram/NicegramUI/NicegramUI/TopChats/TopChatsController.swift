@@ -1,3 +1,4 @@
+#if CN
 import Foundation
 import UIKit
 import Display
@@ -547,3 +548,4 @@ public class TopChatsViewController: ViewController {
     }
     
 }
+#endif
