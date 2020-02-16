@@ -182,7 +182,7 @@ public final class TelegramRootController: NavigationController {
             }
         }
         
-        #if DEBUG
+        #if CN
         let topChatsController = TopChatsViewController(context: self.context)
         
         
@@ -298,7 +298,7 @@ public final class TelegramRootController: NavigationController {
         PremiumSettings().lastOpened = utcnow()
         premiumLog("LAST OPENED \(PremiumSettings().lastOpened) | DIFF \(PremiumSettings().lastOpened - oldOpened) s")
         
-        #if DEBUG
+        #if CN
         controllers.insert(self.topChatsController!, at: 0)
         #endif
         rootTabController.setControllers(controllers, selectedIndex: selectedIndex)
