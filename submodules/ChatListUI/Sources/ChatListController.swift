@@ -366,17 +366,12 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                 self.chatListDisplayNode.chatListNode.chatListFilterSignal
             ).start(next: { [weak self] networkState, proxy, passcode, state, chatListFilter in
                 if let strongSelf = self {
-                    var defaultTitle: String = "Chats"
+                    var defaultTitle: String = strongSelf.presentationData.strings.DialogList_Title
                     if strongSelf.groupId == .root {
-                        if let chatListFilter = chatListFilter {
-                            let title: String = chatListFilter.title ?? ""
-                            defaultTitle = title
-                        } else {
-                            if (strongSelf.ngfilter != nil) {
+                        if (strongSelf.ngfilter != nil) {
                                 // Title
                                 defaultTitle = l(getFilterTabName(filter: strongSelf.ngfilter!), strongSelf.presentationData.strings.baseLanguageCode)
                             }
-                        }
                     } else {
                         defaultTitle = strongSelf.presentationData.strings.ChatList_ArchivedChatsTitle
                         // FOLDER TITLE
