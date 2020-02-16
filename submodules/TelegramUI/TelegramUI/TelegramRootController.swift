@@ -3,6 +3,7 @@ import UIKit
 import Display
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import AccountContext
@@ -13,6 +14,9 @@ import SettingsUI
 import NicegramLib
 import AlertUI
 import AvatarNode
+import AppBundle
+import TelegramUIPreferences
+import NicegramUI
 
 public final class TelegramRootController: NavigationController {
     private let context: AccountContext
@@ -25,6 +29,7 @@ public final class TelegramRootController: NavigationController {
     public var accountSettingsController: ViewController?
     
     public var filterControllers: [ChatListController]?
+    public var topChatsController: ViewController?
     
     private var permissionsDisposable: Disposable?
     private var presentationDataDisposable: Disposable?
@@ -61,14 +66,12 @@ public final class TelegramRootController: NavigationController {
                         }
                         strongSelf.updateBackgroundDetailsMode(navigationDetailsBackgroundMode, transition: .immediate)
                     }
-                    
+                    strongSelf.updateBackgroundDetailsMode(navigationDetailsBackgroundMode, transition: .immediate)
                     let previousTheme = strongSelf.presentationData.theme
                     strongSelf.presentationData = presentationData
                     if previousTheme !== presentationData.theme {
                         strongSelf.rootTabController?.updateTheme(navigationBarPresentationData: NavigationBarPresentationData(presentationData: presentationData), theme: TabBarControllerTheme(rootControllerTheme: presentationData.theme))
                         strongSelf.rootTabController?.statusBar.statusBarStyle = presentationData.theme.rootController.statusBarStyle.style
-                        
-                        
                     }
                 }
             })
@@ -85,7 +88,8 @@ public final class TelegramRootController: NavigationController {
     
     public func addRootControllers(showCallsTab: Bool, niceSettings: NiceSettings) {
         let tabBarController = TabBarController(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData), theme: TabBarControllerTheme(rootControllerTheme: self.presentationData.theme), showTabNames: SimplyNiceSettings().showTabNames)
-        let chatListController = self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: nil, filterIndex: nil, isMissed: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
+        tabBarController.navigationPresentation = .master
+        let chatListController = self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, filter: nil, controlsHistoryPreload: true, hideNetworkActivityStatus: false, ngfilter: nil, filterIndex: nil, isMissed: false, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
         if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
             chatListController.tabBarItem.badgeValue = sharedContext.switchingData.chatListBadge
         }
@@ -111,7 +115,7 @@ public final class TelegramRootController: NavigationController {
                 if index + 1 > SimplyNiceSettings().maxFilters {
                     break
                 }
-                filControllers.append(self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: filter, filterIndex: Int32(index), isMissed: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild))
+                filControllers.append(self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, filter: nil, controlsHistoryPreload: true, hideNetworkActivityStatus: false, ngfilter: filter, filterIndex: Int32(index), isMissed: false, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild))
             }
             
             if !filControllers.isEmpty {
@@ -142,15 +146,49 @@ public final class TelegramRootController: NavigationController {
         controllers.append(accountSettingsController)
         
         
-        if showMissed() {
-            let missedController = self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: .onlyMissed, filterIndex: nil, isMissed: true, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
-            
-            if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
-                missedController.tabBarItem.badgeValue = sharedContext.switchingData.chatListBadge
+//        var hasUnreads = false
+//
+//        let semaphore = DispatchSemaphore(value: 0)
+//        let signal = renderedTotalUnreadCount(accountManager: self.context.sharedContext.accountManager, postbox: self.context.account.postbox)
+//        signal.start(next: { count in
+//            if count.0 != 0 {
+//                hasUnreads = true
+//            }
+//            print("unread count \(count.0)")
+//            semaphore.signal()
+//        })
+//
+//        semaphore.wait()
+        
+        if showMissed() /*&& hasUnreads*/ {
+            var missedControllerIndex: Int? = nil
+            for (index, testController) in controllers.enumerated() {
+                if let strongController = testController as? ChatListController {
+                    if strongController.ngfilter == .onlyMissed {
+                        missedControllerIndex = index
+                    }
+                }
             }
-            
-            controllers.insert(missedController, at: 0)
+            if let hasMissedControllerIndex = missedControllerIndex {
+                // Use existing tab
+            } else {
+                let missedController = self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, filter: nil, controlsHistoryPreload: true, hideNetworkActivityStatus: false, ngfilter: .onlyMissed, filterIndex: nil, isMissed: true, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
+                
+                if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
+                    missedController.tabBarItem.badgeValue = sharedContext.switchingData.chatListBadge
+                }
+                
+                controllers.insert(missedController, at: 0)
+            }
         }
+        
+        #if DEBUG
+        let topChatsController = TopChatsViewController(context: self.context)
+        
+        
+        controllers.insert(topChatsController, at: 0)
+        self.topChatsController = topChatsController
+        #endif
         
         tabBarController.setControllers(controllers, selectedIndex: restoreSettignsController != nil ? (controllers.count - 1) : (controllers.count - 2))
         
@@ -160,6 +198,19 @@ public final class TelegramRootController: NavigationController {
         self.accountSettingsController = accountSettingsController
         self.rootTabController = tabBarController
         self.pushViewController(tabBarController, animated: false)
+        
+//        let _ = (archivedStickerPacks(account: self.context.account, namespace: .stickers)
+//        |> deliverOnMainQueue).start(next: { [weak self] stickerPacks in
+//            var packs: [(StickerPackCollectionInfo, StickerPackItem?)] = []
+//            for pack in stickerPacks {
+//                packs.append((pack.info, pack.topItems.first))
+//            }
+//
+//            if let strongSelf = self {
+//                let controller = archivedStickersNoticeController(context: strongSelf.context, archivedStickerPacks: packs)
+//                strongSelf.chatListController?.present(controller, in: .window(.root))
+//            }
+//        })
     }
     
     public func updateRootControllers(showCallsTab: Bool, niceSettings: NiceSettings) {
@@ -185,7 +236,7 @@ public final class TelegramRootController: NavigationController {
                 if index + 1 > SimplyNiceSettings().maxFilters {
                     break
                 }
-                filControllers.append(self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: filter, filterIndex: Int32(index), isMissed: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild))
+                filControllers.append(self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, filter: nil, controlsHistoryPreload: true, hideNetworkActivityStatus: false, ngfilter: filter, filterIndex: Int32(index), isMissed: false, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild))
             }
             
             if !filControllers.isEmpty {
@@ -205,15 +256,41 @@ public final class TelegramRootController: NavigationController {
         controllers.append(self.chatListController!)
         controllers.append(self.accountSettingsController!)
         
-        if showMissed() {
-            selectedIndex = 0
-            let missedController = self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, controlsHistoryPreload: true, hideNetworkActivityStatus: false, filter: .onlyMissed, filterIndex: nil, isMissed: true, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
-            
-            if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
-                missedController.tabBarItem.badgeValue = sharedContext.switchingData.chatListBadge
+//        var hasUnreads = false
+//
+//        let semaphore = DispatchSemaphore(value: 0)
+//        let signal = renderedTotalUnreadCount(accountManager: self.context.sharedContext.accountManager, postbox: self.context.account.postbox)
+//        signal.start(next: { count in
+//            if count.0 != 0 {
+//                hasUnreads = true
+//            }
+//            print("unread count \(count.0)")
+//            semaphore.signal()
+//        })
+//
+//        semaphore.wait()
+        
+        if showMissed() /*&& hasUnreads*/ {
+            for (index, testController) in controllers.enumerated() {
+                if let strongController = testController as? ChatListController {
+                    if strongController.ngfilter == .onlyMissed {
+                        selectedIndex = index
+                        break
+                    }
+                }
             }
-            
-            controllers.insert(missedController, at: 0)
+            if let hasMissedControllerIndex = selectedIndex {
+                // Use existing tab
+            } else {
+                selectedIndex = 0
+                let missedController = self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, filter: nil, controlsHistoryPreload: true, hideNetworkActivityStatus: false, ngfilter: .onlyMissed, filterIndex: nil, isMissed: true, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
+                
+                if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
+                    missedController.tabBarItem.badgeValue = sharedContext.switchingData.chatListBadge
+                }
+                
+                controllers.insert(missedController, at: 0)
+            }
         }
         
         // Updating start data
@@ -221,6 +298,9 @@ public final class TelegramRootController: NavigationController {
         PremiumSettings().lastOpened = utcnow()
         premiumLog("LAST OPENED \(PremiumSettings().lastOpened) | DIFF \(PremiumSettings().lastOpened - oldOpened) s")
         
+        #if DEBUG
+        controllers.insert(self.topChatsController!, at: 0)
+        #endif
         rootTabController.setControllers(controllers, selectedIndex: selectedIndex)
         
         //        let observer = NotificationCenter.default.addObserver(forName: .IAPHelperPurchaseNotification, object: nil, queue: .main, using: { notification in

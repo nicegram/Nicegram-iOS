@@ -5,15 +5,18 @@ import Display
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import LegacyComponents
 import TelegramPresentationData
 import ItemListUI
+import PresentationDataUtils
 import AccountContext
 import TextFormat
 import OverlayStatusController
 import TelegramStringFormatting
 import ShareController
 import AlertUI
+import PresentationDataUtils
 import GalleryUI
 import LegacyUI
 import ItemListAvatarAndNameInfoItem
@@ -22,9 +25,10 @@ import PeerAvatarGalleryUI
 import NotificationMuteSettingsUI
 import MapResourceToAvatarSizes
 import NotificationSoundSelectionUI
+import Markdown
 
 private final class ChannelInfoControllerArguments {
-    let account: Account
+    let context: AccountContext
     let avatarAndNameInfoContext: ItemListAvatarAndNameInfoItemContext
     let tapAvatarAction: () -> Void
     let presentController: (ViewController, ViewControllerPresentationArguments) -> Void
@@ -45,9 +49,10 @@ private final class ChannelInfoControllerArguments {
     let displayAddressNameContextMenu: (String) -> Void
     let displayContextMenu: (ChannelInfoEntryTag, String) -> Void
     let aboutLinkAction: (TextLinkItemActionType, TextLinkItem) -> Void
-    let toggleSignatures:(Bool) -> Void
-    init(account: Account, avatarAndNameInfoContext: ItemListAvatarAndNameInfoItemContext, tapAvatarAction: @escaping () -> Void, presentController: @escaping (ViewController, ViewControllerPresentationArguments) -> Void, changeProfilePhoto: @escaping () -> Void, updateEditingName: @escaping (ItemListAvatarAndNameInfoItemName) -> Void, updateEditingDescriptionText: @escaping (String) -> Void, openChannelTypeSetup: @escaping () -> Void, openDiscussionGroupSetup: @escaping () -> Void, changeNotificationMuteSettings: @escaping () -> Void, openSharedMedia: @escaping () -> Void, openStats: @escaping () -> Void, openAdmins: @escaping () -> Void, openMembers: @escaping () -> Void, openBanned: @escaping () -> Void, reportChannel: @escaping () -> Void, leaveChannel: @escaping () -> Void, deleteChannel: @escaping () -> Void, displayAddressNameContextMenu: @escaping (String) -> Void, displayContextMenu: @escaping (ChannelInfoEntryTag, String) -> Void, aboutLinkAction: @escaping (TextLinkItemActionType, TextLinkItem) -> Void, toggleSignatures: @escaping(Bool)->Void) {
-        self.account = account
+    let toggleSignatures: (Bool) -> Void
+    
+    init(context: AccountContext, avatarAndNameInfoContext: ItemListAvatarAndNameInfoItemContext, tapAvatarAction: @escaping () -> Void, presentController: @escaping (ViewController, ViewControllerPresentationArguments) -> Void, changeProfilePhoto: @escaping () -> Void, updateEditingName: @escaping (ItemListAvatarAndNameInfoItemName) -> Void, updateEditingDescriptionText: @escaping (String) -> Void, openChannelTypeSetup: @escaping () -> Void, openDiscussionGroupSetup: @escaping () -> Void, changeNotificationMuteSettings: @escaping () -> Void, openSharedMedia: @escaping () -> Void, openStats: @escaping () -> Void, openAdmins: @escaping () -> Void, openMembers: @escaping () -> Void, openBanned: @escaping () -> Void, reportChannel: @escaping () -> Void, leaveChannel: @escaping () -> Void, deleteChannel: @escaping () -> Void, displayAddressNameContextMenu: @escaping (String) -> Void, displayContextMenu: @escaping (ChannelInfoEntryTag, String) -> Void, aboutLinkAction: @escaping (TextLinkItemActionType, TextLinkItem) -> Void, toggleSignatures: @escaping(Bool)->Void) {
+        self.context = context
         self.avatarAndNameInfoContext = avatarAndNameInfoContext
         self.tapAvatarAction = tapAvatarAction
         self.presentController = presentController
@@ -320,89 +325,89 @@ private enum ChannelInfoEntry: ItemListNodeEntry {
         return lhs.stableId < rhs.stableId
     }
     
-    func item(_ arguments: ChannelInfoControllerArguments) -> ListViewItem {
+    func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
+        let arguments = arguments as! ChannelInfoControllerArguments
         switch self {
             case let .info(theme, strings, dateTimeFormat, peer, cachedData, state, updatingAvatar):
-                return ItemListAvatarAndNameInfoItem(account: arguments.account, theme: theme, strings: strings, dateTimeFormat: dateTimeFormat, mode: .generic, peer: peer, presence: nil, cachedData: cachedData, state: state, sectionId: self.section, style: .plain, editingNameUpdated: { editingName in
+                return ItemListAvatarAndNameInfoItem(accountContext: arguments.context, presentationData: presentationData, dateTimeFormat: dateTimeFormat, mode: .generic, peer: peer, presence: nil, cachedData: cachedData, state: state, sectionId: self.section, style: .plain, editingNameUpdated: { editingName in
                     arguments.updateEditingName(editingName)
                 }, avatarTapped: {
                     arguments.tapAvatarAction()
                 }, idTapped: { value in
                     UIPasteboard.general.string = value
-                    arguments.presentController(OverlayStatusController(theme: theme, strings: strings, type: .success), ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+                    let pc = OverlayStatusController(theme: theme, type: .success)
+                    arguments.presentController(pc, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
                 }, context: arguments.avatarAndNameInfoContext, updatingImage: updatingAvatar)
             case let .about(theme, text, value):
-                return ItemListTextWithLabelItem(theme: theme, label: text, text: foldMultipleLineBreaks(value), enabledEntityTypes: [.url, .mention, .hashtag], multiline: true, sectionId: self.section, action: nil, longTapAction: {
+                return ItemListTextWithLabelItem(presentationData: presentationData, label: text, text: foldMultipleLineBreaks(value), enabledEntityTypes: [.url, .mention, .hashtag], multiline: true, sectionId: self.section, action: nil, longTapAction: {
                     arguments.displayContextMenu(ChannelInfoEntryTag.about, value)
                 }, linkItemAction: { action, itemLink in
                     arguments.aboutLinkAction(action, itemLink)
                 }, tag: ChannelInfoEntryTag.about)
             case let .addressName(theme, text, value):
-                return ItemListTextWithLabelItem(theme: theme, label: text, text: "https://t.me/\(value)", textColor: .accent, enabledEntityTypes: [], multiline: false, sectionId: self.section, action: {
+                return ItemListTextWithLabelItem(presentationData: presentationData, label: text, text: "https://t.me/\(value)", textColor: .accent, enabledEntityTypes: [], multiline: false, sectionId: self.section, action: {
                     arguments.displayAddressNameContextMenu("https://t.me/\(value)")
                 }, longTapAction: {
                     arguments.displayContextMenu(ChannelInfoEntryTag.link, "https://t.me/\(value)")
                 }, tag: ChannelInfoEntryTag.link)
             case let .channelPhotoSetup(theme, text):
-                return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
                     arguments.changeProfilePhoto()
                 })
             case let .channelTypeSetup(theme, text, value):
-                return ItemListDisclosureItem(theme: theme, title: text, label: value, sectionId: self.section, style: .plain, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: value, sectionId: self.section, style: .plain, action: {
                     arguments.openChannelTypeSetup()
                 })
             case let .discussionGroupSetup(theme, text, value):
-                return ItemListDisclosureItem(theme: theme, title: text, label: value, sectionId: self.section, style: .plain, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: value, sectionId: self.section, style: .plain, action: {
                     arguments.openDiscussionGroupSetup()
                 })
             case let .discussionGroupSetupInfo(theme, text):
-                return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+                return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .channelDescriptionSetup(theme, placeholder, value):
-                return ItemListMultilineInputItem(theme: theme, text: value, placeholder: placeholder, maxLength: ItemListMultilineInputItemTextLimit(value: 255, display: true), sectionId: self.section, style: .plain, textUpdated: { updatedText in
+                return ItemListMultilineInputItem(presentationData: presentationData, text: value, placeholder: placeholder, maxLength: ItemListMultilineInputItemTextLimit(value: 255, display: true), sectionId: self.section, style: .plain, textUpdated: { updatedText in
                     arguments.updateEditingDescriptionText(updatedText)
-                }, action: {
-                    
                 })
             case let .admins(theme, text, value):
-                return ItemListDisclosureItem(theme: theme, title: text, label: value, sectionId: self.section, style: .plain, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: value, sectionId: self.section, style: .plain, action: {
                     arguments.openAdmins()
                 })
             case let .members(theme, text, value):
-                return ItemListDisclosureItem(theme: theme, title: text, label: value, sectionId: self.section, style: .plain, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: value, sectionId: self.section, style: .plain, action: {
                     arguments.openMembers()
                 })
             case let .banned(theme, text, value):
-                return ItemListDisclosureItem(theme: theme, title: text, label: value, sectionId: self.section, style: .plain, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: value, sectionId: self.section, style: .plain, action: {
                     arguments.openBanned()
                 })
             case let .signMessages(theme, text, value):
-                return ItemListSwitchItem(theme: theme, title: text, value: value, sectionId: self.section, style: .plain, updated: { updated in
+                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .plain, updated: { updated in
                     arguments.toggleSignatures(updated)
                 })
             case let .signInfo(theme, text):
-                return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section, style: .plain)
+                return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section, style: .plain)
             case let .sharedMedia(theme, text):
-                return ItemListDisclosureItem(theme: theme, title: text, label: "", sectionId: self.section, style: .plain, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: "", sectionId: self.section, style: .plain, action: {
                     arguments.openSharedMedia()
                 })
             case let .stats(theme, text):
-                return ItemListDisclosureItem(theme: theme, title: text, label: "", sectionId: self.section, style: .plain, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: "", sectionId: self.section, style: .plain, action: {
                     arguments.openStats()
                 })
             case let .notifications(theme, text, value):
-                return ItemListDisclosureItem(theme: theme, title: text, label: value, sectionId: self.section, style: .plain, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: value, sectionId: self.section, style: .plain, action: {
                     arguments.changeNotificationMuteSettings()
                 })
             case let .report(theme, text):
-                return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
                     arguments.reportChannel()
                 })
             case let .leave(theme, text):
-                return ItemListActionItem(theme: theme, title: text, kind: .destructive, alignment: .natural, sectionId: self.section, style: .plain, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .destructive, alignment: .natural, sectionId: self.section, style: .plain, action: {
                     arguments.leaveChannel()
                 })
             case let .deleteChannel(theme, text):
-                return ItemListActionItem(theme: theme, title: text, kind: .destructive, alignment: .natural, sectionId: self.section, style: .plain, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .destructive, alignment: .natural, sectionId: self.section, style: .plain, action: {
                     arguments.deleteChannel()
                 })
         }
@@ -501,7 +506,7 @@ private func channelInfoEntries(account: Account, presentationData: Presentation
                     if let addressName = peer.addressName, !addressName.isEmpty {
                         discussionGroupTitle = "@\(addressName)"
                     } else {
-                        discussionGroupTitle = peer.displayTitle
+                        discussionGroupTitle = peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
                     }
                 } else {
                     discussionGroupTitle = presentationData.strings.Channel_DiscussionGroupAdd
@@ -536,7 +541,7 @@ private func channelInfoEntries(account: Account, presentationData: Presentation
                         if let addressName = peer.addressName, !addressName.isEmpty {
                             discussionGroupTitle = "@\(addressName)"
                         } else {
-                            discussionGroupTitle = peer.displayTitle
+                            discussionGroupTitle = peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
                         }
                     } else if canEditChannel {
                         discussionGroupTitle = presentationData.strings.Channel_DiscussionGroupAdd
@@ -688,7 +693,7 @@ public func channelInfoController(context: AccountContext, peerId: PeerId) -> Vi
     var displayContextMenuImpl: ((ChannelInfoEntryTag, String) -> Void)?
     var aboutLinkActionImpl: ((TextLinkItemActionType, TextLinkItem) -> Void)?
     
-    let arguments = ChannelInfoControllerArguments(account: context.account, avatarAndNameInfoContext: avatarAndNameInfoContext, tapAvatarAction: {
+    let arguments = ChannelInfoControllerArguments(context: context, avatarAndNameInfoContext: avatarAndNameInfoContext, tapAvatarAction: {
         let _ = (context.account.postbox.loadedPeerWithId(peerId) |> take(1) |> deliverOnMainQueue).start(next: { peer in
             if peer.profileImageRepresentations.isEmpty {
                 return
@@ -736,7 +741,7 @@ public func channelInfoController(context: AccountContext, peerId: PeerId) -> Vi
                     if let data = image.jpegData(compressionQuality: 0.6) {
                         let resource = LocalFileMediaResource(fileId: arc4random64())
                         context.account.postbox.mediaBox.storeResourceData(resource.id, data: data)
-                        let representation = TelegramMediaImageRepresentation(dimensions: CGSize(width: 640.0, height: 640.0), resource: resource)
+                        let representation = TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: 640, height: 640), resource: resource)
                         updateState {
                             $0.withUpdatedUpdatingAvatar(.image(representation, true))
                         }
@@ -759,7 +764,7 @@ public func channelInfoController(context: AccountContext, peerId: PeerId) -> Vi
                 let mixin = TGMediaAvatarMenuMixin(context: legacyController.context, parentController: emptyController, hasSearchButton: true, hasDeleteButton: hasPhotos, hasViewButton: false, personalPhoto: false, saveEditedPhotos: false, saveCapturedMedia: false, signup: false)!
                 let _ = currentAvatarMixin.swap(mixin)
                 mixin.requestSearchController = { assetsController in
-                    let controller = WebSearchController(context: context, peer: peer, configuration: searchBotsConfiguration, mode: .avatar(initialQuery: peer?.displayTitle, completion: { result in
+                    let controller = WebSearchController(context: context, peer: peer, configuration: searchBotsConfiguration, mode: .avatar(initialQuery: peer?.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder), completion: { result in
                         assetsController?.dismiss()
                         completedImpl(result)
                     }))
@@ -857,7 +862,7 @@ public func channelInfoController(context: AccountContext, peerId: PeerId) -> Vi
         var cancelImpl: (() -> Void)?
         let progressSignal = Signal<Never, NoError> { subscriber in
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-            let controller = OverlayStatusController(theme: presentationData.theme, strings: presentationData.strings, type: .loading(cancelled: {
+            let controller = OverlayStatusController(theme: presentationData.theme, type: .loading(cancelled: {
                 cancelImpl?()
             }))
             presentControllerImpl?(controller, nil)
@@ -897,6 +902,8 @@ public func channelInfoController(context: AccountContext, peerId: PeerId) -> Vi
     }, reportChannel: {
         presentControllerImpl?(peerReportOptionsController(context: context, subject: .peer(peerId), present: { c, a in
             presentControllerImpl?(c, a)
+        }, push: { c in
+            pushControllerImpl?(c)
         }, completion: { _ in }), nil)
     }, leaveChannel: {
         let _ = (context.account.postbox.transaction { transaction -> Peer? in
@@ -907,7 +914,7 @@ public func channelInfoController(context: AccountContext, peerId: PeerId) -> Vi
                 return
             }
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-            let controller = ActionSheetController(presentationTheme: presentationData.theme)
+            let controller = ActionSheetController(presentationData: presentationData)
             let dismissAction: () -> Void = { [weak controller] in
                 controller?.dismissAnimated()
             }
@@ -931,7 +938,7 @@ public func channelInfoController(context: AccountContext, peerId: PeerId) -> Vi
                 return
             }
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-            let controller = ActionSheetController(presentationTheme: presentationData.theme)
+            let controller = ActionSheetController(presentationData: presentationData)
             let dismissAction: () -> Void = { [weak controller] in
                 controller?.dismissAnimated()
             }
@@ -962,7 +969,7 @@ public func channelInfoController(context: AccountContext, peerId: PeerId) -> Vi
     
     let globalNotificationsKey: PostboxViewKey = .preferences(keys: Set<ValueBoxKey>([PreferencesKeys.globalNotifications]))
     let signal = combineLatest(queue: .mainQueue(), context.sharedContext.presentationData, statePromise.get(), context.account.viewTracker.peerView(peerId, updateData: true), context.account.postbox.combinedView(keys: [globalNotificationsKey]))
-        |> map { presentationData, state, view, combinedView -> (ItemListControllerState, (ItemListNodeState<ChannelInfoEntry>, ChannelInfoEntry.ItemGenerationArguments)) in
+        |> map { presentationData, state, view, combinedView -> (ItemListControllerState, (ItemListNodeState, Any)) in
             let peer = peerViewMainPeer(view)
             
             var globalNotificationSettings: GlobalNotificationSettings = GlobalNotificationSettings.defaultSettings
@@ -1088,8 +1095,8 @@ public func channelInfoController(context: AccountContext, peerId: PeerId) -> Vi
                 crossfadeState = true
             }
             
-            let controllerState = ItemListControllerState(theme: presentationData.theme, title: .text(presentationData.strings.UserInfo_Title), leftNavigationButton: leftNavigationButton, rightNavigationButton: rightNavigationButton, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-            let listState = ItemListNodeState(entries: channelInfoEntries(account: context.account, presentationData: presentationData, view: view, globalNotificationSettings: globalNotificationSettings, state: state), style: .plain, crossfadeState: crossfadeState, animateChanges: false)
+            let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(presentationData.strings.UserInfo_Title), leftNavigationButton: leftNavigationButton, rightNavigationButton: rightNavigationButton, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
+            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: channelInfoEntries(account: context.account, presentationData: presentationData, view: view, globalNotificationSettings: globalNotificationSettings, state: state), style: .plain, crossfadeState: crossfadeState, animateChanges: false)
             
             return (controllerState, (listState, arguments))
         } |> afterDisposed {
@@ -1125,7 +1132,7 @@ public func channelInfoController(context: AccountContext, peerId: PeerId) -> Vi
     }
     avatarGalleryTransitionArguments = { [weak controller] entry in
         if let controller = controller {
-            var result: ((ASDisplayNode, () -> (UIView?, UIView?)), CGRect)?
+            var result: ((ASDisplayNode, CGRect, () -> (UIView?, UIView?)), CGRect)?
             controller.forEachItemNode { itemNode in
                 if let itemNode = itemNode as? ItemListAvatarAndNameInfoItemNode {
                     result = itemNode.avatarTransitionNode()

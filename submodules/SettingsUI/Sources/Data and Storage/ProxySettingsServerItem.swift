@@ -5,8 +5,10 @@ import AsyncDisplayKit
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import ItemListUI
+import PresentationDataUtils
 import ActivityIndicator
 
 private let activitySize = CGSize(width: 24.0, height: 24.0)
@@ -99,11 +101,12 @@ final class ProxySettingsServerItem: ListViewItem, ItemListItem {
 private let titleFont = Font.regular(17.0)
 private let statusFont = Font.regular(14.0)
 
-class ProxySettingsServerItemNode: ItemListRevealOptionsItemNode {
+private final class ProxySettingsServerItemNode: ItemListRevealOptionsItemNode {
     private let backgroundNode: ASDisplayNode
     private let topStripeNode: ASDisplayNode
     private let bottomStripeNode: ASDisplayNode
     private let highlightedBackgroundNode: ASDisplayNode
+    private let maskNode: ASImageNode
     
     private let titleNode: TextNode
     private let infoIconNode: ASImageNode
@@ -136,6 +139,8 @@ class ProxySettingsServerItemNode: ItemListRevealOptionsItemNode {
         
         self.bottomStripeNode = ASDisplayNode()
         self.bottomStripeNode.isLayerBacked = true
+        
+        self.maskNode = ASImageNode()
         
         self.infoIconNode = ASImageNode()
         self.infoIconNode.isLayerBacked = true
@@ -235,20 +240,20 @@ class ProxySettingsServerItemNode: ItemListRevealOptionsItemNode {
             titleAttributedString.append(NSAttributedString(string: ":\(item.server.port)", font: titleFont, textColor: item.theme.list.itemSecondaryTextColor))
             let statusAttributedString = NSAttributedString(string: item.label, font: statusFont, textColor: item.labelAccent ? item.theme.list.itemAccentColor : item.theme.list.itemSecondaryTextColor)
             
-            var editableControlSizeAndApply: (CGSize, () -> ItemListEditableControlNode)?
-            var reorderControlSizeAndApply: (CGSize, (Bool) -> ItemListEditableReorderControlNode)?
+            var editableControlSizeAndApply: (CGFloat, (CGFloat) -> ItemListEditableControlNode)?
+            var reorderControlSizeAndApply: (CGFloat, (CGFloat, Bool, ContainedViewLayoutTransition) -> ItemListEditableReorderControlNode)?
             
             let editingOffset: CGFloat
             var reorderInset: CGFloat = 0.0
             
             if item.editing.editing {
-                let sizeAndApply = editableControlLayout(48.0, item.theme, false)
+                let sizeAndApply = editableControlLayout(item.theme, false)
                 editableControlSizeAndApply = sizeAndApply
-                editingOffset = sizeAndApply.0.width
+                editingOffset = sizeAndApply.0
                 
-                let reorderSizeAndApply = reorderControlLayout(65.0, item.theme)
+                let reorderSizeAndApply = reorderControlLayout(item.theme)
                 reorderControlSizeAndApply = reorderSizeAndApply
-                reorderInset = reorderSizeAndApply.0.width
+                reorderInset = reorderSizeAndApply.0
             } else {
                 editingOffset = 0.0
             }
@@ -305,9 +310,9 @@ class ProxySettingsServerItemNode: ItemListRevealOptionsItemNode {
                     }
                     
                     if let editableControlSizeAndApply = editableControlSizeAndApply {
-                        let editableControlFrame = CGRect(origin: CGPoint(x: params.leftInset + revealOffset, y: 0.0), size: editableControlSizeAndApply.0)
+                        let editableControlFrame = CGRect(origin: CGPoint(x: params.leftInset + revealOffset, y: 0.0), size: CGSize(width: editableControlSizeAndApply.0, height: layout.contentSize.height))
                         if strongSelf.editableControlNode == nil {
-                            let editableControlNode = editableControlSizeAndApply.1()
+                            let editableControlNode = editableControlSizeAndApply.1(layout.contentSize.height)
                             editableControlNode.tapped = {
                                 if let strongSelf = self {
                                     strongSelf.setRevealOptionsOpened(true, animated: true)
@@ -336,13 +341,13 @@ class ProxySettingsServerItemNode: ItemListRevealOptionsItemNode {
                     
                     if let reorderControlSizeAndApply = reorderControlSizeAndApply {
                         if strongSelf.reorderControlNode == nil {
-                            let reorderControlNode = reorderControlSizeAndApply.1(false)
+                            let reorderControlNode = reorderControlSizeAndApply.1(layout.contentSize.height, false, .immediate)
                             strongSelf.reorderControlNode = reorderControlNode
                             strongSelf.addSubnode(reorderControlNode)
                             reorderControlNode.alpha = 0.0
                             transition.updateAlpha(node: reorderControlNode, alpha: 1.0)
                         }
-                        let reorderControlFrame = CGRect(origin: CGPoint(x: params.width + revealOffset - params.rightInset - reorderControlSizeAndApply.0.width, y: 0.0), size: reorderControlSizeAndApply.0)
+                        let reorderControlFrame = CGRect(origin: CGPoint(x: params.width + revealOffset - params.rightInset - reorderControlSizeAndApply.0, y: 0.0), size: CGSize(width: reorderControlSizeAndApply.0, height: layout.contentSize.height))
                         strongSelf.reorderControlNode?.frame = reorderControlFrame
                     } else if let reorderControlNode = strongSelf.reorderControlNode {
                         strongSelf.reorderControlNode = nil
@@ -363,11 +368,19 @@ class ProxySettingsServerItemNode: ItemListRevealOptionsItemNode {
                     if strongSelf.bottomStripeNode.supernode == nil {
                         strongSelf.insertSubnode(strongSelf.bottomStripeNode, at: 2)
                     }
+                    if strongSelf.maskNode.supernode == nil {
+                        strongSelf.insertSubnode(strongSelf.maskNode, at: 3)
+                    }
+                    
+                    let hasCorners = itemListHasRoundedBlockLayout(params)
+                    var hasTopCorners = false
+                    var hasBottomCorners = false
                     switch neighbors.top {
                         case .sameSection(false):
                             strongSelf.topStripeNode.isHidden = true
                         default:
-                            strongSelf.topStripeNode.isHidden = false
+                            hasTopCorners = true
+                            strongSelf.topStripeNode.isHidden = hasCorners
                     }
                     let bottomStripeInset: CGFloat
                     let bottomStripeOffset: CGFloat
@@ -378,8 +391,14 @@ class ProxySettingsServerItemNode: ItemListRevealOptionsItemNode {
                         default:
                             bottomStripeInset = 0.0
                             bottomStripeOffset = 0.0
+                            hasBottomCorners = true
+                            strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
+                    
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                    
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
+                    strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                     transition.updateFrame(node: strongSelf.topStripeNode, frame: CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight)))
                     transition.updateFrame(node: strongSelf.bottomStripeNode, frame: CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight)))
                     

@@ -4,6 +4,7 @@ import Display
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import LegacyComponents
 import TelegramUIPreferences
 import MediaResources
@@ -91,7 +92,7 @@ func uploadCustomWallpaper(context: AccountContext, wallpaper: WallpaperGalleryE
                     }
                 case let .internalReference(_, _, _, _, _, image, _, _):
                     if let image = image {
-                        if let imageRepresentation = imageRepresentationLargerThan(image.representations, size: CGSize(width: 1000.0, height: 800.0)) {
+                        if let imageRepresentation = imageRepresentationLargerThan(image.representations, size: PixelDimensions(width: 1000, height: 800)) {
                             imageResource = imageRepresentation.resource
                         }
                     }
@@ -137,6 +138,7 @@ func uploadCustomWallpaper(context: AccountContext, wallpaper: WallpaperGalleryE
             context.sharedContext.accountManager.mediaBox.storeResourceData(resource.id, data: data)
             context.account.postbox.mediaBox.storeResourceData(resource.id, data: data)
             
+            let autoNightModeTriggered = context.sharedContext.currentPresentationData.with {$0 }.autoNightModeTriggered
             let accountManager = context.sharedContext.accountManager
             let account = context.account
             let updateWallpaper: (TelegramWallpaper) -> Void = { wallpaper in
@@ -154,14 +156,26 @@ func uploadCustomWallpaper(context: AccountContext, wallpaper: WallpaperGalleryE
                 
                 let _ = (updatePresentationThemeSettingsInteractively(accountManager: accountManager, { current in
                     var themeSpecificChatWallpapers = current.themeSpecificChatWallpapers
-                    themeSpecificChatWallpapers[current.theme.index] = wallpaper
-                    return PresentationThemeSettings(chatWallpaper: wallpaper, theme: current.theme, themeSpecificAccentColors: current.themeSpecificAccentColors, themeSpecificChatWallpapers: themeSpecificChatWallpapers, fontSize: current.fontSize, automaticThemeSwitchSetting: current.automaticThemeSwitchSetting, largeEmoji: current.largeEmoji, disableAnimations: current.disableAnimations)
+                    let themeReference: PresentationThemeReference
+                    if autoNightModeTriggered {
+                        themeReference = current.automaticThemeSwitchSetting.theme
+                    } else {
+                        themeReference = current.theme
+                    }
+                    let accentColor = current.themeSpecificAccentColors[themeReference.index]
+                    if let accentColor = accentColor, accentColor.baseColor == .custom {
+                        themeSpecificChatWallpapers[coloredThemeIndex(reference: themeReference, accentColor: accentColor)] = wallpaper
+                    } else {
+                        themeSpecificChatWallpapers[coloredThemeIndex(reference: themeReference, accentColor: accentColor)] = nil
+                        themeSpecificChatWallpapers[themeReference.index] = wallpaper
+                    }
+                    return current.withUpdatedThemeSpecificChatWallpapers(themeSpecificChatWallpapers)
                 })).start()
             }
             
             let apply: () -> Void = {
                 let settings = WallpaperSettings(blur: mode.contains(.blur), motion: mode.contains(.motion), color: nil, intensity: nil)
-                let wallpaper: TelegramWallpaper = .image([TelegramMediaImageRepresentation(dimensions: thumbnailDimensions, resource: thumbnailResource), TelegramMediaImageRepresentation(dimensions: croppedImage.size, resource: resource)], settings)
+                let wallpaper: TelegramWallpaper = .image([TelegramMediaImageRepresentation(dimensions: PixelDimensions(thumbnailDimensions), resource: thumbnailResource), TelegramMediaImageRepresentation(dimensions: PixelDimensions(croppedImage.size), resource: resource)], settings)
                 updateWallpaper(wallpaper)
                 DispatchQueue.main.async {
                     completion()

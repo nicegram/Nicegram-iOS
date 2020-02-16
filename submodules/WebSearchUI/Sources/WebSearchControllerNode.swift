@@ -5,6 +5,7 @@ import Postbox
 import SwiftSignalKit
 import Display
 import TelegramCore
+import SyncCore
 import LegacyComponents
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -12,6 +13,8 @@ import MergeLists
 import AccountContext
 import GalleryUI
 import ChatListSearchItemHeader
+import SegmentedControlNode
+import AppBundle
 
 private struct WebSearchContextResultStableId: Hashable {
     let result: ChatContextResult
@@ -127,6 +130,7 @@ class WebSearchControllerNode: ASDisplayNode {
     private let peer: Peer?
     private var theme: PresentationTheme
     private var strings: PresentationStrings
+    private var presentationData: PresentationData
     private let mode: WebSearchMode
     
     private let controllerInteraction: WebSearchControllerInteraction
@@ -135,7 +139,7 @@ class WebSearchControllerNode: ASDisplayNode {
     
     private let segmentedBackgroundNode: ASDisplayNode
     private let segmentedSeparatorNode: ASDisplayNode
-    private let segmentedControl: UISegmentedControl
+    private let segmentedControlNode: SegmentedControlNode
     
     private let toolbarBackgroundNode: ASDisplayNode
     private let toolbarSeparatorNode: ASDisplayNode
@@ -145,7 +149,6 @@ class WebSearchControllerNode: ASDisplayNode {
     
     private let attributionNode: ASImageNode
     
-    private let recentQueriesPlaceholder: ImmediateTextNode
     private let recentQueriesNode: ListView
     private var enqueuedRecentTransitions: [(WebSearchRecentTransition, Bool)] = []
     
@@ -175,10 +178,11 @@ class WebSearchControllerNode: ASDisplayNode {
     var cancel: (() -> Void)?
     var dismissInput: (() -> Void)?
     
-    init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, controllerInteraction: WebSearchControllerInteraction, peer: Peer?, mode: WebSearchMode) {
+    init(context: AccountContext, presentationData: PresentationData, controllerInteraction: WebSearchControllerInteraction, peer: Peer?, mode: WebSearchMode) {
         self.context = context
-        self.theme = theme
-        self.strings = strings
+        self.theme = presentationData.theme
+        self.strings = presentationData.strings
+        self.presentationData = presentationData
         self.controllerInteraction = controllerInteraction
         self.peer = peer
         self.mode = mode
@@ -189,8 +193,11 @@ class WebSearchControllerNode: ASDisplayNode {
         self.segmentedBackgroundNode = ASDisplayNode()
         self.segmentedSeparatorNode = ASDisplayNode()
         
-        self.segmentedControl = UISegmentedControl(items: [strings.WebSearch_Images, strings.WebSearch_GIFs])
-        self.segmentedControl.selectedSegmentIndex = 0
+        let items = [
+            strings.WebSearch_Images,
+            strings.WebSearch_GIFs
+        ]
+        self.segmentedControlNode = SegmentedControlNode(theme: SegmentedControlTheme(theme: theme), items: items.map { SegmentedControlItem(title: $0) }, selectedIndex: 0)
         
         self.toolbarBackgroundNode = ASDisplayNode()
         self.toolbarSeparatorNode = ASDisplayNode()
@@ -208,8 +215,6 @@ class WebSearchControllerNode: ASDisplayNode {
         self.recentQueriesNode = ListView()
         self.recentQueriesNode.backgroundColor = theme.list.plainBackgroundColor
         
-        self.recentQueriesPlaceholder = ImmediateTextNode()
-        
         super.init()
         
         self.setViewBlock({
@@ -221,7 +226,7 @@ class WebSearchControllerNode: ASDisplayNode {
         self.addSubnode(self.segmentedBackgroundNode)
         self.addSubnode(self.segmentedSeparatorNode)
         if case .media = mode {
-            self.view.addSubview(self.segmentedControl)
+            self.addSubnode(self.segmentedControlNode)
         }
         self.addSubnode(self.toolbarBackgroundNode)
         self.addSubnode(self.toolbarSeparatorNode)
@@ -230,7 +235,16 @@ class WebSearchControllerNode: ASDisplayNode {
         self.addSubnode(self.attributionNode)
         self.addSubnode(self.badgeNode)
         
-        self.segmentedControl.addTarget(self, action: #selector(self.indexChanged), for: .valueChanged)
+        self.segmentedControlNode.selectedIndexChanged = { [weak self] index in
+            if let strongSelf = self, let scope = WebSearchScope(rawValue: Int32(index)) {
+                let _ = updateWebSearchSettingsInteractively(accountManager: strongSelf.context.sharedContext.accountManager) { _ -> WebSearchSettings in
+                    return WebSearchSettings(scope: scope)
+                    }.start()
+                strongSelf.requestUpdateInterfaceState(true) { current in
+                    return current.withUpdatedScope(scope)
+                }
+            }
+        }
         self.cancelButton.addTarget(self, action: #selector(self.cancelPressed), forControlEvents: .touchUpInside)
         self.sendButton.addTarget(self, action: #selector(self.sendPressed), forControlEvents: .touchUpInside)
         
@@ -252,7 +266,7 @@ class WebSearchControllerNode: ASDisplayNode {
                     entries.append(WebSearchRecentQueryEntry(index: i, query: queries[i]))
                 }
                 
-                let header = ChatListSearchItemHeader(type: .recentPeers, theme: interfaceState.presentationData.theme, strings:interfaceState.presentationData.strings, actionTitle: strings.WebSearch_RecentSectionClear, action: {
+                let header = ChatListSearchItemHeader(type: .recentPeers, theme: interfaceState.presentationData.theme, strings: interfaceState.presentationData.strings, actionTitle: interfaceState.presentationData.strings.WebSearch_RecentSectionClear, action: {
                     _ = clearRecentWebSearchQueries(postbox: strongSelf.context.account.postbox).start()
                 })
                 
@@ -266,7 +280,6 @@ class WebSearchControllerNode: ASDisplayNode {
         self.recentQueriesNode.beganInteractiveDragging = { [weak self] in
             self?.dismissInput?()
         }
-        
         
         self.gridNode.visibleItemsUpdated = { [weak self] visibleItems in
             if let strongSelf = self, let bottom = visibleItems.bottom, let entries = strongSelf.currentEntries {
@@ -330,11 +343,9 @@ class WebSearchControllerNode: ASDisplayNode {
         }
         
         if themeUpdated {
-            self.backgroundColor = self.theme.chatList.backgroundColor
-            
             self.segmentedBackgroundNode.backgroundColor = self.theme.rootController.navigationBar.backgroundColor
             self.segmentedSeparatorNode.backgroundColor = self.theme.rootController.navigationBar.separatorColor
-            self.segmentedControl.tintColor = self.theme.rootController.navigationBar.accentTextColor
+            self.segmentedControlNode.updateTheme(SegmentedControlTheme(theme: self.theme))
             self.toolbarBackgroundNode.backgroundColor = self.theme.rootController.navigationBar.backgroundColor
             self.toolbarSeparatorNode.backgroundColor = self.theme.rootController.navigationBar.separatorColor
             
@@ -358,16 +369,14 @@ class WebSearchControllerNode: ASDisplayNode {
         var insets = layout.insets(options: [.input])
         insets.top += navigationBarHeight
         
-        let segmentedHeight: CGFloat = self.segmentedControl.superview != nil ? 44.0 : 5.0
+        let segmentedHeight: CGFloat = self.segmentedControlNode.supernode != nil ? 44.0 : 5.0
         let panelY: CGFloat = insets.top - UIScreenPixel - 4.0
         
         transition.updateFrame(node: self.segmentedBackgroundNode, frame: CGRect(origin: CGPoint(x: 0.0, y: panelY), size: CGSize(width: layout.size.width, height: segmentedHeight)))
         transition.updateFrame(node: self.segmentedSeparatorNode, frame: CGRect(origin: CGPoint(x: 0.0, y: panelY + segmentedHeight), size: CGSize(width: layout.size.width, height: UIScreenPixel)))
         
-        var controlSize = self.segmentedControl.sizeThatFits(layout.size)
-        controlSize.width = layout.size.width - layout.safeInsets.left - layout.safeInsets.right - 10.0 * 2.0
-        
-        transition.updateFrame(view: self.segmentedControl, frame: CGRect(origin: CGPoint(x: layout.safeInsets.left + floor((layout.size.width - layout.safeInsets.left - layout.safeInsets.right - controlSize.width) / 2.0), y: panelY + 5.0), size: controlSize))
+        let controlSize = self.segmentedControlNode.updateLayout(.stretchToFill(width: layout.size.width - layout.safeInsets.left - layout.safeInsets.right - 10.0 * 2.0), transition: transition)
+        transition.updateFrame(node: self.segmentedControlNode, frame: CGRect(origin: CGPoint(x: layout.safeInsets.left + floor((layout.size.width - layout.safeInsets.left - layout.safeInsets.right - controlSize.width) / 2.0), y: panelY + 5.0), size: controlSize))
         
         insets.top -= 4.0
         
@@ -435,30 +444,10 @@ class WebSearchControllerNode: ASDisplayNode {
         insets.bottom += toolbarHeight
         self.gridNode.transaction(GridNodeTransaction(deleteItems: [], insertItems: [], updateItems: [], scrollToItem: nil, updateLayout: GridNodeUpdateLayout(layout: GridNodeLayout(size: layout.size, insets: insets, preloadSize: 400.0, type: gridNodeLayoutForContainerLayout(size: layout.size)), transition: .immediate), itemTransition: .immediate, stationaryItems: .none,updateFirstIndexInSectionOffset: nil), completion: { _ in })
         
-        var duration: Double = 0.0
-        var curve: UInt = 0
-        switch transition {
-            case .immediate:
-                break
-            case let .animated(animationDuration, animationCurve):
-                duration = animationDuration
-                switch animationCurve {
-                    case .easeInOut, .custom:
-                        break
-                    case .spring:
-                        curve = 7
-                }
-        }
-        
-        let listViewCurve: ListViewAnimationCurve
-        if curve == 7 {
-            listViewCurve = .Spring(duration: duration)
-        } else {
-            listViewCurve = .Default(duration: duration)
-        }
+        let (duration, curve) = listViewAnimationDurationAndCurve(transition: transition)
         
         self.recentQueriesNode.frame = CGRect(origin: CGPoint(), size: layout.size)
-        self.recentQueriesNode.transaction(deleteIndices: [], insertIndicesAndItems: [], updateIndicesAndItems: [], options: [.Synchronous], scrollToItem: nil, updateSizeAndInsets: ListViewUpdateSizeAndInsets(size: layout.size, insets: insets, duration: duration, curve: listViewCurve), stationaryItemRange: nil, updateOpaqueState: nil, completion: { _ in })
+        self.recentQueriesNode.transaction(deleteIndices: [], insertIndicesAndItems: [], updateIndicesAndItems: [], options: [.Synchronous], scrollToItem: nil, updateSizeAndInsets: ListViewUpdateSizeAndInsets(size: layout.size, insets: insets, duration: duration, curve: curve), stationaryItemRange: nil, updateOpaqueState: nil, completion: { _ in })
         
         if !self.dequeuedInitialTransitionOnLayout {
             self.dequeuedInitialTransitionOnLayout = true
@@ -471,7 +460,7 @@ class WebSearchControllerNode: ASDisplayNode {
         self.webSearchInterfaceStatePromise.set(self.webSearchInterfaceState)
     
         if let state = interfaceState.state {
-            self.segmentedControl.selectedSegmentIndex = Int(state.scope.rawValue)
+            self.segmentedControlNode.selectedIndex = Int(state.scope.rawValue)
         }
         
         if let validLayout = self.containerLayout {
@@ -656,17 +645,6 @@ class WebSearchControllerNode: ASDisplayNode {
         }
     }
     
-    @objc private func indexChanged() {
-        if let scope = WebSearchScope(rawValue: Int32(self.segmentedControl.selectedSegmentIndex)) {
-            let _ = updateWebSearchSettingsInteractively(accountManager: self.context.sharedContext.accountManager) { _ -> WebSearchSettings in
-                return WebSearchSettings(scope: scope)
-            }.start()
-            self.requestUpdateInterfaceState(true) { current in
-                return current.withUpdatedScope(scope)
-            }
-        }
-    }
-    
     @objc private func cancelPressed() {
         self.cancel?()
     }
@@ -688,7 +666,7 @@ class WebSearchControllerNode: ASDisplayNode {
         if self.controllerInteraction.selectionState != nil {
             if let state = self.webSearchInterfaceState.state, state.scope == .images {
                 if let results = self.currentProcessedResults?.results {
-                    presentLegacyWebSearchGallery(context: self.context, peer: self.peer, theme: self.theme, results: results, current: currentResult, selectionContext: self.controllerInteraction.selectionState, editingContext: self.controllerInteraction.editingState, updateHiddenMedia: { [weak self] id in
+                    presentLegacyWebSearchGallery(context: self.context, peer: self.peer, presentationData: self.presentationData, results: results, current: currentResult, selectionContext: self.controllerInteraction.selectionState, editingContext: self.controllerInteraction.editingState, updateHiddenMedia: { [weak self] id in
                         self?.hiddenMediaId.set(.single(id))
                     }, initialLayout: self.containerLayout?.0, transitionHostView: { [weak self] in
                         return self?.gridNode.view
@@ -733,7 +711,7 @@ class WebSearchControllerNode: ASDisplayNode {
                                 }
                             }
                             if let transitionNode = transitionNode {
-                                return GalleryTransitionArguments(transitionNode: (transitionNode, { [weak transitionNode] in
+                                return GalleryTransitionArguments(transitionNode: (transitionNode, transitionNode.bounds, { [weak transitionNode] in
                                         return (transitionNode?.transitionView().snapshotContentTree(unhide: true), nil)
                                 }), addToTransitionSurface: { view in
                                     if let strongSelf = self {

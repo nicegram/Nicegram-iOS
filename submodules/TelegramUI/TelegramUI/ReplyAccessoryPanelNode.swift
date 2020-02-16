@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 import TelegramCore
+import SyncCore
 import Postbox
 import SwiftSignalKit
 import Display
@@ -78,7 +79,7 @@ final class ReplyAccessoryPanelNode: AccessoryPanelNode {
                     authorName = author.displayTitle(strings: strings, displayOrder: nameDisplayOrder)
                 }
                 if let message = message {
-                    (text, _) = descriptionStringForMessage(message, strings: strings, nameDisplayOrder: nameDisplayOrder, accountPeerId: context.account.peerId)
+                    (text, _) = descriptionStringForMessage(contentSettings: context.currentContentSettings.with { $0 }, message: message, strings: strings, nameDisplayOrder: nameDisplayOrder, accountPeerId: context.account.peerId)
                 }
                 
                 var updatedMediaReference: AnyMediaReference?
@@ -89,14 +90,14 @@ final class ReplyAccessoryPanelNode: AccessoryPanelNode {
                         if let image = media as? TelegramMediaImage {
                             updatedMediaReference = .message(message: MessageReference(message), media: image)
                             if let representation = largestRepresentationForPhoto(image) {
-                                imageDimensions = representation.dimensions
+                                imageDimensions = representation.dimensions.cgSize
                             }
                             break
                         } else if let file = media as? TelegramMediaFile {
                             updatedMediaReference = .message(message: MessageReference(message), media: file)
                             isRoundImage = file.isInstantVideo
                             if let representation = largestImageRepresentation(file.previewRepresentations), !file.isSticker && !file.isAnimatedSticker {
-                                imageDimensions = representation.dimensions
+                                imageDimensions = representation.dimensions.cgSize
                             }
                             break
                         }
@@ -144,7 +145,7 @@ final class ReplyAccessoryPanelNode: AccessoryPanelNode {
                 
                 let isMedia: Bool
                 if let message = message {
-                    switch messageContentKind(message, strings: strings, nameDisplayOrder: nameDisplayOrder, accountPeerId: context.account.peerId) {
+                    switch messageContentKind(contentSettings: context.currentContentSettings.with { $0 }, message: message, strings: strings, nameDisplayOrder: nameDisplayOrder, accountPeerId: context.account.peerId) {
                         case .text:
                             isMedia = false
                         default:
@@ -159,7 +160,7 @@ final class ReplyAccessoryPanelNode: AccessoryPanelNode {
                 
                 let headerString: String
                 if let message = message, message.flags.contains(.Incoming), let author = message.author {
-                    headerString = "Reply to message. From: \(author.displayTitle)"
+                    headerString = "Reply to message. From: \(author.displayTitle(strings: strings, displayOrder: nameDisplayOrder))"
                 } else if let message = message, !message.flags.contains(.Incoming) {
                     headerString = "Reply to your message"
                 } else {
@@ -227,7 +228,7 @@ final class ReplyAccessoryPanelNode: AccessoryPanelNode {
         let textRightInset: CGFloat = 20.0
         
         let closeButtonSize = CGSize(width: 44.0, height: bounds.height)
-        let closeButtonFrame = CGRect(origin: CGPoint(x: bounds.width - rightInset - closeButtonSize.width + 12.0, y: 2.0), size: closeButtonSize)
+        let closeButtonFrame = CGRect(origin: CGPoint(x: bounds.width - rightInset - closeButtonSize.width + 16.0, y: 2.0), size: closeButtonSize)
         self.closeButton.frame = closeButtonFrame
         
         self.actionArea.frame = CGRect(origin: CGPoint(x: leftInset, y: 2.0), size: CGSize(width: closeButtonFrame.minX - leftInset, height: bounds.height))

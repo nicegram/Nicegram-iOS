@@ -5,6 +5,7 @@ import Display
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import UniversalMediaPlayer
 import TelegramPresentationData
 import AccountContext
@@ -238,7 +239,7 @@ class ChatMessageInteractiveInstantVideoNode: ASDisplayNode {
                     case .bubble:
                         if item.message.flags.contains(.Failed) {
                             statusType = .BubbleOutgoing(.Failed)
-                        } else if item.message.flags.isSending && !item.message.isSentOrAcknowledged {
+                        } else if (item.message.flags.isSending && !item.message.isSentOrAcknowledged) || item.attributes.updatingMedia != nil {
                             statusType = .BubbleOutgoing(.Sending)
                         } else {
                             statusType = .BubbleOutgoing(.Sent(read: item.read))
@@ -247,6 +248,9 @@ class ChatMessageInteractiveInstantVideoNode: ASDisplayNode {
             }
             
             var edited = false
+            if item.attributes.updatingMedia != nil {
+                edited = true
+            }
             let sentViaBot = false
             var viewCount: Int? = nil
             for attribute in item.message.attributes {
@@ -388,7 +392,7 @@ class ChatMessageInteractiveInstantVideoNode: ASDisplayNode {
                                         }
                                     }
                                 }
-                            }), content: NativeVideoContent(id: .message(item.message.stableId, telegramFile.fileId), fileReference: .message(message: MessageReference(item.message), media: telegramFile), streamVideo: streamVideo ? .earlierStart : .none, enableSound: false, fetchAutomatically: false), priority: .embedded, autoplay: true)
+                            }), content: NativeVideoContent(id: .message(item.message.stableId, telegramFile.fileId), fileReference: .message(message: MessageReference(item.message), media: telegramFile), streamVideo: streamVideo ? .conservative : .none, enableSound: false, fetchAutomatically: false), priority: .embedded, autoplay: true)
                             let previousVideoNode = strongSelf.videoNode
                             strongSelf.videoNode = videoNode
                             strongSelf.insertSubnode(videoNode, belowSubnode: previousVideoNode ?? strongSelf.dateAndStatusNode)

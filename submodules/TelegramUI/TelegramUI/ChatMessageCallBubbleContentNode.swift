@@ -3,8 +3,10 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import TelegramCore
+import SyncCore
 import Postbox
 import TelegramPresentationData
+import AppBundle
 
 private let titleFont: UIFont = Font.medium(16.0)
 private let labelFont: UIFont = Font.regular(13.0)
@@ -205,7 +207,7 @@ class ChatMessageCallBubbleContentNode: ChatMessageBubbleContentNode {
         }
     }
     
-    override func tapActionAtPoint(_ point: CGPoint, gesture: TapLongTapOrDoubleTapGesture) -> ChatMessageBubbleContentTapAction {
+    override func tapActionAtPoint(_ point: CGPoint, gesture: TapLongTapOrDoubleTapGesture, isEstimating: Bool) -> ChatMessageBubbleContentTapAction {
         if self.buttonNode.frame.contains(point) {
             return .ignore
         } else if self.bounds.contains(point), let item = self.item {

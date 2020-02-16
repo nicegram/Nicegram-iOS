@@ -5,9 +5,11 @@ import Display
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import LegacyComponents
 import TelegramPresentationData
 import ItemListUI
+import PresentationDataUtils
 import AccountContext
 import TextFormat
 import OverlayStatusController
@@ -15,6 +17,7 @@ import TelegramStringFormatting
 import AccountContext
 import ShareController
 import AlertUI
+import PresentationDataUtils
 import TelegramNotices
 import GalleryUI
 import ItemListAvatarAndNameInfoItem
@@ -22,10 +25,13 @@ import PeerAvatarGalleryUI
 import NotificationMuteSettingsUI
 import NotificationSoundSelectionUI
 import NicegramLib
-import ChatListUI
+import Markdown
+import LocalizedPeerData
+import PhoneNumberFormat
+import TelegramIntents
 
 private final class UserInfoControllerArguments {
-    let account: Account
+    let context: AccountContext
     let avatarAndNameInfoContext: ItemListAvatarAndNameInfoItemContext
     let updateEditingName: (ItemListAvatarAndNameInfoItemName) -> Void
     let tapAvatarAction: () -> Void
@@ -56,8 +62,8 @@ private final class UserInfoControllerArguments {
     let botPrivacy: () -> Void
     let report: () -> Void
     
-    init(account: Account, avatarAndNameInfoContext: ItemListAvatarAndNameInfoItemContext, updateEditingName: @escaping (ItemListAvatarAndNameInfoItemName) -> Void, tapAvatarAction: @escaping () -> Void, presentController: @escaping (ViewController, ViewControllerPresentationArguments) -> Void, openChat: @escaping () -> Void, addContact: @escaping () -> Void, shareContact: @escaping () -> Void, shareMyContact: @escaping () -> Void, startSecretChat: @escaping () -> Void, changeNotificationMuteSettings: @escaping () -> Void, openSharedMedia: @escaping () -> Void, openGroupsInCommon: @escaping () -> Void, updatePeerBlocked: @escaping (Bool) -> Void, deleteContact: @escaping () -> Void, displayUsernameContextMenu: @escaping (String) -> Void, placeRegDate: @escaping () -> Void, displayCopyContextMenu: @escaping (UserInfoEntryTag, String) -> Void, call: @escaping () -> Void, openCallMenu: @escaping (String) -> Void, requestPhoneNumber: @escaping () -> Void, aboutLinkAction: @escaping (TextLinkItemActionType, TextLinkItem) -> Void, displayAboutContextMenu: @escaping (String) -> Void, openEncryptionKey: @escaping (SecretChatKeyFingerprint) -> Void, addBotToGroup: @escaping () -> Void, shareBot: @escaping () -> Void, botSettings: @escaping () -> Void, botHelp: @escaping () -> Void, botPrivacy: @escaping () -> Void, report: @escaping () -> Void) {
-        self.account = account
+    init(context: AccountContext, avatarAndNameInfoContext: ItemListAvatarAndNameInfoItemContext, updateEditingName: @escaping (ItemListAvatarAndNameInfoItemName) -> Void, tapAvatarAction: @escaping () -> Void, presentController: @escaping (ViewController, ViewControllerPresentationArguments) -> Void,  openChat: @escaping () -> Void, addContact: @escaping () -> Void, shareContact: @escaping () -> Void, shareMyContact: @escaping () -> Void, startSecretChat: @escaping () -> Void, changeNotificationMuteSettings: @escaping () -> Void, openSharedMedia: @escaping () -> Void, openGroupsInCommon: @escaping () -> Void, updatePeerBlocked: @escaping (Bool) -> Void, deleteContact: @escaping () -> Void, displayUsernameContextMenu: @escaping (String) -> Void, placeRegDate : @escaping () -> Void,  displayCopyContextMenu: @escaping (UserInfoEntryTag, String) -> Void, call: @escaping () -> Void, openCallMenu: @escaping (String) -> Void, requestPhoneNumber: @escaping () -> Void, aboutLinkAction: @escaping (TextLinkItemActionType, TextLinkItem) -> Void, displayAboutContextMenu: @escaping (String) -> Void, openEncryptionKey: @escaping (SecretChatKeyFingerprint) -> Void, addBotToGroup: @escaping () -> Void, shareBot: @escaping () -> Void, botSettings: @escaping () -> Void, botHelp: @escaping () -> Void, botPrivacy: @escaping () -> Void, report: @escaping () -> Void) {
+        self.context = context
         self.avatarAndNameInfoContext = avatarAndNameInfoContext
         self.updateEditingName = updateEditingName
         self.tapAvatarAction = tapAvatarAction
@@ -403,116 +409,118 @@ private enum UserInfoEntry: ItemListNodeEntry {
         return lhs.sortIndex < rhs.sortIndex
     }
     
-    func item(_ arguments: UserInfoControllerArguments) -> ListViewItem {
+    func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
+        let arguments = arguments as! UserInfoControllerArguments
         switch self {
             case let .info(theme, strings, dateTimeFormat, peer, presence, cachedData, state, displayCall):
-                return ItemListAvatarAndNameInfoItem(account: arguments.account, theme: theme, strings: strings, dateTimeFormat: dateTimeFormat, mode: .generic, peer: peer, presence: presence, cachedData: cachedData, state: state, sectionId: self.section, style: .plain, editingNameUpdated: { editingName in
+                return ItemListAvatarAndNameInfoItem(accountContext: arguments.context, presentationData: presentationData, dateTimeFormat: dateTimeFormat, mode: .generic, peer: peer, presence: presence, cachedData: cachedData, state: state, sectionId: self.section, style: .plain, editingNameUpdated: { editingName in
                     arguments.updateEditingName(editingName)
                 }, avatarTapped: {
                     arguments.tapAvatarAction()
                 }, idTapped: { value in
                     UIPasteboard.general.string = value
-                    arguments.presentController(OverlayStatusController(theme: theme, strings: strings, type: .success), ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+                    let pc = OverlayStatusController(theme: theme, type: .success)
+                    arguments.presentController(pc, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
                 }, context: arguments.avatarAndNameInfoContext, call: displayCall ? {
                     arguments.call()
                 } : nil)
             case let .calls(theme, strings, dateTimeFormat, messages):
-                return ItemListCallListItem(theme: theme, strings: strings, dateTimeFormat: dateTimeFormat, messages: messages, sectionId: self.section, style: .plain)
+                return ItemListCallListItem(presentationData: presentationData, dateTimeFormat: dateTimeFormat, messages: messages, sectionId: self.section, style: .plain)
             case let .about(theme, peer, text, value):
                 var enabledEntityTypes: EnabledEntityTypes = []
                 if let peer = peer as? TelegramUser {
                     enabledEntityTypes = [.url, .mention, .hashtag, .phoneNumber, .external]
                 }
-                return ItemListTextWithLabelItem(theme: theme, label: text, text: foldMultipleLineBreaks(value), enabledEntityTypes: enabledEntityTypes, multiline: true, sectionId: self.section, action: nil, longTapAction: {
+                return ItemListTextWithLabelItem(presentationData: presentationData, label: text, text: foldMultipleLineBreaks(value), enabledEntityTypes: enabledEntityTypes, multiline: true, sectionId: self.section, action: nil, longTapAction: {
                     arguments.displayAboutContextMenu(value)
                 }, linkItemAction: { action, itemLink in
                     arguments.aboutLinkAction(action, itemLink)
                 }, tag: UserInfoEntryTag.about)
             case let .phoneNumber(theme, _, label, value, isMain):
-                return ItemListTextWithLabelItem(theme: theme, label: label, text: value, textColor: isMain ? .highlighted : .accent, enabledEntityTypes: [], multiline: false, sectionId: self.section, action: {
+                return ItemListTextWithLabelItem(presentationData: presentationData, label: label, text: value, textColor: isMain ? .highlighted : .accent, enabledEntityTypes: [], multiline: false, sectionId: self.section, action: {
                     arguments.openCallMenu(value)
                 }, longTapAction: {
                     arguments.displayCopyContextMenu(.phoneNumber, value)
                 }, tag: UserInfoEntryTag.phoneNumber)
             case let .requestPhoneNumber(theme, label, value):
-                return ItemListTextWithLabelItem(theme: theme, label: label, text: value, textColor: .accent, enabledEntityTypes: [], multiline: false, sectionId: self.section, action: {
+                return ItemListTextWithLabelItem(presentationData: presentationData, label: label, text: value, textColor: .accent, enabledEntityTypes: [], multiline: false, sectionId: self.section, action: {
                     arguments.requestPhoneNumber()
                 })
             case let .userName(theme, text, value):
-                return ItemListTextWithLabelItem(theme: theme, label: text, text: "@\(value)", textColor: .accent, enabledEntityTypes: [], multiline: false, sectionId: self.section, action: {
+                return ItemListTextWithLabelItem(presentationData: presentationData, label: text, text: "@\(value)", textColor: .accent, enabledEntityTypes: [], multiline: false, sectionId: self.section, action: {
                     arguments.displayUsernameContextMenu("@\(value)")
                 }, longTapAction: {
                     arguments.displayCopyContextMenu(.username, "@\(value)")
                 }, tag: UserInfoEntryTag.username)
             case let .registerDate(theme, text, value, isAccent):
-                return ItemListTextWithLabelItem(theme: theme, label: text, text: value, textColor: isAccent ? .accent : .primary, enabledEntityTypes: [], multiline: false, sectionId: self.section, action: {
+                return ItemListTextWithLabelItem(presentationData: presentationData, label: text, text: value, textColor: isAccent ? .accent : .primary, enabledEntityTypes: [], multiline: false, sectionId: self.section, action: {
                         arguments.placeRegDate()
                         // arguments.displayUsernameContextMenu("@\(value)")
                     }, longTapAction: {
                         // arguments.displayCopyContextMenu(.username, "@\(value)")
                     }, tag: UserInfoEntryTag.registerDate)
             case let .sendMessage(theme, text):
-                return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
                     arguments.openChat()
                 })
             case let .addContact(theme, text):
-                return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
                     arguments.addContact()
                 })
             case let .shareContact(theme, text):
-                return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
                     arguments.shareContact()
                 })
             case let .shareMyContact(theme, text):
-                return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
                     arguments.shareMyContact()
                 })
             case let .startSecretChat(theme, text):
-                return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
                     arguments.startSecretChat()
                 })
             case let .sharedMedia(theme, text):
-                return ItemListDisclosureItem(theme: theme, title: text, label: "", sectionId: self.section, style: .plain, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: "", sectionId: self.section, style: .plain, action: {
                     arguments.openSharedMedia()
                 })
             case let .notifications(theme, text, value):
-                return ItemListDisclosureItem(theme: theme, title: text, label: value, sectionId: self.section, style: .plain, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: value, sectionId: self.section, style: .plain, action: {
                     arguments.changeNotificationMuteSettings()
                 })
             case let .groupsInCommon(theme, text, value):
-                return ItemListDisclosureItem(theme: theme, title: text, label: value, sectionId: self.section, style: .plain, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: value, sectionId: self.section, style: .plain, action: {
                     arguments.openGroupsInCommon()
                 })
             case let .secretEncryptionKey(theme, text, fingerprint):
-                return ItemListSecretChatKeyItem(theme: theme, title: text, fingerprint: fingerprint, sectionId: self.section, style: .plain, action: {
+                return ItemListSecretChatKeyItem(presentationData: presentationData, title: text, fingerprint: fingerprint, sectionId: self.section, style: .plain, action: {
                     arguments.openEncryptionKey(fingerprint)
                 })
             case let .botAddToGroup(theme, text):
-                return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
                     arguments.addBotToGroup()
                 })
             case let .botShare(theme, text):
-                return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
                     arguments.shareBot()
             })
             case let .botSettings(theme, text):
-                return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
                     arguments.botSettings()
                 })
             case let .botHelp(theme, text):
-                return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
                     arguments.botHelp()
                 })
             case let .botPrivacy(theme, text):
-                return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
                     arguments.botPrivacy()
                 })
             case let .botReport(theme, text):
-                return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .plain, action: {
                     arguments.report()
                 })
             case let .block(theme, text, action):
-                return ItemListActionItem(theme: theme, title: text, kind: .destructive, alignment: .natural, sectionId: self.section, style: .plain, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .destructive, alignment: .natural, sectionId: self.section, style: .plain, action: {
                     switch action {
                         case .block:
                             arguments.updatePeerBlocked(true)
@@ -652,7 +660,7 @@ private func userInfoEntries(account: Account, presentationData: PresentationDat
             }
         }
         if !found {
-            entries.append(UserInfoEntry.phoneNumber(presentationData.theme, index, "home", formattedNumber, false))
+            entries.append(UserInfoEntry.phoneNumber(presentationData.theme, index, presentationData.strings.ContactInfo_PhoneLabelMobile, formattedNumber, false))
             index += 1
         } else {
             for (label, number, isMain) in phoneNumbers {
@@ -805,6 +813,30 @@ private func getUserPeer(postbox: Postbox, peerId: PeerId) -> Signal<(Peer?, Cac
     }
 }
 
+public func openAddPersonContactImpl(context: AccountContext, peerId: PeerId, pushController: @escaping (ViewController) -> Void, present: @escaping (ViewController, Any?) -> Void) {
+    let _ = (getUserPeer(postbox: context.account.postbox, peerId: peerId)
+    |> deliverOnMainQueue).start(next: { peer, cachedData in
+        guard let user = peer as? TelegramUser, let contactData = DeviceContactExtendedData(peer: user) else {
+            return
+        }
+        
+        var shareViaException = false
+        if let cachedData = cachedData as? CachedUserData, let peerStatusSettings = cachedData.peerStatusSettings {
+            shareViaException = peerStatusSettings.contains(.addExceptionWhenAddingContact)
+        }
+        
+        pushController(deviceContactInfoController(context: context, subject: .create(peer: user, contactData: contactData, isSharing: true, shareViaException: shareViaException, completion: { peer, stableId, contactData in
+            if let peer = peer as? TelegramUser {
+                if let phone = peer.phone, !phone.isEmpty {
+                }
+                
+                let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                present(OverlayStatusController(theme: presentationData.theme, type: .genericSuccess(presentationData.strings.AddContact_StatusSuccess(peer.compactDisplayTitle).0, true)), nil)
+            }
+        }), completed: nil, cancelled: nil))
+    })
+}
+
 public func userInfoController(context: AccountContext, peerId: PeerId, mode: PeerInfoControllerMode = .generic) -> ViewController {
     let statePromise = ValuePromise(UserInfoState(), ignoreRepeated: true)
     let stateValue = Atomic(value: UserInfoState())
@@ -906,7 +938,7 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
         })
     }
     
-    let arguments = UserInfoControllerArguments(account: context.account, avatarAndNameInfoContext: avatarAndNameInfoContext, updateEditingName: { editingName in
+    let arguments = UserInfoControllerArguments(context: context, avatarAndNameInfoContext: avatarAndNameInfoContext, updateEditingName: { editingName in
         updateState { state in
             if let _ = state.editingState {
                 return state.withUpdatedEditingState(UserInfoEditingState(editingName: editingName))
@@ -939,32 +971,16 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
     }, openChat: {
         openChatImpl?()
     }, addContact: {
-        let _ = (getUserPeer(postbox: context.account.postbox, peerId: peerId)
-        |> deliverOnMainQueue).start(next: { peer, cachedData in
-            guard let user = peer as? TelegramUser, let contactData = DeviceContactExtendedData(peer: user) else {
-                return
-            }
-            
-            var shareViaException = false
-            if let cachedData = cachedData as? CachedUserData, let peerStatusSettings = cachedData.peerStatusSettings {
-                shareViaException = peerStatusSettings.contains(.addExceptionWhenAddingContact)
-            }
-            
-            presentControllerImpl?(deviceContactInfoController(context: context, subject: .create(peer: user, contactData: contactData, isSharing: true, shareViaException: shareViaException, completion: { peer, stableId, contactData in
-                if let peer = peer as? TelegramUser {
-                    if let phone = peer.phone, !phone.isEmpty {
-                    }
-                    
-                    let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                    presentControllerImpl?(OverlayStatusController(theme: presentationData.theme, strings: presentationData.strings, type: .genericSuccess(presentationData.strings.AddContact_StatusSuccess(peer.compactDisplayTitle).0, true)), nil)
-                }
-            }), completed: nil, cancelled: nil), ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+        openAddPersonContactImpl(context: context, peerId: peerId, pushController: { c in
+            pushControllerImpl?(c)
+        }, present: { c, a in
+            presentControllerImpl?(c, a)
         })
     }, shareContact: {
         shareContactImpl?()
     }, shareMyContact: {
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        let actionSheet = ActionSheetController(presentationTheme: presentationData.theme)
+        let actionSheet = ActionSheetController(presentationData: presentationData)
         actionSheet.setItemGroups([ActionSheetItemGroup(items: [
             ActionSheetButtonItem(title: presentationData.strings.UserInfo_ShareMyContactInfo, color: .destructive, action: { [weak actionSheet] in
                 actionSheet?.dismissAnimated()
@@ -978,7 +994,7 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
         presentControllerImpl?(actionSheet, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
     }, startSecretChat: {
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        let actionSheet = ActionSheetController(presentationTheme: presentationData.theme)
+        let actionSheet = ActionSheetController(presentationData: presentationData)
         actionSheet.setItemGroups([ActionSheetItemGroup(items: [
             ActionSheetButtonItem(title: presentationData.strings.UserInfo_StartSecretChat, color: .destructive, action: { [weak actionSheet] in
                 actionSheet?.dismissAnimated()
@@ -1046,7 +1062,7 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
             } else {
                 if value {
                     let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                    let controller = ActionSheetController(presentationTheme: presentationData.theme)
+                    let controller = ActionSheetController(presentationData: presentationData)
                     let dismissAction: () -> Void = { [weak controller] in
                         controller?.dismissAnimated()
                     }
@@ -1082,6 +1098,8 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
                                 } else if reportSpam {
                                     let _ = reportPeer(account: context.account, peerId: peerId, reason: .spam).start()
                                 }
+                                
+                                deleteSendMessageIntents(peerId: peerId)
                             })
                         ]),
                         ActionSheetItemGroup(items: [ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, action: { dismissAction() })])
@@ -1090,9 +1108,9 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
                 } else {
                     let text: String
                     if value {
-                        text = presentationData.strings.UserInfo_BlockConfirmation(peer.displayTitle).0
+                        text = presentationData.strings.UserInfo_BlockConfirmation(peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)).0
                     } else {
-                        text = presentationData.strings.UserInfo_UnblockConfirmation(peer.displayTitle).0
+                        text = presentationData.strings.UserInfo_UnblockConfirmation(peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)).0
                     }
                     presentControllerImpl?(textAlertController(context: context, title: nil, text: text, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_No, action: {}), TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Yes, action: {
                         updatePeerBlockedDisposable.set(requestUpdatePeerIsBlocked(account: context.account, peerId: peer.id, isBlocked: value).start())
@@ -1102,7 +1120,7 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
         })
     }, deleteContact: {
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        let controller = ActionSheetController(presentationTheme: presentationData.theme)
+        let controller = ActionSheetController(presentationData: presentationData)
         let dismissAction: () -> Void = { [weak controller] in
             controller?.dismissAnimated()
         }
@@ -1127,7 +1145,7 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
                         
                         let progressSignal = Signal<Never, NoError> { subscriber in
                             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                            let controller = OverlayStatusController(theme: presentationData.theme, strings: presentationData.strings, type: .loading(cancelled: nil))
+                            let controller = OverlayStatusController(theme: presentationData.theme, type: .loading(cancelled: nil))
                             presentControllerImpl?(controller, nil)
                             return ActionDisposable { [weak controller] in
                                 Queue.mainQueue().async() {
@@ -1150,6 +1168,8 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
                         |> deliverOnMainQueue).start(completed: {
                             dismissImpl?()
                         }))
+                        
+                        deleteSendMessageIntents(peerId: peerId)
                     })
                 })
             ]),
@@ -1172,7 +1192,7 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
         } else {
             let progressSignal = Signal<Never, NoError> { subscriber in
                 let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                let controller = OverlayStatusController(theme: presentationData.theme, strings: presentationData.strings, type: .loading(cancelled: nil))
+                let controller = OverlayStatusController(theme: presentationData.theme, type: .loading(cancelled: nil))
                 presentControllerImpl?(controller, nil)
                 return ActionDisposable { [weak controller] in
                     Queue.mainQueue().async() {
@@ -1220,7 +1240,7 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
         |> deliverOnMainQueue).start(next: { peer, _ in
             if let peer = peer as? TelegramUser, let peerPhoneNumber = peer.phone, formatPhoneNumber(number) == formatPhoneNumber(peerPhoneNumber) {
                 let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                let controller = ActionSheetController(presentationTheme: presentationData.theme)
+                let controller = ActionSheetController(presentationData: presentationData)
                 let dismissAction: () -> Void = { [weak controller] in
                     controller?.dismissAnimated()
                 }
@@ -1289,6 +1309,8 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
     }, report: {
         presentControllerImpl?(peerReportOptionsController(context: context, subject: .peer(peerId), present: { c, a in
             presentControllerImpl?(c, a)
+        }, push: { c in
+            pushControllerImpl?(c)
         }, completion: { _ in }), nil)
     })
         
@@ -1310,7 +1332,7 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
     
     let globalNotificationsKey: PostboxViewKey = .preferences(keys: Set<ValueBoxKey>([PreferencesKeys.globalNotifications]))
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get(), regStatePromise.get(), peerView.get(), deviceContacts, context.account.postbox.combinedView(keys: [.peerChatState(peerId: peerId), globalNotificationsKey]))
-    |> map { presentationData, state, regState, view, deviceContacts, combinedView -> (ItemListControllerState, (ItemListNodeState<UserInfoEntry>, UserInfoEntry.ItemGenerationArguments)) in
+    |> map { presentationData, state, regState, view, deviceContacts, combinedView -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let peer = peerViewMainPeer(view.0)
         
         var globalNotificationSettings: GlobalNotificationSettings = .defaultSettings
@@ -1365,7 +1387,7 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
                         }
                     }
                     
-                    if let updateName = updateName, case let .personName(firstName, lastName) = updateName {
+                    if let updateName = updateName, case let .personName(firstName, lastName, _) = updateName {
                         updatePeerNameDisposable.set((updateContactName(account: context.account, peerId: peerId, firstName: firstName, lastName: lastName)
                         |> deliverOnMainQueue).start(error: { _ in
                             updateState { state in
@@ -1387,7 +1409,7 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
                                     var signals: [Signal<DeviceContactExtendedData?, NoError>] = []
                                     if let contactDataManager = context.sharedContext.contactDataManager {
                                         for (id, basicData) in records {
-                                            signals.append(contactDataManager.appendContactData(DeviceContactExtendedData(basicData: DeviceContactBasicData(firstName: firstName, lastName: lastName, phoneNumbers: basicData.phoneNumbers), middleName: "", prefix: "", suffix: "", organization: "", jobTitle: "", department: "", emailAddresses: [], urls: [], addresses: [], birthdayDate: nil, socialProfiles: [], instantMessagingProfiles: []), to: id))
+                                            signals.append(contactDataManager.appendContactData(DeviceContactExtendedData(basicData: DeviceContactBasicData(firstName: firstName, lastName: lastName, phoneNumbers: basicData.phoneNumbers), middleName: "", prefix: "", suffix: "", organization: "", jobTitle: "", department: "", emailAddresses: [], urls: [], addresses: [], birthdayDate: nil, socialProfiles: [], instantMessagingProfiles: [], note: ""), to: id))
                                         }
                                     }
                                     return combineLatest(signals)
@@ -1410,8 +1432,8 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
             })
         }
         
-        let controllerState = ItemListControllerState(theme: presentationData.theme, title: .text(presentationData.strings.UserInfo_Title), leftNavigationButton: leftNavigationButton, rightNavigationButton: rightNavigationButton, backNavigationButton: nil)
-        let listState = ItemListNodeState(entries: userInfoEntries(account: context.account, presentationData: presentationData, view: view.0, cachedPeerData: view.1, deviceContacts: deviceContacts, mode: mode, state: state, peerChatState: (combinedView.views[.peerChatState(peerId: peerId)] as? PeerChatStateView)?.chatState, globalNotificationSettings: globalNotificationSettings), style: .plain)
+        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(presentationData.strings.UserInfo_Title), leftNavigationButton: leftNavigationButton, rightNavigationButton: rightNavigationButton, backNavigationButton: nil)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: userInfoEntries(account: context.account, presentationData: presentationData, view: view.0, cachedPeerData: view.1, deviceContacts: deviceContacts, mode: mode, state: state, peerChatState: (combinedView.views[.peerChatState(peerId: peerId)] as? PeerChatStateView)?.chatState, globalNotificationSettings: globalNotificationSettings), style: .plain)
         
         return (controllerState, (listState, arguments))
     }
@@ -1462,12 +1484,13 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
                 let _ = (enqueueMessages(account: context.account, peerId: peerId, messages: [.message(text: "", attributes: [], mediaReference: .standalone(media: contact), replyToMessageId: nil, localGroupingKey: nil)])
                     |> deliverOnMainQueue).start(next: { [weak controller] _ in
                         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                        controller?.present(OverlayStatusController(theme: presentationData.theme, strings: presentationData.strings, type: .success), in: .window(.root))
+                        controller?.present(OverlayStatusController(theme: presentationData.theme, type: .success), in: .window(.root))
                     })
         })
     }
     startSecretChatImpl = { [weak controller] in
-        let _ = (context.account.postbox.transaction { transaction -> PeerId? in
+        let _ = (context.account.postbox.transaction { transaction -> (Peer?, PeerId?) in
+            let peer = transaction.getPeer(peerId)
             let filteredPeerIds = Array(transaction.getAssociatedPeerIds(peerId)).filter { $0.namespace == Namespaces.Peer.SecretChat }
             var activeIndices: [ChatListIndex] = []
             for associatedId in filteredPeerIds {
@@ -1484,54 +1507,57 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
             }
             activeIndices.sort()
             if let index = activeIndices.last {
-                return index.messageIndex.id.peerId
+                return (peer, index.messageIndex.id.peerId)
             } else {
-                return nil
+                return (peer, nil)
             }
-        } |> deliverOnMainQueue).start(next: { currentPeerId in
+        } |> deliverOnMainQueue).start(next: { peer, currentPeerId in
             if let currentPeerId = currentPeerId {
                 if let navigationController = (controller?.navigationController as? NavigationController) {
                     context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: context, chatLocation: .peer(currentPeerId)))
                 }
-            } else {
-                var createSignal = createSecretChat(account: context.account, peerId: peerId)
-                var cancelImpl: (() -> Void)?
-                let progressSignal = Signal<Never, NoError> { subscriber in
-                    let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                    let controller = OverlayStatusController(theme: presentationData.theme, strings: presentationData.strings, type: .loading(cancelled: {
-                        cancelImpl?()
-                    }))
-                    presentControllerImpl?(controller, nil)
-                    return ActionDisposable { [weak controller] in
-                        Queue.mainQueue().async() {
-                            controller?.dismiss()
+            } else if let controller = controller {
+                let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                let displayTitle = peer?.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder) ?? ""
+                controller.present(textAlertController(context: context, title: nil, text: presentationData.strings.UserInfo_StartSecretChatConfirmation(displayTitle).0, actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {}), TextAlertAction(type: .defaultAction, title: presentationData.strings.UserInfo_StartSecretChatStart, action: {
+                    var createSignal = createSecretChat(account: context.account, peerId: peerId)
+                    var cancelImpl: (() -> Void)?
+                    let progressSignal = Signal<Never, NoError> { subscriber in
+                        let controller = OverlayStatusController(theme: presentationData.theme, type: .loading(cancelled: {
+                            cancelImpl?()
+                        }))
+                        presentControllerImpl?(controller, nil)
+                        return ActionDisposable { [weak controller] in
+                            Queue.mainQueue().async() {
+                                controller?.dismiss()
+                            }
                         }
                     }
-                }
-                |> runOn(Queue.mainQueue())
-                |> delay(0.15, queue: Queue.mainQueue())
-                let progressDisposable = progressSignal.start()
-                
-                createSignal = createSignal
-                |> afterDisposed {
-                    Queue.mainQueue().async {
-                        progressDisposable.dispose()
+                    |> runOn(Queue.mainQueue())
+                    |> delay(0.15, queue: Queue.mainQueue())
+                    let progressDisposable = progressSignal.start()
+                    
+                    createSignal = createSignal
+                    |> afterDisposed {
+                        Queue.mainQueue().async {
+                            progressDisposable.dispose()
+                        }
                     }
-                }
-                cancelImpl = {
-                    createSecretChatDisposable.set(nil)
-                }
-                
-                createSecretChatDisposable.set((createSignal |> deliverOnMainQueue).start(next: { peerId in
-                    if let navigationController = (controller?.navigationController as? NavigationController) {
-                        context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: context, chatLocation: .peer(peerId)))
+                    cancelImpl = {
+                        createSecretChatDisposable.set(nil)
                     }
-                }, error: { _ in
-                    if let controller = controller {
-                        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                        controller.present(textAlertController(context: context, title: nil, text: presentationData.strings.Login_UnknownError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), in: .window(.root))
-                    }
-                }))
+                    
+                    createSecretChatDisposable.set((createSignal |> deliverOnMainQueue).start(next: { [weak controller] peerId in
+                        if let navigationController = (controller?.navigationController as? NavigationController) {
+                            context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: context, chatLocation: .peer(peerId)))
+                        }
+                    }, error: { [weak controller] _ in
+                        if let controller = controller {
+                            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                            controller.present(textAlertController(context: context, title: nil, text: presentationData.strings.Login_UnknownError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), in: .window(.root))
+                        }
+                    }))
+                })]), in: .window(.root))
             }
         })
     }
@@ -1547,7 +1573,7 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
             presentControllerImpl?(c, a)
         }, dismissInput: {
             dismissInputImpl?()
-        })
+        }, contentContext: nil)
     }
     shareBotImpl = { [weak controller] in
         let _ = (getUserPeer(postbox: context.account.postbox, peerId: peerId)
@@ -1560,7 +1586,7 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
     }
     avatarGalleryTransitionArguments = { [weak controller] entry in
         if let controller = controller {
-            var result: ((ASDisplayNode, () -> (UIView?, UIView?)), CGRect)?
+            var result: ((ASDisplayNode, CGRect, () -> (UIView?, UIView?)), CGRect)?
             controller.forEachItemNode { itemNode in
                 if let itemNode = itemNode as? ItemListAvatarAndNameInfoItemNode {
                     result = itemNode.avatarTransitionNode()
@@ -1686,9 +1712,7 @@ public func userInfoController(context: AccountContext, peerId: PeerId, mode: Pe
                 let presentationData = context.sharedContext.currentPresentationData.with { $0 }
                 let text: String = presentationData.strings.UserInfo_TapToCall
                 
-                let tooltipController = TooltipController(content: .text(text), dismissByTapOutside: true)
-                tooltipController.dismissed = {
-                }
+                let tooltipController = TooltipController(content: .text(text), baseFontSize: presentationData.listsFontSize.baseDisplaySize, dismissByTapOutside: true)
                 controller.present(tooltipController, in: .window(.root), with: TooltipControllerPresentationArguments(sourceNodeAndRect: { [weak resultItemNode] in
                     if let resultItemNode = resultItemNode {
                         return (resultItemNode, callButtonFrame)

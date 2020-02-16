@@ -1,17 +1,21 @@
 #import "MTHttpRequestOperation.h"
 
 #import "../thirdparty/AFNetworking/AFHTTPRequestOperation.h"
+#import <MtProtoKit/MTDisposable.h>
+#import <MtProtoKit/MTSignal.h>
 
-#if defined(MtProtoKitDynamicFramework)
-#   import <MTProtoKitDynamic/MTDisposable.h>
-#   import <MTProtoKitDynamic/MTSignal.h>
-#elif defined(MtProtoKitMacFramework)
-#   import <MTProtoKitMac/MTDisposable.h>
-#   import <MTProtoKitMac/MTSignal.h>
-#else
-#   import <MtProtoKit/MTDisposable.h>
-#   import <MtProtoKit/MTSignal.h>
-#endif
+@implementation MTHttpResponse
+
+- (instancetype)initWithHeaders:(NSDictionary *)headers data:(NSData *)data {
+    self = [super init];
+    if (self != nil) {
+        _headers = headers;
+        _data = data;
+    }
+    return self;
+}
+
+@end
 
 @implementation MTHttpRequestOperation
 
@@ -32,11 +36,13 @@
         
         [operation setCompletionBlockWithSuccess:^(__unused NSOperation *operation, __unused id responseObject)
         {
-            [subscriber putNext:[(AFHTTPRequestOperation *)operation responseData]];
+            AFHTTPRequestOperation *concreteOperation = (AFHTTPRequestOperation *)operation;
+            MTHttpResponse *result = [[MTHttpResponse alloc] initWithHeaders:[concreteOperation response].allHeaderFields data:[concreteOperation responseData]];
+            [subscriber putNext:result];
             [subscriber putCompletion];
         } failure:^(__unused NSOperation *operation, __unused NSError *error)
         {
-            [subscriber putError:nil];
+            [subscriber putError:error];
         }];
         
         [operation start];

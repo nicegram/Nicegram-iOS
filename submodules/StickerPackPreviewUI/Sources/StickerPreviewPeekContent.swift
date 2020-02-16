@@ -4,9 +4,11 @@ import Display
 import AsyncDisplayKit
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import StickerResources
-import AnimationUI
+import AnimatedStickerNode
+import TelegramAnimatedStickerNode
 
 public enum StickerPreviewPeekItem: Equatable {
     case pack(StickerPackItem)
@@ -88,10 +90,10 @@ private final class StickerPreviewPeekContentNode: ASDisplayNode, PeekController
             let animationNode = AnimatedStickerNode()
             self.animationNode = animationNode
             
-            let dimensions = item.file.dimensions ?? CGSize(width: 512.0, height: 512.0)
-            let fittedDimensions = dimensions.aspectFitted(CGSize(width: 400.0, height: 400.0))
+            let dimensions = item.file.dimensions ?? PixelDimensions(width: 512, height: 512)
+            let fittedDimensions = dimensions.cgSize.aspectFitted(CGSize(width: 400.0, height: 400.0))
             
-            self.animationNode?.setup(account: account, resource: .resource(item.file.resource), width: Int(fittedDimensions.width), height: Int(fittedDimensions.height), mode: .direct)
+            self.animationNode?.setup(source: AnimatedStickerResourceSource(account: account, resource: item.file.resource), width: Int(fittedDimensions.width), height: Int(fittedDimensions.height), mode: .direct)
             self.animationNode?.visibility = true
             self.animationNode?.addSubnode(self.textNode)
         } else {
@@ -119,7 +121,7 @@ private final class StickerPreviewPeekContentNode: ASDisplayNode, PeekController
             let textSpacing: CGFloat = 10.0
             let textSize = self.textNode.measure(CGSize(width: 100.0, height: 100.0))
             
-            let imageSize = dimensitons.aspectFitted(boundingSize)
+            let imageSize = dimensitons.cgSize.aspectFitted(boundingSize)
             self.imageNode.asyncLayout()(TransformImageArguments(corners: ImageCorners(), imageSize: imageSize, boundingSize: imageSize, intrinsicInsets: UIEdgeInsets()))()
             let imageFrame = CGRect(origin: CGPoint(x: floor((size.width - imageSize.width) / 2.0), y: textSize.height + textSpacing), size: imageSize)
             self.imageNode.frame = imageFrame

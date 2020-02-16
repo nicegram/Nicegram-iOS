@@ -4,15 +4,61 @@ import Display
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import TelegramUIPreferences
 import DeviceAccess
 import ItemListUI
+import PresentationDataUtils
 import AccountContext
 import AlertUI
+import PresentationDataUtils
 import TelegramNotices
 import NotificationSoundSelectionUI
 import TelegramStringFormatting
+
+private struct CounterTagSettings: OptionSet {
+    var rawValue: Int32
+    
+    init(rawValue: Int32) {
+        self.rawValue = rawValue
+    }
+    
+    init(summaryTags: PeerSummaryCounterTags) {
+        var result = CounterTagSettings()
+        if summaryTags.contains(.privateChat) {
+            result.insert(.regularChatsAndPrivateGroups)
+        }
+        if summaryTags.contains(.channel) {
+            result.insert(.channels)
+        }
+        if summaryTags.contains(.publicGroup) {
+            result.insert(.publicGroups)
+        }
+        self = result
+    }
+    
+    func toSumaryTags() -> PeerSummaryCounterTags {
+        var result = PeerSummaryCounterTags()
+        if self.contains(.regularChatsAndPrivateGroups) {
+            result.insert(.privateChat)
+            result.insert(.secretChat)
+            result.insert(.bot)
+            result.insert(.privateGroup)
+        }
+        if self.contains(.publicGroups) {
+            result.insert(.publicGroup)
+        }
+        if self.contains(.channels) {
+            result.insert(.channel)
+        }
+        return result
+    }
+    
+    static let regularChatsAndPrivateGroups = CounterTagSettings(rawValue: 1 << 0)
+    static let publicGroups = CounterTagSettings(rawValue: 1 << 1)
+    static let channels = CounterTagSettings(rawValue: 1 << 2)
+}
 
 private final class NotificationsAndSoundsArguments {
     let context: AccountContext
@@ -40,8 +86,7 @@ private final class NotificationsAndSoundsArguments {
     let updateInAppPreviews: (Bool) -> Void
     
     let updateDisplayNameOnLockscreen: (Bool) -> Void
-    let updateTotalUnreadCountStyle: (Bool) -> Void
-    let updateIncludeTag: (PeerSummaryCounterTags, Bool) -> Void
+    let updateIncludeTag: (CounterTagSettings, Bool) -> Void
     let updateTotalUnreadCountCategory: (Bool) -> Void
     
     let updateJoinedNotifications: (Bool) -> Void
@@ -54,7 +99,7 @@ private final class NotificationsAndSoundsArguments {
     
     let updateNotificationsFromAllAccounts: (Bool) -> Void
     
-    init(context: AccountContext, presentController: @escaping (ViewController, ViewControllerPresentationArguments?) -> Void, pushController: @escaping(ViewController)->Void, soundSelectionDisposable: MetaDisposable, authorizeNotifications: @escaping () -> Void, suppressWarning: @escaping () -> Void, updateMessageAlerts: @escaping (Bool) -> Void, updateMessagePreviews: @escaping (Bool) -> Void, updateMessageSound: @escaping (PeerMessageSound) -> Void, updateGroupAlerts: @escaping (Bool) -> Void, updateGroupPreviews: @escaping (Bool) -> Void, updateGroupSound: @escaping (PeerMessageSound) -> Void, updateChannelAlerts: @escaping (Bool) -> Void, updateChannelPreviews: @escaping (Bool) -> Void, updateChannelSound: @escaping (PeerMessageSound) -> Void, updateInAppSounds: @escaping (Bool) -> Void, updateInAppVibration: @escaping (Bool) -> Void, updateInAppPreviews: @escaping (Bool) -> Void, updateDisplayNameOnLockscreen: @escaping (Bool) -> Void, updateTotalUnreadCountStyle: @escaping (Bool) -> Void, updateIncludeTag: @escaping (PeerSummaryCounterTags, Bool) -> Void, updateTotalUnreadCountCategory: @escaping (Bool) -> Void, resetNotifications: @escaping () -> Void, updatedExceptionMode: @escaping(NotificationExceptionMode) -> Void, openAppSettings: @escaping () -> Void, updateJoinedNotifications: @escaping (Bool) -> Void, updateNotificationsFromAllAccounts: @escaping (Bool) -> Void) {
+    init(context: AccountContext, presentController: @escaping (ViewController, ViewControllerPresentationArguments?) -> Void, pushController: @escaping(ViewController)->Void, soundSelectionDisposable: MetaDisposable, authorizeNotifications: @escaping () -> Void, suppressWarning: @escaping () -> Void, updateMessageAlerts: @escaping (Bool) -> Void, updateMessagePreviews: @escaping (Bool) -> Void, updateMessageSound: @escaping (PeerMessageSound) -> Void, updateGroupAlerts: @escaping (Bool) -> Void, updateGroupPreviews: @escaping (Bool) -> Void, updateGroupSound: @escaping (PeerMessageSound) -> Void, updateChannelAlerts: @escaping (Bool) -> Void, updateChannelPreviews: @escaping (Bool) -> Void, updateChannelSound: @escaping (PeerMessageSound) -> Void, updateInAppSounds: @escaping (Bool) -> Void, updateInAppVibration: @escaping (Bool) -> Void, updateInAppPreviews: @escaping (Bool) -> Void, updateDisplayNameOnLockscreen: @escaping (Bool) -> Void, updateIncludeTag: @escaping (CounterTagSettings, Bool) -> Void, updateTotalUnreadCountCategory: @escaping (Bool) -> Void, resetNotifications: @escaping () -> Void, updatedExceptionMode: @escaping(NotificationExceptionMode) -> Void, openAppSettings: @escaping () -> Void, updateJoinedNotifications: @escaping (Bool) -> Void, updateNotificationsFromAllAccounts: @escaping (Bool) -> Void) {
         self.context = context
         self.presentController = presentController
         self.pushController = pushController
@@ -74,7 +119,6 @@ private final class NotificationsAndSoundsArguments {
         self.updateInAppVibration = updateInAppVibration
         self.updateInAppPreviews = updateInAppPreviews
         self.updateDisplayNameOnLockscreen = updateDisplayNameOnLockscreen
-        self.updateTotalUnreadCountStyle = updateTotalUnreadCountStyle
         self.updateIncludeTag = updateIncludeTag
         self.updateTotalUnreadCountCategory = updateTotalUnreadCountCategory
         self.resetNotifications = resetNotifications
@@ -110,7 +154,6 @@ public enum NotificationsAndSoundsEntryTag: ItemListItemTag {
     case inAppVibrate
     case inAppPreviews
     case displayNamesOnLockscreen
-    case unreadCountStyle
     case includePublicGroups
     case includeChannels
     case unreadCountCategory
@@ -165,7 +208,6 @@ private enum NotificationsAndSoundsEntry: ItemListNodeEntry {
     case displayNamesOnLockscreenInfo(PresentationTheme, String)
     
     case badgeHeader(PresentationTheme, String)
-    case unreadCountStyle(PresentationTheme, String, Bool)
     case includePublicGroups(PresentationTheme, String, Bool)
     case includeChannels(PresentationTheme, String, Bool)
     case unreadCountCategory(PresentationTheme, String, Bool)
@@ -193,7 +235,7 @@ private enum NotificationsAndSoundsEntry: ItemListNodeEntry {
                 return NotificationsAndSoundsSection.inApp.rawValue
             case .displayNamesOnLockscreen, .displayNamesOnLockscreenInfo:
                 return NotificationsAndSoundsSection.displayNamesOnLockscreen.rawValue
-            case .badgeHeader, .unreadCountStyle, .includePublicGroups, .includeChannels, .unreadCountCategory, .unreadCountCategoryInfo:
+            case .badgeHeader, .includePublicGroups, .includeChannels, .unreadCountCategory, .unreadCountCategoryInfo:
                 return NotificationsAndSoundsSection.badge.rawValue
             case .joinedNotifications, .joinedNotificationsInfo:
                 return NotificationsAndSoundsSection.joinedNotifications.rawValue
@@ -264,8 +306,6 @@ private enum NotificationsAndSoundsEntry: ItemListNodeEntry {
                 return 28
             case .badgeHeader:
                 return 29
-            case .unreadCountStyle:
-                return 30
             case .includePublicGroups:
                 return 31
             case .includeChannels:
@@ -309,8 +349,6 @@ private enum NotificationsAndSoundsEntry: ItemListNodeEntry {
                 return NotificationsAndSoundsEntryTag.inAppPreviews
             case .displayNamesOnLockscreen:
                 return NotificationsAndSoundsEntryTag.displayNamesOnLockscreen
-            case .unreadCountStyle:
-                return NotificationsAndSoundsEntryTag.unreadCountStyle
             case .includePublicGroups:
                 return NotificationsAndSoundsEntryTag.includePublicGroups
             case .includeChannels:
@@ -508,12 +546,6 @@ private enum NotificationsAndSoundsEntry: ItemListNodeEntry {
                 } else {
                     return false
                 }
-            case let .unreadCountStyle(lhsTheme, lhsText, lhsValue):
-                if case let .unreadCountStyle(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
-                    return true
-                } else {
-                    return false
-                }
             case let .includePublicGroups(lhsTheme, lhsText, lhsValue):
                 if case let .includePublicGroups(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
                     return true
@@ -569,36 +601,37 @@ private enum NotificationsAndSoundsEntry: ItemListNodeEntry {
         return lhs.stableId < rhs.stableId
     }
     
-    func item(_ arguments: NotificationsAndSoundsArguments) -> ListViewItem {
+    func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
+        let arguments = arguments as! NotificationsAndSoundsArguments
         switch self {
             case let .accountsHeader(theme, text):
-                return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
+                return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .allAccounts(theme, text, value):
-                return ItemListSwitchItem(theme: theme, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     arguments.updateNotificationsFromAllAccounts(updatedValue)
                 }, tag: self.tag)
             case let .accountsInfo(theme, text):
-                return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+                return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .permissionInfo(theme, title, text, suppressed):
-                return ItemListInfoItem(theme: theme, title: title, text: .plain(text), style: .blocks, sectionId: self.section, closeAction: suppressed ? nil : {
+                return ItemListInfoItem(presentationData: presentationData, title: title, text: .plain(text), style: .blocks, sectionId: self.section, closeAction: suppressed ? nil : {
                     arguments.suppressWarning()
                 })
             case let .permissionEnable(theme, text):
-                return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     arguments.authorizeNotifications()
                 })
             case let .messageHeader(theme, text):
-                return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
+                return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .messageAlerts(theme, text, value):
-                return ItemListSwitchItem(theme: theme, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     arguments.updateMessageAlerts(updatedValue)
                 }, tag: self.tag)
             case let .messagePreviews(theme, text, value):
-                return ItemListSwitchItem(theme: theme, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     arguments.updateMessagePreviews(updatedValue)
                 }, tag: self.tag)
             case let .messageSound(theme, text, value, sound):
-                return ItemListDisclosureItem(theme: theme, title: text, label: value, sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: value, sectionId: self.section, style: .blocks, action: {
                     let controller = notificationSoundSelectionController(context: arguments.context, isModal: true, currentSound: sound, defaultSound: nil, completion: { [weak arguments] value in
                         arguments?.updateMessageSound(value)
                     })
@@ -606,24 +639,24 @@ private enum NotificationsAndSoundsEntry: ItemListNodeEntry {
                 })
             case let .userExceptions(theme, strings, text, value):
                 let label = value.settings.count > 0 ? strings.Notifications_Exceptions(Int32(value.settings.count)) : strings.Notification_Exceptions_Add
-                return ItemListDisclosureItem(theme: theme, title: text, label: label, sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: label, sectionId: self.section, style: .blocks, action: {
                     let controller = NotificationExceptionsController(context: arguments.context, mode: value, updatedMode: arguments.updatedExceptionMode)
                     arguments.pushController(controller)
                 })
             case let .messageNotice(theme, text):
-                return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+                return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .groupHeader(theme, text):
-                return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
+                return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .groupAlerts(theme, text, value):
-                return ItemListSwitchItem(theme: theme, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     arguments.updateGroupAlerts(updatedValue)
                 }, tag: self.tag)
             case let .groupPreviews(theme, text, value):
-                return ItemListSwitchItem(theme: theme, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     arguments.updateGroupPreviews(updatedValue)
                 }, tag: self.tag)
             case let .groupSound(theme, text, value, sound):
-                return ItemListDisclosureItem(theme: theme, title: text, label: value, sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: value, sectionId: self.section, style: .blocks, action: {
                     let controller = notificationSoundSelectionController(context: arguments.context, isModal: true, currentSound: sound, defaultSound: nil, completion: { [weak arguments] value in
                         arguments?.updateGroupSound(value)
                     })
@@ -631,24 +664,24 @@ private enum NotificationsAndSoundsEntry: ItemListNodeEntry {
                 })
             case let .groupExceptions(theme, strings, text, value):
                 let label = value.settings.count > 0 ? strings.Notifications_Exceptions(Int32(value.settings.count)) : strings.Notification_Exceptions_Add
-                return ItemListDisclosureItem(theme: theme, title: text, label: label, sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: label, sectionId: self.section, style: .blocks, action: {
                     let controller = NotificationExceptionsController(context: arguments.context, mode: value, updatedMode: arguments.updatedExceptionMode)
                     arguments.pushController(controller)
                 })
             case let .groupNotice(theme, text):
-                return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+                return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .channelHeader(theme, text):
-                return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
+                return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .channelAlerts(theme, text, value):
-                return ItemListSwitchItem(theme: theme, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     arguments.updateChannelAlerts(updatedValue)
                 }, tag: self.tag)
             case let .channelPreviews(theme, text, value):
-                return ItemListSwitchItem(theme: theme, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     arguments.updateChannelPreviews(updatedValue)
                 }, tag: self.tag)
             case let .channelSound(theme, text, value, sound):
-                return ItemListDisclosureItem(theme: theme, title: text, label: value, sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: value, sectionId: self.section, style: .blocks, action: {
                     let controller = notificationSoundSelectionController(context: arguments.context, isModal: true, currentSound: sound, defaultSound: nil, completion: { [weak arguments] value in
                         arguments?.updateChannelSound(value)
                     })
@@ -656,66 +689,62 @@ private enum NotificationsAndSoundsEntry: ItemListNodeEntry {
                 })
             case let .channelExceptions(theme, strings, text, value):
                 let label = value.settings.count > 0 ? strings.Notifications_Exceptions(Int32(value.settings.count)) : strings.Notification_Exceptions_Add
-                return ItemListDisclosureItem(theme: theme, title: text, label: label, sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: label, sectionId: self.section, style: .blocks, action: {
                     let controller = NotificationExceptionsController(context: arguments.context, mode: value, updatedMode: arguments.updatedExceptionMode)
                     arguments.pushController(controller)
                 })
             case let .channelNotice(theme, text):
-                return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+                return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .inAppHeader(theme, text):
-                return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
+                return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .inAppSounds(theme, text, value):
-                return ItemListSwitchItem(theme: theme, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     arguments.updateInAppSounds(updatedValue)
                 }, tag: self.tag)
             case let .inAppVibrate(theme, text, value):
-                return ItemListSwitchItem(theme: theme, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     arguments.updateInAppVibration(updatedValue)
                 }, tag: self.tag)
             case let .inAppPreviews(theme, text, value):
-                return ItemListSwitchItem(theme: theme, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     arguments.updateInAppPreviews(updatedValue)
                 }, tag: self.tag)
             case let .displayNamesOnLockscreen(theme, text, value):
-                return ItemListSwitchItem(theme: theme, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     arguments.updateDisplayNameOnLockscreen(updatedValue)
                 }, tag: self.tag)
             case let .displayNamesOnLockscreenInfo(theme, text):
-                return ItemListTextItem(theme: theme, text: .markdown(text.replacingOccurrences(of: "]", with: "]()")), sectionId: self.section, linkAction: { _ in
+                return ItemListTextItem(presentationData: presentationData, text: .markdown(text.replacingOccurrences(of: "]", with: "]()")), sectionId: self.section, linkAction: { _ in
                     arguments.openAppSettings()
                 })
             case let .badgeHeader(theme, text):
-                return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
-            case let .unreadCountStyle(theme, text, value):
-                return ItemListSwitchItem(theme: theme, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
-                    arguments.updateTotalUnreadCountStyle(updatedValue)
-                }, tag: self.tag)
+                return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .includePublicGroups(theme, text, value):
-                return ItemListSwitchItem(theme: theme, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     arguments.updateIncludeTag(.publicGroups, updatedValue)
                 }, tag: self.tag)
             case let .includeChannels(theme, text, value):
-                return ItemListSwitchItem(theme: theme, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     arguments.updateIncludeTag(.channels, updatedValue)
                 }, tag: self.tag)
             case let .unreadCountCategory(theme, text, value):
-                return ItemListSwitchItem(theme: theme, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     arguments.updateTotalUnreadCountCategory(updatedValue)
                 }, tag: self.tag)
             case let .unreadCountCategoryInfo(theme, text):
-                return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+                return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .joinedNotifications(theme, text, value):
-                return ItemListSwitchItem(theme: theme, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     arguments.updateJoinedNotifications(updatedValue)
                 }, tag: self.tag)
             case let .joinedNotificationsInfo(theme, text):
-                return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+                return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .reset(theme, text):
-                return ItemListActionItem(theme: theme, title: text, kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     arguments.resetNotifications()
                 }, tag: self.tag)
             case let .resetNotice(theme, text):
-                return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+                return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         }
     }
 }
@@ -793,9 +822,11 @@ private func notificationsAndSoundsEntries(authorizationStatus: AccessType, warn
     entries.append(.displayNamesOnLockscreenInfo(presentationData.theme, presentationData.strings.Notifications_DisplayNamesOnLockScreenInfoWithLink))
     
     entries.append(.badgeHeader(presentationData.theme, presentationData.strings.Notifications_Badge.uppercased()))
-    entries.append(.unreadCountStyle(presentationData.theme, presentationData.strings.Notifications_Badge_IncludeMutedChats, inAppSettings.totalUnreadCountDisplayStyle == .raw))
-    entries.append(.includePublicGroups(presentationData.theme, presentationData.strings.Notifications_Badge_IncludePublicGroups, inAppSettings.totalUnreadCountIncludeTags.contains(.publicGroups)))
-    entries.append(.includeChannels(presentationData.theme, presentationData.strings.Notifications_Badge_IncludeChannels, inAppSettings.totalUnreadCountIncludeTags.contains(.channels)))
+    
+    let counterTagSettings = CounterTagSettings(summaryTags: inAppSettings.totalUnreadCountIncludeTags)
+    
+    entries.append(.includePublicGroups(presentationData.theme, presentationData.strings.Notifications_Badge_IncludePublicGroups, counterTagSettings.contains(.publicGroups)))
+    entries.append(.includeChannels(presentationData.theme, presentationData.strings.Notifications_Badge_IncludeChannels, counterTagSettings.contains(.channels)))
     entries.append(.unreadCountCategory(presentationData.theme, presentationData.strings.Notifications_Badge_CountUnreadMessages, inAppSettings.totalUnreadCountDisplayCategory == .messages))
     entries.append(.unreadCountCategoryInfo(presentationData.theme, inAppSettings.totalUnreadCountDisplayCategory == .chats ? presentationData.strings.Notifications_Badge_CountUnreadMessages_InfoOff : presentationData.strings.Notifications_Badge_CountUnreadMessages_InfoOn))
     entries.append(.joinedNotifications(presentationData.theme, presentationData.strings.NotificationSettings_ContactJoined, globalSettings.contactsJoined))
@@ -924,20 +955,16 @@ public func notificationsAndSoundsController(context: AccountContext, exceptions
             settings.displayNameOnLockscreen = value
             return settings
         }).start()
-    }, updateTotalUnreadCountStyle: { value in
-        let _ = updateInAppNotificationSettingsInteractively(accountManager: context.sharedContext.accountManager, { settings in
-            var settings = settings
-            settings.totalUnreadCountDisplayStyle = value ? .raw : .filtered
-            return settings
-        }).start()
     }, updateIncludeTag: { tag, value in
         let _ = updateInAppNotificationSettingsInteractively(accountManager: context.sharedContext.accountManager, { settings in
-            var settings = settings
+            var currentSettings = CounterTagSettings(summaryTags: settings.totalUnreadCountIncludeTags)
             if !value {
-                settings.totalUnreadCountIncludeTags.remove(tag)
+                currentSettings.remove(tag)
             } else {
-                settings.totalUnreadCountIncludeTags.insert(tag)
+                currentSettings.insert(tag)
             }
+            var settings = settings
+            settings.totalUnreadCountIncludeTags = currentSettings.toSumaryTags()
             return settings
         }).start()
     }, updateTotalUnreadCountCategory: { value in
@@ -948,7 +975,7 @@ public func notificationsAndSoundsController(context: AccountContext, exceptions
         }).start()
     }, resetNotifications: {
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        let actionSheet = ActionSheetController(presentationTheme: presentationData.theme)
+        let actionSheet = ActionSheetController(presentationData: presentationData)
         actionSheet.setItemGroups([ActionSheetItemGroup(items: [
             ActionSheetButtonItem(title: presentationData.strings.Notifications_Reset, color: .destructive, action: { [weak actionSheet] in
                 actionSheet?.dismissAnimated()
@@ -964,7 +991,7 @@ public func notificationsAndSoundsController(context: AccountContext, exceptions
                 let _ = signal.start()
             })
         ]), ActionSheetItemGroup(items: [
-            ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+            ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
                 actionSheet?.dismissAnimated()
             })
         ])])
@@ -1066,7 +1093,7 @@ public func notificationsAndSoundsController(context: AccountContext, exceptions
     |> distinctUntilChanged
     
     let signal = combineLatest(context.sharedContext.presentationData, sharedData, preferences, notificationExceptions.get(), DeviceAccess.authorizationStatus(applicationInForeground: context.sharedContext.applicationBindings.applicationInForeground, subject: .notifications), notificationsWarningSuppressed.get(), hasMoreThanOneAccount)
-        |> map { presentationData, sharedData, view, exceptions, authorizationStatus, warningSuppressed, hasMoreThanOneAccount -> (ItemListControllerState, (ItemListNodeState<NotificationsAndSoundsEntry>, NotificationsAndSoundsEntry.ItemGenerationArguments)) in
+        |> map { presentationData, sharedData, view, exceptions, authorizationStatus, warningSuppressed, hasMoreThanOneAccount -> (ItemListControllerState, (ItemListNodeState, Any)) in
             
             let viewSettings: GlobalNotificationSettingsSet
             if let settings = view.values[PreferencesKeys.globalNotifications] as? GlobalNotificationSettings {
@@ -1095,8 +1122,8 @@ public func notificationsAndSoundsController(context: AccountContext, exceptions
                 }
             }
             
-            let controllerState = ItemListControllerState(theme: presentationData.theme, title: .text(presentationData.strings.Notifications_Title), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-            let listState = ItemListNodeState(entries: entries, style: .blocks, ensureVisibleItemTag: focusOnItemTag, initialScrollToItem: scrollToItem)
+            let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(presentationData.strings.Notifications_Title), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
+            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, ensureVisibleItemTag: focusOnItemTag, initialScrollToItem: scrollToItem)
             
             return (controllerState, (listState, arguments))
     }

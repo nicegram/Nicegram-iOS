@@ -5,6 +5,7 @@ import AsyncDisplayKit
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import ProgressNavigationButtonNode
 import AccountContext
@@ -35,6 +36,8 @@ public final class SecureIdPlaintextFormController: FormController<SecureIdPlain
         self.updatedValue = updatedValue
         
         super.init(initParams: SecureIdPlaintextFormControllerNodeInitParams(context: context, secureIdContext: secureIdContext), presentationData: self.presentationData)
+        
+        self.navigationPresentation = .modal
         
         switch type {
             case .phone:
@@ -71,7 +74,7 @@ public final class SecureIdPlaintextFormController: FormController<SecureIdPlain
             if let strongSelf = self {
                 switch state {
                     case .inProgress:
-                        strongSelf.navigationItem.rightBarButtonItem = UIBarButtonItem(customDisplayNode: ProgressNavigationButtonNode(theme: strongSelf.presentationData.theme))
+                        strongSelf.navigationItem.rightBarButtonItem = UIBarButtonItem(customDisplayNode: ProgressNavigationButtonNode(color: strongSelf.presentationData.theme.rootController.navigationBar.controlColor))
                     case .nextAvailable, .nextNotAvailable:
                         if strongSelf.navigationItem.rightBarButtonItem !== strongSelf.nextItem {
                             strongSelf.navigationItem.rightBarButtonItem = strongSelf.nextItem

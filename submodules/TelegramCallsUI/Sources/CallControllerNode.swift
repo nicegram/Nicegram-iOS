@@ -4,6 +4,7 @@ import Display
 import AsyncDisplayKit
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -171,7 +172,7 @@ final class CallControllerNode: ASDisplayNode {
                 self.dimNode.isHidden = true
             }
             
-            self.statusNode.title = peer.displayTitle
+            self.statusNode.title = peer.displayTitle(strings: self.presentationData.strings, displayOrder: self.presentationData.nameDisplayOrder)
             if hasOther {
                 self.statusNode.subtitle = self.presentationData.strings.Call_AnsweringWithAccount(accountPeer.displayTitle(strings: self.presentationData.strings, displayOrder: self.presentationData.nameDisplayOrder)).0
                 
@@ -231,10 +232,18 @@ final class CallControllerNode: ASDisplayNode {
                     text += "\n\(self.statusNode.subtitle)"
                 }
                 statusValue = .text(text)
-            case let .active(timestamp, reception, keyVisualHash):
+            case .active(let timestamp, let reception, let keyVisualHash), .reconnecting(let timestamp, let reception, let keyVisualHash):
                 let strings = self.presentationData.strings
+                var isReconnecting = false
+                if case .reconnecting = callState {
+                    isReconnecting = true
+                }
                 statusValue = .timer({ value in
-                    return strings.Call_StatusOngoing(value).0
+                    if isReconnecting {
+                        return strings.Call_StatusConnecting
+                    } else {
+                        return strings.Call_StatusOngoing(value).0
+                    }
                 }, timestamp)
                 if self.keyTextData?.0 != keyVisualHash {
                     let text = stringForEmojiHashOfData(keyVisualHash, 4)!

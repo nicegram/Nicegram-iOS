@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import Display
 import TelegramCore
+import SyncCore
 import Postbox
 import TelegramPresentationData
 import TelegramStringFormatting
@@ -22,7 +23,7 @@ public struct NotificationSoundSettings {
 }
 
 public func notificationMuteSettingsController(presentationData: PresentationData, notificationSettings: MessageNotificationSettings, soundSettings: NotificationSoundSettings?, openSoundSettings: @escaping () -> Void, updateSettings: @escaping (Int32?) -> Void) -> ViewController {
-    let controller = ActionSheetController(presentationTheme: presentationData.theme)
+    let controller = ActionSheetController(presentationData: presentationData)
     let dismissAction: () -> Void = { [weak controller] in
         controller?.dismissAnimated()
     }
@@ -46,6 +47,9 @@ public func notificationMuteSettingsController(presentationData: PresentationDat
     let options: [NotificationMuteOption] = [
         .enable,
         .interval(1 * 60 * 60),
+        .interval(4 * 60 * 60),
+        .interval(8 * 60 * 60),
+        .interval(1 * 24 * 60 * 60),
         .interval(2 * 24 * 60 * 60),
         .disable
     ]

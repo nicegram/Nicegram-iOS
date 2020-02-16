@@ -5,16 +5,19 @@ import AsyncDisplayKit
 import Postbox
 import SwiftSignalKit
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import TelegramUIPreferences
 import DeviceAccess
 import AccountContext
 import AlertUI
+import PresentationDataUtils
 import TelegramPermissions
 import TelegramNotices
 import ContactsPeerItem
 import SearchUI
 import TelegramPermissionsUI
+import AppBundle
 
 private func fixListNodeScrolling(_ listNode: ListView, searchNode: NavigationBarSearchContentNode) -> Bool {
     if searchNode.expansionProgress > 0.0 && searchNode.expansionProgress < 1.0 {
@@ -102,7 +105,12 @@ public class ContactsController: ViewController {
         self.title = self.presentationData.strings.Contacts_Title
         self.tabBarItem.title = self.presentationData.strings.Contacts_Title
         
-        let icon = UIImage(bundleImageName: "Chat List/Tabs/IconContacts")
+        let icon: UIImage?
+        if useSpecialTabBarIcons() {
+            icon = UIImage(bundleImageName: "Chat List/Tabs/Holiday/IconContacts")
+        } else {
+            icon = UIImage(bundleImageName: "Chat List/Tabs/IconContacts")
+        }
         
         self.tabBarItem.image = icon
         self.tabBarItem.selectedImage = icon
@@ -280,7 +288,8 @@ public class ContactsController: ViewController {
                 }
                 let presentPeersNearby = {
                     let controller = strongSelf.context.sharedContext.makePeersNearbyController(context: strongSelf.context)
-                    (strongSelf.navigationController as? NavigationController)?.replaceAllButRootController(controller, animated: true, completion: { [weak self] in
+                    controller.navigationPresentation = .master
+                    (strongSelf.navigationController as? NavigationController)?.pushViewController(controller, animated: true, completion: { [weak self] in
                         if let strongSelf = self {
                             strongSelf.contactsNode.contactListNode.listNode.clearHighlightAnimated(true)
                         }
@@ -293,6 +302,7 @@ public class ContactsController: ViewController {
                     default:
                         let controller = PermissionController(context: strongSelf.context, splashScreen: false)
                         controller.setState(.permission(.nearbyLocation(status: PermissionRequestStatus(accessType: status))), animated: false)
+                        controller.navigationPresentation = .master
                         controller.proceed = { result in
                             if result {
                                 presentPeersNearby()
@@ -490,7 +500,7 @@ public class ContactsController: ViewController {
             }
         }
         
-        let actionSheet = ActionSheetController(presentationTheme: self.presentationData.theme)
+        let actionSheet = ActionSheetController(presentationData: self.presentationData)
         var items: [ActionSheetItem] = []
         items.append(ActionSheetTextItem(title: self.presentationData.strings.Contacts_SortBy))
         items.append(ActionSheetButtonItem(title: self.presentationData.strings.Contacts_SortByName, color: .accent, action: { [weak actionSheet] in
@@ -502,7 +512,7 @@ public class ContactsController: ViewController {
             updateSortOrder(.presence)
         }))
         actionSheet.setItemGroups([ActionSheetItemGroup(items: items), ActionSheetItemGroup(items: [
-            ActionSheetButtonItem(title: self.presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+            ActionSheetButtonItem(title: self.presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
                 actionSheet?.dismissAnimated()
             })
         ])])
@@ -519,19 +529,19 @@ public class ContactsController: ViewController {
             
             switch status {
                 case .allowed:
-                    let contactData = DeviceContactExtendedData(basicData: DeviceContactBasicData(firstName: "", lastName: "", phoneNumbers: [DeviceContactPhoneNumberData(label: "_$!<Mobile>!$_", value: "+")]), middleName: "", prefix: "", suffix: "", organization: "", jobTitle: "", department: "", emailAddresses: [], urls: [], addresses: [], birthdayDate: nil, socialProfiles: [], instantMessagingProfiles: [])
-                    strongSelf.present(strongSelf.context.sharedContext.makeDeviceContactInfoController(context: strongSelf.context, subject: .create(peer: nil, contactData: contactData, isSharing: false, shareViaException: false, completion: { peer, stableId, contactData in
+                    let contactData = DeviceContactExtendedData(basicData: DeviceContactBasicData(firstName: "", lastName: "", phoneNumbers: [DeviceContactPhoneNumberData(label: "_$!<Mobile>!$_", value: "+")]), middleName: "", prefix: "", suffix: "", organization: "", jobTitle: "", department: "", emailAddresses: [], urls: [], addresses: [], birthdayDate: nil, socialProfiles: [], instantMessagingProfiles: [], note: "")
+                    (strongSelf.navigationController as? NavigationController)?.pushViewController(strongSelf.context.sharedContext.makeDeviceContactInfoController(context: strongSelf.context, subject: .create(peer: nil, contactData: contactData, isSharing: false, shareViaException: false, completion: { peer, stableId, contactData in
                         guard let strongSelf = self else {
                             return
                         }
                         if let peer = peer {
-                            if let infoController = strongSelf.context.sharedContext.makePeerInfoController(context: strongSelf.context, peer: peer, mode: .generic) {
+                            if let infoController = strongSelf.context.sharedContext.makePeerInfoController(context: strongSelf.context, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false) {
                                 (strongSelf.navigationController as? NavigationController)?.pushViewController(infoController)
                             }
                         } else {
                             (strongSelf.navigationController as? NavigationController)?.pushViewController(strongSelf.context.sharedContext.makeDeviceContactInfoController(context: strongSelf.context, subject: .vcard(nil, stableId, contactData), completed: nil, cancelled: nil))
                         }
-                    }), completed: nil, cancelled: nil), in: .window(.root), with: ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+                    }), completed: nil, cancelled: nil))
                 case .notDetermined:
                     DeviceAccess.authorizeAccess(to: .contacts)
                 default:

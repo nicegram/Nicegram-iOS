@@ -4,6 +4,7 @@ import AsyncDisplayKit
 import Display
 import SwiftSignalKit
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import TelegramUIPreferences
 import UniversalMediaPlayer
@@ -33,26 +34,26 @@ private class MediaHeaderItemNode: ASDisplayNode {
         self.addSubnode(self.subtitleNode)
     }
     
-    func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, theme: PresentationTheme, strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat, playbackItem: SharedMediaPlaylistItem?, transition: ContainedViewLayoutTransition) -> (NSAttributedString?, NSAttributedString?, Bool) {
+    func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, theme: PresentationTheme, strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat, nameDisplayOrder: PresentationPersonNameOrder, playbackItem: SharedMediaPlaylistItem?, transition: ContainedViewLayoutTransition) -> (NSAttributedString?, NSAttributedString?, Bool) {
         var rateButtonHidden = false
         var titleString: NSAttributedString?
         var subtitleString: NSAttributedString?
         if let playbackItem = playbackItem, let displayData = playbackItem.displayData {
             switch displayData {
-                case let .music(title, performer, _):
-                    rateButtonHidden = true
-                    let titleText: String = title ?? "Unknown Track"
-                    let subtitleText: String = performer ?? "Unknown Artist"
+                case let .music(title, performer, _, long):
+                    rateButtonHidden = !long
+                    let titleText: String = title ?? strings.MediaPlayer_UnknownTrack
+                    let subtitleText: String = performer ?? strings.MediaPlayer_UnknownArtist
                     
                     titleString = NSAttributedString(string: titleText, font: titleFont, textColor: theme.rootController.navigationBar.primaryTextColor)
                     subtitleString = NSAttributedString(string: subtitleText, font: subtitleFont, textColor: theme.rootController.navigationBar.secondaryTextColor)
                 case let .voice(author, peer):
                     rateButtonHidden = false
-                    let titleText: String = author?.displayTitle ?? ""
+                    let titleText: String = author?.displayTitle(strings: strings, displayOrder: nameDisplayOrder) ?? ""
                     let subtitleText: String
                     if let peer = peer {
                         if peer is TelegramGroup || peer is TelegramChannel {
-                            subtitleText = peer.displayTitle
+                            subtitleText = peer.displayTitle(strings: strings, displayOrder: nameDisplayOrder)
                         } else {
                             subtitleText = strings.MusicPlayer_VoiceNote
                         }
@@ -64,12 +65,12 @@ private class MediaHeaderItemNode: ASDisplayNode {
                     subtitleString = NSAttributedString(string: subtitleText, font: subtitleFont, textColor: theme.rootController.navigationBar.secondaryTextColor)
                 case let .instantVideo(author, peer, timestamp):
                     rateButtonHidden = false
-                    let titleText: String = author?.displayTitle ?? ""
+                    let titleText: String = author?.displayTitle(strings: strings, displayOrder: nameDisplayOrder) ?? ""
                     var subtitleText: String
                     
                     if let peer = peer {
                         if peer is TelegramGroup || peer is TelegramChannel {
-                            subtitleText = peer.displayTitle
+                            subtitleText = peer.displayTitle(strings: strings, displayOrder: nameDisplayOrder)
                         } else {
                             subtitleText = strings.Message_VideoMessage
                         }
@@ -132,6 +133,7 @@ final class MediaNavigationAccessoryHeaderNode: ASDisplayNode, UIScrollViewDeleg
     private var theme: PresentationTheme
     private var strings: PresentationStrings
     private var dateTimeFormat: PresentationDateTimeFormat
+    private var nameDisplayOrder: PresentationPersonNameOrder
     
     private let scrollNode: ASScrollNode
     private var initialContentOffset: CGFloat?
@@ -171,12 +173,12 @@ final class MediaNavigationAccessoryHeaderNode: ASDisplayNode, UIScrollViewDeleg
     var playPrevious: (() -> Void)?
     var playNext: (() -> Void)?
     
-    var voiceBaseRate: AudioPlaybackRate? = nil {
+    var playbackBaseRate: AudioPlaybackRate? = nil {
         didSet {
-            guard self.voiceBaseRate != oldValue, let voiceBaseRate = self.voiceBaseRate else {
+            guard self.playbackBaseRate != oldValue, let playbackBaseRate = self.playbackBaseRate else {
                 return
             }
-            switch voiceBaseRate {
+            switch playbackBaseRate {
                 case .x1:
                     self.rateButton.setImage(PresentationResourcesRootController.navigationPlayerRateInactiveIcon(self.theme), for: [])
                     self.rateButton.accessibilityLabel = self.strings.VoiceOver_Media_PlaybackRate
@@ -209,6 +211,7 @@ final class MediaNavigationAccessoryHeaderNode: ASDisplayNode, UIScrollViewDeleg
         self.theme = presentationData.theme
         self.strings = presentationData.strings
         self.dateTimeFormat = presentationData.dateTimeFormat
+        self.nameDisplayOrder = presentationData.nameDisplayOrder
         
         self.scrollNode = ASScrollNode()
         
@@ -258,7 +261,7 @@ final class MediaNavigationAccessoryHeaderNode: ASDisplayNode, UIScrollViewDeleg
         self.actionPlayNode.image = PresentationResourcesRootController.navigationPlayerPlayIcon(self.theme)
         self.actionPlayNode.isHidden = true
         
-        self.scrubbingNode = MediaPlayerScrubbingNode(content: .standard(lineHeight: 2.0, lineCap: .square, scrubberHandle: .none, backgroundColor: .clear, foregroundColor: self.theme.rootController.navigationBar.accentTextColor))
+        self.scrubbingNode = MediaPlayerScrubbingNode(content: .standard(lineHeight: 2.0, lineCap: .square, scrubberHandle: .none, backgroundColor: .clear, foregroundColor: self.theme.rootController.navigationBar.accentTextColor, bufferingColor: self.theme.rootController.navigationBar.accentTextColor.withAlphaComponent(0.5)))
         
         self.separatorNode = ASDisplayNode()
         self.separatorNode.isLayerBacked = true
@@ -315,9 +318,9 @@ final class MediaNavigationAccessoryHeaderNode: ASDisplayNode, UIScrollViewDeleg
                 } else {
                     baseRate = .x2
                 }
-                strongSelf.voiceBaseRate = baseRate
+                strongSelf.playbackBaseRate = baseRate
             } else {
-                strongSelf.voiceBaseRate = .x1
+                strongSelf.playbackBaseRate = .x1
             }
         }
         
@@ -361,6 +364,7 @@ final class MediaNavigationAccessoryHeaderNode: ASDisplayNode, UIScrollViewDeleg
     func updatePresentationData(_ presentationData: PresentationData) {
         self.theme = presentationData.theme
         self.strings = presentationData.strings
+        self.nameDisplayOrder = presentationData.nameDisplayOrder
         self.dateTimeFormat = presentationData.dateTimeFormat
         
         let maskImage = generateMaskImage(color: self.theme.rootController.navigationBar.backgroundColor)
@@ -371,10 +375,10 @@ final class MediaNavigationAccessoryHeaderNode: ASDisplayNode, UIScrollViewDeleg
         self.actionPlayNode.image = PresentationResourcesRootController.navigationPlayerPlayIcon(self.theme)
         self.actionPauseNode.image = PresentationResourcesRootController.navigationPlayerPauseIcon(self.theme)
         self.separatorNode.backgroundColor = self.theme.rootController.navigationBar.separatorColor
-        self.scrubbingNode.updateContent(.standard(lineHeight: 2.0, lineCap: .square, scrubberHandle: .none, backgroundColor: .clear, foregroundColor: self.theme.rootController.navigationBar.accentTextColor))
+        self.scrubbingNode.updateContent(.standard(lineHeight: 2.0, lineCap: .square, scrubberHandle: .none, backgroundColor: .clear, foregroundColor: self.theme.rootController.navigationBar.accentTextColor, bufferingColor: self.theme.rootController.navigationBar.accentTextColor.withAlphaComponent(0.5)))
         
-        if let voiceBaseRate = self.voiceBaseRate {
-            switch voiceBaseRate {
+        if let playbackBaseRate = self.playbackBaseRate {
+            switch playbackBaseRate {
                 case .x1:
                     self.rateButton.setImage(PresentationResourcesRootController.navigationPlayerRateInactiveIcon(self.theme), for: [])
                 case .x2:
@@ -421,12 +425,12 @@ final class MediaNavigationAccessoryHeaderNode: ASDisplayNode, UIScrollViewDeleg
         
         let inset: CGFloat = 40.0 + leftInset
         let constrainedSize = CGSize(width: size.width - inset * 2.0, height: size.height)
-        let (titleString, subtitleString, rateButtonHidden) = self.currentItemNode.updateLayout(size: constrainedSize, leftInset: leftInset, rightInset: rightInset, theme: self.theme, strings: self.strings, dateTimeFormat: self.dateTimeFormat, playbackItem: self.playbackItems?.0, transition: transition)
+        let (titleString, subtitleString, rateButtonHidden) = self.currentItemNode.updateLayout(size: constrainedSize, leftInset: leftInset, rightInset: rightInset, theme: self.theme, strings: self.strings, dateTimeFormat: self.dateTimeFormat, nameDisplayOrder: self.nameDisplayOrder, playbackItem: self.playbackItems?.0, transition: transition)
         self.accessibilityAreaNode.accessibilityLabel = "\(titleString?.string ?? ""). \(subtitleString?.string ?? "")"
         self.rateButton.isHidden = rateButtonHidden
         
-        let _ = self.previousItemNode.updateLayout(size: constrainedSize, leftInset: 0.0, rightInset: 0.0, theme: self.theme, strings: self.strings, dateTimeFormat: self.dateTimeFormat, playbackItem: self.playbackItems?.1, transition: transition)
-        let _ = self.nextItemNode.updateLayout(size: constrainedSize, leftInset: 0.0, rightInset: 0.0, theme: self.theme, strings: self.strings, dateTimeFormat: self.dateTimeFormat, playbackItem: self.playbackItems?.2, transition: transition)
+        let _ = self.previousItemNode.updateLayout(size: constrainedSize, leftInset: 0.0, rightInset: 0.0, theme: self.theme, strings: self.strings, dateTimeFormat: self.dateTimeFormat, nameDisplayOrder: self.nameDisplayOrder, playbackItem: self.playbackItems?.1, transition: transition)
+        let _ = self.nextItemNode.updateLayout(size: constrainedSize, leftInset: 0.0, rightInset: 0.0, theme: self.theme, strings: self.strings, dateTimeFormat: self.dateTimeFormat, nameDisplayOrder: self.nameDisplayOrder, playbackItem: self.playbackItems?.2, transition: transition)
         
         let constrainedBounds = CGRect(origin: CGPoint(), size: constrainedSize)
         transition.updateFrame(node: self.scrollNode, frame: constrainedBounds.offsetBy(dx: inset, dy: 0.0))
@@ -457,7 +461,7 @@ final class MediaNavigationAccessoryHeaderNode: ASDisplayNode, UIScrollViewDeleg
         let closeButtonSize = self.closeButton.measure(CGSize(width: 100.0, height: 100.0))
         transition.updateFrame(node: self.closeButton, frame: CGRect(origin: CGPoint(x: bounds.size.width - 44.0 - rightInset, y: 0.0), size: CGSize(width: 44.0, height: minHeight)))
         let rateButtonSize = CGSize(width: 24.0, height: minHeight)
-        transition.updateFrame(node: self.rateButton, frame: CGRect(origin: CGPoint(x: bounds.size.width - 18.0 - closeButtonSize.width - 18.0 - rateButtonSize.width - rightInset, y: 0.0), size: rateButtonSize))
+        transition.updateFrame(node: self.rateButton, frame: CGRect(origin: CGPoint(x: bounds.size.width - 18.0 - closeButtonSize.width - 17.0 - rateButtonSize.width - rightInset, y: 0.0), size: rateButtonSize))
         transition.updateFrame(node: self.actionPlayNode, frame: CGRect(origin: CGPoint(x: leftInset, y: 0.0), size: CGSize(width: 40.0, height: 37.0)))
         transition.updateFrame(node: self.actionPauseNode, frame: CGRect(origin: CGPoint(x: leftInset, y: 0.0), size: CGSize(width: 40.0, height: 37.0)))
         transition.updateFrame(node: self.actionButton, frame: CGRect(origin: CGPoint(x: leftInset, y: 0.0), size: CGSize(width: 40.0, height: 37.0)))

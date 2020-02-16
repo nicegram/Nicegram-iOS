@@ -4,8 +4,10 @@ import AsyncDisplayKit
 import Display
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
+import AppBundle
 
 final class ThemeGridSelectionPanelNode: ASDisplayNode {
     private let deleteButton: UIButton

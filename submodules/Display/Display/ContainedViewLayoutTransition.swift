@@ -90,6 +90,39 @@ public extension ContainedViewLayoutTransition {
         }
     }
     
+    func updateFrameAsPositionAndBounds(node: ASDisplayNode, frame: CGRect, force: Bool = false, beginWithCurrentState: Bool = false, completion: ((Bool) -> Void)? = nil) {
+        if node.frame.equalTo(frame) && !force {
+            completion?(true)
+        } else {
+            switch self {
+            case .immediate:
+                node.position = frame.center
+                node.bounds = CGRect(origin: CGPoint(), size: frame.size)
+                if let completion = completion {
+                    completion(true)
+                }
+            case let .animated(duration, curve):
+                let previousPosition: CGPoint
+                let previousBounds: CGRect
+                if beginWithCurrentState, let presentation = node.layer.presentation() {
+                    previousPosition = presentation.position
+                    previousBounds = presentation.bounds
+                } else {
+                    previousPosition = node.position
+                    previousBounds = node.bounds
+                }
+                node.position = frame.center
+                node.bounds = CGRect(origin: CGPoint(), size: frame.size)
+                node.layer.animateFrame(from:
+                    CGRect(origin: CGPoint(x: previousPosition.x - previousBounds.width / 2.0, y: previousPosition.y - previousBounds.height / 2.0), size: previousBounds.size), to: frame, duration: duration, timingFunction: curve.timingFunction, mediaTimingFunction: curve.mediaTimingFunction, force: force, completion: { result in
+                    if let completion = completion {
+                        completion(result)
+                    }
+                })
+            }
+        }
+    }
+    
     func updateFrameAdditive(node: ASDisplayNode, frame: CGRect, force: Bool = false, completion: ((Bool) -> Void)? = nil) {
         if node.frame.equalTo(frame) && !force {
             completion?(true)
@@ -104,6 +137,27 @@ public extension ContainedViewLayoutTransition {
                 let previousFrame = node.frame
                 node.frame = frame
                 self.animatePositionAdditive(node: node, offset: CGPoint(x: previousFrame.minX - frame.minX, y: previousFrame.minY - frame.minY))
+            }
+        }
+    }
+    
+    func updateFrameAdditiveToCenter(node: ASDisplayNode, frame: CGRect, force: Bool = false, completion: ((Bool) -> Void)? = nil) {
+        if node.frame.equalTo(frame) && !force {
+            completion?(true)
+        } else {
+            switch self {
+            case .immediate:
+                node.position = frame.center
+                node.bounds = CGRect(origin: node.bounds.origin, size: frame.size)
+                if let completion = completion {
+                    completion(true)
+                }
+            case let .animated(duration, curve):
+                let previousBounds = node.bounds
+                let previousCenter = node.frame.center
+                node.position = frame.center
+                node.bounds = CGRect(origin: node.bounds.origin, size: frame.size)
+                self.animatePositionAdditive(node: node, offset: CGPoint(x: previousCenter.x - frame.midX, y: previousCenter.y - frame.midY))
             }
         }
     }
@@ -297,7 +351,7 @@ public extension ContainedViewLayoutTransition {
     func animatePositionAdditive(node: ASDisplayNode, offset: CGFloat, removeOnCompletion: Bool = true, completion: @escaping (Bool) -> Void) {
         switch self {
             case .immediate:
-                break
+                completion(true)
             case let .animated(duration, curve):
                 node.layer.animatePosition(from: CGPoint(x: 0.0, y: offset), to: CGPoint(), duration: duration, timingFunction: curve.timingFunction, mediaTimingFunction: curve.mediaTimingFunction, removeOnCompletion: removeOnCompletion, additive: true, completion: completion)
         }
@@ -306,7 +360,7 @@ public extension ContainedViewLayoutTransition {
     func animatePositionAdditive(layer: CALayer, offset: CGFloat, removeOnCompletion: Bool = true, completion: @escaping (Bool) -> Void) {
         switch self {
             case .immediate:
-                break
+                completion(true)
             case let .animated(duration, curve):
                 layer.animatePosition(from: CGPoint(x: 0.0, y: offset), to: CGPoint(), duration: duration, timingFunction: curve.timingFunction, mediaTimingFunction: curve.mediaTimingFunction, removeOnCompletion: removeOnCompletion, additive: true, completion: completion)
         }
@@ -315,7 +369,7 @@ public extension ContainedViewLayoutTransition {
     func animatePositionAdditive(node: ASDisplayNode, offset: CGPoint, removeOnCompletion: Bool = true, completion: (() -> Void)? = nil) {
         switch self {
             case .immediate:
-                break
+                completion?()
             case let .animated(duration, curve):
                 node.layer.animatePosition(from: offset, to: CGPoint(), duration: duration, timingFunction: curve.timingFunction, mediaTimingFunction: curve.mediaTimingFunction, removeOnCompletion: removeOnCompletion, additive: true, completion: { _ in
                     completion?()
@@ -326,7 +380,7 @@ public extension ContainedViewLayoutTransition {
     func animatePositionAdditive(layer: CALayer, offset: CGPoint, to toOffset: CGPoint = CGPoint(), removeOnCompletion: Bool = true, completion: (() -> Void)? = nil) {
         switch self {
             case .immediate:
-                break
+                completion?()
             case let .animated(duration, curve):
                 layer.animatePosition(from: offset, to: toOffset, duration: duration, timingFunction: curve.timingFunction, mediaTimingFunction: curve.mediaTimingFunction, removeOnCompletion: removeOnCompletion, additive: true, completion: { _ in
                     completion?()
@@ -513,6 +567,30 @@ public extension ContainedViewLayoutTransition {
         }
     }
     
+    func animateTransformScale(view: UIView, from fromScale: CGFloat, completion: ((Bool) -> Void)? = nil) {
+        let t = view.layer.transform
+        let currentScale = sqrt((t.m11 * t.m11) + (t.m12 * t.m12) + (t.m13 * t.m13))
+        if currentScale.isEqual(to: fromScale) {
+            if let completion = completion {
+                completion(true)
+            }
+            return
+        }
+        
+        switch self {
+        case .immediate:
+            if let completion = completion {
+                completion(true)
+            }
+        case let .animated(duration, curve):
+            view.layer.animateScale(from: fromScale, to: currentScale, duration: duration, timingFunction: curve.timingFunction, mediaTimingFunction: curve.mediaTimingFunction, completion: { result in
+                if let completion = completion {
+                    completion(result)
+                }
+            })
+        }
+    }
+    
     func updateTransformScale(node: ASDisplayNode, scale: CGFloat, beginWithCurrentState: Bool = false, completion: ((Bool) -> Void)? = nil) {
         let t = node.layer.transform
         let currentScale = sqrt((t.m11 * t.m11) + (t.m12 * t.m12) + (t.m13 * t.m13))
@@ -575,6 +653,7 @@ public extension ContainedViewLayoutTransition {
     func updateSublayerTransformScale(node: ASDisplayNode, scale: CGFloat, completion: ((Bool) -> Void)? = nil) {
         if !node.isNodeLoaded {
             node.subnodeTransform = CATransform3DMakeScale(scale, scale, 1.0)
+            completion?(true)
             return
         }
         let t = node.layer.sublayerTransform
@@ -603,15 +682,50 @@ public extension ContainedViewLayoutTransition {
         }
     }
     
-    func updateSublayerTransformScaleAndOffset(node: ASDisplayNode, scale: CGFloat, offset: CGPoint, beginWithCurrentState: Bool = false, completion: ((Bool) -> Void)? = nil) {
+    func updateSublayerTransformScaleAdditive(node: ASDisplayNode, scale: CGFloat, completion: ((Bool) -> Void)? = nil) {
         if !node.isNodeLoaded {
             node.subnodeTransform = CATransform3DMakeScale(scale, scale, 1.0)
+            completion?(true)
             return
         }
         let t = node.layer.sublayerTransform
         let currentScale = sqrt((t.m11 * t.m11) + (t.m12 * t.m12) + (t.m13 * t.m13))
-        let currentOffset = CGPoint(x: t.m41, y: t.m42)
-        if currentScale.isEqual(to: scale) && currentOffset == offset {
+        if currentScale.isEqual(to: scale) {
+            if let completion = completion {
+                completion(true)
+            }
+            return
+        }
+        
+        switch self {
+        case .immediate:
+            node.layer.sublayerTransform = CATransform3DMakeScale(scale, scale, 1.0)
+            if let completion = completion {
+                completion(true)
+            }
+        case let .animated(duration, curve):
+            let t = node.layer.sublayerTransform
+            let currentScale = sqrt((t.m11 * t.m11) + (t.m12 * t.m12) + (t.m13 * t.m13))
+            node.layer.sublayerTransform = CATransform3DMakeScale(scale, scale, 1.0)
+            node.layer.animate(from: -(scale - currentScale) as NSNumber, to: 0.0 as NSNumber, keyPath: "sublayerTransform.scale", timingFunction: curve.timingFunction, duration: duration, delay: 0.0, mediaTimingFunction: curve.mediaTimingFunction, removeOnCompletion: true, additive: true, completion: {
+                result in
+                if let completion = completion {
+                    completion(result)
+                }
+            })
+        }
+    }
+    
+    func updateSublayerTransformScaleAndOffset(node: ASDisplayNode, scale: CGFloat, offset: CGPoint, beginWithCurrentState: Bool = false, completion: ((Bool) -> Void)? = nil) {
+        if !node.isNodeLoaded {
+            node.subnodeTransform = CATransform3DMakeScale(scale, scale, 1.0)
+            completion?(true)
+            return
+        }
+        let t = node.layer.sublayerTransform
+        let currentScale = sqrt((t.m11 * t.m11) + (t.m12 * t.m12) + (t.m13 * t.m13))
+        let currentOffset = CGPoint(x: t.m41 / currentScale, y: t.m42 / currentScale)
+        if abs(currentScale - scale) <= CGFloat.ulpOfOne && abs(currentOffset.x - offset.x) <= CGFloat.ulpOfOne && abs(currentOffset.y - offset.y) <= CGFloat.ulpOfOne {
             if let completion = completion {
                 completion(true)
             }
@@ -647,6 +761,7 @@ public extension ContainedViewLayoutTransition {
     func updateSublayerTransformScale(node: ASDisplayNode, scale: CGPoint, completion: ((Bool) -> Void)? = nil) {
         if !node.isNodeLoaded {
             node.subnodeTransform = CATransform3DMakeScale(scale.x, scale.y, 1.0)
+            completion?(true)
             return
         }
         let t = node.layer.sublayerTransform
@@ -713,6 +828,7 @@ public extension ContainedViewLayoutTransition {
     func updateTransformScale(node: ASDisplayNode, scale: CGPoint, completion: ((Bool) -> Void)? = nil) {
         if !node.isNodeLoaded {
             node.subnodeTransform = CATransform3DMakeScale(scale.x, scale.y, 1.0)
+            completion?(true)
             return
         }
         let t = node.layer.transform
@@ -746,7 +862,7 @@ public extension ContainedViewLayoutTransition {
     }
     
     func updateSublayerTransformOffset(layer: CALayer, offset: CGPoint, completion: ((Bool) -> Void)? = nil) {
-        let t = layer.transform
+        let t = layer.sublayerTransform
         let currentOffset = CGPoint(x: t.m41, y: t.m42)
         if currentOffset == offset {
             if let completion = completion {
@@ -765,6 +881,39 @@ public extension ContainedViewLayoutTransition {
             layer.sublayerTransform = CATransform3DMakeTranslation(offset.x, offset.y, 0.0)
             layer.animate(from: NSValue(caTransform3D: t), to: NSValue(caTransform3D: layer.sublayerTransform), keyPath: "sublayerTransform", timingFunction: curve.timingFunction, duration: duration, delay: 0.0, mediaTimingFunction: curve.mediaTimingFunction, removeOnCompletion: true, additive: false, completion: {
                 result in
+                if let completion = completion {
+                    completion(result)
+                }
+            })
+        }
+    }
+    
+    func updateTransformRotation(node: ASDisplayNode, angle: CGFloat, beginWithCurrentState: Bool = false, completion: ((Bool) -> Void)? = nil) {
+        let t = node.layer.transform
+        let currentAngle = atan2(t.m12, t.m11)
+        if currentAngle.isEqual(to: angle) {
+            if let completion = completion {
+                completion(true)
+            }
+            return
+        }
+        
+        switch self {
+        case .immediate:
+            node.layer.transform = CATransform3DMakeRotation(angle, 0.0, 0.0, 1.0)
+            if let completion = completion {
+                completion(true)
+            }
+        case let .animated(duration, curve):
+            let previousAngle: CGFloat
+            if beginWithCurrentState, let presentation = node.layer.presentation() {
+                let t = presentation.transform
+                previousAngle = atan2(t.m12, t.m11)
+            } else {
+                previousAngle = currentAngle
+            }
+            node.layer.transform = CATransform3DMakeRotation(angle, 0.0, 0.0, 1.0)
+            node.layer.animateRotation(from: previousAngle, to: angle, duration: duration, timingFunction: curve.timingFunction, mediaTimingFunction: curve.mediaTimingFunction, completion: { result in
                 if let completion = completion {
                     completion(result)
                 }

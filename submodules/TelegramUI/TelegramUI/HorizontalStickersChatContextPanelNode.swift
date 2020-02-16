@@ -3,9 +3,11 @@ import UIKit
 import AsyncDisplayKit
 import Postbox
 import TelegramCore
+import SyncCore
 import Display
 import SwiftSignalKit
 import TelegramPresentationData
+import TelegramUIPreferences
 import MergeLists
 import AccountContext
 import StickerPackPreviewUI
@@ -99,7 +101,7 @@ final class HorizontalStickersChatContextPanelNode: ChatInputContextPanelNode {
     private let clippingNode: ASDisplayNode
     private let gridNode: GridNode
     
-    private var validLayout: (CGSize, CGFloat, CGFloat, ChatPresentationInterfaceState)?
+    private var validLayout: (CGSize, CGFloat, CGFloat, CGFloat, ChatPresentationInterfaceState)?
     private var currentEntries: [StickerEntry] = []
     private var enqueuedTransitions: [StickerEntryTransition] = []
     
@@ -108,7 +110,7 @@ final class HorizontalStickersChatContextPanelNode: ChatInputContextPanelNode {
     
     private var stickerPreviewController: StickerPreviewController?
     
-    override init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings) {
+    override init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, fontSize: PresentationFontSize) {
         self.strings = strings
         
         self.backgroundNode = ASImageNode()
@@ -135,7 +137,7 @@ final class HorizontalStickersChatContextPanelNode: ChatInputContextPanelNode {
         
         self.stickersInteraction = HorizontalStickersChatContextPanelInteraction()
         
-        super.init(context: context, theme: theme, strings: strings)
+        super.init(context: context, theme: theme, strings: strings, fontSize: fontSize)
         
         self.placement = .overTextInput
         self.isOpaque = false
@@ -150,6 +152,9 @@ final class HorizontalStickersChatContextPanelNode: ChatInputContextPanelNode {
     
     override func didLoad() {
         super.didLoad()
+        
+        self.gridNode.view.disablesInteractiveTransitionGestureRecognizer = true
+        self.gridNode.view.disablesInteractiveKeyboardGestureRecognizer = true
         
         self.view.addGestureRecognizer(PeekControllerGestureRecognizer(contentAtPoint: { [weak self] point in
             if let strongSelf = self {
@@ -186,14 +191,13 @@ final class HorizontalStickersChatContextPanelNode: ChatInputContextPanelNode {
                                             switch attribute {
                                             case let .Sticker(_, packReference, _):
                                                 if let packReference = packReference {
-                                                    let controller = StickerPackPreviewController(context: strongSelf.context, stickerPack: packReference, parentNavigationController: controllerInteraction.navigationController())
-                                                    controller.sendSticker = { file, sourceNode, sourceRect in
+                                                    let controller = StickerPackScreen(context: strongSelf.context, mainStickerPack: packReference, stickerPacks: [packReference], parentNavigationController: controllerInteraction.navigationController(), sendSticker: { file, sourceNode, sourceRect in
                                                         if let strongSelf = self, let controllerInteraction = strongSelf.controllerInteraction {
                                                             return controllerInteraction.sendSticker(file, true, sourceNode, sourceRect)
                                                         } else {
                                                             return false
                                                         }
-                                                    }
+                                                    })
                                                     
                                                     controllerInteraction.navigationController()?.view.window?.endEditing(true)
                                                     controllerInteraction.presentController(controller, nil)
@@ -207,7 +211,7 @@ final class HorizontalStickersChatContextPanelNode: ChatInputContextPanelNode {
                                     }
                                     return true
                                 }),
-                                PeekControllerMenuItem(title: strongSelf.strings.Common_Cancel, color: .accent, action: { _, _ in return true })
+                                PeekControllerMenuItem(title: strongSelf.strings.Common_Cancel, color: .accent, font: .bold, action: { _, _ in return true })
                             ]
                             return (itemNode, StickerPreviewPeekContent(account: strongSelf.context.account, item: .pack(item), menu: menuItems))
                         } else {
@@ -246,7 +250,7 @@ final class HorizontalStickersChatContextPanelNode: ChatInputContextPanelNode {
         self.currentEntries = entries
         
         if let validLayout = self.validLayout {
-            self.updateLayout(size: validLayout.0, leftInset: validLayout.1, rightInset: validLayout.2, transition: .immediate, interfaceState: validLayout.3)
+            self.updateLayout(size: validLayout.0, leftInset: validLayout.1, rightInset: validLayout.2, bottomInset: validLayout.3, transition: .immediate, interfaceState: validLayout.4)
         }
         
         let transition = preparedGridEntryTransition(account: self.context.account, from: previousEntries, to: entries, stickersInteraction: self.stickersInteraction, interfaceInteraction: self.interfaceInteraction!)
@@ -267,7 +271,7 @@ final class HorizontalStickersChatContextPanelNode: ChatInputContextPanelNode {
         }
     }
     
-    override func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState) {
+    override func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState) {
         let sideInsets: CGFloat = 10.0 + leftInset
         let contentWidth = min(size.width - sideInsets - sideInsets, max(24.0, CGFloat(self.currentEntries.count) * 66.0 + 6.0))
         
@@ -298,7 +302,7 @@ final class HorizontalStickersChatContextPanelNode: ChatInputContextPanelNode {
         self.gridNode.transaction(GridNodeTransaction(deleteItems: [], insertItems: [], updateItems: [], scrollToItem: nil, updateLayout: GridNodeUpdateLayout(layout: GridNodeLayout(size: CGSize(width: gridFrame.size.height, height: gridFrame.size.width), insets: UIEdgeInsets(top: 3.0, left: 0.0, bottom: 3.0, right: 0.0), preloadSize: 100.0, type: .fixed(itemSize: CGSize(width: 66.0, height: 66.0), fillWidth: nil, lineSpacing: 0.0, itemSpacing: nil)), transition: .immediate), itemTransition: .immediate, stationaryItems: .all, updateFirstIndexInSectionOffset: nil), completion: { _ in })
         
         let dequeue = self.validLayout == nil
-        self.validLayout = (size, leftInset, rightInset, interfaceState)
+        self.validLayout = (size, leftInset, rightInset, bottomInset, interfaceState)
         
         if dequeue {
             self.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
@@ -314,6 +318,7 @@ final class HorizontalStickersChatContextPanelNode: ChatInputContextPanelNode {
     }
     
     override func animateOut(completion: @escaping () -> Void) {
+        self.layer.allowsGroupOpacity = true
         self.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, removeOnCompletion: false, completion: { _ in
             completion()
         })

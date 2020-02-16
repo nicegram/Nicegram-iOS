@@ -154,13 +154,27 @@ static void setNilField(CustomBlurEffect *object, NSString *name) {
     [inv invoke];
 }
 
+static void setBoolField(CustomBlurEffect *object, NSString *name, BOOL value) {
+    SEL selector = NSSelectorFromString(name);
+    NSMethodSignature *signature = [[object class] instanceMethodSignatureForSelector:selector];
+    if (signature == nil) {
+        return;
+    }
+    
+    NSInvocation *inv = [NSInvocation invocationWithMethodSignature:signature];
+    [inv setSelector:selector];
+    [inv setArgument:&value atIndex:2];
+    [inv setTarget:object];
+    [inv invoke];
+}
+
 UIBlurEffect *makeCustomZoomBlurEffect() {
     if (@available(iOS 11.0, *)) {
         NSString *string = [@[@"_", @"UI", @"Custom", @"BlurEffect"] componentsJoinedByString:@""];
         CustomBlurEffect *result = (CustomBlurEffect *)[NSClassFromString(string) effectWithStyle:0];
         
         setField(result, encodeText(@"tfuCmvsSbejvt;", -1), 10.0);
-        setField(result, encodeText(@"tfu[ppn;", -1), 0.015);
+        //setField(result, encodeText(@"tfu[ppn;", -1), 0.015);
         setNilField(result, encodeText(@"tfuDpmpsUjou;", -1));
         setField(result, encodeText(@"tfuDpmpsUjouBmqib;", -1), 0.0);
         setField(result, encodeText(@"tfuEbslfojohUjouBmqib;", -1), 0.0);
@@ -176,5 +190,11 @@ UIBlurEffect *makeCustomZoomBlurEffect() {
         return result;
     } else {
         return [UIBlurEffect effectWithStyle:UIBlurEffectStyleRegular];
+    }
+}
+
+void applySmoothRoundedCorners(CALayer * _Nonnull layer) {
+    if (@available(iOS 11.0, *)) {
+        setBoolField(layer, encodeText(@"tfuDpoujovpvtDpsofst;", -1), true);
     }
 }

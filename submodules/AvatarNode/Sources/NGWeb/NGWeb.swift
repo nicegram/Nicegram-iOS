@@ -9,6 +9,7 @@
 import Foundation
 import Postbox
 import TelegramCore
+import SyncCore
 import BuildConfig
 import NicegramLib
 
@@ -207,7 +208,7 @@ public func requestValidator(_ receipt: Data,  completion: @escaping (_ apiResul
 
 
 
-public func validatePremium(_ current: Bool) {
+public func validatePremium(_ current: Bool, forceValid: Bool = false) {
     let sem = DispatchSemaphore(value: 0)
     if (current) {
         guard let receiptURL = Bundle.main.appStoreReceiptURL,
@@ -227,6 +228,10 @@ public func validatePremium(_ current: Bool) {
             } else if validStatus == "1" { // OK
                 ngApiLog("Okie-dokie")
             } else { // Error
+                if forceValid {
+                    PremiumSettings().p = false
+                    ngApiLog("Hello hacker?")
+                }
             }
             sem.signal()
             return
@@ -265,12 +270,12 @@ public func isNGForceAllowed(_ peer: Peer?) -> Bool {
     return false
 }
 
-public func isNGAllowedReason(_ peer: Peer?) -> Bool {
+public func isNGAllowedReason(_ peer: Peer?, _ contentSettings: ContentSettings) -> Bool {
     var isAllowedReason = true
     if let peer = peer {
-        if let restrictionReason = peer.restrictionReason(platform: "ios") {
+        if let restrictionReason = peer.restrictionText(platform: "ios", contentSettings: contentSettings, extractReason: true) {
             if !NGAPISETTINGS().RESTRICTION_REASONS.contains(restrictionReason)  {
-                ngApiLog("REASON NOT ALLOWED \(restrictionReason) \(peer.restrictionText(platform: "ios"))")
+                ngApiLog("REASON NOT ALLOWED \(restrictionReason)")
                 isAllowedReason = false
             }
         }
@@ -278,10 +283,11 @@ public func isNGAllowedReason(_ peer: Peer?) -> Bool {
     return isAllowedReason
 }
 
-public func isAllowedChat(peer: Peer?) -> Bool {
+public func isAllowedChat(peer: Peer?, contentSettings: ContentSettings
+) -> Bool {
     var isAllowed: Bool = false
     if NGAPISETTINGS().SYNC_CHATS {
-        if isNGAllowedReason(peer) {
+        if isNGAllowedReason(peer, contentSettings) {
             isAllowed = true
         }
     }

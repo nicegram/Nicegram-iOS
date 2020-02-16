@@ -4,16 +4,16 @@ import AsyncDisplayKit
 import Display
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import ItemListUI
+import PresentationDataUtils
 import TextFormat
 import PhotoResources
 import WebsiteType
 import UrlHandling
 
-private let titleFont = Font.medium(16.0)
-private let descriptionFont = Font.regular(14.0)
 private let iconFont = Font.medium(22.0)
 
 private let iconTextBackgroundImage = generateStretchableFilledCircleImage(radius: 2.0, color: UIColor(rgb: 0xdfdfdf))
@@ -155,6 +155,9 @@ final class ListMessageSnippetItemNode: ListMessageNode {
                 updatedTheme = item.theme
             }
             
+            let titleFont = Font.medium(floor(item.fontSize.baseDisplaySize * 16.0 / 17.0))
+            let descriptionFont = Font.regular(floor(item.fontSize.baseDisplaySize * 14.0 / 17.0))
+            
             let leftInset: CGFloat = 65.0 + params.leftInset
             
             var leftOffset: CGFloat = 0.0
@@ -202,7 +205,7 @@ final class ListMessageSnippetItemNode: ListMessageNode {
                         title = NSAttributedString(string: content.title ?? content.websiteName ?? hostName, font: titleFont, textColor: item.theme.list.itemPrimaryTextColor)
                         
                         if let image = content.image {
-                            if let representation = imageRepresentationLargerThan(image.representations, size: CGSize(width: 80.0, height: 80.0)) {
+                            if let representation = imageRepresentationLargerThan(image.representations, size: PixelDimensions(width: 80, height: 80)) {
                                 iconImageReferenceAndRepresentation = (.message(message: MessageReference(item.message), media: image), representation)
                             }
                         } else if let file = content.file {
@@ -309,7 +312,7 @@ final class ListMessageSnippetItemNode: ListMessageNode {
             if let iconImageReferenceAndRepresentation = iconImageReferenceAndRepresentation {
                 let iconSize = CGSize(width: 42.0, height: 42.0)
                 let imageCorners = ImageCorners(topLeft: .Corner(2.0), topRight: .Corner(2.0), bottomLeft: .Corner(2.0), bottomRight: .Corner(2.0))
-                let arguments = TransformImageArguments(corners: imageCorners, imageSize: iconImageReferenceAndRepresentation.1.dimensions.aspectFilled(iconSize), boundingSize: iconSize, intrinsicInsets: UIEdgeInsets(), emptyColor: item.theme.list.mediaPlaceholderColor)
+                let arguments = TransformImageArguments(corners: imageCorners, imageSize: iconImageReferenceAndRepresentation.1.dimensions.cgSize.aspectFilled(iconSize), boundingSize: iconSize, intrinsicInsets: UIEdgeInsets(), emptyColor: item.theme.list.mediaPlaceholderColor)
                 iconImageApply = iconImageLayout(arguments)
             }
             
@@ -325,7 +328,7 @@ final class ListMessageSnippetItemNode: ListMessageNode {
                 }
             }
             
-            let contentHeight = 40.0 + descriptionNodeLayout.size.height + linkNodeLayout.size.height
+            let contentHeight = 9.0 + titleNodeLayout.size.height + 10.0 + descriptionNodeLayout.size.height + linkNodeLayout.size.height
             
             var insets = UIEdgeInsets()
             if dateHeaderAtBottom, let header = item.header {
@@ -377,7 +380,7 @@ final class ListMessageSnippetItemNode: ListMessageNode {
                     transition.updateFrame(node: strongSelf.titleNode, frame: CGRect(origin: CGPoint(x: leftOffset + leftInset, y: 9.0), size: titleNodeLayout.size))
                     let _ = titleNodeApply()
                     
-                    let descriptionFrame = CGRect(origin: CGPoint(x: leftOffset + leftInset - 1.0, y: 32.0), size: descriptionNodeLayout.size)
+                    let descriptionFrame = CGRect(origin: CGPoint(x: leftOffset + leftInset - 1.0, y: strongSelf.titleNode.frame.maxY + 3.0), size: descriptionNodeLayout.size)
                     transition.updateFrame(node: strongSelf.descriptionNode, frame: descriptionFrame)
                     let _ = descriptionNodeApply()
                     
@@ -464,10 +467,10 @@ final class ListMessageSnippetItemNode: ListMessageNode {
         }
     }
     
-    override func transitionNode(id: MessageId, media: Media) -> (ASDisplayNode, () -> (UIView?, UIView?))? {
+    override func transitionNode(id: MessageId, media: Media) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         if let item = self.item, item.message.id == id, self.iconImageNode.supernode != nil {
             let iconImageNode = self.iconImageNode
-            return (self.iconImageNode, { [weak iconImageNode] in
+            return (self.iconImageNode, self.iconImageNode.bounds, { [weak iconImageNode] in
                 return (iconImageNode?.view.snapshotContentTree(unhide: true), nil)
             })
         }
@@ -498,12 +501,12 @@ final class ListMessageSnippetItemNode: ListMessageNode {
                     }
                 } else {
                     if isTelegramMeLink(content.url) || !item.controllerInteraction.openMessage(item.message, .link) {
-                        item.controllerInteraction.openUrl(currentPrimaryUrl, false, false)
+                        item.controllerInteraction.openUrl(currentPrimaryUrl, false, false, nil)
                     }
                 }
             } else {
                 if !item.controllerInteraction.openMessage(item.message, .default) {
-                    item.controllerInteraction.openUrl(currentPrimaryUrl, false, false)
+                    item.controllerInteraction.openUrl(currentPrimaryUrl, false, false, nil)
                 }
             }
         }
@@ -553,10 +556,10 @@ final class ListMessageSnippetItemNode: ListMessageNode {
                                     item.controllerInteraction.longTap(ChatControllerInteractionLongTapAction.url(url), item.message)
                                 } else if url == self.currentPrimaryUrl {
                                     if !item.controllerInteraction.openMessage(item.message, .default) {
-                                        item.controllerInteraction.openUrl(url, false, false)
+                                        item.controllerInteraction.openUrl(url, false, false, nil)
                                     }
                                 } else {
-                                    item.controllerInteraction.openUrl(url, false, true)
+                                    item.controllerInteraction.openUrl(url, false, true, nil)
                                 }
                             }
                         case .hold, .doubleTap:

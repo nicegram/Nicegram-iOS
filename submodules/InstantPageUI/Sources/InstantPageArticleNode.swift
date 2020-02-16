@@ -4,6 +4,7 @@ import AsyncDisplayKit
 import Display
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import AccountContext
@@ -101,7 +102,7 @@ final class InstantPageArticleNode: ASDisplayNode, InstantPageNode {
         self.contentTileNode.frame = self.bounds
         
         if let imageNode = self.imageNode, let image = self.cover, let largest = largestImageRepresentation(image.representations) {
-            let size = largest.dimensions.aspectFilled(imageSize)
+            let size = largest.dimensions.cgSize.aspectFilled(imageSize)
             let boundingSize = imageSize
             
             let makeLayout = imageNode.asyncLayout()
@@ -124,7 +125,7 @@ final class InstantPageArticleNode: ASDisplayNode, InstantPageNode {
     func updateLayout(size: CGSize, transition: ContainedViewLayoutTransition) {
     }
     
-    func transitionNode(media: InstantPageMedia) -> (ASDisplayNode, () -> (UIView?, UIView?))? {
+    func transitionNode(media: InstantPageMedia) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         return nil
     }
     

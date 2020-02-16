@@ -17,6 +17,7 @@ import TelegramUIPreferences
 import ItemListUI
 import ItemListPeerActionItem
 import AccountContext
+import NicegramLib
 
 private final class NewFolderListControllerArguments {
     let createNew: () -> (Void)
@@ -36,11 +37,12 @@ private enum NewFolderListSection: Int32 {
     case folders
 }
 
-private enum NewFolderListEntryStableId: Hashable {
-    case create
-    case archive
-    case foldersHeader
-    case folder(Int32)
+private enum NewFolderListEntryStableId: Equatable, Hashable {
+    case index(Int)
+//    case create
+//    case archive
+//    case foldersHeader
+//    case folder(Int32)
 }
 
 private enum NewFolderListEntry: ItemListNodeEntry {
@@ -60,16 +62,16 @@ private enum NewFolderListEntry: ItemListNodeEntry {
         }
     }
     
-    var stableId: NewFolderListEntryStableId {
+    var stableId: Int32 {
         switch self {
         case .create:
-            return .create
+            return 0
         case .archive:
-            return .archive
+            return 1
         case .foldersHeader:
-            return .foldersHeader
+            return 2
         case let .folderItem(_, _, _, folder):
-            return .folder(folder.groupId)
+            return 100 + folder.groupId
         }
     }
     
@@ -115,53 +117,24 @@ private enum NewFolderListEntry: ItemListNodeEntry {
     }
     
     static func <(lhs: NewFolderListEntry, rhs: NewFolderListEntry) -> Bool {
-        switch lhs {
-        case .create:
-            if case .create = rhs {
-                return true
-            } else {
-                return false
-            }
-        case .archive:
-            if case .archive = rhs {
-                return true
-            } else {
-                return false
-            }
-        case .foldersHeader:
-            if case .foldersHeader = rhs {
-                return true
-            } else {
-                return false
-            }
-        case let .folderItem(index, _, _, _):
-            switch rhs {
-            case .create:
-                return false
-            case .archive:
-                return false
-            case .foldersHeader:
-                return false
-            case let .folderItem(rhsIndex, _, _, _):
-                return index < rhsIndex
-            }
-        }
+        return lhs.stableId < rhs.stableId
     }
     
-    func item(_ arguments: NewFolderListControllerArguments) -> ListViewItem {
+    func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
+        let arguments = arguments as! NewFolderListControllerArguments
         switch self {
         case let .create(theme, text):
-            return ItemListPeerActionItem(theme: theme, icon: PresentationResourcesItemList.plusIconImage(theme), title: text, sectionId: self.section, editing: false, action: {
+            return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.plusIconImage(theme), title: text, sectionId: self.section, editing: false, action: {
                 arguments.createNew()
             })
         case let .archive(theme, text):
-            return ItemListPeerActionItem(theme: theme, icon: PresentationResourcesItemList.archiveIcon(theme), title: text, sectionId: self.section, editing: false, action: {
+            return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.archiveIcon(theme), title: text, sectionId: self.section, editing: false, action: {
                 arguments.archive()
             })
         case let .foldersHeader(theme, text):
-            return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+            return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         case let .folderItem(_, theme, _, folder):
-            return ItemListActionItem(theme: theme, title: folder.name, kind: .neutral, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+            return ItemListActionItem(presentationData: presentationData, title: folder.name, kind: .neutral, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 arguments.addToExisting(folder)
             })
         }
@@ -250,7 +223,7 @@ public func newFolderListController(context: AccountContext, parent: ChatListCon
     let arguments = NewFolderListControllerArguments(
     createNew: {
         if getNiceFolders().count >= 3 && !canUnlimFolders() {
-            let controller = standardTextAlertController(theme: AlertControllerTheme(presentationTheme: presentationData.theme), title: nil, text: l("Folder.LimitExceeded", locale), actions: [TextAlertAction(type: .genericAction, title: "OK", action: {})])
+            let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: l("Folder.LimitExceeded", locale), actions: [TextAlertAction(type: .genericAction, title: "OK", action: {})])
             presentControllerImpl?(controller, nil)
         } else {
             var text: String?
@@ -278,7 +251,7 @@ public func newFolderListController(context: AccountContext, parent: ChatListCon
     
     
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get())
-        |> map { presentationData,  state -> (ItemListControllerState, (ItemListNodeState<NewFolderListEntry>, NewFolderListEntry.ItemGenerationArguments)) in
+        |> map { presentationData,  state -> (ItemListControllerState, (ItemListNodeState, Any)) in
             
             let entries = newFolderListControllerEntries(presentationData: presentationData)
             
@@ -299,8 +272,8 @@ public func newFolderListController(context: AccountContext, parent: ChatListCon
                 dismissImpl?()
             })
             
-            let controllerState = ItemListControllerState(theme: presentationData.theme, title: .text(l("Folder.New", presentationData.strings.baseLanguageCode)), leftNavigationButton: leftNavigationButton, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-            let listState = ItemListNodeState(entries: entries, style: .blocks, ensureVisibleItemTag: focusOnItemTag, initialScrollToItem: scrollToItem)
+            let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("Folder.New", presentationData.strings.baseLanguageCode)), leftNavigationButton: leftNavigationButton, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
+            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, ensureVisibleItemTag: focusOnItemTag, initialScrollToItem: scrollToItem)
             
             return (controllerState, (listState, arguments))
     }

@@ -6,6 +6,7 @@ import Display
 import SwiftSignalKit
 import WebKit
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import AccountContext
 import RadialStatusNode
@@ -241,7 +242,7 @@ class ChatExternalFileGalleryItemNode: GalleryItemNode {
         return self._title.get()
     }
     
-    override func animateIn(from node: (ASDisplayNode, () -> (UIView?, UIView?)), addToTransitionSurface: (UIView) -> Void) {
+    override func animateIn(from node: (ASDisplayNode, CGRect, () -> (UIView?, UIView?)), addToTransitionSurface: (UIView) -> Void) {
         var transformedFrame = node.0.view.convert(node.0.view.bounds, to: self.containerNode.view)
         let transformedSuperFrame = node.0.view.convert(node.0.view.bounds, to: self.containerNode.view.superview)
         
@@ -257,7 +258,7 @@ class ChatExternalFileGalleryItemNode: GalleryItemNode {
         self.statusNodeContainer.layer.animateScale(from: 0.5, to: 1.0, duration: 0.25, timingFunction: kCAMediaTimingFunctionSpring)
     }
     
-    override func animateOut(to node: (ASDisplayNode, () -> (UIView?, UIView?)), addToTransitionSurface: (UIView) -> Void, completion: @escaping () -> Void) {
+    override func animateOut(to node: (ASDisplayNode, CGRect, () -> (UIView?, UIView?)), addToTransitionSurface: (UIView) -> Void, completion: @escaping () -> Void) {
         var transformedFrame = node.0.view.convert(node.0.view.bounds, to: self.containerNode.view)
         let transformedSuperFrame = node.0.view.convert(node.0.view.bounds, to: self.containerNode.view.superview)
         let transformedSelfFrame = node.0.view.convert(node.0.view.bounds, to: self.view)
@@ -267,7 +268,7 @@ class ChatExternalFileGalleryItemNode: GalleryItemNode {
         var boundsCompleted = false
         var copyCompleted = false
         
-        let (maybeCopyView, copyViewBackgrond) = node.1()
+        let (maybeCopyView, copyViewBackgrond) = node.2()
         copyViewBackgrond?.alpha = 0.0
         let copyView = maybeCopyView!
         
@@ -309,8 +310,8 @@ class ChatExternalFileGalleryItemNode: GalleryItemNode {
         self.statusNodeContainer.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.15, timingFunction: CAMediaTimingFunctionName.easeIn.rawValue, removeOnCompletion: false)
     }
     
-    override func footerContent() -> Signal<GalleryFooterContentNode?, NoError> {
-        return .single(self.footerContentNode)
+    override func footerContent() -> Signal<(GalleryFooterContentNode?, GalleryOverlayContentNode?), NoError> {
+        return .single((self.footerContentNode, nil))
     }
     
     @objc func statusPressed() {

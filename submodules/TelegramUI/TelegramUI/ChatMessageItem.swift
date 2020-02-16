@@ -5,6 +5,7 @@ import AsyncDisplayKit
 import Display
 import SwiftSignalKit
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import TelegramUIPreferences
 import AccountContext
@@ -42,14 +43,23 @@ public enum ChatMessageItemContent: Sequence {
         }
     }
     
-    public func makeIterator() -> AnyIterator<Message> {
+    var firstMessageAttributes: ChatMessageEntryAttributes {
+        switch self {
+            case let .message(message):
+                return message.attributes
+            case let .group(messages):
+                return messages[0].3
+        }
+    }
+    
+    public func makeIterator() -> AnyIterator<(Message, ChatMessageEntryAttributes)> {
         var index = 0
-        return AnyIterator { () -> Message? in
+        return AnyIterator { () -> (Message, ChatMessageEntryAttributes)? in
             switch self {
-                case let .message(message, _, _, _):
+                case let .message(message):
                     if index == 0 {
                         index += 1
-                        return message
+                        return (message.message, message.attributes)
                     } else {
                         index += 1
                         return nil
@@ -58,7 +68,7 @@ public enum ChatMessageItemContent: Sequence {
                     if index < messages.count {
                         let currentIndex = index
                         index += 1
-                        return messages[currentIndex].0
+                        return (messages[currentIndex].0, messages[currentIndex].3)
                     } else {
                         return nil
                     }
@@ -216,10 +226,10 @@ public final class ChatMessageItemAssociatedData: Equatable {
     let isRecentActions: Bool
     let isScheduledMessages: Bool
     let contactsPeerIds: Set<PeerId>
-    let animatedEmojiStickers: [String: StickerPackItem]
+    let animatedEmojiStickers: [String: [StickerPackItem]]
     let forcedResourceStatus: FileMediaResourceStatus?
     
-    init(automaticDownloadPeerType: MediaAutoDownloadPeerType, automaticDownloadNetworkType: MediaAutoDownloadNetworkType, isRecentActions: Bool = false, isScheduledMessages: Bool = false, contactsPeerIds: Set<PeerId> = Set(), animatedEmojiStickers: [String: StickerPackItem] = [:], forcedResourceStatus: FileMediaResourceStatus? = nil) {
+    init(automaticDownloadPeerType: MediaAutoDownloadPeerType, automaticDownloadNetworkType: MediaAutoDownloadNetworkType, isRecentActions: Bool = false, isScheduledMessages: Bool = false, contactsPeerIds: Set<PeerId> = Set(), animatedEmojiStickers: [String: [StickerPackItem]] = [:], forcedResourceStatus: FileMediaResourceStatus? = nil) {
         self.automaticDownloadPeerType = automaticDownloadPeerType
         self.automaticDownloadNetworkType = automaticDownloadNetworkType
         self.isRecentActions = isRecentActions
@@ -266,6 +276,8 @@ public final class ChatMessageItem: ListViewItem, CustomStringConvertible {
     let effectiveAuthorId: PeerId?
     let additionalContent: ChatMessageItemAdditionalContent?
     
+    let wantTrButton: [(Bool, [String])]
+    
     public let accessoryItem: ListViewAccessoryItem?
     let header: ChatMessageDateHeader
     
@@ -287,7 +299,7 @@ public final class ChatMessageItem: ListViewItem, CustomStringConvertible {
         }
     }
     
-    public init(presentationData: ChatPresentationData, context: AccountContext, chatLocation: ChatLocation, associatedData: ChatMessageItemAssociatedData, controllerInteraction: ChatControllerInteraction, content: ChatMessageItemContent, disableDate: Bool = false, additionalContent: ChatMessageItemAdditionalContent? = nil) {
+    public init(presentationData: ChatPresentationData, context: AccountContext, chatLocation: ChatLocation, associatedData: ChatMessageItemAssociatedData, controllerInteraction: ChatControllerInteraction, content: ChatMessageItemContent, disableDate: Bool = false, additionalContent: ChatMessageItemAdditionalContent? = nil, wantTrButton: [(Bool, [String])] = [(false, [])]) {
         self.presentationData = presentationData
         self.context = context
         self.chatLocation = chatLocation
@@ -296,6 +308,7 @@ public final class ChatMessageItem: ListViewItem, CustomStringConvertible {
         self.content = content
         self.disableDate = disableDate
         self.additionalContent = additionalContent
+        self.wantTrButton = wantTrButton
         
         var accessoryItem: ListViewAccessoryItem?
         let incoming = content.effectivelyIncoming(self.context.account.peerId)
@@ -370,7 +383,7 @@ public final class ChatMessageItem: ListViewItem, CustomStringConvertible {
         
         loop: for media in self.message.media {
             if let telegramFile = media as? TelegramMediaFile {
-                if telegramFile.isAnimatedSticker, !telegramFile.previewRepresentations.isEmpty, let size = telegramFile.size, size > 0 && size <= 128 * 1024 {
+                if telegramFile.isAnimatedSticker, (self.message.id.peerId.namespace == Namespaces.Peer.SecretChat || !telegramFile.previewRepresentations.isEmpty), let size = telegramFile.size, size > 0 && size <= 128 * 1024 {
                     if self.message.id.peerId.namespace == Namespaces.Peer.SecretChat {
                         if telegramFile.fileId.namespace == Namespaces.Media.CloudFile {
                             viewClassName = ChatMessageAnimatedStickerItemNode.self
@@ -404,15 +417,21 @@ public final class ChatMessageItem: ListViewItem, CustomStringConvertible {
         }
         
         if viewClassName == ChatMessageBubbleItemNode.self && self.presentationData.largeEmoji && self.message.media.isEmpty {
-            if self.message.text.count == 1, let _ = self.associatedData.animatedEmojiStickers[self.message.text.basicEmoji.0] {
-                viewClassName = ChatMessageAnimatedStickerItemNode.self
-            } else if messageIsElligibleForLargeEmoji(self.message) {
-                viewClassName = ChatMessageStickerItemNode.self
+            if case let .message(_, _, _, attributes) = self.content {
+                switch attributes.contentTypeHint {
+                    case .largeEmoji:
+                        viewClassName = ChatMessageStickerItemNode.self
+                    case .animatedEmoji:
+                        viewClassName = ChatMessageAnimatedStickerItemNode.self
+                    default:
+                        break
+                }
             }
         }
         
         let configure = {
             let node = (viewClassName as! ChatMessageItemView.Type).init()
+            node.wantTrButton = self.wantTrButton
             node.setupItem(self)
             
             let nodeLayout = node.asyncLayout()

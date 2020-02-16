@@ -7,22 +7,20 @@ public struct ExperimentalUISettings: Equatable, PreferencesEntry {
     public var skipReadHistory: Bool
     public var crashOnLongQueries: Bool
     public var chatListPhotos: Bool
-    public var brr: Bool
     public var knockoutWallpaper: Bool
-    public var gradientBubbles: Bool
+    public var wallets: Bool
     
     public static var defaultSettings: ExperimentalUISettings {
-        return ExperimentalUISettings(keepChatNavigationStack: false, skipReadHistory: false, crashOnLongQueries: false, chatListPhotos: false, brr: false, knockoutWallpaper: false, gradientBubbles: false)
+        return ExperimentalUISettings(keepChatNavigationStack: false, skipReadHistory: false, crashOnLongQueries: false, chatListPhotos: false, knockoutWallpaper: false, wallets: false)
     }
     
-    public init(keepChatNavigationStack: Bool, skipReadHistory: Bool, crashOnLongQueries: Bool, chatListPhotos: Bool, brr: Bool, knockoutWallpaper: Bool, gradientBubbles: Bool) {
+    public init(keepChatNavigationStack: Bool, skipReadHistory: Bool, crashOnLongQueries: Bool, chatListPhotos: Bool, knockoutWallpaper: Bool, wallets: Bool) {
         self.keepChatNavigationStack = keepChatNavigationStack
         self.skipReadHistory = skipReadHistory
         self.crashOnLongQueries = crashOnLongQueries
         self.chatListPhotos = chatListPhotos
-        self.brr = brr
         self.knockoutWallpaper = knockoutWallpaper
-        self.gradientBubbles = gradientBubbles
+        self.wallets = wallets
     }
     
     public init(decoder: PostboxDecoder) {
@@ -30,9 +28,8 @@ public struct ExperimentalUISettings: Equatable, PreferencesEntry {
         self.skipReadHistory = decoder.decodeInt32ForKey("skipReadHistory", orElse: 0) != 0
         self.crashOnLongQueries = decoder.decodeInt32ForKey("crashOnLongQueries", orElse: 0) != 0
         self.chatListPhotos = decoder.decodeInt32ForKey("chatListPhotos", orElse: 0) != 0
-        self.brr = decoder.decodeInt32ForKey("nice:brr", orElse: 0) != 0
         self.knockoutWallpaper = decoder.decodeInt32ForKey("knockoutWallpaper", orElse: 0) != 0
-        self.gradientBubbles = decoder.decodeInt32ForKey("gradientBubbles", orElse: 0) != 0
+        self.wallets = decoder.decodeInt32ForKey("wallets", orElse: 0) != 0
     }
     
     public func encode(_ encoder: PostboxEncoder) {
@@ -40,9 +37,8 @@ public struct ExperimentalUISettings: Equatable, PreferencesEntry {
         encoder.encodeInt32(self.skipReadHistory ? 1 : 0, forKey: "skipReadHistory")
         encoder.encodeInt32(self.crashOnLongQueries ? 1 : 0, forKey: "crashOnLongQueries")
         encoder.encodeInt32(self.chatListPhotos ? 1 : 0, forKey: "chatListPhotos")
-        encoder.encodeInt32(self.brr ? 1 : 0, forKey: "nice:brr")
         encoder.encodeInt32(self.knockoutWallpaper ? 1 : 0, forKey: "knockoutWallpaper")
-        encoder.encodeInt32(self.gradientBubbles ? 1 : 0, forKey: "gradientBubbles")
+        encoder.encodeInt32(self.wallets ? 1 : 0, forKey: "wallets")
     }
     
     public func isEqual(to: PreferencesEntry) -> Bool {

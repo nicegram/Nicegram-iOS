@@ -1,6 +1,7 @@
 import Foundation
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import Display
 import AVFoundation
@@ -220,7 +221,7 @@ public final class PresentationCallImpl: PresentationCall {
     private var droppedCall = false
     private var dropCallKitCallTimer: SwiftSignalKit.Timer?
     
-    init(account: Account, audioSession: ManagedAudioSession, callSessionManager: CallSessionManager, callKitIntegration: CallKitIntegration?, serializedData: String?, dataSaving: VoiceCallDataSaving, derivedState: VoipDerivedState, getDeviceAccessData: @escaping () -> (presentationData: PresentationData, present: (ViewController, Any?) -> Void, openSettings: () -> Void), internalId: CallSessionInternalId, peerId: PeerId, isOutgoing: Bool, peer: Peer?, proxyServer: ProxyServerSettings?, currentNetworkType: NetworkType, updatedNetworkType: Signal<NetworkType, NoError>) {
+    init(account: Account, audioSession: ManagedAudioSession, callSessionManager: CallSessionManager, callKitIntegration: CallKitIntegration?, serializedData: String?, dataSaving: VoiceCallDataSaving, derivedState: VoipDerivedState, getDeviceAccessData: @escaping () -> (presentationData: PresentationData, present: (ViewController, Any?) -> Void, openSettings: () -> Void), initialState: CallSession?, internalId: CallSessionInternalId, peerId: PeerId, isOutgoing: Bool, peer: Peer?, proxyServer: ProxyServerSettings?, currentNetworkType: NetworkType, updatedNetworkType: Signal<NetworkType, NoError>) {
         self.account = account
         self.audioSession = audioSession
         self.callSessionManager = callSessionManager
@@ -235,7 +236,15 @@ public final class PresentationCallImpl: PresentationCall {
         self.ongoingContext = OngoingCallContext(account: account, callSessionManager: self.callSessionManager, internalId: self.internalId, proxyServer: proxyServer, initialNetworkType: currentNetworkType, updatedNetworkType: updatedNetworkType, serializedData: serializedData, dataSaving: dataSaving, derivedState: derivedState)
         
         var didReceiveAudioOutputs = false
-        self.sessionStateDisposable = (callSessionManager.callState(internalId: internalId)
+        
+        var callSessionState: Signal<CallSession, NoError> = .complete()
+        if let initialState = initialState {
+            callSessionState = .single(initialState)
+        }
+        callSessionState = callSessionState
+        |> then(callSessionManager.callState(internalId: internalId))
+        
+        self.sessionStateDisposable = (callSessionState
         |> deliverOnMainQueue).start(next: { [weak self] sessionState in
             if let strongSelf = self {
                 strongSelf.updateSessionState(sessionState: sessionState, callContextState: strongSelf.callContextState, reception: strongSelf.reception, audioSessionControl: strongSelf.audioSessionControl)
@@ -401,23 +410,23 @@ public final class PresentationCallImpl: PresentationCall {
         switch sessionState.state {
             case .ringing:
                 presentationState = .ringing
-                if let _ = audioSessionControl, previous == nil || previousControl == nil {
+                if previous == nil || previousControl == nil {
                     if !self.reportedIncomingCall {
                         self.reportedIncomingCall = true
-                        self.callKitIntegration?.reportIncomingCall(uuid: self.internalId, handle: "\(self.peerId.id)", displayTitle: self.peer?.displayTitle ?? "Unknown", completion: { [weak self] error in
+                        self.callKitIntegration?.reportIncomingCall(uuid: self.internalId, handle: "\(self.peerId.id)", displayTitle: self.peer?.debugDisplayTitle ?? "Unknown", completion: { [weak self] error in
                             if let error = error {
                                 if error.domain == "com.apple.CallKit.error.incomingcall" && (error.code == -3 || error.code == 3) {
                                     Logger.shared.log("PresentationCall", "reportIncomingCall device in DND mode")
                                     Queue.mainQueue().async {
                                         if let strongSelf = self {
-                                            strongSelf.callSessionManager.drop(internalId: strongSelf.internalId, reason: .busy)
+                                            strongSelf.callSessionManager.drop(internalId: strongSelf.internalId, reason: .busy, debugLog: .single(nil))
                                         }
                                     }
                                 } else {
                                     Logger.shared.log("PresentationCall", "reportIncomingCall error \(error)")
                                     Queue.mainQueue().async {
                                         if let strongSelf = self {
-                                            strongSelf.callSessionManager.drop(internalId: strongSelf.internalId, reason: .hangUp)
+                                            strongSelf.callSessionManager.drop(internalId: strongSelf.internalId, reason: .hangUp, debugLog: .single(nil))
                                         }
                                     }
                                 }
@@ -442,7 +451,7 @@ public final class PresentationCallImpl: PresentationCall {
                             presentationState = .connecting(keyVisualHash)
                         case .failed:
                             presentationState = nil
-                            self.callSessionManager.drop(internalId: self.internalId, reason: .disconnect)
+                            self.callSessionManager.drop(internalId: self.internalId, reason: .disconnect, debugLog: .single(nil))
                         case .connected:
                             let timestamp: Double
                             if let activeTimestamp = self.activeTimestamp {
@@ -452,6 +461,15 @@ public final class PresentationCallImpl: PresentationCall {
                                 self.activeTimestamp = timestamp
                             }
                             presentationState = .active(timestamp, reception, keyVisualHash)
+                        case .reconnecting:
+                            let timestamp: Double
+                            if let activeTimestamp = self.activeTimestamp {
+                                timestamp = activeTimestamp
+                            } else {
+                                timestamp = CFAbsoluteTimeGetCurrent()
+                                self.activeTimestamp = timestamp
+                            }
+                            presentationState = .reconnecting(timestamp, reception, keyVisualHash)
                     }
                 } else {
                     presentationState = .connecting(keyVisualHash)
@@ -475,12 +493,14 @@ public final class PresentationCallImpl: PresentationCall {
             case let .terminated(id, _, options):
                 self.audioSessionShouldBeActive.set(true)
                 if wasActive {
-                    self.ongoingContext.stop(callId: id, sendDebugLogs: options.contains(.sendDebugLogs))
+                    let debugLogValue = Promise<String?>()
+                    self.ongoingContext.stop(callId: id, sendDebugLogs: options.contains(.sendDebugLogs), debugLogValue: debugLogValue)
                 }
             default:
                 self.audioSessionShouldBeActive.set(false)
                 if wasActive {
-                    self.ongoingContext.stop()
+                    let debugLogValue = Promise<String?>()
+                    self.ongoingContext.stop(debugLogValue: debugLogValue)
                 }
         }
         if case .terminated = sessionState.state, !wasTerminated {
@@ -509,7 +529,7 @@ public final class PresentationCallImpl: PresentationCall {
         }
         if let presentationState = presentationState {
             self.statePromise.set(presentationState)
-            self.updateTone(presentationState, previous: previous)
+            self.updateTone(presentationState, callContextState: callContextState, previous: previous)
         }
         
         if !self.shouldPresentCallRating {
@@ -519,9 +539,11 @@ public final class PresentationCallImpl: PresentationCall {
         }
     }
     
-    private func updateTone(_ state: PresentationCallState, previous: CallSession?) {
+    private func updateTone(_ state: PresentationCallState, callContextState: OngoingCallContextState?, previous: CallSession?) {
         var tone: PresentationCallTone?
-        if let previous = previous {
+        if let callContextState = callContextState, case .reconnecting = callContextState {
+            tone = .connecting
+        } else if let previous = previous {
             switch previous.state {
                 case .accepting, .active, .dropping, .requesting:
                     switch state {
@@ -593,15 +615,17 @@ public final class PresentationCallImpl: PresentationCall {
     }
     
     public func hangUp() -> Signal<Bool, NoError> {
-        self.callSessionManager.drop(internalId: self.internalId, reason: .hangUp)
-        self.ongoingContext.stop()
+        let debugLogValue = Promise<String?>()
+        self.callSessionManager.drop(internalId: self.internalId, reason: .hangUp, debugLog: debugLogValue.get())
+        self.ongoingContext.stop(debugLogValue: debugLogValue)
         
         return self.hungUpPromise.get()
     }
     
     public func rejectBusy() {
-        self.callSessionManager.drop(internalId: self.internalId, reason: .busy)
-        self.ongoingContext.stop()
+        self.callSessionManager.drop(internalId: self.internalId, reason: .busy, debugLog: .single(nil))
+        let debugLog = Promise<String?>()
+        self.ongoingContext.stop(debugLogValue: debugLog)
     }
     
     public func toggleIsMuted() {

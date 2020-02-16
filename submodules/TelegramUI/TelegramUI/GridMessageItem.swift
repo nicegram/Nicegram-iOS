@@ -3,14 +3,17 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import TelegramCore
+import SyncCore
 import Postbox
 import SwiftSignalKit
 import TelegramPresentationData
+import TelegramUIPreferences
 import TelegramStringFormatting
 import AccountContext
 import RadialStatusNode
 import PhotoResources
 import GridMessageSelectionNode
+import ContextUI
 
 private func mediaForMessage(_ message: Message) -> Media? {
     for media in message.media {
@@ -37,6 +40,7 @@ final class GridMessageItemSection: GridSection {
     
     fileprivate let theme: PresentationTheme
     private let strings: PresentationStrings
+    private let fontSize: PresentationFontSize
     
     private let roundedTimestamp: Int32
     private let month: Int32
@@ -46,9 +50,10 @@ final class GridMessageItemSection: GridSection {
         return self.roundedTimestamp.hashValue
     }
     
-    init(timestamp: Int32, theme: PresentationTheme, strings: PresentationStrings) {
+    init(timestamp: Int32, theme: PresentationTheme, strings: PresentationStrings, fontSize: PresentationFontSize) {
         self.theme = theme
         self.strings = strings
+        self.fontSize = fontSize
         
         var now = time_t(timestamp)
         var timeinfoNow: tm = tm()
@@ -68,20 +73,20 @@ final class GridMessageItemSection: GridSection {
     }
     
     func node() -> ASDisplayNode {
-        return GridMessageItemSectionNode(theme: self.theme, strings: self.strings, roundedTimestamp: self.roundedTimestamp, month: self.month, year: self.year)
+        return GridMessageItemSectionNode(theme: self.theme, strings: self.strings, fontSize: self.fontSize, roundedTimestamp: self.roundedTimestamp, month: self.month, year: self.year)
     }
 }
-
-private let sectionTitleFont = Font.regular(14.0)
 
 final class GridMessageItemSectionNode: ASDisplayNode {
     var theme: PresentationTheme
     var strings: PresentationStrings
+    var fontSize: PresentationFontSize
     let titleNode: ASTextNode
     
-    init(theme: PresentationTheme, strings: PresentationStrings, roundedTimestamp: Int32, month: Int32, year: Int32) {
+    init(theme: PresentationTheme, strings: PresentationStrings, fontSize: PresentationFontSize, roundedTimestamp: Int32, month: Int32, year: Int32) {
         self.theme = theme
         self.strings = strings
+        self.fontSize = fontSize
         
         self.titleNode = ASTextNode()
         self.titleNode.isUserInteractionEnabled = false
@@ -89,6 +94,8 @@ final class GridMessageItemSectionNode: ASDisplayNode {
         super.init()
         
         self.backgroundColor = theme.list.plainBackgroundColor.withAlphaComponent(0.9)
+        
+        let sectionTitleFont = Font.regular(floor(fontSize.baseDisplaySize * 14.0 / 17.0))
         
         let dateText = stringForMonth(strings: strings, month: month, ofYear: year)
         self.addSubnode(self.titleNode)
@@ -103,7 +110,7 @@ final class GridMessageItemSectionNode: ASDisplayNode {
         let bounds = self.bounds
         
         let titleSize = self.titleNode.measure(CGSize(width: bounds.size.width - 24.0, height: CGFloat.greatestFiniteMagnitude))
-        self.titleNode.frame = CGRect(origin: CGPoint(x: 12.0, y: 8.0), size: titleSize)
+        self.titleNode.frame = CGRect(origin: CGPoint(x: 12.0, y: floor((bounds.size.height - titleSize.height) / 2.0)), size: titleSize)
     }
 }
 
@@ -115,13 +122,13 @@ final class GridMessageItem: GridItem {
     private let controllerInteraction: ChatControllerInteraction
     let section: GridSection?
     
-    init(theme: PresentationTheme, strings: PresentationStrings, context: AccountContext, message: Message, controllerInteraction: ChatControllerInteraction) {
+    init(theme: PresentationTheme, strings: PresentationStrings, fontSize: PresentationFontSize, context: AccountContext, message: Message, controllerInteraction: ChatControllerInteraction) {
         self.theme = theme
         self.strings = strings
         self.context = context
         self.message = message
         self.controllerInteraction = controllerInteraction
-        self.section = GridMessageItemSection(timestamp: message.timestamp, theme: theme, strings: strings)
+        self.section = GridMessageItemSection(timestamp: message.timestamp, theme: theme, strings: strings, fontSize: fontSize)
     }
     
     func node(layout: GridNodeLayout, synchronousLoad: Bool) -> GridItemNode {
@@ -145,6 +152,7 @@ final class GridMessageItem: GridItem {
 
 final class GridMessageItemNode: GridItemNode {
     private var currentState: (AccountContext, Media, CGSize)?
+    private let containerNode: ContextControllerSourceNode
     private let imageNode: TransformImageNode
     private(set) var messageId: MessageId?
     private var item: GridMessageItem?
@@ -159,6 +167,7 @@ final class GridMessageItemNode: GridItemNode {
     private var resourceStatus: MediaResourceStatus?
     
     override init() {
+        self.containerNode = ContextControllerSourceNode()
         self.imageNode = TransformImageNode()
         self.statusNode = RadialStatusNode(backgroundNodeColor: UIColor(white: 0.0, alpha: 0.6))
         let progressDiameter: CGFloat = 40.0
@@ -170,8 +179,17 @@ final class GridMessageItemNode: GridItemNode {
         
         super.init()
         
-        self.addSubnode(self.imageNode)
-        self.addSubnode(self.mediaBadgeNode)
+        self.addSubnode(self.containerNode)
+        self.containerNode.addSubnode(self.imageNode)
+        self.containerNode.addSubnode(self.mediaBadgeNode)
+        
+        self.containerNode.activated = { [weak self] gesture in
+            guard let strongSelf = self, let item = strongSelf.item, let controllerInteraction = strongSelf.controllerInteraction else {
+                gesture.cancel()
+                return
+            }
+            controllerInteraction.openMessageContextActions(item.message, strongSelf.containerNode, strongSelf.containerNode.bounds, gesture)
+        }
     }
     
     deinit {
@@ -199,7 +217,7 @@ final class GridMessageItemNode: GridItemNode {
         if self.currentState == nil || self.currentState!.0 !== context || !self.currentState!.1.isEqual(to: media) {
             var mediaDimensions: CGSize?
             if let image = media as? TelegramMediaImage, let largestSize = largestImageRepresentation(image.representations)?.dimensions {
-                mediaDimensions = largestSize
+                mediaDimensions = largestSize.cgSize
                
                 self.imageNode.setSignal(mediaGridMessagePhoto(account: context.account, photoReference: .message(message: MessageReference(item.message), media: image), synchronousLoad: synchronousLoad), attemptSynchronously: synchronousLoad, dispatchOnDisplayLink: true)
                 
@@ -210,7 +228,7 @@ final class GridMessageItemNode: GridItemNode {
                 self.mediaBadgeNode.isHidden = true
                 self.resourceStatus = nil
             } else if let file = media as? TelegramMediaFile, file.isVideo {
-                mediaDimensions = file.dimensions
+                mediaDimensions = file.dimensions?.cgSize
                 self.imageNode.setSignal(mediaGridMessageVideo(postbox: context.account.postbox, videoReference: .message(message: MessageReference(item.message), media: file), synchronousLoad: synchronousLoad, autoFetchFullSizeThumbnail: true), attemptSynchronously: synchronousLoad)
                 
                 self.mediaBadgeNode.isHidden = false
@@ -302,6 +320,9 @@ final class GridMessageItemNode: GridItemNode {
         super.layout()
         
         let imageFrame = self.bounds
+        
+        self.containerNode.frame = imageFrame
+        
         self.imageNode.frame = imageFrame
         
         if let item = self.item, let (_, _, mediaDimensions) = self.currentState {
@@ -336,7 +357,7 @@ final class GridMessageItemNode: GridItemNode {
                     })
                     
                     selectionNode.frame = CGRect(origin: CGPoint(), size: self.bounds.size)
-                    self.addSubnode(selectionNode)
+                    self.containerNode.addSubnode(selectionNode)
                     self.selectionNode = selectionNode
                     selectionNode.updateSelected(selected, animated: false)
                     if animated {
@@ -358,10 +379,10 @@ final class GridMessageItemNode: GridItemNode {
         }
     }
     
-    func transitionNode(id: MessageId, media: Media) -> (ASDisplayNode, () -> (UIView?, UIView?))? {
+    func transitionNode(id: MessageId, media: Media) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         if self.messageId == id {
             let imageNode = self.imageNode
-            return (self.imageNode, { [weak self, weak imageNode] in
+            return (self.imageNode, self.imageNode.bounds, { [weak self, weak imageNode] in
                 var statusNodeHidden = false
                 var accessoryHidden = false
                 if let strongSelf = self {
@@ -437,7 +458,8 @@ final class GridMessageItemNode: GridItemNode {
                                 let _ = controllerInteraction.openMessage(message, .default)
                             }
                         case .longTap:
-                            controllerInteraction.openMessageContextMenu(message, false, self, self.bounds, nil)
+                        break
+                            //controllerInteraction.openMessageContextMenu(message, false, self, self.bounds, nil)
                         default:
                             break
                     }

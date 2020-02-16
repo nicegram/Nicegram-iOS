@@ -3,7 +3,9 @@ import UIKit
 import AsyncDisplayKit
 
 final class TooltipControllerNode: ASDisplayNode {
-    private let dismiss: () -> Void
+    private let baseFontSize: CGFloat
+    
+    private let dismiss: (Bool) -> Void
     
     private var validLayout: ContainerViewLayout?
     
@@ -19,7 +21,9 @@ final class TooltipControllerNode: ASDisplayNode {
     private var dismissedByTouchOutside = false
     private var dismissByTapOutsideSource = false
     
-    init(content: TooltipControllerContent, dismiss: @escaping () -> Void, dismissByTapOutside: Bool, dismissByTapOutsideSource: Bool) {
+    init(content: TooltipControllerContent, baseFontSize: CGFloat, dismiss: @escaping (Bool) -> Void, dismissByTapOutside: Bool, dismissByTapOutsideSource: Bool) {
+        self.baseFontSize = baseFontSize
+        
         self.dismissByTapOutside = dismissByTapOutside
         self.dismissByTapOutsideSource = dismissByTapOutsideSource
         
@@ -30,7 +34,11 @@ final class TooltipControllerNode: ASDisplayNode {
         self.imageNode.image = content.image
         
         self.textNode = ImmediateTextNode()
-        self.textNode.attributedText = NSAttributedString(string: content.text, font: Font.regular(14.0), textColor: .white, paragraphAlignment: .center)
+        if case let .attributedText(text) = content {
+            self.textNode.attributedText = text
+        } else {
+            self.textNode.attributedText = NSAttributedString(string: content.text, font: Font.regular(floor(baseFontSize * 14.0 / 17.0)), textColor: .white, paragraphAlignment: .center)
+        }
         self.textNode.isUserInteractionEnabled = false
         self.textNode.displaysAsynchronously = false
         self.textNode.maximumNumberOfLines = 0
@@ -54,7 +62,7 @@ final class TooltipControllerNode: ASDisplayNode {
             })
             self.textNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.12)
         }
-        self.textNode.attributedText = NSAttributedString(string: text, font: Font.regular(14.0), textColor: .white, paragraphAlignment: .center)
+        self.textNode.attributedText = NSAttributedString(string: text, font: Font.regular(floor(self.baseFontSize * 14.0 / 17.0)), textColor: .white, paragraphAlignment: .center)
         if let layout = self.validLayout {
             self.containerLayoutUpdated(layout, transition: transition)
         }
@@ -118,22 +126,27 @@ final class TooltipControllerNode: ASDisplayNode {
         })
     }
     
+    func hide() {
+        self.containerNode.alpha = 0.0
+    }
+    
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         if let event = event {
             var eventIsPresses = false
-            if #available(iOSApplicationExtension 9.0, *) {
+            if #available(iOSApplicationExtension 9.0, iOS 9.0, *) {
                 eventIsPresses = event.type == .presses
             }
             if event.type == .touches || eventIsPresses {
+                let pointInside = self.containerNode.frame.contains(point)
                 if self.containerNode.frame.contains(point) || self.dismissByTapOutside {
                     if !self.dismissedByTouchOutside {
                         self.dismissedByTouchOutside = true
-                        self.dismiss()
+                        self.dismiss(pointInside)
                     }
                 } else if self.dismissByTapOutsideSource, let sourceRect = self.sourceRect, !sourceRect.contains(point) {
                     if !self.dismissedByTouchOutside {
                         self.dismissedByTouchOutside = true
-                        self.dismiss()
+                        self.dismiss(false)
                     }
                 }
                 return nil

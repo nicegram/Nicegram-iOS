@@ -3,6 +3,7 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 
 private let titleFont = Font.medium(16.0)
@@ -21,7 +22,7 @@ final class ChatRecentActionsEmptyNode: ASDisplayNode {
     private var title: String = ""
     private var text: String = ""
     
-    init(theme: PresentationTheme, chatWallpaper: TelegramWallpaper) {
+    init(theme: PresentationTheme, chatWallpaper: TelegramWallpaper, chatBubbleCorners: PresentationChatBubbleCorners) {
         self.theme = theme
         self.chatWallpaper = chatWallpaper
         
@@ -36,7 +37,7 @@ final class ChatRecentActionsEmptyNode: ASDisplayNode {
         
         super.init()
         
-        let graphics = PresentationResourcesChat.additionalGraphics(theme, wallpaper: chatWallpaper)
+        let graphics = PresentationResourcesChat.additionalGraphics(theme, wallpaper: chatWallpaper, bubbleCorners: chatBubbleCorners)
         self.backgroundNode.image = graphics.chatEmptyItemBackgroundImage
         
         self.addSubnode(self.backgroundNode)

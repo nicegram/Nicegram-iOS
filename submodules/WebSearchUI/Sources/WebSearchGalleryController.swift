@@ -6,6 +6,7 @@ import Postbox
 import SwiftSignalKit
 import AsyncDisplayKit
 import TelegramCore
+import SyncCore
 import LegacyComponents
 import TelegramPresentationData
 import AccountContext
@@ -84,7 +85,7 @@ class WebSearchGalleryController: ViewController {
     private let centralItemTitle = Promise<String>()
     private let centralItemTitleView = Promise<UIView?>()
     private let centralItemNavigationStyle = Promise<GalleryItemNodeNavigationStyle>()
-    private let centralItemFooterContentNode = Promise<GalleryFooterContentNode?>()
+    private let centralItemFooterContentNode = Promise<(GalleryFooterContentNode?, GalleryOverlayContentNode?)>()
     private let centralItemAttributesDisposable = DisposableSet();
 
     private let checkedDisposable = MetaDisposable()
@@ -114,7 +115,7 @@ class WebSearchGalleryController: ViewController {
             self?.dismiss(forceAway: true)
         }, selectionState: selectionState, editingState: editingState)
         
-        if let title = peer?.displayTitle {
+        if let title = peer?.displayTitle(strings: self.presentationData.strings, displayOrder: self.presentationData.nameDisplayOrder) {
             let recipientNode = GalleryNavigationRecipientNode(color: .white, title: title)
             let leftItem = UIBarButtonItem(customDisplayNode: recipientNode)
             self.navigationItem.leftBarButtonItem = leftItem
@@ -155,7 +156,7 @@ class WebSearchGalleryController: ViewController {
             self?.navigationItem.titleView = titleView
         }))
         
-        self.centralItemAttributesDisposable.add(self.centralItemFooterContentNode.get().start(next: { [weak self] footerContentNode in
+        self.centralItemAttributesDisposable.add(self.centralItemFooterContentNode.get().start(next: { [weak self] footerContentNode, _ in
             self?.galleryNode.updatePresentationState({
                 $0.withUpdatedFooterContentNode(footerContentNode)
             }, transition: .immediate)

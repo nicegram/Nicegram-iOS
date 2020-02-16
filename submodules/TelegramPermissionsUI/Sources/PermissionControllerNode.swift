@@ -4,9 +4,11 @@ import Display
 import AsyncDisplayKit
 import SwiftSignalKit
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import AccountContext
 import TelegramPermissions
+import AppBundle
 
 public struct PermissionControllerCustomIcon: Equatable {
     let light: UIImage?

@@ -4,9 +4,11 @@ import AsyncDisplayKit
 import Display
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import ItemListUI
+import PresentationDataUtils
 import AccountContext
 import TelegramStringFormatting
 
@@ -147,24 +149,25 @@ enum BotReceiptEntry: ItemListNodeEntry {
         return lhs.stableId < rhs.stableId
     }
     
-    func item(_ arguments: BotReceiptControllerArguments) -> ListViewItem {
+    func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
+        let arguments = arguments as! BotReceiptControllerArguments
         switch self {
             case let .header(theme, invoice, botName):
                 return BotCheckoutHeaderItem(account: arguments.account, theme: theme, invoice: invoice, botName: botName, sectionId: self.section)
             case let .price(_, theme, text, value, isFinal):
                 return BotCheckoutPriceItem(theme: theme, title: text, label: value, isFinal: isFinal, sectionId: self.section)
             case let .paymentMethod(theme, text, value):
-                return ItemListDisclosureItem(theme: theme, title: text, label: value, sectionId: self.section, style: .blocks, disclosureStyle: .none, action: nil)
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: value, sectionId: self.section, style: .blocks, disclosureStyle: .none, action: nil)
             case let .shippingInfo(theme, text, value):
-                return ItemListDisclosureItem(theme: theme, title: text, label: value, sectionId: self.section, style: .blocks, disclosureStyle: .none, action: nil)
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: value, sectionId: self.section, style: .blocks, disclosureStyle: .none, action: nil)
             case let .shippingMethod(theme, text, value):
-                return ItemListDisclosureItem(theme: theme, title: text, label: value, sectionId: self.section, style: .blocks, disclosureStyle: .none, action: nil)
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: value, sectionId: self.section, style: .blocks, disclosureStyle: .none, action: nil)
             case let .nameInfo(theme, text, value):
-                return ItemListDisclosureItem(theme: theme, title: text, label: value, sectionId: self.section, style: .blocks, disclosureStyle: .none, action: nil)
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: value, sectionId: self.section, style: .blocks, disclosureStyle: .none, action: nil)
             case let .emailInfo(theme, text, value):
-                return ItemListDisclosureItem(theme: theme, title: text, label: value, sectionId: self.section, style: .blocks, disclosureStyle: .none, action: nil)
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: value, sectionId: self.section, style: .blocks, disclosureStyle: .none, action: nil)
             case let .phoneInfo(theme, text, value):
-                return ItemListDisclosureItem(theme: theme, title: text, label: value, sectionId: self.section, style: .blocks, disclosureStyle: .none, action: nil)
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: value, sectionId: self.section, style: .blocks, disclosureStyle: .none, action: nil)
         }
     }
 }
@@ -174,7 +177,7 @@ private func botReceiptControllerEntries(presentationData: PresentationData, inv
     
     var botName = ""
     if let botPeer = botPeer {
-        botName = botPeer.displayTitle
+        botName = botPeer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
     }
     entries.append(.header(presentationData.theme, invoice, botName))
     
@@ -253,7 +256,7 @@ private func availablePaymentMethods(current: BotCheckoutPaymentMethod?) -> [Bot
     return []
 }
 
-final class BotReceiptControllerNode: ItemListControllerNode<BotReceiptEntry> {
+final class BotReceiptControllerNode: ItemListControllerNode {
     private let context: AccountContext
     private let dismissAnimated: () -> Void
     
@@ -264,7 +267,7 @@ final class BotReceiptControllerNode: ItemListControllerNode<BotReceiptEntry> {
     
     private let actionButton: BotCheckoutActionButton
     
-    init(controller: ItemListController<BotReceiptEntry>?, navigationBar: NavigationBar, updateNavigationOffset: @escaping (CGFloat) -> Void, context: AccountContext, invoice: TelegramMediaInvoice, messageId: MessageId, dismissAnimated: @escaping () -> Void) {
+    init(controller: ItemListController?, navigationBar: NavigationBar, updateNavigationOffset: @escaping (CGFloat) -> Void, context: AccountContext, invoice: TelegramMediaInvoice, messageId: MessageId, dismissAnimated: @escaping () -> Void) {
         self.context = context
         self.dismissAnimated = dismissAnimated
         
@@ -272,11 +275,11 @@ final class BotReceiptControllerNode: ItemListControllerNode<BotReceiptEntry> {
         
         let arguments = BotReceiptControllerArguments(account: context.account)
         
-        let signal: Signal<(PresentationTheme, (ItemListNodeState<BotReceiptEntry>, BotReceiptEntry.ItemGenerationArguments)), NoError> = combineLatest(context.sharedContext.presentationData, receiptData.get(), context.account.postbox.loadedPeerWithId(messageId.peerId))
-            |> map { presentationData, receiptData, botPeer -> (PresentationTheme, (ItemListNodeState<BotReceiptEntry>, BotReceiptEntry.ItemGenerationArguments)) in
-                let nodeState = ItemListNodeState(entries: botReceiptControllerEntries(presentationData: presentationData, invoice: invoice, formInvoice: receiptData?.0, formInfo: receiptData?.1, shippingOption: receiptData?.2, paymentMethodTitle: receiptData?.3, botPeer: botPeer), style: .plain, focusItemTag: nil, emptyStateItem: nil, animateChanges: false)
-                
-                return (presentationData.theme, (nodeState, arguments))
+        let signal: Signal<(ItemListPresentationData, (ItemListNodeState, Any)), NoError> = combineLatest(context.sharedContext.presentationData, receiptData.get(), context.account.postbox.loadedPeerWithId(messageId.peerId))
+        |> map { presentationData, receiptData, botPeer -> (ItemListPresentationData, (ItemListNodeState, Any)) in
+            let nodeState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: botReceiptControllerEntries(presentationData: presentationData, invoice: invoice, formInvoice: receiptData?.0, formInfo: receiptData?.1, shippingOption: receiptData?.2, paymentMethodTitle: receiptData?.3, botPeer: botPeer), style: .plain, focusItemTag: nil, emptyStateItem: nil, animateChanges: false)
+            
+            return (ItemListPresentationData(presentationData), (nodeState, arguments))
         }
         
         self.actionButton = BotCheckoutActionButton(inactiveFillColor: self.presentationData.theme.list.plainBackgroundColor, activeFillColor: self.presentationData.theme.list.itemAccentColor, foregroundColor: self.presentationData.theme.list.plainBackgroundColor)
@@ -298,10 +301,10 @@ final class BotReceiptControllerNode: ItemListControllerNode<BotReceiptEntry> {
         self.dataRequestDisposable?.dispose()
     }
     
-    override func containerLayoutUpdated(_ layout: ContainerViewLayout, navigationBarHeight: CGFloat, transition: ContainedViewLayoutTransition) {
+    override func containerLayoutUpdated(_ layout: ContainerViewLayout, navigationBarHeight: CGFloat, transition: ContainedViewLayoutTransition, additionalInsets: UIEdgeInsets) {
         var updatedInsets = layout.intrinsicInsets
         updatedInsets.bottom += BotCheckoutActionButton.diameter + 20.0
-        super.containerLayoutUpdated(ContainerViewLayout(size: layout.size, metrics: layout.metrics, deviceMetrics: layout.deviceMetrics, intrinsicInsets: updatedInsets, safeInsets: layout.safeInsets, statusBarHeight: layout.statusBarHeight, inputHeight: layout.inputHeight, inputHeightIsInteractivellyChanging: layout.inputHeightIsInteractivellyChanging, inVoiceOver: layout.inVoiceOver), navigationBarHeight: navigationBarHeight, transition: transition)
+        super.containerLayoutUpdated(ContainerViewLayout(size: layout.size, metrics: layout.metrics, deviceMetrics: layout.deviceMetrics, intrinsicInsets: updatedInsets, safeInsets: layout.safeInsets, statusBarHeight: layout.statusBarHeight, inputHeight: layout.inputHeight, inputHeightIsInteractivellyChanging: layout.inputHeightIsInteractivellyChanging, inVoiceOver: layout.inVoiceOver), navigationBarHeight: navigationBarHeight, transition: transition, additionalInsets: additionalInsets)
         
         let actionButtonFrame = CGRect(origin: CGPoint(x: 10.0, y: layout.size.height - 10.0 - BotCheckoutActionButton.diameter - layout.intrinsicInsets.bottom), size: CGSize(width: layout.size.width - 20.0, height: BotCheckoutActionButton.diameter))
         transition.updateFrame(node: self.actionButton, frame: actionButtonFrame)

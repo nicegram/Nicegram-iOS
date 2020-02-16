@@ -4,23 +4,26 @@ import Display
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import TelegramUIPreferences
 import ItemListUI
+import PresentationDataUtils
 import AccountContext
 import AlertUI
+import PresentationDataUtils
 import ItemListPeerItem
 
 private final class ChannelMembersControllerArguments {
-    let account: Account
+    let context: AccountContext
     
     let addMember: () -> Void
     let setPeerIdWithRevealedOptions: (PeerId?, PeerId?) -> Void
     let removePeer: (PeerId) -> Void
     let openPeer: (Peer) -> Void
     let inviteViaLink: ()->Void
-    init(account: Account, addMember: @escaping () -> Void, setPeerIdWithRevealedOptions: @escaping (PeerId?, PeerId?) -> Void, removePeer: @escaping (PeerId) -> Void, openPeer: @escaping (Peer) -> Void, inviteViaLink: @escaping()->Void) {
-        self.account = account
+    init(context: AccountContext, addMember: @escaping () -> Void, setPeerIdWithRevealedOptions: @escaping (PeerId?, PeerId?) -> Void, removePeer: @escaping (PeerId) -> Void, openPeer: @escaping (Peer) -> Void, inviteViaLink: @escaping()->Void) {
+        self.context = context
         self.addMember = addMember
         self.setPeerIdWithRevealedOptions = setPeerIdWithRevealedOptions
         self.removePeer = removePeer
@@ -175,18 +178,19 @@ private enum ChannelMembersEntry: ItemListNodeEntry {
         }
     }
     
-    func item(_ arguments: ChannelMembersControllerArguments) -> ListViewItem {
+    func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
+        let arguments = arguments as! ChannelMembersControllerArguments
         switch self {
             case let .addMember(theme, text):
-                return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     arguments.addMember()
                 })
             case let .inviteLink(theme, text):
-                return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     arguments.inviteViaLink()
                 })
             case let .addMemberInfo(theme, text):
-                return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+                return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .peerItem(_, theme, strings, dateTimeFormat, nameDisplayOrder, participant, editing, enabled):
                 let text: ItemListPeerItemText
                 if let user = participant.peer as? TelegramUser, let _ = user.botInfo {
@@ -194,7 +198,7 @@ private enum ChannelMembersEntry: ItemListNodeEntry {
                 } else {
                     text = .presence
                 }
-                return ItemListPeerItem(theme: theme, strings: strings, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, account: arguments.account, peer: participant.peer, presence: participant.presences[participant.peer.id], text: text, label: .none, editing: editing, switchValue: nil, enabled: enabled, selectable: true, sectionId: self.section, action: {
+                return ItemListPeerItem(presentationData: presentationData, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, context: arguments.context, peer: participant.peer, presence: participant.presences[participant.peer.id], text: text, label: .none, editing: editing, switchValue: nil, enabled: enabled, selectable: true, sectionId: self.section, action: {
                     arguments.openPeer(participant.peer)
                 }, setPeerIdWithRevealedOptions: { previousId, id in
                     arguments.setPeerIdWithRevealedOptions(previousId, id)
@@ -335,6 +339,7 @@ public func channelMembersController(context: AccountContext, peerId: PeerId) ->
     
     var presentControllerImpl: ((ViewController, Any?) -> Void)?
     var pushControllerImpl: ((ViewController) -> Void)?
+    var dismissInputImpl: (() -> Void)?
     
     let actionsDisposable = DisposableSet()
     
@@ -346,7 +351,7 @@ public func channelMembersController(context: AccountContext, peerId: PeerId) ->
     
     let peersPromise = Promise<[RenderedChannelParticipant]?>(nil)
     
-    let arguments = ChannelMembersControllerArguments(account: context.account, addMember: {
+    let arguments = ChannelMembersControllerArguments(context: context, addMember: {
         actionsDisposable.add((peersPromise.get()
         |> take(1)
         |> deliverOnMainQueue).start(next: { members in
@@ -355,7 +360,7 @@ public func channelMembersController(context: AccountContext, peerId: PeerId) ->
             
             addMembersDisposable.set((contactsController.result
             |> deliverOnMainQueue
-            |> introduceError(AddChannelMemberError.self)
+            |> castError(AddChannelMemberError.self)
             |> mapToSignal { [weak contactsController] contacts -> Signal<Never, AddChannelMemberError> in
                 contactsController?.displayProgress = true
                 
@@ -403,8 +408,8 @@ public func channelMembersController(context: AccountContext, peerId: PeerId) ->
                                 presentControllerImpl?(textAlertController(context: context, title: nil, text: presentationData.strings.Channel_AddBotErrorHaveRights, actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {}), TextAlertAction(type: .defaultAction, title: presentationData.strings.Channel_AddBotAsAdmin, action: {
                                     contactsController?.dismiss()
                                     
-                                    presentControllerImpl?(channelAdminController(context: context, peerId: peerId, adminId: memberId, initialParticipant: nil, updated: { _ in
-                                    }, upgradedToSupergroup: { _, f in f () }, transferedOwnership: { _ in }), ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+                                    pushControllerImpl?(channelAdminController(context: context, peerId: peerId, adminId: memberId, initialParticipant: nil, updated: { _ in
+                                    }, upgradedToSupergroup: { _, f in f () }, transferedOwnership: { _ in }))
                                 })]), nil)
                             } else {
                                 presentControllerImpl?(textAlertController(context: context, title: nil, text: presentationData.strings.Channel_AddBotErrorHaveRights, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), nil)
@@ -445,7 +450,7 @@ public func channelMembersController(context: AccountContext, peerId: PeerId) ->
             }
         }))
     }, openPeer: { peer in
-        if let controller = context.sharedContext.makePeerInfoController(context: context, peer: peer, mode: .generic) {
+        if let controller = context.sharedContext.makePeerInfoController(context: context, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false) {
             pushControllerImpl?(controller)
         }
     }, inviteViaLink: {
@@ -463,7 +468,7 @@ public func channelMembersController(context: AccountContext, peerId: PeerId) ->
     
     let signal = combineLatest(queue: .mainQueue(), context.sharedContext.presentationData, statePromise.get(), peerView, peersPromise.get())
     |> deliverOnMainQueue
-    |> map { presentationData, state, view, peers -> (ItemListControllerState, (ItemListNodeState<ChannelMembersEntry>, ChannelMembersEntry.ItemGenerationArguments)) in
+    |> map { presentationData, state, view, peers -> (ItemListControllerState, (ItemListNodeState, Any)) in
         var rightNavigationButton: ItemListNavigationButton?
         var secondaryRightNavigationButton: ItemListNavigationButton?
         if let peers = peers, !peers.isEmpty {
@@ -497,11 +502,13 @@ public func channelMembersController(context: AccountContext, peerId: PeerId) ->
                     return state.withUpdatedSearchingMembers(false)
                 }
             }, openPeer: { peer, _ in
-                if let infoController = context.sharedContext.makePeerInfoController(context: context, peer: peer, mode: .generic) {
+                if let infoController = context.sharedContext.makePeerInfoController(context: context, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false) {
                     pushControllerImpl?(infoController)
                 }
-            }, present: { c, a in
-                presentControllerImpl?(c, a)
+            }, pushController: { c in
+                pushControllerImpl?(c)
+            }, dismissInput: {
+                dismissInputImpl?()
             })
         }
         
@@ -513,8 +520,8 @@ public func channelMembersController(context: AccountContext, peerId: PeerId) ->
         let previous = previousPeers
         previousPeers = peers
         
-        let controllerState = ItemListControllerState(theme: presentationData.theme, title: .text(presentationData.strings.Channel_Subscribers_Title), leftNavigationButton: nil, rightNavigationButton: rightNavigationButton, secondaryRightNavigationButton: secondaryRightNavigationButton, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: true)
-        let listState = ItemListNodeState(entries: ChannelMembersControllerEntries(context: context, presentationData: presentationData, view: view, state: state, participants: peers), style: .blocks, emptyStateItem: emptyStateItem, searchItem: searchItem, animateChanges: previous != nil && peers != nil && previous!.count >= peers!.count)
+        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(presentationData.strings.Channel_Subscribers_Title), leftNavigationButton: nil, rightNavigationButton: rightNavigationButton, secondaryRightNavigationButton: secondaryRightNavigationButton, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: true)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: ChannelMembersControllerEntries(context: context, presentationData: presentationData, view: view, state: state, participants: peers), style: .blocks, emptyStateItem: emptyStateItem, searchItem: searchItem, animateChanges: previous != nil && peers != nil && previous!.count >= peers!.count)
         
         return (controllerState, (listState, arguments))
     }
@@ -532,6 +539,9 @@ public func channelMembersController(context: AccountContext, peerId: PeerId) ->
         if let controller = controller {
             (controller.navigationController as? NavigationController)?.pushViewController(c)
         }
+    }
+    dismissInputImpl = { [weak controller] in
+        controller?.view.endEditing(true)
     }
     controller.visibleBottomContentOffsetChanged = { offset in
         if let loadMoreControl = loadMoreControl, case let .known(value) = offset, value < 40.0 {

@@ -2,10 +2,6 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 
-#if BUCK
-import DisplayPrivate
-#endif
-
 struct KeyboardSurface {
     let host: UIView
 }
@@ -20,26 +16,6 @@ private func getFirstResponder(_ view: UIView) -> UIView? {
             }
         }
         return nil
-    }
-}
-
-private func isViewVisibleInHierarchy(_ view: UIView, _ initial: Bool = true) -> Bool {
-    guard let window = view.window else {
-        return false
-    }
-    if view.isHidden || view.alpha == 0.0 {
-        return false
-    }
-    if view.superview === window {
-        return true
-    } else if let superview = view.superview {
-        if initial && view.frame.minY >= superview.frame.height {
-            return false
-        } else {
-            return isViewVisibleInHierarchy(superview, false)
-        }
-    } else {
-        return false
     }
 }
 
@@ -146,5 +122,54 @@ class KeyboardManager {
         }
         
         self.previousFirstResponderView = firstResponderView
+    }
+}
+
+private func endAnimations(view: UIView) {
+    view.layer.removeAllAnimations()
+    for subview in view.subviews {
+        endAnimations(view: subview)
+    }
+}
+
+func viewTreeContainsFirstResponder(view: UIView) -> Bool {
+    if view.isFirstResponder {
+        return true
+    } else {
+        for subview in view.subviews {
+            if viewTreeContainsFirstResponder(view: subview) {
+                return true
+            }
+        }
+        return false
+    }
+}
+
+final class KeyboardViewManager {
+    private let host: StatusBarHost
+    
+    init(host: StatusBarHost) {
+        self.host = host
+    }
+    
+    func dismissEditingWithoutAnimation(view: UIView) {
+        if viewTreeContainsFirstResponder(view: view) {
+            view.endEditing(true)
+            if let keyboardWindow = self.host.keyboardWindow {
+                for view in keyboardWindow.subviews {
+                    endAnimations(view: view)
+                }
+            }
+        }
+    }
+    
+    func update(leftEdge: CGFloat, transition: ContainedViewLayoutTransition) {
+        guard let keyboardWindow = self.host.keyboardWindow else {
+            return
+        }
+        let t = keyboardWindow.layer.sublayerTransform
+        let currentOffset = CGPoint(x: t.m41, y: t.m42)
+        transition.updateSublayerTransformOffset(layer: keyboardWindow.layer, offset: CGPoint(x: leftEdge, y: currentOffset.y), completion: { _ in
+        })
     }
 }

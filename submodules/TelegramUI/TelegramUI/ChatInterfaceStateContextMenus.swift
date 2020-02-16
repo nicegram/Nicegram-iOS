@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import Postbox
 import TelegramCore
+import SyncCore
 import Display
 import UIKit
 import SwiftSignalKit
@@ -14,6 +15,9 @@ import LegacyUI
 import ChatListUI
 import PeerInfoUI
 import NicegramLib
+import AppBundle
+import SaveToCameraRoll
+import PresentationDataUtils
 
 private struct MessageContextMenuData {
     let starStatus: Bool?
@@ -26,14 +30,18 @@ private struct MessageContextMenuData {
 }
 
 func canEditMessage(context: AccountContext, limitsConfiguration: LimitsConfiguration, message: Message) -> Bool {
+    return canEditMessage(accountPeerId: context.account.peerId, limitsConfiguration: limitsConfiguration, message: message)
+}
+
+private func canEditMessage(accountPeerId: PeerId, limitsConfiguration: LimitsConfiguration, message: Message, reschedule: Bool = false) -> Bool {
     var hasEditRights = false
-    var unlimitedInterval = false
+    var unlimitedInterval = reschedule
     
     if message.id.namespace == Namespaces.Message.ScheduledCloud {
         if let peer = message.peers[message.id.peerId], let channel = peer as? TelegramChannel {
             switch channel.info {
                 case .broadcast:
-                    if channel.hasPermission(.editAllMessages) {
+                    if channel.hasPermission(.editAllMessages) || !message.flags.contains(.Incoming) {
                         hasEditRights = true
                     }
                 default:
@@ -44,13 +52,13 @@ func canEditMessage(context: AccountContext, limitsConfiguration: LimitsConfigur
         }
     } else if message.id.peerId.namespace == Namespaces.Peer.SecretChat || message.id.namespace != Namespaces.Message.Cloud {
         hasEditRights = false
-    } else if let author = message.author, author.id == context.account.peerId {
+    } else if let author = message.author, author.id == accountPeerId {
         hasEditRights = true
     } else if message.author?.id == message.id.peerId, let peer = message.peers[message.id.peerId] {
         if let peer = peer as? TelegramChannel {
             switch peer.info {
             case .broadcast:
-                if peer.hasPermission(.editAllMessages) {
+                if peer.hasPermission(.editAllMessages) || !message.flags.contains(.Incoming) {
                     hasEditRights = true
                 }
             case .group:
@@ -63,12 +71,6 @@ func canEditMessage(context: AccountContext, limitsConfiguration: LimitsConfigur
     }
     
     var hasUneditableAttributes = false
-    
-    if let peer = message.peers[message.id.peerId] as? TelegramChannel {
-        if !peer.hasPermission(.sendMessages) {
-            //hasUneditableAttributes = true
-        }
-    }
     
     if hasEditRights {
         for attribute in message.attributes {
@@ -102,8 +104,8 @@ func canEditMessage(context: AccountContext, limitsConfiguration: LimitsConfigur
             }
         }
         
-        if !hasUneditableAttributes {
-            if canPerformEditingActions(limits: limitsConfiguration, accountPeerId: context.account.peerId, message: message, unlimitedInterval: unlimitedInterval) {
+        if !hasUneditableAttributes || reschedule {
+            if canPerformEditingActions(limits: limitsConfiguration, accountPeerId: accountPeerId, message: message, unlimitedInterval: unlimitedInterval) {
                 return true
             }
         }
@@ -121,6 +123,12 @@ func canReplyInChat(_ chatPresentationInterfaceState: ChatPresentationInterfaceS
     }
     guard !chatPresentationInterfaceState.isScheduledMessages else {
         return false
+    }
+    switch chatPresentationInterfaceState.mode {
+    case .inline:
+        return false
+    default:
+        break
     }
     
     var canReply = false
@@ -248,8 +256,6 @@ func contextMenuForChatPresentationIntefaceState(chatPresentationInterfaceState:
         return .single([])
     }
     
-    let dataSignal: Signal<MessageContextMenuData, NoError>
-    
     var loadStickerSaveStatus: MediaId?
     var loadCopyMediaResource: MediaResource?
     var isAction = false
@@ -341,20 +347,27 @@ func contextMenuForChatPresentationIntefaceState(chatPresentationInterfaceState:
         return transaction.getPreferencesEntry(key: PreferencesKeys.limitsConfiguration) as? LimitsConfiguration ?? LimitsConfiguration.defaultValue
     }
     
-    dataSignal = combineLatest(loadLimits, loadStickerSaveStatusSignal, loadResourceStatusSignal, context.sharedContext.chatAvailableMessageActions(postbox: context.account.postbox, accountPeerId: context.account.peerId, messageIds: Set(messages.map { $0.id })))
-    |> map { limitsConfiguration, stickerSaveStatus, resourceStatus, messageActions -> MessageContextMenuData in
+    let dataSignal: Signal<(MessageContextMenuData, [MessageId: ChatUpdatingMessageMedia]), NoError> = combineLatest(
+        loadLimits,
+        loadStickerSaveStatusSignal,
+        loadResourceStatusSignal,
+        context.sharedContext.chatAvailableMessageActions(postbox: context.account.postbox, accountPeerId: context.account.peerId, messageIds: Set(messages.map { $0.id })),
+        context.account.pendingUpdateMessageManager.updatingMessageMedia
+        |> take(1)
+    )
+    |> map { limitsConfiguration, stickerSaveStatus, resourceStatus, messageActions, updatingMessageMedia -> (MessageContextMenuData, [MessageId: ChatUpdatingMessageMedia]) in
         var canEdit = false
         if !isAction {
             let message = messages[0]
             canEdit = canEditMessage(context: context, limitsConfiguration: limitsConfiguration, message: message)
         }
         
-        return MessageContextMenuData(starStatus: stickerSaveStatus, canReply: canReply, canPin: canPin, canEdit: canEdit, canSelect: canSelect, resourceStatus: resourceStatus, messageActions: messageActions)
+        return (MessageContextMenuData(starStatus: stickerSaveStatus, canReply: canReply, canPin: canPin, canEdit: canEdit, canSelect: canSelect, resourceStatus: resourceStatus, messageActions: messageActions), updatingMessageMedia)
     }
     
     return dataSignal
     |> deliverOnMainQueue
-    |> map { data -> [ContextMenuItem] in
+    |> map { data, updatingMessageMedia -> [ContextMenuItem] in
         var actions: [ContextMenuItem] = []
         
         if let starStatus = data.starStatus {
@@ -403,47 +416,78 @@ func contextMenuForChatPresentationIntefaceState(chatPresentationInterfaceState:
         
         if !messages[0].text.isEmpty || resourceAvailable {
             let message = messages[0]
-            actions.append(.action(ContextMenuActionItem(text: chatPresentationInterfaceState.strings.Conversation_ContextMenuCopy, icon: { theme in
-                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Copy"), color: theme.actionSheet.primaryTextColor)
-            }, action: { _, f in
-                if resourceAvailable {
-                    for media in message.media {
-                        if let image = media as? TelegramMediaImage, let largest = largestImageRepresentation(image.representations) {
-                            let _ = (context.account.postbox.mediaBox.resourceData(largest.resource, option: .incremental(waitUntilFetchStatus: false))
-                                |> take(1)
-                                |> deliverOnMainQueue).start(next: { data in
-                                    if data.complete, let imageData = try? Data(contentsOf: URL(fileURLWithPath: data.path)) {
-                                        if let image = UIImage(data: imageData) {
-                                            if !message.text.isEmpty {
-                                                UIPasteboard.general.string = message.text
-                                                /*UIPasteboard.general.items = [
-                                                 [kUTTypeUTF8PlainText as String: message.text],
-                                                 [kUTTypePNG as String: image]
-                                                 ]*/
+            var isExpired = false
+            for media in message.media {
+                if let _ = media as? TelegramMediaExpiredContent {
+                    isExpired = true
+                }
+            }
+            if !isExpired {
+                actions.append(.action(ContextMenuActionItem(text: chatPresentationInterfaceState.strings.Conversation_ContextMenuCopy, icon: { theme in
+                    return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Copy"), color: theme.actionSheet.primaryTextColor)
+                }, action: { _, f in
+                    let copyTextWithEntities = {
+                        var messageEntities: [MessageTextEntity]?
+                        for attribute in message.attributes {
+                            if let attribute = attribute as? TextEntitiesMessageAttribute {
+                                messageEntities = attribute.entities
+                                break
+                            }
+                        }
+                        storeMessageTextInPasteboard(message.text, entities: messageEntities)
+                    }
+                    if resourceAvailable {
+                        for media in message.media {
+                            if let image = media as? TelegramMediaImage, let largest = largestImageRepresentation(image.representations) {
+                                let _ = (context.account.postbox.mediaBox.resourceData(largest.resource, option: .incremental(waitUntilFetchStatus: false))
+                                    |> take(1)
+                                    |> deliverOnMainQueue).start(next: { data in
+                                        if data.complete, let imageData = try? Data(contentsOf: URL(fileURLWithPath: data.path)) {
+                                            if let image = UIImage(data: imageData) {
+                                                if !message.text.isEmpty {
+                                                    copyTextWithEntities()
+                                                } else {
+                                                    UIPasteboard.general.image = image
+                                                }
                                             } else {
-                                                UIPasteboard.general.image = image
+                                                copyTextWithEntities()
                                             }
                                         } else {
-                                            UIPasteboard.general.string = message.text
+                                            copyTextWithEntities()
                                         }
-                                    } else {
-                                        UIPasteboard.general.string = message.text
-                                    }
-                                })
+                                    })
+                            }
                         }
+                    } else {
+                        copyTextWithEntities()
                     }
-                } else {
-                    var messageEntities: [MessageTextEntity]?
-                    for attribute in message.attributes {
-                        if let attribute = attribute as? TextEntitiesMessageAttribute {
-                            messageEntities = attribute.entities
-                            break
-                        }
+                    f(.default)
+                })))
+            }
+            if resourceAvailable, !message.containsSecretMedia {
+                var mediaReference: AnyMediaReference?
+                for media in message.media {
+                    if let image = media as? TelegramMediaImage, let largest = largestImageRepresentation(image.representations) {
+                        mediaReference = ImageMediaReference.standalone(media: image).abstract
+                        break
+                    } else if let file = media as? TelegramMediaFile, file.isVideo {
+                        mediaReference = FileMediaReference.standalone(media: file).abstract
+                        break
                     }
-                    storeMessageTextInPasteboard(message.text, entities: messageEntities)
                 }
-                f(.default)
-            })))
+                if let mediaReference = mediaReference {
+                    actions.append(.action(ContextMenuActionItem(text: chatPresentationInterfaceState.strings.Preview_SaveToCameraRoll, icon: { theme in
+                        return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Save"), color: theme.actionSheet.primaryTextColor)
+                    }, action: { _, f in
+                        let _ = (saveToCameraRoll(context: context, postbox: context.account.postbox, mediaReference: mediaReference)
+                        |> deliverOnMainQueue).start(completed: {
+                            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                            controllerInteraction.presentGlobalOverlayController(OverlayStatusController(theme: presentationData.theme, type: .success), nil)
+                        })
+                        f(.default)
+                    })))
+                }
+            }
         }
         
         if data.canEdit {
@@ -518,7 +562,7 @@ func contextMenuForChatPresentationIntefaceState(chatPresentationInterfaceState:
                     hasSelected = true
                 }
             }
-            if hasSelected {
+            if hasSelected, case .poll = activePoll.kind {
                 actions.append(.action(ContextMenuActionItem(text: chatPresentationInterfaceState.strings.Conversation_UnvotePoll, icon: { theme in
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Unvote"), color: theme.actionSheet.primaryTextColor)
                 }, action: { _, f in
@@ -546,7 +590,7 @@ func contextMenuForChatPresentationIntefaceState(chatPresentationInterfaceState:
             }
         }
         
-        if let _ = activePoll, messages[0].forwardInfo == nil {
+        if let activePoll = activePoll, messages[0].forwardInfo == nil {
             var canStopPoll = false
             if !messages[0].flags.contains(.Incoming) {
                 canStopPoll = true
@@ -572,7 +616,14 @@ func contextMenuForChatPresentationIntefaceState(chatPresentationInterfaceState:
             }
             
             if canStopPoll {
-                actions.append(.action(ContextMenuActionItem(text: chatPresentationInterfaceState.strings.Conversation_StopPoll, icon: { theme in
+                let stopPollAction: String
+                switch activePoll.kind {
+                case .poll:
+                    stopPollAction = chatPresentationInterfaceState.strings.Conversation_StopPoll
+                case .quiz:
+                    stopPollAction = chatPresentationInterfaceState.strings.Conversation_StopQuiz
+                }
+                actions.append(.action(ContextMenuActionItem(text: stopPollAction, icon: { theme in
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/StopPoll"), color: theme.actionSheet.primaryTextColor)
                 }, action: { _, f in
                     interfaceInteraction.requestStopPollInMessage(messages[0].id)
@@ -595,9 +646,9 @@ func contextMenuForChatPresentationIntefaceState(chatPresentationInterfaceState:
                         
                         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
                         if channel.addressName == nil {
-                            controllerInteraction.presentGlobalOverlayController(OverlayStatusController(theme: presentationData.theme, strings: presentationData.strings, type: .genericSuccess(presentationData.strings.Conversation_PrivateMessageLinkCopied, true)), nil)
+                            controllerInteraction.presentGlobalOverlayController(OverlayStatusController(theme: presentationData.theme, type: .genericSuccess(presentationData.strings.Conversation_PrivateMessageLinkCopied, true)), nil)
                         } else {
-                            controllerInteraction.presentGlobalOverlayController(OverlayStatusController(theme: presentationData.theme, strings: presentationData.strings, type: .genericSuccess(presentationData.strings.GroupInfo_InviteLink_CopyAlert_Success, false)), nil)
+                            controllerInteraction.presentGlobalOverlayController(OverlayStatusController(theme: presentationData.theme, type: .genericSuccess(presentationData.strings.GroupInfo_InviteLink_CopyAlert_Success, false)), nil)
                         }
                     }
                 })
@@ -737,12 +788,33 @@ func contextMenuForChatPresentationIntefaceState(chatPresentationInterfaceState:
             })))
         }
         
-        if !data.messageActions.options.intersection([.deleteLocally, .deleteGlobally]).isEmpty && !isAction {
-            let title = message.flags.isSending ? chatPresentationInterfaceState.strings.Conversation_ContextMenuCancelSending : chatPresentationInterfaceState.strings.Conversation_ContextMenuDelete
+        var clearCacheAsDelete = false
+        if let peer = message.peers[message.id.peerId] as? TelegramChannel {
+            clearCacheAsDelete = true
+        }
+        if (!data.messageActions.options.intersection([.deleteLocally, .deleteGlobally]).isEmpty || clearCacheAsDelete) && !isAction {
+            let title: String
+            var isSending = false
+            var isEditing = false
+            if updatingMessageMedia[message.id] != nil {
+                isSending = true
+                isEditing = true
+                title = chatPresentationInterfaceState.strings.Conversation_ContextMenuCancelEditing
+            } else if message.flags.isSending {
+                isSending = true
+                title = chatPresentationInterfaceState.strings.Conversation_ContextMenuCancelSending
+            } else {
+                title = chatPresentationInterfaceState.strings.Conversation_ContextMenuDelete
+            }
             actions.append(.action(ContextMenuActionItem(text: title, textColor: .destructive, icon: { theme in
-                return generateTintedImage(image: UIImage(bundleImageName: message.flags.isSending ? "Chat/Context Menu/Clear" : "Chat/Context Menu/Delete"), color: theme.actionSheet.destructiveActionTextColor)
+                return generateTintedImage(image: UIImage(bundleImageName: isSending ? "Chat/Context Menu/Clear" : "Chat/Context Menu/Delete"), color: theme.actionSheet.destructiveActionTextColor)
             }, action: { controller, f in
-                interfaceInteraction.deleteMessages(selectAll ? messages : [message], controller, f)
+                if isEditing {
+                    context.account.pendingUpdateMessageManager.cancel(messageId: message.id)
+                    f(.default)
+                } else {
+                    interfaceInteraction.deleteMessages(selectAll ? messages : [message], controller, f)
+                }
             })))
         }
         
@@ -831,11 +903,17 @@ func chatAvailableMessageActionsImpl(postbox: Postbox, accountPeerId: PeerId, me
                 }
                 if id.namespace == Namespaces.Message.ScheduledCloud {
                     optionsMap[id]!.insert(.sendScheduledNow)
-                    if let peer = transaction.getPeer(id.peerId), let channel = peer as? TelegramChannel, !channel.hasPermission(.editAllMessages) {
-                    } else {
+                    if canEditMessage(accountPeerId: accountPeerId, limitsConfiguration: limitsConfiguration, message: message, reschedule: true) {
                         optionsMap[id]!.insert(.editScheduledTime)
                     }
-                    if let peer = transaction.getPeer(id.peerId), let channel = peer as? TelegramChannel, !channel.hasPermission(.deleteAllMessages) {
+                    if let peer = transaction.getPeer(id.peerId), let channel = peer as? TelegramChannel {
+                        if !message.flags.contains(.Incoming) {
+                            optionsMap[id]!.insert(.deleteLocally)
+                        } else {
+                            if channel.hasPermission(.deleteAllMessages) {
+                                optionsMap[id]!.insert(.deleteLocally)
+                            }
+                        }
                     } else {
                         optionsMap[id]!.insert(.deleteLocally)
                     }

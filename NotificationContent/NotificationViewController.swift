@@ -5,6 +5,7 @@ import TelegramUI
 import BuildConfig
 
 @objc(NotificationViewController)
+@available(iOSApplicationExtension 10.0, *)
 class NotificationViewController: UIViewController, UNNotificationContentExtension {
     private var impl: NotificationViewControllerImpl?
     
@@ -37,7 +38,7 @@ class NotificationViewController: UIViewController, UNNotificationContentExtensi
             
             let appVersion = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "unknown"
             
-            self.impl = NotificationViewControllerImpl(initializationData: NotificationViewControllerInitializationData(appGroupPath: appGroupUrl.path, apiId: buildConfig.apiId, languagesCategory: languagesCategory, encryptionParameters: encryptionParameters, appVersion: appVersion, bundleData: buildConfig.bundleData(withAppToken: nil)), setPreferredContentSize: { [weak self] size in
+            self.impl = NotificationViewControllerImpl(initializationData: NotificationViewControllerInitializationData(appGroupPath: appGroupUrl.path, apiId: buildConfig.apiId, apiHash: buildConfig.apiHash, languagesCategory: languagesCategory, encryptionParameters: encryptionParameters, appVersion: appVersion, bundleData: buildConfig.bundleData(withAppToken: nil, signatureDict: nil)), setPreferredContentSize: { [weak self] size in
                 self?.preferredContentSize = size
             })
         }

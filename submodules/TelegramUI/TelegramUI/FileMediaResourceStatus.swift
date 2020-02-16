@@ -1,6 +1,7 @@
 import Foundation
 import UIKit
 import TelegramCore
+import SyncCore
 import Postbox
 import SwiftSignalKit
 import UniversalMediaPlayer
@@ -32,7 +33,7 @@ func messageFileMediaPlaybackStatus(context: AccountContext, file: TelegramMedia
     }
 }
 
-func messageFileMediaResourceStatus(context: AccountContext, file: TelegramMediaFile, message: Message, isRecentActions: Bool) -> Signal<FileMediaResourceStatus, NoError> {
+func messageFileMediaResourceStatus(context: AccountContext, file: TelegramMediaFile, message: Message, isRecentActions: Bool, isSharedMedia: Bool = false) -> Signal<FileMediaResourceStatus, NoError> {
     let playbackStatus = internalMessageFileMediaPlaybackStatus(context: context, file: file, message: message, isRecentActions: isRecentActions) |> map { status -> MediaPlayerPlaybackStatus? in
         return status?.status
     }

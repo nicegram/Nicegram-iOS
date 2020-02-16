@@ -1,6 +1,7 @@
 import Foundation
 import UIKit
 import TelegramCore
+import SyncCore
 import WebKit
 import AsyncDisplayKit
 import Display
@@ -112,7 +113,7 @@ final class InstantPageWebEmbedNode: ASDisplayNode, InstantPageNode {
         self.webView?.frame = self.bounds
     }
     
-    func transitionNode(media: InstantPageMedia) -> (ASDisplayNode, () -> (UIView?, UIView?))? {
+    func transitionNode(media: InstantPageMedia) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         return nil
     }
     

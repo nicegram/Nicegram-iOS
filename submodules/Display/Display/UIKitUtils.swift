@@ -106,12 +106,12 @@ public extension UIColor {
         }
     }
     
-    var hsv: (CGFloat, CGFloat, CGFloat) {
+    var hsb: (CGFloat, CGFloat, CGFloat) {
         var hue: CGFloat = 0.0
         var saturation: CGFloat = 0.0
-        var value: CGFloat = 0.0
-        if self.getHue(&hue, saturation: &saturation, brightness: &value, alpha: nil) {
-            return (hue, saturation, value)
+        var brightness: CGFloat = 0.0
+        if self.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: nil) {
+            return (hue, saturation, brightness)
         } else {
             return (0.0, 0.0, 0.0)
         }
@@ -184,6 +184,28 @@ public extension UIColor {
         let a: CGFloat = CGFloat(c1[3] + (c2[3] - c1[3]) * f)
         
         return UIColor(red: r, green: g, blue: b, alpha: a)
+    }
+    
+    private var colorComponents: (r: Int32, g: Int32, b: Int32) {
+        var r: CGFloat = 0.0
+        var g: CGFloat = 0.0
+        var b: CGFloat = 0.0
+        if self.getRed(&r, green: &g, blue: &b, alpha: nil) {
+            return (Int32(max(0.0, r) * 255.0), Int32(max(0.0, g) * 255.0), Int32(max(0.0, b) * 255.0))
+        } else if self.getWhite(&r, alpha: nil) {
+            return (Int32(max(0.0, r) * 255.0), Int32(max(0.0, r) * 255.0), Int32(max(0.0, r) * 255.0))
+        }
+        return (0, 0, 0)
+    }
+    
+    func distance(to other: UIColor) -> Int32 {
+        let e1 = self.colorComponents
+        let e2 = other.colorComponents
+        let rMean = (e1.r + e2.r) / 2
+        let r = e1.r - e2.r
+        let g = e1.g - e2.g
+        let b = e1.b - e2.b
+        return ((512 + rMean) * r * r) >> 8 + 4 * g * g + ((767 - rMean) * b * b) >> 8
     }
 }
 
@@ -296,6 +318,8 @@ private func makeSubtreeSnapshot(layer: CALayer, keepTransform: Bool = false) ->
         maskLayer.contentsScale = mask.contentsScale
         maskLayer.contentsCenter = mask.contentsCenter
         maskLayer.contentsGravity = mask.contentsGravity
+        maskLayer.frame = mask.frame
+        maskLayer.bounds = mask.bounds
         view.layer.mask = maskLayer
     }
     view.layer.cornerRadius = layer.cornerRadius

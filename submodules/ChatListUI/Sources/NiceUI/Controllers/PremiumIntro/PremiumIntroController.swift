@@ -228,7 +228,7 @@ public final class PremiumIntroController : ViewController {
                 let productID = notification.object as? String
                 if productID == NicegramProducts.Premium {
                     PremiumSettings().p = true
-                    validatePremium(isPremium())
+                    validatePremium(isPremium(), forceValid: true)
                     if (isPremium()) {
                         if let strongSelf = self {
                             let c = premiumController(context: strongSelf.context)

@@ -3,11 +3,12 @@ import UIKit
 import Postbox
 import Display
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import AvatarNode
 import AccountContext
 
-private let avatarFont = UIFont(name: ".SFCompactRounded-Semibold", size: 16.0)!
+private let avatarFont = avatarPlaceholderFont(size: 16.0)
 
 final class ChatMessageAvatarAccessoryItem: ListViewAccessoryItem {
     private let context: AccountContext
@@ -46,7 +47,7 @@ final class ChatMessageAvatarAccessoryItem: ListViewAccessoryItem {
         let node = ChatMessageAvatarAccessoryItemNode()
         node.frame = CGRect(origin: CGPoint(), size: CGSize(width: 38.0, height: 38.0))
         if let peer = self.peer {
-            node.setPeer(account: self.context.account, theme: self.context.sharedContext.currentPresentationData.with({ $0 }).theme, synchronousLoad: synchronous, peer: peer, authorOfMessage: self.messageReference, emptyColor: self.emptyColor)
+            node.setPeer(context: self.context, theme: self.context.sharedContext.currentPresentationData.with({ $0 }).theme, synchronousLoad: synchronous, peer: peer, authorOfMessage: self.messageReference, emptyColor: self.emptyColor)
         }
         return node
     }
@@ -68,11 +69,11 @@ final class ChatMessageAvatarAccessoryItemNode: ListViewAccessoryItemNode {
         self.addSubnode(self.avatarNode)
     }
     
-    func setPeer(account: Account, theme: PresentationTheme, synchronousLoad:Bool, peer: Peer, authorOfMessage: MessageReference?, emptyColor: UIColor) {
+    func setPeer(context: AccountContext, theme: PresentationTheme, synchronousLoad:Bool, peer: Peer, authorOfMessage: MessageReference?, emptyColor: UIColor) {
         var overrideImage: AvatarNodeImageOverride?
         if peer.isDeleted {
             overrideImage = .deletedIcon
         }
-        self.avatarNode.setPeer(account: account, theme: theme, peer: peer, authorOfMessage: authorOfMessage, overrideImage: overrideImage, emptyColor: emptyColor, synchronousLoad: synchronousLoad)
+        self.avatarNode.setPeer(context: context, theme: theme, peer: peer, authorOfMessage: authorOfMessage, overrideImage: overrideImage, emptyColor: emptyColor, synchronousLoad: synchronousLoad, displayDimensions: CGSize(width: 38.0, height: 38.0))
     }
 }

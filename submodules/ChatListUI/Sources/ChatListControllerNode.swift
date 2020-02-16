@@ -4,6 +4,7 @@ import AsyncDisplayKit
 import Display
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import MergeLists
@@ -11,6 +12,7 @@ import ActivityIndicator
 import AccountContext
 import SearchBarNode
 import SearchUI
+import ContextUI
 
 private final class ChatListControllerNodeView: UITracingLayerView, PreviewingHostView {
     var previewingDelegate: PreviewingHostViewDelegate? {
@@ -64,24 +66,25 @@ final class ChatListControllerNode: ASDisplayNode {
     var requestOpenRecentPeerOptions: ((Peer) -> Void)?
     var requestOpenMessageFromSearch: ((Peer, MessageId) -> Void)?
     var requestAddContact: ((String) -> Void)?
+    var peerContextAction: ((Peer, ChatListSearchContextActionSource, ASDisplayNode, ContextGesture?) -> Void)?
     var dismissSelf: (() -> Void)?
     var isEmptyUpdated: ((Bool) -> Void)?
 
     let debugListView = ListView()
     
-    init(context: AccountContext, groupId: PeerGroupId, controlsHistoryPreload: Bool, presentationData: PresentationData, controller: ChatListControllerImpl) {
+    init(context: AccountContext, groupId: PeerGroupId, filter: ChatListFilter?, previewing: Bool, controlsHistoryPreload: Bool, presentationData: PresentationData, controller: ChatListControllerImpl) {
         self.context = context
         self.groupId = groupId
         self.presentationData = presentationData
         
         let mode: ChatListNodeMode
-        if (controller.filter != nil) {
-            mode = .filteredChatList(filter: controller.filter!)
+        if (controller.ngfilter != nil) {
+            mode = .filteredChatList(filter: controller.ngfilter!)
         } else {
             mode = .chatList
         }
         
-        self.chatListNode = ChatListNode(context: context, groupId: groupId, controlsHistoryPreload: controlsHistoryPreload, mode: mode, theme: presentationData.theme, strings: presentationData.strings, dateTimeFormat: presentationData.dateTimeFormat, nameSortOrder: presentationData.nameSortOrder, nameDisplayOrder: presentationData.nameDisplayOrder, disableAnimations: presentationData.disableAnimations)
+        self.chatListNode = ChatListNode(context: context, groupId: groupId, chatListFilter: filter, previewing: previewing, controlsHistoryPreload: controlsHistoryPreload, mode: mode, theme: presentationData.theme, fontSize: presentationData.listsFontSize, strings: presentationData.strings, dateTimeFormat: presentationData.dateTimeFormat, nameSortOrder: presentationData.nameSortOrder, nameDisplayOrder: presentationData.nameDisplayOrder, disableAnimations: presentationData.disableAnimations)
         
         self.controller = controller
         
@@ -155,7 +158,7 @@ final class ChatListControllerNode: ASDisplayNode {
         
         self.backgroundColor = self.presentationData.theme.chatList.backgroundColor
         
-        self.chatListNode.updateThemeAndStrings(theme: self.presentationData.theme, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, nameSortOrder: self.presentationData.nameSortOrder, nameDisplayOrder: self.presentationData.nameDisplayOrder, disableAnimations: self.presentationData.disableAnimations)
+        self.chatListNode.updateThemeAndStrings(theme: self.presentationData.theme, fontSize: self.presentationData.listsFontSize, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, nameSortOrder: self.presentationData.nameSortOrder, nameDisplayOrder: self.presentationData.nameDisplayOrder, disableAnimations: self.presentationData.disableAnimations)
         self.searchDisplayController?.updatePresentationData(presentationData)
         self.chatListEmptyNode?.updateThemeAndStrings(theme: self.presentationData.theme, strings: self.presentationData.strings)
         
@@ -219,29 +222,8 @@ final class ChatListControllerNode: ASDisplayNode {
         self.chatListNode.bounds = CGRect(x: 0.0, y: 0.0, width: layout.size.width, height: layout.size.height)
         self.chatListNode.position = CGPoint(x: layout.size.width / 2.0, y: layout.size.height / 2.0)
         
-        var duration: Double = 0.0
-        var curve: UInt = 0
-        switch transition {
-            case .immediate:
-                break
-            case let .animated(animationDuration, animationCurve):
-                duration = animationDuration
-                switch animationCurve {
-                    case .easeInOut, .custom:
-                        break
-                    case .spring:
-                        curve = 7
-                }
-        }
-        
-        let listViewCurve: ListViewAnimationCurve
-        if curve == 7 {
-            listViewCurve = .Spring(duration: duration)
-        } else {
-            listViewCurve = .Default(duration: duration)
-        } 
-        
-        let updateSizeAndInsets = ListViewUpdateSizeAndInsets(size: layout.size, insets: insets, duration: duration, curve: listViewCurve)
+        let (duration, curve) = listViewAnimationDurationAndCurve(transition: transition)
+        let updateSizeAndInsets = ListViewUpdateSizeAndInsets(size: layout.size, insets: insets, duration: duration, curve: curve)
         
         self.chatListNode.visualInsets = UIEdgeInsets(top: visualNavigationHeight, left: 0.0, bottom: 0.0, right: 0.0)
         self.chatListNode.updateLayout(transition: transition, updateSizeAndInsets: updateSizeAndInsets)
@@ -269,6 +251,7 @@ final class ChatListControllerNode: ASDisplayNode {
         
         self.searchDisplayController = SearchDisplayController(presentationData: self.presentationData, contentNode: ChatListSearchContainerNode(context: self.context, filter: [], groupId: self.groupId, openPeer: { [weak self] peer, dismissSearch in
             self?.requestOpenPeerFromSearch?(peer, dismissSearch)
+        }, openDisabledPeer: { _ in
         }, openRecentPeerOptions: { [weak self] peer in
             self?.requestOpenRecentPeerOptions?(peer)
         }, openMessage: { [weak self] peer, messageId in
@@ -279,7 +262,7 @@ final class ChatListControllerNode: ASDisplayNode {
             if let requestAddContact = self?.requestAddContact {
                 requestAddContact(phoneNumber)
             }
-        }), cancel: { [weak self] in
+        }, peerContextAction: self.peerContextAction), cancel: { [weak self] in
             if let requestDeactivateSearch = self?.requestDeactivateSearch {
                 requestDeactivateSearch()
             }

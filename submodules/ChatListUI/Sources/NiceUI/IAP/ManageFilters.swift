@@ -16,6 +16,7 @@ import TelegramUIPreferences
 import ItemListUI
 import AccountContext
 import OverlayStatusController
+import NicegramLib
 
 
 private struct SelectionState: Equatable {
@@ -98,16 +99,17 @@ private enum ManageFiltersEntry: ItemListNodeEntry {
         return lhs.stableId < rhs.stableId
     }
     
-    func item(_ arguments: ManageFiltersArguments) -> ListViewItem {
+    func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
+        let arguments = arguments as! ManageFiltersArguments
         switch self {
         case let .header(theme, text):
-            return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .filterSwitch(theme, title, value, filter, _):
-            return ItemListSwitchItem(theme: theme, title: title, value: value, maximumNumberOfLines: 1, sectionId: self.section, style: .blocks, updated: { value in
+            return ItemListSwitchItem(presentationData: presentationData, title: title, value: value, maximumNumberOfLines: 1, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.toggleFilter(filter, value)
             })
         case let .configureCustom(theme, text):
-            return ItemListDisclosureItem(theme: theme, title: text, label: "", sectionId: self.section, style: .blocks, action: {
+            return ItemListDisclosureItem(presentationData: presentationData, title: text, label: "", sectionId: self.section, style: .blocks, action: {
                 arguments.testAction()
             })
         }
@@ -195,13 +197,13 @@ public func manageFilters(context: AccountContext) -> ViewController {
     
     
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get())
-        |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState<ManageFiltersEntry>, ManageFiltersEntry.ItemGenerationArguments)) in
+        |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
             
             let entries = manageFiltersEntries(presentationData: presentationData)
             
             
-            let controllerState = ItemListControllerState(theme: presentationData.theme, title: .text(l("ManageFilters.Title", presentationData.strings.baseLanguageCode)), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-            let listState = ItemListNodeState(entries: entries, style: .blocks, ensureVisibleItemTag: nil, initialScrollToItem: nil)
+            let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("ManageFilters.Title", presentationData.strings.baseLanguageCode)), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
+            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, ensureVisibleItemTag: nil, initialScrollToItem: nil)
             
             return (controllerState, (listState, arguments))
     }

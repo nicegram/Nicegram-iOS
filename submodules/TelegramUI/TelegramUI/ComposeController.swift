@@ -5,11 +5,14 @@ import AsyncDisplayKit
 import Postbox
 import SwiftSignalKit
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import AccountContext
 import AlertUI
+import PresentationDataUtils
 import SearchUI
 import TelegramPermissionsUI
+import AppBundle
 
 public class ComposeController: ViewController {
     private let context: AccountContext
@@ -39,11 +42,15 @@ public class ComposeController: ViewController {
         
         super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData))
         
+        self.navigationPresentation = .modal
+        
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
         
         self.title = self.presentationData.strings.Compose_NewMessage
-        
+                
         self.navigationItem.backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Back, style: .plain, target: nil, action: nil)
+        
+        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Cancel, style: .plain, target: self, action: #selector(cancelPressed))
         
         self.scrollToTop = { [weak self] in
             if let strongSelf = self {
@@ -55,18 +62,18 @@ public class ComposeController: ViewController {
         }
         
         self.presentationDataDisposable = (context.sharedContext.presentationData
-            |> deliverOnMainQueue).start(next: { [weak self] presentationData in
-                if let strongSelf = self {
-                    let previousTheme = strongSelf.presentationData.theme
-                    let previousStrings = strongSelf.presentationData.strings
-                    
-                    strongSelf.presentationData = presentationData
-                    
-                    if previousTheme !== presentationData.theme || previousStrings !== presentationData.strings {
-                        strongSelf.updateThemeAndStrings()
-                    }
+        |> deliverOnMainQueue).start(next: { [weak self] presentationData in
+            if let strongSelf = self {
+                let previousTheme = strongSelf.presentationData.theme
+                let previousStrings = strongSelf.presentationData.strings
+                
+                strongSelf.presentationData = presentationData
+                
+                if previousTheme !== presentationData.theme || previousStrings !== presentationData.strings {
+                    strongSelf.updateThemeAndStrings()
                 }
-            })
+            }
+        })
         
         self.searchContentNode = NavigationBarSearchContentNode(theme: self.presentationData.theme, placeholder: self.presentationData.strings.Common_Search, activate: { [weak self] in
             self?.activateSearch()
@@ -141,7 +148,7 @@ public class ComposeController: ViewController {
         
         self.contactsNode.openCreateNewSecretChat = { [weak self] in
             if let strongSelf = self {
-                let controller = ContactSelectionControllerImpl(ContactSelectionControllerParams(context: strongSelf.context, title: { $0.Compose_NewEncryptedChatTitle }))
+                let controller = ContactSelectionControllerImpl(ContactSelectionControllerParams(context: strongSelf.context, autoDismiss: false, title: { $0.Compose_NewEncryptedChatTitle }))
                 strongSelf.createActionDisposable.set((controller.result
                     |> take(1)
                     |> deliverOnMainQueue).start(next: { [weak controller] peer in
@@ -234,9 +241,6 @@ public class ComposeController: ViewController {
     
     private func activateSearch() {
         if self.displayNavigationBar {
-            if let scrollToTop = self.scrollToTop {
-                scrollToTop()
-            }
             if let searchContentNode = self.searchContentNode {
                 self.contactsNode.activateSearch(placeholderNode: searchContentNode.placeholderNode)
             }
@@ -255,5 +259,9 @@ public class ComposeController: ViewController {
     
     private func openPeer(peerId: PeerId) {
         (self.navigationController as? NavigationController)?.replaceTopController(ChatControllerImpl(context: self.context, chatLocation: .peer(peerId)), animated: true)
+    }
+    
+    @objc private func cancelPressed() {
+        (self.navigationController as? NavigationController)?.filterController(self, animated: true)
     }
 }

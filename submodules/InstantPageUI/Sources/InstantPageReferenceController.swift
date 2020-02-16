@@ -4,8 +4,10 @@ import Display
 import AsyncDisplayKit
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import AccountContext
+import TelegramUIPreferences
 
 final class InstantPageReferenceController: ViewController {
     private var controllerNode: InstantPageReferenceControllerNode {
@@ -15,6 +17,7 @@ final class InstantPageReferenceController: ViewController {
     private var animatedIn = false
     
     private let context: AccountContext
+    private let sourcePeerType: MediaAutoDownloadPeerType
     private let theme: InstantPageTheme
     private let webPage: TelegramMediaWebpage
     private let anchorText: NSAttributedString
@@ -22,8 +25,9 @@ final class InstantPageReferenceController: ViewController {
     private let openUrlIn: (InstantPageUrlItem) -> Void
     private let present: (ViewController, Any?) -> Void
     
-    init(context: AccountContext, theme: InstantPageTheme, webPage: TelegramMediaWebpage, anchorText: NSAttributedString, openUrl: @escaping (InstantPageUrlItem) -> Void, openUrlIn: @escaping (InstantPageUrlItem) -> Void, present: @escaping (ViewController, Any?) -> Void) {
+    init(context: AccountContext, sourcePeerType: MediaAutoDownloadPeerType, theme: InstantPageTheme, webPage: TelegramMediaWebpage, anchorText: NSAttributedString, openUrl: @escaping (InstantPageUrlItem) -> Void, openUrlIn: @escaping (InstantPageUrlItem) -> Void, present: @escaping (ViewController, Any?) -> Void) {
         self.context = context
+        self.sourcePeerType = sourcePeerType
         self.theme = theme
         self.webPage = webPage
         self.anchorText = anchorText
@@ -41,7 +45,7 @@ final class InstantPageReferenceController: ViewController {
     }
     
     override public func loadDisplayNode() {
-        self.displayNode = InstantPageReferenceControllerNode(context: self.context, theme: self.theme, webPage: self.webPage, anchorText: self.anchorText, openUrl: self.openUrl, openUrlIn: self.openUrlIn, present: self.present)
+        self.displayNode = InstantPageReferenceControllerNode(context: self.context, sourcePeerType: self.sourcePeerType, theme: self.theme, webPage: self.webPage, anchorText: self.anchorText, openUrl: self.openUrl, openUrlIn: self.openUrlIn, present: self.present)
         self.controllerNode.dismiss = { [weak self] in
             self?.presentingViewController?.dismiss(animated: false, completion: nil)
         }
@@ -52,8 +56,6 @@ final class InstantPageReferenceController: ViewController {
     
     override public func loadView() {
         super.loadView()
-        
-        self.statusBar.removeFromSupernode()
     }
     
     override public func viewDidAppear(_ animated: Bool) {

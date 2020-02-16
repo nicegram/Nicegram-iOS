@@ -3,13 +3,16 @@ import UIKit
 import AsyncDisplayKit
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import Display
 import TelegramPresentationData
+import TelegramUIPreferences
 import MergeLists
 import AvatarNode
 import AccountContext
 import PeerPresenceStatusManager
+import AppBundle
 
 private let subtitleFont = Font.regular(12.0)
 
@@ -45,8 +48,8 @@ private struct SharePeerEntry: Comparable, Identifiable {
         return lhs.index < rhs.index
     }
     
-    func item(account: Account, interfaceInteraction: ShareControllerInteraction) -> GridItem {
-        return ShareControllerPeerGridItem(account: account, theme: self.theme, strings: self.strings, peer: self.peer, presence: self.presence, controllerInteraction: interfaceInteraction, search: false)
+    func item(context: AccountContext, interfaceInteraction: ShareControllerInteraction) -> GridItem {
+        return ShareControllerPeerGridItem(context: context, theme: self.theme, strings: self.strings, peer: self.peer, presence: self.presence, controllerInteraction: interfaceInteraction, search: false)
     }
 }
 
@@ -57,23 +60,24 @@ private struct ShareGridTransaction {
     let animated: Bool
 }
 
-private let avatarFont = UIFont(name: ".SFCompactRounded-Semibold", size: 17.0)!
+private let avatarFont = avatarPlaceholderFont(size: 17.0)
 
-private func preparedGridEntryTransition(account: Account, from fromEntries: [SharePeerEntry], to toEntries: [SharePeerEntry], interfaceInteraction: ShareControllerInteraction) -> ShareGridTransaction {
+private func preparedGridEntryTransition(context: AccountContext, from fromEntries: [SharePeerEntry], to toEntries: [SharePeerEntry], interfaceInteraction: ShareControllerInteraction) -> ShareGridTransaction {
     let (deleteIndices, indicesAndItems, updateIndices) = mergeListsStableWithUpdates(leftList: fromEntries, rightList: toEntries)
     
     let deletions = deleteIndices
-    let insertions = indicesAndItems.map { GridNodeInsertItem(index: $0.0, item: $0.1.item(account: account, interfaceInteraction: interfaceInteraction), previousIndex: $0.2) }
-    let updates = updateIndices.map { GridNodeUpdateItem(index: $0.0, previousIndex: $0.2, item: $0.1.item(account: account, interfaceInteraction: interfaceInteraction)) }
+    let insertions = indicesAndItems.map { GridNodeInsertItem(index: $0.0, item: $0.1.item(context: context, interfaceInteraction: interfaceInteraction), previousIndex: $0.2) }
+    let updates = updateIndices.map { GridNodeUpdateItem(index: $0.0, previousIndex: $0.2, item: $0.1.item(context: context, interfaceInteraction: interfaceInteraction)) }
     
     return ShareGridTransaction(deletions: deletions, insertions: insertions, updates: updates, animated: false)
 }
 
 final class SharePeersContainerNode: ASDisplayNode, ShareContentContainerNode {
     private let sharedContext: SharedAccountContext
-    private let account: Account
+    private let context: AccountContext
     private let theme: PresentationTheme
     private let strings: PresentationStrings
+    private let nameDisplayOrder: PresentationPersonNameOrder
     private let controllerInteraction: ShareControllerInteraction
     private let switchToAnotherAccount: () -> Void
     
@@ -103,11 +107,12 @@ final class SharePeersContainerNode: ASDisplayNode, ShareContentContainerNode {
     
     let peersValue = Promise<[(RenderedPeer, PeerPresence?)]>()
     
-    init(sharedContext: SharedAccountContext, account: Account, switchableAccounts: [AccountWithInfo], theme: PresentationTheme, strings: PresentationStrings, peers: [(RenderedPeer, PeerPresence?)], accountPeer: Peer, controllerInteraction: ShareControllerInteraction, externalShare: Bool, switchToAnotherAccount: @escaping () -> Void) {
+    init(sharedContext: SharedAccountContext, context: AccountContext, switchableAccounts: [AccountWithInfo], theme: PresentationTheme, strings: PresentationStrings, nameDisplayOrder: PresentationPersonNameOrder, peers: [(RenderedPeer, PeerPresence?)], accountPeer: Peer, controllerInteraction: ShareControllerInteraction, externalShare: Bool, switchToAnotherAccount: @escaping () -> Void) {
         self.sharedContext = sharedContext
-        self.account = account
+        self.context = context
         self.theme = theme
         self.strings = strings
+        self.nameDisplayOrder = nameDisplayOrder
         self.controllerInteraction = controllerInteraction
         self.accountPeer = accountPeer
         self.switchToAnotherAccount = switchToAnotherAccount
@@ -154,9 +159,9 @@ final class SharePeersContainerNode: ASDisplayNode, ShareContentContainerNode {
         
         self.contentTitleAccountNode = AvatarNode(font: avatarFont)
         var hasOtherAccounts = false
-        if switchableAccounts.count > 1, let info = switchableAccounts.first(where: { $0.account.id == account.id }) {
+        if switchableAccounts.count > 1, let info = switchableAccounts.first(where: { $0.account.id == context.account.id }) {
             hasOtherAccounts = true
-            self.contentTitleAccountNode.setPeer(account: account, theme: theme, peer: info.peer, emptyColor: nil, synchronousLoad: false)
+            self.contentTitleAccountNode.setPeer(context: context, theme: theme, peer: info.peer, emptyColor: nil, synchronousLoad: false)
         } else {
             self.contentTitleAccountNode.isHidden = true
         }
@@ -195,7 +200,7 @@ final class SharePeersContainerNode: ASDisplayNode, ShareContentContainerNode {
                 strongSelf.entries = entries
                 
                 let firstTime = previousEntries == nil
-                let transition = preparedGridEntryTransition(account: account, from: previousEntries ?? [], to: entries, interfaceInteraction: controllerInteraction)
+                let transition = preparedGridEntryTransition(context: context, from: previousEntries ?? [], to: entries, interfaceInteraction: controllerInteraction)
                 strongSelf.enqueueTransition(transition, firstTime: firstTime)
             }
         }))
@@ -371,7 +376,7 @@ final class SharePeersContainerNode: ASDisplayNode, ShareContentContainerNode {
                 if peer.peerId == self.accountPeer.id {
                     text = self.strings.DialogList_SavedMessages
                 } else {
-                    text = peer.chatMainPeer?.displayTitle ?? ""
+                    text = peer.chatMainPeer?.displayTitle(strings: self.strings, displayOrder: self.nameDisplayOrder) ?? ""
                 }
                 
                 if !string.isEmpty {

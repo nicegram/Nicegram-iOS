@@ -15,6 +15,7 @@
 "NiceFeatures.Tabs.ShowContacts" = "Show Contacts Tab";
 "NiceFeatures.ChatScreen.Header" = "CHAT SCREEN";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Animated Stickers";
+"NiceFeatures.useBackCam" = "Use Rear camera (Round Videos)";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "Save to Cloud";
@@ -22,10 +23,14 @@
 /*Open Pin*/
 "Chat.OpenPin" = "Show Pin";
 "ChatFilter.Admin" = "Admin";
+"NiceFeatures.Notifications.HideNotifyAccount" = "Hide account in notification";
+"NiceFeatures.Notifications.HideNotifyAccountNotice" = "Instead of «User → Account» you will see only «User». For multiple accounts only.";
 "NiceFeatures.Notifications.Fix" = "Disable Unwanted Notifications";
 "NiceFeatures.Notifications.FixNotice" = "Useful if you get notifications from muted chats.\nReply from notifications, account labels and media previews will be unavailable.";
 "NiceFeatures.Filters.Header" = "FILTERS (TABS)";
 "NiceFeatures.Filters.Notice" = "Select the number of custom tabs.\nLongtap on tab to change filter.";
+"NiceFeatures.Filters.ShowBadge" = "Show Badges (Filters)";
+"NiceFeatures.UseClassicInfoUi" = "Use classic Chat Info UI";
 
 /*Common*/
 "Common.ExitNow" = "Exit Now";
@@ -50,6 +55,8 @@
 "NGWeb.Blocked" = "Unavailable in Nicegram due to AppStore Guidelines";
 
 /*Browser*/
+/*Please, Go to «Data & Storage» to configure default browser*/
+"NiceFeatures.Use.DataStorage" = "Please, Use «%1» to configure default browser";
 "NiceFeatures.Browser.Header" = "URLs";
 "NiceFeatures.Browser.UseBrowser" = "Open links in browser";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram will open links in external browser instead of in-app. Selected browser must be installed.";
@@ -72,14 +79,16 @@
 "Common.FAQ.Intro" = "Please note that Nicegram Support is done by the only one developer and community.\n\nFirstly, take a look at the Nicegram FAQ: it has important troubleshooting tips and answers to most questions.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Unique features you can't refuse!";
-"IAP.Premium.Features" = "Unlimited Folders\nUnlimited Pinned Chats\nMissed messages Filter\n«New Messages» digest on App launch";
+"IAP.Premium.Features" = "Unlimited Folders & Pinned Chats\nQuick message Translator\nMissed messages Filter & Tabs Management\n«New Messages» digest on App launch";
 "IAP.Premium.Activated" = "Premium Activated!";
 "IAP.Common.Restore" = "Restore Purchases";
 "IAP.Common.CantPay" = "Sorry, but You can't make purchases because of your device or account restrictions.";
 "IAP.Common.ErrorFetch" = "Sorry, сan't fetch App Store purchases.";
 "IAP.Common.Congrats" = "Congratulations!";
 "IAP.Common.ValidateError" = "Sorry, can't validate your purchase.";
-
+"Premium.OnetapTranslate" = "Quick Translate button";
+"Premium.IgnoreTranslate.Title" = "Ignored Languages";
+"Premium.IgnoreTranslate.Header" = "App will try to detect language of each message. Quick Translate button will be DISABLED for languages you choose below.";
 
 /*Manage Filters*/
 "ManageFilters.Title" = "Manage Tabs";
@@ -95,3 +104,14 @@
 "NGLab.RegDate.Notice" = "This is an approximate date";
 "NGLab.RegDate.MenuItem" = "registered";
 "NGLab.RegDate.FetchError" = "Sorry, can't get registration date.";
+
+/*Backup Settings*/
+"NiceFeatures.BackupIcloud" = "Sync Settings & Folders with iCloud";
+"NiceFeatures.BackupSettings" = "Backup Settings & Folders";
+"NiceFeatures.BackupSettings.Notice" = "Creates backup file. Tap on file for restore.";
+"NiceFeatures.BackupSettings.Done" = "Backup Done to Saved Messages";
+"NiceFeatures.BackupSettings.Error" = "Error creating backup";
+
+"NiceFeatures.RestoreSettings.Confirm" = "Are you sure you want to restore Folders & Settings from file?\n⚠️ It will override current data";
+"NiceFeatures.RestoreSettings.Done" = "Folders & Settings succesfully restored";
+"NiceFeatures.RestoreSettings.Error" = "Error restoring settings. File may be corrupted";

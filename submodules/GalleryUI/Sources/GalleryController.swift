@@ -6,6 +6,7 @@ import Postbox
 import SwiftSignalKit
 import AsyncDisplayKit
 import TelegramCore
+import SyncCore
 import SafariServices
 import TelegramPresentationData
 import TextFormat
@@ -139,7 +140,7 @@ private func galleryMessageCaptionText(_ message: Message) -> String {
     return message.text
 }
 
-public func galleryItemForEntry(context: AccountContext, presentationData: PresentationData, entry: MessageHistoryEntry, isCentral: Bool = false, streamVideos: Bool, loopVideos: Bool = false, hideControls: Bool = false, fromPlayingVideo: Bool = false, landscape: Bool = false, timecode: Double? = nil, tempFilePath: String? = nil, playbackCompleted: @escaping () -> Void = {}, performAction: @escaping (GalleryControllerInteractionTapAction) -> Void = { _ in }, openActionOptions: @escaping (GalleryControllerInteractionTapAction) -> Void = { _ in }) -> GalleryItem? {
+public func galleryItemForEntry(context: AccountContext, presentationData: PresentationData, entry: MessageHistoryEntry, isCentral: Bool = false, streamVideos: Bool, loopVideos: Bool = false, hideControls: Bool = false, fromPlayingVideo: Bool = false, landscape: Bool = false, timecode: Double? = nil, configuration: GalleryConfiguration? = nil, tempFilePath: String? = nil, playbackCompleted: @escaping () -> Void = {}, performAction: @escaping (GalleryControllerInteractionTapAction) -> Void = { _ in }, openActionOptions: @escaping (GalleryControllerInteractionTapAction) -> Void = { _ in }, storeMediaPlaybackState: @escaping (MessageId, Double?) -> Void = { _, _ in }) -> GalleryItem? {
     let message = entry.message
     let location = entry.location
     if let (media, mediaImage) = mediaForMessage(message: message) {
@@ -172,7 +173,7 @@ public func galleryItemForEntry(context: AccountContext, presentationData: Prese
                 }
                 
                 let caption = galleryCaptionStringWithAppliedEntities(text, entities: entities)
-                return UniversalVideoGalleryItem(context: context, presentationData: presentationData, content: content, originData: GalleryItemOriginData(title: message.effectiveAuthor?.displayTitle, timestamp: message.timestamp), indexData: location.flatMap { GalleryItemIndexData(position: Int32($0.index), totalCount: Int32($0.count)) }, contentInfo: .message(message), caption: caption, hideControls: hideControls, fromPlayingVideo: fromPlayingVideo, landscape: landscape, timecode: timecode, playbackCompleted: playbackCompleted, performAction: performAction, openActionOptions: openActionOptions)
+                return UniversalVideoGalleryItem(context: context, presentationData: presentationData, content: content, originData: GalleryItemOriginData(title: message.effectiveAuthor?.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder), timestamp: message.timestamp), indexData: location.flatMap { GalleryItemIndexData(position: Int32($0.index), totalCount: Int32($0.count)) }, contentInfo: .message(message), caption: caption, hideControls: hideControls, fromPlayingVideo: fromPlayingVideo, landscape: landscape, timecode: timecode, configuration: configuration, playbackCompleted: playbackCompleted, performAction: performAction, openActionOptions: openActionOptions, storeMediaPlaybackState: storeMediaPlaybackState)
             } else {
                 if let fileName = file.fileName, (fileName as NSString).pathExtension.lowercased() == "json" {
                     return ChatAnimationGalleryItem(context: context, presentationData: presentationData, message: message, location: location)
@@ -203,7 +204,7 @@ public func galleryItemForEntry(context: AccountContext, presentationData: Prese
                         if let file = webpageContent.file, file.isVideo {
                             content = NativeVideoContent(id: .message(message.stableId, file.fileId), fileReference: .message(message: MessageReference(message), media: file), imageReference: mediaImage.flatMap({ ImageMediaReference.message(message: MessageReference(message), media: $0) }), streamVideo: .conservative, loopVideo: loopVideos, tempFilePath: tempFilePath)
                         } else if URL(string: embedUrl)?.pathExtension == "mp4" {
-                            content = SystemVideoContent(url: embedUrl, imageReference: .webPage(webPage: WebpageReference(webpage), media: image), dimensions: webpageContent.embedSize ?? CGSize(width: 640.0, height: 640.0), duration: Int32(webpageContent.duration ?? 0))
+                            content = SystemVideoContent(url: embedUrl, imageReference: .webPage(webPage: WebpageReference(webpage), media: image), dimensions: webpageContent.embedSize?.cgSize ?? CGSize(width: 640.0, height: 640.0), duration: Int32(webpageContent.duration ?? 0))
                         }
                     }
                     if content == nil, let webEmbedContent = WebEmbedVideoContent(webPage: webpage, webpageContent: webpageContent, forcedTimestamp: timecode.flatMap(Int.init)) {
@@ -211,7 +212,7 @@ public func galleryItemForEntry(context: AccountContext, presentationData: Prese
                     }
             }
             if let content = content {
-                return UniversalVideoGalleryItem(context: context, presentationData: presentationData, content: content, originData: GalleryItemOriginData(title: message.effectiveAuthor?.displayTitle, timestamp: message.timestamp), indexData: location.flatMap { GalleryItemIndexData(position: Int32($0.index), totalCount: Int32($0.count)) }, contentInfo: .message(message), caption: NSAttributedString(string: ""), fromPlayingVideo: fromPlayingVideo, landscape: landscape, timecode: timecode, performAction: performAction, openActionOptions: openActionOptions)
+                return UniversalVideoGalleryItem(context: context, presentationData: presentationData, content: content, originData: GalleryItemOriginData(title: message.effectiveAuthor?.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder), timestamp: message.timestamp), indexData: location.flatMap { GalleryItemIndexData(position: Int32($0.index), totalCount: Int32($0.count)) }, contentInfo: .message(message), caption: NSAttributedString(string: ""), fromPlayingVideo: fromPlayingVideo, landscape: landscape, timecode: timecode, configuration: configuration, performAction: performAction, openActionOptions: openActionOptions, storeMediaPlaybackState: storeMediaPlaybackState)
             } else {
                 return nil
             }
@@ -221,10 +222,10 @@ public func galleryItemForEntry(context: AccountContext, presentationData: Prese
 }
 
 public final class GalleryTransitionArguments {
-    public let transitionNode: (ASDisplayNode, () -> (UIView?, UIView?))
+    public let transitionNode: (ASDisplayNode, CGRect, () -> (UIView?, UIView?))
     public let addToTransitionSurface: (UIView) -> Void
     
-    public init(transitionNode: (ASDisplayNode, () -> (UIView?, UIView?)), addToTransitionSurface: @escaping (UIView) -> Void) {
+    public init(transitionNode: (ASDisplayNode, CGRect, () -> (UIView?, UIView?)), addToTransitionSurface: @escaping (UIView) -> Void) {
         self.transitionNode = transitionNode
         self.addToTransitionSurface = addToTransitionSurface
     }
@@ -272,7 +273,27 @@ public enum GalleryControllerItemNodeAction {
     case timecode(Double)
 }
 
-public class GalleryController: ViewController {
+public struct GalleryConfiguration {
+    static var defaultValue: GalleryConfiguration {
+        return GalleryConfiguration(youtubePictureInPictureEnabled: false)
+    }
+    
+    public let youtubePictureInPictureEnabled: Bool
+    
+    fileprivate init(youtubePictureInPictureEnabled: Bool) {
+        self.youtubePictureInPictureEnabled = youtubePictureInPictureEnabled
+    }
+    
+    static func with(appConfiguration: AppConfiguration) -> GalleryConfiguration {
+        if let data = appConfiguration.data, let value = data["youtube_pip"] as? String {
+            return GalleryConfiguration(youtubePictureInPictureEnabled: value != "disabled")
+        } else {
+            return .defaultValue
+        }
+    }
+}
+
+public class GalleryController: ViewController, StandalonePresentableController {
     public static let darkNavigationTheme = NavigationBarTheme(buttonColor: .white, disabledButtonColor: UIColor(rgb: 0x525252), primaryTextColor: .white, backgroundColor: UIColor(white: 0.0, alpha: 0.6), separatorColor: UIColor(white: 0.0, alpha: 0.8), badgeBackgroundColor: .clear, badgeStrokeColor: .clear, badgeTextColor: .clear)
     public static let lightNavigationTheme = NavigationBarTheme(buttonColor: UIColor(rgb: 0x007ee5), disabledButtonColor: UIColor(rgb: 0xd0d0d0), primaryTextColor: .black, backgroundColor: UIColor(red: 0.968626451, green: 0.968626451, blue: 0.968626451, alpha: 1.0), separatorColor: UIColor(red: 0.6953125, green: 0.6953125, blue: 0.6953125, alpha: 1.0), badgeBackgroundColor: .clear, badgeStrokeColor: .clear, badgeTextColor: .clear)
     
@@ -304,13 +325,14 @@ public class GalleryController: ViewController {
     
     private var entries: [MessageHistoryEntry] = []
     private var centralEntryStableId: UInt32?
+    private var configuration: GalleryConfiguration?
     
     private let centralItemTitle = Promise<String>()
     private let centralItemTitleView = Promise<UIView?>()
     private let centralItemRightBarButtonItem = Promise<UIBarButtonItem?>()
     private let centralItemRightBarButtonItems = Promise<[UIBarButtonItem]?>(nil)
     private let centralItemNavigationStyle = Promise<GalleryItemNodeNavigationStyle>()
-    private let centralItemFooterContentNode = Promise<GalleryFooterContentNode?>()
+    private let centralItemFooterContentNode = Promise<(GalleryFooterContentNode?, GalleryOverlayContentNode?)>()
     private let centralItemAttributesDisposable = DisposableSet();
     
     private let _hiddenMedia = Promise<(MessageId, Media)?>(nil)
@@ -374,7 +396,7 @@ public class GalleryController: ViewController {
                         } else {
                             namespaces = .not(Namespaces.Message.allScheduled)
                         }
-                        return context.account.postbox.aroundMessageHistoryViewForLocation(.peer(message!.id.peerId), anchor: .index(message!.index), count: 50, fixedCombinedReadStates: nil, topTaggedMessageIdNamespaces: [], tagMask: tags, namespaces: namespaces, orderStatistics: [.combinedLocation])
+                        return context.account.postbox.aroundMessageHistoryViewForLocation(.peer(message!.id.peerId), anchor: .index(message!.index), count: 50, clipHoles: false, fixedCombinedReadStates: nil, topTaggedMessageIdNamespaces: [], tagMask: tags, namespaces: namespaces, orderStatistics: [.combinedLocation])
                         |> mapToSignal { (view, _, _) -> Signal<GalleryMessageHistoryView?, NoError> in
                             let mapped = GalleryMessageHistoryView.view(view)
                             return .single(mapped)
@@ -396,10 +418,14 @@ public class GalleryController: ViewController {
         }
         
         let syncResult = Atomic<(Bool, (() -> Void)?)>(value: (false, nil))
-        self.disposable.set(messageView.start(next: { [weak self] view in
+        self.disposable.set(combineLatest(messageView, self.context.account.postbox.preferencesView(keys: [PreferencesKeys.appConfiguration])).start(next: { [weak self] view, preferencesView in
             let f: () -> Void = {
                 if let strongSelf = self {
                     if let view = view {
+                        let appConfiguration: AppConfiguration = preferencesView.values[PreferencesKeys.appConfiguration] as? AppConfiguration ?? .defaultValue
+                        let configuration = GalleryConfiguration.with(appConfiguration: appConfiguration)
+                        strongSelf.configuration = configuration
+                        
                         let entries = view.entries
                         var centralEntryStableId: UInt32?
                         loop: for i in 0 ..< entries.count {
@@ -417,6 +443,7 @@ public class GalleryController: ViewController {
                                     }
                             }
                         }
+                        
                         if invertItemOrder {
                             strongSelf.entries = entries.reversed()
                             if let centralEntryStableId = centralEntryStableId {
@@ -434,7 +461,7 @@ public class GalleryController: ViewController {
                                 if entry.message.stableId == strongSelf.centralEntryStableId {
                                     isCentral = true
                                 }
-                                if let item = galleryItemForEntry(context: context, presentationData: strongSelf.presentationData, entry: entry, isCentral: isCentral, streamVideos: streamSingleVideo, fromPlayingVideo: isCentral && fromPlayingVideo, landscape: isCentral && landscape, timecode: isCentral ? timecode : nil, performAction: strongSelf.performAction, openActionOptions: strongSelf.openActionOptions) {
+                                if let item = galleryItemForEntry(context: context, presentationData: strongSelf.presentationData, entry: entry, isCentral: isCentral, streamVideos: streamSingleVideo, fromPlayingVideo: isCentral && fromPlayingVideo, landscape: isCentral && landscape, timecode: isCentral ? timecode : nil, configuration: configuration, performAction: strongSelf.performAction, openActionOptions: strongSelf.openActionOptions, storeMediaPlaybackState: strongSelf.actionInteraction?.storeMediaPlaybackState ?? { _, _ in }) {
                                     if isCentral {
                                         centralItemIndex = items.count
                                     }
@@ -504,9 +531,9 @@ public class GalleryController: ViewController {
             }
         }))
         
-        self.centralItemAttributesDisposable.add(self.centralItemFooterContentNode.get().start(next: { [weak self] footerContentNode in
+        self.centralItemAttributesDisposable.add(self.centralItemFooterContentNode.get().start(next: { [weak self] footerContentNode, overlayContentNode in
             self?.galleryNode.updatePresentationState({
-                $0.withUpdatedFooterContentNode(footerContentNode)
+                $0.withUpdatedFooterContentNode(footerContentNode).withUpdatedOverlayContentNode(overlayContentNode)
             }, transition: .immediate)
         }))
         
@@ -582,7 +609,7 @@ public class GalleryController: ViewController {
                         } else if canOpenIn {
                             openText = strongSelf.presentationData.strings.Conversation_FileOpenIn
                         }
-                        let actionSheet = ActionSheetController(presentationTheme: strongSelf.presentationData.theme)
+                        let actionSheet = ActionSheetController(presentationData: strongSelf.presentationData)
                         
                         var items: [ActionSheetItem] = []
                         items.append(ActionSheetTextItem(title: cleanUrl))
@@ -619,13 +646,13 @@ public class GalleryController: ViewController {
                             }))
                         }
                         actionSheet.setItemGroups([ActionSheetItemGroup(items: items), ActionSheetItemGroup(items: [
-                            ActionSheetButtonItem(title: strongSelf.presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                            ActionSheetButtonItem(title: strongSelf.presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
                                 actionSheet?.dismissAnimated()
                             })
                         ])])
                         strongSelf.present(actionSheet, in: .window(.root))
                     case let .peerMention(peerId, mention):
-                        let actionSheet = ActionSheetController(presentationTheme: strongSelf.presentationData.theme)
+                        let actionSheet = ActionSheetController(presentationData: strongSelf.presentationData)
                         var items: [ActionSheetItem] = []
                         if !mention.isEmpty {
                             items.append(ActionSheetTextItem(title: mention))
@@ -644,13 +671,13 @@ public class GalleryController: ViewController {
                             }))
                         }
                         actionSheet.setItemGroups([ActionSheetItemGroup(items: items), ActionSheetItemGroup(items: [
-                            ActionSheetButtonItem(title: strongSelf.presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                            ActionSheetButtonItem(title: strongSelf.presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
                                 actionSheet?.dismissAnimated()
                             })
                         ])])
                         strongSelf.present(actionSheet, in: .window(.root))
                     case let .textMention(mention):
-                        let actionSheet = ActionSheetController(presentationTheme: strongSelf.presentationData.theme)
+                        let actionSheet = ActionSheetController(presentationData: strongSelf.presentationData)
                         actionSheet.setItemGroups([ActionSheetItemGroup(items: [
                             ActionSheetTextItem(title: mention),
                             ActionSheetButtonItem(title: strongSelf.presentationData.strings.Conversation_LinkDialogOpen, color: .accent, action: { [weak actionSheet] in
@@ -665,13 +692,13 @@ public class GalleryController: ViewController {
                                 UIPasteboard.general.string = mention
                             })
                         ]), ActionSheetItemGroup(items: [
-                            ActionSheetButtonItem(title: strongSelf.presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                            ActionSheetButtonItem(title: strongSelf.presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
                                 actionSheet?.dismissAnimated()
                             })
                         ])])
                         strongSelf.present(actionSheet, in: .window(.root))
                     case let .botCommand(command):
-                        let actionSheet = ActionSheetController(presentationTheme: strongSelf.presentationData.theme)
+                        let actionSheet = ActionSheetController(presentationData: strongSelf.presentationData)
                         var items: [ActionSheetItem] = []
                         items.append(ActionSheetTextItem(title: command))
                         items.append(ActionSheetButtonItem(title: strongSelf.presentationData.strings.Conversation_LinkDialogCopy, color: .accent, action: { [weak actionSheet] in
@@ -679,13 +706,13 @@ public class GalleryController: ViewController {
                             UIPasteboard.general.string = command
                         }))
                         actionSheet.setItemGroups([ActionSheetItemGroup(items: items), ActionSheetItemGroup(items: [
-                            ActionSheetButtonItem(title: strongSelf.presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                            ActionSheetButtonItem(title: strongSelf.presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
                                 actionSheet?.dismissAnimated()
                             })
                         ])])
                         strongSelf.present(actionSheet, in: .window(.root))
                     case let .hashtag(peerName, hashtag):
-                        let actionSheet = ActionSheetController(presentationTheme: strongSelf.presentationData.theme)
+                        let actionSheet = ActionSheetController(presentationData: strongSelf.presentationData)
                         actionSheet.setItemGroups([ActionSheetItemGroup(items: [
                             ActionSheetTextItem(title: hashtag),
                             ActionSheetButtonItem(title: strongSelf.presentationData.strings.Conversation_LinkDialogOpen, color: .accent, action: { [weak actionSheet] in
@@ -700,14 +727,14 @@ public class GalleryController: ViewController {
                                 UIPasteboard.general.string = hashtag
                             })
                         ]), ActionSheetItemGroup(items: [
-                                ActionSheetButtonItem(title: strongSelf.presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                                ActionSheetButtonItem(title: strongSelf.presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
                                     actionSheet?.dismissAnimated()
                                 })
                             ])
                         ])
                         strongSelf.present(actionSheet, in: .window(.root))
                     case let .timecode(timecode, text):
-                        let actionSheet = ActionSheetController(presentationTheme: strongSelf.presentationData.theme)
+                        let actionSheet = ActionSheetController(presentationData: strongSelf.presentationData)
                         actionSheet.setItemGroups([ActionSheetItemGroup(items: [
                             ActionSheetTextItem(title: text),
                             ActionSheetButtonItem(title: strongSelf.presentationData.strings.Conversation_LinkDialogOpen, color: .accent, action: { [weak actionSheet] in
@@ -722,7 +749,7 @@ public class GalleryController: ViewController {
                                 UIPasteboard.general.string = text
                             })
                         ]), ActionSheetItemGroup(items: [
-                                ActionSheetButtonItem(title: strongSelf.presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                                ActionSheetButtonItem(title: strongSelf.presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
                                     actionSheet?.dismissAnimated()
                                 })
                             ])
@@ -731,6 +758,9 @@ public class GalleryController: ViewController {
                 }
             }
         }
+        
+        self.blocksBackgroundWhenInOverlay = true
+        self.isOpaqueWhenInOverlay = true
     }
     
     required init(coder aDecoder: NSCoder) {
@@ -837,6 +867,10 @@ public class GalleryController: ViewController {
             self?.presentingViewController?.dismiss(animated: false, completion: nil)
         }
         
+        self.galleryNode.controlsVisibilityChanged = { [weak self] visible in
+            self?.prefersOnScreenNavigationHidden = !visible
+        }
+        
         let baseNavigationController = self.baseNavigationController
         self.galleryNode.baseNavigationController = { [weak baseNavigationController] in
             return baseNavigationController
@@ -849,7 +883,7 @@ public class GalleryController: ViewController {
             if entry.message.stableId == self.centralEntryStableId {
                 isCentral = true
             }
-            if let item = galleryItemForEntry(context: self.context, presentationData: self.presentationData, entry: entry, streamVideos: self.streamVideos, fromPlayingVideo: isCentral && self.fromPlayingVideo, landscape: isCentral && self.landscape, timecode: isCentral ? self.timecode : nil, performAction: self.performAction, openActionOptions: self.openActionOptions) {
+            if let item = galleryItemForEntry(context: self.context, presentationData: self.presentationData, entry: entry, streamVideos: self.streamVideos, fromPlayingVideo: isCentral && self.fromPlayingVideo, landscape: isCentral && self.landscape, timecode: isCentral ? self.timecode : nil, configuration: self.configuration, performAction: self.performAction, openActionOptions: self.openActionOptions, storeMediaPlaybackState: self.actionInteraction?.storeMediaPlaybackState ?? { _, _ in }) {
                 if isCentral {
                     centralItemIndex = items.count
                 }
@@ -939,10 +973,34 @@ public class GalleryController: ViewController {
         self.accountInUseDisposable.set(self.context.sharedContext.setAccountUserInterfaceInUse(self.context.account.id))
     }
     
+    override public func didAppearInContextPreview() {
+        if let centralItemNode = self.galleryNode.pager.centralItemNode() {
+            let message = self.entries[centralItemNode.index].message
+            self.centralItemTitle.set(centralItemNode.title())
+            self.centralItemTitleView.set(centralItemNode.titleView())
+            self.centralItemRightBarButtonItem.set(centralItemNode.rightBarButtonItem())
+            self.centralItemRightBarButtonItems.set(centralItemNode.rightBarButtonItems())
+            self.centralItemNavigationStyle.set(centralItemNode.navigationStyle())
+            self.centralItemFooterContentNode.set(centralItemNode.footerContent())
+            
+            if let (media, _) = mediaForMessage(message: message) {
+                centralItemNode.activateAsInitial()
+            }
+        }
+    }
+    
     override public func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         
         self.accountInUseDisposable.set(nil)
+    }
+    
+    override public func preferredContentSizeForLayout(_ layout: ContainerViewLayout) -> CGSize? {
+        if let centralItemNode = self.galleryNode.pager.centralItemNode(), let itemSize = centralItemNode.contentSize() {
+            return itemSize.aspectFitted(layout.size)
+        } else {
+            return nil
+        }
     }
     
     override public func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {
@@ -955,7 +1013,7 @@ public class GalleryController: ViewController {
             self.adjustedForInitialPreviewingLayout = true
             self.galleryNode.setControlsHidden(true, animated: false)
             if let centralItemNode = self.galleryNode.pager.centralItemNode(), let itemSize = centralItemNode.contentSize() {
-                self.preferredContentSize = itemSize.aspectFitted(self.view.bounds.size)
+                self.preferredContentSize = itemSize.aspectFitted(layout.size)
                 self.containerLayoutUpdated(ContainerViewLayout(size: self.preferredContentSize, metrics: LayoutMetrics(), deviceMetrics: layout.deviceMetrics, intrinsicInsets: UIEdgeInsets(), safeInsets: UIEdgeInsets(), statusBarHeight: nil, inputHeight: nil, inputHeightIsInteractivellyChanging: false, inVoiceOver: false), transition: .immediate)
             }
         }

@@ -3,10 +3,13 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import TelegramCore
+import SyncCore
 import Postbox
 import SwiftSignalKit
 import TelegramPresentationData
 import UniversalMediaPlayer
+import AppBundle
+import ContextUI
 
 private func generatePauseIcon(_ theme: PresentationTheme) -> UIImage? {
     return generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/MinimizedPause"), color: theme.chat.inputPanel.actionControlForegroundColor)
@@ -18,7 +21,7 @@ private func generatePlayIcon(_ theme: PresentationTheme) -> UIImage? {
 
 final class ChatRecordingPreviewInputPanelNode: ChatInputPanelNode {
     private let deleteButton: HighlightableButtonNode
-    private let sendButton: HighlightableButtonNode
+    let sendButton: HighlightTrackingButtonNode
     private var sendButtonRadialStatusNode: ChatSendButtonRadialStatusNode?
     private let playButton: HighlightableButtonNode
     private let pauseButton: HighlightableButtonNode
@@ -36,12 +39,14 @@ final class ChatRecordingPreviewInputPanelNode: ChatInputPanelNode {
     
     private let statusDisposable = MetaDisposable()
     
+    private var gestureRecognizer: ContextGesture?
+    
     init(theme: PresentationTheme) {
         self.deleteButton = HighlightableButtonNode()
         self.deleteButton.displaysAsynchronously = false
         self.deleteButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionTrash"), color: theme.chat.inputPanel.panelControlAccentColor), for: [])
         
-        self.sendButton = HighlightableButtonNode()
+        self.sendButton = HighlightTrackingButtonNode()
         self.sendButton.displaysAsynchronously = false
         self.sendButton.setImage(PresentationResourcesChat.chatInputPanelSendButtonImage(theme), for: [])
         
@@ -86,6 +91,16 @@ final class ChatRecordingPreviewInputPanelNode: ChatInputPanelNode {
         self.addSubnode(self.durationLabel)
         self.addSubnode(self.waveformButton)
         
+        self.sendButton.highligthedChanged = { [weak self] highlighted in
+            if let strongSelf = self {
+                if highlighted {
+                    strongSelf.sendButton.layer.animateScale(from: 1.0, to: 0.75, duration: 0.4, removeOnCompletion: false)
+                } else if let presentationLayer = strongSelf.sendButton.layer.presentation() {
+                    strongSelf.sendButton.layer.animateScale(from: CGFloat((presentationLayer.value(forKeyPath: "transform.scale.y") as? NSNumber)?.floatValue ?? 1.0), to: 1.0, duration: 0.25, removeOnCompletion: false)
+                }
+            }
+        }
+        
         self.deleteButton.addTarget(self, action: #selector(self.deletePressed), forControlEvents: [.touchUpInside])
         self.sendButton.addTarget(self, action: #selector(self.sendPressed), forControlEvents: [.touchUpInside])
         
@@ -97,11 +112,21 @@ final class ChatRecordingPreviewInputPanelNode: ChatInputPanelNode {
         self.statusDisposable.dispose()
     }
     
-    @objc func buttonPressed() {
-        self.interfaceInteraction?.deleteChat()
+    override func didLoad() {
+        super.didLoad()
+        
+        let gestureRecognizer = ContextGesture(target: nil, action: nil)
+        self.sendButton.view.addGestureRecognizer(gestureRecognizer)
+        self.gestureRecognizer = gestureRecognizer
+        gestureRecognizer.activated = { [weak self] gesture in
+            guard let strongSelf = self else {
+                return
+            }
+            strongSelf.interfaceInteraction?.displaySendMessageOptions(strongSelf.sendButton, gesture)
+        }
     }
     
-    override func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, maxHeight: CGFloat, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics) -> CGFloat {
+    override func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, maxHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics) -> CGFloat {
         if self.presentationInterfaceState != interfaceState {
             var updateWaveform = false
             if self.presentationInterfaceState?.recordedMediaPreview != interfaceState.recordedMediaPreview {

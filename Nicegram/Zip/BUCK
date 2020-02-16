@@ -1,0 +1,11 @@
+load("//Config:buck_rule_macros.bzl", "static_library")
+
+static_library(
+    name = "Zip",
+    exported_headers = glob([
+        "Sources/CZLib/*.h",
+    ]),
+    srcs = glob([
+        "Sources/ZIPFoundation/*.swift"
+    ])
+)

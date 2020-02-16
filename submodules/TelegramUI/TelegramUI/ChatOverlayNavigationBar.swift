@@ -4,12 +4,17 @@ import AsyncDisplayKit
 import Display
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
+import TelegramUIPreferences
 
 private let titleFont = Font.semibold(14.0)
 
 final class ChatOverlayNavigationBar: ASDisplayNode {
     private let theme: PresentationTheme
+    private let strings: PresentationStrings
+    private let nameDisplayOrder: PresentationPersonNameOrder
+    private let tapped: () -> Void
     private let close: () -> Void
     
     private let separatorNode: ASDisplayNode
@@ -24,7 +29,7 @@ final class ChatOverlayNavigationBar: ASDisplayNode {
             var title = ""
             if let peerView = self.peerView {
                 if let peer = peerViewMainPeer(peerView) {
-                    title = peer.displayTitle
+                    title = peer.displayTitle(strings: self.strings, displayOrder: self.nameDisplayOrder)
                 }
             }
             if self.peerTitle != title {
@@ -36,8 +41,11 @@ final class ChatOverlayNavigationBar: ASDisplayNode {
         }
     }
     
-    init(theme: PresentationTheme, close: @escaping () -> Void) {
+    init(theme: PresentationTheme, strings: PresentationStrings, nameDisplayOrder: PresentationPersonNameOrder, tapped: @escaping () -> Void, close: @escaping () -> Void) {
         self.theme = theme
+        self.strings = strings
+        self.nameDisplayOrder = nameDisplayOrder
+        self.tapped = tapped
         self.close = close
         
         self.separatorNode = ASDisplayNode()
@@ -77,6 +85,13 @@ final class ChatOverlayNavigationBar: ASDisplayNode {
         self.closeButton.addTarget(self, action: #selector(self.closePressed), forControlEvents: [.touchUpInside])
     }
     
+    override func didLoad() {
+        super.didLoad()
+        
+        let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(self.handleTap))
+        self.view.addGestureRecognizer(gestureRecognizer)
+    }
+        
     func updateLayout(size: CGSize, transition: ContainedViewLayoutTransition) {
         transition.updateFrame(node: self.separatorNode, frame: CGRect(origin: CGPoint(x: 0.0, y: size.height - UIScreenPixel), size: CGSize(width: size.width, height: UIScreenPixel)))
         
@@ -87,11 +102,15 @@ final class ChatOverlayNavigationBar: ASDisplayNode {
         let _ = titleApply()
         transition.updateFrame(node: self.titleNode, frame: CGRect(origin: CGPoint(x: sideInset, y: floor((size.height - titleLayout.size.height) / 2.0)), size: titleLayout.size))
         
-        let closeButtonSize = self.closeButton.measure(CGSize(width: 100.0, height: 100.0))
-        transition.updateFrame(node: self.closeButton, frame: CGRect(origin: CGPoint(x: size.width - sideInset - closeButtonSize.width - 6.0, y: floor((size.height - closeButtonSize.height) / 2.0)), size: closeButtonSize))
+        let closeButtonSize = CGSize(width: size.height, height: size.height)
+        transition.updateFrame(node: self.closeButton, frame: CGRect(origin: CGPoint(x: size.width - sideInset - closeButtonSize.width + 10.0, y: 0.0), size: closeButtonSize))
     }
     
-    @objc func closePressed() {
+    @objc private func handleTap() {
+        self.tapped()
+    }
+    
+    @objc private func closePressed() {
         self.close()
     }
 }

@@ -3,11 +3,13 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import TelegramStringFormatting
+import AppBundle
 
 private func loadCountryCodes() -> [(String, Int)] {
-    guard let filePath = frameworkBundle.path(forResource: "PhoneCountries", ofType: "txt") else {
+    guard let filePath = getAppBundle().path(forResource: "PhoneCountries", ofType: "txt") else {
         return []
     }
     guard let stringData = try? Data(contentsOf: URL(fileURLWithPath: filePath)) else {
@@ -96,6 +98,11 @@ final class AuthorizationSequenceCountrySelectionControllerNode: ASDisplayNode, 
         self.searchTableView = UITableView(frame: CGRect(), style: .plain)
         self.searchTableView.isHidden = true
         
+        if #available(iOS 11.0, *) {
+            self.tableView.contentInsetAdjustmentBehavior = .never
+            self.searchTableView.contentInsetAdjustmentBehavior = .never
+        }
+        
         let countryNamesAndCodes = localizedContryNamesAndCodes(strings: strings)
         
         var sections: [(String, [((String, String), String, Int)])] = []
@@ -110,7 +117,6 @@ final class AuthorizationSequenceCountrySelectionControllerNode: ASDisplayNode, 
         }
         self.sections = sections
         var sectionTitles = sections.map { $0.0 }
-        sectionTitles.insert(UITableView.indexSearch, at: 0)
         self.sectionTitles = sectionTitles
         
         super.init()
@@ -146,6 +152,8 @@ final class AuthorizationSequenceCountrySelectionControllerNode: ASDisplayNode, 
     }
     
     func containerLayoutUpdated(_ layout: ContainerViewLayout, navigationBarHeight: CGFloat, transition: ContainedViewLayoutTransition) {
+        self.tableView.contentInset = UIEdgeInsets(top: 0.0, left: 0.0, bottom: layout.intrinsicInsets.bottom, right: 0.0)
+        self.searchTableView.contentInset = UIEdgeInsets(top: 0.0, left: 0.0, bottom: layout.intrinsicInsets.bottom, right: 0.0)
         transition.updateFrame(view: self.tableView, frame: CGRect(origin: CGPoint(x: 0.0, y: navigationBarHeight), size: CGSize(width: layout.size.width, height: layout.size.height - navigationBarHeight)))
         transition.updateFrame(view: self.searchTableView, frame: CGRect(origin: CGPoint(x: 0.0, y: navigationBarHeight), size: CGSize(width: layout.size.width, height: layout.size.height - navigationBarHeight)))
     }
@@ -208,7 +216,7 @@ final class AuthorizationSequenceCountrySelectionControllerNode: ASDisplayNode, 
     }
     
     func tableView(_ tableView: UITableView, willDisplayHeaderView view: UIView, forSection section: Int) {
-        (view as? UITableViewHeaderFooterView)?.backgroundView?.backgroundColor = self.theme.list.plainBackgroundColor
+        (view as? UITableViewHeaderFooterView)?.tintColor = self.theme.list.plainBackgroundColor
         (view as? UITableViewHeaderFooterView)?.textLabel?.textColor = self.theme.list.itemPrimaryTextColor
     }
     

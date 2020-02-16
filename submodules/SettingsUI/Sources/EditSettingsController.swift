@@ -5,9 +5,11 @@ import Display
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import LegacyComponents
 import TelegramPresentationData
 import ItemListUI
+import PresentationDataUtils
 import AccountContext
 import GalleryUI
 import LegacyUI
@@ -16,6 +18,7 @@ import WebSearchUI
 import PeerAvatarGalleryUI
 import MapResourceToAvatarSizes
 import OverlayStatusController
+import PhoneNumberFormat
 
 private struct EditSettingsItemArguments {
     let context: AccountContext
@@ -189,40 +192,41 @@ private enum SettingsEntry: ItemListNodeEntry {
         return lhs.stableId < rhs.stableId
     }
     
-    func item(_ arguments: EditSettingsItemArguments) -> ListViewItem {
+    func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
+        let arguments = arguments as! EditSettingsItemArguments
         switch self {
             case let .userInfo(theme, strings, dateTimeFormat, peer, cachedData, state, updatingImage):
-                return ItemListAvatarAndNameInfoItem(account: arguments.context.account, theme: theme, strings: strings, dateTimeFormat: dateTimeFormat, mode: .editSettings, peer: peer, presence: TelegramUserPresence(status: .present(until: Int32.max), lastActivity: 0), cachedData: cachedData, state: state, sectionId: ItemListSectionId(self.section), style: .blocks(withTopInset: false, withExtendedBottomInset: false), editingNameUpdated: { editingName in
+                return ItemListAvatarAndNameInfoItem(accountContext: arguments.context, presentationData: presentationData, dateTimeFormat: dateTimeFormat, mode: .editSettings, peer: peer, presence: TelegramUserPresence(status: .present(until: Int32.max), lastActivity: 0), cachedData: cachedData, state: state, sectionId: ItemListSectionId(self.section), style: .blocks(withTopInset: false, withExtendedBottomInset: false), editingNameUpdated: { editingName in
                     arguments.updateEditingName(editingName)
                 }, avatarTapped: {
                     arguments.avatarTapAction()
                 }, idTapped: { value in
                     UIPasteboard.general.string = value
-                    arguments.presentController(OverlayStatusController(theme: theme, strings: strings, type: .success))
+                    let pc = OverlayStatusController(theme: theme, type: .success)
+                    arguments.presentController(pc)
                 }, context: arguments.avatarAndNameInfoContext, updatingImage: updatingImage)
             case let .userInfoNotice(theme, text):
-                return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+                return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .bioText(theme, currentText, placeholder):
-                return ItemListMultilineInputItem(theme: theme, text: currentText, placeholder: placeholder, maxLength: ItemListMultilineInputItemTextLimit(value: 70, display: true), sectionId: self.section, style: .blocks, textUpdated: { updatedText in
+                return ItemListMultilineInputItem(presentationData: presentationData, text: currentText, placeholder: placeholder, maxLength: ItemListMultilineInputItemTextLimit(value: 70, display: true), sectionId: self.section, style: .blocks, textUpdated: { updatedText in
                     arguments.updateBioText(currentText, updatedText)
-                }, tag: EditSettingsEntryTag.bio, action: {
-                })
+                }, tag: EditSettingsEntryTag.bio)
             case let .bioInfo(theme, text):
-                return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+                return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .phoneNumber(theme, text, number):
-                return ItemListDisclosureItem(theme: theme, title: text, label: number, sectionId: ItemListSectionId(self.section), style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: number, sectionId: ItemListSectionId(self.section), style: .blocks, action: {
                     arguments.pushController(ChangePhoneNumberIntroController(context: arguments.context, phoneNumber: number))
                 })
             case let .username(theme, text, address):
-                return ItemListDisclosureItem(theme: theme, title: text, label: address, sectionId: ItemListSectionId(self.section), style: .blocks, action: {
-                    arguments.presentController(usernameSetupController(context: arguments.context))
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: address, sectionId: ItemListSectionId(self.section), style: .blocks, action: {
+                    arguments.pushController(usernameSetupController(context: arguments.context))
                 })
             case let .addAccount(theme, text):
-                return ItemListActionItem(theme: theme, title: text, kind: .generic, alignment: .center, sectionId: ItemListSectionId(self.section), style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .center, sectionId: ItemListSectionId(self.section), style: .blocks, action: {
                     arguments.addAccount()
                 })
             case let .logOut(theme, text):
-                return ItemListActionItem(theme: theme, title: text, kind: .destructive, alignment: .center, sectionId: ItemListSectionId(self.section), style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .destructive, alignment: .center, sectionId: ItemListSectionId(self.section), style: .blocks, action: {
                     arguments.logout()
                 })
         }
@@ -399,7 +403,7 @@ func editSettingsController(context: AccountContext, currentName: ItemListAvatar
         }
         
         var updateNameSignal: Signal<Void, NoError> = .complete()
-        if let updateName = updateName, case let .personName(firstName, lastName) = updateName {
+        if let updateName = updateName, case let .personName(firstName, lastName, _) = updateName {
             updateNameSignal = updateAccountPeerName(account: context.account, firstName: firstName, lastName: lastName)
         }
         var updateBioSignal: Signal<Void, NoError> = .complete()
@@ -429,7 +433,7 @@ func editSettingsController(context: AccountContext, currentName: ItemListAvatar
     let peerView = context.account.viewTracker.peerView(context.account.peerId)
     
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get(), peerView)
-    |> map { presentationData, state, view -> (ItemListControllerState, (ItemListNodeState<SettingsEntry>, SettingsEntry.ItemGenerationArguments)) in
+    |> map { presentationData, state, view -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let rightNavigationButton: ItemListNavigationButton
         if state.updatingName != nil || state.updatingBioText {
             rightNavigationButton = ItemListNavigationButton(content: .none, style: .activity, enabled: true, action: {})
@@ -439,8 +443,8 @@ func editSettingsController(context: AccountContext, currentName: ItemListAvatar
             })
         }
         
-        let controllerState = ItemListControllerState(theme: presentationData.theme, title: .text(presentationData.strings.EditProfile_Title), leftNavigationButton: nil, rightNavigationButton: rightNavigationButton, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-        let listState = ItemListNodeState(entries: editSettingsEntries(presentationData: presentationData, state: state, view: view, canAddAccounts: canAddAccounts), style: .blocks, ensureVisibleItemTag: focusOnItemTag)
+        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(presentationData.strings.EditProfile_Title), leftNavigationButton: nil, rightNavigationButton: rightNavigationButton, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: editSettingsEntries(presentationData: presentationData, state: state, view: view, canAddAccounts: canAddAccounts), style: .blocks, ensureVisibleItemTag: focusOnItemTag)
         
         return (controllerState, (listState, arguments))
     } |> afterDisposed {
@@ -452,14 +456,14 @@ func editSettingsController(context: AccountContext, currentName: ItemListAvatar
         (controller?.navigationController as? NavigationController)?.pushViewController(value)
     }
     presentControllerImpl = { [weak controller] value, arguments in
-        controller?.present(value, in: .window(.root), with: arguments ?? ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+        controller?.present(value, in: .window(.root), with: arguments)
     }
     dismissImpl = { [weak controller] in
         let _ = (controller?.navigationController as? NavigationController)?.popViewController(animated: true)
     }
     avatarGalleryTransitionArguments = { [weak controller] entry in
         if let controller = controller {
-            var result: ((ASDisplayNode, () -> (UIView?, UIView?)), CGRect)?
+            var result: ((ASDisplayNode, CGRect, () -> (UIView?, UIView?)), CGRect)?
             controller.forEachItemNode { itemNode in
                 if let itemNode = itemNode as? ItemListAvatarAndNameInfoItemNode {
                     result = itemNode.avatarTransitionNode()
@@ -510,7 +514,7 @@ func editSettingsController(context: AccountContext, currentName: ItemListAvatar
                 if let data = image.jpegData(compressionQuality: 0.6) {
                     let resource = LocalFileMediaResource(fileId: arc4random64())
                     context.account.postbox.mediaBox.storeResourceData(resource.id, data: data)
-                    let representation = TelegramMediaImageRepresentation(dimensions: CGSize(width: 640.0, height: 640.0), resource: resource)
+                    let representation = TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: 640, height: 640), resource: resource)
                     updateState {
                         $0.withUpdatedUpdatingAvatar(.image(representation, true))
                     }

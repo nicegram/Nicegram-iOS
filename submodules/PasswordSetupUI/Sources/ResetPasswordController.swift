@@ -4,10 +4,13 @@ import Display
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import ItemListUI
+import PresentationDataUtils
 import AccountContext
 import AlertUI
+import PresentationDataUtils
 
 private final class ResetPasswordControllerArguments {
     let updateCodeText: (String) -> Void
@@ -65,17 +68,18 @@ private enum ResetPasswordEntry: ItemListNodeEntry, Equatable {
         return lhs.stableId < rhs.stableId
     }
     
-    func item(_ arguments: ResetPasswordControllerArguments) -> ListViewItem {
+    func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
+        let arguments = arguments as! ResetPasswordControllerArguments
         switch self {
             case let .code(theme, strings, text, value):
-                return ItemListSingleLineInputItem(theme: theme, strings: strings, title: NSAttributedString(string: text, textColor: theme.list.itemPrimaryTextColor), text: value, placeholder: "", type: .number, spacing: 10.0, tag: ResetPasswordEntryTag.code, sectionId: self.section, textUpdated: { updatedText in
+                return ItemListSingleLineInputItem(presentationData: presentationData, title: NSAttributedString(string: text, textColor: theme.list.itemPrimaryTextColor), text: value, placeholder: "", type: .number, spacing: 10.0, tag: ResetPasswordEntryTag.code, sectionId: self.section, textUpdated: { updatedText in
                     arguments.updateCodeText(updatedText)
                 }, action: {
                 })
             case let .codeInfo(theme, text):
-                return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+                return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .helpInfo(theme, text):
-                return ItemListTextItem(theme: theme, text: .markdown(text), sectionId: self.section, linkAction: { action in
+                return ItemListTextItem(presentationData: presentationData, text: .markdown(text), sectionId: self.section, linkAction: { action in
                     if case .tap = action {
                         arguments.openHelp()
                     }
@@ -141,7 +145,7 @@ public func resetPasswordController(context: AccountContext, emailPattern: Strin
     
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get())
     |> deliverOnMainQueue
-    |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState<ResetPasswordEntry>, ResetPasswordEntry.ItemGenerationArguments)) in
+    |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
         
         let leftNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Cancel), style: .regular, enabled: true, action: {
             dismissImpl?()
@@ -189,8 +193,8 @@ public func resetPasswordController(context: AccountContext, emailPattern: Strin
             })
         }
         
-        let controllerState = ItemListControllerState(theme: presentationData.theme, title: .text(presentationData.strings.TwoStepAuth_RecoveryTitle), leftNavigationButton: leftNavigationButton, rightNavigationButton: rightNavigationButton, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: false)
-        let listState = ItemListNodeState(entries: resetPasswordControllerEntries(presentationData: presentationData, state: state, pattern: emailPattern), style: .blocks, focusItemTag: ResetPasswordEntryTag.code, emptyStateItem: nil, animateChanges: false)
+        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(presentationData.strings.TwoStepAuth_RecoveryTitle), leftNavigationButton: leftNavigationButton, rightNavigationButton: rightNavigationButton, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: false)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: resetPasswordControllerEntries(presentationData: presentationData, state: state, pattern: emailPattern), style: .blocks, focusItemTag: ResetPasswordEntryTag.code, emptyStateItem: nil, animateChanges: false)
         
         return (controllerState, (listState, arguments))
     }

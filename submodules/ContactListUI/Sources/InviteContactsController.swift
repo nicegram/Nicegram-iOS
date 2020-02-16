@@ -5,11 +5,13 @@ import AsyncDisplayKit
 import Postbox
 import SwiftSignalKit
 import TelegramCore
+import SyncCore
 import MessageUI
 import TelegramPresentationData
 import AccountContext
 import ShareController
 import AlertUI
+import PresentationDataUtils
 import SearchUI
 
 public class InviteContactsController: ViewController, MFMessageComposeViewControllerDelegate, UINavigationControllerDelegate {
@@ -37,6 +39,8 @@ public class InviteContactsController: ViewController, MFMessageComposeViewContr
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
         
         super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData))
+        
+        self.navigationPresentation = .modal
         
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
         
@@ -88,7 +92,18 @@ public class InviteContactsController: ViewController, MFMessageComposeViewContr
         self.searchContentNode?.updateThemeAndPlaceholder(theme: self.presentationData.theme, placeholder: self.presentationData.strings.Common_Search)
         self.title = self.presentationData.strings.Contacts_InviteFriends
         self.navigationItem.backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Back, style: .plain, target: nil, action: nil)
-        self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: presentationData.strings.Contacts_SelectAll, style: .plain, target: self, action: #selector(self.selectAllPressed))
+        self.updateRightBarButtonItem()
+    }
+    
+    private func updateRightBarButtonItem() {
+        let currentContacts = self.contactsNode.currentSortedContacts.with { $0 }
+        let title: String
+        if self.contactsNode.selectionState.selectedContactIndices.count == currentContacts?.count {
+            title = self.presentationData.strings.Contacts_DeselectAll
+        } else {
+            title = self.presentationData.strings.Contacts_SelectAll
+        }
+        self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: title, style: .plain, target: self, action: #selector(self.selectAllPressed))
     }
     
     override public func loadDisplayNode() {
@@ -101,7 +116,7 @@ public class InviteContactsController: ViewController, MFMessageComposeViewContr
             if let strongSelf = self {
                 self?.searchContentNode?.setIsEnabled(true)
                 
-                strongSelf.navigationItem.rightBarButtonItem = UIBarButtonItem(title: strongSelf.presentationData.strings.Contacts_SelectAll, style: .plain, target: self, action: #selector(strongSelf.selectAllPressed))
+                strongSelf.updateRightBarButtonItem()
             }
         }
         
@@ -154,6 +169,10 @@ public class InviteContactsController: ViewController, MFMessageComposeViewContr
             } else if let strongSelf = self {
                 strongSelf.present(textAlertController(context: strongSelf.context, title: nil, text: strongSelf.presentationData.strings.Invite_LargeRecipientsCountWarning, actions: [TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {}), TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_OK, action: f)]), in: .window(.root))
             }
+        }
+        
+        self.contactsNode.selectionChanged = { [weak self] in
+            self?.updateRightBarButtonItem()
         }
         
         self.contactsNode.listNode.visibleContentOffsetChanged = { [weak self] offset in

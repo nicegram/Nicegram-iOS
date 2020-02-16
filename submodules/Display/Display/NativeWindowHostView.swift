@@ -12,6 +12,21 @@ private let defaultOrientations: UIInterfaceOrientationMask = {
     }
 }()
 
+public enum WindowUserInterfaceStyle {
+    case light
+    case dark
+    
+    @available(iOS 12.0, *)
+    public init(style: UIUserInterfaceStyle) {
+        switch style {
+        case .light, .unspecified:
+            self = .light
+        case .dark:
+            self = .dark
+        }
+    }
+}
+
 public final class PreviewingHostViewDelegate {
     public let controllerForLocation: (UIView, CGPoint) -> (UIViewController, CGRect)?
     public let commitController: (UIViewController) -> Void
@@ -59,6 +74,11 @@ private final class WindowRootViewController: UIViewController, UIViewController
     var presentController: ((UIViewController, PresentationSurfaceLevel, Bool, (() -> Void)?) -> Void)?
     var transitionToSize: ((CGSize, Double) -> Void)?
     
+    private var _systemUserInterfaceStyle = ValuePromise<WindowUserInterfaceStyle>(ignoreRepeated: true)
+    var systemUserInterfaceStyle: Signal<WindowUserInterfaceStyle, NoError> {
+        return self._systemUserInterfaceStyle.get()
+    }
+    
     var orientations: UIInterfaceOrientationMask = defaultOrientations {
         didSet {
             if oldValue != self.orientations {
@@ -77,17 +97,17 @@ private final class WindowRootViewController: UIViewController, UIViewController
     var gestureEdges: UIRectEdge = [] {
         didSet {
             if oldValue != self.gestureEdges {
-                if #available(iOSApplicationExtension 11.0, *) {
+                if #available(iOSApplicationExtension 11.0, iOS 11.0, *) {
                     self.setNeedsUpdateOfScreenEdgesDeferringSystemGestures()
                 }
             }
         }
     }
     
-    var preferNavigationUIHidden: Bool = false {
+    var prefersOnScreenNavigationHidden: Bool = false {
         didSet {
-            if oldValue != self.preferNavigationUIHidden {
-                if #available(iOSApplicationExtension 11.0, *) {
+            if oldValue != self.prefersOnScreenNavigationHidden {
+                if #available(iOSApplicationExtension 11.0, iOS 11.0, *) {
                     self.setNeedsUpdateOfHomeIndicatorAutoHidden()
                 }
             }
@@ -106,17 +126,29 @@ private final class WindowRootViewController: UIViewController, UIViewController
         return orientations
     }
     
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        if #available(iOS 12.0, *) {
+            self._systemUserInterfaceStyle.set(WindowUserInterfaceStyle(style: self.traitCollection.userInterfaceStyle))
+        }
+    }
+    
     init() {
         super.init(nibName: nil, bundle: nil)
         
         self.extendedLayoutIncludesOpaqueBars = true
         
-        if #available(iOSApplicationExtension 11.0, *) {
+        if #available(iOSApplicationExtension 11.0, iOS 11.0, *) {
             self.voiceOverStatusObserver = NotificationCenter.default.addObserver(forName: UIAccessibility.voiceOverStatusDidChangeNotification, object: nil, queue: OperationQueue.main, using: { [weak self] _ in
                 if let strongSelf = self {
                     strongSelf.updatePreviewingRegistration()
                 }
             })
+        }
+        
+        if #available(iOS 13.0, *) {
+            self._systemUserInterfaceStyle.set(WindowUserInterfaceStyle(style: self.traitCollection.userInterfaceStyle))
+        } else {
+            self._systemUserInterfaceStyle.set(.light)
         }
     }
     
@@ -135,7 +167,7 @@ private final class WindowRootViewController: UIViewController, UIViewController
     }
     
     override var prefersHomeIndicatorAutoHidden: Bool {
-        return self.preferNavigationUIHidden
+        return self.prefersOnScreenNavigationHidden
     }
     
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
@@ -159,23 +191,25 @@ private final class WindowRootViewController: UIViewController, UIViewController
         var shouldRegister = false
         
         var isVoiceOverRunning = false
-        if #available(iOSApplicationExtension 10.0, *) {
+        if #available(iOSApplicationExtension 10.0, iOS 10.0, *) {
             isVoiceOverRunning = UIAccessibility.isVoiceOverRunning
         }
         if !isVoiceOverRunning {
             shouldRegister = true
         }
         
+        shouldRegister = false
+        
         if shouldRegister != self.registeredForPreviewing {
             self.registeredForPreviewing = shouldRegister
             if shouldRegister {
-                if #available(iOSApplicationExtension 9.0, *) {
+                if #available(iOSApplicationExtension 9.0, iOS 9.0, *) {
                     self.previewingContext = self.registerForPreviewing(with: self, sourceView: self.view)
                 }
             } else if let previewingContext = self.previewingContext {
                 self.previewingContext = nil
                 if let previewingContext = previewingContext as? UIViewControllerPreviewing {
-                    if #available(iOSApplicationExtension 9.0, *) {
+                    if #available(iOSApplicationExtension 9.0, iOS 9.0, *) {
                         self.unregisterForPreviewing(withContext: previewingContext)
                     }
                 }
@@ -189,7 +223,7 @@ private final class WindowRootViewController: UIViewController, UIViewController
         if UIAccessibility.isVoiceOverRunning {
             return nil
         }
-        if #available(iOSApplicationExtension 9.0, *) {
+        if #available(iOSApplicationExtension 9.0, iOS 9.0, *) {
             guard let result = self.view.hitTest(location, with: nil) else {
                 return nil
             }
@@ -205,12 +239,16 @@ private final class WindowRootViewController: UIViewController, UIViewController
     }
     
     public func previewingContext(_ previewingContext: UIViewControllerPreviewing, commit viewControllerToCommit: UIViewController) {
-        if #available(iOSApplicationExtension 9.0, *) {
+        if #available(iOSApplicationExtension 9.0, iOS 9.0, *) {
             if let previousPreviewingHostView = self.previousPreviewingHostView, let delegate = previousPreviewingHostView.previewingDelegate {
                 delegate.commitController(viewControllerToCommit)
             }
             self.previousPreviewingHostView = nil
         }
+    }
+    
+    override public func present(_ viewControllerToPresent: UIViewController, animated flag: Bool, completion: (() -> Void)? = nil) {
+        super.present(viewControllerToPresent, animated: flag, completion: completion)
     }
 }
 
@@ -224,7 +262,7 @@ private final class NativeWindow: UIWindow, WindowHost {
     var hitTestImpl: ((CGPoint, UIEvent?) -> UIView?)?
     var presentNativeImpl: ((UIViewController) -> Void)?
     var invalidateDeferScreenEdgeGestureImpl: (() -> Void)?
-    var invalidatePreferNavigationUIHiddenImpl: (() -> Void)?
+    var invalidatePrefersOnScreenNavigationHiddenImpl: (() -> Void)?
     var invalidateSupportedOrientationsImpl: (() -> Void)?
     var cancelInteractiveKeyboardGesturesImpl: (() -> Void)?
     var forEachControllerImpl: (((ContainableController) -> Void) -> Void)?
@@ -237,7 +275,7 @@ private final class NativeWindow: UIWindow, WindowHost {
             let sizeUpdated = super.frame.size != value.size
             
             var frameTransition: ContainedViewLayoutTransition = .immediate
-            if #available(iOSApplicationExtension 9.0, *) {
+            if #available(iOSApplicationExtension 9.0, iOS 9.0, *) {
                 let duration = UIView.inheritedAnimationDuration
                 if !duration.isZero {
                     frameTransition = .animated(duration: duration, curve: .easeInOut)
@@ -320,8 +358,8 @@ private final class NativeWindow: UIWindow, WindowHost {
         self.invalidateDeferScreenEdgeGestureImpl?()
     }
     
-    func invalidatePreferNavigationUIHidden() {
-        self.invalidatePreferNavigationUIHiddenImpl?()
+    func invalidatePrefersOnScreenNavigationHidden() {
+        self.invalidatePrefersOnScreenNavigationHiddenImpl?()
     }
     
     func invalidateSupportedOrientations() {
@@ -337,7 +375,7 @@ private final class NativeWindow: UIWindow, WindowHost {
     }
 }
 
-public func nativeWindowHostView() -> (UIWindow & WindowHost, WindowHostView, UIWindow) {
+public func nativeWindowHostView() -> (UIWindow & WindowHost, WindowHostView) {
     let window = NativeWindow(frame: UIScreen.main.bounds)
     
     let rootViewController = WindowRootViewController()
@@ -346,23 +384,14 @@ public func nativeWindowHostView() -> (UIWindow & WindowHost, WindowHostView, UI
     rootViewController.view.frame = CGRect(origin: CGPoint(), size: window.bounds.size)
     rootViewController.viewDidAppear(false)
     
-    let aboveStatusbarWindow = AboveStatusBarWindow(frame: UIScreen.main.bounds)
-    aboveStatusbarWindow.supportedOrientations = { [weak rootViewController] in
-        if let rootViewController = rootViewController {
-            return rootViewController.supportedInterfaceOrientations
-        } else {
-            return .portrait
-        }
-    }
-    
-    let hostView = WindowHostView(containerView: rootViewController.view, eventView: window, aboveStatusBarView: rootViewController.view, isRotating: {
+    let hostView = WindowHostView(containerView: rootViewController.view, eventView: window, isRotating: {
         return window.isRotating()
-    }, updateSupportedInterfaceOrientations: { orientations in
+    }, systemUserInterfaceStyle: rootViewController.systemUserInterfaceStyle, updateSupportedInterfaceOrientations: { orientations in
         rootViewController.orientations = orientations
     }, updateDeferScreenEdgeGestures: { edges in
         rootViewController.gestureEdges = edges
-    }, updatePreferNavigationUIHidden: { value in
-        rootViewController.preferNavigationUIHidden = value
+    }, updatePrefersOnScreenNavigationHidden: { value in
+        rootViewController.prefersOnScreenNavigationHidden = value
     })
     
     rootViewController.transitionToSize = { [weak hostView] size, duration in
@@ -396,6 +425,10 @@ public func nativeWindowHostView() -> (UIWindow & WindowHost, WindowHostView, UI
         hostView?.presentNative?(controller)
     }
     
+    hostView.nativeController = { [weak rootViewController] in
+        return rootViewController
+    }
+    
     window.hitTestImpl = { [weak hostView] point, event in
         return hostView?.hitTest?(point, event)
     }
@@ -404,8 +437,8 @@ public func nativeWindowHostView() -> (UIWindow & WindowHost, WindowHostView, UI
         return hostView?.invalidateDeferScreenEdgeGesture?()
     }
     
-    window.invalidatePreferNavigationUIHiddenImpl = { [weak hostView] in
-        return hostView?.invalidatePreferNavigationUIHidden?()
+    window.invalidatePrefersOnScreenNavigationHiddenImpl = { [weak hostView] in
+        return hostView?.invalidatePrefersOnScreenNavigationHidden?()
     }
     
     window.invalidateSupportedOrientationsImpl = { [weak hostView] in
@@ -431,5 +464,5 @@ public func nativeWindowHostView() -> (UIWindow & WindowHost, WindowHostView, UI
         }
     }
     
-    return (window, hostView, aboveStatusbarWindow)
+    return (window, hostView)
 }

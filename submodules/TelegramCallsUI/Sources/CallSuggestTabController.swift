@@ -5,9 +5,11 @@ import AsyncDisplayKit
 import Display
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import TelegramUIPreferences
 import AccountContext
+import AppBundle
 
 private func generateIconImage(theme: AlertControllerTheme) -> UIImage? {
     return UIImage(bundleImageName: "Call List/AlertIcon")
@@ -217,9 +219,9 @@ func callSuggestTabController(sharedContext: SharedAccountContext) -> AlertContr
         }).start()
     })]
     
-    contentNode = CallSuggestTabAlertContentNode(theme: AlertControllerTheme(presentationTheme: theme), ptheme: theme, strings: strings, actions: actions)
+    contentNode = CallSuggestTabAlertContentNode(theme: AlertControllerTheme(presentationData: presentationData), ptheme: theme, strings: strings, actions: actions)
     
-    let controller = AlertController(theme: AlertControllerTheme(presentationTheme: theme), contentNode: contentNode!)
+    let controller = AlertController(theme: AlertControllerTheme(presentationData: presentationData), contentNode: contentNode!)
     dismissImpl = { [weak controller] animated in
         if animated {
             controller?.dismissAnimated()

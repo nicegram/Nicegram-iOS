@@ -5,8 +5,10 @@ import AsyncDisplayKit
 import Postbox
 import SwiftSignalKit
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import AccountContext
+import AppBundle
 
 enum PrivacyIntroControllerMode {
     case passcode
@@ -67,7 +69,7 @@ enum PrivacyIntroControllerMode {
     }
 }
 
-final public class PrivacyIntroControllerPresentationArguments {
+public final class PrivacyIntroControllerPresentationArguments {
     let fadeIn: Bool
     let animateIn: Bool
     

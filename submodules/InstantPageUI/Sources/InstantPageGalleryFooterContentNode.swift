@@ -4,6 +4,7 @@ import AsyncDisplayKit
 import Display
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import Photos
 import TelegramPresentationData
@@ -11,6 +12,7 @@ import TextFormat
 import AccountContext
 import ShareController
 import GalleryUI
+import AppBundle
 
 private let actionImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionAction"), color: .white)
 

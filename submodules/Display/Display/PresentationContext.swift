@@ -34,9 +34,8 @@ public final class PresentationContext {
         }
     }
     
-    weak var volumeControlStatusBarNodeView: UIView?
-    
     var updateIsInteractionBlocked: ((Bool) -> Void)?
+    var updateHasBlocked: ((Bool) -> Void)?
     
     var updateHasOpaqueOverlay: ((Bool) -> Void)?
     private(set) var hasOpaqueOverlay: Bool = false {
@@ -57,7 +56,7 @@ public final class PresentationContext {
     
     private var presentationDisposables = DisposableSet()
     
-    var topLevelSubview: UIView?
+    var topLevelSubview: () -> UIView? = { nil }
     
     var isCurrentlyOpaque: Bool {
         for (controller, _) in self.controllers {
@@ -94,7 +93,7 @@ public final class PresentationContext {
         if let topController = topController {
             return topController.view
         } else {
-            return self.topLevelSubview
+            return self.topLevelSubview()
         }
     }
     
@@ -120,6 +119,10 @@ public final class PresentationContext {
         }
     }
     
+    private func layoutForController(containerLayout: ContainerViewLayout, controller: ContainableController) -> (ContainerViewLayout, CGRect) {
+        return (containerLayout, CGRect(origin: CGPoint(), size: containerLayout.size))
+    }
+    
     public func present(_ controller: ContainableController, on level: PresentationSurfaceLevel, blockInteraction: Bool = false, completion: @escaping () -> Void) {
         let controllerReady = controller.ready.get()
         |> filter({ $0 })
@@ -140,8 +143,9 @@ public final class PresentationContext {
                     controller.supportedOrientations = ViewControllerSupportedOrientations(regularSize: orientations, compactSize: orientations)
                 }
             }
-            controller.view.frame = CGRect(origin: CGPoint(), size: initialLayout.size)
-            controller.containerLayoutUpdated(initialLayout, transition: .immediate)
+            let (controllerLayout, controllerFrame) = self.layoutForController(containerLayout: initialLayout, controller: controller)
+            controller.view.frame = controllerFrame
+            controller.containerLayoutUpdated(controllerLayout, transition: .immediate)
             var blockInteractionToken: Int?
             if blockInteraction {
                 blockInteractionToken = self.addBlockInteraction()
@@ -170,37 +174,32 @@ public final class PresentationContext {
                     }
                     strongSelf.controllers.insert((controller, level), at: insertIndex ?? strongSelf.controllers.count)
                     if let view = strongSelf.view, let layout = strongSelf.layout {
+                        let (updatedControllerLayout, updatedControllerFrame) = strongSelf.layoutForController(containerLayout: layout, controller: controller)
+                        
                         (controller as? UIViewController)?.navigation_setDismiss({ [weak controller] in
                             if let strongSelf = self, let controller = controller {
                                 strongSelf.dismiss(controller)
                             }
                         }, rootController: nil)
                         (controller as? UIViewController)?.setIgnoreAppearanceMethodInvocations(true)
-                        if layout != initialLayout {
-                            controller.view.frame = CGRect(origin: CGPoint(), size: layout.size)
+                        if updatedControllerLayout != controllerLayout {
+                            controller.view.frame = updatedControllerFrame
                             if let topLevelSubview = strongSelf.topLevelSubview(for: level) {
                                 view.insertSubview(controller.view, belowSubview: topLevelSubview)
                             } else {
-                                if let volumeControlStatusBarNodeView = strongSelf.volumeControlStatusBarNodeView {
-                                    view.insertSubview(controller.view, belowSubview: volumeControlStatusBarNodeView)
-                                } else {
-                                    view.addSubview(controller.view)
-                                }
+                                view.addSubview(controller.view)
                             }
-                            controller.containerLayoutUpdated(layout, transition: .immediate)
+                            controller.containerLayoutUpdated(updatedControllerLayout, transition: .immediate)
                         } else {
                             if let topLevelSubview = strongSelf.topLevelSubview(for: level) {
                                 view.insertSubview(controller.view, belowSubview: topLevelSubview)
                             } else {
-                                if let volumeControlStatusBarNodeView = strongSelf.volumeControlStatusBarNodeView {
-                                    view.insertSubview(controller.view, belowSubview: volumeControlStatusBarNodeView)
-                                } else {
-                                    view.addSubview(controller.view)
-                                }
+                                view.addSubview(controller.view)
                             }
                         }
                         (controller as? UIViewController)?.setIgnoreAppearanceMethodInvocations(false)
                         view.layer.invalidateUpTheTree()
+                        strongSelf.updateViews()
                         controller.viewWillAppear(false)
                         if let controller = controller as? PresentableController {
                             controller.viewDidAppear(completion: { [weak self] in
@@ -211,7 +210,6 @@ public final class PresentationContext {
                             strongSelf.notifyAccessibilityScreenChanged()
                         }
                     }
-                    strongSelf.updateViews()
                 }
             }))
         } else {
@@ -225,7 +223,7 @@ public final class PresentationContext {
     }
     
     private func dismiss(_ controller: ContainableController) {
-        if let index = self.controllers.index(where: { $0.0 === controller }) {
+        if let index = self.controllers.firstIndex(where: { $0.0 === controller }) {
             self.controllers.remove(at: index)
             controller.viewWillDisappear(false)
             controller.view.removeFromSuperview()
@@ -242,7 +240,9 @@ public final class PresentationContext {
             self.readyChanged(wasReady: wasReady)
         } else if self.ready {
             for (controller, _) in self.controllers {
-                controller.containerLayoutUpdated(layout, transition: transition)
+                let (controllerLayout, controllerFrame) = self.layoutForController(containerLayout: layout, controller: controller)
+                controller.view.frame = controllerFrame
+                controller.containerLayoutUpdated(controllerLayout, transition: transition)
             }
         }
     }
@@ -259,17 +259,14 @@ public final class PresentationContext {
         if let view = self.view, let layout = self.layout {
             for (controller, _) in self.controllers {
                 controller.viewWillAppear(false)
-                if let topLevelSubview = self.topLevelSubview {
+                if let topLevelSubview = self.topLevelSubview() {
                     view.insertSubview(controller.view, belowSubview: topLevelSubview)
                 } else {
-                    if let volumeControlStatusBarNodeView = self.volumeControlStatusBarNodeView {
-                        view.insertSubview(controller.view, belowSubview: volumeControlStatusBarNodeView)
-                    } else {
-                        view.addSubview(controller.view)
-                    }
+                    view.addSubview(controller.view)
                 }
-                controller.view.frame = CGRect(origin: CGPoint(), size: layout.size)
-                controller.containerLayoutUpdated(layout, transition: .immediate)
+                let (controllerLayout, controllerFrame) = self.layoutForController(containerLayout: layout, controller: controller)
+                controller.view.frame = controllerFrame
+                controller.containerLayoutUpdated(controllerLayout, transition: .immediate)
                 if let controller = controller as? PresentableController {
                     controller.viewDidAppear(completion: { [weak self] in
                         self?.notifyAccessibilityScreenChanged()
@@ -310,10 +307,10 @@ public final class PresentationContext {
         UIAccessibility.post(notification: UIAccessibility.Notification.screenChanged, argument: nil)
     }
     
-    func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+    func hitTest(view: UIView, point: CGPoint, with event: UIEvent?) -> UIView? {
         for (controller, _) in self.controllers.reversed() {
             if controller.isViewLoaded {
-                if let result = controller.view.hitTest(point, with: event) {
+                if let result = controller.view.hitTest(view.convert(point, to: controller.view), with: event) {
                     return result
                 }
             }
@@ -331,21 +328,27 @@ public final class PresentationContext {
     
     func combinedSupportedOrientations(currentOrientationToLock: UIInterfaceOrientationMask) -> ViewControllerSupportedOrientations {
         var mask = ViewControllerSupportedOrientations(regularSize: .all, compactSize: .all)
-        
         for (controller, _) in self.controllers {
             mask = mask.intersection(controller.combinedSupportedOrientations(currentOrientationToLock: currentOrientationToLock))
         }
-        
         return mask
     }
     
     func combinedDeferScreenEdgeGestures() -> UIRectEdge {
         var edges: UIRectEdge = []
-        
         for (controller, _) in self.controllers {
             edges = edges.union(controller.deferScreenEdgeGestures)
         }
-        
         return edges
+    }
+    
+    func combinedPrefersOnScreenNavigationHidden() -> Bool {
+        var hidden: Bool = false
+        for (controller, _) in self.controllers {
+            if let controller = controller as? ViewController {
+                hidden = hidden || controller.prefersOnScreenNavigationHidden
+            }
+        }
+        return hidden
     }
 }

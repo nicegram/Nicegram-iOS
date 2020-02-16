@@ -2,9 +2,7 @@ import Foundation
 import UIKit
 import Display
 import SwiftSignalKit
-import TelegramCore
 import TelegramPresentationData
-import AccountContext
 import ProgressNavigationButtonNode
 
 public enum ItemListNavigationButtonStyle {
@@ -58,6 +56,7 @@ public struct ItemListBackButton: Equatable {
 
 public enum ItemListControllerTitle: Equatable {
     case text(String)
+    case textWithSubtitle(String, String)
     case sectionControl([String], Int)
 }
 
@@ -82,7 +81,7 @@ public final class ItemListControllerTabBarItem: Equatable {
 }
 
 public struct ItemListControllerState {
-    let theme: PresentationTheme
+    let presentationData: ItemListPresentationData
     let title: ItemListControllerTitle
     let leftNavigationButton: ItemListNavigationButton?
     let rightNavigationButton: ItemListNavigationButton?
@@ -91,8 +90,8 @@ public struct ItemListControllerState {
     let tabBarItem: ItemListControllerTabBarItem?
     let animateChanges: Bool
     
-    public init(theme: PresentationTheme, title: ItemListControllerTitle, leftNavigationButton: ItemListNavigationButton?, rightNavigationButton: ItemListNavigationButton?, secondaryRightNavigationButton: ItemListNavigationButton? = nil, backNavigationButton: ItemListBackButton?, tabBarItem: ItemListControllerTabBarItem? = nil, animateChanges: Bool = true) {
-        self.theme = theme
+    public init(presentationData: ItemListPresentationData, title: ItemListControllerTitle, leftNavigationButton: ItemListNavigationButton?, rightNavigationButton: ItemListNavigationButton?, secondaryRightNavigationButton: ItemListNavigationButton? = nil, backNavigationButton: ItemListBackButton?, tabBarItem: ItemListControllerTabBarItem? = nil, animateChanges: Bool = true) {
+        self.presentationData = presentationData
         self.title = title
         self.leftNavigationButton = leftNavigationButton
         self.rightNavigationButton = rightNavigationButton
@@ -103,8 +102,8 @@ public struct ItemListControllerState {
     }
 }
 
-open class ItemListController<Entry: ItemListNodeEntry>: ViewController, KeyShortcutResponder, PresentableController {
-    private let state: Signal<(ItemListControllerState, (ItemListNodeState<Entry>, Entry.ItemGenerationArguments)), NoError>
+open class ItemListController: ViewController, KeyShortcutResponder, PresentableController {
+    private let state: Signal<(ItemListControllerState, (ItemListNodeState, Any)), NoError>
     
     private var leftNavigationButtonTitleAndStyle: (ItemListNavigationButtonContent, ItemListNavigationButtonStyle)?
     private var rightNavigationButtonTitleAndStyle: [(ItemListNavigationButtonContent, ItemListNavigationButtonStyle)] = []
@@ -113,10 +112,11 @@ open class ItemListController<Entry: ItemListNodeEntry>: ViewController, KeyShor
     private var navigationButtonActions: (left: (() -> Void)?, right: (() -> Void)?, secondaryRight: (() -> Void)?) = (nil, nil, nil)
     private var segmentedTitleView: ItemListControllerSegmentedTitleView?
     
-    private var theme: PresentationTheme
-    private var strings: PresentationStrings
+    private var presentationData: ItemListPresentationData
     
     private var validLayout: ContainerViewLayout?
+    
+    public var additionalInsets: UIEdgeInsets = UIEdgeInsets()
     
     private var didPlayPresentationAnimation = false
     public private(set) var didAppearOnce = false
@@ -135,7 +135,7 @@ open class ItemListController<Entry: ItemListNodeEntry>: ViewController, KeyShor
     public var experimentalSnapScrollToItem: Bool = false {
         didSet {
             if self.isNodeLoaded {
-                (self.displayNode as! ItemListControllerNode<Entry>).listNode.experimentalSnapScrollToItem = self.experimentalSnapScrollToItem
+                (self.displayNode as! ItemListControllerNode).listNode.experimentalSnapScrollToItem = self.experimentalSnapScrollToItem
             }
         }
     }
@@ -143,7 +143,7 @@ open class ItemListController<Entry: ItemListNodeEntry>: ViewController, KeyShor
     public var enableInteractiveDismiss = false {
         didSet {
             if self.isNodeLoaded {
-                (self.displayNode as! ItemListControllerNode<Entry>).enableInteractiveDismiss = self.enableInteractiveDismiss
+                (self.displayNode as! ItemListControllerNode).enableInteractiveDismiss = self.enableInteractiveDismiss
             }
         }
     }
@@ -151,15 +151,15 @@ open class ItemListController<Entry: ItemListNodeEntry>: ViewController, KeyShor
     public var alwaysSynchronous = false {
         didSet {
             if self.isNodeLoaded {
-                (self.displayNode as! ItemListControllerNode<Entry>).alwaysSynchronous = self.alwaysSynchronous
+                (self.displayNode as! ItemListControllerNode).alwaysSynchronous = self.alwaysSynchronous
             }
         }
     }
     
-    public var visibleEntriesUpdated: ((ItemListNodeVisibleEntries<Entry>) -> Void)? {
+    public var visibleEntriesUpdated: ((ItemListNodeVisibleEntries) -> Void)? {
         didSet {
             if self.isNodeLoaded {
-                (self.displayNode as! ItemListControllerNode<Entry>).visibleEntriesUpdated = self.visibleEntriesUpdated
+                (self.displayNode as! ItemListControllerNode).visibleEntriesUpdated = self.visibleEntriesUpdated
             }
         }
     }
@@ -167,7 +167,7 @@ open class ItemListController<Entry: ItemListNodeEntry>: ViewController, KeyShor
     public var visibleBottomContentOffsetChanged: ((ListViewVisibleContentOffset) -> Void)? {
         didSet {
             if self.isNodeLoaded {
-                (self.displayNode as! ItemListControllerNode<Entry>).visibleBottomContentOffsetChanged = self.visibleBottomContentOffsetChanged
+                (self.displayNode as! ItemListControllerNode).visibleBottomContentOffsetChanged = self.visibleBottomContentOffsetChanged
             }
         }
     }
@@ -175,7 +175,7 @@ open class ItemListController<Entry: ItemListNodeEntry>: ViewController, KeyShor
     public var contentOffsetChanged: ((ListViewVisibleContentOffset, Bool) -> Void)? {
         didSet {
             if self.isNodeLoaded {
-                (self.displayNode as! ItemListControllerNode<Entry>).contentOffsetChanged = self.contentOffsetChanged
+                (self.displayNode as! ItemListControllerNode).contentOffsetChanged = self.contentOffsetChanged
             }
         }
     }
@@ -183,7 +183,7 @@ open class ItemListController<Entry: ItemListNodeEntry>: ViewController, KeyShor
     public var contentScrollingEnded: ((ListView) -> Bool)? {
         didSet {
             if self.isNodeLoaded {
-                (self.displayNode as! ItemListControllerNode<Entry>).contentScrollingEnded = self.contentScrollingEnded
+                (self.displayNode as! ItemListControllerNode).contentScrollingEnded = self.contentScrollingEnded
             }
         }
     }
@@ -191,17 +191,35 @@ open class ItemListController<Entry: ItemListNodeEntry>: ViewController, KeyShor
     public var searchActivated: ((Bool) -> Void)? {
         didSet {
             if self.isNodeLoaded {
-                (self.displayNode as! ItemListControllerNode<Entry>).searchActivated = self.searchActivated
+                (self.displayNode as! ItemListControllerNode).searchActivated = self.searchActivated
             }
         }
     }
     
     public var willScrollToTop: (() -> Void)?
     
-    public var reorderEntry: ((Int, Int, [Entry]) -> Void)? {
+    public func setReorderEntry<T: ItemListNodeEntry>(_ f: @escaping (Int, Int, [T]) -> Signal<Bool, NoError>) {
+        self.reorderEntry = { a, b, list in
+            return f(a, b, list.map { $0 as! T })
+        }
+    }
+    private var reorderEntry: ((Int, Int, [ItemListNodeAnyEntry]) -> Signal<Bool, NoError>)? {
         didSet {
             if self.isNodeLoaded {
-                (self.displayNode as! ItemListControllerNode<Entry>).reorderEntry = self.reorderEntry
+                (self.displayNode as! ItemListControllerNode).reorderEntry = self.reorderEntry
+            }
+        }
+    }
+    
+    public func setReorderCompleted<T: ItemListNodeEntry>(_ f: @escaping ([T]) -> Void) {
+        self.reorderCompleted = { list in
+            f(list.map { $0 as! T })
+        }
+    }
+    private var reorderCompleted: (([ItemListNodeAnyEntry]) -> Void)? {
+        didSet {
+            if self.isNodeLoaded {
+                (self.displayNode as! ItemListControllerNode).reorderCompleted = self.reorderCompleted
             }
         }
     }
@@ -212,32 +230,24 @@ open class ItemListController<Entry: ItemListNodeEntry>: ViewController, KeyShor
     public var willDisappear: ((Bool) -> Void)?
     public var didDisappear: ((Bool) -> Void)?
     
-    convenience public init(context: AccountContext, state: Signal<(ItemListControllerState, (ItemListNodeState<Entry>, Entry.ItemGenerationArguments)), NoError>, tabBarItem: Signal<ItemListControllerTabBarItem, NoError>? = nil) {
-        self.init(sharedContext: context.sharedContext, state: state, tabBarItem: tabBarItem)
-    }
-    
-    convenience public init(sharedContext: SharedAccountContext, state: Signal<(ItemListControllerState, (ItemListNodeState<Entry>, Entry.ItemGenerationArguments)), NoError>, tabBarItem: Signal<ItemListControllerTabBarItem, NoError>? = nil) {
-        let presentationData = sharedContext.currentPresentationData.with { $0 }
-        self.init(theme: presentationData.theme, strings: presentationData.strings, updatedPresentationData: sharedContext.presentationData |> map { ($0.theme, $0.strings) }, state: state, tabBarItem: tabBarItem)
-    }
-    
-    public init(theme: PresentationTheme, strings: PresentationStrings, updatedPresentationData: Signal<(theme: PresentationTheme, strings: PresentationStrings), NoError>, state: Signal<(ItemListControllerState, (ItemListNodeState<Entry>, Entry.ItemGenerationArguments)), NoError>, tabBarItem: Signal<ItemListControllerTabBarItem, NoError>?) {
+    public init<ItemGenerationArguments>(presentationData: ItemListPresentationData, updatedPresentationData: Signal<ItemListPresentationData, NoError>, state: Signal<(ItemListControllerState, (ItemListNodeState, ItemGenerationArguments)), NoError>, tabBarItem: Signal<ItemListControllerTabBarItem, NoError>?) {
         self.state = state
+        |> map { controllerState, nodeStateAndArgument -> (ItemListControllerState, (ItemListNodeState, Any)) in
+            return (controllerState, (nodeStateAndArgument.0, nodeStateAndArgument.1))
+        }
         
-        self.theme = theme
-        self.strings = strings
+        self.presentationData = presentationData
         
-        super.init(navigationBarPresentationData: NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: theme), strings: NavigationBarStrings(presentationStrings: strings)))
+        super.init(navigationBarPresentationData: NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: presentationData.theme), strings: NavigationBarStrings(presentationStrings: presentationData.strings)))
         
         self.isOpaqueWhenInOverlay = true
-        //self.isModalWhenInOverlay = true
         self.blocksBackgroundWhenInOverlay = true
         
-        self.statusBar.statusBarStyle = theme.rootController.statusBarStyle.style
+        self.statusBar.statusBarStyle = presentationData.theme.rootController.statusBarStyle.style
         
         self.scrollToTop = { [weak self] in
             self?.willScrollToTop?()
-            (self?.displayNode as! ItemListControllerNode<Entry>).scrollToTop()
+            (self?.displayNode as! ItemListControllerNode).scrollToTop()
         }
         
         if let tabBarItem = tabBarItem {
@@ -278,12 +288,16 @@ open class ItemListController<Entry: ItemListNodeEntry>: ViewController, KeyShor
                                 strongSelf.title = text
                                 strongSelf.navigationItem.titleView = nil
                                 strongSelf.segmentedTitleView = nil
+                            case let .textWithSubtitle(title, subtitle):
+                                strongSelf.title = ""
+                                strongSelf.navigationItem.titleView = ItemListTextWithSubtitleTitleView(theme: controllerState.presentationData.theme, title: title, subtitle: subtitle)
+                                strongSelf.segmentedTitleView = nil
                             case let .sectionControl(sections, index):
                                 strongSelf.title = ""
                                 if let segmentedTitleView = strongSelf.segmentedTitleView, segmentedTitleView.segments == sections {
                                     segmentedTitleView.index = index
                                 } else {
-                                    let segmentedTitleView = ItemListControllerSegmentedTitleView(segments: sections, index: index, color: controllerState.theme.rootController.navigationBar.accentTextColor)
+                                    let segmentedTitleView = ItemListControllerSegmentedTitleView(theme: controllerState.presentationData.theme, segments: sections, selectedIndex: index)
                                     strongSelf.segmentedTitleView = segmentedTitleView
                                     strongSelf.navigationItem.titleView = strongSelf.segmentedTitleView
                                     segmentedTitleView.indexUpdated = { index in
@@ -296,7 +310,7 @@ open class ItemListController<Entry: ItemListNodeEntry>: ViewController, KeyShor
                     }
                     strongSelf.navigationButtonActions = (left: controllerState.leftNavigationButton?.action, right: controllerState.rightNavigationButton?.action, secondaryRight: controllerState.secondaryRightNavigationButton?.action)
                     
-                    let themeUpdated = strongSelf.theme !== controllerState.theme
+                    let themeUpdated = strongSelf.presentationData != controllerState.presentationData
                     if strongSelf.leftNavigationButtonTitleAndStyle?.0 != controllerState.leftNavigationButton?.content || strongSelf.leftNavigationButtonTitleAndStyle?.1 != controllerState.leftNavigationButton?.style || themeUpdated {
                         if let leftNavigationButton = controllerState.leftNavigationButton {
                             let item: UIBarButtonItem
@@ -309,11 +323,11 @@ open class ItemListController<Entry: ItemListNodeEntry>: ViewController, KeyShor
                                     var image: UIImage?
                                     switch icon {
                                         case .search:
-                                            image = PresentationResourcesRootController.navigationCompactSearchIcon(controllerState.theme)
+                                            image = PresentationResourcesRootController.navigationCompactSearchIcon(controllerState.presentationData.theme)
                                         case .add:
-                                            image = PresentationResourcesRootController.navigationAddIcon(controllerState.theme)
+                                            image = PresentationResourcesRootController.navigationAddIcon(controllerState.presentationData.theme)
                                         case .action:
-                                            image = PresentationResourcesRootController.navigationShareIcon(controllerState.theme)
+                                            image = PresentationResourcesRootController.navigationShareIcon(controllerState.presentationData.theme)
                                     }
                                     item = UIBarButtonItem(image: image, style: leftNavigationButton.style.barButtonItemStyle, target: strongSelf, action: #selector(strongSelf.leftNavigationButtonPressed))
                             }
@@ -354,7 +368,7 @@ open class ItemListController<Entry: ItemListNodeEntry>: ViewController, KeyShor
                         for (content, style, _) in rightNavigationButtonTitleAndStyle {
                             let item: UIBarButtonItem
                             if case .activity = style {
-                                item = UIBarButtonItem(customDisplayNode: ProgressNavigationButtonNode(theme: controllerState.theme))
+                                item = UIBarButtonItem(customDisplayNode: ProgressNavigationButtonNode(color: controllerState.presentationData.theme.rootController.navigationBar.controlColor))
                             } else {
                                 let action: Selector = (index == 0 && rightNavigationButtonTitleAndStyle.count > 1) ? #selector(strongSelf.secondaryRightNavigationButtonPressed) : #selector(strongSelf.rightNavigationButtonPressed)
                                 switch content {
@@ -366,11 +380,11 @@ open class ItemListController<Entry: ItemListNodeEntry>: ViewController, KeyShor
                                         var image: UIImage?
                                         switch icon {
                                             case .search:
-                                                image = PresentationResourcesRootController.navigationCompactSearchIcon(controllerState.theme)
+                                                image = PresentationResourcesRootController.navigationCompactSearchIcon(controllerState.presentationData.theme)
                                             case .add:
-                                                image = PresentationResourcesRootController.navigationAddIcon(controllerState.theme)
+                                                image = PresentationResourcesRootController.navigationAddIcon(controllerState.presentationData.theme)
                                             case .action:
-                                                image = PresentationResourcesRootController.navigationShareIcon(controllerState.theme)
+                                                image = PresentationResourcesRootController.navigationShareIcon(controllerState.presentationData.theme)
                                         }
                                         item = UIBarButtonItem(image: image, style: style.barButtonItemStyle, target: strongSelf, action: action)
                                 }
@@ -400,26 +414,32 @@ open class ItemListController<Entry: ItemListNodeEntry>: ViewController, KeyShor
                         }
                     }
                     
-                    if strongSelf.theme !== controllerState.theme {
-                        strongSelf.theme = controllerState.theme
+                    if strongSelf.presentationData != controllerState.presentationData {
+                        strongSelf.presentationData = controllerState.presentationData
                         
-                        strongSelf.navigationBar?.updatePresentationData(NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: strongSelf.theme), strings: NavigationBarStrings(presentationStrings: strongSelf.strings)))
-                        strongSelf.statusBar.statusBarStyle = strongSelf.theme.rootController.statusBarStyle.style
+                        strongSelf.navigationBar?.updatePresentationData(NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: strongSelf.presentationData.theme), strings: NavigationBarStrings(presentationStrings: strongSelf.presentationData.strings)))
+                        strongSelf.statusBar.updateStatusBarStyle(strongSelf.presentationData.theme.rootController.statusBarStyle.style, animated: true)
                         
-                        strongSelf.segmentedTitleView?.color = controllerState.theme.rootController.navigationBar.accentTextColor
+                        strongSelf.segmentedTitleView?.theme = controllerState.presentationData.theme
+                        
+                        if let titleView = strongSelf.navigationItem.titleView as? ItemListTextWithSubtitleTitleView {
+                            titleView.updateTheme(theme: controllerState.presentationData.theme)
+                        }
                         
                         var items = strongSelf.navigationItem.rightBarButtonItems ?? []
                         for i in 0 ..< strongSelf.rightNavigationButtonTitleAndStyle.count {
                             if case .activity = strongSelf.rightNavigationButtonTitleAndStyle[i].1 {
-                                items[i] = UIBarButtonItem(customDisplayNode: ProgressNavigationButtonNode(theme: controllerState.theme))!
+                                items[i] = UIBarButtonItem(customDisplayNode: ProgressNavigationButtonNode(color: controllerState.presentationData.theme.rootController.navigationBar.controlColor))!
                             }
                         }
                         strongSelf.navigationItem.setRightBarButtonItems(items, animated: false)
                     }
                 }
             }
-        } |> map { ($0.theme, $1) }
-        let displayNode = ItemListControllerNode<Entry>(controller: self, navigationBar: self.navigationBar!, updateNavigationOffset: { [weak self] offset in
+        }
+        |> map { ($0.presentationData, $1) }
+        
+        let displayNode = ItemListControllerNode(controller: self, navigationBar: self.navigationBar!, updateNavigationOffset: { [weak self] offset in
             if let strongSelf = self {
                 strongSelf.navigationOffset = offset
             }
@@ -435,13 +455,14 @@ open class ItemListController<Entry: ItemListNodeEntry>: ViewController, KeyShor
         displayNode.contentScrollingEnded = self.contentScrollingEnded
         displayNode.searchActivated = self.searchActivated
         displayNode.reorderEntry = self.reorderEntry
+        displayNode.reorderCompleted = self.reorderCompleted
         displayNode.listNode.experimentalSnapScrollToItem = self.experimentalSnapScrollToItem
         displayNode.requestLayout = { [weak self] transition in
             self?.requestLayout(transition: transition)
         }
         self.displayNode = displayNode
         super.displayNodeDidLoad()
-        self._ready.set((self.displayNode as! ItemListControllerNode<Entry>).ready)
+        self._ready.set((self.displayNode as! ItemListControllerNode).ready)
     }
     
     override open func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {
@@ -449,7 +470,7 @@ open class ItemListController<Entry: ItemListNodeEntry>: ViewController, KeyShor
         
         self.validLayout = layout
         
-        (self.displayNode as! ItemListControllerNode<Entry>).containerLayoutUpdated(layout, navigationBarHeight: self.navigationInsetHeight, transition: transition)
+        (self.displayNode as! ItemListControllerNode).containerLayoutUpdated(layout, navigationBarHeight: self.navigationInsetHeight, transition: transition, additionalInsets: self.additionalInsets)
     }
 
     @objc func leftNavigationButtonPressed() {
@@ -471,12 +492,12 @@ open class ItemListController<Entry: ItemListNodeEntry>: ViewController, KeyShor
     }
     
     public func viewDidAppear(completion: @escaping () -> Void) {
-        (self.displayNode as! ItemListControllerNode<Entry>).listNode.preloadPages = true
+        (self.displayNode as! ItemListControllerNode).listNode.preloadPages = true
         
         if let presentationArguments = self.presentationArguments as? ViewControllerPresentationArguments, !self.didPlayPresentationAnimation {
             self.didPlayPresentationAnimation = true
             if case .modalSheet = presentationArguments.presentationAnimation {
-                (self.displayNode as! ItemListControllerNode<Entry>).animateIn(completion: {
+                (self.displayNode as! ItemListControllerNode).animateIn(completion: {
                     presentationArguments.completion?()
                     completion()
                 })
@@ -505,17 +526,13 @@ open class ItemListController<Entry: ItemListNodeEntry>: ViewController, KeyShor
         self.didDisappear?(animated)
     }
     
-    override open func dismiss(completion: (() -> Void)? = nil) {
-        if !self.isDismissed {
-            self.isDismissed = true
-            (self.displayNode as! ItemListControllerNode<Entry>).animateOut(completion: completion)
-            self.updateTransitionWhenPresentedAsModal?(0.0, .animated(duration: 0.2, curve: .easeInOut))
-        }
+    public var listInsets: UIEdgeInsets {
+        return (self.displayNode as! ItemListControllerNode).listNode.insets
     }
     
     public func frameForItemNode(_ predicate: (ListViewItemNode) -> Bool) -> CGRect? {
         var result: CGRect?
-        (self.displayNode as! ItemListControllerNode<Entry>).listNode.forEachItemNode { itemNode in
+        (self.displayNode as! ItemListControllerNode).listNode.forEachItemNode { itemNode in
             if let itemNode = itemNode as? ListViewItemNode {
                 if predicate(itemNode) {
                     result = itemNode.convert(itemNode.bounds, to: self.displayNode)
@@ -526,19 +543,19 @@ open class ItemListController<Entry: ItemListNodeEntry>: ViewController, KeyShor
     }
     
     public func forEachItemNode(_ f: (ListViewItemNode) -> Void) {
-        (self.displayNode as! ItemListControllerNode<Entry>).listNode.forEachItemNode { itemNode in
+        (self.displayNode as! ItemListControllerNode).listNode.forEachItemNode { itemNode in
             if let itemNode = itemNode as? ListViewItemNode {
                 f(itemNode)
             }
         }
     }
     
-    public func ensureItemNodeVisible(_ itemNode: ListViewItemNode) {
-        (self.displayNode as! ItemListControllerNode<Entry>).listNode.ensureItemNodeVisible(itemNode)
+    public func ensureItemNodeVisible(_ itemNode: ListViewItemNode, animated: Bool = true, curve: ListViewAnimationCurve = .Default(duration: 0.25)) {
+        (self.displayNode as! ItemListControllerNode).listNode.ensureItemNodeVisible(itemNode, animated: animated, curve: curve)
     }
     
     public func afterLayout(_ f: @escaping () -> Void) {
-        (self.displayNode as! ItemListControllerNode<Entry>).afterLayout(f)
+        (self.displayNode as! ItemListControllerNode).afterLayout(f)
     }
     
     public func previewingController(from sourceView: UIView, for location: CGPoint) -> (UIViewController, CGRect)? {
@@ -555,8 +572,8 @@ open class ItemListController<Entry: ItemListNodeEntry>: ViewController, KeyShor
         }
         
         var selectedNode: ItemListItemNode?
-        let listLocation = self.view.convert(location, to:  (self.displayNode as! ItemListControllerNode<Entry>).listNode.view)
-        (self.displayNode as! ItemListControllerNode<Entry>).listNode.forEachItemNode { itemNode in
+        let listLocation = self.view.convert(location, to:  (self.displayNode as! ItemListControllerNode).listNode.view)
+        (self.displayNode as! ItemListControllerNode).listNode.forEachItemNode { itemNode in
             if itemNode.frame.contains(listLocation), let itemNode = itemNode as? ItemListItemNode {
                 selectedNode = itemNode
             }
@@ -579,7 +596,7 @@ open class ItemListController<Entry: ItemListNodeEntry>: ViewController, KeyShor
     }
     
     public func clearItemNodesHighlight(animated: Bool = false) {
-        (self.displayNode as! ItemListControllerNode<Entry>).listNode.clearHighlightAnimated(animated)
+        (self.displayNode as! ItemListControllerNode).listNode.clearHighlightAnimated(animated)
     }
     
     public func previewingCommit(_ viewControllerToCommit: UIViewController) {
@@ -592,5 +609,70 @@ open class ItemListController<Entry: ItemListNodeEntry>: ViewController, KeyShor
                 _ = self?.navigationBar?.executeBack()
             }
         })]
+    }
+}
+
+private final class ItemListTextWithSubtitleTitleView: UIView, NavigationBarTitleView {
+    private let titleNode: ImmediateTextNode
+    private let subtitleNode: ImmediateTextNode
+    
+    private var validLayout: (CGSize, CGRect)?
+    
+    init(theme: PresentationTheme, title: String, subtitle: String) {
+        self.titleNode = ImmediateTextNode()
+        self.titleNode.displaysAsynchronously = false
+        self.titleNode.maximumNumberOfLines = 1
+        self.titleNode.isOpaque = false
+        
+        self.titleNode.attributedText = NSAttributedString(string: title, font: Font.medium(17.0), textColor: theme.rootController.navigationBar.primaryTextColor)
+        
+        self.subtitleNode = ImmediateTextNode()
+        self.subtitleNode.displaysAsynchronously = false
+        self.subtitleNode.maximumNumberOfLines = 1
+        self.subtitleNode.isOpaque = false
+        
+        self.subtitleNode.attributedText = NSAttributedString(string: subtitle, font: Font.regular(13.0), textColor: theme.rootController.navigationBar.secondaryTextColor)
+        
+        super.init(frame: CGRect())
+        
+        self.addSubnode(self.titleNode)
+        self.addSubnode(self.subtitleNode)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    func updateTheme(theme: PresentationTheme) {
+        self.titleNode.attributedText = NSAttributedString(string: self.titleNode.attributedText?.string ?? "", font: Font.medium(17.0), textColor: theme.rootController.navigationBar.primaryTextColor)
+        self.subtitleNode.attributedText = NSAttributedString(string: self.subtitleNode.attributedText?.string ?? "", font: Font.regular(13.0), textColor: theme.rootController.navigationBar.secondaryTextColor)
+        if let (size, clearBounds) = self.validLayout {
+            self.updateLayout(size: size, clearBounds: clearBounds, transition: .immediate)
+        }
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        
+        if let (size, clearBounds) = self.validLayout {
+            self.updateLayout(size: size, clearBounds: clearBounds, transition: .immediate)
+        }
+    }
+    
+    func updateLayout(size: CGSize, clearBounds: CGRect, transition: ContainedViewLayoutTransition) {
+        self.validLayout = (size, clearBounds)
+        
+        let titleSize = self.titleNode.updateLayout(size)
+        let subtitleSize = self.subtitleNode.updateLayout(size)
+        let spacing: CGFloat = 0.0
+        let contentHeight = titleSize.height + spacing + subtitleSize.height
+        let titleFrame = CGRect(origin: CGPoint(x: floor((size.width - titleSize.width) / 2.0), y: floor((size.height - contentHeight) / 2.0)), size: titleSize)
+        let subtitleFrame = CGRect(origin: CGPoint(x: floor((size.width - subtitleSize.width) / 2.0), y: titleFrame.maxY + spacing), size: subtitleSize)
+            
+        self.titleNode.frame = titleFrame
+        self.subtitleNode.frame = subtitleFrame
+    }
+    
+    func animateLayoutTransition() {
     }
 }

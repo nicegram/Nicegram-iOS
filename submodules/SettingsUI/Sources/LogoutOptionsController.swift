@@ -4,12 +4,15 @@ import Display
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import LegacyComponents
 import TelegramPresentationData
 import ItemListUI
+import PresentationDataUtils
 import OverlayStatusController
 import AccountContext
 import AlertUI
+import PresentationDataUtils
 import UrlHandling
 
 private struct LogoutOptionsItemArguments {
@@ -70,41 +73,42 @@ private enum LogoutOptionsEntry: ItemListNodeEntry, Equatable {
         return lhs.stableId < rhs.stableId
     }
     
-    func item(_ arguments: LogoutOptionsItemArguments) -> ListViewItem {
+    func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
+        let arguments = arguments as! LogoutOptionsItemArguments
         switch self {
             case let .alternativeHeader(theme, title):
-                return ItemListSectionHeaderItem(theme: theme, text: title, sectionId: self.section)
+                return ItemListSectionHeaderItem(presentationData: presentationData, text: title, sectionId: self.section)
             case let .addAccount(theme, title, text):
-                return ItemListDisclosureItem(theme: theme, icon: PresentationResourcesSettings.addAccount, title: title, label: text, labelStyle: .multilineDetailText, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, icon: PresentationResourcesSettings.addAccount, title: title, label: text, labelStyle: .multilineDetailText, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
                     arguments.addAccount()
                 })
             case let .setPasscode(theme, title, text):
-                return ItemListDisclosureItem(theme: theme, icon: PresentationResourcesSettings.setPasscode, title: title, label: text, labelStyle: .multilineDetailText, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, icon: PresentationResourcesSettings.setPasscode, title: title, label: text, labelStyle: .multilineDetailText, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
                     arguments.setPasscode()
                 })
             case let .clearCache(theme, title, text):
-                return ItemListDisclosureItem(theme: theme, icon: PresentationResourcesSettings.clearCache, title: title, label: text, labelStyle: .multilineDetailText, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, icon: PresentationResourcesSettings.clearCache, title: title, label: text, labelStyle: .multilineDetailText, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
                     arguments.clearCache()
                 })
             case let .changePhoneNumber(theme, title, text):
-                return ItemListDisclosureItem(theme: theme, icon: PresentationResourcesSettings.changePhoneNumber, title: title, label: text, labelStyle: .multilineDetailText, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, icon: PresentationResourcesSettings.changePhoneNumber, title: title, label: text, labelStyle: .multilineDetailText, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
                     arguments.changePhoneNumber()
                 })
             case let .contactSupport(theme, title, text):
-                return ItemListDisclosureItem(theme: theme, icon: PresentationResourcesSettings.support, title: title, label: text, labelStyle: .multilineDetailText, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, icon: PresentationResourcesSettings.support, title: title, label: text, labelStyle: .multilineDetailText, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
                     arguments.contactSupport()
                 })
             case let .logout(theme, title):
-                return ItemListActionItem(theme: theme, title: title, kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, title: title, kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     arguments.logout()
                 })
             case let .logoutInfo(theme, title):
-                return ItemListTextItem(theme: theme, text: .plain(title), sectionId: self.section)
+                return ItemListTextItem(presentationData: presentationData, text: .plain(title), sectionId: self.section)
         }
     }
 }
 
-private func logoutOptionsEntries(presentationData: PresentationData, canAddAccounts: Bool, hasPasscode: Bool) -> [LogoutOptionsEntry] {
+private func logoutOptionsEntries(presentationData: PresentationData, canAddAccounts: Bool, hasPasscode: Bool, hasWallets: Bool) -> [LogoutOptionsEntry] {
     var entries: [LogoutOptionsEntry] = []
     entries.append(.alternativeHeader(presentationData.theme, presentationData.strings.LogoutOptions_AlternativeOptionsSection))
     if canAddAccounts {
@@ -117,7 +121,11 @@ private func logoutOptionsEntries(presentationData: PresentationData, canAddAcco
     entries.append(.changePhoneNumber(presentationData.theme, presentationData.strings.LogoutOptions_ChangePhoneNumberTitle, presentationData.strings.LogoutOptions_ChangePhoneNumberText))
     entries.append(.contactSupport(presentationData.theme, presentationData.strings.LogoutOptions_ContactSupportTitle, presentationData.strings.LogoutOptions_ContactSupportText))
     entries.append(.logout(presentationData.theme, presentationData.strings.LogoutOptions_LogOut))
-    entries.append(.logoutInfo(presentationData.theme, presentationData.strings.LogoutOptions_LogOutInfo))
+    if hasWallets {
+        entries.append(.logoutInfo(presentationData.theme, presentationData.strings.LogoutOptions_LogOutWalletInfo))
+    } else {
+        entries.append(.logoutInfo(presentationData.theme, presentationData.strings.LogoutOptions_LogOutInfo))
+    }
     return entries
 }
 
@@ -167,7 +175,7 @@ func logoutOptionsController(context: AccountContext, navigationController: Navi
         
         let openFaq: (Promise<ResolvedUrl>) -> Void = { resolvedUrl in
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-            let controller = OverlayStatusController(theme: presentationData.theme, strings: presentationData.strings, type: .loading(cancelled: nil))
+            let controller = OverlayStatusController(theme: presentationData.theme, type: .loading(cancelled: nil))
             presentControllerImpl?(controller, nil)
             let _ = (resolvedUrl.get()
             |> take(1)
@@ -178,7 +186,7 @@ func logoutOptionsController(context: AccountContext, navigationController: Navi
                 context.sharedContext.openResolvedUrl(resolvedUrl, context: context, urlContext: .generic, navigationController: navigationController, openPeer: { peer, navigation in
                 }, sendFile: nil, sendSticker: nil, present: { controller, arguments in
                     pushControllerImpl?(controller)
-                }, dismissInput: {})
+                }, dismissInput: {}, contentContext: nil)
             })
         }
         
@@ -211,8 +219,18 @@ func logoutOptionsController(context: AccountContext, navigationController: Navi
         presentControllerImpl?(alertController, nil)
     })
     
-    let signal = combineLatest(queue: .mainQueue(), context.sharedContext.presentationData, context.sharedContext.accountManager.accessChallengeData())
-    |> map { presentationData, accessChallengeData -> (ItemListControllerState, (ItemListNodeState<LogoutOptionsEntry>, LogoutOptionsEntry.ItemGenerationArguments)) in
+    #if ENABLE_WALLET
+    let hasWallets = context.hasWallets
+    #else
+    let hasWallets: Signal<Bool, NoError> = .single(false)
+    #endif
+    
+    let signal = combineLatest(queue: .mainQueue(),
+        context.sharedContext.presentationData,
+        context.sharedContext.accountManager.accessChallengeData(),
+        hasWallets
+    )
+    |> map { presentationData, accessChallengeData, hasWallets -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let leftNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Cancel), style: .regular, enabled: true, action: {
             dismissImpl?()
         })
@@ -225,8 +243,8 @@ func logoutOptionsController(context: AccountContext, navigationController: Navi
                 break
         }
         
-        let controllerState = ItemListControllerState(theme: presentationData.theme, title: .text(presentationData.strings.LogoutOptions_Title), leftNavigationButton: leftNavigationButton, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-        let listState = ItemListNodeState(entries: logoutOptionsEntries(presentationData: presentationData, canAddAccounts: canAddAccounts, hasPasscode: hasPasscode), style: .blocks)
+        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(presentationData.strings.LogoutOptions_Title), leftNavigationButton: leftNavigationButton, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: logoutOptionsEntries(presentationData: presentationData, canAddAccounts: canAddAccounts, hasPasscode: hasPasscode, hasWallets: hasWallets), style: .blocks)
         
         return (controllerState, (listState, arguments))
     }

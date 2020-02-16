@@ -3,7 +3,9 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
+import TelegramUIPreferences
 import AccountContext
 
 enum ChatInputContextPanelPlacement {
@@ -16,15 +18,17 @@ class ChatInputContextPanelNode: ASDisplayNode {
     var interfaceInteraction: ChatPanelInterfaceInteraction?
     var placement: ChatInputContextPanelPlacement = .overPanels
     var theme: PresentationTheme
+    var fontSize: PresentationFontSize
     
-    init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings) {
+    init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, fontSize: PresentationFontSize) {
         self.context = context
         self.theme = theme
+        self.fontSize = fontSize
         
         super.init()
     }
     
-    func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState) {
+    func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState) {
     }
     
     func animateOut(completion: @escaping () -> Void) {

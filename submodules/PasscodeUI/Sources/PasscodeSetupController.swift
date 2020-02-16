@@ -3,6 +3,7 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import Postbox
 import TelegramPresentationData
@@ -58,7 +59,7 @@ public final class PasscodeSetupController: ViewController {
                 return
             }
             
-            let controller = ActionSheetController(presentationTheme: strongSelf.presentationData.theme)
+            let controller = ActionSheetController(presentationData: strongSelf.presentationData)
             let dismissAction: () -> Void = { [weak controller] in
                 self?.controllerNode.activateInput()
                 controller?.dismissAnimated()

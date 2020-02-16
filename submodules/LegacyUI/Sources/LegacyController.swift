@@ -122,7 +122,7 @@ public final class LegacyControllerContext: NSObject, LegacyComponentsContext {
     
     public func isStatusBarHidden() -> Bool {
         if let controller = self.controller {
-            return controller.statusBar.isHidden
+            return controller.statusBar.isHidden || controller.navigationPresentation == .modal
         } else {
             return true
         }
@@ -173,6 +173,9 @@ public final class LegacyControllerContext: NSObject, LegacyComponentsContext {
     }
     
     public func currentlyInSplitView() -> Bool {
+        if let controller = self.controller as? LegacyController, let validLayout = controller.validLayout {
+            return validLayout.isNonExclusive
+        }
         return false
     }
     
@@ -247,7 +250,7 @@ public final class LegacyControllerContext: NSObject, LegacyComponentsContext {
     
     public func setApplicationStatusBarAlpha(_ alpha: CGFloat) {
         if let controller = self.controller {
-            controller.statusBar.alpha = alpha
+            controller.statusBar.updateAlpha(alpha, transition: .immediate)
             self.updateDeferScreenEdgeGestures()
         }
     }
@@ -281,6 +284,11 @@ public final class LegacyControllerContext: NSObject, LegacyComponentsContext {
             }
             if validLayout.intrinsicInsets.bottom.isEqual(to: 21.0) {
                 safeInsets.bottom = 21.0
+            } else if validLayout.intrinsicInsets.bottom.isEqual(to: 34.0) {
+                safeInsets.bottom = 34.0
+            }
+            if controller.navigationPresentation == .modal {
+                safeInsets.top = 0.0
             }
             return safeInsets
         }
@@ -482,6 +490,7 @@ open class LegacyController: ViewController, PresentableController {
                 orientation = .landscapeRight
             }
             
+            legacyTelegramController.intrinsicSize = layout.size
             legacyTelegramController._updateInset(for: orientation, force: false, notify: true)
             if self.enableContainerLayoutUpdates {
                 legacyTelegramController.layoutController(for: layout.size, duration: duration)
@@ -508,7 +517,7 @@ open class LegacyController: ViewController, PresentableController {
             case .custom:
                 self.presentingViewController?.dismiss(animated: false, completion: completion)
             case .navigation:
-                break
+                (self.navigationController as? NavigationController)?.filterController(self, animated: true)
         }
     }
     

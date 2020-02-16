@@ -4,9 +4,11 @@ import AsyncDisplayKit
 import Display
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import AccountContext
+import AppBundle
 
 final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
     private let deleteButton: HighlightableButtonNode
@@ -15,12 +17,14 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
     private let cloudButton: HighlightableButtonNode
     private let copyForwardButton: HighlightableButtonNode
     private let shareButton: HighlightableButtonNode
+    private let separatorNode: ASDisplayNode
     
-    private var validLayout: (width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, maxHeight: CGFloat, metrics: LayoutMetrics)?
+    private var validLayout: (width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, maxHeight: CGFloat, metrics: LayoutMetrics, isSecondary: Bool)?
     private var presentationInterfaceState: ChatPresentationInterfaceState?
     private var actions: ChatAvailableMessageActions?
     
     private var theme: PresentationTheme
+    private let peerMedia: Bool
     
     private let canDeleteMessagesDisposable = MetaDisposable()
     
@@ -32,8 +36,8 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
 
                 if self.selectedMessages.isEmpty {
                     self.actions = nil
-                    if let (width, leftInset, rightInset, maxHeight, metrics) = self.validLayout, let interfaceState = self.presentationInterfaceState {
-                        let _ = self.updateLayout(width: width, leftInset: leftInset, rightInset: rightInset, maxHeight: maxHeight, transition: .immediate, interfaceState: interfaceState, metrics: metrics)
+                    if let (width, leftInset, rightInset, maxHeight, metrics, isSecondary) = self.validLayout, let interfaceState = self.presentationInterfaceState {
+                        let _ = self.updateLayout(width: width, leftInset: leftInset, rightInset: rightInset, maxHeight: maxHeight, isSecondary: isSecondary, transition: .immediate, interfaceState: interfaceState, metrics: metrics)
                     }
                     self.canDeleteMessagesDisposable.set(nil)
                 } else if let context = self.context {
@@ -41,8 +45,8 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
                     |> deliverOnMainQueue).start(next: { [weak self] actions in
                         if let strongSelf = self {
                             strongSelf.actions = actions
-                            if let (width, leftInset, rightInset, maxHeight, metrics) = strongSelf.validLayout, let interfaceState = strongSelf.presentationInterfaceState {
-                                let _ = strongSelf.updateLayout(width: width, leftInset: leftInset, rightInset: rightInset, maxHeight: maxHeight, transition: .immediate, interfaceState: interfaceState, metrics: metrics)
+                            if let (width, leftInset, rightInset, maxHeight, metrics, isSecondary) = strongSelf.validLayout, let interfaceState = strongSelf.presentationInterfaceState {
+                                let _ = strongSelf.updateLayout(width: width, leftInset: leftInset, rightInset: rightInset, maxHeight: maxHeight, isSecondary: isSecondary, transition: .immediate, interfaceState: interfaceState, metrics: metrics)
                             }
                         }
                     }))
@@ -51,8 +55,9 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
         }
     }
     
-    init(theme: PresentationTheme, strings: PresentationStrings) {
+    init(theme: PresentationTheme, strings: PresentationStrings, peerMedia: Bool = false) {
         self.theme = theme
+        self.peerMedia = peerMedia
         
         self.deleteButton = HighlightableButtonNode()
         self.deleteButton.isEnabled = false
@@ -95,6 +100,9 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
         self.shareButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionAction"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
         self.shareButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionAction"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
         
+        self.separatorNode = ASDisplayNode()
+        self.separatorNode.backgroundColor = theme.chat.inputPanel.panelSeparatorColor
+        
         super.init()
         
         self.addSubnode(self.deleteButton)
@@ -103,6 +111,7 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
         self.addSubnode(self.cloudButton)
         self.addSubnode(self.copyForwardButton)
         self.addSubnode(self.shareButton)
+        self.addSubnode(self.separatorNode)
         
         self.forwardButton.isEnabled = false
         self.cloudButton.isEnabled = false
@@ -133,6 +142,8 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
             self.cloudButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionSaveToCloud"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
             self.copyForwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionCopyForward"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
             self.copyForwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionCopyForward"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
+            
+            self.separatorNode.backgroundColor = theme.chat.inputPanel.panelSeparatorColor
         }
     }
     
@@ -160,8 +171,8 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
         self.interfaceInteraction?.shareSelectedMessages()
     }
     
-    override func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, maxHeight: CGFloat, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics) -> CGFloat {
-        self.validLayout = (width, leftInset, rightInset, maxHeight, metrics)
+    override func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, maxHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics) -> CGFloat {
+        self.validLayout = (width, leftInset, rightInset, maxHeight, metrics, isSecondary)
         
         let panelHeight = defaultHeight(metrics: metrics)
         
@@ -176,15 +187,23 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
             self.shareButton.isEnabled = false
             self.copyForwardButton.isEnabled = self.cloudButton.isEnabled
             
-            self.deleteButton.isEnabled = !actions.options.intersection([.deleteLocally, .deleteGlobally]).isEmpty
+            if self.peerMedia {
+                self.deleteButton.isEnabled = !actions.options.intersection([.deleteLocally, .deleteGlobally]).isEmpty
+            } else {
+                self.deleteButton.isEnabled = true
+            }
             self.shareButton.isEnabled = !actions.options.intersection([.forward]).isEmpty
             self.reportButton.isEnabled = !actions.options.intersection([.report]).isEmpty
             
-            self.deleteButton.isHidden = !self.deleteButton.isEnabled
+            if self.peerMedia {
+                self.deleteButton.isHidden = !self.deleteButton.isEnabled
+            } else {
+                self.deleteButton.isHidden = false
+            }
             self.reportButton.isHidden = !self.reportButton.isEnabled
         } else {
             self.deleteButton.isEnabled = false
-            self.deleteButton.isHidden = true
+            self.deleteButton.isHidden = self.peerMedia
             self.reportButton.isEnabled = false
             self.reportButton.isHidden = true
             self.forwardButton.isEnabled = false
@@ -193,10 +212,10 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
             self.copyForwardButton.isEnabled = self.cloudButton.isEnabled
         }
         
-        if self.deleteButton.isHidden && self.reportButton.isHidden {
+        if self.reportButton.isHidden || (self.peerMedia && self.deleteButton.isHidden && self.reportButton.isHidden) {
             if let peer = interfaceState.renderedPeer?.peer as? TelegramChannel, case .broadcast = peer.info {
                 self.reportButton.isHidden = false
-            } else {
+            } else if self.peerMedia {
                 self.deleteButton.isHidden = false
             }
         }
@@ -242,6 +261,9 @@ final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
             }
             offset += buttonSize.width + spacing
         }
+        
+        transition.updateAlpha(node: self.separatorNode, alpha: isSecondary ? 1.0 : 0.0)
+        self.separatorNode.frame = CGRect(origin: CGPoint(x: 0.0, y: panelHeight), size: CGSize(width: width, height: UIScreenPixel))
         
         return panelHeight
     }

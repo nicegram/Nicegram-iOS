@@ -1,6 +1,7 @@
 import Foundation
 import Postbox
 import TelegramCore
+import SyncCore
 import TextFormat
 import Display
 import SwiftSignalKit
@@ -245,8 +246,8 @@ public enum ChatControllerSubject: Equatable {
 
 public enum ChatControllerPresentationMode: Equatable {
     case standard(previewing: Bool)
-    case overlay
-    case inline
+    case overlay(NavigationController?)
+    case inline(NavigationController?)
 }
 
 public final class ChatEmbeddedInterfaceState: PeerChatListEmbeddedInterfaceState {

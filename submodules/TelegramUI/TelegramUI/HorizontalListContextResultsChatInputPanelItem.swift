@@ -3,13 +3,15 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import Postbox
 import AVFoundation
 import RadialStatusNode
 import StickerResources
 import PhotoResources
-import AnimationUI
+import AnimatedStickerNode
+import TelegramAnimatedStickerNode
 
 final class HorizontalListContextResultsChatInputPanelItem: ListViewItem {
     let account: Account
@@ -212,7 +214,7 @@ final class HorizontalListContextResultsChatInputPanelItemNode: ListViewItemNode
                     } else if let thumbnail = thumbnail {
                         imageResource = thumbnail.resource
                     }
-                    imageDimensions = content?.dimensions
+                    imageDimensions = content?.dimensions?.cgSize
                     if type == "gif", let thumbnailResource = imageResource, let content = content, let dimensions = content.dimensions {
                         videoFile = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: 0), partialReference: nil, resource: content.resource, previewRepresentations: [TelegramMediaImageRepresentation(dimensions: dimensions, resource: thumbnailResource)], immediateThumbnailData: nil, mimeType: "video/mp4", size: nil, attributes: [.Animated, .Video(duration: 0, size: dimensions, flags: [])])
                         imageResource = nil
@@ -226,14 +228,14 @@ final class HorizontalListContextResultsChatInputPanelItemNode: ListViewItemNode
                 case let .internalReference(_, _, _, _, _, image, file, _):
                     if let image = image {
                         if let largestRepresentation = largestImageRepresentation(image.representations) {
-                            imageDimensions = largestRepresentation.dimensions
+                            imageDimensions = largestRepresentation.dimensions.cgSize
                         }
-                        imageResource = imageRepresentationLargerThan(image.representations, size: CGSize(width: 200.0, height: 100.0))?.resource
+                        imageResource = imageRepresentationLargerThan(image.representations, size: PixelDimensions(width: 200, height: 100))?.resource
                     } else if let file = file {
                         if let dimensions = file.dimensions {
-                            imageDimensions = dimensions
+                            imageDimensions = dimensions.cgSize
                         } else if let largestRepresentation = largestImageRepresentation(file.previewRepresentations) {
-                            imageDimensions = largestRepresentation.dimensions
+                            imageDimensions = largestRepresentation.dimensions.cgSize
                         }
                         if file.isAnimatedSticker {
                             animatedStickerFile = file
@@ -307,8 +309,8 @@ final class HorizontalListContextResultsChatInputPanelItemNode: ListViewItemNode
                     if let stickerFile = stickerFile {
                         updateImageSignal = chatMessageSticker(account: item.account, file: stickerFile, small: false, fetched: true)
                     } else {
-                        let tmpRepresentation = TelegramMediaImageRepresentation(dimensions: CGSize(width: fittedImageDimensions.width * 2.0, height: fittedImageDimensions.height * 2.0), resource: imageResource)
-                        let tmpImage = TelegramMediaImage(imageId: MediaId(namespace: 0, id: 0), representations: [tmpRepresentation], immediateThumbnailData: nil, reference: nil, partialReference: nil)
+                        let tmpRepresentation = TelegramMediaImageRepresentation(dimensions: PixelDimensions(CGSize(width: fittedImageDimensions.width * 2.0, height: fittedImageDimensions.height * 2.0)), resource: imageResource)
+                        let tmpImage = TelegramMediaImage(imageId: MediaId(namespace: 0, id: 0), representations: [tmpRepresentation], immediateThumbnailData: nil, reference: nil, partialReference: nil, flags: [])
                         updateImageSignal = chatMessagePhoto(postbox: item.account.postbox, photoReference: .standalone(media: tmpImage))
                     }
                 } else {
@@ -384,9 +386,9 @@ final class HorizontalListContextResultsChatInputPanelItemNode: ListViewItemNode
                             animationNode.started = { [weak self] in
                                 self?.imageNode.alpha = 0.0
                             }
-                            let dimensions = animatedStickerFile.dimensions ?? CGSize(width: 512.0, height: 512.0)
-                            let fittedDimensions = dimensions.aspectFitted(CGSize(width: 160.0, height: 160.0))
-                            animationNode.setup(account: item.account, resource: .resource(animatedStickerFile.resource), width: Int(fittedDimensions.width), height: Int(fittedDimensions.height), mode: .cached)
+                            let dimensions = animatedStickerFile.dimensions ?? PixelDimensions(width: 512, height: 512)
+                            let fittedDimensions = dimensions.cgSize.aspectFitted(CGSize(width: 160.0, height: 160.0))
+                            animationNode.setup(source: AnimatedStickerResourceSource(account: item.account, resource: animatedStickerFile.resource), width: Int(fittedDimensions.width), height: Int(fittedDimensions.height), mode: .cached)
                         }
                     }
                     

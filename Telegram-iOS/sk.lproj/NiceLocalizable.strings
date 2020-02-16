@@ -6,14 +6,12 @@
 "ChatFilter.Private" = "Užívatelia";
 "ChatFilter.Groups" = "Skupiny";
 "ChatFilter.Unread" = "Neprečítané";
-"ChatFilter.Unmuted" = "Nestlmené";
 "ChatFilter.Favourites" = "Obľúbené";
 
 /*Nice Features*/
 "NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "ZÁLOŽKY";
 "NiceFeatures.Tabs.ShowContacts" = "Zobraziť kontakty";
-"NiceFeatures.ChatScreen.Header" = "CHATY";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Animované nálepky";
 
 /*Save to Cloud*/
@@ -43,3 +41,4 @@
 "Folder.Create" = "Vytvoriť priečinok...";
 "Folder.Create.Name" = "Názov priečinku";
 "Folder.Create.Placeholder" = "Priečinok...";
+"NGLab.RegDate.MenuItem" = "zaregistrovaný";

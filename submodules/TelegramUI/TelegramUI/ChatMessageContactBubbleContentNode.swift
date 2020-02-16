@@ -5,11 +5,13 @@ import Display
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import AvatarNode
 import AccountContext
+import PhoneNumberFormat
 
-private let avatarFont = UIFont(name: ".SFCompactRounded-Semibold", size: 16.0)!
+private let avatarFont = avatarPlaceholderFont(size: 16.0)
 
 private let titleFont = Font.medium(14.0)
 private let textFont = Font.regular(14.0)
@@ -140,6 +142,9 @@ class ChatMessageContactBubbleContentNode: ChatMessageBubbleContentNode {
                 let (textLayout, textApply) = makeTextLayout(TextNodeLayoutArguments(attributedString: textString, backgroundColor: nil, maximumNumberOfLines: 5, truncationType: .end, constrainedSize: CGSize(width: maxTextWidth, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
                 
                 var edited = false
+                if item.attributes.updatingMedia != nil {
+                    edited = true
+                }
                 var viewCount: Int?
                 for attribute in item.message.attributes {
                     if let attribute = attribute as? EditedMessageAttribute {
@@ -172,7 +177,7 @@ class ChatMessageContactBubbleContentNode: ChatMessageBubbleContentNode {
                         } else {
                             if item.message.flags.contains(.Failed) {
                                 statusType = .BubbleOutgoing(.Failed)
-                            } else if item.message.flags.isSending && !item.message.isSentOrAcknowledged {
+                            } else if (item.message.flags.isSending && !item.message.isSentOrAcknowledged) || item.attributes.updatingMedia != nil {
                                 statusType = .BubbleOutgoing(.Sending)
                             } else {
                                 statusType = .BubbleOutgoing(.Sent(read: item.read))
@@ -300,7 +305,7 @@ class ChatMessageContactBubbleContentNode: ChatMessageBubbleContentNode {
                             }
                             
                             if let peerId = selectedContact?.peerId, let peer = item.message.peers[peerId] {
-                                strongSelf.avatarNode.setPeer(account: item.context.account, theme: item.presentationData.theme.theme, peer: peer, emptyColor: avatarPlaceholderColor, synchronousLoad: synchronousLoads)
+                                strongSelf.avatarNode.setPeer(context: item.context, theme: item.presentationData.theme.theme, peer: peer, emptyColor: avatarPlaceholderColor, synchronousLoad: synchronousLoads)
                             } else {
                                 strongSelf.avatarNode.setCustomLetters(customLetters)
                             }
@@ -323,7 +328,7 @@ class ChatMessageContactBubbleContentNode: ChatMessageBubbleContentNode {
         self.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false)
     }
     
-    override func tapActionAtPoint(_ point: CGPoint, gesture: TapLongTapOrDoubleTapGesture) -> ChatMessageBubbleContentTapAction {
+    override func tapActionAtPoint(_ point: CGPoint, gesture: TapLongTapOrDoubleTapGesture, isEstimating: Bool) -> ChatMessageBubbleContentTapAction {
         if self.buttonNode.frame.contains(point) {
             return .openMessage
         }
@@ -344,7 +349,7 @@ class ChatMessageContactBubbleContentNode: ChatMessageBubbleContentNode {
         }
     }
     
-    override func reactionTargetNode(value: String) -> (ASImageNode, Int)? {
+    override func reactionTargetNode(value: String) -> (ASDisplayNode, Int)? {
         if !self.dateAndStatusNode.isHidden {
             return self.dateAndStatusNode.reactionNode(value: value)
         }

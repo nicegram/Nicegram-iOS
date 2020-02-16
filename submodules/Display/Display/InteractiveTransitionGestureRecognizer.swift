@@ -5,6 +5,9 @@ private func hasHorizontalGestures(_ view: UIView, point: CGPoint?) -> Bool {
     if view.disablesInteractiveTransitionGestureRecognizer {
         return true
     }
+    if let disablesInteractiveTransitionGestureRecognizerNow = view.disablesInteractiveTransitionGestureRecognizerNow, disablesInteractiveTransitionGestureRecognizerNow() {
+        return true
+    }
     
     if let point = point, let test = view.interactiveTransitionGestureRecognizerTest, test(point) {
         return true
@@ -31,8 +34,11 @@ private func hasHorizontalGestures(_ view: UIView, point: CGPoint?) -> Bool {
 class InteractiveTransitionGestureRecognizer: UIPanGestureRecognizer {
     var validatedGesture = false
     var firstLocation: CGPoint = CGPoint()
+    private let canBegin: () -> Bool
     
-    override init(target: Any?, action: Selector?) {
+    init(target: Any?, action: Selector?, canBegin: @escaping () -> Bool) {
+        self.canBegin = canBegin
+        
         super.init(target: target, action: action)
         
         self.maximumNumberOfTouches = 1
@@ -45,6 +51,11 @@ class InteractiveTransitionGestureRecognizer: UIPanGestureRecognizer {
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
+        if !self.canBegin() {
+            self.state = .failed
+            return
+        }
+        
         super.touchesBegan(touches, with: event)
         
         let touch = touches.first!

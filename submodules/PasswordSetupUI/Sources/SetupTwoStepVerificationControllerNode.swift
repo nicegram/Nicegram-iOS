@@ -4,11 +4,13 @@ import Display
 import AsyncDisplayKit
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import ActivityIndicator
 import AccountContext
 import AlertUI
+import PresentationDataUtils
 
 public enum SetupTwoStepVerificationInitialState {
     case automatic
@@ -270,11 +272,7 @@ final class SetupTwoStepVerificationControllerNode: ViewControllerTracingNode {
         var insets = state.layout.layout.insets(options: [.statusBar])
         let visibleInsets = state.layout.layout.insets(options: [.statusBar, .input])
         if let inputHeight = state.layout.layout.inputHeight {
-            if inputHeight.isEqual(to: state.layout.layout.standardInputHeight - 44.0) {
-                insets.bottom += state.layout.layout.standardInputHeight
-            } else {
-                insets.bottom += inputHeight
-            }
+            insets.bottom += max(inputHeight, state.layout.layout.standardInputHeight)
         }
         let contentFrame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: state.layout.layout.size.width, height: state.layout.layout.size.height))
         if state.data.state?.kind != self.contentNode?.kind {
@@ -700,7 +698,6 @@ final class SetupTwoStepVerificationControllerNode: ViewControllerTracingNode {
             }, transition: .animated(duration: 0.5, curve: .spring))
         }
         if case let .enterEmail(enterEmail)? = self.innerState.data.state, case .create = enterEmail.state, enterEmail.email.isEmpty {
-            
             self.present(textAlertController(context: self.context, title: nil, text: self.presentationData.strings.TwoStepAuth_EmailSkipAlert, actions: [TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Common_Cancel, action: {}), TextAlertAction(type: .destructiveAction, title: self.presentationData.strings.TwoStepAuth_EmailSkip, action: {
                 continueImpl()
             })]), nil)

@@ -20,8 +20,19 @@ public enum DeviceMetrics: CaseIterable, Equatable {
     case unknown(screenSize: CGSize, statusBarHeight: CGFloat, onScreenNavigationHeight: CGFloat?)
 
     public static var allCases: [DeviceMetrics] {
-        return [.iPhone4, .iPhone5, .iPhone6, .iPhone6Plus, .iPhoneX, .iPhoneXSMax,
-                .iPad, .iPadPro10Inch, .iPadPro11Inch, .iPadPro, .iPadPro3rdGen]
+        return [
+            .iPhone4,
+            .iPhone5,
+            .iPhone6,
+            .iPhone6Plus,
+            .iPhoneX,
+            .iPhoneXSMax,
+            .iPad,
+            .iPadPro10Inch,
+            .iPadPro11Inch,
+            .iPadPro,
+            .iPadPro3rdGen
+        ]
     }
     
     public init(screenSize: CGSize, statusBarHeight: CGFloat, onScreenNavigationHeight: CGFloat?) {
@@ -32,8 +43,15 @@ public enum DeviceMetrics: CaseIterable, Equatable {
         
         let additionalSize = CGSize(width: screenSize.width, height: screenSize.height + 20.0)
         for device in DeviceMetrics.allCases {
-            if let _ = onScreenNavigationHeight, device.onScreenNavigationHeight(inLandscape: false) == nil {
-                continue
+            if let _ = onScreenNavigationHeight, device.onScreenNavigationHeight(inLandscape: false, systemOnScreenNavigationHeight: nil) == nil {
+                if case .tablet = device.type {
+                    if screenSize.height == 1024.0 && screenSize.width == 768.0 {
+                    } else {
+                        continue
+                    }
+                } else {
+                    continue
+                }
             }
             
             let width = device.screenSize.width
@@ -93,16 +111,36 @@ public enum DeviceMetrics: CaseIterable, Equatable {
         }
     }
     
-    func onScreenNavigationHeight(inLandscape: Bool) -> CGFloat? {
+    func onScreenNavigationHeight(inLandscape: Bool, systemOnScreenNavigationHeight: CGFloat?) -> CGFloat? {
         switch self {
-            case .iPhoneX, .iPhoneXSMax:
-                return inLandscape ? 21.0 : 34.0
-            case .iPadPro3rdGen, .iPadPro11Inch:
+        case .iPhoneX, .iPhoneXSMax:
+            return inLandscape ? 21.0 : 34.0
+        case .iPadPro3rdGen, .iPadPro11Inch:
+            return 21.0
+        case .iPad, .iPadPro, .iPadPro10Inch:
+            if let systemOnScreenNavigationHeight = systemOnScreenNavigationHeight, !systemOnScreenNavigationHeight.isZero {
                 return 21.0
-            case let .unknown(_, _, onScreenNavigationHeight):
-                return onScreenNavigationHeight
-            default:
+            } else {
                 return nil
+            }
+        case let .unknown(_, _, onScreenNavigationHeight):
+            return onScreenNavigationHeight
+        default:
+            return nil
+        }
+    }
+    
+    func statusBarHeight(for size: CGSize) -> CGFloat? {
+        let value = self.statusBarHeight
+        switch self {
+        case .iPad, .iPadPro10Inch, .iPadPro11Inch, .iPadPro, .iPadPro3rdGen:
+            return value
+        default:
+            if size.width < size.height {
+                return value
+            } else {
+                return nil
+            }
         }
     }
     
@@ -144,7 +182,7 @@ public enum DeviceMetrics: CaseIterable, Equatable {
                 case .iPhone4, .iPhone5, .iPhone6:
                     return 216.0
                 case .iPhone6Plus:
-                    return 227.0
+                    return 226.0
                 case .iPhoneX:
                     return 291.0
                 case .iPhoneXSMax:
@@ -177,8 +215,10 @@ public enum DeviceMetrics: CaseIterable, Equatable {
             switch self {
                 case .iPhone4, .iPhone5:
                     return 37.0
-                case .iPhone6, .iPhone6Plus, .iPhoneX, .iPhoneXSMax:
+                case .iPhone6, .iPhoneX, .iPhoneXSMax:
                     return 44.0
+                case .iPhone6Plus:
+                    return 45.0
                 case .iPad, .iPadPro10Inch, .iPadPro11Inch, .iPadPro, .iPadPro3rdGen:
                     return 50.0
                 case .unknown:

@@ -5,12 +5,14 @@ import Display
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import TelegramUIPreferences
 import TextFormat
 import AccountContext
 import LocalizedPeerData
 import ContextUI
+import Markdown
 
 private let nameFont = Font.medium(14.0)
 
@@ -18,7 +20,7 @@ private let inlineBotPrefixFont = Font.regular(14.0)
 private let inlineBotNameFont = nameFont
 
 class ChatMessageInstantVideoItemNode: ChatMessageItemView {
-    private let contextSourceNode: ContextContentContainingNode
+    private let contextSourceNode: ContextExtractedContentContainingNode
     private let interactiveVideoNode: ChatMessageInteractiveInstantVideoNode
     
     private var selectionNode: ChatMessageSelectionNode?
@@ -54,7 +56,7 @@ class ChatMessageInstantVideoItemNode: ChatMessageItemView {
     }
     
     required init() {
-        self.contextSourceNode = ContextContentContainingNode()
+        self.contextSourceNode = ContextExtractedContentContainingNode()
         self.interactiveVideoNode = ChatMessageInteractiveInstantVideoNode()
         
         super.init(layerBacked: false)
@@ -113,6 +115,7 @@ class ChatMessageInstantVideoItemNode: ChatMessageItemView {
         let currentForwardInfo = self.appliedForwardInfo
         
         return { item, params, mergedTop, mergedBottom, dateHeaderAtBottom in
+            let layoutConstants = chatMessageItemLayoutConstants(layoutConstants, params: params, presentationData: item.presentationData)
             let incoming = item.message.effectivelyIncoming(item.context.account.peerId)
             
             let avatarInset: CGFloat
@@ -207,7 +210,7 @@ class ChatMessageInstantVideoItemNode: ChatMessageItemView {
                 }
             }
             
-            let (videoLayout, videoApply) = makeVideoLayout(ChatMessageBubbleContentItem(context: item.context, controllerInteraction: item.controllerInteraction, message: item.message, read: item.read, presentationData: item.presentationData, associatedData: item.associatedData), params.width - params.leftInset - params.rightInset - avatarInset, displaySize, .free, automaticDownload)
+            let (videoLayout, videoApply) = makeVideoLayout(ChatMessageBubbleContentItem(context: item.context, controllerInteraction: item.controllerInteraction, message: item.message, read: item.read, presentationData: item.presentationData, associatedData: item.associatedData, attributes: item.content.firstMessageAttributes), params.width - params.leftInset - params.rightInset - avatarInset, displaySize, .free, automaticDownload)
             
             let videoFrame = CGRect(origin: CGPoint(x: (incoming ? (params.leftInset + layoutConstants.bubble.edgeInset + avatarInset + layoutConstants.bubble.contentInsets.left) : (params.width - params.rightInset - videoLayout.contentSize.width - layoutConstants.bubble.edgeInset - layoutConstants.bubble.contentInsets.left - deliveryFailedInset)), y: 0.0), size: videoLayout.contentSize)
             
@@ -264,7 +267,7 @@ class ChatMessageInstantVideoItemNode: ChatMessageItemView {
                             if let sourcePeer = item.message.peers[attribute.messageId.peerId] {
                                 let inlineBotNameColor = serviceMessageColorComponents(theme: item.presentationData.theme.theme, wallpaper: item.presentationData.theme.wallpaper).primaryText
                                 
-                                let nameString = NSAttributedString(string: sourcePeer.displayTitle, font: inlineBotPrefixFont, textColor: inlineBotNameColor)
+                                let nameString = NSAttributedString(string: sourcePeer.displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder), font: inlineBotPrefixFont, textColor: inlineBotNameColor)
                                 
                                 viaBotApply = viaBotLayout(TextNodeLayoutArguments(attributedString: nameString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: max(0, availableWidth), height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
                             }
@@ -292,7 +295,7 @@ class ChatMessageInstantVideoItemNode: ChatMessageItemView {
                     updatedReplyBackgroundNode = ASImageNode()
                 }
                 
-                let graphics = PresentationResourcesChat.additionalGraphics(item.presentationData.theme.theme, wallpaper: item.presentationData.theme.wallpaper)
+                let graphics = PresentationResourcesChat.additionalGraphics(item.presentationData.theme.theme, wallpaper: item.presentationData.theme.wallpaper, bubbleCorners: item.presentationData.chatBubbleCorners)
                 replyBackgroundImage = graphics.chatFreeformContentAdditionalInfoBackgroundImage
             }
             
@@ -303,7 +306,7 @@ class ChatMessageInstantVideoItemNode: ChatMessageItemView {
                 if currentShareButtonNode != nil {
                     updatedShareButtonNode = currentShareButtonNode
                     if item.presentationData.theme !== currentItem?.presentationData.theme {
-                        let graphics = PresentationResourcesChat.additionalGraphics(item.presentationData.theme.theme, wallpaper: item.presentationData.theme.wallpaper)
+                        let graphics = PresentationResourcesChat.additionalGraphics(item.presentationData.theme.theme, wallpaper: item.presentationData.theme.wallpaper, bubbleCorners: item.presentationData.chatBubbleCorners)
                         if item.message.id.peerId == item.context.account.peerId {
                             updatedShareButtonBackground = graphics.chatBubbleNavigateButtonImage
                         } else {
@@ -313,7 +316,7 @@ class ChatMessageInstantVideoItemNode: ChatMessageItemView {
                 } else {
                     let buttonNode = HighlightableButtonNode()
                     let buttonIcon: UIImage?
-                    let graphics = PresentationResourcesChat.additionalGraphics(item.presentationData.theme.theme, wallpaper: item.presentationData.theme.wallpaper)
+                    let graphics = PresentationResourcesChat.additionalGraphics(item.presentationData.theme.theme, wallpaper: item.presentationData.theme.wallpaper, bubbleCorners: item.presentationData.chatBubbleCorners)
                     if item.message.id.peerId == item.context.account.peerId {
                         buttonIcon = graphics.chatBubbleNavigateButtonImage
                     } else {
@@ -346,7 +349,7 @@ class ChatMessageInstantVideoItemNode: ChatMessageItemView {
                 } else {
                     if let currentForwardInfo = currentForwardInfo, forwardInfo.author == nil && currentForwardInfo.0 != nil {
                         forwardSource = nil
-                        forwardAuthorSignature = currentForwardInfo.0?.displayTitle
+                        forwardAuthorSignature = currentForwardInfo.0?.displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder)
                     } else {
                         forwardSource = forwardInfo.author
                         forwardAuthorSignature = forwardInfo.authorSignature
@@ -361,14 +364,14 @@ class ChatMessageInstantVideoItemNode: ChatMessageItemView {
                     updatedForwardBackgroundNode = ASImageNode()
                 }
                 
-                let graphics = PresentationResourcesChat.additionalGraphics(item.presentationData.theme.theme, wallpaper: item.presentationData.theme.wallpaper)
+                let graphics = PresentationResourcesChat.additionalGraphics(item.presentationData.theme.theme, wallpaper: item.presentationData.theme.wallpaper, bubbleCorners: item.presentationData.chatBubbleCorners)
                 forwardBackgroundImage = graphics.chatServiceBubbleFillImage
             }
             
             var maxContentWidth = videoLayout.contentSize.width
             var actionButtonsFinalize: ((CGFloat) -> (CGSize, (_ animated: Bool) -> ChatMessageActionButtonsNode))?
             if let replyMarkup = replyMarkup {
-                let (minWidth, buttonsLayout) = actionButtonsLayout(item.context, item.presentationData.theme, item.presentationData.strings, replyMarkup, item.message, maxContentWidth)
+                let (minWidth, buttonsLayout) = actionButtonsLayout(item.context, item.presentationData.theme, item.presentationData.chatBubbleCorners, item.presentationData.strings, replyMarkup, item.message, maxContentWidth)
                 maxContentWidth = max(maxContentWidth, minWidth)
                 actionButtonsFinalize = buttonsLayout
             }
@@ -761,17 +764,20 @@ class ChatMessageInstantVideoItemNode: ChatMessageItemView {
             let offset: CGFloat = incoming ? 42.0 : 0.0
             
             if let selectionNode = self.selectionNode {
+                let selectionFrame = CGRect(origin: CGPoint(x: -offset, y: 0.0), size: CGSize(width: self.contentBounds.size.width, height: self.contentBounds.size.height))
+                selectionNode.frame = selectionFrame
+                selectionNode.updateLayout(size: selectionFrame.size)
                 selectionNode.updateSelected(selected, animated: animated)
-                selectionNode.frame = CGRect(origin: CGPoint(x: -offset, y: 0.0), size: CGSize(width: self.contentBounds.size.width, height: self.contentBounds.size.height))
                 self.subnodeTransform = CATransform3DMakeTranslation(offset, 0.0, 0.0);
             } else {
-                let selectionNode = ChatMessageSelectionNode(theme: item.presentationData.theme.theme, toggle: { [weak self] value in
+                let selectionNode = ChatMessageSelectionNode(wallpaper: item.presentationData.theme.wallpaper, theme: item.presentationData.theme.theme, toggle: { [weak self] value in
                     if let strongSelf = self, let item = strongSelf.item {
                         item.controllerInteraction.toggleMessagesSelection([item.message.id], value)
                     }
                 })
-                
-                selectionNode.frame = CGRect(origin: CGPoint(x: -offset, y: 0.0), size: CGSize(width: self.contentBounds.size.width, height: self.contentBounds.size.height))
+                let selectionFrame = CGRect(origin: CGPoint(x: -offset, y: 0.0), size: CGSize(width: self.contentBounds.size.width, height: self.contentBounds.size.height))
+                selectionNode.frame = selectionFrame
+                selectionNode.updateLayout(size: selectionFrame.size)
                 self.addSubnode(selectionNode)
                 self.selectionNode = selectionNode
                 selectionNode.updateSelected(selected, animated: false)
@@ -830,7 +836,7 @@ class ChatMessageInstantVideoItemNode: ChatMessageItemView {
         return self.interactiveVideoNode.playMediaWithSound()
     }
     
-    override func getMessageContextSourceNode() -> ContextContentContainingNode? {
+    override func getMessageContextSourceNode() -> ContextExtractedContentContainingNode? {
         return self.contextSourceNode
     }
     

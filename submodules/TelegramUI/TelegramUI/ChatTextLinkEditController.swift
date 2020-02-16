@@ -5,6 +5,7 @@ import AsyncDisplayKit
 import Display
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import AccountContext
 import UrlEscaping
@@ -397,7 +398,7 @@ func chatTextLinkEditController(sharedContext: SharedAccountContext, account: Ac
         applyImpl?()
     })]
     
-    let contentNode = ChatTextLinkEditAlertContentNode(theme: AlertControllerTheme(presentationTheme: presentationData.theme), ptheme: presentationData.theme, strings: presentationData.strings, actions: actions, text: text, link: link)
+    let contentNode = ChatTextLinkEditAlertContentNode(theme: AlertControllerTheme(presentationData: presentationData), ptheme: presentationData.theme, strings: presentationData.strings, actions: actions, text: text, link: link)
     contentNode.complete = {
         applyImpl?()
     }
@@ -406,7 +407,7 @@ func chatTextLinkEditController(sharedContext: SharedAccountContext, account: Ac
             return
         }
         let updatedLink = explicitUrl(contentNode.link)
-        if !updatedLink.isEmpty && isValidUrl(updatedLink) {
+        if !updatedLink.isEmpty && isValidUrl(updatedLink, validSchemes: ["http": true, "https": true, "tg": false, "ton": false]) {
             dismissImpl?(true)
             apply(updatedLink)
         } else {
@@ -414,9 +415,9 @@ func chatTextLinkEditController(sharedContext: SharedAccountContext, account: Ac
         }
     }
     
-    let controller = AlertController(theme: AlertControllerTheme(presentationTheme: presentationData.theme), contentNode: contentNode)
+    let controller = AlertController(theme: AlertControllerTheme(presentationData: presentationData), contentNode: contentNode)
     let presentationDataDisposable = sharedContext.presentationData.start(next: { [weak controller, weak contentNode] presentationData in
-        controller?.theme = AlertControllerTheme(presentationTheme: presentationData.theme)
+        controller?.theme = AlertControllerTheme(presentationData: presentationData)
         contentNode?.inputFieldNode.updateTheme(presentationData.theme)
     })
     controller.dismissed = {

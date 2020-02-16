@@ -122,6 +122,7 @@
         pickerController.onlyCrop = strongController.onlyCrop;
         pickerController.hasSilentPosting = strongController.hasSilentPosting;
         pickerController.hasSchedule = strongController.hasSchedule;
+        pickerController.reminder = strongController.reminder;
         pickerController.presentScheduleController = strongController.presentScheduleController;
         [strongController pushViewController:pickerController animated:true];
     };
@@ -212,6 +213,12 @@
 {
     _hasSchedule = hasSchedule;
     self.pickerController.hasSchedule = hasSchedule;
+}
+
+- (void)setReminder:(bool)reminder
+{
+    _reminder = reminder;
+    self.pickerController.reminder = reminder;
 }
 
 - (void)setPresentScheduleController:(void (^)(void (^)(int32_t)))presentScheduleController {
@@ -936,7 +943,7 @@
                     const char *gif89Header = "GIF89";
                     if (data.length >= 5 && (!memcmp(data.bytes, gif87Header, 5) || !memcmp(data.bytes, gif89Header, 5)))
                     {
-                        return [[TGGifConverter convertGifToMp4:data] map:^id(NSDictionary *result)
+                        return [[[TGGifConverter convertGifToMp4:data] map:^id(NSDictionary *result)
                         {
                             NSString *filePath = result[@"path"];
                             
@@ -958,6 +965,18 @@
                             
                             id generatedItem = descriptionGenerator(dict, caption, entities, nil);
                             return generatedItem;
+                        }] catch:^SSignal *(id error)
+                        {
+                            [data writeToURL:[NSURL fileURLWithPath:tempFileName] atomically:true];
+                            
+                            NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+                            dict[@"type"] = @"file";
+                            dict[@"tempFileUrl"] = [NSURL fileURLWithPath:tempFileName];
+                            dict[@"fileName"] = assetData.fileName;
+                            dict[@"mimeType"] = TGMimeTypeForFileUTI(assetData.fileUTI);
+                            
+                            id generatedItem = descriptionGenerator(dict, caption, entities, nil);
+                            return [SSignal single:generatedItem];
                         }];
                     }
                     else

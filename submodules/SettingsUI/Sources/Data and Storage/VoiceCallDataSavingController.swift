@@ -4,9 +4,11 @@ import Display
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import TelegramUIPreferences
 import ItemListUI
+import PresentationDataUtils
 import AccountContext
 
 private final class VoiceCallDataSavingControllerArguments {
@@ -77,22 +79,23 @@ private enum VoiceCallDataSavingEntry: ItemListNodeEntry {
         return lhs.stableId < rhs.stableId
     }
     
-    func item(_ arguments: VoiceCallDataSavingControllerArguments) -> ListViewItem {
+    func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
+        let arguments = arguments as! VoiceCallDataSavingControllerArguments
         switch self {
             case let .never(theme, text, value):
-                return ItemListCheckboxItem(theme: theme, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                     arguments.updateSelection(.never)
                 })
             case let .cellular(theme, text, value):
-                return ItemListCheckboxItem(theme: theme, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                     arguments.updateSelection(.cellular)
                 })
             case let .always(theme, text, value):
-                return ItemListCheckboxItem(theme: theme, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                     arguments.updateSelection(.always)
                 })
             case let .info(theme, text):
-                return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+                return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         }
     }
 }
@@ -148,12 +151,12 @@ func voiceCallDataSavingController(context: AccountContext) -> ViewController {
     })
     
     let signal = combineLatest(context.sharedContext.presentationData, sharedSettings) |> deliverOnMainQueue
-        |> map { presentationData, sharedSettings -> (ItemListControllerState, (ItemListNodeState<VoiceCallDataSavingEntry>, VoiceCallDataSavingEntry.ItemGenerationArguments)) in
+        |> map { presentationData, sharedSettings -> (ItemListControllerState, (ItemListNodeState, Any)) in
             
             let dataSaving = effectiveDataSaving(for: sharedSettings.0, autodownloadSettings: sharedSettings.1)
             
-            let controllerState = ItemListControllerState(theme: presentationData.theme, title: .text(presentationData.strings.CallSettings_Title), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: false)
-            let listState = ItemListNodeState(entries: voiceCallDataSavingControllerEntries(presentationData: presentationData, dataSaving: dataSaving), style: .blocks, emptyStateItem: nil, animateChanges: false)
+            let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(presentationData.strings.CallSettings_Title), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: false)
+            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: voiceCallDataSavingControllerEntries(presentationData: presentationData, dataSaving: dataSaving), style: .blocks, emptyStateItem: nil, animateChanges: false)
             
             return (controllerState, (listState, arguments))
         }

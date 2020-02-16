@@ -5,16 +5,20 @@ import AsyncDisplayKit
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import AccountContext
 import LocalAuth
+import AppBundle
+import PasscodeInputFieldNode
+import MonotonicTime
 
 private let titleFont = Font.regular(20.0)
 private let subtitleFont = Font.regular(15.0)
 private let buttonFont = Font.regular(17.0)
 
 final class PasscodeEntryControllerNode: ASDisplayNode {
-    private let context: AccountContext
+    private let accountManager: AccountManager
     private var theme: PresentationTheme
     private var strings: PresentationStrings
     private var wallpaper: TelegramWallpaper
@@ -25,10 +29,12 @@ final class PasscodeEntryControllerNode: ASDisplayNode {
     
     private let statusBar: StatusBar
     
+    private let modalPresentation: Bool
+    
     private let backgroundNode: ASImageNode
     private let iconNode: PasscodeLockIconNode
     private let titleNode: PasscodeEntryLabelNode
-    private let inputFieldNode: PasscodeEntryInputFieldNode
+    private let inputFieldNode: PasscodeInputFieldNode
     private let subtitleNode: PasscodeEntryLabelNode
     private let keyboardNode: PasscodeEntryKeyboardNode
     private let cancelButtonNode: HighlightableButtonNode
@@ -46,8 +52,8 @@ final class PasscodeEntryControllerNode: ASDisplayNode {
     var checkPasscode: ((String) -> Void)?
     var requestBiometrics: (() -> Void)?
     
-    init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, wallpaper: TelegramWallpaper, passcodeType: PasscodeEntryFieldType, biometricsType: LocalAuthBiometricAuthentication?, arguments: PasscodeEntryControllerPresentationArguments, statusBar: StatusBar) {
-        self.context = context
+    init(accountManager: AccountManager, theme: PresentationTheme, strings: PresentationStrings, wallpaper: TelegramWallpaper, passcodeType: PasscodeEntryFieldType, biometricsType: LocalAuthBiometricAuthentication?, arguments: PasscodeEntryControllerPresentationArguments, statusBar: StatusBar, modalPresentation: Bool) {
+        self.accountManager = accountManager
         self.theme = theme
         self.strings = strings
         self.wallpaper = wallpaper
@@ -55,13 +61,14 @@ final class PasscodeEntryControllerNode: ASDisplayNode {
         self.biometricsType = biometricsType
         self.arguments = arguments
         self.statusBar = statusBar
+        self.modalPresentation = modalPresentation
         
         self.backgroundNode = ASImageNode()
         self.backgroundNode.contentMode = .scaleToFill
 
         self.iconNode = PasscodeLockIconNode()
         self.titleNode = PasscodeEntryLabelNode()
-        self.inputFieldNode = PasscodeEntryInputFieldNode(color: .white, accentColor: .white, fieldType: passcodeType, keyboardAppearance: .dark, useCustomNumpad: true)
+        self.inputFieldNode = PasscodeInputFieldNode(color: .white, accentColor: .white, fieldType: passcodeType, keyboardAppearance: .dark, useCustomNumpad: true)
         self.subtitleNode = PasscodeEntryLabelNode()
         self.keyboardNode = PasscodeEntryKeyboardNode()
         self.cancelButtonNode = HighlightableButtonNode()
@@ -165,17 +172,13 @@ final class PasscodeEntryControllerNode: ASDisplayNode {
         }
         
         var size = validLayout.size
-        if case .compact = validLayout.metrics.widthClass, size.width > size.height {
-            size = CGSize(width: size.height, height: size.width)
-        }
-        
         if let background = self.background, background.size == size {
             return
         }
         
         switch self.wallpaper {
             case .image, .file:
-                if let image = chatControllerBackgroundImage(theme: self.theme, wallpaper: self.wallpaper, mediaBox: self.context.sharedContext.accountManager.mediaBox, composed: false, knockoutMode: false) {
+                if let image = chatControllerBackgroundImage(theme: self.theme, wallpaper: self.wallpaper, mediaBox: self.accountManager.mediaBox, composed: false, knockoutMode: false) {
                     self.background = ImageBasedPasscodeBackground(image: image, size: size)
                 } else {
                     self.background = GradientPasscodeBackground(size: size, backgroundColors: self.theme.passcode.backgroundColors.colors, buttonColor: self.theme.passcode.buttonColor)
@@ -187,7 +190,7 @@ final class PasscodeEntryControllerNode: ASDisplayNode {
         if let background = self.background {
             self.backgroundNode.image = background.backgroundImage
             self.keyboardNode.updateBackground(background)
-            self.inputFieldNode.updateBackground(background)
+            self.inputFieldNode.updateBackground(background.foregroundImage, size: background.size)
         }
     }
     
@@ -195,7 +198,14 @@ final class PasscodeEntryControllerNode: ASDisplayNode {
     private func shouldWaitBeforeNextAttempt() -> Bool {
         if let attempts = self.invalidAttempts {
             if attempts.count >= 6 {
-                if Int32(CFAbsoluteTimeGetCurrent()) - attempts.timestamp < waitInterval {
+                var bootTimestamp: Int32 = 0
+                let uptime = getDeviceUptimeSeconds(&bootTimestamp)
+                
+                if attempts.bootTimestamp != bootTimestamp {
+                    return true
+                }
+                
+                if uptime - attempts.uptime < waitInterval {
                     return true
                 } else {
                     return false
@@ -216,10 +226,13 @@ final class PasscodeEntryControllerNode: ASDisplayNode {
                 text = NSAttributedString(string: self.strings.PasscodeSettings_TryAgainIn1Minute, font: subtitleFont, textColor: .white)
                 
                 self.timer?.invalidate()
-                let timer = SwiftSignalKit.Timer(timeout: Double(attempts.timestamp + waitInterval - Int32(CFAbsoluteTimeGetCurrent())), repeat: false, completion: { [weak self] in
+                let timer = SwiftSignalKit.Timer(timeout: 1.0, repeat: true, completion: { [weak self] in
                     if let strongSelf = self {
-                        strongSelf.timer = nil
-                        strongSelf.updateInvalidAttempts(strongSelf.invalidAttempts, animated: true)
+                        if !strongSelf.shouldWaitBeforeNextAttempt() {
+                            strongSelf.updateInvalidAttempts(strongSelf.invalidAttempts, animated: true)
+                            strongSelf.timer?.invalidate()
+                            strongSelf.timer = nil
+                        }
                     }
                 }, queue: Queue.mainQueue())
                 self.timer = timer
@@ -331,35 +344,10 @@ final class PasscodeEntryControllerNode: ASDisplayNode {
         self.validLayout = layout
         
         self.updateBackground()
-        
-        if layout.size.width == 320.0 {
-            self.iconNode.alpha = 0.0
-        }
-        
+            
         let bounds = CGRect(origin: CGPoint(), size: layout.size)
         transition.updateFrame(node: self.backgroundNode, frame: bounds)
         transition.updateFrame(view: self.effectView, frame: bounds)
-        
-        let iconSize = CGSize(width: 35.0, height: 37.0)
-        transition.updateFrame(node: self.iconNode, frame: CGRect(origin: CGPoint(x: floor((layout.size.width - iconSize.width) / 2.0) + 6.0, y: layout.insets(options: .statusBar).top + 15.0), size: iconSize))
-        
-        let passcodeLayout = PasscodeLayout(layout: layout)
-        
-        let inputFieldFrame = self.inputFieldNode.updateLayout(layout: passcodeLayout, transition: transition)
-        transition.updateFrame(node: self.inputFieldNode, frame: CGRect(origin: CGPoint(), size: layout.size))
-        
-        let titleSize = self.titleNode.updateLayout(layout: layout, transition: transition)
-        transition.updateFrame(node: self.titleNode, frame: CGRect(origin: CGPoint(x: 0.0, y: passcodeLayout.titleOffset), size: titleSize))
-        
-        var subtitleOffset = passcodeLayout.subtitleOffset
-        if case .alphanumeric = self.passcodeType {
-            subtitleOffset = 16.0
-        }
-        let subtitleSize = self.subtitleNode.updateLayout(layout: layout, transition: transition)
-        transition.updateFrame(node: self.subtitleNode, frame: CGRect(origin: CGPoint(x: 0.0, y: inputFieldFrame.maxY + subtitleOffset), size: subtitleSize))
-        
-        let (keyboardFrame, keyboardButtonSize) = self.keyboardNode.updateLayout(layout: passcodeLayout, transition: transition)
-        transition.updateFrame(node: self.keyboardNode, frame: CGRect(origin: CGPoint(), size: layout.size))
         
         switch self.passcodeType {
             case .digits6, .digits4:
@@ -370,27 +358,104 @@ final class PasscodeEntryControllerNode: ASDisplayNode {
                 self.deleteButtonNode.alpha = 0.0
         }
         
+        let isLandscape = layout.orientation == .landscape && layout.deviceMetrics.type != .tablet
+        let keyboardHidden = self.keyboardNode.alpha == 0.0
+        
+        let layoutSize: CGSize
+        if isLandscape {
+            if keyboardHidden {
+                layoutSize = CGSize(width: layout.size.width - layout.safeInsets.left - layout.safeInsets.right, height: layout.size.height)
+            } else {
+                layoutSize = CGSize(width: layout.size.width / 2.0, height: layout.size.height)
+            }
+        } else {
+            layoutSize = layout.size
+        }
+        
+        if layout.size.width == 320.0 || (isLandscape && keyboardHidden) {
+            self.iconNode.alpha = 0.0
+        }
+                
+        let passcodeLayout = PasscodeLayout(layout: layout, modalPresentation: self.modalPresentation)
+        let inputFieldOffset: CGFloat
+        if isLandscape {
+            let bottomInset = layout.inputHeight ?? 0.0
+            if !keyboardHidden || bottomInset == 0.0 {
+                inputFieldOffset = floor(layoutSize.height / 2.0 + 12.0)
+            } else {
+                inputFieldOffset = floor(layoutSize.height - bottomInset) / 2.0 - 40.0
+            }
+        } else {
+            inputFieldOffset = passcodeLayout.inputFieldOffset
+        }
+        
+        let inputFieldFrame = self.inputFieldNode.updateLayout(size: layoutSize, topOffset: inputFieldOffset, transition: transition)
+        transition.updateFrame(node: self.inputFieldNode, frame: CGRect(origin: CGPoint(x: layout.safeInsets.left, y: 0.0), size: layoutSize))
+                
+        let titleFrame: CGRect
+        if isLandscape {
+            let titleSize = self.titleNode.updateLayout(size: CGSize(width: layoutSize.width, height: layout.size.height), transition: transition)
+            titleFrame = CGRect(origin: CGPoint(x: layout.safeInsets.left, y: inputFieldFrame.minY - titleSize.height - 16.0), size: titleSize)
+        } else {
+            let titleSize = self.titleNode.updateLayout(size: layout.size, transition: transition)
+            titleFrame = CGRect(origin: CGPoint(x: 0.0, y: passcodeLayout.titleOffset), size: titleSize)
+        }
+        transition.updateFrame(node: self.titleNode, frame: titleFrame)
+        
+        let iconSize = CGSize(width: 35.0, height: 37.0)
+        let iconFrame: CGRect
+        if isLandscape {
+            iconFrame = CGRect(origin: CGPoint(x: layout.safeInsets.left + floor((layoutSize.width - iconSize.width) / 2.0) + 6.0, y: titleFrame.minY - iconSize.height - 14.0), size: iconSize)
+        } else {
+            iconFrame = CGRect(origin: CGPoint(x: floor((layoutSize.width - iconSize.width) / 2.0) + 6.0, y: layout.insets(options: .statusBar).top + 15.0), size: iconSize)
+        }
+        transition.updateFrame(node: self.iconNode, frame: iconFrame)
+        
+        var subtitleOffset = passcodeLayout.subtitleOffset
+        if case .alphanumeric = self.passcodeType {
+            subtitleOffset = 16.0
+        }
+        let subtitleSize = self.subtitleNode.updateLayout(size: layoutSize, transition: transition)
+        transition.updateFrame(node: self.subtitleNode, frame: CGRect(origin: CGPoint(x: layout.safeInsets.left, y: inputFieldFrame.maxY + subtitleOffset), size: subtitleSize))
+        
+        let (keyboardFrame, keyboardButtonSize) = self.keyboardNode.updateLayout(layout: passcodeLayout, transition: transition)
+        transition.updateFrame(node: self.keyboardNode, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: layout.size))
+                
         let bottomInset = layout.inputHeight ?? 0.0
         
         let cancelSize = self.cancelButtonNode.measure(layout.size)
-        var cancelY: CGFloat = layout.size.height - layout.intrinsicInsets.bottom - cancelSize.height - passcodeLayout.keyboard.deleteOffset
-        if bottomInset > 0 && self.keyboardNode.alpha < 1.0 {
-            cancelY = layout.size.height - bottomInset - cancelSize.height - 20.0
+        var bottomButtonY = layout.size.height - layout.intrinsicInsets.bottom - cancelSize.height - passcodeLayout.keyboard.deleteOffset
+        var cancelX = floor(keyboardFrame.minX + keyboardButtonSize.width / 2.0 - cancelSize.width / 2.0)
+        var cancelY = bottomButtonY
+        if bottomInset > 0 && keyboardHidden {
+            cancelX = floor((layout.size.width - cancelSize.width) / 2.0)
+            cancelY = layout.size.height - bottomInset - cancelSize.height - 15.0 - layout.intrinsicInsets.bottom
+        } else if isLandscape {
+            bottomButtonY = keyboardFrame.maxY - keyboardButtonSize.height + floor((keyboardButtonSize.height - cancelSize.height) / 2.0)
+            cancelY = bottomButtonY
         }
         
-        transition.updateFrame(node: self.cancelButtonNode, frame: CGRect(origin: CGPoint(x: floor(keyboardFrame.minX + keyboardButtonSize.width / 2.0 - cancelSize.width / 2.0), y: cancelY), size: cancelSize))
+        transition.updateFrame(node: self.cancelButtonNode, frame: CGRect(origin: CGPoint(x: cancelX, y: cancelY), size: cancelSize))
         
         let deleteSize = self.deleteButtonNode.measure(layout.size)
-        transition.updateFrame(node: self.deleteButtonNode, frame: CGRect(origin: CGPoint(x: floor(keyboardFrame.maxX - keyboardButtonSize.width / 2.0 - deleteSize.width / 2.0), y: layout.size.height - layout.intrinsicInsets.bottom - deleteSize.height - passcodeLayout.keyboard.deleteOffset), size: deleteSize))
+        transition.updateFrame(node: self.deleteButtonNode, frame: CGRect(origin: CGPoint(x: floor(keyboardFrame.maxX - keyboardButtonSize.width / 2.0 - deleteSize.width / 2.0), y: bottomButtonY), size: deleteSize))
         
         if let biometricIcon = self.biometricButtonNode.image(for: .normal) {
+            var biometricX = layout.safeInsets.left + floor((layoutSize.width - biometricIcon.size.width) / 2.0)
             var biometricY: CGFloat = 0.0
-            if bottomInset > 0 && self.keyboardNode.alpha < 1.0 {
-                biometricY = inputFieldFrame.maxY + floor((layout.size.height - bottomInset - inputFieldFrame.maxY - biometricIcon.size.height) / 2.0)
+            if isLandscape {
+                if bottomInset > 0 && keyboardHidden {
+                    biometricX = cancelX + cancelSize.width + 64.0
+                }
+                biometricY = cancelY + floor((cancelSize.height - biometricIcon.size.height) / 2.0)
             } else {
-                biometricY = keyboardFrame.maxY + passcodeLayout.keyboard.biometricsOffset
+                if bottomInset > 0 && keyboardHidden {
+                    biometricY = inputFieldFrame.maxY + floor((layout.size.height - bottomInset - inputFieldFrame.maxY - biometricIcon.size.height) / 2.0)
+                } else {
+                    biometricY = keyboardFrame.maxY + passcodeLayout.keyboard.biometricsOffset
+                }
             }
-            transition.updateFrame(node: self.biometricButtonNode, frame: CGRect(origin: CGPoint(x: floor((layout.size.width - biometricIcon.size.width) / 2.0), y: biometricY), size: biometricIcon.size))
+            transition.updateFrame(node: self.biometricButtonNode, frame: CGRect(origin: CGPoint(x: biometricX, y: biometricY), size: biometricIcon.size))
         }
     }
 }

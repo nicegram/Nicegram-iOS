@@ -3,6 +3,7 @@ import Display
 import AsyncDisplayKit
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import PassKit
 import Lottie
@@ -17,6 +18,11 @@ import PeerAvatarGalleryUI
 import PeerInfoUI
 import SettingsUI
 import AlertUI
+import PresentationDataUtils
+import ShareController
+import UndoUI
+import ChatListUI
+import NicegramLib
 
 private enum ChatMessageGalleryControllerData {
     case url(String)
@@ -25,11 +31,12 @@ private enum ChatMessageGalleryControllerData {
     case map(TelegramMediaMap)
     case stickerPack(StickerPackReference)
     case audio(TelegramMediaFile)
-    case document(TelegramMediaFile)
-    case gallery(GalleryController)
+    case document(TelegramMediaFile, Bool)
+    case gallery(Signal<GalleryController, NoError>)
     case secretGallery(SecretMediaPreviewController)
     case chatAvatars(AvatarGalleryController, Media)
     case theme(TelegramMediaFile)
+    case ngSettings(TelegramMediaFile)
     case other(Media)
 }
 
@@ -148,28 +155,28 @@ private func chatMessageGalleryControllerData(context: AccountContext, message: 
                             let gallery = GalleryController(context: context, source: .peerMessagesAtId(message.id), invertItemOrder: reverseMessageGalleryOrder, streamSingleVideo: stream, fromPlayingVideo: autoplayingVideo, landscape: landscape, timecode: timecode, synchronousLoad: synchronousLoad, replaceRootController: { [weak navigationController] controller, ready in
                                 navigationController?.replaceTopController(controller, animated: false, ready: ready)
                                 }, baseNavigationController: navigationController, actionInteraction: actionInteraction)
-                            return .gallery(gallery)
+                            return .gallery(.single(gallery))
                         }
                     }
-                    #if DEBUG
+                    
                     if ext == "mkv" {
-                        let gallery = GalleryController(context: context, source: standalone ? .standaloneMessage(message) : .peerMessagesAtId(message.id), invertItemOrder: reverseMessageGalleryOrder, streamSingleVideo: stream, fromPlayingVideo: autoplayingVideo, landscape: landscape, timecode: timecode, synchronousLoad: synchronousLoad, replaceRootController: { [weak navigationController] controller, ready in
-                            navigationController?.replaceTopController(controller, animated: false, ready: ready)
-                            }, baseNavigationController: navigationController, actionInteraction: actionInteraction)
-                        return .gallery(gallery)
+                        return .document(file, true)
                     }
-                    #endif
+                    
+                    if ext == "ng-settings" {
+                        return .ngSettings(file)
+                    }
                 }
                 
                 if internalDocumentItemSupportsMimeType(file.mimeType, fileName: file.fileName ?? "file") {
                     let gallery = GalleryController(context: context, source: .peerMessagesAtId(message.id), invertItemOrder: reverseMessageGalleryOrder, streamSingleVideo: stream, fromPlayingVideo: autoplayingVideo, landscape: landscape, timecode: timecode, synchronousLoad: synchronousLoad, replaceRootController: { [weak navigationController] controller, ready in
                         navigationController?.replaceTopController(controller, animated: false, ready: ready)
                         }, baseNavigationController: navigationController, actionInteraction: actionInteraction)
-                    return .gallery(gallery)
+                    return .gallery(.single(gallery))
                 }
                 
                 if !file.isVideo {
-                    return .document(file)
+                    return .document(file, false)
                 }
             }
             
@@ -177,11 +184,25 @@ private func chatMessageGalleryControllerData(context: AccountContext, message: 
                 let gallery = SecretMediaPreviewController(context: context, messageId: message.id)
                 return .secretGallery(gallery)
             } else {
-                let gallery = GalleryController(context: context, source: standalone ? .standaloneMessage(message) : .peerMessagesAtId(message.id), invertItemOrder: reverseMessageGalleryOrder, streamSingleVideo: stream, fromPlayingVideo: autoplayingVideo, landscape: landscape, timecode: timecode, synchronousLoad: synchronousLoad, replaceRootController: { [weak navigationController] controller, ready in
-                    navigationController?.replaceTopController(controller, animated: false, ready: ready)
+                let startTimecode: Signal<Double?, NoError>
+                if let timecode = timecode {
+                    startTimecode = .single(timecode)
+                } else {
+                    startTimecode = mediaPlaybackStoredState(postbox: context.account.postbox, messageId: message.id)
+                    |> map { state in
+                        return state?.timestamp
+                    }
+                }
+                
+                return .gallery(startTimecode
+                |> deliverOnMainQueue
+                |> map { timecode in
+                    let gallery = GalleryController(context: context, source: standalone ? .standaloneMessage(message) : .peerMessagesAtId(message.id), invertItemOrder: reverseMessageGalleryOrder, streamSingleVideo: stream, fromPlayingVideo: autoplayingVideo, landscape: landscape, timecode: timecode, synchronousLoad: synchronousLoad, replaceRootController: { [weak navigationController] controller, ready in
+                        navigationController?.replaceTopController(controller, animated: false, ready: ready)
                     }, baseNavigationController: navigationController, actionInteraction: actionInteraction)
-                gallery.temporaryDoNotWaitForReady = autoplayingVideo
-                return .gallery(gallery)
+                    gallery.temporaryDoNotWaitForReady = autoplayingVideo
+                    return gallery
+                })
             }
         }
     }
@@ -201,7 +222,7 @@ func chatMessagePreviewControllerData(context: AccountContext, message: Message,
     if let mediaData = chatMessageGalleryControllerData(context: context, message: message, navigationController: navigationController, standalone: standalone, reverseMessageGalleryOrder: reverseMessageGalleryOrder, mode: .default, synchronousLoad: true, actionInteraction: nil) {
         switch mediaData {
             case let .gallery(gallery):
-                return .gallery(gallery)
+                break
             case let .instantPage(gallery, centralIndex, galleryMedia):
                 return .instantPage(gallery, centralIndex, galleryMedia)
             default:
@@ -211,9 +232,97 @@ func chatMessagePreviewControllerData(context: AccountContext, message: Message,
     return nil
 }
 
+func chatMediaListPreviewControllerData(context: AccountContext, message: Message, standalone: Bool, reverseMessageGalleryOrder: Bool, navigationController: NavigationController?) -> Signal<ChatMessagePreviewControllerData?, NoError> {
+    if let mediaData = chatMessageGalleryControllerData(context: context, message: message, navigationController: navigationController, standalone: standalone, reverseMessageGalleryOrder: reverseMessageGalleryOrder, mode: .default, synchronousLoad: true, actionInteraction: nil) {
+        switch mediaData {
+            case let .gallery(gallery):
+                return gallery
+                |> map { gallery in
+                    return .gallery(gallery)
+                }
+            case let .instantPage(gallery, centralIndex, galleryMedia):
+                return .single(.instantPage(gallery, centralIndex, galleryMedia))
+            default:
+                break
+        }
+    }
+    return .single(nil)
+}
+
+func getBoolEmoji(_ value: Bool) -> String {
+    if value {
+        return "✓" //"+" //return "✅"
+    }
+    return "x" //"-" //return "❌"
+}
+
 func openChatMessageImpl(_ params: OpenChatMessageParams) -> Bool {
     if let mediaData = chatMessageGalleryControllerData(context: params.context, message: params.message, navigationController: params.navigationController, standalone: params.standalone, reverseMessageGalleryOrder: params.reverseMessageGalleryOrder, mode: params.mode, synchronousLoad: false, actionInteraction: params.actionInteraction) {
         switch mediaData {
+            case let .ngSettings(media):
+                params.dismissInput()
+                let presentationData = params.context.sharedContext.currentPresentationData.with { $0 }
+                let lang = presentationData.strings.baseLanguageCode
+                let path = params.context.account.postbox.mediaBox.completedResourcePath(media.resource)
+                if let path = path, let data = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedIfSafe) {
+                    let jsonData: Any
+                    do {
+                        try jsonData = JSONSerialization.jsonObject(with: data, options: [])
+                        if let jsonArray = jsonData as? [String:Any] {
+                            let askController = textAlertController(context: params.context, title: nil, text: l("NiceFeatures.RestoreSettings.Confirm", lang), actions: [
+                                TextAlertAction(
+                                    type: .destructiveAction,
+                                    title: presentationData.strings.Common_Yes,
+                                    action: {
+                                        var importResult = NicegramSettings().importSettings(json: jsonArray)
+                                        var debugString = ""
+                                        for result in importResult {
+                                            if !debugString.isEmpty {
+                                                debugString += "\n"
+                                            }
+                                            debugString += "\(getBoolEmoji(result.2)) \(result.0)"
+                                            if !result.1.isEmpty {
+                                                debugString += " - \(result.1)"
+                                            }
+                                        }
+                                        print("debugStringImport", debugString)
+                                        
+                                        let debugImportController = textAlertController(context: params.context, title: presentationData.strings.Conversation_Info, text: debugString, actions: [
+                                            TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})
+                                        ])
+                                        
+                                        if importResult.count > 0 {
+                                            let resultController = textAlertController(context: params.context, title: nil, text: l("NiceFeatures.RestoreSettings.Done", lang) + "\n\n" + l("Common.RestartRequired", lang), actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Conversation_Info, action: {
+                                                params.present(debugImportController, nil)
+                                            }), TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})])
+                                            params.present(resultController, nil)
+                                        } else {
+                                            let resultController = textAlertController(context: params.context, title: nil, text: l("NiceFeatures.RestoreSettings.Error", lang), actions: [
+                                                TextAlertAction(type: .defaultAction, title: presentationData.strings.Conversation_Info, action: {
+                                                    params.present(debugImportController, nil)
+                                                }),
+                                                TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})
+                                            ])
+                                            params.present(resultController, nil)
+                                        }
+                                }
+                                ),
+                                TextAlertAction(
+                                    type: .genericAction,
+                                    title: presentationData.strings.Common_No,
+                                    action: {}
+                                )
+                            ])
+                            params.present(askController, nil)
+                            return true
+                        }
+                    } catch {
+                    }
+                    
+                    let errorController = textAlertController(context: params.context, title: nil, text: l("NiceSettings.Restore.Error", lang), actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})])
+                    params.present(errorController, nil)
+                    return false
+                }
             case let .url(url):
                 params.openUrl(url)
                 return true
@@ -240,7 +349,7 @@ func openChatMessageImpl(_ params: OpenChatMessageParams) -> Bool {
                 
                 params.dismissInput()
                 params.present(gallery, InstantPageGalleryControllerPresentationArguments(transitionArguments: { entry in
-                    var selectedTransitionNode: (ASDisplayNode, () -> (UIView?, UIView?))?
+                    var selectedTransitionNode: (ASDisplayNode, CGRect, () -> (UIView?, UIView?))?
                     if entry.index == centralIndex {
                         selectedTransitionNode = params.transitionNode(params.message.id, galleryMedia)
                     }
@@ -253,7 +362,16 @@ func openChatMessageImpl(_ params: OpenChatMessageParams) -> Bool {
             case let .map(mapMedia):
                 params.dismissInput()
                 
-                let controller = legacyLocationController(message: params.message, mapMedia: mapMedia, context: params.context, isModal: params.modal, openPeer: { peer in
+//                let controllerParams = LocationViewParams(sendLiveLocation: { location in
+//                    let outMessage: EnqueueMessage = .message(text: "", attributes: [], mediaReference: .standalone(media: location), replyToMessageId: nil, localGroupingKey: nil)
+//                    params.enqueueMessage(outMessage)
+//                }, stopLiveLocation: {
+//                    params.context.liveLocationManager?.cancelLiveLocation(peerId: params.message.id.peerId)
+//                }, openUrl: params.openUrl, openPeer: { peer in
+//                    params.openPeer(peer, .info)
+//                })
+//                let controller = LocationViewController(context: params.context, mapMedia: mapMedia, params: controllerParams)
+                let controller = legacyLocationController(message: params.message, mapMedia: mapMedia, context: params.context, openPeer: { peer in
                     params.openPeer(peer, .info)
                 }, sendLiveLocation: { coordinate, period in
                     let outMessage: EnqueueMessage = .message(text: "", attributes: [], mediaReference: .standalone(media: TelegramMediaMap(latitude: coordinate.latitude, longitude: coordinate.longitude, geoPlace: nil, venue: nil, liveBroadcastingTimeout: period)), replyToMessageId: nil, localGroupingKey: nil)
@@ -261,22 +379,45 @@ func openChatMessageImpl(_ params: OpenChatMessageParams) -> Bool {
                 }, stopLiveLocation: {
                     params.context.liveLocationManager?.cancelLiveLocation(peerId: params.message.id.peerId)
                 }, openUrl: params.openUrl)
-                
-                if params.modal {
-                    params.present(controller, nil)
-                } else {
-                    params.navigationController?.pushViewController(controller)
-                }
+                controller.navigationPresentation = .modal
+                params.navigationController?.pushViewController(controller)
                 return true
             case let .stickerPack(reference):
-                let controller = StickerPackPreviewController(context: params.context, stickerPack: reference, parentNavigationController: params.navigationController)
-                controller.sendSticker = params.sendSticker
+                let controller = StickerPackScreen(context: params.context, mainStickerPack: reference, stickerPacks: [reference], parentNavigationController: params.navigationController, sendSticker: params.sendSticker, actionPerformed: { info, items, action in
+                    let presentationData = params.context.sharedContext.currentPresentationData.with { $0 }
+                    var animateInAsReplacement = false
+                    if let navigationController = params.navigationController {
+                        for controller in navigationController.overlayControllers {
+                            if let controller = controller as? UndoOverlayController {
+                                controller.dismissWithCommitActionAndReplacementAnimation()
+                                animateInAsReplacement = true
+                            }
+                        }
+                    }
+                    switch action {
+                    case .add:
+                        params.navigationController?.presentOverlay(controller: UndoOverlayController(presentationData: presentationData, content: .stickersModified(title: presentationData.strings.StickerPackActionInfo_AddedTitle, text: presentationData.strings.StickerPackActionInfo_AddedText(info.title).0, undo: false, info: info, topItem: items.first, account: params.context.account), elevatedLayout: true, animateInAsReplacement: animateInAsReplacement, action: { _ in
+                            return true
+                        }))
+                    case let .remove(positionInList):
+                        params.navigationController?.presentOverlay(controller: UndoOverlayController(presentationData: presentationData, content: .stickersModified(title: presentationData.strings.StickerPackActionInfo_RemovedTitle, text: presentationData.strings.StickerPackActionInfo_RemovedText(info.title).0, undo: true, info: info, topItem: items.first, account: params.context.account), elevatedLayout: true, animateInAsReplacement: animateInAsReplacement, action: { action in
+                            if case .undo = action {
+                                let _ = addStickerPackInteractively(postbox: params.context.account.postbox, info: info, items: items, positionInList: positionInList).start()
+                            }
+                            return true
+                        }))
+                    }
+                })
                 params.dismissInput()
                 params.present(controller, nil)
                 return true
-            case let .document(file):
+            case let .document(file, immediateShare):
+                params.dismissInput()
                 let presentationData = params.context.sharedContext.currentPresentationData.with { $0 }
-                if let rootController = params.navigationController?.view.window?.rootViewController {
+                if immediateShare {
+                    let controller = ShareController(context: params.context, subject: .media(.standalone(media: file)), immediateExternalShare: true)
+                    params.present(controller, nil)
+                } else if let rootController = params.navigationController?.view.window?.rootViewController {
                     presentDocumentPreviewController(rootController: rootController, theme: presentationData.theme, strings: presentationData.strings, postbox: params.context.account.postbox, file: file)
                 }
                 return true
@@ -313,13 +454,16 @@ func openChatMessageImpl(_ params: OpenChatMessageParams) -> Bool {
                 return true
             case let .gallery(gallery):
                 params.dismissInput()
-                params.present(gallery, GalleryControllerPresentationArguments(transitionArguments: { messageId, media in
-                    let selectedTransitionNode = params.transitionNode(messageId, media)
-                    if let selectedTransitionNode = selectedTransitionNode {
-                        return GalleryTransitionArguments(transitionNode: selectedTransitionNode, addToTransitionSurface: params.addToTransitionSurface)
-                    }
-                    return nil
-                }))
+                let _ = (gallery
+                |> deliverOnMainQueue).start(next: { gallery in
+                    params.present(gallery, GalleryControllerPresentationArguments(transitionArguments: { messageId, media in
+                        let selectedTransitionNode = params.transitionNode(messageId, media)
+                        if let selectedTransitionNode = selectedTransitionNode {
+                            return GalleryTransitionArguments(transitionNode: selectedTransitionNode, addToTransitionSurface: params.addToTransitionSurface)
+                        }
+                        return nil
+                    }))
+                })
                 return true
             case let .secretGallery(gallery):
                 params.dismissInput()
@@ -332,6 +476,7 @@ func openChatMessageImpl(_ params: OpenChatMessageParams) -> Bool {
                 }))
                 return true
             case let .other(otherMedia):
+                params.dismissInput()
                 if let contact = otherMedia as? TelegramMediaContact {
                     let _ = (params.context.account.postbox.transaction { transaction -> (Peer?, Bool?) in
                         if let peerId = contact.peerId {
@@ -344,7 +489,7 @@ func openChatMessageImpl(_ params: OpenChatMessageParams) -> Bool {
                         if let vCard = contact.vCardData, let vCardData = vCard.data(using: .utf8), let parsed = DeviceContactExtendedData(vcard: vCardData) {
                             contactData = parsed
                         } else {
-                            contactData = DeviceContactExtendedData(basicData: DeviceContactBasicData(firstName: contact.firstName, lastName: contact.lastName, phoneNumbers: [DeviceContactPhoneNumberData(label: "_$!<Mobile>!$_", value: contact.phoneNumber)]), middleName: "", prefix: "", suffix: "", organization: "", jobTitle: "", department: "", emailAddresses: [], urls: [], addresses: [], birthdayDate: nil, socialProfiles: [], instantMessagingProfiles: [])
+                            contactData = DeviceContactExtendedData(basicData: DeviceContactBasicData(firstName: contact.firstName, lastName: contact.lastName, phoneNumbers: [DeviceContactPhoneNumberData(label: "_$!<Mobile>!$_", value: contact.phoneNumber)]), middleName: "", prefix: "", suffix: "", organization: "", jobTitle: "", department: "", emailAddresses: [], urls: [], addresses: [], birthdayDate: nil, socialProfiles: [], instantMessagingProfiles: [], note: "")
                         }
                         let controller = deviceContactInfoController(context: params.context, subject: .vcard(peer, nil, contactData), completed: nil, cancelled: nil)
                         params.navigationController?.pushViewController(controller)
@@ -381,7 +526,7 @@ func openChatMessageImpl(_ params: OpenChatMessageParams) -> Bool {
                     return false
                 }
                 let controller = ThemePreviewController(context: params.context, previewTheme: theme, source: .media(.message(message: MessageReference(params.message), media: media)))
-                params.present(controller, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+                params.navigationController?.pushViewController(controller)
         }
     }
     return false
@@ -445,10 +590,12 @@ func openChatWallpaper(context: AccountContext, message: Message, present: @esca
                 if case let .wallpaper(parameter) = resolvedUrl {
                     let source: WallpaperListSource
                     switch parameter {
-                        case let .slug(slug, options, color, intensity):
-                            source = .slug(slug, content.file, options, color, intensity, message)
+                        case let .slug(slug, options, firstColor, secondColor, intensity, rotation):
+                            source = .slug(slug, content.file, options, firstColor, secondColor, intensity, rotation, message)
                         case let .color(color):
-                            source = .wallpaper(.color(Int32(color.rgb)), nil, nil, nil, message)
+                            source = .wallpaper(.color(color.argb), nil, nil, nil, nil, nil, message)
+                        case let .gradient(topColor, bottomColor, rotation):
+                            source = .wallpaper(.gradient(topColor.argb, bottomColor.argb, WallpaperSettings(rotation: rotation)), nil, nil, nil, nil, rotation, message)
                     }
                     
                     let controller = WallpaperGalleryController(context: context, source: source)
@@ -459,26 +606,52 @@ func openChatWallpaper(context: AccountContext, message: Message, present: @esca
     }
 }
 
-func openChatTheme(context: AccountContext, message: Message, present: @escaping (ViewController, Any?) -> Void) {
+func openChatTheme(context: AccountContext, message: Message, pushController: @escaping (ViewController) -> Void, present: @escaping (ViewController, Any?) -> Void) {
     for media in message.media {
         if let webpage = media as? TelegramMediaWebpage, case let .Loaded(content) = webpage.content {
             let _ = (context.sharedContext.resolveUrl(account: context.account, url: content.url)
             |> deliverOnMainQueue).start(next: { resolvedUrl in
                 var file: TelegramMediaFile?
-                let mimeType = "application/x-tgtheme-ios"
-                if let contentFiles = content.files, let filteredFile = contentFiles.filter({ $0.mimeType == mimeType }).first {
-                    file = filteredFile
-                } else if let contentFile = content.file, contentFile.mimeType == mimeType {
+                var settings: TelegramThemeSettings?
+                let themeMimeType = "application/x-tgtheme-ios"
+                
+                for attribute in content.attributes {
+                    if case let .theme(attribute) = attribute {
+                        if let attributeSettings = attribute.settings {
+                            settings = attributeSettings
+                        } else if let filteredFile = attribute.files.filter({ $0.mimeType == themeMimeType }).first {
+                            file = filteredFile
+                        }
+                    }
+                }
+                
+                if file == nil && settings == nil, let contentFile = content.file, contentFile.mimeType == themeMimeType {
                     file = contentFile
                 }
-                if case let .theme(slug) = resolvedUrl, let file = file {
-                    if let path = context.sharedContext.accountManager.mediaBox.completedResourcePath(file.resource), let data = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead), let theme = makePresentationTheme(data: data) {
-                        let controller = ThemePreviewController(context: context, previewTheme: theme, source: .slug(slug, file))
-                        present(controller, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
-                    }
-                } else {
+                let displayUnsupportedAlert: () -> Void = {
                     let presentationData = context.sharedContext.currentPresentationData.with { $0 }
                     present(textAlertController(context: context, title: nil, text: presentationData.strings.Theme_Unsupported, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), nil)
+                }
+                if case let .theme(slug) = resolvedUrl {
+                    if let file = file {
+                        if let path = context.sharedContext.accountManager.mediaBox.completedResourcePath(file.resource), let data = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
+                            if let theme = makePresentationTheme(data: data) {
+                                let controller = ThemePreviewController(context: context, previewTheme: theme, source: .slug(slug, file))
+                                pushController(controller)
+                            } else {
+                                displayUnsupportedAlert()
+                            }
+                        }
+                    } else if let settings = settings {
+                        if let theme = makePresentationTheme(settings: settings, title: content.title) {
+                            let controller = ThemePreviewController(context: context, previewTheme: theme, source: .themeSettings(slug, settings))
+                            pushController(controller)
+                        } else {
+                            displayUnsupportedAlert()
+                        }
+                    }
+                } else {
+                    displayUnsupportedAlert()
                 }
             })
         }

@@ -1,32 +1,41 @@
 import Foundation
 import UIKit
 import Display
-import TelegramCore
-import Postbox
 import TelegramPresentationData
-import AccountContext
+import SyncCore
+import Postbox
+import TelegramCore
 
 public enum UndoOverlayContent {
     case removedChat(text: String)
-    case archivedChat(peerId: PeerId, title: String, text: String, undo: Bool)
+    case archivedChat(peerId: Int64, title: String, text: String, undo: Bool)
     case hidArchive(title: String, text: String, undo: Bool)
     case revealedArchive(title: String, text: String, undo: Bool)
     case succeed(text: String)
+    case emoji(path: String, text: String)
+    case swipeToReply(title: String, text: String)
+    case actionSucceeded(title: String, text: String, cancel: String)
+    case stickersModified(title: String, text: String, undo: Bool, info: StickerPackCollectionInfo, topItem: ItemCollectionItem?, account: Account)
+}
+
+public enum UndoOverlayAction {
+    case info
+    case undo
+    case commit
 }
 
 public final class UndoOverlayController: ViewController {
-    private let context: AccountContext
     private let presentationData: PresentationData
     public let content: UndoOverlayContent
     private let elevatedLayout: Bool
     private let animateInAsReplacement: Bool
-    private var action: (Bool) -> Void
+    private var action: (UndoOverlayAction) -> Bool
     
     private var didPlayPresentationAnimation = false
+    private var dismissed = false
     
-    public init(context: AccountContext, content: UndoOverlayContent, elevatedLayout: Bool, animateInAsReplacement: Bool = false, action: @escaping (Bool) -> Void) {
-        self.context = context
-        self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
+    public init(presentationData: PresentationData, content: UndoOverlayContent, elevatedLayout: Bool, animateInAsReplacement: Bool = false, action: @escaping (UndoOverlayAction) -> Bool) {
+        self.presentationData = presentationData
         self.content = content
         self.elevatedLayout = elevatedLayout
         self.animateInAsReplacement = animateInAsReplacement
@@ -43,7 +52,7 @@ public final class UndoOverlayController: ViewController {
     
     override public func loadDisplayNode() {
         self.displayNode = UndoOverlayControllerNode(presentationData: self.presentationData, content: self.content, elevatedLayout: self.elevatedLayout, action: { [weak self] value in
-            self?.action(value)
+            return self?.action(value) ?? false
         }, dismiss: { [weak self] in
             self?.dismiss()
         })
@@ -51,12 +60,12 @@ public final class UndoOverlayController: ViewController {
     }
     
     public func dismissWithCommitAction() {
-        self.action(true)
+        self.action(.commit)
         self.dismiss()
     }
     
     public func dismissWithCommitActionAndReplacementAnimation() {
-        self.action(true)
+        self.action(.commit)
         (self.displayNode as! UndoOverlayControllerNode).animateOutWithReplacement(completion: { [weak self] in
             self?.presentingViewController?.dismiss(animated: false, completion: nil)
         })
@@ -78,6 +87,10 @@ public final class UndoOverlayController: ViewController {
     }
     
     override public func dismiss(completion: (() -> Void)? = nil) {
+        guard !self.dismissed else {
+            return
+        }
+        self.dismissed = true
         (self.displayNode as! UndoOverlayControllerNode).animateOut(completion: { [weak self] in
             self?.presentingViewController?.dismiss(animated: false, completion: nil)
             completion?()

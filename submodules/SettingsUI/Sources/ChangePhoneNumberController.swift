@@ -3,12 +3,15 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import ProgressNavigationButtonNode
 import AccountContext
 import AlertUI
+import PresentationDataUtils
 import CountrySelectionUI
+import PhoneNumberFormat
 
 final class ChangePhoneNumberController: ViewController {
     private var controllerNode: ChangePhoneNumberControllerNode {
@@ -81,7 +84,7 @@ final class ChangePhoneNumberController: ViewController {
                     }
                 }
                 strongSelf.controllerNode.view.endEditing(true)
-                strongSelf.present(controller, in: .window(.root))
+                strongSelf.push(controller)
             }
         }
     }

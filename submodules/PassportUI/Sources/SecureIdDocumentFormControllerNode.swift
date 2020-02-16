@@ -3,6 +3,7 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import TelegramCore
+import SyncCore
 import Postbox
 import SwiftSignalKit
 import TelegramPresentationData
@@ -11,6 +12,7 @@ import AccountContext
 import GalleryUI
 import CountrySelectionUI
 import DateSelectionUI
+import AppBundle
 
 private enum SecureIdDocumentFormTextField {
     case identifier
@@ -2141,6 +2143,7 @@ final class SecureIdDocumentFormControllerNode: FormControllerNode<SecureIdDocum
         return self._itemParams!
     }
     
+    private var presentationData: PresentationData
     private var theme: PresentationTheme
     private var strings: PresentationStrings
     
@@ -2159,6 +2162,7 @@ final class SecureIdDocumentFormControllerNode: FormControllerNode<SecureIdDocum
     private let hiddenItemDisposable = MetaDisposable()
     
     required init(initParams: SecureIdDocumentFormControllerNodeInitParams, presentationData: PresentationData) {
+        self.presentationData = presentationData
         self.theme = presentationData.theme
         self.strings = presentationData.strings
         self.context = initParams.context
@@ -2271,8 +2275,7 @@ final class SecureIdDocumentFormControllerNode: FormControllerNode<SecureIdDocum
                 } else if useNext {
                     if case .deleteDocument = itemEntry {
                         return false
-                    }
-                    else if let inputNode = itemNode as? FormControllerTextInputItemNode {
+                    } else if let inputNode = itemNode as? FormControllerTextInputItemNode {
                         inputNode.activate()
                         return false
                     } else if let actionNode = itemNode as? FormControllerDetailActionItemNode {
@@ -2413,7 +2416,7 @@ final class SecureIdDocumentFormControllerNode: FormControllerNode<SecureIdDocum
                         strongSelf.view.endEditing(true)
                         strongSelf.present(controller, nil)
                     case .gender:
-                        let controller = ActionSheetController(presentationTheme: strongSelf.theme)
+                        let controller = ActionSheetController(presentationData: strongSelf.presentationData)
                         let dismissAction: () -> Void = { [weak controller] in
                             controller?.dismissAnimated()
                         }
@@ -2755,7 +2758,7 @@ final class SecureIdDocumentFormControllerNode: FormControllerNode<SecureIdDocum
             return
         }
         
-        let controller = ActionSheetController(presentationTheme: theme)
+        let controller = ActionSheetController(presentationData: self.presentationData)
         let dismissAction: () -> Void = { [weak controller] in
             controller?.dismissAnimated()
         }
@@ -2815,7 +2818,7 @@ final class SecureIdDocumentFormControllerNode: FormControllerNode<SecureIdDocum
     }
     
     private func openDocument(document: SecureIdVerificationDocument) {
-        let controller = ActionSheetController(presentationTheme: theme)
+        let controller = ActionSheetController(presentationData: self.presentationData)
         let dismissAction: () -> Void = { [weak controller] in
             controller?.dismissAnimated()
         }
@@ -3034,7 +3037,7 @@ final class SecureIdDocumentFormControllerNode: FormControllerNode<SecureIdDocum
             for itemNode in strongSelf.itemNodes {
                 if let itemNode = itemNode as? SecureIdValueFormFileItemNode, let item = itemNode.item, let document = item.document {
                     if document.resource.isEqual(to: entry.resource) {
-                        return GalleryTransitionArguments(transitionNode: (itemNode.imageNode, {
+                        return GalleryTransitionArguments(transitionNode: (itemNode.imageNode, itemNode.imageNode.bounds, {
                             return (itemNode.imageNode.view.snapshotContentTree(unhide: true), nil)
                         }), addToTransitionSurface: { view in
                             self?.view.addSubview(view)

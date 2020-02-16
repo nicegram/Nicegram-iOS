@@ -5,6 +5,7 @@ import AsyncDisplayKit
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import AccountContext
 import PhotoResources
@@ -16,9 +17,9 @@ private struct InstantImageGalleryThumbnailItem: GalleryThumbnailItem {
     
     var image: (Signal<(TransformImageArguments) -> DrawingContext?, NoError>, CGSize) {
         if let imageReferene = mediaReference.concrete(TelegramMediaImage.self), let representation = largestImageRepresentation(imageReferene.media.representations) {
-            return (mediaGridMessagePhoto(account: self.account, photoReference: imageReferene), representation.dimensions)
+            return (mediaGridMessagePhoto(account: self.account, photoReference: imageReferene), representation.dimensions.cgSize)
         } else if let fileReference = mediaReference.concrete(TelegramMediaFile.self), let dimensions = fileReference.media.dimensions {
-                return (mediaGridMessageVideo(postbox: account.postbox, videoReference: fileReference), dimensions)
+                return (mediaGridMessageVideo(postbox: account.postbox, videoReference: fileReference), dimensions.cgSize)
             } else {
             return (.single({ _ in return nil }), CGSize(width: 128.0, height: 128.0))
         }
@@ -132,10 +133,10 @@ final class InstantImageGalleryItemNode: ZoomableContentGalleryItemNode {
     fileprivate func setImage(imageReference: ImageMediaReference) {
         if self.contextAndMedia == nil || !self.contextAndMedia!.1.media.isEqual(to: imageReference.media) {
             if let largestSize = largestRepresentationForPhoto(imageReference.media) {
-                let displaySize = largestSize.dimensions.fitted(CGSize(width: 1280.0, height: 1280.0)).dividedByScreenScale().integralFloor
+                let displaySize = largestSize.dimensions.cgSize.fitted(CGSize(width: 1280.0, height: 1280.0)).dividedByScreenScale().integralFloor
                 self.imageNode.asyncLayout()(TransformImageArguments(corners: ImageCorners(), imageSize: displaySize, boundingSize: displaySize, intrinsicInsets: UIEdgeInsets(), emptyColor: .black))()
                 self.imageNode.setSignal(chatMessagePhoto(postbox: self.context.account.postbox, photoReference: imageReference), dispatchOnDisplayLink: false)
-                self.zoomableContent = (largestSize.dimensions, self.imageNode)
+                self.zoomableContent = (largestSize.dimensions.cgSize, self.imageNode)
                 self.fetchDisposable.set(fetchedMediaResource(mediaBox: self.context.account.postbox.mediaBox, reference: imageReference.resourceReference(largestSize.resource)).start())
             } else {
                 self._ready.set(.single(Void()))
@@ -148,10 +149,10 @@ final class InstantImageGalleryItemNode: ZoomableContentGalleryItemNode {
     func setFile(context: AccountContext, fileReference: FileMediaReference) {
         if self.contextAndMedia == nil || !self.contextAndMedia!.1.media.isEqual(to: fileReference.media) {
             if let largestSize = fileReference.media.dimensions {
-                let displaySize = largestSize.dividedByScreenScale()
+                let displaySize = largestSize.cgSize.dividedByScreenScale()
                 self.imageNode.asyncLayout()(TransformImageArguments(corners: ImageCorners(), imageSize: displaySize, boundingSize: displaySize, intrinsicInsets: UIEdgeInsets()))()
                 self.imageNode.setSignal(chatMessageImageFile(account: context.account, fileReference: fileReference, thumbnail: false), dispatchOnDisplayLink: false)
-                self.zoomableContent = (largestSize, self.imageNode)
+                self.zoomableContent = (largestSize.cgSize, self.imageNode)
             } else {
                 self._ready.set(.single(Void()))
             }
@@ -160,14 +161,14 @@ final class InstantImageGalleryItemNode: ZoomableContentGalleryItemNode {
         self.footerContentNode.setShareMedia(fileReference.abstract)
     }
     
-    override func animateIn(from node: (ASDisplayNode, () -> (UIView?, UIView?)), addToTransitionSurface: (UIView) -> Void) {
+    override func animateIn(from node: (ASDisplayNode, CGRect, () -> (UIView?, UIView?)), addToTransitionSurface: (UIView) -> Void) {
         var transformedFrame = node.0.view.convert(node.0.view.bounds, to: self.imageNode.view)
         let transformedSuperFrame = node.0.view.convert(node.0.view.bounds, to: self.imageNode.view.superview)
         let transformedSelfFrame = node.0.view.convert(node.0.view.bounds, to: self.view)
         let transformedCopyViewFinalFrame = self.imageNode.view.convert(self.imageNode.view.bounds, to: self.view)
         
-        let surfaceCopyView = node.1().0!
-        let copyView = node.1().0!
+        let surfaceCopyView = node.2().0!
+        let copyView = node.2().0!
         
         addToTransitionSurface(surfaceCopyView)
         
@@ -216,7 +217,7 @@ final class InstantImageGalleryItemNode: ZoomableContentGalleryItemNode {
         self.statusNodeContainer.layer.animateScale(from: 0.5, to: 1.0, duration: 0.25, timingFunction: kCAMediaTimingFunctionSpring)*/
     }
     
-    override func animateOut(to node: (ASDisplayNode, () -> (UIView?, UIView?)), addToTransitionSurface: (UIView) -> Void, completion: @escaping () -> Void) {
+    override func animateOut(to node: (ASDisplayNode, CGRect, () -> (UIView?, UIView?)), addToTransitionSurface: (UIView) -> Void, completion: @escaping () -> Void) {
         self.fetchDisposable.set(nil)
         
         var transformedFrame = node.0.view.convert(node.0.view.bounds, to: self.imageNode.view)
@@ -228,8 +229,8 @@ final class InstantImageGalleryItemNode: ZoomableContentGalleryItemNode {
         var boundsCompleted = false
         var copyCompleted = false
         
-        let copyView = node.1().0!
-        let surfaceCopyView = node.1().0!
+        let copyView = node.2().0!
+        let surfaceCopyView = node.2().0!
         
         addToTransitionSurface(surfaceCopyView)
         
@@ -300,7 +301,7 @@ final class InstantImageGalleryItemNode: ZoomableContentGalleryItemNode {
         return self._title.get()
     }
     
-    override func footerContent() -> Signal<GalleryFooterContentNode?, NoError> {
-        return .single(self.footerContentNode)
+    override func footerContent() -> Signal<(GalleryFooterContentNode?, GalleryOverlayContentNode?), NoError> {
+        return .single((self.footerContentNode, nil))
     }
 }

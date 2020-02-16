@@ -2,8 +2,17 @@ import Foundation
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import Contacts
 import Intents
+
+func formatPhoneNumber(_ value: String) -> String {
+    if value.hasPrefix("+") {
+        return value
+    } else {
+        return "+\(value)"
+    }
+}
 
 struct MatchingDeviceContact {
     let stableId: String
@@ -45,6 +54,7 @@ private func cleanPhoneNumber(_ text: String) -> String {
     return result
 }
 
+@available(iOSApplicationExtension 10.0, *)
 func matchingDeviceContacts(stableIds: [String]) -> Signal<[MatchingDeviceContact], IntentContactsError> {
     guard CNContactStore.authorizationStatus(for: .contacts) == .authorized else {
         return .fail(.generic)
@@ -118,6 +128,7 @@ func matchingCloudContact(postbox: Postbox, peerId: PeerId) -> Signal<TelegramUs
     }
 }
 
+@available(iOSApplicationExtension 10.0, *)
 func personWithUser(stableId: String, user: TelegramUser) -> INPerson {
     var nameComponents = PersonNameComponents()
     nameComponents.givenName = user.firstName
@@ -128,7 +139,7 @@ func personWithUser(stableId: String, user: TelegramUser) -> INPerson {
     } else if let username = user.username {
         personHandle = INPersonHandle(value: "@\(username)", type: .unknown)
     } else {
-        personHandle = INPersonHandle(value: user.displayTitle, type: .unknown)
+        personHandle = INPersonHandle(value: user.nameOrPhone, type: .unknown)
     }
     
     return INPerson(personHandle: personHandle, nameComponents: nameComponents, displayName: user.debugDisplayTitle, image: nil, contactIdentifier: stableId, customIdentifier: "tg\(user.id.toInt64())")

@@ -3,6 +3,7 @@ import UIKit
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramUIPreferences
 import UniversalMediaPlayer
 import TelegramAudio
@@ -426,7 +427,6 @@ final class SharedMediaPlayer {
                     switch playbackItem {
                         case let .audio(player):
                             player.setBaseRate(rateValue)
-                        
                         case let .instantVideo(node):
                             node.setBaseRate(rateValue)
                     }

@@ -3,10 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import SwiftSignalKit
 
-#if BUCK
-import DisplayPrivate
-#endif
-
 private struct WindowLayout: Equatable {
     let size: CGSize
     let metrics: LayoutMetrics
@@ -129,58 +125,20 @@ private func encodeText(_ string: String, _ key: Int) -> String {
     return result
 }
 
-public func doesViewTreeDisableInteractiveTransitionGestureRecognizer(_ view: UIView) -> Bool {
-    if view.disablesInteractiveTransitionGestureRecognizer {
+public func doesViewTreeDisableInteractiveTransitionGestureRecognizer(_ view: UIView, keyboardOnly: Bool = false) -> Bool {
+    if view.disablesInteractiveTransitionGestureRecognizer && !keyboardOnly {
+        return true
+    }
+    if view.disablesInteractiveKeyboardGestureRecognizer {
         return true
     }
     if let f = view.disablesInteractiveTransitionGestureRecognizerNow, f() {
         return true
     }
     if let superview = view.superview {
-        return doesViewTreeDisableInteractiveTransitionGestureRecognizer(superview)
+        return doesViewTreeDisableInteractiveTransitionGestureRecognizer(superview, keyboardOnly: keyboardOnly)
     }
     return false
-}
-
-private let transitionClass: AnyClass? = NSClassFromString(encodeText("VJUsbotjujpoWjfx", -1))
-private let previewingClass: AnyClass? = NSClassFromString("UIVisualEffectView")
-private let previewingActionGroupClass: AnyClass? = NSClassFromString("UIInterfaceActionGroupView")
-private func checkIsPreviewingView(_ view: UIView) -> Bool {
-    if let transitionClass = transitionClass, view.isKind(of: transitionClass) {
-        for subview in view.subviews {
-            if let previewingClass = previewingClass, subview.isKind(of: previewingClass) {
-                return true
-            }
-        }
-    }
-    return false
-}
-
-private func applyThemeToPreviewingView(_ view: UIView, accentColor: UIColor, darkBlur: Bool) {
-    if let previewingActionGroupClass = previewingActionGroupClass, view.isKind(of: previewingActionGroupClass) {
-        view.tintColor = accentColor
-        testZoomBlurEffect((view.superview?.superview?.subviews[1] as? UIVisualEffectView)?.effect)
-        if darkBlur {
-            applyThemeToPreviewingEffectView(view)
-        }
-        return
-    }
-    
-    for subview in view.subviews {
-        applyThemeToPreviewingView(subview, accentColor: accentColor, darkBlur: darkBlur)
-    }
-}
-
-private func applyThemeToPreviewingEffectView(_ view: UIView) {
-    if let previewingClass = previewingClass, view.isKind(of: previewingClass) {
-        if let view = view as? UIVisualEffectView {
-            view.effect = UIBlurEffect(style: .dark)
-        }
-    }
-    
-    for subview in view.subviews {
-        applyThemeToPreviewingEffectView(subview)
-    }
 }
 
 public func getFirstResponderAndAccessoryHeight(_ view: UIView, _ accessoryHeight: CGFloat? = nil) -> (UIView?, CGFloat?) {
@@ -204,40 +162,41 @@ public func getFirstResponderAndAccessoryHeight(_ view: UIView, _ accessoryHeigh
 public final class WindowHostView {
     public let containerView: UIView
     public let eventView: UIView
-    public let aboveStatusBarView: UIView
     public let isRotating: () -> Bool
+    public let systemUserInterfaceStyle: Signal<WindowUserInterfaceStyle, NoError>
     
     let updateSupportedInterfaceOrientations: (UIInterfaceOrientationMask) -> Void
     let updateDeferScreenEdgeGestures: (UIRectEdge) -> Void
-    let updatePreferNavigationUIHidden: (Bool) -> Void
+    let updatePrefersOnScreenNavigationHidden: (Bool) -> Void
     
     var present: ((ContainableController, PresentationSurfaceLevel, Bool, @escaping () -> Void) -> Void)?
     var presentInGlobalOverlay: ((_ controller: ContainableController) -> Void)?
     var presentNative: ((UIViewController) -> Void)?
+    var nativeController: (() -> UIViewController?)?
     var updateSize: ((CGSize, Double) -> Void)?
     var layoutSubviews: (() -> Void)?
     var updateToInterfaceOrientation: ((UIInterfaceOrientation) -> Void)?
     var isUpdatingOrientationLayout = false
     var hitTest: ((CGPoint, UIEvent?) -> UIView?)?
     var invalidateDeferScreenEdgeGesture: (() -> Void)?
-    var invalidatePreferNavigationUIHidden: (() -> Void)?
+    var invalidatePrefersOnScreenNavigationHidden: (() -> Void)?
     var invalidateSupportedOrientations: (() -> Void)?
     var cancelInteractiveKeyboardGestures: (() -> Void)?
     var forEachController: (((ContainableController) -> Void) -> Void)?
     var getAccessibilityElements: (() -> [Any]?)?
     
-    init(containerView: UIView, eventView: UIView, aboveStatusBarView: UIView, isRotating: @escaping () -> Bool, updateSupportedInterfaceOrientations: @escaping (UIInterfaceOrientationMask) -> Void, updateDeferScreenEdgeGestures: @escaping (UIRectEdge) -> Void, updatePreferNavigationUIHidden: @escaping (Bool) -> Void) {
+    init(containerView: UIView, eventView: UIView, isRotating: @escaping () -> Bool, systemUserInterfaceStyle:  Signal<WindowUserInterfaceStyle, NoError>, updateSupportedInterfaceOrientations: @escaping (UIInterfaceOrientationMask) -> Void, updateDeferScreenEdgeGestures: @escaping (UIRectEdge) -> Void, updatePrefersOnScreenNavigationHidden: @escaping (Bool) -> Void) {
         self.containerView = containerView
         self.eventView = eventView
-        self.aboveStatusBarView = aboveStatusBarView
         self.isRotating = isRotating
+        self.systemUserInterfaceStyle = systemUserInterfaceStyle
         self.updateSupportedInterfaceOrientations = updateSupportedInterfaceOrientations
         self.updateDeferScreenEdgeGestures = updateDeferScreenEdgeGestures
-        self.updatePreferNavigationUIHidden = updatePreferNavigationUIHidden
+        self.updatePrefersOnScreenNavigationHidden = updatePrefersOnScreenNavigationHidden
     }
     
     fileprivate var onScreenNavigationHeight: CGFloat? {
-        if #available(iOSApplicationExtension 11.0, *) {
+        if #available(iOSApplicationExtension 11.0, iOS 11.0, *) {
             return self.eventView.safeAreaInsets.bottom.isLessThanOrEqualTo(0.0) ? nil : self.eventView.safeAreaInsets.bottom
         } else {
             return nil
@@ -255,7 +214,7 @@ public protocol WindowHost {
     func present(_ controller: ContainableController, on level: PresentationSurfaceLevel, blockInteraction: Bool, completion: @escaping () -> Void)
     func presentInGlobalOverlay(_ controller: ContainableController)
     func invalidateDeferScreenEdgeGestures()
-    func invalidatePreferNavigationUIHidden()
+    func invalidatePrefersOnScreenNavigationHidden()
     func invalidateSupportedOrientations()
     func cancelInteractiveKeyboardGestures()
 }
@@ -281,11 +240,11 @@ public final class WindowKeyboardGestureRecognizerDelegate: NSObject, UIGestureR
 public class Window1 {
     public let hostView: WindowHostView
     
-    private var deviceMetrics: DeviceMetrics
+    public var deviceMetrics: DeviceMetrics
     
     private let statusBarHost: StatusBarHost?
-    private let statusBarManager: StatusBarManager?
     private let keyboardManager: KeyboardManager?
+    private let keyboardViewManager: KeyboardViewManager?
     private var statusBarChangeObserver: AnyObject?
     private var keyboardRotationChangeObserver: AnyObject?
     private var keyboardFrameChangeObserver: AnyObject?
@@ -301,10 +260,11 @@ public class Window1 {
     
     private let presentationContext: PresentationContext
     private let overlayPresentationContext: GlobalOverlayPresentationContext
+    private let topPresentationContext: PresentationContext
     
     private var tracingStatusBarsInvalidated = false
     private var shouldUpdateDeferScreenEdgeGestures = false
-    private var shouldInvalidatePreferNavigationUIHidden = false
+    private var shouldInvalidatePrefersOnScreenNavigationHidden = false
     private var shouldInvalidateSupportedOrientations = false
     
     private var statusBarHidden = false
@@ -312,12 +272,15 @@ public class Window1 {
     public var previewThemeAccentColor: UIColor = .blue
     public var previewThemeDarkBlur: Bool = false
     
+    private var shouldNotAnimateLikelyKeyboardAutocorrectionSwitch: Bool = false
+    
     public private(set) var forceInCallStatusBarText: String? = nil
     public var inCallNavigate: (() -> Void)? {
         didSet {
-            self.statusBarManager?.inCallNavigate = self.inCallNavigate
         }
     }
+    
+    public let systemUserInterfaceStyle: Signal<WindowUserInterfaceStyle, NoError>
     
     private var windowPanRecognizer: WindowPanRecognizer?
     private let keyboardGestureRecognizerDelegate = WindowKeyboardGestureRecognizerDelegate()
@@ -326,21 +289,11 @@ public class Window1 {
     
     private var keyboardTypeChangeTimer: SwiftSignalKit.Timer?
     
-    private let volumeControlStatusBar: VolumeControlStatusBar
-    private let volumeControlStatusBarNode: VolumeControlStatusBarNode
-    
     private var isInteractionBlocked = false
-    
-    /*private var accessibilityElements: [Any]? {
-        return self.viewController?.view.accessibilityElements
-    }*/
     
     public init(hostView: WindowHostView, statusBarHost: StatusBarHost?) {
         self.hostView = hostView
-        
-        self.volumeControlStatusBar = VolumeControlStatusBar(frame: CGRect(origin: CGPoint(x: 0.0, y: -20.0), size: CGSize(width: 100.0, height: 20.0)), shouldBeVisible: statusBarHost?.handleVolumeControl ?? .single(false))
-        self.volumeControlStatusBarNode = VolumeControlStatusBarNode()
-        self.volumeControlStatusBarNode.isHidden = true
+        self.systemUserInterfaceStyle = hostView.systemUserInterfaceStyle
         
         let boundsSize = self.hostView.eventView.bounds.size
         self.deviceMetrics = DeviceMetrics(screenSize: UIScreen.main.bounds.size, statusBarHeight: statusBarHost?.statusBarFrame.height ?? defaultStatusBarHeight, onScreenNavigationHeight: self.hostView.onScreenNavigationHeight)
@@ -349,29 +302,52 @@ public class Window1 {
         let statusBarHeight: CGFloat
         if let statusBarHost = statusBarHost {
             statusBarHeight = statusBarHost.statusBarFrame.size.height
-            self.statusBarManager = StatusBarManager(host: statusBarHost, volumeControlStatusBar: self.volumeControlStatusBar, volumeControlStatusBarNode: self.volumeControlStatusBarNode)
             self.keyboardManager = KeyboardManager(host: statusBarHost)
+            self.keyboardViewManager = KeyboardViewManager(host: statusBarHost)
         } else {
             statusBarHeight = self.deviceMetrics.statusBarHeight
-            self.statusBarManager = nil
             self.keyboardManager = nil
+            self.keyboardViewManager = nil
         }
         
         let isLandscape =  boundsSize.width > boundsSize.height
         let safeInsets = self.deviceMetrics.safeInsets(inLandscape: isLandscape)
-        let onScreenNavigationHeight = self.deviceMetrics.onScreenNavigationHeight(inLandscape: isLandscape)
+        let onScreenNavigationHeight = self.deviceMetrics.onScreenNavigationHeight(inLandscape: isLandscape, systemOnScreenNavigationHeight: self.hostView.onScreenNavigationHeight)
         
         self.windowLayout = WindowLayout(size: boundsSize, metrics: layoutMetricsForScreenSize(boundsSize), statusBarHeight: statusBarHeight, forceInCallStatusBarText: self.forceInCallStatusBarText, inputHeight: 0.0, safeInsets: safeInsets, onScreenNavigationHeight: onScreenNavigationHeight, upperKeyboardInputPositionBound: nil, inVoiceOver: UIAccessibility.isVoiceOverRunning)
         self.updatingLayout = UpdatingLayout(layout: self.windowLayout, transition: .immediate)
         self.presentationContext = PresentationContext()
-        self.overlayPresentationContext = GlobalOverlayPresentationContext(statusBarHost: statusBarHost, parentView: self.hostView.aboveStatusBarView)
+        self.overlayPresentationContext = GlobalOverlayPresentationContext(statusBarHost: statusBarHost, parentView: self.hostView.containerView)
+        self.topPresentationContext = PresentationContext()
+        
+        self.presentationContext.topLevelSubview = { [weak self] in
+            guard let strongSelf = self else {
+                return nil
+            }
+            if let first = strongSelf.topPresentationContext.controllers.first {
+                return first.0.displayNode.view
+            }
+            if let first = strongSelf._topLevelOverlayControllers.first {
+                return first.view
+            }
+            return nil
+        }
         
         self.presentationContext.updateIsInteractionBlocked = { [weak self] value in
             self?.isInteractionBlocked = value
         }
         
+        let updateOpaqueOverlays: () -> Void = { [weak self] in
+            guard let strongSelf = self else {
+                return
+            }
+            strongSelf._rootController?.displayNode.accessibilityElementsHidden = strongSelf.presentationContext.hasOpaqueOverlay || strongSelf.topPresentationContext.hasOpaqueOverlay
+        }
         self.presentationContext.updateHasOpaqueOverlay = { [weak self] value in
-            self?._rootController?.displayNode.accessibilityElementsHidden = value
+            updateOpaqueOverlays()
+        }
+        self.topPresentationContext.updateHasOpaqueOverlay = { [weak self] value in
+            updateOpaqueOverlays()
         }
         
         self.hostView.present = { [weak self] controller, level, blockInteraction, completion in
@@ -395,7 +371,7 @@ public class Window1 {
         }
         
         self.hostView.layoutSubviews = { [weak self] in
-            self?.layoutSubviews()
+            self?.layoutSubviews(force: false)
         }
         
         self.hostView.updateToInterfaceOrientation = { [weak self] orientation in
@@ -410,8 +386,8 @@ public class Window1 {
             self?.invalidateDeferScreenEdgeGestures()
         }
         
-        self.hostView.invalidatePreferNavigationUIHidden = { [weak self] in
-            self?.invalidatePreferNavigationUIHidden()
+        self.hostView.invalidatePrefersOnScreenNavigationHidden = { [weak self] in
+            self?.invalidatePrefersOnScreenNavigationHidden()
         }
         
         self.hostView.invalidateSupportedOrientations = { [weak self] in
@@ -429,13 +405,10 @@ public class Window1 {
             })
         }
         
-        /*self.hostView.getAccessibilityElements = { [weak self] in
-            return self?.accessibilityElements
-        }*/
-        
         self.presentationContext.view = self.hostView.containerView
-        self.presentationContext.volumeControlStatusBarNodeView = self.volumeControlStatusBarNode.view
+        self.topPresentationContext.view = self.hostView.containerView
         self.presentationContext.containerLayoutUpdated(containedLayoutForWindowLayout(self.windowLayout, deviceMetrics: self.deviceMetrics), transition: .immediate)
+        self.topPresentationContext.containerLayoutUpdated(containedLayoutForWindowLayout(self.windowLayout, deviceMetrics: self.deviceMetrics), transition: .immediate)
         self.overlayPresentationContext.containerLayoutUpdated(containedLayoutForWindowLayout(self.windowLayout, deviceMetrics: self.deviceMetrics), transition: .immediate)
         
         self.statusBarChangeObserver = NotificationCenter.default.addObserver(forName: UIApplication.willChangeStatusBarFrameNotification, object: nil, queue: OperationQueue.main, using: { [weak self] notification in
@@ -455,6 +428,9 @@ public class Window1 {
                 if strongSelf.deviceMetrics.type == .tablet, abs(strongSelf.windowLayout.size.height - UIScreen.main.bounds.height) > 41.0 {
                     keyboardHeight = max(0.0, keyboardHeight - 24.0)
                 }
+                
+                //print("rotation keyboardHeight: \(keyboardHeight)")
+                
                 var duration: Double = (notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? NSNumber)?.doubleValue ?? 0.0
                 if duration > Double.ulpOfOne {
                     duration = 0.5
@@ -474,25 +450,75 @@ public class Window1 {
         
         self.keyboardFrameChangeObserver = NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillChangeFrameNotification, object: nil, queue: nil, using: { [weak self] notification in
             if let strongSelf = self {
-                let keyboardFrame: CGRect = (notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue ?? CGRect()
+                var keyboardFrame: CGRect = (notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue ?? CGRect()
+                if let keyboardView = strongSelf.statusBarHost?.keyboardView {
+                    if keyboardFrame.width.isEqual(to: keyboardView.bounds.width) && keyboardFrame.height.isEqual(to: keyboardView.bounds.height) && keyboardFrame.minX.isEqual(to: keyboardView.frame.minX) {
+                        keyboardFrame.origin.y = keyboardView.frame.minY
+                    }
+                }
+                
+                var popoverDelta: CGFloat = 0.0
                 
                 let screenHeight: CGFloat
                 var inPopover = false
                 if keyboardFrame.width.isEqual(to: UIScreen.main.bounds.width) {
-                    if abs(strongSelf.windowLayout.size.height - UIScreen.main.bounds.height) > 41.0 {
+                    let screenSize = UIScreen.main.bounds.size
+                    var portraitScreenSize = UIScreen.main.bounds.size
+                    if portraitScreenSize.width > portraitScreenSize.height {
+                        portraitScreenSize = CGSize(width: portraitScreenSize.height, height: portraitScreenSize.width)
+                    }
+                    var portraitLayoutSize = strongSelf.windowLayout.size
+                    if portraitLayoutSize.width > portraitLayoutSize.height {
+                        portraitLayoutSize = CGSize(width: portraitLayoutSize.height, height: portraitLayoutSize.width)
+                    }
+                    
+                    if strongSelf.windowLayout.size.height != screenSize.height {
+                        let heightDelta = screenSize.height - strongSelf.windowLayout.size.height
+                        
+                        let heightDeltaValid = heightDelta > 0.0 && heightDelta < 100.0
+                        
+                        if heightDeltaValid {
+                            inPopover = true
+                            popoverDelta = heightDelta / 2.0
+                        }
+                    }
+                    
+                    if #available(iOSApplicationExtension 13.0, iOS 13.0, *) {
                         screenHeight = UIScreen.main.bounds.height
-                        inPopover = true
                     } else {
                         screenHeight = strongSelf.windowLayout.size.height
                     }
+                    
+                    /*if abs(strongSelf.windowLayout.size.height - UIScreen.main.bounds.height) > 41.0 {
+                        if abs(portraitLayoutSize.height - portraitScreenSize.height) > 41.0 || abs(portraitLayoutSize.width - portraitScreenSize.width) > 41.0 {
+                            screenHeight = strongSelf.windowLayout.size.height
+                        } else {
+                            screenHeight = UIScreen.main.bounds.height
+                        }
+                    } else if abs(strongSelf.windowLayout.size.height - UIScreen.main.bounds.height) > 39.0 {
+                        screenHeight = UIScreen.main.bounds.height
+                    } else {
+                        screenHeight = strongSelf.windowLayout.size.height
+                    }*/
                 } else {
                     screenHeight = UIScreen.main.bounds.width
                 }
                 
-                var keyboardHeight = max(0.0, screenHeight - keyboardFrame.minY)
-                if inPopover {
-                    keyboardHeight = max(0.0, keyboardHeight - 48.0)
+                var keyboardHeight: CGFloat
+                if keyboardFrame.isEmpty || keyboardFrame.maxY < screenHeight {
+                    keyboardHeight = 0.0
+                } else {
+                    keyboardHeight = max(0.0, screenHeight - keyboardFrame.minY)
+                    if inPopover && !keyboardHeight.isZero {
+                        if #available(iOSApplicationExtension 13.0, iOS 13.0, *) {
+                            keyboardHeight = max(0.0, keyboardHeight - popoverDelta)
+                        } else {
+                            keyboardHeight = max(0.0, keyboardHeight - popoverDelta)
+                        }
+                    }
                 }
+                
+                print("keyboardHeight: \(keyboardHeight) (raw: \(keyboardFrame))")
             
                 var duration: Double = (notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? NSNumber)?.doubleValue ?? 0.0
                 if duration > Double.ulpOfOne {
@@ -507,11 +533,19 @@ public class Window1 {
                     transitionCurve = .easeInOut
                 }
                 
-                strongSelf.updateLayout { $0.update(inputHeight: keyboardHeight.isLessThanOrEqualTo(0.0) ? nil : keyboardHeight, transition: .animated(duration: duration, curve: transitionCurve), overrideTransition: false) }
+                var transition: ContainedViewLayoutTransition = .animated(duration: duration, curve: transitionCurve)
+                
+                if strongSelf.shouldNotAnimateLikelyKeyboardAutocorrectionSwitch, let inputHeight = strongSelf.windowLayout.inputHeight {
+                    if abs(inputHeight - keyboardHeight) <= 44.1 {
+                        transition = .immediate
+                    }
+                }
+                
+                strongSelf.updateLayout { $0.update(inputHeight: keyboardHeight.isLessThanOrEqualTo(0.0) ? nil : keyboardHeight, transition: transition, overrideTransition: false) }
             }
         })
         
-        if #available(iOSApplicationExtension 11.0, *) {
+        if #available(iOSApplicationExtension 11.0, iOS 11.0, *) {
             self.keyboardTypeChangeObserver = NotificationCenter.default.addObserver(forName: UITextInputMode.currentInputModeDidChangeNotification, object: nil, queue: OperationQueue.main, using: { [weak self] notification in
                 if let strongSelf = self, let initialInputHeight = strongSelf.windowLayout.inputHeight, let firstResponder = getFirstResponderAndAccessoryHeight(strongSelf.hostView.eventView).0 {
                     if firstResponder.textInputMode?.primaryLanguage != nil {
@@ -542,7 +576,7 @@ public class Window1 {
             })
         }
         
-        if #available(iOSApplicationExtension 11.0, *) {
+        if #available(iOSApplicationExtension 11.0, iOS 11.0, *) {
             self.voiceOverStatusObserver = NotificationCenter.default.addObserver(forName: UIAccessibility.voiceOverStatusDidChangeNotification, object: nil, queue: OperationQueue.main, using: { [weak self] _ in
                 if let strongSelf = self {
                     strongSelf.updateLayout { $0.update(inVoiceOver: UIAccessibility.isVoiceOverRunning) }
@@ -567,9 +601,6 @@ public class Window1 {
         }
         self.windowPanRecognizer = recognizer
         self.hostView.containerView.addGestureRecognizer(recognizer)
-        
-        self.hostView.containerView.addSubview(self.volumeControlStatusBar)
-        self.hostView.containerView.addSubview(self.volumeControlStatusBarNode.view)
     }
     
     public required init(coder aDecoder: NSCoder) {
@@ -594,10 +625,6 @@ public class Window1 {
         }
     }
     
-    public func setupVolumeControlStatusBarGraphics(_ graphics: (UIImage, UIImage, UIImage)) {
-        self.volumeControlStatusBarNode.graphics = graphics
-    }
-    
     public func setForceInCallStatusBar(_ forceInCallStatusBarText: String?, transition: ContainedViewLayoutTransition = .animated(duration: 0.3, curve: .easeInOut)) {
         if self.forceInCallStatusBarText != forceInCallStatusBarText {
             self.forceInCallStatusBarText = forceInCallStatusBarText
@@ -618,8 +645,8 @@ public class Window1 {
         self.hostView.eventView.setNeedsLayout()
     }
     
-    public func invalidatePreferNavigationUIHidden() {
-        self.shouldInvalidatePreferNavigationUIHidden = true
+    public func invalidatePrefersOnScreenNavigationHidden() {
+        self.shouldInvalidatePrefersOnScreenNavigationHidden = true
         self.hostView.eventView.setNeedsLayout()
     }
     
@@ -647,6 +674,11 @@ public class Window1 {
         if self.isInteractionBlocked {
             return nil
         }
+        
+        if let result = self.topPresentationContext.hitTest(view: self.hostView.containerView, point: point, with: event) {
+            return result
+        }
+        
         if let coveringView = self.coveringView, !coveringView.isHidden, coveringView.superview != nil, coveringView.frame.contains(point) {
             return coveringView.hitTest(point, with: event)
         }
@@ -669,7 +701,7 @@ public class Window1 {
             }
         }
         
-        if let result = self.presentationContext.hitTest(point, with: event) {
+        if let result = self.presentationContext.hitTest(view: self.hostView.containerView, point: point, with: event) {
             return result
         }
         return self.viewController?.view.hitTest(point, with: event)
@@ -683,6 +715,9 @@ public class Window1 {
             transition = .immediate
         }
         self.updateLayout { $0.update(size: value, metrics: layoutMetricsForScreenSize(value), safeInsets: self.deviceMetrics.safeInsets(inLandscape: value.width > value.height), forceInCallStatusBarText: self.forceInCallStatusBarText, transition: transition, overrideTransition: true) }
+        if let statusBarHost = self.statusBarHost, !statusBarHost.isApplicationInForeground {
+            self.layoutSubviews(force: true)
+        }
     }
     
     private var _rootController: ContainableController?
@@ -697,7 +732,45 @@ public class Window1 {
             self._rootController = value
             
             if let rootController = self._rootController {
+                if let rootController = rootController as? NavigationController {
+                    rootController.statusBarHost = self.statusBarHost
+                    rootController.updateSupportedOrientations = { [weak self] in
+                        guard let strongSelf = self else {
+                            return
+                        }
+                        
+                        var supportedOrientations = ViewControllerSupportedOrientations(regularSize: .all, compactSize: .all)
+                        let orientationToLock: UIInterfaceOrientationMask
+                        if strongSelf.windowLayout.size.width < strongSelf.windowLayout.size.height {
+                            orientationToLock = .portrait
+                        } else {
+                            orientationToLock = .landscape
+                        }
+                        if let _rootController = strongSelf._rootController {
+                            supportedOrientations = supportedOrientations.intersection(_rootController.combinedSupportedOrientations(currentOrientationToLock: orientationToLock))
+                        }
+                        supportedOrientations = supportedOrientations.intersection(strongSelf.presentationContext.combinedSupportedOrientations(currentOrientationToLock: orientationToLock))
+                        supportedOrientations = supportedOrientations.intersection(strongSelf.overlayPresentationContext.combinedSupportedOrientations(currentOrientationToLock: orientationToLock))
+                        
+                        var resolvedOrientations: UIInterfaceOrientationMask
+                        switch strongSelf.windowLayout.metrics.widthClass {
+                        case .regular:
+                            resolvedOrientations = supportedOrientations.regularSize
+                        case .compact:
+                            resolvedOrientations = supportedOrientations.compactSize
+                        }
+                        if resolvedOrientations.isEmpty {
+                            resolvedOrientations = [.portrait]
+                        }
+                        strongSelf.hostView.updateSupportedInterfaceOrientations(resolvedOrientations)
+                    }
+                    rootController.keyboardViewManager = self.keyboardViewManager
+                    rootController.inCallNavigate = { [weak self] in
+                        self?.inCallNavigate?()
+                    }
+                }
                 if !self.windowLayout.size.width.isZero && !self.windowLayout.size.height.isZero {
+                    rootController.displayNode.frame = CGRect(origin: CGPoint(), size: self.windowLayout.size)
                     rootController.containerLayoutUpdated(containedLayoutForWindowLayout(self.windowLayout, deviceMetrics: self.deviceMetrics), transition: .immediate)
                 }
                 
@@ -715,22 +788,42 @@ public class Window1 {
         }
         set(value) {
             for controller in self._topLevelOverlayControllers {
+                if let controller = controller as? ViewController {
+                    controller.statusBar.alphaUpdated = nil
+                }
                 controller.view.removeFromSuperview()
             }
             self._topLevelOverlayControllers = value
             
             let layout = containedLayoutForWindowLayout(self.windowLayout, deviceMetrics: self.deviceMetrics)
             for controller in self._topLevelOverlayControllers {
+                controller.displayNode.frame = CGRect(origin: CGPoint(), size: self.windowLayout.size)
                 controller.containerLayoutUpdated(layout, transition: .immediate)
                 
                 if let coveringView = self.coveringView {
                     self.hostView.containerView.insertSubview(controller.view, belowSubview: coveringView)
                 } else {
-                    self.hostView.containerView.insertSubview(controller.view, belowSubview: self.volumeControlStatusBarNode.view)
+                    self.hostView.containerView.addSubview(controller.view)
+                }
+                
+                if let controller = controller as? ViewController {
+                    controller.statusBar.alphaUpdated = { [weak self] transition in
+                        guard let strongSelf = self, let navigationController = strongSelf._rootController as? NavigationController else {
+                            return
+                        }
+                        var isStatusBarHidden: Bool = false
+                        for controller in strongSelf._topLevelOverlayControllers {
+                            if let controller = controller as? ViewController {
+                                if case .Hide = controller.statusBar.statusBarStyle {
+                                    isStatusBarHidden = true
+                                }
+                            }
+                        }
+                        
+                        navigationController.updateExternalStatusBarHidden(isStatusBarHidden, transition: .animated(duration: 0.3, curve: .easeInOut))
+                    }
                 }
             }
-            
-            self.presentationContext.topLevelSubview = self._topLevelOverlayControllers.first?.view
         }
     }
     
@@ -747,7 +840,11 @@ public class Window1 {
                     coveringView.layer.removeAnimation(forKey: "opacity")
                     coveringView.layer.allowsGroupOpacity = false
                     coveringView.alpha = 1.0
-                    self.hostView.containerView.insertSubview(coveringView, belowSubview: self.volumeControlStatusBarNode.view)
+                    if let controller = self.topPresentationContext.controllers.first {
+                        self.hostView.containerView.insertSubview(coveringView, belowSubview: controller.0.displayNode.view)
+                    } else {
+                        self.hostView.containerView.addSubview(coveringView)
+                    }
                     if !self.windowLayout.size.width.isZero {
                         coveringView.frame = CGRect(origin: CGPoint(), size: self.windowLayout.size)
                         coveringView.updateLayout(self.windowLayout.size)
@@ -757,58 +854,9 @@ public class Window1 {
         }
     }
     
-    private func layoutSubviews() {
-        var hasPreview = false
-        var updatedHasPreview = false
-        for subview in self.hostView.eventView.subviews {
-            if checkIsPreviewingView(subview) {
-                applyThemeToPreviewingView(subview, accentColor: self.previewThemeAccentColor, darkBlur: self.previewThemeDarkBlur)
-                hasPreview = true
-                break
-            }
-        }
-        if hasPreview != self.cachedHasPreview {
-            self.cachedHasPreview = hasPreview
-            updatedHasPreview = true
-        }
-        
-        if self.tracingStatusBarsInvalidated || updatedHasPreview, let statusBarManager = statusBarManager, let keyboardManager = keyboardManager {
+    private func layoutSubviews(force: Bool) {
+        if self.tracingStatusBarsInvalidated, let keyboardManager = keyboardManager {
             self.tracingStatusBarsInvalidated = false
-            
-            if self.statusBarHidden {
-                statusBarManager.updateState(surfaces: [], withSafeInsets: false, forceInCallStatusBarText: nil, forceHiddenBySystemWindows: false, animated: false)
-            } else {
-                var statusBarSurfaces: [StatusBarSurface] = []
-                for layers in self.hostView.containerView.layer.traceableLayerSurfaces(withTag: WindowTracingTags.statusBar) {
-                    let surface = StatusBarSurface()
-                    for layer in layers {
-                        let traceableInfo = layer.traceableInfo()
-                        if let statusBar = traceableInfo?.userData as? StatusBar {
-                            surface.addStatusBar(statusBar)
-                        }
-                    }
-                    statusBarSurfaces.append(surface)
-                }
-                self.hostView.containerView.layer.adjustTraceableLayerTransforms(CGSize())
-                var animatedUpdate = false
-                if let updatingLayout = self.updatingLayout {
-                    if case .animated = updatingLayout.transition {
-                        animatedUpdate = true
-                    }
-                }
-                self.cachedWindowSubviewCount = self.hostView.containerView.window?.subviews.count ?? 0
-                statusBarManager.updateState(surfaces: statusBarSurfaces, withSafeInsets: !self.windowLayout.safeInsets.top.isZero, forceInCallStatusBarText: self.forceInCallStatusBarText, forceHiddenBySystemWindows: hasPreview, animated: animatedUpdate)
-            }
-            
-            var keyboardSurfaces: [KeyboardSurface] = []
-            for layers in self.hostView.containerView.layer.traceableLayerSurfaces(withTag: WindowTracingTags.keyboard) {
-                for layer in layers {
-                    if let view = layer.delegate as? UITracingLayerView {
-                        keyboardSurfaces.append(KeyboardSurface(host: view))
-                    }
-                }
-            }
-            keyboardManager.surfaces = keyboardSurfaces
             
             var supportedOrientations = ViewControllerSupportedOrientations(regularSize: .all, compactSize: .all)
             let orientationToLock: UIInterfaceOrientationMask
@@ -836,17 +884,17 @@ public class Window1 {
             self.hostView.updateSupportedInterfaceOrientations(resolvedOrientations)
             
             self.hostView.updateDeferScreenEdgeGestures(self.collectScreenEdgeGestures())
-            self.hostView.updatePreferNavigationUIHidden(self.collectPreferNavigationUIHidden())
+            self.hostView.updatePrefersOnScreenNavigationHidden(self.collectPrefersOnScreenNavigationHidden())
             
             self.shouldUpdateDeferScreenEdgeGestures = false
-            self.shouldInvalidatePreferNavigationUIHidden = false
+            self.shouldInvalidatePrefersOnScreenNavigationHidden = false
             self.shouldInvalidateSupportedOrientations = false
-        } else if self.shouldUpdateDeferScreenEdgeGestures || self.shouldInvalidatePreferNavigationUIHidden || self.shouldInvalidateSupportedOrientations {
+        } else if self.shouldUpdateDeferScreenEdgeGestures || self.shouldInvalidatePrefersOnScreenNavigationHidden || self.shouldInvalidateSupportedOrientations {
             self.hostView.updateDeferScreenEdgeGestures(self.collectScreenEdgeGestures())
-            self.hostView.updatePreferNavigationUIHidden(self.collectPreferNavigationUIHidden())
+            self.hostView.updatePrefersOnScreenNavigationHidden(self.collectPrefersOnScreenNavigationHidden())
             
             self.shouldUpdateDeferScreenEdgeGestures = false
-            self.shouldInvalidatePreferNavigationUIHidden = false
+            self.shouldInvalidatePrefersOnScreenNavigationHidden = false
             
             if self.shouldInvalidateSupportedOrientations {
                 var supportedOrientations = ViewControllerSupportedOrientations(regularSize: .all, compactSize: .all)
@@ -864,10 +912,10 @@ public class Window1 {
                 
                 var resolvedOrientations: UIInterfaceOrientationMask
                 switch self.windowLayout.metrics.widthClass {
-                case .regular:
-                    resolvedOrientations = supportedOrientations.regularSize
-                case .compact:
-                    resolvedOrientations = supportedOrientations.compactSize
+                    case .regular:
+                        resolvedOrientations = supportedOrientations.regularSize
+                    case .compact:
+                        resolvedOrientations = supportedOrientations.compactSize
                 }
                 if resolvedOrientations.isEmpty {
                     resolvedOrientations = [.portrait]
@@ -878,7 +926,9 @@ public class Window1 {
             }
         }
         
-        if !UIWindow.isDeviceRotating() {
+        if force {
+            self.commitUpdatingLayout()
+        } else if !UIWindow.isDeviceRotating() {
             if !self.hostView.isUpdatingOrientationLayout {
                 self.commitUpdatingLayout()
             } else {
@@ -908,6 +958,8 @@ public class Window1 {
         self._rootController?.updateToInterfaceOrientation(orientation)
         self.presentationContext.updateToInterfaceOrientation(orientation)
         self.overlayPresentationContext.updateToInterfaceOrientation(orientation)
+        
+         self.topPresentationContext.updateToInterfaceOrientation(orientation)
         
         for controller in self.topLevelOverlayControllers {
             controller.updateToInterfaceOrientation(orientation)
@@ -942,14 +994,12 @@ public class Window1 {
                 
                 let boundsSize = updatingLayout.layout.size
                 let isLandscape = boundsSize.width > boundsSize.height
-                var statusBarHeight: CGFloat?
-                if let statusBarHost = self.statusBarHost {
-                    statusBarHeight = statusBarHost.statusBarFrame.size.height
-                } else {
-                    statusBarHeight = self.deviceMetrics.statusBarHeight
+                var statusBarHeight: CGFloat? = self.deviceMetrics.statusBarHeight(for: boundsSize)
+                if let statusBarHeightValue = statusBarHeight, let statusBarHost = self.statusBarHost {
+                    statusBarHeight = max(statusBarHeightValue, statusBarHost.statusBarFrame.size.height)
                 }
                 
-                if self.deviceMetrics.type == .tablet, let onScreenNavigationHeight = self.hostView.onScreenNavigationHeight, onScreenNavigationHeight != self.deviceMetrics.onScreenNavigationHeight(inLandscape: false) {
+                if self.deviceMetrics.type == .tablet, let onScreenNavigationHeight = self.hostView.onScreenNavigationHeight, onScreenNavigationHeight != self.deviceMetrics.onScreenNavigationHeight(inLandscape: false, systemOnScreenNavigationHeight: self.hostView.onScreenNavigationHeight) {
                     self.deviceMetrics = DeviceMetrics(screenSize: UIScreen.main.bounds.size, statusBarHeight: statusBarHeight ?? defaultStatusBarHeight, onScreenNavigationHeight: onScreenNavigationHeight)
                 }
                 
@@ -966,7 +1016,7 @@ public class Window1 {
                 }
                 let previousInputOffset = inputHeightOffsetForLayout(self.windowLayout)
                 
-                self.windowLayout = WindowLayout(size: updatingLayout.layout.size, metrics: layoutMetricsForScreenSize(updatingLayout.layout.size), statusBarHeight: statusBarHeight, forceInCallStatusBarText: updatingLayout.layout.forceInCallStatusBarText, inputHeight: updatingLayout.layout.inputHeight, safeInsets: updatingLayout.layout.safeInsets, onScreenNavigationHeight: self.deviceMetrics.onScreenNavigationHeight(inLandscape: isLandscape), upperKeyboardInputPositionBound: updatingLayout.layout.upperKeyboardInputPositionBound, inVoiceOver: updatingLayout.layout.inVoiceOver)
+                self.windowLayout = WindowLayout(size: updatingLayout.layout.size, metrics: layoutMetricsForScreenSize(updatingLayout.layout.size), statusBarHeight: statusBarHeight, forceInCallStatusBarText: updatingLayout.layout.forceInCallStatusBarText, inputHeight: updatingLayout.layout.inputHeight, safeInsets: updatingLayout.layout.safeInsets, onScreenNavigationHeight: self.deviceMetrics.onScreenNavigationHeight(inLandscape: isLandscape, systemOnScreenNavigationHeight: self.hostView.onScreenNavigationHeight), upperKeyboardInputPositionBound: updatingLayout.layout.upperKeyboardInputPositionBound, inVoiceOver: updatingLayout.layout.inVoiceOver)
                 
                 let childLayout = containedLayoutForWindowLayout(self.windowLayout, deviceMetrics: self.deviceMetrics)
                 let childLayoutUpdated = self.updatedContainerLayout != childLayout
@@ -978,11 +1028,17 @@ public class Window1 {
                     if self.presentationContext.isCurrentlyOpaque {
                         rootLayout.inputHeight = nil
                     }
-                    self._rootController?.containerLayoutUpdated(rootLayout, transition: rootTransition)
+                    if let rootController = self._rootController {
+                        rootTransition.updateFrame(node: rootController.displayNode, frame: CGRect(origin: CGPoint(), size: self.windowLayout.size))
+                        rootController.containerLayoutUpdated(rootLayout, transition: rootTransition)
+                    }
                     self.presentationContext.containerLayoutUpdated(childLayout, transition: updatingLayout.transition)
                     self.overlayPresentationContext.containerLayoutUpdated(childLayout, transition: updatingLayout.transition)
+                    
+                    self.topPresentationContext.containerLayoutUpdated(childLayout, transition: updatingLayout.transition)
                 
                     for controller in self.topLevelOverlayControllers {
+                        updatingLayout.transition.updateFrame(node: controller.displayNode, frame: CGRect(origin: CGPoint(), size: self.windowLayout.size))
                         controller.containerLayoutUpdated(childLayout, transition: updatingLayout.transition)
                     }
                 }
@@ -1000,9 +1056,6 @@ public class Window1 {
                     })
                 }
                 
-                self.volumeControlStatusBarNode.frame = CGRect(origin: CGPoint(), size: self.windowLayout.size)
-                self.volumeControlStatusBarNode.updateLayout(layout: childLayout, transition: updatingLayout.transition)
-                
                 if let coveringView = self.coveringView {
                     coveringView.frame = CGRect(origin: CGPoint(), size: self.windowLayout.size)
                     coveringView.updateLayout(self.windowLayout.size)
@@ -1012,15 +1065,42 @@ public class Window1 {
     }
     
     public func present(_ controller: ContainableController, on level: PresentationSurfaceLevel, blockInteraction: Bool = false, completion: @escaping () -> Void = {}) {
-        self.presentationContext.present(controller, on: level, blockInteraction: blockInteraction, completion: completion)
+        if level.rawValue <= 3, let controller = controller as? ViewController {
+            for presentedController in self.presentationContext.controllers.reversed() {
+                if let navigationController = presentedController.0 as? NavigationController {
+                    navigationController.presentOverlay(controller: controller, inGlobal: false, blockInteraction: blockInteraction)
+                    return
+                }
+            }
+            
+            if let navigationController = self._rootController as? NavigationController {
+                navigationController.presentOverlay(controller: controller, inGlobal: false, blockInteraction: blockInteraction)
+            } else {
+                self.presentationContext.present(controller, on: level, blockInteraction: blockInteraction, completion: completion)
+            }
+        } else {
+            if let controller = controller as? ViewController, controller.presentedOverCoveringView {
+                self.topPresentationContext.present(controller, on: level, completion: completion)
+            } else {
+                self.presentationContext.present(controller, on: level, blockInteraction: blockInteraction, completion: completion)
+            }
+        }
     }
     
     public func presentInGlobalOverlay(_ controller: ContainableController) {
+        if let controller = controller as? ViewController {
+            if let navigationController = self._rootController as? NavigationController {
+                navigationController.presentOverlay(controller: controller, inGlobal: true)
+                return
+            }
+        }
         self.overlayPresentationContext.present(controller)
     }
     
     public func presentNative(_ controller: UIViewController) {
-        
+        if let nativeController = self.hostView.nativeController?() {
+            nativeController.present(controller, animated: true, completion: nil)
+        }
     }
     
     private func panGestureBegan(location: CGPoint) {
@@ -1034,7 +1114,7 @@ public class Window1 {
         if let inputHeight = self.windowLayout.inputHeight, !inputHeight.isZero, keyboardGestureBeginLocation.y < self.windowLayout.size.height - inputHeight - (accessoryHeight ?? 0.0) {
             var enableGesture = true
             if let view = self.hostView.containerView.hitTest(location, with: nil) {
-                if doesViewTreeDisableInteractiveTransitionGestureRecognizer(view) {
+                if doesViewTreeDisableInteractiveTransitionGestureRecognizer(view, keyboardOnly: true) {
                     enableGesture = false
                 }
             }
@@ -1120,7 +1200,11 @@ public class Window1 {
     }
     
     private func collectScreenEdgeGestures() -> UIRectEdge {
-        var edges = self.presentationContext.combinedDeferScreenEdgeGestures()
+        var edges: UIRectEdge = []
+        if let navigationController = self._rootController as? NavigationController, let overlayController = navigationController.topOverlayController {
+            edges = edges.union(overlayController.deferScreenEdgeGestures)
+        }
+        edges = edges.union(self.presentationContext.combinedDeferScreenEdgeGestures())
         
         for controller in self.topLevelOverlayControllers {
             if let controller = controller as? ViewController {
@@ -1131,20 +1215,55 @@ public class Window1 {
         return edges
     }
     
-    private func collectPreferNavigationUIHidden() -> Bool {
-        return false
+    private func collectPrefersOnScreenNavigationHidden() -> Bool {
+        var hidden = false
+        if let navigationController = self._rootController as? NavigationController, let overlayController = navigationController.topOverlayController {
+            hidden = hidden || overlayController.prefersOnScreenNavigationHidden
+        }
+        hidden = hidden || self.presentationContext.combinedPrefersOnScreenNavigationHidden()
+        
+        for controller in self.topLevelOverlayControllers {
+            if let controller = controller as? ViewController {
+                hidden = hidden || controller.prefersOnScreenNavigationHidden
+            }
+        }
+        
+        return hidden
     }
     
-    public func forEachViewController(_ f: (ContainableController) -> Bool) {
+    public func forEachViewController(_ f: (ContainableController) -> Bool, excludeNavigationSubControllers: Bool = false) {
+        if let navigationController = self._rootController as? NavigationController {
+            if !excludeNavigationSubControllers {
+                for case let controller as ContainableController in navigationController.viewControllers {
+                    !f(controller)
+                }
+            }
+            if let controller = navigationController.topOverlayController {
+                !f(controller)
+            }
+        }
         for (controller, _) in self.presentationContext.controllers {
             if !f(controller) {
                 break
             }
         }
+        
         for controller in self.topLevelOverlayControllers {
             if !f(controller) {
                 break
             }
+        }
+        for (controller, _) in self.topPresentationContext.controllers {
+            if !f(controller) {
+                break
+            }
+        }
+    }
+    
+    public func doNotAnimateLikelyKeyboardAutocorrectionSwitch() {
+        self.shouldNotAnimateLikelyKeyboardAutocorrectionSwitch = true
+        DispatchQueue.main.async {
+            self.shouldNotAnimateLikelyKeyboardAutocorrectionSwitch = false
         }
     }
 }

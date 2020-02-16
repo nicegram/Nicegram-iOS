@@ -4,6 +4,7 @@ import Display
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramUIPreferences
 import TelegramCallsUI
 import OverlayStatusController
@@ -12,8 +13,9 @@ import PassportUI
 import LocalAuth
 import CallListUI
 import NotificationSoundSelectionUI
-
-private let maximumNumberOfAccounts = 7
+import PresentationDataUtils
+import PhoneNumberFormat
+import AccountUtils
 
 enum SettingsSearchableItemIcon {
     case profile
@@ -27,6 +29,7 @@ enum SettingsSearchableItemIcon {
     case appearance
     case language
     case watch
+    case wallet
     case passport
     case support
     case faq
@@ -45,6 +48,7 @@ enum SettingsSearchableItemId: Hashable {
     case language(Int32)
     case watch(Int32)
     case passport(Int32)
+    case wallet(Int32)
     case support(Int32)
     case faq(Int32)
     
@@ -74,10 +78,12 @@ enum SettingsSearchableItemId: Hashable {
                 return 11
             case .passport:
                 return 12
-            case .support:
+            case .wallet:
                 return 13
-            case .faq:
+            case .support:
                 return 14
+            case .faq:
+                return 15
         }
     }
     
@@ -95,6 +101,7 @@ enum SettingsSearchableItemId: Hashable {
                  let .language(id),
                  let .watch(id),
                  let .passport(id),
+                 let .wallet(id),
                  let .support(id),
                  let .faq(id):
                 return id
@@ -134,8 +141,10 @@ enum SettingsSearchableItemId: Hashable {
             case 12:
                 self = .passport(id)
             case 13:
-                self = .support(id)
+                self = .wallet(id)
             case 14:
+                self = .support(id)
+            case 15:
                 self = .faq(id)
             default:
                 return nil
@@ -400,9 +409,6 @@ private func notificationSearchableItems(context: AccountContext, settings: Glob
         SettingsSearchableItem(id: .notifications(16), title: strings.Notifications_DisplayNamesOnLockScreen, alternate: synonyms(strings.SettingsSearch_Synonyms_Notifications_DisplayNamesOnLockScreen), icon: icon, breadcrumbs: [strings.Settings_NotificationsAndSounds], present: { context, _, present in
             presentNotificationSettings(context, present, .displayNamesOnLockscreen)
         }),
-        SettingsSearchableItem(id: .notifications(17), title: strings.Notifications_Badge_IncludeMutedChats, alternate: synonyms(strings.SettingsSearch_Synonyms_Notifications_BadgeIncludeMutedChats), icon: icon, breadcrumbs: [strings.Settings_NotificationsAndSounds, strings.Notifications_Badge], present: { context, _, present in
-            presentNotificationSettings(context, present, .unreadCountStyle)
-        }),
         SettingsSearchableItem(id: .notifications(18), title: strings.Notifications_Badge_IncludePublicGroups, alternate: synonyms(strings.SettingsSearch_Synonyms_Notifications_BadgeIncludeMutedPublicGroups), icon: icon, breadcrumbs: [strings.Settings_NotificationsAndSounds, strings.Notifications_Badge], present: { context, _, present in
             presentNotificationSettings(context, present, .includePublicGroups)
         }),
@@ -421,7 +427,7 @@ private func notificationSearchableItems(context: AccountContext, settings: Glob
     ]
 }
 
-private func privacySearchableItems(context: AccountContext, privacySettings: AccountPrivacySettings?) -> [SettingsSearchableItem] {
+private func privacySearchableItems(context: AccountContext, privacySettings: AccountPrivacySettings?, activeSessionsContext: ActiveSessionsContext?, webSessionsContext: WebSessionsContext?) -> [SettingsSearchableItem] {
     let icon: SettingsSearchableItemIcon = .privacy
     let strings = context.sharedContext.currentPresentationData.with { $0 }.strings
     
@@ -497,7 +503,7 @@ private func privacySearchableItems(context: AccountContext, privacySettings: Ac
         passcodeAlternate = synonyms(strings.SettingsSearch_Synonyms_Privacy_Passcode)
     }
     
-    return [
+    return ([
         SettingsSearchableItem(id: .privacy(0), title: strings.Settings_PrivacySettings, alternate: synonyms(strings.SettingsSearch_Synonyms_Privacy_Title), icon: icon, breadcrumbs: [], present: { context, _, present in
             presentPrivacySettings(context, present, nil)
         }),
@@ -521,7 +527,7 @@ private func privacySearchableItems(context: AccountContext, privacySettings: Ac
         }),
         SettingsSearchableItem(id: .privacy(7), title: passcodeTitle, alternate: passcodeAlternate, icon: icon, breadcrumbs: [strings.Settings_PrivacySettings], present: { context, _, present in
             let _ = passcodeOptionsAccessController(context: context, pushController: { c in 
-                
+                present(.push, c)
             }, completion: { animated in
                 let controller = passcodeOptionsController(context: context)
                 if animated {
@@ -531,42 +537,44 @@ private func privacySearchableItems(context: AccountContext, privacySettings: Ac
                 }
             }).start(next: { controller in
                 if let controller = controller {
-                    present(.modal, controller)
+                    present(.push, controller)
                 }
             })
         }),
         SettingsSearchableItem(id: .privacy(8), title: strings.PrivacySettings_TwoStepAuth, alternate: synonyms(strings.SettingsSearch_Synonyms_Privacy_TwoStepAuth), icon: icon, breadcrumbs: [strings.Settings_PrivacySettings], present: { context, _, present in
             present(.push, twoStepVerificationUnlockSettingsController(context: context, mode: .access(intro: true, data: nil)))
         }),
-        SettingsSearchableItem(id: .privacy(9), title: strings.PrivacySettings_AuthSessions, alternate: synonyms(strings.SettingsSearch_Synonyms_Privacy_AuthSessions), icon: icon, breadcrumbs: [strings.Settings_PrivacySettings], present: { context, _, present in
-            present(.push, recentSessionsController(context: context, activeSessionsContext: ActiveSessionsContext(account: context.account)))
+        activeSessionsContext == nil ? nil : SettingsSearchableItem(id: .privacy(9), title: strings.Settings_Devices, alternate: synonyms(strings.SettingsSearch_Synonyms_Privacy_AuthSessions) + [strings.PrivacySettings_AuthSessions], icon: icon, breadcrumbs: [strings.Settings_PrivacySettings], present: { context, _, present in
+            present(.push, recentSessionsController(context: context, activeSessionsContext: activeSessionsContext!, webSessionsContext: webSessionsContext ?? WebSessionsContext(account: context.account), websitesOnly: false))
         }),
-        SettingsSearchableItem(id: .privacy(10), title: strings.PrivacySettings_DeleteAccountTitle, alternate: synonyms(strings.SettingsSearch_Synonyms_Privacy_DeleteAccountIfAwayFor), icon: icon, breadcrumbs: [strings.Settings_PrivacySettings], present: { context, _, present in
+        webSessionsContext == nil ? nil : SettingsSearchableItem(id: .privacy(10), title: strings.PrivacySettings_WebSessions, alternate: synonyms(strings.SettingsSearch_Synonyms_Privacy_AuthSessions), icon: icon, breadcrumbs: [strings.Settings_PrivacySettings], present: { context, _, present in
+            present(.push, recentSessionsController(context: context, activeSessionsContext: activeSessionsContext ?? ActiveSessionsContext(account: context.account), webSessionsContext: webSessionsContext ?? WebSessionsContext(account: context.account), websitesOnly: true))
+        }),
+        SettingsSearchableItem(id: .privacy(11), title: strings.PrivacySettings_DeleteAccountTitle, alternate: synonyms(strings.SettingsSearch_Synonyms_Privacy_DeleteAccountIfAwayFor), icon: icon, breadcrumbs: [strings.Settings_PrivacySettings], present: { context, _, present in
             presentPrivacySettings(context, present, .accountTimeout)
         }),
-        SettingsSearchableItem(id: .privacy(11), title: strings.PrivacySettings_DataSettings, alternate: synonyms(strings.SettingsSearch_Synonyms_Privacy_Data_Title), icon: icon, breadcrumbs: [strings.Settings_PrivacySettings], present: { context, _, present in
+        SettingsSearchableItem(id: .privacy(12), title: strings.PrivacySettings_DataSettings, alternate: synonyms(strings.SettingsSearch_Synonyms_Privacy_Data_Title), icon: icon, breadcrumbs: [strings.Settings_PrivacySettings], present: { context, _, present in
             presentDataPrivacySettings(context, present)
         }),
-        
-        SettingsSearchableItem(id: .privacy(12), title: strings.Privacy_ContactsReset, alternate: synonyms(strings.SettingsSearch_Synonyms_Privacy_Data_ContactsReset), icon: icon, breadcrumbs: [strings.Settings_PrivacySettings, strings.PrivacySettings_DataSettings], present: { context, _, present in
+        SettingsSearchableItem(id: .privacy(13), title: strings.Privacy_ContactsReset, alternate: synonyms(strings.SettingsSearch_Synonyms_Privacy_Data_ContactsReset), icon: icon, breadcrumbs: [strings.Settings_PrivacySettings, strings.PrivacySettings_DataSettings], present: { context, _, present in
             presentDataPrivacySettings(context, present)
         }),
-        SettingsSearchableItem(id: .privacy(13), title: strings.Privacy_ContactsSync, alternate: synonyms(strings.SettingsSearch_Synonyms_Privacy_Data_ContactsSync), icon: icon, breadcrumbs: [strings.Settings_PrivacySettings, strings.PrivacySettings_DataSettings], present: { context, _, present in
+        SettingsSearchableItem(id: .privacy(14), title: strings.Privacy_ContactsSync, alternate: synonyms(strings.SettingsSearch_Synonyms_Privacy_Data_ContactsSync), icon: icon, breadcrumbs: [strings.Settings_PrivacySettings, strings.PrivacySettings_DataSettings], present: { context, _, present in
             presentDataPrivacySettings(context, present)
         }),
-        SettingsSearchableItem(id: .privacy(14), title: strings.Privacy_TopPeers, alternate: synonyms(strings.SettingsSearch_Synonyms_Privacy_Data_TopPeers), icon: icon, breadcrumbs: [strings.Settings_PrivacySettings, strings.PrivacySettings_DataSettings], present: { context, _, present in
+        SettingsSearchableItem(id: .privacy(15), title: strings.Privacy_TopPeers, alternate: synonyms(strings.SettingsSearch_Synonyms_Privacy_Data_TopPeers), icon: icon, breadcrumbs: [strings.Settings_PrivacySettings, strings.PrivacySettings_DataSettings], present: { context, _, present in
             presentDataPrivacySettings(context, present)
         }),
-        SettingsSearchableItem(id: .privacy(15), title: strings.Privacy_DeleteDrafts, alternate: synonyms(strings.SettingsSearch_Synonyms_Privacy_Data_DeleteDrafts), icon: icon, breadcrumbs: [strings.Settings_PrivacySettings, strings.PrivacySettings_DataSettings], present: { context, _, present in
+        SettingsSearchableItem(id: .privacy(16), title: strings.Privacy_DeleteDrafts, alternate: synonyms(strings.SettingsSearch_Synonyms_Privacy_Data_DeleteDrafts), icon: icon, breadcrumbs: [strings.Settings_PrivacySettings, strings.PrivacySettings_DataSettings], present: { context, _, present in
             presentDataPrivacySettings(context, present)
         }),
-        SettingsSearchableItem(id: .privacy(16), title: strings.Privacy_PaymentsClearInfo, alternate: synonyms(strings.SettingsSearch_Synonyms_Privacy_Data_ClearPaymentsInfo), icon: icon, breadcrumbs: [strings.Settings_PrivacySettings, strings.PrivacySettings_DataSettings], present: { context, _, present in
+        SettingsSearchableItem(id: .privacy(17), title: strings.Privacy_PaymentsClearInfo, alternate: synonyms(strings.SettingsSearch_Synonyms_Privacy_Data_ClearPaymentsInfo), icon: icon, breadcrumbs: [strings.Settings_PrivacySettings, strings.PrivacySettings_DataSettings], present: { context, _, present in
             presentDataPrivacySettings(context, present)
         }),
-        SettingsSearchableItem(id: .privacy(17), title: strings.Privacy_SecretChatsLinkPreviews, alternate: synonyms(strings.SettingsSearch_Synonyms_Privacy_Data_SecretChatLinkPreview), icon: icon, breadcrumbs: [strings.Settings_PrivacySettings, strings.PrivacySettings_DataSettings, strings.Privacy_SecretChatsTitle], present: { context, _, present in
+        SettingsSearchableItem(id: .privacy(18), title: strings.Privacy_SecretChatsLinkPreviews, alternate: synonyms(strings.SettingsSearch_Synonyms_Privacy_Data_SecretChatLinkPreview), icon: icon, breadcrumbs: [strings.Settings_PrivacySettings, strings.PrivacySettings_DataSettings, strings.Privacy_SecretChatsTitle], present: { context, _, present in
             presentDataPrivacySettings(context, present)
         })
-    ]
+    ] as [SettingsSearchableItem?]).compactMap { $0 }
 }
 
 private func dataSearchableItems(context: AccountContext) -> [SettingsSearchableItem] {
@@ -619,6 +627,9 @@ private func dataSearchableItems(context: AccountContext) -> [SettingsSearchable
         }),
         SettingsSearchableItem(id: .data(13), title: strings.ChatSettings_DownloadInBackground, alternate: synonyms(strings.SettingsSearch_Synonyms_Data_DownloadInBackground), icon: icon, breadcrumbs: [strings.Settings_ChatSettings], present: { context, _, present in
             presentDataSettings(context, present, .downloadInBackground)
+        }),
+        SettingsSearchableItem(id: .data(14), title: strings.ChatSettings_OpenLinksIn, alternate: synonyms(strings.SettingsSearch_Synonyms_ChatSettings_OpenLinksIn), icon: icon, breadcrumbs: [strings.Settings_ChatSettings], present: { context, _, present in
+            present(.push, webBrowserSettingsController(context: context))
         })
     ]
 }
@@ -666,7 +677,7 @@ private func appearanceSearchableItems(context: AccountContext) -> [SettingsSear
         SettingsSearchableItem(id: .appearance(0), title: strings.Settings_Appearance, alternate: synonyms(strings.SettingsSearch_Synonyms_Appearance_Title), icon: icon, breadcrumbs: [], present: { context, _, present in
             presentAppearanceSettings(context, present, nil)
         }),
-        SettingsSearchableItem(id: .appearance(1), title: strings.Appearance_TextSize, alternate: synonyms(strings.SettingsSearch_Synonyms_Appearance_TextSize), icon: icon, breadcrumbs: [strings.Settings_Appearance], present: { context, _, present in
+        SettingsSearchableItem(id: .appearance(1), title: strings.Appearance_TextSizeSetting, alternate: synonyms(strings.SettingsSearch_Synonyms_Appearance_TextSize), icon: icon, breadcrumbs: [strings.Settings_Appearance], present: { context, _, present in
             presentAppearanceSettings(context, present, .fontSize)
         }),
         SettingsSearchableItem(id: .appearance(2), title: strings.Settings_ChatBackground, alternate: synonyms(strings.SettingsSearch_Synonyms_Appearance_ChatBackground), icon: icon, breadcrumbs: [strings.Settings_Appearance], present: { context, _, present in
@@ -701,7 +712,7 @@ private func languageSearchableItems(context: AccountContext, localizations: [Lo
     
     let applyLocalization: (AccountContext, @escaping (SettingsSearchableItemPresentation, ViewController?) -> Void, String) -> Void = { context, present, languageCode in
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        let controller = OverlayStatusController(theme: presentationData.theme, strings: presentationData.strings, type: .loading(cancelled: nil))
+        let controller = OverlayStatusController(theme: presentationData.theme, type: .loading(cancelled: nil))
         present(.immediate, controller)
         
         let _ = (downloadAndApplyLocalization(accountManager: context.sharedContext.accountManager, postbox: context.account.postbox, network: context.account.network, languageCode: languageCode)
@@ -725,7 +736,7 @@ private func languageSearchableItems(context: AccountContext, localizations: [Lo
     return items
 }
 
-func settingsSearchableItems(context: AccountContext, notificationExceptionsList: Signal<NotificationExceptionsList?, NoError>, archivedStickerPacks: Signal<[ArchivedStickerPackItem]?, NoError>, privacySettings: Signal<AccountPrivacySettings?, NoError>) -> Signal<[SettingsSearchableItem], NoError> {
+func settingsSearchableItems(context: AccountContext, notificationExceptionsList: Signal<NotificationExceptionsList?, NoError>, archivedStickerPacks: Signal<[ArchivedStickerPackItem]?, NoError>, privacySettings: Signal<AccountPrivacySettings?, NoError>, hasWallet: Signal<Bool, NoError>, activeSessionsContext: Signal<ActiveSessionsContext?, NoError>, webSessionsContext: Signal<WebSessionsContext?, NoError>) -> Signal<[SettingsSearchableItem], NoError> {
     let watchAppInstalled = (context.watchManager?.watchAppInstalled ?? .single(false))
     |> take(1)
 
@@ -802,8 +813,27 @@ func settingsSearchableItems(context: AccountContext, notificationExceptionsList
         }
     }
     
-    return combineLatest(watchAppInstalled, canAddAccount, localizations, notificationSettings, notificationExceptionsList, archivedStickerPacks, proxyServers, privacySettings)
-    |> map { watchAppInstalled, canAddAccount, localizations, notificationSettings, notificationExceptionsList, archivedStickerPacks, proxyServers, privacySettings in
+    let activeWebSessionsContext = webSessionsContext
+    |> mapToSignal { webSessionsContext -> Signal<WebSessionsContext?, NoError> in
+        if let webSessionsContext = webSessionsContext {
+            return webSessionsContext.state
+            |> map { state -> WebSessionsContext? in
+                if !state.sessions.isEmpty {
+                    return webSessionsContext
+                } else {
+                    return nil
+                }
+            }
+            |> distinctUntilChanged(isEqual: { lhs, rhs in
+                return lhs !== rhs
+            })
+        } else {
+            return .single(nil)
+        }
+    }
+    
+    return combineLatest(watchAppInstalled, canAddAccount, localizations, notificationSettings, notificationExceptionsList, archivedStickerPacks, proxyServers, privacySettings, hasWallet, activeSessionsContext, activeWebSessionsContext)
+    |> map { watchAppInstalled, canAddAccount, localizations, notificationSettings, notificationExceptionsList, archivedStickerPacks, proxyServers, privacySettings, hasWallet, activeSessionsContext, activeWebSessionsContext in
         let strings = context.sharedContext.currentPresentationData.with { $0 }.strings
         
         var allItems: [SettingsSearchableItem] = []
@@ -825,7 +855,7 @@ func settingsSearchableItems(context: AccountContext, notificationExceptionsList
         let notificationItems = notificationSearchableItems(context: context, settings: notificationSettings, exceptionsList: notificationExceptionsList)
         allItems.append(contentsOf: notificationItems)
         
-        let privacyItems = privacySearchableItems(context: context, privacySettings: privacySettings)
+        let privacyItems = privacySearchableItems(context: context, privacySettings: privacySettings, activeSessionsContext: activeSessionsContext, webSessionsContext: activeWebSessionsContext)
         allItems.append(contentsOf: privacyItems)
         
         let dataItems = dataSearchableItems(context: context)
@@ -851,6 +881,17 @@ func settingsSearchableItems(context: AccountContext, notificationExceptionsList
             present(.modal, SecureIdAuthController(context: context, mode: .list))
         })
         allItems.append(passport)
+
+        #if ENABLE_WALLET
+        if hasWallet {
+            let wallet = SettingsSearchableItem(id: .wallet(0), title: strings.Settings_Wallet, alternate: synonyms(strings.SettingsSearch_Synonyms_Wallet), icon: .wallet, breadcrumbs: [], present: { context, _, present in
+                context.sharedContext.openWallet(context: context, walletContext: .generic, present: { c in
+                    present(.push, c)
+                })
+            })
+            allItems.append(wallet)
+        }
+        #endif
         
         let support = SettingsSearchableItem(id: .support(0), title: strings.Settings_Support, alternate: synonyms(strings.SettingsSearch_Synonyms_Support), icon: .support, breadcrumbs: [], present: { context, _, present in
             let _ = (supportPeerId(account: context.account)
@@ -869,7 +910,7 @@ func settingsSearchableItems(context: AccountContext, notificationExceptionsList
                 context.sharedContext.openResolvedUrl(resolvedUrl, context: context, urlContext: .generic, navigationController: navigationController, openPeer: { peer, navigation in
                 }, sendFile: nil, sendSticker: nil, present: { controller, arguments in
                     present(.push, controller)
-                }, dismissInput: {})
+                }, dismissInput: {}, contentContext: nil)
             })
         })
         allItems.append(faq)

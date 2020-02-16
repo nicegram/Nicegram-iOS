@@ -3,8 +3,10 @@ import UIKit
 import AsyncDisplayKit
 import Postbox
 import TelegramCore
+import SyncCore
 import Display
 import TelegramPresentationData
+import TelegramUIPreferences
 import MergeLists
 import AccountContext
 import Emoji
@@ -101,9 +103,10 @@ final class EmojisChatInputContextPanelNode: ChatInputContextPanelNode {
     private var currentEntries: [EmojisChatInputContextPanelEntry]?
     
     private var enqueuedTransitions: [(EmojisChatInputContextPanelTransition, Bool)] = []
-    private var validLayout: (CGSize, CGFloat, CGFloat)?
+    private var validLayout: (CGSize, CGFloat, CGFloat, CGFloat)?
+    private var presentationInterfaceState: ChatPresentationInterfaceState?
     
-    override init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings) {
+    override init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, fontSize: PresentationFontSize) {
         self.backgroundNode = ASImageNode()
         self.backgroundNode.displayWithoutProcessing = true
         self.backgroundNode.displaysAsynchronously = false
@@ -128,7 +131,7 @@ final class EmojisChatInputContextPanelNode: ChatInputContextPanelNode {
         self.listView.view.disablesInteractiveTransitionGestureRecognizer = true
         self.listView.transform = CATransform3DMakeRotation(-CGFloat.pi / 2.0, 0.0, 0.0, 1.0)
         
-        super.init(context: context, theme: theme, strings: strings)
+        super.init(context: context, theme: theme, strings: strings, fontSize: fontSize)
         
         self.placement = .overTextInput
         self.isOpaque = false
@@ -190,6 +193,10 @@ final class EmojisChatInputContextPanelNode: ChatInputContextPanelNode {
         })
         self.currentEntries = to
         self.enqueueTransition(transition, firstTime: firstTime)
+        
+        if let presentationInterfaceState = presentationInterfaceState, let (size, leftInset, rightInset, bottomInset) = self.validLayout {
+            self.updateLayout(size: size, leftInset: leftInset, rightInset: rightInset, bottomInset: bottomInset, transition: .immediate, interfaceState: presentationInterfaceState)
+        }
     }
     
     private func enqueueTransition(_ transition: EmojisChatInputContextPanelTransition, firstTime: Bool) {
@@ -207,12 +214,7 @@ final class EmojisChatInputContextPanelNode: ChatInputContextPanelNode {
             self.enqueuedTransitions.remove(at: 0)
             
             var options = ListViewDeleteAndInsertOptions()
-            if firstTime {
-                //options.insert(.Synchronous)
-                //options.insert(.LowLatency)
-            } else {
-                options.insert(.AnimateCrossfade)
-            }
+            options.insert(.Synchronous)
             
             let updateSizeAndInsets = ListViewUpdateSizeAndInsets(size: validLayout.0, insets: UIEdgeInsets(top: 3.0, left: 0.0, bottom: 3.0, right: 0.0), duration: 0.0, curve: .Default(duration: nil))
             
@@ -220,10 +222,10 @@ final class EmojisChatInputContextPanelNode: ChatInputContextPanelNode {
         }
     }
     
-    override func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState) {
+    override func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState) {
         let hadValidLayout = self.validLayout != nil
-        self.validLayout = (size, leftInset, rightInset)
-        
+        self.validLayout = (size, leftInset, rightInset, bottomInset)
+        self.presentationInterfaceState = interfaceState
         
         let sideInsets: CGFloat = 10.0 + leftInset
         let contentWidth = min(size.width - sideInsets - sideInsets, max(24.0, CGFloat(self.currentEntries?.count ?? 0) * 45.0))

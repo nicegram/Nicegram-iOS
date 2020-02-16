@@ -37,6 +37,9 @@
 @property (nonatomic, strong, readonly) MTContext *context;
 @property (nonatomic, strong, readonly) MTApiEnvironment *apiEnvironment;
 @property (nonatomic) NSInteger datacenterId;
+@property (nonatomic, strong) MTDatacenterAuthKey *useExplicitAuthKey;
+
+@property (nonatomic, copy) void (^tempAuthKeyBindingResultUpdated)(bool);
 
 @property (nonatomic) bool shouldStayConnected;
 @property (nonatomic) bool useUnauthorizedMode;
@@ -45,10 +48,11 @@
 @property (nonatomic) bool enforceMedia;
 @property (nonatomic) bool cdn;
 @property (nonatomic) bool checkForProxyConnectionIssues;
+@property (nonatomic) bool canResetAuthData;
 @property (nonatomic) id requiredAuthToken;
 @property (nonatomic) NSInteger authTokenMasterDatacenterId;
 
-- (instancetype)initWithContext:(MTContext *)context datacenterId:(NSInteger)datacenterId usageCalculationInfo:(MTNetworkUsageCalculationInfo *)usageCalculationInfo;
+- (instancetype)initWithContext:(MTContext *)context datacenterId:(NSInteger)datacenterId usageCalculationInfo:(MTNetworkUsageCalculationInfo *)usageCalculationInfo requiredAuthToken:(id)requiredAuthToken authTokenMasterDatacenterId:(NSInteger)authTokenMasterDatacenterId;
 
 - (void)setUsageCalculationInfo:(MTNetworkUsageCalculationInfo *)usageCalculationInfo;
 

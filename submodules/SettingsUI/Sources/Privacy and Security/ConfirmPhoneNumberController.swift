@@ -4,11 +4,15 @@ import Display
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import ItemListUI
+import PresentationDataUtils
 import AccountContext
 import AlertUI
+import PresentationDataUtils
 import AuthorizationUI
+import PhoneNumberFormat
 
 private final class ConfirmPhoneNumberCodeControllerArguments {
     let updateEntryText: (String) -> Void
@@ -81,10 +85,11 @@ private enum ConfirmPhoneNumberCodeEntry: ItemListNodeEntry {
         return lhs.stableId < rhs.stableId
     }
     
-    func item(_ arguments: ConfirmPhoneNumberCodeControllerArguments) -> ListViewItem {
+    func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
+        let arguments = arguments as! ConfirmPhoneNumberCodeControllerArguments
         switch self {
             case let .codeEntry(theme, strings, title, text):
-                return ItemListSingleLineInputItem(theme: theme, strings: strings, title: NSAttributedString(string: title, textColor: .black), text: text, placeholder: "", type: .number, spacing: 10.0, tag: ConfirmPhoneNumberCodeTag.input, sectionId: self.section, textUpdated: { updatedText in
+                return ItemListSingleLineInputItem(presentationData: presentationData, title: NSAttributedString(string: title, textColor: .black), text: text, placeholder: "", type: .number, spacing: 10.0, tag: ConfirmPhoneNumberCodeTag.input, sectionId: self.section, textUpdated: { updatedText in
                     arguments.updateEntryText(updatedText)
                 }, action: {
                     arguments.next()
@@ -103,7 +108,7 @@ private enum ConfirmPhoneNumberCodeEntry: ItemListNodeEntry {
                 if !nextOptionText.isEmpty {
                     result += "\n\n" + nextOptionText
                 }
-                return ItemListTextItem(theme: theme, text: .markdown(result), sectionId: self.section)
+                return ItemListTextItem(presentationData: presentationData, text: .markdown(result), sectionId: self.section)
         }
     }
 }
@@ -157,14 +162,14 @@ protocol ConfirmPhoneNumberCodeController: class {
     func applyCode(_ code: Int)
 }
 
-private final class ConfirmPhoneNumberCodeControllerImpl: ItemListController<ConfirmPhoneNumberCodeEntry>, ConfirmPhoneNumberCodeController {
+private final class ConfirmPhoneNumberCodeControllerImpl: ItemListController, ConfirmPhoneNumberCodeController {
     private let applyCodeImpl: (Int) -> Void
     
-    init(context: AccountContext, state: Signal<(ItemListControllerState, (ItemListNodeState<ConfirmPhoneNumberCodeEntry>, ConfirmPhoneNumberCodeEntry.ItemGenerationArguments)), NoError>, applyCodeImpl: @escaping (Int) -> Void) {
+    init(context: AccountContext, state: Signal<(ItemListControllerState, (ItemListNodeState, Any)), NoError>, applyCodeImpl: @escaping (Int) -> Void) {
         self.applyCodeImpl = applyCodeImpl
         
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        super.init(theme: presentationData.theme, strings: presentationData.strings, updatedPresentationData: context.sharedContext.presentationData |> map { ($0.theme, $0.strings) }, state: state, tabBarItem: nil)
+        super.init(presentationData: ItemListPresentationData(presentationData), updatedPresentationData: context.sharedContext.presentationData |> map(ItemListPresentationData.init(_:)), state: state, tabBarItem: nil)
     }
     
     required init(coder aDecoder: NSCoder) {
@@ -289,7 +294,7 @@ public func confirmPhoneNumberCodeController(context: AccountContext, phoneNumbe
     
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get() |> deliverOnMainQueue, currentDataPromise.get() |> deliverOnMainQueue, timeout.get() |> deliverOnMainQueue)
     |> deliverOnMainQueue
-    |> map { presentationData, state, data, timeout -> (ItemListControllerState, (ItemListNodeState<ConfirmPhoneNumberCodeEntry>, ConfirmPhoneNumberCodeEntry.ItemGenerationArguments)) in
+    |> map { presentationData, state, data, timeout -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let leftNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Cancel), style: .regular, enabled: true, action: {
             dismissImpl?()
         })
@@ -306,8 +311,8 @@ public func confirmPhoneNumberCodeController(context: AccountContext, phoneNumbe
             })
         }
         
-        let controllerState = ItemListControllerState(theme: presentationData.theme, title: .text(presentationData.strings.CancelResetAccount_Title), leftNavigationButton: leftNavigationButton, rightNavigationButton: rightNavigationButton, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: false)
-        let listState = ItemListNodeState(entries: confirmPhoneNumberCodeControllerEntries(presentationData: presentationData, state: state, phoneNumber: phoneNumber, codeData: data, timeout: timeout, strings: presentationData.strings, theme: presentationData.theme), style: .blocks, focusItemTag: ConfirmPhoneNumberCodeTag.input, emptyStateItem: nil, animateChanges: false)
+        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(presentationData.strings.CancelResetAccount_Title), leftNavigationButton: leftNavigationButton, rightNavigationButton: rightNavigationButton, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: false)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: confirmPhoneNumberCodeControllerEntries(presentationData: presentationData, state: state, phoneNumber: phoneNumber, codeData: data, timeout: timeout, strings: presentationData.strings, theme: presentationData.theme), style: .blocks, focusItemTag: ConfirmPhoneNumberCodeTag.input, emptyStateItem: nil, animateChanges: false)
         
         return (controllerState, (listState, arguments))
     }

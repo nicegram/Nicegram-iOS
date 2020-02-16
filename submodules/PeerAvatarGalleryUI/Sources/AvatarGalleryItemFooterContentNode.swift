@@ -4,6 +4,7 @@ import AsyncDisplayKit
 import Display
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import Photos
 import TelegramPresentationData
@@ -11,6 +12,7 @@ import TelegramUIPreferences
 import TelegramStringFormatting
 import AccountContext
 import GalleryUI
+import AppBundle
 
 private let deleteImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionTrash"), color: .white)
 private let actionImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionAction"), color: .white)
@@ -20,6 +22,7 @@ private let dateFont = Font.regular(14.0)
 
 final class AvatarGalleryItemFooterContentNode: GalleryFooterContentNode {
     private let context: AccountContext
+    private var presentationData: PresentationData
     private var strings: PresentationStrings
     private var dateTimeFormat: PresentationDateTimeFormat
     
@@ -41,6 +44,7 @@ final class AvatarGalleryItemFooterContentNode: GalleryFooterContentNode {
     
     init(context: AccountContext, presentationData: PresentationData) {
         self.context = context
+        self.presentationData = presentationData
         self.strings = presentationData.strings
         self.dateTimeFormat = presentationData.dateTimeFormat
         
@@ -81,7 +85,7 @@ final class AvatarGalleryItemFooterContentNode: GalleryFooterContentNode {
         var dateText: String?
         switch entry {
             case let .image(_, _, peer, date, _, _):
-                nameText = peer.displayTitle
+                nameText = peer?.displayTitle(strings: self.presentationData.strings, displayOrder: self.presentationData.nameDisplayOrder) ?? ""
                 dateText = humanReadableStringForTimestamp(strings: self.strings, dateTimeFormat: self.dateTimeFormat, timestamp: date)
             default:
                 break
@@ -144,7 +148,7 @@ final class AvatarGalleryItemFooterContentNode: GalleryFooterContentNode {
     
     @objc private func deleteButtonPressed() {
         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
-        let actionSheet = ActionSheetController(presentationTheme: presentationData.theme)
+        let actionSheet = ActionSheetController(presentationData: presentationData)
         let items: [ActionSheetItem] = [
             ActionSheetButtonItem(title: presentationData.strings.Common_Delete, color: .destructive, action: { [weak self, weak actionSheet] in
                 actionSheet?.dismissAnimated()
@@ -154,7 +158,7 @@ final class AvatarGalleryItemFooterContentNode: GalleryFooterContentNode {
         
         actionSheet.setItemGroups([ActionSheetItemGroup(items: items),
                                    ActionSheetItemGroup(items: [
-                                    ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in
+                                    ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
                                         actionSheet?.dismissAnimated()
                                     })
                                     ])

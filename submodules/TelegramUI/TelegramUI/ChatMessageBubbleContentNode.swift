@@ -4,6 +4,7 @@ import AsyncDisplayKit
 import Display
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramUIPreferences
 import AccountContext
 
@@ -40,11 +41,13 @@ enum ChatMessageBubbleMergeStatus {
 
 enum ChatMessageBubbleRelativePosition {
     case None(ChatMessageBubbleMergeStatus)
+    case BubbleNeighbour
     case Neighbour
 }
 
 enum ChatMessageBubbleContentMosaicNeighbor {
     case merged
+    case mergedBubble
     case none(tail: Bool)
 }
 
@@ -81,6 +84,7 @@ enum ChatMessageBubbleContentTapAction {
     case openMessage
     case timecode(Double, String)
     case tooltip(String, ASDisplayNode?, CGRect?)
+    case bankCard(String)
     case ignore
 }
 
@@ -91,14 +95,16 @@ final class ChatMessageBubbleContentItem {
     let read: Bool
     let presentationData: ChatPresentationData
     let associatedData: ChatMessageItemAssociatedData
+    let attributes: ChatMessageEntryAttributes
     
-    init(context: AccountContext, controllerInteraction: ChatControllerInteraction, message: Message, read: Bool, presentationData: ChatPresentationData, associatedData: ChatMessageItemAssociatedData) {
+    init(context: AccountContext, controllerInteraction: ChatControllerInteraction, message: Message, read: Bool, presentationData: ChatPresentationData, associatedData: ChatMessageItemAssociatedData, attributes: ChatMessageEntryAttributes) {
         self.context = context
         self.controllerInteraction = controllerInteraction
         self.message = message
         self.read = read
         self.presentationData = presentationData
         self.associatedData = associatedData
+        self.attributes = attributes
     }
 }
 
@@ -139,7 +145,7 @@ class ChatMessageBubbleContentNode: ASDisplayNode {
         })
     }
     
-    func transitionNode(messageId: MessageId, media: Media) -> (ASDisplayNode, () -> (UIView?, UIView?))? {
+    func transitionNode(messageId: MessageId, media: Media) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         return nil
     }
     
@@ -151,7 +157,7 @@ class ChatMessageBubbleContentNode: ASDisplayNode {
         return false
     }
     
-    func updateSearchTextHighlightState(text: String?) {
+    func updateSearchTextHighlightState(text: String?, messages: [MessageIndex]?) {
     }
     
     func updateAutomaticMediaDownloadSettings(_ settings: MediaAutoDownloadSettings) {
@@ -161,7 +167,7 @@ class ChatMessageBubbleContentNode: ASDisplayNode {
         return nil
     }
     
-    func tapActionAtPoint(_ point: CGPoint, gesture: TapLongTapOrDoubleTapGesture) -> ChatMessageBubbleContentTapAction {
+    func tapActionAtPoint(_ point: CGPoint, gesture: TapLongTapOrDoubleTapGesture, isEstimating: Bool) -> ChatMessageBubbleContentTapAction {
         return .none
     }
     
@@ -178,7 +184,7 @@ class ChatMessageBubbleContentNode: ASDisplayNode {
     func updateIsExtractedToContextPreview(_ value: Bool) {
     }
     
-    func reactionTargetNode(value: String) -> (ASImageNode, Int)? {
+    func reactionTargetNode(value: String) -> (ASDisplayNode, Int)? {
         return nil
     }
 }

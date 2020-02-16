@@ -4,11 +4,12 @@ import Display
 import AsyncDisplayKit
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import AccountContext
 
 enum ChatScheduleTimeControllerMode {
-    case scheduledMessages
+    case scheduledMessages(sendWhenOnlineAvailable: Bool)
     case reminders
 }
 
@@ -20,6 +21,7 @@ final class ChatScheduleTimeController: ViewController {
     private var animatedIn = false
     
     private let context: AccountContext
+    private let peerId: PeerId
     private let mode: ChatScheduleTimeControllerMode
     private let currentTime: Int32?
     private let minimalTime: Int32?
@@ -28,15 +30,20 @@ final class ChatScheduleTimeController: ViewController {
     
     private var presentationDataDisposable: Disposable?
     
-    init(context: AccountContext, mode: ChatScheduleTimeControllerMode, currentTime: Int32? = nil, minimalTime: Int32? = nil, dismissByTapOutside: Bool = true, completion: @escaping (Int32) -> Void) {
+    init(context: AccountContext, peerId: PeerId, mode: ChatScheduleTimeControllerMode, currentTime: Int32? = nil, minimalTime: Int32? = nil, dismissByTapOutside: Bool = true, completion: @escaping (Int32) -> Void) {
         self.context = context
+        self.peerId = peerId
         self.mode = mode
-        self.currentTime = currentTime
+        self.currentTime = currentTime != scheduleWhenOnlineTimestamp ? currentTime : nil
         self.minimalTime = minimalTime
         self.dismissByTapOutside = dismissByTapOutside
         self.completion = completion
         
         super.init(navigationBarPresentationData: nil)
+        
+        self.statusBar.statusBarStyle = .Ignore
+        
+        self.blocksBackgroundWhenInOverlay = true
         
         self.presentationDataDisposable = (context.sharedContext.presentationData
         |> deliverOnMainQueue).start(next: { [weak self] presentationData in
@@ -59,8 +66,11 @@ final class ChatScheduleTimeController: ViewController {
     override public func loadDisplayNode() {
         self.displayNode = ChatScheduleTimeControllerNode(context: self.context, mode: self.mode, currentTime: self.currentTime, minimalTime: self.minimalTime, dismissByTapOutside: self.dismissByTapOutside)
         self.controllerNode.completion = { [weak self] time in
-            self?.completion(time + 5)
-            self?.dismiss()
+            guard let strongSelf = self else {
+                return
+            }
+            strongSelf.completion(time == scheduleWhenOnlineTimestamp ? time : time + 5)
+            strongSelf.dismiss()
         }
         self.controllerNode.dismiss = { [weak self] in
             self?.presentingViewController?.dismiss(animated: false, completion: nil)
@@ -72,8 +82,6 @@ final class ChatScheduleTimeController: ViewController {
     
     override public func loadView() {
         super.loadView()
-        
-        self.statusBar.removeFromSupernode()
     }
     
     override public func viewDidAppear(_ animated: Bool) {

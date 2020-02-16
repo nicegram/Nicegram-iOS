@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import Display
 import TelegramCore
+import SyncCore
 import Postbox
 import SwiftSignalKit
 import TelegramPresentationData
@@ -11,6 +12,8 @@ import AccountContext
 import LegacyUI
 import ImageCompression
 import LocalMediaResources
+import AppBundle
+import ChatListUI
 
 final class InstantVideoControllerRecordingStatus {
     let micLevel: Signal<Float, NoError>
@@ -20,7 +23,7 @@ final class InstantVideoControllerRecordingStatus {
     }
 }
 
-final class InstantVideoController: LegacyController {
+final class InstantVideoController: LegacyController, StandalonePresentableController {
     private var captureController: TGVideoMessageCaptureController?
     
     var onDismiss: (() -> Void)?
@@ -35,6 +38,8 @@ final class InstantVideoController: LegacyController {
         self.audioStatus = InstantVideoControllerRecordingStatus(micLevel: self.micLevelValue.get())
         
         super.init(presentation: presentation, theme: theme, initialLayout: initialLayout)
+        
+        self.lockOrientation = true
     }
     
     required public init(coder aDecoder: NSCoder) {
@@ -95,7 +100,9 @@ func legacyInputMicPalette(from theme: PresentationTheme) -> TGModernConversatio
     return TGModernConversationInputMicPallete(dark: theme.overallDarkAppearance, buttonColor: inputPanelTheme.actionControlFillColor, iconColor: inputPanelTheme.actionControlForegroundColor, backgroundColor: inputPanelTheme.panelBackgroundColor, borderColor: inputPanelTheme.panelSeparatorColor, lock: inputPanelTheme.panelControlAccentColor, textColor: inputPanelTheme.primaryTextColor, secondaryTextColor: inputPanelTheme.secondaryTextColor, recording: inputPanelTheme.mediaRecordingDotColor)
 }
 
-func legacyInstantVideoController(theme: PresentationTheme, panelFrame: CGRect, context: AccountContext, peerId: PeerId, slowmodeState: ChatSlowmodeState?, send: @escaping (EnqueueMessage) -> Void, displaySlowmodeTooltip: @escaping (ASDisplayNode, CGRect) -> Void) -> InstantVideoController {
+func legacyInstantVideoController(theme: PresentationTheme, panelFrame: CGRect, context: AccountContext, peerId: PeerId, slowmodeState: ChatSlowmodeState?, hasSchedule: Bool, send: @escaping (EnqueueMessage) -> Void, displaySlowmodeTooltip: @escaping (ASDisplayNode, CGRect) -> Void, presentSchedulePicker: @escaping (@escaping (Int32) -> Void) -> Void) -> InstantVideoController {
+    let isSecretChat = peerId.namespace == Namespaces.Peer.SecretChat
+    
     let legacyController = InstantVideoController(presentation: .custom, theme: theme)
     legacyController.supportedOrientations = ViewControllerSupportedOrientations(regularSize: .all, compactSize: .all)
     legacyController.lockOrientation = true
@@ -123,8 +130,13 @@ func legacyInstantVideoController(theme: PresentationTheme, panelFrame: CGRect, 
                 let node = ChatSendButtonRadialStatusView(color: theme.chat.inputPanel.panelControlAccentColor)
                 node.slowmodeState = slowmodeState
                 return node
-            })!
-            controller.finishedWithVideo = { videoUrl, previewImage, _, duration, dimensions, liveUploadData, adjustments in
+            }, canSendSilently: !isSecretChat, canSchedule: hasSchedule, reminder: peerId == context.account.peerId, useBackCam: NicegramSettings().useBackCam)!
+            controller.presentScheduleController = { done in
+                presentSchedulePicker { time in
+                    done?(time)
+                }
+            }
+            controller.finishedWithVideo = { videoUrl, previewImage, _, duration, dimensions, liveUploadData, adjustments, isSilent, scheduleTimestamp in
                 guard let videoUrl = videoUrl else {
                     return
                 }
@@ -139,7 +151,7 @@ func legacyInstantVideoController(theme: PresentationTheme, panelFrame: CGRect, 
                     let thumbnailImage = TGScaleImageToPixelSize(previewImage, thumbnailSize)!
                     if let thumbnailData = thumbnailImage.jpegData(compressionQuality: 0.4) {
                         context.account.postbox.mediaBox.storeResourceData(resource.id, data: thumbnailData)
-                        previewRepresentations.append(TelegramMediaImageRepresentation(dimensions: thumbnailSize, resource: resource))
+                        previewRepresentations.append(TelegramMediaImageRepresentation(dimensions: PixelDimensions(thumbnailSize), resource: resource))
                     }
                 }
                 
@@ -174,9 +186,30 @@ func legacyInstantVideoController(theme: PresentationTheme, panelFrame: CGRect, 
                     }
                 }
                 
-                let media = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: arc4random64()), partialReference: nil, resource: resource, previewRepresentations: previewRepresentations, immediateThumbnailData: nil, mimeType: "video/mp4", size: nil, attributes: [.FileName(fileName: "video.mp4"), .Video(duration: Int(finalDuration), size: finalDimensions, flags: [.instantRoundVideo])])
-                let attributes: [MessageAttribute] = []
-                send(.message(text: "", attributes: attributes, mediaReference: .standalone(media: media), replyToMessageId: nil, localGroupingKey: nil))
+                let media = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: arc4random64()), partialReference: nil, resource: resource, previewRepresentations: previewRepresentations, immediateThumbnailData: nil, mimeType: "video/mp4", size: nil, attributes: [.FileName(fileName: "video.mp4"), .Video(duration: Int(finalDuration), size: PixelDimensions(finalDimensions), flags: [.instantRoundVideo])])
+                var message: EnqueueMessage = .message(text: "", attributes: [], mediaReference: .standalone(media: media), replyToMessageId: nil, localGroupingKey: nil)
+                
+                let scheduleTime: Int32? = scheduleTimestamp > 0 ? scheduleTimestamp : nil
+                
+                message = message.withUpdatedAttributes { attributes in
+                    var attributes = attributes
+                    for i in (0 ..< attributes.count).reversed() {
+                        if attributes[i] is NotificationInfoMessageAttribute {
+                            attributes.remove(at: i)
+                        } else if let _ = scheduleTime, attributes[i] is OutgoingScheduleInfoMessageAttribute {
+                            attributes.remove(at: i)
+                        }
+                    }
+                    if isSilent {
+                        attributes.append(NotificationInfoMessageAttribute(flags: .muted))
+                    }
+                    if let scheduleTime = scheduleTime {
+                         attributes.append(OutgoingScheduleInfoMessageAttribute(scheduleTime: scheduleTime))
+                    }
+                    return attributes
+                }
+                
+                send(message)
             }
             controller.didDismiss = { [weak legacyController] in
                 if let legacyController = legacyController {

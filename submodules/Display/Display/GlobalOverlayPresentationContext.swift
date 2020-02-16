@@ -3,7 +3,7 @@ import UIKit
 import AsyncDisplayKit
 import SwiftSignalKit
 
-private func isViewVisibleInHierarchy(_ view: UIView, _ initial: Bool = true) -> Bool {
+func isViewVisibleInHierarchy(_ view: UIView, _ initial: Bool = true) -> Bool {
     guard let window = view.window else {
         return false
     }
@@ -23,10 +23,10 @@ private func isViewVisibleInHierarchy(_ view: UIView, _ initial: Bool = true) ->
     }
 }
 
-private final class HierarchyTrackingNode: ASDisplayNode {
+public final class HierarchyTrackingNode: ASDisplayNode {
     private let f: (Bool) -> Void
     
-    init(_ f: @escaping (Bool) -> Void) {
+    public init(_ f: @escaping (Bool) -> Void) {
         self.f = f
         
         super.init()
@@ -34,13 +34,13 @@ private final class HierarchyTrackingNode: ASDisplayNode {
         self.isLayerBacked = true
     }
     
-    override func didEnterHierarchy() {
+    override public func didEnterHierarchy() {
         super.didEnterHierarchy()
         
         self.f(true)
     }
     
-    override func didExitHierarchy() {
+    override public func didExitHierarchy() {
         super.didExitHierarchy()
         
         self.f(false)
@@ -95,10 +95,8 @@ final class GlobalOverlayPresentationContext {
                 }
                 return keyboardWindow
             } else {
-                if underStatusBar, let view = self.parentView {
+                if let view = self.parentView {
                     return view
-                } else {
-                    return statusBarHost.statusBarWindow
                 }
             }
         }
@@ -119,7 +117,11 @@ final class GlobalOverlayPresentationContext {
             }
         }
         if let presentationView = self.currentPresentationView(underStatusBar: underStatusBar), let initialLayout = self.layout {
-            controller.view.frame = CGRect(origin: CGPoint(x: presentationView.bounds.width - initialLayout.size.width, y: 0.0), size: initialLayout.size)
+            if initialLayout.metrics.widthClass == .regular {
+                controller.view.frame = CGRect(origin: CGPoint(x: presentationView.bounds.width - initialLayout.size.width, y: 0.0), size: initialLayout.size)
+            } else {
+                controller.view.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: initialLayout.size)
+            }
             controller.containerLayoutUpdated(initialLayout, transition: .immediate)
             
             self.presentationDisposables.add(controllerReady.start(next: { [weak self] _ in
@@ -137,7 +139,11 @@ final class GlobalOverlayPresentationContext {
                         }, rootController: nil)
                         (controller as? UIViewController)?.setIgnoreAppearanceMethodInvocations(true)
                         if layout != initialLayout {
-                            controller.view.frame = CGRect(origin: CGPoint(x: view.bounds.width - layout.size.width, y: 0.0), size: layout.size)
+                            if layout.metrics.widthClass == .regular {
+                                controller.view.frame = CGRect(origin: CGPoint(x: view.bounds.width - layout.size.width, y: 0.0), size: layout.size)
+                            } else {
+                                controller.view.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: layout.size)
+                            }
                             view.addSubview(controller.view)
                             controller.containerLayoutUpdated(layout, transition: .immediate)
                         } else {
@@ -176,6 +182,7 @@ final class GlobalOverlayPresentationContext {
             self.readyChanged(wasReady: wasReady)
         } else if self.ready {
             for controller in self.controllers {
+                transition.updateFrame(node: controller.displayNode, frame: CGRect(origin: CGPoint(), size: layout.size))
                 controller.containerLayoutUpdated(layout, transition: transition)
             }
         }
@@ -204,7 +211,11 @@ final class GlobalOverlayPresentationContext {
                     }
                     view.addSubview(controller.view)
                     if !justMove {
-                        controller.view.frame = CGRect(origin: CGPoint(x: view.bounds.width - layout.size.width, y: 0.0), size: layout.size)
+                        if layout.metrics.widthClass == .regular {
+                            controller.view.frame = CGRect(origin: CGPoint(x: view.bounds.width - layout.size.width, y: 0.0), size: layout.size)
+                        } else {
+                            controller.view.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: layout.size)
+                        }
                         controller.containerLayoutUpdated(layout, transition: .immediate)
                         controller.viewDidAppear(false)
                     }

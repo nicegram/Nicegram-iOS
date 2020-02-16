@@ -1,6 +1,7 @@
 import Foundation
 import UIKit
 import TelegramCore
+import SyncCore
 
 public func chatInputStateStringWithAppliedEntities(_ text: String, entities: [MessageTextEntity]) -> NSAttributedString {
     var nsString: NSString?
@@ -50,7 +51,7 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
     let string = NSMutableAttributedString(string: text, attributes: [NSAttributedString.Key.font: baseFont, NSAttributedString.Key.foregroundColor: baseColor])
     var skipEntity = false
     var underlineAllLinks = false
-    if linkColor.isEqual(baseColor) {
+    if linkColor.argb == baseColor.argb {
         underlineAllLinks = true
     }
     var fontAttributes: [NSRange: ChatTextFontAttributes] = [:]
@@ -218,6 +219,15 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
             
                 string.insert(NSAttributedString(string: paragraphBreak), at: paragraphRange.upperBound)
                 rangeOffset += paragraphBreak.count
+            case .BankCard:
+                string.addAttribute(NSAttributedString.Key.foregroundColor, value: linkColor, range: range)
+                if underlineLinks && underlineAllLinks {
+                    string.addAttribute(NSAttributedString.Key.underlineStyle, value: NSUnderlineStyle.single.rawValue as NSNumber, range: range)
+                }
+                if nsString == nil {
+                    nsString = text as NSString
+                }
+                string.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.BankCard), value: nsString!.substring(with: range), range: range)
             case let .Custom(type):
                 if type == ApplicationSpecificEntityType.Timecode {
                     string.addAttribute(NSAttributedString.Key.foregroundColor, value: linkColor, range: range)

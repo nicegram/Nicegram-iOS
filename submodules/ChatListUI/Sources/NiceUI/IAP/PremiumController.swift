@@ -17,6 +17,7 @@ import ItemListUI
 import AccountContext
 import TelegramNotices
 import NicegramLib
+import SyncCore
 
 private struct SelectionState: Equatable {
 }
@@ -26,12 +27,14 @@ private final class PremiumControllerArguments {
     let openSetMissedInterval: () -> Void
     let testAction: () -> Void
     let openManageFilters: () -> Void
+    let openIgnoreTranslations: () -> Void
     
-    init(toggleSetting:@escaping (Bool, String) -> Void, openSetMissedInterval:@escaping () -> Void, testAction:@escaping () -> Void, openManageFilters:@escaping () -> Void) {
+    init(toggleSetting:@escaping (Bool, String) -> Void, openSetMissedInterval:@escaping () -> Void, testAction:@escaping () -> Void, openManageFilters:@escaping () -> Void, openIgnoreTranslations:@escaping () -> Void) {
         self.toggleSetting = toggleSetting
         self.openSetMissedInterval = openSetMissedInterval
         self.testAction = testAction
         self.openManageFilters = openManageFilters
+        self.openIgnoreTranslations = openIgnoreTranslations
     }
 }
 
@@ -41,6 +44,7 @@ private enum premiumControllerSection: Int32 {
     case syncPins
     case notifyMissed
     case manageFilters
+    case other
     case test
 }
 
@@ -61,7 +65,12 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
     case manageFiltersHeader(PresentationTheme, String)
     case manageFilters(PresentationTheme, String)
     
+    case otherHeader(PresentationTheme, String)
+    
+    case onetaptr(PresentationTheme, String, Bool)
+    
     case testButton(PresentationTheme, String)
+    case ignoretr(PresentationTheme, String)
     
     var section: ItemListSectionId {
         switch self {
@@ -73,6 +82,8 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return premiumControllerSection.notifyMissed.rawValue
         case .manageFiltersHeader, .manageFilters:
            return premiumControllerSection.manageFilters.rawValue
+        case .otherHeader, .onetaptr, .ignoretr:
+            return premiumControllerSection.other.rawValue
         case .testButton:
             return premiumControllerSection.test.rawValue
         }
@@ -97,6 +108,12 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return 3000
         case .manageFilters:
             return 3100
+        case .otherHeader:
+            return 10000
+        case .onetaptr:
+            return 11000
+        case .ignoretr:
+            return 12000
         case .testButton:
             return 999999
         }
@@ -157,8 +174,28 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
                 return false
             }
             
+        case let .onetaptr(lhsTheme, lhsText, lhsValue):
+            if case let .onetaptr(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
+                return true
+            } else {
+                return false
+            }
+            
+        case let .otherHeader(lhsTheme, lhsText):
+            if case let .otherHeader(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
+            
         case let .testButton(lhsTheme, lhsText):
             if case let .testButton(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
+        case let .ignoretr(lhsTheme, lhsText):
+            if case let .ignoretr(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
                 return true
             } else {
                 return false
@@ -171,34 +208,46 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
         return lhs.stableId < rhs.stableId
     }
     
-    func item(_ arguments: PremiumControllerArguments) -> ListViewItem {
+    func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
+        let arguments = arguments as! PremiumControllerArguments
         switch self {
         case let .header(theme, text):
-            return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .syncPinsHeader(theme, text):
-            return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .syncPinsToggle(theme, text, value):
-            return ItemListSwitchItem(theme: theme, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.toggleSetting(value, "syncPins")
             })
         case let .syncPinsNotice(theme, text):
-            return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+            return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             
         case let .notifyMissed(theme, title, value):
-            return ItemListDisclosureItem(theme: theme, title: title, label: value, sectionId: self.section, style: .blocks, action: {
+            return ItemListDisclosureItem(presentationData: presentationData, title: title, label: value, sectionId: self.section, style: .blocks, action: {
                 arguments.openSetMissedInterval()
             })
         case let .notifyMissedNotice(theme, text):
-            return ItemListTextItem(theme: theme, text: .plain(text), sectionId: self.section)
+            return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         case let .manageFiltersHeader(theme, text):
-            return ItemListSectionHeaderItem(theme: theme, text: text, sectionId: self.section)
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .manageFilters(theme, text):
-            return ItemListDisclosureItem(theme: theme, icon: nil, title: text, label: "", sectionId: self.section, style: .blocks, action: {
+            return ItemListDisclosureItem(presentationData: presentationData, icon: nil, title: text, label: "", sectionId: self.section, style: .blocks, action: {
                 arguments.openManageFilters()
             })
+        case let .otherHeader(theme, text):
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
+        case let .onetaptr(theme, text, value):
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                arguments.toggleSetting(value, "oneTapTr")
+            })
+            
         case let .testButton(theme, text):
-            return ItemListActionItem(theme: theme, title: "Test Button", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+            return ItemListActionItem(presentationData: presentationData, title: "Test Button", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 arguments.testAction()
+            })
+        case let .ignoretr(theme, text):
+            return ItemListDisclosureItem(presentationData: presentationData, title: text, label: "", sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
+                arguments.openIgnoreTranslations()
             })
         }
     }
@@ -238,6 +287,11 @@ private func premiumControllerEntries(presentationData: PresentationData, premiu
     
     entries.append(.manageFiltersHeader(theme, l("NiceFeatures.Filters.Header", locale)))
     entries.append(.manageFilters(theme, l("ManageFilters.Title", locale)))
+    
+    entries.append(.otherHeader(theme, presentationData.strings.ChatSettings_Other))
+    entries.append(.onetaptr(theme, l("Premium.OnetapTranslate", locale), premiumSettings.oneTapTr))
+    
+    entries.append(.ignoretr(theme, l("Premium.IgnoreTranslate.Title", locale)))
     
     #if DEBUG
     entries.append(.testButton(theme, "TEST"))
@@ -299,6 +353,9 @@ public func premiumController(context: AccountContext) -> ViewController {
         case "syncPins":
             PremiumSettings().syncPins = value
             break
+        case "oneTapTr":
+            PremiumSettings().oneTapTr = value
+            break
         default:
             break
         }
@@ -307,7 +364,7 @@ public func premiumController(context: AccountContext) -> ViewController {
         }
     }, openSetMissedInterval: {
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        let actionSheet = ActionSheetController(presentationTheme: presentationData.theme)
+        let actionSheet = ActionSheetController(presentationData: presentationData)
         var items: [ActionSheetItem] = []
         let setAction: (Int32?) -> Void = { value in
             if let value = value {
@@ -361,27 +418,45 @@ public func premiumController(context: AccountContext) -> ViewController {
             ])])
         presentControllerImpl?(actionSheet, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
     }, testAction: {
-        let msg = "- 儒家 \n\n> - Dota"
-        let _ = (getRegDate(context.account.peerId.toInt64(), owner: context.account.peerId.toInt64())  |> deliverOnMainQueue).start(next: { response in
-            print("Regdate response", response)
-            let dateFormatter = DateFormatter()
-            dateFormatter.timeZone = TimeZone(abbreviation: "UTC") //Set timezone that you want
-            dateFormatter.locale = NSLocale.current
-            dateFormatter.setLocalizedDateFormatFromTemplate("MMMMy") 
-            let strDate = dateFormatter.string(from: response)
-            print(strDate)
-        },
-        error: {_ in print("error regdate request")})
-        print("TESTED!")
+//        presentControllerImpl?(WebController(url: URL(string: "https://nicegram.app/")!), ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+        
+//        let msg = "- 儒家 \n\n> - Dota"
+//        let _ = (getRegDate(context.account.peerId.toInt64(), owner: context.account.peerId.toInt64())  |> deliverOnMainQueue).start(next: { response in
+//            print("Regdate response", response)
+//            let dateFormatter = DateFormatter()
+//            dateFormatter.timeZone = TimeZone(abbreviation: "UTC") //Set timezone that you want
+//            dateFormatter.locale = NSLocale.current
+//            dateFormatter.setLocalizedDateFormatFromTemplate("MMMMy")
+//            let strDate = dateFormatter.string(from: response)
+//            print(strDate)
+//        },
+//        error: {_ in print("error regdate request")})
+//        print("TESTED!")
+        
+//        if let exportPath = NicegramSettings().exportSettings() {
+//            var messages: [EnqueueMessage] = []
+//            let id = arc4random64()
+//            let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: LocalFileReferenceMediaResource(localFilePath: exportPath, randomId: id), previewRepresentations: [], immediateThumbnailData: nil, mimeType: "application/json", size: nil, attributes: [.FileName(fileName: BACKUP_NAME)])
+//            messages.append(.message(text: "", attributes: [], mediaReference: .standalone(media: file), replyToMessageId: nil, localGroupingKey: nil))
+//            let _ = enqueueMessages(account: context.account, peerId: context.account.peerId, messages: messages).start()
+//        } else {
+//            print("Error exporting")
+//        }
+        
+
+        
+        
     }, openManageFilters: {
         pushControllerImpl?(manageFilters(context: context))
+    }, openIgnoreTranslations: {
+        presentControllerImpl?(ignoreTranslateController(context: context), ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
     }
     )
     
     
     
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get())
-        |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState<PremiumControllerEntry>, PremiumControllerEntry.ItemGenerationArguments)) in
+        |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
             
             let entries = premiumControllerEntries(presentationData: presentationData, premiumSettings: PremiumSettings())
             
@@ -398,8 +473,8 @@ public func premiumController(context: AccountContext) -> ViewController {
             //                }
             //            }
             
-            let controllerState = ItemListControllerState(theme: presentationData.theme, title: .text(l("Premium.Title", presentationData.strings.baseLanguageCode)), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-            let listState = ItemListNodeState(entries: entries, style: .blocks, ensureVisibleItemTag: nil, initialScrollToItem: scrollToItem)
+            let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("Premium.Title", presentationData.strings.baseLanguageCode)), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
+            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, ensureVisibleItemTag: nil, initialScrollToItem: scrollToItem)
             
             return (controllerState, (listState, arguments))
     }

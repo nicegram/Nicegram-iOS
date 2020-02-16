@@ -4,6 +4,7 @@ import Display
 import AsyncDisplayKit
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -11,6 +12,23 @@ import AccountContext
 import StickerResources
 import PhotoResources
 import TelegramStringFormatting
+
+private func foldLineBreaks(_ text: String) -> String {
+    var lines = text.split { $0.isNewline }
+    var startedBothLines = false
+    var result = ""
+    for line in lines {
+        if line.isEmpty {
+            continue
+        }
+        if result.isEmpty {
+            result += line
+        } else {
+            result += " " + line
+        }
+    }
+    return result
+}
 
 final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
     private let context: AccountContext
@@ -184,17 +202,22 @@ final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
                 if let image = media as? TelegramMediaImage {
                     updatedMediaReference = .message(message: MessageReference(message), media: image)
                     if let representation = largestRepresentationForPhoto(image) {
-                        imageDimensions = representation.dimensions
+                        imageDimensions = representation.dimensions.cgSize
                     }
                     break
                 } else if let file = media as? TelegramMediaFile {
                     updatedMediaReference = .message(message: MessageReference(message), media: file)
                     if !file.isInstantVideo, let representation = largestImageRepresentation(file.previewRepresentations), !file.isSticker {
-                        imageDimensions = representation.dimensions
+                        imageDimensions = representation.dimensions.cgSize
                     }
                     break
-                } else if let _ = media as? TelegramMediaPoll {
-                    titleString = strings.Conversation_PinnedPoll
+                } else if let poll = media as? TelegramMediaPoll {
+                    switch poll.kind {
+                    case .poll:
+                        titleString = strings.Conversation_PinnedPoll
+                    case .quiz:
+                        titleString = strings.Conversation_PinnedQuiz
+                    }
                 }
             }
             
@@ -221,8 +244,8 @@ final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
                         updateImageSignal = chatMessagePhotoThumbnail(account: context.account, photoReference: imageReference)
                     } else if let fileReference = updatedMediaReference.concrete(TelegramMediaFile.self) {
                         if fileReference.media.isAnimatedSticker {
-                            let dimensions = fileReference.media.dimensions ?? CGSize(width: 512.0, height: 512.0)
-                            updateImageSignal = chatMessageAnimatedSticker(postbox: context.account.postbox, file: fileReference.media, small: false, size: dimensions.aspectFitted(CGSize(width: 160.0, height: 160.0)))
+                            let dimensions = fileReference.media.dimensions ?? PixelDimensions(width: 512, height: 512)
+                            updateImageSignal = chatMessageAnimatedSticker(postbox: context.account.postbox, file: fileReference.media, small: false, size: dimensions.cgSize.aspectFitted(CGSize(width: 160.0, height: 160.0)))
                             updatedFetchMediaSignal = fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, reference: fileReference.resourceReference(fileReference.media.resource))
                         } else if fileReference.media.isVideo {
                             updateImageSignal = chatMessageVideoThumbnail(account: context.account, fileReference: fileReference)
@@ -237,7 +260,7 @@ final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
             
             let (titleLayout, titleApply) = makeTitleLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: titleString, font: Font.medium(15.0), textColor: theme.chat.inputPanel.panelControlAccentColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: width - textLineInset - contentLeftInset - rightInset - textRightInset, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets(top: 2.0, left: 0.0, bottom: 2.0, right: 0.0)))
             
-            let (textLayout, textApply) = makeTextLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: descriptionStringForMessage(message, strings: strings, nameDisplayOrder: nameDisplayOrder, accountPeerId: accountPeerId).0, font: Font.regular(15.0), textColor: message.media.isEmpty || message.media.first is TelegramMediaWebpage ? theme.chat.inputPanel.primaryTextColor : theme.chat.inputPanel.secondaryTextColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: width - textLineInset - contentLeftInset - rightInset - textRightInset, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets(top: 2.0, left: 0.0, bottom: 2.0, right: 0.0)))
+            let (textLayout, textApply) = makeTextLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: foldLineBreaks(descriptionStringForMessage(contentSettings: context.currentContentSettings.with { $0 }, message: message, strings: strings, nameDisplayOrder: nameDisplayOrder, accountPeerId: accountPeerId).0), font: Font.regular(15.0), textColor: message.media.isEmpty || message.media.first is TelegramMediaWebpage ? theme.chat.inputPanel.primaryTextColor : theme.chat.inputPanel.secondaryTextColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: width - textLineInset - contentLeftInset - rightInset - textRightInset, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets(top: 2.0, left: 0.0, bottom: 2.0, right: 0.0)))
             
             Queue.mainQueue().async {
                 if let strongSelf = self {

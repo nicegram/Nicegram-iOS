@@ -3,10 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import SwiftSignalKit
 
-#if BUCK
-import DisplayPrivate
-#endif
-
 var testSpringFrictionLimits: (CGFloat, CGFloat) = (3.0, 60.0)
 var testSpringFriction: CGFloat = 31.8211269378662
 
@@ -77,11 +73,13 @@ public struct ListViewItemLayoutParams {
     public let width: CGFloat
     public let leftInset: CGFloat
     public let rightInset: CGFloat
+    public let availableHeight: CGFloat
     
-    public init(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat) {
+    public init(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, availableHeight: CGFloat) {
         self.width = width
         self.leftInset = leftInset
         self.rightInset = rightInset
+        self.availableHeight = availableHeight
     }
 }
 
@@ -110,6 +108,10 @@ open class ListViewItemNode: ASDisplayNode {
                 self.layoutHeaderAccessoryItemNode(headerAccessoryItemNode)
             }
         }
+    }
+    
+    open var extractedBackgroundNode: ASDisplayNode? {
+        return nil
     }
     
     private final var spring: ListViewItemSpring?
@@ -557,11 +559,22 @@ open class ListViewItemNode: ASDisplayNode {
     public func updateFrame(_ frame: CGRect, within containerSize: CGSize) {
         self.frame = frame
         self.updateAbsoluteRect(frame, within: containerSize)
+        if let extractedBackgroundNode = self.extractedBackgroundNode {
+            extractedBackgroundNode.frame = frame.offsetBy(dx: 0.0, dy: -self.insets.top)
+        }
     }
     
     open func updateAbsoluteRect(_ rect: CGRect, within containerSize: CGSize) {
     }
     
     open func applyAbsoluteOffset(value: CGFloat, animationCurve: ContainedViewLayoutTransitionCurve, duration: Double) {
+        if let extractedBackgroundNode = self.extractedBackgroundNode {
+            let transition: ContainedViewLayoutTransition = .animated(duration: duration, curve: animationCurve)
+            transition.animatePositionAdditive(node: extractedBackgroundNode, offset: CGPoint(x: 0.0, y: -value))
+        }
+    }
+    
+    open func snapshotForReordering() -> UIView? {
+        return self.view.snapshotContentTree(keepTransform: true)
     }
 }

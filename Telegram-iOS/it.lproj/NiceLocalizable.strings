@@ -15,6 +15,7 @@
 "NiceFeatures.Tabs.ShowContacts" = "Mostra lista contatti";
 "NiceFeatures.ChatScreen.Header" = "SCHERMATA DELLE CHAT";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Adesivi animati";
+"NiceFeatures.useBackCam" = "Usa camera posteriore (Videomessaggi)";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "Salva nel cloud";
@@ -22,10 +23,14 @@
 /*Open Pin*/
 "Chat.OpenPin" = "Apri pin";
 "ChatFilter.Admin" = "Amministratore";
+"NiceFeatures.Notifications.HideNotifyAccount" = "Nascondi account nella notifica";
+"NiceFeatures.Notifications.HideNotifyAccountNotice" = "Invece di «Utente → Account» vedrai solo «Utente». Solo per account multipli.";
 "NiceFeatures.Notifications.Fix" = "Disabilita notifiche inutili";
 "NiceFeatures.Notifications.FixNotice" = "Utile se ricevi notifiche da chat silenziate.\nLe risposte alle notifiche, le etichette degli account e le anteprime dei media non saranno disponibili.";
 "NiceFeatures.Filters.Header" = "FILTRI (TABS)";
 "NiceFeatures.Filters.Notice" = "Seleziona il numero di schede personalizzate.\nTocca a lungo la scheda per cambiare filtro.";
+"NiceFeatures.Filters.ShowBadge" = "Mostra badge (Filtri)";
+"NiceFeatures.UseClassicInfoUi" = "Usa l'interfaccia delle info classica";
 
 /*Common*/
 "Common.ExitNow" = "Esci ora";
@@ -50,6 +55,8 @@
 "NGWeb.Blocked" = "Non disponibile su Nicegram a causa delle linee guida dell'App Store";
 
 /*Browser*/
+/*Please, Go to «Data & Storage» to configure default browser*/
+"NiceFeatures.Use.DataStorage" = "Per favore, usa «%1» per configurare il tuo browser predefinito";
 "NiceFeatures.Browser.Header" = "URL";
 "NiceFeatures.Browser.UseBrowser" = "Apri link nel browser";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram aprirà i link esterni in un browser esterno invece di aprirli nell'app.\nIl browser selezionato deve essere installato.";
@@ -72,14 +79,16 @@
 "Common.FAQ.Intro" = "Nota che Nicegram Support è operato solo dall'unico sviluppatore e dalla community.\n\nPrima di tutto, dai una occhiata alle FAQ di Nicegram: contiene molte soluzioni a problemi frequenti.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Feature uniche che non potrai rifiutare";
-"IAP.Premium.Features" = "Cartelle illimitate\nChat fissate illimitate\nFiltra i messaggi non letti\nRiassunto dei messaggi non letti";
+"IAP.Premium.Features" = "Cartelle illimitate e chat fissate\nTraduttore istantaneo dei messaggi\nFiltro messaggi mancati e gestione delle tab\nRiassunto \"Nuovi messaggi\" al lancio dell'applicazione";
 "IAP.Premium.Activated" = "Premium attivato!";
 "IAP.Common.Restore" = "Ripristina acquisti";
 "IAP.Common.CantPay" = "Spiacenti, ma non puoi fare acquisti a causa di un problema con il tuo telefono o con il tuo account";
 "IAP.Common.ErrorFetch" = "Spiacenti, non è stato possibile ottenere i tuoi acquisti dall'App Store";
 "IAP.Common.Congrats" = "Congratulazioni!";
 "IAP.Common.ValidateError" = "Spiacente, non è stato possibile convalidare l'acquisto.";
-
+"Premium.OnetapTranslate" = "Bottone di traduzione veloce";
+"Premium.IgnoreTranslate.Title" = "Lingue ignorate";
+"Premium.IgnoreTranslate.Header" = "L'app cercherà di rilevare la lingua di ogni messaggio. Il bottone della traduzione rapida sarà DISABILITATO per le lingue che scegli qua sotto.";
 
 /*Manage Filters*/
 "ManageFilters.Title" = "Gestisci tab";
@@ -88,3 +97,21 @@
 "Messages.Translate" = "Traduci";
 "Messages.UndoTranslate" = "Annulla traduzione";
 "Messages.TranslateError" = "Spiacenti, questa traduzione non è disponibile.";
+
+/*NG Lab Registration Date*/
+"NGLab.RegDate.Btn" = "Ottieni data di registrazione";
+"NGLab.RegDate.Title" = "Data di registrazione";
+"NGLab.RegDate.Notice" = "Questa è una data approssimativa";
+"NGLab.RegDate.MenuItem" = "registrato";
+"NGLab.RegDate.FetchError" = "Spiacenti, impossibile ottenere la data di registrazione.";
+
+/*Backup Settings*/
+"NiceFeatures.BackupIcloud" = "Sincronizza impostazioni e cartelle con iCloud";
+"NiceFeatures.BackupSettings" = "Impostazioni di backup & cartelle";
+"NiceFeatures.BackupSettings.Notice" = "Crea un backup. Tocca il file per ripristinarlo.";
+"NiceFeatures.BackupSettings.Done" = "Backup eseguito nei messaggi salvati";
+"NiceFeatures.BackupSettings.Error" = "Errore creazione backup";
+
+"NiceFeatures.RestoreSettings.Confirm" = "Sicuro di voler ripristinare cartelle e impostazioni da file?\n⚠️ Questo sovrascriverà i dati attuali";
+"NiceFeatures.RestoreSettings.Done" = "Cartelle e impostazioni ripristinate ✔️";
+"NiceFeatures.RestoreSettings.Error" = "Errore ripristino impostazioni. Il file potrebbe essere danneggiato";

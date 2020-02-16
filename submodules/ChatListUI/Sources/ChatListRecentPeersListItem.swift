@@ -5,26 +5,29 @@ import Postbox
 import Display
 import SwiftSignalKit
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import ChatListSearchRecentPeersNode
+import ContextUI
+import AccountContext
 
 class ChatListRecentPeersListItem: ListViewItem {
     let theme: PresentationTheme
     let strings: PresentationStrings
-    let account: Account
+    let context: AccountContext
     let peers: [Peer]
     let peerSelected: (Peer) -> Void
-    let peerLongTapped: (Peer) -> Void
+    let peerContextAction: (Peer, ASDisplayNode, ContextGesture?) -> Void
     
     let header: ListViewItemHeader?
     
-    init(theme: PresentationTheme, strings: PresentationStrings, account: Account, peers: [Peer], peerSelected: @escaping (Peer) -> Void, peerLongTapped: @escaping (Peer) -> Void) {
+    init(theme: PresentationTheme, strings: PresentationStrings, context: AccountContext, peers: [Peer], peerSelected: @escaping (Peer) -> Void, peerContextAction: @escaping (Peer, ASDisplayNode, ContextGesture?) -> Void) {
         self.theme = theme
         self.strings = strings
-        self.account = account
+        self.context = context
         self.peers = peers
         self.peerSelected = peerSelected
-        self.peerLongTapped = peerLongTapped
+        self.peerContextAction = peerContextAction
         self.header = nil
     }
     
@@ -113,10 +116,10 @@ class ChatListRecentPeersListItemNode: ListViewItemNode {
                             peersNode = currentPeersNode
                             peersNode.updateThemeAndStrings(theme: item.theme, strings: item.strings)
                         } else {
-                            peersNode = ChatListSearchRecentPeersNode(account: item.account, theme: item.theme, mode: .list, strings: item.strings, peerSelected: { peer in
+                            peersNode = ChatListSearchRecentPeersNode(context: item.context, theme: item.theme, mode: .list, strings: item.strings, peerSelected: { peer in
                                 self?.item?.peerSelected(peer)
-                            }, peerLongTapped: { peer in
-                                self?.item?.peerLongTapped(peer)
+                            }, peerContextAction: { peer, node, gesture in
+                                self?.item?.peerContextAction(peer, node, gesture)
                             }, isPeerSelected: { _ in
                                 return false
                             })

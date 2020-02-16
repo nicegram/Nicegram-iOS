@@ -4,12 +4,14 @@ import AsyncDisplayKit
 import Display
 import Postbox
 import TelegramCore
+import SyncCore
 import SwiftSignalKit
 import TelegramPresentationData
 import UniversalMediaPlayer
 import TelegramUIPreferences
 import AccountContext
 import PhotoResources
+import AppBundle
 
 private func generateBackground(theme: PresentationTheme) -> UIImage? {
     return generateImage(CGSize(width: 20.0, height: 10.0 + 8.0), rotatedContext: { size, context in
@@ -20,20 +22,45 @@ private func generateBackground(theme: PresentationTheme) -> UIImage? {
     })?.stretchableImage(withLeftCapWidth: 10, topCapHeight: 10 + 8)
 }
 
-private func generateShareIcon(theme: PresentationTheme) -> UIImage? {
-    return generateImage(CGSize(width: 19.0, height: 5.0), rotatedContext: { size, context in
-        context.clear(CGRect(origin: CGPoint(), size: size))
-        context.setFillColor(theme.list.itemAccentColor.cgColor)
-        for i in 0 ..< 3 {
-            context.fillEllipse(in: CGRect(origin: CGPoint(x: CGFloat(i) * (5.0 + 2.0), y: 0.0), size: CGSize(width: 5.0, height: 5.0)))
-        }
+private func generateCollapseIcon(theme: PresentationTheme) -> UIImage? {
+    return generateImage(CGSize(width: 38.0, height: 5.0), rotatedContext: { size, context in
+        let bounds = CGRect(origin: CGPoint(), size: size)
+        context.clear(bounds)
+        
+        let path = UIBezierPath(roundedRect: bounds, cornerRadius: 2.5)
+        context.setFillColor(theme.list.controlSecondaryColor.cgColor)
+        context.addPath(path.cgPath)
+        context.fillPath()
     })
 }
 
-private let titleFont = Font.medium(16.0)
-private let descriptionFont = Font.regular(12.0)
+private let digitsSet = CharacterSet(charactersIn: "0123456789")
+private func timestampLabelWidthForDuration(_ timestamp: Double) -> CGFloat {
+    let text: String
+    if timestamp > 0 {
+        let timestamp = Int32(timestamp)
+        let hours = timestamp / (60 * 60)
+        let minutes = timestamp % (60 * 60) / 60
+        let seconds = timestamp % 60
+        if hours != 0 {
+            text = String(format: "%d:%02d:%02d", hours, minutes, seconds)
+        } else {
+            text = String(format: "%d:%02d", minutes, seconds)
+        }
+    } else {
+        text = "-:--"
+    }
+    
+    let convertedString = text.components(separatedBy: digitsSet).joined(separator: "8")
+    let string = NSAttributedString(string: convertedString, font: Font.regular(13.0), textColor: .black)
+    let size = string.boundingRect(with: CGSize(width: 200.0, height: 100.0), options: NSStringDrawingOptions.usesLineFragmentOrigin, context: nil).size
+    return size.width
+}
 
-private func stringsForDisplayData(_ data: SharedMediaPlaybackDisplayData?, theme: PresentationTheme) -> (NSAttributedString?, NSAttributedString?) {
+private let titleFont = Font.semibold(17.0)
+private let descriptionFont = Font.regular(17.0)
+
+private func stringsForDisplayData(_ data: SharedMediaPlaybackDisplayData?, presentationData: PresentationData) -> (NSAttributedString?, NSAttributedString?) {
     var titleString: NSAttributedString?
     var descriptionString: NSAttributedString?
     
@@ -41,16 +68,16 @@ private func stringsForDisplayData(_ data: SharedMediaPlaybackDisplayData?, them
         let titleText: String
         let subtitleText: String
         switch data {
-            case let .music(title, performer, _):
-                titleText = title ?? "Unknown Track"
-                subtitleText = performer ?? "Unknown Artist"
+            case let .music(title, performer, _, _):
+                titleText = title ?? presentationData.strings.MediaPlayer_UnknownTrack
+                subtitleText = performer ?? presentationData.strings.MediaPlayer_UnknownArtist
             case .voice, .instantVideo:
                 titleText = ""
                 subtitleText = ""
         }
         
-        titleString = NSAttributedString(string: titleText, font: titleFont, textColor: theme.list.itemPrimaryTextColor)
-        descriptionString = NSAttributedString(string: subtitleText, font: descriptionFont, textColor: theme.list.itemSecondaryTextColor)
+        titleString = NSAttributedString(string: titleText, font: titleFont, textColor: presentationData.theme.list.itemPrimaryTextColor)
+        descriptionString = NSAttributedString(string: subtitleText, font: descriptionFont, textColor: presentationData.theme.list.itemSecondaryTextColor)
     }
     
     return (titleString, descriptionString)
@@ -59,7 +86,7 @@ private func stringsForDisplayData(_ data: SharedMediaPlaybackDisplayData?, them
 final class OverlayPlayerControlsNode: ASDisplayNode {
     private let accountManager: AccountManager
     private let postbox: Postbox
-    private var theme: PresentationTheme
+    private var presentationData: PresentationData
     
     private let backgroundNode: ASImageNode
     
@@ -87,6 +114,9 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
     private var currentLooping: MusicPlaybackSettingsLooping?
     private let loopingButton: IconButtonNode
     
+    private var currentRate: AudioPlaybackRate?
+    private let rateButton: HighlightableButtonNode
+    
     let separatorNode: ASDisplayNode
     
     var isExpanded = false
@@ -105,22 +135,27 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
     private var currentFileReference: FileMediaReference?
     private var statusDisposable: Disposable?
     
+    private var scrubbingDisposable: Disposable?
+    private var leftDurationLabelPushed = false
+    private var rightDurationLabelPushed = false
+    private var currentDuration: Double = 0.0
+    
     private var validLayout: (width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, maxHeight: CGFloat)?
     
-    init(account: Account, accountManager: AccountManager, theme: PresentationTheme, status: Signal<(Account, SharedMediaPlayerItemPlaybackStateOrLoading)?, NoError>) {
+    init(account: Account, accountManager: AccountManager, presentationData: PresentationData, status: Signal<(Account, SharedMediaPlayerItemPlaybackStateOrLoading)?, NoError>) {
         self.accountManager = accountManager
         self.postbox = account.postbox
-        self.theme = theme
+        self.presentationData = presentationData
         
         self.backgroundNode = ASImageNode()
         self.backgroundNode.isLayerBacked = true
         self.backgroundNode.displayWithoutProcessing = true
         self.backgroundNode.displaysAsynchronously = false
-        self.backgroundNode.image = generateBackground(theme: theme)
+        self.backgroundNode.image = generateBackground(theme: presentationData.theme)
         
         self.collapseNode = HighlightableButtonNode()
         self.collapseNode.displaysAsynchronously = false
-        self.collapseNode.setImage(generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/CollapseArrow"), color: theme.list.controlSecondaryColor), for: [])
+        self.collapseNode.setImage(generateCollapseIcon(theme: presentationData.theme), for: [])
         
         self.albumArtNode = TransformImageNode()
         
@@ -133,15 +168,21 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
         self.descriptionNode.displaysAsynchronously = false
         
         self.shareNode = HighlightableButtonNode()
-        self.shareNode.setImage(generateShareIcon(theme: theme), for: [])
+        self.shareNode.setImage(generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/Share"), color: presentationData.theme.list.itemAccentColor), for: [])
         
-        self.scrubberNode = MediaPlayerScrubbingNode(content: .standard(lineHeight: 3.0, lineCap: .round, scrubberHandle: .circle, backgroundColor: theme.list.controlSecondaryColor, foregroundColor: theme.list.itemAccentColor))
-        self.leftDurationLabel = MediaPlayerTimeTextNode(textColor: theme.list.itemSecondaryTextColor)
+        self.scrubberNode = MediaPlayerScrubbingNode(content: .standard(lineHeight: 3.0, lineCap: .round, scrubberHandle: .circle, backgroundColor: presentationData.theme.list.controlSecondaryColor, foregroundColor: presentationData.theme.list.itemAccentColor, bufferingColor: presentationData.theme.list.itemAccentColor.withAlphaComponent(0.4)))
+        self.leftDurationLabel = MediaPlayerTimeTextNode(textColor: presentationData.theme.list.itemSecondaryTextColor)
         self.leftDurationLabel.displaysAsynchronously = false
-        self.rightDurationLabel = MediaPlayerTimeTextNode(textColor: theme.list.itemSecondaryTextColor)
+        self.leftDurationLabel.keepPreviousValueOnEmptyState = true
+        self.rightDurationLabel = MediaPlayerTimeTextNode(textColor: presentationData.theme.list.itemSecondaryTextColor)
         self.rightDurationLabel.displaysAsynchronously = false
         self.rightDurationLabel.mode = .reversed
         self.rightDurationLabel.alignment = .right
+        self.rightDurationLabel.keepPreviousValueOnEmptyState = true
+        
+        self.rateButton = HighlightableButtonNode()
+        self.rateButton.hitTestSlop = UIEdgeInsets(top: -8.0, left: -4.0, bottom: -8.0, right: -4.0)
+        self.rateButton.displaysAsynchronously = false
         
         self.backwardButton = IconButtonNode()
         self.backwardButton.displaysAsynchronously = false
@@ -158,12 +199,12 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
         self.playPauseButton = IconButtonNode()
         self.playPauseButton.displaysAsynchronously = false
         
-        self.backwardButton.icon = generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/Previous"), color: theme.list.itemPrimaryTextColor)
-        self.forwardButton.icon = generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/Next"), color: theme.list.itemPrimaryTextColor)
+        self.backwardButton.icon = generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/Previous"), color: presentationData.theme.list.itemPrimaryTextColor)
+        self.forwardButton.icon = generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/Next"), color: presentationData.theme.list.itemPrimaryTextColor)
         
         self.separatorNode = ASDisplayNode()
         self.separatorNode.isLayerBacked = true
-        self.separatorNode.backgroundColor = theme.list.itemPlainSeparatorColor
+        self.separatorNode.backgroundColor = presentationData.theme.list.itemPlainSeparatorColor
         
         super.init()
         
@@ -176,9 +217,10 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
         self.addSubnode(self.descriptionNode)
         self.addSubnode(self.shareNode)
         
-        self.addSubnode(self.scrubberNode)
         self.addSubnode(self.leftDurationLabel)
         self.addSubnode(self.rightDurationLabel)
+        self.addSubnode(self.rateButton)
+        self.addSubnode(self.scrubberNode)
         
         self.addSubnode(self.orderButton)
         self.addSubnode(self.loopingButton)
@@ -205,7 +247,7 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
         
         let mappedStatus = combineLatest(delayedStatus, self.scrubberNode.scrubbingTimestamp) |> map { value, scrubbingTimestamp -> MediaPlayerStatus in
             if let (_, valueOrLoading) = value, case let .state(value) = valueOrLoading {
-                return MediaPlayerStatus(generationTimestamp: value.status.generationTimestamp, duration: value.status.duration, dimensions: value.status.dimensions, timestamp: scrubbingTimestamp ?? value.status.timestamp, baseRate: value.status.baseRate, seekId: value.status.seekId, status: value.status.status, soundEnabled: value.status.soundEnabled)
+                return MediaPlayerStatus(generationTimestamp: scrubbingTimestamp != nil ? 0 : value.status.generationTimestamp, duration: value.status.duration, dimensions: value.status.dimensions, timestamp: scrubbingTimestamp ?? value.status.timestamp, baseRate: value.status.baseRate, seekId: value.status.seekId, status: value.status.status, soundEnabled: value.status.soundEnabled)
             } else {
                 return MediaPlayerStatus(generationTimestamp: 0.0, duration: 0.0, dimensions: CGSize(), timestamp: 0.0, baseRate: 1.0, seekId: 0, status: .paused, soundEnabled: true)
             }
@@ -214,78 +256,135 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
         self.leftDurationLabel.status = mappedStatus
         self.rightDurationLabel.status = mappedStatus
         
+        self.scrubbingDisposable = (self.scrubberNode.scrubbingPosition
+        |> deliverOnMainQueue).start(next: { [weak self] value in
+            guard let strongSelf = self else {
+                return
+            }
+            let leftDurationLabelPushed: Bool
+            let rightDurationLabelPushed: Bool
+            if let value = value {
+                leftDurationLabelPushed = value < 0.16
+                rightDurationLabelPushed = value > (strongSelf.rateButton.isHidden ? 0.84 : 0.74)
+            } else {
+                leftDurationLabelPushed = false
+                rightDurationLabelPushed = false
+            }
+            if leftDurationLabelPushed != strongSelf.leftDurationLabelPushed || rightDurationLabelPushed != strongSelf.rightDurationLabelPushed {
+                strongSelf.leftDurationLabelPushed = leftDurationLabelPushed
+                strongSelf.rightDurationLabelPushed = rightDurationLabelPushed
+                
+                if let layout = strongSelf.validLayout {
+                    strongSelf.updateLayout(width: layout.0, leftInset: layout.1, rightInset: layout.2, maxHeight: layout.3, transition: .animated(duration: 0.35, curve: .spring))
+                }
+            }
+        })
+        
         self.statusDisposable = (delayedStatus
         |> deliverOnMainQueue).start(next: { [weak self] value in
-            if let strongSelf = self {
-                var valueItemId: SharedMediaPlaylistItemId?
-                if let (_, value) = value, case let .state(state) = value {
-                    valueItemId = state.item.id
+            guard let strongSelf = self else {
+                return
+            }
+            var valueItemId: SharedMediaPlaylistItemId?
+            if let (_, value) = value, case let .state(state) = value {
+                valueItemId = state.item.id
+            }
+            if !areSharedMediaPlaylistItemIdsEqual(valueItemId, strongSelf.currentItemId) {
+                strongSelf.currentItemId = valueItemId
+                strongSelf.scrubberNode.ignoreSeekId = nil
+            }
+            
+            var rateButtonIsHidden = true
+            strongSelf.shareNode.isHidden = false
+            var displayData: SharedMediaPlaybackDisplayData?
+            if let (_, valueOrLoading) = value, case let .state(value) = valueOrLoading {
+                let isPaused: Bool
+                switch value.status.status {
+                    case .playing:
+                        isPaused = false
+                    case .paused:
+                        isPaused = true
+                    case let .buffering(_, whilePlaying):
+                        isPaused = !whilePlaying
                 }
-                if !areSharedMediaPlaylistItemIdsEqual(valueItemId, strongSelf.currentItemId) {
-                    strongSelf.currentItemId = valueItemId
-                    strongSelf.scrubberNode.ignoreSeekId = nil
-                }
-                strongSelf.shareNode.isHidden = false
-                var displayData: SharedMediaPlaybackDisplayData?
-                if let (_, valueOrLoading) = value, case let .state(value) = valueOrLoading {
-                    let isPaused: Bool
-                    switch value.status.status {
-                        case .playing:
-                            isPaused = false
-                        case .paused:
-                            isPaused = true
-                        case let .buffering(_, whilePlaying):
-                            isPaused = !whilePlaying
-                    }
-                    if strongSelf.currentIsPaused != isPaused {
-                        strongSelf.currentIsPaused = isPaused
-                        
-                        strongSelf.updatePlayPauseButton(paused: isPaused)
-                    }
+                if strongSelf.currentIsPaused != isPaused {
+                    strongSelf.currentIsPaused = isPaused
                     
-                    strongSelf.playPauseButton.isEnabled = true
-                    strongSelf.backwardButton.isEnabled = true
-                    strongSelf.forwardButton.isEnabled = true
-                    
-                    displayData = value.item.displayData
-                    
-                    if value.order != strongSelf.currentOrder {
-                        strongSelf.updateOrder?(value.order)
-                        strongSelf.currentOrder = value.order
-                        strongSelf.updateOrderButton(value.order)
-                    }
-                    if value.looping != strongSelf.currentLooping {
-                        strongSelf.currentLooping = value.looping
-                        strongSelf.updateLoopButton(value.looping)
-                    }
-                } else {
-                    strongSelf.playPauseButton.isEnabled = false
-                    strongSelf.backwardButton.isEnabled = false
-                    strongSelf.forwardButton.isEnabled = false
-                    displayData = nil
+                    strongSelf.updatePlayPauseButton(paused: isPaused)
                 }
                 
-                if strongSelf.displayData != displayData {
-                    strongSelf.displayData = displayData
-                    
-                    if let (_, valueOrLoading) = value, case let .state(value) = valueOrLoading, let source = value.item.playbackData?.source {
-                        switch source {
-                            case let .telegramFile(fileReference):
-                                strongSelf.currentFileReference = fileReference
-                                if let size = fileReference.media.size {
-                                    strongSelf.scrubberNode.bufferingStatus = strongSelf.postbox.mediaBox.resourceRangesStatus(fileReference.media.resource)
-                                    |> map { ranges -> (IndexSet, Int) in
-                                        return (ranges, size)
-                                    }
-                                } else {
-                                    strongSelf.scrubberNode.bufferingStatus = nil
-                                }
-                        }
-                    } else {
-                        strongSelf.scrubberNode.bufferingStatus = nil
-                    }
-                    strongSelf.updateLabels(transition: .immediate)
+                strongSelf.playPauseButton.isEnabled = true
+                strongSelf.backwardButton.isEnabled = true
+                strongSelf.forwardButton.isEnabled = true
+                
+                displayData = value.item.displayData
+                
+                if value.order != strongSelf.currentOrder {
+                    strongSelf.updateOrder?(value.order)
+                    strongSelf.currentOrder = value.order
+                    strongSelf.updateOrderButton(value.order)
                 }
+                if value.looping != strongSelf.currentLooping {
+                    strongSelf.currentLooping = value.looping
+                    strongSelf.updateLoopButton(value.looping)
+                }
+                
+                let baseRate: AudioPlaybackRate
+                if !value.status.baseRate.isEqual(to: 1.0) {
+                    baseRate = .x2
+                } else {
+                    baseRate = .x1
+                }
+                if baseRate != strongSelf.currentRate {
+                    strongSelf.currentRate = baseRate
+                    strongSelf.updateRateButton(baseRate)
+                }
+                
+                if let displayData = displayData, case let .music(_, _, _, long) = displayData, long {
+                    strongSelf.scrubberNode.enableFineScrubbing = true
+                    rateButtonIsHidden = false
+                } else {
+                    strongSelf.scrubberNode.enableFineScrubbing = false
+                    rateButtonIsHidden = true
+                }
+                
+                let duration = value.status.duration
+                if duration != strongSelf.currentDuration && !duration.isZero {
+                    strongSelf.currentDuration = duration
+                    if let layout = strongSelf.validLayout {
+                        strongSelf.updateLayout(width: layout.0, leftInset: layout.1, rightInset: layout.2, maxHeight: layout.3, transition: .immediate)
+                    }
+                }
+                
+                strongSelf.rateButton.isHidden = rateButtonIsHidden
+            } else {
+                strongSelf.playPauseButton.isEnabled = false
+                strongSelf.backwardButton.isEnabled = false
+                strongSelf.forwardButton.isEnabled = false
+                strongSelf.rateButton.isHidden = true
+                displayData = nil
+            }
+            
+            if strongSelf.displayData != displayData {
+                strongSelf.displayData = displayData
+                                
+                if let (_, valueOrLoading) = value, case let .state(value) = valueOrLoading, let source = value.item.playbackData?.source {
+                    switch source {
+                        case let .telegramFile(fileReference):
+                            strongSelf.currentFileReference = fileReference
+                            if let size = fileReference.media.size {
+                                strongSelf.scrubberNode.bufferingStatus = strongSelf.postbox.mediaBox.resourceRangesStatus(fileReference.media.resource)
+                                |> map { ranges -> (IndexSet, Int) in
+                                    return (ranges, size)
+                                }
+                            } else {
+                                strongSelf.scrubberNode.bufferingStatus = nil
+                            }
+                    }
+                } else {
+                    strongSelf.scrubberNode.bufferingStatus = nil
+                }
+                strongSelf.updateLabels(transition: .immediate)
             }
         })
         
@@ -300,10 +399,12 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
         self.backwardButton.addTarget(self, action: #selector(self.backwardPressed), forControlEvents: .touchUpInside)
         self.forwardButton.addTarget(self, action: #selector(self.forwardPressed), forControlEvents: .touchUpInside)
         self.playPauseButton.addTarget(self, action: #selector(self.playPausePressed), forControlEvents: .touchUpInside)
+        self.rateButton.addTarget(self, action: #selector(self.rateButtonPressed), forControlEvents: .touchUpInside)
     }
     
     deinit {
         self.statusDisposable?.dispose()
+        self.scrubbingDisposable?.dispose()
     }
     
     override func didLoad() {
@@ -312,20 +413,20 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
         self.albumArtNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.albumArtTap(_:))))
     }
     
-    func updateTheme(_ theme: PresentationTheme) {
-        guard self.theme !== theme else {
+    func updatePresentationData(_ presentationData: PresentationData) {
+        guard self.presentationData.theme !== presentationData.theme else {
             return
         }
-        self.theme = theme
+        self.presentationData = presentationData
         
-        self.backgroundNode.image = generateBackground(theme: theme)
-        self.collapseNode.setImage(generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/CollapseArrow"), color: theme.list.controlSecondaryColor), for: [])
-        self.shareNode.setImage(generateShareIcon(theme: theme), for: [])
-        self.scrubberNode.updateColors(backgroundColor: theme.list.controlSecondaryColor, foregroundColor: theme.list.itemAccentColor)
-        self.leftDurationLabel.textColor = theme.list.itemSecondaryTextColor
-        self.rightDurationLabel.textColor = theme.list.itemSecondaryTextColor
-        self.backwardButton.icon = generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/Previous"), color: theme.list.itemPrimaryTextColor)
-        self.forwardButton.icon = generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/Next"), color: theme.list.itemPrimaryTextColor)
+        self.backgroundNode.image = generateBackground(theme: presentationData.theme)
+        self.collapseNode.setImage(generateCollapseIcon(theme: presentationData.theme), for: [])
+        self.shareNode.setImage(generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/Share"), color: presentationData.theme.list.itemAccentColor), for: [])
+        self.scrubberNode.updateColors(backgroundColor: presentationData.theme.list.controlSecondaryColor, foregroundColor: presentationData.theme.list.itemAccentColor)
+        self.leftDurationLabel.textColor = presentationData.theme.list.itemSecondaryTextColor
+        self.rightDurationLabel.textColor = presentationData.theme.list.itemSecondaryTextColor
+        self.backwardButton.icon = generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/Previous"), color: presentationData.theme.list.itemPrimaryTextColor)
+        self.forwardButton.icon = generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/Next"), color: presentationData.theme.list.itemPrimaryTextColor)
         if let isPaused = self.currentIsPaused {
             self.updatePlayPauseButton(paused: isPaused)
         }
@@ -335,7 +436,10 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
         if let looping = self.currentLooping {
             self.updateLoopButton(looping)
         }
-        self.separatorNode.backgroundColor = theme.list.itemPlainSeparatorColor
+        if let rate = self.currentRate {
+            self.updateRateButton(rate)
+        }
+        self.separatorNode.backgroundColor = presentationData.theme.list.itemPlainSeparatorColor
     }
     
     private func updateLabels(transition: ContainedViewLayoutTransition) {
@@ -347,12 +451,12 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
         
         let sideInset: CGFloat = 20.0
         
-        let infoLabelsLeftInset: CGFloat = 64.0
+        let infoLabelsLeftInset: CGFloat = 60.0
         let infoLabelsRightInset: CGFloat = 32.0
         
         let infoVerticalOrigin: CGFloat = panelHeight - OverlayPlayerControlsNode.basePanelHeight + 36.0
         
-        let (titleString, descriptionString) = stringsForDisplayData(self.displayData, theme: self.theme)
+        let (titleString, descriptionString) = stringsForDisplayData(self.displayData, presentationData: self.presentationData)
         let makeTitleLayout = TextNode.asyncLayout(self.titleNode)
         let (titleLayout, titleApply) = makeTitleLayout(TextNodeLayoutArguments(attributedString: titleString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: width - sideInset * 2.0 - leftInset - rightInset - infoLabelsLeftInset - infoLabelsRightInset, height: CGFloat.greatestFiniteMagnitude), alignment: .left, lineSpacing: 0.0, cutout: nil, insets: UIEdgeInsets()))
         let makeDescriptionLayout = TextNode.asyncLayout(self.descriptionNode)
@@ -361,13 +465,13 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
         transition.updateFrame(node: self.titleNode, frame: CGRect(origin: CGPoint(x: self.isExpanded ? floor((width - titleLayout.size.width) / 2.0) : (leftInset + sideInset + infoLabelsLeftInset), y: infoVerticalOrigin + 1.0), size: titleLayout.size))
         let _ = titleApply()
         
-        transition.updateFrame(node: self.descriptionNode, frame: CGRect(origin: CGPoint(x: self.isExpanded ? floor((width - descriptionLayout.size.width) / 2.0) : (leftInset + sideInset + infoLabelsLeftInset), y: infoVerticalOrigin + 27.0), size: descriptionLayout.size))
+        transition.updateFrame(node: self.descriptionNode, frame: CGRect(origin: CGPoint(x: self.isExpanded ? floor((width - descriptionLayout.size.width) / 2.0) : (leftInset + sideInset + infoLabelsLeftInset), y: infoVerticalOrigin + 26.0), size: descriptionLayout.size))
         let _ = descriptionApply()
         
         var albumArt: SharedMediaPlaybackAlbumArt?
         if let displayData = self.displayData {
             switch displayData {
-                case let .music(_, _, value):
+                case let .music(_, _, value, _):
                     albumArt = value
                 default:
                     break
@@ -385,33 +489,42 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
     
     private func updatePlayPauseButton(paused: Bool) {
         if paused {
-            self.playPauseButton.icon = generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/Play"), color: self.theme.list.itemPrimaryTextColor)
+            self.playPauseButton.icon = generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/Play"), color: self.presentationData.theme.list.itemPrimaryTextColor)
         } else {
-            self.playPauseButton.icon = generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/Pause"), color: self.theme.list.itemPrimaryTextColor)
+            self.playPauseButton.icon = generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/Pause"), color: self.presentationData.theme.list.itemPrimaryTextColor)
         }
     }
     
     private func updateOrderButton(_ order: MusicPlaybackSettingsOrder) {
-        let baseColor = self.theme.list.itemSecondaryTextColor
+        let baseColor = self.presentationData.theme.list.itemSecondaryTextColor
         switch order {
             case .regular:
                 self.orderButton.icon = generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/OrderReverse"), color: baseColor)
             case .reversed:
-                self.orderButton.icon = generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/OrderReverse"), color: self.theme.list.itemAccentColor)
+                self.orderButton.icon = generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/OrderReverse"), color: self.presentationData.theme.list.itemAccentColor)
             case .random:
-                self.orderButton.icon = generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/OrderRandom"), color: self.theme.list.itemAccentColor)
+                self.orderButton.icon = generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/OrderRandom"), color: self.presentationData.theme.list.itemAccentColor)
         }
     }
     
     private func updateLoopButton(_ looping: MusicPlaybackSettingsLooping) {
-        let baseColor = self.theme.list.itemSecondaryTextColor
+        let baseColor = self.presentationData.theme.list.itemSecondaryTextColor
         switch looping {
             case .none:
                 self.loopingButton.icon = generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/Repeat"), color: baseColor)
             case .item:
-                self.loopingButton.icon = generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/RepeatOne"), color: self.theme.list.itemAccentColor)
+                self.loopingButton.icon = generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/RepeatOne"), color: self.presentationData.theme.list.itemAccentColor)
             case .all:
-                self.loopingButton.icon = generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/Repeat"), color: self.theme.list.itemAccentColor)
+                self.loopingButton.icon = generateTintedImage(image: UIImage(bundleImageName: "GlobalMusicPlayer/Repeat"), color: self.presentationData.theme.list.itemAccentColor)
+        }
+    }
+    
+    private func updateRateButton(_ baseRate: AudioPlaybackRate) {
+        switch baseRate {
+            case .x2:
+                self.rateButton.setImage(PresentationResourcesRootController.navigationPlayerMaximizedRateActiveIcon(self.presentationData.theme), for: [])
+            default:
+                self.rateButton.setImage(PresentationResourcesRootController.navigationPlayerMaximizedRateInactiveIcon(self.presentationData.theme), for: [])
         }
     }
     
@@ -429,7 +542,6 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
     func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, maxHeight: CGFloat, transition: ContainedViewLayoutTransition) -> CGFloat {
         self.validLayout = (width, leftInset, rightInset, maxHeight)
     
-        
         let panelHeight = OverlayPlayerControlsNode.heightForLayout(width: width, leftInset: leftInset, rightInset: rightInset, maxHeight: maxHeight, isExpanded: self.isExpanded)
         
         transition.updateFrame(node: self.separatorNode, frame: CGRect(origin: CGPoint(x: 0.0, y: panelHeight), size: CGSize(width: width, height: UIScreenPixel)))
@@ -437,7 +549,7 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
         transition.updateFrame(node: self.collapseNode, frame: CGRect(origin: CGPoint(x: 0.0, y: 2.0), size: CGSize(width: width, height: 30.0)))
         
         let sideInset: CGFloat = 20.0
-        let sideButtonsInset: CGFloat = sideInset + 30.0
+        let sideButtonsInset: CGFloat = sideInset + 36.0
         
         let infoVerticalOrigin: CGFloat = panelHeight - OverlayPlayerControlsNode.basePanelHeight + 36.0
         
@@ -522,8 +634,15 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
         let scrubberVerticalOrigin: CGFloat = infoVerticalOrigin + 64.0
         
         transition.updateFrame(node: self.scrubberNode, frame: CGRect(origin: CGPoint(x: leftInset +  sideInset, y: scrubberVerticalOrigin - 8.0), size: CGSize(width: width - sideInset * 2.0 - leftInset - rightInset, height: 10.0 + 8.0 * 2.0)))
-        transition.updateFrame(node: self.leftDurationLabel, frame: CGRect(origin: CGPoint(x: leftInset + sideInset, y: scrubberVerticalOrigin + 12.0), size: CGSize(width: 100.0, height: 20.0)))
-        transition.updateFrame(node: self.rightDurationLabel, frame: CGRect(origin: CGPoint(x: width - sideInset - rightInset - 100.0, y: scrubberVerticalOrigin + 12.0), size: CGSize(width: 100.0, height: 20.0)))
+        
+        var leftLabelVerticalOffset: CGFloat = self.leftDurationLabelPushed ? 6.0 : 0.0
+        transition.updateFrame(node: self.leftDurationLabel, frame: CGRect(origin: CGPoint(x: leftInset + sideInset, y: scrubberVerticalOrigin + 14.0 + leftLabelVerticalOffset), size: CGSize(width: 100.0, height: 20.0)))
+        
+        var rightLabelVerticalOffset: CGFloat = self.rightDurationLabelPushed ? 6.0 : 0.0
+        transition.updateFrame(node: self.rightDurationLabel, frame: CGRect(origin: CGPoint(x: width - sideInset - rightInset - 100.0, y: scrubberVerticalOrigin + 14.0 + rightLabelVerticalOffset), size: CGSize(width: 100.0, height: 20.0)))
+        
+        let rateRightOffset = timestampLabelWidthForDuration(self.currentDuration)
+        transition.updateFrame(node: self.rateButton, frame: CGRect(origin: CGPoint(x: width - sideInset - rightInset - rateRightOffset - 28.0, y: scrubberVerticalOrigin + 10.0 + rightLabelVerticalOffset), size: CGSize(width: 24.0, height: 24.0)))
         
         transition.updateFrame(node: self.backgroundNode, frame: CGRect(origin: CGPoint(x: 0.0, y: -8.0), size: CGSize(width: width, height: panelHeight + 8.0)))
         
@@ -604,6 +723,21 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
     
     @objc func playPausePressed() {
         self.control?(.playback(.togglePlayPause))
+    }
+    
+    @objc func rateButtonPressed() {
+        var nextRate: AudioPlaybackRate
+        if let currentRate = self.currentRate {
+            switch currentRate {
+                case .x1:
+                    nextRate = .x2
+                default:
+                    nextRate = .x1
+            }
+        } else {
+            nextRate = .x2
+        }
+        self.control?(.setBaseRate(nextRate))
     }
     
     @objc func albumArtTap(_ recognizer: UITapGestureRecognizer) {

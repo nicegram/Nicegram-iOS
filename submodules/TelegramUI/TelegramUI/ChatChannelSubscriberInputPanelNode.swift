@@ -3,10 +3,13 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import TelegramCore
+import SyncCore
 import Postbox
 import SwiftSignalKit
 import TelegramPresentationData
 import AlertUI
+import PresentationDataUtils
+import PeerInfoUI
 
 private enum SubscriberAction {
     case join
@@ -116,40 +119,45 @@ final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
         }
         
         switch action {
-            case .join:
-                self.activityIndicator.isHidden = false
-                self.activityIndicator.startAnimating()
-                self.actionDisposable.set((context.peerChannelMemberCategoriesContextsManager.join(account: context.account, peerId: peer.id)
-                |> afterDisposed { [weak self] in
-                    Queue.mainQueue().async {
-                        if let strongSelf = self {
-                            strongSelf.activityIndicator.isHidden = true
-                            strongSelf.activityIndicator.stopAnimating()
-                        }
+        case .join:
+            self.activityIndicator.isHidden = false
+            self.activityIndicator.startAnimating()
+            self.actionDisposable.set((context.peerChannelMemberCategoriesContextsManager.join(account: context.account, peerId: peer.id)
+            |> afterDisposed { [weak self] in
+                Queue.mainQueue().async {
+                    if let strongSelf = self {
+                        strongSelf.activityIndicator.isHidden = true
+                        strongSelf.activityIndicator.stopAnimating()
                     }
-                }).start(error: { [weak self] error in
-                    guard let strongSelf = self, let presentationInterfaceState = strongSelf.presentationInterfaceState, let peer = presentationInterfaceState.renderedPeer?.peer else {
-                        return
-                    }
-                    let text: String
-                    switch error {
-                        case .tooMuchJoined:
-                            text = presentationInterfaceState.strings.Join_ChannelsTooMuch
-                        default:
-                            if let channel = peer as? TelegramChannel, case .broadcast = channel.info {
-                                text = presentationInterfaceState.strings.Channel_ErrorAccessDenied
-                            } else {
-                                text = presentationInterfaceState.strings.Group_ErrorAccessDenied
-                            }
-                    }
-                    strongSelf.interfaceInteraction?.presentController(textAlertController(context: context, title: nil, text: text, actions: [TextAlertAction(type: .defaultAction, title: presentationInterfaceState.strings.Common_OK, action: {})]), nil)
-                }))
-            case .kicked:
-                break
-            case .muteNotifications, .unmuteNotifications:
-                if let context = self.context, let presentationInterfaceState = self.presentationInterfaceState, let peer = presentationInterfaceState.renderedPeer?.peer {
-                    self.actionDisposable.set(togglePeerMuted(account: context.account, peerId: peer.id).start())
                 }
+            }).start(error: { [weak self] error in
+                guard let strongSelf = self, let presentationInterfaceState = strongSelf.presentationInterfaceState, let peer = presentationInterfaceState.renderedPeer?.peer else {
+                    return
+                }
+                let text: String
+                switch error {
+                case .tooMuchJoined:
+                    strongSelf.interfaceInteraction?.getNavigationController()?.pushViewController(oldChannelsController(context: context, intent: .join, completed: { value in
+                        if value {
+                            self?.buttonPressed()
+                        }
+                    }))
+                    return
+                default:
+                    if let channel = peer as? TelegramChannel, case .broadcast = channel.info {
+                        text = presentationInterfaceState.strings.Channel_ErrorAccessDenied
+                    } else {
+                        text = presentationInterfaceState.strings.Group_ErrorAccessDenied
+                    }
+                }
+                strongSelf.interfaceInteraction?.presentController(textAlertController(context: context, title: nil, text: text, actions: [TextAlertAction(type: .defaultAction, title: presentationInterfaceState.strings.Common_OK, action: {})]), nil)
+            }))
+        case .kicked:
+            break
+        case .muteNotifications, .unmuteNotifications:
+            if let context = self.context, let presentationInterfaceState = self.presentationInterfaceState, let peer = presentationInterfaceState.renderedPeer?.peer {
+                self.actionDisposable.set(togglePeerMuted(account: context.account, peerId: peer.id).start())
+            }
         }
     }
     
@@ -159,7 +167,7 @@ final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
         }
     }
     
-    override func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, maxHeight: CGFloat, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics) -> CGFloat {
+    override func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, maxHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics) -> CGFloat {
         self.layoutData = (width, leftInset, rightInset)
         
         if self.presentationInterfaceState != interfaceState {
@@ -167,7 +175,7 @@ final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
             self.presentationInterfaceState = interfaceState
             
             if previousState?.theme !== interfaceState.theme {
-                self.badgeBackground.image = PresentationResourcesChatList.badgeBackgroundActive(interfaceState.theme)
+                self.badgeBackground.image = PresentationResourcesChatList.badgeBackgroundActive(interfaceState.theme, diameter: 20.0)
             }
             
             if previousState?.peerDiscussionId != interfaceState.peerDiscussionId {
@@ -237,7 +245,12 @@ final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
         let panelHeight = defaultHeight(metrics: metrics)
         
         if self.discussButton.isHidden {
-            self.button.frame = CGRect(origin: CGPoint(x: leftInset, y: 0.0), size: CGSize(width: width - leftInset - rightInset, height: panelHeight))
+            if let action = self.action, action == .muteNotifications || action == .unmuteNotifications {
+                let buttonWidth = self.button.titleNode.calculateSizeThatFits(CGSize(width: width, height: panelHeight)).width + 24.0
+                self.button.frame = CGRect(origin: CGPoint(x: floor((width - buttonWidth) / 2.0), y: 0.0), size: CGSize(width: buttonWidth, height: panelHeight))
+            } else {
+                self.button.frame = CGRect(origin: CGPoint(x: leftInset, y: 0.0), size: CGSize(width: width - leftInset - rightInset, height: panelHeight))
+            }
         } else {
             let availableWidth = min(600.0, width - leftInset - rightInset)
             let leftOffset = floor((width - availableWidth) / 2.0)

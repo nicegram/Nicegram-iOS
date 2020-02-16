@@ -5,9 +5,11 @@ import Display
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import AccountContext
 import WebSearchUI
+import AppBundle
 
 func paneGifSearchForQuery(account: Account, query: String, updateActivity: ((Bool) -> Void)?) -> Signal<[FileMediaReference]?, NoError> {
     let delayRequest = true
@@ -26,7 +28,7 @@ func paneGifSearchForQuery(account: Account, query: String, updateActivity: ((Bo
     }
     |> mapToSignal { peer -> Signal<(ChatPresentationInputQueryResult?) -> ChatPresentationInputQueryResult?, NoError> in
         if let user = peer as? TelegramUser, let botInfo = user.botInfo, let _ = botInfo.inlinePlaceholder {
-            let results = requestContextResults(account: account, botId: user.id, query: query, peerId: account.peerId, limit: 64)
+            let results = requestContextResults(account: account, botId: user.id, query: query, peerId: account.peerId, limit: 15)
             |> map { results -> (ChatPresentationInputQueryResult?) -> ChatPresentationInputQueryResult? in
                 return { _ in
                     return .contextRequestResult(user, results)
@@ -196,7 +198,7 @@ final class GifPaneSearchContentNode: ASDisplayNode & PaneSearchContentNode {
         }
     }
     
-    func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, inputHeight: CGFloat, transition: ContainedViewLayoutTransition) {
+    func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, inputHeight: CGFloat, deviceMetrics: DeviceMetrics, transition: ContainedViewLayoutTransition) {
         let firstLayout = self.validLayout == nil
         self.validLayout = size
         

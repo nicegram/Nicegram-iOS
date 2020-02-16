@@ -24,19 +24,14 @@
     NSInteger _number;
     
     UIColor *_checkColor;
+    
+    CGAffineTransform TGCheckButtonDefaultTransform;
 }
 @end
 
 @implementation TGCheckButtonView
 
-static NSMutableDictionary *backgroundImages;
-static NSMutableDictionary *fillImages;
-static CGAffineTransform TGCheckButtonDefaultTransform;
-
-+ (void)resetCache
-{
-    [backgroundImages removeAllObjects];
-    [fillImages removeAllObjects];
++ (void)resetCache {
 }
 
 - (instancetype)initWithStyle:(TGCheckButtonStyle)style {
@@ -55,15 +50,12 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
     self = [super initWithFrame:CGRectMake(0, 0, size.width, size.height)];
     if (self != nil)
     {
-        static dispatch_once_t onceToken;
-        static CGFloat screenScale = 2.0f;
-        dispatch_once(&onceToken, ^
-        {
-            TGCheckButtonDefaultTransform = CGAffineTransformMakeRotation(-M_PI_4);
-            backgroundImages = [[NSMutableDictionary alloc] init];
-            fillImages = [[NSMutableDictionary alloc] init];
-            screenScale = [UIScreen mainScreen].scale;
-        });
+        CGFloat screenScale = 2.0f;
+        
+        TGCheckButtonDefaultTransform = CGAffineTransformMakeRotation(-M_PI_4);
+        NSMutableDictionary *backgroundImages = [[NSMutableDictionary alloc] init];
+        NSMutableDictionary *fillImages = [[NSMutableDictionary alloc] init];
+        screenScale = [UIScreen mainScreen].scale;
         
         int32_t hex = 0x29c519;
         UIColor *greenColor = [[UIColor alloc] initWithRed:(((hex >> 16) & 0xff) / 255.0f) green:(((hex >> 8) & 0xff) / 255.0f) blue:(((hex) & 0xff) / 255.0f) alpha:1.0f];
@@ -483,7 +475,7 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
     {
         _numberLabel = [[UILabel alloc] init];
         _numberLabel.backgroundColor = [UIColor clearColor];
-        _numberLabel.frame = CGRectMake(0.0f, -TGScreenPixel, _wrapperView.frame.size.width, _wrapperView.frame.size.height);
+        _numberLabel.frame = CGRectMake(0.0f, -TGScreenPixel, _wrapperView.bounds.size.width, _wrapperView.bounds.size.height);
         _numberLabel.textColor = _checkColor;
         _numberLabel.textAlignment = NSTextAlignmentCenter;
         _numberLabel.userInteractionEnabled = false;

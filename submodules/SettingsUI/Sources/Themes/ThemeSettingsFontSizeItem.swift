@@ -4,21 +4,32 @@ import Display
 import AsyncDisplayKit
 import SwiftSignalKit
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import TelegramUIPreferences
 import LegacyComponents
 import ItemListUI
+import PresentationDataUtils
+import AppBundle
 
 class ThemeSettingsFontSizeItem: ListViewItem, ItemListItem {
     let theme: PresentationTheme
     let fontSize: PresentationFontSize
+    let disableLeadingInset: Bool
+    let displayIcons: Bool
+    let force: Bool
+    let enabled: Bool
     let sectionId: ItemListSectionId
     let updated: (PresentationFontSize) -> Void
     let tag: ItemListItemTag?
     
-    init(theme: PresentationTheme, fontSize: PresentationFontSize, sectionId: ItemListSectionId, updated: @escaping (PresentationFontSize) -> Void, tag: ItemListItemTag? = nil) {
+    init(theme: PresentationTheme, fontSize: PresentationFontSize, enabled: Bool = true, disableLeadingInset: Bool = false, displayIcons: Bool = true, force: Bool = false, sectionId: ItemListSectionId, updated: @escaping (PresentationFontSize) -> Void, tag: ItemListItemTag? = nil) {
         self.theme = theme
         self.fontSize = fontSize
+        self.enabled = enabled
+        self.disableLeadingInset = disableLeadingInset
+        self.displayIcons = displayIcons
+        self.force = force
         self.sectionId = sectionId
         self.updated = updated
         self.tag = tag
@@ -71,10 +82,12 @@ class ThemeSettingsFontSizeItemNode: ListViewItemNode, ItemListItemNode {
     private let backgroundNode: ASDisplayNode
     private let topStripeNode: ASDisplayNode
     private let bottomStripeNode: ASDisplayNode
+    private let maskNode: ASImageNode
     
     private var sliderView: TGPhotoEditorSliderView?
     private let leftIconNode: ASImageNode
     private let rightIconNode: ASImageNode
+    private let disabledOverlayNode: ASDisplayNode
     
     private var item: ThemeSettingsFontSizeItem?
     private var layoutParams: ListViewItemLayoutParams?
@@ -93,6 +106,8 @@ class ThemeSettingsFontSizeItemNode: ListViewItemNode, ItemListItemNode {
         self.bottomStripeNode = ASDisplayNode()
         self.bottomStripeNode.isLayerBacked = true
         
+        self.maskNode = ASImageNode()
+        
         self.leftIconNode = ASImageNode()
         self.leftIconNode.displaysAsynchronously = false
         self.leftIconNode.displayWithoutProcessing = true
@@ -101,10 +116,14 @@ class ThemeSettingsFontSizeItemNode: ListViewItemNode, ItemListItemNode {
         self.rightIconNode.displaysAsynchronously = false
         self.rightIconNode.displayWithoutProcessing = true
         
+        self.disabledOverlayNode = ASDisplayNode()
+        
         super.init(layerBacked: false, dynamicBounce: false)
         
         self.addSubnode(self.leftIconNode)
         self.addSubnode(self.rightIconNode)
+        
+        self.addSubnode(self.disabledOverlayNode)
     }
     
     override func didLoad() {
@@ -122,6 +141,8 @@ class ThemeSettingsFontSizeItemNode: ListViewItemNode, ItemListItemNode {
         sliderView.positionsCount = 7
         sliderView.disablesInteractiveTransitionGestureRecognizer = true
         if let item = self.item, let params = self.layoutParams {
+            sliderView.isUserInteractionEnabled = item.enabled
+            
             let value: CGFloat
             switch item.fontSize {
                 case .extraSmall:
@@ -142,12 +163,14 @@ class ThemeSettingsFontSizeItemNode: ListViewItemNode, ItemListItemNode {
             sliderView.value = value
             sliderView.backgroundColor = item.theme.list.itemBlocksBackgroundColor
             sliderView.backColor = item.theme.list.disclosureArrowColor
-            sliderView.trackColor = item.theme.list.itemAccentColor
+            sliderView.trackColor = item.enabled ? item.theme.list.itemAccentColor : item.theme.list.itemDisabledTextColor
             sliderView.knobImage = generateKnobImage()
             
-            sliderView.frame = CGRect(origin: CGPoint(x: params.leftInset + 38.0, y: 8.0), size: CGSize(width: params.width - params.leftInset - params.rightInset - 38.0 * 2.0, height: 44.0))
+            let sliderInset: CGFloat = item.displayIcons ? 38.0 : 16.0
+            
+            sliderView.frame = CGRect(origin: CGPoint(x: params.leftInset + sliderInset, y: 8.0), size: CGSize(width: params.width - params.leftInset - params.rightInset - sliderInset * 2.0, height: 44.0))
         }
-        self.view.addSubview(sliderView)
+        self.view.insertSubview(sliderView, belowSubview: self.disabledOverlayNode.view)
         sliderView.addTarget(self, action: #selector(self.sliderValueChanged), for: .valueChanged)
         self.sliderView = sliderView
     }
@@ -168,23 +191,33 @@ class ThemeSettingsFontSizeItemNode: ListViewItemNode, ItemListItemNode {
             }
             
             let contentSize: CGSize
-            let insets: UIEdgeInsets
+            var insets: UIEdgeInsets
             let separatorHeight = UIScreenPixel
             
             contentSize = CGSize(width: params.width, height: 60.0)
             insets = itemListNeighborsGroupedInsets(neighbors)
+            
+            if item.disableLeadingInset {
+                insets.top = 0.0
+                insets.bottom = 0.0
+            }
             
             let layout = ListViewItemNodeLayout(contentSize: contentSize, insets: insets)
             let layoutSize = layout.size
             
             return (layout, { [weak self] in
                 if let strongSelf = self {
+                    let firstTime = strongSelf.item == nil || item.force
                     strongSelf.item = item
                     strongSelf.layoutParams = params
                     
                     strongSelf.backgroundNode.backgroundColor = item.theme.list.itemBlocksBackgroundColor
                     strongSelf.topStripeNode.backgroundColor = item.theme.list.itemBlocksSeparatorColor
                     strongSelf.bottomStripeNode.backgroundColor = item.theme.list.itemBlocksSeparatorColor
+                    
+                    strongSelf.disabledOverlayNode.backgroundColor = item.theme.list.itemBlocksBackgroundColor.withAlphaComponent(0.4)
+                    strongSelf.disabledOverlayNode.isHidden = item.enabled
+                    strongSelf.disabledOverlayNode.frame = CGRect(origin: CGPoint(x: params.leftInset, y: 8.0), size: CGSize(width: params.width - params.leftInset - params.rightInset, height: 44.0))
                     
                     if strongSelf.backgroundNode.supernode == nil {
                         strongSelf.insertSubnode(strongSelf.backgroundNode, at: 0)
@@ -195,11 +228,19 @@ class ThemeSettingsFontSizeItemNode: ListViewItemNode, ItemListItemNode {
                     if strongSelf.bottomStripeNode.supernode == nil {
                         strongSelf.insertSubnode(strongSelf.bottomStripeNode, at: 2)
                     }
+                    if strongSelf.maskNode.supernode == nil {
+                        strongSelf.insertSubnode(strongSelf.maskNode, at: 3)
+                    }
+                    
+                    let hasCorners = itemListHasRoundedBlockLayout(params)
+                    var hasTopCorners = false
+                    var hasBottomCorners = false
                     switch neighbors.top {
-                        case .sameSection(false):
-                            strongSelf.topStripeNode.isHidden = true
-                        default:
-                            strongSelf.topStripeNode.isHidden = false
+                    case .sameSection(false):
+                        strongSelf.topStripeNode.isHidden = true
+                    default:
+                        hasTopCorners = true
+                        strongSelf.topStripeNode.isHidden = hasCorners
                     }
                     let bottomStripeInset: CGFloat
                     let bottomStripeOffset: CGFloat
@@ -210,8 +251,14 @@ class ThemeSettingsFontSizeItemNode: ListViewItemNode, ItemListItemNode {
                         default:
                             bottomStripeInset = 0.0
                             bottomStripeOffset = 0.0
+                            hasBottomCorners = true
+                            strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
+                    
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                    
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
+                    strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                     strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight))
                     strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight))
                     
@@ -228,15 +275,42 @@ class ThemeSettingsFontSizeItemNode: ListViewItemNode, ItemListItemNode {
                         strongSelf.rightIconNode.frame = CGRect(origin: CGPoint(x: params.width - params.rightInset - 14.0 - image.size.width, y: 21.0), size: CGSize(width: image.size.width, height: image.size.height))
                     }
                     
+                    strongSelf.leftIconNode.isHidden = !item.displayIcons
+                    strongSelf.rightIconNode.isHidden = !item.displayIcons
+                    
                     if let sliderView = strongSelf.sliderView {
+                        sliderView.isUserInteractionEnabled = item.enabled
+                        sliderView.trackColor = item.enabled ? item.theme.list.itemAccentColor : item.theme.list.itemDisabledTextColor
+                        
                         if themeUpdated {
                             sliderView.backgroundColor = item.theme.list.itemBlocksBackgroundColor
                             sliderView.backColor = item.theme.list.disclosureArrowColor
-                            sliderView.trackColor = item.theme.list.itemAccentColor
                             sliderView.knobImage = generateKnobImage()
                         }
                         
-                        sliderView.frame = CGRect(origin: CGPoint(x: params.leftInset + 38.0, y: 8.0), size: CGSize(width: params.width - params.leftInset - params.rightInset - 38.0 * 2.0, height: 44.0))
+                        let value: CGFloat
+                        switch item.fontSize {
+                        case .extraSmall:
+                            value = 0.0
+                        case .small:
+                            value = 1.0
+                        case .medium:
+                            value = 2.0
+                        case .regular:
+                            value = 3.0
+                        case .large:
+                            value = 4.0
+                        case .extraLarge:
+                            value = 5.0
+                        case .extraLargeX2:
+                            value = 6.0
+                        }
+                        if firstTime {
+                            sliderView.value = value
+                        }
+                        
+                        let sliderInset: CGFloat = item.displayIcons ? 38.0 : 16.0
+                        sliderView.frame = CGRect(origin: CGPoint(x: params.leftInset + sliderInset, y: 8.0), size: CGSize(width: params.width - params.leftInset - params.rightInset - sliderInset * 2.0, height: 44.0))
                     }
                 }
             })

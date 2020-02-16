@@ -129,6 +129,8 @@ typedef enum {
 
 @interface MTDatacenterAuthMessageService ()
 {
+    id<EncryptionProvider> _encryptionProvider;
+    
     bool _tempAuth;
     MTSessionInfo *_sessionInfo;
     
@@ -161,6 +163,7 @@ typedef enum {
     self = [super init];
     if (self != nil)
     {
+        _encryptionProvider = context.encryptionProvider;
         _tempAuth = tempAuth;
         _sessionInfo = [[MTSessionInfo alloc] initWithRandomSessionIdAndContext:context];
     }
@@ -241,7 +244,7 @@ typedef enum {
                 [reqPqBuffer appendBytes:_nonce.bytes length:_nonce.length];
                 
                 NSString *messageDescription = [NSString stringWithFormat:@"reqPq nonce:%@", _nonce];
-                MTOutgoingMessage *message = [[MTOutgoingMessage alloc] initWithData:reqPqBuffer.data metadata:messageDescription shortMetadata:messageDescription messageId:_currentStageMessageId messageSeqNo:_currentStageMessageSeqNo];
+                MTOutgoingMessage *message = [[MTOutgoingMessage alloc] initWithData:reqPqBuffer.data metadata:messageDescription additionalDebugDescription:nil shortMetadata:messageDescription messageId:_currentStageMessageId messageSeqNo:_currentStageMessageSeqNo];
                 return [[MTMessageTransaction alloc] initWithMessagePayload:@[message] prepared:nil failed:nil completion:^(NSDictionary *messageInternalIdToTransactionId, NSDictionary *messageInternalIdToPreparedMessage, __unused NSDictionary *messageInternalIdToQuickAckId)
                 {
                     if (_stage == MTDatacenterAuthStagePQ && messageInternalIdToTransactionId[message.internalId] != nil && messageInternalIdToPreparedMessage[message.internalId] != nil)
@@ -265,7 +268,7 @@ typedef enum {
                 [reqDhBuffer appendTLBytes:_dhEncryptedData];
                 
                 NSString *messageDescription = [NSString stringWithFormat:@"reqDh nonce:%@ serverNonce:%@ p:%@ q:%@ fingerprint:%llx", _nonce, _serverNonce, _dhP, _dhQ, _dhPublicKeyFingerprint];
-                MTOutgoingMessage *message = [[MTOutgoingMessage alloc] initWithData:reqDhBuffer.data metadata:messageDescription shortMetadata:messageDescription messageId:_currentStageMessageId messageSeqNo:_currentStageMessageSeqNo];
+                MTOutgoingMessage *message = [[MTOutgoingMessage alloc] initWithData:reqDhBuffer.data metadata:messageDescription additionalDebugDescription:nil shortMetadata:messageDescription messageId:_currentStageMessageId messageSeqNo:_currentStageMessageSeqNo];
                 return [[MTMessageTransaction alloc] initWithMessagePayload:@[message] prepared:nil failed:nil completion:^(NSDictionary *messageInternalIdToTransactionId, NSDictionary *messageInternalIdToPreparedMessage, __unused NSDictionary *messageInternalIdToQuickAckId)
                 {
                     if (_stage == MTDatacenterAuthStageReqDH && messageInternalIdToTransactionId[message.internalId] != nil && messageInternalIdToPreparedMessage[message.internalId] != nil)
@@ -285,7 +288,7 @@ typedef enum {
                 [setDhParamsBuffer appendBytes:_serverNonce.bytes length:_serverNonce.length];
                 [setDhParamsBuffer appendTLBytes:_encryptedClientData];
                 
-                MTOutgoingMessage *message = [[MTOutgoingMessage alloc] initWithData:setDhParamsBuffer.data metadata:@"setDhParams" shortMetadata:@"setDhParams" messageId:_currentStageMessageId messageSeqNo:_currentStageMessageSeqNo];
+                MTOutgoingMessage *message = [[MTOutgoingMessage alloc] initWithData:setDhParamsBuffer.data metadata:@"setDhParams" additionalDebugDescription:nil shortMetadata:@"setDhParams" messageId:_currentStageMessageId messageSeqNo:_currentStageMessageSeqNo];
                 return [[MTMessageTransaction alloc] initWithMessagePayload:@[message] prepared:nil failed:nil completion:^(NSDictionary *messageInternalIdToTransactionId, NSDictionary *messageInternalIdToPreparedMessage, __unused NSDictionary *messageInternalIdToQuickAckId)
                 {
                     if (_stage == MTDatacenterAuthStageKeyVerification && messageInternalIdToTransactionId[message.internalId] != nil && messageInternalIdToPreparedMessage[message.internalId] != nil)
@@ -399,8 +402,7 @@ typedef enum {
                         arc4random_buf(&random, 1);
                         [dataWithHash appendBytes:&random length:1];
                     }
-                    
-                    NSData *encryptedData = MTRsaEncrypt([publicKey objectForKey:@"key"], dataWithHash);
+                    NSData *encryptedData = MTRsaEncrypt(_encryptionProvider, [publicKey objectForKey:@"key"], dataWithHash);
                     if (encryptedData.length < 256)
                     {
                         NSMutableData *newEncryptedData = [[NSMutableData alloc] init];
@@ -437,7 +439,7 @@ typedef enum {
                         [dataWithHash appendBytes:&random length:1];
                     }
                     
-                    NSData *encryptedData = MTRsaEncrypt([publicKey objectForKey:@"key"], dataWithHash);
+                    NSData *encryptedData = MTRsaEncrypt(_encryptionProvider, [publicKey objectForKey:@"key"], dataWithHash);
                     if (encryptedData.length < 256)
                     {
                         NSMutableData *newEncryptedData = [[NSMutableData alloc] init];
@@ -571,7 +573,7 @@ typedef enum {
                 
                 NSData *innerDataGA = dhInnerData.gA;
                 NSData *innerDataDhPrime = dhInnerData.dhPrime;
-                if (!MTCheckIsSafeGAOrB(innerDataGA, innerDataDhPrime))
+                if (!MTCheckIsSafeGAOrB(_encryptionProvider, innerDataGA, innerDataDhPrime))
                 {
                     if (MTLogEnabled()) {
                         MTLog(@"[MTDatacenterAuthMessageService#%p invalid DH g_a]", self);
@@ -581,7 +583,7 @@ typedef enum {
                     return;
                 }
                 
-                if (!MTCheckMod(innerDataDhPrime, (unsigned int)innerDataG, mtProto.context.keychain))
+                if (!MTCheckMod(_encryptionProvider, innerDataDhPrime, (unsigned int)innerDataG, mtProto.context.keychain))
                 {
                     if (MTLogEnabled()) {
                         MTLog(@"[MTDatacenterAuthMessageService#%p invalid DH g (2)]", self);
@@ -591,7 +593,7 @@ typedef enum {
                     return;
                 }
                 
-                if (!MTCheckIsSafePrime(innerDataDhPrime, mtProto.context.keychain))
+                if (!MTCheckIsSafePrime(_encryptionProvider, innerDataDhPrime, mtProto.context.keychain))
                 {
                     if (MTLogEnabled()) {
                         MTLog(@"[MTDatacenterAuthMessageService#%p invalid DH prime]", self);
@@ -609,9 +611,9 @@ typedef enum {
                 tmpG = (int32_t)OSSwapInt32(tmpG);
                 NSData *g = [[NSData alloc] initWithBytes:&tmpG length:4];
                 
-                NSData *g_b = MTExp(g, b, innerDataDhPrime);
+                NSData *g_b = MTExp(_encryptionProvider, g, b, innerDataDhPrime);
                 
-                NSData *authKey = MTExp(innerDataGA, b, innerDataDhPrime);
+                NSData *authKey = MTExp(_encryptionProvider, innerDataGA, b, innerDataDhPrime);
                 
                 NSData *authKeyHash = MTSha1(authKey);
                 

@@ -5,10 +5,12 @@ import AsyncDisplayKit
 import Postbox
 import SwiftSignalKit
 import TelegramCore
+import SyncCore
 import TelegramPresentationData
 import ProgressNavigationButtonNode
 import AccountContext
 import AlertUI
+import PresentationDataUtils
 import ContactListUI
 import CounterContollerTitleView
 
@@ -182,7 +184,7 @@ class ContactMultiselectionControllerImpl: ViewController, ContactMultiselection
                                 displayCountAlert = true
                                 updatedState = updatedState.withToggledPeerId(.peer(peer.id))
                             } else {
-                                addedToken = EditableTokenListToken(id: peer.id, title: peer.displayTitle)
+                                addedToken = EditableTokenListToken(id: peer.id, title: peer.displayTitle(strings: strongSelf.presentationData.strings, displayOrder: strongSelf.presentationData.nameDisplayOrder))
                             }
                         }
                         updatedCount = updatedState.selectedPeerIndices.count
@@ -298,22 +300,6 @@ class ContactMultiselectionControllerImpl: ViewController, ContactMultiselection
             self.didPlayPresentationAnimation = true
             if case .modalSheet = presentationArguments.presentationAnimation {
                 self.contactsNode.animateIn()
-            }
-        }
-    }
-    
-    override open func dismiss(completion: (() -> Void)? = nil) {
-        if let presentationArguments = self.presentationArguments as? ViewControllerPresentationArguments {
-            switch presentationArguments.presentationAnimation {
-                case .modalSheet:
-                    self.view.endEditing(true)
-                    self.contactsNode.animateOut(completion: { [weak self] in
-                        self?.dismissed?()
-                        completion?()
-                    })
-                case .none:
-                    self.dismissed?()
-                    completion?()
             }
         }
     }

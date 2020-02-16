@@ -6,9 +6,11 @@ class ScrollToTopView: UIScrollView, UIScrollViewDelegate {
     override init(frame: CGRect) {
         super.init(frame: frame)
         
+        self.isOpaque = false
+        self.backgroundColor = .clear
         self.delegate = self
         self.scrollsToTop = true
-        if #available(iOSApplicationExtension 11.0, *) {
+        if #available(iOSApplicationExtension 11.0, iOS 11.0, *) {
             self.contentInsetAdjustmentBehavior = .never
         }
     }
@@ -31,5 +33,17 @@ class ScrollToTopView: UIScrollView, UIScrollViewDelegate {
         }
         
         return false
+    }
+}
+
+class ScrollToTopNode: ASDisplayNode {
+    init(action: @escaping () -> Void) {
+        super.init()
+        
+        self.setViewBlock({
+            let view = ScrollToTopView(frame: CGRect())
+            view.action = action
+            return view
+        })
     }
 }

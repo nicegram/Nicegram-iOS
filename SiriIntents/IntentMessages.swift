@@ -2,6 +2,7 @@ import Foundation
 import SwiftSignalKit
 import Postbox
 import TelegramCore
+import SyncCore
 import Contacts
 import Intents
 
@@ -16,6 +17,7 @@ extension MessageId {
     }
 }
 
+@available(iOSApplicationExtension 10.0, *)
 func getMessages(account: Account, ids: [MessageId]) -> Signal<[INMessage], NoError> {
     return account.postbox.transaction { transaction -> [INMessage] in
         var messages: [INMessage] = []
@@ -28,13 +30,14 @@ func getMessages(account: Account, ids: [MessageId]) -> Signal<[INMessage], NoEr
     }
 }
 
+@available(iOSApplicationExtension 10.0, *)
 func unreadMessages(account: Account) -> Signal<[INMessage], NoError> {
     return account.postbox.tailChatListView(groupId: .root, count: 20, summaryComponents: ChatListEntrySummaryComponents())
     |> take(1)
     |> mapToSignal { view -> Signal<[INMessage], NoError> in
         var signals: [Signal<[INMessage], NoError>] = []
         for entry in view.0.entries {
-            if case let .MessageEntry(index, _, readState, notificationSettings, _, _, _, _) = entry {
+            if case let .MessageEntry(index, _, readState, notificationSettings, _, _, _, _, _) = entry {
                 if index.messageIndex.id.peerId.namespace != Namespaces.Peer.CloudUser {
                     continue
                 }
@@ -86,6 +89,7 @@ func unreadMessages(account: Account) -> Signal<[INMessage], NoError> {
     }
 }
 
+@available(iOSApplicationExtension 10.0, *)
 struct CallRecord {
     let identifier: String
     let date: Date
@@ -99,6 +103,7 @@ struct CallRecord {
     }
 }
 
+@available(iOSApplicationExtension 10.0, *)
 func missedCalls(account: Account) -> Signal<[CallRecord], NoError> {
     return account.viewTracker.callListView(type: .missed, index: MessageIndex.absoluteUpperBound(), count: 30)
     |> take(1)
@@ -120,6 +125,7 @@ func missedCalls(account: Account) -> Signal<[CallRecord], NoError> {
     }
 }
 
+@available(iOSApplicationExtension 10.0, *)
 private func callWithTelegramMessage(_ telegramMessage: Message, account: Account) -> CallRecord? {
     guard let author = telegramMessage.author, let user = telegramMessage.peers[author.id] as? TelegramUser else {
         return nil
@@ -145,7 +151,7 @@ private func callWithTelegramMessage(_ telegramMessage: Message, account: Accoun
         personHandle = INPersonHandle(value: user.phone ?? "", type: .phoneNumber)
     }
     
-    let caller = INPerson(personHandle: personHandle, nameComponents: nil, displayName: user.displayTitle, image: nil, contactIdentifier: nil, customIdentifier: "tg\(user.id.toInt64())")
+    let caller = INPerson(personHandle: personHandle, nameComponents: nil, displayName: user.nameOrPhone, image: nil, contactIdentifier: nil, customIdentifier: "tg\(user.id.toInt64())")
     let date = Date(timeIntervalSince1970: TimeInterval(telegramMessage.timestamp))
     
     var duration: Int32?
@@ -158,6 +164,7 @@ private func callWithTelegramMessage(_ telegramMessage: Message, account: Accoun
     return CallRecord(identifier: identifier, date: date, caller: caller, duration: duration, unseen: true)
 }
 
+@available(iOSApplicationExtension 10.0, *)
 private func messageWithTelegramMessage(_ telegramMessage: Message) -> INMessage? {
     guard let author = telegramMessage.author, let user = telegramMessage.peers[author.id] as? TelegramUser, user.id.id != 777000 else {
         return nil
@@ -184,7 +191,7 @@ private func messageWithTelegramMessage(_ telegramMessage: Message) -> INMessage
     }
     
     let personIdentifier = "tg\(user.id.toInt64())"
-    let sender = INPerson(personHandle: personHandle, nameComponents: nil, displayName: user.displayTitle, image: nil, contactIdentifier: personIdentifier, customIdentifier: personIdentifier)
+    let sender = INPerson(personHandle: personHandle, nameComponents: nil, displayName: user.nameOrPhone, image: nil, contactIdentifier: personIdentifier, customIdentifier: personIdentifier)
     let date = Date(timeIntervalSince1970: TimeInterval(telegramMessage.timestamp))
     
     let message: INMessage

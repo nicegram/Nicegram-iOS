@@ -13,6 +13,7 @@ import Postbox
 import TelegramCore
 import TelegramPresentationData
 import AccountContext
+import NicegramLib
 
 private let animationDurationFactor: Double = 1.0
 private let avatarFont: UIFont = UIFont(name: ".SFCompactRounded-Semibold", size: 16.0)!
@@ -259,7 +260,7 @@ final class TabBarFilterSwitchControllerNode: ViewControllerTracingNode {
     
     private var validLayout: ContainerViewLayout?
     
-    init(sharedContext: SharedAccountContext, presentationData: PresentationData, current: NiceChatListNodePeersFilter?, available: [NiceChatListNodePeersFilter], switchToFilter: @escaping (NiceChatListNodePeersFilter) -> Void, cancel: @escaping () -> Void, sourceNodes: [ASDisplayNode]) {
+    init(sharedContext: SharedAccountContext, presentationData: PresentationData, current: NiceChatListNodePeersFilter?, available: [NiceChatListNodePeersFilter], switchToNGFilter: @escaping (NiceChatListNodePeersFilter) -> Void, cancel: @escaping () -> Void, sourceNodes: [ASDisplayNode]) {
         self.presentationData = presentationData
         self.cancel = cancel
         self.sourceNodes = sourceNodes
@@ -307,7 +308,7 @@ final class TabBarFilterSwitchControllerNode: ViewControllerTracingNode {
                     return cancel()
                 } else {
                     cancel()
-                    switchToFilter(filter)
+                    switchToNGFilter(filter)
                 }
             }))
         }
@@ -321,6 +322,15 @@ final class TabBarFilterSwitchControllerNode: ViewControllerTracingNode {
         self.contentNodes.forEach(self.contentContainerNode.addSubnode)
         
         self.dimNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.dimTapGesture(_:))))
+    }
+    
+    deinit {
+        if let propertyAnimator = self.propertyAnimator {
+            if #available(iOSApplicationExtension 10.0, iOS 10.0, *) {
+                let propertyAnimator = propertyAnimator as? UIViewPropertyAnimator
+                propertyAnimator?.stopAnimation(true)
+            }
+        }
     }
     
     func animateIn() {

@@ -3,6 +3,7 @@ import UIKit
 import Postbox
 import SwiftSignalKit
 import TelegramCore
+import SyncCore
 import Display
 import AccountContext
 import ContextUI
@@ -32,6 +33,7 @@ final class ChatPanelInterfaceInteractionStatuses {
 enum ChatPanelSearchNavigationAction {
     case earlier
     case later
+    case index(Int)
 }
 
 enum ChatPanelRestrictionInfoSubject {
@@ -68,6 +70,7 @@ final class ChatPanelInterfaceInteraction {
     let dismissMessageSearch: () -> Void
     let updateMessageSearch: (String) -> Void
     let navigateMessageSearch: (ChatPanelSearchNavigationAction) -> Void
+    let openSearchResults: () -> Void
     let openCalendarSearch: () -> Void
     let toggleMembersSearch: (Bool) -> Void
     let navigateToMessage: (MessageId) -> Void
@@ -112,13 +115,19 @@ final class ChatPanelInterfaceInteraction {
     let openLinkEditing: () -> Void
     let reportPeerIrrelevantGeoLocation: () -> Void
     let displaySlowmodeTooltip: (ASDisplayNode, CGRect) -> Void
-    let displaySendMessageOptions: () -> Void
+    let displaySendMessageOptions: (ASDisplayNode, ContextGesture) -> Void
     let openScheduledMessages: () -> Void
+    let displaySearchResultsTooltip: (ASDisplayNode, CGRect) -> Void
     let statuses: ChatPanelInterfaceInteractionStatuses?
     let gotoPin: () -> Void
     let dismissInput: () -> Void
     
-    init(setupReplyMessage: @escaping (MessageId, @escaping (ContainedViewLayoutTransition) -> Void) -> Void, setupEditMessage: @escaping (MessageId?, @escaping (ContainedViewLayoutTransition) -> Void) -> Void, beginMessageSelection: @escaping ([MessageId], @escaping (ContainedViewLayoutTransition) -> Void) -> Void, deleteSelectedMessages: @escaping () -> Void, reportSelectedMessages: @escaping () -> Void, reportMessages: @escaping ([Message], ContextController?) -> Void, deleteMessages: @escaping ([Message], ContextController?, @escaping (ContextMenuActionResult) -> Void) -> Void, forwardSelectedMessages: @escaping () -> Void, forwardCurrentForwardMessages: @escaping () -> Void, forwardMessages: @escaping ([Message]) -> Void, cloudSelectedMessages: @escaping () -> Void, cloudMessages: @escaping ([Message]) -> Void,  copyForwardSelectedMessages: @escaping () ->  Void, copyForwardMessages: @escaping ([Message]) -> Void, shareSelectedMessages: @escaping () -> Void, updateTextInputStateAndMode: @escaping ((ChatTextInputState, ChatInputMode) -> (ChatTextInputState, ChatInputMode)) -> Void, updateInputModeAndDismissedButtonKeyboardMessageId: @escaping ((ChatPresentationInterfaceState) -> (ChatInputMode, MessageId?)) -> Void, openStickers: @escaping () -> Void, editMessage: @escaping () -> Void, beginMessageSearch: @escaping (ChatSearchDomain, String) -> Void, dismissMessageSearch: @escaping () -> Void, updateMessageSearch: @escaping (String) -> Void, navigateMessageSearch: @escaping (ChatPanelSearchNavigationAction) -> Void, openCalendarSearch: @escaping () -> Void, toggleMembersSearch: @escaping (Bool) -> Void, navigateToMessage: @escaping (MessageId) -> Void, navigateToChat: @escaping (PeerId) -> Void, openPeerInfo: @escaping () -> Void, togglePeerNotifications: @escaping () -> Void, sendContextResult: @escaping (ChatContextResultCollection, ChatContextResult, ASDisplayNode, CGRect) -> Bool, sendBotCommand: @escaping (Peer, String) -> Void, sendBotStart: @escaping (String?) -> Void, botSwitchChatWithPayload: @escaping (PeerId, String) -> Void, beginMediaRecording: @escaping (Bool) -> Void, finishMediaRecording: @escaping (ChatFinishMediaRecordingAction) -> Void, stopMediaRecording: @escaping () -> Void, lockMediaRecording: @escaping () -> Void, deleteRecordedMedia: @escaping () -> Void, sendRecordedMedia: @escaping () -> Void, displayRestrictedInfo: @escaping (ChatPanelRestrictionInfoSubject, ChatPanelRestrictionInfoDisplayType) -> Void, displayVideoUnmuteTip: @escaping (CGPoint?) -> Void, switchMediaRecordingMode: @escaping () -> Void, setupMessageAutoremoveTimeout: @escaping () -> Void, sendSticker: @escaping (FileMediaReference, ASDisplayNode, CGRect) -> Bool, unblockPeer: @escaping () -> Void, pinMessage: @escaping (MessageId) -> Void, unpinMessage: @escaping () -> Void, shareAccountContact: @escaping () -> Void, reportPeer: @escaping () -> Void, presentPeerContact: @escaping () -> Void, dismissReportPeer: @escaping () -> Void, deleteChat: @escaping () -> Void, beginCall: @escaping () -> Void, toggleMessageStickerStarred: @escaping (MessageId) -> Void, presentController: @escaping (ViewController, Any?) -> Void, getNavigationController: @escaping () -> NavigationController?, presentGlobalOverlayController: @escaping (ViewController, Any?) -> Void, navigateFeed: @escaping () -> Void, openGrouping: @escaping () -> Void, toggleSilentPost: @escaping () -> Void, requestUnvoteInMessage: @escaping (MessageId) -> Void, requestStopPollInMessage: @escaping (MessageId) -> Void, updateInputLanguage: @escaping ((String?) -> String?) -> Void, gotoPin: @escaping () -> Void, dismissInput: @escaping () -> Void, unarchiveChat: @escaping () -> Void, openLinkEditing: @escaping () -> Void, reportPeerIrrelevantGeoLocation: @escaping () -> Void, displaySlowmodeTooltip: @escaping (ASDisplayNode, CGRect) -> Void, displaySendMessageOptions: @escaping () -> Void, openScheduledMessages: @escaping () -> Void, statuses: ChatPanelInterfaceInteractionStatuses?) {
+    init(setupReplyMessage: @escaping (MessageId, @escaping (ContainedViewLayoutTransition) -> Void) -> Void, setupEditMessage: @escaping (MessageId?, @escaping (ContainedViewLayoutTransition) -> Void) -> Void, beginMessageSelection: @escaping ([MessageId], @escaping (ContainedViewLayoutTransition) -> Void) -> Void, deleteSelectedMessages: @escaping () -> Void, reportSelectedMessages: @escaping () -> Void, reportMessages: @escaping ([Message], ContextController?) -> Void, deleteMessages: @escaping ([Message], ContextController?, @escaping (ContextMenuActionResult) -> Void) -> Void, forwardSelectedMessages: @escaping () -> Void, forwardCurrentForwardMessages: @escaping () -> Void, forwardMessages: @escaping ([Message]) -> Void,
+         cloudSelectedMessages: @escaping () -> Void,
+         cloudMessages: @escaping ([Message]) -> Void,
+         copyForwardSelectedMessages: @escaping () -> Void,
+         copyForwardMessages:  @escaping ([Message]) -> Void,
+         shareSelectedMessages: @escaping () -> Void, updateTextInputStateAndMode: @escaping ((ChatTextInputState, ChatInputMode) -> (ChatTextInputState, ChatInputMode)) -> Void, updateInputModeAndDismissedButtonKeyboardMessageId: @escaping ((ChatPresentationInterfaceState) -> (ChatInputMode, MessageId?)) -> Void, openStickers: @escaping () -> Void, editMessage: @escaping () -> Void, beginMessageSearch: @escaping (ChatSearchDomain, String) -> Void, dismissMessageSearch: @escaping () -> Void, updateMessageSearch: @escaping (String) -> Void, openSearchResults: @escaping () -> Void, navigateMessageSearch: @escaping (ChatPanelSearchNavigationAction) -> Void, openCalendarSearch: @escaping () -> Void, toggleMembersSearch: @escaping (Bool) -> Void, navigateToMessage: @escaping (MessageId) -> Void, navigateToChat: @escaping (PeerId) -> Void, openPeerInfo: @escaping () -> Void, togglePeerNotifications: @escaping () -> Void, sendContextResult: @escaping (ChatContextResultCollection, ChatContextResult, ASDisplayNode, CGRect) -> Bool, sendBotCommand: @escaping (Peer, String) -> Void, sendBotStart: @escaping (String?) -> Void, botSwitchChatWithPayload: @escaping (PeerId, String) -> Void, beginMediaRecording: @escaping (Bool) -> Void, finishMediaRecording: @escaping (ChatFinishMediaRecordingAction) -> Void, stopMediaRecording: @escaping () -> Void, lockMediaRecording: @escaping () -> Void, deleteRecordedMedia: @escaping () -> Void, sendRecordedMedia: @escaping () -> Void, displayRestrictedInfo: @escaping (ChatPanelRestrictionInfoSubject, ChatPanelRestrictionInfoDisplayType) -> Void, displayVideoUnmuteTip: @escaping (CGPoint?) -> Void, switchMediaRecordingMode: @escaping () -> Void, setupMessageAutoremoveTimeout: @escaping () -> Void, sendSticker: @escaping (FileMediaReference, ASDisplayNode, CGRect) -> Bool, unblockPeer: @escaping () -> Void, pinMessage: @escaping (MessageId) -> Void, unpinMessage: @escaping () -> Void, shareAccountContact: @escaping () -> Void, reportPeer: @escaping () -> Void, presentPeerContact: @escaping () -> Void, dismissReportPeer: @escaping () -> Void, deleteChat: @escaping () -> Void, beginCall: @escaping () -> Void, toggleMessageStickerStarred: @escaping (MessageId) -> Void, presentController: @escaping (ViewController, Any?) -> Void, getNavigationController: @escaping () -> NavigationController?, presentGlobalOverlayController: @escaping (ViewController, Any?) -> Void, navigateFeed: @escaping () -> Void, openGrouping: @escaping () -> Void, toggleSilentPost: @escaping () -> Void, requestUnvoteInMessage: @escaping (MessageId) -> Void, requestStopPollInMessage: @escaping (MessageId) -> Void, updateInputLanguage: @escaping ((String?) -> String?) -> Void, gotoPin: @escaping () -> Void, dismissInput: @escaping () -> Void, unarchiveChat: @escaping () -> Void, openLinkEditing: @escaping () -> Void, reportPeerIrrelevantGeoLocation: @escaping () -> Void, displaySlowmodeTooltip: @escaping (ASDisplayNode, CGRect) -> Void, displaySendMessageOptions: @escaping (ASDisplayNode, ContextGesture) -> Void, openScheduledMessages: @escaping () -> Void, displaySearchResultsTooltip: @escaping (ASDisplayNode, CGRect) -> Void, statuses: ChatPanelInterfaceInteractionStatuses?) {
         self.setupReplyMessage = setupReplyMessage
         self.setupEditMessage = setupEditMessage
         self.beginMessageSelection = beginMessageSelection
@@ -141,6 +150,7 @@ final class ChatPanelInterfaceInteraction {
         self.beginMessageSearch = beginMessageSearch
         self.dismissMessageSearch = dismissMessageSearch
         self.updateMessageSearch = updateMessageSearch
+        self.openSearchResults = openSearchResults
         self.navigateMessageSearch = navigateMessageSearch
         self.openCalendarSearch = openCalendarSearch
         self.toggleMembersSearch = toggleMembersSearch
@@ -190,6 +200,7 @@ final class ChatPanelInterfaceInteraction {
         self.displaySlowmodeTooltip = displaySlowmodeTooltip
         self.displaySendMessageOptions = displaySendMessageOptions
         self.openScheduledMessages = openScheduledMessages
+        self.displaySearchResultsTooltip = displaySearchResultsTooltip
         self.statuses = statuses
     }
 }

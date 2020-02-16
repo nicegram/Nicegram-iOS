@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 import TelegramCore
+import SyncCore
 import Postbox
 import Display
 import TelegramPresentationData
@@ -97,7 +98,7 @@ final class InstantPageScrollableNode: ASScrollNode, InstantPageNode {
     func updateLayout(size: CGSize, transition: ContainedViewLayoutTransition) {
     }
     
-    func transitionNode(media: InstantPageMedia) -> (ASDisplayNode, () -> (UIView?, UIView?))? {
+    func transitionNode(media: InstantPageMedia) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         return nil
     }
     

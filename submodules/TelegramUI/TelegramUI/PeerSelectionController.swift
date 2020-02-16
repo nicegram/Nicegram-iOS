@@ -3,6 +3,7 @@ import UIKit
 import SwiftSignalKit
 import Display
 import TelegramCore
+import SyncCore
 import Postbox
 import TelegramPresentationData
 import ProgressNavigationButtonNode
@@ -21,6 +22,8 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
     public var peerSelected: ((PeerId) -> Void)?
     private let filter: ChatListNodePeersFilter
     
+    private let attemptSelection: ((Peer) -> Void)?
+    
     public var inProgress: Bool = false {
         didSet {
             if self.inProgress != oldValue {
@@ -29,7 +32,7 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
                 }
                 
                 if self.inProgress {
-                    self.navigationItem.rightBarButtonItem = UIBarButtonItem(customDisplayNode: ProgressNavigationButtonNode(theme: self.presentationData.theme))
+                    self.navigationItem.rightBarButtonItem = UIBarButtonItem(customDisplayNode: ProgressNavigationButtonNode(color: self.presentationData.theme.rootController.navigationBar.controlColor))
                 } else {
                     self.navigationItem.rightBarButtonItem = nil
                 }
@@ -57,8 +60,12 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
         self.filter = params.filter
         self.hasContactSelector = params.hasContactSelector
         self.presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
+        self.attemptSelection = params.attemptSelection
         
         super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData))
+        
+        self.navigationPresentation = .modal
+        
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
         
         self.customTitle = params.title
@@ -135,6 +142,12 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
             }
         }
         
+        self.peerSelectionNode.requestOpenDisabledPeer = { [weak self] peer in
+            if let strongSelf = self {
+                strongSelf.attemptSelection?(peer)
+            }
+        }
+        
         self.peerSelectionNode.requestOpenPeerFromSearch = { [weak self] peer in
             if let strongSelf = self {
                 let storedPeer = strongSelf.context.account.postbox.transaction { transaction -> Void in
@@ -152,9 +165,15 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
             }
         }
         
+        var isProcessingContentOffsetChanged = false
         self.peerSelectionNode.contentOffsetChanged = { [weak self] offset in
+            if isProcessingContentOffsetChanged {
+                return
+            }
+            isProcessingContentOffsetChanged = true
             if let strongSelf = self, let searchContentNode = strongSelf.searchContentNode {
                 searchContentNode.updateListVisibleContentOffset(offset)
+                isProcessingContentOffsetChanged = false
             }
         }
         
@@ -178,7 +197,7 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-        self.peerSelectionNode.animateIn()
+        //self.peerSelectionNode.animateIn()
     }
     
     override public func viewDidDisappear(_ animated: Bool) {
@@ -214,10 +233,5 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
                 self.peerSelectionNode.deactivateSearch(placeholderNode: searchContentNode.placeholderNode)
             }
         }
-    }
-    
-    override public func dismiss(completion: (() -> Void)? = nil) {
-        self.peerSelectionNode.view.endEditing(true)
-        self.peerSelectionNode.animateOut(completion: completion)
     }
 }

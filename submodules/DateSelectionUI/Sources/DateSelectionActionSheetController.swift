@@ -20,11 +20,11 @@ public final class DateSelectionActionSheetController: ActionSheetController {
         let theme = presentationData.theme
         let strings = presentationData.strings
         
-        super.init(theme: ActionSheetControllerTheme(presentationTheme: theme))
+        super.init(theme: ActionSheetControllerTheme(presentationData: presentationData))
         
         self.presentationDisposable = context.sharedContext.presentationData.start(next: { [weak self] presentationData in
             if let strongSelf = self {
-                strongSelf.theme = ActionSheetControllerTheme(presentationTheme: presentationData.theme)
+                strongSelf.theme = ActionSheetControllerTheme(presentationData: presentationData)
             }
         })
         
@@ -105,6 +105,8 @@ private final class DateSelectionActionSheetItemNode: ActionSheetItemNode {
         
         self.pickerView = UIDatePicker()
         self.pickerView.timeZone = TimeZone(secondsFromGMT: 0)
+        self.pickerView.setValue(theme.primaryTextColor, forKey: "textColor")
+        self.pickerView.datePickerMode = .countDownTimer
         self.pickerView.datePickerMode = .date
         self.pickerView.date = Date(timeIntervalSince1970: Double(roundDateToDays(currentValue)))
         self.pickerView.locale = localeWithStrings(strings)
@@ -116,8 +118,6 @@ private final class DateSelectionActionSheetItemNode: ActionSheetItemNode {
         } else {
             self.pickerView.maximumDate = Date(timeIntervalSince1970: Double(Int32.max - 1))
         }
-        
-        self.pickerView.setValue(theme.primaryTextColor, forKey: "textColor")
         
         super.init(theme: theme)
         
