@@ -3,13 +3,13 @@ export BUCK_DEBUG_OPTIONS=\
 	--config custom.other_cflags="-O0 -D DEBUG" \
   	--config custom.other_cxxflags="-O0 -D DEBUG" \
   	--config custom.optimization="-Onone" \
-  	--config custom.config_swift_compiler_flags="-DDEBUG"
+  	--config custom.config_swift_compiler_flags="-DDEBUG -DCN"
 
 export BUCK_RELEASE_OPTIONS=\
 	--config custom.other_cflags="-Os" \
   	--config custom.other_cxxflags="-Os" \
   	--config custom.optimization="-O" \
-  	--config custom.config_swift_compiler_flags="-whole-module-optimization"
+  	--config custom.config_swift_compiler_flags="-whole-module-optimization -DCN"
 
 export BUCK_THREADS_OPTIONS=--config build.threads=$(shell sysctl -n hw.logicalcpu)
 
