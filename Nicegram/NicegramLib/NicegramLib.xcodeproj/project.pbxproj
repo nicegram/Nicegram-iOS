@@ -231,6 +231,17 @@
 				<string>1DD70E291A957FFF00000000</string>
 			</array>
 		</dict>
+		<key>1DD70E294069D0FC00000000</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>name</key>
+			<string>CNStrings.swift</string>
+			<key>path</key>
+			<string>NicegramLib/Strings/CNStrings.swift</string>
+			<key>sourceTree</key>
+			<string>SOURCE_ROOT</string>
+		</dict>
 		<key>1DD70E29EA69938700000000</key>
 		<dict>
 			<key>isa</key>
@@ -254,6 +265,7 @@
 			<string>SOURCE_ROOT</string>
 			<key>children</key>
 			<array>
+				<string>1DD70E294069D0FC00000000</string>
 				<string>1DD70E29EA69938700000000</string>
 			</array>
 		</dict>
@@ -398,6 +410,13 @@
 			<key>fileRef</key>
 			<string>1DD70E291A957FFF00000000</string>
 		</dict>
+		<key>E7A30F044069D0FC00000000</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>fileRef</key>
+			<string>1DD70E294069D0FC00000000</string>
+		</dict>
 		<key>E7A30F04EA69938700000000</key>
 		<dict>
 			<key>isa</key>
@@ -424,6 +443,7 @@
 				<string>E7A30F044FA0E2C400000000</string>
 				<string>E7A30F049F221D5300000000</string>
 				<string>E7A30F041A957FFF00000000</string>
+				<string>E7A30F044069D0FC00000000</string>
 				<string>E7A30F04EA69938700000000</string>
 				<string>E7A30F04B3C0AA2C00000000</string>
 			</array>

@@ -31,6 +31,19 @@ public func generatePlayerRateIcon(_ color: UIColor) -> UIImage? {
 }
 
 public struct PresentationResourcesRootController {
+    public static func navigationGmodIconON(_ theme: PresentationTheme) -> UIImage? {
+        return theme.image(PresentationResourceKey.navigationGmodIconON.rawValue, { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat List/GmodIconON"), color: theme.rootController.navigationBar.accentTextColor)
+        })
+    }
+    
+    public static func navigationGmodIconOFF(_ theme: PresentationTheme) -> UIImage? {
+        return theme.image(PresentationResourceKey.navigationGmodIconOFF.rawValue, { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat List/GmodIconOFF"), color: theme.rootController.navigationBar.accentTextColor)
+        })
+    }
+    
+    
     public static func navigationIndefiniteActivityImage(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.rootNavigationIndefiniteActivity.rawValue, { theme in
             generateIndefiniteActivityIndicatorImage(color: theme.rootController.navigationBar.accentTextColor)

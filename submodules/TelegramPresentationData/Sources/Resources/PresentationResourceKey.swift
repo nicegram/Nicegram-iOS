@@ -5,6 +5,8 @@ public struct PresentationResources {
 }
 
 public enum PresentationResourceKey: Int32 {
+    case navigationGmodIconON
+    case navigationGmodIconOFF
     case rootNavigationIndefiniteActivity
     
     case rootTabContactsIcon

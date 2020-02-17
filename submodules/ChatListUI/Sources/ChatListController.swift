@@ -669,6 +669,56 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
             }
         }
         
+        self.titleView.toggleGmod = { [weak self] in
+            if let strongSelf = self {
+                let locale = strongSelf.presentationData.strings.baseLanguageCode
+                //let privacySignal: Signal<AccountPrivacySettings, NoError> = requestAccountPrivacySettings(account: context.account)
+                
+                //let _ = (privacySignal |> deliverOnMainQueue).start(next: { info in
+                    if NicegramSettings().gmod {
+                        print("DISABLE GMOD")
+//                        var newSettings = AccountPrivacySettings(presence: SelectivePrivacySettings.enableEveryone(disableFor: [:]), groupInvitations: info.groupInvitations, voiceCalls: info.groupInvitations, voiceCallsP2P: info.voiceCallsP2P, profilePhoto: info.profilePhoto, forwards: info.forwards, phoneNumber: info.phoneNumber, phoneDiscoveryEnabled: info.phoneDiscoveryEnabled, accountRemovalTimeout: info.accountRemovalTimeout)
+                        // disable
+                        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: cnl("Gmod.Disable", locale), text: cnl("Gmod.Disable.Notice", locale), actions: [
+                            TextAlertAction(type: .destructiveAction, title: strongSelf.presentationData.strings.Common_OK, action: {
+                                let _ = updateExperimentalUISettingsInteractively(accountManager: strongSelf.context.sharedContext.accountManager, { settings in
+                                    var settings = settings
+                                    settings.skipReadHistory = false
+                                    return settings
+                                }).start()
+                                let updateSettingsSignal = updateSelectiveAccountPrivacySettings(account: strongSelf.context.account, type: .presence, settings: SelectivePrivacySettings.enableEveryone(disableFor: [:]))
+                                updateSettingsSignal.start()
+                                NicegramSettings().gmod = false
+                                strongSelf.titleView.isGmod = !strongSelf.titleView.isGmod
+                            }),
+                            TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {})])
+                        strongSelf.present(controller, in: .window(.root))
+                    } else {
+                        // enable
+                        print("ENABLE GMOD")
+                        
+                        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: cnl("Gmod.Enable", locale), text: cnl("Gmod.Notice", locale), actions: [
+                            TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {}),
+                            TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Yes, action: {
+                            let _ = updateExperimentalUISettingsInteractively(accountManager: strongSelf.context.sharedContext.accountManager, { settings in
+                                 var settings = settings
+                                 settings.skipReadHistory = true
+                                 return settings
+                             }).start()
+                             let updateSettingsSignal = updateSelectiveAccountPrivacySettings(account: strongSelf.context.account, type: .presence, settings: SelectivePrivacySettings.disableEveryone(enableFor: [:]))
+                             updateSettingsSignal.start()
+                             NicegramSettings().gmod = true
+                             strongSelf.titleView.isGmod = !strongSelf.titleView.isGmod
+                            })
+                        ])
+                        strongSelf.present(controller, in: .window(.root))
+                    }
+                    
+                //})
+            }
+            
+        }
+        
         self.presentationDataDisposable = (context.sharedContext.presentationData
         |> deliverOnMainQueue).start(next: { [weak self] presentationData in
             if let strongSelf = self {
@@ -1317,6 +1367,26 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
     public func activateCompose() {
         self.composePressed()
     }
+    
+//    @objc private func gmodPressed() {
+//        if NicegramSettings().gmod {
+//            // disable
+//            let _ = updateExperimentalUISettingsInteractively(accountManager: self.context.sharedContext.accountManager, { settings in
+//                var settings = settings
+//                settings.skipReadHistory = false
+//                return settings
+//            }).start()
+//            NicegramSettings().gmod = false
+//        } else {
+//            // enable
+//            let _ = updateExperimentalUISettingsInteractively(accountManager: self.context.sharedContext.accountManager, { settings in
+//                var settings = settings
+//                settings.skipReadHistory = true
+//                return settings
+//            }).start()
+//            NicegramSettings().gmod = true
+//        }
+//    }
     
     @objc private func composePressed() {
         let controller = self.context.sharedContext.makeComposeController(context: self.context)

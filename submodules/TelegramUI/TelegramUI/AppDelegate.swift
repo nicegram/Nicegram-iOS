@@ -1131,6 +1131,9 @@ final class SharedApplicationContext {
                 Queue().async {
                     updateNGInfo(userId: context.context.account.peerId.toInt64())
                     downloadLocale(presentationData.strings.baseLanguageCode)
+                    #if CN
+                    cndownloadLocale(presentationData.strings.baseLanguageCode)
+                    #endif
                     if (isPremium()) {
                         PCACHE = "yes"
                         validatePremium(isPremium())

@@ -96,3 +96,82 @@ final class ChatTitleProxyNode: ASDisplayNode {
         self.frame = CGRect(origin: CGPoint(), size: CGSize(width: 30.0, height: 30.0))
     }
 }
+
+
+private func generateGmodIcon(color: UIColor, off: Bool) -> UIImage? {
+    return generateImage(CGSize(width: 30.0, height: 30.0), rotatedContext: { size, context in
+        context.clear(CGRect(origin: CGPoint(), size: size))
+        
+        context.translateBy(x: size.width / 2.0, y: size.height / 2.0)
+        context.scaleBy(x: 1.0, y: -1.0)
+        context.translateBy(x: -size.width / 2.0, y: -size.height / 2.0)
+        
+        if off {
+            print("Generating OFF icon")
+            if let image = generateTintedImage(image: UIImage(bundleImageName: "Chat List/GmodIconOFF"), color: color) {
+                context.draw(image.cgImage!, in: CGRect(origin: CGPoint(), size: image.size))
+            }
+        } else {
+            print("Generating ON icon")
+            if let image = generateTintedImage(image: UIImage(bundleImageName: "Chat List/GmodIconON"), color: color) {
+                context.draw(image.cgImage!, in: CGRect(origin: CGPoint(), size: image.size))
+            }
+        }
+    })
+}
+
+
+final class ChatTitleGmodNode: ASDisplayNode {
+    private let iconNode: ASImageNode
+    //private let activityIndicator: ActivityIndicator
+    
+    var theme: PresentationTheme {
+        didSet {
+            if self.theme !== oldValue {
+                var off = true
+                if NicegramSettings().gmod {
+                    off = false
+                }
+                self.iconNode.image = generateGmodIcon(color: theme.rootController.navigationBar.accentTextColor, off: off)
+                // self.activityIndicator.type = .custom(theme.rootController.navigationBar.accentTextColor, 10.0, 1.3333, true)
+            }
+        }
+    }
+    
+    var status: Bool = NicegramSettings().gmod {
+        didSet {
+           var off = true
+           if NicegramSettings().gmod {
+                off = false
+           }
+           self.iconNode.image = generateGmodIcon(color: self.theme.rootController.navigationBar.accentTextColor, off: off)
+        }
+    }
+    
+    init(theme: PresentationTheme) {
+        self.theme = theme
+        
+        self.iconNode = ASImageNode()
+        self.iconNode.isLayerBacked = true
+        self.iconNode.displayWithoutProcessing = true
+        self.iconNode.displaysAsynchronously = false
+        var off = true
+        if NicegramSettings().gmod {
+            off = false
+        }
+        self.iconNode.image = generateGmodIcon(color: theme.rootController.navigationBar.accentTextColor, off: off)
+        
+        //self.activityIndicator = ActivityIndicator(type: .custom(theme.rootController.navigationBar.accentTextColor, 10.0, 1.3333, true), speed: .slow)
+        
+        super.init()
+        
+        self.addSubnode(self.iconNode)
+        //self.addSubnode(self.activityIndicator)
+        
+        let iconFrame = CGRect(origin: CGPoint(x: 0, y: -3), size: CGSize(width: 30.0, height: 30.0))
+        self.iconNode.frame = iconFrame
+        //self.activityIndicator.frame = CGRect(origin: CGPoint(x: floor(iconFrame.midX - 5.0), y: 10.0), size: CGSize(width: 10.0, height: 10.0))
+        
+        self.frame = CGRect(origin: CGPoint(x: 0, y: -3), size: CGSize(width: 30.0, height: 30.0))
+    }
+}

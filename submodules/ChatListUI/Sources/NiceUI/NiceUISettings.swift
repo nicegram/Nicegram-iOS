@@ -591,7 +591,29 @@ public class NicegramSettings {
         }
     }
     
+    public var sendWithKb: Bool {
+        get {
+            return UD?.bool(forKey: "sendWithKb") ?? true
+        }
+        set {
+            UD?.set(newValue, forKey: "sendWithKb")
+        }
+    }
+    
+    public var gmod: Bool {
+        get {
+            return UD?.bool(forKey: "gmod") ?? false
+        }
+        set {
+            UD?.set(newValue, forKey: "gmod")
+        }
+    }
+    
     public var json: [String: Any] {
+        var cnExclusiveSettings: [String: Any] = [
+            "sendWithKb": self.sendWithKb,
+            "gmod": self.gmod
+        ]
         var jsNiceSettings: [String: Any] = [
             "hideNumber": self.hideNumber,
             "maxFilters": self.maxFilters,
@@ -599,7 +621,7 @@ public class NicegramSettings {
             "filtersBadge": self.filtersBadge,
             "useBackCam": self.useBackCam,
             "hideNotifyAccountName": self.hideNotifyAccountName,
-            "useClassicInfoUi": self.useClassicInfoUi
+            "useClassicInfoUi": self.useClassicInfoUi,
         ]
         
         var intChatFilters: [Int32] = []
@@ -631,7 +653,8 @@ public class NicegramSettings {
             "NiceSettings": jsNiceSettings,
             "NiceFolders": jsNiceFolders,
             "NiceFilters": jsNiceFilters,
-            "PremiumSettings": jsPremiumSettings
+            "PremiumSettings": jsPremiumSettings,
+            "CNSettings": cnExclusiveSettings
         ]
         return data
     }
@@ -807,6 +830,25 @@ public class NicegramSettings {
             }
         } else {
             result.append(("NiceFilters", "", false))
+        }
+        
+        if let CNSettings = json["CNSettings"] as? [String: Any] {
+            result.append(("CNSettings", "", true))
+            if let sendWithKb = CNSettings["sendWithKb"] as? Bool {
+                self.sendWithKb = sendWithKb
+                result.append(("sendWithKb", String(sendWithKb), true))
+            } else {
+                result.append(("sendWithKb", "", false))
+            }
+            
+            if let gmod = CNSettings["gmod"] as? Bool {
+                self.gmod = gmod
+                result.append(("gmod", String(gmod), true))
+            } else {
+                result.append(("gmod", "", false))
+            }
+        } else {
+            result.append(("CNSettings", "", false))
         }
         
         return result

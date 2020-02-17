@@ -334,7 +334,7 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
                   return
               }
 
-             self.topChats = parsedTopChats
+            self.topChats = parsedTopChats.filter { $0.lang == "ZH" } 
 
               // Make sure to update UI in main thread
               DispatchQueue.main.async {
