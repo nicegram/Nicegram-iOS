@@ -669,6 +669,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
             }
         }
         
+        #if CN
         self.titleView.toggleGmod = { [weak self] in
             if let strongSelf = self {
                 let locale = strongSelf.presentationData.strings.baseLanguageCode
@@ -718,6 +719,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
             }
             
         }
+        #endif
         
         self.presentationDataDisposable = (context.sharedContext.presentationData
         |> deliverOnMainQueue).start(next: { [weak self] presentationData in

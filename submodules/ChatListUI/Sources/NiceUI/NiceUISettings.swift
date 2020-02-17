@@ -409,6 +409,11 @@ public class NicegramSettings {
         shared?.register(defaults: ["muteSoundSilent": true])
         shared?.register(defaults: ["hideNotifyAccountName": false])
         UD?.register(defaults: ["useClassicInfoUi": false])
+        
+        #if CN
+        UD?.register(defaults: ["sendWithKb": true])
+        UD?.register(defaults: ["gmod": false])
+        #endif
     }
     
     // SimplyNiceSettings

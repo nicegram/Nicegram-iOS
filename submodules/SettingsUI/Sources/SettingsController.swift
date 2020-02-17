@@ -771,7 +771,7 @@ private func settingsEntries(account: Account, presentationData: PresentationDat
         }
         
         
-        entries.append(.niceFeatures(presentationData.theme, PresentationResourcesSettings.nicegramIcon, l("NiceFeatures.Title", presentationData.strings.baseLanguageCode)))
+        entries.append(.niceFeatures(presentationData.theme, PresentationResourcesSettings.nicegramIcon, cnl("NiceFeatures.Title", presentationData.strings.baseLanguageCode)))
         
         entries.append(.savedMessages(presentationData.theme, PresentationResourcesSettings.savedMessages, presentationData.strings.Settings_SavedMessages))
         entries.append(.recentCalls(presentationData.theme, PresentationResourcesSettings.recentCalls, presentationData.strings.CallSettings_RecentCalls))
@@ -804,7 +804,7 @@ private func settingsEntries(account: Account, presentationData: PresentationDat
         }
         
         entries.append(.ngChat(presentationData.theme, PresentationResourcesSettings.support, presentationData.strings.Settings_Support))
-        entries.append(.ngFaq(presentationData.theme, PresentationResourcesSettings.faq, l("Common.FAQ.Button", presentationData.strings.baseLanguageCode)))
+        entries.append(.ngFaq(presentationData.theme, PresentationResourcesSettings.faq, cnl("Common.FAQ.Button", presentationData.strings.baseLanguageCode)))
         
         entries.append(.askAQuestion(presentationData.theme, PresentationResourcesSettings.support, presentationData.strings.Settings_Support))
         entries.append(.faq(presentationData.theme, PresentationResourcesSettings.faq, presentationData.strings.Settings_FAQ))
