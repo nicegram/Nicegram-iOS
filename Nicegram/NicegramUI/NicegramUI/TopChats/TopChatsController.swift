@@ -146,7 +146,7 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
         view.backgroundColor = self.presentationData.theme.chatList.itemSelectedBackgroundColor
         cell.selectedBackgroundView = view
         
-        imageLoader.obtainImageWithPath(imagePath: AVATAR_URL + topChat.image) { (image) in
+        imageLoader.obtainImageWithPath(imagePath: topChat.image) { (image) in
             // Before assigning the image, check whether the current cell is visible
             if let updateCell = tableView.cellForRow(at: indexPath) as? TopChatsCell {
                 updateCell.imageView?.image = image

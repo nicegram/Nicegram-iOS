@@ -9,11 +9,11 @@
 import Foundation
 import UIKit
 
-let ARCHIVE_URL = "https://github.com/Kylmakalle/topchats/archive/latest.zip"
+// let ARCHIVE_URL = "https://github.com/Kylmakalle/topchats/archive/latest.zip"
 let JSON_URL = "https://github.com/Kylmakalle/topchats/raw/master/topchats.json"
-let ORIG_JSON_URL = "https://combot.org/telegram/top/chats/langs/all.json"
+// let ORIG_JSON_URL = "https://combot.org/telegram/top/chats/langs/all.json"
 let FILE_NAME = "topchats.json"
-let AVATAR_URL = "https://ant.combot.org/a/ch/"
+// let AVATAR_URL = "https://ant.combot.org/a/ch/"
 
 struct TopChat: Decodable {
     let title : String
@@ -83,6 +83,10 @@ func code_to_lang_emoji(_ lang: String) -> (String, String) {
         return ("Polski","🇵🇱")
     case "ML":
         return ("മലയാളം", "ML")
+    case "ZH-HANS":
+        return ("简体中文", "🇨🇳")
+    case "ZH-HANT":
+        return ("正體中文", "🇹🇼")
     default:
         return (lang, lang)
     }
