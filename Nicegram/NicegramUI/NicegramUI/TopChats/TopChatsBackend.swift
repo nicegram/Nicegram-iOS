@@ -123,10 +123,11 @@ class ImageCacheLoader {
             task = session.downloadTask(with: url, completionHandler: { (location, response, error) in
                 if let location = location {
                     if let data = try? Data(contentsOf: location) {
-                        let img: UIImage! = UIImage(data: data)
-                        self.cache.setObject(img, forKey: imagePath as NSString)
-                        DispatchQueue.main.async {
-                            completionHandler(img)
+                        if let img = UIImage(data: data) {
+                            self.cache.setObject(img, forKey: imagePath as NSString)
+                            DispatchQueue.main.async {
+                                completionHandler(img)
+                            }
                         }
                     }
                 }
