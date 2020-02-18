@@ -5,6 +5,7 @@ import Display
 import TelegramPresentationData
 import SwiftSignalKit
 import AccountContext
+import NicegramLib
 // import Zip
 
 let leftTCTableinset: CGFloat = 20
@@ -334,7 +335,7 @@ final class TopChatsController: UIViewController, UITableViewDelegate, UITableVi
                   return
               }
 
-            self.topChats = parsedTopChats.filter { $0.lang == "ZH" } 
+            self.topChats = parsedTopChats
 
               // Make sure to update UI in main thread
               DispatchQueue.main.async {
@@ -439,7 +440,7 @@ public class TopChatsViewController: ViewController {
         
         super.init(navigationBarPresentationData: nil)
         
-        let title = "Top Chats"
+        let title = cnl("TopChats.Title", self.presentationData.strings.baseLanguageCode)
         
         self.tabBarItem.image = UIImage(bundleImageName: "Chat/Input/Media/TrendingIcon")
         self.tabBarItem.title = title
@@ -494,6 +495,9 @@ public class TopChatsViewController: ViewController {
     private func updateThemeAndStrings() {
         print("UPDATING COLORS")
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
+        let title = cnl("TopChats.Title", self.presentationData.strings.baseLanguageCode)
+        self.tabBarItem.title = title
+        self.navigationItem.title = title
     }
     
     override public func loadDisplayNode() {
