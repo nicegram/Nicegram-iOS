@@ -98,9 +98,11 @@ public final class TelegramRootController: NavigationController {
         var controllers: [ViewController] = []
         
         #if CN
-        let topChatsController = TopChatsViewController(context: self.context)
-        controllers.append(topChatsController)
-        self.topChatsController = topChatsController
+        if NicegramSettings().showTopChats {
+            let topChatsController = TopChatsViewController(context: self.context)
+            controllers.append(topChatsController)
+            self.topChatsController = topChatsController
+        }
         #endif
         
         let contactsController = ContactsController(context: self.context)
@@ -219,7 +221,9 @@ public final class TelegramRootController: NavigationController {
         var controllers: [ViewController] = []
         
         #if CN
-        controllers.append(self.topChatsController!)
+        if NicegramSettings().showTopChats {
+            controllers.append(self.topChatsController!)
+        }
         #endif
         
         // let niceSettings = getNiceSettings(accountManager: self.context.sharedContext.accountManager)

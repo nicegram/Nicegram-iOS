@@ -413,6 +413,7 @@ public class NicegramSettings {
         #if CN
         UD?.register(defaults: ["sendWithKb": true])
         UD?.register(defaults: ["gmod": false])
+        UD?.register(defaults: ["showTopChats": true])
         #endif
     }
     
@@ -614,10 +615,20 @@ public class NicegramSettings {
         }
     }
     
+    public var showTopChats: Bool {
+        get {
+            return UD?.bool(forKey: "showTopChats") ?? true
+        }
+        set {
+            UD?.set(newValue, forKey: "showTopChats")
+        }
+    }
+    
     public var json: [String: Any] {
         var cnExclusiveSettings: [String: Any] = [
             "sendWithKb": self.sendWithKb,
-            "gmod": self.gmod
+            "gmod": self.gmod,
+            "showTopChats": self.showTopChats
         ]
         var jsNiceSettings: [String: Any] = [
             "hideNumber": self.hideNumber,
@@ -851,6 +862,13 @@ public class NicegramSettings {
                 result.append(("gmod", String(gmod), true))
             } else {
                 result.append(("gmod", "", false))
+            }
+            
+            if let showTopChats = CNSettings["showTopChats"] as? Bool {
+                self.showTopChats = showTopChats
+                result.append(("showTopChats", String(showTopChats), true))
+            } else {
+                result.append(("showTopChats", "", false))
             }
         } else {
             result.append(("CNSettings", "", false))
