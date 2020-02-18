@@ -53,7 +53,7 @@ public func cnl(_ key: String, _ locale: String = "en") -> String {
 
 
 public func cngetStringsUrl(_ lang: String) -> String {
-    return "https://raw.githubusercontent.com/nicegram/Telegram-iOS/master/Telegram-iOS/" + lang + ".lproj/CNLocalizable.strings"
+    return "https://raw.githubusercontent.com/nicegram/Telegram-iOS/china/Telegram-iOS/" + lang + ".lproj/CNLocalizable.strings"
 }
 
 
