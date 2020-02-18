@@ -97,6 +97,12 @@ public final class TelegramRootController: NavigationController {
         
         var controllers: [ViewController] = []
         
+        #if CN
+        let topChatsController = TopChatsViewController(context: self.context)
+        controllers.append(topChatsController)
+        self.topChatsController = topChatsController
+        #endif
+        
         let contactsController = ContactsController(context: self.context)
         contactsController.switchToChatsController = {  [weak self] in
             self?.openChatsController(activateSearch: false)
@@ -182,13 +188,6 @@ public final class TelegramRootController: NavigationController {
             }
         }
         
-        #if CN
-        let topChatsController = TopChatsViewController(context: self.context)
-        
-        
-        controllers.insert(topChatsController, at: 0)
-        self.topChatsController = topChatsController
-        #endif
         
         tabBarController.setControllers(controllers, selectedIndex: restoreSettignsController != nil ? (controllers.count - 1) : (controllers.count - 2))
         
@@ -218,6 +217,11 @@ public final class TelegramRootController: NavigationController {
             return
         }
         var controllers: [ViewController] = []
+        
+        #if CN
+        controllers.append(self.topChatsController!)
+        #endif
+        
         // let niceSettings = getNiceSettings(accountManager: self.context.sharedContext.accountManager)
         if niceSettings.showContactsTab {
             controllers.append(self.contactsController!)
@@ -298,9 +302,6 @@ public final class TelegramRootController: NavigationController {
         PremiumSettings().lastOpened = utcnow()
         premiumLog("LAST OPENED \(PremiumSettings().lastOpened) | DIFF \(PremiumSettings().lastOpened - oldOpened) s")
         
-        #if CN
-        controllers.insert(self.topChatsController!, at: 0)
-        #endif
         rootTabController.setControllers(controllers, selectedIndex: selectedIndex)
         
         //        let observer = NotificationCenter.default.addObserver(forName: .IAPHelperPurchaseNotification, object: nil, queue: .main, using: { notification in
