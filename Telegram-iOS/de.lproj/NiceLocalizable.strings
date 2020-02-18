@@ -23,8 +23,6 @@
 /*Open Pin*/
 "Chat.OpenPin" = "Pin anzeigen";
 "ChatFilter.Admin" = "Administrator";
-"NiceFeatures.Notifications.HideNotifyAccount" = "Hallo";
-"NiceFeatures.Notifications.HideNotifyAccountNotice" = "Hello.";
 "NiceFeatures.Notifications.Fix" = "Ungewünschte Benachrichtigungen deaktivieren";
 "NiceFeatures.Notifications.FixNotice" = "Nützlich, wenn du Benachrichtigungen von stummgeschalteten Chats erhältst.\nDas Antworten von Benachrichtigungen, Kontobezeichnungen sowie Medienvorschauen werden nicht verfügbar sein.";
 "NiceFeatures.Filters.Header" = "Filter (Tabs)";
