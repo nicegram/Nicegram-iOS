@@ -442,7 +442,7 @@ public class TopChatsViewController: ViewController {
         
         let title = cnl("TopChats.Title", self.presentationData.strings.baseLanguageCode)
         
-        self.tabBarItem.image = UIImage(bundleImageName: "Chat/Input/Media/TrendingIcon")
+        self.tabBarItem.image = UIImage(bundleImageName: "TopChats")
         self.tabBarItem.title = title
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
         self.innerNavigationController.navigationBar.barTintColor = self.presentationData.theme.rootController.navigationBar.backgroundColor

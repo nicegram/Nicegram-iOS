@@ -115,7 +115,7 @@ class ImageCacheLoader {
         } else {
             /* You need placeholder image in your assets,
                if you want to display a placeholder to user */
-            let placeholder = UIImage(bundleImageName: "Contact List/CreateGroupActionIcon")!
+            let placeholder = UIImage(bundleImageName: "TopChats")!
             DispatchQueue.main.async {
                 completionHandler(placeholder)
             }
