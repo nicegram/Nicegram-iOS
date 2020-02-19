@@ -2,6 +2,10 @@ load("//Config:utils.bzl",
     "library_configs",
     "dynamic_library_configs",
 )
+load("//Config:utils.bzl",
+    "bundle_identifier",
+    "DEVELOPMENT_LANGUAGE",
+    "SHARED_CONFIGS")
 
 text_section_items = [
     "__text",
@@ -319,3 +323,98 @@ def glob_sub_map(prefix, glob_specs):
             fail('\"%s\" maps to both \"%s\" and \"%s\"' % (file_key, result[file_key], path))
         result[file_key] = path
     return result
+
+
+######## TESTS
+def test_name(name):
+     return name + "Tests"
+def ci_test_name(name):
+    return name + "-For-CI"
+
+DEFAULT_SWIFT_VERSION = "5"
+
+def merge_dict(a, b):
+    d = {}
+    d.update(a)
+    d.update(b)
+    return d
+
+def info_plist_substitutions(name):
+    substitutions = {
+        "DEVELOPMENT_LANGUAGE": DEVELOPMENT_LANGUAGE,
+        "EXECUTABLE_NAME": name,
+        "PRODUCT_BUNDLE_IDENTIFIER": bundle_identifier(suffix=".UiTests"),
+        "PRODUCT_NAME": name,
+    }
+    return substitutions
+
+
+def test_configs(name):
+    binary_specific_config = info_plist_substitutions(name)
+    binary_config = merge_dict(SHARED_CONFIGS, binary_specific_config)
+    configs = {
+        "Debug": binary_config,
+        "Profile": binary_config,
+    }
+    return configs
+# Use this macro to declare test targets. For first-party libraries, use first_party_library to declare a test target instead.
+# This macro defines two targets.
+# 1. An apple_test target comprising `srcs`. This test target is picked up by Xcode, and is runnable from Buck.
+# 2. An apple_library target comprising the code in `srcs`. This library is used by the apple_test_all macro to create a single apple_test target in CI. This library will not be included in Xcode, unless an Xcode project is generated that relies on an apple_test_all target.
+def apple_test_lib(
+        name,
+        visibility = ["PUBLIC"],
+        bundle_for_ci = True,
+        info_plist = None,
+        info_plist_substitutions = {},
+        test_host_app = None,
+        run_test_separately = False,
+        is_ui_test = False,
+        ui_test_target_app = None,
+        frameworks = [],
+        labels = [],
+        destination_specifier = None,
+        **kwargs):
+    if bundle_for_ci:
+        # Create a library with the test files. We'll use use these for our CI tests.
+        # Libraries are much faster to create in CI than unit test bundles.
+        # Therefore, we package up this test target as a library that we can depend on
+        # later with a single apple_test bundle.
+        native.apple_library(
+            name = ci_test_name(name),
+            visibility = visibility,
+            frameworks = [
+                "$PLATFORM_DIR/Developer/Library/Frameworks/XCTest.framework",
+            ] + frameworks,
+            labels = ["CI"] + labels,
+            **kwargs
+        )
+
+    if info_plist == None:
+        info_plist = "//Config:test_info_plist"
+
+    substitutions = {
+        "CURRENT_PROJECT_VERSION": "1",
+        "DEVELOPMENT_LANGUAGE": DEVELOPMENT_LANGUAGE,
+        "EXECUTABLE_NAME": name,
+        "PRODUCT_BUNDLE_IDENTIFIER": "com.airbnb.%s" % name,
+        "PRODUCT_NAME": name,
+    }
+    substitutions.update(info_plist_substitutions)
+    native.apple_test(
+        name = name,
+        visibility = visibility,
+        info_plist = info_plist,
+        info_plist_substitutions = substitutions,
+        destination_specifier = destination_specifier,
+        test_host_app = test_host_app,
+        is_ui_test = is_ui_test,
+        ui_test_target_app = ui_test_target_app,
+        run_test_separately = run_test_separately,
+        configs = test_configs(name),
+        frameworks = [
+          "$PLATFORM_DIR/Developer/Library/Frameworks/XCTest.framework"
+        ] + frameworks,
+        labels = labels,
+        **kwargs
+    )

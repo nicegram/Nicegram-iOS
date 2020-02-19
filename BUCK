@@ -556,8 +556,36 @@ apple_package(
     bundle = ":Telegram",
 )
 
+load("//Config:buck_rule_macros.bzl", "apple_test_lib")
+ui_tests = [
+    ":UITests",
+]
+
+apple_test_lib(
+    name = "UITests",
+    destination_specifier = {
+        "name": "iPhone 8",
+    },
+    run_test_separately = True,
+    # The `test_host_app` is launched first in the Simulator and needs to be an `apple_bundle` that is distinct from `ui_test_target_app`.
+    test_host_app = ":Telegram",
+    srcs = glob([
+        "Telegram-iOS UITests/*.swift",
+    ]),
+    is_ui_test = True,
+    ui_test_target_app = ":Telegram",
+    labels = ['ui'],
+
+    frameworks = [
+        "$PLATFORM_DIR/Developer/Library/Frameworks/XCTest.framework",
+        "$SDKROOT/System/Library/Frameworks/Foundation.framework",
+        "$SDKROOT/System/Library/Frameworks/UIKit.framework",
+    ],
+)
+
 xcode_workspace_config(
     name = "workspace",
     workspace_name = "Telegram_Buck",
     src_target = ":Telegram",
+    extra_tests = ui_tests,
 )
