@@ -11,6 +11,7 @@ import TextFormat
 import AccountContext
 import TouchDownGesture
 import ImageTransparency
+import NicegramLib
 
 private let searchLayoutProgressImage = generateImage(CGSize(width: 22.0, height: 22.0), contextGenerator: { size, context in
     context.clear(CGRect(origin: CGPoint(), size: size))
@@ -782,7 +783,11 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
                         placeholder = interfaceState.strings.Conversation_InputTextBroadcastPlaceholder
                     }
                 } else {
-                    placeholder = interfaceState.strings.Conversation_InputTextPlaceholder
+                    if UserDefaults(suiteName: "NicegramSettings")?.bool(forKey: "gmod") ?? false {
+                        placeholder = cnl("Gmod", interfaceState.strings.baseLanguageCode)
+                    } else {
+                        placeholder = interfaceState.strings.Conversation_InputTextPlaceholder
+                    }
                 }
                 if self.currentPlaceholder != placeholder || themeUpdated {
                     self.currentPlaceholder = placeholder

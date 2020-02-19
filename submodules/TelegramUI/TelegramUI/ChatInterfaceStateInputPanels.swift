@@ -81,7 +81,7 @@ func inputPanelForChatPresentationIntefaceState(_ chatPresentationInterfaceState
     var displayInputTextPanel = false
     
     if let peer = chatPresentationInterfaceState.renderedPeer?.peer {
-        if let user = peer as? TelegramUser {
+        /*if let user = peer as? TelegramUser {
             if NicegramSettings().gmod {
                 if let currentPanel = (currentPanel as? ChatRestrictedInputPanelNode) ?? (currentSecondaryPanel as? ChatRestrictedInputPanelNode) {
                     return (currentPanel, nil)
@@ -92,7 +92,7 @@ func inputPanelForChatPresentationIntefaceState(_ chatPresentationInterfaceState
                     return (panel, nil)
                 }
             }
-        } else if let secretChat = peer as? TelegramSecretChat {
+        } else*/ if let secretChat = peer as? TelegramSecretChat {
             switch secretChat.embeddedState {
                 case .handshake:
                     if let currentPanel = (currentPanel as? SecretChatHandshakeStatusInputPanelNode) ?? (currentSecondaryPanel as? SecretChatHandshakeStatusInputPanelNode) {
@@ -142,7 +142,7 @@ func inputPanelForChatPresentationIntefaceState(_ chatPresentationInterfaceState
                     panel.interfaceInteraction = interfaceInteraction
                     return (panel, nil)
                 }
-            } else if NicegramSettings().gmod {
+            } /*else if NicegramSettings().gmod {
                 if let currentPanel = (currentPanel as? ChatRestrictedInputPanelNode) ?? (currentSecondaryPanel as? ChatRestrictedInputPanelNode) {
                     return (currentPanel, nil)
                 } else {
@@ -151,7 +151,7 @@ func inputPanelForChatPresentationIntefaceState(_ chatPresentationInterfaceState
                     panel.interfaceInteraction = interfaceInteraction
                     return (panel, nil)
                 }
-            }
+            }*/
             
             switch channel.info {
             case .broadcast:
@@ -206,7 +206,7 @@ func inputPanelForChatPresentationIntefaceState(_ chatPresentationInterfaceState
                     panel.interfaceInteraction = interfaceInteraction
                     return (panel, nil)
                 }
-            } else if NicegramSettings().gmod  {
+            } /*else if NicegramSettings().gmod  {
                 if let currentPanel = (currentPanel as? ChatRestrictedInputPanelNode) ?? (currentSecondaryPanel as? ChatRestrictedInputPanelNode) {
                     return (currentPanel, nil)
                 } else {
@@ -215,7 +215,7 @@ func inputPanelForChatPresentationIntefaceState(_ chatPresentationInterfaceState
                     panel.interfaceInteraction = interfaceInteraction
                     return (panel, nil)
                 }
-            }
+            }*/
         }
         
         var displayBotStartPanel = false
