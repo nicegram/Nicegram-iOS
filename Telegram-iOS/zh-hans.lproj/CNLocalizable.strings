@@ -1,10 +1,10 @@
-"Gmod.Restricted" = "You can't send messages in Ghost Mode.";
-"Gmod.Disable.Notice" = "Your online status and read marks will be revealed.";
-"Gmod" = "Ghost Mode";
-"Gmod.Enable" = "Enable Ghost Mode?";
-"Gmod.Disable" = "Disable Ghost Mode?";
-"Gmod.Notice" = "Your online status will be hidden from everyone by Telegram privacy settings.\nYou will enter chats in preview mode and read marks will not be send.\nPreview mode works same as you longtap a chat in official Telegram.\nYour online status may be revealed if you send ANY message.\nThis is just a shortcut that not violates Telegram TOS.";
-"SendWithKb" = "Send with «Enter» button";
+"Gmod.Restricted" = "你不能在鬼魂模式下发送消息。";
+"Gmod.Disable.Notice" = "您的在线状态和阅读标记将显示出来。";
+"Gmod" = "幽灵模式";
+"Gmod.Enable" = "启用幽灵模式？";
+"Gmod.Disable" = "禁用幽灵模式？";
+"Gmod.Notice" = "您的联机状态将通过电报隐私设置对所有人隐藏。\n您将在预览模式下进入聊天室，并且不会发送读取标记。\n预览模式的工作原理与您在正式电报中长时间访问聊天室的工作原理相同。\n如果您发送任何消息，您的联机状态可能会显示出来。\n这只是一个不违反“Telegram”TOS的快捷方式。";
+"SendWithKb" = "使用“回车”按钮发送";
 "NiceFeatures.Title" = "捷报设置";
 "Common.FAQ.Button" = "捷报 FAQ";
 "TopChats.Title" = "排行榜";
