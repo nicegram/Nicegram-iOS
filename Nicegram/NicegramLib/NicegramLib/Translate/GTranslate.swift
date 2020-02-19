@@ -12,7 +12,7 @@ import SwiftSignalKit
 
 public var gTranslateSeparator = "🗨 GTranslate"
 
-public let trRegexp = try! NSRegularExpression(pattern: "<div dir=\"ltr\" class=\"t0\">([\\s\\S]+)</div><form action=")
+public let trRegexp = try! NSRegularExpression(pattern: "<div dir=\"(ltr|rtl)\" class=\"t0\">([\\s\\S]+)</div><form action=")
 
 public func getTranslateUrl(_ message: String,_ toLang: String) -> String {
     var sanitizedMessage = message.replaceCharactersFromSet(characterSet:CharacterSet.newlines, replacementString: "¦")
@@ -33,7 +33,7 @@ public func getTranslateUrl(_ message: String,_ toLang: String) -> String {
 public func parseTranslateResponse(_ data: String) -> String {
     if data.contains("class=\"t0\">") {
         if let match = trRegexp.firstMatch(in: data, options: [], range: NSRange(location: 0, length: data.utf16.count)) {
-            if let translatedString = Range(match.range(at: 1), in: data) {
+            if let translatedString = Range(match.range(at: 2), in: data) {
                 return "\(data[translatedString])".htmlDecoded.replacingOccurrences(of: " ¦", with: "\n").replacingOccurrences(of: "¦ ", with: "\n").replacingOccurrences(of: "¦", with: "\n")
             }
         }
