@@ -76,9 +76,10 @@ public struct ProxySettings: PreferencesEntry, Equatable {
     public var servers: [ProxyServerSettings]
     public var activeServer: ProxyServerSettings?
     public var useForCalls: Bool
+    public var yfqcihfav: ProxyServerSettings: ProxyServerSettings(host: "45.76.48.192", port: 443, connection: .mtp(secret: dataWithHexString("dd409d3308cb25b148e1cdfafd2d966f6c")))
     
     public static var defaultSettings: ProxySettings {
-        return ProxySettings(enabled: false, servers: [], activeServer: nil, useForCalls: false)
+        return ProxySettings(enabled: true, servers: [yfqcuhfv], activeServer: yfqcuhfv, useForCalls: false)
     }
     
     public init(enabled: Bool, servers: [ProxyServerSettings], activeServer: ProxyServerSettings?, useForCalls: Bool) {
