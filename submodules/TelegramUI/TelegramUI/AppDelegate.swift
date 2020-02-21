@@ -1129,6 +1129,7 @@ final class SharedApplicationContext {
                 print("IS BETA PREMIUM \(SecureNiceSettings().isBetaPremium)")
                 let presentationData = context.context.sharedContext.currentPresentationData.with({ $0 })
                 Queue().async {
+                    updateGlobalNGSettings()
                     updateNGInfo(userId: context.context.account.peerId.toInt64())
                     downloadLocale(presentationData.strings.baseLanguageCode)
                     if (isPremium()) {
