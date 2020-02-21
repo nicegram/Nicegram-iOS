@@ -5,6 +5,7 @@ import TelegramCore
 import SyncCore
 import AccountContext
 import AvatarNode
+import ChatListUI
 
 func inputPanelForChatPresentationIntefaceState(_ chatPresentationInterfaceState: ChatPresentationInterfaceState, context: AccountContext, currentPanel: ChatInputPanelNode?, currentSecondaryPanel: ChatInputPanelNode?, textInputPanelNode: ChatTextInputPanelNode?, interfaceInteraction: ChatPanelInterfaceInteraction?) -> (primary: ChatInputPanelNode?, secondary: ChatInputPanelNode?) {
     if let renderedPeer = chatPresentationInterfaceState.renderedPeer, renderedPeer.peer?.restrictionText(platform: "ios", contentSettings: context.currentContentSettings.with { $0 }) != nil {
@@ -80,7 +81,18 @@ func inputPanelForChatPresentationIntefaceState(_ chatPresentationInterfaceState
     var displayInputTextPanel = false
     
     if let peer = chatPresentationInterfaceState.renderedPeer?.peer {
-        if let secretChat = peer as? TelegramSecretChat {
+        /*if let user = peer as? TelegramUser {
+            if NicegramSettings().gmod {
+                if let currentPanel = (currentPanel as? ChatRestrictedInputPanelNode) ?? (currentSecondaryPanel as? ChatRestrictedInputPanelNode) {
+                    return (currentPanel, nil)
+                } else {
+                    let panel = GmodRestrictedInputPanelNode()
+                    panel.context = context
+                    panel.interfaceInteraction = interfaceInteraction
+                    return (panel, nil)
+                }
+            }
+        } else*/ if let secretChat = peer as? TelegramSecretChat {
             switch secretChat.embeddedState {
                 case .handshake:
                     if let currentPanel = (currentPanel as? SecretChatHandshakeStatusInputPanelNode) ?? (currentSecondaryPanel as? SecretChatHandshakeStatusInputPanelNode) {
@@ -130,7 +142,16 @@ func inputPanelForChatPresentationIntefaceState(_ chatPresentationInterfaceState
                     panel.interfaceInteraction = interfaceInteraction
                     return (panel, nil)
                 }
-            }
+            } /*else if NicegramSettings().gmod {
+                if let currentPanel = (currentPanel as? ChatRestrictedInputPanelNode) ?? (currentSecondaryPanel as? ChatRestrictedInputPanelNode) {
+                    return (currentPanel, nil)
+                } else {
+                    let panel = GmodRestrictedInputPanelNode()
+                    panel.context = context
+                    panel.interfaceInteraction = interfaceInteraction
+                    return (panel, nil)
+                }
+            }*/
             
             switch channel.info {
             case .broadcast:
@@ -185,7 +206,16 @@ func inputPanelForChatPresentationIntefaceState(_ chatPresentationInterfaceState
                     panel.interfaceInteraction = interfaceInteraction
                     return (panel, nil)
                 }
-            }
+            } /*else if NicegramSettings().gmod  {
+                if let currentPanel = (currentPanel as? ChatRestrictedInputPanelNode) ?? (currentSecondaryPanel as? ChatRestrictedInputPanelNode) {
+                    return (currentPanel, nil)
+                } else {
+                    let panel = GmodRestrictedInputPanelNode()
+                    panel.context = context
+                    panel.interfaceInteraction = interfaceInteraction
+                    return (panel, nil)
+                }
+            }*/
         }
         
         var displayBotStartPanel = false
@@ -243,7 +273,7 @@ func inputPanelForChatPresentationIntefaceState(_ chatPresentationInterfaceState
             } else {
                 let panel = ChatTextInputPanelNode(presentationInterfaceState: chatPresentationInterfaceState, presentController: { [weak interfaceInteraction] controller in
                     interfaceInteraction?.presentController(controller, nil)
-                })
+                }, sendWithKb: NicegramSettings().sendWithKb)
                 
                 panel.interfaceInteraction = interfaceInteraction
                 panel.context = context

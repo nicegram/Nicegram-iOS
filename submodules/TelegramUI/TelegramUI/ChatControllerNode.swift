@@ -314,7 +314,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         
         self.textInputPanelNode = ChatTextInputPanelNode(presentationInterfaceState: chatPresentationInterfaceState, presentController: { [weak self] controller in
             self?.interfaceInteraction?.presentController(controller, nil)
-        })
+            }, sendWithKb: NicegramSettings().sendWithKb)
         self.textInputPanelNode?.storedInputLanguage = chatPresentationInterfaceState.interfaceState.inputLanguage
         self.textInputPanelNode?.updateHeight = { [weak self] animated in
             if let strongSelf = self, let _ = strongSelf.inputPanelNode as? ChatTextInputPanelNode, !strongSelf.ignoreUpdateHeight {

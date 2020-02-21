@@ -11,6 +11,7 @@ import TextFormat
 import AccountContext
 import TouchDownGesture
 import ImageTransparency
+import NicegramLib
 
 private let searchLayoutProgressImage = generateImage(CGSize(width: 22.0, height: 22.0), contextGenerator: { size, context in
     context.clear(CGRect(origin: CGPoint(), size: size))
@@ -249,6 +250,8 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
     private var theme: PresentationTheme?
     private var strings: PresentationStrings?
     
+    let sendWithKb: Bool
+    
     var inputTextState: ChatTextInputState {
         if let textInputNode = self.textInputNode {
             let selectionRange: Range<Int> = textInputNode.selectedRange.location ..< (textInputNode.selectedRange.location + textInputNode.selectedRange.length)
@@ -372,7 +375,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
     private let accessoryButtonSpacing: CGFloat = 0.0
     private let accessoryButtonInset: CGFloat = 2.0
     
-    init(presentationInterfaceState: ChatPresentationInterfaceState, presentController: @escaping (ViewController) -> Void) {
+    init(presentationInterfaceState: ChatPresentationInterfaceState, presentController: @escaping (ViewController) -> Void, sendWithKb: Bool = false) {
         self.presentationInterfaceState = presentationInterfaceState
         
         self.textInputContainer = ASDisplayNode()
@@ -392,6 +395,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
         self.searchLayoutClearButton = HighlightableButton()
         self.searchLayoutProgressView = UIImageView(image: searchLayoutProgressImage)
         self.searchLayoutProgressView.isHidden = true
+        self.sendWithKb = sendWithKb
         
         self.actionButtons = ChatTextInputActionButtonsNode(theme: presentationInterfaceState.theme, strings: presentationInterfaceState.strings, presentController: presentController)
         
@@ -532,6 +536,9 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
         textInputNode.textView.scrollIndicatorInsets = UIEdgeInsets(top: 9.0, left: 0.0, bottom: 9.0, right: -13.0)
         self.textInputContainer.addSubnode(textInputNode)
         textInputNode.view.disablesInteractiveTransitionGestureRecognizer = true
+        if self.sendWithKb {
+            textInputNode.returnKeyType = .send
+        }
         self.textInputNode = textInputNode
         
         if let presentationInterfaceState = self.presentationInterfaceState {
@@ -776,7 +783,11 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
                         placeholder = interfaceState.strings.Conversation_InputTextBroadcastPlaceholder
                     }
                 } else {
-                    placeholder = interfaceState.strings.Conversation_InputTextPlaceholder
+                    if UserDefaults(suiteName: "NicegramSettings")?.bool(forKey: "gmod") ?? false {
+                        placeholder = cnl("Gmod", interfaceState.strings.baseLanguageCode)
+                    } else {
+                        placeholder = interfaceState.strings.Conversation_InputTextPlaceholder
+                    }
                 }
                 if self.currentPlaceholder != placeholder || themeUpdated {
                     self.currentPlaceholder = placeholder
@@ -1549,6 +1560,14 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
     
     @objc func editableTextNode(_ editableTextNode: ASEditableTextNode, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
         self.updateActivity()
+        #if CN
+        if self.sendWithKb {
+            if text == "\n" {
+                self.sendButtonPressed()
+                return false
+            }
+        }
+        #endif
         var cleanText = text
         let removeSequences: [String] = ["\u{202d}", "\u{202c}"]
         for sequence in removeSequences {

@@ -15,6 +15,8 @@ struct NetworkStatusTitle: Equatable {
 }
 
 final class ChatListTitleView: UIView, NavigationBarTitleView, NavigationBarTitleTransitionNode {
+    private let gmodNode: ChatTitleGmodNode
+    private let gmodButton: HighlightTrackingButton
     private let titleNode: ImmediateTextNode
     private let lockView: ChatListTitleLockView
     private let activityIndicator: ActivityIndicator
@@ -51,8 +53,19 @@ final class ChatListTitleView: UIView, NavigationBarTitleView, NavigationBarTitl
         }
     }
     
+    var isGmod: Bool = NicegramSettings().gmod {
+        didSet {
+            if self.isGmod != oldValue {
+                self.gmodNode.status = !self.gmodNode.status
+                
+                self.setNeedsLayout()
+            }
+        }
+    }
+    
     var toggleIsLocked: (() -> Void)?
     var openProxySettings: (() -> Void)?
+    var toggleGmod: (() -> Void)?
     
     private var isPasscodeSet = false
     private var isManuallyLocked = false
@@ -65,6 +78,7 @@ final class ChatListTitleView: UIView, NavigationBarTitleView, NavigationBarTitl
             
             self.activityIndicator.type = .custom(self.theme.rootController.navigationBar.primaryTextColor, 22.0, 1.5, false)
             self.proxyNode.theme = self.theme
+            self.gmodNode.theme = self.theme
         }
     }
     
@@ -102,13 +116,18 @@ final class ChatListTitleView: UIView, NavigationBarTitleView, NavigationBarTitl
         self.proxyButton.accessibilityLabel = self.strings.VoiceOver_Navigation_ProxySettings
         self.proxyButton.accessibilityTraits = .button
         
+        self.gmodNode = ChatTitleGmodNode(theme: self.theme)
+        self.gmodButton = HighlightTrackingButton()
+        
         super.init(frame: CGRect())
         
         self.isAccessibilityElement = false
         
+        self.addSubnode(self.gmodNode)
         self.addSubnode(self.activityIndicator)
         self.addSubnode(self.titleNode)
         self.addSubnode(self.proxyNode)
+        self.addSubview(self.gmodButton)
         self.addSubview(self.lockView)
         self.addSubview(self.buttonView)
         self.addSubview(self.proxyButton)
@@ -150,6 +169,22 @@ final class ChatListTitleView: UIView, NavigationBarTitleView, NavigationBarTitl
         }
         
         self.proxyButton.addTarget(self, action: #selector(self.proxyButtonPressed), for: .touchUpInside)
+        
+        self.gmodButton.highligthedChanged = { [weak self] highlighted in
+            if let strongSelf = self {
+                if highlighted {
+                    strongSelf.gmodNode.layer.removeAnimation(forKey: "opacity")
+                    strongSelf.gmodNode.alpha = 0.4
+                } else {
+                    if !strongSelf.gmodNode.alpha.isEqual(to: 1.0) {
+                        strongSelf.gmodNode.alpha = 1.0
+                        strongSelf.gmodNode.layer.animateAlpha(from: 0.4, to: 1.0, duration: 0.2)
+                    }
+                }
+            }
+        }
+        
+        self.gmodButton.addTarget(self, action: #selector(self.gmodButtonPressed), for: .touchUpInside)
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -199,6 +234,10 @@ final class ChatListTitleView: UIView, NavigationBarTitleView, NavigationBarTitl
         self.proxyNode.frame = proxyFrame
         self.proxyButton.frame = proxyFrame.insetBy(dx: -2.0, dy: -2.0)
         
+        let gmodFrame = CGRect(origin: CGPoint(x: clearBounds.maxX - 9.0 - self.gmodNode.bounds.width - 9.0 - self.proxyNode.bounds.width, y: floor((size.height - gmodNode.bounds.height) / 2.0)), size: gmodNode.bounds.size)
+        self.gmodNode.frame = gmodFrame
+        self.gmodButton.frame = gmodFrame.insetBy(dx: -2.0, dy: -2.0)
+        
         let buttonX = max(0.0, titleFrame.minX - 10.0)
         self.buttonView.frame = CGRect(origin: CGPoint(x: buttonX, y: 0.0), size: CGSize(width: min(titleFrame.maxX + 28.0, size.width) - buttonX, height: size.height))
         
@@ -214,6 +253,11 @@ final class ChatListTitleView: UIView, NavigationBarTitleView, NavigationBarTitl
     @objc private func proxyButtonPressed() {
         self.openProxySettings?()
     }
+    
+    @objc private func gmodButtonPressed() {
+        self.toggleGmod?()
+    }
+    
     
     func makeTransitionMirrorNode() -> ASDisplayNode {
         let view = ChatListTitleView(theme: self.theme, strings: self.strings)
@@ -234,6 +278,13 @@ final class ChatListTitleView: UIView, NavigationBarTitleView, NavigationBarTitl
         return nil
     }
     
+    var gmodButtonFrame: CGRect? {
+        if !self.gmodNode.isHidden {
+            return gmodNode.frame
+        }
+        return nil
+    }
+    
     var lockViewFrame: CGRect? {
         if !self.lockView.isHidden && !self.lockView.frame.isEmpty {
             return self.lockView.frame
@@ -245,6 +296,11 @@ final class ChatListTitleView: UIView, NavigationBarTitleView, NavigationBarTitl
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         if !self.proxyButton.isHidden {
             if let result = self.proxyButton.hitTest(point.offsetBy(dx: -self.proxyButton.frame.minX, dy: -self.proxyButton.frame.minY), with: event) {
+                return result;
+            }
+        }
+        if !self.gmodButton.isHidden {
+            if let result = self.gmodButton.hitTest(point.offsetBy(dx: -self.gmodButton.frame.minX, dy: -self.gmodButton.frame.minY), with: event) {
                 return result;
             }
         }

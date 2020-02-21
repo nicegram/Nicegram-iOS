@@ -409,6 +409,12 @@ public class NicegramSettings {
         shared?.register(defaults: ["muteSoundSilent": true])
         shared?.register(defaults: ["hideNotifyAccountName": false])
         UD?.register(defaults: ["useClassicInfoUi": false])
+        
+        #if CN
+        UD?.register(defaults: ["sendWithKb": true])
+        UD?.register(defaults: ["gmod": false])
+        UD?.register(defaults: ["showTopChats": true])
+        #endif
     }
     
     // SimplyNiceSettings
@@ -591,7 +597,39 @@ public class NicegramSettings {
         }
     }
     
+    public var sendWithKb: Bool {
+        get {
+            return UD?.bool(forKey: "sendWithKb") ?? true
+        }
+        set {
+            UD?.set(newValue, forKey: "sendWithKb")
+        }
+    }
+    
+    public var gmod: Bool {
+        get {
+            return UD?.bool(forKey: "gmod") ?? false
+        }
+        set {
+            UD?.set(newValue, forKey: "gmod")
+        }
+    }
+    
+    public var showTopChats: Bool {
+        get {
+            return UD?.bool(forKey: "showTopChats") ?? true
+        }
+        set {
+            UD?.set(newValue, forKey: "showTopChats")
+        }
+    }
+    
     public var json: [String: Any] {
+        var cnExclusiveSettings: [String: Any] = [
+            "sendWithKb": self.sendWithKb,
+            "gmod": self.gmod,
+            "showTopChats": self.showTopChats
+        ]
         var jsNiceSettings: [String: Any] = [
             "hideNumber": self.hideNumber,
             "maxFilters": self.maxFilters,
@@ -599,7 +637,7 @@ public class NicegramSettings {
             "filtersBadge": self.filtersBadge,
             "useBackCam": self.useBackCam,
             "hideNotifyAccountName": self.hideNotifyAccountName,
-            "useClassicInfoUi": self.useClassicInfoUi
+            "useClassicInfoUi": self.useClassicInfoUi,
         ]
         
         var intChatFilters: [Int32] = []
@@ -631,7 +669,8 @@ public class NicegramSettings {
             "NiceSettings": jsNiceSettings,
             "NiceFolders": jsNiceFolders,
             "NiceFilters": jsNiceFilters,
-            "PremiumSettings": jsPremiumSettings
+            "PremiumSettings": jsPremiumSettings,
+            "CNSettings": cnExclusiveSettings
         ]
         return data
     }
@@ -807,6 +846,32 @@ public class NicegramSettings {
             }
         } else {
             result.append(("NiceFilters", "", false))
+        }
+        
+        if let CNSettings = json["CNSettings"] as? [String: Any] {
+            result.append(("CNSettings", "", true))
+            if let sendWithKb = CNSettings["sendWithKb"] as? Bool {
+                self.sendWithKb = sendWithKb
+                result.append(("sendWithKb", String(sendWithKb), true))
+            } else {
+                result.append(("sendWithKb", "", false))
+            }
+            
+            if let gmod = CNSettings["gmod"] as? Bool {
+                self.gmod = gmod
+                result.append(("gmod", String(gmod), true))
+            } else {
+                result.append(("gmod", "", false))
+            }
+            
+            if let showTopChats = CNSettings["showTopChats"] as? Bool {
+                self.showTopChats = showTopChats
+                result.append(("showTopChats", String(showTopChats), true))
+            } else {
+                result.append(("showTopChats", "", false))
+            }
+        } else {
+            result.append(("CNSettings", "", false))
         }
         
         return result

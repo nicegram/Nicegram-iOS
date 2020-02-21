@@ -54,8 +54,10 @@ private final class NiceFeaturesControllerArguments {
     let togglebackCam: (Bool) -> Void
     let toggletgFilters: (Bool) -> Void
     let toggleClassicInfoUi: (Bool) -> Void
+    let toggleSendWithKb: (Bool) -> Void
+    let toggleshowTopChats: (Bool) -> Void
 
-    init(togglePinnedMessage: @escaping (Bool) -> Void, toggleMuteSilent: @escaping (Bool) -> Void, toggleHideNotifyAccount: @escaping (Bool) -> Void, toggleShowContactsTab: @escaping (Bool) -> Void, toggleFixNotifications: @escaping (Bool) -> Void, updateShowCallsTab: @escaping (Bool) -> Void, changeFiltersAmount: @escaping (Int32) -> Void, toggleShowTabNames: @escaping (Bool, String) -> Void, toggleHidePhone: @escaping (Bool, String) -> Void, toggleUseBrowser: @escaping (Bool) -> Void, customizeBrowser: @escaping (Browser) -> Void, openBrowserSelection: @escaping () -> Void, backupSettings: @escaping () -> Void, toggleFiltersBadge: @escaping (Bool) -> Void, toggleBackupIcloud: @escaping (Bool) -> Void, togglebackCam: @escaping (Bool) -> Void, toggletgFilters: @escaping (Bool) -> Void, toggleClassicInfoUi: @escaping (Bool) -> Void) {
+    init(togglePinnedMessage: @escaping (Bool) -> Void, toggleMuteSilent: @escaping (Bool) -> Void, toggleHideNotifyAccount: @escaping (Bool) -> Void, toggleShowContactsTab: @escaping (Bool) -> Void, toggleFixNotifications: @escaping (Bool) -> Void, updateShowCallsTab: @escaping (Bool) -> Void, changeFiltersAmount: @escaping (Int32) -> Void, toggleShowTabNames: @escaping (Bool, String) -> Void, toggleHidePhone: @escaping (Bool, String) -> Void, toggleUseBrowser: @escaping (Bool) -> Void, customizeBrowser: @escaping (Browser) -> Void, openBrowserSelection: @escaping () -> Void, backupSettings: @escaping () -> Void, toggleFiltersBadge: @escaping (Bool) -> Void, toggleBackupIcloud: @escaping (Bool) -> Void, togglebackCam: @escaping (Bool) -> Void, toggletgFilters: @escaping (Bool) -> Void, toggleClassicInfoUi: @escaping (Bool) -> Void, toggleSendWithKb: @escaping (Bool) -> Void, toggleshowTopChats: @escaping (Bool) -> Void) {
         self.togglePinnedMessage = togglePinnedMessage
         self.toggleMuteSilent = toggleMuteSilent
         self.toggleHideNotifyAccount = toggleHideNotifyAccount
@@ -74,11 +76,14 @@ private final class NiceFeaturesControllerArguments {
         self.togglebackCam = togglebackCam
         self.toggletgFilters = toggletgFilters
         self.toggleClassicInfoUi = toggleClassicInfoUi
+        self.toggleSendWithKb = toggleSendWithKb
+        self.toggleshowTopChats = toggleshowTopChats
     }
 }
 
 
 private enum niceFeaturesControllerSection: Int32 {
+    case cn
     case messageNotifications
     case chatsList
     case tabs
@@ -130,9 +135,15 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
     case backCam(PresentationTheme, String, Bool)
     case tgFilters(PresentationTheme, String, Bool)
     case toggleClassicInfoUi(PresentationTheme, String, Bool)
+    
+    case cnHeader(PresentationTheme, String)
+    case toggleSendWithKb(PresentationTheme, String, Bool)
+    case toggleshowTopChats(PresentationTheme, String, Bool)
 
     var section: ItemListSectionId {
         switch self {
+        case .cnHeader, .toggleSendWithKb, .toggleshowTopChats:
+            return niceFeaturesControllerSection.cn.rawValue
         case .messageNotificationsHeader, .pinnedMessageNotification, .fixNotifications, .fixNotificationsNotice, .muteSilentNotifications, .muteSilentNotificationsNotice, .hideNotifyAccount, .hideNotifyAccountNotice:
             return niceFeaturesControllerSection.messageNotifications.rawValue
         case .chatsListHeader:
@@ -153,6 +164,12 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
 
     var stableId: Int32 {
         switch self {
+        case .cnHeader:
+            return -100000
+        case .toggleSendWithKb:
+            return -90000
+        case .toggleshowTopChats:
+            return -89000
         case .messageNotificationsHeader:
             return 0
         case .pinnedMessageNotification:
@@ -214,6 +231,24 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
 
     static func ==(lhs: NiceFeaturesControllerEntry, rhs: NiceFeaturesControllerEntry) -> Bool {
         switch lhs {
+        case let .cnHeader(lhsTheme, lhsText):
+            if case let .cnHeader(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
+        case let .toggleSendWithKb(lhsTheme, lhsText, lhsValue):
+            if case let .toggleSendWithKb(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
+                return true
+            } else {
+                return false
+            }
+        case let .toggleshowTopChats(lhsTheme, lhsText, lhsValue):
+            if case let .toggleshowTopChats(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
+                return true
+            } else {
+                return false
+            }
         case let .messageNotificationsHeader(lhsTheme, lhsText):
             if case let .messageNotificationsHeader(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
                 return true
@@ -405,6 +440,16 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
     func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
         let arguments = arguments as! NiceFeaturesControllerArguments
         switch self {
+        case let .cnHeader(theme, text):
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
+        case let .toggleSendWithKb(theme, text, value):
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                arguments.toggleSendWithKb(value)
+            })
+        case let .toggleshowTopChats(theme, text, value):
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                arguments.toggleshowTopChats(value)
+            })
         case let .messageNotificationsHeader(theme, text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .pinnedMessageNotification(theme, text, value):
@@ -512,6 +557,12 @@ private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls
     var entries: [NiceFeaturesControllerEntry] = []
 
     let locale = presentationData.strings.baseLanguageCode
+    #if CN
+    entries.append(.cnHeader(presentationData.theme, cnl("NiceFeatures.Title", locale).uppercased()))
+    
+    entries.append(.toggleSendWithKb(presentationData.theme, cnl("SendWithKb", locale), nicegramSettings.sendWithKb))
+    entries.append(.toggleshowTopChats(presentationData.theme, cnl("TopChats.ShowTab", locale), nicegramSettings.showTopChats))
+    #endif
     entries.append(.messageNotificationsHeader(presentationData.theme, presentationData.strings.Notifications_Title.uppercased()))
     //entries.append(.pinnedMessageNotification(presentationData.theme, "Pinned Messages", niceSettings.pinnedMessagesNotification))  //presentationData.strings.Nicegram_Settings_Features_PinnedMessages
     
@@ -721,6 +772,11 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
         NicegramSettings().useTgFilters = value
     }, toggleClassicInfoUi: { value in
         NicegramSettings().useClassicInfoUi = value
+    }, toggleSendWithKb: { value in
+        NicegramSettings().sendWithKb = value
+    }, toggleshowTopChats: { value in
+        NicegramSettings().showTopChats = value
+        updateTabs()
     }
     )
 
@@ -753,7 +809,7 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
             }
         }
 
-        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("NiceFeatures.Title", presentationData.strings.baseLanguageCode)), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
+        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(cnl("NiceFeatures.Title", presentationData.strings.baseLanguageCode)), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
             let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, ensureVisibleItemTag: focusOnItemTag, initialScrollToItem: scrollToItem)
 
         return (controllerState, (listState, arguments))
