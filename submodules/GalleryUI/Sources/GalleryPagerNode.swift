@@ -5,6 +5,34 @@ import Display
 import SwiftSignalKit
 import Postbox
 
+private let edgeWidth: CGFloat = 44.0
+
+private let leftFadeImage = generateImage(CGSize(width: 64.0, height: 1.0), opaque: false, rotatedContext: { size, context in
+    let bounds = CGRect(origin: CGPoint(), size: size)
+    context.clear(bounds)
+    
+    let gradientColors = [UIColor.black.withAlphaComponent(0.35).cgColor, UIColor.black.withAlphaComponent(0.0).cgColor] as CFArray
+    
+    var locations: [CGFloat] = [0.0, 1.0]
+    let colorSpace = CGColorSpaceCreateDeviceRGB()
+    let gradient = CGGradient(colorsSpace: colorSpace, colors: gradientColors, locations: &locations)!
+
+    context.drawLinearGradient(gradient, start: CGPoint(x: 0.0, y: 0.0), end: CGPoint(x: 64.0, y: 0.0), options: CGGradientDrawingOptions())
+})
+
+private let rightFadeImage = generateImage(CGSize(width: 64.0, height: 1.0), opaque: false, rotatedContext: { size, context in
+    let bounds = CGRect(origin: CGPoint(), size: size)
+    context.clear(bounds)
+    
+    let gradientColors = [UIColor.black.withAlphaComponent(0.0).cgColor, UIColor.black.withAlphaComponent(0.35).cgColor] as CFArray
+    
+    var locations: [CGFloat] = [0.0, 1.0]
+    let colorSpace = CGColorSpaceCreateDeviceRGB()
+    let gradient = CGGradient(colorsSpace: colorSpace, colors: gradientColors, locations: &locations)!
+
+    context.drawLinearGradient(gradient, start: CGPoint(x: 0.0, y: 0.0), end: CGPoint(x: 64.0, y: 0.0), options: CGGradientDrawingOptions())
+})
+
 public struct GalleryPagerInsertItem {
     public let index: Int
     public let item: GalleryItem
@@ -43,10 +71,16 @@ public struct GalleryPagerTransaction {
     }
 }
 
-public final class GalleryPagerNode: ASDisplayNode, UIScrollViewDelegate {
+public final class GalleryPagerNode: ASDisplayNode, UIScrollViewDelegate, UIGestureRecognizerDelegate {
     private let pageGap: CGFloat
     
     private let scrollView: UIScrollView
+    
+    private let leftFadeNode: ASImageNode
+    private let rightFadeNode: ASImageNode
+    private var highlightedSide: Bool?
+    
+    private var tapRecognizer: TapLongTapOrDoubleTapGestureRecognizer?
     
     public private(set) var items: [GalleryItem] = []
     private var itemNodes: [GalleryItemNode] = []
@@ -78,6 +112,16 @@ public final class GalleryPagerNode: ASDisplayNode, UIScrollViewDelegate {
             self.scrollView.contentInsetAdjustmentBehavior = .never
         }
         
+        self.leftFadeNode = ASImageNode()
+        self.leftFadeNode.contentMode = .scaleToFill
+        self.leftFadeNode.image = leftFadeImage
+        self.leftFadeNode.alpha = 0.0
+        
+        self.rightFadeNode = ASImageNode()
+        self.rightFadeNode.contentMode = .scaleToFill
+        self.rightFadeNode.image = rightFadeImage
+        self.rightFadeNode.alpha = 0.0
+        
         super.init()
         
         self.scrollView.showsVerticalScrollIndicator = false
@@ -90,6 +134,91 @@ public final class GalleryPagerNode: ASDisplayNode, UIScrollViewDelegate {
         self.scrollView.scrollsToTop = false
         self.scrollView.delaysContentTouches = false
         self.view.addSubview(self.scrollView)
+        
+        self.addSubnode(self.leftFadeNode)
+        self.addSubnode(self.rightFadeNode)
+    }
+    
+    public override func didLoad() {
+        super.didLoad()
+        
+        let recognizer = TapLongTapOrDoubleTapGestureRecognizer(target: self, action: #selector(self.tapLongTapOrDoubleTapGesture(_:)))
+        recognizer.delegate = self
+        self.tapRecognizer = recognizer
+        recognizer.tapActionAtPoint = { _ in
+            return .keepWithSingleTap
+        }
+        recognizer.highlight = { [weak self] point in
+            guard let strongSelf = self else {
+                return
+            }
+            let size = strongSelf.bounds
+            
+            var highlightedSide: Bool?
+            if let point = point {
+                if point.x < edgeWidth && strongSelf.canGoToPreviousItem() {
+                    if strongSelf.items.count > 1 {
+                        highlightedSide = false
+                    }
+                } else if point.x > size.width - edgeWidth && strongSelf.canGoToNextItem() {
+                    if strongSelf.items.count > 1 {
+                        highlightedSide = true
+                    }
+                }
+            }
+            if strongSelf.highlightedSide != highlightedSide {
+                strongSelf.highlightedSide = highlightedSide
+                
+                let leftAlpha: CGFloat
+                let rightAlpha: CGFloat
+                if let highlightedSide = highlightedSide {
+                    leftAlpha = highlightedSide ? 0.0 : 1.0
+                    rightAlpha = highlightedSide ? 1.0 : 0.0
+                } else {
+                    leftAlpha = 0.0
+                    rightAlpha = 0.0
+                }
+                if strongSelf.leftFadeNode.alpha != leftAlpha {
+                    strongSelf.leftFadeNode.alpha = leftAlpha
+                    if leftAlpha.isZero {
+                        strongSelf.leftFadeNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.16, timingFunction: kCAMediaTimingFunctionSpring)
+                    } else {
+                        strongSelf.leftFadeNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.08)
+                    }
+                }
+                if strongSelf.rightFadeNode.alpha != rightAlpha {
+                    strongSelf.rightFadeNode.alpha = rightAlpha
+                    if rightAlpha.isZero {
+                        strongSelf.rightFadeNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.16, timingFunction: kCAMediaTimingFunctionSpring)
+                    } else {
+                        strongSelf.rightFadeNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.08)
+                    }
+                }
+            }
+        }
+        self.view.addGestureRecognizer(recognizer)
+    }
+    
+    public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        return true
+    }
+    
+    @objc private func tapLongTapOrDoubleTapGesture(_ recognizer: TapLongTapOrDoubleTapGestureRecognizer) {
+        switch recognizer.state {
+        case .ended:
+            if let (gesture, location) = recognizer.lastRecognizedGestureAndLocation {
+                if case .tap = gesture {
+                    let size = self.bounds.size
+                    if location.x < edgeWidth && self.canGoToPreviousItem() {
+                        self.goToPreviousItem()
+                    } else if location.x > size.width - edgeWidth && self.canGoToNextItem() {
+                        self.goToNextItem()
+                    }
+                }
+            }
+        default:
+            break
+        }
     }
     
     public var isScrollEnabled: Bool {
@@ -134,6 +263,10 @@ public final class GalleryPagerNode: ASDisplayNode, UIScrollViewDelegate {
             
             transition.animatePosition(node: centralItemNode, from: centralItemNode.position.offsetBy(dx: -updatedCentralPoint.x + centralPoint.x, dy: -updatedCentralPoint.y + centralPoint.y))
         }
+        
+        let fadeWidth = min(72.0, layout.size.width * 0.2)
+        self.leftFadeNode.frame = CGRect(x: 0.0, y: 0.0, width: fadeWidth, height: layout.size.height)
+        self.rightFadeNode.frame = CGRect(x: layout.size.width - fadeWidth, y: 0.0, width: fadeWidth, height: layout.size.height)
     }
     
     public func ready() -> Signal<Void, NoError> {
@@ -152,15 +285,26 @@ public final class GalleryPagerNode: ASDisplayNode, UIScrollViewDelegate {
     }
     
     public func replaceItems(_ items: [GalleryItem], centralItemIndex: Int?, keepFirst: Bool = false) {
+        var items = items
+        if keepFirst && !self.items.isEmpty && !items.isEmpty {
+            items[0] = self.items[0]
+        }
+        
         var updateItems: [GalleryPagerUpdateItem] = []
-        let deleteItems: [Int] = []
+        var deleteItems: [Int] = []
         var insertItems: [GalleryPagerInsertItem] = []
-        for i in 0 ..< items.count {
-            if i == 0 && keepFirst {
-                updateItems.append(GalleryPagerUpdateItem(index: 0, previousIndex: 0, item: items[i]))
-            } else {
-                insertItems.append(GalleryPagerInsertItem(index: i, item: items[i], previousIndex: nil))
+        var previousIndexById: [AnyHashable: Int] = [:]
+        var validIds = Set(items.map { $0.id })
+        
+        for i in 0 ..< self.items.count {
+            previousIndexById[self.items[i].id] = i
+            if !validIds.contains(self.items[i].id) {
+                deleteItems.append(i)
             }
+        }
+        
+        for i in 0 ..< items.count {
+            insertItems.append(GalleryPagerInsertItem(index: i, item: items[i], previousIndex: previousIndexById[items[i].id]))
         }
         self.transaction(GalleryPagerTransaction(deleteItems: deleteItems, insertItems: insertItems, updateItems: updateItems, focusOnItem: centralItemIndex))
     }
@@ -169,6 +313,7 @@ public final class GalleryPagerNode: ASDisplayNode, UIScrollViewDelegate {
         for updatedItem in transaction.updateItems {
             self.items[updatedItem.previousIndex] = updatedItem.item
             if let itemNode = self.visibleItemNode(at: updatedItem.previousIndex) {
+                //print("update visible node at \(updatedItem.previousIndex)")
                 updatedItem.item.updateNode(node: itemNode)
             }
         }
@@ -180,48 +325,43 @@ public final class GalleryPagerNode: ASDisplayNode, UIScrollViewDelegate {
                 self.items.remove(at: deleteItemIndex)
                 for i in 0 ..< self.itemNodes.count {
                     if self.itemNodes[i].index == deleteItemIndex {
+                        //print("delete visible node at \(deleteItemIndex)")
                         self.removeVisibleItemNode(internalIndex: i)
                         break
                     }
                 }
             }
             
-            for itemNode in self.itemNodes {
-                var indexOffset = 0
-                for deleteIndex in deleteItems {
-                    if deleteIndex < itemNode.index {
-                        indexOffset += 1
-                    } else {
-                        break
-                    }
-                }
-                
-                itemNode.index = itemNode.index - indexOffset
-            }
-            
             let insertItems = transaction.insertItems.sorted(by: { $0.index < $1.index })
-            if self.items.count == 0 && !insertItems.isEmpty {
-                if insertItems[0].index != 0 {
-                    fatalError("transaction: invalid insert into empty list")
-                }
+            
+            if transaction.updateItems.isEmpty && !insertItems.isEmpty {
+                self.items.removeAll()
             }
             
             for insertedItem in insertItems {
-                self.items.insert(insertedItem.item, at: insertedItem.index)
+                self.items.append(insertedItem.item)
+                //self.items.insert(insertedItem.item, at: insertedItem.index)
             }
             
-            let sortedInsertItems = transaction.insertItems.sorted(by: { $0.index < $1.index })
+            let visibleIndices: [Int] = self.itemNodes.map { $0.index }
+            
+            var remapIndices: [Int: Int] = [:]
+            for i in 0 ..< insertItems.count {
+                if let previousIndex = insertItems[i].previousIndex, visibleIndices.contains(previousIndex) {
+                    remapIndices[previousIndex] = i
+                }
+            }
             
             for itemNode in self.itemNodes {
-                var indexOffset = 0
-                for insertedItem in sortedInsertItems {
-                    if insertedItem.index <= itemNode.index + indexOffset {
-                        indexOffset += 1
-                    }
+                if let remappedIndex = remapIndices[itemNode.index] {
+                    //print("remap visible node \(itemNode.index) -> \(remappedIndex)")
+                    itemNode.index = remappedIndex
                 }
-                
-                itemNode.index = itemNode.index + indexOffset
             }
+            
+            self.itemNodes.sort(by: { $0.index < $1.index })
+            
+            //print("visible indices before update \(self.itemNodes.map { $0.index })")
             
             self.invalidatedItems = true
             if let focusOnItem = transaction.focusOnItem {
@@ -229,12 +369,42 @@ public final class GalleryPagerNode: ASDisplayNode, UIScrollViewDelegate {
             }
             
             self.updateItemNodes(transition: .immediate)
+            
+            //print("visible indices after update \(self.itemNodes.map { $0.index })")
         }
         else if let focusOnItem = transaction.focusOnItem {
             self.ignoreCentralItemIndexUpdate = true
             self.centralItemIndex = focusOnItem
             self.ignoreCentralItemIndexUpdate = false
             self.updateItemNodes(transition: .immediate, forceOffsetReset: true)
+        }
+    }
+    
+    private func canGoToPreviousItem() -> Bool {
+        if let index = self.centralItemIndex, index > 0 {
+            return true
+        } else {
+            return false
+        }
+    }
+    
+    private func canGoToNextItem() -> Bool {
+        if let index = self.centralItemIndex, index < self.items.count - 1 {
+            return true
+        } else {
+            return false
+        }
+    }
+    
+    private func goToPreviousItem() {
+        if let index = self.centralItemIndex, index > 0 {
+            self.transaction(GalleryPagerTransaction(deleteItems: [], insertItems: [], updateItems: [], focusOnItem: index - 1))
+        }
+    }
+    
+    private func goToNextItem() {
+        if let index = self.centralItemIndex, index < self.items.count - 1 {
+            self.transaction(GalleryPagerTransaction(deleteItems: [], insertItems: [], updateItems: [], focusOnItem: index + 1))
         }
     }
     

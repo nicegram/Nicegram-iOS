@@ -59,17 +59,7 @@ open class ZoomableContentGalleryItemNode: GalleryItemNode, UIScrollViewDelegate
         if #available(iOSApplicationExtension 11.0, iOS 11.0, *) {
             self.scrollNode.view.contentInsetAdjustmentBehavior = .never
         }
-        
-        self.leftFadeNode = ASImageNode()
-        self.leftFadeNode.contentMode = .scaleToFill
-        self.leftFadeNode.image = leftFadeImage
-        self.leftFadeNode.alpha = 0.0
-        
-        self.rightFadeNode = ASImageNode()
-        self.rightFadeNode.contentMode = .scaleToFill
-        self.rightFadeNode.image = rightFadeImage
-        self.rightFadeNode.alpha = 0.0
-        
+    
         super.init()
         
         self.scrollNode.view.delegate = self
@@ -119,10 +109,7 @@ open class ZoomableContentGalleryItemNode: GalleryItemNode, UIScrollViewDelegate
         if recognizer.state == .ended {
             if let (gesture, location) = recognizer.lastRecognizedGestureAndLocation {
                 let pointInNode = self.scrollNode.view.convert(location, to: self.view)
-                if pointInNode.x < 44.0 {
-                    self.goToPreviousItem()
-                } else if pointInNode.x > self.frame.width - 44.0 {
-                    self.goToNextItem()
+                if pointInNode.x < 44.0 || pointInNode.x > self.frame.width - 44.0 {
                 } else {
                     switch gesture {
                         case .tap:
