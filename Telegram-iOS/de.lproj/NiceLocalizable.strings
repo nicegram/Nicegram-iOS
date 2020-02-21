@@ -15,6 +15,7 @@
 "NiceFeatures.Tabs.ShowContacts" = "Kontakte Tab anzeigen";
 "NiceFeatures.ChatScreen.Header" = "CHAT ANZEIGE";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Animierte Stickers";
+"NiceFeatures.useBackCam" = "Use Rear camera (Round Videos)";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "In Cloud speichern";
@@ -26,6 +27,7 @@
 "NiceFeatures.Notifications.FixNotice" = "Nützlich, wenn du Benachrichtigungen von stummgeschalteten Chats erhältst.\nDas Antworten von Benachrichtigungen, Kontobezeichnungen sowie Medienvorschauen werden nicht verfügbar sein.";
 "NiceFeatures.Filters.Header" = "Filter (Tabs)";
 "NiceFeatures.Filters.Notice" = "Wählen Sie die Anzahl der benutzerdefinierten Tabs.\nLanges Tippen auf Tab, um den Filter zu ändern.";
+"NiceFeatures.Filters.ShowBadge" = "Abzeichen anzeigen (Filter)";
 
 /*Common*/
 "Common.ExitNow" = "Jetzt verlassen";
