@@ -115,3 +115,13 @@
 "NiceFeatures.RestoreSettings.Confirm" = "Klasör & Ayarları dosyadan geri yüklemek istediğinize emin misiniz?\n⚠️ Şu ankinin üzerine yazılacak";
 "NiceFeatures.RestoreSettings.Done" = "Klasör & Ayarlar başarılı bir şekilde geri yüklendi";
 "NiceFeatures.RestoreSettings.Error" = "Ayarlar geri yüklenirken hata. Dosya bozulmuş olabilir";
+
+/*Ghost Mode*/
+"Gmod.Restricted" = "Hayalet Mod’da mesaj gönderemezsiniz.";
+"Gmod.Unavailable" = "Hayalet Mod Kullanılamaz";
+"Gmod.Disable.Notice" = "Çevrimiçi durumunuz ve okundu işaretleriniz görünecek.";
+"Gmod" = "Hayalet Mod";
+"Gmod.Enable" = "Hayalet Mod etkinleştirilsin mi?";
+"Gmod.Disable" = "Hayalet Mod devre dışı bırakılsın mı?";
+
+"SendWithKb" = "«Enter» butonu ile gönder";

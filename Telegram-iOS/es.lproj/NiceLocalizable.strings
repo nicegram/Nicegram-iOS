@@ -15,7 +15,7 @@
 "NiceFeatures.Tabs.ShowContacts" = "Mostrar pestaña de Contactos";
 "NiceFeatures.ChatScreen.Header" = "PANTALLA DE CHAT";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Stickers animados";
-"NiceFeatures.useBackCam" = "Usar cámara trasera (Videomensajes)";
+"NiceFeatures.useBackCam" = "Usa cámara trasera (videos redondos)";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "Guardar en la nube";
@@ -23,11 +23,13 @@
 /*Open Pin*/
 "Chat.OpenPin" = "Mostrar anclado";
 "ChatFilter.Admin" = "Administrador";
+"NiceFeatures.Notifications.HideNotifyAccountNotice" = "Envés de «Usuario → Cuenta» solamente verás «Usuario». Solo para cuentas múltiples.";
 "NiceFeatures.Notifications.Fix" = "Desactivar notificaciones no deseadas";
 "NiceFeatures.Notifications.FixNotice" = "Útil si recibes notificaciones de chats silenciados.\nResponder desde la notificación, etiquetas de cuenta y vistas previas de multimedia no estarán disponibles.";
 "NiceFeatures.Filters.Header" = "FILTROS (PESTAÑAS)";
 "NiceFeatures.Filters.Notice" = "Selecciona el número de pestañas personalizadas. \nMantén pulsado una pestaña para cambiar el filtro.";
 "NiceFeatures.Filters.ShowBadge" = "Mostrar globos (Filtros)";
+"NiceFeatures.UseClassicInfoUi" = "Usa el interfaz de usuario classico del chat";
 
 /*Common*/
 "Common.ExitNow" = "Salir ahora";
@@ -46,7 +48,7 @@
 "Folder.Create.Name" = "Nombre de la carpeta";
 "Folder.Create.Placeholder" = "Carpeta…";
 "Folder.LimitExceeded" = "Lo siento pero no se puede crear más que 3 archivos personalizados.\nHay más archivos disponibles en Premium.";
-"NiceFeatures.HideNumber" = "Ocultar número en ajustes";
+"NiceFeatures.HideNumber" = "Oculta numero de teléfono dentro de los ajustes";
 
 /*NGWeb*/
 "NGWeb.Blocked" = "No disponible en Nicegram debido a las normas del App Store";
