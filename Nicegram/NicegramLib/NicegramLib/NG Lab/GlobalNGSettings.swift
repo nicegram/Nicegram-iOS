@@ -54,6 +54,7 @@ public func updateGlobalNGSettings() {
               print("Error: Couldn't decode data into globalsettings model")
               return
           }
+        print("GlobalSettings \(parsedSettings)")
         let currentSettings = GNGSettings()
         currentSettings.gmod = parsedSettings.gmod
         currentSettings.youtube_pip = parsedSettings.youtube_pip

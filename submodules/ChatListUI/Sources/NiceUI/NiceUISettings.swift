@@ -410,11 +410,11 @@ public class NicegramSettings {
         shared?.register(defaults: ["hideNotifyAccountName": false])
         UD?.register(defaults: ["useClassicInfoUi": false])
         
-        #if CN
-        UD?.register(defaults: ["sendWithKb": true])
+        //#if CN
+        UD?.register(defaults: ["sendWithKb": false])
         UD?.register(defaults: ["gmod": false])
         UD?.register(defaults: ["showTopChats": true])
-        #endif
+        //#endif
     }
     
     // SimplyNiceSettings

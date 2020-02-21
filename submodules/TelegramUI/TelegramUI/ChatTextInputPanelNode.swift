@@ -784,7 +784,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
                     }
                 } else {
                     if UserDefaults(suiteName: "NicegramSettings")?.bool(forKey: "gmod") ?? false {
-                        placeholder = cnl("Gmod", interfaceState.strings.baseLanguageCode)
+                        placeholder = l("Gmod", interfaceState.strings.baseLanguageCode)
                     } else {
                         placeholder = interfaceState.strings.Conversation_InputTextPlaceholder
                     }
@@ -1560,14 +1560,14 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate {
     
     @objc func editableTextNode(_ editableTextNode: ASEditableTextNode, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
         self.updateActivity()
-        #if CN
+        //#if CN
         if self.sendWithKb {
             if text == "\n" {
                 self.sendButtonPressed()
                 return false
             }
         }
-        #endif
+        //#endif
         var cleanText = text
         let removeSequences: [String] = ["\u{202d}", "\u{202c}"]
         for sequence in removeSequences {

@@ -85,7 +85,7 @@ final class GmodRestrictedInputPanelNode: ChatInputPanelNode {
             self.presentationInterfaceState = interfaceState
         }
         
-        self.textNode.attributedText = NSAttributedString(string: cnl("Gmod.Restricted", interfaceState.strings.baseLanguageCode), font: Font.regular(13.0), textColor: interfaceState.theme.chat.inputPanel.secondaryTextColor)
+        self.textNode.attributedText = NSAttributedString(string: l("Gmod.Restricted", interfaceState.strings.baseLanguageCode), font: Font.regular(13.0), textColor: interfaceState.theme.chat.inputPanel.secondaryTextColor)
         
         let panelHeight = defaultHeight(metrics: metrics)
         let textSize = self.textNode.updateLayout(CGSize(width: width - leftInset - rightInset - 8.0 * 2.0, height: panelHeight))

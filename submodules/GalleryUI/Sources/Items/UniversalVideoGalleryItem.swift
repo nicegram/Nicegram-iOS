@@ -456,7 +456,7 @@ final class UniversalVideoGalleryItemNode: ZoomableContentGalleryItemNode {
                 let type = webEmbedType(content: content.webpageContent)
                 switch type {
                     case .youtube:
-                        disablePictureInPicture = !(UserDefaults(suiteName: "GlobalNGSettings")?.bool(forKey: "youtube_pip") ?? true) || !(item.configuration?.youtubePictureInPictureEnabled ?? false)
+                        disablePictureInPicture = !(UserDefaults(suiteName: "GlobalNGSettings")?.bool(forKey: "youtube_pip") ?? true)// || !(item.configuration?.youtubePictureInPictureEnabled ?? false)
                     case .iframe:
                         disablePlayerControls = true
                     default:

@@ -669,7 +669,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
             }
         }
         
-        #if CN
+        //#if CN
         self.titleView.toggleGmod = { [weak self] in
             if let strongSelf = self {
                 let locale = strongSelf.presentationData.strings.baseLanguageCode
@@ -680,7 +680,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                         print("DISABLE GMOD")
 //                        var newSettings = AccountPrivacySettings(presence: SelectivePrivacySettings.enableEveryone(disableFor: [:]), groupInvitations: info.groupInvitations, voiceCalls: info.groupInvitations, voiceCallsP2P: info.voiceCallsP2P, profilePhoto: info.profilePhoto, forwards: info.forwards, phoneNumber: info.phoneNumber, phoneDiscoveryEnabled: info.phoneDiscoveryEnabled, accountRemovalTimeout: info.accountRemovalTimeout)
                         // disable
-                        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: cnl("Gmod.Disable", locale), text: cnl("Gmod.Disable.Notice", locale), actions: [
+                        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: l("Gmod.Disable", locale), text: l("Gmod.Disable.Notice", locale), actions: [
                             TextAlertAction(type: .destructiveAction, title: strongSelf.presentationData.strings.Common_OK, action: {
                                 let _ = updateExperimentalUISettingsInteractively(accountManager: strongSelf.context.sharedContext.accountManager, { settings in
                                     var settings = settings
@@ -697,8 +697,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                     } else {
                         // enable
                         print("ENABLE GMOD")
-                        
-                        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: cnl("Gmod.Enable", locale), text: cnl("Gmod.Notice", locale), actions: [
+                        if GNGSettings().gmod {
+                        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: l("Gmod.Enable", locale), text: l("Gmod.Notice", locale), actions: [
                             TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {}),
                             TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Yes, action: {
                             let _ = updateExperimentalUISettingsInteractively(accountManager: strongSelf.context.sharedContext.accountManager, { settings in
@@ -713,13 +713,18 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                             })
                         ])
                         strongSelf.present(controller, in: .window(.root))
+                        } else {
+                            let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: nil, text: l("Gmod.Unavailable", locale), actions: [TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_OK, action: {})])
+                        strongSelf.present(controller, in: .window(.root))
+                        }
+                        
                     }
                     
                 //})
             }
             
         }
-        #endif
+        //#endif
         
         self.presentationDataDisposable = (context.sharedContext.presentationData
         |> deliverOnMainQueue).start(next: { [weak self] presentationData in

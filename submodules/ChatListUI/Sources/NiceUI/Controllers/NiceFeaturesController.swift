@@ -557,12 +557,12 @@ private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls
     var entries: [NiceFeaturesControllerEntry] = []
 
     let locale = presentationData.strings.baseLanguageCode
-    #if CN
-    entries.append(.cnHeader(presentationData.theme, cnl("NiceFeatures.Title", locale).uppercased()))
+    //#if CN
+    //entries.append(.cnHeader(presentationData.theme, cnl("NiceFeatures.Title", locale).uppercased()))
     
-    entries.append(.toggleSendWithKb(presentationData.theme, cnl("SendWithKb", locale), nicegramSettings.sendWithKb))
-    entries.append(.toggleshowTopChats(presentationData.theme, cnl("TopChats.ShowTab", locale), nicegramSettings.showTopChats))
-    #endif
+    entries.append(.toggleSendWithKb(presentationData.theme, l("SendWithKb", locale), nicegramSettings.sendWithKb))
+    //entries.append(.toggleshowTopChats(presentationData.theme, l("TopChats.ShowTab", locale), nicegramSettings.showTopChats))
+    //#endif
     entries.append(.messageNotificationsHeader(presentationData.theme, presentationData.strings.Notifications_Title.uppercased()))
     //entries.append(.pinnedMessageNotification(presentationData.theme, "Pinned Messages", niceSettings.pinnedMessagesNotification))  //presentationData.strings.Nicegram_Settings_Features_PinnedMessages
     
@@ -809,7 +809,7 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
             }
         }
 
-        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(cnl("NiceFeatures.Title", presentationData.strings.baseLanguageCode)), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
+        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("NiceFeatures.Title", presentationData.strings.baseLanguageCode)), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
             let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, ensureVisibleItemTag: focusOnItemTag, initialScrollToItem: scrollToItem)
 
         return (controllerState, (listState, arguments))
