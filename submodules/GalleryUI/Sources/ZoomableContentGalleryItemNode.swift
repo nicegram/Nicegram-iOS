@@ -3,36 +3,8 @@ import UIKit
 import Display
 import AsyncDisplayKit
 
-private let leftFadeImage = generateImage(CGSize(width: 64.0, height: 1.0), opaque: false, rotatedContext: { size, context in
-    let bounds = CGRect(origin: CGPoint(), size: size)
-    context.clear(bounds)
-    
-    let gradientColors = [UIColor.black.withAlphaComponent(0.35).cgColor, UIColor.black.withAlphaComponent(0.0).cgColor] as CFArray
-    
-    var locations: [CGFloat] = [0.0, 1.0]
-    let colorSpace = CGColorSpaceCreateDeviceRGB()
-    let gradient = CGGradient(colorsSpace: colorSpace, colors: gradientColors, locations: &locations)!
-
-    context.drawLinearGradient(gradient, start: CGPoint(x: 0.0, y: 0.0), end: CGPoint(x: 64.0, y: 0.0), options: CGGradientDrawingOptions())
-})
-
-private let rightFadeImage = generateImage(CGSize(width: 64.0, height: 1.0), opaque: false, rotatedContext: { size, context in
-    let bounds = CGRect(origin: CGPoint(), size: size)
-    context.clear(bounds)
-    
-    let gradientColors = [UIColor.black.withAlphaComponent(0.0).cgColor, UIColor.black.withAlphaComponent(0.35).cgColor] as CFArray
-    
-    var locations: [CGFloat] = [0.0, 1.0]
-    let colorSpace = CGColorSpaceCreateDeviceRGB()
-    let gradient = CGGradient(colorsSpace: colorSpace, colors: gradientColors, locations: &locations)!
-
-    context.drawLinearGradient(gradient, start: CGPoint(x: 0.0, y: 0.0), end: CGPoint(x: 64.0, y: 0.0), options: CGGradientDrawingOptions())
-})
-
 open class ZoomableContentGalleryItemNode: GalleryItemNode, UIScrollViewDelegate {
     public let scrollNode: ASScrollNode
-    private let leftFadeNode: ASImageNode
-    private let rightFadeNode: ASImageNode
     
     private var containerLayout: ContainerViewLayout?
     
@@ -81,28 +53,10 @@ open class ZoomableContentGalleryItemNode: GalleryItemNode, UIScrollViewDelegate
             }
             return .waitForDoubleTap
         }
-        tapRecognizer.highlight = { [weak self] location in
-            if let strongSelf = self {
-                let pointInNode = location.flatMap { strongSelf.scrollNode.view.convert($0, to: strongSelf.view) }
-                let transition: ContainedViewLayoutTransition = .animated(duration: 0.07, curve: .easeInOut)
-                if let location = pointInNode, location.x < edgeWidth && strongSelf.canGoToPreviousItem() {
-                    transition.updateAlpha(node: strongSelf.leftFadeNode, alpha: 1.0)
-                } else {
-                    transition.updateAlpha(node: strongSelf.leftFadeNode, alpha: 0.0)
-                }
-                if let location = pointInNode, location.x > strongSelf.frame.width - edgeWidth && strongSelf.canGoToNextItem() {
-                    transition.updateAlpha(node: strongSelf.rightFadeNode, alpha: 1.0)
-                } else {
-                    transition.updateAlpha(node: strongSelf.rightFadeNode, alpha: 0.0)
-                }
-            }
-        }
         
         self.scrollNode.view.addGestureRecognizer(tapRecognizer)
 
         self.addSubnode(self.scrollNode)
-        self.addSubnode(self.leftFadeNode)
-        self.addSubnode(self.rightFadeNode)
     }
     
     @objc open func contentTap(_ recognizer: TapLongTapOrDoubleTapGestureRecognizer) {
@@ -150,10 +104,6 @@ open class ZoomableContentGalleryItemNode: GalleryItemNode, UIScrollViewDelegate
             shouldResetContents = true
         }
         self.containerLayout = layout
-        
-        let fadeWidth = min(72.0, layout.size.width * 0.2)
-        self.leftFadeNode.frame = CGRect(x: 0.0, y: 0.0, width: fadeWidth, height: layout.size.height)
-        self.rightFadeNode.frame = CGRect(x: layout.size.width - fadeWidth, y: 0.0, width: fadeWidth, height: layout.size.height)
         
         if shouldResetContents {
             var previousFrame: CGRect?

@@ -1424,15 +1424,6 @@ public final class PresentationStrings: Equatable {
     public func Channel_AdminLog_MessageInvitedName(_ _1: String) -> (String, [(Int, NSRange)]) {
         return formatWithArgumentRanges(self._s[1144]!, self._r[1144]!, [_1])
     }
-    public var Map_Home: String { return self._s[1133]! }
-    public var CheckoutInfo_ShippingInfoStatePlaceholder: String { return self._s[1135]! }
-    public var Notifications_GroupNotificationsExceptionsHelp: String { return self._s[1136]! }
-    public var SocksProxySetup_Password: String { return self._s[1137]! }
-    public var Notifications_PermissionsEnable: String { return self._s[1138]! }
-    public var TwoStepAuth_ChangeEmail: String { return self._s[1140]! }
-    public func Channel_AdminLog_MessageInvitedName(_ _1: String) -> (String, [(Int, NSRange)]) {
-        return formatWithArgumentRanges(self._s[1141]!, self._r[1141]!, [_1])
-    }
     public func Time_MonthOfYear_m10(_ _0: String) -> (String, [(Int, NSRange)]) {
         return formatWithArgumentRanges(self._s[1146]!, self._r[1146]!, [_0])
     }
@@ -5079,12 +5070,12 @@ public final class PresentationStrings: Equatable {
     public func CreatePoll_AddMoreOptions(_ value: Int32) -> String {
         let form = getPluralizationForm(self.lc, value)
         let stringValue = presentationStringsFormattedNumber(value, self.groupingSeparator)
-        return String(format: self._ps[66 * 6 + Int(form.rawValue)]!, stringValue)
+        return String(format: self._ps[67 * 6 + Int(form.rawValue)]!, stringValue)
     }
     public func Media_SharePhoto(_ value: Int32) -> String {
         let form = getPluralizationForm(self.lc, value)
         let stringValue = presentationStringsFormattedNumber(value, self.groupingSeparator)
-        return String(format: self._ps[67 * 6 + Int(form.rawValue)]!, stringValue)
+        return String(format: self._ps[68 * 6 + Int(form.rawValue)]!, stringValue)
     }
     public func Contacts_ImportersCount(_ value: Int32) -> String {
         let form = getPluralizationForm(self.lc, value)
@@ -5288,7 +5279,7 @@ public final class PresentationStrings: Equatable {
     public func Call_Seconds(_ value: Int32) -> String {
         let form = getPluralizationForm(self.lc, value)
         let stringValue = presentationStringsFormattedNumber(value, self.groupingSeparator)
-        return String(format: self._ps[111 * 6 + Int(form.rawValue)]!, stringValue)
+        return String(format: self._ps[110 * 6 + Int(form.rawValue)]!, stringValue)
     }
     public func MessagePoll_QuizCount(_ value: Int32) -> String {
         let form = getPluralizationForm(self.lc, value)
@@ -5348,7 +5339,7 @@ public final class PresentationStrings: Equatable {
         let stringValue = presentationStringsFormattedNumber(value, self.groupingSeparator)
         return String(format: self._ps[122 * 6 + Int(form.rawValue)]!, stringValue)
     }
-    public func Call_ShortMinutes(_ value: Int32) -> String {
+    public func Conversation_StatusOnline(_ value: Int32) -> String {
         let form = getPluralizationForm(self.lc, value)
         let stringValue = presentationStringsFormattedNumber(value, self.groupingSeparator)
         return String(format: self._ps[123 * 6 + Int(form.rawValue)]!, stringValue)
@@ -5425,4 +5416,3 @@ public final class PresentationStrings: Equatable {
         return lhs === rhs
     }
 }
-

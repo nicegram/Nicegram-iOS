@@ -351,6 +351,10 @@ final class PeerInfoSelectionPanelNode: ASDisplayNode {
             forwardMessages()
         }, forwardCurrentForwardMessages: {
         }, forwardMessages: { _ in
+        }, cloudSelectedMessages: {
+        }, cloudMessages: { _ in
+        }, copyForwardSelectedMessages: {
+        }, copyForwardMessages: { _ in
         }, shareSelectedMessages: {
             shareMessages()
         }, updateTextInputStateAndMode: { _ in
@@ -405,6 +409,8 @@ final class PeerInfoSelectionPanelNode: ASDisplayNode {
         }, requestUnvoteInMessage: { _ in
         }, requestStopPollInMessage: { _ in
         }, updateInputLanguage: { _ in
+        }, gotoPin: {
+        }, dismissInput: {
         }, unarchiveChat: {
         }, openLinkEditing: {
         }, reportPeerIrrelevantGeoLocation: {
