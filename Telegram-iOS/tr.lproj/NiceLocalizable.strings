@@ -121,8 +121,6 @@
 "Gmod.Unavailable" = "Hayalet Mod Kullanılamaz";
 "Gmod.Disable.Notice" = "Çevrimiçi durumunuz ve okundu işaretleriniz görünecek.";
 "Gmod" = "Hayalet Mod";
-"Gmod.Enable" = "Hayalet Mod etkinleştirilsin mi?";
-"Gmod.Disable" = "Hayalet Mod devre dışı bırakılsın mı?";
 "Gmod.Notice" = "Çevrimiçi durumunuz, Telegram gizlilik ayarlarına göre herkesten gizlenecek.\nSohbetlere önizleme modunda gireceksiniz ve okundu işaretleri gönderilmeyecek.\nÖnizleme modu, resmi Telegram’da bir sohbete uzun basmak gibi çalışır.\nÇevrimiçi durumunuz HERHANGİ BİR mesaj gönderirseniz, görünecek.\nBu sadece bir kısayoldur, Telegram Kullanım Koşulları’nı ihlal etmez.";
 
 "SendWithKb" = "«Enter» butonu ile gönder";
