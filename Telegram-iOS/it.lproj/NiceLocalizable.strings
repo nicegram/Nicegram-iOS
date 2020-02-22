@@ -107,7 +107,7 @@
 
 /*Backup Settings*/
 "NiceFeatures.BackupIcloud" = "Sincronizza impostazioni e cartelle con iCloud";
-"NiceFeatures.BackupSettings" = "Impostazioni di backup & cartelle";
+"NiceFeatures.BackupSettings" = "Backup impostazioni e cartelle";
 "NiceFeatures.BackupSettings.Notice" = "Crea un backup. Tocca il file per ripristinarlo.";
 "NiceFeatures.BackupSettings.Done" = "Backup eseguito nei messaggi salvati";
 "NiceFeatures.BackupSettings.Error" = "Errore creazione backup";
@@ -115,3 +115,14 @@
 "NiceFeatures.RestoreSettings.Confirm" = "Sicuro di voler ripristinare cartelle e impostazioni da file?\n⚠️ Questo sovrascriverà i dati attuali";
 "NiceFeatures.RestoreSettings.Done" = "Cartelle e impostazioni ripristinate ✔️";
 "NiceFeatures.RestoreSettings.Error" = "Errore ripristino impostazioni. Il file potrebbe essere danneggiato";
+
+/*Ghost Mode*/
+"Gmod.Restricted" = "Non puoi inviare messaggi nella ghost mode.";
+"Gmod.Unavailable" = "Ghost mode non disponibile";
+"Gmod.Disable.Notice" = "Il tuo stato e i messaggi che hai letto verranno rivelati.";
+"Gmod" = "Ghost mode";
+"Gmod.Enable" = "Abilitare la ghost mode?";
+"Gmod.Disable" = "Disabilitare la ghost mode?";
+"Gmod.Notice" = "Il tuo stato online verrà nascosto a tutti dalle impostazioni sulla privacy di Telegram.\nEntrerai nelle chat in modalità anteprima e i segni di lettura non verranno inviati.\nLa modalità anteprima funziona come un tap lungo su Telegram ufficiale.\nIl tuo stato online può essere rivelato se invii un messaggio qualsiasi.\nQuesta è una scorciatoia e non viola i TOS di Telegram.";
+
+"SendWithKb" = "Invia con il pulsante \"Invio\"";
