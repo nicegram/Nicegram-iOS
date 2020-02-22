@@ -114,3 +114,7 @@
 "NiceFeatures.RestoreSettings.Confirm" = "¿Quieres restaurar las carpetas y ajustes desde un archivo?\n⚠️ Sobreescribirá los datos actuales";
 "NiceFeatures.RestoreSettings.Done" = "Carpetas y ajustes restaurados con éxito";
 "NiceFeatures.RestoreSettings.Error" = "Error al restaurar los ajustes. El archivo podría estar corrupto";
+"Gmod" = "Modo fantasma";
+"Gmod.Enable" = "¿Activar Modo fantasma?";
+"Gmod.Disable" = "¿Desactivar Modo fantasma?";
+"NiceFeatures.ShowGmodIcon" = "Mostrar icono de Modo fantasma";
