@@ -168,10 +168,10 @@ final class ChatTitleGmodNode: ASDisplayNode {
         self.addSubnode(self.iconNode)
         //self.addSubnode(self.activityIndicator)
         
-        let iconFrame = CGRect(origin: CGPoint(x: 0, y: -3), size: CGSize(width: 30.0, height: 30.0))
+        let iconFrame = CGRect(origin: CGPoint(x: 6, y: -4), size: CGSize(width: 30.0, height: 30.0))
         self.iconNode.frame = iconFrame
         //self.activityIndicator.frame = CGRect(origin: CGPoint(x: floor(iconFrame.midX - 5.0), y: 10.0), size: CGSize(width: 10.0, height: 10.0))
         
-        self.frame = CGRect(origin: CGPoint(x: 0, y: -3), size: CGSize(width: 30.0, height: 30.0))
+        self.frame = CGRect(origin: CGPoint(x: 6, y: -4), size: CGSize(width: 30.0, height: 30.0))
     }
 }

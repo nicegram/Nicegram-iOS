@@ -234,7 +234,7 @@ final class ChatListTitleView: UIView, NavigationBarTitleView, NavigationBarTitl
         self.proxyNode.frame = proxyFrame
         self.proxyButton.frame = proxyFrame.insetBy(dx: -2.0, dy: -2.0)
         
-        let gmodFrame = CGRect(origin: CGPoint(x: clearBounds.maxX - 9.0 - self.gmodNode.bounds.width - 9.0 - self.proxyNode.bounds.width, y: floor((size.height - gmodNode.bounds.height) / 2.0)), size: gmodNode.bounds.size)
+        let gmodFrame = CGRect(origin: CGPoint(x: clearBounds.maxX - 9.0 - self.gmodNode.bounds.width - 9.0 - (self.proxyButton.isHidden ? 0.0 : self.proxyNode.bounds.width), y: floor((size.height - gmodNode.bounds.height) / 2.0)), size: gmodNode.bounds.size)
         self.gmodNode.frame = gmodFrame
         self.gmodButton.frame = gmodFrame.insetBy(dx: -2.0, dy: -2.0)
         

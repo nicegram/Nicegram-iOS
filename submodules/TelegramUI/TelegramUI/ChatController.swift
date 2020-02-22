@@ -2010,15 +2010,10 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
         self.chatInfoNavigationButton = ChatNavigationButton(action: .openChatInfo(expandAvatar: true), buttonItem: chatInfoButtonItem)
         
         self.navigationItem.titleView = self.chatTitleView
-        self.chatTitleView?.pressed = { [weak self] in
-            self?.navigationButtonAction(.openChatInfo(expandAvatar: false))
-        }
-        
-        self.navigationItem.titleView = self.chatTitleView
         if !NicegramSettings().useClassicInfoUi {
-        self.chatTitleView?.pressed = { [weak self] in
-            self?.navigationButtonAction(.openChatInfo(expandAvatar: false))
-        }
+            self.chatTitleView?.pressed = { [weak self] in
+                self?.navigationButtonAction(.openChatInfo(expandAvatar: false))
+            }
         }
         self.updateChatPresentationInterfaceState(animated: false, interactive: false, { state in
             if let botStart = botStart, case .interactive = botStart.behavior {
