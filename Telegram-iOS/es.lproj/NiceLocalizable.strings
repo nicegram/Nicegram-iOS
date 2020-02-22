@@ -119,9 +119,11 @@
 /*Ghost Mode*/
 "Gmod.Restricted" = "No puedes enviar mensajes en Modo fantasma.";
 "Gmod.Unavailable" = "Modo fantasma no disponible";
+"Gmod.Disable.Notice" = "Tu estado en línea y confirmaciones de lectura serán revelados.";
 "Gmod" = "Modo fantasma";
 "Gmod.Enable" = "¿Activar Modo fantasma?";
 "Gmod.Disable" = "¿Desactivar Modo fantasma?";
+"Gmod.Notice" = "Tu estado en línea estará oculto para todos según los ajustes de privacidad del Telegram.\nEntrarás en los chats en modo de vista previa y no se enviarán confirmaciones de lectura.\nEl modo de vista previa funciona de la misma manera que cuando mantienes pulsado un chat en Telegram oficial.\nTu estado en línea puede ser revelado si envías CUALQUIER mensaje.\nEsto es sólo un atajo que no viola los términos de servicio de Telegram.";
 
 "SendWithKb" = "Enviar con botón Intro";
 "NiceFeatures.ShowGmodIcon" = "Mostrar icono de Modo fantasma";
