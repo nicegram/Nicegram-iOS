@@ -121,8 +121,8 @@
 "Gmod.Unavailable" = "Ghost Mode Unavailable";
 "Gmod.Disable.Notice" = "Your online status and read marks will be revealed.";
 "Gmod" = "Ghost Mode";
-"Gmod.Enable" = "Enable Ghost Busters Mode?";
-"Gmod.Disable" = "Disable Ghost Busters Mode?";
+"Gmod.Enable" = "Enable Ghost Mode?";
+"Gmod.Disable" = "Disable Ghost Mode?";
 "Gmod.Notice" = "Your online status will be hidden from everyone by Telegram privacy settings.\nYou will enter chats in preview mode and read marks will not be send.\nPreview mode works same as you longtap a chat in official Telegram.\nYour online status may be revealed if you send ANY message.\nThis is just a shortcut that not violates Telegram TOS.";
 
 "SendWithKb" = "Send with «Enter» button";
