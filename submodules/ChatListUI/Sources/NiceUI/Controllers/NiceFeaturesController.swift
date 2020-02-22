@@ -56,8 +56,9 @@ private final class NiceFeaturesControllerArguments {
     let toggleClassicInfoUi: (Bool) -> Void
     let toggleSendWithKb: (Bool) -> Void
     let toggleshowTopChats: (Bool) -> Void
+    let toggleshowGmodIcon: (Bool) -> Void
 
-    init(togglePinnedMessage: @escaping (Bool) -> Void, toggleMuteSilent: @escaping (Bool) -> Void, toggleHideNotifyAccount: @escaping (Bool) -> Void, toggleShowContactsTab: @escaping (Bool) -> Void, toggleFixNotifications: @escaping (Bool) -> Void, updateShowCallsTab: @escaping (Bool) -> Void, changeFiltersAmount: @escaping (Int32) -> Void, toggleShowTabNames: @escaping (Bool, String) -> Void, toggleHidePhone: @escaping (Bool, String) -> Void, toggleUseBrowser: @escaping (Bool) -> Void, customizeBrowser: @escaping (Browser) -> Void, openBrowserSelection: @escaping () -> Void, backupSettings: @escaping () -> Void, toggleFiltersBadge: @escaping (Bool) -> Void, toggleBackupIcloud: @escaping (Bool) -> Void, togglebackCam: @escaping (Bool) -> Void, toggletgFilters: @escaping (Bool) -> Void, toggleClassicInfoUi: @escaping (Bool) -> Void, toggleSendWithKb: @escaping (Bool) -> Void, toggleshowTopChats: @escaping (Bool) -> Void) {
+    init(togglePinnedMessage: @escaping (Bool) -> Void, toggleMuteSilent: @escaping (Bool) -> Void, toggleHideNotifyAccount: @escaping (Bool) -> Void, toggleShowContactsTab: @escaping (Bool) -> Void, toggleFixNotifications: @escaping (Bool) -> Void, updateShowCallsTab: @escaping (Bool) -> Void, changeFiltersAmount: @escaping (Int32) -> Void, toggleShowTabNames: @escaping (Bool, String) -> Void, toggleHidePhone: @escaping (Bool, String) -> Void, toggleUseBrowser: @escaping (Bool) -> Void, customizeBrowser: @escaping (Browser) -> Void, openBrowserSelection: @escaping () -> Void, backupSettings: @escaping () -> Void, toggleFiltersBadge: @escaping (Bool) -> Void, toggleBackupIcloud: @escaping (Bool) -> Void, togglebackCam: @escaping (Bool) -> Void, toggletgFilters: @escaping (Bool) -> Void, toggleClassicInfoUi: @escaping (Bool) -> Void, toggleSendWithKb: @escaping (Bool) -> Void, toggleshowTopChats: @escaping (Bool) -> Void, toggleshowGmodIcon: @escaping (Bool) -> Void) {
         self.togglePinnedMessage = togglePinnedMessage
         self.toggleMuteSilent = toggleMuteSilent
         self.toggleHideNotifyAccount = toggleHideNotifyAccount
@@ -78,6 +79,7 @@ private final class NiceFeaturesControllerArguments {
         self.toggleClassicInfoUi = toggleClassicInfoUi
         self.toggleSendWithKb = toggleSendWithKb
         self.toggleshowTopChats = toggleshowTopChats
+        self.toggleshowGmodIcon = toggleshowGmodIcon
     }
 }
 
@@ -139,6 +141,7 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
     case cnHeader(PresentationTheme, String)
     case toggleSendWithKb(PresentationTheme, String, Bool)
     case toggleshowTopChats(PresentationTheme, String, Bool)
+    case toggleshowGmodIcon(PresentationTheme, String, Bool)
 
     var section: ItemListSectionId {
         switch self {
@@ -156,7 +159,7 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return niceFeaturesControllerSection.chatScreen.rawValue
         case .browsersHeader, .telegramBrowsers:
             return niceFeaturesControllerSection.browsers.rawValue
-        case .otherHeader, .hideNumber, .backupNotice, .backupSettings, .backupIcloud, .backCam, .tgFilters, .toggleClassicInfoUi:
+        case .otherHeader, .hideNumber, .backupNotice, .backupSettings, .backupIcloud, .backCam, .tgFilters, .toggleClassicInfoUi, .toggleshowGmodIcon:
             return niceFeaturesControllerSection.other.rawValue
         }
 
@@ -220,6 +223,8 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             return 42
         case .toggleClassicInfoUi:
             return 43
+        case .toggleshowGmodIcon:
+            return 44
         case .backupIcloud:
             return 100000 - 1
         case .backupSettings:
@@ -430,6 +435,12 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
+        case let .toggleshowGmodIcon(lhsTheme, lhsText, lhsValue):
+            if case let .toggleshowGmodIcon(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
+                return true
+            } else {
+                return false
+            }
         }
     }
 
@@ -540,6 +551,10 @@ private enum NiceFeaturesControllerEntry: ItemListNodeEntry {
         return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.toggleClassicInfoUi(value)
         })
+        case let .toggleshowGmodIcon(theme, text, value):
+        return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                arguments.toggleshowGmodIcon(value)
+        })
         }
     }
 
@@ -599,6 +614,7 @@ private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls
     
     //entries.append(.tgFilters(presentationData.theme, "Use Telegram Filters", nicegramSettings.useTgFilters))
     entries.append(.toggleClassicInfoUi(presentationData.theme, l("NiceFeatures.UseClassicInfoUi", locale), nicegramSettings.useClassicInfoUi))
+    entries.append(.toggleshowGmodIcon(presentationData.theme, l("NiceFeatures.ShowGmodIcon", locale), nicegramSettings.showGmodIcon))
 
     entries.append(.backupSettings(presentationData.theme, l("NiceFeatures.BackupSettings", locale)))
     entries.append(.backupNotice(presentationData.theme, l("NiceFeatures.BackupSettings.Notice", locale)))
@@ -777,6 +793,11 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
     }, toggleshowTopChats: { value in
         NicegramSettings().showTopChats = value
         updateTabs()
+    }, toggleshowGmodIcon: { value in
+        NicegramSettings().showGmodIcon = value
+        let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: l("Common.RestartRequired", presentationData.strings.baseLanguageCode), actions: [/* TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: { preconditionFailure() }),*/ TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})])
+
+        presentControllerImpl?(controller, nil)
     }
     )
 

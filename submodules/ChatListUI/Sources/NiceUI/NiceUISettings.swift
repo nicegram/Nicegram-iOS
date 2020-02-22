@@ -389,7 +389,7 @@ public class SystemNGSettings {
     
 }
 
-public let SETTINGS_VERSION = 4
+public let SETTINGS_VERSION = 5
 public let BACKUP_NAME = "backup.ng-settings"
 public func getSettingsFilePath() -> URL {
     return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
@@ -415,6 +415,7 @@ public class NicegramSettings {
         UD?.register(defaults: ["gmod": false])
         UD?.register(defaults: ["showTopChats": true])
         //#endif
+        UD?.register(defaults: ["showGmodIcon": true])
     }
     
     // SimplyNiceSettings
@@ -624,11 +625,21 @@ public class NicegramSettings {
         }
     }
     
+    public var showGmodIcon: Bool {
+       get {
+           return UD?.bool(forKey: "showGmodIcon") ?? true
+       }
+       set {
+           UD?.set(newValue, forKey: "showGmodIcon")
+       }
+   }
+    
     public var json: [String: Any] {
         var cnExclusiveSettings: [String: Any] = [
             "sendWithKb": self.sendWithKb,
             "gmod": self.gmod,
-            "showTopChats": self.showTopChats
+            "showTopChats": self.showTopChats,
+            "showGmodIcon": self.showGmodIcon
         ]
         var jsNiceSettings: [String: Any] = [
             "hideNumber": self.hideNumber,
@@ -869,6 +880,13 @@ public class NicegramSettings {
                 result.append(("showTopChats", String(showTopChats), true))
             } else {
                 result.append(("showTopChats", "", false))
+            }
+            
+            if let showGmodIcon = CNSettings["showGmodIcon"] as? Bool {
+                self.showGmodIcon = showGmodIcon
+                result.append(("showGmodIcon", String(showGmodIcon), true))
+            } else {
+                result.append(("showGmodIcon", "", false))
             }
         } else {
             result.append(("CNSettings", "", false))
