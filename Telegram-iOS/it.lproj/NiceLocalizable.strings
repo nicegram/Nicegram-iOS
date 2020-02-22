@@ -121,5 +121,9 @@
 "Gmod.Unavailable" = "Ghost mode non disponibile";
 "Gmod.Disable.Notice" = "Il tuo stato e i messaggi che hai letto verranno rivelati.";
 "Gmod" = "Ghost mode";
+"Gmod.Enable" = "Abilitare la ghost mode?";
+"Gmod.Disable" = "Disabilitare la ghost mode?";
+"Gmod.Notice" = "Il tuo stato online verrà nascosto a tutti dalle impostazioni sulla privacy di Telegram.\nEntrerai nelle chat in modalità anteprima e i segni di lettura non verranno inviati.\nLa modalità anteprima funziona come un tap lungo su una chat su Telegram ufficiale.\nIl tuo stato online può essere rivelato se invii un messaggio qualsiasi.\nQuesta è una scorciatoia e non viola i TOS di Telegram.";
 
 "SendWithKb" = "Invia con il pulsante \"Invio\"";
+"NiceFeatures.ShowGmodIcon" = "Mostra icona ghost mode";
