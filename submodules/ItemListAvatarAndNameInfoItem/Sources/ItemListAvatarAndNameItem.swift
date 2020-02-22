@@ -426,8 +426,8 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                 case .settings:
                     if let phone = peer.phone, !phone.isEmpty {
                         let UD = UserDefaults(suiteName: "SimplyNiceSettings")
-                        let cloud = NSUbiquitousKeyValueStore.default
-                        if /*!(cloud.object(forKey: "hideNumber") as? Bool ??*/ UD?.bool(forKey: "hideNumber") ?? false {
+                        //let cloud = NSUbiquitousKeyValueStore.default
+                        if /*!(cloud.object(forKey: "hideNumber") as? Bool ??*/ !(UD?.bool(forKey: "hideNumber") ?? false) {
                             statusText += formatPhoneNumber(phone)
                         }
                     }
