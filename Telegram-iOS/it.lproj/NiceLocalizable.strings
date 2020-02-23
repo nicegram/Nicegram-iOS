@@ -119,7 +119,6 @@
 /*Ghost Mode*/
 "Gmod.Restricted" = "Non puoi inviare messaggi nella ghost mode.";
 "Gmod.Unavailable" = "Ghost mode non disponibile";
-"Gmod.Disable.Notice" = "Il tuo stato e i messaggi che hai letto verranno rivelati.";
 "Gmod" = "Ghost mode";
 "Gmod.Enable" = "Abilitare la ghost mode?";
 "Gmod.Disable" = "Disabilitare la ghost mode?";
