@@ -119,7 +119,6 @@
 /*Ghost Mode*/
 "Gmod.Restricted" = "No puedes enviar mensajes en Modo fantasma.";
 "Gmod.Unavailable" = "Modo fantasma no disponible";
-"Gmod.Disable.Notice" = "Tu estado en línea y confirmaciones de lectura serán revelados.";
 "Gmod" = "Modo fantasma";
 
 "SendWithKb" = "Enviar con botón Intro";
