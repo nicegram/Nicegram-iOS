@@ -116,5 +116,13 @@
 "NiceFeatures.RestoreSettings.Done" = "分组和设置已恢复成功";
 "NiceFeatures.RestoreSettings.Error" = "恢复设置出错，备份文件可能已损坏。";
 
+/*Ghost Mode*/
+"Gmod.Restricted" = "在幽灵模式下，您不能发送消息。";
+"Gmod.Unavailable" = "幽灵模式不可用";
+"Gmod.Disable.Notice" = "您的近期上线状态可见性将会变为«%1»。将会显示阅读标记。";
+"Gmod" = "幽灵模式";
+"Gmod.Enable" = "启用幽灵模式？";
+"Gmod.Disable" = "关闭幽灵模式？";
+
 "SendWithKb" = "按<回车>发送";
 "NiceFeatures.ShowGmodIcon" = "显示幽灵模式图标";
