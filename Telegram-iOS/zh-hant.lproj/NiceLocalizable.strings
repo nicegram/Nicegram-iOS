@@ -114,3 +114,15 @@
 "NiceFeatures.RestoreSettings.Confirm" = "您確定要從備份檔還原「文件夾和設定」？\n⚠️它將覆蓋當前數據";
 "NiceFeatures.RestoreSettings.Done" = "已成功還原「文件夾與設定」";
 "NiceFeatures.RestoreSettings.Error" = "恢復設定錯誤，備份檔可能已損壞";
+
+/*Ghost Mode*/
+"Gmod.Restricted" = "您無法在隱身模式下傳送訊息";
+"Gmod.Unavailable" = "隱身模式無法使用";
+"Gmod.Disable.Notice" = "您的「上次上線」設定將變更為 «%1»，已讀標記將會顯示。";
+"Gmod" = "隱身模式";
+"Gmod.Enable" = "啟用隱身模式？";
+"Gmod.Disable" = "停用隱身模式？";
+"Gmod.Notice" = "您的在線狀態將透過 Telegram 隱私設定對所有人隱藏。\n您將以預覽模式進入對話，並且不會傳送已讀資訊。\n預覽模式與您在 Telegram 透過長按對話的原理相同。\n但如果您傳送任何訊息，將會傳送出在線狀態。\n這是一種不違反 Telegram TOS 的工作方式。";
+
+"SendWithKb" = "點擊 «Enter» 傳送";
+"NiceFeatures.ShowGmodIcon" = "顯示隱身模式圖示";
