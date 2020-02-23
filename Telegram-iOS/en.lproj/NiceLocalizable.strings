@@ -48,7 +48,7 @@
 "Folder.Create" = "Create Folder...";
 "Folder.Create.Name" = "Folder Name";
 "Folder.Create.Placeholder" = "Folder...";
-"Folder.LimitExceeded" = "Sorry, you can create no more then 3 custom folders.\nMore folders are available in Premium.";
+"Folder.LimitExceeded" = "Sorry, you can create no more than 3 custom folders.\nMore folders are available in Premium.";
 "NiceFeatures.HideNumber" = "Hide phone in settings";
 
 /*NGWeb*/
