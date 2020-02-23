@@ -119,7 +119,6 @@
 /*Ghost Mode*/
 "Gmod.Restricted" = "Hayalet Mod’da mesaj gönderemezsiniz.";
 "Gmod.Unavailable" = "Hayalet Mod Kullanılamaz";
-"Gmod.Disable.Notice" = "Çevrimiçi durumunuz ve okundu işaretleriniz görünecek.";
 "Gmod" = "Hayalet Mod";
 "Gmod.Enable" = "Hayalet Mod etkinleştirilsin mi?";
 "Gmod.Disable" = "Hayalet Mod devre dışı bırakılsın mı?";
