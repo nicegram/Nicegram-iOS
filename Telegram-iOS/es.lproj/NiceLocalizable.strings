@@ -117,8 +117,8 @@
 "NiceFeatures.RestoreSettings.Error" = "Error al restaurar los ajustes. El archivo podría estar corrupto";
 
 /*Ghost Mode*/
-"Gmod.Restricted" = "No puedes enviar mensajes en Modo fantasma.";
-"Gmod.Unavailable" = "Modo fantasma no disponible";
+"Gmod.Restricted" = "No se puede enviar mensajes en modo fantasma.";
+"Gmod.Unavailable" = "Modo fantasma no está disponible";
 "Gmod" = "Modo fantasma";
 
 "SendWithKb" = "Enviar con botón Intro";
