@@ -119,7 +119,7 @@
 /*Ghost Mode*/
 "Gmod.Restricted" = "You can't send messages in Ghost Mode.";
 "Gmod.Unavailable" = "Ghost Mode Unavailable";
-"Gmod.Disable.Notice" = "Your online status and read marks will be revealed.";
+"Gmod.Disable.Notice" = "Your last seen visibility will be set to «%1». Read marks will be revealed.";
 "Gmod" = "Ghost Mode";
 "Gmod.Enable" = "Enable Ghost Mode?";
 "Gmod.Disable" = "Disable Ghost Mode?";

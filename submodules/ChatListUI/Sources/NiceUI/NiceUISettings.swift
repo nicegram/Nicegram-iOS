@@ -247,7 +247,7 @@ public class SimplyNiceSettings {
             } else {
                 return UD?.bool(forKey: "showTabNames") ?? true
             }
-             
+            
         }
         set {
             // cloud.set(newValue, forKey: "showTabNames")
@@ -565,7 +565,7 @@ public class NicegramSettings {
     public var useTgFilters: Bool {
         get {
             return UD?.bool(forKey: "useTgFilters") ?? true
-            }
+        }
         set {
             UD?.set(newValue, forKey: "useTgFilters")
         }
@@ -626,13 +626,13 @@ public class NicegramSettings {
     }
     
     public var showGmodIcon: Bool {
-       get {
-           return UD?.bool(forKey: "showGmodIcon") ?? true
-       }
-       set {
-           UD?.set(newValue, forKey: "showGmodIcon")
-       }
-   }
+        get {
+            return UD?.bool(forKey: "showGmodIcon") ?? true
+        }
+        set {
+            UD?.set(newValue, forKey: "showGmodIcon")
+        }
+    }
     
     public var json: [String: Any] {
         var cnExclusiveSettings: [String: Any] = [
@@ -773,7 +773,7 @@ public class NicegramSettings {
                 result.append(("useClassicInfoUi", "", false))
             }
         } else {
-             result.append(("NiceSettings", "", false))
+            result.append(("NiceSettings", "", false))
         }
         
         if let niceFolders = json["NiceFolders"] as? [String:Any] {
@@ -893,5 +893,163 @@ public class NicegramSettings {
         }
         
         return result
+    }
+}
+
+// MARK: AccountSpecificSettings
+
+public class AccountSpecificNgSettings {
+    let UD = UserDefaults(suiteName: "AccountSpecificNgSettings")
+    
+    let accountId: Int64
+    
+    public init(_ accountId: Int64) {
+        self.accountId = accountId
+        UD?.register(defaults: [
+            "gmodLastPrivacy:\(accountId)": "enableEveryone",
+            "gmodDisableFor:\(accountId)": [],
+            "gmodEnableFor:\(accountId)": []
+        ])
+    }
+    
+    public var gmodLastPrivacy: String {
+        get {
+            return UD?.string(forKey: "gmodLastPrivacy:\(accountId)") ?? "enableEveryone"
+        }
+        set {
+            UD?.set(newValue, forKey: "gmodLastPrivacy:\(accountId)")
+        }
+    }
+    
+    public var gmodDisableFor: [Int64] {
+        get {
+            return UD?.array(forKey: "gmodDisableFor:\(accountId)") as? [Int64] ?? []
+        }
+        set {
+            UD?.set(newValue, forKey: "gmodDisableFor:\(accountId)")
+        }
+    }
+    
+    public var gmodEnableFor: [Int64] {
+        get {
+            return UD?.string(forKey: "gmodEnableFor:\(accountId)") as? [Int64] ?? []
+        }
+        set {
+            UD?.set(newValue, forKey: "gmodEnableFor:\(accountId)")
+        }
+    }
+    
+}
+
+public func saveLastSeenSettings(accountId: Int64, currentSettings: SelectivePrivacySettings) {
+    let accountSettings = AccountSpecificNgSettings(accountId)
+    var settingsType = "enableEveryone"
+    var disableForResult: [Int64] = []
+    var enableForResult: [Int64] = []
+    
+    switch (currentSettings) {
+        case .enableEveryone(let disableFor):
+            settingsType = "enableEveryone"
+            for entry in disableFor {
+                disableForResult.append(entry.key.toInt64())
+            }
+        case .enableContacts(let enableFor, let disableFor):
+            settingsType = "enableContacts"
+            for entry in disableFor {
+                disableForResult.append(entry.key.toInt64())
+            }
+            for entry in enableFor {
+                enableForResult.append(entry.key.toInt64())
+            }
+        case .disableEveryone(let enableFor):
+            settingsType = "disableEveryone"
+            for entry in enableFor {
+                enableForResult.append(entry.key.toInt64())
+            }
+    }
+    
+    accountSettings.gmodEnableFor = enableForResult
+    accountSettings.gmodDisableFor = disableForResult
+    accountSettings.gmodLastPrivacy = settingsType
+}
+
+public func getLastSeenSettings(accountId: Int64, postbox: Postbox) -> SelectivePrivacySettings {
+    let accountSettings = AccountSpecificNgSettings(accountId)
+
+    switch (accountSettings.gmodLastPrivacy) {
+        case "enableEveryone":
+            return .enableEveryone(disableFor: idsToPeersMap(postbox: postbox, accountSettings.gmodDisableFor))
+        case "enableContacts":
+            return .enableContacts(enableFor: idsToPeersMap(postbox: postbox, accountSettings.gmodEnableFor), disableFor: idsToPeersMap(postbox: postbox, accountSettings.gmodDisableFor))
+        case "disableEveryone":
+            return .disableEveryone(enableFor: idsToPeersMap(postbox: postbox, accountSettings.gmodEnableFor))
+        default:
+            return .enableEveryone(disableFor: [:])
+    }
+}
+
+func idsToPeersMap(postbox: Postbox, _ ids: [Int64]) -> [PeerId: SelectivePrivacyPeer] {
+    if !ids.isEmpty {
+        var result: [PeerId: SelectivePrivacyPeer] = [:]
+        let semaphore = DispatchSemaphore(value: 0)
+        let _ = (postbox.transaction { transaction -> [PeerId: SelectivePrivacyPeer] in
+            var converted: [PeerId: SelectivePrivacyPeer] = [:]
+            for peerid in ids {
+                let tempPeerId = PeerId(peerid)
+                if let strongPeer = transaction.getPeer(tempPeerId) {
+                    converted[tempPeerId] = SelectivePrivacyPeer(peer: strongPeer, participantCount: nil)
+                }
+            }
+            return converted
+        }
+        /*|> deliverOnMainQueue*/).start(next: { peers in
+            print("SET PEERS")
+            result = peers
+            semaphore.signal()
+        })
+        semaphore.wait()
+        print("RETUNR PEERS")
+        return result
+    } else {
+        return [:]
+    }
+}
+
+// MARK
+
+import TelegramPresentationData
+
+private func countForSelectivePeers(_ peers: [PeerId: SelectivePrivacyPeer]) -> Int {
+    var result = 0
+    for (_, peer) in peers {
+        result += peer.userCount
+    }
+    return result
+}
+
+func stringForSelectiveSettings(strings: PresentationStrings, settings: SelectivePrivacySettings) -> String {
+    switch settings {
+        case let .disableEveryone(enableFor):
+            if enableFor.isEmpty {
+                return strings.PrivacySettings_LastSeenNobody
+            } else {
+                return strings.PrivacySettings_LastSeenNobodyPlus("\(countForSelectivePeers(enableFor))").0
+            }
+        case let .enableEveryone(disableFor):
+            if disableFor.isEmpty {
+                return strings.PrivacySettings_LastSeenEverybody
+            } else {
+                return strings.PrivacySettings_LastSeenEverybodyMinus("\(countForSelectivePeers(disableFor))").0
+            }
+        case let .enableContacts(enableFor, disableFor):
+            if !enableFor.isEmpty && !disableFor.isEmpty {
+                return strings.PrivacySettings_LastSeenContactsMinusPlus("\(countForSelectivePeers(enableFor))", "\(countForSelectivePeers(disableFor))").0
+            } else if !enableFor.isEmpty {
+                return strings.PrivacySettings_LastSeenContactsPlus("\(countForSelectivePeers(enableFor))").0
+            } else if !disableFor.isEmpty {
+                return strings.PrivacySettings_LastSeenContactsMinus("\(countForSelectivePeers(disableFor))").0
+            } else {
+                return strings.PrivacySettings_LastSeenContacts
+            }
     }
 }
