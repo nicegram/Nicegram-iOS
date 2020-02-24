@@ -26,9 +26,9 @@
 "NiceFeatures.Notifications.HideNotifyAccount" = "Hide account in notification";
 "NiceFeatures.Notifications.HideNotifyAccountNotice" = "Instead of «User → Account» you will see only «User». For multiple accounts only.";
 "NiceFeatures.Notifications.Fix" = "Disable Unwanted Notifications";
-"NiceFeatures.Notifications.FixNotice" = "Useful if you get notifications from muted chats.\nReply from notifications, account labels and media previews will be unavailable.";
+"NiceFeatures.Notifications.FixNotice" = "Useful if you get notifications from muted chats.\nReply from notifications, account labels, and media previews will be unavailable.";
 "NiceFeatures.Filters.Header" = "FILTERS (TABS)";
-"NiceFeatures.Filters.Notice" = "Select the number of custom tabs.\nLongtap on tab to change filter.";
+"NiceFeatures.Filters.Notice" = "Select the number of custom tabs.\nLong-tap on tab to change filter.";
 "NiceFeatures.Filters.ShowBadge" = "Show Badges (Filters)";
 "NiceFeatures.UseClassicInfoUi" = "Use classic Chat Info UI";
 
@@ -48,7 +48,7 @@
 "Folder.Create" = "Create Folder...";
 "Folder.Create.Name" = "Folder Name";
 "Folder.Create.Placeholder" = "Folder...";
-"Folder.LimitExceeded" = "Sorry, you can create no more then 3 custom folders.\nMore folders are available in Premium.";
+"Folder.LimitExceeded" = "Sorry, you can create no more than 3 custom folders.\nMore folders are available in Premium.";
 "NiceFeatures.HideNumber" = "Hide phone in settings";
 
 /*NGWeb*/
@@ -76,13 +76,13 @@
 "Common.SupportChatUsername" = "nicegramchat";
 "Common.FAQUrl" = "https://nicegram.app/faq/";
 "Common.FAQ.Button" = "Nicegram FAQ";
-"Common.FAQ.Intro" = "Please note that Nicegram Support is done by the only one developer and community.\n\nFirstly, take a look at the Nicegram FAQ: it has important troubleshooting tips and answers to most questions.";
+"Common.FAQ.Intro" = "Please note that Nicegram Support is done by the only developer and community.\n\nFirstly, take a look at the Nicegram FAQ: it has important troubleshooting tips and answers to most questions.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Unique features you can't refuse!";
 "IAP.Premium.Features" = "Unlimited Folders & Pinned Chats\nQuick message Translator\nMissed messages Filter & Tabs Management\n«New Messages» digest on App launch";
 "IAP.Premium.Activated" = "Premium Activated!";
 "IAP.Common.Restore" = "Restore Purchases";
-"IAP.Common.CantPay" = "Sorry, but You can't make purchases because of your device or account restrictions.";
+"IAP.Common.CantPay" = "Sorry, but you can't make purchases because of your device or account restrictions.";
 "IAP.Common.ErrorFetch" = "Sorry, сan't fetch App Store purchases.";
 "IAP.Common.Congrats" = "Congratulations!";
 "IAP.Common.ValidateError" = "Sorry, can't validate your purchase.";
@@ -108,8 +108,8 @@
 /*Backup Settings*/
 "NiceFeatures.BackupIcloud" = "Sync Settings & Folders with iCloud";
 "NiceFeatures.BackupSettings" = "Backup Settings & Folders";
-"NiceFeatures.BackupSettings.Notice" = "Creates backup file. Tap on file for restore.";
-"NiceFeatures.BackupSettings.Done" = "Backup Done to Saved Messages";
+"NiceFeatures.BackupSettings.Notice" = "Creates backup file. Tap on file to restore.";
+"NiceFeatures.BackupSettings.Done" = "Backup sent to Saved Messages";
 "NiceFeatures.BackupSettings.Error" = "Error creating backup";
 
 "NiceFeatures.RestoreSettings.Confirm" = "Are you sure you want to restore Folders & Settings from file?\n⚠️ It will override current data";
