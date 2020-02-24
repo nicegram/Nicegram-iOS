@@ -27,6 +27,7 @@
 "NiceFeatures.Notifications.HideNotifyAccountNotice" = "«Kullanıcı → Hesap» yerine sadece «Kullanıcı» göreceksiniz. Yalnızca çoklu hesaplar için.";
 "NiceFeatures.Notifications.Fix" = "İstenmeyen Bildirimleri Devre Dışı Bırak";
 "NiceFeatures.Filters.Header" = "FİLTRELER (SEKMELER)";
+"NiceFeatures.Filters.Notice" = "Özel sekmelerin sayısını seçin.\nFiltreyi değiştirmek için sekmeye uzun dokunun.";
 "NiceFeatures.Filters.ShowBadge" = "Rozetleri Göster (Filtreler)";
 "NiceFeatures.UseClassicInfoUi" = "Klasik Sohbet Bilgisi Arayüzünü Kullan";
 
@@ -46,6 +47,7 @@
 "Folder.Create" = "Klasör Oluştur...";
 "Folder.Create.Name" = "Klasör İsmi";
 "Folder.Create.Placeholder" = "Klasör...";
+"Folder.LimitExceeded" = "Üzgünüz, 3’ten fazla özel klasör oluşturamazsınız.\nDaha fazla klasör Premium’da kullanılabilir.";
 "NiceFeatures.HideNumber" = "Ayarlarda numarayı gizle";
 
 /*NGWeb*/
@@ -73,11 +75,13 @@
 "Common.SupportChatUsername" = "nicegram_tr";
 "Common.FAQUrl" = "https://nicegram.app/tr/faq/";
 "Common.FAQ.Button" = "Nicegram SSS";
+"Common.FAQ.Intro" = "Nicegram Destek’in sadece geliştirici ve topluluktan ibaret olduğunu unutmayın.\n\nİlk olarak, Nicegram SSS’e bakın: önemli çözüm ipuçları ve birçok soruya cevap var.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Reddedemeyeceğiniz benzersiz özellikler!";
 "IAP.Premium.Features" = "Sınırsız Klasörler & Sabit Sohbetler\nHızlı Mesaj Çevirmeni\nKaçırılan Mesaj Filtresi & Sekme Yönetimi\nUygulama Açılışında Yeni Mesajlar Özeti";
 "IAP.Premium.Activated" = "Premium Aktive Edildi!";
 "IAP.Common.Restore" = "Satın Alımları Geri Yükle";
+"IAP.Common.CantPay" = "Üzgünüz, ama cihaz veya hesap kısıtlamalarınız yüzünden satın alım yapamazsınız.";
 "IAP.Common.ErrorFetch" = "Üzgünüz, App Store satın alımları çekilemiyor.";
 "IAP.Common.Congrats" = "Tebrikler!";
 "IAP.Common.ValidateError" = "Üzgünüz, satın alımınız doğrulanamıyor.";
@@ -104,6 +108,7 @@
 "NiceFeatures.BackupIcloud" = "Ayarları & Klasörleri iCloud ile Senkronize Et";
 "NiceFeatures.BackupSettings" = "Ayarları & Klasörleri Yedekle";
 "NiceFeatures.BackupSettings.Notice" = "Yedekleme dosyası oluşturur. Geri yüklemek için dosyaya dokun.";
+"NiceFeatures.BackupSettings.Done" = "Yedekleme, Kayıtlı Mesajlar’a gönderildi";
 "NiceFeatures.BackupSettings.Error" = "Yedekleme oluşturulurken hata";
 
 "NiceFeatures.RestoreSettings.Confirm" = "Klasör & Ayarları dosyadan geri yüklemek istediğinize emin misiniz?\n⚠️ Şu ankinin üzerine yazılacak";
