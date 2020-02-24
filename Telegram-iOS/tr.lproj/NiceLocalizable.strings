@@ -26,9 +26,8 @@
 "NiceFeatures.Notifications.HideNotifyAccount" = "Hesabı bildirimde gizle";
 "NiceFeatures.Notifications.HideNotifyAccountNotice" = "«Kullanıcı → Hesap» yerine sadece «Kullanıcı» göreceksiniz. Yalnızca çoklu hesaplar için.";
 "NiceFeatures.Notifications.Fix" = "İstenmeyen Bildirimleri Devre Dışı Bırak";
-"NiceFeatures.Notifications.FixNotice" = "Sessiz hesaplardan bildirim alıyorsanız kullanışlıdır:\nBildirimden yanıtlama, hesap etiketleri ve medya önizlemeleri kullanılamaz olacak.";
 "NiceFeatures.Filters.Header" = "FİLTRELER (SEKMELER)";
-"NiceFeatures.Filters.Notice" = "Özel sekmelerin sayısını seçin.\nFiltreyi değiştirmek için sekmeye uzun dokunun.";
+"NiceFeatures.Filters.Notice" = "Özel sekmelerin sayısını seçin.\nFiltreyi değiştirmek için sekmeye uzun basın.";
 "NiceFeatures.Filters.ShowBadge" = "Rozetleri Göster (Filtreler)";
 "NiceFeatures.UseClassicInfoUi" = "Klasik Sohbet Bilgisi Arayüzünü Kullan";
 
@@ -76,6 +75,7 @@
 "Common.SupportChatUsername" = "nicegram_tr";
 "Common.FAQUrl" = "https://nicegram.app/tr/faq/";
 "Common.FAQ.Button" = "Nicegram SSS";
+"Common.FAQ.Intro" = "Lütfen Nicegram Destek’in sadece geliştirici ve topluluktan ibaret olduğunu unutmayın.\n\nİlk olarak, Nicegram SSS’e göz atın: önemli çözüm ipuçları ve birçok soruya cevaplar var.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Reddedemeyeceğiniz benzersiz özellikler!";
 "IAP.Premium.Features" = "Sınırsız Klasörler & Sabit Sohbetler\nHızlı Mesaj Çevirmeni\nKaçırılan Mesaj Filtresi & Sekme Yönetimi\nUygulama Açılışında Yeni Mesajlar Özeti";
