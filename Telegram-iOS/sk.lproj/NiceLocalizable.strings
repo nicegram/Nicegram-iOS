@@ -21,9 +21,7 @@
 "Chat.OpenPin" = "Zobraziť pripnuté";
 "ChatFilter.Admin" = "Admin";
 "NiceFeatures.Notifications.Fix" = "Vypnúť nechcené notifikácie";
-"NiceFeatures.Notifications.FixNotice" = "Nápomocné, pri dostávaní notifikácií zo stlmených chatov.\nOdpovede z notifikácií, názvy účtov a náhľady médií nebudú dostupné.";
 "NiceFeatures.Filters.Header" = "FILTRE (ZÁLOŽKY)";
-"NiceFeatures.Filters.Notice" = "Zvoľ počet vlastných záložiek.\nPodrž záložku pre zmenenie jej filtra.";
 
 /*Common*/
 "Common.ExitNow" = "Ukončiť";
