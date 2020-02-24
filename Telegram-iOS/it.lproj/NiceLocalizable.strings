@@ -21,13 +21,13 @@
 "Chat.SaveToCloud" = "Salva nel cloud";
 
 /*Open Pin*/
-"Chat.OpenPin" = "Apri pin";
+"Chat.OpenPin" = "Mostra pin";
 "ChatFilter.Admin" = "Amministratore";
 "NiceFeatures.Notifications.HideNotifyAccount" = "Nascondi account nella notifica";
 "NiceFeatures.Notifications.HideNotifyAccountNotice" = "Invece di «Utente → Account» vedrai solo «Utente». Solo per account multipli.";
-"NiceFeatures.Notifications.Fix" = "Disabilita notifiche inutili";
+"NiceFeatures.Notifications.Fix" = "Disabilita notifiche indesiderate";
 "NiceFeatures.Notifications.FixNotice" = "Utile se ricevi notifiche da chat silenziate.\nLe risposte alle notifiche, etichette degli account e le anteprime multimediali non saranno disponibili.";
-"NiceFeatures.Filters.Header" = "FILTRI (TABS)";
+"NiceFeatures.Filters.Header" = "FILTRI (TAB)";
 "NiceFeatures.Filters.Notice" = "Seleziona il numero di tab personalizzate.\nTocca a lungo la tab per cambiare filtro.";
 "NiceFeatures.Filters.ShowBadge" = "Mostra badge (Filtri)";
 "NiceFeatures.UseClassicInfoUi" = "Usa l'interfaccia delle info classica";
@@ -36,7 +36,7 @@
 "Common.ExitNow" = "Esci ora";
 "Common.Later" = "Dopo";
 "Common.RestartRequired" = "Riavvio richiesto!";
-"NiceFeatures.Tabs.ShowNames" = "Mostra i nomi delle tab";
+"NiceFeatures.Tabs.ShowNames" = "Mostra nomi tab";
 "Chat.ForwardAsCopy" = "Inoltra senza firma";
 
 /*Folder*/
@@ -45,11 +45,11 @@
 "Folder.Created" = "Cartella creata";
 "Folder.AddToExisting" = "Aggiungi ad una cartella esistente";
 "Folder.Updated" = "Cartella aggiornata";
-"Folder.Create" = "Crea una cartella...";
-"Folder.Create.Name" = "Nome della cartella";
+"Folder.Create" = "Crea cartella...";
+"Folder.Create.Name" = "Nome cartella";
 "Folder.Create.Placeholder" = "Cartella...";
 "Folder.LimitExceeded" = "Spiacente, puoi creare solo 3 cartelle personalizzate.\nPuoi aggiungerne di più con Premium.";
-"NiceFeatures.HideNumber" = "Nascondi il numero di telefono dalle impostazioni";
+"NiceFeatures.HideNumber" = "Nascondi il numero di telefono nelle impostazioni";
 
 /*NGWeb*/
 "NGWeb.Blocked" = "Non disponibile su Nicegram a causa delle linee guida dell'App Store";
@@ -59,8 +59,8 @@
 "NiceFeatures.Use.DataStorage" = "Per favore, usa «%1» per configurare il tuo browser predefinito";
 "NiceFeatures.Browser.Header" = "URL";
 "NiceFeatures.Browser.UseBrowser" = "Apri link nel browser";
-"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram aprirà i link esterni in un browser esterno invece di aprirli nell'app.\nIl browser selezionato deve essere installato.";
-"ChatFilter.Missed" = "Non letti";
+"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram aprirà i link in un browser esterno invece di farlo nell'app.\nIl browser selezionato deve essere installato.";
+"ChatFilter.Missed" = "Mancati";
 
 /*Premium*/
 "Premium.Title" = "Premium";
