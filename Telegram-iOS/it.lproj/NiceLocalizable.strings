@@ -83,10 +83,10 @@
 "IAP.Premium.Activated" = "Premium attivato!";
 "IAP.Common.Restore" = "Ripristina acquisti";
 "IAP.Common.CantPay" = "Spiacente, non puoi effettuare acquisti a causa di restrizioni sul tuo dispositivo o account.";
-"IAP.Common.ErrorFetch" = "Spiacente, non è stato possibile ottenere i tuoi acquisti dall'App Store.";
+"IAP.Common.ErrorFetch" = "Spiacente, impossibile ottenere i tuoi acquisti dall'App Store.";
 "IAP.Common.Congrats" = "Congratulazioni!";
 "IAP.Common.ValidateError" = "Spiacente, non è stato possibile convalidare l'acquisto.";
-"Premium.OnetapTranslate" = "Bottone di traduzione veloce";
+"Premium.OnetapTranslate" = "Bottone di traduzione rapida";
 "Premium.IgnoreTranslate.Title" = "Lingue ignorate";
 "Premium.IgnoreTranslate.Header" = "L'app cercherà di rilevare la lingua di ogni messaggio. Il bottone della traduzione rapida sarà DISABILITATO per le lingue che scegli qua sotto.";
 
