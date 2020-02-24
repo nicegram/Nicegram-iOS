@@ -23,9 +23,7 @@
 "Chat.OpenPin" = "نشان دادن سنجاق";
 "ChatFilter.Admin" = "مدیر";
 "NiceFeatures.Notifications.Fix" = "غیرفعال کردن اعلان های ناخواسته";
-"NiceFeatures.Notifications.FixNotice" = "در صورت دریافت اعلان از گپ های بیصدا مفید است.\nپاسخ از اعلان ها، برچسب های حساب و پیش نمایش رسانه ها در دسترس نخواهد بود.";
 "NiceFeatures.Filters.Header" = "فیلترها (برگه ها)";
-"NiceFeatures.Filters.Notice" = "تعداد برگه ها را انتخاب کنید.\nبرای تغییر فیلتر نوار را حرکت دهید.";
 
 /*Common*/
 "Common.ExitNow" = "خروج";
@@ -43,7 +41,6 @@
 "Folder.Create" = "ساخت پوشه";
 "Folder.Create.Name" = "نام پوشه";
 "Folder.Create.Placeholder" = "پوشه...";
-"Folder.LimitExceeded" = "متاسفم،شما بیش از ۳ پوشه نمی‌توانید ایجاد کنید.\nپوشه های بیشتر بزودی دردسترس خواهند بود.";
 "NiceFeatures.HideNumber" = "پنهان کردن شماره موبایل در تنظیمات";
 
 /*NGWeb*/
@@ -71,12 +68,10 @@
 "Common.SupportChatUsername" = "nicegram_fa";
 "Common.FAQUrl" = "https://nicegram.app/faq";
 "Common.FAQ.Button" = "سوالات رایج تلگرام";
-"Common.FAQ.Intro" = "لطفاً توجه داشته باشید که پشتیبانی Nicegram توسط تنها یک توسعه دهنده و انجمن انجام می شود.\n\nدر مرحله اول، به سؤالات متداول Nicegram نگاهی بیندازید: دارای نکات مهم عیب یابی و پاسخ بیشتر سوالات است.";
 "IAP.Premium.Title" = "ویژه";
 "IAP.Premium.Subtitle" = "ویژگی های منحصر به فردی که شما نمیتوانید رد کنید!";
 "IAP.Premium.Activated" = "نسخه ویژه فعال شد!";
 "IAP.Common.Restore" = "بازیابی خریدها";
-"IAP.Common.CantPay" = "متأسفیم، اما به دلیل محدودیت دستگاه یا حساب خود نمی توانید خرید کنید.";
 "IAP.Common.ErrorFetch" = "متاسفانه خرید از اپ استور مقدور نیست.";
 "IAP.Common.Congrats" = "تبریک میگوییم!";
 "IAP.Common.ValidateError" = "متأسفیم، نمی توانید خرید خود را تأیید کنید.";
@@ -96,4 +91,3 @@
 "NGLab.RegDate.MenuItem" = "ثبت شد";
 "NGLab.RegDate.FetchError" = "متاسفانه دریافت تاریخ ثبت نام مقدور نیست.";
 "NiceFeatures.BackupSettings" = "تنظیمات پشتیبان گیری و پوشه ها";
-"NiceFeatures.BackupSettings.Done" = "تهیه نسخه پشتیبان از پیام های ذخیره شده کامل شد";
