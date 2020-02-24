@@ -1593,6 +1593,9 @@ public func settingsController(context: AccountContext, accountManager: AccountM
     |> mapToSignal { context -> Signal<Bool, NoError> in
         return context.account.postbox.preferencesView(keys: [PreferencesKeys.appConfiguration])
         |> map { view -> Bool in
+            if GNGSettings().qr_login_camera {
+                return true
+            }
             guard let appConfiguration = view.values[PreferencesKeys.appConfiguration] as? AppConfiguration else {
                 return false
             }
