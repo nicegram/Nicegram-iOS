@@ -26,6 +26,7 @@
 "NiceFeatures.Notifications.HideNotifyAccount" = "Hesabı bildirimde gizle";
 "NiceFeatures.Notifications.HideNotifyAccountNotice" = "«Kullanıcı → Hesap» yerine sadece «Kullanıcı» göreceksiniz. Yalnızca çoklu hesaplar için.";
 "NiceFeatures.Notifications.Fix" = "İstenmeyen Bildirimleri Devre Dışı Bırak";
+"NiceFeatures.Notifications.FixNotice" = "Sessiz sohbetlerden bildirimler alıyorsanız kullanışlıdır.\nBildirimlerden yanıtlama, hesap etiketleri ve medya önizlemeleri kullanılamaz olacak.";
 "NiceFeatures.Filters.Header" = "FİLTRELER (SEKMELER)";
 "NiceFeatures.Filters.Notice" = "Özel sekmelerin sayısını seçin.\nFiltreyi değiştirmek için sekmeye uzun basın.";
 "NiceFeatures.Filters.ShowBadge" = "Rozetleri Göster (Filtreler)";
