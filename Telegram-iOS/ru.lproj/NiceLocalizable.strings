@@ -26,9 +26,7 @@
 "NiceFeatures.Notifications.HideNotifyAccount" = "Скрыть аккаунт в уведомлении";
 "NiceFeatures.Notifications.HideNotifyAccountNotice" = "Вместо «Пользователь → Аккаунт» вы будете видеть только «Пользователь». Только для нескольких аккаунтов.";
 "NiceFeatures.Notifications.Fix" = "Отключить нежелательные уведомления";
-"NiceFeatures.Notifications.FixNotice" = "Нужно, если вы получаете уведомления, даже если они отключены в чате. Ответ из уведомления, метки аккаунтов и предпросмотр медиа будут недоступны.";
 "NiceFeatures.Filters.Header" = "ФИЛЬТРЫ (ВКЛАДКИ)";
-"NiceFeatures.Filters.Notice" = "Выберите количество пользовательских вкладок.\nДолгое нажатие по вкладке позволит сменить фильтр.";
 "NiceFeatures.Filters.ShowBadge" = "Показывать бейджи (Фильтры)";
 "NiceFeatures.UseClassicInfoUi" = "Классический интерфейс «о чате»";
 
@@ -48,7 +46,6 @@
 "Folder.Create" = "Создать Папку...";
 "Folder.Create.Name" = "Название Папки";
 "Folder.Create.Placeholder" = "Папка...";
-"Folder.LimitExceeded" = "К сожалению, создать можно не больше 3 папок. Совсем скоро можно будет создать больше.";
 "NiceFeatures.HideNumber" = "Скрыть номер в настройках";
 
 /*NGWeb*/
@@ -76,13 +73,11 @@
 "Common.SupportChatUsername" = "nicegram_ru";
 "Common.FAQUrl" = "https://nicegram.app/ru/faq/";
 "Common.FAQ.Button" = "Вопросы о Nicegram";
-"Common.FAQ.Intro" = "Пожалуйста, обратите внимание, что поддержка Nicegram осуществляется одним единственным разработчиком и сообществом.\n\nВ первую очередь, ознакомьтесь с часто задаваемыми вопросами о Nicegram: там Вы найдёте ответы на большинство вопросов и важные советы по устранению неполадок.";
 "IAP.Premium.Title" = "Премиум";
 "IAP.Premium.Subtitle" = "Уникальные функции, от которых трудно отказаться!";
 "IAP.Premium.Features" = "Бесконечные папки и закрепы\nБыстрый перевод сообщений\nФильтр пропущенных и Управление вкладками\nОбзор новых сообщений при старте Приложения";
 "IAP.Premium.Activated" = "Премиум Активирован!";
 "IAP.Common.Restore" = "Восстановить Покупки";
-"IAP.Common.CantPay" = "К сожалению, Вы не можете производить покупки ввиду ограничений вашего устройства или аккаунта.";
 "IAP.Common.ErrorFetch" = "Не удалось связаться с AppStore";
 "IAP.Common.Congrats" = "Поздравляем!";
 "IAP.Common.ValidateError" = "К сожалению, подтвердить покупку не удалось.";
@@ -108,8 +103,6 @@
 /*Backup Settings*/
 "NiceFeatures.BackupIcloud" = "Синхронизация Настроек и Папок в iCloud";
 "NiceFeatures.BackupSettings" = "Резервное копирование настроек и папок";
-"NiceFeatures.BackupSettings.Notice" = "Создает бэкап файл. Тапни на файл для восстановления.";
-"NiceFeatures.BackupSettings.Done" = "Резервное копирование выполнено в сохраненные сообщения";
 "NiceFeatures.BackupSettings.Error" = "Ошибка при создании бэкапа";
 
 "NiceFeatures.RestoreSettings.Confirm" = "Восстановить Папки и Настройки из файла?\n⚠️ Текущие данные будут перезаписаны";
