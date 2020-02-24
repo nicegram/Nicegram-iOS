@@ -12,7 +12,7 @@
 /*Nice Features*/
 "NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "TAB";
-"NiceFeatures.Tabs.ShowContacts" = "Mostra lista contatti";
+"NiceFeatures.Tabs.ShowContacts" = "Mostra tab contatti";
 "NiceFeatures.ChatScreen.Header" = "SCHERMATA DELLE CHAT";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Adesivi animati";
 "NiceFeatures.useBackCam" = "Usa camera posteriore (Videomessaggi)";
@@ -76,7 +76,7 @@
 "Common.SupportChatUsername" = "nicegram_it";
 "Common.FAQUrl" = "https://nicegram.app/faq/";
 "Common.FAQ.Button" = "FAQ Nicegram";
-"Common.FAQ.Intro" = "Nota che il supporto di Nicegram è operato solo dall'unico sviluppatore e dalla community.\n\nPrima di tutto, dai una occhiata alle FAQ di Nicegram: contiene molte soluzioni a problemi frequenti.";
+"Common.FAQ.Intro" = "Per favore, nota che il supporto di Nicegram è operato solo dall'unico sviluppatore e dalla community.\n\nPrima di tutto, dai una occhiata alle FAQ di Nicegram: contiene molte soluzioni a problemi frequenti.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Feature uniche che non puoi rifiutare!";
 "IAP.Premium.Features" = "Cartelle e chat fissate illimitate\nTraduttore istantaneo dei messaggi\nFiltro messaggi mancati e gestione delle tab\nRiassunto «Nuovi messaggi» al lancio dell'applicazione";
@@ -88,7 +88,7 @@
 "IAP.Common.ValidateError" = "Spiacente, non è stato possibile convalidare l'acquisto.";
 "Premium.OnetapTranslate" = "Bottone di traduzione rapida";
 "Premium.IgnoreTranslate.Title" = "Lingue ignorate";
-"Premium.IgnoreTranslate.Header" = "L'app cercherà di rilevare la lingua di ogni messaggio. Il bottone della traduzione rapida sarà DISABILITATO per le lingue che scegli qua sotto.";
+"Premium.IgnoreTranslate.Header" = "L'app cercherà di rilevare la lingua di ogni messaggio. Il bottone di traduzione rapida sarà DISABILITATO per le lingue che scegli qua sotto.";
 
 /*Manage Filters*/
 "ManageFilters.Title" = "Gestisci tab";
@@ -99,8 +99,8 @@
 "Messages.TranslateError" = "Spiacente, traduzione non disponibile.";
 
 /*NG Lab Registration Date*/
-"NGLab.RegDate.Btn" = "Ottieni data di registrazione";
-"NGLab.RegDate.Title" = "Data di registrazione";
+"NGLab.RegDate.Btn" = "Ottieni data registrazione";
+"NGLab.RegDate.Title" = "Data registrazione";
 "NGLab.RegDate.Notice" = "Questa è una data approssimativa";
 "NGLab.RegDate.MenuItem" = "registrato";
 "NGLab.RegDate.FetchError" = "Spiacente, impossibile ottenere data registrazione.";
@@ -112,18 +112,18 @@
 "NiceFeatures.BackupSettings.Done" = "Backup eseguito nei messaggi salvati";
 "NiceFeatures.BackupSettings.Error" = "Errore creazione backup";
 
-"NiceFeatures.RestoreSettings.Confirm" = "Sicuro di voler ripristinare cartelle e impostazioni da file?\n⚠️ Questo sovrascriverà i dati attuali";
-"NiceFeatures.RestoreSettings.Done" = "Cartelle e impostazioni ripristinate ✔️";
-"NiceFeatures.RestoreSettings.Error" = "Errore ripristino impostazioni. Il file potrebbe essere danneggiato";
+"NiceFeatures.RestoreSettings.Confirm" = "Sicuro di voler ripristinare cartelle e impostazioni dal file?\n⚠️ Questo sovrascriverà i dati attuali";
+"NiceFeatures.RestoreSettings.Done" = "✔️ Cartelle e impostazioni ripristinate";
+"NiceFeatures.RestoreSettings.Error" = "Errore ripristino impostazioni. Il file potrebbe essere corrotto";
 
 /*Ghost Mode*/
-"Gmod.Restricted" = "Non puoi inviare messaggi nella ghost mode.";
+"Gmod.Restricted" = "Non puoi inviare messaggi in ghost mode.";
 "Gmod.Unavailable" = "Ghost mode non disponibile";
-"Gmod.Disable.Notice" = "La visibilità del tuo ultimo accesso verrà impostato a \"%1\". Le spunte di lettura verranno rivelate.";
+"Gmod.Disable.Notice" = "La visibilità del tuo ultimo accesso verrà impostato a «%1». Le spunte di lettura verranno rivelate.";
 "Gmod" = "Ghost mode";
 "Gmod.Enable" = "Abilitare la ghost mode?";
 "Gmod.Disable" = "Disabilitare la ghost mode?";
 "Gmod.Notice" = "Il tuo stato online verrà nascosto a tutti dalle impostazioni sulla privacy di Telegram.\nEntrerai nelle chat in modalità anteprima e i segni di lettura non verranno inviati.\nLa modalità anteprima funziona come un tap lungo su una chat su Telegram ufficiale.\nIl tuo stato online può essere rivelato se invii un messaggio qualsiasi.\nQuesta è una scorciatoia e non viola i TOS di Telegram.";
 
-"SendWithKb" = "Invia con il pulsante \"Invio\"";
+"SendWithKb" = "Invia con il pulsante «Invio»";
 "NiceFeatures.ShowGmodIcon" = "Mostra icona ghost mode";
