@@ -26,9 +26,7 @@
 "NiceFeatures.Notifications.HideNotifyAccount" = "Ukryj konto w powiadomieniu";
 "NiceFeatures.Notifications.HideNotifyAccountNotice" = "Zamiast «Użytkownik → Konto» zobaczysz tylko «Użytkownik». Tylko dla wielu kont.";
 "NiceFeatures.Notifications.Fix" = "Wyłącz niechciane powiadomienia";
-"NiceFeatures.Notifications.FixNotice" = "Przydatne, jeśli otrzymujesz powiadomienia z czatów z wyłączonymi powiadomieniami.\nOpcja „Odpowiedz” nie będzie dostępna dla powiadomień, etykiet kont i podglądów multimediów.";
 "NiceFeatures.Filters.Header" = "FILTRY (ZAKŁADKI)";
-"NiceFeatures.Filters.Notice" = "Wybierz liczbę własnych kart.\nPrzytrzymaj kartę, aby zmienić filtr.";
 "NiceFeatures.Filters.ShowBadge" = "Pokaż plakietki (filtry)";
 "NiceFeatures.UseClassicInfoUi" = "Użyj klasycznego wyglądu Informacji o czacie";
 
@@ -48,7 +46,6 @@
 "Folder.Create" = "Utwórz folder...";
 "Folder.Create.Name" = "Nazwa folderu";
 "Folder.Create.Placeholder" = "Folder...";
-"Folder.LimitExceeded" = "Przepraszamy, nie możesz utworzyć więcej niż 3 niestandardowe foldery.\nWięcej folderów jest dostępnych w Premium.";
 "NiceFeatures.HideNumber" = "Ukryj numer telefonu w ustawieniach";
 
 /*NGWeb*/
@@ -76,13 +73,11 @@
 "Common.SupportChatUsername" = "nicegramchat";
 "Common.FAQUrl" = "https://nicegram.app/faq/";
 "Common.FAQ.Button" = "Nicegram FAQ";
-"Common.FAQ.Intro" = "Wsparcie Nicegram jest wykonywane przez jednego programistę i społeczność.\n\nPo pierwsze, zajrzyj do FAQ: zawiera ważne wskazówki dotyczące rozwiązywania problemów i odpowiedzi na większość pytań.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Unikalne funkcje, których nie można odmówić!";
 "IAP.Premium.Features" = "Nielimitowane foldery i przypięte czaty\nSzybkie tłumaczenie wiadomości\nFiltr nieodebranych wiadomości i zarządzanie zakładkami\n«Nowe wiadomości» – podsumowanie po uruchomieniu aplikacji";
 "IAP.Premium.Activated" = "Aktywowano wersję Premium!";
 "IAP.Common.Restore" = "Odtwórz zakupione";
-"IAP.Common.CantPay" = "Nie możesz dokonywać zakupów z powodu ograniczeń dotyczących twojego urządzenia lub konta.";
 "IAP.Common.ErrorFetch" = "Nie mogę odebrać zakupów w App Store.";
 "IAP.Common.Congrats" = "Gratulacje!";
 "IAP.Common.ValidateError" = "Nie można zweryfikować twojego zakupu.";
@@ -108,8 +103,6 @@
 /*Backup Settings*/
 "NiceFeatures.BackupIcloud" = "Synchronizuj ustawienia i foldery z iCloud";
 "NiceFeatures.BackupSettings" = "Kopia zapasowa ustawień i folderów";
-"NiceFeatures.BackupSettings.Notice" = "Tworzy plik kopii zapasowej. Stuknij plik, aby przywrócić.";
-"NiceFeatures.BackupSettings.Done" = "Wykonano kopię zapasową w „Zapisanych wiadomościach”";
 "NiceFeatures.BackupSettings.Error" = "Błąd tworzenia kopii zapasowej.";
 
 "NiceFeatures.RestoreSettings.Confirm" = "Czy na pewno chcesz przywrócić foldery i ustawienia z pliku?\n⚠ Zastąpi to bieżące dane";
