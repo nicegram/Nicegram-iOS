@@ -26,9 +26,7 @@
 "NiceFeatures.Notifications.HideNotifyAccount" = "Hesabı bildirimde gizle";
 "NiceFeatures.Notifications.HideNotifyAccountNotice" = "«Kullanıcı → Hesap» yerine sadece «Kullanıcı» göreceksiniz. Yalnızca çoklu hesaplar için.";
 "NiceFeatures.Notifications.Fix" = "İstenmeyen Bildirimleri Devre Dışı Bırak";
-"NiceFeatures.Notifications.FixNotice" = "Sessiz sohbetlerden bildirim almak kullanışlıdır.\nBildirimlerden yanıtlama, hesap etiketleri ve medya önizlemeleri kullanılamayacak.";
 "NiceFeatures.Filters.Header" = "FİLTRELER (SEKMELER)";
-"NiceFeatures.Filters.Notice" = "Özel sekmelerin sayısını seçin.\nFiltreyi değiştirmek için sekmeye uzun basın.";
 "NiceFeatures.Filters.ShowBadge" = "Rozetleri Göster (Filtreler)";
 "NiceFeatures.UseClassicInfoUi" = "Klasik Sohbet Bilgisi Arayüzünü Kullan";
 
@@ -48,7 +46,6 @@
 "Folder.Create" = "Klasör Oluştur...";
 "Folder.Create.Name" = "Klasör İsmi";
 "Folder.Create.Placeholder" = "Klasör...";
-"Folder.LimitExceeded" = "Üzgünüz, 3’ten fazla özel klasör oluşturamazsınız.\nDaha fazla klasör yakında kullanılabilir olacak.";
 "NiceFeatures.HideNumber" = "Ayarlarda numarayı gizle";
 
 /*NGWeb*/
@@ -76,13 +73,11 @@
 "Common.SupportChatUsername" = "nicegram_tr";
 "Common.FAQUrl" = "https://nicegram.app/tr/faq/";
 "Common.FAQ.Button" = "Nicegram SSS";
-"Common.FAQ.Intro" = "Lütfen Nicegram Destek’in sadece bir geliştirici ve topluluktan oluştuğunu unutmayın.\n\nİlk olarak Nicegram SSS’e bir göz atın: önemli ipuçları ve çoğu soruya cevap barındırıyor.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Reddedemeyeceğiniz benzersiz özellikler!";
 "IAP.Premium.Features" = "Sınırsız Klasörler & Sabit Sohbetler\nHızlı Mesaj Çevirmeni\nKaçırılan Mesaj Filtresi & Sekme Yönetimi\nUygulama Açılışında Yeni Mesajlar Özeti";
 "IAP.Premium.Activated" = "Premium Aktive Edildi!";
 "IAP.Common.Restore" = "Satın Alımları Geri Yükle";
-"IAP.Common.CantPay" = "Üzgünüz, ama cihaz veya hesap kısıtlamalarınız yüzünden satın alım yapamazsınız.";
 "IAP.Common.ErrorFetch" = "Üzgünüz, App Store satın alımları çekilemiyor.";
 "IAP.Common.Congrats" = "Tebrikler!";
 "IAP.Common.ValidateError" = "Üzgünüz, satın alımınız doğrulanamıyor.";
@@ -108,8 +103,6 @@
 /*Backup Settings*/
 "NiceFeatures.BackupIcloud" = "Ayarları & Klasörleri iCloud ile Senkronize Et";
 "NiceFeatures.BackupSettings" = "Ayarları & Klasörleri Yedekle";
-"NiceFeatures.BackupSettings.Notice" = "Yedekleme dosyası oluşturur. Geri yüklemek için dosyaya dokunun.";
-"NiceFeatures.BackupSettings.Done" = "Kayıtlı Mesajlara Yedekleme Tamamlandı";
 "NiceFeatures.BackupSettings.Error" = "Yedekleme oluşturulurken hata";
 
 "NiceFeatures.RestoreSettings.Confirm" = "Klasör & Ayarları dosyadan geri yüklemek istediğinize emin misiniz?\n⚠️ Şu ankinin üzerine yazılacak";
