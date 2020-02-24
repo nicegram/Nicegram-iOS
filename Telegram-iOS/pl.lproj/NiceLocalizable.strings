@@ -103,8 +103,19 @@
 /*Backup Settings*/
 "NiceFeatures.BackupIcloud" = "Synchronizuj ustawienia i foldery z iCloud";
 "NiceFeatures.BackupSettings" = "Kopia zapasowa ustawień i folderów";
+"NiceFeatures.BackupSettings.Done" = "Kopia zapasowa została wysłana do Zapisanych wiadomości";
 "NiceFeatures.BackupSettings.Error" = "Błąd tworzenia kopii zapasowej.";
 
 "NiceFeatures.RestoreSettings.Confirm" = "Czy na pewno chcesz przywrócić foldery i ustawienia z pliku?\n⚠ Zastąpi to bieżące dane";
 "NiceFeatures.RestoreSettings.Done" = "Foldery i ustawienia zostały pomyślnie przywrócone";
 "NiceFeatures.RestoreSettings.Error" = "Błąd podczas przywracania ustawień. Plik może być uszkodzony";
+
+/*Ghost Mode*/
+"Gmod.Restricted" = "Nie możesz wysyłać wiadomości w trybie Ducha.";
+"Gmod.Unavailable" = "Tryb Ducha niedostępny";
+"Gmod" = "Tryb Ducha";
+"Gmod.Enable" = "Włączyć tryb Ducha?";
+"Gmod.Disable" = "Wyłączyć tryb Ducha?";
+
+"SendWithKb" = "Wyślij za pomocą przycisku «Enter»";
+"NiceFeatures.ShowGmodIcon" = "Pokaż ikonę trybu Ducha";
