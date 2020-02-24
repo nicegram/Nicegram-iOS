@@ -205,6 +205,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
     private var searchContentNode: NavigationBarSearchContentNode?
     
     var switchToNGFilter: ((NiceChatListNodePeersFilter) -> Void)?
+    let gmodNotificationName: NSNotification.Name = Notification.Name("GmodValue")
     
     weak var switchController: TabBarFilterSwitchController?
     
@@ -669,6 +670,12 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
             }
         }
         
+        
+        let gmodObserver = NotificationCenter.default.addObserver(forName: self.gmodNotificationName, object: nil, queue: .main, using: { notification in
+               self.titleView.isGmod = !self.titleView.isGmod
+        })
+        
+        
         //#if CN
         self.titleView.toggleGmod = { [weak self] in
             if let strongSelf = self {
@@ -692,7 +699,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                                     return settings
                                 }).start()
                                 NicegramSettings().gmod = false
-                                strongSelf.titleView.isGmod = !strongSelf.titleView.isGmod
+                                NotificationCenter.default.post(name: strongSelf.gmodNotificationName, object: nil)
+                                //strongSelf.titleView.isGmod = !strongSelf.titleView.isGmod
                             }),
                             TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {})])
                         strongSelf.present(controller, in: .window(.root))
@@ -717,7 +725,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                                  let updateSettingsSignal = updateSelectiveAccountPrivacySettings(account: strongSelf.context.account, type: .presence, settings: SelectivePrivacySettings.disableEveryone(enableFor: [:]))
                                  updateSettingsSignal.start()
                                  NicegramSettings().gmod = true
-                                 strongSelf.titleView.isGmod = !strongSelf.titleView.isGmod
+                                 NotificationCenter.default.post(name: strongSelf.gmodNotificationName, object: nil)
+                                 //strongSelf.titleView.isGmod = !strongSelf.titleView.isGmod
                                 })
                             ])
                             strongSelf.present(controller, in: .window(.root))
@@ -778,6 +787,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
         self.suggestLocalizationDisposable.dispose()
         self.presentationDataDisposable?.dispose()
         self.stateDisposable.dispose()
+        NotificationCenter.default.removeObserver(self, name: self.gmodNotificationName, object: nil)
     }
     
     private func updateThemeAndStrings() {
