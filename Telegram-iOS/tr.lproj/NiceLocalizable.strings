@@ -103,6 +103,7 @@
 /*Backup Settings*/
 "NiceFeatures.BackupIcloud" = "Ayarları & Klasörleri iCloud ile Senkronize Et";
 "NiceFeatures.BackupSettings" = "Ayarları & Klasörleri Yedekle";
+"NiceFeatures.BackupSettings.Notice" = "Yedekleme dosyası oluşturur. Geri yüklemek için dosyaya dokun.";
 "NiceFeatures.BackupSettings.Error" = "Yedekleme oluşturulurken hata";
 
 "NiceFeatures.RestoreSettings.Confirm" = "Klasör & Ayarları dosyadan geri yüklemek istediğinize emin misiniz?\n⚠️ Şu ankinin üzerine yazılacak";
