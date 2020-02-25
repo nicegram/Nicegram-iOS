@@ -26,7 +26,9 @@
 "NiceFeatures.Notifications.HideNotifyAccount" = "Ocultar cuenta en notificación";
 "NiceFeatures.Notifications.HideNotifyAccountNotice" = "Envés de «Usuario → Cuenta» solamente verás «Usuario». Solo para cuentas múltiples.";
 "NiceFeatures.Notifications.Fix" = "Desactivar notificaciones no deseadas";
+"NiceFeatures.Notifications.FixNotice" = "Útil si recibes notificaciones de chats silenciados.\nResponder desde la notificación, etiquetas de cuenta y vistas previas de multimedia no estarán disponibles.";
 "NiceFeatures.Filters.Header" = "FILTROS (PESTAÑAS)";
+"NiceFeatures.Filters.Notice" = "Selecciona el número de pestañas personalizadas. \nMantén pulsado una pestaña para cambiar el filtro.";
 "NiceFeatures.Filters.ShowBadge" = "Mostrar globos (Filtros)";
 "NiceFeatures.UseClassicInfoUi" = "Usar interfaz clásica de perfil";
 
@@ -46,6 +48,7 @@
 "Folder.Create" = "Crear carpeta…";
 "Folder.Create.Name" = "Nombre de la carpeta";
 "Folder.Create.Placeholder" = "Carpeta…";
+"Folder.LimitExceeded" = "Lo siento pero no se puede crear más que 3 archivos personalizados.\nHay más archivos disponibles en Premium.";
 "NiceFeatures.HideNumber" = "Ocultar número en Ajustes";
 
 /*NGWeb*/
@@ -73,11 +76,13 @@
 "Common.SupportChatUsername" = "nicegram_es";
 "Common.FAQUrl" = "https://nicegram.app/faq/";
 "Common.FAQ.Button" = "Preguntas frecuentes de Nicegram";
+"Common.FAQ.Intro" = "Ten en cuenta que el soporte de Nicegram sólo lo realiza un desarrollador y una comunidad.\n\nPrimero, echa un vistazo a las preguntas frecuentes de Nicegram: Tiene consejos importantes para la solución de la mayoría de problemas.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "¡Características únicas que no puedes rechazar!";
 "IAP.Premium.Features" = "Carpetas y chats anclados ilimitados\nTraductor rápido de mensajes\nFiltro de mensajes perdidos y gestión de pestañas\nResumen de “mensajes nuevos” al abrir la app";
 "IAP.Premium.Activated" = "¡Premium activado!";
 "IAP.Common.Restore" = "Restaurar compras";
+"IAP.Common.CantPay" = "Lo sentimos, pero no se puede realizar compras debido a tu dispositivo o las restricciones de tu cuenta.";
 "IAP.Common.ErrorFetch" = "Lo sentimos, no se pueden recuperar las compras del App Store.";
 "IAP.Common.Congrats" = "¡Felicidades!";
 "IAP.Common.ValidateError" = "Lo sentimos, no se puede validar tu compra.";
@@ -103,6 +108,8 @@
 /*Backup Settings*/
 "NiceFeatures.BackupIcloud" = "Sincronizar ajustes y carpetas con iCloud";
 "NiceFeatures.BackupSettings" = "Copia de seguridad de ajustes y carpetas";
+"NiceFeatures.BackupSettings.Notice" = "Crea un archivo de copia de seguridad. Pulsa en el archivo para restaurarlo.";
+"NiceFeatures.BackupSettings.Done" = "Copia de seguridad hecha en Mensajes guardados";
 "NiceFeatures.BackupSettings.Error" = "Error al crear la copia de seguridad";
 
 "NiceFeatures.RestoreSettings.Confirm" = "¿Quieres restaurar las carpetas y ajustes desde un archivo?\n⚠️ Sobreescribirá los datos actuales";
@@ -112,7 +119,11 @@
 /*Ghost Mode*/
 "Gmod.Restricted" = "No se puede enviar mensajes en modo fantasma.";
 "Gmod.Unavailable" = "Modo fantasma no está disponible";
+"Gmod.Disable.Notice" = "Tu última visibilidad vista se establecerá en «%1». Las notas de lectura serán reveladas.";
 "Gmod" = "Modo fantasma";
+"Gmod.Enable" = "¿Activar Modo fantasma?";
+"Gmod.Disable" = "¿Desactivar Modo fantasma?";
+"Gmod.Notice" = "Tu estado en línea estará oculto para todos según los ajustes de privacidad del Telegram.\nEntrarás en los chats en modo de vista previa y no se enviarán confirmaciones de lectura.\nEl modo de vista previa funciona de la misma manera que cuando mantienes pulsado un chat en Telegram oficial.\nTu estado en línea puede ser revelado si envías CUALQUIER mensaje.\nEsto es sólo un atajo que no viola los términos de servicio de Telegram.";
 
 "SendWithKb" = "Envía con el botón «Intro»";
 "NiceFeatures.ShowGmodIcon" = "Mostrar icono de Modo fantasma";
