@@ -18,3 +18,21 @@
 /*Open Pin*/
 "Chat.OpenPin" = "عرض دبوس";
 "ChatFilter.Admin" = "المدير";
+"NiceFeatures.Notifications.Fix" = "تعطيل إعلامات الإغلاق الاضطراري للتطبيقات";
+
+/*Common*/
+"Common.ExitNow" = "الإغلاق الآن";
+"Common.Later" = "لاحقاً";
+"Common.RestartRequired" = "إعادة التشغيل مطلوبة";
+
+/*Folder*/
+"Folder.DefaultName" = "المجلد";
+"Folder.New" = "إضافة مجلد";
+"Folder.Created" = "تم إنشاء المجلد";
+"Folder.Updated" = "تم تحديث المجلد";
+"Folder.Create" = "إنشاء مجلد...";
+"Folder.Create.Name" = "إسم المجلد";
+"Folder.Create.Placeholder" = "المجلد...";
+"NiceFeatures.Browser.UseBrowser" = "فتح في المتصفح";
+"ChatFilter.Missed" = "فائتة";
+"Premium.Missed" = "أخبرني لدى ورود رسائل جديدة";
