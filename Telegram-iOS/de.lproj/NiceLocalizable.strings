@@ -15,7 +15,7 @@
 "NiceFeatures.Tabs.ShowContacts" = "Kontakte Tab anzeigen";
 "NiceFeatures.ChatScreen.Header" = "CHAT ANZEIGE";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Animierte Stickers";
-"NiceFeatures.useBackCam" = "Use Rear camera (Round Videos)";
+"NiceFeatures.useBackCam" = "Verwende Rückkamera (runde Videos)";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "In Cloud speichern";
