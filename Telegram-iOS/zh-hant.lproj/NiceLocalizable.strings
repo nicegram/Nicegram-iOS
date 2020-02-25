@@ -25,7 +25,9 @@
 "ChatFilter.Admin" = "管理員";
 "NiceFeatures.Notifications.HideNotifyAccount" = "在通知中隱藏帳號";
 "NiceFeatures.Notifications.Fix" = "停用非必要通知";
+"NiceFeatures.Notifications.FixNotice" = "如果您想將「已關閉通知」的對話完全禁音，這將非常有用。\n來自回覆、@username、媒體預覽的通知將被停用。";
 "NiceFeatures.Filters.Header" = "篩選標籤";
+"NiceFeatures.Filters.Notice" = "選擇篩選標籤的數量。\n長按標籤來更改篩選器。";
 "NiceFeatures.Filters.ShowBadge" = "顯示標記 (小紅點)";
 "NiceFeatures.UseClassicInfoUi" = "使用經典版介面";
 
@@ -45,6 +47,7 @@
 "Folder.Create" = "建立資料夾…";
 "Folder.Create.Name" = "資料夾名稱";
 "Folder.Create.Placeholder" = "資料夾…";
+"Folder.LimitExceeded" = "抱歉，您最多只能建立 3 個自訂資料夾。\n進階版將可建立更多資料夾。";
 "NiceFeatures.HideNumber" = "在設定中隱藏電話號碼";
 
 /*NGWeb*/
@@ -72,11 +75,13 @@
 "Common.SupportChatUsername" = "nicegram_tw";
 "Common.FAQUrl" = "https://nicegram-tw.gitbook.io/";
 "Common.FAQ.Button" = "Nicegram 常見問題";
+"Common.FAQ.Intro" = "注意：Nicegram 支援僅由開發人員和志願者提供。\n\n請先看一下 Nicegram 常見問題：它有故障排除指示和其他大多數問題的解答。";
 "IAP.Premium.Title" = "進階版功能";
 "IAP.Premium.Subtitle" = "您無法抗拒的獨特功能！";
 "IAP.Premium.Features" = "無限資料夾＆置頂對話\n快速訊息翻譯\n錯過消息篩選及標籤管理\n在進入 App 時提示「新訊息」";
 "IAP.Premium.Activated" = "已升級進階版！";
 "IAP.Common.Restore" = "恢復購買";
+"IAP.Common.CantPay" = "抱歉，由於您的設備或帳戶限制，您無法購買。";
 "IAP.Common.ErrorFetch" = "抱歉，無法取得 App Store 購買的商品。";
 "IAP.Common.Congrats" = "恭喜！";
 "IAP.Common.ValidateError" = "很抱歉，無法驗證您的購買。";
@@ -102,6 +107,8 @@
 /*Backup Settings*/
 "NiceFeatures.BackupIcloud" = "從 iCloud 同步設定與資料夾";
 "NiceFeatures.BackupSettings" = "備份設定與資料夾";
+"NiceFeatures.BackupSettings.Notice" = "建立備份檔，點擊檔案開始還原。";
+"NiceFeatures.BackupSettings.Done" = "備份已儲存";
 "NiceFeatures.BackupSettings.Error" = "建立備份檔時發生錯誤";
 
 "NiceFeatures.RestoreSettings.Confirm" = "您確定要從備份檔還原「文件夾和設定」？\n⚠️它將覆蓋當前數據";
