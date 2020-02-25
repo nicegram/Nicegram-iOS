@@ -74,7 +74,7 @@
 "Folder.DeleteAsk" = "Cancella cartella";
 "Folder.NeedPremium" = "Questa cartella è disponibile solo con Premium. Ottieni Premium o dovrai cancellare la cartella con uno swipe.";
 "Common.SupportChatUsername" = "nicegram_it";
-"Common.FAQUrl" = "https://nicegram.app/faq/";
+"Common.FAQUrl" = "https://nicegram.app/it/faq/";
 "Common.FAQ.Button" = "FAQ Nicegram";
 "Common.FAQ.Intro" = "Per favore, nota che il supporto di Nicegram è operato solo dall'unico sviluppatore e dalla community.\n\nPrima di tutto, dai una occhiata alle FAQ di Nicegram: contiene molte soluzioni a problemi frequenti.";
 "IAP.Premium.Title" = "Premium";
