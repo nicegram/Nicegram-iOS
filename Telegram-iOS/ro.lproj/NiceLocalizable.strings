@@ -55,7 +55,7 @@
 
 /*Browser*/
 /*Please, Go to «Data & Storage» to configure default browser*/
-"NiceFeatures.Use.DataStorage" = "Pentru a putea folosi, «%1» configurați-vă browser-ul prestabilit";
+"NiceFeatures.Use.DataStorage" = "Pentru a putea folosi, %1 configurațiva browser-ul prestabilit";
 "NiceFeatures.Browser.Header" = "URL-UL";
 "NiceFeatures.Browser.UseBrowser" = "Deschideți în navigator";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram va deschide legături în browser externe în afara aplicație. Browserul selectat trebuie instalat.";
@@ -114,3 +114,6 @@
 "NiceFeatures.RestoreSettings.Confirm" = "Sigur doriți să restaurați folderele și setările din fișier?\n⚠️ Va anula datele actuale";
 "NiceFeatures.RestoreSettings.Done" = "Dosare & Setarile restaurat cu succes";
 "NiceFeatures.RestoreSettings.Error" = "Eroare restabilire setări. Fișierle pot fi corupte";
+"Gmod" = "Corn al Fantomei";
+"Gmod.Enable" = "Activaţi modul Root?";
+"Gmod.Disable" = "Activaţi modul Root?";

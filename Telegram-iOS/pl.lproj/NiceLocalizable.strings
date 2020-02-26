@@ -109,9 +109,21 @@
 "NiceFeatures.BackupIcloud" = "Synchronizuj ustawienia i foldery z iCloud";
 "NiceFeatures.BackupSettings" = "Kopia zapasowa ustawień i folderów";
 "NiceFeatures.BackupSettings.Notice" = "Tworzy plik kopii zapasowej. Stuknij plik, aby przywrócić.";
-"NiceFeatures.BackupSettings.Done" = "Wykonano kopię zapasową w „Zapisanych wiadomościach”";
+"NiceFeatures.BackupSettings.Done" = "Kopia zapasowa została wysłana do Zapisanych wiadomości";
 "NiceFeatures.BackupSettings.Error" = "Błąd tworzenia kopii zapasowej.";
 
 "NiceFeatures.RestoreSettings.Confirm" = "Czy na pewno chcesz przywrócić foldery i ustawienia z pliku?\n⚠ Zastąpi to bieżące dane";
 "NiceFeatures.RestoreSettings.Done" = "Foldery i ustawienia zostały pomyślnie przywrócone";
 "NiceFeatures.RestoreSettings.Error" = "Błąd podczas przywracania ustawień. Plik może być uszkodzony";
+
+/*Ghost Mode*/
+"Gmod.Restricted" = "Nie możesz wysyłać wiadomości w trybie Ducha.";
+"Gmod.Unavailable" = "Tryb Ducha niedostępny";
+"Gmod.Disable.Notice" = "Twoja ostatnia widoczność zostanie ustawiona na «%1». Odczytywane znaki zostaną pokazane.";
+"Gmod" = "Tryb Ducha";
+"Gmod.Enable" = "Włączyć tryb Ducha?";
+"Gmod.Disable" = "Wyłączyć tryb Ducha?";
+"Gmod.Notice" = "Twój status online zostanie ukryty przez wszystkich w ustawieniach prywatności Telegram.\nBędziesz wchodzić na czaty w trybie podglądu, a odczyt ocen nie zostanie wysłany.\nTryb podglądu działa tak samo, jak po długim stuknięciu czatu w oficjalnej aplikacji Telegram.\nTwój status online może zostać ujawniony jeśli wyślesz JAKO wiadomość.\nJest to tylko skrót, który nie narusza Telegram TOS.";
+
+"SendWithKb" = "Wyślij za pomocą przycisku «Enter»";
+"NiceFeatures.ShowGmodIcon" = "Pokaż ikonę trybu Ducha";

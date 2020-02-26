@@ -6,7 +6,7 @@
 "ChatFilter.Private" = "Benutzer";
 "ChatFilter.Groups" = "Gruppen";
 "ChatFilter.Unread" = "Ungelesen";
-"ChatFilter.Unmuted" = "Laut";
+"ChatFilter.Unmuted" = "Entstumm";
 "ChatFilter.Favourites" = "Favoriten";
 
 /*Nice Features*/
@@ -15,7 +15,7 @@
 "NiceFeatures.Tabs.ShowContacts" = "Kontakte Tab anzeigen";
 "NiceFeatures.ChatScreen.Header" = "CHAT ANZEIGE";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Animierte Stickers";
-"NiceFeatures.useBackCam" = "Use Rear camera (Round Videos)";
+"NiceFeatures.useBackCam" = "Verwende Rückkamera (runde Videos)";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "In Cloud speichern";
@@ -23,11 +23,14 @@
 /*Open Pin*/
 "Chat.OpenPin" = "Pin anzeigen";
 "ChatFilter.Admin" = "Administrator";
+"NiceFeatures.Notifications.HideNotifyAccount" = "Konto in Benachrichtigung ausblenden";
+"NiceFeatures.Notifications.HideNotifyAccountNotice" = "Anstelle von «Benutzer → Konto» sehen Sie nur «Benutzer».";
 "NiceFeatures.Notifications.Fix" = "Ungewünschte Benachrichtigungen deaktivieren";
 "NiceFeatures.Notifications.FixNotice" = "Nützlich, wenn du Benachrichtigungen von stummgeschalteten Chats erhältst.\nDas Antworten von Benachrichtigungen, Kontobezeichnungen sowie Medienvorschauen werden nicht verfügbar sein.";
 "NiceFeatures.Filters.Header" = "Filter (Tabs)";
 "NiceFeatures.Filters.Notice" = "Wählen Sie die Anzahl der benutzerdefinierten Tabs.\nLanges Tippen auf Tab, um den Filter zu ändern.";
 "NiceFeatures.Filters.ShowBadge" = "Abzeichen anzeigen (Filter)";
+"NiceFeatures.UseClassicInfoUi" = "Klassische Chat-Info-UI verwenden";
 
 /*Common*/
 "Common.ExitNow" = "Jetzt verlassen";
@@ -76,17 +79,48 @@
 "Common.FAQ.Intro" = "Bitte beachten Sie, dass der Nicegram Support von einem einzigen Entwickler und der Community durchgeführt wird.\n\nWerfen Sie einen Blick auf die Nicegram-FAQ: Sie enthält wichtige Tipps zur Fehlerbehebung und Antworten auf die meisten Fragen.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Einzigartige Funktionen, die du nicht ablehnen kannst!";
+"IAP.Premium.Features" = "Unbegrenzte Ordner & angepinnte Chats\nSchnellnachrichtenübersetzer\nVerpasste Nachrichten Filter & Tabs Verwaltung\n«Neue Nachrichten» beim Start der App";
 "IAP.Premium.Activated" = "Premium aktiviert!";
 "IAP.Common.Restore" = "Einkäufe wiederherstellen";
 "IAP.Common.CantPay" = "Leider können Sie aufgrund Ihres Geräts oder Ihres Kontos keine Einkäufe tätigen.";
 "IAP.Common.ErrorFetch" = "Entschuldigung, App Store Käufe können nicht abgerufen werden.";
 "IAP.Common.Congrats" = "Herzlichen Glückwunsch!";
 "IAP.Common.ValidateError" = "Es tut uns leid, kann Ihren Kauf nicht validieren.";
+"Premium.OnetapTranslate" = "Schnellübersetzen-Schaltfläche";
+"Premium.IgnoreTranslate.Title" = "Ignorierte Sprachen";
+"Premium.IgnoreTranslate.Header" = "Die App wird versuchen, die Sprache jeder Nachricht zu erkennen. Die Schnellübersetzen-Schaltfläche wird für die gewünschten Sprachen unten deaktiviert.";
 
 /*Manage Filters*/
 "ManageFilters.Title" = "Tabs verwalten";
+"ManageFilters.Header" = "VERFÜGBAREN FILTER VERFÜGBAREN";
 
 "Messages.Translate" = "Übersetzen";
 "Messages.UndoTranslate" = "Rückgängig übersetzen";
 "Messages.TranslateError" = "Die Übersetzung ist leider nicht verfügbar.";
+
+/*NG Lab Registration Date*/
+"NGLab.RegDate.Btn" = "Anmeldedatum";
+"NGLab.RegDate.Title" = "Anmeldedatum";
+"NGLab.RegDate.Notice" = "Dies ist ein ungefähres Datum";
 "NGLab.RegDate.MenuItem" = "registriert";
+"NGLab.RegDate.FetchError" = "Leider kann das Registrierungsdatum nicht abgerufen werden.";
+
+/*Backup Settings*/
+"NiceFeatures.BackupIcloud" = "Einstellungen & Ordner mit iCloud synchronisieren";
+"NiceFeatures.BackupSettings" = "Sicherungseinstellungen & Ordner";
+"NiceFeatures.BackupSettings.Notice" = "Erstellt Sicherungsdatei. Zum Wiederherstellen auf Datei tippen.";
+"NiceFeatures.BackupSettings.Done" = "Sicherung an gespeicherte Nachrichten gesendet";
+"NiceFeatures.BackupSettings.Error" = "Fehler beim Erstellen der Sicherung";
+
+"NiceFeatures.RestoreSettings.Confirm" = "Sind Sie sicher, dass Sie Ordner & Einstellungen aus der Datei wiederherstellen möchten?\n⚠️ Aktuelle Daten werden überschrieben";
+"NiceFeatures.RestoreSettings.Done" = "Ordner & Einstellungen erfolgreich wiederhergestellt";
+"NiceFeatures.RestoreSettings.Error" = "Fehler beim Wiederherstellen der Einstellungen. Die Datei könnte beschädigt sein";
+"Gmod.Unavailable" = "Ghost Modus nicht verfügbar";
+"Gmod.Disable.Notice" = "Deine zuletzt gesehene Sichtbarkeit wird auf «%1» gesetzt. Lesezeichen werden angezeigt.";
+"Gmod" = "Ghost-Modus";
+"Gmod.Enable" = "Ghost Modus aktivieren?";
+"Gmod.Disable" = "Ghost Modus deaktivieren?";
+"Gmod.Notice" = "Ihr Online-Status wird durch Telegram-Privatsphäre-Einstellungen für jeden ausgeblendet.\nDu wirst Chats im Vorschaumodus betreten und Lesezeichen werden nicht gesendet.\nVorschaumodus funktioniert genauso wie wenn Sie lange auf einen Chat in der offiziellen Telegramm-App getippt haben.\nIhr Online-Status kann angezeigt werden, wenn Sie eine Nachricht senden.\nDies ist nur eine Verknüpfung, die nicht gegen Telegram TOS verstößt.";
+
+"SendWithKb" = "Mit «Enter» senden";
+"NiceFeatures.ShowGmodIcon" = "Geister-Modus Symbol anzeigen";

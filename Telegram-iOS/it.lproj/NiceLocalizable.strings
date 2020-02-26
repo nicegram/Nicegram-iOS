@@ -12,7 +12,7 @@
 /*Nice Features*/
 "NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "TAB";
-"NiceFeatures.Tabs.ShowContacts" = "Mostra lista contatti";
+"NiceFeatures.Tabs.ShowContacts" = "Mostra tab contatti";
 "NiceFeatures.ChatScreen.Header" = "SCHERMATA DELLE CHAT";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Adesivi animati";
 "NiceFeatures.useBackCam" = "Usa camera posteriore (Videomessaggi)";
@@ -21,14 +21,14 @@
 "Chat.SaveToCloud" = "Salva nel cloud";
 
 /*Open Pin*/
-"Chat.OpenPin" = "Apri pin";
+"Chat.OpenPin" = "Mostra pin";
 "ChatFilter.Admin" = "Amministratore";
 "NiceFeatures.Notifications.HideNotifyAccount" = "Nascondi account nella notifica";
 "NiceFeatures.Notifications.HideNotifyAccountNotice" = "Invece di «Utente → Account» vedrai solo «Utente». Solo per account multipli.";
-"NiceFeatures.Notifications.Fix" = "Disabilita notifiche inutili";
-"NiceFeatures.Notifications.FixNotice" = "Utile se ricevi notifiche da chat silenziate.\nLe risposte alle notifiche, le etichette degli account e le anteprime dei media non saranno disponibili.";
-"NiceFeatures.Filters.Header" = "FILTRI (TABS)";
-"NiceFeatures.Filters.Notice" = "Seleziona il numero di schede personalizzate.\nTocca a lungo la scheda per cambiare filtro.";
+"NiceFeatures.Notifications.Fix" = "Disabilita notifiche indesiderate";
+"NiceFeatures.Notifications.FixNotice" = "Utile se ricevi notifiche da chat silenziate.\nLe risposte alle notifiche, etichette degli account e le anteprime multimediali non saranno disponibili.";
+"NiceFeatures.Filters.Header" = "FILTRI (TAB)";
+"NiceFeatures.Filters.Notice" = "Seleziona il numero di tab personalizzate.\nTocca a lungo la tab per cambiare filtro.";
 "NiceFeatures.Filters.ShowBadge" = "Mostra badge (Filtri)";
 "NiceFeatures.UseClassicInfoUi" = "Usa l'interfaccia delle info classica";
 
@@ -36,7 +36,7 @@
 "Common.ExitNow" = "Esci ora";
 "Common.Later" = "Dopo";
 "Common.RestartRequired" = "Riavvio richiesto!";
-"NiceFeatures.Tabs.ShowNames" = "Mostra i nomi delle tab";
+"NiceFeatures.Tabs.ShowNames" = "Mostra nomi tab";
 "Chat.ForwardAsCopy" = "Inoltra senza firma";
 
 /*Folder*/
@@ -45,11 +45,11 @@
 "Folder.Created" = "Cartella creata";
 "Folder.AddToExisting" = "Aggiungi ad una cartella esistente";
 "Folder.Updated" = "Cartella aggiornata";
-"Folder.Create" = "Crea una cartella...";
-"Folder.Create.Name" = "Nome della cartella";
+"Folder.Create" = "Crea cartella...";
+"Folder.Create.Name" = "Nome cartella";
 "Folder.Create.Placeholder" = "Cartella...";
-"Folder.LimitExceeded" = "Spiacente, puoi creare solo 3 cartelle personalizzate.\nPotrai aggiungerne di più con Premium.";
-"NiceFeatures.HideNumber" = "Nascondi il numero di telefono dalle impostazioni";
+"Folder.LimitExceeded" = "Spiacente, puoi creare solo 3 cartelle personalizzate.\nPuoi aggiungerne di più con Premium.";
+"NiceFeatures.HideNumber" = "Nascondi il numero di telefono nelle impostazioni";
 
 /*NGWeb*/
 "NGWeb.Blocked" = "Non disponibile su Nicegram a causa delle linee guida dell'App Store";
@@ -59,71 +59,71 @@
 "NiceFeatures.Use.DataStorage" = "Per favore, usa «%1» per configurare il tuo browser predefinito";
 "NiceFeatures.Browser.Header" = "URL";
 "NiceFeatures.Browser.UseBrowser" = "Apri link nel browser";
-"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram aprirà i link esterni in un browser esterno invece di aprirli nell'app.\nIl browser selezionato deve essere installato.";
-"ChatFilter.Missed" = "Non letti";
+"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram aprirà i link in un browser esterno invece di farlo nell'app.\nIl browser selezionato deve essere installato.";
+"ChatFilter.Missed" = "Mancati";
 
 /*Premium*/
 "Premium.Title" = "Premium";
 "Premium.UnlimitedPins.Header" = "CHAT FISSATE ILLIMITATE";
 "Premium.SyncPins" = "Sincronizza chat fissate";
-"Premium.SyncPins.Notice.ON" = "Se cambi le chat fissate in un altro client, esse CAMBIERANNO in Nicegram.";
-"Premium.SyncPins.Notice.OFF" = "Se cambi le chat fissate in un altro client, esse NON CAMBIERANNO in Nicegram.";
-"Premium.Missed.Header" = "Messaggi non letti";
-"Premium.Missed" = "Notifica per i messaggi non letti";
-"Premium.Missed.Notice" = "Quando apri l'app dopo un po' di tempo, Nicegram ti ricorderà delle chat private non lette e delle menzioni.";
+"Premium.SyncPins.Notice.ON" = "Se cambi chat fissate in un altro client, esse CAMBIERANNO su Nicegram.";
+"Premium.SyncPins.Notice.OFF" = "Se cambi chat fissate in un altro client, esse NON CAMBIERANNO su Nicegram.";
+"Premium.Missed.Header" = "Messaggi mancati";
+"Premium.Missed" = "Notifica per i messaggi mancati";
+"Premium.Missed.Notice" = "Quando apri l'app dopo un po' di tempo (dormita, studio, ecc.), Nicegram ti notificherà delle chat private e menzioni non lette.";
 "Folder.DeleteAsk" = "Cancella cartella";
-"Folder.NeedPremium" = "Questa cartella è disponibile solo con Premium. Puoi ottenere Premium o dovrai cancellare la cartella con uno swipe";
+"Folder.NeedPremium" = "Questa cartella è disponibile solo con Premium. Ottieni Premium o dovrai cancellare la cartella con uno swipe.";
 "Common.SupportChatUsername" = "nicegram_it";
-"Common.FAQUrl" = "https://nicegram.app/faq/";
-"Common.FAQ.Button" = "Domande frequenti";
-"Common.FAQ.Intro" = "Nota che Nicegram Support è operato solo dall'unico sviluppatore e dalla community.\n\nPrima di tutto, dai una occhiata alle FAQ di Nicegram: contiene molte soluzioni a problemi frequenti.";
+"Common.FAQUrl" = "https://nicegram.app/it/faq/";
+"Common.FAQ.Button" = "FAQ Nicegram";
+"Common.FAQ.Intro" = "Per favore, nota che il supporto di Nicegram è operato solo dall'unico sviluppatore e dalla community.\n\nPrima di tutto, dai una occhiata alle FAQ di Nicegram: contiene molte soluzioni a problemi frequenti.";
 "IAP.Premium.Title" = "Premium";
-"IAP.Premium.Subtitle" = "Feature uniche che non potrai rifiutare";
-"IAP.Premium.Features" = "Cartelle illimitate e chat fissate\nTraduttore istantaneo dei messaggi\nFiltro messaggi mancati e gestione delle tab\nRiassunto \"Nuovi messaggi\" al lancio dell'applicazione";
+"IAP.Premium.Subtitle" = "Feature uniche che non puoi rifiutare!";
+"IAP.Premium.Features" = "Cartelle e chat fissate illimitate\nTraduttore istantaneo dei messaggi\nFiltro messaggi mancati e gestione delle tab\nRiassunto «Nuovi messaggi» al lancio dell'applicazione";
 "IAP.Premium.Activated" = "Premium attivato!";
 "IAP.Common.Restore" = "Ripristina acquisti";
-"IAP.Common.CantPay" = "Spiacenti, ma non puoi fare acquisti a causa di un problema con il tuo telefono o con il tuo account";
-"IAP.Common.ErrorFetch" = "Spiacenti, non è stato possibile ottenere i tuoi acquisti dall'App Store";
+"IAP.Common.CantPay" = "Spiacente, non puoi effettuare acquisti a causa di restrizioni sul tuo dispositivo o account.";
+"IAP.Common.ErrorFetch" = "Spiacente, impossibile ottenere i tuoi acquisti dall'App Store.";
 "IAP.Common.Congrats" = "Congratulazioni!";
 "IAP.Common.ValidateError" = "Spiacente, non è stato possibile convalidare l'acquisto.";
-"Premium.OnetapTranslate" = "Bottone di traduzione veloce";
+"Premium.OnetapTranslate" = "Bottone di traduzione rapida";
 "Premium.IgnoreTranslate.Title" = "Lingue ignorate";
-"Premium.IgnoreTranslate.Header" = "L'app cercherà di rilevare la lingua di ogni messaggio. Il bottone della traduzione rapida sarà DISABILITATO per le lingue che scegli qua sotto.";
+"Premium.IgnoreTranslate.Header" = "L'app cercherà di rilevare la lingua di ogni messaggio. Il bottone di traduzione rapida sarà DISABILITATO per le lingue che scegli qua sotto.";
 
 /*Manage Filters*/
 "ManageFilters.Title" = "Gestisci tab";
-"ManageFilters.Header" = "Configura filtri disponibili";
+"ManageFilters.Header" = "CONFIGURA FILTRI DISPONIBILI";
 
 "Messages.Translate" = "Traduci";
 "Messages.UndoTranslate" = "Annulla traduzione";
-"Messages.TranslateError" = "Spiacenti, questa traduzione non è disponibile.";
+"Messages.TranslateError" = "Spiacente, traduzione non disponibile.";
 
 /*NG Lab Registration Date*/
-"NGLab.RegDate.Btn" = "Ottieni data di registrazione";
-"NGLab.RegDate.Title" = "Data di registrazione";
+"NGLab.RegDate.Btn" = "Ottieni data registrazione";
+"NGLab.RegDate.Title" = "Data registrazione";
 "NGLab.RegDate.Notice" = "Questa è una data approssimativa";
 "NGLab.RegDate.MenuItem" = "registrato";
-"NGLab.RegDate.FetchError" = "Spiacenti, impossibile ottenere la data di registrazione.";
+"NGLab.RegDate.FetchError" = "Spiacente, impossibile ottenere data registrazione.";
 
 /*Backup Settings*/
 "NiceFeatures.BackupIcloud" = "Sincronizza impostazioni e cartelle con iCloud";
 "NiceFeatures.BackupSettings" = "Backup impostazioni e cartelle";
-"NiceFeatures.BackupSettings.Notice" = "Crea un backup. Tocca il file per ripristinarlo.";
+"NiceFeatures.BackupSettings.Notice" = "Crea file di backup. Tocca il file per ripristinare.";
 "NiceFeatures.BackupSettings.Done" = "Backup eseguito nei messaggi salvati";
 "NiceFeatures.BackupSettings.Error" = "Errore creazione backup";
 
-"NiceFeatures.RestoreSettings.Confirm" = "Sicuro di voler ripristinare cartelle e impostazioni da file?\n⚠️ Questo sovrascriverà i dati attuali";
-"NiceFeatures.RestoreSettings.Done" = "Cartelle e impostazioni ripristinate ✔️";
-"NiceFeatures.RestoreSettings.Error" = "Errore ripristino impostazioni. Il file potrebbe essere danneggiato";
+"NiceFeatures.RestoreSettings.Confirm" = "Sicuro di voler ripristinare cartelle e impostazioni dal file?\n⚠️ Questo sovrascriverà i dati attuali";
+"NiceFeatures.RestoreSettings.Done" = "✔️ Cartelle e impostazioni ripristinate";
+"NiceFeatures.RestoreSettings.Error" = "Errore ripristino impostazioni. Il file potrebbe essere corrotto";
 
 /*Ghost Mode*/
-"Gmod.Restricted" = "Non puoi inviare messaggi nella ghost mode.";
+"Gmod.Restricted" = "Non puoi inviare messaggi in ghost mode.";
 "Gmod.Unavailable" = "Ghost mode non disponibile";
-"Gmod.Disable.Notice" = "La visibilità del tuo ultimo accesso verrà impostato a \"%1\". Le spunte di lettura verranno rivelate.";
+"Gmod.Disable.Notice" = "La visibilità del tuo ultimo accesso verrà impostato a «%1». Le spunte di lettura verranno rivelate.";
 "Gmod" = "Ghost mode";
 "Gmod.Enable" = "Abilitare la ghost mode?";
 "Gmod.Disable" = "Disabilitare la ghost mode?";
 "Gmod.Notice" = "Il tuo stato online verrà nascosto a tutti dalle impostazioni sulla privacy di Telegram.\nEntrerai nelle chat in modalità anteprima e i segni di lettura non verranno inviati.\nLa modalità anteprima funziona come un tap lungo su una chat su Telegram ufficiale.\nIl tuo stato online può essere rivelato se invii un messaggio qualsiasi.\nQuesta è una scorciatoia e non viola i TOS di Telegram.";
 
-"SendWithKb" = "Invia con il pulsante \"Invio\"";
+"SendWithKb" = "Invia con il pulsante «Invio»";
 "NiceFeatures.ShowGmodIcon" = "Mostra icona ghost mode";
