@@ -115,12 +115,5 @@
 "NiceFeatures.RestoreSettings.Confirm" = "Sind Sie sicher, dass Sie Ordner & Einstellungen aus der Datei wiederherstellen möchten?\n⚠️ Aktuelle Daten werden überschrieben";
 "NiceFeatures.RestoreSettings.Done" = "Ordner & Einstellungen erfolgreich wiederhergestellt";
 "NiceFeatures.RestoreSettings.Error" = "Fehler beim Wiederherstellen der Einstellungen. Die Datei könnte beschädigt sein";
-"Gmod.Unavailable" = "Ghost Modus nicht verfügbar";
-"Gmod.Disable.Notice" = "Deine zuletzt gesehene Sichtbarkeit wird auf «%1» gesetzt. Lesezeichen werden angezeigt.";
-"Gmod" = "Ghost-Modus";
-"Gmod.Enable" = "Ghost Modus aktivieren?";
-"Gmod.Disable" = "Ghost Modus deaktivieren?";
-"Gmod.Notice" = "Ihr Online-Status wird durch Telegram-Privatsphäre-Einstellungen für jeden ausgeblendet.\nDu wirst Chats im Vorschaumodus betreten und Lesezeichen werden nicht gesendet.\nVorschaumodus funktioniert genauso wie wenn Sie lange auf einen Chat in der offiziellen Telegramm-App getippt haben.\nIhr Online-Status kann angezeigt werden, wenn Sie eine Nachricht senden.\nDies ist nur eine Verknüpfung, die nicht gegen Telegram TOS verstößt.";
 
 "SendWithKb" = "Mit «Enter» senden";
-"NiceFeatures.ShowGmodIcon" = "Geister-Modus Symbol anzeigen";
