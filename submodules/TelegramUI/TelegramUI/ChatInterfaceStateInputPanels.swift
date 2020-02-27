@@ -82,7 +82,7 @@ func inputPanelForChatPresentationIntefaceState(_ chatPresentationInterfaceState
     
     if let peer = chatPresentationInterfaceState.renderedPeer?.peer {
         /*if let user = peer as? TelegramUser {
-            if NicegramSettings().gmod {
+            if VarNicegramSettings.gmod {
                 if let currentPanel = (currentPanel as? ChatRestrictedInputPanelNode) ?? (currentSecondaryPanel as? ChatRestrictedInputPanelNode) {
                     return (currentPanel, nil)
                 } else {
@@ -142,7 +142,7 @@ func inputPanelForChatPresentationIntefaceState(_ chatPresentationInterfaceState
                     panel.interfaceInteraction = interfaceInteraction
                     return (panel, nil)
                 }
-            } /*else if NicegramSettings().gmod {
+            } /*else if VarNicegramSettings.gmod {
                 if let currentPanel = (currentPanel as? ChatRestrictedInputPanelNode) ?? (currentSecondaryPanel as? ChatRestrictedInputPanelNode) {
                     return (currentPanel, nil)
                 } else {
@@ -206,7 +206,7 @@ func inputPanelForChatPresentationIntefaceState(_ chatPresentationInterfaceState
                     panel.interfaceInteraction = interfaceInteraction
                     return (panel, nil)
                 }
-            } /*else if NicegramSettings().gmod  {
+            } /*else if VarNicegramSettings.gmod  {
                 if let currentPanel = (currentPanel as? ChatRestrictedInputPanelNode) ?? (currentSecondaryPanel as? ChatRestrictedInputPanelNode) {
                     return (currentPanel, nil)
                 } else {
@@ -273,7 +273,7 @@ func inputPanelForChatPresentationIntefaceState(_ chatPresentationInterfaceState
             } else {
                 let panel = ChatTextInputPanelNode(presentationInterfaceState: chatPresentationInterfaceState, presentController: { [weak interfaceInteraction] controller in
                     interfaceInteraction?.presentController(controller, nil)
-                }, sendWithKb: NicegramSettings().sendWithKb)
+                }, sendWithKb: VarNicegramSettings.sendWithKb)
                 
                 panel.interfaceInteraction = interfaceInteraction
                 panel.context = context

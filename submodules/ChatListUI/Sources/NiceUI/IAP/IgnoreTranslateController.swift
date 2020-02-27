@@ -191,12 +191,12 @@ public func ignoreTranslateController(context: AccountContext) -> ViewController
     
     let arguments = IgnoreTranslateArguments(updateData: { langCode, isIgnoring in
         if isIgnoring {
-            if !PremiumSettings().ignoreTranslate.contains(langCode) {
-                PremiumSettings().ignoreTranslate.append(langCode)
+            if !VarPremiumSettings.ignoreTranslate.contains(langCode) {
+                VarPremiumSettings.ignoreTranslate.append(langCode)
             }
         } else {
-            if let index = PremiumSettings().ignoreTranslate.index(of: langCode) {
-                    PremiumSettings().ignoreTranslate.remove(at: index)
+            if let index = VarPremiumSettings.ignoreTranslate.index(of: langCode) {
+                    VarPremiumSettings.ignoreTranslate.remove(at: index)
                 }
         }
     })
@@ -204,7 +204,7 @@ public func ignoreTranslateController(context: AccountContext) -> ViewController
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get())
         |> map {presentationData, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
             
-            let entries = ignoreTranslateControllerEntries(presentationData: presentationData, premiumSettings: PremiumSettings())
+            let entries = ignoreTranslateControllerEntries(presentationData: presentationData, premiumSettings: VarPremiumSettings)
             
             
             var index = 0

@@ -128,7 +128,7 @@ public func getNGSettings(_ userId: Int64, completion: @escaping (_ sync: Bool, 
         var restricitionReasons = NGAPISETTINGS().RESTRICTION_REASONS
         var allowedChats = NGAPISETTINGS().ALLOWED
         var restrictedChats = NGAPISETTINGS().RESTRICTED
-        var localPremium = PremiumSettings().isPremium
+        var localPremium = VarPremiumSettings.isPremium
         var betaPremium = SecureNiceSettings().isBetaPremium
         
         if let response = apiResponse {
@@ -170,10 +170,10 @@ public func updateNGInfo(userId: Int64) {
         NGAPISETTINGS().ALLOWED = allowed
         NGAPISETTINGS().RESTRICTION_REASONS = rreasons
         
-        PremiumSettings().isPremium = isPremium
+        VarPremiumSettings.isPremium = isPremium
         SecureNiceSettings().isBetaPremium = isBetaPremium
         
-        ngApiLog("SYNC_CHATS \(NGAPISETTINGS().SYNC_CHATS)\nRESTRICTED \(NGAPISETTINGS().RESTRICTED)\nALLOWED \(NGAPISETTINGS().ALLOWED)\nRESTRICTED_REASONS count \(NGAPISETTINGS().RESTRICTION_REASONS.count)\nPREMIUM \(PremiumSettings().isPremium)\nBETA PREMIUM \(SecureNiceSettings().isBetaPremium)")
+        ngApiLog("SYNC_CHATS \(NGAPISETTINGS().SYNC_CHATS)\nRESTRICTED \(NGAPISETTINGS().RESTRICTED)\nALLOWED \(NGAPISETTINGS().ALLOWED)\nRESTRICTED_REASONS count \(NGAPISETTINGS().RESTRICTION_REASONS.count)\nPREMIUM \(VarPremiumSettings.isPremium)\nBETA PREMIUM \(SecureNiceSettings().isBetaPremium)")
     })
 }
 
@@ -213,7 +213,7 @@ public func validatePremium(_ current: Bool, forceValid: Bool = false) {
     if (current) {
         guard let receiptURL = Bundle.main.appStoreReceiptURL,
             let data = try? Data(contentsOf: receiptURL) else {
-                PremiumSettings().p = false
+                VarPremiumSettings.p = false
                 ngApiLog("Hello hacker?????")
                 sem.signal()
                 return
@@ -222,14 +222,14 @@ public func validatePremium(_ current: Bool, forceValid: Bool = false) {
         let encodedData = data.base64EncodedData(options: [])
         requestValidator(encodedData, completion: { validStatus in
             if validStatus == "0" { // Hacker
-                PremiumSettings().p = false
+                VarPremiumSettings.p = false
                 ngApiLog("Hello hacker")
                 // preconditionFailure("Hello hacker")
             } else if validStatus == "1" { // OK
                 ngApiLog("Okie-dokie")
             } else { // Error
                 if forceValid {
-                    PremiumSettings().p = false
+                    VarPremiumSettings.p = false
                     ngApiLog("Hello hacker?")
                 }
             }

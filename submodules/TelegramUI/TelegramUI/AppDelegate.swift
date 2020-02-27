@@ -1125,8 +1125,8 @@ final class SharedApplicationContext {
                 
                 network = context.context.account.network
                 syncFolders(context.context.account.postbox)
-                print("IS PREMIUM \(SecureNiceSettings().isPremium)")
-                print("IS BETA PREMIUM \(SecureNiceSettings().isBetaPremium)")
+                //print("IS PREMIUM \(SecureNiceSettings().isPremium)")
+                //print("IS BETA PREMIUM \(SecureNiceSettings().isBetaPremium)")
                 let presentationData = context.context.sharedContext.currentPresentationData.with({ $0 })
                 Queue().async {
                     updateGlobalNGSettings()
@@ -1144,10 +1144,10 @@ final class SharedApplicationContext {
                     //if !UserDefaults.standard.bool(forKey: "isCloud") {
 //                        let cloud = NSUbiquitousKeyValueStore.default
 //                        Logger.shared.log("[System NG]", "MOVE TO CLOUD SETTINGS")
-//                        let nf = SimplyNiceFolders()
-//                        let ns = SimplyNiceSettings()
-//                        let nt = SimplyNiceFilters()
-//                        let ps = PremiumSettings()
+//                        let nf = VarSimplyNiceFolders
+//                        let ns = VarSimplyNiceSettings
+//                        let nt = VarSimplyNiceFilters
+//                        let ps = VarPremiumSettings
 //                        
 //                        if cloud.object(forKey: "folders") == nil {
 //                            // cloud.set(NSKeyedArchiver.archivedData(withRootObject: nf.folders), forKey: "folders")
@@ -1577,7 +1577,7 @@ final class SharedApplicationContext {
     
     func applicationWillTerminate(_ application: UIApplication) {
         Logger.shared.log("App \(self.episodeId)", "terminating")
-        PremiumSettings().lastOpened = utcnow()
+        VarPremiumSettings.lastOpened = utcnow()
     }
     
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {

@@ -23,6 +23,7 @@ final class ChatListTitleView: UIView, NavigationBarTitleView, NavigationBarTitl
     private let buttonView: HighlightTrackingButton
     private let proxyNode: ChatTitleProxyNode
     private let proxyButton: HighlightTrackingButton
+    private let nicegramSettings: NicegramSettings = VarNicegramSettings
     
     private var validLayout: (CGSize, CGRect)?
     
@@ -48,7 +49,7 @@ final class ChatListTitleView: UIView, NavigationBarTitleView, NavigationBarTitl
                 }
                 self.lockView.updateTheme(self.theme)
                 
-                if !NicegramSettings().showGmodIcon {
+                if !self.nicegramSettings.showGmodIcon {
                     self.gmodNode.isHidden = true
                     self.gmodButton.isHidden = true
                 } else {
@@ -61,7 +62,7 @@ final class ChatListTitleView: UIView, NavigationBarTitleView, NavigationBarTitl
         }
     }
     
-    var isGmod: Bool = NicegramSettings().gmod {
+    var isGmod: Bool = false {
         didSet {
             if self.isGmod != oldValue {
                 self.gmodNode.status = !self.gmodNode.status

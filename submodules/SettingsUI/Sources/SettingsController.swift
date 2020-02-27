@@ -934,8 +934,8 @@ public func settingsController(context: AccountContext, accountManager: AccountM
     let openNicegramFaq: () -> Void = {
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
         let ngFaqUrl = l("Common.FAQUrl", presentationData.strings.baseLanguageCode)
-        if SimplyNiceSettings().useBrowser {
-            let browserUrl = getBrowserUrl(ngFaqUrl, browser: SimplyNiceSettings().browser)
+        if VarSimplyNiceSettings.useBrowser {
+            let browserUrl = getBrowserUrl(ngFaqUrl, browser: VarSimplyNiceSettings.browser)
             context.sharedContext.applicationBindings.openUrl(browserUrl)
         } else {
             context.sharedContext.applicationBindings.openUrl(ngFaqUrl)
@@ -1077,7 +1077,7 @@ public func settingsController(context: AccountContext, accountManager: AccountM
                                                 let observer = NotificationCenter.default.addObserver(forName: .IAPHelperPurchaseNotification, object: nil, queue: .main, using: {  notification in
                                                     let productID = notification.object as? String
                                                     if productID == NicegramProducts.Premium {
-                                                        PremiumSettings().p = true
+                                                        VarPremiumSettings.p = true
                                                         validatePremium(isPremium(), forceValid: true)
                                                         
                                                         if (isPremium()) {

@@ -1318,7 +1318,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
 private let defaultChatControllerInteraction = ChatControllerInteraction.default
 
 private func peerInfoControllerImpl(context: AccountContext, peer: Peer, mode: PeerInfoControllerMode, avatarInitiallyExpanded: Bool, isOpenedFromChat: Bool) -> ViewController? {
-    let useClassicUi = NicegramSettings().useClassicInfoUi
+    let useClassicUi = VarNicegramSettings.useClassicInfoUi
     if let _ = peer as? TelegramGroup {
         if useClassicUi {
             return groupInfoController(context: context, peerId: peer.id)

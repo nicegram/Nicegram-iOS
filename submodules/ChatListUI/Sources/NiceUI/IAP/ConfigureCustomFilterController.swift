@@ -227,7 +227,7 @@ public func conigureCustomFilterController(context: AccountContext, customFilter
     let arguments = ConigureCustomFilterControllerArguments(toggleSetting: { value, setting in
         switch (setting) {
         case "test":
-            // PremiumSettings().syncPins = value
+            // VarPremiumSettings.syncPins = value
             break
         default:
             break

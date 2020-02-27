@@ -595,7 +595,7 @@ private func niceFeaturesControllerEntries(niceSettings: NiceSettings, showCalls
     entries.append(.showContactsTab(presentationData.theme, l("NiceFeatures.Tabs.ShowContacts", locale), niceSettings.showContactsTab))
     entries.append(.duplicateShowCalls(presentationData.theme, presentationData.strings.CallSettings_TabIcon, showCalls))
 
-    entries.append(.showTabNames(presentationData.theme, l("NiceFeatures.Tabs.ShowNames", locale), SimplyNiceSettings().showTabNames, locale))
+    entries.append(.showTabNames(presentationData.theme, l("NiceFeatures.Tabs.ShowNames", locale), VarSimplyNiceSettings.showTabNames, locale))
 
     entries.append(.filtersHeader(presentationData.theme, l("NiceFeatures.Filters.Header", locale)))
     entries.append(.filtersAmount(presentationData.theme, locale, simplyNiceSettings.maxFilters))
@@ -647,7 +647,7 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
         $0
     }
 
-    var currentBrowser = Browser(rawValue: SimplyNiceSettings().browser) ?? Browser.Safari
+    var currentBrowser = Browser(rawValue: VarSimplyNiceSettings.browser) ?? Browser.Safari
     let statePromise = ValuePromise(BrowserSelectionState(selectedBrowser: currentBrowser), ignoreRepeated: true)
     let stateValue = Atomic(value: BrowserSelectionState(selectedBrowser: currentBrowser))
     let updateState: ((BrowserSelectionState) -> BrowserSelectionState) -> Void = { f in
@@ -681,9 +681,9 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
             return settings
         }).start()
     }, toggleMuteSilent: { value in
-        NicegramSettings().muteSoundSilent = value
+        VarNicegramSettings.muteSoundSilent = value
     }, toggleHideNotifyAccount: { value in
-        NicegramSettings().hideNotifyAccountName = value
+        VarNicegramSettings.hideNotifyAccountName = value
     }, toggleShowContactsTab: { value in
         let _ = updateNiceSettingsInteractively(accountManager: context.sharedContext.accountManager, { settings in
             var settings = settings
@@ -707,19 +707,19 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
         }
     }, changeFiltersAmount: { value in
         if lastTabsCounter != nil {
-            if Int32(value) == SimplyNiceSettings().maxFilters {
+            if Int32(value) == VarSimplyNiceSettings.maxFilters {
                 //print("Same value, returning")
                 return
             } else {
                 lastTabsCounter = Int32(value)
             }
         }
-        SimplyNiceSettings().maxFilters = Int32(value)
-        if SimplyNiceSettings().maxFilters > SimplyNiceSettings().chatFilters.count {
-            let delta = Int(SimplyNiceSettings().maxFilters) - SimplyNiceSettings().chatFilters.count
+        VarSimplyNiceSettings.maxFilters = Int32(value)
+        if VarSimplyNiceSettings.maxFilters > VarSimplyNiceSettings.chatFilters.count {
+            let delta = Int(VarSimplyNiceSettings.maxFilters) - VarSimplyNiceSettings.chatFilters.count
 
             for _ in 0...delta {
-                SimplyNiceSettings().chatFilters.append(.onlyNonMuted)
+                VarSimplyNiceSettings.chatFilters.append(.onlyNonMuted)
             }
         }
         let _ = updateNiceSettingsInteractively(accountManager: context.sharedContext.accountManager, { settings in
@@ -732,7 +732,7 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
         updateTabs()
 
     }, toggleShowTabNames: { value, locale in
-        SimplyNiceSettings().showTabNames = value
+        VarSimplyNiceSettings.showTabNames = value
         updateTabs()
         // NSUbiquitousKeyValueStore.default.synchronize()
         
@@ -740,16 +740,16 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
 
         presentControllerImpl?(controller, nil)
     }, toggleHidePhone: { value, locale in
-        SimplyNiceSettings().hideNumber = value
+        VarSimplyNiceSettings.hideNumber = value
         // NSUbiquitousKeyValueStore.default.synchronize()
         
         let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: l("Common.RestartRequired", locale), actions: [/*TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: { preconditionFailure() }),*/ TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})])
 
         presentControllerImpl?(controller, nil)
     }, toggleUseBrowser: { value in
-        SimplyNiceSettings().useBrowser = value
+        VarSimplyNiceSettings.useBrowser = value
     }, customizeBrowser: { value in
-        SimplyNiceSettings().browser = value.rawValue
+        VarSimplyNiceSettings.browser = value.rawValue
         updateState { state in
             return BrowserSelectionState(selectedBrowser: value)
         }
@@ -760,7 +760,7 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
 //        let controller = webBrowserSettingsController(context: context)
 //        presentControllerImpl?(controller, nil)
     }, backupSettings: {
-        if let exportPath = NicegramSettings().exportSettings() {
+        if let exportPath = VarNicegramSettings.exportSettings() {
             var messages: [EnqueueMessage] = []
             let id = arc4random64()
             let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: LocalFileReferenceMediaResource(localFilePath: exportPath, randomId: id), previewRepresentations: [], immediateThumbnailData: nil, mimeType: "application/json", size: nil, attributes: [.FileName(fileName: BACKUP_NAME)])
@@ -775,7 +775,7 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
             presentControllerImpl?(controller, nil)
         }
     }, toggleFiltersBadge: { value in
-        SimplyNiceSettings().filtersBadge = value
+        VarSimplyNiceSettings.filtersBadge = value
         updateTabs()
     }, toggleBackupIcloud: { value in
         setUseIcloud(value)
@@ -783,18 +783,18 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
         })])
         presentControllerImpl?(controller, nil)
     }, togglebackCam: { value in
-        NicegramSettings().useBackCam = value
+        VarNicegramSettings.useBackCam = value
     }, toggletgFilters: { value in
-        NicegramSettings().useTgFilters = value
+        VarNicegramSettings.useTgFilters = value
     }, toggleClassicInfoUi: { value in
-        NicegramSettings().useClassicInfoUi = value
+        VarNicegramSettings.useClassicInfoUi = value
     }, toggleSendWithKb: { value in
-        NicegramSettings().sendWithKb = value
+        VarNicegramSettings.sendWithKb = value
     }, toggleshowTopChats: { value in
-        NicegramSettings().showTopChats = value
+        VarNicegramSettings.showTopChats = value
         updateTabs()
     }, toggleshowGmodIcon: { value in
-        NicegramSettings().showGmodIcon = value
+        VarNicegramSettings.showGmodIcon = value
         let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: l("Common.RestartRequired", presentationData.strings.baseLanguageCode), actions: [/* TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: { preconditionFailure() }),*/ TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})])
 
         presentControllerImpl?(controller, nil)
@@ -815,7 +815,7 @@ public func niceFeaturesController(context: AccountContext) -> ViewController {
     let signal = combineLatest(context.sharedContext.presentationData, context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.niceSettings]), showCallsTab, statePromise.get())
         |> map { presentationData, sharedData, showCalls, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
             
-            let entries = niceFeaturesControllerEntries(niceSettings: niceSettings, showCalls: showCalls, presentationData: presentationData, simplyNiceSettings: SimplyNiceSettings(), nicegramSettings: NicegramSettings(), defaultWebBrowser: "")
+            let entries = niceFeaturesControllerEntries(niceSettings: niceSettings, showCalls: showCalls, presentationData: presentationData, simplyNiceSettings: VarSimplyNiceSettings, nicegramSettings: VarNicegramSettings, defaultWebBrowser: "")
 
         var index = 0
         var scrollToItem: ListViewScrollToItem?

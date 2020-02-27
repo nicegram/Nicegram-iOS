@@ -19,7 +19,7 @@ func setFiltersDefault() {
 
 
 public func getCustomFilter(_ id: Int32) -> CustomFilter? {
-    let filters = SimplyNiceFilters().filters
+    let filters = VarSimplyNiceFilters.filters
     for filter in filters {
         if filter.id == id {
             return filter
@@ -32,7 +32,7 @@ public func getCustomFilter(_ id: Int32) -> CustomFilter? {
 public func generateFilterId() -> Int32 {
     
     var filterIds: [Int32] = []
-    let filter = SimplyNiceFilters().filters
+    let filter = VarSimplyNiceFilters.filters
     for filter in filter {
         filterIds.append(filter.id)
     }
@@ -50,8 +50,8 @@ public func generateFilterId() -> Int32 {
 public func createOrGetCustomFilter(id: Int32? = nil, _ name: String = "Custom", _ includeItems: [String] = [], _ unIncludeItems: [String] = []) -> CustomFilter {
     if let id = id {
         if let customFilter = getCustomFilter(id) {
-            if let exisitngIndex = SimplyNiceFilters().filters.firstIndex(of: customFilter) {
-                SimplyNiceFilters().filters[exisitngIndex] = customFilter
+            if let exisitngIndex = VarSimplyNiceFilters.filters.firstIndex(of: customFilter) {
+                VarSimplyNiceFilters.filters[exisitngIndex] = customFilter
                 return customFilter
             }
         }
@@ -59,7 +59,7 @@ public func createOrGetCustomFilter(id: Int32? = nil, _ name: String = "Custom",
     
     let id = generateFilterId()
     let filter = CustomFilter(id: id, name: name, includeItems: includeItems, unIncludeItems: unIncludeItems)
-    SimplyNiceFilters().filters.append(filter)
+    VarSimplyNiceFilters.filters.append(filter)
     return filter
 }
 
@@ -173,6 +173,7 @@ public class CustomFilter: NSObject, NSCoding {
     }
 }
 
+public var VarSimplyNiceFilters = SimplyNiceFilters()
 
 public class SimplyNiceFilters {
     let UD = UserDefaults(suiteName: "SimplyNiceFilters")
@@ -260,20 +261,20 @@ public class SimplyNiceFilters {
 
 
 public func enableFilter(_ filter: Int32) -> Void {
-    guard let index = SimplyNiceFilters().disabledFilters.firstIndex(of: filter) else { return }
-    SimplyNiceFilters().disabledFilters.remove(at: index)
+    guard let index = VarSimplyNiceFilters.disabledFilters.firstIndex(of: filter) else { return }
+    VarSimplyNiceFilters.disabledFilters.remove(at: index)
 }
 
 
 public func disableFilter(_ filter: Int32) -> Void {
-    guard let _ = SimplyNiceFilters().disabledFilters.firstIndex(of: filter) else {
-        SimplyNiceFilters().disabledFilters.append(filter)
+    guard let _ = VarSimplyNiceFilters.disabledFilters.firstIndex(of: filter) else {
+        VarSimplyNiceFilters.disabledFilters.append(filter)
         return
     }
 }
 
 public func isEnabledFilter(_ filter: Int32) -> Bool {
-    guard let _ = SimplyNiceFilters().disabledFilters.firstIndex(of: filter) else {
+    guard let _ = VarSimplyNiceFilters.disabledFilters.firstIndex(of: filter) else {
         return true
     }
     return false

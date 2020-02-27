@@ -68,7 +68,7 @@ public func reorderPinnedItemIds(transaction: Transaction, groupId: PeerGroupId,
     if transaction.getPinnedItemIds(groupId: groupId) != itemIds {
         transaction.setPinnedItemIds(groupId: groupId, itemIds: itemIds)
         if isPremium() {
-            if !PremiumSettings().syncPins {
+            if !VarPremiumSettings.syncPins {
                 return true
             }
         }

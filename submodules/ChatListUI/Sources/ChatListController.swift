@@ -144,7 +144,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                 let _ = updateNiceSettingsInteractively(accountManager: accountManager, { settings in
                     var settings = settings
                     let index = self?.filterIndex ?? 0
-                    SimplyNiceSettings().chatFilters[Int(index)] = f
+                    VarSimplyNiceSettings.chatFilters[Int(index)] = f
                     settings.chatFilters[Int(index)] = f
                     settings.currentFilter = index
                     return settings
@@ -463,7 +463,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
             if let strongSelf = self {
                 if strongSelf.ngfilter != nil {
                     print("Change filter badge")
-                    if !SimplyNiceSettings().filtersBadge {
+                    if !VarSimplyNiceSettings.filtersBadge {
                         strongSelf.tabBarItem.badgeValue = ""
                     } else {
                         let inAppSettings: InAppNotificationSettings
@@ -680,7 +680,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
         self.titleView.toggleGmod = { [weak self] in
             if let strongSelf = self {
                 let locale = strongSelf.presentationData.strings.baseLanguageCode
-                    if NicegramSettings().gmod {
+                    if VarNicegramSettings.gmod {
                         print("DISABLE GMOD")
                         // disable
                         let savedLastSeenSettings = getLastSeenSettings(accountId: strongSelf.context.account.peerId.toInt64(), postbox: strongSelf.context.account.postbox)
@@ -698,7 +698,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                                     settings.skipReadHistory = false
                                     return settings
                                 }).start()
-                                NicegramSettings().gmod = false
+                                VarNicegramSettings.gmod = false
                                 NotificationCenter.default.post(name: strongSelf.gmodNotificationName, object: nil)
                                 //strongSelf.titleView.isGmod = !strongSelf.titleView.isGmod
                             }),
@@ -724,7 +724,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                                  }).start()
                                  let updateSettingsSignal = updateSelectiveAccountPrivacySettings(account: strongSelf.context.account, type: .presence, settings: SelectivePrivacySettings.disableEveryone(enableFor: [:]))
                                  updateSettingsSignal.start()
-                                 NicegramSettings().gmod = true
+                                 VarNicegramSettings.gmod = true
                                  NotificationCenter.default.post(name: strongSelf.gmodNotificationName, object: nil)
                                  //strongSelf.titleView.isGmod = !strongSelf.titleView.isGmod
                                 })
@@ -1395,14 +1395,14 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
     }
     
 //    @objc private func gmodPressed() {
-//        if NicegramSettings().gmod {
+//        if VarNicegramSettings.gmod {
 //            // disable
 //            let _ = updateExperimentalUISettingsInteractively(accountManager: self.context.sharedContext.accountManager, { settings in
 //                var settings = settings
 //                settings.skipReadHistory = false
 //                return settings
 //            }).start()
-//            NicegramSettings().gmod = false
+//            VarNicegramSettings.gmod = false
 //        } else {
 //            // enable
 //            let _ = updateExperimentalUISettingsInteractively(accountManager: self.context.sharedContext.accountManager, { settings in
@@ -1410,7 +1410,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
 //                settings.skipReadHistory = true
 //                return settings
 //            }).start()
-//            NicegramSettings().gmod = true
+//            VarNicegramSettings.gmod = true
 //        }
 //    }
     
@@ -2312,7 +2312,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
     }
     
 //    public func presentTabBarPreviewingController(sourceNodes: [ASDisplayNode]) {
-//        if !NicegramSettings().useTgFilters {
+//        if !VarNicegramSettings.useTgFilters {
 //            if (self.ngfilter == nil || self.isMissed || self.filterIndex == nil) {
 //                if self.chatListDisplayNode.searchDisplayController != nil {
 //                    self.deactivateSearch(animated: true)
@@ -2331,7 +2331,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
 //                    let _ = updateNiceSettingsInteractively(accountManager: accountManager, { settings in
 //                        var settings = settings
 //                        let index = self?.filterIndex ?? 0
-//                        SimplyNiceSettings().chatFilters[Int(index)] = f
+//                        VarSimplyNiceSettings.chatFilters[Int(index)] = f
 //                        settings.chatFilters[Int(index)] = f
 //                        settings.currentFilter = index
 //                        return settings

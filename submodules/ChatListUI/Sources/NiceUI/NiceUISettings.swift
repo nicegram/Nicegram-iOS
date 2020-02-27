@@ -152,15 +152,18 @@ public func setNiceSettings(accountManager: AccountManager, newNiceSettings: Nic
 // I'm fucking tired of these "Disposables", "transactions" and other shit, really. I'm not an iOS dev at all. Just want to make things nice...
 public func setDefaults() {
     let UD = UserDefaults(suiteName: "SimplyNiceSettings")
-    UD?.register(defaults: ["maxFilters": 2])
-    UD?.register(defaults: ["chatFilters": [1 << 6, 1 << 5]])
-    UD?.register(defaults: ["showTabNames": true])
-    UD?.register(defaults: ["hideNumber": false])
-    UD?.register(defaults: ["useBrowser": false])
-    UD?.register(defaults: ["browser": "safari"])
+    UD?.register(defaults:
+    [
+        "maxFilters": 2,
+        "chatFilters": [1 << 6, 1 << 5],
+        "showTabNames": true,
+        "hideNumber": false
+    ])
 }
 
 let supportedFilters: [Int32] = [1, 2, 8, 16, 32, 64, 256, 1 << 9] //, 1 << 10] // pow 2
+
+public var VarSimplyNiceSettings = SimplyNiceSettings()
 
 public class SimplyNiceSettings {
     let UD = UserDefaults(suiteName: "SimplyNiceSettings")
@@ -395,13 +398,15 @@ public func getSettingsFilePath() -> URL {
     return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
 }
 
+public var VarNicegramSettings = NicegramSettings()
+
 public class NicegramSettings {
     let UD = UserDefaults(suiteName: "NicegramSettings")
     let shared = UserDefaults(suiteName: "group.\(Bundle.main.bundleIdentifier!)")
-    let exSimplyNiceSettings = SimplyNiceSettings()
-    let exSimplyNiceFolders = SimplyNiceFolders()
-    let exSimplyNiceFilters = SimplyNiceFilters()
-    let exPremiumSettings = PremiumSettings()
+    let exSimplyNiceSettings = VarSimplyNiceSettings
+    let exSimplyNiceFolders = VarSimplyNiceFolders
+    let exSimplyNiceFilters = VarSimplyNiceFilters
+    let exPremiumSettings = VarPremiumSettings
     
     public init() {
         UD?.register(defaults: ["useBackCam": false])
@@ -948,24 +953,24 @@ public func saveLastSeenSettings(accountId: Int64, currentSettings: SelectivePri
     var enableForResult: [Int64] = []
     
     switch (currentSettings) {
-        case .enableEveryone(let disableFor):
-            settingsType = "enableEveryone"
-            for entry in disableFor {
-                disableForResult.append(entry.key.toInt64())
-            }
-        case .enableContacts(let enableFor, let disableFor):
-            settingsType = "enableContacts"
-            for entry in disableFor {
-                disableForResult.append(entry.key.toInt64())
-            }
-            for entry in enableFor {
-                enableForResult.append(entry.key.toInt64())
-            }
-        case .disableEveryone(let enableFor):
-            settingsType = "disableEveryone"
-            for entry in enableFor {
-                enableForResult.append(entry.key.toInt64())
-            }
+    case .enableEveryone(let disableFor):
+        settingsType = "enableEveryone"
+        for entry in disableFor {
+            disableForResult.append(entry.key.toInt64())
+        }
+    case .enableContacts(let enableFor, let disableFor):
+        settingsType = "enableContacts"
+        for entry in disableFor {
+            disableForResult.append(entry.key.toInt64())
+        }
+        for entry in enableFor {
+            enableForResult.append(entry.key.toInt64())
+        }
+    case .disableEveryone(let enableFor):
+        settingsType = "disableEveryone"
+        for entry in enableFor {
+            enableForResult.append(entry.key.toInt64())
+        }
     }
     
     accountSettings.gmodEnableFor = enableForResult
@@ -975,16 +980,16 @@ public func saveLastSeenSettings(accountId: Int64, currentSettings: SelectivePri
 
 public func getLastSeenSettings(accountId: Int64, postbox: Postbox) -> SelectivePrivacySettings {
     let accountSettings = AccountSpecificNgSettings(accountId)
-
+    
     switch (accountSettings.gmodLastPrivacy) {
-        case "enableEveryone":
-            return .enableEveryone(disableFor: idsToPeersMap(postbox: postbox, accountSettings.gmodDisableFor))
-        case "enableContacts":
-            return .enableContacts(enableFor: idsToPeersMap(postbox: postbox, accountSettings.gmodEnableFor), disableFor: idsToPeersMap(postbox: postbox, accountSettings.gmodDisableFor))
-        case "disableEveryone":
-            return .disableEveryone(enableFor: idsToPeersMap(postbox: postbox, accountSettings.gmodEnableFor))
-        default:
-            return .enableEveryone(disableFor: [:])
+    case "enableEveryone":
+        return .enableEveryone(disableFor: idsToPeersMap(postbox: postbox, accountSettings.gmodDisableFor))
+    case "enableContacts":
+        return .enableContacts(enableFor: idsToPeersMap(postbox: postbox, accountSettings.gmodEnableFor), disableFor: idsToPeersMap(postbox: postbox, accountSettings.gmodDisableFor))
+    case "disableEveryone":
+        return .disableEveryone(enableFor: idsToPeersMap(postbox: postbox, accountSettings.gmodEnableFor))
+    default:
+        return .enableEveryone(disableFor: [:])
     }
 }
 
@@ -1001,12 +1006,12 @@ func idsToPeersMap(postbox: Postbox, _ ids: [Int64]) -> [PeerId: SelectivePrivac
                 }
             }
             return converted
-        }
-        /*|> deliverOnMainQueue*/).start(next: { peers in
-            print("SET PEERS")
-            result = peers
-            semaphore.signal()
-        })
+            }
+            /*|> deliverOnMainQueue*/).start(next: { peers in
+                print("SET PEERS")
+                result = peers
+                semaphore.signal()
+            })
         semaphore.wait()
         print("RETUNR PEERS")
         return result
@@ -1029,27 +1034,27 @@ private func countForSelectivePeers(_ peers: [PeerId: SelectivePrivacyPeer]) -> 
 
 func stringForSelectiveSettings(strings: PresentationStrings, settings: SelectivePrivacySettings) -> String {
     switch settings {
-        case let .disableEveryone(enableFor):
-            if enableFor.isEmpty {
-                return strings.PrivacySettings_LastSeenNobody
-            } else {
-                return strings.PrivacySettings_LastSeenNobodyPlus("\(countForSelectivePeers(enableFor))").0
-            }
-        case let .enableEveryone(disableFor):
-            if disableFor.isEmpty {
-                return strings.PrivacySettings_LastSeenEverybody
-            } else {
-                return strings.PrivacySettings_LastSeenEverybodyMinus("\(countForSelectivePeers(disableFor))").0
-            }
-        case let .enableContacts(enableFor, disableFor):
-            if !enableFor.isEmpty && !disableFor.isEmpty {
-                return strings.PrivacySettings_LastSeenContactsMinusPlus("\(countForSelectivePeers(enableFor))", "\(countForSelectivePeers(disableFor))").0
-            } else if !enableFor.isEmpty {
-                return strings.PrivacySettings_LastSeenContactsPlus("\(countForSelectivePeers(enableFor))").0
-            } else if !disableFor.isEmpty {
-                return strings.PrivacySettings_LastSeenContactsMinus("\(countForSelectivePeers(disableFor))").0
-            } else {
-                return strings.PrivacySettings_LastSeenContacts
-            }
+    case let .disableEveryone(enableFor):
+        if enableFor.isEmpty {
+            return strings.PrivacySettings_LastSeenNobody
+        } else {
+            return strings.PrivacySettings_LastSeenNobodyPlus("\(countForSelectivePeers(enableFor))").0
+        }
+    case let .enableEveryone(disableFor):
+        if disableFor.isEmpty {
+            return strings.PrivacySettings_LastSeenEverybody
+        } else {
+            return strings.PrivacySettings_LastSeenEverybodyMinus("\(countForSelectivePeers(disableFor))").0
+        }
+    case let .enableContacts(enableFor, disableFor):
+        if !enableFor.isEmpty && !disableFor.isEmpty {
+            return strings.PrivacySettings_LastSeenContactsMinusPlus("\(countForSelectivePeers(enableFor))", "\(countForSelectivePeers(disableFor))").0
+        } else if !enableFor.isEmpty {
+            return strings.PrivacySettings_LastSeenContactsPlus("\(countForSelectivePeers(enableFor))").0
+        } else if !disableFor.isEmpty {
+            return strings.PrivacySettings_LastSeenContactsMinus("\(countForSelectivePeers(disableFor))").0
+        } else {
+            return strings.PrivacySettings_LastSeenContacts
+        }
     }
 }

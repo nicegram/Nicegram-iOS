@@ -164,7 +164,7 @@ public func manageFilters(context: AccountContext) -> ViewController {
     let arguments = ManageFiltersArguments(toggleSetting: { value, setting in
         switch (setting) {
         case "test":
-            // PremiumSettings().syncPins = value
+            // VarPremiumSettings.syncPins = value
             break
         default:
             break
@@ -181,7 +181,7 @@ public func manageFilters(context: AccountContext) -> ViewController {
             print("Disabling filter")
             disableFilter(filter)
         }
-        print(SimplyNiceFilters().disabledFilters)
+        print(VarSimplyNiceFilters.disabledFilters)
     }, testAction: {
         print("TAPPED")
 //        Queue.mainQueue().async {
