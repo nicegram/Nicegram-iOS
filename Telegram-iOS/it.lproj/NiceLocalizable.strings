@@ -116,14 +116,14 @@
 "NiceFeatures.RestoreSettings.Done" = "✔️ Cartelle e impostazioni ripristinate";
 "NiceFeatures.RestoreSettings.Error" = "Errore ripristino impostazioni. Il file potrebbe essere corrotto";
 
-/*Ghost Mode*/
-"Gmod.Restricted" = "Non puoi inviare messaggi in ghost mode.";
-"Gmod.Unavailable" = "Ghost mode non disponibile";
+/*Preview Mode*/
+"Gmod.Restricted" = "Non puoi inviare messaggi in Preview Mode.";
+"Gmod.Unavailable" = "Preview Mode non disponibile";
 "Gmod.Disable.Notice" = "La visibilità del tuo ultimo accesso verrà impostato a «%1». Le spunte di lettura verranno rivelate.";
-"Gmod" = "Ghost mode";
-"Gmod.Enable" = "Abilitare la ghost mode?";
-"Gmod.Disable" = "Disabilitare la ghost mode?";
+"Gmod" = "Preview Mode";
+"Gmod.Enable" = "Abilitare la Preview Mode?";
+"Gmod.Disable" = "Disabilitare la Preview Mode?";
 "Gmod.Notice" = "Il tuo stato online verrà nascosto a tutti dalle impostazioni sulla privacy di Telegram.\nEntrerai nelle chat in modalità anteprima e i segni di lettura non verranno inviati.\nLa modalità anteprima funziona come un tap lungo su una chat su Telegram ufficiale.\nIl tuo stato online può essere rivelato se invii un messaggio qualsiasi.\nQuesta è una scorciatoia e non viola i TOS di Telegram.";
 
 "SendWithKb" = "Invia con il pulsante «Invio»";
-"NiceFeatures.ShowGmodIcon" = "Mostra icona ghost mode";
+"NiceFeatures.ShowGmodIcon" = "Mostra icona Preview Mode";

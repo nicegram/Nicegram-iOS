@@ -116,7 +116,7 @@
 "NiceFeatures.RestoreSettings.Done" = "Klasör & Ayarlar başarılı bir şekilde geri yüklendi";
 "NiceFeatures.RestoreSettings.Error" = "Ayarlar geri yüklenirken hata. Dosya bozulmuş olabilir";
 
-/*Ghost Mode*/
+/*Preview Mode*/
 "Gmod.Restricted" = "Hayalet Mod’da mesaj gönderemezsiniz.";
 "Gmod.Unavailable" = "Hayalet Mod Kullanılamaz";
 "Gmod.Disable.Notice" = "Son görülme görünürlüğünüz «%1» olarak ayarlanacak. Okundu işaretleri görünecek.";

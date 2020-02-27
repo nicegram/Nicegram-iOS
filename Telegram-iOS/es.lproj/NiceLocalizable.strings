@@ -116,7 +116,7 @@
 "NiceFeatures.RestoreSettings.Done" = "Carpetas y ajustes restaurados con éxito";
 "NiceFeatures.RestoreSettings.Error" = "Error al restaurar los ajustes. El archivo podría estar corrupto";
 
-/*Ghost Mode*/
+/*Preview Mode*/
 "Gmod.Restricted" = "No se puede enviar mensajes en modo fantasma.";
 "Gmod.Unavailable" = "Modo fantasma no está disponible";
 "Gmod.Disable.Notice" = "Tu última visibilidad vista se establecerá en «%1». Las notas de lectura serán reveladas.";

@@ -115,7 +115,7 @@
 "NiceFeatures.RestoreSettings.Done" = "已成功還原「文件夾與設定」";
 "NiceFeatures.RestoreSettings.Error" = "恢復設定錯誤，備份檔可能已損壞";
 
-/*Ghost Mode*/
+/*Preview Mode*/
 "Gmod.Restricted" = "您無法在隱身模式下傳送訊息";
 "Gmod.Unavailable" = "隱身模式無法使用";
 "Gmod.Disable.Notice" = "您的「上次上線」設定將變更為 «%1»，已讀標記將會顯示。";

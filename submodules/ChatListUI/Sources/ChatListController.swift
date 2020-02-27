@@ -707,7 +707,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                     } else {
                         // enable
                         print("ENABLE GMOD")
-                        if GNGSettings().gmod {
+                        if VarGNGSettings.gmod2 {
                         let privacySignal: Signal<AccountPrivacySettings, NoError> = requestAccountPrivacySettings(account: context.account)
                         let _ = (privacySignal |> deliverOnMainQueue).start(next: { info in
                             var currentSettings = info.presence
@@ -717,11 +717,11 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                                 
                                 saveLastSeenSettings(accountId: strongSelf.context.account.peerId.toInt64(), currentSettings: currentSettings)
                                 
-                                let _ = updateExperimentalUISettingsInteractively(accountManager: strongSelf.context.sharedContext.accountManager, { settings in
-                                     var settings = settings
-                                     settings.skipReadHistory = true
-                                     return settings
-                                 }).start()
+//                                let _ = updateExperimentalUISettingsInteractively(accountManager: strongSelf.context.sharedContext.accountManager, { settings in
+//                                     var settings = settings
+//                                     settings.skipReadHistory = true
+//                                     return settings
+//                                 }).start()
                                  let updateSettingsSignal = updateSelectiveAccountPrivacySettings(account: strongSelf.context.account, type: .presence, settings: SelectivePrivacySettings.disableEveryone(enableFor: [:]))
                                  updateSettingsSignal.start()
                                  VarNicegramSettings.gmod = true
@@ -904,9 +904,17 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                         scrollToEndIfExists = true
                     }
                     
-                    strongSelf.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: strongSelf.context, chatLocation: .peer(peerId), scrollToEndIfExists: scrollToEndIfExists, options: strongSelf.groupId == PeerGroupId.root ? [.removeOnMasterDetails] : [], parentGroupId: strongSelf.groupId, completion: { [weak self] in
+                    if VarNicegramSettings.gmod {
+                        let chatController = strongSelf.context.sharedContext.makeChatController(context: strongSelf.context, chatLocation: .peer(peerId), subject: nil, botStart: nil, mode: .standard(previewing: true))
+                        chatController.canReadHistory.set(false)
+                        let contextController = ContextController(account: strongSelf.context.account, presentationData: strongSelf.presentationData, source: .controller(ContextControllerContentSourceImpl(controller: chatController, sourceNode: strongSelf.chatListDisplayNode.chatListNode, navigationController: navigationController)), items: .single([]), reactionItems: [], gesture:nil)
+                        strongSelf.presentInGlobalOverlay(contextController)
+                        self?.chatListDisplayNode.chatListNode.clearHighlightAnimated(true)
+                    } else {
+                        strongSelf.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: strongSelf.context, chatLocation: .peer(peerId), scrollToEndIfExists: scrollToEndIfExists, options: strongSelf.groupId == PeerGroupId.root ? [.removeOnMasterDetails] : [], parentGroupId: strongSelf.groupId, completion: { [weak self] in
                         self?.chatListDisplayNode.chatListNode.clearHighlightAnimated(true)
                     }))
+                    }
                 }
             }
         }

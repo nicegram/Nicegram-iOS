@@ -116,14 +116,14 @@
 "NiceFeatures.RestoreSettings.Done" = "Folders & Settings succesfully restored";
 "NiceFeatures.RestoreSettings.Error" = "Error restoring settings. File may be corrupted";
 
-/*Ghost Mode*/
-"Gmod.Restricted" = "You can't send messages in Ghost Mode.";
-"Gmod.Unavailable" = "Ghost Mode Unavailable";
-"Gmod.Disable.Notice" = "Your last seen visibility will be set to «%1». Read marks will be revealed.";
-"Gmod" = "Ghost Mode";
-"Gmod.Enable" = "Enable Ghost Mode?";
-"Gmod.Disable" = "Disable Ghost Mode?";
-"Gmod.Notice" = "Your online status will be hidden from everyone by Telegram privacy settings.\nYou will enter chats in preview mode and read marks will not be sent.\nPreview mode works same as when you long-tap a chat in the official Telegram app.\nYour online status may be revealed if you send ANY message.\nThis is just a shortcut that does not violate Telegram TOS.";
+/*Preview Mode*/
+"Gmod.Restricted" = "You can't send messages in Preview Mode.";
+"Gmod.Unavailable" = "Preview Mode Unavailable";
+"Gmod.Disable.Notice" = "Your last seen visibility will be set to «%1»";
+"Gmod" = "Preview Mode";
+"Gmod.Enable" = "Enable Preview Mode?";
+"Gmod.Disable" = "Disable Preview Mode?";
+"Gmod.Notice" = "Your online status will be hidden from everyone by Telegram privacy settings.\nYou will enter chats in preview mode, same as when you long-tap a chat in the official Telegram app.\nYour online status may be revealed if you send ANY message.\nThis is just a shortcut that does not violate Telegram TOS.";
 
 "SendWithKb" = "Send with «Enter» button";
-"NiceFeatures.ShowGmodIcon" = "Show Ghost Mode icon";
+"NiceFeatures.ShowGmodIcon" = "Show Preview Mode icon";
