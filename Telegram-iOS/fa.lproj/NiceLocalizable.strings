@@ -97,8 +97,3 @@
 "NGLab.RegDate.FetchError" = "متاسفانه دریافت تاریخ ثبت نام مقدور نیست.";
 "NiceFeatures.BackupSettings" = "تنظیمات پشتیبان گیری و پوشه ها";
 "NiceFeatures.BackupSettings.Done" = "تهیه نسخه پشتیبان از پیام های ذخیره شده کامل شد";
-
-/*Ghost Mode*/
-"Gmod.Restricted" = "ارسال پیام در حالت مهمان امکان‌پذیر نیست.";
-"Gmod" = "شیپور شبح";
-"Gmod.Enable" = "فعال کردن حالت روت?";
