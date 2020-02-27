@@ -116,14 +116,4 @@
 "NiceFeatures.RestoreSettings.Done" = "Foldery i ustawienia zostały pomyślnie przywrócone";
 "NiceFeatures.RestoreSettings.Error" = "Błąd podczas przywracania ustawień. Plik może być uszkodzony";
 
-/*Ghost Mode*/
-"Gmod.Restricted" = "Nie możesz wysyłać wiadomości w trybie Ducha.";
-"Gmod.Unavailable" = "Tryb Ducha niedostępny";
-"Gmod.Disable.Notice" = "Twoja ostatnia widoczność zostanie ustawiona na «%1». Odczytywane znaki zostaną pokazane.";
-"Gmod" = "Tryb Ducha";
-"Gmod.Enable" = "Włączyć tryb Ducha?";
-"Gmod.Disable" = "Wyłączyć tryb Ducha?";
-"Gmod.Notice" = "Twój status online zostanie ukryty przez wszystkich w ustawieniach prywatności Telegram.\nBędziesz wchodzić na czaty w trybie podglądu, a odczyt ocen nie zostanie wysłany.\nTryb podglądu działa tak samo, jak po długim stuknięciu czatu w oficjalnej aplikacji Telegram.\nTwój status online może zostać ujawniony jeśli wyślesz JAKO wiadomość.\nJest to tylko skrót, który nie narusza Telegram TOS.";
-
 "SendWithKb" = "Wyślij za pomocą przycisku «Enter»";
-"NiceFeatures.ShowGmodIcon" = "Pokaż ikonę trybu Ducha";
