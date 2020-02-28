@@ -1521,11 +1521,11 @@ final class SharedApplicationContext {
         |> take(1)
         |> deliverOnMainQueue).start(next: { sharedApplicationContext in
             var extendNow = false
-            if #available(iOS 9.0, *) {
-                if !ProcessInfo.processInfo.isLowPowerModeEnabled {
-                    extendNow = true
-                }
-            }
+//            if #available(iOS 9.0, *) {
+//                if !ProcessInfo.processInfo.isLowPowerModeEnabled {
+//                    extendNow = true
+//                }
+//            }
             #if DEBUG
             extendNow = false
             #endif
