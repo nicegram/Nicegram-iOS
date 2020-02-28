@@ -116,4 +116,14 @@
 "NiceFeatures.RestoreSettings.Done" = "Klasör & Ayarlar başarılı bir şekilde geri yüklendi";
 "NiceFeatures.RestoreSettings.Error" = "Ayarlar geri yüklenirken hata. Dosya bozulmuş olabilir";
 
+/*Preview Mode*/
+"Gmod.Restricted" = "Önizleme Modu’nda mesaj gönderemezsiniz.";
+"Gmod.Unavailable" = "Önizleme Modu Kullanılamaz";
+"Gmod.Disable.Notice" = "Son görülme görünürlüğünüz, «%1» olarak ayarlanacak";
+"Gmod" = "Önizleme Modu";
+"Gmod.Enable" = "Önizleme Modu etkinleştirilsin mi?";
+"Gmod.Disable" = "Önizleme Modu devre dışı bırakılsın mı?";
+"Gmod.Notice" = "Çevrimiçi durumunuz, Telegram gizlilik ayarlarına göre herkesten gizlenecek.\nSohbetlere önizleme modunda gireceksiniz, resmi Telegram uygulamasında bir sohbete uzun dokunmak ile aynı.\nHERHANGİ BİR mesaj gönderirseniz, çevrimiçi durumunuz görünebilir.\nBu sadece bir kısayoldur, Telegram Kullanım Koşulları’nı ihlal etmez.";
+
 "SendWithKb" = "«Enter» butonu ile gönder";
+"NiceFeatures.ShowGmodIcon" = "Önizleme Modu simgesini göster";
