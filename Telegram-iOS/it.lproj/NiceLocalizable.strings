@@ -116,4 +116,12 @@
 "NiceFeatures.RestoreSettings.Done" = "✔️ Cartelle e impostazioni ripristinate";
 "NiceFeatures.RestoreSettings.Error" = "Errore ripristino impostazioni. Il file potrebbe essere corrotto";
 
+/*Preview Mode*/
+"Gmod.Restricted" = "Non puoi inviare messaggi nella modalità anteprima.";
+"Gmod.Unavailable" = "Modalità anteprima non disponibile";
+"Gmod.Disable.Notice" = "La tua visibilità sarà impostata su «%1»";
+"Gmod" = "Modalità anteprima";
+"Gmod.Enable" = "Abilitare modalità anteprima?";
+"Gmod.Disable" = "Disabilitare modalità anteprima?";
+
 "SendWithKb" = "Invia con il pulsante «Invio»";
