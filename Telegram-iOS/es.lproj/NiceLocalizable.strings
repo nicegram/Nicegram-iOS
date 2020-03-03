@@ -116,4 +116,11 @@
 "NiceFeatures.RestoreSettings.Done" = "Carpetas y ajustes restaurados con éxito";
 "NiceFeatures.RestoreSettings.Error" = "Error al restaurar los ajustes. El archivo podría estar corrupto";
 
+/*Preview Mode*/
+"Gmod.Restricted" = "No puedes enviar mensajes en modo vista previa.";
+"Gmod.Unavailable" = "Modo vista previa no disponible";
+"Gmod" = "Modo vista previa";
+"Gmod.Enable" = "¿Activar modo vista previa?";
+"Gmod.Disable" = "¿Desactivar modo vista previa?";
+
 "SendWithKb" = "Envía con el botón «Intro»";
