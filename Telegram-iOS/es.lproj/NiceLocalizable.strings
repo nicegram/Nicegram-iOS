@@ -119,8 +119,11 @@
 /*Preview Mode*/
 "Gmod.Restricted" = "No puedes enviar mensajes en modo vista previa.";
 "Gmod.Unavailable" = "Modo vista previa no disponible";
+"Gmod.Disable.Notice" = "La visibilidad de tu última vez cambiará a “%1”";
 "Gmod" = "Modo vista previa";
 "Gmod.Enable" = "¿Activar modo vista previa?";
 "Gmod.Disable" = "¿Desactivar modo vista previa?";
+"Gmod.Notice" = "Tu estado en línea estará oculto para todos por los ajustes de privacidad de Telegram.\nEntrarás a los chats en modo vista previa, de la misma forma que cuando mantienes pulsado un chat en la app oficial de Telegram.\nTu estado en línea podría ser revelado si envías cualquier mensaje.\nEsto es solo un atajo que no viola los términos de servicio de Telegram.";
 
 "SendWithKb" = "Envía con el botón «Intro»";
+"NiceFeatures.ShowGmodIcon" = "Mostrar icono de modo vista previa";
