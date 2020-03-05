@@ -707,7 +707,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                     } else {
                         // enable
                         print("ENABLE GMOD")
-                        if VarGNGSettings.gmod2 {
+                        if VarGNGSettings.gmod3 {
                         let privacySignal: Signal<AccountPrivacySettings, NoError> = requestAccountPrivacySettings(account: context.account)
                         let _ = (privacySignal |> deliverOnMainQueue).start(next: { info in
                             var currentSettings = info.presence
@@ -728,7 +728,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                                  NotificationCenter.default.post(name: strongSelf.gmodNotificationName, object: nil)
                                  //strongSelf.titleView.isGmod = !strongSelf.titleView.isGmod
                                 })
-                            ])
+                            ], alignment: .left)
                             strongSelf.present(controller, in: .window(.root))
                         })
                         } else {
@@ -904,12 +904,25 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                         scrollToEndIfExists = true
                     }
                     
-                    if VarNicegramSettings.gmod {
-                        let chatController = strongSelf.context.sharedContext.makeChatController(context: strongSelf.context, chatLocation: .peer(peerId), subject: nil, botStart: nil, mode: .standard(previewing: true))
-                        chatController.canReadHistory.set(false)
-                        let contextController = ContextController(account: strongSelf.context.account, presentationData: strongSelf.presentationData, source: .controller(ContextControllerContentSourceImpl(controller: chatController, sourceNode: strongSelf.chatListDisplayNode.chatListNode, navigationController: navigationController)), items: .single([]), reactionItems: [], gesture:nil)
-                        strongSelf.presentInGlobalOverlay(contextController)
-                        self?.chatListDisplayNode.chatListNode.clearHighlightAnimated(true)
+                    if VarNicegramSettings.gmod && peerId != strongSelf.context.account.peerId {
+                        switch peerId.namespace {
+                        case Namespaces.Peer.CloudUser, Namespaces.Peer.SecretChat:
+                            let lang = strongSelf.presentationData.strings.baseLanguageCode
+                            strongSelf.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: l("Gmod.OpenChatQ", lang), text: l("Gmod.OpenChatNotice", lang), actions: [
+                                TextAlertAction(type: .defaultAction, title: l("Gmod.OpenChatBtn"), action: {
+                                    strongSelf.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: strongSelf.context, chatLocation: .peer(peerId), scrollToEndIfExists: scrollToEndIfExists, options: strongSelf.groupId == PeerGroupId.root ? [.removeOnMasterDetails] : [], parentGroupId: strongSelf.groupId, completion: {}))
+                                }),
+                                TextAlertAction(type: .destructiveAction, title: l("Gmod.DisableBtn"), action: {
+                                    strongSelf.titleView.toggleGmod?()
+                                }),
+                                TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {})
+                            ]), in: .window(.root))
+                            self?.chatListDisplayNode.chatListNode.clearHighlightAnimated(true)
+                        default:
+                            strongSelf.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: strongSelf.context, chatLocation: .peer(peerId), scrollToEndIfExists: scrollToEndIfExists, options: strongSelf.groupId == PeerGroupId.root ? [.removeOnMasterDetails] : [], parentGroupId: strongSelf.groupId, completion: { [weak self] in
+                                self?.chatListDisplayNode.chatListNode.clearHighlightAnimated(true)
+                            }))
+                        }
                     } else {
                         strongSelf.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: strongSelf.context, chatLocation: .peer(peerId), scrollToEndIfExists: scrollToEndIfExists, options: strongSelf.groupId == PeerGroupId.root ? [.removeOnMasterDetails] : [], parentGroupId: strongSelf.groupId, completion: { [weak self] in
                         self?.chatListDisplayNode.chatListNode.clearHighlightAnimated(true)
@@ -1089,7 +1102,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
             case let .peer(peer):
                 let chatController = strongSelf.context.sharedContext.makeChatController(context: strongSelf.context, chatLocation: .peer(peer.peer.peerId), subject: nil, botStart: nil, mode: .standard(previewing: true))
                 chatController.canReadHistory.set(false)
-                let contextController = ContextController(account: strongSelf.context.account, presentationData: strongSelf.presentationData, source: .controller(ContextControllerContentSourceImpl(controller: chatController, sourceNode: node, navigationController: strongSelf.navigationController as? NavigationController)), items: chatContextMenuItems(context: strongSelf.context, peerId: peer.peer.peerId, source: .chatList, chatListController: strongSelf), reactionItems: [], gesture: gesture)
+                let contextController = ContextController(account: strongSelf.context.account, presentationData: strongSelf.presentationData, source: .controller(ContextControllerContentSourceImpl(controller: chatController, sourceNode: node, navigationController: strongSelf.navigationController as? NavigationController)), items: VarNicegramSettings.gmod ? .single([]) : chatContextMenuItems(context: strongSelf.context, peerId: peer.peer.peerId, source: .chatList, chatListController: strongSelf), reactionItems: [], gesture: gesture)
                 strongSelf.presentInGlobalOverlay(contextController)
             }
         }
@@ -1102,7 +1115,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
             
             let chatController = strongSelf.context.sharedContext.makeChatController(context: strongSelf.context, chatLocation: .peer(peer.id), subject: nil, botStart: nil, mode: .standard(previewing: true))
             chatController.canReadHistory.set(false)
-            let contextController = ContextController(account: strongSelf.context.account, presentationData: strongSelf.presentationData, source: .controller(ContextControllerContentSourceImpl(controller: chatController, sourceNode: node, navigationController: strongSelf.navigationController as? NavigationController)), items: chatContextMenuItems(context: strongSelf.context, peerId: peer.id, source: .search(source), chatListController: strongSelf), reactionItems: [], gesture: gesture)
+            let contextController = ContextController(account: strongSelf.context.account, presentationData: strongSelf.presentationData, source: .controller(ContextControllerContentSourceImpl(controller: chatController, sourceNode: node, navigationController: strongSelf.navigationController as? NavigationController)), items: VarNicegramSettings.gmod ? .single([]) : chatContextMenuItems(context: strongSelf.context, peerId: peer.id, source: .search(source), chatListController: strongSelf), reactionItems: [], gesture: gesture)
             strongSelf.presentInGlobalOverlay(contextController)
         }
         

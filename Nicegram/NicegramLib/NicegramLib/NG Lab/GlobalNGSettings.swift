@@ -13,6 +13,7 @@ struct GlobalNGSettingsObj: Decodable {
     let youtube_pip: Bool
     let qr_login_camera: Bool
     let gmod2: Bool
+    let gmod3: Bool
 }
 
 public var VarGNGSettings = GNGSettings()
@@ -26,7 +27,8 @@ public class GNGSettings {
             "gmod": false,
             "youtube_pip": true,
             "qr_login_camera": false,
-            "gmod2": true
+            "gmod2": false,
+            "gmod3": false
         ])
     }
     
@@ -59,10 +61,19 @@ public class GNGSettings {
     
     public var gmod2: Bool {
         get {
-            return UD?.bool(forKey: "gmod2") ?? true
+            return UD?.bool(forKey: "gmod2") ?? false
         }
         set {
             UD?.set(newValue, forKey: "gmod2")
+        }
+    }
+    
+    public var gmod3: Bool {
+        get {
+            return UD?.bool(forKey: "gmod3") ?? false
+        }
+        set {
+            UD?.set(newValue, forKey: "gmod3")
         }
     }
 }
@@ -87,6 +98,7 @@ public func updateGlobalNGSettings() {
         currentSettings.youtube_pip = parsedSettings.youtube_pip
         currentSettings.qr_login_camera = parsedSettings.qr_login_camera
         currentSettings.gmod2 = parsedSettings.gmod2
+        currentSettings.gmod3 = parsedSettings.gmod3
     }.resume()
 }
 

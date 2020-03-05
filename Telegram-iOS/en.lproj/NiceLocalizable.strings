@@ -123,7 +123,11 @@
 "Gmod" = "Preview Mode";
 "Gmod.Enable" = "Enable Preview Mode?";
 "Gmod.Disable" = "Disable Preview Mode?";
-"Gmod.Notice" = "Your online status will be hidden from everyone by Telegram privacy settings.\nYou will enter chats in preview mode, same as when you long-tap a chat in the official Telegram app.\nYour online status may be revealed if you send ANY message.\nThis is just a shortcut that does not violate Telegram TOS.";
+"Gmod.Notice" = "Your online status will be hidden from everyone by Telegram privacy settings.\nApp will show a warning if you're entering a private chat.\nYour online status may be revealed if you send or type ANY message.";
 
 "SendWithKb" = "Send with «Enter» button";
 "NiceFeatures.ShowGmodIcon" = "Show Preview Mode icon";
+"Gmod.OpenChatQ" = "Open chat?";
+"Gmod.OpenChatNotice" = "Chat will be marked as \"read\", but you can preview chat with a long-tap (force-touch)";
+"Gmod.OpenChatBtn" = "Yes, open the chat";
+"Gmod.DisableBtn" = "Disable warnings";
