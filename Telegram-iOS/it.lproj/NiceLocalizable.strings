@@ -123,7 +123,6 @@
 "Gmod" = "Modalità anteprima";
 "Gmod.Enable" = "Abilitare modalità anteprima?";
 "Gmod.Disable" = "Disabilitare modalità anteprima?";
-"Gmod.Notice" = "Il tuo stato online verrà nascosto a tutti dalle impostazioni sulla privacy di Telegram.\nEntrerai nelle chat in modalità anteprima, come un tap lungo su una chat su Telegram ufficiale.\nIl tuo stato online può essere rivelato se invii un messaggio qualsiasi.\nQuesta è una scorciatoia e non viola i TOS di Telegram.";
 
 "SendWithKb" = "Invia con il pulsante «Invio»";
 "NiceFeatures.ShowGmodIcon" = "Mostra icona modalità anteprima";
