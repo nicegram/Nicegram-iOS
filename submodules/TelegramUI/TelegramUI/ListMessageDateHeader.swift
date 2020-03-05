@@ -15,7 +15,7 @@ private let timezoneOffset: Int32 = {
 }()
 
 func listMessageDateHeaderId(timestamp: Int32) -> Int64 {
-    var time: time_t = time_t(timestamp + timezoneOffset)
+    var time: time_t = time_t(Int64(timestamp) + Int64(timezoneOffset))
     var timeinfo: tm = tm()
     localtime_r(&time, &timeinfo)
     
