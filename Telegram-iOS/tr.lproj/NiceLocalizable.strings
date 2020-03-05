@@ -123,7 +123,6 @@
 "Gmod" = "Önizleme Modu";
 "Gmod.Enable" = "Önizleme Modu etkinleştirilsin mi?";
 "Gmod.Disable" = "Önizleme Modu devre dışı bırakılsın mı?";
-"Gmod.Notice" = "Çevrimiçi durumunuz, Telegram gizlilik ayarlarına göre herkesten gizlenecek.\nSohbetlere önizleme modunda gireceksiniz, resmi Telegram uygulamasında bir sohbete uzun dokunmak ile aynı.\nHERHANGİ BİR mesaj gönderirseniz, çevrimiçi durumunuz görünebilir.\nBu sadece bir kısayoldur, Telegram Kullanım Koşulları’nı ihlal etmez.";
 
 "SendWithKb" = "«Enter» butonu ile gönder";
 "NiceFeatures.ShowGmodIcon" = "Önizleme Modu simgesini göster";
