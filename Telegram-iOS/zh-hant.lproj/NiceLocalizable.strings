@@ -122,7 +122,6 @@
 "Gmod" = "預覽模式";
 "Gmod.Enable" = "啟用預覽模式？";
 "Gmod.Disable" = "停用預覽模式？";
-"Gmod.Notice" = "在線狀態將透過 Telegram 隱私設定對所有人隱藏\n您將以預覽模式查看對話，如同您在官方版 Telegram APP 中長按對話一樣。\n如果您傳送任何訊息，將可能顯示您的在線狀態。\n這是不違反 Telegram TOS 的一種便捷方法";
 
 "SendWithKb" = "點擊 «Enter» 傳送";
 "NiceFeatures.ShowGmodIcon" = "顯示預覽模式圖示";
