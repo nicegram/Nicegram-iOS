@@ -123,6 +123,11 @@
 "Gmod" = "Modo vista previa";
 "Gmod.Enable" = "¿Activar modo vista previa?";
 "Gmod.Disable" = "¿Desactivar modo vista previa?";
+"Gmod.Notice" = "Tu estado en línea estará oculto para todos por la configuración de privacidad de Telegram.\nLa aplicación mostrará una advertencia si estás entrando en un chat privado.\nTu estado en línea puede ser revelado si envías o escribes CUALQUIER mensaje.";
 
 "SendWithKb" = "Envía con el botón «Intro»";
 "NiceFeatures.ShowGmodIcon" = "Mostrar icono de modo vista previa";
+"Gmod.OpenChatQ" = "¿Abrir chat?";
+"Gmod.OpenChatNotice" = "El chat se marcará como \"leído\", pero puedes obtener una vista previa del chat con un toque prolongado (toque forzado)";
+"Gmod.OpenChatBtn" = "Sí, abrir el chat";
+"Gmod.DisableBtn" = "Desactivar advertencias";
