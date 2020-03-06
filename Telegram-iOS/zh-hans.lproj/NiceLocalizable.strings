@@ -126,3 +126,6 @@
 
 "SendWithKb" = "按<回车>发送";
 "NiceFeatures.ShowGmodIcon" = "显示幽灵模式图标";
+"Gmod.OpenChatQ" = "打开对话？";
+"Gmod.OpenChatBtn" = "是的，打开此对话";
+"Gmod.DisableBtn" = "禁用告警提示";
