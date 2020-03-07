@@ -128,3 +128,6 @@
 "SendWithKb" = "Invia con il pulsante «Invio»";
 "NiceFeatures.ShowGmodIcon" = "Mostra icona modalità anteprima";
 "Gmod.OpenChatQ" = "Aprire chat?";
+"Gmod.OpenChatNotice" = "La chat verrà segnata come \"letta\", ma puoi fare l'anteprima della chat con un tocco lungo (force-touch)";
+"Gmod.OpenChatBtn" = "Sì, apri la chat";
+"Gmod.DisableBtn" = "Disabilita avvisi";
