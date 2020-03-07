@@ -123,6 +123,8 @@
 "Gmod" = "Modalità anteprima";
 "Gmod.Enable" = "Abilitare modalità anteprima?";
 "Gmod.Disable" = "Disabilitare modalità anteprima?";
+"Gmod.Notice" = "Il tuo stato online sarà nascosto da tutti tramite le impostazioni della privacy di Telegram.\nL'app mostrerà un avviso se entri in una chat privata.\nIl tuo stato online verrà rivelato se mandi o scrivi qualunque messaggio.";
 
 "SendWithKb" = "Invia con il pulsante «Invio»";
 "NiceFeatures.ShowGmodIcon" = "Mostra icona modalità anteprima";
+"Gmod.OpenChatQ" = "Aprire chat?";
