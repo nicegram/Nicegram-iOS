@@ -114,6 +114,3 @@
 "NiceFeatures.RestoreSettings.Confirm" = "Sigur doriți să restaurați folderele și setările din fișier?\n⚠️ Va anula datele actuale";
 "NiceFeatures.RestoreSettings.Done" = "Dosare & Setarile restaurat cu succes";
 "NiceFeatures.RestoreSettings.Error" = "Eroare restabilire setări. Fișierle pot fi corupte";
-"Gmod" = "Corn al Fantomei";
-"Gmod.Enable" = "Activaţi modul Root?";
-"Gmod.Disable" = "Activaţi modul Root?";

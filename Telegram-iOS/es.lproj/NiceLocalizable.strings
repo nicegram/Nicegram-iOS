@@ -117,13 +117,17 @@
 "NiceFeatures.RestoreSettings.Error" = "Error al restaurar los ajustes. El archivo podría estar corrupto";
 
 /*Preview Mode*/
-"Gmod.Restricted" = "No se puede enviar mensajes en modo fantasma.";
-"Gmod.Unavailable" = "Modo fantasma no está disponible";
-"Gmod.Disable.Notice" = "Tu última visibilidad vista se establecerá en «%1». Las notas de lectura serán reveladas.";
-"Gmod" = "Modo fantasma";
-"Gmod.Enable" = "¿Activar Modo fantasma?";
-"Gmod.Disable" = "¿Desactivar Modo fantasma?";
-"Gmod.Notice" = "Tu estado en línea estará oculto para todos según los ajustes de privacidad del Telegram.\nEntrarás en los chats en modo de vista previa y no se enviarán confirmaciones de lectura.\nEl modo de vista previa funciona de la misma manera que cuando mantienes pulsado un chat en Telegram oficial.\nTu estado en línea puede ser revelado si envías CUALQUIER mensaje.\nEsto es sólo un atajo que no viola los términos de servicio de Telegram.";
+"Gmod.Restricted" = "No puedes enviar mensajes en modo vista previa.";
+"Gmod.Unavailable" = "Modo vista previa no disponible";
+"Gmod.Disable.Notice" = "La visibilidad de tu última vez cambiará a “%1”";
+"Gmod" = "Modo vista previa";
+"Gmod.Enable" = "¿Activar modo vista previa?";
+"Gmod.Disable" = "¿Desactivar modo vista previa?";
+"Gmod.Notice" = "Tu estado en línea estará oculto para todos por la configuración de privacidad de Telegram.\nLa aplicación mostrará una advertencia si estás entrando en un chat privado.\nTu estado en línea puede ser revelado si envías o escribes CUALQUIER mensaje.";
 
 "SendWithKb" = "Envía con el botón «Intro»";
-"NiceFeatures.ShowGmodIcon" = "Mostrar icono de Modo fantasma";
+"NiceFeatures.ShowGmodIcon" = "Mostrar icono de modo vista previa";
+"Gmod.OpenChatQ" = "¿Abrir chat?";
+"Gmod.OpenChatNotice" = "El chat se marcará como \"leído\", pero puedes obtener una vista previa del chat con un toque prolongado (toque forzado)";
+"Gmod.OpenChatBtn" = "Sí, abrir el chat";
+"Gmod.DisableBtn" = "Desactivar advertencias";

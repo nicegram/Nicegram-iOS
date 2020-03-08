@@ -124,6 +124,4 @@
 "Gmod.Enable" = "Włączyć tryb Ducha?";
 "Gmod.Disable" = "Wyłączyć tryb Ducha?";
 "Gmod.Notice" = "Twój status online zostanie ukryty przez wszystkich w ustawieniach prywatności Telegram.\nBędziesz wchodzić na czaty w trybie podglądu, a odczyt ocen nie zostanie wysłany.\nTryb podglądu działa tak samo, jak po długim stuknięciu czatu w oficjalnej aplikacji Telegram.\nTwój status online może zostać ujawniony jeśli wyślesz JAKO wiadomość.\nJest to tylko skrót, który nie narusza Telegram TOS.";
-
 "SendWithKb" = "Wyślij za pomocą przycisku «Enter»";
-"NiceFeatures.ShowGmodIcon" = "Pokaż ikonę trybu Ducha";
