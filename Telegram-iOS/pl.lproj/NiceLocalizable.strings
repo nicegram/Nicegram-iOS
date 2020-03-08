@@ -122,5 +122,10 @@
 "Gmod" = "Tryb Podglądu";
 "Gmod.Enable" = "Włączyć tryb Podglądu?";
 "Gmod.Disable" = "Wyłączyć tryb Podglądu?";
+"Gmod.Notice" = "Twój status online zostanie ukryty przed wszystkimi w Ustawieniach prywatności Telegrama.\nAplikacja wyświetli ostrzeżenie, jeśli wejdziesz na prywatny czat.\nTwój status online może zostać ujawniony, jeśli wyślesz lub napiszesz JAKĄŚ wiadomość.";
 
 "SendWithKb" = "Wyślij za pomocą przycisku «Enter»";
+"NiceFeatures.ShowGmodIcon" = "Pokaż ikonę trybu Podglądu";
+"Gmod.OpenChatQ" = "Otworzyć czat?";
+"Gmod.OpenChatBtn" = "Tak, otwórz czat";
+"Gmod.DisableBtn" = "Wyłącz ostrzeżenia";
