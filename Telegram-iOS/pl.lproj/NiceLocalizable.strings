@@ -116,4 +116,11 @@
 "NiceFeatures.RestoreSettings.Done" = "Foldery i ustawienia zostały pomyślnie przywrócone";
 "NiceFeatures.RestoreSettings.Error" = "Błąd podczas przywracania ustawień. Plik może być uszkodzony";
 
+/*Preview Mode*/
+"Gmod.Restricted" = "Nie możesz wysyłać wiadomości w trybie Podglądu.";
+"Gmod.Unavailable" = "Tryb Podglądu niedostępny";
+"Gmod" = "Tryb Podglądu";
+"Gmod.Enable" = "Włączyć tryb Podglądu?";
+"Gmod.Disable" = "Wyłączyć tryb Podglądu?";
+
 "SendWithKb" = "Wyślij za pomocą przycisku «Enter»";
