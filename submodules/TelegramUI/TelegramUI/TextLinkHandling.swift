@@ -52,8 +52,8 @@ func handleTextLinkActionImpl(context: AccountContext, peerId: PeerId?, navigate
                 switch result {
                     case let .externalUrl(url):
                         var browserUrl = url
-                        if SimplyNiceSettings().useBrowser {
-                            browserUrl = getBrowserUrl(url, browser: SimplyNiceSettings().browser)
+                        if VarSimplyNiceSettings.useBrowser {
+                            browserUrl = getBrowserUrl(url, browser: VarSimplyNiceSettings.browser)
                         }
                         context.sharedContext.applicationBindings.openUrl(browserUrl)
                     case let .peer(peerId, _):

@@ -2604,7 +2604,7 @@ func replayFinalState(accountManager: AccountManager, postbox: Postbox, accountP
                     updatedSecretChatTypingActivities.insert(chatPeerId)
                 }
             case let .UpdatePinnedItemIds(groupId, pinnedOperation):
-                if isPremium() && !PremiumSettings().syncPins {
+                if isPremium() && !VarPremiumSettings.syncPins {
                     premiumLog("Ignored Pinned Items update \(groupId) \(pinnedOperation)")
                     break
                 }

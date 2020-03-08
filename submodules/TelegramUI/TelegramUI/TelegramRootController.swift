@@ -87,7 +87,7 @@ public final class TelegramRootController: NavigationController {
     }
     
     public func addRootControllers(showCallsTab: Bool, niceSettings: NiceSettings) {
-        let tabBarController = TabBarController(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData), theme: TabBarControllerTheme(rootControllerTheme: self.presentationData.theme), showTabNames: SimplyNiceSettings().showTabNames)
+        let tabBarController = TabBarController(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData), theme: TabBarControllerTheme(rootControllerTheme: self.presentationData.theme), showTabNames: VarSimplyNiceSettings.showTabNames)
         tabBarController.navigationPresentation = .master
         let chatListController = self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, filter: nil, controlsHistoryPreload: true, hideNetworkActivityStatus: false, ngfilter: nil, filterIndex: nil, isMissed: false, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
         if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
@@ -108,11 +108,11 @@ public final class TelegramRootController: NavigationController {
         if showCallsTab {
             controllers.append(callListController)
         }
-        if SimplyNiceSettings().maxFilters > 0 {
+        if VarSimplyNiceSettings.maxFilters > 0 {
             var filControllers: [ChatListController] = []
-            for (index, filter) in SimplyNiceSettings().chatFilters.enumerated() {
+            for (index, filter) in VarSimplyNiceSettings.chatFilters.enumerated() {
                 // Break if max filters
-                if index + 1 > SimplyNiceSettings().maxFilters {
+                if index + 1 > VarSimplyNiceSettings.maxFilters {
                     break
                 }
                 filControllers.append(self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, filter: nil, controlsHistoryPreload: true, hideNetworkActivityStatus: false, ngfilter: filter, filterIndex: Int32(index), isMissed: false, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild))
@@ -229,11 +229,11 @@ public final class TelegramRootController: NavigationController {
         
         var selectedIndex: Int? = nil
         
-        if SimplyNiceSettings().maxFilters > 0 {
+        if VarSimplyNiceSettings.maxFilters > 0 {
             var filControllers: [ChatListController] = []
-            for (index, filter) in SimplyNiceSettings().chatFilters.enumerated() {
+            for (index, filter) in VarSimplyNiceSettings.chatFilters.enumerated() {
                 // Break if max filters
-                if index + 1 > SimplyNiceSettings().maxFilters {
+                if index + 1 > VarSimplyNiceSettings.maxFilters {
                     break
                 }
                 filControllers.append(self.context.sharedContext.makeChatListController(context: self.context, groupId: .root, filter: nil, controlsHistoryPreload: true, hideNetworkActivityStatus: false, ngfilter: filter, filterIndex: Int32(index), isMissed: false, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild))
@@ -294,9 +294,9 @@ public final class TelegramRootController: NavigationController {
         }
         
         // Updating start data
-        let oldOpened = PremiumSettings().lastOpened
-        PremiumSettings().lastOpened = utcnow()
-        premiumLog("LAST OPENED \(PremiumSettings().lastOpened) | DIFF \(PremiumSettings().lastOpened - oldOpened) s")
+        let oldOpened = VarPremiumSettings.lastOpened
+        VarPremiumSettings.lastOpened = utcnow()
+        premiumLog("LAST OPENED \(VarPremiumSettings.lastOpened) | DIFF \(VarPremiumSettings.lastOpened - oldOpened) s")
         
         #if CN
         controllers.insert(self.topChatsController!, at: 0)
@@ -306,7 +306,7 @@ public final class TelegramRootController: NavigationController {
 //        let observer = NotificationCenter.default.addObserver(forName: .IAPHelperPurchaseNotification, object: nil, queue: .main, using: { notification in
 //            let productID = notification.object as? String
 //            if productID == NicegramProducts.Premium {
-//                PremiumSettings().p = true
+//                VarPremiumSettings.p = true
 //                validatePremium(isPremium())
 //                print("TRIGGERED MAIN OBSERVERS")
 //                if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {

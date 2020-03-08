@@ -673,7 +673,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                 ActionSheetTextItem(title: "Reset Premium. You will be able to restore purchase."),
                 ActionSheetButtonItem(title: "Reset Premiuum", color: .destructive, action: { [weak actionSheet] in
                     actionSheet?.dismissAnimated()
-                    PremiumSettings().p = false
+                    VarPremiumSettings.p = false
                 }),
                 ]), ActionSheetItemGroup(items: [
                     ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, action: { [weak actionSheet] in

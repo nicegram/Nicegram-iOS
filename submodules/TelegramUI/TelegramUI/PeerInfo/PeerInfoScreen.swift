@@ -3057,6 +3057,15 @@ private final class PeerInfoScreenNode: ViewControllerTracingNode, UIScrollViewD
             return
         }
         for childController in tabController.controllers {
+            if let chatListController = tabController.controllers[tabController.selectedIndex] as? ChatListController  {
+                chatListController.maybeAskForPeerChatRemoval(peer: RenderedPeer(peer: peer), deleteGloballyIfPossible: globally, completion: { [weak navigationController] deleted in
+                    if deleted {
+                        navigationController?.popToRoot(animated: true)
+                    }
+                }, removed: {
+                })
+                break
+            }
             if let chatListController = childController as? ChatListController {
                 chatListController.maybeAskForPeerChatRemoval(peer: RenderedPeer(peer: peer), deleteGloballyIfPossible: globally, completion: { [weak navigationController] deleted in
                     if deleted {

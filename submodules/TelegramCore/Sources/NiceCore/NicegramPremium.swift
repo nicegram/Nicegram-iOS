@@ -11,18 +11,19 @@ import NicegramLib
 
 public func setPremiumDefaults() {
     let UD = UserDefaults(suiteName: "PremiumSettings")
-    UD?.register(defaults: ["syncPins": true])
-    UD?.register(defaults: ["p": false])
-    UD?.register(defaults: ["isPremium": false])
-    UD?.register(defaults: ["isBetaPremium": false])
-    UD?.register(defaults: ["lastOpenedApp": utcnow()])
-    UD?.register(defaults: ["notifyMissed": false])
-    UD?.register(defaults: ["notifyMissedEach": 5 * 60 *  60])
-    UD?.register(defaults: ["oneTapTr": true])
-    UD?.register(defaults: ["ignoreTranslate": []])
-    
+    UD?.register(defaults: ["syncPins": true,
+    "p": false,
+    "isPremium": false,
+    "isBetaPremium": false,
+    "lastOpenedApp": utcnow(),
+    "notifyMissed": false,
+    "notifyMissedEach": 5 * 60 *  60,
+    "oneTapTr": true,
+    "ignoreTranslate": []
+    ])
 }
 
+public var VarPremiumSettings = PremiumSettings()
 
 public class PremiumSettings {
     let UD = UserDefaults(suiteName: "PremiumSettings")
@@ -163,7 +164,7 @@ public func setUseIcloud(_ value: Bool) {
 
 public func isPremium() -> Bool {
     #if DEBUG
-        return PremiumSettings().p
+        return VarPremiumSettings.p
     #endif
     
     if (NicegramProducts.Premium.isEmpty) {
@@ -175,12 +176,12 @@ public func isPremium() -> Bool {
         return false
     }
     
-    return PremiumSettings().p //|| SecureNiceSettings().isPremium || SecureNiceSettings().isBetaPremium
+    return VarPremiumSettings.p //|| SecureNiceSettings().isPremium || SecureNiceSettings().isBetaPremium
 }
 
 public func usetrButton() -> [(Bool, [String])] {
     if isPremium() {
-        let ps = PremiumSettings()
+        let ps = VarPremiumSettings
         return [(ps.oneTapTr, ps.ignoreTranslate)]
     }
     return [(false, [])]
@@ -188,9 +189,9 @@ public func usetrButton() -> [(Bool, [String])] {
 
 public func showMissed() -> Bool {
     // premiumlog("MISSSED DIFF")
-    if isPremium() && PremiumSettings().notifyMissed {
-        let launchDiff = utcnow() - PremiumSettings().lastOpened
-        let isShowMissed: Bool = launchDiff > PremiumSettings().notifyMissedEach
+    if isPremium() && VarPremiumSettings.notifyMissed {
+        let launchDiff = utcnow() - VarPremiumSettings.lastOpened
+        let isShowMissed: Bool = launchDiff > VarPremiumSettings.notifyMissedEach
         
         premiumLog("SHOWING  MISSED: \(isShowMissed) CAUSE LAUNCH DIFF IS \(launchDiff)")
         return isShowMissed

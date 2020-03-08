@@ -2010,7 +2010,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
         self.chatInfoNavigationButton = ChatNavigationButton(action: .openChatInfo(expandAvatar: true), buttonItem: chatInfoButtonItem)
         
         self.navigationItem.titleView = self.chatTitleView
-        if !NicegramSettings().useClassicInfoUi {
+        if !VarNicegramSettings.useClassicInfoUi {
             self.chatTitleView?.pressed = { [weak self] in
                 self?.navigationButtonAction(.openChatInfo(expandAvatar: false))
             }
@@ -8005,8 +8005,8 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                     let sourceRect = CGRect(origin: CGPoint(x: floor(targetRect.midX), y: floor(targetRect.midY)), size: CGSize(width: 1.0, height: 1.0))
                     if let parsedUrl = parsedUrlValue {
                         if parsedUrl.scheme == "http" || parsedUrl.scheme == "https" {
-                            if SimplyNiceSettings().useBrowser {
-                                let browserUrl = getBrowserUrl(parsedUrl.absoluteString, browser: SimplyNiceSettings().browser)
+                            if VarSimplyNiceSettings.useBrowser {
+                                let browserUrl = getBrowserUrl(parsedUrl.absoluteString, browser: VarSimplyNiceSettings.browser)
                                 context.sharedContext.applicationBindings.openUrl(browserUrl)
                             } else if #available(iOSApplicationExtension 9.0, iOS 9.0, *) {
                                 let controller = SFSafariViewController(url: parsedUrl)

@@ -129,7 +129,7 @@ final class ChatTitleGmodNode: ASDisplayNode {
         didSet {
             if self.theme !== oldValue {
                 var off = true
-                if NicegramSettings().gmod {
+                if VarNicegramSettings.gmod {
                     off = false
                 }
                 self.iconNode.image = generateGmodIcon(color: theme.rootController.navigationBar.accentTextColor, off: off)
@@ -138,10 +138,10 @@ final class ChatTitleGmodNode: ASDisplayNode {
         }
     }
     
-    var status: Bool = NicegramSettings().gmod {
+    var status: Bool = VarNicegramSettings.gmod {
         didSet {
            var off = true
-           if NicegramSettings().gmod {
+           if VarNicegramSettings.gmod {
                 off = false
            }
            self.iconNode.image = generateGmodIcon(color: self.theme.rootController.navigationBar.accentTextColor, off: off)
@@ -156,7 +156,7 @@ final class ChatTitleGmodNode: ASDisplayNode {
         self.iconNode.displayWithoutProcessing = true
         self.iconNode.displaysAsynchronously = false
         var off = true
-        if NicegramSettings().gmod {
+        if VarNicegramSettings.gmod {
             off = false
         }
         self.iconNode.image = generateGmodIcon(color: theme.rootController.navigationBar.accentTextColor, off: off)

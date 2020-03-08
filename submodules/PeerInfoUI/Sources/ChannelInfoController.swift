@@ -1119,6 +1119,15 @@ public func channelInfoController(context: AccountContext, peerId: PeerId) -> Vi
             return
         }
         for childController in tabController.controllers {
+            if let chatListController = tabController.controllers[tabController.selectedIndex] as? ChatListController  {
+                chatListController.maybeAskForPeerChatRemoval(peer: RenderedPeer(peer: peer), deleteGloballyIfPossible: deleteGloballyIfPossible, completion: { [weak navigationController] deleted in
+                    if deleted {
+                        navigationController?.popToRoot(animated: true)
+                    }
+                }, removed: {
+                })
+                break
+            }
             if let chatListController = childController as? ChatListController {
                 chatListController.maybeAskForPeerChatRemoval(peer: RenderedPeer(peer: peer), deleteGloballyIfPossible: deleteGloballyIfPossible, completion: { [weak navigationController] deleted in
                     if deleted {

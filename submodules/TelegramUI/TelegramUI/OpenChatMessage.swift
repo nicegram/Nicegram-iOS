@@ -274,7 +274,7 @@ func openChatMessageImpl(_ params: OpenChatMessageParams) -> Bool {
                                     type: .destructiveAction,
                                     title: presentationData.strings.Common_Yes,
                                     action: {
-                                        var importResult = NicegramSettings().importSettings(json: jsonArray)
+                                        var importResult = VarNicegramSettings.importSettings(json: jsonArray)
                                         var debugString = ""
                                         for result in importResult {
                                             if !debugString.isEmpty {

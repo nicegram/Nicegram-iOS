@@ -364,6 +364,8 @@ public func resetFolders() {
     cloud.removeObject(forKey: "folders")
 }
 
+public var VarSimplyNiceFolders = SimplyNiceFolders()
+
 public class SimplyNiceFolders {
     let UD = UserDefaults(suiteName: "SimplyNiceFolders")
     let cloud = NSUbiquitousKeyValueStore.default
@@ -427,19 +429,19 @@ public func isNiceFolderCheck(_ groupId: Int32) -> Bool {
 }
 
 public func getNiceFolders() ->  [NiceFolder] {
-    return SimplyNiceFolders().folders
+    return VarSimplyNiceFolders.folders
 }
 
 public func setNiceFolders(_ folders: [NiceFolder]) -> Void {
-    SimplyNiceFolders().folders = folders
+    VarSimplyNiceFolders.folders = folders
 }
 
 public func setNiceFolderAt(_ index: Int, _ folder: NiceFolder) -> Void {
-    SimplyNiceFolders().folders[index] = folder
+    VarSimplyNiceFolders.folders[index] = folder
 }
 
 public func getFolder(_ groupId: Int32) -> NiceFolder? {
-    for folder in SimplyNiceFolders().folders {
+    for folder in VarSimplyNiceFolders.folders {
         if folder.groupId == groupId {
             return folder
         }
@@ -448,7 +450,7 @@ public func getFolder(_ groupId: Int32) -> NiceFolder? {
 }
 
 public func searchFolderIndex(_ groupId: Int32) -> Int? {
-    for (index, folder) in SimplyNiceFolders().folders.enumerated() {
+    for (index, folder) in VarSimplyNiceFolders.folders.enumerated() {
         if folder.groupId == groupId {
             return index
         }
@@ -460,7 +462,7 @@ public func searchFolderIndex(_ groupId: Int32) -> Int? {
 public func createFolder(_ name: String, _ items: [Int64]) -> NiceFolder {
     let groupId = generateFolderGroupId()
     let folder = NiceFolder(groupId: groupId, name: name, items: items)
-    SimplyNiceFolders().folders.append(folder)
+    VarSimplyNiceFolders.folders.append(folder)
     return folder
 }
 
@@ -468,7 +470,7 @@ public func createFolder(_ name: String, _ items: [Int64]) -> NiceFolder {
 public func deleteFolder(_ groupId: Int32) -> Void {
     let folderIndex = searchFolderIndex(groupId)
     if folderIndex != nil {
-        SimplyNiceFolders().folders.remove(at: folderIndex!)
+        VarSimplyNiceFolders.folders.remove(at: folderIndex!)
     }
 }
 
@@ -517,7 +519,7 @@ public func sureRemovePeerFromFolder(_ peerId: PeerId) {
 
 public func syncFolders(_ postbox: Postbox) {
     fLog("Syncing folders")
-    for folder in SimplyNiceFolders().folders {
+    for folder in VarSimplyNiceFolders.folders {
         for peerId in folder.items {
             let _ = updatePeerGroupIdInteractively(postbox: postbox, peerId: PeerId(peerId), groupId: PeerGroupId(rawValue: folder.groupId)).start(completed: {
                 fLog("Sync done for \(peerId) in \(folder)")

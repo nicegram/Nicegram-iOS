@@ -275,8 +275,8 @@ private func premiumControllerEntries(presentationData: PresentationData, premiu
     entries.append(.syncPinsNotice(theme, l(changeNoticeString, locale)))
     
     var notifyTimeout = Int32.max
-    if PremiumSettings().notifyMissed {
-        notifyTimeout = Int32(PremiumSettings().notifyMissedEach)
+    if VarPremiumSettings.notifyMissed {
+        notifyTimeout = Int32(VarPremiumSettings.notifyMissedEach)
     } else {
         notifyTimeout = Int32.max
     }
@@ -324,7 +324,7 @@ public func premiumController(context: AccountContext) -> ViewController {
     let presentationData = context.sharedContext.currentPresentationData.with { $0 }
     var pushControllerImpl: ((ViewController) -> Void)?
     
-    var currentBrowser = Browser(rawValue: SimplyNiceSettings().browser) ?? Browser.Safari
+    var currentBrowser = Browser(rawValue: VarSimplyNiceSettings.browser) ?? Browser.Safari
     let statePromise = ValuePromise(SelectionState(), ignoreRepeated: false)
     let stateValue = Atomic(value: SelectionState())
     let updateState: ((SelectionState) -> SelectionState) -> Void = { f in
@@ -351,10 +351,10 @@ public func premiumController(context: AccountContext) -> ViewController {
     let arguments = PremiumControllerArguments(toggleSetting: { value, setting in
         switch (setting) {
         case "syncPins":
-            PremiumSettings().syncPins = value
+            VarPremiumSettings.syncPins = value
             break
         case "oneTapTr":
-            PremiumSettings().oneTapTr = value
+            VarPremiumSettings.oneTapTr = value
             break
         default:
             break
@@ -369,15 +369,15 @@ public func premiumController(context: AccountContext) -> ViewController {
         let setAction: (Int32?) -> Void = { value in
             if let value = value {
                 if value == Int32.max {
-                    PremiumSettings().notifyMissed = false
+                    VarPremiumSettings.notifyMissed = false
                 } else if value > 0 {
-                    PremiumSettings().notifyMissed = true
-                    PremiumSettings().notifyMissedEach = Int(value)
+                    VarPremiumSettings.notifyMissed = true
+                    VarPremiumSettings.notifyMissedEach = Int(value)
                 } else {
-                    PremiumSettings().notifyMissed = false
+                    VarPremiumSettings.notifyMissed = false
                 }
             } else {
-                PremiumSettings().notifyMissed = false
+                VarPremiumSettings.notifyMissed = false
             }
             updateState { state in
                 return SelectionState()
@@ -433,7 +433,7 @@ public func premiumController(context: AccountContext) -> ViewController {
 //        error: {_ in print("error regdate request")})
 //        print("TESTED!")
         
-//        if let exportPath = NicegramSettings().exportSettings() {
+//        if let exportPath = VarNicegramSettings.exportSettings() {
 //            var messages: [EnqueueMessage] = []
 //            let id = arc4random64()
 //            let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: LocalFileReferenceMediaResource(localFilePath: exportPath, randomId: id), previewRepresentations: [], immediateThumbnailData: nil, mimeType: "application/json", size: nil, attributes: [.FileName(fileName: BACKUP_NAME)])
@@ -458,7 +458,7 @@ public func premiumController(context: AccountContext) -> ViewController {
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get())
         |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
             
-            let entries = premiumControllerEntries(presentationData: presentationData, premiumSettings: PremiumSettings())
+            let entries = premiumControllerEntries(presentationData: presentationData, premiumSettings: VarPremiumSettings)
             
             var index = 0
             var scrollToItem: ListViewScrollToItem?

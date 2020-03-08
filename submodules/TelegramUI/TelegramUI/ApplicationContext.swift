@@ -693,7 +693,7 @@ final class AuthorizedApplicationContext {
                     strongSelf.showCallsTab = value
                     // strongSelf.showNonMutedChatsTab = niceSettingsValue.workmode
                     strongSelf.showContactsTab = niceSettingsValue.showContactsTab
-                    strongSelf.showFilteredChatTabs = SimplyNiceSettings().chatFilters
+                    strongSelf.showFilteredChatTabs = VarSimplyNiceSettings.chatFilters
                     strongSelf.foo = niceSettingsValue.foo
                     strongSelf.rootController.updateRootControllers(showCallsTab: value, niceSettings: niceSettingsValue)
                 }

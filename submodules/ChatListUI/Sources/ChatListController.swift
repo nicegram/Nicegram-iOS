@@ -144,7 +144,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                 let _ = updateNiceSettingsInteractively(accountManager: accountManager, { settings in
                     var settings = settings
                     let index = self?.filterIndex ?? 0
-                    SimplyNiceSettings().chatFilters[Int(index)] = f
+                    VarSimplyNiceSettings.chatFilters[Int(index)] = f
                     settings.chatFilters[Int(index)] = f
                     settings.currentFilter = index
                     return settings
@@ -463,7 +463,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
             if let strongSelf = self {
                 if strongSelf.ngfilter != nil {
                     print("Change filter badge")
-                    if !SimplyNiceSettings().filtersBadge {
+                    if !VarSimplyNiceSettings.filtersBadge {
                         strongSelf.tabBarItem.badgeValue = ""
                     } else {
                         let inAppSettings: InAppNotificationSettings
@@ -680,7 +680,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
         self.titleView.toggleGmod = { [weak self] in
             if let strongSelf = self {
                 let locale = strongSelf.presentationData.strings.baseLanguageCode
-                    if NicegramSettings().gmod {
+                    if VarNicegramSettings.gmod {
                         print("DISABLE GMOD")
                         // disable
                         let savedLastSeenSettings = getLastSeenSettings(accountId: strongSelf.context.account.peerId.toInt64(), postbox: strongSelf.context.account.postbox)
@@ -698,7 +698,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                                     settings.skipReadHistory = false
                                     return settings
                                 }).start()
-                                NicegramSettings().gmod = false
+                                VarNicegramSettings.gmod = false
                                 NotificationCenter.default.post(name: strongSelf.gmodNotificationName, object: nil)
                                 //strongSelf.titleView.isGmod = !strongSelf.titleView.isGmod
                             }),
@@ -707,7 +707,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                     } else {
                         // enable
                         print("ENABLE GMOD")
-                        if GNGSettings().gmod {
+                        if VarGNGSettings.gmod3 {
                         let privacySignal: Signal<AccountPrivacySettings, NoError> = requestAccountPrivacySettings(account: context.account)
                         let _ = (privacySignal |> deliverOnMainQueue).start(next: { info in
                             var currentSettings = info.presence
@@ -717,18 +717,18 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                                 
                                 saveLastSeenSettings(accountId: strongSelf.context.account.peerId.toInt64(), currentSettings: currentSettings)
                                 
-                                let _ = updateExperimentalUISettingsInteractively(accountManager: strongSelf.context.sharedContext.accountManager, { settings in
-                                     var settings = settings
-                                     settings.skipReadHistory = true
-                                     return settings
-                                 }).start()
+//                                let _ = updateExperimentalUISettingsInteractively(accountManager: strongSelf.context.sharedContext.accountManager, { settings in
+//                                     var settings = settings
+//                                     settings.skipReadHistory = true
+//                                     return settings
+//                                 }).start()
                                  let updateSettingsSignal = updateSelectiveAccountPrivacySettings(account: strongSelf.context.account, type: .presence, settings: SelectivePrivacySettings.disableEveryone(enableFor: [:]))
                                  updateSettingsSignal.start()
-                                 NicegramSettings().gmod = true
+                                 VarNicegramSettings.gmod = true
                                  NotificationCenter.default.post(name: strongSelf.gmodNotificationName, object: nil)
                                  //strongSelf.titleView.isGmod = !strongSelf.titleView.isGmod
                                 })
-                            ])
+                            ], alignment: .left)
                             strongSelf.present(controller, in: .window(.root))
                         })
                         } else {
@@ -904,9 +904,30 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
                         scrollToEndIfExists = true
                     }
                     
-                    strongSelf.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: strongSelf.context, chatLocation: .peer(peerId), scrollToEndIfExists: scrollToEndIfExists, options: strongSelf.groupId == PeerGroupId.root ? [.removeOnMasterDetails] : [], parentGroupId: strongSelf.groupId, completion: { [weak self] in
+                    if VarNicegramSettings.gmod && peerId != strongSelf.context.account.peerId {
+                        switch peerId.namespace {
+                        case Namespaces.Peer.CloudUser, Namespaces.Peer.SecretChat:
+                            let lang = strongSelf.presentationData.strings.baseLanguageCode
+                            strongSelf.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: l("Gmod.OpenChatQ", lang), text: l("Gmod.OpenChatNotice", lang), actions: [
+                                TextAlertAction(type: .defaultAction, title: l("Gmod.OpenChatBtn"), action: {
+                                    strongSelf.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: strongSelf.context, chatLocation: .peer(peerId), scrollToEndIfExists: scrollToEndIfExists, options: strongSelf.groupId == PeerGroupId.root ? [.removeOnMasterDetails] : [], parentGroupId: strongSelf.groupId, completion: {}))
+                                }),
+                                TextAlertAction(type: .destructiveAction, title: l("Gmod.DisableBtn"), action: {
+                                    strongSelf.titleView.toggleGmod?()
+                                }),
+                                TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {})
+                            ]), in: .window(.root))
+                            self?.chatListDisplayNode.chatListNode.clearHighlightAnimated(true)
+                        default:
+                            strongSelf.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: strongSelf.context, chatLocation: .peer(peerId), scrollToEndIfExists: scrollToEndIfExists, options: strongSelf.groupId == PeerGroupId.root ? [.removeOnMasterDetails] : [], parentGroupId: strongSelf.groupId, completion: { [weak self] in
+                                self?.chatListDisplayNode.chatListNode.clearHighlightAnimated(true)
+                            }))
+                        }
+                    } else {
+                        strongSelf.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: strongSelf.context, chatLocation: .peer(peerId), scrollToEndIfExists: scrollToEndIfExists, options: strongSelf.groupId == PeerGroupId.root ? [.removeOnMasterDetails] : [], parentGroupId: strongSelf.groupId, completion: { [weak self] in
                         self?.chatListDisplayNode.chatListNode.clearHighlightAnimated(true)
                     }))
+                    }
                 }
             }
         }
@@ -1081,7 +1102,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
             case let .peer(peer):
                 let chatController = strongSelf.context.sharedContext.makeChatController(context: strongSelf.context, chatLocation: .peer(peer.peer.peerId), subject: nil, botStart: nil, mode: .standard(previewing: true))
                 chatController.canReadHistory.set(false)
-                let contextController = ContextController(account: strongSelf.context.account, presentationData: strongSelf.presentationData, source: .controller(ContextControllerContentSourceImpl(controller: chatController, sourceNode: node, navigationController: strongSelf.navigationController as? NavigationController)), items: chatContextMenuItems(context: strongSelf.context, peerId: peer.peer.peerId, source: .chatList, chatListController: strongSelf), reactionItems: [], gesture: gesture)
+                let contextController = ContextController(account: strongSelf.context.account, presentationData: strongSelf.presentationData, source: .controller(ContextControllerContentSourceImpl(controller: chatController, sourceNode: node, navigationController: strongSelf.navigationController as? NavigationController)), items: VarNicegramSettings.gmod ? .single([]) : chatContextMenuItems(context: strongSelf.context, peerId: peer.peer.peerId, source: .chatList, chatListController: strongSelf), reactionItems: [], gesture: gesture)
                 strongSelf.presentInGlobalOverlay(contextController)
             }
         }
@@ -1094,7 +1115,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
             
             let chatController = strongSelf.context.sharedContext.makeChatController(context: strongSelf.context, chatLocation: .peer(peer.id), subject: nil, botStart: nil, mode: .standard(previewing: true))
             chatController.canReadHistory.set(false)
-            let contextController = ContextController(account: strongSelf.context.account, presentationData: strongSelf.presentationData, source: .controller(ContextControllerContentSourceImpl(controller: chatController, sourceNode: node, navigationController: strongSelf.navigationController as? NavigationController)), items: chatContextMenuItems(context: strongSelf.context, peerId: peer.id, source: .search(source), chatListController: strongSelf), reactionItems: [], gesture: gesture)
+            let contextController = ContextController(account: strongSelf.context.account, presentationData: strongSelf.presentationData, source: .controller(ContextControllerContentSourceImpl(controller: chatController, sourceNode: node, navigationController: strongSelf.navigationController as? NavigationController)), items: VarNicegramSettings.gmod ? .single([]) : chatContextMenuItems(context: strongSelf.context, peerId: peer.id, source: .search(source), chatListController: strongSelf), reactionItems: [], gesture: gesture)
             strongSelf.presentInGlobalOverlay(contextController)
         }
         
@@ -1395,14 +1416,14 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
     }
     
 //    @objc private func gmodPressed() {
-//        if NicegramSettings().gmod {
+//        if VarNicegramSettings.gmod {
 //            // disable
 //            let _ = updateExperimentalUISettingsInteractively(accountManager: self.context.sharedContext.accountManager, { settings in
 //                var settings = settings
 //                settings.skipReadHistory = false
 //                return settings
 //            }).start()
-//            NicegramSettings().gmod = false
+//            VarNicegramSettings.gmod = false
 //        } else {
 //            // enable
 //            let _ = updateExperimentalUISettingsInteractively(accountManager: self.context.sharedContext.accountManager, { settings in
@@ -1410,7 +1431,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
 //                settings.skipReadHistory = true
 //                return settings
 //            }).start()
-//            NicegramSettings().gmod = true
+//            VarNicegramSettings.gmod = true
 //        }
 //    }
     
@@ -2312,7 +2333,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
     }
     
 //    public func presentTabBarPreviewingController(sourceNodes: [ASDisplayNode]) {
-//        if !NicegramSettings().useTgFilters {
+//        if !VarNicegramSettings.useTgFilters {
 //            if (self.ngfilter == nil || self.isMissed || self.filterIndex == nil) {
 //                if self.chatListDisplayNode.searchDisplayController != nil {
 //                    self.deactivateSearch(animated: true)
@@ -2331,7 +2352,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController,
 //                    let _ = updateNiceSettingsInteractively(accountManager: accountManager, { settings in
 //                        var settings = settings
 //                        let index = self?.filterIndex ?? 0
-//                        SimplyNiceSettings().chatFilters[Int(index)] = f
+//                        VarSimplyNiceSettings.chatFilters[Int(index)] = f
 //                        settings.chatFilters[Int(index)] = f
 //                        settings.currentFilter = index
 //                        return settings
