@@ -80,6 +80,8 @@
 "IAP.Common.ErrorFetch" = "متاسفانه خرید از اپ استور مقدور نیست.";
 "IAP.Common.Congrats" = "تبریک میگوییم!";
 "IAP.Common.ValidateError" = "متأسفیم، نمی توانید خرید خود را تأیید کنید.";
+"Premium.OnetapTranslate" = "دکمه ترجمه سریع";
+"Premium.IgnoreTranslate.Title" = "زبان های نادیده گرفته شده ";
 
 /*Manage Filters*/
 "ManageFilters.Title" = "مدیریت زبانه ها";
@@ -97,3 +99,14 @@
 "NGLab.RegDate.FetchError" = "متاسفانه دریافت تاریخ ثبت نام مقدور نیست.";
 "NiceFeatures.BackupSettings" = "تنظیمات پشتیبان گیری و پوشه ها";
 "NiceFeatures.BackupSettings.Done" = "تهیه نسخه پشتیبان از پیام های ذخیره شده کامل شد";
+"NiceFeatures.BackupSettings.Error" = "خطا در ایجاد نسخه پشتیبان";
+"Gmod.Unavailable" = "حالت پیش نمایش در دسترس نیست";
+"Gmod" = "حالت پیش نمایش";
+"Gmod.Enable" = "حالت پیش نمایش فعال شود؟";
+"Gmod.Disable" = "حالت پیش نمایش غیر فعال شود؟";
+
+"SendWithKb" = "با دکمه enter بفرست";
+"NiceFeatures.ShowGmodIcon" = "آیکون پیش نمایش را نشان بده";
+"Gmod.OpenChatQ" = "چت را باز کنم؟";
+"Gmod.OpenChatBtn" = "بله ، چت را باز کن";
+"Gmod.DisableBtn" = "هشدار ها را غیر فعال کن";
