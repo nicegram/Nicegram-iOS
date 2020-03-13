@@ -103,6 +103,8 @@
 "NiceFeatures.BackupSettings.Done" = "تهیه نسخه پشتیبان از پیام های ذخیره شده کامل شد";
 "NiceFeatures.BackupSettings.Error" = "خطا در ایجاد نسخه پشتیبان";
 
+"NiceFeatures.RestoreSettings.Confirm" = "آیا مطمئن هستید که می خواید فولدر ها و تنظیمات را از فایل بازگردانید؟\n⚠️ اطلاعات فعلی شما جایگزین خواهد شد";
+
 /*Preview Mode*/
 "Gmod.Restricted" = "در حالت پیش نمایش نمی توانید پیام ارسال کنید.";
 "Gmod.Unavailable" = "حالت پیش نمایش در دسترس نیست";
