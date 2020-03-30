@@ -5,7 +5,7 @@
 "ChatFilter.Channels" = "Canales";
 "ChatFilter.Private" = "Usuarios";
 "ChatFilter.Groups" = "Grupos";
-"ChatFilter.Unread" = "No leído";
+"ChatFilter.Unread" = "No leídos";
 "ChatFilter.Unmuted" = "No silenciado";
 "ChatFilter.Favourites" = "Favoritos";
 
@@ -15,7 +15,7 @@
 "NiceFeatures.Tabs.ShowContacts" = "Mostrar pestaña de Contactos";
 "NiceFeatures.ChatScreen.Header" = "PANTALLA DE CHAT";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Stickers animados";
-"NiceFeatures.useBackCam" = "Usa cámara trasera (videos redondos)";
+"NiceFeatures.useBackCam" = "Usar cámara trasera (Videomensajes)";
 
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "Guardar en la nube";
