@@ -24,6 +24,7 @@
 "Chat.OpenPin" = "顯示置頂";
 "ChatFilter.Admin" = "管理員";
 "NiceFeatures.Notifications.HideNotifyAccount" = "在通知中隱藏帳號";
+"NiceFeatures.Notifications.HideNotifyAccountNotice" = "而不是「用戶→帳戶」，您將只看到「用戶」。僅適用於多個帳戶。";
 "NiceFeatures.Notifications.Fix" = "停用非必要通知";
 "NiceFeatures.Notifications.FixNotice" = "如果您想將「已關閉通知」的對話完全禁音，這將非常有用。\n來自回覆、@username、媒體預覽的通知將被停用。";
 "NiceFeatures.Filters.Header" = "篩選標籤";
@@ -122,6 +123,11 @@
 "Gmod" = "預覽模式";
 "Gmod.Enable" = "啟用預覽模式？";
 "Gmod.Disable" = "停用預覽模式？";
+"Gmod.Notice" = "您的線上狀態會被 Telegram 隱私設定隱藏。\n如果您進入私人對話，App 會顯示警告。\n如果您傳送或輸入任何訊息，你的線上狀態將可能會被顯示。";
 
 "SendWithKb" = "點擊 «Enter» 傳送";
 "NiceFeatures.ShowGmodIcon" = "顯示預覽模式圖示";
+"Gmod.OpenChatQ" = "開啟對話？";
+"Gmod.OpenChatNotice" = "對話將被標記為「已讀」，但您可以長按來預覽聊天。";
+"Gmod.OpenChatBtn" = "是的，打開對話";
+"Gmod.DisableBtn" = "停用警告";
