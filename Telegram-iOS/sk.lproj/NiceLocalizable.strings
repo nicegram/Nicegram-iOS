@@ -13,6 +13,7 @@
 "NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "ZÁLOŽKY";
 "NiceFeatures.Tabs.ShowContacts" = "Zobraziť kontakty";
+"NiceFeatures.ChatScreen.Header" = "CHATOVÁ OBRAZOVKA";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Animované nálepky";
 
 /*Save to Cloud*/
@@ -44,6 +45,8 @@
 "Folder.Create.Placeholder" = "Priečinok...";
 "NiceFeatures.Browser.UseBrowser" = "Otvoriť linku v prehliadači";
 "Folder.DeleteAsk" = "Odstrániť priečinok";
+"IAP.Premium.Title" = "Prémium";
+"IAP.Premium.Activated" = "Prémium Aktivované!";
 "IAP.Common.Restore" = "Obnoviť nákup";
 "IAP.Common.Congrats" = "Gratulujeme!";
 
