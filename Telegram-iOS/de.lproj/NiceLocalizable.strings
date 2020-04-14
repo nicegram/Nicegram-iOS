@@ -6,7 +6,7 @@
 "ChatFilter.Private" = "Benutzer";
 "ChatFilter.Groups" = "Gruppen";
 "ChatFilter.Unread" = "Ungelesen";
-"ChatFilter.Unmuted" = "Entstumm";
+"ChatFilter.Unmuted" = "Laut";
 "ChatFilter.Favourites" = "Favoriten";
 
 /*Nice Features*/
