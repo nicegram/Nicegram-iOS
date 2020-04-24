@@ -116,4 +116,18 @@
 "NiceFeatures.RestoreSettings.Done" = "Ordner & Einstellungen erfolgreich wiederhergestellt";
 "NiceFeatures.RestoreSettings.Error" = "Fehler beim Wiederherstellen der Einstellungen. Die Datei könnte beschädigt sein";
 
+/*Preview Mode*/
+"Gmod.Restricted" = "Du kannst keine Nachrichten im Vorschaumodus senden.";
+"Gmod.Unavailable" = "Vorschaumodus nicht verfügbar";
+"Gmod.Disable.Notice" = "Deine zuletzt gesehen Einstellung wird auf ‹‹%1›› gesetzt";
+"Gmod" = "Vorschaumodus";
+"Gmod.Enable" = "Vorschaumodus aktivieren?";
+"Gmod.Disable" = "Vorschaumodus deaktivieren?";
+"Gmod.Notice" = "Dein Onlinestatus wird über die Telegram Privatsphäre-Einstellungen vor jedem versteckt.\nDie App zeigt dir eine Warnung, solltest du einen privaten Chat betreten.\nNachrichten jeglicher Art können deinen Onlinestatus zeigen.";
+
 "SendWithKb" = "Mit «Enter» senden";
+"NiceFeatures.ShowGmodIcon" = "Icon für Vorschaumodus anzeigen";
+"Gmod.OpenChatQ" = "Chat öffnen?";
+"Gmod.OpenChatNotice" = "Der Chat wird als gelesen markiert, du kannst aber durch Force-Touch/halten den Chat im Vorschaumodus öffnen";
+"Gmod.OpenChatBtn" = "Ja, Chat öffnen";
+"Gmod.DisableBtn" = "Warnungen deaktivieren";
