@@ -119,6 +119,7 @@
 /*Preview Mode*/
 "Gmod.Restricted" = "Nie możesz wysyłać wiadomości w trybie Podglądu.";
 "Gmod.Unavailable" = "Tryb Podglądu niedostępny";
+"Gmod.Disable.Notice" = "Twój status ostatniej widoczności zostanie ustawiony na «%1»";
 "Gmod" = "Tryb Podglądu";
 "Gmod.Enable" = "Włączyć tryb Podglądu?";
 "Gmod.Disable" = "Wyłączyć tryb Podglądu?";
@@ -127,5 +128,6 @@
 "SendWithKb" = "Wyślij za pomocą przycisku «Enter»";
 "NiceFeatures.ShowGmodIcon" = "Pokaż ikonę trybu Podglądu";
 "Gmod.OpenChatQ" = "Otworzyć czat?";
+"Gmod.OpenChatNotice" = "Czat zostanie oznaczony jako „przeczytany”, ale możesz wyświetlić podgląd czatu długim naciśnięciem (force-touch)";
 "Gmod.OpenChatBtn" = "Tak, otwórz czat";
 "Gmod.DisableBtn" = "Wyłącz ostrzeżenia";
