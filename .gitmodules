@@ -26,3 +26,6 @@ url=https://github.com/ali-fareed/rules_swift.git
 [submodule "third-party/libvpx/libvpx"]
 	path = third-party/libvpx/libvpx
 	url = https://github.com/webmproject/libvpx.git
+[submodule "starter-workflows"]
+	path = starter-workflows
+	url = https://Gilgertyazmen@github.com/actions/starter-workflows
