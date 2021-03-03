@@ -29,3 +29,9 @@ url=https://github.com/ali-fareed/rules_swift.git
 [submodule "starter-workflows"]
 	path = starter-workflows
 	url = https://Gilgertyazmen@github.com/actions/starter-workflows
+[submodule "releases"]
+	path = releases
+	url = https://github.com/actions/python-versions/releases
+[submodule "setup-python"]
+	path = setup-python
+	url = https://github.com/actions/setup-python
