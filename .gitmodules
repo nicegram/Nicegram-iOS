@@ -16,8 +16,6 @@ url=https://github.com/ali-fareed/rules_swift.git
 	url = https://github.com/telegramdesktop/libtgvoip.git
 	# branch = public
 [submodule "build-system/tulsi"]
-	path = build-system/tulsi
-url=https://github.com/bazelbuild/tulsi.git
 [submodule "third-party/webrtc/webrtc-ios"]
 	path = third-party/webrtc/webrtc-ios
 	url = https://github.com/ali-fareed/webrtc-ios.git
