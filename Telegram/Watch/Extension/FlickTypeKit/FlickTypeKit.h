@@ -23,19 +23,29 @@ typedef NS_ENUM(NSInteger, FlickTypeCompletionType) {
 
 @interface FlickType : NSObject
 
-// eg "https://www.my-app.com/flicktype"
+@property (class, readonly) NSString* sdkVersion;
+
+// eg "https://your.app.domain/flicktype"
 @property (class) NSURL* returnURL;
 
-// Returns true if it was a FlickType response activity
+// Returns true if `userActivity` was a FlickType response activity
 + (BOOL)handle:(NSUserActivity*)userActivity;
 
 @end
 
 @interface WKInterfaceController (FlickType)
 
-- (void)presentTextInputControllerWithSuggestions:(nullable NSArray<NSString*> *)suggestions allowedInputMode:(WKTextInputMode)inputMode flickType:(FlickTypeMode)flickTypeMode completion:(void(^)(NSArray * __nullable results))completion; // results is nil if cancelled
+// Suggestion list, with `flickType` argument
+- (void)presentTextInputControllerWithSuggestions:(nullable NSArray<NSString*> *)suggestions allowedInputMode:(WKTextInputMode)inputMode flickType:(FlickTypeMode)flickTypeMode completion:(void(^)(NSArray * __nullable results))completion;
 
-- (void)presentTextInputControllerWithSuggestionsForLanguage:(NSArray * __nullable (^ __nullable)(NSString *inputLanguage))suggestionsHandler allowedInputMode:(WKTextInputMode)inputMode  flickType:(FlickTypeMode)flickTypeMode completion:(void(^)(NSArray * __nullable results))completion; // will never go straight to dictation because allows for switching input language
+// Suggestion list, with `flickType` and `startingText` arguments
+- (void)presentTextInputControllerWithSuggestions:(nullable NSArray<NSString*> *)suggestions allowedInputMode:(WKTextInputMode)inputMode flickType:(FlickTypeMode)flickTypeMode startingText:(NSString *)startingText completion:(void(^)(NSArray * __nullable results))completion;
+
+// Suggestion handler, with `flickType` argument
+- (void)presentTextInputControllerWithSuggestionsForLanguage:(NSArray * __nullable (^ __nullable)(NSString *inputLanguage))suggestionsHandler allowedInputMode:(WKTextInputMode)inputMode flickType:(FlickTypeMode)flickTypeMode completion:(void(^)(NSArray * __nullable results))completion;
+
+// Suggestion handler, with `flickType` and `startingText` arguments
+- (void)presentTextInputControllerWithSuggestionsForLanguage:(NSArray * __nullable (^ __nullable)(NSString *inputLanguage))suggestionsHandler allowedInputMode:(WKTextInputMode)inputMode flickType:(FlickTypeMode)flickTypeMode startingText:(NSString *)startingText completion:(void(^)(NSArray * __nullable results))completion;
 
 @end
 

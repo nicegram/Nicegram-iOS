@@ -43,7 +43,12 @@ static InvocationCompletionHandler completionHandler(struct TextInputInvocation 
 
 @implementation WKInterfaceController (FlickType)
 
+// Wrapper for default `startingText` value
 - (void)presentTextInputControllerWithSuggestions:(nullable NSArray<NSString*> *)suggestions allowedInputMode:(WKTextInputMode)inputMode flickType:(FlickTypeMode)flickTypeMode  completion:(CompletionBlock)completion {
+    [self presentTextInputControllerWithSuggestions:suggestions allowedInputMode:inputMode flickType:flickTypeMode startingText:@"" completion:completion];
+}
+
+- (void)presentTextInputControllerWithSuggestions:(nullable NSArray<NSString*> *)suggestions allowedInputMode:(WKTextInputMode)inputMode flickType:(FlickTypeMode)flickTypeMode startingText:(NSString *)startingText completion:(CompletionBlock)completion {
     
     // This source version of FlickTypeKit only supports watchOS 7 or later
     if (NSProcessInfo.processInfo.operatingSystemVersion.majorVersion < 7) {
@@ -56,14 +61,19 @@ static InvocationCompletionHandler completionHandler(struct TextInputInvocation 
         .suggestionsHandler = nil,
         .inputMode = inputMode,
         .flickTypeMode = flickTypeMode,
-        .flickTypeProperties = @{},
-        .startingText = @"",
+        .flickTypeProperties = @{}, // TODO: currently not implemented in Objective-C version
+        .startingText = startingText,
         .completion = completion
     };
     [self handlePresentTextInput:invocation];
 }
 
+// Wrapper for default `startingText` value
 - (void)presentTextInputControllerWithSuggestionsForLanguage:(SuggestionsBlock)suggestionsHandler allowedInputMode:(WKTextInputMode)inputMode flickType:(FlickTypeMode)flickTypeMode completion:(CompletionBlock)completion {
+    [self presentTextInputControllerWithSuggestionsForLanguage:suggestionsHandler allowedInputMode:inputMode flickType:flickTypeMode startingText:@"" completion:completion];
+}
+
+- (void)presentTextInputControllerWithSuggestionsForLanguage:(SuggestionsBlock)suggestionsHandler allowedInputMode:(WKTextInputMode)inputMode flickType:(FlickTypeMode)flickTypeMode startingText:(NSString *)startingText completion:(CompletionBlock)completion {
     
     // This source version of FlickTypeKit only supports watchOS 7 or later
     if (NSProcessInfo.processInfo.operatingSystemVersion.majorVersion < 7) {
@@ -77,7 +87,7 @@ static InvocationCompletionHandler completionHandler(struct TextInputInvocation 
         .inputMode = inputMode,
         .flickTypeMode = flickTypeMode,
         .flickTypeProperties = @{},
-        .startingText = @"",
+        .startingText = startingText,
         .completion = completion
     };
     [self handlePresentTextInput:invocation];
@@ -154,7 +164,6 @@ struct ReturnHandler {
     
     void (^switchToFlickType)(BOOL) = ^void(BOOL includeStartingText) {
         NSString* token = [NSString stringWithFormat:@"%f", NSDate.timeIntervalSinceReferenceDate];
-        NSLog(@"token: %@", token);
         struct ReturnHandler returnHandler = { .token = token, .completion = completionHandler(invocation) };
         FlickType.returnHandler = returnHandler;
         NSMutableDictionary* queryItems = [@{
@@ -215,7 +224,10 @@ struct ReturnHandler {
 
 @implementation FlickType
 
-static NSString* _typeURL = @"https://flicktype.com/type/";
++ (NSString*)sdkVersion {
+    return @"2.0.0/objc";
+}
+
 static NSURL* _returnURL = nil;
 static struct ReturnHandler _returnHandler;
 
@@ -228,7 +240,7 @@ static struct ReturnHandler _returnHandler;
 }
 
 + (NSString*)typeURL {
-    return _typeURL;
+    return @"https://flicktype.com/type/";
 }
 
 + (struct ReturnHandler)returnHandler {
@@ -248,7 +260,7 @@ static struct ReturnHandler _returnHandler;
 }
 
 + (BOOL)handle:(NSUserActivity*)userActivity {
-    NSLog(@"handle userActivity %@", userActivity);
+    NSLog(@"FlickTypeKit: handle userActivity %@", userActivity);
     // TODO: main thread check?
     
     void (^alert)(NSString*) = ^void(NSString* message) {
