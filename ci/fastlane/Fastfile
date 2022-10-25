@@ -61,6 +61,21 @@ lane :master_build do |options|
   )
 end
 
+lane :tg_report_release do |options|
+  version = options[:version]
+  build = options[:build]
+  release_url = options[:release_url]
+
+  install_ipa_guide_url = "https://medium.com/@pancakeufo/how-to-install-nicegram-on-your-jailbroken-ios-device-1b8f9f2b5afa"
+
+  tg(
+    message: ""\
+    "Nicegram v#{version} (#{build}) -> [Download](#{release_url})\n\n"\
+    "How to install .ipa -> [Read here](#{install_ipa_guide_url})",
+    parse_mode: "Markdown"
+  )
+end
+
 lane :build do |options|
   build_number = options[:build_number]
   upload_to_tf = options[:upload_to_tf]
@@ -303,12 +318,13 @@ end
 
 lane :tg do |options|
   message = options[:message]
+  parse_mode = options[:parse_mode]
 
-  telegram(
-    token: TELEGRAM_BOT_TOKEN,
-    chat_id: TELEGRAM_CHAT_ID,
-    text: message
-  )
+  sh("curl -X POST \
+     -H 'Content-Type: application/json' \
+     -d '{\"chat_id\": \"#{TELEGRAM_CHAT_ID}\", \"text\": \"#{message}\", \"parse_mode\": \"#{parse_mode}\"}' \
+     https://api.telegram.org/bot#{TELEGRAM_BOT_TOKEN}/sendMessage"
+   )
 end
 
 
