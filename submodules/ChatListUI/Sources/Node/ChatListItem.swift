@@ -1,3 +1,6 @@
+// MARK: Nicegram HideReactions
+import NGData
+//
 import Foundation
 import UIKit
 import AsyncDisplayKit
@@ -1790,7 +1793,9 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
                         currentMentionBadgeImage = PresentationResourcesChatList.badgeBackgroundMention(item.presentationData.theme, diameter: badgeDiameter)
                     }
                     mentionBadgeContent = .mention
-                } else if hasUnseenReactions {
+                }
+                // MARK: Nicegram HideReactions, !VarSystemNGSettings.hideReactions added
+                else if hasUnseenReactions, !VarSystemNGSettings.hideReactions {
                     if isRemovedFromTotalUnreadCount {
                         currentMentionBadgeImage = PresentationResourcesChatList.badgeBackgroundInactiveReactions(item.presentationData.theme, diameter: badgeDiameter)
                     } else {

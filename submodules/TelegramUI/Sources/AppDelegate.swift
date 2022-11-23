@@ -2807,7 +2807,7 @@ final class DoubleBottomFlowContext {
             if let (id, _) = transaction.getCurrent() {
                 setAccountRecordAccessChallengeData(transaction: transaction, id: id, accessChallengeData: data)
                 
-                updatePresentationPasscodeSettingsInternal(transaction: transaction, { $0.withUpdatedAutolockTimeout(60).withUpdatedBiometricsDomainState(LocalAuth.evaluatedPolicyDomainState) })
+                updatePresentationPasscodeSettingsInternal(transaction: transaction, { $0.withUpdatedAutolockTimeout($0.autolockTimeout ?? 60).withUpdatedBiometricsDomainState(LocalAuth.evaluatedPolicyDomainState) })
                 
                 UserDefaults.standard.set(id.int64 ,forKey: "DoubleBottomId")
             }

@@ -1705,10 +1705,25 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                     })))
                 }
                 
-
-                if let peer = message.peers[message.id.peerId] as? TelegramChannel {
+                if let peer = message.peers[message.id.peerId] {
+                    let hasRestrictPermission: Bool
+                    if let channel = peer as? TelegramChannel {
+                        hasRestrictPermission = channel.hasPermission(.banMembers)
+                    } else if let group = peer as? TelegramGroup {
+                        switch group.role {
+                        case .creator:
+                            hasRestrictPermission = true
+                        case let .admin(adminRights, _):
+                            hasRestrictPermission = adminRights.rights.contains(.canBanUsers)
+                        case .member:
+                            hasRestrictPermission = false
+                        }
+                    } else {
+                        hasRestrictPermission = false
+                    }
+                    
                     if let user = message.author as? TelegramUser {
-                        if (user.id != context.account.peerId) && peer.hasPermission(.banMembers) {
+                        if (user.id != context.account.peerId) && hasRestrictPermission {
                             let banDisposables = DisposableDict<PeerId>()
                             // TODO: Check is user an admin?
                             ngContextItems.append(.action(ContextMenuActionItem(text: chatPresentationInterfaceState.strings.Conversation_ContextMenuBan, icon: { theme in
