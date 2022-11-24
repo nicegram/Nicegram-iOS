@@ -1729,7 +1729,15 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                             ngContextItems.append(.action(ContextMenuActionItem(text: chatPresentationInterfaceState.strings.Conversation_ContextMenuBan, icon: { theme in
                                 return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Restrict"), color: theme.actionSheet.primaryTextColor)
                             }, action: { _, f in
-                                banDisposables.set((context.engine.peers.fetchChannelParticipant(peerId: peer.id, participantId: user.id)
+                                let participantSignal: Signal<ChannelParticipant?, NoError>
+                                if peer is TelegramChannel {
+                                    participantSignal = context.engine.peers.fetchChannelParticipant(peerId: peer.id, participantId: user.id)
+                                } else if peer is TelegramGroup {
+                                    participantSignal = .single(.member(id: user.id, invitedAt: 0, adminInfo: nil, banInfo: nil, rank: nil))
+                                } else {
+                                    participantSignal = .single(nil)
+                                }
+                                banDisposables.set((participantSignal
                                     |> deliverOnMainQueue).start(next: { participant in
                                 controllerInteraction.presentController(channelBannedMemberController(context: context, peerId: peer.id, memberId: message.author!.id, initialParticipant: participant, updated: { _ in }, upgradedToSupergroup: { _, f in f() }), ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
                                     }), forKey: user.id)
