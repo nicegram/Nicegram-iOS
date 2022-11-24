@@ -1705,7 +1705,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                     })))
                 }
                 
-                if let peer = message.peers[message.id.peerId] {
+                if let peer = chatPresentationInterfaceState.renderedPeer?.peer ?? message.peers[message.id.peerId] {
                     let hasRestrictPermission: Bool
                     if let channel = peer as? TelegramChannel {
                         hasRestrictPermission = channel.hasPermission(.banMembers)
