@@ -914,8 +914,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             // MARK: Nicegram FoldersAtBottom
             self.chatListDisplayNode.inlineTabContainerNode.update(size: CGSize(width: layout.size.width, height: 40.0), sideInset: layout.safeInsets.left, filters: self.tabContainerData?.0 ?? [], selectedFilter: self.chatListDisplayNode.mainContainerNode.currentItemFilter, isReordering: self.chatListDisplayNode.isReorderingFilters || (self.chatListDisplayNode.mainContainerNode.currentItemNode.currentState.editing && !self.chatListDisplayNode.didBeginSelectingChatsWhileEditing), isEditing: false, transitionFraction: self.chatListDisplayNode.mainContainerNode.transitionFraction, presentationData: self.presentationData, transition: .immediate)
             //
-            
-            self.requestUpdateHeaderContent(transition: .immediate)
         }
         
         if self.isNodeLoaded {
