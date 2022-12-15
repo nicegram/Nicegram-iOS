@@ -1,7 +1,9 @@
 import NGAuth
 import NGSecondPhone
 import UIKit
+import NGCoreUI
 import NGEnv
+import NGLotteryUI
 import NGModels
 import NGMyEsims
 import NGSpecialOffer
@@ -16,6 +18,7 @@ protocol AssistantRouterInput: AnyObject {
     func showChat(chatURL: URL?)
     func dismissWithBot(session: String)
     func showSpecialOffer(id: String)
+    func showLottery()
 }
 
 final class AssistantRouter: AssistantRouterInput {
@@ -26,16 +29,19 @@ final class AssistantRouter: AssistantRouterInput {
     private let myEsimsBuilder: MyEsimsBuilder
     private let loginBuilder: LoginBuilder
     private let specialOfferBuilder: SpecialOfferBuilder
+    private let lotteryFlowFactory: LotteryFlowFactory
     
     init(assistantListener: AssistantListener?,
          myEsimsBuilder: MyEsimsBuilder,
          loginBuilder: LoginBuilder,
          specialOfferBuilder: SpecialOfferBuilder,
+         lotteryFlowFactory: LotteryFlowFactory,
          ngTheme: NGThemeColors) {
         self.assistantListener = assistantListener
         self.myEsimsBuilder = myEsimsBuilder
         self.loginBuilder = loginBuilder
         self.specialOfferBuilder = specialOfferBuilder
+        self.lotteryFlowFactory = lotteryFlowFactory
     }
 
     func dismiss() {
@@ -78,5 +84,26 @@ final class AssistantRouter: AssistantRouterInput {
         }
         
         parentViewController?.present(vc, animated: true)
+    }
+    
+    func showLottery() {
+        let navigation = makeDefaultNavigationController()
+        
+        let flow = lotteryFlowFactory.makeFlow(navigationController: navigation)
+        
+        let input = LotteryFlowInput()
+        
+        let handlers = LotteryFlowHandlers(
+            close: { [weak self] in
+                self?.parentViewController?.dismiss(animated: true)
+            }
+        )
+        
+        let lotteryController = flow.makeStartViewController(input: input, handlers: handlers)
+        
+        navigation.setViewControllers([lotteryController], animated: false)
+        navigation.modalPresentationStyle = .overFullScreen
+        
+        parentViewController?.present(navigation, animated: true)
     }
 }

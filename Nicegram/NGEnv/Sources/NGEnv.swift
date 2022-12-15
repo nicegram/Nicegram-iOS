@@ -24,6 +24,7 @@ public struct NGEnvObj: Decodable {
     public let remote_config_cache_duration_seconds: Double
     public let telegram_auth_bot: String
     public let google_cloud_api_key: String
+    public let lottery_referral_bot: String
 }
 
 func parseNGEnv() -> NGEnvObj {

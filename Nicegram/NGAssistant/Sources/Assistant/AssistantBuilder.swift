@@ -1,11 +1,17 @@
 import UIKit
 import AccountContext
 import EsimAuth
+import NGApiClient
+import NGAppContext
+import NGAuth
 import NGLogging
+import NGLottery
+import NGLotteryUI
 import NGModels
 import NGMyEsims
 import NGRepositories
 import NGSpecialOffer
+import NGTelegramRepo
 import NGTheme
 import Postbox
 import NGAuth
@@ -20,6 +26,7 @@ public protocol AssistantListener: AnyObject {
 
 @available(iOS 13, *)
 public class AssistantBuilderImpl: AssistantBuilder {
+    private let appContext: AppContext
     private let tgAccountContext: AccountContext
     private let auth: EsimAuth
     private let esimRepository: EsimRepository
@@ -27,7 +34,8 @@ public class AssistantBuilderImpl: AssistantBuilder {
     private let ngTheme: NGThemeColors
     private weak var listener: AssistantListener?
     
-    public init(tgAccountContext: AccountContext, auth: EsimAuth, esimRepository: EsimRepository, specialOfferService: SpecialOfferService, ngTheme: NGThemeColors, listener: AssistantListener?) {
+    public init(appContext: AppContext, tgAccountContext: AccountContext, auth: EsimAuth, esimRepository: EsimRepository, specialOfferService: SpecialOfferService, ngTheme: NGThemeColors, listener: AssistantListener?) {
+        self.appContext = appContext
         self.tgAccountContext = tgAccountContext
         self.auth = auth
         self.esimRepository = esimRepository
@@ -51,11 +59,16 @@ public class AssistantBuilderImpl: AssistantBuilder {
             ngTheme: ngTheme
         )
         
+        let lotteryFlowFactory = LotteryFlowFactoryImpl(
+            appContext: appContext
+        )
+        
         let router = AssistantRouter(
             assistantListener: listener,
             myEsimsBuilder: myEsimBuilder,
             loginBuilder: loginBuilder,
             specialOfferBuilder: specialOfferBuilder,
+            lotteryFlowFactory: lotteryFlowFactory,
             ngTheme: ngTheme
         )
         router.parentViewController = controller
@@ -70,6 +83,9 @@ public class AssistantBuilderImpl: AssistantBuilder {
             getSpecialOfferUseCase: GetSpecialOfferUseCaseImpl(
                 specialOfferService: specialOfferService
             ),
+            getReferralLinkUseCase: GetReferralLinkUseCaseImpl(),
+            initiateLoginWithTelegramUseCase: appContext.resolveInitiateLoginWithTelegramUseCase(),
+            getLotteryDataUseCase: appContext.resolveGetLotteryDataUseCase(),
             eventsLogger: LoggersFactory().createDefaultEventsLogger()
         )
         interactor.output = presenter

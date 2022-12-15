@@ -1,9 +1,16 @@
+import Combine
 import Foundation
 import EsimAuth
+import NGAppCache
+import NGAuth
+import NGCoreUI
 import NGLogging
+import NGLottery
 import NGModels
+import NGRemoteConfig
 import NGRepositories
 import NGSpecialOffer
+import UIKit
 
 typealias AssistantInteractorInput = AssistantViewControllerOutput
 
@@ -15,8 +22,11 @@ protocol AssistantInteractorOutput {
     func handleLogout()
     func handle(specialOffer: SpecialOffer)
     func handleSuccessSignInWithTelegram()
+    func presentLottery(_: Bool)
+    func presentLottery(jackpot: Money)
 }
 
+@available(iOS 13.0, *)
 class AssistantInteractor: AssistantInteractorInput {
     var output: AssistantInteractorOutput!
     var router: AssistantRouterInput!
@@ -24,17 +34,25 @@ class AssistantInteractor: AssistantInteractorInput {
     private let esimAuth: EsimAuth
     private let userEsimsRepository: UserEsimsRepository
     private let getSpecialOfferUseCase: GetSpecialOfferUseCase
+    private let getReferralLinkUseCase: GetReferralLinkUseCase
+    private let initiateLoginWithTelegramUseCase: InitiateLoginWithTelegramUseCase
+    private let getLotteryDataUseCase: GetLotteryDataUseCase
     private let eventsLogger: EventsLogger
     
     private var deeplink: Deeplink?
     private var specialOffer: SpecialOffer?
     private var isAuthorized = false
+    private var cancellables = Set<AnyCancellable>()
     
-    init(deeplink: Deeplink?, esimAuth: EsimAuth, userEsimsRepository: UserEsimsRepository, getSpecialOfferUseCase: GetSpecialOfferUseCase, eventsLogger: EventsLogger) {
+    
+    init(deeplink: Deeplink?, esimAuth: EsimAuth, userEsimsRepository: UserEsimsRepository, getSpecialOfferUseCase: GetSpecialOfferUseCase, getReferralLinkUseCase: GetReferralLinkUseCase, initiateLoginWithTelegramUseCase: InitiateLoginWithTelegramUseCase, getLotteryDataUseCase: GetLotteryDataUseCase, eventsLogger: EventsLogger) {
         self.deeplink = deeplink
         self.esimAuth = esimAuth
         self.userEsimsRepository = userEsimsRepository
         self.getSpecialOfferUseCase = getSpecialOfferUseCase
+        self.getReferralLinkUseCase = getReferralLinkUseCase
+        self.initiateLoginWithTelegramUseCase = initiateLoginWithTelegramUseCase
+        self.getLotteryDataUseCase = getLotteryDataUseCase
         self.eventsLogger = eventsLogger
     }
     
@@ -42,6 +60,7 @@ class AssistantInteractor: AssistantInteractorInput {
         output.handleViewDidLoad()
         trySignInWithTelegram()
         fetchSpecialOffer()
+        subscribeToLotteryChange()
     }
     
     func onViewDidAppear() {
@@ -100,8 +119,19 @@ class AssistantInteractor: AssistantInteractorInput {
         router.dismissWithBot(session: session)
         router = nil
     }
+    
+    func handleLottery() {
+        router.showLottery()
+    }
+    
+    func handleLotteryReferral() {
+        if let url = getReferralLinkUseCase.getReferralLink() {
+            UIApplication.shared.open(url)
+        }
+    }
 }
 
+@available(iOS 13.0, *)
 private extension AssistantInteractor {
     func handleUser(_ user: EsimUser?, animated: Bool) {
         isAuthorized = (user != nil)
@@ -137,6 +167,42 @@ private extension AssistantInteractor {
                 self.output.handle(specialOffer: specialOffer)
             }
         }
+    }
+    
+    func initiateLoginWithTelegram() {
+        output.handleLoading(isLoading: true)
+        initiateLoginWithTelegramUseCase.initiateLoginWithTelegram { [weak self] result in
+            guard let self else { return }
+            
+            DispatchQueue.main.async {
+                self.output.handleLoading(isLoading: false)
+                switch result {
+                case .success(let url):
+                    UIApplication.shared.open(url)
+                case .failure(let error):
+                    Alerts.show(.error(error))
+                }
+            }
+        }
+    }
+    
+    func subscribeToLotteryChange() {
+        guard !hideLottery else { return }
+        getLotteryDataUseCase.lotteryDataPublisher()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] lotteryData in
+                guard let self else { return }
+                
+                if let lotteryData {
+                    self.output.presentLottery(jackpot: lotteryData.currentDraw.jackpot)
+                    self.output.presentLottery(true)
+                    
+                    AppCache.wasLotteryShown = true
+                } else {
+                    self.output.presentLottery(false)
+                }
+            }
+            .store(in: &cancellables)
     }
     
     func tryHandleDeeplink() {

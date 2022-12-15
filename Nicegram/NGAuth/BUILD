@@ -20,7 +20,9 @@ swift_library(
         "//Nicegram/NGEnv:NGEnv",
         "//Nicegram/NGLoadingIndicator:NGLoadingIndicator",
         "//Nicegram/NGToast:NGToast",
-        "//Nicegram/NGAlert:NGAlert",
+        "//Nicegram/NGAlert:NGAlert",    
+        "//Nicegram/NGTelegramRepo:NGTelegramRepo",
+        "//Nicegram/NGUtils:NGUtils",
     ],
     visibility = ["//visibility:public"],
 

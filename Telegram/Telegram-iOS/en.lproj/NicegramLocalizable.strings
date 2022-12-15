@@ -135,3 +135,69 @@
 
 /*Push Notifications*/
 "NicegramPush.SpecialOffer.Body" = "New special offer is available for you, check it out!";
+
+/*Lottery*/
+"Lottery.Banner.Title" = "Nicegram Happy Lottery";
+"Lottery.Banner.Desc" = "Powerball Jackpot";
+
+"Assistant.Referral.Desc" = "Приглашай друзей в **Nicegram** чтобы получить дополнительный шанс выиграть джекпот!!!";
+"Assistant.Referral.Btn" = "Пригласить";
+
+"Lottery.Header.Title" = "Nicegram Happy Lottery";
+"Lottery.Header.Desc" = "Испытай удачу в розыгрыше джек пота PowerBall размером";
+"Lottery.NextDrawWaiting.Title" = "Следующий розыгрыш через:";
+"Lottery.NextDrawStarted.Title" = "ИГРА НАЧАЛАСЬ!";
+"Lottery.NextDrawStarted.Desc" = "Результат текушего розыгрыша будет известен уже совсем скоро. Генерация билетиков на следующую игру наснется через несоклько часов.";
+"Lottery.NextDraw.Day" = "Days";
+"Lottery.NextDraw.Hour" = "hour";
+"Lottery.NextDraw.Min" = "Min";
+"Lottery.NextDraw.Sec" = "SEC";
+"Lottery.GetTicket.Btn" = "Получить билетик";
+"Lottery.InfoTab" = "Инфо";
+"Lottery.TicketsTab" = "Мои билетики";
+"Lottery.PastDraws" = "Истоиря прошлых розыгрышей";
+"Lottery.ActiveTickets.Title" = "Активные билетики";
+"Lottery.ActiveTickets.Desc" = "Результат будет известен через: %@";
+"Lottery.AvailableTickets.Title" = "Доступные Билетики";
+"Lottery.AvailableTicketsNotEmpty.Desc" = "У вас есть возможность получить бесплатный билетик на следующую игру, которая пройдет 10 декабря. Вы можете использовать возможность сейчас или подождать следующей игры.";
+"Lottery.AvailableTickets.Btn" = "Сгенерировать билетик";
+"Lottery.AvailableTicketsEmpty.Desc" = "У вас еще нет билетиков для генерации. Приглашгайте друзей или воспользуйтесь Nicegram Premium чтобы получить шанс выиграть Джек-Пот!";
+"Lottery.PastTickets" = "Прошлые билетики";
+"Lottery.MoreInfo" = "More info";
+
+"LotteryTicket.YourNumbers" = "Your Numbers";
+"LotteryTicket.LastWin" = "Последний выигрыш";
+"LotteryTicket.Link" = "[https://powerball.com](https://powerball.com)";
+
+"Lottery.DrawSection.Title" = "Как происходит розыгрыш?";
+"Lottery.DrawSection.Desc" = "Розыгрыш происходит каждую неделю по средам. Размер джек-пота растет пока кто-нибудь не выиграет главный приз. Джекпот на следующую игру составляет %@.\n\nПобедителем считается билетик, у которого совпадут все шесть номеров. Порядок совпадения первых пяти номеров не имеет значения, последний номер должен совпадать с последним номера билетика.";
+
+"Lottery.HowToGetTicketSection.Title" = "Как получить билетик??";
+"Lottery.HowToGetTicketSection.Desc" = "1. Все премиум подписчики могут получить по одному бесплатному билетику в месяц. Для этого  необходимо иметь активную Premium подписку и нажать кнопку “Получить билетик” в разделе “Мои билетики”.\n\n 2. Пригласить 3-ех пользователей в Nicegram, чтобы получить один бесплатный билетик. Можно приглашать больше, чтобы получить больше билетиков.";
+
+"Lottery.WinnerSection.Title" = "Как узнать победителя?";
+"Lottery.WinnerSection.Desc" = "Результат розыгрыша каждого раунда будет доступен на официальном сайте [https://powerball.com](https://powerball.com). Выигрышный билетик будет так-же опубликован в NG Ассистенте и в телеграм канале/боте.";
+
+"Lottery.ReferralSection.Title" = "Пригласи друзей в Nicegram";
+"Lottery.ReferralSection.Desc" = "Пригласи своих друзей в Nicegram используя персональную ссылку и получи по одному билетику за каждых 3-ех друзей, которые установят и верифицируют аккаунт. Ваши друзья тоже получат бонусный +1 билетик, после того как активируют свой первый билетик.";
+"Lottery.ReferralSection.Btn" = "Пригласить друзей в Nicegram";
+
+"Lottery.PremiumSection.Title" = "Получи бесплатный билет за Premium";
+"Lottery.PremiumSection.Subscribe.Desc" = "Получай по бесплатному билетику один раз в месяц при наличии активной Premium Подписки.\n\nУ вас нет активной полдписки! Активируйте Nicegram Premium для доступа ко всем возможностям мессенджера и чтобы получить бесплатный билетик.";
+"Lottery.PremiumSection.Subscribe.Btn" = "Активировать Nicegram Premium";
+"Lottery.PremiumSection.Get.Desc" = "Получай по бесплатному билетику один раз в месяц при наличии активной Premium Подписки.\n\nУ вас есть активная подписка Nicegram Premium. Вы можете получить свой билетик прямо сейчас!";
+"Lottery.PremiumSection.Get.Btn" = "Получить билетик за Premium";
+"Lottery.PremiumSection.Wait.Desc" = "Получай по бесплатному билетику один раз в месяц при наличии активной Premium Подписки.\n\nУ вас есть активная подписка Nicegram Premium. Вы уже использовали возможность получить билетик, новая возможность будет доступна %@";
+"Lottery.PremiumSection.Wait.Btn" = "Получить билетик за Premium";
+
+"CreateTicket.Title" = "Создание билетика";
+"CreateTicket.Desc" = "Тут текст что он может ввести вручную номера или выбрать рандомную генерацию";
+"CreateTicket.DrawDate" = "Дата розыгрыша: **%@**";
+"CreateTicket.NumbersDesc" = "1-5 ячейка числа от 1 до 69\n6 ячейка числа от 1 до 26";
+"CreateTicket.RandomBtn" = "Случайная комбинация";
+"CreateTicket.CreateBtn" = "Получить билетик";
+
+"Alert.TelegramLogin.Title" = "Требуется верификация телеграмм аккуунта";
+"Alert.TelegramLogin.Desc" = "А тут мы должны написать почему нам это требуется, так в 2-3 слова или строках";
+"Alert.TelegramLogin.PositiveBtn" = "Continue";
+"Alert.TelegramLogin.NegativeBtn" = "Close";

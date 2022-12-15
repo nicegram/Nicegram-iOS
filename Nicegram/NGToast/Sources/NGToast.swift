@@ -14,7 +14,7 @@ open class NGToast: UIView {
     
     //  MARK: - Logic
     
-    public var duration: TimeInterval = 2
+    public var duration: TimeInterval? = 2
     private var autoDismissTimer: Timer?
     
     private var shownVerticalPositionConstraint: Constraint?
@@ -73,8 +73,8 @@ open class NGToast: UIView {
             self.updateConstraints(isHidden: false)
             view.layoutIfNeeded()
         } completion: { _ in
-            if #available(iOS 10.0, *) {
-                self.autoDismissTimer = Timer.scheduledTimer(withTimeInterval: self.duration, repeats: false) { [weak self] _ in
+            if let duration = self.duration {
+                self.autoDismissTimer = Timer.scheduledTimer(withTimeInterval: duration, repeats: false) { [weak self] _ in
                     self?.hide()
                 }
             }

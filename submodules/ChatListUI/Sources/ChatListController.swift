@@ -4,12 +4,15 @@ import Postbox
 // MARK: Nicegram Imports
 import EsimAuth
 import NGApiClient
+import NGAppContext
 import NGData
 import NGAppCache
 import NGAssistant
+import NGCoreUI
 import NGTheme
 import NGAuth
 import NGLocalDataSources
+import NGLotteryUI
 import NGModels
 import NGRemoteConfig
 import NGRemoteDataSources
@@ -224,6 +227,14 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     }
     
     public init(context: AccountContext, location: ChatListControllerLocation, controlsHistoryPreload: Bool, hideNetworkActivityStatus: Bool = false, previewing: Bool = false, enableDebugActions: Bool) {
+        // MARK: Nicegram
+        if #available(iOS 13.0, *) {
+            self._appContext = AppContext(accountContext: context)
+        } else {
+            self._appContext = nil
+        }
+        //
+        
         self.context = context
         self.controlsHistoryPreload = controlsHistoryPreload
         self.hideNetworkActivityStatus = hideNetworkActivityStatus
@@ -754,6 +765,12 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             }
             self.reloadFilters()
         }
+        
+        // MARK: Nicegram
+        if #available(iOS 13.0, *) {
+            self.nicegramInit()
+        }
+        //
         
         self.updateNavigationMetadata()
     }
@@ -1954,7 +1971,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             }))
         }
         
-        showNicegramHintAssistantIfNeeded()
         showNicegramAssistantIfNeeded()
         showSpecialOfferIfNeeded()
     }
@@ -2926,38 +2942,95 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         }
     }
     
-    public func showNicegramAssistant(deeplink: Deeplink?) {
-        guard didAppear else {
-            deferredNicegramDeeplink = deeplink
-            return
-        }
-        
-        let auth = EsimAuth(
-            bundleId: NGENV.bundle_id,
-            apiClient: createNicegramApiClient(auth: nil)
-        )
-        let apiClient = createNicegramApiClient(auth: auth)
-        
-        let plansAdapter = EsimPlansRequestAdaper(apiCient: apiClient)
+    private let _appContext: AnyObject?
+    @available(iOS 13.0, *)
+    private var appContext: AppContext {
+        return _appContext as! AppContext
+    }
     
-        let offersRepository = EsimOffersRepositoryImpl(remoteDataSource: plansAdapter)
-        let regionsRepository = EsimRegionsRepositoryImpl(remoteDataSource: plansAdapter)
-        let countriesRepository = EsimCountriesRepositoryImpl(remoteDataSource: plansAdapter)
-        let userEsimsRepository = UserEsimsRepositoryImpl(
-            localDataSource: UserEsimsLocalDataSourceImpl(),
-            remoteDataSource: UserEsimsRemoteDataSourceImpl(
-                apiClient: apiClient
-            )
+    private var lotteryDataSubscription: AnyObject?
+    
+    @available(iOS 13.0, *)
+    private func nicegramInit() {
+        let getLotteryDataUseCase = appContext.resolveGetLotteryDataUseCase()
+        let loadLotteryDataUseCase = appContext.resolveLoadLotteryDataUseCase()
+        
+        lotteryDataSubscription = getLotteryDataUseCase.lotteryDataPublisher()
+            .compactMap { $0 }
+            .prefix(1)
+            .delay(for: .seconds(10), scheduler: RunLoop.main)
+            .sink { [weak self] lotteryData in
+                guard !AppCache.wasLotteryShown, !hideLottery else { return }
+                self?.showLotteryBanner(jackpot: lotteryData.currentDraw.jackpot)
+            }
+        
+        loadLotteryDataUseCase.loadLotteryData(completion: { _ in })
+    }
+    
+    private func showLotteryBanner(jackpot: Money) {
+        if #available(iOS 13.0, *) {
+            AppCache.wasLotteryShown = true
+            showLotteryBannerAsToast(jackpot: jackpot) { [weak self] in
+                self?.showLotterySplash()
+            }
+        }
+    }
+    
+    @available(iOS 13.0, *)
+    private func showLotterySplash() {
+        let parentViewController = self.view.window?.rootViewController
+        
+        let navigation = makeDefaultNavigationController()
+        
+        let lotteryFlowFactory = LotteryFlowFactoryImpl(appContext: self.appContext)
+        let flow = lotteryFlowFactory.makeFlow(navigationController: navigation)
+        
+        let input = LotteryFlowInput()
+        
+        let handlers = LotteryFlowHandlers(
+            close: { [weak parentViewController] in
+                parentViewController?.dismiss(animated: true)
+            }
         )
         
-        let esimRepositry = EsimRepositoryImpl(offersRepository: offersRepository, regionsRepository: regionsRepository, countriesRepository: countriesRepository, userEsimsRepository: userEsimsRepository)
+        let lotteryController = flow.makeStartViewController(input: input, handlers: handlers)
         
+        navigation.setViewControllers([lotteryController], animated: false)
+        navigation.modalPresentationStyle = .overFullScreen
+        
+        parentViewController?.present(navigation, animated: true)
+    }
+    
+    public func showNicegramAssistant(deeplink: Deeplink?) {
         if #available(iOS 13, *) {
+            guard didAppear else {
+                deferredNicegramDeeplink = deeplink
+                return
+            }
+            
+            let auth = appContext.esimAuth
+            let apiClient = appContext.resolveApiClient()
+            
+            let plansAdapter = EsimPlansRequestAdaper(apiCient: apiClient)
+        
+            let offersRepository = EsimOffersRepositoryImpl(remoteDataSource: plansAdapter)
+            let regionsRepository = EsimRegionsRepositoryImpl(remoteDataSource: plansAdapter)
+            let countriesRepository = EsimCountriesRepositoryImpl(remoteDataSource: plansAdapter)
+            let userEsimsRepository = UserEsimsRepositoryImpl(
+                localDataSource: UserEsimsLocalDataSourceImpl(),
+                remoteDataSource: UserEsimsRemoteDataSourceImpl(
+                    apiClient: apiClient
+                )
+            )
+            
+            let esimRepositry = EsimRepositoryImpl(offersRepository: offersRepository, regionsRepository: regionsRepository, countriesRepository: countriesRepository, userEsimsRepository: userEsimsRepository)
+            
             let ngTheme = NGThemeColors(
-                telegramTheme: self.presentationData.theme.intro.statusBarStyle, 
+                telegramTheme: self.presentationData.theme.intro.statusBarStyle,
                 statusBarStyle: self.statusBar.statusBarStyle
             )
             let personalAssistant = AssistantBuilderImpl(
+                appContext: self.appContext,
                 tgAccountContext: context,
                 auth: auth,
                 esimRepository: esimRepositry,
@@ -2981,36 +3054,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             navigation.modalPresentationStyle = .overFullScreen
             
             present(navigation, animated: false, completion: nil)
-        }
-    }
-    
-    private func showNicegramHintAssistantIfNeeded() {        
-        if UIDevice.current.userInterfaceIdiom == .phone && AppCache.appLaunchCount == 1 {
-            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(2)) {
-                guard !NGSettings.showAssistantHint else {
-                    if #available(iOS 13, *) {
-                        let ngTheme = NGThemeColors(
-                            telegramTheme: self.presentationData.theme.intro.statusBarStyle, 
-                            statusBarStyle: self.statusBar.statusBarStyle
-                        )
-                        let personalAssistant = HintBuilderImpl(ngTheme: ngTheme).build()
-                        let navigation = UINavigationController(rootViewController: personalAssistant)
-                        navigation.navigationBar.tintColor = ngTheme.reverseTitleColor
-                        navigation.modalPresentationStyle = .overFullScreen
-                        navigation.navigationBar.standardAppearance.backgroundColor = UIColor.clear
-                        navigation.navigationBar.standardAppearance.backgroundEffect = nil
-                        navigation.navigationBar.standardAppearance.shadowImage = UIImage()
-                        navigation.navigationBar.standardAppearance.shadowColor = .clear
-                        navigation.navigationBar.standardAppearance.backgroundImage = UIImage()
-                        
-                        self.present(navigation, animated: false, completion: nil)
-                        NGSettings.showAssistantHint = false
-                    } else {
-                        print("Error")
-                    }
-                    return
-                }   
-            }
         }
     }
     
