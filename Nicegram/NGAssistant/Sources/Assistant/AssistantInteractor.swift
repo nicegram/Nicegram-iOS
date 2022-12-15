@@ -33,6 +33,7 @@ class AssistantInteractor: AssistantInteractorInput {
 
     private let esimAuth: EsimAuth
     private let userEsimsRepository: UserEsimsRepository
+    private let getCurrentUserUseCase: GetCurrentUserUseCase
     private let getSpecialOfferUseCase: GetSpecialOfferUseCase
     private let getReferralLinkUseCase: GetReferralLinkUseCase
     private let initiateLoginWithTelegramUseCase: InitiateLoginWithTelegramUseCase
@@ -45,10 +46,11 @@ class AssistantInteractor: AssistantInteractorInput {
     private var cancellables = Set<AnyCancellable>()
     
     
-    init(deeplink: Deeplink?, esimAuth: EsimAuth, userEsimsRepository: UserEsimsRepository, getSpecialOfferUseCase: GetSpecialOfferUseCase, getReferralLinkUseCase: GetReferralLinkUseCase, initiateLoginWithTelegramUseCase: InitiateLoginWithTelegramUseCase, getLotteryDataUseCase: GetLotteryDataUseCase, eventsLogger: EventsLogger) {
+    init(deeplink: Deeplink?, esimAuth: EsimAuth, userEsimsRepository: UserEsimsRepository, getCurrentUserUseCase: GetCurrentUserUseCase, getSpecialOfferUseCase: GetSpecialOfferUseCase, getReferralLinkUseCase: GetReferralLinkUseCase, initiateLoginWithTelegramUseCase: InitiateLoginWithTelegramUseCase, getLotteryDataUseCase: GetLotteryDataUseCase, eventsLogger: EventsLogger) {
         self.deeplink = deeplink
         self.esimAuth = esimAuth
         self.userEsimsRepository = userEsimsRepository
+        self.getCurrentUserUseCase = getCurrentUserUseCase
         self.getSpecialOfferUseCase = getSpecialOfferUseCase
         self.getReferralLinkUseCase = getReferralLinkUseCase
         self.initiateLoginWithTelegramUseCase = initiateLoginWithTelegramUseCase
@@ -69,7 +71,14 @@ class AssistantInteractor: AssistantInteractorInput {
     }
     
     func handleAuth(isAnimated: Bool) {
-        handleUser(esimAuth.currentUser, animated: isAnimated)
+        let currentUser: EsimUser?
+        if getCurrentUserUseCase.isAuthorized() {
+            currentUser = getCurrentUserUseCase.getCurrentUser()
+        } else {
+            currentUser = nil
+        }
+        
+        handleUser(currentUser, animated: isAnimated)
     }
     
     func handleDismiss() {
@@ -86,7 +95,7 @@ class AssistantInteractor: AssistantInteractorInput {
     }
     
     func handleOnLogin() {
-        router.showLogin()
+        initiateLoginWithTelegram()
     }
     
     func handleLogout() {

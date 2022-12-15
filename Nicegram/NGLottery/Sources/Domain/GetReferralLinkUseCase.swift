@@ -1,4 +1,3 @@
-import EsimAuth
 import Foundation
 import NGEnv
 import NGUtils

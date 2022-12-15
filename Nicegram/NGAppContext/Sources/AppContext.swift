@@ -55,6 +55,12 @@ public extension AppContext {
 
 @available(iOS 13.0, *)
 public extension AppContext {
+    func resolveGetCurrentUserUseCase() -> GetCurrentUserUseCase {
+        return GetCurrentUserUseCaseImpl(
+            esimAuth: esimAuth
+        )
+    }
+    
     func resolveInitiateLoginWithTelegramUseCase() -> InitiateLoginWithTelegramUseCase {
         return InitiateLoginWithTelegramUseCaseImpl(
             getTelegramIdUseCase: GetTelegramIdUseCaseImpl(

@@ -47,13 +47,12 @@ public class AssistantBuilderImpl: AssistantBuilder {
     public func build(deeplink: Deeplink?) -> UIViewController {
         let controller = AssistantViewController(ngTheme: ngTheme)
         let myEsimBuilder = MyEsimsBuilderImpl(
+            appContext: appContext,
             tgAccountContext: tgAccountContext,
             auth: auth,
             esimRepository: esimRepository,
-            ngTheme: ngTheme,
-            loginListener: controller
+            ngTheme: ngTheme
         )
-        let loginBuilder = LoginBuilderImpl(tgAccountContext: tgAccountContext, esimAuth: auth, ngTheme: ngTheme, loginListener: controller)
         let specialOfferBuilder = SpecialOfferBuilderImpl(
             specialOfferService: specialOfferService,
             ngTheme: ngTheme
@@ -66,7 +65,6 @@ public class AssistantBuilderImpl: AssistantBuilder {
         let router = AssistantRouter(
             assistantListener: listener,
             myEsimsBuilder: myEsimBuilder,
-            loginBuilder: loginBuilder,
             specialOfferBuilder: specialOfferBuilder,
             lotteryFlowFactory: lotteryFlowFactory,
             ngTheme: ngTheme
@@ -80,6 +78,7 @@ public class AssistantBuilderImpl: AssistantBuilder {
             deeplink: deeplink,
             esimAuth: auth,
             userEsimsRepository: esimRepository,
+            getCurrentUserUseCase: appContext.resolveGetCurrentUserUseCase(),
             getSpecialOfferUseCase: GetSpecialOfferUseCaseImpl(
                 specialOfferService: specialOfferService
             ),

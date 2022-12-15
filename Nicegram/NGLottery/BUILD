@@ -7,6 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     deps = [
+        "//Nicegram/NGAuth:NGAuth",
         "//Nicegram/NGCore:NGCore",
         "//Nicegram/NGEnv:NGEnv",
         "//Nicegram/NGStoreKitFacade:NGStoreKitFacade",

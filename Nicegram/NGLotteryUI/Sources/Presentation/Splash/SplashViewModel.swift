@@ -25,7 +25,7 @@ class SplashViewModelImpl: BaseViewModel<SplashViewState, SplashInput, SplashHan
     private let getLotteryDataUseCase: GetLotteryDataUseCase
     private let getPremiumStatusUseCase: GetPremiumStatusUseCase
     private let getTicketForPremiumUseCase : GetTicketForPremiumUseCase
-    private let getUserVerificationStatusUseCase: GetUserVerificationStatusUseCase
+    private let getCurrentUserUseCase: GetCurrentUserUseCase
     private let initiateLoginWithTelegramUseCase: InitiateLoginWithTelegramUseCase
     private let loadLotteryDataUseCase: LoadLotteryDataUseCase
     private let getReferralLinkUseCase: GetReferralLinkUseCase
@@ -34,17 +34,21 @@ class SplashViewModelImpl: BaseViewModel<SplashViewState, SplashInput, SplashHan
     
     //  MARK: - Lifecycle
     
-    init(input: SplashInput, handlers: SplashHandlers, getLotteryDataUseCase: GetLotteryDataUseCase, getPremiumStatusUseCase: GetPremiumStatusUseCase, getTicketForPremiumUseCase: GetTicketForPremiumUseCase, getUserVerificationStatusUseCase: GetUserVerificationStatusUseCase, initiateLoginWithTelegramUseCase: InitiateLoginWithTelegramUseCase, loadLotteryDataUseCase: LoadLotteryDataUseCase, getReferralLinkUseCase: GetReferralLinkUseCase, eventsLogger: EventsLogger) {
+    init(input: SplashInput, handlers: SplashHandlers, getLotteryDataUseCase: GetLotteryDataUseCase, getPremiumStatusUseCase: GetPremiumStatusUseCase, getTicketForPremiumUseCase: GetTicketForPremiumUseCase, getCurrentUserUseCase: GetCurrentUserUseCase, initiateLoginWithTelegramUseCase: InitiateLoginWithTelegramUseCase, loadLotteryDataUseCase: LoadLotteryDataUseCase, getReferralLinkUseCase: GetReferralLinkUseCase, eventsLogger: EventsLogger) {
         self.getLotteryDataUseCase = getLotteryDataUseCase
         self.getPremiumStatusUseCase = getPremiumStatusUseCase
         self.getTicketForPremiumUseCase = getTicketForPremiumUseCase
-        self.getUserVerificationStatusUseCase = getUserVerificationStatusUseCase
+        self.getCurrentUserUseCase = getCurrentUserUseCase
         self.initiateLoginWithTelegramUseCase = initiateLoginWithTelegramUseCase
         self.loadLotteryDataUseCase = loadLotteryDataUseCase
         self.getReferralLinkUseCase = getReferralLinkUseCase
         self.eventsLogger = eventsLogger
         
         super.init(input: input, handlers: handlers)
+    }
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
         
         subscribeToDataChange()
         refreshData()
@@ -101,7 +105,7 @@ private extension SplashViewModelImpl {
     }
     
     func getTicketForPremium() {
-        guard getUserVerificationStatusUseCase.isUserVerifiedWithTelegram() else {
+        guard getCurrentUserUseCase.isAuthorized() else {
             Alerts.show(.needLoginWithTelegram { [weak self] in
                 self?.initiateLoginWithTelegram()
             })

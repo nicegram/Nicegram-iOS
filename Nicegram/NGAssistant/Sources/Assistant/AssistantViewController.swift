@@ -500,16 +500,6 @@ extension AssistantViewController: AssistantViewControllerInput {
     }
 }
 
-extension AssistantViewController: LoginListener {
-    func onLogin() {
-        output.handleAuth(isAnimated: false)
-    }
-    
-    func onOpenTelegamBot(session: String) {
-        output.handleTelegramBot(session: session)
-    }
-}
-
 extension AssistantViewController: UINavigationControllerDelegate {
     func navigationControllerSupportedInterfaceOrientations(_ navigationController: UINavigationController) -> UIInterfaceOrientationMask {
         return UIDevice.current.userInterfaceIdiom == .phone ? .portrait : .all

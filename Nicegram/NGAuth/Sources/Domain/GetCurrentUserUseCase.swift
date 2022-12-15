@@ -1,10 +1,11 @@
 import EsimAuth
 
-public protocol GetUserVerificationStatusUseCase {
-    func isUserVerifiedWithTelegram() -> Bool
+public protocol GetCurrentUserUseCase {
+    func getCurrentUser() -> EsimUser?
+    func isAuthorized() -> Bool
 }
 
-public class GetUserVerificationStatusUseCaseImpl {
+public class GetCurrentUserUseCaseImpl {
     
     //  MARK: - Dependencies
     
@@ -18,8 +19,12 @@ public class GetUserVerificationStatusUseCaseImpl {
     
 }
 
-extension GetUserVerificationStatusUseCaseImpl: GetUserVerificationStatusUseCase {
-    public func isUserVerifiedWithTelegram() -> Bool {
+extension GetCurrentUserUseCaseImpl: GetCurrentUserUseCase {
+    public func getCurrentUser() -> EsimUser? {
+        return esimAuth.currentUser
+    }
+    
+    public func isAuthorized() -> Bool {
         guard let currentUser = esimAuth.currentUser else {
             return false
         }

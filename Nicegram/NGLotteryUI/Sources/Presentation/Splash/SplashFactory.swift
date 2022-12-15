@@ -42,7 +42,7 @@ extension SplashFactoryImpl: SplashFactory {
             lotteryDataRepository: appContext.lotteryDataRepository
         )
         
-        let getUserVerificationStatusUseCase = GetUserVerificationStatusUseCaseImpl(
+        let getCurrentUserUseCase = GetCurrentUserUseCaseImpl(
             esimAuth: appContext.esimAuth
         )
         
@@ -54,7 +54,7 @@ extension SplashFactoryImpl: SplashFactory {
         
         let eventsLogger = appContext.createDefaultEventsLogger()
         
-        let viewModel = SplashViewModelImpl(input: input, handlers: handlers, getLotteryDataUseCase: getLotteryDataUseCase, getPremiumStatusUseCase: getPremiumStatusUseCase, getTicketForPremiumUseCase: getTicketForPremiumUseCase, getUserVerificationStatusUseCase: getUserVerificationStatusUseCase, initiateLoginWithTelegramUseCase: initiateLoginWithTelegramUseCase, loadLotteryDataUseCase: loadLotteryDataUseCase, getReferralLinkUseCase: getReferralLinkUseCase, eventsLogger: eventsLogger)
+        let viewModel = SplashViewModelImpl(input: input, handlers: handlers, getLotteryDataUseCase: getLotteryDataUseCase, getPremiumStatusUseCase: getPremiumStatusUseCase, getTicketForPremiumUseCase: getTicketForPremiumUseCase, getCurrentUserUseCase: getCurrentUserUseCase, initiateLoginWithTelegramUseCase: initiateLoginWithTelegramUseCase, loadLotteryDataUseCase: loadLotteryDataUseCase, getReferralLinkUseCase: getReferralLinkUseCase, eventsLogger: eventsLogger)
         
         let view = SplashViewController(viewModel: viewModel, flowHolder: flow)
         
