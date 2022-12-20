@@ -12,6 +12,7 @@ import NGCoreUI
 import NGTheme
 import NGAuth
 import NGLocalDataSources
+import NGLocalization
 import NGLotteryUI
 import NGModels
 import NGRemoteConfig
@@ -2952,13 +2953,23 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     
     @available(iOS 13.0, *)
     private func nicegramInit() {
+        // Localization
+        let _ = context.sharedContext.accountManager.sharedData(keys: [SharedDataKeys.localizationSettings]).start { sharedData in
+            if let localizationSettings = sharedData.entries[SharedDataKeys.localizationSettings]?.get(LocalizationSettings.self) {
+                let activeLanguageCode = localizationSettings.secondaryComponent?.languageCode ?? localizationSettings.primaryComponent.languageCode
+                LocalizationServiceImpl.shared.setLanguageCode(activeLanguageCode)
+            }
+        }
+        
+        // Lottery
+        
         let getLotteryDataUseCase = appContext.resolveGetLotteryDataUseCase()
         let loadLotteryDataUseCase = appContext.resolveLoadLotteryDataUseCase()
         
         lotteryDataSubscription = getLotteryDataUseCase.lotteryDataPublisher()
             .compactMap { $0 }
             .prefix(1)
-            .delay(for: .seconds(10), scheduler: RunLoop.main)
+            .delay(for: .seconds(3), scheduler: RunLoop.main)
             .sink { [weak self] lotteryData in
                 guard !AppCache.wasLotteryShown, !hideLottery else { return }
                 self?.showLotteryBanner(jackpot: lotteryData.currentDraw.jackpot)

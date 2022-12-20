@@ -5,7 +5,7 @@ public func showLotteryBannerAsToast(jackpot: Money, onTap: @escaping () -> Void
     let banner = LotteryBannerView()
     banner.display(jackpot: jackpot)
     
-    let toast = NGToast()
+    let toast = NGToast(topInsetFromSafeArea: 65)
     toast.duration = nil
     toast.setContentView(banner)
     

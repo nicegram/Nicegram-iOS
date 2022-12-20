@@ -94,7 +94,7 @@ private extension WaysToGetTicketView {
         let stack = UIStackView(
             arrangedSubviews: [
                 referralSection,
-                .lotterySectionsSeparator(),
+                .orSeparator(),
                 premiumSection
             ],
             axis: .vertical,
@@ -106,6 +106,35 @@ private extension WaysToGetTicketView {
         stack.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
+    }
+}
+
+private extension UIView {
+    static func orSeparator() -> UIView {
+        let leadingSeparator = UIView.lotterySectionsSeparator()
+        let trailingSeparator = UIView.lotterySectionsSeparator()
+        
+        let label = UILabel()
+        label.applyStyle(
+            font: .systemFont(ofSize: 14, weight: .semibold),
+            textColor: .white,
+            textAlignment: .center,
+            numberOfLines: 1,
+            adjustFontSize: .no
+        )
+        label.text = ngLocalized("Lottery.Or")
+        
+        let stack = UIStackView(
+            arrangedSubviews: [leadingSeparator, label, trailingSeparator],
+            axis: .horizontal,
+            spacing: 10,
+            alignment: .center
+        )
+        trailingSeparator.snp.makeConstraints { make in
+            make.width.equalTo(leadingSeparator)
+        }
+
+        return stack
     }
 }
 

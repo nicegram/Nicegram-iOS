@@ -328,7 +328,6 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
             MobySubscriptionAnalytics.trackInstall(installInfo: installInfo)
         }
         
-        LocalizationServiceImpl.shared.setup(hash: NGENV.crowdin_hash, sourceLanguage: "en", completion: nil)
         RemoteConfigServiceImpl.shared.prefetch()
         
         let launchStartTime = CFAbsoluteTimeGetCurrent()

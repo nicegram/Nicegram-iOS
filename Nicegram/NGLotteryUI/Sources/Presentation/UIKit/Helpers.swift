@@ -18,7 +18,7 @@ public extension UILabel {
             font: .systemFont(ofSize: 16, weight: .semibold),
             textColor: .white,
             textAlignment: .natural,
-            numberOfLines: 1,
+            numberOfLines: 2,
             adjustFontSize: .yes(0.8)
         )
     }

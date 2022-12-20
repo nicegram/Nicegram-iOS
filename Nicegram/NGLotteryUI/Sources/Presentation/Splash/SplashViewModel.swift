@@ -20,6 +20,10 @@ struct SplashHandlers {
 @available(iOS 13.0, *)
 class SplashViewModelImpl: BaseViewModel<SplashViewState, SplashInput, SplashHandlers> {
     
+    private struct Constants {
+        static var moreInfoUrl: URL { URL(string: "https://lottery.nicegram.app")! }
+    }
+    
     //  MARK: - Use Cases
     
     private let getLotteryDataUseCase: GetLotteryDataUseCase
@@ -185,7 +189,7 @@ extension SplashViewModelImpl: SplashViewModel {
     }
     
     func requestMoreInfo() {
-        // TODO: Open Web
+        UIApplication.shared.open(Constants.moreInfoUrl)
     }
     
     func requestPullToRefresh() {

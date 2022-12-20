@@ -74,6 +74,9 @@ private extension ReferralBannerView {
             spacing: 10,
             alignment: .center
         )
+        inviteButton.snp.makeConstraints { make in
+            make.width.greaterThanOrEqualTo(90)
+        }
         descLabel.snp.contentHuggingHorizontalPriority = 249
         descLabel.snp.contentCompressionResistanceHorizontalPriority = 749
 

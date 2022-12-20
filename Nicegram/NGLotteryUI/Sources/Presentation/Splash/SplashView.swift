@@ -321,6 +321,7 @@ private extension SplashViewController {
             make.bottom.lessThanOrEqualToSuperview()
         }
         
+        scrollView.bounces = false
         scrollView.showsVerticalScrollIndicator = false
         scrollView.addSubview(scrollContent)
         scrollContent.snp.makeConstraints { make in

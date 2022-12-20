@@ -11,9 +11,9 @@ struct LotteryDataDTO: Decodable {
 }
 
 private struct InfoDTO: Decodable {
-    @EsimApiDate var currentDrawDate: Date
-    @EsimApiDate var nextDrawDate: Date
-    @EsimApiDate var currentDrawBlockedAtDate: Date
+    @DrawDate var currentDrawDate: Date
+    @DrawDate var nextDrawDate: Date
+    @DrawDate var currentDrawBlockedAtDate: Date
     let lastWinningTickets: [PastDrawDTO]
     let lottoPrize: Double
     let availableToGenerateCount: Int?
@@ -22,12 +22,12 @@ private struct InfoDTO: Decodable {
     @EsimApiOptionalDate var dateReceiveTicketViaSubscription: Date?
     
     struct PastDrawDTO: Decodable {
-        @EsimApiDate var date: Date
+        @DrawDate var date: Date
         let number: TicketNumbersDTO
     }
     
     struct UserTicketDTO: Decodable {
-        @EsimApiDate var date: Date
+        @DrawDate var date: Date
         let number: TicketNumbersDTO
     }
     
@@ -54,4 +54,23 @@ private struct InfoDTO: Decodable {
     }
 }
 
-
+@propertyWrapper
+private struct DrawDate: Decodable {
+    public var wrappedValue: Date
+    
+    public init(from decoder: Decoder) throws {
+        let dateFormatter = DateFormatter()
+        dateFormatter.timeZone = TimeZone(abbreviation: "EST")
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        
+        let container = try decoder.singleValueContainer()
+        
+        let string = try container.decode(String.self)
+        if let dateFromString = dateFormatter.date(from: string) {
+            wrappedValue = dateFromString
+        } else {
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Expected \(dateFormatter.dateFormat ?? ""), but found \(string) instead")
+        }
+    }
+}
