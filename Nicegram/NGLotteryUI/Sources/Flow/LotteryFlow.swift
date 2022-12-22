@@ -71,6 +71,7 @@ extension LotteryFlowImpl: LotteryFlow {
         routeToSubscribeImpl = { [weak self, weak controller] in
             guard let self, let controller else { return }
             let subscriptionController = self.makeSubscriptionStartController()
+            subscriptionController.modalPresentationStyle = .fullScreen
             controller.present(subscriptionController, animated: true)
         }
         

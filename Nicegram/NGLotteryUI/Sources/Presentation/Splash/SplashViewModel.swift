@@ -21,7 +21,9 @@ struct SplashHandlers {
 class SplashViewModelImpl: BaseViewModel<SplashViewState, SplashInput, SplashHandlers> {
     
     private struct Constants {
-        static var moreInfoUrl: URL { URL(string: "https://lottery.nicegram.app")! }
+        static var moreInfoUrl: URL {
+            URL(string: "https://lotto.nicegram.app")!
+        }
     }
     
     //  MARK: - Use Cases
