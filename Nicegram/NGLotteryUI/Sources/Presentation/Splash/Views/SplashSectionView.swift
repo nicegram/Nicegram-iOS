@@ -100,17 +100,16 @@ private extension SplashSectionView {
         button.applyLotteryActionStyle()
         
         let topStack = UIStackView(
-            arrangedSubviews: [titleImageView, titleLabel, UIView(), badgeLabel],
+            arrangedSubviews: [titleImageView, titleLabel, badgeLabel],
             axis: .horizontal,
             spacing: 8,
             alignment: .center
         )
-        topStack.setCustomSpacing(0, after: titleLabel)
         titleImageView.snp.makeConstraints { make in
             make.size.equalTo(29)
         }
-        titleLabel.snp.contentHuggingHorizontalPriority = 249
-        titleLabel.snp.contentCompressionResistanceHorizontalPriority = 749
+        badgeLabel.snp.contentHuggingHorizontalPriority = 761
+        badgeLabel.snp.contentCompressionResistanceHorizontalPriority = 762
         
         let stack = UIStackView(
             arrangedSubviews: [topStack, textView, button],
