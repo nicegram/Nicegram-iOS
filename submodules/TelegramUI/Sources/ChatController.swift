@@ -55,11 +55,13 @@ import TooltipUI
 import StatisticsUI
 import NGWebUtils
 // MARK: Nicegram Imports
+import NGAppCache
 import NGStrings
 import NGUI
 import NGWebUtils
 import NGTranslate
 import NGStats
+import class StoreKit.SKStoreReviewController
 //
 import MediaResources
 import GalleryData
@@ -10276,6 +10278,23 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
         if !self.didAppear {
             if let peerId = self.chatLocation.peerId {
                 shareChannelInfo(peerId: peerId, context: self.context)
+            }
+        }
+        //
+        
+        // MARK: Nicegram Unblock
+        if let peer = self.presentationInterfaceState.renderedPeer?.peer {
+            let isLastSeenBlockedChat = (peer.id.id._internalGetInt64Value() == AppCache.lastSeenBlockedChatId)
+            if isLastSeenBlockedChat,
+               isAllowedChat(peer: peer, contentSettings: context.currentContentSettings.with { $0 }) {
+                AppCache.lastSeenBlockedChatId = nil
+                if #available(iOS 14.0, *) {
+                    if let windowScene = self.view.window?.windowScene {
+                        SKStoreReviewController.requestReview(in: windowScene)
+                    }
+                } else {
+                    SKStoreReviewController.requestReview()
+                }
             }
         }
         //
