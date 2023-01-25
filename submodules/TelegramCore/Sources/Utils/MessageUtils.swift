@@ -251,11 +251,6 @@ public extension Message {
     }
     
     func isCopyProtected() -> Bool {
-        //  MARK: - Nicegram (allow saving+forwarding content when copy protected)
-        if canCopyProtectedContent() {
-            return false
-        }
-        
         if self.flags.contains(.CopyProtected) {
             return true
         } else if let group = self.peers[self.id.peerId] as? TelegramGroup, group.flags.contains(.copyProtectionEnabled) {
