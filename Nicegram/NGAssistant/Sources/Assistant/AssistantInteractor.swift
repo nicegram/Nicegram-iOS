@@ -28,6 +28,11 @@ protocol AssistantInteractorOutput {
 
 @available(iOS 13.0, *)
 class AssistantInteractor: AssistantInteractorInput {
+    
+    private struct Constants {
+        static let lotteryJackpot = Money(amount: 250000000, currency: .usd)
+    }
+    
     var output: AssistantInteractorOutput!
     var router: AssistantRouterInput!
 
@@ -37,7 +42,6 @@ class AssistantInteractor: AssistantInteractorInput {
     private let getSpecialOfferUseCase: GetSpecialOfferUseCase
     private let getReferralLinkUseCase: GetReferralLinkUseCase
     private let initiateLoginWithTelegramUseCase: InitiateLoginWithTelegramUseCase
-    private let getLotteryDataUseCase: GetLotteryDataUseCase
     private let eventsLogger: EventsLogger
     
     private var deeplink: Deeplink?
@@ -46,7 +50,7 @@ class AssistantInteractor: AssistantInteractorInput {
     private var cancellables = Set<AnyCancellable>()
     
     
-    init(deeplink: Deeplink?, esimAuth: EsimAuth, userEsimsRepository: UserEsimsRepository, getCurrentUserUseCase: GetCurrentUserUseCase, getSpecialOfferUseCase: GetSpecialOfferUseCase, getReferralLinkUseCase: GetReferralLinkUseCase, initiateLoginWithTelegramUseCase: InitiateLoginWithTelegramUseCase, getLotteryDataUseCase: GetLotteryDataUseCase, eventsLogger: EventsLogger) {
+    init(deeplink: Deeplink?, esimAuth: EsimAuth, userEsimsRepository: UserEsimsRepository, getCurrentUserUseCase: GetCurrentUserUseCase, getSpecialOfferUseCase: GetSpecialOfferUseCase, getReferralLinkUseCase: GetReferralLinkUseCase, initiateLoginWithTelegramUseCase: InitiateLoginWithTelegramUseCase, eventsLogger: EventsLogger) {
         self.deeplink = deeplink
         self.esimAuth = esimAuth
         self.userEsimsRepository = userEsimsRepository
@@ -54,7 +58,6 @@ class AssistantInteractor: AssistantInteractorInput {
         self.getSpecialOfferUseCase = getSpecialOfferUseCase
         self.getReferralLinkUseCase = getReferralLinkUseCase
         self.initiateLoginWithTelegramUseCase = initiateLoginWithTelegramUseCase
-        self.getLotteryDataUseCase = getLotteryDataUseCase
         self.eventsLogger = eventsLogger
     }
     
@@ -62,7 +65,7 @@ class AssistantInteractor: AssistantInteractorInput {
         output.handleViewDidLoad()
         trySignInWithTelegram()
         fetchSpecialOffer()
-        subscribeToLotteryChange()
+        displayLotteryIfNeeded()
     }
     
     func onViewDidAppear() {
@@ -195,23 +198,9 @@ private extension AssistantInteractor {
         }
     }
     
-    func subscribeToLotteryChange() {
-        guard !hideLottery else { return }
-        getLotteryDataUseCase.lotteryDataPublisher()
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] lotteryData in
-                guard let self else { return }
-                
-                if let lotteryData {
-                    self.output.presentLottery(jackpot: lotteryData.currentDraw.jackpot)
-                    self.output.presentLottery(true)
-                    
-                    AppCache.wasLotteryShown = true
-                } else {
-                    self.output.presentLottery(false)
-                }
-            }
-            .store(in: &cancellables)
+    func displayLotteryIfNeeded() {
+        self.output.presentLottery(jackpot: Constants.lotteryJackpot)
+        self.output.presentLottery(!hideLottery)
     }
     
     func tryHandleDeeplink() {

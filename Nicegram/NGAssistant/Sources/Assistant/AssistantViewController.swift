@@ -149,7 +149,6 @@ final class AssistantViewController: UIViewController {
             make.height.equalTo(0.66)
         }
         
-        lotteryContainerView.isHidden = true
         lotteryContainerView.addSubview(lotteryStack)
         lotteryStack.snp.makeConstraints { make in
             make.edges.equalToSuperview()

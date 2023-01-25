@@ -57,7 +57,7 @@ class SplashViewModelImpl: BaseViewModel<SplashViewState, SplashInput, SplashHan
         super.viewDidLoad()
         
         subscribeToDataChange()
-        refreshData()
+        loadLotteryData()
         
         eventsLogger.logEvent(name: "lottery_splash_show")
     }
@@ -73,38 +73,8 @@ private extension SplashViewModelImpl {
             .combineLatest(getPremiumStatusUseCase.premiumStatusPublisher())
             .sink { [weak self] lotteryData, hasPremium in
                 guard let self else { return }
-                
                 self.updateViewState { state in
-                    state.nextDraw = .init(
-                        id: lotteryData.currentDraw.date,
-                        jackpot: lotteryData.currentDraw.jackpot,
-                        date: lotteryData.currentDraw.date
-                    )
-                    state.lastDraw = self.mapToPastDraw(lotteryData.lastDraw)
-                    state.pastDraws = lotteryData.pastDraws.compactMap { self.mapToPastDraw($0) }
-                    state.userActiveTickets = lotteryData.userActiveTickets.map { ticket in
-                        return .init(numbers: ticket.numbers, date: ticket.drawDate)
-                    }
-                    state.availableUserTicketsCount = lotteryData.userAvailableTicketsCount
-
-                    if hasPremium {
-                        if let nextDate = lotteryData.nextTicketForPremiumDate,
-                           nextDate > Date() {
-                            state.premiumSection = .alreadyReceived(nextDate: nextDate)
-                        } else {
-                            state.premiumSection = .getTicket
-                        }
-                    } else {
-                        state.premiumSection = .subscribe
-                    }
-
-                    state.userPastTickets = lotteryData.userPastTickets.compactMap { ticketWithDraw in
-                        return .init(
-                            date: ticketWithDraw.draw.date,
-                            ticket: ticketWithDraw.ticket.numbers,
-                            winningNumbers: ticketWithDraw.draw.winningNumbers
-                        )
-                    }
+                    state = .loaded(self.map(lotteryData: lotteryData, hasPremium: hasPremium))
                 }
             }
             .store(in: &cancellables)
@@ -118,11 +88,11 @@ private extension SplashViewModelImpl {
             return
         }
         
-        updateViewState { $0.isLoading = true }
+        updateLoadedState { $0.isLoading = true }
         getTicketForPremiumUseCase.getTicket { [weak self] error in
             guard let self else { return }
             
-            self.updateViewState { $0.isLoading = false }
+            self.updateLoadedState { $0.isLoading = false }
             
             if let error {
                 Alerts.show(.error(error))
@@ -133,11 +103,11 @@ private extension SplashViewModelImpl {
     }
     
     func initiateLoginWithTelegram() {
-        updateViewState { $0.isLoading = true }
+        updateLoadedState { $0.isLoading = true }
         initiateLoginWithTelegramUseCase.initiateLoginWithTelegram { [weak self] result in
             guard let self else { return }
             
-            self.updateViewState { $0.isLoading = false }
+            self.updateLoadedState { $0.isLoading = false }
             
             switch result {
             case .success(let url):
@@ -150,8 +120,19 @@ private extension SplashViewModelImpl {
         }
     }
     
-    func refreshData() {
-        loadLotteryDataUseCase.loadLotteryData { _ in }
+    func loadLotteryData() {
+        updateViewState { $0 = .loading }
+        loadLotteryDataUseCase.loadLotteryData { [weak self] error in
+            guard let self else { return }
+            
+            if let error {
+                self.updateViewState { state in
+                    state = .placeholder(.retry(error: error, onTap: {
+                        self.loadLotteryData()
+                    }))
+                }
+            }
+        }
     }
 }
 
@@ -160,16 +141,16 @@ private extension SplashViewModelImpl {
 
 @available(iOS 13.0, *)
 extension SplashViewModelImpl: SplashViewModel {
-    func requestTab(_ tab: SplashViewState.Tab) {
-        updateViewState { $0.tab = tab }
+    func requestTab(_ tab: SplashViewLoadedState.Tab) {
+        updateLoadedState { $0.tab = tab }
     }
     
     func requestGetTicket() {
-        updateViewState { state in
+        updateLoadedState { state in
             state.tab = .myTickets
             state.forceShowHowToGetTicket = true
         }
-        updateViewState { $0.forceShowHowToGetTicket = false }
+        updateLoadedState { $0.forceShowHowToGetTicket = false }
     }
     
     func requestCreateTicket() {
@@ -194,10 +175,6 @@ extension SplashViewModelImpl: SplashViewModel {
         UIApplication.shared.open(Constants.moreInfoUrl)
     }
     
-    func requestPullToRefresh() {
-        refreshData()
-    }
-    
     func requestClose() {
         handlers.close()
     }
@@ -207,9 +184,64 @@ extension SplashViewModelImpl: SplashViewModel {
 
 @available(iOS 13.0, *)
 private extension SplashViewModelImpl {
-    func mapToPastDraw(_ draw: PastDraw?) -> SplashViewState.PastDraw? {
+    func map(lotteryData: LotteryData, hasPremium: Bool) -> SplashViewLoadedState {
+        var state = SplashViewLoadedState()
+        
+        state.nextDraw = .init(
+            id: lotteryData.currentDraw.date,
+            jackpot: lotteryData.currentDraw.jackpot,
+            date: lotteryData.currentDraw.date
+        )
+        state.lastDraw = self.mapToPastDraw(lotteryData.lastDraw)
+        state.pastDraws = lotteryData.pastDraws.compactMap { self.mapToPastDraw($0) }
+        state.userActiveTickets = lotteryData.userActiveTickets.map { ticket in
+            return .init(numbers: ticket.numbers, date: ticket.drawDate)
+        }
+        state.availableUserTicketsCount = lotteryData.userAvailableTicketsCount
+
+        if hasPremium {
+            if let nextDate = lotteryData.nextTicketForPremiumDate,
+               nextDate > Date() {
+                state.premiumSection = .alreadyReceived(nextDate: nextDate)
+            } else {
+                state.premiumSection = .getTicket
+            }
+        } else {
+            state.premiumSection = .subscribe
+        }
+
+        state.userPastTickets = lotteryData.userPastTickets.compactMap { ticketWithDraw in
+            return .init(
+                date: ticketWithDraw.draw.date,
+                ticket: ticketWithDraw.ticket.numbers,
+                winningNumbers: ticketWithDraw.draw.winningNumbers
+            )
+        }
+        
+        return state
+    }
+    
+    func mapToPastDraw(_ draw: PastDraw?) -> SplashViewLoadedState.PastDraw? {
         guard let draw else { return nil }
         return .init(date: draw.date, winningNumbers: draw.winningNumbers)
+    }
+}
+
+//  MARK: - Helpers
+
+@available(iOS 13.0, *)
+private extension SplashViewModelImpl {
+    func updateLoadedState(_ block: @escaping (inout SplashViewLoadedState) -> Void) {
+        updateViewState { state in
+            switch state {
+            case .loaded(let loadedState):
+                var loadedState = loadedState
+                block(&loadedState)
+                state = .loaded(loadedState)
+            case .loading, .placeholder:
+                break
+            }
+        }
     }
 }
 

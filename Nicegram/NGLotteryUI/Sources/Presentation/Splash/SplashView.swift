@@ -4,56 +4,9 @@ import NGCoreUI
 import SnapKit
 import UIKit
 
-
-struct SplashViewState: ViewState {
-    var tab: Tab = .info
-    var nextDraw: NextDraw = NextDraw()
-    var lastDraw: PastDraw? = nil
-    var pastDraws: [PastDraw] = []
-    var userActiveTickets: [UserActiveTicket] = []
-    var availableUserTicketsCount: Int = 0
-    var premiumSection: PremiumSectionViewState = .subscribe
-    var userPastTickets: [MyTicketsViewState.PastTicket] = []
-    var isLoading: Bool = false
-    
-    var forceShowHowToGetTicket: Bool = false
-    
-    enum Tab: Int {
-        case info
-        case myTickets
-    }
-    
-    struct NextDraw: Identifiable {
-        let id: Date
-        let jackpot: Money
-        let date: Date
-        
-        init(id: Date = Date(), jackpot: Money = Money(amount: 0, currency: .usd), date: Date = .distantFuture) {
-            self.id = id
-            self.jackpot = jackpot
-            self.date = date
-        }
-    }
-    
-    struct PastDraw {
-        let date: Date
-        let winningNumbers: [Int]
-        
-        init(date: Date = Date(), winningNumbers: [Int] = []) {
-            self.date = date
-            self.winningNumbers = winningNumbers
-        }
-    }
-    
-    struct UserActiveTicket {
-        let numbers: [Int]
-        let date: Date
-    }
-}
-
 @available(iOS 13.0, *)
 protocol SplashViewModel: ViewModel where ViewState == SplashViewState {
-    func requestTab(_: SplashViewState.Tab)
+    func requestTab(_: SplashViewLoadedState.Tab)
     func requestGetTicket()
     func requestCreateTicket()
     func requestSubscribe()
@@ -69,6 +22,8 @@ class SplashViewController<T: SplashViewModel>: MVVMViewController<T> {
     //  MARK: - UI Elements
     
     private let containerView = UIView()
+    private let contentView = UIView()
+    private lazy var contentViewWrapper = PlaceholderableView(wrappedView: contentView)
     private let scrollView = UIScrollView()
     private let headerView = HeaderView()
     private let nextDrawView = NextDrawView()
@@ -78,11 +33,11 @@ class SplashViewController<T: SplashViewModel>: MVVMViewController<T> {
     private let infoView = LotteryInfoView()
     private let myTicketsView = MyTicketsView()
     private let closeButton = CustomButton()
-    private lazy var loadingView = LoadingView(containerView: self.view)
+    private lazy var loadingView = LoadingView()
     
     //  MARK: - Logic
     
-    private var nextDrawId: SplashViewState.NextDraw.ID?
+    private var nextDrawId: SplashViewLoadedState.NextDraw.ID?
     private var timerSubscription: AnyCancellable?
     
     //  MARK: - Lifecycle
@@ -122,7 +77,7 @@ class SplashViewController<T: SplashViewModel>: MVVMViewController<T> {
         }
         
         segmentControl.onSegmentSelected = { [weak self] index in
-            guard let tab = SplashViewState.Tab(rawValue: index) else { return }
+            guard let tab = SplashViewLoadedState.Tab(rawValue: index) else { return }
             self?.viewModel.requestTab(tab)
         }
         
@@ -142,6 +97,18 @@ class SplashViewController<T: SplashViewModel>: MVVMViewController<T> {
     //  MARK: - Private Functions
     
     override func updateState(_ state: SplashViewState) {
+        switch state {
+        case .loading:
+            contentViewWrapper.showLoading()
+        case .placeholder(let placeholderState):
+            contentViewWrapper.showPlaceholder(placeholderState)
+        case .loaded(let splashViewLoadedState):
+            displayLoadedState(splashViewLoadedState)
+            contentViewWrapper.hidePlaceholder()
+        }
+    }
+    
+    private func displayLoadedState(_ state: SplashViewLoadedState) {
         headerView.display(jackpot: state.nextDraw.jackpot)
         
         if state.nextDraw.id != self.nextDrawId {
@@ -330,14 +297,25 @@ private extension SplashViewController {
             make.height.equalToSuperview().priority(1)
         }
         
-        scrollContent.addSubview(closeButton)
+        contentView.addSubview(scrollView)
+        scrollView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
+        
+        containerView.addSubview(contentViewWrapper)
+        contentViewWrapper.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
+        
+        containerView.addSubview(closeButton)
         closeButton.snp.makeConstraints { make in
             make.top.trailing.equalToSuperview().inset(16)
             make.size.equalTo(24)
         }
         
-        containerView.addSubview(scrollView)
-        scrollView.snp.makeConstraints { make in
+        loadingView.dimmBackground = true
+        containerView.addSubview(loadingView)
+        loadingView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
     }

@@ -34,7 +34,7 @@ class CreateTicketViewController<T: CreateTicketViewModel>: MVVMViewController<T
     private let randomButton = CustomButton()
     private let createButton = CustomButton()
     private let contentView = UIView()
-    private lazy var loadingView = LoadingView(containerView: self.view)
+    private lazy var loadingView = LoadingView()
     
     //  MARK: - Logic
     
@@ -240,6 +240,12 @@ private extension CreateTicketViewController {
             make.top.equalTo(titleLabel.snp.bottom).offset(12)
             make.leading.trailing.equalToSuperview().inset(15)
             make.bottom.equalToSuperview().inset(Constants.buttonBottomOffset)
+        }
+        
+        loadingView.dimmBackground = true
+        contentView.addSubview(loadingView)
+        loadingView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
         }
     }
     
