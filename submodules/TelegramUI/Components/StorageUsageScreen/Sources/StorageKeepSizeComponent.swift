@@ -35,6 +35,11 @@ private func totalDiskSpace() -> Int64 {
 
 private let maximumCacheSizeValues: [Int32] = {
     let diskSpace = totalDiskSpace()
+    // MARK: Nicegram CacheSettings
+    if diskSpace > 0 {
+        return [1, 2, 8, Int32.max]
+    }
+    //
     if diskSpace > 100 * 1024 * 1024 * 1024 {
         return [5, 20, 50, Int32.max]
     } else if diskSpace > 50 * 1024 * 1024 * 1024 {
