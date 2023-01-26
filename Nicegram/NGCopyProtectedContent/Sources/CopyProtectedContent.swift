@@ -15,8 +15,14 @@ public func shouldShowInterfaceForCopyContent(message: Message) -> Bool {
 }
 
 public func shouldShowInterfaceForForwardAsCopy(message: Message) -> Bool {
-    let hasMedia = !message.media.isEmpty
-    return !hasMedia && shouldShowInterfaceForCopyContent(message: message)
+    let isCopyProtectionEnabled = message.isCopyProtected()
+    
+    if isCopyProtectionEnabled {
+        let hasMedia = !message.media.isEmpty
+        return !hasMedia && shouldShowInterfaceForCopyContent(message: message)
+    } else {
+        return true
+    }
 }
 
 public func shouldSubscribeToCopyContent(message: Message) -> Bool {
