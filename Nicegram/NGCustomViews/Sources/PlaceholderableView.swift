@@ -66,19 +66,7 @@ public extension PlaceholderableView {
             buttonTitle: ngLocalized("Nicegram.Alert.TryAgain") .uppercased(),
             buttonImage: UIImage(named: "ng.refresh"),
             configureView: { view in
-                view.alignment = .center
-                view.spacing = 24
-                view.configureButton { button in
-                    button.backgroundColor = .ngLightOrange
-                    button.layer.cornerRadius = 8
-                    button.insets = UIEdgeInsets(top: 5, left: 8, bottom: 5, right: 8)
-                    button.spacing = 6
-                    
-                    button.configureTitleLabel { label in
-                        label.font = .systemFont(ofSize: 12, weight: .semibold)
-                    }
-                }
-                
+                view.configureWithSmallButton()
             },
             onButtonClick: onButtonClick
         )

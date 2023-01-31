@@ -196,11 +196,6 @@ public extension Peer {
     }
     
     var isCopyProtectionEnabled: Bool {
-        //  MARK: - Nicegram (allow saving+forwarding content when copy protected)
-        if canCopyProtectedContent() {
-            return false
-        }
-        
         switch self {
         case let group as TelegramGroup:
             return group.flags.contains(.copyProtectionEnabled)

@@ -1,3 +1,6 @@
+//  MARK: Nicegram CopyProtectedContent
+import NGCopyProtectedContent
+//
 import Foundation
 import UIKit
 import AsyncDisplayKit
@@ -675,6 +678,10 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
             canEdit = false
         }
         
+        //  MARK: Nicegram CopyProtectedContent
+        canShare = shouldShowInterfaceForCopyContent(message: message)
+        //
+        
         var authorNameText: String?
         if let forwardInfo = message.forwardInfo, forwardInfo.flags.contains(.isImported), let authorSignature = forwardInfo.authorSignature {
             authorNameText = authorSignature
@@ -1191,6 +1198,13 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
         self.interacting?(true)
         
         if let currentMessage = self.currentMessage {
+            //  MARK: Nicegram CopyProtectedContent
+            if shouldSubscribeToCopyContent(message: currentMessage) {
+                self.interacting?(false)
+                routeToNicegramPremiumForCopyContent(presentationData: presentationData)
+                return
+            }
+            //
             let _ = (self.context.engine.data.get(TelegramEngine.EngineData.Item.Messages.MessageGroup(id: currentMessage.id))
             |> deliverOnMainQueue).start(next: { [weak self] messages in
                 if let strongSelf = self, !messages.isEmpty {

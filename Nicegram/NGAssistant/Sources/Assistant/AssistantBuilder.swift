@@ -84,7 +84,6 @@ public class AssistantBuilderImpl: AssistantBuilder {
             ),
             getReferralLinkUseCase: GetReferralLinkUseCaseImpl(),
             initiateLoginWithTelegramUseCase: appContext.resolveInitiateLoginWithTelegramUseCase(),
-            getLotteryDataUseCase: appContext.resolveGetLotteryDataUseCase(),
             eventsLogger: LoggersFactory().createDefaultEventsLogger()
         )
         interactor.output = presenter

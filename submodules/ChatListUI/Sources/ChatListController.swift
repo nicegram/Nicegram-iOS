@@ -2950,8 +2950,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         return _appContext as! AppContext
     }
     
-    private var lotteryDataSubscription: AnyObject?
-    
     @available(iOS 13.0, *)
     private func nicegramInit() {
         // Localization
@@ -2960,14 +2958,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 let activeLanguageCode = localizationSettings.secondaryComponent?.languageCode ?? localizationSettings.primaryComponent.languageCode
                 LocalizationServiceImpl.shared.setLanguageCode(activeLanguageCode)
             }
-        }
-        
-        // Lottery
-        
-        let loadLotteryDataUseCase = appContext.resolveLoadLotteryDataUseCase()
-        
-        if !hideLottery {
-            loadLotteryDataUseCase.loadLotteryData(completion: { _ in })
         }
     }
     

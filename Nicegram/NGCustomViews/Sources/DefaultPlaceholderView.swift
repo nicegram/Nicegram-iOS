@@ -24,7 +24,7 @@ open class DefaultPlaceholderView: UIView {
         set { stack.spacing = newValue }
     }
 
-    var onButtonClick: (() -> ())? {
+    public var onButtonClick: (() -> ())? {
         get { button.touchUpInside }
         set { button.touchUpInside = newValue }
     }
@@ -81,5 +81,22 @@ open class DefaultPlaceholderView: UIView {
     
     public func configureButton(_ c: (CustomButton) -> ()) {
         c(button)
+    }
+}
+
+public extension DefaultPlaceholderView {
+    func configureWithSmallButton() {
+        self.alignment = .center
+        self.spacing = 24
+        self.configureButton { button in
+            button.backgroundColor = .ngLightOrange
+            button.layer.cornerRadius = 8
+            button.insets = UIEdgeInsets(top: 5, left: 8, bottom: 5, right: 8)
+            button.spacing = 6
+            
+            button.configureTitleLabel { label in
+                label.font = .systemFont(ofSize: 12, weight: .semibold)
+            }
+        }
     }
 }

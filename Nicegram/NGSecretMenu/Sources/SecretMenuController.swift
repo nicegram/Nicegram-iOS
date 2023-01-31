@@ -1,6 +1,7 @@
 import AccountContext
 import Display
 import ItemListUI
+import NGCopyProtectedContent
 import PresentationDataUtils
 import SwiftSignalKit
 import TelegramCore

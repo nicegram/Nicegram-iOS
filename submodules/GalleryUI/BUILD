@@ -1,6 +1,9 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
-NGDEPS = ["//Nicegram/NGData:NGData"]
+NGDEPS = [
+    "//Nicegram/NGCopyProtectedContent:NGCopyProtectedContent",
+    "//Nicegram/NGData:NGData",
+]
 
 swift_library(
     name = "GalleryUI",
