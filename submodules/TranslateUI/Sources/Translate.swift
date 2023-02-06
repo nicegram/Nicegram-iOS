@@ -127,7 +127,6 @@ public var popularTranslationLanguages = [
     "en",
     "ar",
     "zh",
-//    "zh-Hant",
     "fr",
     "de",
     "it",
@@ -135,7 +134,8 @@ public var popularTranslationLanguages = [
     "ko",
     "pt",
     "ru",
-    "es"
+    "es",
+    "uk"
 ]
 
 @available(iOS 12.0, *)
@@ -147,6 +147,10 @@ public func canTranslateText(context: AccountContext, text: String, showTranslat
     }
 
     if #available(iOS 12.0, *) {
+        if context.sharedContext.immediateExperimentalUISettings.disableLanguageRecognition {
+            return (true, nil)
+        }
+        
         var dontTranslateLanguages: [String] = []
         if let ignoredLanguages = ignoredLanguages {
             dontTranslateLanguages = ignoredLanguages
@@ -173,4 +177,16 @@ public func canTranslateText(context: AccountContext, text: String, showTranslat
     } else {
         return (false, nil)
     }
+}
+
+public func systemLanguageCodes() -> [String] {
+    var languages: [String] = []
+    for language in Locale.preferredLanguages.prefix(2) {
+        let language = language.components(separatedBy: "-").first ?? language
+        languages.append(language)
+    }
+    if languages.count == 2 && languages != ["en", "ru"] {
+        languages = Array(languages.prefix(1))
+    }
+    return languages
 }

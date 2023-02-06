@@ -52,6 +52,19 @@ private func makeExclusiveKeychain(id: AccountRecordId, postbox: Postbox) -> Key
     })
 }
 
+func _internal_test(_ network: Network) -> Signal<Bool, String> {
+    return network.request(Api.functions.help.test()) |> map { result in
+        switch result {
+        case .boolFalse:
+            return false
+        case .boolTrue:
+            return true
+        }
+    } |> mapError { error in
+        return error.description
+    }
+}
+
 public class UnauthorizedAccount {
     public let networkArguments: NetworkInitializationArguments
     public let id: AccountRecordId
@@ -1149,6 +1162,9 @@ public class Account {
         self.managedOperationsDisposable.add(managedSynchronizeEmojiKeywordsOperations(postbox: self.postbox, network: self.network).start())
         self.managedOperationsDisposable.add(managedApplyPendingScheduledMessagesActions(postbox: self.postbox, network: self.network, stateManager: self.stateManager).start())
         self.managedOperationsDisposable.add(managedSynchronizeAvailableReactions(postbox: self.postbox, network: self.network).start())
+        self.managedOperationsDisposable.add(managedSynchronizeEmojiSearchCategories(postbox: self.postbox, network: self.network, kind: .emoji).start())
+        self.managedOperationsDisposable.add(managedSynchronizeEmojiSearchCategories(postbox: self.postbox, network: self.network, kind: .status).start())
+        self.managedOperationsDisposable.add(managedSynchronizeEmojiSearchCategories(postbox: self.postbox, network: self.network, kind: .avatar).start())
         self.managedOperationsDisposable.add(managedSynchronizeAttachMenuBots(postbox: self.postbox, network: self.network, force: true).start())
         self.managedOperationsDisposable.add(managedSynchronizeNotificationSoundList(postbox: self.postbox, network: self.network).start())
 
@@ -1232,6 +1248,8 @@ public class Account {
             self.managedOperationsDisposable.add(managedAllPremiumStickers(postbox: self.postbox, network: self.network).start())
             self.managedOperationsDisposable.add(managedRecentStatusEmoji(postbox: self.postbox, network: self.network).start())
             self.managedOperationsDisposable.add(managedFeaturedStatusEmoji(postbox: self.postbox, network: self.network).start())
+            self.managedOperationsDisposable.add(managedProfilePhotoEmoji(postbox: self.postbox, network: self.network).start())
+            self.managedOperationsDisposable.add(managedGroupPhotoEmoji(postbox: self.postbox, network: self.network).start())
             self.managedOperationsDisposable.add(managedRecentReactions(postbox: self.postbox, network: self.network).start())
             self.managedTopReactionsDisposable.set(managedTopReactions(postbox: self.postbox, network: self.network).start())
             self.managedOperationsDisposable.add(self.managedTopReactionsDisposable)

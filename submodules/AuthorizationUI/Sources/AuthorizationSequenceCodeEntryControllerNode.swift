@@ -394,6 +394,8 @@ final class AuthorizationSequenceCodeEntryControllerNode: ASDisplayNode, UITextF
             codeLength = Int(length)
         case let .fragment(_, length):
             codeLength = Int(length)
+        case let .firebase(_, length):
+            codeLength = Int(length)
         case .emailSetupRequired:
             codeLength = 6
         case .none:
@@ -412,7 +414,7 @@ final class AuthorizationSequenceCodeEntryControllerNode: ASDisplayNode, UITextF
             prefix: codePrefix,
             count: codeLength,
             width: maximumWidth - 28.0,
-            compact: layout.size.width <= 320.0
+            compact: layout.size.width <= 320.0 || (layout.size.width <= 375.0 && codeLength > 5)
         )
         
         var items: [AuthorizationLayoutItem] = []
@@ -581,6 +583,8 @@ final class AuthorizationSequenceCodeEntryControllerNode: ASDisplayNode, UITextF
                 case let .email(_, length, _, _, _):
                     codeLength = length
                 case let .fragment(_, length):
+                    codeLength = length
+                case let .firebase(_, length):
                     codeLength = length
                 default:
                     break

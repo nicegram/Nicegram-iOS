@@ -857,6 +857,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 isStatusSelection: true,
                 isReactionSelection: false,
                 isEmojiSelection: false,
+                hasTrending: false,
                 topReactionItems: [],
                 areUnicodeEmojiEnabled: false,
                 areCustomEmojiEnabled: true,
@@ -2225,11 +2226,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     }
     
     @objc fileprivate func reorderingDonePressed() {
-        if !self.chatListDisplayNode.isReorderingFilters {
-            return
-        }
-        
-        // MARK: Nicegram FoldersAtBottom
         guard let defaultFilters = self.tabContainerData else {
             return
         }
@@ -2241,7 +2237,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 return id
             }
         }
-        //
         
         var reorderedFilterIdsValue: [Int32]?
         // MARK: Nicegram FoldersAtBottom, check first inlineTabContainerNode.reorderedFilterIds

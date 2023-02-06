@@ -1381,7 +1381,7 @@ public func mediaGridMessagePhoto(account: Account, userLocation: MediaResourceU
         let fullSizeData = value._1
         let fullSizeComplete = value._3
         return { arguments in
-            guard let context = DrawingContext(size: arguments.drawingSize, clear: true) else {
+            guard let context = DrawingContext(size: arguments.drawingSize, opaque: arguments.corners.isEmpty && arguments.intrinsicInsets == .zero, clear: true) else {
                 return nil
             }
             
@@ -1819,7 +1819,7 @@ public func standaloneChatMessagePhotoInteractiveFetched(account: Account, userL
     }
 }
 
-public func chatMessagePhotoInteractiveFetched(context: AccountContext, userLocation: MediaResourceUserLocation, photoReference: ImageMediaReference, displayAtSize: Int?, storeToDownloadsPeerType: MediaAutoDownloadPeerType?) -> Signal<Never, NoError> {
+public func chatMessagePhotoInteractiveFetched(context: AccountContext, userLocation: MediaResourceUserLocation, photoReference: ImageMediaReference, displayAtSize: Int?, storeToDownloadsPeerId: EnginePeer.Id?) -> Signal<Never, NoError> {
     if let largestRepresentation = largestRepresentationForPhoto(photoReference.media) {
         var fetchRange: (Range<Int64>, MediaBoxFetchPriority)?
         if let displayAtSize = displayAtSize, let range = representationFetchRangeForDisplayAtSize(representation: largestRepresentation, dimension: displayAtSize) {
@@ -1828,8 +1828,8 @@ public func chatMessagePhotoInteractiveFetched(context: AccountContext, userLoca
 
         return fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: userLocation, userContentType: .image, reference: photoReference.resourceReference(largestRepresentation.resource), range: fetchRange, statsCategory: .image, reportResultStatus: true)
         |> mapToSignal { type -> Signal<FetchResourceSourceType, FetchResourceError> in
-            if case .remote = type, let peerType = storeToDownloadsPeerType {
-                return storeDownloadedMedia(storeManager: context.downloadedMediaStoreManager, media: photoReference.abstract, peerType: peerType)
+            if case .remote = type, let peerId = storeToDownloadsPeerId {
+                return storeDownloadedMedia(storeManager: context.downloadedMediaStoreManager, media: photoReference.abstract, peerId: peerId)
                 |> castError(FetchResourceError.self)
                 |> mapToSignal { _ -> Signal<FetchResourceSourceType, FetchResourceError> in
                 }
@@ -1962,7 +1962,7 @@ public func chatWebpageSnippetFile(account: Account, userLocation: MediaResource
             }
             
             if let fullSizeImage = fullSizeImage ?? (blurredImage?.cgImage) {
-                guard let context = DrawingContext(size: arguments.drawingSize, clear: true) else {
+                guard let context = DrawingContext(size: arguments.drawingSize, opaque: arguments.corners.isEmpty && arguments.intrinsicInsets == .zero, clear: true) else {
                     return nil
                 }
                 
@@ -1991,7 +1991,7 @@ public func chatWebpageSnippetFile(account: Account, userLocation: MediaResource
                 return context
             } else {
                 if let emptyColor = arguments.emptyColor {
-                    guard let context = DrawingContext(size: arguments.drawingSize, clear: true) else {
+                    guard let context = DrawingContext(size: arguments.drawingSize, opaque: arguments.corners.isEmpty && arguments.intrinsicInsets == .zero, clear: true) else {
                         return nil
                     }
                     

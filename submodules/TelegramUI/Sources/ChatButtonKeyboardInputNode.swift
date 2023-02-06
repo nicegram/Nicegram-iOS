@@ -78,7 +78,6 @@ private final class ChatButtonKeyboardInputButtonNode: HighlightTrackingButtonNo
             if let strongSelf = self {
                 if highlighted, !strongSelf.bounds.width.isZero {
                     let scale = (strongSelf.bounds.width - 10.0) / strongSelf.bounds.width
-                    
                     strongSelf.layer.animateScale(from: 1.0, to: scale, duration: 0.15, removeOnCompletion: false)
                     
                     strongSelf.backgroundContainerNode.layer.removeAnimation(forKey: "opacity")
@@ -432,6 +431,10 @@ final class ChatButtonKeyboardInputNode: ChatInputNode {
                     })
                 case let .openWebView(url, simple):
                     self.controllerInteraction.openWebView(markupButton.title, url, simple, false)
+                case let .requestPeer(peerType, buttonId):
+                    if let message = self.message {
+                    self.controllerInteraction.openRequestedPeerSelection(message.id, peerType, buttonId)
+                    }
             }
             if dismissIfOnce {
                 if let message = self.message {

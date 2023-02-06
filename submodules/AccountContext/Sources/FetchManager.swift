@@ -151,8 +151,8 @@ public enum FetchManagerPriority: Comparable {
 
 public protocol FetchManager {
     var queue: Queue { get }
-    // MARK: Nicegram downloading feature
-    func interactivelyFetched(category: FetchManagerCategory, location: FetchManagerLocation, locationKey: FetchManagerLocationKey, mediaReference: AnyMediaReference?, resourceReference: MediaResourceReference, ranges: RangeSet<Int64>, statsCategory: MediaResourceStatsCategory, elevatedPriority: Bool, userInitiated: Bool, priority: FetchManagerPriority, storeToDownloadsPeerType: MediaAutoDownloadPeerType?, accountContext: AccountContext?, shouldSave: Bool) -> Signal<Void, NoError>
+    // MARK: Nicegram downloading feature, 'accountContext, shouldSave' params added
+    func interactivelyFetched(category: FetchManagerCategory, location: FetchManagerLocation, locationKey: FetchManagerLocationKey, mediaReference: AnyMediaReference?, resourceReference: MediaResourceReference, ranges: RangeSet<Int64>, statsCategory: MediaResourceStatsCategory, elevatedPriority: Bool, userInitiated: Bool, priority: FetchManagerPriority, storeToDownloadsPeerId: EnginePeer.Id?, accountContext: AccountContext?, shouldSave: Bool) -> Signal<Void, NoError>
     func cancelInteractiveFetches(category: FetchManagerCategory, location: FetchManagerLocation, locationKey: FetchManagerLocationKey, resource: MediaResource)
     func cancelInteractiveFetches(resourceId: String)
     func toggleInteractiveFetchPaused(resourceId: String, isPaused: Bool)

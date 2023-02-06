@@ -167,7 +167,7 @@ final class EntityKeyboardAnimationTopPanelComponent: Component {
                     itemLayer.layerTintColor = component.theme.list.itemAccentColor.cgColor
                 }
                 
-                itemLayer.isVisibleForAnimations = true
+                itemLayer.isVisibleForAnimations = itemEnvironment.isContentInFocus
             }
             
             if itemEnvironment.isExpanded {
@@ -924,17 +924,22 @@ final class EntityKeyboardStaticStickersPanelComponent: Component {
 
 public final class EntityKeyboardTopPanelItemEnvironment: Equatable {
     public let isExpanded: Bool
+    public let isContentInFocus: Bool
     public let isHighlighted: Bool
     public let highlightedSubgroupId: AnyHashable?
     
-    public init(isExpanded: Bool, isHighlighted: Bool, highlightedSubgroupId: AnyHashable?) {
+    public init(isExpanded: Bool, isContentInFocus: Bool, isHighlighted: Bool, highlightedSubgroupId: AnyHashable?) {
         self.isExpanded = isExpanded
+        self.isContentInFocus = isContentInFocus
         self.isHighlighted = isHighlighted
         self.highlightedSubgroupId = highlightedSubgroupId
     }
     
     public static func ==(lhs: EntityKeyboardTopPanelItemEnvironment, rhs: EntityKeyboardTopPanelItemEnvironment) -> Bool {
         if lhs.isExpanded != rhs.isExpanded {
+            return false
+        }
+        if lhs.isContentInFocus != rhs.isContentInFocus {
             return false
         }
         if lhs.isHighlighted != rhs.isHighlighted {
@@ -1798,15 +1803,19 @@ public final class EntityKeyboardTopPanelComponent: Component {
                         transition: itemTransition,
                         component: item.content,
                         environment: {
-                            EntityKeyboardTopPanelItemEnvironment(isExpanded: itemLayout.isExpanded, isHighlighted: self.activeContentItemId == item.id, highlightedSubgroupId: self.activeContentItemId == item.id ? self.activeSubcontentItemId : nil)
+                            EntityKeyboardTopPanelItemEnvironment(
+                                isExpanded: itemLayout.isExpanded,
+                                isContentInFocus: self.environment?.isContentInFocus ?? false,
+                                isHighlighted: self.activeContentItemId == item.id,
+                                highlightedSubgroupId: self.activeContentItemId == item.id ? self.activeSubcontentItemId : nil)
                         },
                         containerSize: itemOuterFrame.size
                     )
                     let itemFrame = CGRect(origin: CGPoint(x: itemOuterFrame.minX + floor((itemOuterFrame.width - itemSize.width) / 2.0), y: itemOuterFrame.minY + floor((itemOuterFrame.height - itemSize.height) / 2.0)), size: itemSize)
                     itemTransition.setFrame(view: itemView, frame: itemFrame)
                     
-                    transition.setSublayerTransform(view: itemView, transform: CATransform3DMakeScale(scale, scale, 1.0))
-                    transition.setAlpha(view: itemView, alpha: self.visibilityFraction)
+                    itemTransition.setSublayerTransform(view: itemView, transform: CATransform3DMakeScale(scale, scale, 1.0))
+                    itemTransition.setAlpha(view: itemView, alpha: self.visibilityFraction)
                 }
             }
             var removedIds: [AnyHashable] = []
