@@ -347,6 +347,8 @@ class ThemeSettingsAppIconItemNode: ListViewItemNode, ItemListItemNode {
                                     name = "Nicegram Light"
                                 case "New3":
                                     name = item.strings.Appearance_AppIconDefault
+                                case "NicegramAlt":
+                                    name = "Special"
                                 case "Premium":
                                     name = item.strings.Appearance_AppIconPremium
                                 case "PremiumBlack":

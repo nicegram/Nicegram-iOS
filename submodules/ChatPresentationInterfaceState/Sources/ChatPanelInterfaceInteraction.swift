@@ -54,6 +54,11 @@ public enum ChatPanelRestrictionInfoDisplayType {
     case alert
 }
 
+public enum ChatTranslationDisplayType {
+    case original
+    case translated
+}
+
 public final class ChatPanelInterfaceInteraction {
     // MARK: Nicegram
     public let cloudMessages: ([Message]?) -> Void
@@ -155,6 +160,10 @@ public final class ChatPanelInterfaceInteraction {
     public let insertText: (NSAttributedString) -> Void
     public let backwardsDeleteText: () -> Void
     public let restartTopic: () -> Void
+    public let toggleTranslation: (ChatTranslationDisplayType) -> Void
+    public let changeTranslationLanguage: (String) -> Void
+    public let addDoNotTranslateLanguage: (String) -> Void
+    public let hideTranslationPanel: () -> Void
     public let requestLayout: (ContainedViewLayoutTransition) -> Void
     public let chatController: () -> ViewController?
     public let statuses: ChatPanelInterfaceInteractionStatuses?
@@ -260,6 +269,10 @@ public final class ChatPanelInterfaceInteraction {
         insertText: @escaping (NSAttributedString) -> Void,
         backwardsDeleteText: @escaping () -> Void,
         restartTopic: @escaping () -> Void,
+        toggleTranslation:  @escaping (ChatTranslationDisplayType) -> Void,
+        changeTranslationLanguage: @escaping (String) -> Void,
+        addDoNotTranslateLanguage:  @escaping (String) -> Void,
+        hideTranslationPanel:  @escaping () -> Void,
         requestLayout: @escaping (ContainedViewLayoutTransition) -> Void,
         chatController: @escaping () -> ViewController?,
         statuses: ChatPanelInterfaceInteractionStatuses?
@@ -364,6 +377,10 @@ public final class ChatPanelInterfaceInteraction {
         self.insertText = insertText
         self.backwardsDeleteText = backwardsDeleteText
         self.restartTopic = restartTopic
+        self.toggleTranslation = toggleTranslation
+        self.changeTranslationLanguage = changeTranslationLanguage
+        self.addDoNotTranslateLanguage = addDoNotTranslateLanguage
+        self.hideTranslationPanel = hideTranslationPanel
         self.requestLayout = requestLayout
 
         self.chatController = chatController
@@ -473,6 +490,10 @@ public final class ChatPanelInterfaceInteraction {
         }, insertText: { _ in
         }, backwardsDeleteText: {
         }, restartTopic: {
+        }, toggleTranslation: { _ in
+        }, changeTranslationLanguage: { _ in
+        }, addDoNotTranslateLanguage: { _ in
+        }, hideTranslationPanel: {
         }, requestLayout: { _ in
         }, chatController: {
             return nil

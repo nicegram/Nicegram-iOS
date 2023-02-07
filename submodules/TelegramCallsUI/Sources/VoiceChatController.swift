@@ -2860,7 +2860,7 @@ public final class VoiceChatControllerImpl: ViewController, VoiceChatController 
             items.append(.separator)
             items.append(.action(ContextMenuActionItem(text: self.presentationData.strings.Common_Back, icon: { theme in
                 return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Back"), color: theme.actionSheet.primaryTextColor)
-            }, action: { [weak self] (c, _) in
+            }, iconPosition: .left, action: { [weak self] (c, _) in
                 guard let strongSelf = self else {
                     return
                 }
@@ -2955,7 +2955,7 @@ public final class VoiceChatControllerImpl: ViewController, VoiceChatController 
                 items.append(.separator)
                 items.append(.action(ContextMenuActionItem(text: strongSelf.presentationData.strings.Common_Back, icon: { theme in
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Back"), color: theme.actionSheet.primaryTextColor)
-                }, action: { (c, _) in
+                }, iconPosition: .left, action: { (c, _) in
                     guard let strongSelf = self else {
                         return
                     }
@@ -3001,7 +3001,7 @@ public final class VoiceChatControllerImpl: ViewController, VoiceChatController 
                 items.append(.separator)
                 items.append(.action(ContextMenuActionItem(text: self.presentationData.strings.Common_Back, icon: { theme in
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Back"), color: theme.actionSheet.primaryTextColor)
-                }, action: { [weak self] (c, _) in
+                }, iconPosition: .left, action: { [weak self] (c, _) in
                     guard let strongSelf = self else {
                         return
                     }
@@ -6152,12 +6152,10 @@ public final class VoiceChatControllerImpl: ViewController, VoiceChatController 
                 if !peer.profileImageRepresentations.isEmpty {
                     hasPhotos = true
                 }
-                
-                let paintStickersContext = LegacyPaintStickersContext(context: strongSelf.context)
-                
+                                
                 let mixin = TGMediaAvatarMenuMixin(context: legacyController.context, parentController: emptyController, hasSearchButton: true, hasDeleteButton: hasPhotos && !fromGallery, hasViewButton: false, personalPhoto: peerId.namespace == Namespaces.Peer.CloudUser, isVideo: false, saveEditedPhotos: false, saveCapturedMedia: false, signup: false, forum: false, title: nil, isSuggesting: false)!
                 mixin.forceDark = true
-                mixin.stickersContext = paintStickersContext
+                mixin.stickersContext = LegacyPaintStickersContext(context: strongSelf.context)
                 let _ = strongSelf.currentAvatarMixin.swap(mixin)
                 mixin.requestSearchController = { [weak self] assetsController in
                     guard let strongSelf = self else {
@@ -6247,7 +6245,7 @@ public final class VoiceChatControllerImpl: ViewController, VoiceChatController 
             self.updateAvatarPromise.set(.single((representation, 0.0)))
 
             let postbox = self.call.account.postbox
-            let signal = peerId.namespace == Namespaces.Peer.CloudUser ? self.call.accountContext.engine.accountData.updateAccountPhoto(resource: resource, videoResource: nil, videoStartTimestamp: nil, mapResourceToAvatarSizes: { resource, representations in
+            let signal = peerId.namespace == Namespaces.Peer.CloudUser ? self.call.accountContext.engine.accountData.updateAccountPhoto(resource: resource, videoResource: nil, videoStartTimestamp: nil, markup: nil, mapResourceToAvatarSizes: { resource, representations in
                 return mapResourceToAvatarSizes(postbox: postbox, resource: resource, representations: representations)
             }) : self.call.accountContext.engine.peers.updatePeerPhoto(peerId: peerId, photo: self.call.accountContext.engine.peers.uploadedPeerPhoto(resource: resource), mapResourceToAvatarSizes: { resource, representations in
                 return mapResourceToAvatarSizes(postbox: postbox, resource: resource, representations: representations)
@@ -6367,7 +6365,7 @@ public final class VoiceChatControllerImpl: ViewController, VoiceChatController 
             self.updateAvatarDisposable.set((signal
             |> mapToSignal { videoResource -> Signal<UpdatePeerPhotoStatus, UploadPeerPhotoError> in
                 if peerId.namespace == Namespaces.Peer.CloudUser {
-                    return context.engine.accountData.updateAccountPhoto(resource: photoResource, videoResource: videoResource, videoStartTimestamp: videoStartTimestamp, mapResourceToAvatarSizes: { resource, representations in
+                    return context.engine.accountData.updateAccountPhoto(resource: photoResource, videoResource: videoResource, videoStartTimestamp: videoStartTimestamp, markup: nil, mapResourceToAvatarSizes: { resource, representations in
                         return mapResourceToAvatarSizes(postbox: account.postbox, resource: resource, representations: representations)
                     })
                 } else {

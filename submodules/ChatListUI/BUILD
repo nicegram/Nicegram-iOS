@@ -98,6 +98,8 @@ swift_library(
         "//submodules/PeerInfoUI",
 		"//submodules/TelegramUI/Components/ChatListHeaderComponent",
         "//submodules/TelegramUI/Components/ChatListTitleView",
+        "//submodules/AvatarNode:AvatarNode",
+        "//submodules/AvatarVideoNode:AvatarVideoNode",
     ],
     visibility = [
         "//visibility:public",

@@ -46,6 +46,7 @@ import BackgroundTasks
 import UIKitRuntimeUtils
 import StoreKit
 import PhoneNumberFormat
+import AuthorizationUI
 
 #if canImport(AppCenter)
 import AppCenter
@@ -221,64 +222,8 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
     )
 }
 
-private final class AnimationSupportContext {
-    private let window: UIWindow
-    private let testView: UIView
-    private var animationCount: Int = 0
-    private var displayLink: CADisplayLink?
-    
-    init(window: UIWindow) {
-        self.window = window
-        self.testView = UIView()
-        window.addSubview(self.testView)
-        self.testView.frame = CGRect(origin: CGPoint(), size: CGSize(width: 10.0, height: 10.0))
-        self.testView.backgroundColor = .black
-    }
-    
-    func add() {
-        self.animationCount += 1
-        self.update()
-    }
-    
-    func remove() {
-        self.animationCount -= 1
-        if self.animationCount < 0 {
-            self.animationCount = 0
-            assertionFailure()
-        }
-        self.update()
-    }
-    
-    @objc func displayEvent() {
-        self.testView.frame = CGRect(origin: CGPoint(x: self.testView.frame.minX == 0.0 ? 1.0 : 0.0, y: 0.0), size: self.testView.bounds.size)
-    }
-    
-    private func update() {
-        if self.animationCount != 0 {
-            if self.displayLink == nil {
-                let displayLink = CADisplayLink(target: self, selector: #selector(self.displayEvent))
-                
-                if #available(iOS 15.0, *) {
-                    let maxFps = Float(UIScreen.main.maximumFramesPerSecond)
-                    if maxFps > 61.0 {
-                        displayLink.preferredFrameRateRange = CAFrameRateRange(minimum: 60.0, maximum: maxFps, preferred: maxFps)
-                    }
-                }
-                
-                self.displayLink = displayLink
-                displayLink.add(to: .main, forMode: .common)
-                displayLink.isPaused = false
-            }
-        } else if let displayLink = self.displayLink {
-            self.displayLink = nil
-            displayLink.invalidate()
-        }
-    }
-}
-
 @objc(AppDelegate) class AppDelegate: UIResponder, UIApplicationDelegate, PKPushRegistryDelegate, UNUserNotificationCenterDelegate {
     @objc var window: UIWindow?
-    private var animationSupportContext: AnimationSupportContext?
     var nativeWindow: (UIWindow & WindowHost)?
     var mainWindow: Window1!
     private var dataImportSplash: LegacyDataImportSplash?
@@ -332,6 +277,15 @@ private final class AnimationSupportContext {
     // MARK: Nicegram DB Changes
     private var doubleBottomFlow: DoubleBottomFlow?
     
+    private var firebaseSecrets: [String: String] = [:] {
+        didSet {
+            if self.firebaseSecrets != oldValue {
+                self.firebaseSecretStream.set(.single(self.firebaseSecrets))
+            }
+        }
+    }
+    private let firebaseSecretStream = Promise<[String: String]>([:])
+    
     private var notificationTokenPromise: Promise<Data> {
         if let current = self._notificationTokenPromise {
             return current
@@ -350,7 +304,7 @@ private final class AnimationSupportContext {
     private var alertActions: (primary: (() -> Void)?, other: (() -> Void)?)?
     
     private let deviceToken = Promise<Data?>(nil)
-    
+        
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         precondition(!testIsLaunched)
         testIsLaunched = true
@@ -408,8 +362,10 @@ private final class AnimationSupportContext {
         self.window = window
         self.nativeWindow = window
         
-        //self.animationSupportContext = AnimationSupportContext(window: window)
-        //self.animationSupportContext?.add()
+        let launchIconSize = CGSize(width: 99.0, height: 99.0)
+        let launchIconView = UIImageView(image: UIImage(bundleImageName: "Components/LaunchLogo"))
+        launchIconView.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((hostView.containerView.frame.width - launchIconSize.width) / 2.0), y: floorToScreenPixels((hostView.containerView.frame.height - launchIconSize.height) / 2.0)), size: launchIconSize)
+        hostView.containerView.addSubview(launchIconView)
         
         let clearNotificationsManager = ClearNotificationsManager(getNotificationIds: { completion in
             if #available(iOS 10.0, *) {
@@ -808,6 +764,7 @@ private final class AnimationSupportContext {
                     PresentationAppIcon(name: "BlackFilledIcon", imageName: "BlackFilledIcon"),
                     PresentationAppIcon(name: "New1", imageName: "New1"),
                     PresentationAppIcon(name: "New2", imageName: "New2"),
+                    PresentationAppIcon(name: "NicegramAlt", imageName: "NicegramAlt"),
                 ]
                 if buildConfig.isInternalBuild {
                     icons.append(PresentationAppIcon(name: "WhiteFilledIcon", imageName: "WhiteFilledIcon"))
@@ -918,7 +875,7 @@ private final class AnimationSupportContext {
                 }
             
             var setPresentationCall: ((PresentationCall?) -> Void)?
-            let sharedContext = SharedAccountContextImpl(mainWindow: self.mainWindow, sharedContainerPath: legacyBasePath, basePath: rootPath, encryptionParameters: encryptionParameters, accountManager: accountManager, appLockContext: appLockContext, applicationBindings: applicationBindings, initialPresentationDataAndSettings: initialPresentationDataAndSettings, networkArguments: networkArguments, hasInAppPurchases: buildConfig.isAppStoreBuild && buildConfig.apiId == 1, rootPath: rootPath, legacyBasePath: legacyBasePath, apsNotificationToken: self.notificationTokenPromise.get() |> map(Optional.init), voipNotificationToken: self.voipTokenPromise.get() |> map(Optional.init), setNotificationCall: { call in
+            let sharedContext = SharedAccountContextImpl(mainWindow: self.mainWindow, sharedContainerPath: legacyBasePath, basePath: rootPath, encryptionParameters: encryptionParameters, accountManager: accountManager, appLockContext: appLockContext, applicationBindings: applicationBindings, initialPresentationDataAndSettings: initialPresentationDataAndSettings, networkArguments: networkArguments, hasInAppPurchases: buildConfig.isAppStoreBuild && buildConfig.apiId == 1, rootPath: rootPath, legacyBasePath: legacyBasePath, apsNotificationToken: self.notificationTokenPromise.get() |> map(Optional.init), voipNotificationToken: self.voipTokenPromise.get() |> map(Optional.init), firebaseSecretStream: self.firebaseSecretStream.get(), setNotificationCall: { call in
                 setPresentationCall?(call)
             }, navigateToChat: { accountId, peerId, messageId in
                 self.openChatWhenReady(accountId: accountId, peerId: peerId, threadId: nil, messageId: messageId)
@@ -1026,7 +983,9 @@ private final class AnimationSupportContext {
                     return .single(nil)
                 }
             }
-            let wakeupManager = SharedWakeupManager(beginBackgroundTask: { name, expiration in application.beginBackgroundTask(withName: name, expirationHandler: expiration) }, endBackgroundTask: { id in application.endBackgroundTask(id) }, backgroundTimeRemaining: { application.backgroundTimeRemaining }, activeAccounts: sharedContext.activeAccountContexts |> map { ($0.0?.account, $0.1.map { ($0.0, $0.1.account) }) }, liveLocationPolling: liveLocationPolling, watchTasks: watchTasks, inForeground: applicationBindings.applicationInForeground, hasActiveAudioSession: self.hasActiveAudioSession.get(), notificationManager: notificationManager, mediaManager: sharedContext.mediaManager, callManager: sharedContext.callManager, accountUserInterfaceInUse: { id in
+            let wakeupManager = SharedWakeupManager(beginBackgroundTask: { name, expiration in application.beginBackgroundTask(withName: name, expirationHandler: expiration) }, endBackgroundTask: { id in application.endBackgroundTask(id) }, backgroundTimeRemaining: { application.backgroundTimeRemaining }, acquireIdleExtension: {
+                return applicationBindings.pushIdleTimerExtension()
+            }, activeAccounts: sharedContext.activeAccountContexts |> map { ($0.0?.account, $0.1.map { ($0.0, $0.1.account) }) }, liveLocationPolling: liveLocationPolling, watchTasks: watchTasks, inForeground: applicationBindings.applicationInForeground, hasActiveAudioSession: self.hasActiveAudioSession.get(), notificationManager: notificationManager, mediaManager: sharedContext.mediaManager, callManager: sharedContext.callManager, accountUserInterfaceInUse: { id in
                 return sharedContext.accountUserInterfaceInUse(id)
             })
             let sharedApplicationContext = SharedApplicationContext(sharedContext: sharedContext, notificationManager: notificationManager, wakeupManager: wakeupManager)
@@ -1160,7 +1119,7 @@ private final class AnimationSupportContext {
         
         let startTime = CFAbsoluteTimeGetCurrent()
         self.contextDisposable.set((self.context.get()
-        |> deliverOnMainQueue).start(next: { context in
+        |> deliverOnMainQueue).start(next: { [weak launchIconView] context in
             print("Application: context took \(CFAbsoluteTimeGetCurrent() - startTime) to become available")
             
             var network: Network?
@@ -1206,8 +1165,15 @@ private final class AnimationSupportContext {
                     print("Launch to ready took \((CFAbsoluteTimeGetCurrent() - launchStartTime) * 1000.0) ms")
 
                     self.mainWindow.debugAction = nil
-                    
                     self.mainWindow.viewController = context.rootController
+                    
+                    if let launchIconView {
+                        launchIconView.alpha = 0.0
+                        launchIconView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, completion: { [weak launchIconView] _ in
+                            launchIconView?.removeFromSuperview()
+                        })
+                    }
+                    
                     if firstTime {
                         let layer = context.rootController.view.layer
                         layer.allowsGroupOpacity = true
@@ -1254,7 +1220,7 @@ private final class AnimationSupportContext {
         let authContextReadyDisposable = MetaDisposable()
         
         self.authContextDisposable.set((self.authContext.get()
-        |> deliverOnMainQueue).start(next: { context in
+        |> deliverOnMainQueue).start(next: { [weak launchIconView] context in
             var network: Network?
             if let context = context {
                 network = context.account.network
@@ -1286,15 +1252,38 @@ private final class AnimationSupportContext {
             self.authContextValue = context
             if let context = context {
                 let presentationData = context.sharedContext.currentPresentationData.with({ $0 })
-                let statusController = OverlayStatusController(theme: presentationData.theme, type: .loading(cancelled: nil))
-                self.mainWindow.present(statusController, on: .root)
+                
+                let progressSignal = Signal<Never, NoError> { [weak self] subscriber in
+                    let statusController = OverlayStatusController(theme: presentationData.theme, type: .loading(cancelled: nil))
+                    self?.mainWindow.present(statusController, on: .root)
+                    return ActionDisposable { [weak statusController] in
+                        Queue.mainQueue().async() {
+                            statusController?.dismiss()
+                        }
+                    }
+                }
+                |> runOn(Queue.mainQueue())
+                |> delay(0.5, queue: Queue.mainQueue())
+                let progressDisposable = progressSignal.start()
+                
                 let isReady: Signal<Bool, NoError> = context.isReady.get()
                 authContextReadyDisposable.set((isReady
                 |> filter { $0 }
                 |> take(1)
                 |> deliverOnMainQueue).start(next: { _ in
-                    statusController.dismiss()
+                    progressDisposable.dispose()
                     self.mainWindow.present(context.rootController, on: .root)
+                    
+                    if let launchIconView {
+                        if context.rootController.topViewController is AuthorizationSequenceSplashController {
+                            context.rootController.view.addSubview(launchIconView)
+                            Queue.mainQueue().after(0.01, {
+                                launchIconView.removeFromSuperview()
+                            })
+                        } else {
+                            launchIconView.removeFromSuperview()
+                        }
+                    }
                 }))
             } else {
                 authContextReadyDisposable.set(nil)
@@ -1435,6 +1424,8 @@ private final class AnimationSupportContext {
             self.isInForegroundPromise.set(true)
             self.isActiveValue = true
             self.isActivePromise.set(true)
+            
+            self.runForegroundTasks()
         }
         
         if UIApplication.shared.isStatusBarHidden {
@@ -1478,24 +1469,10 @@ private final class AnimationSupportContext {
             BGTaskScheduler.shared.register(forTaskWithIdentifier: taskId, using: DispatchQueue.main) { task in
                 Logger.shared.log("App \(self.episodeId)", "Executing cleanup task")
                 
-                let disposable = MetaDisposable()
-                
-                let _ = (self.sharedContextPromise.get()
-                |> take(1)
-                |> deliverOnMainQueue).start(next: { sharedApplicationContext in
-                    let _ = (sharedApplicationContext.sharedContext.activeAccountContexts
-                    |> take(1)
-                    |> deliverOnMainQueue).start(next: { activeAccounts in
-                        var signals: Signal<Never, NoError> = .complete()
-                        
-                        for (_, context, _) in activeAccounts.accounts {
-                            signals = signals |> then(context.account.cleanupTasks(lowImpact: false))
-                        }
-                        
-                        disposable.set(signals.start(completed: {
-                            task.setTaskCompleted(success: true)
-                        }))
-                    })
+                let disposable = self.runCacheReindexTasks(lowImpact: true, completion: {
+                    Logger.shared.log("App \(self.episodeId)", "Completed cleanup task")
+                    
+                    task.setTaskCompleted(success: true)
                 })
                 
                 task.expirationHandler = {
@@ -1521,7 +1498,47 @@ private final class AnimationSupportContext {
             })
         }
         
+        /*let timestamp = Int(CFAbsoluteTimeGetCurrent())
+        let minReindexTimestamp = timestamp - 2 * 24 * 60 * 60
+        if let indexTimestamp = UserDefaults.standard.object(forKey: "TelegramCacheIndexTimestamp") as? NSNumber, indexTimestamp.intValue >= minReindexTimestamp {
+        } else {
+            UserDefaults.standard.set(timestamp as NSNumber, forKey: "TelegramCacheIndexTimestamp")
+            
+            Logger.shared.log("App \(self.episodeId)", "Executing low-impact cache reindex in foreground")
+            let _ = self.runCacheReindexTasks(lowImpact: true, completion: {
+                Logger.shared.log("App \(self.episodeId)", "Executing low-impact cache reindex in foreground — done")
+            })
+        }*/
+        
+        if #available(iOS 12.0, *) {
+            UIApplication.shared.registerForRemoteNotifications()
+        }
+        
         return true
+    }
+    
+    private func runCacheReindexTasks(lowImpact: Bool, completion: @escaping () -> Void) -> Disposable {
+        let disposable = MetaDisposable()
+        
+        let _ = (self.sharedContextPromise.get()
+        |> take(1)
+        |> deliverOnMainQueue).start(next: { sharedApplicationContext in
+            let _ = (sharedApplicationContext.sharedContext.activeAccountContexts
+            |> take(1)
+            |> deliverOnMainQueue).start(next: { activeAccounts in
+                var signals: Signal<Never, NoError> = .complete()
+                
+                for (_, context, _) in activeAccounts.accounts {
+                    signals = signals |> then(context.account.cleanupTasks(lowImpact: lowImpact))
+                }
+                
+                disposable.set(signals.start(completed: {
+                    completion()
+                }))
+            })
+        })
+        
+        return disposable
     }
 
     private func resetBadge() {
@@ -1620,6 +1637,22 @@ private final class AnimationSupportContext {
                 }
             }
         }
+        
+        self.runForegroundTasks()
+    }
+    
+    func runForegroundTasks() {
+        let _ = (self.sharedContextPromise.get()
+        |> take(1)
+        |> deliverOnMainQueue).start(next: { sharedApplicationContext in
+            let _ = (sharedApplicationContext.sharedContext.activeAccountContexts
+             |> take(1)
+             |> deliverOnMainQueue).start(next: { activeAccounts in
+                for (_, context, _) in activeAccounts.accounts {
+                    (context.downloadedMediaStoreManager as? DownloadedMediaStoreManagerImpl)?.runTasks()
+                }
+            })
+        })
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
@@ -1688,6 +1721,26 @@ private final class AnimationSupportContext {
         }
         
         Logger.shared.log("App \(self.episodeId)", "remoteNotification: \(redactedPayload)")
+        
+        if let firebaseAuth = redactedPayload["com.google.firebase.auth"] as? String {
+            guard let firebaseAuthData = firebaseAuth.data(using: .utf8), let firebaseJson = try? JSONSerialization.jsonObject(with: firebaseAuthData) else {
+                completionHandler(.newData)
+                return
+            }
+            guard let firebaseDict = firebaseJson as? [String: Any] else {
+                completionHandler(.newData)
+                return
+            }
+            
+            if let receipt = firebaseDict["receipt"] as? String, let secret = firebaseDict["secret"] as? String {
+                var firebaseSecrets = self.firebaseSecrets
+                firebaseSecrets[receipt] = secret
+                self.firebaseSecrets = firebaseSecrets
+            }
+            
+            completionHandler(.newData)
+            return
+        }
 
         if userInfo["p"] == nil {
             completionHandler(.noData)

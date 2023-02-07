@@ -143,6 +143,8 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
     private let titleAccessoryPanelContainer: ChatControllerTitlePanelNodeContainer
     private var titleAccessoryPanelNode: ChatTitleAccessoryPanelNode?
     
+    private var chatTranslationPanel: ChatTranslationPanelNode?
+    
     private var inputPanelNode: ChatInputPanelNode?
     private(set) var inputPanelOverscrollNode: ChatInputPanelOverscrollNode?
     private weak var currentDismissedInputPanelNode: ChatInputPanelNode?
@@ -632,7 +634,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
 
         self.addSubnode(self.messageTransitionNode)
         self.contentContainerNode.addSubnode(self.navigateButtons)
-        self.contentContainerNode.addSubnode(self.presentationContextMarker)
+        self.addSubnode(self.presentationContextMarker)
         self.contentContainerNode.addSubnode(self.contentDimNode)
 
         self.navigationBar?.additionalContentNode.addSubnode(self.titleAccessoryPanelContainer)
@@ -1109,6 +1111,52 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
             self.titleAccessoryPanelNode = nil
         }
         
+        var dismissedTranslationPanelNode: ChatTranslationPanelNode?
+        var immediatelyLayoutTranslationPanelNodeAndAnimateAppearance = false
+        var translationPanelHeight: CGFloat?
+        
+        var hasTranslationPanel = false
+        if let _ = self.chatPresentationInterfaceState.translationState, self.emptyType == nil {
+            if case .overlay = self.chatPresentationInterfaceState.mode {
+            } else if self.chatPresentationInterfaceState.renderedPeer?.peer?.restrictionText(platform: "ios", contentSettings: self.context.currentContentSettings.with { $0 }) != nil {
+            } else if self.chatPresentationInterfaceState.search != nil {
+            } else {
+                hasTranslationPanel = true
+            }
+        }
+        if hasTranslationPanel {
+            let translationPanelNode: ChatTranslationPanelNode
+            if let current = self.chatTranslationPanel {
+                translationPanelNode = current
+            } else {
+                translationPanelNode = ChatTranslationPanelNode(context: self.context)
+            }
+            translationPanelNode.interfaceInteraction = self.interfaceInteraction
+            
+            if self.chatTranslationPanel != translationPanelNode {
+                dismissedTranslationPanelNode = self.chatTranslationPanel
+                self.chatTranslationPanel = translationPanelNode
+                immediatelyLayoutTranslationPanelNodeAndAnimateAppearance = true
+                self.titleAccessoryPanelContainer.addSubnode(translationPanelNode)
+                
+                translationPanelNode.clipsToBounds = true
+                if transition.isAnimated {
+                    extraTransition = .animated(duration: 0.2, curve: .easeInOut)
+                }
+            }
+            
+            let height = translationPanelNode.updateLayout(width: layout.size.width, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, transition: immediatelyLayoutTitleAccessoryPanelNodeAndAnimateAppearance ? .immediate : transition, interfaceState: self.chatPresentationInterfaceState)
+            translationPanelHeight = height
+            if immediatelyLayoutTranslationPanelNodeAndAnimateAppearance {
+                translationPanelNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
+                translationPanelNode.subnodeTransform = CATransform3DMakeTranslation(0.0, -height, 0.0)
+                extraTransition.updateSublayerTransformOffset(layer: translationPanelNode.layer, offset: CGPoint())
+            }
+        } else if let chatTranslationPanel = self.chatTranslationPanel {
+            dismissedTranslationPanelNode = chatTranslationPanel
+            self.chatTranslationPanel = nil
+        }
+        
         var dismissedImportStatusPanelNode: ChatImportStatusPanel?
         var importStatusPanelHeight: CGFloat?
         if let importState = self.chatPresentationInterfaceState.importState {
@@ -1422,18 +1470,27 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
             let _ = inputMediaNode.updateLayout(width: layout.size.width, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, bottomInset: cleanInsets.bottom, standardInputHeight: layout.standardInputHeight, inputHeight: layout.inputHeight ?? 0.0, maximumHeight: maximumInputNodeHeight, inputPanelHeight: inputPanelSize?.height ?? 0.0, transition: .immediate, interfaceState: self.chatPresentationInterfaceState, deviceMetrics: layout.deviceMetrics, isVisible: false, isExpanded: self.inputPanelContainerNode.stableIsExpanded)
         }
         
-        transition.updateFrame(node: self.titleAccessoryPanelContainer, frame: CGRect(origin: CGPoint(x: 0.0, y: insets.top), size: CGSize(width: layout.size.width, height: 100.0)))
+        transition.updateFrame(node: self.titleAccessoryPanelContainer, frame: CGRect(origin: CGPoint(x: 0.0, y: insets.top), size: CGSize(width: layout.size.width, height: 116.0)))
         
         transition.updateFrame(node: self.inputContextPanelContainer, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: layout.size.width, height: layout.size.height)))
         transition.updateFrame(node: self.inputContextOverTextPanelContainer, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: layout.size.width, height: layout.size.height)))
         
+        var extraNavigationBarHeight: CGFloat = 0.0
         var titleAccessoryPanelFrame: CGRect?
         if let _ = self.titleAccessoryPanelNode, let panelHeight = titleAccessoryPanelHeight {
             titleAccessoryPanelFrame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: layout.size.width, height: panelHeight))
             insets.top += panelHeight
+            extraNavigationBarHeight += titleAccessoryPanelBackgroundHeight ?? 0.0
+        }
+        
+        var translationPanelFrame: CGRect?
+        if let _ = self.chatTranslationPanel, let panelHeight = translationPanelHeight {
+            translationPanelFrame = CGRect(origin: CGPoint(x: 0.0, y: extraNavigationBarHeight), size: CGSize(width: layout.size.width, height: panelHeight))
+            insets.top += panelHeight
+            extraNavigationBarHeight += panelHeight
         }
 
-        updateExtraNavigationBarBackgroundHeight(titleAccessoryPanelBackgroundHeight ?? 0.0, extraTransition)
+        updateExtraNavigationBarBackgroundHeight(extraNavigationBarHeight, extraTransition)
         
         var importStatusPanelFrame: CGRect?
         if let _ = self.chatImportStatusPanel, let panelHeight = importStatusPanelHeight {
@@ -1450,7 +1507,9 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         transition.updateFrame(node: self.backgroundNode, frame: contentBounds)
         self.backgroundNode.updateLayout(size: contentBounds.size, transition: transition)
 
-        transition.updateFrame(node: self.historyNodeContainer, frame: contentBounds)
+        transition.updateBounds(node: self.historyNodeContainer, bounds: contentBounds)
+        transition.updatePosition(node: self.historyNodeContainer, position: contentBounds.center)
+        
         transition.updateBounds(node: self.historyNode, bounds: CGRect(origin: CGPoint(), size: contentBounds.size))
         transition.updatePosition(node: self.historyNode, position: CGPoint(x: contentBounds.size.width / 2.0, y: contentBounds.size.height / 2.0))
         if let blurredHistoryNode = self.blurredHistoryNode {
@@ -1758,8 +1817,8 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         transition.updateFrame(node: self.inputPanelBackgroundNode, frame: apparentInputBackgroundFrame, beginWithCurrentState: true)
 
         if let navigationBarBackgroundContent = self.navigationBarBackgroundContent {
-            transition.updateFrame(node: navigationBarBackgroundContent, frame: CGRect(origin: .zero, size: CGSize(width: layout.size.width, height: navigationBarHeight + (titleAccessoryPanelBackgroundHeight ?? 0.0))), beginWithCurrentState: true)
-            navigationBarBackgroundContent.update(rect: CGRect(origin: .zero, size: CGSize(width: layout.size.width, height: navigationBarHeight + (titleAccessoryPanelBackgroundHeight ?? 0.0))), within: layout.size, transition: transition)
+            transition.updateFrame(node: navigationBarBackgroundContent, frame: CGRect(origin: .zero, size: CGSize(width: layout.size.width, height: navigationBarHeight + (titleAccessoryPanelBackgroundHeight ?? 0.0) + (translationPanelHeight ?? 0.0))), beginWithCurrentState: true)
+            navigationBarBackgroundContent.update(rect: CGRect(origin: .zero, size: CGSize(width: layout.size.width, height: navigationBarHeight + (titleAccessoryPanelBackgroundHeight ?? 0.0) + (translationPanelHeight ?? 0.0))), within: layout.size, transition: transition)
         }
         
         if let inputPanelBackgroundContent = self.inputPanelBackgroundContent {
@@ -1807,6 +1866,11 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         if let titleAccessoryPanelNode = self.titleAccessoryPanelNode, let titleAccessoryPanelFrame = titleAccessoryPanelFrame, !titleAccessoryPanelNode.frame.equalTo(titleAccessoryPanelFrame) {
             titleAccessoryPanelNode.frame = titleAccessoryPanelFrame
             transition.animatePositionAdditive(node: titleAccessoryPanelNode, offset: CGPoint(x: 0.0, y: -titleAccessoryPanelFrame.height))
+        }
+        
+        if let chatTranslationPanel = self.chatTranslationPanel, let translationPanelFrame = translationPanelFrame, !chatTranslationPanel.frame.equalTo(translationPanelFrame) {
+            chatTranslationPanel.frame = translationPanelFrame
+            transition.animatePositionAdditive(node: chatTranslationPanel, offset: CGPoint(x: 0.0, y: -translationPanelFrame.height))
         }
         
         if let chatImportStatusPanel = self.chatImportStatusPanel, let importStatusPanelFrame = importStatusPanelFrame, !chatImportStatusPanel.frame.equalTo(importStatusPanelFrame) {
@@ -1903,6 +1967,15 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
             transition.updateFrame(node: dismissedTitleAccessoryPanelNode, frame: dismissedPanelFrame, completion: { [weak dismissedTitleAccessoryPanelNode] _ in
                 dismissedTitleAccessoryPanelNode?.removeFromSupernode()
             })
+        }
+        
+        if let dismissedTranslationPanelNode = dismissedTranslationPanelNode {
+            var dismissedPanelFrame = dismissedTranslationPanelNode.frame
+            dismissedPanelFrame.origin.y = -dismissedPanelFrame.size.height
+            transition.updateAlpha(node: dismissedTranslationPanelNode, alpha: 0.0, completion: { [weak dismissedTranslationPanelNode] _ in
+                dismissedTranslationPanelNode?.removeFromSupernode()
+            })
+            dismissedTranslationPanelNode.animateOut()
         }
         
         if let dismissedImportStatusPanelNode = dismissedImportStatusPanelNode {
@@ -2558,7 +2631,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         case .none:
             break
         case .inputButtons:
-            if let peer = self.chatPresentationInterfaceState.renderedPeer?.peer as? TelegramUser, peer.botInfo != nil {
+            if let peer = self.chatPresentationInterfaceState.renderedPeer?.peer as? TelegramUser, peer.botInfo != nil, self.chatPresentationInterfaceState.keyboardButtonsMessage?.visibleButtonKeyboardMarkup?.flags.contains(.persistent) == true {
             } else {
                 self.interfaceInteraction?.updateInputModeAndDismissedButtonKeyboardMessageId({ state in
                     return (.none, state.keyboardButtonsMessage?.id ?? state.interfaceState.messageActionsState.closedButtonKeyboardMessageId)
@@ -3038,7 +3111,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                 }
             }
             
-            if let peer = self.chatPresentationInterfaceState.renderedPeer?.peer as? TelegramUser, peer.botInfo != nil, case .inputButtons = self.chatPresentationInterfaceState.inputMode {
+            if let peer = self.chatPresentationInterfaceState.renderedPeer?.peer as? TelegramUser, peer.botInfo != nil, case .inputButtons = self.chatPresentationInterfaceState.inputMode, self.chatPresentationInterfaceState.keyboardButtonsMessage?.visibleButtonKeyboardMarkup?.flags.contains(.persistent) == true {
                 enableGesture = false
             }
             

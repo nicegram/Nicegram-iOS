@@ -19,6 +19,7 @@ import TextNodeWithEntities
 import AnimationCache
 import MultiAnimationRenderer
 import ChatControllerInteraction
+import ShimmerEffect
 
 private let buttonFont = Font.semibold(13.0)
 
@@ -47,6 +48,7 @@ final class ChatMessageAttachedContentButtonNode: HighlightTrackingButtonNode {
     private let iconNode: ASImageNode
     private let highlightedTextNode: TextNode
     private let backgroundNode: ASImageNode
+    private let shimmerEffectNode: ShimmerEffectForegroundNode
     
     private var regularImage: UIImage?
     private var highlightedImage: UIImage?
@@ -54,12 +56,17 @@ final class ChatMessageAttachedContentButtonNode: HighlightTrackingButtonNode {
     private var highlightedIconImage: UIImage?
     
     var pressed: (() -> Void)?
+  
+    private var titleColor: UIColor?
     
     init() {
         self.textNode = TextNode()
         self.textNode.isUserInteractionEnabled = false
         self.highlightedTextNode = TextNode()
         self.highlightedTextNode.isUserInteractionEnabled = false
+        
+        self.shimmerEffectNode = ShimmerEffectForegroundNode()
+        self.shimmerEffectNode.cornerRadius = 5.0
         
         self.backgroundNode = ASImageNode()
         self.backgroundNode.isLayerBacked = true
@@ -73,6 +80,7 @@ final class ChatMessageAttachedContentButtonNode: HighlightTrackingButtonNode {
         
         super.init()
         
+        self.addSubnode(self.shimmerEffectNode)
         self.addSubnode(self.backgroundNode)
         self.addSubnode(self.textNode)
         self.addSubnode(self.highlightedTextNode)
@@ -85,7 +93,13 @@ final class ChatMessageAttachedContentButtonNode: HighlightTrackingButtonNode {
                     strongSelf.iconNode.image = strongSelf.highlightedIconImage
                     strongSelf.textNode.isHidden = true
                     strongSelf.highlightedTextNode.isHidden = false
+                    
+                    let scale = (strongSelf.bounds.width - 10.0) / strongSelf.bounds.width
+                    strongSelf.layer.animateScale(from: 1.0, to: scale, duration: 0.15, removeOnCompletion: false)
                 } else {
+                    if let presentationLayer = strongSelf.layer.presentation() {
+                        strongSelf.layer.animateScale(from: CGFloat((presentationLayer.value(forKeyPath: "transform.scale.y") as? NSNumber)?.floatValue ?? 1.0), to: 1.0, duration: 0.25, removeOnCompletion: false)
+                    }
                     UIView.transition(with: strongSelf.view, duration: 0.2, options: [.transitionCrossDissolve], animations: {
                         strongSelf.backgroundNode.image = strongSelf.regularImage
                         strongSelf.iconNode.image = strongSelf.regularIconImage
@@ -103,7 +117,26 @@ final class ChatMessageAttachedContentButtonNode: HighlightTrackingButtonNode {
         self.pressed?()
     }
     
-    static func asyncLayout(_ current: ChatMessageAttachedContentButtonNode?) -> (_ width: CGFloat, _ regularImage: UIImage, _ highlightedImage: UIImage, _ iconImage: UIImage?, _ highlightedIconImage: UIImage?, _ title: String, _ titleColor: UIColor, _ highlightedTitleColor: UIColor) -> (CGFloat, (CGFloat) -> (CGSize, () -> ChatMessageAttachedContentButtonNode)) {
+    func startShimmering() {
+        guard let titleColor = self.titleColor else {
+            return
+        }
+        self.shimmerEffectNode.isHidden = false
+        self.shimmerEffectNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
+        
+        let backgroundFrame = self.backgroundNode.frame
+        self.shimmerEffectNode.frame = backgroundFrame
+        self.shimmerEffectNode.updateAbsoluteRect(CGRect(origin: .zero, size: backgroundFrame.size), within: backgroundFrame.size)
+        self.shimmerEffectNode.update(backgroundColor: .clear, foregroundColor: titleColor.withAlphaComponent(0.3), horizontal: true, effectSize: nil, globalTimeOffset: false, duration: nil)
+    }
+    
+    func stopShimmering() {
+        self.shimmerEffectNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, completion: { [weak self] _ in
+            self?.shimmerEffectNode.isHidden = true
+        })
+    }
+    
+    static func asyncLayout(_ current: ChatMessageAttachedContentButtonNode?) -> (_ width: CGFloat, _ regularImage: UIImage, _ highlightedImage: UIImage, _ iconImage: UIImage?, _ highlightedIconImage: UIImage?, _ title: String, _ titleColor: UIColor, _ highlightedTitleColor: UIColor, _ inProgress: Bool) -> (CGFloat, (CGFloat) -> (CGSize, () -> ChatMessageAttachedContentButtonNode)) {
         let previousRegularImage = current?.regularImage
         let previousHighlightedImage = current?.highlightedImage
         let previousRegularIconImage = current?.regularIconImage
@@ -112,7 +145,7 @@ final class ChatMessageAttachedContentButtonNode: HighlightTrackingButtonNode {
         let maybeMakeTextLayout = (current?.textNode).flatMap(TextNode.asyncLayout)
         let maybeMakeHighlightedTextLayout = (current?.highlightedTextNode).flatMap(TextNode.asyncLayout)
         
-        return { width, regularImage, highlightedImage, iconImage, highlightedIconImage, title, titleColor, highlightedTitleColor in            
+        return { width, regularImage, highlightedImage, iconImage, highlightedIconImage, title, titleColor, highlightedTitleColor, inProgress in
             let targetNode: ChatMessageAttachedContentButtonNode
             if let current = current {
                 targetNode = current
@@ -169,6 +202,8 @@ final class ChatMessageAttachedContentButtonNode: HighlightTrackingButtonNode {
                 return (CGSize(width: refinedWidth, height: 33.0), {
                     targetNode.accessibilityLabel = title
                     
+                    targetNode.titleColor = titleColor
+                    
                     if let updatedRegularImage = updatedRegularImage {
                         targetNode.regularImage = updatedRegularImage
                         if !targetNode.textNode.isHidden {
@@ -197,8 +232,9 @@ final class ChatMessageAttachedContentButtonNode: HighlightTrackingButtonNode {
                     let _ = textApply()
                     let _ = highlightedTextApply()
                     
-                    targetNode.backgroundNode.frame = CGRect(origin: CGPoint(), size: CGSize(width: refinedWidth, height: 33.0))
+                    let backgroundFrame = CGRect(origin: CGPoint(), size: CGSize(width: refinedWidth, height: 33.0))
                     var textFrame = CGRect(origin: CGPoint(x: floor((refinedWidth - textSize.size.width) / 2.0), y: floor((34.0 - textSize.size.height) / 2.0)), size: textSize.size)
+                    targetNode.backgroundNode.frame = backgroundFrame
                     if let image = targetNode.iconNode.image {
                         textFrame.origin.x += floor(image.size.width / 2.0)
                         targetNode.iconNode.frame = CGRect(origin: CGPoint(x: textFrame.minX - image.size.width - 5.0, y: textFrame.minY + 2.0), size: image.size)
@@ -529,7 +565,7 @@ final class ChatMessageAttachedContentNode: ASDisplayNode {
             if let (media, flags) = mediaAndFlags {
                 if let file = media as? TelegramMediaFile {
                     if file.mimeType == "application/x-tgtheme-ios", let size = file.size, size < 16 * 1024 {
-                        let (_, initialImageWidth, refineLayout) = contentImageLayout(context, presentationData, presentationData.dateTimeFormat, message, associatedData, attributes, file, imageDateAndStatus, .full, associatedData.automaticDownloadPeerType, .constrained(CGSize(width: constrainedSize.width - horizontalInsets.left - horizontalInsets.right, height: constrainedSize.height)), layoutConstants, contentMode, controllerInteraction.presentationContext)
+                        let (_, initialImageWidth, refineLayout) = contentImageLayout(context, presentationData, presentationData.dateTimeFormat, message, associatedData, attributes, file, imageDateAndStatus, .full, associatedData.automaticDownloadPeerType, associatedData.automaticDownloadPeerId, .constrained(CGSize(width: constrainedSize.width - horizontalInsets.left - horizontalInsets.right, height: constrainedSize.height)), layoutConstants, contentMode, controllerInteraction.presentationContext)
                         initialWidth = initialImageWidth + horizontalInsets.left + horizontalInsets.right
                         refineContentImageLayout = refineLayout
                     } else if file.isInstantVideo {
@@ -561,12 +597,12 @@ final class ChatMessageAttachedContentNode: ASDisplayNode {
                             }
                         }
 
-                        let (_, initialImageWidth, refineLayout) = contentImageLayout(context, presentationData, presentationData.dateTimeFormat, message, associatedData, attributes, file, imageDateAndStatus, automaticDownload, associatedData.automaticDownloadPeerType, .constrained(CGSize(width: constrainedSize.width - horizontalInsets.left - horizontalInsets.right, height: constrainedSize.height)), layoutConstants, contentMode, controllerInteraction.presentationContext)
+                        let (_, initialImageWidth, refineLayout) = contentImageLayout(context, presentationData, presentationData.dateTimeFormat, message, associatedData, attributes, file, imageDateAndStatus, automaticDownload, associatedData.automaticDownloadPeerType, associatedData.automaticDownloadPeerId, .constrained(CGSize(width: constrainedSize.width - horizontalInsets.left - horizontalInsets.right, height: constrainedSize.height)), layoutConstants, contentMode, controllerInteraction.presentationContext)
                         initialWidth = initialImageWidth + horizontalInsets.left + horizontalInsets.right
                         refineContentImageLayout = refineLayout
                     } else if file.isSticker || file.isAnimatedSticker {
                         let automaticDownload = shouldDownloadMediaAutomatically(settings: automaticDownloadSettings, peerType: associatedData.automaticDownloadPeerType, networkType: associatedData.automaticDownloadNetworkType, authorPeerId: message.author?.id, contactsPeerIds: associatedData.contactsPeerIds, media: file)
-                        let (_, initialImageWidth, refineLayout) = contentImageLayout(context, presentationData, presentationData.dateTimeFormat, message, associatedData, attributes, file, imageDateAndStatus, automaticDownload ? .full : .none, associatedData.automaticDownloadPeerType, .constrained(CGSize(width: constrainedSize.width - horizontalInsets.left - horizontalInsets.right, height: constrainedSize.height)), layoutConstants, contentMode, controllerInteraction.presentationContext)
+                        let (_, initialImageWidth, refineLayout) = contentImageLayout(context, presentationData, presentationData.dateTimeFormat, message, associatedData, attributes, file, imageDateAndStatus, automaticDownload ? .full : .none, associatedData.automaticDownloadPeerType, associatedData.automaticDownloadPeerId, .constrained(CGSize(width: constrainedSize.width - horizontalInsets.left - horizontalInsets.right, height: constrainedSize.height)), layoutConstants, contentMode, controllerInteraction.presentationContext)
                         initialWidth = initialImageWidth + horizontalInsets.left + horizontalInsets.right
                         refineContentImageLayout = refineLayout
                     } else {
@@ -612,7 +648,7 @@ final class ChatMessageAttachedContentNode: ASDisplayNode {
                 } else if let image = media as? TelegramMediaImage {
                     if !flags.contains(.preferMediaInline) {
                         let automaticDownload = shouldDownloadMediaAutomatically(settings: automaticDownloadSettings, peerType: associatedData.automaticDownloadPeerType, networkType: associatedData.automaticDownloadNetworkType, authorPeerId: message.author?.id, contactsPeerIds: associatedData.contactsPeerIds, media: image)
-                        let (_, initialImageWidth, refineLayout) = contentImageLayout(context, presentationData, presentationData.dateTimeFormat, message, associatedData, attributes, image, imageDateAndStatus, automaticDownload ? .full : .none, associatedData.automaticDownloadPeerType, .constrained(CGSize(width: constrainedSize.width - horizontalInsets.left - horizontalInsets.right, height: constrainedSize.height)), layoutConstants, contentMode, controllerInteraction.presentationContext)
+                        let (_, initialImageWidth, refineLayout) = contentImageLayout(context, presentationData, presentationData.dateTimeFormat, message, associatedData, attributes, image, imageDateAndStatus, automaticDownload ? .full : .none, associatedData.automaticDownloadPeerType, associatedData.automaticDownloadPeerId, .constrained(CGSize(width: constrainedSize.width - horizontalInsets.left - horizontalInsets.right, height: constrainedSize.height)), layoutConstants, contentMode, controllerInteraction.presentationContext)
                         initialWidth = initialImageWidth + horizontalInsets.left + horizontalInsets.right
                         refineContentImageLayout = refineLayout
                     } else if let dimensions = largestImageRepresentation(image.representations)?.dimensions {
@@ -624,11 +660,11 @@ final class ChatMessageAttachedContentNode: ASDisplayNode {
                     }
                 } else if let image = media as? TelegramMediaWebFile {
                     let automaticDownload = shouldDownloadMediaAutomatically(settings: automaticDownloadSettings, peerType: associatedData.automaticDownloadPeerType, networkType: associatedData.automaticDownloadNetworkType, authorPeerId: message.author?.id, contactsPeerIds: associatedData.contactsPeerIds, media: image)
-                    let (_, initialImageWidth, refineLayout) = contentImageLayout(context, presentationData, presentationData.dateTimeFormat, message, associatedData, attributes, image, imageDateAndStatus, automaticDownload ? .full : .none, associatedData.automaticDownloadPeerType, .constrained(CGSize(width: constrainedSize.width - horizontalInsets.left - horizontalInsets.right, height: constrainedSize.height)), layoutConstants, contentMode, controllerInteraction.presentationContext)
+                    let (_, initialImageWidth, refineLayout) = contentImageLayout(context, presentationData, presentationData.dateTimeFormat, message, associatedData, attributes, image, imageDateAndStatus, automaticDownload ? .full : .none, associatedData.automaticDownloadPeerType, associatedData.automaticDownloadPeerId, .constrained(CGSize(width: constrainedSize.width - horizontalInsets.left - horizontalInsets.right, height: constrainedSize.height)), layoutConstants, contentMode, controllerInteraction.presentationContext)
                     initialWidth = initialImageWidth + horizontalInsets.left + horizontalInsets.right
                     refineContentImageLayout = refineLayout
                 } else if let wallpaper = media as? WallpaperPreviewMedia {
-                    let (_, initialImageWidth, refineLayout) = contentImageLayout(context, presentationData, presentationData.dateTimeFormat, message, associatedData, attributes, wallpaper, imageDateAndStatus, .full, associatedData.automaticDownloadPeerType, .constrained(CGSize(width: constrainedSize.width - horizontalInsets.left - horizontalInsets.right, height: constrainedSize.height)), layoutConstants, contentMode, controllerInteraction.presentationContext)
+                    let (_, initialImageWidth, refineLayout) = contentImageLayout(context, presentationData, presentationData.dateTimeFormat, message, associatedData, attributes, wallpaper, imageDateAndStatus, .full, associatedData.automaticDownloadPeerType, associatedData.automaticDownloadPeerId, .constrained(CGSize(width: constrainedSize.width - horizontalInsets.left - horizontalInsets.right, height: constrainedSize.height)), layoutConstants, contentMode, controllerInteraction.presentationContext)
                     initialWidth = initialImageWidth + horizontalInsets.left + horizontalInsets.right
                     refineContentImageLayout = refineLayout
                     if case let .file(_, _, _, _, isTheme, _) = wallpaper.content, isTheme {
@@ -776,7 +812,7 @@ final class ChatMessageAttachedContentNode: ASDisplayNode {
                         let bubbleColor = bubbleColorComponents(theme: presentationData.theme.theme, incoming: false, wallpaper: !presentationData.theme.wallpaper.isEmpty)
                         titleHighlightedColor = bubbleColor.fill[0]
                     }
-                    let (buttonWidth, continueLayout) = makeButtonLayout(constrainedSize.width, buttonImage, buttonHighlightedImage, buttonIconImage, buttonHighlightedIconImage, actionTitle, titleColor, titleHighlightedColor)
+                    let (buttonWidth, continueLayout) = makeButtonLayout(constrainedSize.width, buttonImage, buttonHighlightedImage, buttonIconImage, buttonHighlightedIconImage, actionTitle, titleColor, titleHighlightedColor, false)
                     boundingSize.width = max(buttonWidth, boundingSize.width)
                     continueActionButtonLayout = continueLayout
                 }
@@ -928,8 +964,7 @@ final class ChatMessageAttachedContentNode: ASDisplayNode {
                                 if let updateImageSignal = updateInlineImageSignal {
                                     strongSelf.inlineImageNode.setSignal(updateImageSignal)
                                 }
-                                
-                                strongSelf.inlineImageNode.frame = imageFrame
+                                animation.animator.updateFrame(layer: strongSelf.inlineImageNode.layer, frame: imageFrame, completion: nil)
                                 if strongSelf.inlineImageNode.supernode == nil {
                                     strongSelf.addSubnode(strongSelf.inlineImageNode)
                                 }
