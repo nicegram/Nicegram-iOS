@@ -508,7 +508,9 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
             if (strongSelf.context.sharedContext.currentPresentationData.with({ $0 })).reduceMotion {
                 return
             }
-            strongSelf.backgroundNode.animateEvent(transition: transition, extendAnimation: false)
+            if DeviceMetrics.performance.isGraphicallyCapable {
+                strongSelf.backgroundNode.animateEvent(transition: transition, extendAnimation: false)
+            }
         }
 
         getMessageTransitionNode = { [weak self] in
@@ -2232,7 +2234,9 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                 if (self.context.sharedContext.currentPresentationData.with({ $0 })).reduceMotion {
                     return
                 }
-                self.backgroundNode.animateEvent(transition: transition, extendAnimation: false)
+                if DeviceMetrics.performance.isGraphicallyCapable {
+                    self.backgroundNode.animateEvent(transition: transition, extendAnimation: false)
+                }
             }
             //self.historyNode.didScrollWithOffset?(listBottomInset - previousListBottomInset, transition, nil)
         }
@@ -2533,6 +2537,8 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                     if textView.isFirstResponder {
                         if self.chatPresentationInterfaceStateRequiresInputFocus(chatPresentationInterfaceState) {
                             if let validLayout = self.validLayout, validLayout.0.inputHeight != nil {
+                                waitForKeyboardLayout = true
+                            } else {
                                 waitForKeyboardLayout = true
                             }
                         }

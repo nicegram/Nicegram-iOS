@@ -14,7 +14,7 @@ swift_library(
     copts = [
         "-warnings-as-errors",
     ],
-    deps = [
+    deps = NGDEPS + [
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
         "//submodules/AsyncDisplayKit:AsyncDisplayKit",
         "//submodules/Display:Display",
@@ -50,7 +50,8 @@ swift_library(
         "//submodules/TelegramUI/Components/TextNodeWithEntities:TextNodeWithEntities",
         "//submodules/TelegramUI/Components/AnimationCache:AnimationCache",
         "//submodules/TelegramUI/Components/MultiAnimationRenderer:MultiAnimationRenderer",
-    ] + NGDEPS,
+        "//submodules/TelegramUI/Components/SliderContextItem:SliderContextItem",
+    ],
     visibility = [
         "//visibility:public",
     ],

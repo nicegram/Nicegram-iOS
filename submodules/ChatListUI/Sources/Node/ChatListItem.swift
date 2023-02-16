@@ -1360,7 +1360,9 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
                         }                 
                         strongSelf.updateVideoVisibility()
                     } else {
-                        let _ = context.engine.peers.fetchAndUpdateCachedPeerData(peerId: peer.id).start()
+                        if let photo = peer.largeProfileImage, photo.hasVideo {
+                            let _ = context.engine.peers.fetchAndUpdateCachedPeerData(peerId: peer.id).start()
+                        }
                     }
                 }))
             } else {

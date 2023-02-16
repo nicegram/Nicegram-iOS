@@ -1222,6 +1222,11 @@ public final class Transaction {
         self.postbox!.messageHistoryThreadIndexTable.set(peerId: peerId, threadId: threadId, info: info)
     }
     
+    public func setMessageHistoryThreads(peerId: PeerId) -> [Int64] {
+        assert(!self.disposed)
+        return self.postbox!.messageHistoryThreadIndexTable.getAll(peerId: peerId).map(\.threadId)
+    }
+    
     public func getPeerThreadCombinedState(peerId: PeerId) -> StoredPeerThreadCombinedState? {
         assert(!self.disposed)
         return self.postbox!.peerThreadCombinedStateTable.get(peerId: peerId)
@@ -1312,7 +1317,7 @@ public func openPostbox(basePath: String, seedConfiguration: SeedConfiguration, 
 
             #if DEBUG
             //debugSaveState(basePath: basePath + "/db", name: "previous2")
-            debugRestoreState(basePath: basePath + "/db", name: "previous2")
+            //debugRestoreState(basePath: basePath + "/db", name: "previous2")
             #endif
             
             let startTime = CFAbsoluteTimeGetCurrent()
