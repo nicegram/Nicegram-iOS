@@ -27,5 +27,5 @@ pipelines:
              - git add .
              - git config user.email "denis.shilovichhh@gmail.com"
              - git config user.name "Denis Shilovich"
-             - git commit -m "$COMMIT_MESSAGE"
+             - git commit --allow-empty -m "$COMMIT_MESSAGE"
              - git push origin $BRANCH
