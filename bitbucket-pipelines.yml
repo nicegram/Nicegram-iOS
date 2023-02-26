@@ -2,7 +2,7 @@ image: atlassian/default-image:3
 
 pipelines:
     branches:
-      '{master,beta}':
+      '{master,beta,beta-hotfix}':
         - step:
            script:
              - BB_REPO_PATH=$BITBUCKET_CLONE_DIR

@@ -2,7 +2,9 @@ name: Beta Release
 
 on:
   push:
-    branches: [ beta ]
+    branches:
+      - beta
+      - beta-hotfix
 
 jobs:
   build:
