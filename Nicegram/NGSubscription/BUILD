@@ -10,6 +10,7 @@ swift_library(
         "//Vendor/SnapKit:SnapKit",
         "//submodules/Markdown:Markdown",
         "//Nicegram/NGButton:NGButton",
+        "//Nicegram/NGCore:NGCore",
         "//Nicegram/NGCustomViews:NGCustomViews",
         "//Nicegram/NGExtensions:NGExtensions",
         "//Nicegram/NGStrings:NGStrings",

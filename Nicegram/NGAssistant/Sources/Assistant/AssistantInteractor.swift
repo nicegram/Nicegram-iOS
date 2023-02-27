@@ -124,7 +124,7 @@ class AssistantInteractor: AssistantInteractorInput {
         }
 
         eventsLogger.logEvent(name: "special_offer_assistant_with_id_\(specialOffer.id)")
-        router.showSpecialOffer(id: specialOffer.id)
+        router.showSpecialOffer()
     }
     
     func handleTelegramBot(session: String) {

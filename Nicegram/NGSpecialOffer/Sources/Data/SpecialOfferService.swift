@@ -4,7 +4,7 @@ import NGRemoteConfig
 
 public protocol SpecialOfferService {
     func fetchSpecialOffer(completion: ((SpecialOffer?) -> ())?)
-    func getSpecialOffer(with: String) -> SpecialOffer?
+    func getSpecialOffer() -> SpecialOffer?
     func wasSpecialOfferSeen(id: String) -> Bool
     func markAsSeen(offerId: String)
 }
@@ -16,8 +16,6 @@ public class SpecialOfferServiceImpl {
     private let remoteConfig: RemoteConfigService
     
     //  MARK: - Logic
-    
-    private var specialOffers: [SpecialOffer] = []
     
     @UserDefaultsWrapper(key: "ng_seen_special_offers", defaultValue: [])
     private var seenSpecialOfferIds: Set<String>
@@ -35,18 +33,13 @@ extension SpecialOfferServiceImpl: SpecialOfferService {
             guard let self = self else { return }
             
             let specialOffer = self.mapDto(dto)
-            
-            if let specialOffer = specialOffer,
-               !self.specialOffers.contains(where: { $0.id == specialOffer.id }) {
-                self.specialOffers.append(specialOffer)
-            }
-            
             completion?(specialOffer)
         }
     }
     
-    public func getSpecialOffer(with id: String) -> SpecialOffer? {
-        return specialOffers.first(where: { $0.id == id })
+    public func getSpecialOffer() -> SpecialOffer? {
+        let dto = remoteConfig.get(SpecialOfferDto.self, byKey: Constants.specialOfferKey)
+        return self.mapDto(dto)
     }
     
     public func wasSpecialOfferSeen(id: String) -> Bool {
@@ -68,11 +61,24 @@ private extension SpecialOfferServiceImpl {
             return nil
         }
         
+        let autoshowMode: SpecialOffer.AutoshowMode
+        if let timeInterval = dto.timeInterval {
+            if timeInterval < 0 {
+                autoshowMode = .no
+            } else if timeInterval.isZero {
+                autoshowMode = .immediately
+            } else {
+                autoshowMode = .delay(timeInterval)
+            }
+        } else {
+            autoshowMode = .immediately
+        }
+        
         return SpecialOffer(
             id: String(id),
             url: url,
             shouldAutoshowToPremiumUser: dto.showToPremium ?? true,
-            autoshowTimeInterval: dto.timeInterval
+            autoshowMode: autoshowMode
         )
     }
 }

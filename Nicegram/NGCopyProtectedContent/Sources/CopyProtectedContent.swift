@@ -36,11 +36,7 @@ public func shouldSubscribeToCopyContent(message: Message) -> Bool {
 }
 
 public func routeToNicegramPremiumForCopyContent(presentationData: PresentationData) {
-    let c = SubscriptionBuilderImpl(presentationData: presentationData).build()
-    c.modalPresentationStyle = .fullScreen
-    if let topViewController = UIApplication.topViewController {
-        topViewController.present(c, animated: true)
-    }
+    routeToNicegramPremium(presentationData: presentationData)
 }
 
 //  MARK: - Bypass setting (Secret Menu)

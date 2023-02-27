@@ -3022,15 +3022,15 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         getFeaturedSpecialOfferUseCase.fetchFeaturedSpecialOffer { [weak self] specialOffer in
             guard let self = self else { return }
             
-            if let specialOffer = specialOffer {
+            if specialOffer != nil {
                 DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(2)) {
-                    self.showSpecialOffer(id: specialOffer.id, specialOfferService: self.specialOfferService)
+                    self.showSpecialOffer(specialOfferService: self.specialOfferService)
                 }
             }
         }
     }
     
-    private func showSpecialOffer(id: String, specialOfferService: SpecialOfferService) {
+    private func showSpecialOffer(specialOfferService: SpecialOfferService) {
         let ngTheme = NGThemeColors(
             telegramTheme: self.presentationData.theme.intro.statusBarStyle, 
             statusBarStyle: self.statusBar.statusBarStyle
@@ -3041,7 +3041,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             ngTheme: ngTheme
         )
         
-        let vc = specialOfferBuilder.build(offerId: id) { [weak self] in
+        let vc = specialOfferBuilder.build() { [weak self] in
             // Because telegram ViewController subclass overrides present(_:animated:completion:)
             self?.view.window?.rootViewController?.dismiss(animated: true)
         }

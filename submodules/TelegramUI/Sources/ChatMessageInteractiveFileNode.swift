@@ -1,6 +1,8 @@
 // MARK: Nicegram Imports
 import NGData
 import NGStrings
+import NGSubscription
+import NGTelegramIntegration
 import NGTranslate
 import NGUI
 //
@@ -366,6 +368,13 @@ final class ChatMessageInteractiveFileNode: ASDisplayNode {
         // MARK: Nicegram Speech2Text, nicegram premium check
         let isNicegramPremium = isPremium()
         guard arguments.associatedData.isPremium || isNicegramPremium else {
+            // MARK: Nicegram Speech2Text, routeToNicegramPremium
+            if isNicegram() {
+                routeToNicegramPremium(presentationData: context.sharedContext.currentPresentationData.with { $0 })
+                return
+            }
+            //
+            
             if self.hapticFeedback == nil {
                 self.hapticFeedback = HapticFeedback()
             }

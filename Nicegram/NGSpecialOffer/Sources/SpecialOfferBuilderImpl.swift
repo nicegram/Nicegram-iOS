@@ -3,7 +3,7 @@ import NGLogging
 import NGTheme
 
 public protocol SpecialOfferBuilder {
-    func build(offerId: String, onCloseRequest: (() -> ())?) -> UIViewController
+    func build(onCloseRequest: (() -> ())?) -> UIViewController
 }
 
 public class SpecialOfferBuilderImpl: SpecialOfferBuilder {
@@ -22,7 +22,7 @@ public class SpecialOfferBuilderImpl: SpecialOfferBuilder {
     
     //  MARK: - Public Functions
 
-    public func build(offerId: String, onCloseRequest: (() -> ())?) -> UIViewController {
+    public func build(onCloseRequest: (() -> ())?) -> UIViewController {
         let controller = SpecialOfferViewController(ngTheme: ngTheme)
 
         let router = SpecialOfferRouter()
@@ -32,7 +32,6 @@ public class SpecialOfferBuilderImpl: SpecialOfferBuilder {
         presenter.output = controller
 
         let interactor = SpecialOfferInteractor(
-            offerId: offerId,
             specialOfferService: specialOfferService,
             setSpecialOfferSeenUseCase: SetSpecialOfferSeenUseCaseImpl(
                 specialOfferService: specialOfferService,

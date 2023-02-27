@@ -6,7 +6,10 @@ import NGExtensions
 import NGLoadingIndicator
 import NGModels
 import NGOnboarding
+import NGRemoteConfig
+import NGSpecialOffer
 import NGSubscription
+import NGTheme
 import TelegramPresentationData
 import UIKit
 
@@ -73,6 +76,8 @@ class NGDeeplinkHandler {
             } else {
                 return false
             }
+        case "specialOffer":
+            return handleSpecialOffer(url: url)
         default:
             return false
         }
@@ -150,6 +155,43 @@ private extension NGDeeplinkHandler {
             }
             debugPrint(initiateLoginWithTelegramUseCase)
         }
+        return true
+    }
+    
+    func handleSpecialOffer(url: URL) -> Bool {
+        let specialOfferService = SpecialOfferServiceImpl(
+            remoteConfig: RemoteConfigServiceImpl.shared
+        )
+        guard specialOfferService.getSpecialOffer() != nil else {
+            return false
+        }
+        
+        guard let topController = navigationController?.topViewController else {
+            return false
+        }
+        
+        let ngTheme = NGThemeColors(
+            telegramTheme: getCurrentPresentationData().theme.intro.statusBarStyle,
+            statusBarStyle: (topController as? ViewController)?.statusBar.statusBarStyle ?? .Black
+        )
+        
+        let builder = SpecialOfferBuilderImpl(
+            specialOfferService: specialOfferService,
+            ngTheme: ngTheme
+        )
+        
+        var closeImpl: (() -> Void)?
+        
+        let c = builder.build() {
+            closeImpl?()
+        }
+        
+        closeImpl = { [weak c] in
+            c?.dismiss(animated: true)
+        }
+        
+        topController.present(c, animated: true)
+        
         return true
     }
 }
