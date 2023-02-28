@@ -28,12 +28,13 @@ class SpecialOfferInteractor: SpecialOfferInteractorInput {
     
     //  MARK: - Lifecycle
     
-    init(offerId: String, specialOfferService: SpecialOfferService, setSpecialOfferSeenUseCase: SetSpecialOfferSeenUseCase, eventsLogger: EventsLogger, onCloseRequest: (() -> ())?) {
+    init(specialOfferService: SpecialOfferService, setSpecialOfferSeenUseCase: SetSpecialOfferSeenUseCase, eventsLogger: EventsLogger, onCloseRequest: (() -> ())?) {
         self.specialOfferService = specialOfferService
-        self.specialOffer = specialOfferService.getSpecialOffer(with: offerId)
         self.setSpecialOfferSeenUseCase = setSpecialOfferSeenUseCase
         self.eventsLogger = eventsLogger
         self.onCloseRequest = onCloseRequest
+        
+        self.specialOffer = specialOfferService.getSpecialOffer()
     }
 }
 

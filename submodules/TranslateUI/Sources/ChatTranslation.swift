@@ -155,7 +155,12 @@ public func chatTranslationState(context: AccountContext, peerId: EnginePeer.Id)
         return .single(nil)
     }
     if #available(iOS 12.0, *) {
-        let baseLang = context.sharedContext.currentPresentationData.with { $0 }.strings.baseLanguageCode
+        var baseLang = context.sharedContext.currentPresentationData.with { $0 }.strings.baseLanguageCode
+        let rawSuffix = "-raw"
+        if baseLang.hasSuffix(rawSuffix) {
+            baseLang = String(baseLang.dropLast(rawSuffix.count))
+        }
+        
         return context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.translationSettings])
         |> mapToSignal { sharedData in
             let settings = sharedData.entries[ApplicationSpecificSharedDataKeys.translationSettings]?.get(TranslationSettings.self) ?? TranslationSettings.defaultSettings
@@ -222,14 +227,24 @@ public func chatTranslationState(context: AccountContext, peerId: EnginePeer.Id)
                                     let hypotheses = languageRecognizer.languageHypotheses(withMaximum: 4)
                                     languageRecognizer.reset()
                                     
-                                    let filteredLanguages = hypotheses.filter { supportedTranslationLanguages.contains($0.key.rawValue) }.sorted(by: { $0.value > $1.value })
-                                    if let language = filteredLanguages.first(where: { supportedTranslationLanguages.contains($0.key.rawValue) }) {
-                                        let fromLang = language.key.rawValue
+                                    func normalize(_ code: String) -> String {
+                                        if code.contains("-") {
+                                            return code.components(separatedBy: "-").first ?? code
+                                        } else if code == "nb" {
+                                            return "no"
+                                        } else {
+                                            return code
+                                        }
+                                    }
+                                    
+                                    let filteredLanguages = hypotheses.filter { supportedTranslationLanguages.contains(normalize($0.key.rawValue)) }.sorted(by: { $0.value > $1.value })
+                                    if let language = filteredLanguages.first {
+                                        let fromLang = normalize(language.key.rawValue)
                                         fromLangs[fromLang] = (fromLangs[fromLang] ?? 0) + message.text.count
                                         count += 1
                                     }
                                 }
-                                if count >= 10 {
+                                if count >= 16 {
                                     break
                                 }
                             }

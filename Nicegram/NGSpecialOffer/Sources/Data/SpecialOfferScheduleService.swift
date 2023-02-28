@@ -3,7 +3,7 @@ import UserNotifications
 import NGLocalization
 
 public protocol SpecialOfferScheduleService {
-    func schedule(offer: SpecialOffer)
+    func schedule(offerId: String, timeInterval: TimeInterval)
     func cancelSchedule(forOfferWith: String)
     func cancelAllSchedules()
     func getScheduledAtDate(forOfferWith: String) -> Date?
@@ -23,12 +23,12 @@ public class SpecialOfferScheduleServiceImpl {
 }
 
 extension SpecialOfferScheduleServiceImpl: SpecialOfferScheduleService {
-    public func schedule(offer: SpecialOffer) {
+    public func schedule(offerId: String, timeInterval: TimeInterval) {
         if #available(iOS 10.0, *) {
-            schedulePush(offer: offer)
+            schedulePush(offerId: offerId, timeInterval: timeInterval)
         }
         
-        updateScheduledAt(Date(), forOfferWith: offer.id)
+        updateScheduledAt(Date(), forOfferWith: offerId)
     }
     
     public func cancelSchedule(forOfferWith id: String) {
@@ -56,17 +56,13 @@ extension SpecialOfferScheduleServiceImpl: SpecialOfferScheduleService {
 
 @available(iOS 10.0, *)
 private extension SpecialOfferScheduleServiceImpl {
-    func schedulePush(offer: SpecialOffer) {
-        guard let autoshowTimeInterval = offer.autoshowTimeInterval else {
-            return
-        }
-        
-        let id = getNotificationIdentifier(forOfferWith: offer.id)
+    func schedulePush(offerId: String, timeInterval: TimeInterval) {
+        let id = getNotificationIdentifier(forOfferWith: offerId)
         
         let content = UNMutableNotificationContent()
         content.body = ngLocalized("NicegramPush.SpecialOffer.Body")
         
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: autoshowTimeInterval, repeats: false)
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: timeInterval, repeats: false)
         
         let request = UNNotificationRequest(
             identifier: id,

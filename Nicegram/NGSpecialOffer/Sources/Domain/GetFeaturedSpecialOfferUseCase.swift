@@ -44,31 +44,30 @@ extension GetFeaturedSpecialOfferUseCaseImpl: GetFeaturedSpecialOfferUseCase {
                 return
             }
             
-            if let scheduledAt = self.scheduleService.getScheduledAtDate(forOfferWith: specialOffer.id) {
-                let fireDate: Date
-                if let autoshowTimeInterval = specialOffer.autoshowTimeInterval {
-                    fireDate = scheduledAt.addingTimeInterval(autoshowTimeInterval)
-                } else {
-                    fireDate = .distantPast
-                }
+            switch specialOffer.autoshowMode {
+            case .no:
+                self.cancelSchedule(forOfferWith: specialOffer.id)
+                completion?(nil)
+            case .immediately:
+                self.cancelSchedule(forOfferWith: specialOffer.id)
                 
-                if fireDate < Date() {
-                    self.cancelSchedule(forOfferWith: specialOffer.id)
+                if AppCache.appLaunchCount > 1 {
                     completion?(specialOffer)
                 } else {
                     completion?(nil)
                 }
-            } else {
-                if specialOffer.autoshowTimeInterval != nil {
-                    self.scheduleService.schedule(offer: specialOffer)
-                    completion?(nil)
-                } else {
-                    if AppCache.appLaunchCount > 1 {
-                        self.cancelSchedule(forOfferWith: specialOffer.id)
+            case .delay(let timeInterval):
+                if let scheduledAt = self.scheduleService.getScheduledAtDate(forOfferWith: specialOffer.id) {
+                    let fireDate = scheduledAt.addingTimeInterval(timeInterval)
+                    
+                    if fireDate < Date() {
                         completion?(specialOffer)
                     } else {
                         completion?(nil)
                     }
+                } else {
+                    self.scheduleService.schedule(offerId: specialOffer.id, timeInterval: timeInterval)
+                    completion?(nil)
                 }
             }
         }

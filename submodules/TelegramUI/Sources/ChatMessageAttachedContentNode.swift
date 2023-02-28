@@ -391,7 +391,7 @@ final class ChatMessageAttachedContentNode: ASDisplayNode {
                 }
             }
             
-            let dateText = stringForMessageTimestampStatus(accountPeerId: context.account.peerId, message: message, dateTimeFormat: presentationData.dateTimeFormat, nameDisplayOrder: presentationData.nameDisplayOrder, strings: presentationData.strings)
+            let dateText = stringForMessageTimestampStatus(accountPeerId: context.account.peerId, message: message, dateTimeFormat: presentationData.dateTimeFormat, nameDisplayOrder: presentationData.nameDisplayOrder, strings: presentationData.strings, associatedData: associatedData)
             
             var webpageGalleryMediaCount: Int?
             for media in message.media {
@@ -1163,7 +1163,7 @@ final class ChatMessageAttachedContentNode: ASDisplayNode {
                 }
                 return .url(url: url, concealed: concealed)
             } else if let peerMention = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.PeerMention)] as? TelegramPeerMention {
-                return .peerMention(peerMention.peerId, peerMention.mention)
+                return .peerMention(peerId: peerMention.peerId, mention: peerMention.mention, openProfile: false)
             } else if let peerName = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.PeerTextMention)] as? String {
                 return .textMention(peerName)
             } else if let botCommand = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.BotCommand)] as? String {

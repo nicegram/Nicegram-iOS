@@ -335,7 +335,7 @@ public func sendAuthorizationCode(accountManager: AccountManager<TelegramAccount
                             }
                             
                             let user = TelegramUser(user: user)
-                            let state = AuthorizedAccountState(isTestingEnvironment: account.testingEnvironment, masterDatacenterId: account.masterDatacenterId, peerId: user.id, state: nil)
+                            let state = AuthorizedAccountState(isTestingEnvironment: account.testingEnvironment, masterDatacenterId: account.masterDatacenterId, peerId: user.id, state: nil, invalidatedChannels: [])
                             initializedAppSettingsAfterLogin(transaction: transaction, appVersion: account.networkArguments.appVersion, syncContacts: syncContacts)
                             transaction.setState(state)
                             if let otherwiseReloginDays = otherwiseReloginDays, let value = forcedPasswordSetupNotice(otherwiseReloginDays) {
@@ -900,7 +900,7 @@ public func authorizeWithCode(accountManager: AccountManager<TelegramAccountMana
                                         }
                                         
                                         let user = TelegramUser(user: user)
-                                        let state = AuthorizedAccountState(isTestingEnvironment: account.testingEnvironment, masterDatacenterId: account.masterDatacenterId, peerId: user.id, state: nil)
+                                        let state = AuthorizedAccountState(isTestingEnvironment: account.testingEnvironment, masterDatacenterId: account.masterDatacenterId, peerId: user.id, state: nil, invalidatedChannels: [])
                                         initializedAppSettingsAfterLogin(transaction: transaction, appVersion: account.networkArguments.appVersion, syncContacts: syncContacts)
                                         transaction.setState(state)
                                         if let otherwiseReloginDays = otherwiseReloginDays, let value = forcedPasswordSetupNotice(otherwiseReloginDays) {
@@ -964,7 +964,7 @@ public func authorizeWithPassword(accountManager: AccountManager<TelegramAccount
                 }
                 
                 let user = TelegramUser(user: user)
-                let state = AuthorizedAccountState(isTestingEnvironment: account.testingEnvironment, masterDatacenterId: account.masterDatacenterId, peerId: user.id, state: nil)
+                let state = AuthorizedAccountState(isTestingEnvironment: account.testingEnvironment, masterDatacenterId: account.masterDatacenterId, peerId: user.id, state: nil, invalidatedChannels: [])
                 /*transaction.updatePeersInternal([user], update: { current, peer -> Peer? in
                  return peer
                  })*/
@@ -1034,7 +1034,7 @@ public func loginWithRecoveredAccountData(accountManager: AccountManager<Telegra
             }
             
             let user = TelegramUser(user: user)
-            let state = AuthorizedAccountState(isTestingEnvironment: account.testingEnvironment, masterDatacenterId: account.masterDatacenterId, peerId: user.id, state: nil)
+            let state = AuthorizedAccountState(isTestingEnvironment: account.testingEnvironment, masterDatacenterId: account.masterDatacenterId, peerId: user.id, state: nil, invalidatedChannels: [])
 
             initializedAppSettingsAfterLogin(transaction: transaction, appVersion: account.networkArguments.appVersion, syncContacts: syncContacts)
             transaction.setState(state)
@@ -1175,7 +1175,7 @@ public func signUpWithName(accountManager: AccountManager<TelegramAccountManager
                     
                     let user = TelegramUser(user: user)
                     let appliedState = account.postbox.transaction { transaction -> Void in
-                        let state = AuthorizedAccountState(isTestingEnvironment: account.testingEnvironment, masterDatacenterId: account.masterDatacenterId, peerId: user.id, state: nil)
+                        let state = AuthorizedAccountState(isTestingEnvironment: account.testingEnvironment, masterDatacenterId: account.masterDatacenterId, peerId: user.id, state: nil, invalidatedChannels: [])
                         if let hole = account.postbox.seedConfiguration.initializeChatListWithHole.topLevel {
                             transaction.replaceChatListHole(groupId: .root, index: hole.index, hole: nil)
                         }

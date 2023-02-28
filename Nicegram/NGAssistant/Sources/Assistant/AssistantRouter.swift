@@ -16,7 +16,7 @@ protocol AssistantRouterInput: AnyObject {
     func showMyEsims(deeplink: Deeplink?)
     func showChat(chatURL: URL?)
     func dismissWithBot(session: String)
-    func showSpecialOffer(id: String)
+    func showSpecialOffer()
     func showLottery()
 }
 
@@ -69,8 +69,8 @@ final class AssistantRouter: AssistantRouterInput {
         })
     }
     
-    func showSpecialOffer(id: String) {
-        let vc = specialOfferBuilder.build(offerId: id) { [weak self] in
+    func showSpecialOffer() {
+        let vc = specialOfferBuilder.build() { [weak self] in
             self?.parentViewController?.dismiss(animated: true)
         }
         

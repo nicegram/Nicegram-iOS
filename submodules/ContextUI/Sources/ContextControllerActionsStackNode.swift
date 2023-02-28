@@ -111,6 +111,7 @@ private final class ContextControllerActionsListActionItemNode: HighlightTrackin
         
         self.isAccessibilityElement = true
         self.accessibilityLabel = item.text
+        self.accessibilityTraits = [.button]
         
         self.addSubnode(self.highlightBackgroundNode)
         self.addSubnode(self.titleLabelNode)

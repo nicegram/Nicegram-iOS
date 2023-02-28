@@ -1360,7 +1360,9 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
                         }                 
                         strongSelf.updateVideoVisibility()
                     } else {
-                        let _ = context.engine.peers.fetchAndUpdateCachedPeerData(peerId: peer.id).start()
+                        if let photo = peer.largeProfileImage, photo.hasVideo {
+                            let _ = context.engine.peers.fetchAndUpdateCachedPeerData(peerId: peer.id).start()
+                        }
                     }
                 }))
             } else {
@@ -1851,7 +1853,7 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
                                 entities = translation.entities
                             }
                             
-                            messageString = stringWithAppliedEntities(trimToLineCount(messageText, lineCount: authorAttributedString == nil ? 2 : 1), entities: entities, baseColor: theme.messageTextColor, linkColor: theme.messageTextColor, baseFont: textFont, linkFont: textFont, boldFont: textFont, italicFont: italicTextFont, boldItalicFont: textFont, fixedFont: textFont, blockQuoteFont: textFont, underlineLinks: false, message: message._asMessage())
+                            messageString = foldLineBreaks(stringWithAppliedEntities(messageText, entities: entities, baseColor: theme.messageTextColor, linkColor: theme.messageTextColor, baseFont: textFont, linkFont: textFont, boldFont: textFont, italicFont: italicTextFont, boldItalicFont: textFont, fixedFont: textFont, blockQuoteFont: textFont, underlineLinks: false, message: message._asMessage()))
                         } else if spoilers != nil || customEmojiRanges != nil {
                             let mutableString = NSMutableAttributedString(string: messageText, font: textFont, textColor: theme.messageTextColor)
                             if let spoilers = spoilers {

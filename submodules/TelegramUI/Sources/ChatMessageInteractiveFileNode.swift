@@ -1,6 +1,8 @@
 // MARK: Nicegram Imports
 import NGData
 import NGStrings
+import NGSubscription
+import NGTelegramIntegration
 import NGTranslate
 import NGUI
 //
@@ -366,6 +368,13 @@ final class ChatMessageInteractiveFileNode: ASDisplayNode {
         // MARK: Nicegram Speech2Text, nicegram premium check
         let isNicegramPremium = isPremium()
         guard arguments.associatedData.isPremium || isNicegramPremium else {
+            // MARK: Nicegram Speech2Text, routeToNicegramPremium
+            if isNicegram() {
+                routeToNicegramPremium(presentationData: context.sharedContext.currentPresentationData.with { $0 })
+                return
+            }
+            //
+            
             if self.hapticFeedback == nil {
                 self.hapticFeedback = HapticFeedback()
             }
@@ -864,7 +873,7 @@ final class ChatMessageInteractiveFileNode: ASDisplayNode {
                         edited = true
                     }
                     
-                    let dateText = stringForMessageTimestampStatus(accountPeerId: arguments.context.account.peerId, message: arguments.message, dateTimeFormat: arguments.presentationData.dateTimeFormat, nameDisplayOrder: arguments.presentationData.nameDisplayOrder, strings: arguments.presentationData.strings)
+                    let dateText = stringForMessageTimestampStatus(accountPeerId: arguments.context.account.peerId, message: arguments.message, dateTimeFormat: arguments.presentationData.dateTimeFormat, nameDisplayOrder: arguments.presentationData.nameDisplayOrder, strings: arguments.presentationData.strings, associatedData: arguments.associatedData)
                     
                     let displayReactionsInline = shouldDisplayInlineDateReactions(message: arguments.message, isPremium: arguments.associatedData.isPremium, forceInline: arguments.associatedData.forceInlineReactions)
                     var reactionSettings: ChatMessageDateAndStatusNode.TrailingReactionSettings?

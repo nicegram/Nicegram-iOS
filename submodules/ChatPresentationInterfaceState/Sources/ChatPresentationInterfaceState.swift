@@ -113,7 +113,6 @@ public enum ChatInputMode: Equatable {
 
 public enum ChatTitlePanelContext: Equatable, Comparable {
     case pinnedMessage
-    case chatInfo
     case requestInProgress
     case toastAlert(String)
     case inviteRequests([EnginePeer], Int32)
@@ -122,8 +121,6 @@ public enum ChatTitlePanelContext: Equatable, Comparable {
         switch self {
             case .pinnedMessage:
                 return 0
-            case .chatInfo:
-                return 1
             case .requestInProgress:
                 return 2
             case .toastAlert:

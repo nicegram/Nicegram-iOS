@@ -592,7 +592,7 @@ public final class ChatHistoryListNode: ListView, ChatHistoryNode {
     private let scrollToMessageIdPromise = Promise<MessageIndex?>(nil)
     
     private let currentlyPlayingMessageIdPromise = Promise<(MessageIndex, Bool)?>(nil)
-    private var appliedPlayingMessageId: MessageIndex? = nil
+    private var appliedPlayingMessageId: (MessageIndex, Bool)? = nil
     
     private(set) var isScrollAtBottomPosition = false
     public var isScrollAtBottomPositionUpdated: (() -> Void)?
@@ -958,63 +958,9 @@ public final class ChatHistoryListNode: ListView, ChatHistoryNode {
         }
         |> distinctUntilChanged
         
-        let animatedEmojiStickers = context.engine.stickers.loadedStickerPack(reference: .animatedEmoji, forceActualized: false)
-        |> map { animatedEmoji -> [String: [StickerPackItem]] in
-            var animatedEmojiStickers: [String: [StickerPackItem]] = [:]
-            switch animatedEmoji {
-                case let .result(_, items, _):
-                    for item in items {
-                        if let emoji = item.getStringRepresentationsOfIndexKeys().first {
-                            animatedEmojiStickers[emoji.basicEmoji.0] = [item]
-                            let strippedEmoji = emoji.basicEmoji.0.strippedEmoji
-                            if animatedEmojiStickers[strippedEmoji] == nil {
-                                animatedEmojiStickers[strippedEmoji] = [item]
-                            }
-                        }
-                    }
-                default:
-                    break
-            }
-            return animatedEmojiStickers
-        }
+        let animatedEmojiStickers: Signal<[String: [StickerPackItem]], NoError> = (context as! AccountContextImpl).animatedEmojiStickersSignal
         
-        let additionalAnimatedEmojiStickers = context.engine.stickers.loadedStickerPack(reference: .animatedEmojiAnimations, forceActualized: false)
-        |> map { animatedEmoji -> [String: [Int: StickerPackItem]] in
-            let sequence = "0️⃣1️⃣2️⃣3️⃣4️⃣5️⃣6️⃣7️⃣8️⃣9️⃣".strippedEmoji
-            var animatedEmojiStickers: [String: [Int: StickerPackItem]] = [:]
-            switch animatedEmoji {
-                case let .result(_, items, _):
-                    for item in items {
-                        let indexKeys = item.getStringRepresentationsOfIndexKeys()
-                        if indexKeys.count > 1, let first = indexKeys.first, let last = indexKeys.last {
-                            let emoji: String?
-                            let indexEmoji: String?
-                            if sequence.contains(first.strippedEmoji) {
-                                emoji = last
-                                indexEmoji = first
-                            } else if sequence.contains(last.strippedEmoji) {
-                                emoji = first
-                                indexEmoji = last
-                            } else {
-                                emoji = nil
-                                indexEmoji = nil
-                            }
-                            
-                            if let emoji = emoji?.strippedEmoji, let indexEmoji = indexEmoji?.strippedEmoji.first, let strIndex = sequence.firstIndex(of: indexEmoji) {
-                                let index = sequence.distance(from: sequence.startIndex, to: strIndex)
-                                if animatedEmojiStickers[emoji] != nil {
-                                    animatedEmojiStickers[emoji]![index] = item
-                                } else {
-                                    animatedEmojiStickers[emoji] = [index: item]
-                                }
-                            }
-                        }
-                    }
-                default:
-                    break
-            }
-            return animatedEmojiStickers
-        }
+        let additionalAnimatedEmojiStickers = (context as! AccountContextImpl).additionalAnimatedEmojiStickers
         
         let previousHistoryAppearsCleared = Atomic<Bool?>(value: nil)
                 
@@ -1081,7 +1027,7 @@ public final class ChatHistoryListNode: ListView, ChatHistoryNode {
             customThreadOutgoingReadState = .single(nil)
         }
         
-        let availableReactions = context.engine.stickers.availableReactions()
+        let availableReactions: Signal<AvailableReactions?, NoError> = (context as! AccountContextImpl).availableReactions
         
         let defaultReaction = combineLatest(
             context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId)),
@@ -1160,7 +1106,6 @@ public final class ChatHistoryListNode: ListView, ChatHistoryNode {
             translationState
         ).start(next: { [weak self] update, chatPresentationData, selectedMessages, updatingMedia, networkType, animatedEmojiStickers, additionalAnimatedEmojiStickers, customChannelDiscussionReadState, customThreadOutgoingReadState, availableReactions, defaultReaction, accountPeer, suggestAudioTranscription, promises, topicAuthorId, allAdMessages, translationState in
             let (historyAppearsCleared, pendingUnpinnedAllMessages, pendingRemovedMessages, currentlyPlayingMessageIdAndType, scrollToMessageId, chatHasBots) = promises
-            let currentlyPlayingMessageId = currentlyPlayingMessageIdAndType?.0
             
             func applyHole() {
                 Queue.mainQueue().async {
@@ -1302,13 +1247,13 @@ public final class ChatHistoryListNode: ListView, ChatHistoryNode {
                 if let translationState, isPremium && translationState.isEnabled {
                     translateToLanguage = translationState.toLang ?? presentationData.strings.baseLanguageCode
                     if translateToLanguage == "nb" {
-                        translateToLanguage = "nl"
+                        translateToLanguage = "no"
                     } else if translateToLanguage == "pt-br" {
                         translateToLanguage = "pt"
                     }
                 }
                 
-                let associatedData = extractAssociatedData(chatLocation: chatLocation, view: view, automaticDownloadNetworkType: networkType, animatedEmojiStickers: animatedEmojiStickers, additionalAnimatedEmojiStickers: additionalAnimatedEmojiStickers, subject: subject, currentlyPlayingMessageId: currentlyPlayingMessageId, isCopyProtectionEnabled: isCopyProtectionEnabled, availableReactions: availableReactions, defaultReaction: defaultReaction, isPremium: isPremium, alwaysDisplayTranscribeButton: alwaysDisplayTranscribeButton, accountPeer: accountPeer, topicAuthorId: topicAuthorId, hasBots: chatHasBots, translateToLanguage: translateToLanguage)
+                let associatedData = extractAssociatedData(chatLocation: chatLocation, view: view, automaticDownloadNetworkType: networkType, animatedEmojiStickers: animatedEmojiStickers, additionalAnimatedEmojiStickers: additionalAnimatedEmojiStickers, subject: subject, currentlyPlayingMessageId: currentlyPlayingMessageIdAndType?.0, isCopyProtectionEnabled: isCopyProtectionEnabled, availableReactions: availableReactions, defaultReaction: defaultReaction, isPremium: isPremium, alwaysDisplayTranscribeButton: alwaysDisplayTranscribeButton, accountPeer: accountPeer, topicAuthorId: topicAuthorId, hasBots: chatHasBots, translateToLanguage: translateToLanguage)
                 
                 let filteredEntries = chatHistoryEntriesForView(
                     location: chatLocation,
@@ -1401,7 +1346,7 @@ public final class ChatHistoryListNode: ListView, ChatHistoryNode {
                         scrollAnimationCurve = .Spring(duration: 0.4)
                     } else {
                         let wasPlaying = strongSelf.appliedPlayingMessageId != nil
-                        if strongSelf.appliedPlayingMessageId != currentlyPlayingMessageId, let (currentlyPlayingMessageId, currentlyPlayingVideo) = currentlyPlayingMessageIdAndType {
+                        if strongSelf.appliedPlayingMessageId?.0 != currentlyPlayingMessageIdAndType?.0, let (currentlyPlayingMessageId, currentlyPlayingVideo) = currentlyPlayingMessageIdAndType {
                             if isFirstTime {
                             } else if case let .peer(peerId) = chatLocation, currentlyPlayingMessageId.id.peerId != peerId {
                             } else {
@@ -1415,12 +1360,12 @@ public final class ChatHistoryListNode: ListView, ChatHistoryNode {
                                     if let appliedPlayingMessageId = strongSelf.appliedPlayingMessageId {
                                         currentIsVisible = false
                                         strongSelf.forEachVisibleMessageItemNode({ view in
-                                            if view.item?.message.id ==  appliedPlayingMessageId.id {
+                                            if view.item?.message.id == appliedPlayingMessageId.0.id && appliedPlayingMessageId.1 == true {
                                                 currentIsVisible = true
                                             }
                                         })
                                     }
-                                    if currentIsVisible {
+                                    if currentIsVisible && currentlyPlayingVideo {
                                         updatedScrollPosition = .index(index: .message(currentlyPlayingMessageId), position: .center(.bottom), directionHint: .Up, animated: true, highlight: true, displayLink: true)
                                         scrollAnimationCurve = .Spring(duration: 0.4)
                                     }
@@ -1498,8 +1443,8 @@ public final class ChatHistoryListNode: ListView, ChatHistoryNode {
                     guard let strongSelf = self else {
                         return
                     }
-                    if strongSelf.appliedPlayingMessageId != currentlyPlayingMessageId {
-                        strongSelf.appliedPlayingMessageId = currentlyPlayingMessageId
+                    if strongSelf.appliedPlayingMessageId?.0 != currentlyPlayingMessageIdAndType?.0 {
+                        strongSelf.appliedPlayingMessageId = currentlyPlayingMessageIdAndType
                     }
                     if strongSelf.appliedScrollToMessageId != scrollToMessageId {
                         strongSelf.appliedScrollToMessageId = scrollToMessageId

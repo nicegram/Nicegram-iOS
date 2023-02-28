@@ -381,6 +381,7 @@ class TabBarNode: ASDisplayNode {
         super.init()
         
         self.isAccessibilityContainer = false
+        self.accessibilityTraits = [.tabBar]
         
         self.isOpaque = false
         self.backgroundColor = nil
@@ -509,6 +510,7 @@ class TabBarNode: ASDisplayNode {
                 node.contextTextImageNode.image = contextTextImage
                 node.contextImageNode.image = contextImage
                 node.accessibilityLabel = item.item.title
+                node.accessibilityTraits = [.button, .selected]
                 node.contentWidth = max(contentWidth, imageContentWidth)
                 node.isSelected = true
             } else {
@@ -522,6 +524,7 @@ class TabBarNode: ASDisplayNode {
                 
                 node.textImageNode.image = textImage
                 node.accessibilityLabel = item.item.title
+                node.accessibilityTraits = [.button]
                 node.imageNode.image = image
                 node.contextTextImageNode.image = contextTextImage
                 node.contextImageNode.image = contextImage
@@ -583,6 +586,7 @@ class TabBarNode: ASDisplayNode {
                 let (contextImage, _) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.tabBarExtractedIconColor, horizontal: self.horizontal, imageMode: true, centered: self.centered)
                 node.textImageNode.image = textImage
                 node.accessibilityLabel = item.item.title
+                node.accessibilityTraits = [.button, .selected]
                 node.imageNode.image = image
                 node.contextTextImageNode.image = contextTextImage
                 node.contextImageNode.image = contextImage
@@ -615,6 +619,7 @@ class TabBarNode: ASDisplayNode {
                 
                 node.textImageNode.image = textImage
                 node.accessibilityLabel = item.item.title
+                node.accessibilityTraits = [.button]
                 node.imageNode.image = image
                 node.contextTextImageNode.image = contextTextImage
                 node.contextImageNode.image = contextImage
@@ -713,6 +718,7 @@ class TabBarNode: ASDisplayNode {
                 node.containerNode.frame = CGRect(origin: CGPoint(), size: nodeFrame.size)
                 node.hitTestSlop = UIEdgeInsets(top: -3.0, left: -horizontalHitTestInset, bottom: -3.0, right: -horizontalHitTestInset)
                 node.containerNode.hitTestSlop = UIEdgeInsets(top: -3.0, left: -horizontalHitTestInset, bottom: -3.0, right: -horizontalHitTestInset)
+                node.accessibilityFrame = nodeFrame.insetBy(dx: -horizontalHitTestInset, dy: 0.0).offsetBy(dx: 0.0, dy: size.height - nodeSize.height - bottomInset)
                 if node.ringColor == nil {
                     node.imageNode.frame = CGRect(origin: CGPoint(), size: nodeFrame.size)
                 }
