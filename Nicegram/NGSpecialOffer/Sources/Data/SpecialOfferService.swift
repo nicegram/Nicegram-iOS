@@ -3,8 +3,9 @@ import EsimPropertyWrappers
 import NGRemoteConfig
 
 public protocol SpecialOfferService {
-    func fetchSpecialOffer(completion: ((SpecialOffer?) -> ())?)
-    func getSpecialOffer() -> SpecialOffer?
+    func fetchMainSpecialOffer(completion: ((SpecialOffer?) -> ())?)
+    func getMainSpecialOffer() -> SpecialOffer?
+    func getSpecialOfferWith(id: String) -> SpecialOffer?
     func wasSpecialOfferSeen(id: String) -> Bool
     func markAsSeen(offerId: String)
 }
@@ -28,7 +29,7 @@ public class SpecialOfferServiceImpl {
 }
 
 extension SpecialOfferServiceImpl: SpecialOfferService {
-    public func fetchSpecialOffer(completion: ((SpecialOffer?) -> ())?) {
+    public func fetchMainSpecialOffer(completion: ((SpecialOffer?) -> ())?) {
         remoteConfig.fetch(SpecialOfferDto.self, byKey: Constants.specialOfferKey) { [weak self] dto in
             guard let self = self else { return }
             
@@ -37,9 +38,17 @@ extension SpecialOfferServiceImpl: SpecialOfferService {
         }
     }
     
-    public func getSpecialOffer() -> SpecialOffer? {
+    public func getMainSpecialOffer() -> SpecialOffer? {
         let dto = remoteConfig.get(SpecialOfferDto.self, byKey: Constants.specialOfferKey)
         return self.mapDto(dto)
+    }
+    
+    public func getSpecialOfferWith(id: String) -> SpecialOffer? {
+        let allSpecialOffers = remoteConfig.get(
+            [SpecialOfferDto].self,
+            byKey: Constants.allSpecialOffersKey
+        )?.compactMap { self.mapDto($0) } ?? []
+        return allSpecialOffers.first(where: { $0.id == id })
     }
     
     public func wasSpecialOfferSeen(id: String) -> Bool {
@@ -97,5 +106,6 @@ private struct SpecialOfferDto: Decodable {
 private extension SpecialOfferServiceImpl {
     struct Constants {
         static let specialOfferKey = "specialOffer"
+        static let allSpecialOffersKey = "allSpecialOffers"
     }
 }

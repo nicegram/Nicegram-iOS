@@ -2152,11 +2152,14 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         transition.updateFrame(node: self.tabContainerNode, frame: CGRect(origin: CGPoint(x: 0.0, y: navigationBarHeight - self.additionalNavigationBarHeight - 46.0 + tabContainerOffset), size: CGSize(width: layout.size.width, height: 46.0)))
         self.tabContainerNode.update(size: CGSize(width: layout.size.width, height: 46.0), sideInset: layout.safeInsets.left, filters: self.tabContainerData?.0 ?? [], selectedFilter: self.chatListDisplayNode.mainContainerNode.currentItemFilter, isReordering: self.chatListDisplayNode.isReorderingFilters || (self.chatListDisplayNode.effectiveContainerNode.currentItemNode.currentState.editing && !self.chatListDisplayNode.didBeginSelectingChatsWhileEditing), isEditing: self.chatListDisplayNode.effectiveContainerNode.currentItemNode.currentState.editing, canReorderAllChats: self.isPremium, filtersLimit: self.tabContainerData?.2, transitionFraction: self.chatListDisplayNode.effectiveContainerNode.transitionFraction, presentationData: self.presentationData, transition: .animated(duration: 0.4, curve: .spring))
         // MARK: Nicegram FoldersAtBottom
+        let showFoldersAtBottom: Bool
         if let tabContainerData = self.tabContainerData {
-            self.chatListDisplayNode.inlineTabContainerNode.isHidden = !tabContainerData.1 || tabContainerData.0.count <= 1
+            showFoldersAtBottom = tabContainerData.1 && tabContainerData.0.count > 1
         } else {
-            self.chatListDisplayNode.inlineTabContainerNode.isHidden = true
+            showFoldersAtBottom = false
         }
+        self.chatListDisplayNode.inlineTabContainerNode.isHidden = !showFoldersAtBottom
+        self.chatListDisplayNode.mainContainerNode.currentItemNode.scroller.contentInset.bottom = showFoldersAtBottom ? 50 : 0
         self.chatListDisplayNode.inlineTabContainerNode.update(size: CGSize(width: layout.size.width, height: 40.0), sideInset: layout.safeInsets.left, filters: self.tabContainerData?.0 ?? [], selectedFilter: self.chatListDisplayNode.mainContainerNode.currentItemFilter, isReordering: self.chatListDisplayNode.isReorderingFilters || (self.chatListDisplayNode.mainContainerNode.currentItemNode.currentState.editing && !self.chatListDisplayNode.didBeginSelectingChatsWhileEditing), isEditing: false, transitionFraction: self.chatListDisplayNode.mainContainerNode.transitionFraction, presentationData: self.presentationData, transition: .animated(duration: 0.4, curve: .spring))
         //
         

@@ -4,6 +4,7 @@ import NGTheme
 
 public protocol SpecialOfferBuilder {
     func build(onCloseRequest: (() -> ())?) -> UIViewController
+    func build(offerId: String, onCloseRequest: (() -> ())?) -> UIViewController
 }
 
 public class SpecialOfferBuilderImpl: SpecialOfferBuilder {
@@ -23,6 +24,16 @@ public class SpecialOfferBuilderImpl: SpecialOfferBuilder {
     //  MARK: - Public Functions
 
     public func build(onCloseRequest: (() -> ())?) -> UIViewController {
+        internalBuild(offerId: nil, onCloseRequest: onCloseRequest)
+    }
+    
+    public func build(offerId: String, onCloseRequest: (() -> ())?) -> UIViewController {
+        internalBuild(offerId: offerId, onCloseRequest: onCloseRequest)
+    }
+    
+    //  MARK: - Private Functions
+
+    private func internalBuild(offerId: String?, onCloseRequest: (() -> ())?) -> UIViewController {
         let controller = SpecialOfferViewController(ngTheme: ngTheme)
 
         let router = SpecialOfferRouter()
@@ -32,6 +43,7 @@ public class SpecialOfferBuilderImpl: SpecialOfferBuilder {
         presenter.output = controller
 
         let interactor = SpecialOfferInteractor(
+            offerId: offerId,
             specialOfferService: specialOfferService,
             setSpecialOfferSeenUseCase: SetSpecialOfferSeenUseCaseImpl(
                 specialOfferService: specialOfferService,

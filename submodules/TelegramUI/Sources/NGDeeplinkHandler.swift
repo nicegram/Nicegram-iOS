@@ -4,6 +4,7 @@ import Display
 import NGAppContext
 import NGExtensions
 import NGLoadingIndicator
+import NGLogging
 import NGModels
 import NGOnboarding
 import NGRemoteConfig
@@ -162,9 +163,14 @@ private extension NGDeeplinkHandler {
         let specialOfferService = SpecialOfferServiceImpl(
             remoteConfig: RemoteConfigServiceImpl.shared
         )
-        guard specialOfferService.getSpecialOffer() != nil else {
-            return false
+        
+        let specialOffer: SpecialOffer?
+        if let offerId = url.queryItems["id"] {
+            specialOffer = specialOfferService.getSpecialOfferWith(id: offerId)
+        } else {
+            specialOffer = specialOfferService.getMainSpecialOffer()
         }
+        guard let specialOffer else { return false }
         
         guard let topController = navigationController?.topViewController else {
             return false
@@ -182,13 +188,17 @@ private extension NGDeeplinkHandler {
         
         var closeImpl: (() -> Void)?
         
-        let c = builder.build() {
+        let c = builder.build(offerId: specialOffer.id) {
             closeImpl?()
         }
         
         closeImpl = { [weak c] in
             c?.dismiss(animated: true)
         }
+        
+        LoggersFactory().createDefaultEventsLogger().logEvent(
+            name: "special_offer_deeplink_with_id_\(specialOffer.id)"
+        )
         
         topController.present(c, animated: true)
         

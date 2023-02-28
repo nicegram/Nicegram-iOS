@@ -23,7 +23,7 @@ public class GetFeaturedSpecialOfferUseCaseImpl {
 
 extension GetFeaturedSpecialOfferUseCaseImpl: GetFeaturedSpecialOfferUseCase {
     public func fetchFeaturedSpecialOffer(completion: ((SpecialOffer?) -> ())?) {
-        specialOfferService.fetchSpecialOffer { [weak self] specialOffer in
+        specialOfferService.fetchMainSpecialOffer { [weak self] specialOffer in
             guard let self = self else { return }
             
             guard let specialOffer = specialOffer else {

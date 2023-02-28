@@ -28,13 +28,17 @@ class SpecialOfferInteractor: SpecialOfferInteractorInput {
     
     //  MARK: - Lifecycle
     
-    init(specialOfferService: SpecialOfferService, setSpecialOfferSeenUseCase: SetSpecialOfferSeenUseCase, eventsLogger: EventsLogger, onCloseRequest: (() -> ())?) {
+    init(offerId: String?, specialOfferService: SpecialOfferService, setSpecialOfferSeenUseCase: SetSpecialOfferSeenUseCase, eventsLogger: EventsLogger, onCloseRequest: (() -> ())?) {
         self.specialOfferService = specialOfferService
         self.setSpecialOfferSeenUseCase = setSpecialOfferSeenUseCase
         self.eventsLogger = eventsLogger
         self.onCloseRequest = onCloseRequest
         
-        self.specialOffer = specialOfferService.getSpecialOffer()
+        if let offerId {
+            self.specialOffer = specialOfferService.getSpecialOfferWith(id: offerId)
+        } else {
+            self.specialOffer = specialOfferService.getMainSpecialOffer()
+        }
     }
 }
 
