@@ -17,6 +17,6 @@ public class GetSpecialOfferUseCaseImpl {
 
 extension GetSpecialOfferUseCaseImpl: GetSpecialOfferUseCase {
     public func fetchSpecialOffer(completion: ((SpecialOffer?) -> ())?) {
-        specialOfferService.fetchSpecialOffer(completion: completion)
+        specialOfferService.fetchMainSpecialOffer(completion: completion)
     }
 }
