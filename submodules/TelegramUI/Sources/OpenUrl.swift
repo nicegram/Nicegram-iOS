@@ -139,8 +139,26 @@ func formattedConfirmationCode(_ code: Int) -> String {
     return result
 }
 
+// MARK: Nicegram Deeplink
+private func extractNicegramDeeplink(from universalLink: String) -> String? {
+    guard let url = URL(string: universalLink),
+          url.scheme == "https",
+          url.host == "nicegram.app",
+          url.path == "/deeplink",
+          let deeplinkParam = url.queryItems["url"] else {
+        return nil
+    }
+    return deeplinkParam
+}
+//
+
 func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, url: String, forceExternal: Bool, presentationData: PresentationData, navigationController: NavigationController?, dismissInput: @escaping () -> Void) {
     // MARK: Nicegram
+    if let nicegramDeeplink = extractNicegramDeeplink(from: url) {
+        openExternalUrlImpl(context: context, urlContext: urlContext, url: nicegramDeeplink, forceExternal: forceExternal, presentationData: presentationData, navigationController: navigationController, dismissInput: dismissInput)
+        return
+    }
+    
     let nicegramHandler = NGDeeplinkHandler(
         tgAccountContext: context,
         navigationController: navigationController

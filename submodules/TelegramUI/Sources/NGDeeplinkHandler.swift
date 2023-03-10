@@ -38,25 +38,7 @@ class NGDeeplinkHandler {
     //  MARK: - Private Functions
 
     private func handle(url: URL) -> Bool {
-        if handleUniversalLink(url) {
-            return true
-        }
-        
-        if handleDeeplink(url) {
-            return true
-        }
-        
-        return false
-    }
-    
-    private func handleUniversalLink(_ url: URL) -> Bool {
-        guard url.scheme == "https",
-              url.host == "nicegram.app",
-              url.path == "/deeplink",
-              let deeplinkParam = url.queryItems["url"],
-              let deeplink = URL(string: deeplinkParam) else { return false }
-        
-        return handleDeeplink(deeplink)
+        return handleDeeplink(url)
     }
     
     private func handleDeeplink(_ url: URL) -> Bool {
