@@ -24,6 +24,7 @@ private enum ChatSendMessageActionIcon {
     case language
     //
     case sendWithoutSound
+    case sendWhenOnline
     case schedule
     
     func image(theme: PresentationTheme) -> UIImage? {
@@ -35,10 +36,12 @@ private enum ChatSendMessageActionIcon {
             case .language:
                 imageName = ""
             //
-            case .sendWithoutSound:
-                imageName = "Chat/Input/Menu/SilentIcon"
-            case .schedule:
-                imageName = "Chat/Input/Menu/ScheduleIcon"
+        case .sendWithoutSound:
+            imageName = "Chat/Input/Menu/SilentIcon"
+        case .sendWhenOnline:
+            imageName = "Chat/Input/Menu/WhenOnlineIcon"
+        case .schedule:
+            imageName = "Chat/Input/Menu/ScheduleIcon"
         }
         return generateTintedImage(image: UIImage(bundleImageName: imageName), color: theme.contextMenu.primaryColor)
     }
@@ -205,7 +208,7 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
     private var emojiViewProvider: ((ChatTextInputTextCustomEmojiAttribute) -> UIView)?
     
     // MARK: Nicegram TranslateEnteredMessage, change (canTranslate + interlocutorLangCode + translate + chooseLanguage)
-    init(context: AccountContext, presentationData: PresentationData, reminders: Bool, gesture: ContextGesture, sourceSendButton: ASDisplayNode, textInputNode: EditableTextNode, attachment: Bool, forwardedCount: Int?, hasEntityKeyboard: Bool, emojiViewProvider: ((ChatTextInputTextCustomEmojiAttribute) -> UIView)?, send: (() -> Void)?, sendSilently: (() -> Void)?, schedule: (() -> Void)?, canTranslate: Bool, interlocutorLangCode: String?, translate: (() -> Void)?, chooseLanguage: (() -> ())?, cancel: (() -> Void)?) {
+    init(context: AccountContext, presentationData: PresentationData, reminders: Bool, gesture: ContextGesture, sourceSendButton: ASDisplayNode, textInputNode: EditableTextNode, attachment: Bool, canSendWhenOnline: Bool, forwardedCount: Int?, hasEntityKeyboard: Bool, emojiViewProvider: ((ChatTextInputTextCustomEmojiAttribute) -> UIView)?, send: (() -> Void)?, sendSilently: (() -> Void)?, sendWhenOnline: (() -> Void)?, schedule: (() -> Void)?, canTranslate: Bool, interlocutorLangCode: String?, translate: (() -> Void)?, chooseLanguage: (() -> ())?, cancel: (() -> Void)?) {
         self.context = context
         self.presentationData = presentationData
         self.sourceSendButton = sourceSendButton
@@ -263,6 +266,11 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
             contentNodes.append(ActionSheetItemNode(theme: self.presentationData.theme, title: self.presentationData.strings.Conversation_SendMessage_SendSilently, icon: .sendWithoutSound, hasSeparator: true, action: {
                 sendSilently?()
             }))
+            if canSendWhenOnline {
+                contentNodes.append(ActionSheetItemNode(theme: self.presentationData.theme, title: self.presentationData.strings.Conversation_SendMessage_SendWhenOnline, icon: .sendWhenOnline, hasSeparator: true, action: {
+                    sendWhenOnline?()
+                }))
+            }
         }
         if let _ = schedule {
             // MARK: Nicegram TranslateEnteredMessage, change (hasSeparator: canTranslate)

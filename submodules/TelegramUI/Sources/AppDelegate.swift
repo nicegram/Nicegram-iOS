@@ -383,6 +383,10 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         self.window = window
         self.nativeWindow = window
         
+        if !UIDevice.current.isBatteryMonitoringEnabled {
+            UIDevice.current.isBatteryMonitoringEnabled = true
+        }
+        
         let clearNotificationsManager = ClearNotificationsManager(getNotificationIds: { completion in
             if #available(iOS 10.0, *) {
                 UNUserNotificationCenter.current().getDeliveredNotifications(completionHandler: { notifications in
@@ -525,7 +529,7 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
                 Logger.shared.log("data", "can't deserialize")
             }
             return data
-        }, autolockDeadine: autolockDeadine, encryptionProvider: OpenSSLEncryptionProvider(), resolvedDeviceName: nil)
+        }, autolockDeadine: autolockDeadine, encryptionProvider: OpenSSLEncryptionProvider(), deviceModelName: nil, useBetaFeatures: !buildConfig.isAppStoreBuild)
         
         guard let appGroupUrl = maybeAppGroupUrl else {
             self.mainWindow?.presentNative(UIAlertController(title: nil, message: "Error 2", preferredStyle: .alert))
@@ -554,6 +558,40 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         let encryptionParameters = ValueBoxEncryptionParameters(forceEncryptionIfNoSet: false, key: ValueBoxEncryptionParameters.Key(data: deviceSpecificEncryptionParameters.key)!, salt: ValueBoxEncryptionParameters.Salt(data: deviceSpecificEncryptionParameters.salt)!)
         
         TempBox.initializeShared(basePath: rootPath, processType: "app", launchSpecificId: Int64.random(in: Int64.min ... Int64.max))
+        
+        let writeAbilityTestFile = TempBox.shared.tempFile(fileName: "test.bin")
+        var writeAbilityTestSuccess = true
+        if let testFile = ManagedFile(queue: nil, path: writeAbilityTestFile.path, mode: .readwrite) {
+            let bufferSize = 128 * 1024
+            let randomBuffer = malloc(bufferSize)!
+            defer {
+                free(randomBuffer)
+            }
+            arc4random_buf(randomBuffer, bufferSize)
+            var writtenBytes = 0
+            while writtenBytes < 1024 * 1024 {
+                let actualBytes = testFile.write(randomBuffer, count: bufferSize)
+                writtenBytes += actualBytes
+                if actualBytes != bufferSize {
+                    writeAbilityTestSuccess = false
+                    break
+                }
+            }
+            testFile._unsafeClose()
+            TempBox.shared.dispose(writeAbilityTestFile)
+        } else {
+            writeAbilityTestSuccess = false
+        }
+        
+        if !writeAbilityTestSuccess {
+            let alertController = UIAlertController(title: nil, message: "The device does not have sufficient free space.", preferredStyle: .alert)
+            alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
+                preconditionFailure()
+            }))
+            self.mainWindow?.presentNative(alertController)
+            
+            return true
+        }
         
         let legacyLogs: [String] = [
             "broadcast-logs",
@@ -617,7 +655,20 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         
         self.window?.makeKeyAndVisible()
         
-        self.hasActiveAudioSession.set(MediaManagerImpl.globalAudioSession.isActive())
+        var hasActiveCalls: Signal<Bool, NoError> = .single(false)
+        if CallKitIntegration.isAvailable, let callKitIntegration = CallKitIntegration.shared {
+            hasActiveCalls = callKitIntegration.hasActiveCalls
+        }
+        self.hasActiveAudioSession.set(
+            combineLatest(queue: .mainQueue(),
+                hasActiveCalls,
+                MediaManagerImpl.globalAudioSession.isActive()
+            )
+            |> map { hasActiveCalls, isActive -> Bool in
+                return hasActiveCalls || isActive
+            }
+            |> distinctUntilChanged
+        )
         
         let applicationBindings = TelegramApplicationBindings(isMainApp: true, appBundleId: baseAppBundleId, appBuildType: buildConfig.isAppStoreBuild ? .public : .internal, containerPath: appGroupUrl.path, appSpecificScheme: buildConfig.appSpecificUrlScheme, openUrl: { url in
             var parsedUrl = URL(string: url)
@@ -1002,9 +1053,11 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
             let wakeupManager = SharedWakeupManager(beginBackgroundTask: { name, expiration in
                 let id = application.beginBackgroundTask(withName: name, expirationHandler: expiration)
                 Logger.shared.log("App \(self.episodeId)", "Begin background task \(name): \(id)")
+                print("App \(self.episodeId)", "Begin background task \(name): \(id)")
                 return id
             }, endBackgroundTask: { id in
                 print("App \(self.episodeId)", "End background task \(id)")
+                Logger.shared.log("App \(self.episodeId)", "End background task \(id)")
                 application.endBackgroundTask(id)
             }, backgroundTimeRemaining: { application.backgroundTimeRemaining }, acquireIdleExtension: {
                 return applicationBindings.pushIdleTimerExtension()
@@ -1512,7 +1565,7 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
             })
         }
         
-        /*let timestamp = Int(CFAbsoluteTimeGetCurrent())
+        let timestamp = Int(CFAbsoluteTimeGetCurrent())
         let minReindexTimestamp = timestamp - 2 * 24 * 60 * 60
         if let indexTimestamp = UserDefaults.standard.object(forKey: "TelegramCacheIndexTimestamp") as? NSNumber, indexTimestamp.intValue >= minReindexTimestamp {
         } else {
@@ -1522,7 +1575,7 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
             let _ = self.runCacheReindexTasks(lowImpact: true, completion: {
                 Logger.shared.log("App \(self.episodeId)", "Executing low-impact cache reindex in foreground — done")
             })
-        }*/
+        }
         
         if #available(iOS 12.0, *) {
             UIApplication.shared.registerForRemoteNotifications()
@@ -1761,6 +1814,9 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
                 if !ProcessInfo.processInfo.isLowPowerModeEnabled {
                     extendNow = true
                 }
+            }
+            if !sharedApplicationContext.sharedContext.energyUsageSettings.extendBackgroundWork {
+                extendNow = false
             }
             sharedApplicationContext.wakeupManager.allowBackgroundTimeExtension(timeout: 2.0, extendNow: extendNow)
         })

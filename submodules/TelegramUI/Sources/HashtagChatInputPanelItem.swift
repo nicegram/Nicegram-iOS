@@ -375,7 +375,7 @@ final class HashtagChatInputPanelItemNode: ListViewItemNode {
             }, tapticAction: { [weak self] in
                 self?.hapticImpact()
             })
-            revealNode.setOptions(self.revealOptions, isLeft: false)
+            revealNode.setOptions(self.revealOptions, isLeft: false, enableAnimations: true)
             self.revealNode = revealNode
             
             if let (size, _, rightInset) = self.validLayout {
