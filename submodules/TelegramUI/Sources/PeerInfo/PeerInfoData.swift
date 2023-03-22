@@ -200,6 +200,7 @@ final class PeerInfoScreenData {
     let requestsContext: PeerInvitationImportersContext?
     let threadData: MessageHistoryThreadData?
     let appConfiguration: AppConfiguration?
+    let isPowerSavingEnabled: Bool?
     
     init(
         peer: Peer?,
@@ -219,7 +220,8 @@ final class PeerInfoScreenData {
         requests: PeerInvitationImportersState?,
         requestsContext: PeerInvitationImportersContext?,
         threadData: MessageHistoryThreadData?,
-        appConfiguration: AppConfiguration?
+        appConfiguration: AppConfiguration?,
+        isPowerSavingEnabled: Bool?
     ) {
         self.peer = peer
         self.chatPeer = chatPeer
@@ -239,6 +241,7 @@ final class PeerInfoScreenData {
         self.requestsContext = requestsContext
         self.threadData = threadData
         self.appConfiguration = appConfiguration
+        self.isPowerSavingEnabled = isPowerSavingEnabled
     }
 }
 
@@ -255,6 +258,18 @@ private enum PeerInfoScreenInputData: Equatable {
     case user(userId: PeerId, secretChatId: PeerId?, kind: PeerInfoScreenInputUserKind)
     case channel
     case group(groupId: PeerId)
+}
+
+public func hasAvailablePeerInfoMediaPanes(context: AccountContext, peerId: PeerId) -> Signal<Bool, NoError> {
+    let chatLocationContextHolder = Atomic<ChatLocationContextHolder?>(value: nil)
+    return peerInfoAvailableMediaPanes(context: context, peerId: peerId, chatLocation: .peer(id: peerId), chatLocationContextHolder: chatLocationContextHolder)
+    |> map { panes -> Bool in
+        if let panes {
+            return !panes.isEmpty
+        } else {
+            return false
+        }
+    }
 }
 
 private func peerInfoAvailableMediaPanes(context: AccountContext, peerId: PeerId, chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>) -> Signal<[PeerInfoPaneKey]?, NoError> {
@@ -453,9 +468,14 @@ func peerInfoScreenSettingsData(context: AccountContext, peerId: EnginePeer.Id, 
             TelegramEngine.EngineData.Item.Configuration.UserLimits(isPremium: false),
             TelegramEngine.EngineData.Item.Configuration.UserLimits(isPremium: true)
         ),
-        hasPassword
+        hasPassword,
+        context.sharedContext.automaticMediaDownloadSettings
+        |> mapToSignal { settings -> Signal<Bool, NoError> in
+            return automaticEnergyUsageShouldBeOn(settings: settings)
+        }
+        |> distinctUntilChanged
     )
-    |> map { peerView, accountsAndPeers, accountSessions, privacySettings, sharedPreferences, notifications, stickerPacks, hasPassport, hasWatchApp, accountPreferences, suggestions, limits, hasPassword -> PeerInfoScreenData in
+    |> map { peerView, accountsAndPeers, accountSessions, privacySettings, sharedPreferences, notifications, stickerPacks, hasPassport, hasWatchApp, accountPreferences, suggestions, limits, hasPassword, isPowerSavingEnabled -> PeerInfoScreenData in
         let (notificationExceptions, notificationsAuthorizationStatus, notificationsWarningSuppressed) = notifications
         let (featuredStickerPacks, archivedStickerPacks) = stickerPacks
         
@@ -517,7 +537,8 @@ func peerInfoScreenSettingsData(context: AccountContext, peerId: EnginePeer.Id, 
             requests: nil,
             requestsContext: nil,
             threadData: nil,
-            appConfiguration: appConfiguration
+            appConfiguration: appConfiguration,
+            isPowerSavingEnabled: isPowerSavingEnabled
         )
     }
 }
@@ -545,7 +566,8 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                 requests: nil,
                 requestsContext: nil,
                 threadData: nil,
-                appConfiguration: nil
+                appConfiguration: nil,
+                isPowerSavingEnabled: nil
             ))
         case let .user(userPeerId, secretChatId, kind):
             let groupsInCommon: GroupsInCommonContext?
@@ -677,7 +699,8 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                     requests: nil,
                     requestsContext: nil,
                     threadData: nil,
-                    appConfiguration: nil
+                    appConfiguration: nil,
+                    isPowerSavingEnabled: nil
                 )
             }
         case .channel:
@@ -754,7 +777,8 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                     requests: requests,
                     requestsContext: currentRequestsContext,
                     threadData: nil,
-                    appConfiguration: nil
+                    appConfiguration: nil,
+                    isPowerSavingEnabled: nil
                 )
             }
         case let .group(groupId):
@@ -954,7 +978,8 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                     requests: requests,
                     requestsContext: currentRequestsContext,
                     threadData: threadData,
-                    appConfiguration: appConfiguration
+                    appConfiguration: appConfiguration,
+                    isPowerSavingEnabled: nil
                 )
             }
         }
@@ -1058,8 +1083,8 @@ func availableActionsForMemberOfPeer(accountPeerId: PeerId, peer: Peer?, member:
             case .admin:
                 switch member {
                 case let .legacyGroupMember(_, _, invitedBy, _):
+                    result.insert(.restrict)
                     if invitedBy == accountPeerId {
-                        result.insert(.restrict)
                         result.insert(.promote)
                     }
                 case .channelMember:

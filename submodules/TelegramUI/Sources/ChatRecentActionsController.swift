@@ -162,6 +162,7 @@ final class ChatRecentActionsController: TelegramBaseController {
         }, changeTranslationLanguage: { _ in
         }, addDoNotTranslateLanguage: { _ in
         }, hideTranslationPanel: {
+        }, openPremiumGift: {
         }, requestLayout: { _ in
         }, chatController: {
             return nil

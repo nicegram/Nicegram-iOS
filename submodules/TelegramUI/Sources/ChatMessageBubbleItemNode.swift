@@ -73,6 +73,50 @@ private final class ChatMessageBubbleClippingNode: ASDisplayNode {
     }
 }
 
+func hasCommentButton(item: ChatMessageItem) -> Bool {
+    let firstMessage = item.content.firstMessage
+    
+    var hasDiscussion = false
+    if let channel = firstMessage.peers[firstMessage.id.peerId] as? TelegramChannel, case let .broadcast(info) = channel.info, info.flags.contains(.hasDiscussionGroup) {
+        hasDiscussion = true
+    }
+    if case let .replyThread(replyThreadMessage) = item.chatLocation, replyThreadMessage.effectiveTopId == firstMessage.id {
+        hasDiscussion = false
+    }
+
+    if firstMessage.adAttribute != nil {
+        hasDiscussion = false
+    }
+    
+    if hasDiscussion {
+        var canComment = false
+        if case .pinnedMessages = item.associatedData.subject {
+            canComment = false
+        } else if firstMessage.id.namespace == Namespaces.Message.Local {
+            canComment = true
+        } else {
+            for attribute in firstMessage.attributes {
+                if let attribute = attribute as? ReplyThreadMessageAttribute, let commentsPeerId = attribute.commentsPeerId {
+                    switch item.associatedData.channelDiscussionGroup {
+                    case .unknown:
+                        canComment = true
+                    case let .known(groupId):
+                        canComment = groupId == commentsPeerId
+                    }
+                    break
+                }
+            }
+        }
+        
+        if canComment {
+            return true
+        }
+    } else if firstMessage.id.peerId.isReplies {
+        return true
+    }
+    return false
+}
+
 private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> ([(Message, AnyClass, ChatMessageEntryAttributes, BubbleItemAttributes)], Bool, Bool) {
     var result: [(Message, AnyClass, ChatMessageEntryAttributes, BubbleItemAttributes)] = []
     var skipText = false
@@ -85,7 +129,7 @@ private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> ([
     
     var needReactions = true
     
-    var disableComments = false
+    var hasSeparateCommentsButton = false
     
     outer: for (message, itemAttributes) in item.content {
         for attribute in message.attributes {
@@ -111,7 +155,7 @@ private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> ([
                 let isVideo = file.isVideo || (file.isAnimated && file.dimensions != nil)
                 if isVideo {
                     if file.isInstantVideo {
-                        disableComments = true
+                        hasSeparateCommentsButton = true
                         result.append((message, ChatMessageInstantVideoBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .freeform, neighborSpacing: .default)))
                     } else {
                         if let forwardInfo = message.forwardInfo, forwardInfo.flags.contains(.isImported), message.text.isEmpty {
@@ -246,43 +290,8 @@ private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> ([
         needReactions = false
     }
     
-    if !isAction && !disableComments && !Namespaces.Message.allScheduled.contains(firstMessage.id.namespace) {
-        var hasDiscussion = false
-        if let channel = firstMessage.peers[firstMessage.id.peerId] as? TelegramChannel, case let .broadcast(info) = channel.info, info.flags.contains(.hasDiscussionGroup) {
-            hasDiscussion = true
-        }
-        if case let .replyThread(replyThreadMessage) = item.chatLocation, replyThreadMessage.effectiveTopId == firstMessage.id {
-            hasDiscussion = false
-        }
-
-        if firstMessage.adAttribute != nil {
-            hasDiscussion = false
-        }
-        
-        if hasDiscussion {
-            var canComment = false
-            if case .pinnedMessages = item.associatedData.subject {
-                canComment = false
-            } else if firstMessage.id.namespace == Namespaces.Message.Local {
-                canComment = true
-            } else {
-                for attribute in firstMessage.attributes {
-                    if let attribute = attribute as? ReplyThreadMessageAttribute, let commentsPeerId = attribute.commentsPeerId {
-                        switch item.associatedData.channelDiscussionGroup {
-                        case .unknown:
-                            canComment = true
-                        case let .known(groupId):
-                            canComment = groupId == commentsPeerId
-                        }
-                        break
-                    }
-                }
-            }
-            
-            if canComment {
-                result.append((firstMessage, ChatMessageCommentFooterContentNode.self, ChatMessageEntryAttributes(), BubbleItemAttributes(isAttachment: true, neighborType: .freeform, neighborSpacing: .default)))
-            }
-        } else if firstMessage.id.peerId.isReplies {
+    if !isAction && !hasSeparateCommentsButton && !Namespaces.Message.allScheduled.contains(firstMessage.id.namespace) {
+        if hasCommentButton(item: item) {
             result.append((firstMessage, ChatMessageCommentFooterContentNode.self, ChatMessageEntryAttributes(), BubbleItemAttributes(isAttachment: true, neighborType: .freeform, neighborSpacing: .default)))
         }
     }
@@ -340,7 +349,7 @@ private func mapVisibility(_ visibility: ListViewItemNodeVisibility, boundsSize:
         subRect.origin.x = 0.0
         subRect.size.width = 10000.0
         
-        subRect.origin.y = boundsSize.height - insets.top - (subRect.origin.y + subRect.height)
+        subRect.origin.y = boundsSize.height - insets.bottom - (subRect.origin.y + subRect.height)
         
         let contentNodeFrame = contentNode.frame
         if contentNodeFrame.intersects(subRect) {
@@ -1070,6 +1079,11 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewItemNode
                         }
                     }
                 }
+                
+                if case let .replyThread(replyThreadMessage) = item.chatLocation, replyThreadMessage.isChannelPost, replyThreadMessage.messageId.peerId != item.content.firstMessage.id.peerId {
+                    return false
+                }
+                
                 let action = item.controllerInteraction.canSetupReply(item.message)
                 strongSelf.currentSwipeAction = action
                 if case .none = action {
@@ -1364,9 +1378,14 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewItemNode
                 }
             }
             
-            if !needsShareButton, let author = item.message.author as? TelegramUser, let _ = author.botInfo, !item.message.media.isEmpty && !(item.message.media.first is TelegramMediaAction) {
-                needsShareButton = true
+            if !needsShareButton, let author = item.message.author as? TelegramUser, let _ = author.botInfo {
+                if !item.message.media.isEmpty && !(item.message.media.first is TelegramMediaAction) {
+                    needsShareButton = true
+                } else if author.id == PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(92386307)) {
+                    needsShareButton = true
+                }
             }
+            var mayHaveSeparateCommentsButton = false
             if !needsShareButton {
                 loop: for media in item.message.media {
                     if media is TelegramMediaGame || media is TelegramMediaInvoice {
@@ -1382,12 +1401,18 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewItemNode
                     if media is TelegramMediaAction {
                         needsShareButton = false
                         break loop
+                    } else if let media = media as? TelegramMediaFile, media.isInstantVideo {
+                        mayHaveSeparateCommentsButton = true
+                        break loop
                     }
                 }
             }
             
-            if item.associatedData.isCopyProtectionEnabled || item.message.isCopyProtected() {
-                needsShareButton = false
+            if (item.associatedData.isCopyProtectionEnabled || item.message.isCopyProtected()) {
+                if mayHaveSeparateCommentsButton && hasCommentButton(item: item) {
+                } else {
+                    needsShareButton = false
+                }
             }
         }
         
@@ -1746,7 +1771,7 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewItemNode
         var initialDisplayHeader = true
         if hidesHeaders {
             initialDisplayHeader = false
-        } else if let backgroundHiding = backgroundHiding, case .always = backgroundHiding {
+        } else if let backgroundHiding, case .always = backgroundHiding {
             initialDisplayHeader = false
         } else {
             if inlineBotNameString == nil && (ignoreForward || firstMessage.forwardInfo == nil) && replyMessage == nil {
@@ -2108,7 +2133,7 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewItemNode
         }
         
         let hideBackground: Bool
-        if let backgroundHiding = backgroundHiding {
+        if let backgroundHiding {
             switch backgroundHiding {
                 case .never:
                     hideBackground = false
@@ -3545,7 +3570,8 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewItemNode
                 let currentBackgroundFrame = strongSelf.backgroundNode.frame
                 let buttonSize = shareButtonNode.update(presentationData: item.presentationData, controllerInteraction: item.controllerInteraction, chatLocation: item.chatLocation, subject: item.associatedData.subject, message: item.message, account: item.context.account, disableComments: disablesComments)
                 
-                var buttonFrame = CGRect(origin: CGPoint(x: currentBackgroundFrame.maxX + 8.0, y: currentBackgroundFrame.maxY - buttonSize.width - 1.0), size: buttonSize)
+                
+                var buttonFrame = CGRect(origin: CGPoint(x: !incoming ? currentBackgroundFrame.minX - buttonSize.width : currentBackgroundFrame.maxX + 8.0, y: currentBackgroundFrame.maxY - buttonSize.width - 1.0), size: buttonSize)
                 if let shareButtonOffset = shareButtonOffset {
                     buttonFrame.origin.x = shareButtonOffset.x
                     buttonFrame.origin.y = buttonFrame.origin.y + shareButtonOffset.y - (buttonSize.height - 30.0)
@@ -3566,9 +3592,11 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewItemNode
             if let shareButtonNode = strongSelf.shareButtonNode {
                 let buttonSize = shareButtonNode.update(presentationData: item.presentationData, controllerInteraction: item.controllerInteraction, chatLocation: item.chatLocation, subject: item.associatedData.subject, message: item.message, account: item.context.account, disableComments: disablesComments)
                 
-                var buttonFrame = CGRect(origin: CGPoint(x: backgroundFrame.maxX + 8.0, y: backgroundFrame.maxY - buttonSize.width - 1.0), size: buttonSize)
+                var buttonFrame = CGRect(origin: CGPoint(x: !incoming ? backgroundFrame.minX - buttonSize.width - 8.0 : backgroundFrame.maxX + 8.0, y: backgroundFrame.maxY - buttonSize.width - 1.0), size: buttonSize)
                 if let shareButtonOffset = shareButtonOffset {
-                    buttonFrame.origin.x = shareButtonOffset.x
+                    if incoming {
+                        buttonFrame.origin.x = shareButtonOffset.x
+                    }
                     buttonFrame.origin.y = buttonFrame.origin.y + shareButtonOffset.y - (buttonSize.height - 30.0)
                 } else if !disablesComments {
                     buttonFrame.origin.y = buttonFrame.origin.y - (buttonSize.height - 30.0)
@@ -4031,7 +4059,10 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewItemNode
                         } else if contentNode is ChatMessageTextBubbleContentNode, hasFiles {
                             selectAll = false
                         }
-                        tapMessage = contentNode.item?.message
+                        if contentNode is ChatMessageEventLogPreviousMessageContentNode {
+                        } else {
+                            tapMessage = contentNode.item?.message
+                        }
                         let tapAction = contentNode.tapActionAtPoint(convertedLocation, gesture: gesture, isEstimating: false)
                         switch tapAction {
                         case .none, .ignore:
@@ -4544,7 +4575,7 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewItemNode
                 }
             
                 if let item = self.item, self.swipeToReplyNode == nil {
-                    let swipeToReplyNode = ChatMessageSwipeToReplyNode(fillColor: selectDateFillStaticColor(theme: item.presentationData.theme.theme, wallpaper: item.presentationData.theme.wallpaper), enableBlur: dateFillNeedsBlur(theme: item.presentationData.theme.theme, wallpaper: item.presentationData.theme.wallpaper), foregroundColor: bubbleVariableColor(variableColor: item.presentationData.theme.theme.chat.message.shareButtonForegroundColor, wallpaper: item.presentationData.theme.wallpaper), backgroundNode: item.controllerInteraction.presentationContext.backgroundNode, action: ChatMessageSwipeToReplyNode.Action(self.currentSwipeAction))
+                    let swipeToReplyNode = ChatMessageSwipeToReplyNode(fillColor: selectDateFillStaticColor(theme: item.presentationData.theme.theme, wallpaper: item.presentationData.theme.wallpaper), enableBlur: item.controllerInteraction.enableFullTranslucency && dateFillNeedsBlur(theme: item.presentationData.theme.theme, wallpaper: item.presentationData.theme.wallpaper), foregroundColor: bubbleVariableColor(variableColor: item.presentationData.theme.theme.chat.message.shareButtonForegroundColor, wallpaper: item.presentationData.theme.wallpaper), backgroundNode: item.controllerInteraction.presentationContext.backgroundNode, action: ChatMessageSwipeToReplyNode.Action(self.currentSwipeAction))
                     self.swipeToReplyNode = swipeToReplyNode
                     self.insertSubnode(swipeToReplyNode, at: 0)
                 }
@@ -4829,8 +4860,14 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewItemNode
         for contentNode in self.contentNodes {
             if let contentNode = contentNode as? ChatMessageFileBubbleContentNode {
                 return contentNode.interactiveFileNode.hasExpandedAudioTranscription
+            } else if let contentNode = contentNode as? ChatMessageInstantVideoBubbleContentNode {
+                return contentNode.hasExpandedAudioTranscription
             }
         }
         return false
+    }
+    
+    override func contentFrame() -> CGRect {
+        return self.backgroundNode.frame
     }
 }

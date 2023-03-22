@@ -55,6 +55,7 @@ private enum DebugControllerSection: Int32 {
     case logs
     case logging
     case experiments
+    case translation
     case videoExperiments
     case videoExperiments2
     case info
@@ -78,12 +79,10 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     case logToFile(PresentationTheme, Bool)
     case logToConsole(PresentationTheme, Bool)
     case redactSensitiveData(PresentationTheme, Bool)
-    case enableRaiseToSpeak(PresentationTheme, Bool)
     case keepChatNavigationStack(PresentationTheme, Bool)
     case skipReadHistory(PresentationTheme, Bool)
     case crashOnSlowQueries(PresentationTheme, Bool)
     case clearTips(PresentationTheme)
-    case resetTranslationStates(PresentationTheme)
     case resetNotifications
     case crash(PresentationTheme)
     case resetData(PresentationTheme)
@@ -101,7 +100,6 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     case experimentalCompatibility(Bool)
     case enableDebugDataDisplay(Bool)
     case acceleratedStickers(Bool)
-    case experimentalBackground(Bool)
     case inlineForums(Bool)
     case localTranscription(Bool)
     case enableReactionOverrides(Bool)
@@ -111,8 +109,10 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     case voiceConference
     case preferredVideoCodec(Int, String, String?, Bool)
     case disableVideoAspectScaling(Bool)
-    case enableVoipTcp(Bool)
+    case enableNetworkFramework(Bool)
     case restorePurchases(PresentationTheme)
+    case logTranslationRecognition(Bool)
+    case resetTranslationStates
     case hostInfo(PresentationTheme, String)
     case versionInfo(PresentationTheme)
     case resetPremium
@@ -131,13 +131,15 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return DebugControllerSection.logs.rawValue
         case .logToFile, .logToConsole, .redactSensitiveData:
             return DebugControllerSection.logging.rawValue
-        case .enableRaiseToSpeak, .keepChatNavigationStack, .skipReadHistory, .crashOnSlowQueries:
+        case .keepChatNavigationStack, .skipReadHistory, .crashOnSlowQueries:
             return DebugControllerSection.experiments.rawValue
-        case .clearTips, .resetTranslationStates, .resetNotifications, .crash, .resetData, .resetDatabase, .resetDatabaseAndCache, .resetHoles, .reindexUnread, .resetCacheIndex, .reindexCache, .resetBiometricsData, .resetWebViewCache, .optimizeDatabase, .photoPreview, .knockoutWallpaper, .playerEmbedding, .playlistPlayback, .enableQuickReactionSwitch, .voiceConference, .experimentalCompatibility, .enableDebugDataDisplay, .acceleratedStickers, .experimentalBackground, .inlineForums, .localTranscription, . enableReactionOverrides, .restorePurchases:
+        case .clearTips, .resetNotifications, .crash, .resetData, .resetDatabase, .resetDatabaseAndCache, .resetHoles, .reindexUnread, .resetCacheIndex, .reindexCache, .resetBiometricsData, .resetWebViewCache, .optimizeDatabase, .photoPreview, .knockoutWallpaper, .playerEmbedding, .playlistPlayback, .enableQuickReactionSwitch, .voiceConference, .experimentalCompatibility, .enableDebugDataDisplay, .acceleratedStickers, .inlineForums, .localTranscription, .enableReactionOverrides, .restorePurchases:
             return DebugControllerSection.experiments.rawValue
+        case .logTranslationRecognition, .resetTranslationStates:
+            return DebugControllerSection.translation.rawValue
         case .preferredVideoCodec:
             return DebugControllerSection.videoExperiments.rawValue
-        case .disableVideoAspectScaling, .enableVoipTcp:
+        case .disableVideoAspectScaling, .enableNetworkFramework:
             return DebugControllerSection.videoExperiments2.rawValue
         case .hostInfo, .versionInfo, .resetPremium:
             return DebugControllerSection.info.rawValue
@@ -178,8 +180,6 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return 11
         case .redactSensitiveData:
             return 12
-        case .enableRaiseToSpeak:
-            return 13
         case .keepChatNavigationStack:
             return 14
         case .skipReadHistory:
@@ -188,8 +188,6 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return 16
         case .clearTips:
             return 17
-        case .resetTranslationStates:
-            return 18
         case .resetNotifications:
             return 19
         case .crash:
@@ -224,8 +222,6 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return 34
         case .acceleratedStickers:
             return 35
-        case .experimentalBackground:
-            return 36
         case .inlineForums:
             return 37
         case .localTranscription:
@@ -234,19 +230,23 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return 39
         case .restorePurchases:
             return 40
-        case .playerEmbedding:
+        case .logTranslationRecognition:
             return 41
-        case .playlistPlayback:
+        case .resetTranslationStates:
             return 42
-        case .enableQuickReactionSwitch:
+        case .playerEmbedding:
             return 43
-        case .voiceConference:
+        case .playlistPlayback:
             return 44
+        case .enableQuickReactionSwitch:
+            return 45
+        case .voiceConference:
+            return 46
         case let .preferredVideoCodec(index, _, _, _):
-            return 45 + index
+            return 47 + index
         case .disableVideoAspectScaling:
             return 100
-        case .enableVoipTcp:
+        case .enableNetworkFramework:
             return 101
         case .hostInfo:
             return 102
@@ -958,12 +958,6 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     $0.withUpdatedRedactSensitiveData(value)
                 }).start()
             })
-        case let .enableRaiseToSpeak(_, value):
-            return ItemListSwitchItem(presentationData: presentationData, title: "Enable Raise to Speak", value: value, sectionId: self.section, style: .blocks, updated: { value in
-                let _ = updateMediaInputSettingsInteractively(accountManager: arguments.sharedContext.accountManager, {
-                    $0.withUpdatedEnableRaiseToSpeak(value)
-                }).start()
-            })
         case let .keepChatNavigationStack(_, value):
             return ItemListSwitchItem(presentationData: presentationData, title: "Keep Chat Stack", value: value, sectionId: self.section, style: .blocks, updated: { value in
                 let _ = updateExperimentalUISettingsInteractively(accountManager: arguments.sharedContext.accountManager, { settings in
@@ -1001,6 +995,14 @@ private enum DebugControllerEntry: ItemListNodeEntry {
 
                     let _ = context.engine.peers.unmarkChatListFeaturedFiltersAsSeen()
                 }
+            })
+        case let .logTranslationRecognition(value):
+            return ItemListSwitchItem(presentationData: presentationData, title: "Log Language Recognition", value: value, sectionId: self.section, style: .blocks, updated: { value in
+                let _ = updateExperimentalUISettingsInteractively(accountManager: arguments.sharedContext.accountManager, { settings in
+                    var settings = settings
+                    settings.logLanguageRecognition = value
+                    return settings
+                }).start()
             })
         case .resetTranslationStates:
             return ItemListActionItem(presentationData: presentationData, title: "Reset Translation States", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
@@ -1236,16 +1238,6 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     })
                 }).start()
             })
-        case let .experimentalBackground(value):
-            return ItemListSwitchItem(presentationData: presentationData, title: "Background Experiment", value: value, sectionId: self.section, style: .blocks, updated: { value in
-                let _ = arguments.sharedContext.accountManager.transaction ({ transaction in
-                    transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
-                        var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
-                        settings.experimentalBackground = value
-                        return PreferencesEntry(settings)
-                    })
-                }).start()
-            })
         case let .inlineForums(value):
             return ItemListSwitchItem(presentationData: presentationData, title: "Inline Forums", value: value, sectionId: self.section, style: .blocks, updated: { value in
                 let _ = arguments.sharedContext.accountManager.transaction ({ transaction in
@@ -1336,15 +1328,15 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     })
                 }).start()
             })
-        case let .enableVoipTcp(value):
-            return ItemListSwitchItem(presentationData: presentationData, title: "Enable VoIP TCP", value: !value, sectionId: self.section, style: .blocks, updated: { value in
-                let _ = arguments.sharedContext.accountManager.transaction ({ transaction in
-                    transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
-                        var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
-                        settings.enableVoipTcp = value
-                        return PreferencesEntry(settings)
-                    })
-                }).start()
+        case let .enableNetworkFramework(value):
+            return ItemListSwitchItem(presentationData: presentationData, title: "Network X [Restart App]", value: value, sectionId: self.section, style: .blocks, updated: { value in
+                if let context = arguments.context {
+                    let _ = updateNetworkSettingsInteractively(postbox: context.account.postbox, network: context.account.network, { settings in
+                        var settings = settings
+                        settings.useNetworkFramework = value
+                        return settings
+                    }).start()
+                }
             })
         case .restorePurchases:
             return ItemListActionItem(presentationData: presentationData, title: "Restore Purchases", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
@@ -1392,7 +1384,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     }
 }
 
-private func debugControllerEntries(sharedContext: SharedAccountContext, presentationData: PresentationData, loggingSettings: LoggingSettings, mediaInputSettings: MediaInputSettings, experimentalSettings: ExperimentalUISettings, networkSettings: NetworkSettings?, hasLegacyAppData: Bool) -> [DebugControllerEntry] {
+private func debugControllerEntries(sharedContext: SharedAccountContext, presentationData: PresentationData, loggingSettings: LoggingSettings, mediaInputSettings: MediaInputSettings, experimentalSettings: ExperimentalUISettings, networkSettings: NetworkSettings?, hasLegacyAppData: Bool, useBetaFeatures: Bool) -> [DebugControllerEntry] {
     var entries: [DebugControllerEntry] = []
     // MARK: Nicegram DebugMenu
     entries.append(.showOnboarding(!AppCache.wasOnboardingShown))
@@ -1419,14 +1411,12 @@ private func debugControllerEntries(sharedContext: SharedAccountContext, present
     entries.append(.redactSensitiveData(presentationData.theme, loggingSettings.redactSensitiveData))
 
     if isMainApp {
-        entries.append(.enableRaiseToSpeak(presentationData.theme, mediaInputSettings.enableRaiseToSpeak))
         entries.append(.keepChatNavigationStack(presentationData.theme, experimentalSettings.keepChatNavigationStack))
         entries.append(.skipReadHistory(presentationData.theme, experimentalSettings.skipReadHistory))
     }
     entries.append(.crashOnSlowQueries(presentationData.theme, experimentalSettings.crashOnLongQueries))
     if isMainApp {
         entries.append(.clearTips(presentationData.theme))
-        entries.append(.resetTranslationStates(presentationData.theme))
         entries.append(.resetNotifications)
     }
     entries.append(.crash(presentationData.theme))
@@ -1446,13 +1436,16 @@ private func debugControllerEntries(sharedContext: SharedAccountContext, present
         entries.append(.experimentalCompatibility(experimentalSettings.experimentalCompatibility))
         entries.append(.enableDebugDataDisplay(experimentalSettings.enableDebugDataDisplay))
         entries.append(.acceleratedStickers(experimentalSettings.acceleratedStickers))
-        entries.append(.experimentalBackground(experimentalSettings.experimentalBackground))
         entries.append(.inlineForums(experimentalSettings.inlineForums))
         entries.append(.localTranscription(experimentalSettings.localTranscription))
         if case .internal = sharedContext.applicationBindings.appBuildType {
             entries.append(.enableReactionOverrides(experimentalSettings.enableReactionOverrides))
         }
         entries.append(.restorePurchases(presentationData.theme))
+        
+        entries.append(.logTranslationRecognition(experimentalSettings.logLanguageRecognition))
+        entries.append(.resetTranslationStates)
+        
         entries.append(.playerEmbedding(experimentalSettings.playerEmbedding))
         entries.append(.playlistPlayback(experimentalSettings.playlistPlayback))
         entries.append(.enableQuickReactionSwitch(!experimentalSettings.disableQuickReaction))
@@ -1472,7 +1465,7 @@ private func debugControllerEntries(sharedContext: SharedAccountContext, present
 
     if isMainApp {
         entries.append(.disableVideoAspectScaling(experimentalSettings.disableVideoAspectScaling))
-        entries.append(.enableVoipTcp(experimentalSettings.enableVoipTcp))
+        entries.append(.enableNetworkFramework(networkSettings?.useNetworkFramework ?? useBetaFeatures))
     }
 
     if let backupHostOverride = networkSettings?.backupHostOverride {
@@ -1546,8 +1539,13 @@ public func debugController(sharedContext: SharedAccountContext, context: Accoun
             })
         }
         
+        var useBetaFeatures: Bool = false
+        if let context {
+            useBetaFeatures = context.account.network.useBetaFeatures
+        }
+        
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text("Debug"), leftNavigationButton: leftNavigationButton, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: debugControllerEntries(sharedContext: sharedContext, presentationData: presentationData, loggingSettings: loggingSettings, mediaInputSettings: mediaInputSettings, experimentalSettings: experimentalSettings, networkSettings: networkSettings, hasLegacyAppData: hasLegacyAppData), style: .blocks)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: debugControllerEntries(sharedContext: sharedContext, presentationData: presentationData, loggingSettings: loggingSettings, mediaInputSettings: mediaInputSettings, experimentalSettings: experimentalSettings, networkSettings: networkSettings, hasLegacyAppData: hasLegacyAppData, useBetaFeatures: useBetaFeatures), style: .blocks)
         
         return (controllerState, (listState, arguments))
     }
