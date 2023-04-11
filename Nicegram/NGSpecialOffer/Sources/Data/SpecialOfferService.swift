@@ -1,5 +1,5 @@
 import Foundation
-import EsimPropertyWrappers
+import NGCore
 import NGRemoteConfig
 
 public protocol SpecialOfferService {
@@ -10,6 +10,17 @@ public protocol SpecialOfferService {
     func markAsSeen(offerId: String)
 }
 
+public class SpecialOfferServiceMock: SpecialOfferService {
+    public init() {}
+    
+    public func fetchMainSpecialOffer(completion: ((SpecialOffer?) -> ())?) {}
+    public func getMainSpecialOffer() -> SpecialOffer? { nil }
+    public func getSpecialOfferWith(id: String) -> SpecialOffer? { nil }
+    public func wasSpecialOfferSeen(id: String) -> Bool { false }
+    public func markAsSeen(offerId: String) {}
+}
+
+@available(iOS 13.0, *)
 public class SpecialOfferServiceImpl {
     
     //  MARK: - Dependencies
@@ -18,7 +29,7 @@ public class SpecialOfferServiceImpl {
     
     //  MARK: - Logic
     
-    @UserDefaultsWrapper(key: "ng_seen_special_offers", defaultValue: [])
+    @UserDefaultsValue(key: "ng_seen_special_offers", defaultValue: [])
     private var seenSpecialOfferIds: Set<String>
     
     //  MARK: - Lifecycle
@@ -28,6 +39,7 @@ public class SpecialOfferServiceImpl {
     }
 }
 
+@available(iOS 13.0, *)
 extension SpecialOfferServiceImpl: SpecialOfferService {
     public func fetchMainSpecialOffer(completion: ((SpecialOffer?) -> ())?) {
         remoteConfig.fetch(SpecialOfferDto.self, byKey: Constants.specialOfferKey) { [weak self] dto in
@@ -62,6 +74,7 @@ extension SpecialOfferServiceImpl: SpecialOfferService {
 
 //  MARK: - Mapping
 
+@available(iOS 13.0, *)
 private extension SpecialOfferServiceImpl {
     func mapDto(_ dto: SpecialOfferDto?) -> SpecialOffer? {
         guard let dto = dto,
@@ -103,6 +116,7 @@ private struct SpecialOfferDto: Decodable {
 
 //  MARK: - Constants
 
+@available(iOS 13.0, *)
 private extension SpecialOfferServiceImpl {
     struct Constants {
         static let specialOfferKey = "specialOffer"

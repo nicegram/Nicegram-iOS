@@ -1,3 +1,6 @@
+// MARK: Nicegram AiChat
+import NGAiChatUI
+//
 import Foundation
 import UIKit
 import Postbox
@@ -24,6 +27,14 @@ import ChatPresentationInterfaceState
 import TelegramNotices
 import ChatControllerInteraction
 import TranslateUI
+
+// MARK: Nicegram AiChat
+private extension ListViewUpdateSizeAndInsets {
+    func with(insets: UIEdgeInsets) -> ListViewUpdateSizeAndInsets {
+        ListViewUpdateSizeAndInsets(size: size, insets: insets, headerInsets: headerInsets, scrollIndicatorInsets: scrollIndicatorInsets, duration: duration, curve: curve, ensureTopInsetForOverlayHighlightedItems: ensureTopInsetForOverlayHighlightedItems)
+    }
+}
+//
 
 extension ChatReplyThreadMessage {
     var effectiveTopId: MessageId {
@@ -3260,6 +3271,13 @@ public final class ChatHistoryListNode: ListView, ChatHistoryNode {
     }
         
     public func updateLayout(transition: ContainedViewLayoutTransition, updateSizeAndInsets: ListViewUpdateSizeAndInsets, additionalScrollDistance: CGFloat, scrollToTop: Bool, completion: @escaping () -> Void) {
+        // MARK: Nicegram AiChat
+        var insets = updateSizeAndInsets.insets
+        if AiChatUITgHelper.shouldShowAiBotInTgChat() {
+            insets.top += 60
+        }
+        let updateSizeAndInsets = updateSizeAndInsets.with(insets: insets)
+        //
         var scrollToItem: ListViewScrollToItem?
         var postScrollToItem: ListViewScrollToItem?
         if scrollToTop, case .known = self.visibleContentOffset() {

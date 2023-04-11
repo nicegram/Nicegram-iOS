@@ -9,7 +9,6 @@ swift_library(
     deps = [
         "//submodules/TelegramPresentationData:TelegramPresentationData",
         "//submodules/Display:Display",
-        "//Nicegram/NGExtensions:NGExtensions",
     ],
     visibility = ["//visibility:public"],
 

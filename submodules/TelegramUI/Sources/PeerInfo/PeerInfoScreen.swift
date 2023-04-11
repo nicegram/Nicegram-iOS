@@ -48,11 +48,12 @@ import TelegramNotices
 import SaveToCameraRoll
 import PeerInfoUI
 // MARK: Nicegram Imports
+import NGAiChatUI
 import NGWebUtils
 import NGStrings
 import NGUI
 import NGData
-import NGIAP
+import NGEnv
 import NGLab
 import UndoUI
 import NGSubscription
@@ -467,6 +468,7 @@ private enum PeerInfoContextSubject {
 private enum PeerInfoSettingsSection {
     // MARK: Nicegram
     case nicegram
+    case nicegramAiChatBot
     case nicegramPremium
     //
     case avatar
@@ -824,7 +826,14 @@ private func settingsItems(data: PeerInfoScreenData?, context: AccountContext, p
     let locale = presentationData.strings.baseLanguageCode
     var ngId = 0
 
-    if !NicegramProducts.Premium.isEmpty {
+    // MARK: Nicegram AiChat
+    if AiChatUITgHelper.shouldShowAiBotInSettings() {
+        items[.nicegram]!.append(PeerInfoScreenDisclosureItem(id: -1, text: AiChatUITgHelper.botName, icon: PresentationResourcesSettings.aiChatIcon, action: {
+                 interaction.openSettings(.nicegramAiChatBot)
+        }))
+    }
+    //
+    if !NGENV.premium_bundle.isEmpty {
         items[.nicegram]!.append(PeerInfoScreenDisclosureItem(id: ngId, text: l("Premium.Title", locale), icon: PresentationResourcesSettings.premiumIcon, action: {
                  interaction.openSettings(.nicegramPremium)
         }))
@@ -8091,6 +8100,12 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, UIScrollViewDelegate 
             self.controller?.push(nicegramSettingsController(context: self.context, accountsContexts: accountsContexts))
         case .nicegramPremium:
             self.processPremiumControllerOpen()
+        // MARK: Nicegram AiChat
+        case .nicegramAiChatBot:
+            if #available(iOS 13.0, *) {
+                self.controller?.push(aiChatSettingsController(context: self.context))
+            }
+        //
         case .rememberPassword:
                 let context = self.context
                 let controller = TwoFactorDataInputScreen(sharedContext: self.context.sharedContext, engine: .authorized(self.context.engine), mode: .rememberPassword(doneText: self.presentationData.strings.TwoFactorSetup_Done_Action), stateUpdated: { _ in

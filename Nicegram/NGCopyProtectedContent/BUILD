@@ -7,7 +7,6 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     deps = [
-        "//Nicegram/NGCore:NGCore",
         "//Nicegram/NGData:NGData",
         "//Nicegram/NGRemoteConfig:NGRemoteConfig",
 		"//Nicegram/NGSubscription:NGSubscription",

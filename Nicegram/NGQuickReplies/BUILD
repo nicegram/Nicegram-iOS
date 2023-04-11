@@ -14,7 +14,6 @@ swift_library(
     ]),
     deps = UIDEPS + [
         "//submodules/AccountContext:AccountContext",
-        "//Nicegram/EsimModule/FileStorage:FileStorage",
         "//Nicegram/NGStrings:NGStrings",
     ],
     visibility = ["//visibility:public"],

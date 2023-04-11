@@ -1,6 +1,7 @@
 import AccountContext
-import NGApiClient
+import NGCore
 import NGData
+import NGEnv
 import NGUtils
 import Postbox
 import SwiftSignalKit
@@ -9,7 +10,11 @@ import Foundation
 
 private let thresholdGroupMemebrsCount: Int = 1000
 
-private let apiClient = createNicegramApiClient(auth: nil, trackMobileIdentifier: false)
+private let apiClient = EsimApiClient(
+    baseUrl: URL(string: NGENV.esim_api_url)!,
+    apiKey: NGENV.esim_api_key,
+    mobileIdentifier: ""
+)
 private let throttlingService = ChatStatsThrottlingService()
 
 public func isShareChannelsInfoEnabled() -> Bool {

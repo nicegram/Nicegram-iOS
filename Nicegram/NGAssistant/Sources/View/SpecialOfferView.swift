@@ -1,6 +1,6 @@
+import NGCoreUI
 import UIKit
 import SnapKit
-import NGCustomViews
 
 struct SpecialOfferViewModel {
     let id: String

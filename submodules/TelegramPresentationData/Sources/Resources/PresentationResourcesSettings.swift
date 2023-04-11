@@ -23,6 +23,7 @@ private func renderIcon(name: String) -> UIImage? {
 
 public struct PresentationResourcesSettings {
     // MARK: Nicegram
+    public static let aiChatIcon = renderIcon(name: "ng.aichat.avatar")
     public static let nicegramIcon = renderIcon(name: "NicegramSettings")
     public static let premiumIcon = renderIcon(name: "PremiumSettings")
     //

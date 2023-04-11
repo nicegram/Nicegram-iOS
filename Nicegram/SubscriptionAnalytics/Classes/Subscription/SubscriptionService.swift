@@ -59,25 +59,11 @@ public final class SubscriptionService: NSObject {
 
         SubscriptionService.shared.loadSubscriptionOptions(ids: ids)
 
-        SwiftyStoreKit.completeTransactions(atomically: true) { [weak self] purchases in
+        SwiftyStoreKit.completeTransactions(atomically: false) { [weak self] purchases in
             guard let sSelf = self else { return }
 
             DispatchQueue.main.async {
                 sSelf.promotionalHandler.finishAppstoreTransactionRequestIfNeeded(purchases: purchases)
-            }
-
-            for purchase in purchases {
-                switch purchase.transaction.transactionState {
-                case .purchased, .restored:
-                    if purchase.needsFinishTransaction {
-                        SwiftyStoreKit.finishTransaction(purchase.transaction)
-                    }
-
-                case .failed, .purchasing, .deferred:
-                    break
-
-                @unknown default: break
-                }
             }
         }
     }
@@ -96,15 +82,11 @@ public final class SubscriptionService: NSObject {
     }
 
     public func purchaseProduct(productID: String, completionHandler: @escaping PurchaseCompletionHandler) {
-        SwiftyStoreKit.purchaseProduct(productID, atomically: true) { [weak self] result in
+        SwiftyStoreKit.purchaseProduct(productID, atomically: false) { [weak self] result in
             guard let sSelf = self else { return }
 
             switch result {
             case .success(let purchase):
-                if purchase.needsFinishTransaction {
-                    SwiftyStoreKit.finishTransaction(purchase.transaction)
-                }
-
                 AppCache.currentProductID = productID
                 completionHandler(true,nil)
 

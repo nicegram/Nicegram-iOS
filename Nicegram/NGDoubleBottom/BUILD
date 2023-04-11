@@ -26,7 +26,6 @@ swift_library(
         "//Nicegram/NGData:NGData",
         "//Nicegram/NGLogging:NGLogging",
         "//Nicegram/NGStrings:NGStrings",
-        "//Nicegram/NGIAP:NGIAP",
         "//Nicegram/NGAssistant:NGAssistant",
         "//Nicegram/NGAppCache:NGAppCache",
         "//Nicegram/NGEnv:NGEnv",

@@ -1,3 +1,7 @@
+// MARK: Nicegram AiChat
+import Combine
+import NGAiChatUI
+//
 import Foundation
 import UIKit
 import Display
@@ -956,6 +960,10 @@ public final class ChatListNode: ListView {
         return _contentsReady.get()
     }
     
+    // MARK: Nicegram AiChat
+    private var showAiChatCancellable: Any?
+    //
+    
     public var peerSelected: ((EnginePeer, Int64?, Bool, Bool, ChatListNodeEntryPromoInfo?) -> Void)?
     public var disabledPeerSelected: ((EnginePeer, Int64?) -> Void)?
     public var additionalCategorySelected: ((Int) -> Void)?
@@ -1606,6 +1614,16 @@ public final class ChatListNode: ListView {
         
         let currentPeerId: EnginePeer.Id = context.account.peerId
         
+        // MARK: Nicegram AiChat
+        let showAiChatPromise = ValuePromise(false)
+        if #available(iOS 13.0, *) {
+            self.showAiChatCancellable = AiChatUITgHelper.shouldShowAiBotInTgChatsListPublisher()
+                .sink { value in
+                    showAiChatPromise.set(value)
+                }
+        }
+        //
+        
         let chatListNodeViewTransition = combineLatest(
             queue: viewProcessingQueue,
             hideArchivedFolderByDefault,
@@ -1614,9 +1632,13 @@ public final class ChatListNode: ListView {
             suggestedChatListNotice,
             savedMessagesPeer,
             chatListViewUpdate,
-            self.statePromise.get()
+            self.statePromise.get(),
+            // MARK: Nicegram AiChat
+            showAiChatPromise.get()
+            //
         )
-        |> mapToQueue { (hideArchivedFolderByDefault, displayArchiveIntro, storageInfo, suggestedChatListNotice, savedMessagesPeer, updateAndFilter, state) -> Signal<ChatListNodeListViewTransition, NoError> in
+        // MARK: Nicegram AiChat, showAiChat added
+        |> mapToQueue { (hideArchivedFolderByDefault, displayArchiveIntro, storageInfo, suggestedChatListNotice, savedMessagesPeer, updateAndFilter, state, showAiChat) -> Signal<ChatListNodeListViewTransition, NoError> in
             let (update, filter) = updateAndFilter
             
             let previousHideArchivedFolderByDefaultValue = previousHideArchivedFolderByDefault.swap(hideArchivedFolderByDefault)
@@ -1630,7 +1652,18 @@ public final class ChatListNode: ListView {
                 notice = nil
             }
             
-            let (rawEntries, isLoading) = chatListNodeEntriesForView(update.list, state: state, savedMessagesPeer: savedMessagesPeer, foundPeers: state.foundPeers, hideArchivedFolderByDefault: hideArchivedFolderByDefault, displayArchiveIntro: displayArchiveIntro, notice: notice, mode: mode, chatListLocation: location)
+            // MARK: Nicegram AiChat
+            var showAiChat = showAiChat
+            if filter != nil {
+                showAiChat = false
+            }
+            if case .forum(_) = location {
+                showAiChat = false
+            }
+            //
+            
+            // MARK: Nicegram AiChat, showAiChat added
+            let (rawEntries, isLoading) = chatListNodeEntriesForView(update.list, state: state, savedMessagesPeer: savedMessagesPeer, foundPeers: state.foundPeers, hideArchivedFolderByDefault: hideArchivedFolderByDefault, displayArchiveIntro: displayArchiveIntro, notice: notice, mode: mode, chatListLocation: location, showAiChat: showAiChat)
             var isEmpty = true
             var entries = rawEntries.filter { entry in
                 switch entry {

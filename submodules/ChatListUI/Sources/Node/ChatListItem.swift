@@ -1,4 +1,5 @@
-// MARK: Nicegram HideReactions
+// MARK: Nicegram HideReactions, AiChat
+import NGAiChatUI
 import NGData
 //
 import Foundation
@@ -239,6 +240,14 @@ public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
     public func selected(listView: ListView) {
         switch self.content {
         case let .peer(peerData):
+            // MARK: Nicegram AiChat
+            if peerData.peer.peerId == NicegramConstants.aiChatBotPeerId {
+                if #available(iOS 13.0, *) {
+                    Task { await AiChatUITgHelper.tryRouteToAiChatBot() }
+                }
+                return
+            }
+            //
             if let message = peerData.messages.last, let peer = peerData.peer.peer {
                 var threadId: Int64?
                 if case let .forum(_, _, threadIdValue, _, _) = self.index {
@@ -1234,6 +1243,14 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
             guard let strongSelf = self, let item = strongSelf.item else {
                 return
             }
+            
+            // MARK: Nicegram AiChat
+            if case let .peer(peerData) = item.content,
+               peerData.peer.peerId == NicegramConstants.aiChatBotPeerId {
+                return
+            }
+            //
+            
             var threadId: Int64?
             if let value = strongSelf.hitTest(location, with: nil), value === strongSelf.compoundTextButtonNode?.view {
                 if case let .peer(peerData) = item.content, let topicItem = peerData.topForumTopicItems.first {
@@ -1375,6 +1392,13 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
                 self.hierarchyTrackingLayer = nil
             }
         }
+        
+        // MARK: Nicegram AiChat
+        if case let .peer(peerData) = item.content,
+           peerData.peer.peerId == NicegramConstants.aiChatBotPeerId {
+            self.avatarNode.setPeer(context: item.context, theme: item.presentationData.theme, peer: nil, nicegramImage: AiChatUITgHelper.botImage)
+        }
+        //
         
         self.contextContainer.isGestureEnabled = enablePreview && !item.editing
     }
@@ -1775,6 +1799,22 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
             
             switch contentData {
                 case let .chat(itemPeer, _, _, _, text, spoilers, customEmojiRanges):
+                    // MARK: Nicegram AiChat
+                    if itemPeer.peerId == NicegramConstants.aiChatBotPeerId {
+                        titleAttributedString = NSAttributedString(
+                            string: AiChatUITgHelper.botName,
+                            font: titleFont,
+                            textColor: theme.titleColor
+                        )
+                        attributedText = NSAttributedString(
+                            string: AiChatUITgHelper.tgListBotDesc,
+                            font: textFont,
+                            textColor: theme.messageTextColor
+                        )
+                        break
+                    }
+                    //
+                
                     var isUser = false
                     if case .user = itemPeer.chatMainPeer {
                         isUser = true
@@ -2414,6 +2454,17 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
             var peerLeftRevealOptions: [ItemListRevealOption]
             switch item.content {
                 case let .peer(peerData):
+                    // MARK: Nicegram AiChat
+                    if peerData.peer.peerId == NicegramConstants.aiChatBotPeerId {
+                        let presentationData = item.presentationData
+                        let unpin = ItemListRevealOption(key: RevealOptionKey.unpin.rawValue, title: presentationData.strings.DialogList_Unpin, icon: unpinIcon, color: presentationData.theme.list.itemDisclosureActions.constructive.fillColor, textColor: presentationData.theme.list.itemDisclosureActions.constructive.foregroundColor)
+                        
+                        peerRevealOptions = [unpin]
+                        peerLeftRevealOptions = []
+                        
+                        break
+                    }
+                    //
                     let renderedPeer = peerData.peer
                     let presence = peerData.presence
                     let displayAsMessage = peerData.displayAsMessage
@@ -3485,6 +3536,22 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
         guard let item = self.item else {
             return
         }
+        
+        // MARK: Nicegram AiChat
+        if case let .peer(peerData) = item.content,
+           peerData.peer.peerId == NicegramConstants.aiChatBotPeerId {
+            switch option.key {
+            case RevealOptionKey.unpin.rawValue:
+                if #available(iOS 13.0, *) {
+                    self.setRevealOptionsOpened(false, animated: true)
+                    AiChatUITgHelper.presentConfirmUnpin()
+                }
+            default:
+                break
+            }
+            return
+        }
+        //
         
         var close = true
         if case let .chatList(index) = item.index {

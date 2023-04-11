@@ -10558,6 +10558,9 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                                 strongSelf.chatDisplayNode.navigateButtons.mentionCount = mentionCount
                                 strongSelf.chatDisplayNode.navigateButtons.reactionsCount = reactionCount
                             }
+                            // MARK: Nicegram AiChat
+                            strongSelf.updateAiOverlayVisibility()
+                            //
                         }
                     })
                 } else if let peerId = self.chatLocation.peerId, let threadId = self.chatLocation.threadId {
@@ -10570,6 +10573,9 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                                 strongSelf.chatDisplayNode.navigateButtons.mentionCount = mentionCount
                                 strongSelf.chatDisplayNode.navigateButtons.reactionsCount = reactionCount
                             }
+                            // MARK: Nicegram AiChat
+                            strongSelf.updateAiOverlayVisibility()
+                            //
                         }
                     })
                 }
@@ -15846,7 +15852,19 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
     func updateDownButtonVisibility() {
         let recordingMediaMessage = self.audioRecorderValue != nil || self.videoRecorderValue != nil
         self.chatDisplayNode.navigateButtons.displayDownButton = self.shouldDisplayDownButton && !recordingMediaMessage
+        // MARK: Nicegram AiChat
+        updateAiOverlayVisibility()
+        //
     }
+    
+    // MARK: Nicegram AiChat
+    func updateAiOverlayVisibility() {
+        let recordingMediaMessage = self.audioRecorderValue != nil || self.videoRecorderValue != nil
+        let displayMentionButton = (self.chatDisplayNode.navigateButtons.mentionCount != 0)
+        let displayReactionButton = (self.chatDisplayNode.navigateButtons.reactionsCount != 0)
+        self.chatDisplayNode.ngAiOverlayNode.isHidden = self.shouldDisplayDownButton || recordingMediaMessage || displayMentionButton || displayReactionButton
+    }
+    //
     
     func updateTextInputState(_ textInputState: ChatTextInputState) {
         self.updateChatPresentationInterfaceState(interactive: false, { state in

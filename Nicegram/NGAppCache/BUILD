@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     deps = [
-        "//Nicegram/EsimModule/EsimKeychainWrapper:EsimKeychainWrapper",
+        "@swiftpkg_nicegram_assistant_ios//:Sources_NGCore"
     ],
     visibility = [
         "//visibility:public",

@@ -1,6 +1,15 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
 
 http_archive(
+    name = "bazel_skylib",
+    sha256 = "b8a1527901774180afc798aeb28c4634bdccf19c4d98e7bdd1ce79d1fe9aaad7",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.4.0/bazel-skylib-1.4.0.tar.gz",
+        "https://github.com/bazelbuild/bazel-skylib/releases/download/1.4.0/bazel-skylib-1.4.0.tar.gz",
+    ],
+)
+
+http_archive(
     name = "com_google_protobuf",
     urls = ["https://github.com/protocolbuffers/protobuf/archive/v3.14.0.zip"],
     sha256 = "bf0e5070b4b99240183b29df78155eee335885e53a8af8683964579c214ad301",
@@ -64,7 +73,6 @@ http_archive(
     build_file = "@//third-party/AppCenter:AppCenter.BUILD",
 )
 
-
 http_archive(
         name = "FirebaseSDK",
         urls = ["https://github.com/firebase/firebase-ios-sdk/releases/download/v8.11.0/Firebase.zip"],
@@ -72,31 +80,51 @@ http_archive(
 	sha256 = "ecf1013b5d616bb5d3acc7d9ddf257c06228c0a7364dd84d03989bae6af5ac5b",
 )
 
+# swift_bazel start
+
 http_archive(
-    name = "cgrindel_rules_spm",
-    sha256 = "cbe5d5dccdc8d5aa300e1538c4214f44a1266895d9817e8279a9335bcbee2f1e",
-    strip_prefix = "rules_spm-0.7.0",
+    name = "rules_swift_package_manager",
+    sha256 = "e26967e8f76a654b4b15c05d8d6af30dfa4bd463bc7731ec180cd19bddc6273d",
     urls = [
-        "http://github.com/cgrindel/rules_spm/archive/v0.7.0.tar.gz",
+        "https://github.com/cgrindel/rules_swift_package_manager/releases/download/v0.4.2/rules_swift_package_manager.v0.4.2.tar.gz",
     ],
 )
 
-http_archive(
-    name = "rules_pods",
-    urls = ["https://github.com/pinterest/PodToBUILD/releases/download/4.0.0-5787125/PodToBUILD.zip"],
-)
+load("@rules_swift_package_manager//:deps.bzl", "swift_bazel_dependencies")
 
-load(
-    "@cgrindel_rules_spm//spm:deps.bzl",
-    "spm_rules_dependencies",
-)
+swift_bazel_dependencies()
 
-spm_rules_dependencies()
+load("@cgrindel_bazel_starlib//:deps.bzl", "bazel_starlib_dependencies")
+
+bazel_starlib_dependencies()
+
+# MARK: - Gazelle
+
+# gazelle:repo bazel_gazelle
+
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
+load("@rules_swift_package_manager//:go_deps.bzl", "swift_bazel_go_dependencies")
+load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
+
+# Declare Go dependencies before calling go_rules_dependencies.
+swift_bazel_go_dependencies()
+
+go_rules_dependencies()
+
+go_register_toolchains(version = "1.19.1")
+
+gazelle_dependencies()
+
+# MARK: - Swift Toolchain
 
 load(
     "@build_bazel_rules_swift//swift:repositories.bzl",
     "swift_rules_dependencies",
 )
+load("//:swift_deps.bzl", "swift_dependencies")
+
+# gazelle:repository_macro swift_deps.bzl%swift_dependencies
+swift_dependencies()
 
 swift_rules_dependencies()
 
@@ -107,3 +135,4 @@ load(
 
 swift_rules_extra_dependencies()
 
+#swift_bazel finish

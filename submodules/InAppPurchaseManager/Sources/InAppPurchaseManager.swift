@@ -192,7 +192,7 @@ public final class InAppPurchaseManager: NSObject {
                 
         super.init()
         
-        SKPaymentQueue.default().add(self)
+//        SKPaymentQueue.default().add(self)
         self.requestProducts()
     }
     

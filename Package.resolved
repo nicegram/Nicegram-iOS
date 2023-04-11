@@ -1,0 +1,68 @@
+{
+  "pins" : [
+    {
+      "identity" : "factory",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/hmlongco/Factory",
+      "state" : {
+        "revision" : "2a8c1d3d75556a0c2f20ca5ad5f92c5e69c4f835",
+        "version" : "2.1.3"
+      }
+    },
+    {
+      "identity" : "grdb.swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/denis15yo/GRDB.swift.git",
+      "state" : {
+        "branch" : "master",
+        "revision" : "655570181518ac25f7efccb83d50f86c82ee5ac5"
+      }
+    },
+    {
+      "identity" : "lnextensionexecutor",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/LeoNatan/LNExtensionExecutor",
+      "state" : {
+        "revision" : "16b741f659e344f4569c9f9d32ef2298ef0233ff",
+        "version" : "1.2.0"
+      }
+    },
+    {
+      "identity" : "nicegram-assistant-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
+      "state" : {
+        "branch" : "develop",
+        "revision" : "7ccb0501c66ccb2d199b5ce73be1d152cd7a16c3"
+      }
+    },
+    {
+      "identity" : "sdwebimage",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SDWebImage/SDWebImage.git",
+      "state" : {
+        "revision" : "fb50c1d20f24db5322b2f8f379de3618f75fe08e",
+        "version" : "5.15.5"
+      }
+    },
+    {
+      "identity" : "snapkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SnapKit/SnapKit.git",
+      "state" : {
+        "revision" : "f222cbdf325885926566172f6f5f06af95473158",
+        "version" : "5.6.0"
+      }
+    },
+    {
+      "identity" : "swiftystorekit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/bizz84/SwiftyStoreKit.git",
+      "state" : {
+        "revision" : "9ce911639680113dac9b554d6243e406a9758ebe",
+        "version" : "0.16.4"
+      }
+    }
+  ],
+  "version" : 2
+}

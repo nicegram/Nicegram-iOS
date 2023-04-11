@@ -11,7 +11,8 @@ import RangeSet
 // MARK: Nicegram downloading feature
 import UIKit
 import SaveToCameraRoll
-import NGToast
+import NGCore
+import NGCoreUI
 import NGData
 
 public struct FetchManagerLocationEntryId: Hashable {
@@ -450,8 +451,17 @@ private final class FetchManagerCategoryContext {
                                 shouldSave {
                                 let _ = (saveToCameraRoll(context: context, postbox: postbox, userLocation: userLocation, mediaReference: mediaReference)
                                          |> deliverOnMainQueue).start(completed: {
-                                    Queue.mainQueue().after(0.2) {
-                                        NGToast.showDefaultToast(backgroundColor: UIColor(rgb: 0x474747), image: nil, title: "The video is downloaded to your phone gallery")
+                                    if #available(iOS 13.0, *) {
+                                        Task {
+                                            try? await Task.sleep(seconds: 0.2)
+                                            await Toasts.show(
+                                                ToastState(
+                                                    image: nil,
+                                                    title: "The video is downloaded to your phone gallery",
+                                                    backgroundColor: UIColor(rgb: 0x474747)
+                                                )
+                                            )
+                                        }
                                     }
                                 })
                             }

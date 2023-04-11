@@ -4,7 +4,6 @@ import UIKit
 import NGData
 import NGStrings
 import NGSubscription
-import NGUIUtils
 
 public func onboardingController(languageCode: String, onComplete: @escaping () -> Void) -> UIViewController {
     var routeToSubscription: (() -> Void)?

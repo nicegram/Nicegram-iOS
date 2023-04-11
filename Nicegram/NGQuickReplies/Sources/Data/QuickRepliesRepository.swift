@@ -1,5 +1,4 @@
 import Foundation
-import FileStorage
 
 protocol QuickRepliesRepository {
     func getItems(telegramUserId: Int64) -> [QuickReply]

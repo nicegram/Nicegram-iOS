@@ -1,4 +1,4 @@
-import FileStorage
+import NGCore
 import Foundation
 
 struct ChatStatsMeta: Codable {

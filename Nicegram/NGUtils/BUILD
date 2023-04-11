@@ -8,7 +8,6 @@ swift_library(
     ]),
     deps = [
         "//submodules/AccountContext:AccountContext",
-		"//Nicegram/NGCore:NGCore",
     ],
     visibility = [
         "//visibility:public",

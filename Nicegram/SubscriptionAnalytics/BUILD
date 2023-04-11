@@ -8,8 +8,8 @@ swift_library(
     ]),
     visibility = ["//visibility:public"],
     deps = [
-        "//Vendor/SwiftyStoreKit:SwiftyStoreKit",
+        "@swiftpkg_swiftystorekit//:Sources_SwiftyStoreKit",
         "//Nicegram/NGAppCache:NGAppCache",
-        "//Nicegram/NGIAP:NGIAP",
+        "//Nicegram/NGEnv:NGEnv",
     ],
 )

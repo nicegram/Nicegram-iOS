@@ -8,7 +8,7 @@ swift_library(
     ]),
     deps = [
         "@FirebaseSDK//:FirebaseRemoteConfig",
-        "//Nicegram/EsimModule/SafeExecutor:SafeExecutor",
+        "@swiftpkg_nicegram_assistant_ios//:Sources__NGRemoteConfig",
         "//Nicegram/NGEnv:NGEnv",
     ],
     visibility = ["//visibility:public"],
