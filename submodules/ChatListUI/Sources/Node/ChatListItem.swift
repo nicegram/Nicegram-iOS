@@ -1708,7 +1708,13 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
             } else {
                 editingOffset = 0.0
             }
-            
+            // MARK: Nicegram AiChat
+            if case let .peer(peerData) = item.content,
+               peerData.peer.peerId == NicegramConstants.aiChatBotPeerId {
+                reorderControlSizeAndApply = nil
+            }
+            //
+                
             let enableChatListPhotos = true
             
             let avatarDiameter = min(60.0, floor(item.presentationData.fontSize.baseDisplaySize * 60.0 / 17.0))
