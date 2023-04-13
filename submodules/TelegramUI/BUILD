@@ -19,6 +19,8 @@ NGDEPS = [
     "//Nicegram/NGRemoteConfig:NGRemoteConfig",
     "//Nicegram/NGStats:NGStats",
     "//Nicegram/NGModels:NGModels",
+    "@swiftpkg_nicegram_assistant_ios//:Sources_NGAppContext",
+    "@swiftpkg_nicegram_assistant_ios//:Sources_NGAuth"
 ]
 
 load(

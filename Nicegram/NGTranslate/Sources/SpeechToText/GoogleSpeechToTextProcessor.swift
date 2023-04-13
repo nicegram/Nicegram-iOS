@@ -1,5 +1,5 @@
 import Foundation
-import NGExtensions
+import NGCore
 import NGModels
 
 struct GoogleRecognitionConfig: Encodable {
@@ -45,7 +45,7 @@ class GoogleSpeechToTextProcessor {
             completion?(.failure(MessageError.unknown))
             return
         }
-        url = url.appending("key", value: apiKey)
+        url = url.appendingQuery(key: "key", value: apiKey)
         
         let body = makeBody(audioData: audioData, config: config)
         

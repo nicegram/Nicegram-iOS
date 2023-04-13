@@ -1,18 +1,15 @@
 import FirebaseRemoteConfig
-import SafeExecutor
 
 public class FirebaseRemoteConfigService {
     
     //  MARK: - Dependencies
     
     private let remoteConfig: RemoteConfig
-    private let safeFetcher: SafeFetcher<()>
     
     //  MARK: - Lifecycle
     
-    public init(remoteConfig: RemoteConfig = .remoteConfig(), safeFetcher: SafeFetcher<()> = .init(), cacheDuration: TimeInterval) {
+    public init(remoteConfig: RemoteConfig = .remoteConfig(), cacheDuration: TimeInterval) {
         self.remoteConfig = remoteConfig
-        self.safeFetcher = safeFetcher
         
         let settings = RemoteConfigSettings()
         settings.minimumFetchInterval = cacheDuration
@@ -21,8 +18,8 @@ public class FirebaseRemoteConfigService {
     
     //  MARK: - Public Functions
     
-    public func prefetch() {
-        fetchRemoteConfig(completion: nil)
+    public func prefetch(completion: @escaping () -> Void) {
+        fetchRemoteConfig(completion: completion)
     }
 }
 
@@ -44,14 +41,8 @@ extension FirebaseRemoteConfigService: RemoteConfigService {
 
 private extension FirebaseRemoteConfigService {
     func fetchRemoteConfig(completion: (() -> ())?) {
-        safeFetcher.fetch(id: "fetchRemoteConfig") { [weak self] completion in
-            guard let self = self else { return }
-            
-            self.remoteConfig.fetchAndActivate(completionHandler: { _, _ in
-                completion?(())
-            })
-        } completion: { _ in
+        self.remoteConfig.fetchAndActivate(completionHandler: { _, _ in
             completion?()
-        }
+        })
     }
 }

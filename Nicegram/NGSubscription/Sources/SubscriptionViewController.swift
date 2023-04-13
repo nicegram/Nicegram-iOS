@@ -1,8 +1,6 @@
 import UIKit
 import SnapKit
-import NGButton
-import NGCustomViews
-import NGExtensions
+import NGCoreUI
 import NGLoadingIndicator
 import Markdown
 
@@ -277,11 +275,11 @@ private extension SubscriptionViewController {
         botStack.snp.makeConstraints { make in
             make.leading.trailing.equalToSuperview().inset(Constants.horizontalMarging)
             make.top.equalToSuperview().inset(12)
-            make.bottom.equalTo(self.view.safeArea.bottom).inset(10)
+            make.bottom.equalTo(view.safeAreaLayoutGuide).inset(10)
         }
         
         closeButton.snp.makeConstraints { make in
-            make.top.equalTo(view.safeArea.top).inset(20)
+            make.top.equalTo(view.safeAreaLayoutGuide).inset(20)
             make.trailing.equalToSuperview().inset(20)
             make.width.height.equalTo(20)
         }

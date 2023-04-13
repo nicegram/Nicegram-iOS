@@ -1,7 +1,6 @@
 import SubscriptionAnalytics
 import UIKit
 import NGEnv
-import NGIAP
 
 public struct SubscriptionHandlers {
     let onSuccessPurchase: () -> Void
@@ -86,7 +85,7 @@ extension SubscriptionInteractor: SubscriptionInteractorInput {
     func viewDidLoad() {
         output.viewDidLoad()
         
-        if let subscription = subscriptionService.subscription(for: NicegramProducts.Premium) {
+        if let subscription = subscriptionService.subscription(for: NGENV.premium_bundle) {
             output.present(subscription: subscription)
         }
     }

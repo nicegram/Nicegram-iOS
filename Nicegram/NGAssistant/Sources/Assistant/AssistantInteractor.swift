@@ -1,14 +1,13 @@
 import Combine
+import Factory
 import Foundation
-import EsimAuth
 import NGAppCache
 import NGAuth
 import NGCoreUI
 import NGLogging
-import NGLottery
 import NGModels
 import NGRemoteConfig
-import NGRepositories
+import NGRepoUser
 import NGSpecialOffer
 import UIKit
 
@@ -16,32 +15,25 @@ typealias AssistantInteractorInput = AssistantViewControllerOutput
 
 protocol AssistantInteractorOutput {
     func onViewDidAppear()
-    func handleUser(_: EsimUser?, animated: Bool)
+    func handleUser(_: NGUser?, animated: Bool)
     func handleLoading(isLoading: Bool)
     func handleViewDidLoad() 
     func handleLogout()
     func handle(specialOffer: SpecialOffer)
     func handleSuccessSignInWithTelegram()
-    func presentLottery(_: Bool)
-    func presentLottery(jackpot: Money)
 }
 
 @available(iOS 13.0, *)
 class AssistantInteractor: AssistantInteractorInput {
     
-    private struct Constants {
-        static let lotteryJackpot = Money(amount: 250000000, currency: .usd)
-    }
-    
     var output: AssistantInteractorOutput!
     var router: AssistantRouterInput!
 
-    private let esimAuth: EsimAuth
-    private let userEsimsRepository: UserEsimsRepository
-    private let getCurrentUserUseCase: GetCurrentUserUseCase
+    @Injected(\AuthContainer.completeTgLoginUseCase) var completeTgLoginUseCase
+    @Injected(\RepoUserContainer.getCurrentUserUseCase) var getCurrentUserUseCase
     private let getSpecialOfferUseCase: GetSpecialOfferUseCase
-    private let getReferralLinkUseCase: GetReferralLinkUseCase
-    private let initiateLoginWithTelegramUseCase: InitiateLoginWithTelegramUseCase
+    @Injected(\AuthContainer.initTgLoginUseCase) var initTgLoginUseCase
+    @Injected(\AuthContainer.logoutUseCase) var logoutUseCase
     private let eventsLogger: EventsLogger
     
     private var deeplink: Deeplink?
@@ -49,15 +41,9 @@ class AssistantInteractor: AssistantInteractorInput {
     private var isAuthorized = false
     private var cancellables = Set<AnyCancellable>()
     
-    
-    init(deeplink: Deeplink?, esimAuth: EsimAuth, userEsimsRepository: UserEsimsRepository, getCurrentUserUseCase: GetCurrentUserUseCase, getSpecialOfferUseCase: GetSpecialOfferUseCase, getReferralLinkUseCase: GetReferralLinkUseCase, initiateLoginWithTelegramUseCase: InitiateLoginWithTelegramUseCase, eventsLogger: EventsLogger) {
+    init(deeplink: Deeplink?, getSpecialOfferUseCase: GetSpecialOfferUseCase, eventsLogger: EventsLogger) {
         self.deeplink = deeplink
-        self.esimAuth = esimAuth
-        self.userEsimsRepository = userEsimsRepository
-        self.getCurrentUserUseCase = getCurrentUserUseCase
         self.getSpecialOfferUseCase = getSpecialOfferUseCase
-        self.getReferralLinkUseCase = getReferralLinkUseCase
-        self.initiateLoginWithTelegramUseCase = initiateLoginWithTelegramUseCase
         self.eventsLogger = eventsLogger
     }
     
@@ -65,7 +51,6 @@ class AssistantInteractor: AssistantInteractorInput {
         output.handleViewDidLoad()
         trySignInWithTelegram()
         fetchSpecialOffer()
-        displayLotteryIfNeeded()
     }
     
     func onViewDidAppear() {
@@ -74,9 +59,9 @@ class AssistantInteractor: AssistantInteractorInput {
     }
     
     func handleAuth(isAnimated: Bool) {
-        let currentUser: EsimUser?
+        let currentUser: NGUser?
         if getCurrentUserUseCase.isAuthorized() {
-            currentUser = getCurrentUserUseCase.getCurrentUser()
+            currentUser = getCurrentUserUseCase()
         } else {
             currentUser = nil
         }
@@ -89,10 +74,6 @@ class AssistantInteractor: AssistantInteractorInput {
         router = nil
     }
     
-    func handleMyEsims() {
-        router.showMyEsims(deeplink: nil)
-    }
-    
     func handleChat(chatURL: URL?) {
         router.showChat(chatURL: chatURL)
     }
@@ -102,20 +83,8 @@ class AssistantInteractor: AssistantInteractorInput {
     }
     
     func handleLogout() {
-        output.handleLoading(isLoading: true)
-        esimAuth.signOut { [weak self] result in
-            guard let self = self else { return }
-            DispatchQueue.main.async {
-                self.output.handleLoading(isLoading: false)
-                switch result {
-                case .success(_):
-                    self.userEsimsRepository.clear()
-                    self.output.handleLogout()
-                case .failure(let error):
-                    print(error.localizedDescription)
-                }
-            }
-        }
+        logoutUseCase()
+        output.handleLogout()
     }
     
     func handleSpecialOffer() {
@@ -131,39 +100,34 @@ class AssistantInteractor: AssistantInteractorInput {
         router.dismissWithBot(session: session)
         router = nil
     }
-    
-    func handleLottery() {
-        router.showLottery()
-    }
-    
-    func handleLotteryReferral() {
-        if let url = getReferralLinkUseCase.getReferralLink() {
-            UIApplication.shared.open(url)
-        }
-    }
 }
 
 @available(iOS 13.0, *)
 private extension AssistantInteractor {
-    func handleUser(_ user: EsimUser?, animated: Bool) {
+    func handleUser(_ user: NGUser?, animated: Bool) {
         isAuthorized = (user != nil)
         output.handleUser(user, animated: animated)
     }
     
     func trySignInWithTelegram() {
         output.handleLoading(isLoading: true)
-        esimAuth.trySignInWithTelegram { [weak self] result in
-            guard let self = self else { return }
-            DispatchQueue.main.async {
+        
+        Task {
+            let result = await completeTgLoginUseCase()
+            
+            await MainActor.run {
                 self.output.handleLoading(isLoading: false)
+                
                 switch result {
                 case .success:
                     guard !self.isAuthorized else { break }
                     self.isAuthorized = true
                     self.handleAuth(isAnimated: true)
                     self.output.handleSuccessSignInWithTelegram()
-                case .failure:
+                case .sessionMissed, .sessionNotApproved, .sessionExpired:
                     break
+                case .error(let error):
+                    Toasts.show(.error(error))
                 }
             }
         }
@@ -183,33 +147,23 @@ private extension AssistantInteractor {
     
     func initiateLoginWithTelegram() {
         output.handleLoading(isLoading: true)
-        initiateLoginWithTelegramUseCase.initiateLoginWithTelegram { [weak self] result in
-            guard let self else { return }
+        Task {
+            let result = await initTgLoginUseCase(source: .general)
             
-            DispatchQueue.main.async {
+            await MainActor.run {
                 self.output.handleLoading(isLoading: false)
+                
                 switch result {
                 case .success(let url):
                     UIApplication.shared.open(url)
-                case .failure(let error):
-                    Alerts.show(.error(error))
+                case .failure(let failure):
+                    Alerts.show(.error(failure))
                 }
             }
         }
     }
     
-    func displayLotteryIfNeeded() {
-        self.output.presentLottery(jackpot: Constants.lotteryJackpot)
-        self.output.presentLottery(!hideLottery)
-    }
-    
     func tryHandleDeeplink() {
-        guard let deeplink = deeplink else { return }
-        
-        if deeplink is PurchaseEsimDeeplink {
-            router.showMyEsims(deeplink: deeplink)
-        }
-        
         self.deeplink = nil
     }
 }

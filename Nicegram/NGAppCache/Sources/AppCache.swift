@@ -1,5 +1,5 @@
 import Foundation
-import EsimKeychainWrapper
+import NGCore
 
 public final class AppCache {
     // Old key 'appLaunchCount'
@@ -26,9 +26,6 @@ public final class AppCache {
     
     @UserDefaultsBacked(key: "wasOnboardingShown", storage: .standard, defaultValue: false)
     public static var wasOnboardingShown: Bool
-    
-    @UserDefaultsBacked(key: "wasLotteryShown", storage: .standard, defaultValue: false)
-    public static var wasLotteryShown: Bool
     
     @UserDefaultsBacked(key: "lastSeenBlockedChatId", storage: .standard, defaultValue: nil)
     public static var lastSeenBlockedChatId: Int64?

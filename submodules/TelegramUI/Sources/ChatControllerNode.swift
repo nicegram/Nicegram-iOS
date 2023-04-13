@@ -1,8 +1,10 @@
-// MARK: Nicegram OpenGifsShortcut
+// MARK: Nicegram OpenGifsShortcut, AiChat
 import EntityKeyboard
+import NGAiChatUI
 import NGAppCache
 import NGRemoteConfig
 import NGStrings
+import UndoUI
 //
 import Foundation
 import UIKit
@@ -164,6 +166,52 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
     private var inputMediaNodeDataPromise = Promise<ChatEntityKeyboardInputNode.InputData>()
     private var didInitializeInputMediaNodeDataPromise: Bool = false
     private var inputMediaNodeDataDisposable: Disposable?
+    
+    // MARK: Nicegram AiChat
+    lazy var ngAiOverlayNode: ASDisplayNode = {
+        if #available(iOS 13.0, *) {
+            let handlers = TgChatAiOverlayHandlers(
+                getUserMessage: { [weak self] in
+                    guard let self else { return "" }
+                    return self.chatPresentationInterfaceState.interfaceState.effectiveInputState.inputText.string
+                },
+                showError: { [weak self] text in
+                    guard let self else { return }
+                    let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
+                    let content: UndoOverlayContent = .info(title: nil, text: text)
+                    self.controller?.present(UndoOverlayController(presentationData: presentationData, content: content, elevatedLayout: false, animateInAsReplacement: false, action: { _ in
+                            return true
+                    }), in: .current)
+                },
+                useAnswer: { [weak self] text, image in
+                    guard let self else { return }
+                    if let image {
+                        self.paste(.images([image]))
+                    } else if let text {
+                        let newTextInputState = ChatTextInputState(inputText: NSAttributedString(string: text))
+                        self.requestUpdateChatInterfaceState(.animated(duration: 0.4, curve: .spring), true) {
+                            $0.withUpdatedEffectiveInputState(newTextInputState)
+                        }
+                    }
+                }
+            )
+            
+            let viewModel = TgChatAiOverlayViewModelImpl(handlers: handlers)
+            
+            let tgTheme = self.chatPresentationInterfaceState.theme
+            let view = TgChatAiOverlayView(
+                viewModel: viewModel,
+                theme: TgChatAiOverlayTheme(
+                    buttonBackgroundColor: tgTheme.chat.inputPanel.panelBackgroundColor,
+                    buttonForegroundColor: tgTheme.chat.historyNavigation.foregroundColor
+                )
+            )
+            return ASDisplayNode { view }
+        } else {
+            return ASDisplayNode()
+        }
+    }()
+    //
     
     let navigateButtons: ChatHistoryNavigationButtons
     
@@ -635,6 +683,11 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
 
         self.addSubnode(self.messageTransitionNode)
         self.contentContainerNode.addSubnode(self.navigateButtons)
+        // MARK: Nicegram AiChat
+        if AiChatUITgHelper.shouldShowAiBotInTgChat() {
+            self.addSubnode(self.ngAiOverlayNode)
+        }
+        //
         self.addSubnode(self.presentationContextMarker)
         self.contentContainerNode.addSubnode(self.contentDimNode)
 
@@ -1848,6 +1901,18 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         transition.updateFrame(node: self.inputPanelBackgroundSeparatorNode, frame: CGRect(origin: CGPoint(x: 0.0, y: apparentInputBackgroundFrame.origin.y), size: CGSize(width: apparentInputBackgroundFrame.size.width, height: UIScreenPixel)))
         transition.updateFrame(node: self.navigateButtons, frame: apparentNavigateButtonsFrame)
         self.navigateButtons.update(rect: apparentNavigateButtonsFrame, within: layout.size, transition: transition)
+        // MARK: Nicegram AiChat
+        transition.updateFrame(
+            node: self.ngAiOverlayNode,
+            frame: CGRect(
+                origin: .zero,
+                size: CGSize(
+                    width: layout.size.width,
+                    height: apparentNavigateButtonsFrame.maxY
+                )
+            )
+        )
+        //
     
         if let titleAccessoryPanelNode = self.titleAccessoryPanelNode, let titleAccessoryPanelFrame = titleAccessoryPanelFrame, !titleAccessoryPanelNode.frame.equalTo(titleAccessoryPanelFrame) {
             titleAccessoryPanelNode.frame = titleAccessoryPanelFrame

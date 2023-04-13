@@ -1,5 +1,4 @@
 import Foundation
-import NGCore
 import NGData
 import NGRemoteConfig
 import NGSubscription

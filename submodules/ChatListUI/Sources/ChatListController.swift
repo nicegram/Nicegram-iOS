@@ -2,23 +2,19 @@ import Foundation
 import UIKit
 import Postbox
 // MARK: Nicegram Imports
-import EsimAuth
-import NGApiClient
-import NGAppContext
+import NGAiChat
+import NGAiChatUI
 import NGData
 import NGAppCache
 import NGAssistant
 import NGCore
-import NGCoreUI
 import NGTheme
 import NGAuth
-import NGLocalDataSources
 import NGLocalization
-import NGLotteryUI
 import NGModels
 import NGRemoteConfig
-import NGRemoteDataSources
-import NGRepositories
+import NGRepoTg
+import NGRepoUser
 import NGSpecialOffer
 import NGEnv
 
@@ -231,14 +227,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     }
     
     public init(context: AccountContext, location: ChatListControllerLocation, controlsHistoryPreload: Bool, hideNetworkActivityStatus: Bool = false, previewing: Bool = false, enableDebugActions: Bool) {
-        // MARK: Nicegram
-        if #available(iOS 13.0, *) {
-            self._appContext = AppContext(accountContext: context)
-        } else {
-            self._appContext = nil
-        }
-        //
-        
         self.context = context
         self.controlsHistoryPreload = controlsHistoryPreload
         self.hideNetworkActivityStatus = hideNetworkActivityStatus
@@ -3043,19 +3031,34 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         }
     }
     
-    private let _appContext: AnyObject?
-    @available(iOS 13.0, *)
-    private var appContext: AppContext {
-        return _appContext as! AppContext
-    }
-    
     @available(iOS 13.0, *)
     private func nicegramInit() {
+        RepoTgHelper.setTelegramId(context.account.peerId.id._internalGetInt64Value())
+        
+        Task {
+            let initAiChatUseCase = AiChatTgHelper.resolveInitAiChatUseCase()
+            try await initAiChatUseCase()
+        }
+        
+        if #available(iOS 15.0, *) {
+            Task {
+                let checkAiPremiumSubUseCase = AiChatTgHelper.resolveCheckAiPremiumSubUseCase()
+                await checkAiPremiumSubUseCase()
+                
+                let getCurrentUserUseCase = RepoUserTgHelper.resolveGetCurrentUserUseCase()
+                if getCurrentUserUseCase.isAuthorized() {
+                    let refreshAiBillingInfoUseCase = AiChatTgHelper.resolveRefreshAiBillingInfoUseCase()
+                    try await refreshAiBillingInfoUseCase()
+                }
+            }
+        }
+        
         // Localization
         let _ = context.sharedContext.accountManager.sharedData(keys: [SharedDataKeys.localizationSettings]).start { sharedData in
             if let localizationSettings = sharedData.entries[SharedDataKeys.localizationSettings]?.get(LocalizationSettings.self) {
                 let activeLanguageCode = localizationSettings.secondaryComponent?.languageCode ?? localizationSettings.primaryComponent.languageCode
                 LocalizationServiceImpl.shared.setLanguageCode(activeLanguageCode)
+                ng_setTgLangCode(activeLanguageCode)
             }
         }
     }
@@ -3067,32 +3070,11 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 return
             }
             
-            let auth = appContext.esimAuth
-            let apiClient = appContext.resolveApiClient()
-            
-            let plansAdapter = EsimPlansRequestAdaper(apiCient: apiClient)
-        
-            let offersRepository = EsimOffersRepositoryImpl(remoteDataSource: plansAdapter)
-            let regionsRepository = EsimRegionsRepositoryImpl(remoteDataSource: plansAdapter)
-            let countriesRepository = EsimCountriesRepositoryImpl(remoteDataSource: plansAdapter)
-            let userEsimsRepository = UserEsimsRepositoryImpl(
-                localDataSource: UserEsimsLocalDataSourceImpl(),
-                remoteDataSource: UserEsimsRemoteDataSourceImpl(
-                    apiClient: apiClient
-                )
-            )
-            
-            let esimRepositry = EsimRepositoryImpl(offersRepository: offersRepository, regionsRepository: regionsRepository, countriesRepository: countriesRepository, userEsimsRepository: userEsimsRepository)
-            
             let ngTheme = NGThemeColors(
                 telegramTheme: self.presentationData.theme.intro.statusBarStyle,
                 statusBarStyle: self.statusBar.statusBarStyle
             )
             let personalAssistant = AssistantBuilderImpl(
-                appContext: self.appContext,
-                tgAccountContext: context,
-                auth: auth,
-                esimRepository: esimRepositry,
                 specialOfferService: specialOfferService,
                 ngTheme: ngTheme,
                 listener: self
@@ -3116,7 +3098,14 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         }
     }
     
-    private lazy var specialOfferService: SpecialOfferService = SpecialOfferServiceImpl(remoteConfig: RemoteConfigServiceImpl.shared)
+    private lazy var specialOfferService: SpecialOfferService = {
+        if #available(iOS 13.0, *) {
+            return SpecialOfferServiceImpl(remoteConfig: RemoteConfigServiceImpl.shared)
+        } else {
+            return SpecialOfferServiceMock()
+        }
+    }()
+        
     private lazy var getFeaturedSpecialOfferUseCase: GetFeaturedSpecialOfferUseCase = GetFeaturedSpecialOfferUseCaseImpl(
         specialOfferService: specialOfferService,
         specialOfferScheduleService: SpecialOfferScheduleServiceImpl()

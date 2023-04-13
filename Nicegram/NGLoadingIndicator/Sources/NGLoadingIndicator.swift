@@ -1,6 +1,6 @@
+import SnapKit
 import UIKit
 import Lottie
-import NGExtensions
 
 public protocol NGLoadingIndicatorShowable {
     func display(isLoading: Bool)

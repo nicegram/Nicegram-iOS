@@ -7,10 +7,8 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     deps = [
-        "//Nicegram/NGButton:NGButton",
         "//Nicegram/NGData:NGData",
         "//Nicegram/NGSubscription:NGSubscription",
-        "//Nicegram/NGUIUtils:NGUIUtils",
     ],
     visibility = [
         "//visibility:public",

@@ -1,4 +1,5 @@
 import NGEnv
+import _NGRemoteConfig
 
 public protocol RemoteConfigService {
     func get<T: Decodable>(_: T.Type, byKey: String) -> T?
@@ -10,6 +11,10 @@ public class RemoteConfigServiceImpl {
     //  MARK: - Dependencies
     
     private let firebaseRemoteConfig: FirebaseRemoteConfigService
+    
+    //  MARK: - Logic
+    
+    private var task: Any?
     
     //  MARK: - Lifecycle
     
@@ -25,7 +30,32 @@ public class RemoteConfigServiceImpl {
     //  MARK: - Public Functions
 
     public func prefetch() {
-        firebaseRemoteConfig.prefetch()
+        if #available(iOS 13.0, *) {
+            _ = startFetchTaskIfNeeded()
+        } else {
+            firebaseRemoteConfig.prefetch(completion: {})
+        }
+    }
+    
+    //  MARK: - Private Functions
+
+    @available(iOS 13.0, *)
+    private func startFetchTaskIfNeeded() -> Task<Void, Never> {
+        if let task = task as? Task<Void, Never> {
+            return task
+        }
+        
+        let task = Task {
+            await withCheckedContinuation { continuation in
+                firebaseRemoteConfig.prefetch {
+                    continuation.resume()
+                }
+            }
+        }
+        
+        self.task = task
+        
+        return task
     }
 }
 
@@ -35,6 +65,31 @@ extension RemoteConfigServiceImpl: RemoteConfigService {
     }
     
     public func fetch<T>(_ type: T.Type, byKey key: String, completion: ((T?) -> ())?) where T : Decodable {
-        firebaseRemoteConfig.fetch(type, byKey: key, completion: completion)
+        if #available(iOS 13.0, *) {
+            Task {
+                let value: T? = await asyncGet(
+                    RemoteVariable(
+                        key: key,
+                        defaultValue: nil
+                    )
+                )
+                completion?(value)
+            }
+        } else {
+            firebaseRemoteConfig.fetch(type, byKey: key, completion: completion)
+        }
+    }
+}
+
+extension RemoteConfigServiceImpl: RemoteConfig {
+    public func get<Payload>(_ variable: RemoteVariable<Payload>) -> Payload {
+        return self.get(Payload.self, byKey: variable.key) ?? variable.defaultValue
+    }
+    
+    @available(iOS 13.0, *)
+    public func asyncGet<Payload>(_ variable: RemoteVariable<Payload>) async -> Payload {
+        let task = startFetchTaskIfNeeded()
+        _ = await task.value
+        return self.get(variable)
     }
 }

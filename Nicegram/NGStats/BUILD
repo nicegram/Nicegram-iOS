@@ -7,9 +7,8 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     deps = [
+        "@swiftpkg_nicegram_assistant_ios//:Sources_NGCore",
         "//submodules/AccountContext:AccountContext",
-        "//Nicegram/EsimModule/FileStorage:FileStorage",
-        "//Nicegram/NGApiClient:NGApiClient",
         "//Nicegram/NGData:NGData",
         "//Nicegram/NGRemoteConfig:NGRemoteConfig",
         "//Nicegram/NGUtils:NGUtils",

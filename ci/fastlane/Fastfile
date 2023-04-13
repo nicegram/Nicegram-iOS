@@ -79,6 +79,10 @@ lane :build do |options|
   build_number = options[:build_number]
   upload_to_tf = options[:upload_to_tf]
 
+  # SPM dependencies
+  bazel_path = sh("cd #{SOURCE_PATH} && echo $(python3 #{SOURCE_PATH}/build-system/Make/LocateBazel.py)")
+  sh("#{bazel_path} bazel run //:swift_update_pkgs")
+
   start_time = Time.new
 
   configuration_start_time = Time.new

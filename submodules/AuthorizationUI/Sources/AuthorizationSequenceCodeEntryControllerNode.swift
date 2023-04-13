@@ -1,3 +1,6 @@
+// MARK: Nicegram AuthCode
+import NGCoreUI
+//
 import Foundation
 import UIKit
 import AsyncDisplayKit
@@ -26,6 +29,10 @@ final class AuthorizationSequenceCodeEntryControllerNode: ASDisplayNode, UITextF
     private let titleIconNode: ASImageNode
     private let currentOptionNode: ImmediateTextNodeWithEntities
     private let currentOptionActivateAreaNode: AccessibilityAreaNode
+    
+    // MARK: Nicegram AuthCode
+    private let ngAuthCodeNode: ASDisplayNode
+    //
     
     private let currentOptionInfoNode: ASTextNode
     private let currentOptionInfoActivateAreaNode: AccessibilityAreaNode
@@ -125,6 +132,11 @@ final class AuthorizationSequenceCodeEntryControllerNode: ASDisplayNode, UITextF
         
         self.nextOptionTitleNode = ImmediateTextNode()
         
+        // MARK: Nicegram AuthCode
+        self.ngAuthCodeNode = ASDisplayNode { TgAuthCodeButton() }
+        self.ngAuthCodeNode.isHidden = true
+        //
+        
         self.nextOptionButtonNode = HighlightableButtonNode()
         self.nextOptionButtonNode.displaysAsynchronously = false
         let (nextOptionText, nextOptionActive) = authorizationNextOptionText(currentType: .sms(length: 5), nextType: .call, timeout: 60, strings: self.strings, primaryColor: self.theme.list.itemPrimaryTextColor, accentColor: self.theme.list.itemAccentColor)
@@ -196,6 +208,9 @@ final class AuthorizationSequenceCodeEntryControllerNode: ASDisplayNode, UITextF
         self.addSubnode(self.currentOptionNode)
         self.addSubnode(self.currentOptionActivateAreaNode)
         self.addSubnode(self.currentOptionInfoNode)
+        // MARK: Nicegram AuthCode
+        self.addSubnode(self.ngAuthCodeNode)
+        //
         self.addSubnode(self.nextOptionButtonNode)
         self.addSubnode(self.animationNode)
         self.addSubnode(self.resetNode)
@@ -510,6 +525,11 @@ final class AuthorizationSequenceCodeEntryControllerNode: ASDisplayNode, UITextF
                 items.append(AuthorizationLayoutItem(node: self.currentOptionNode, size: currentOptionSize, spacingBefore: AuthorizationLayoutItemSpacing(weight: 10.0, maxValue: 10.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)))
                 
                 items.append(AuthorizationLayoutItem(node: self.codeInputView, size: codeFieldSize, spacingBefore: AuthorizationLayoutItemSpacing(weight: 30.0, maxValue: 30.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)))
+                
+                // MARK: Nicegram AuthCode
+                self.ngAuthCodeNode.isHidden = false
+                items.append(AuthorizationLayoutItem(node: self.ngAuthCodeNode, size: CGSize(width: layout.size.width, height: 34), spacingBefore: AuthorizationLayoutItemSpacing(weight: 120.0, maxValue: 120.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)))
+                //
                 
                 items.append(AuthorizationLayoutItem(node: self.nextOptionButtonNode, size: nextOptionSize, spacingBefore: AuthorizationLayoutItemSpacing(weight: 50.0, maxValue: 120.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)))
             case .missedCall:

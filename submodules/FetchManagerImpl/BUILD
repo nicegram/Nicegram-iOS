@@ -20,7 +20,7 @@ swift_library(
         
         # Nicegram downloading feature
         "//submodules/SaveToCameraRoll:SaveToCameraRoll",
-        "//Nicegram/NGToast:NGToast",
+        "@swiftpkg_nicegram_assistant_ios//:Sources_NGCoreUI",
         "//Nicegram/NGData:NGData",
     ],
     visibility = [

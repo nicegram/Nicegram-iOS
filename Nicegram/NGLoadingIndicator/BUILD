@@ -7,8 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     deps = [
-        "//Nicegram/NGExtensions:NGExtensions",
-        "//Vendor/SnapKit:SnapKit",
+        "@swiftpkg_snapkit//:Sources_SnapKit",
         "//submodules/lottie-ios:Lottie",
     ],
     visibility = [

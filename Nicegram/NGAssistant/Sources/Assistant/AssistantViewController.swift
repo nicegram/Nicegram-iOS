@@ -1,18 +1,11 @@
 import UIKit
 import SnapKit
-import NGExtensions
-import NGCustomViews
-import NGButton
-import EsimAuth
+import NGCoreUI
 import NGLoadingIndicator
 import NGTheme
 import Postbox
 import TelegramCore
 import NGAuth
-import NGCore
-import NGCoreUI
-import NGLotteryUI
-import NGToast
 
 typealias AssistantViewControllerInput = AssistantPresenterOutput
 
@@ -22,17 +15,12 @@ protocol AssistantViewControllerOutput {
     func handleAuth(isAnimated: Bool)
     func handleLogout()
     func handleDismiss()
-    func handleMyEsims()
     func handleChat(chatURL: URL?)
     func handleOnLogin()
     
     func handleTelegramBot(session: String)
     func handleSpecialOffer()
-    func handleLottery()
-    func handleLotteryReferral()
 }
-
-extension AssistantViewController: ClosureBindable { }
 
 final class AssistantViewController: UIViewController {
     var output: AssistantViewControllerOutput!
@@ -40,9 +28,6 @@ final class AssistantViewController: UIViewController {
     private let containerView: RoundedContainerView
     private let blurEffectView = UIVisualEffectView()
     private let titleLabel = UILabel()
-    private let lotteryBannerView = LotteryBannerView()
-    private let referralBannerView: ReferralBannerView
-    private let lotteryContainerView = UIView()
     private let nicegramComunityLabel = UILabel()
     private let assistantItemsStackView = UIStackView()
     private let specialOfferView = SpecialOfferView()
@@ -55,7 +40,7 @@ final class AssistantViewController: UIViewController {
     private var supportView: AssistantItemView
     private var rateView: AssistantItemView
     private var logoutView: AssistantItemView
-    private var loginButton: NGButton
+    private var loginButton = CustomButton()
     
     private let secondSeparatorView = UIView()
     
@@ -70,8 +55,6 @@ final class AssistantViewController: UIViewController {
         self.supportView = AssistantItemView(ngTheme: ngTheme)
         self.rateView = AssistantItemView(ngTheme: ngTheme)
         self.logoutView = AssistantItemView(ngTheme: ngTheme)
-        self.loginButton = NGButton(ngTheme: ngTheme)
-        self.referralBannerView = ReferralBannerView(ngTheme: ngTheme)
         
         super.init(nibName: nil, bundle: nil)
     }
@@ -134,27 +117,6 @@ final class AssistantViewController: UIViewController {
             $0.leading.trailing.equalToSuperview().inset(16)
             $0.bottom.equalToSuperview().inset(54.0)
         }
-        
-        lotteryBannerView.setCloseButton(hidden: true)
-        
-        let lotterySeparator = UIView()
-        lotterySeparator.backgroundColor = ngTheme.separatorColor
-        let lotteryStack = UIStackView(
-            arrangedSubviews: [lotteryBannerView, lotterySeparator, referralBannerView],
-            axis: .vertical,
-            spacing: 12,
-            alignment: .fill
-        )
-        lotterySeparator.snp.makeConstraints { make in
-            make.height.equalTo(0.66)
-        }
-        
-        lotteryContainerView.addSubview(lotteryStack)
-        lotteryStack.snp.makeConstraints { make in
-            make.edges.equalToSuperview()
-        }
-        
-        assistantStackView.addArrangedSubview(lotteryContainerView)
         
         let firstSeparatorView = UIView()
         firstSeparatorView.backgroundColor = ngTheme.separatorColor
@@ -235,16 +197,8 @@ final class AssistantViewController: UIViewController {
             self?.output.handleSpecialOffer()
         }
         
-        lotteryBannerView.onTap = { [weak self] in
-            self?.output.handleLottery()
-        }
-        
-        referralBannerView.onInviteTap = { [weak self] in
-            self?.output.handleLotteryReferral()
-        }
-        
-        mobileDataView.onTouchUpInside = { [weak self] itemTag in
-            self?.output.handleMyEsims()
+        mobileDataView.onTouchUpInside = { _ in
+            UIApplication.shared.open(URL(string: "https://esimplus.onelink.me/WxwP/izj3c4ax")!)
         }
         
         telegramChannelView.onTouchUpInside = { [weak self] itemTag in
@@ -293,8 +247,16 @@ final class AssistantViewController: UIViewController {
             self.output.handleLogout()
         }
 
-        loginButton.buttonState = .enabled
-        loginButton.isRounded = true
+        loginButton.applyStyle(
+            font: .systemFont(ofSize: 17, weight: .medium),
+            foregroundColor: .white,
+            backgroundColor: .ngBlueTwo,
+            cornerRadius: 6,
+            spacing: .zero,
+            insets: .zero,
+            imagePosition: .leading,
+            imageSizeStrategy: .auto
+        )
         loginButton.touchUpInside = { [weak self] in
             guard let self = self else { return }
             self.output.handleOnLogin()
@@ -314,7 +276,7 @@ final class AssistantViewController: UIViewController {
         UIView.animate(withDuration: 0.3, delay: 0) {
             self.blurEffectView.alpha = 1
             self.titleLabel.snp.remakeConstraints {
-                $0.top.equalTo(self.view.safeArea.top).inset(28.0)
+                $0.top.equalTo(self.view.safeAreaLayoutGuide).inset(28.0)
                 $0.leading.trailing.equalToSuperview().inset(16.0)
             }
             self.view.layoutSubviews()
@@ -393,7 +355,7 @@ extension AssistantViewController: AssistantViewControllerInput {
     }
     
     func display(loginTitleText: String?) {
-        loginButton.setTitle(loginTitleText, for: .normal)
+        loginButton.display(title: loginTitleText, image: nil)
     }
     
     func display(isAuthorized: Bool, isAnimated: Bool) {
@@ -470,7 +432,7 @@ extension AssistantViewController: AssistantViewControllerInput {
     }
     
     func displaySuccessToast() {
-        NGToast.showSuccessToast()
+        Toasts.show(.success())
     }
     
     func displayCommunitySection(isHidden: Bool) {
@@ -478,24 +440,6 @@ extension AssistantViewController: AssistantViewControllerInput {
         nicegramComunityLabel.isHidden = isHidden
         telegramChannelView.isHidden = isHidden
         telegramChatView.isHidden = isHidden
-    }
-    
-    func displayLottery(_ flag: Bool, animated: Bool) {
-        lotteryContainerView.isHidden = !flag
-        
-        let block = {
-            self.view.layoutIfNeeded()
-        }
-        
-        if animated {
-            UIView.animate(withDuration: 0.3, animations: block)
-        } else {
-            block()
-        }
-    }
-    
-    func displayLottery(jackpot: Money) {
-        lotteryBannerView.display(jackpot: jackpot)
     }
 }
 

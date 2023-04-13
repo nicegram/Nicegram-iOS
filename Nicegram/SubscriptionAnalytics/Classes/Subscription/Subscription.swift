@@ -6,8 +6,8 @@
 //
 
 import Foundation
+import NGEnv
 import StoreKit
-import NGIAP
 
 // MARK: - Subscription Duration Type
 
@@ -74,7 +74,7 @@ public struct Subscription {
 public extension Subscription {
     static var subscriptions: [Subscription] = [
         Subscription(
-            identifier: NicegramProducts.Premium,
+            identifier: NGENV.premium_bundle,
             price: "$1.99",
             subscriptionDuration: .month
         ),

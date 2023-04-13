@@ -1,8 +1,7 @@
 import UIKit
-import EsimAuth
-import NGCore
 import NGLocalization
 import NGRemoteConfig
+import NGRepoUser
 import NGSpecialOffer
 
 typealias AssistantPresenterInput = AssistantInteractorOutput
@@ -19,8 +18,6 @@ protocol AssistantPresenterOutput: AnyObject {
     func display(specialOffer: SpecialOfferViewModel, animated: Bool)
     func displaySuccessToast()
     func displayCommunitySection(isHidden: Bool)
-    func displayLottery(_: Bool, animated: Bool)
-    func displayLottery(jackpot: Money)
     
     func onLogout()
 }
@@ -34,7 +31,7 @@ final class AssistantPresenter: AssistantPresenterInput {
         viewDidAppear = true
     }
     
-    func handleUser(_ user: EsimUser?, animated: Bool) {
+    func handleUser(_ user: NGUser?, animated: Bool) {
         let isAuthorized = (user != nil)
         output?.display(isAuthorized: isAuthorized, isAnimated: animated)
         
@@ -56,9 +53,9 @@ final class AssistantPresenter: AssistantPresenterInput {
     
     func handleViewDidLoad() {
         let mobileDataItem = PersonalAssistantItem(
-            image: UIImage(named: "PAMobileData"), 
+            image: UIImage(named: "PAMobileData"),
             title: ngLocalized("Nicegram.Assistant.MobileData"),
-            subtitle: ngLocalized("Nicegram.Assistant.MobileData.Esim"), 
+            subtitle: ngLocalized("Nicegram.Assistant.MobileData.Esim"),
             description: ngLocalized("Nicegram.Assistant.MobileData.Description"),
             item: .mobileData
         )
@@ -116,14 +113,6 @@ final class AssistantPresenter: AssistantPresenterInput {
     func handleSuccessSignInWithTelegram() {
         output?.displaySuccessToast()
     }
-    
-    func presentLottery(_ flag: Bool) {
-        output?.displayLottery(flag, animated: viewDidAppear)
-    }
-    
-    func presentLottery(jackpot: Money) {
-        output?.displayLottery(jackpot: jackpot)
-    }
 }
 
 //  MARK: - Mapping
@@ -141,7 +130,7 @@ private extension AssistantPresenter {
 //  MARK: - Private Functions
 
 private extension AssistantPresenter {
-    func makeSupportItem(currentUser: EsimUser?) -> PersonalAssistantItem {
+    func makeSupportItem(currentUser: NGUser?) -> PersonalAssistantItem {
         var title = ngLocalized("Nicegram.Assistant.Support")
         if let currentUser {
             title += " (id: \(currentUser.id))"

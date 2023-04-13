@@ -3,7 +3,7 @@ import NGUtils
 import Postbox
 import SwiftSignalKit
 import TelegramCore
-import FileStorage
+import NGCore
 
 class ChatLanguageStorage {
     

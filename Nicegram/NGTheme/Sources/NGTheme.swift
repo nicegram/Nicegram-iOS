@@ -1,5 +1,4 @@
 import UIKit
-import NGExtensions
 import TelegramPresentationData
 import Display
 

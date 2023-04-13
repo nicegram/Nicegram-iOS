@@ -2,9 +2,7 @@ import UIKit
 import WebKit
 import SnapKit
 import Lottie
-import EsimUI
-import NGButton
-import NGCustomViews
+import NGCoreUI
 import NGTheme
 
 protocol SpecialOfferViewControllerInput { }
@@ -37,7 +35,11 @@ final class SpecialOfferViewController: UIViewController, SpecialOfferViewContro
     
     init(ngTheme: NGThemeColors) {
         self.ngTheme = ngTheme
-        self.popupTransition = PopupTransition(blurStyle: ngTheme.blurStyle)
+        self.popupTransition = PopupTransition(
+            dimmColor: .black.withAlphaComponent(0.5),
+            horizontalPadding: 16,
+            verticalPadding: 16
+        )
         
         super.init(nibName: nil, bundle: nil)
         
@@ -110,15 +112,15 @@ extension SpecialOfferViewController: WKNavigationDelegate {
     }
     
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        webViewWrapper.showRetryPlaceholder(description: error.localizedDescription) { [weak self] in
+        webViewWrapper.showPlaceholder(.retry(error: error) { [weak self] in
             self?.output.didTapRetry()
-        }
+        })
     }
     
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        webViewWrapper.showRetryPlaceholder(description: error.localizedDescription) { [weak self] in
+        webViewWrapper.showPlaceholder(.retry(error: error) { [weak self] in
             self?.output.didTapRetry()
-        }
+        })
     }
     
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {

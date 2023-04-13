@@ -406,7 +406,8 @@ private func offsetPinnedIndex(_ index: EngineChatList.Item.Index, offset: UInt1
     }
 }
 
-func chatListNodeEntriesForView(_ view: EngineChatList, state: ChatListNodeState, savedMessagesPeer: EnginePeer?, foundPeers: [(EnginePeer, EnginePeer?)], hideArchivedFolderByDefault: Bool, displayArchiveIntro: Bool, notice: ChatListNotice?, mode: ChatListNodeMode, chatListLocation: ChatListControllerLocation) -> (entries: [ChatListNodeEntry], loading: Bool) {
+// MARK: Nicegram AiChat, showAiChat added
+func chatListNodeEntriesForView(_ view: EngineChatList, state: ChatListNodeState, savedMessagesPeer: EnginePeer?, foundPeers: [(EnginePeer, EnginePeer?)], hideArchivedFolderByDefault: Bool, displayArchiveIntro: Bool, notice: ChatListNotice?, mode: ChatListNodeMode, chatListLocation: ChatListControllerLocation, showAiChat: Bool) -> (entries: [ChatListNodeEntry], loading: Bool) {
     var result: [ChatListNodeEntry] = []
     
     var pinnedIndexOffset: UInt16 = 0
@@ -697,6 +698,35 @@ func chatListNodeEntriesForView(_ view: EngineChatList, state: ChatListNodeState
             }
         }
     }
+    
+    // MARK: Nicegram AiChat
+    if showAiChat {
+        result.append(.PeerEntry(ChatListNodeEntry.PeerEntryData(
+            index: .chatList(EngineChatList.Item.Index.ChatList.absoluteUpperBound),
+            presentationData: state.presentationData,
+            messages: [],
+            readState: nil,
+            isRemovedFromTotalUnreadCount: false,
+            draftState: nil,
+            peer: EngineRenderedPeer(peerId: NicegramConstants.aiChatBotPeerId, peers: [:], associatedMedia: [:]),
+            threadInfo: nil,
+            presence: nil,
+            hasUnseenMentions: false,
+            hasUnseenReactions: false,
+            editing: state.editing,
+            hasActiveRevealControls: false,
+            selected: false,
+            inputActivities: nil,
+            promoInfo: nil,
+            hasFailedMessages: false,
+            isContact: false,
+            autoremoveTimeout: nil,
+            forumTopicData: nil,
+            topForumTopicItems: [],
+            revealed: false
+        )))
+    }
+    //
 
     if result.count >= 1, case .HoleEntry = result[result.count - 1] {
         return ([.HeaderEntry], true)
@@ -705,3 +735,9 @@ func chatListNodeEntriesForView(_ view: EngineChatList, state: ChatListNodeState
     }
     return (result, view.isLoading)
 }
+
+// MARK: Nicegram AiChat
+struct NicegramConstants {
+    static let aiChatBotPeerId = PeerId(1366176012)
+}
+//

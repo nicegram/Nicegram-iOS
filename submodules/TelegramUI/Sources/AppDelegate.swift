@@ -1,4 +1,8 @@
 // MARK: Nicegram imports
+import NGAiChat
+import NGAppContext
+import var NGCore.ENV
+import struct NGCore.Env
 import NGData
 import NGStrings
 import NGLogging
@@ -360,6 +364,19 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         }
         
         RemoteConfigServiceImpl.shared.prefetch()
+        
+        ENV = Env(
+            apiBaseUrl: URL(string: NGENV.esim_api_url)!,
+            apiKey: NGENV.esim_api_key,
+            privacyUrl: URL(string: NGENV.privacy_url)!,
+            telegramAuthBot: NGENV.telegram_auth_bot,
+            termsUrl: URL(string: NGENV.terms_url)!
+        )
+        
+        if #available(iOS 13.0, *) {
+            AppContextTgHelper.setRemoteConfig(RemoteConfigServiceImpl.shared)
+        }
+        AiChatTgHelper.resolveTransactionsObserver().startObserving()
         
         let launchStartTime = CFAbsoluteTimeGetCurrent()
         
