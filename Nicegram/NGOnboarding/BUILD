@@ -8,7 +8,9 @@ swift_library(
     ]),
     deps = [
         "//Nicegram/NGData:NGData",
-        "//Nicegram/NGSubscription:NGSubscription",
+        "//Nicegram/NGStrings:NGStrings",
+        "//Nicegram/NGTheme:NGTheme",
+        "@swiftpkg_nicegram_assistant_ios//:Sources_NGPremiumUI",
     ],
     visibility = [
         "//visibility:public",

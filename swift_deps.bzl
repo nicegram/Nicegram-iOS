@@ -4,9 +4,17 @@ def swift_dependencies():
     # version: 2.1.3
     swift_package(
         name = "swiftpkg_factory",
-        commit = "2a8c1d3d75556a0c2f20ca5ad5f92c5e69c4f835",
+        commit = "1276137960e14561473f2dfe72b9ccf3a2e03690",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/hmlongco/Factory",
+    )
+
+    # version: 2.6.1
+    swift_package(
+        name = "swiftpkg_floatingpanel",
+        commit = "2a29cb5b3ecf4beb67cf524a030dd74a11b956c4",
+        dependencies_index = "@//:swift_deps_index.json",
+        remote = "https://github.com/scenee/FloatingPanel",
     )
 
     # branch: master
@@ -28,7 +36,7 @@ def swift_dependencies():
     # branch: develop
     swift_package(
         name = "swiftpkg_nicegram_assistant_ios",
-        commit = "74c0ec8db22da84b4ec2988321bdf816616fed7a",
+        commit = "07be6b03cf514567f04e5ee289134e827865e019",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
     )

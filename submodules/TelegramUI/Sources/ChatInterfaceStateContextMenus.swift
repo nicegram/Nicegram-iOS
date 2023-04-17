@@ -27,10 +27,10 @@ import ReactionListContextMenuContent
 import TelegramUIPreferences
 // MARK: Nicegram Imports
 import NGCopyProtectedContent
-import NGUI
+import NGPremiumUI
 import NGStrings
-import NGSubscription
 import NGTranslate
+import NGUI
 import PeerInfoUI
 //
 import TranslateUI
@@ -1185,8 +1185,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                         }, action: { _, f in
                             //  MARK: Nicegram CopyProtectedContent
                             if shouldSubscribeToCopyContent(message: message) {
-                                let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                                routeToNicegramPremiumForCopyContent(presentationData: presentationData)
+                                routeToNicegramPremiumForCopyContent()
                                 return
                             }
                             //
@@ -1313,8 +1312,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                 }, action: { _, f in
                     //  MARK: Nicegram CopyProtectedContent
                     if shouldSubscribeToCopyContent(message: message) {
-                        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                        routeToNicegramPremiumForCopyContent(presentationData: presentationData)
+                        routeToNicegramPremiumForCopyContent()
                         return
                     }
                     //
@@ -1787,7 +1785,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                     }, action: { _, f in
                         //  MARK: Nicegram CopyProtectedContent
                         if shouldSubscribeToCopyContent(message: message) {
-                            routeToNicegramPremiumForCopyContent(presentationData: presentationData)
+                            routeToNicegramPremiumForCopyContent()
                             return
                         }
                         //
@@ -1953,9 +1951,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                                     
                                     switch error {
                                     case .needPremium:
-                                        let c = SubscriptionBuilderImpl(presentationData: presentationData).build()
-                                        c.modalPresentationStyle = .fullScreen
-                                        controllerInteraction.navigationController()?.topViewController?.present(c, animated: true)
+                                        PremiumUITgHelper.routeToPremium()
                                     case .lowAccuracy:
                                         let c = getIAPErrorController(context: context, l("Messages.SpeechToText.LowAccuracyError", locale), presentationData)
                                         controllerInteraction.presentGlobalOverlayController(c, nil)

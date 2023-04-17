@@ -8,8 +8,8 @@ import NGLogging
 import NGModels
 import NGOnboarding
 import NGRemoteConfig
+import NGPremiumUI
 import NGSpecialOffer
-import NGSubscription
 import NGTheme
 import TelegramPresentationData
 import UIKit
@@ -84,13 +84,7 @@ private extension NGDeeplinkHandler {
     }
     
     func handleNicegramPremium(url: URL) -> Bool {
-        let presentationData = getCurrentPresentationData()
-        
-        let c = SubscriptionBuilderImpl(presentationData: presentationData).build()
-        c.modalPresentationStyle = .fullScreen
-        
-        navigationController?.topViewController?.present(c, animated: true)
-        
+        PremiumUITgHelper.routeToPremium()
         return true
     }
     

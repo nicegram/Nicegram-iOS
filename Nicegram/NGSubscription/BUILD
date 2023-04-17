@@ -7,15 +7,8 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     deps = [
-        "@swiftpkg_snapkit//:Sources_SnapKit",
-		"@swiftpkg_nicegram_assistant_ios//:Sources_NGCoreUI",
-        "//submodules/Markdown:Markdown",
-        "//submodules/TelegramPresentationData:TelegramPresentationData",
-        "//Nicegram/NGStrings:NGStrings",
-        "//Nicegram/SubscriptionAnalytics:SubscriptionAnalytics",
-        "//Nicegram/NGLoadingIndicator:NGLoadingIndicator",
-        "//Nicegram/NGEnv:NGEnv",
-        "//Nicegram/NGTheme:NGTheme",
+		"@swiftpkg_nicegram_assistant_ios//:Sources_NGPremium",
+		"//Nicegram/SubscriptionAnalytics:SubscriptionAnalytics",
     ],
     visibility = [
         "//visibility:public",

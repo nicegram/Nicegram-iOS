@@ -196,20 +196,6 @@
 "DoubleBottom.Enabled.OK" = "OK";
 "DoubleBottom.Passcode.Error" = "Please set another passcode different from that you use for Passcode Lock";
 
-/*Nicegram Premium*/
-"NicePremium.Title" = "Nicegram\n**Premium Features**";
-
-"NicePremium.Translator" = "Built-in Translator";
-"NicePremium.Translator.Desc" = "Instantly translate any message in the app without switching to 3rd-party translators";
-
-"NicePremium.SpeechToText.Desc" = "Get any voice message transcribed in seconds and save tons of your free time";
-
-"NicePremium.MentionAll" = "@MentionAll";
-"NicePremium.MentionAll.Desc" = "Quickly inform all group members and make sure everyone will read your message";
-
-"NicePremium.Renews" = "Subscription Automatically Renews";
-"NicePremium.PricePerMonth" = "Subscribe for %@ per month";
-
 /*Onboarding*/
 "NicegramOnboarding.Continue" = "Continue";
 "NicegramOnboarding.1.Title" = "№1 Client for Telegram Messenger";

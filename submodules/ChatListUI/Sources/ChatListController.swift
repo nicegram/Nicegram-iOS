@@ -318,7 +318,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                     
                     // MARK: Nicegram Assistant
                     self.primaryContext?.nicegramButton = AnyComponentWithIdentity(id: "nicegram", component: AnyComponent(NavigationButtonComponent(
-                        content: .image(imageName: "NicegramMain"),
+                        content: .image(imageName: "NicegramN"),
                         pressed: { [weak self] _ in
                             self?.nicegramAssistantPressed()
                         }

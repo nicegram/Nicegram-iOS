@@ -20,7 +20,8 @@ NGDEPS = [
     "//Nicegram/NGStats:NGStats",
     "//Nicegram/NGModels:NGModels",
     "@swiftpkg_nicegram_assistant_ios//:Sources_NGAppContext",
-    "@swiftpkg_nicegram_assistant_ios//:Sources_NGAuth"
+    "@swiftpkg_nicegram_assistant_ios//:Sources_NGAuth",
+    "@swiftpkg_nicegram_assistant_ios//:Sources_NGPremium",
 ]
 
 load(

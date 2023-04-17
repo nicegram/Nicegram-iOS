@@ -1,7 +1,7 @@
 // MARK: Nicegram Imports
 import NGData
+import NGPremiumUI
 import NGStrings
-import NGSubscription
 import NGTelegramIntegration
 import NGTranslate
 import NGUI
@@ -370,7 +370,7 @@ final class ChatMessageInteractiveFileNode: ASDisplayNode {
         guard arguments.associatedData.isPremium || isNicegramPremium else {
             // MARK: Nicegram Speech2Text, routeToNicegramPremium
             if isNicegram() {
-                routeToNicegramPremium(presentationData: context.sharedContext.currentPresentationData.with { $0 })
+                PremiumUITgHelper.routeToPremium()
                 return
             }
             //

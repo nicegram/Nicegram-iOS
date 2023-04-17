@@ -9,7 +9,7 @@ swift_library(
     deps = [
         "//Nicegram/NGData:NGData",
         "//Nicegram/NGRemoteConfig:NGRemoteConfig",
-		"//Nicegram/NGSubscription:NGSubscription",
+        "@swiftpkg_nicegram_assistant_ios//:Sources_NGPremiumUI",
     ],
     visibility = [
         "//visibility:public",

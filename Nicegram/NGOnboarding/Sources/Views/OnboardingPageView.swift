@@ -1,6 +1,7 @@
 import UIKit
 import SnapKit
 import AVKit
+import NGTheme
 
 struct OnboardingPageViewModel {
     let title: String
