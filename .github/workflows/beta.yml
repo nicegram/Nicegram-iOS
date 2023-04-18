@@ -5,6 +5,8 @@ on:
     branches:
       - beta
       - beta-hotfix
+      
+  workflow_dispatch:
 
 jobs:
   build:
