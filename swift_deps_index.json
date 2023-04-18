@@ -67,6 +67,16 @@
       ]
     },
     {
+      "name": "NGAnalytics",
+      "c99name": "NGAnalytics",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGAnalytics",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
       "name": "NGAppContext",
       "c99name": "NGAppContext",
       "src_type": "swift",
@@ -339,7 +349,7 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "131e7f486f87ff98f7bc86993b90bd214f0ad086",
+        "commit": "edcb1e6c4f54e56f032297b6bf2850beda2b68d5",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
         "branch": "develop"
       }

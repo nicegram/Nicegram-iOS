@@ -1,5 +1,6 @@
 // MARK: Nicegram imports
 import NGAiChat
+import NGAnalytics
 import NGAppContext
 import var NGCore.ENV
 import struct NGCore.Env
@@ -385,8 +386,11 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         if #available(iOS 13.0, *) {
             AppContextTgHelper.setRemoteConfig(RemoteConfigServiceImpl.shared)
             PremiumTgHelper.set(subscriptionService: SubscriptionAnalytics.SubscriptionService.shared)
+            AnalyticsTgHelper.set(firebaseSender: FirebaseLogger())
         }
         AiChatTgHelper.resolveTransactionsObserver().startObserving()
+        
+        AnalyticsTgHelper.trackSession()
         
         let launchStartTime = CFAbsoluteTimeGetCurrent()
         
@@ -919,6 +923,13 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         let accountManager = AccountManager<TelegramAccountManagerTypes>(basePath: rootPath + "/accounts-metadata", isTemporary: false, isReadOnly: false, useCaches: true, removeDatabaseOnError: true, hiddenAccountManager: hiddenAccountManager)
 
         self.accountManager = accountManager
+        
+        _ = (accountManager.accountRecords()
+        |> take(1))
+        .start(next: { view in
+            let profilesCount = view.records.count
+            AnalyticsTgHelper.trackProfilesCount(profilesCount)
+        })
 
         telegramUIDeclareEncodables()
         initializeAccountManagement()

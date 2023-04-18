@@ -245,7 +245,7 @@ public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
             if peerData.peer.peerId == NicegramConstants.aiChatBotPeerId {
                 if #available(iOS 13.0, *) {
                     Task { @MainActor in
-                        AiChatUITgHelper.tryRouteToAiChatBot(
+                        AiChatUITgHelper.tryRouteToAiChatBotFromHome(
                             push: { [weak self] controller in
                                 self?.interaction.push(
                                     NativeControllerWrapper(controller: controller)

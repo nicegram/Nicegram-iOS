@@ -8,7 +8,8 @@ swift_library(
     ]),
     deps = [
 		"@FirebaseSDK//:FirebaseAnalytics",
-        "//submodules/TelegramCore:TelegramCore"
+        "//submodules/TelegramCore:TelegramCore",
+		"@swiftpkg_nicegram_assistant_ios//:Sources_NGAnalytics",
     ],
     visibility = [
         "//visibility:public",

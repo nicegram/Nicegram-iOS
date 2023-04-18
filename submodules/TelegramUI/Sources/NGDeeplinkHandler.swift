@@ -2,6 +2,7 @@ import Foundation
 import AccountContext
 import Display
 import NGAiChatUI
+import NGAnalytics
 import NGAuth
 import NGLoadingIndicator
 import NGLogging
@@ -48,6 +49,8 @@ class NGDeeplinkHandler {
         switch url.host {
         case "aiAuth":
             return handleAiAuth(url: url)
+        case "aiLily":
+            return handleAi(url: url)
         case "nicegramPremium":
             return handleNicegramPremium(url: url)
         case "assistant":
@@ -81,9 +84,21 @@ private extension NGDeeplinkHandler {
             Task { @MainActor in
                 AiChatUITgHelper.routeToAiOnboarding(
                     push: { [self] controller in
-                        self.navigationController?.pushViewController(
-                            NativeControllerWrapper(controller: controller)
-                        )
+                        self.push(controller)
+                    }
+                )
+            }
+            return true
+        }
+        return false
+    }
+    
+    func handleAi(url: URL) -> Bool {
+        if #available(iOS 13.0, *) {
+            Task { @MainActor in
+                AiChatUITgHelper.tryRouteToAiChatBotFromDeeplink(
+                    push: { [self] controller in
+                        self.push(controller)
                     }
                 )
             }
@@ -98,6 +113,7 @@ private extension NGDeeplinkHandler {
     }
     
     func handleAssistant(url: URL) -> Bool {
+        AnalyticsTgHelper.trackAssistantOpenFromDeeplink()
         showNicegramAssistant(deeplink: AssistantDeeplink())
         return true
     }
@@ -204,6 +220,12 @@ private extension NGDeeplinkHandler {
     
     func getCurrentPresentationData() -> PresentationData {
         return tgAccountContext.sharedContext.currentPresentationData.with({ $0 })
+    }
+    
+    func push(_ c: UIViewController) {
+        self.navigationController?.pushViewController(
+            NativeControllerWrapper(controller: c)
+        )
     }
 }
 

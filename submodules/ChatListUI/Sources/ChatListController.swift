@@ -4,6 +4,7 @@ import Postbox
 // MARK: Nicegram Imports
 import NGAiChat
 import NGAiChatUI
+import NGAnalytics
 import NGData
 import NGAppCache
 import NGAssistant
@@ -3019,6 +3020,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     @objc private func nicegramAssistantPressed() {
         UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
         
+        AnalyticsTgHelper.trackAssistantOpenFromIcon()
         showNicegramAssistant(deeplink: nil)
     }
     
