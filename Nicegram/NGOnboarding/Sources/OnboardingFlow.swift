@@ -23,7 +23,7 @@ public func onboardingController(languageCode: String, onComplete: @escaping () 
 }
 
 private func onboardingPages(languageCode: String) -> [OnboardingPageViewModel] {
-    (1...5).map { index in
+    (1...6).map { index in
         OnboardingPageViewModel(
             title: l("NicegramOnboarding.\(index).Title", languageCode),
             description: l("NicegramOnboarding.\(index).Desc", languageCode),

@@ -11,6 +11,7 @@ import NGRemoteConfig
 import NGPremiumUI
 import NGSpecialOffer
 import NGTheme
+import NGUI
 import TelegramPresentationData
 import UIKit
 
@@ -77,7 +78,15 @@ class NGDeeplinkHandler {
 private extension NGDeeplinkHandler {
     func handleAiAuth(url: URL) -> Bool {
         if #available(iOS 13.0, *) {
-            Task { await AiChatUITgHelper.routeToAiOnboarding() }
+            Task { @MainActor in
+                AiChatUITgHelper.routeToAiOnboarding(
+                    push: { [self] controller in
+                        self.navigationController?.pushViewController(
+                            NativeControllerWrapper(controller: controller)
+                        )
+                    }
+                )
+            }
             return true
         }
         return false

@@ -26,6 +26,9 @@ import TelegramNotices
 import ReactionListContextMenuContent
 import TelegramUIPreferences
 // MARK: Nicegram Imports
+import struct NGAiChat.AiChatTgHelper
+import struct NGAiChat.AiContextMenuNotificationPayload
+import NGAiChatUI
 import NGCopyProtectedContent
 import NGPremiumUI
 import NGStrings
@@ -1769,6 +1772,39 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             if !actions.isEmpty {
                 actions.append(.separator)
             }
+            
+            // MARK: Nicegram AiChat
+            let messageTextIsEmpty = message.text.isEmpty
+            if #available(iOS 13.0, *), !messageTextIsEmpty {
+                actions.append(.action(ContextMenuActionItem(text: AiChatUITgHelper.botName, icon: { theme in
+                    return generateTintedImage(image: AiChatUITgHelper.botIcon, color: theme.actionSheet.primaryTextColor)
+                }, action: { controller, f in
+                    var items: [ContextMenuItem] = []
+                    
+                    let commands = AiChatTgHelper.getCommandsForContextMenu()
+                    for command in commands {
+                        items.append(.action(ContextMenuActionItem(text: command.title, icon: { _ in nil }, action: { _, f in
+                            let payload = AiContextMenuNotificationPayload(
+                                command: command,
+                                text: message.text
+                            )
+                            NotificationCenter.default.post(
+                                name: AiChatTgHelper.aiContextMenuNotification,
+                                object: nil,
+                                userInfo: [
+                                    AiChatTgHelper.aiContextMenuNotificationPayloadKey: payload
+                                ]
+                            )
+                            
+                            f(.dismissWithoutContent)
+                        })))
+                    }
+                    
+                    controller.setItems(.single(ContextController.Items(content: .list(items))), minHeight: nil)
+                })))
+            }
+            //
+            
             // MARK: NG Context Menu
             let isSecretChat = message.id.peerId.namespace == Namespaces.Peer.SecretChat
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
