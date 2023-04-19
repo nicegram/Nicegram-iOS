@@ -196,20 +196,6 @@
 "DoubleBottom.Enabled.OK" = "确认";
 "DoubleBottom.Passcode.Error" = "请设置另一个与密码锁不同的密码";
 
-/*Nicegram Premium*/
-"NicePremium.Title" = "Nicegram\n**高级版功能**";
-
-"NicePremium.Translator" = "内置翻译器";
-"NicePremium.Translator.Desc" = "即时翻译应用程序中的任何消息，无需切换到第 3 方翻译器";
-
-"NicePremium.SpeechToText.Desc" = "在几秒内转录任何语音消息，节省出大量的空闲时间";
-
-"NicePremium.MentionAll" = "@MentionAll";
-"NicePremium.MentionAll.Desc" = "快速通知所有群组成员并确保每个人都会阅读您的消息";
-
-"NicePremium.Renews" = "订阅自动续订";
-"NicePremium.PricePerMonth" = "订阅并每月支付 %@";
-
 /*Onboarding*/
 "NicegramOnboarding.Continue" = "继续";
 "NicegramOnboarding.1.Title" = "Telegram 通讯的首选客户端";
@@ -222,3 +208,5 @@
 "NicegramOnboarding.4.Desc" = "利用 Nicegram 团队的创新，获取可在 133 个国家上网的 eSIM。您也可以用 eSIM 数据计划的电话号码注册新的 Telegram 账户。";
 "NicegramOnboarding.5.Title" = "最安全的通讯工具";
 "NicegramOnboarding.5.Desc" = "安全的通讯工具，拥有强加密、群组音频和视频电话、公共频道、群聊和机器人、无限制的聊天云存储空间、媒体和文档共享功能。";
+"NicegramOnboarding.6.Title" = "认识莉莉";
+"NicegramOnboarding.6.Desc" = "您的个人人工智能聊天机器人助手，简化您的生活!";

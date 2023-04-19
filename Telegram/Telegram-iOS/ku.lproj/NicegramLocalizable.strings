@@ -1,0 +1,16 @@
+
+/*Nicegram plus*/
+/*Nicegram assistant*/
+
+"Nicegram.Assistant.Title" = "Hello";
+"Nicegram.Assistant.MobileData" = "None";
+"Nicegram.Assistant.MobileData.Esim" = "Thanks";
+"Nicegram.Assistant.Support" = "پاڵپشتی";
+"Nicegram.Assistant.Rate us" = "پۆڵێنکردن";
+
+/*Nicegram assistant hint*/
+"Nicegram.Assistant.Hint.Title" = "Hello";
+"Nicegram.Assistant.Hint.Support" = "پاڵپشتی";
+
+/*Nicegram Mobile Data*/
+"Nicegram.MobileData.Title" = "None";

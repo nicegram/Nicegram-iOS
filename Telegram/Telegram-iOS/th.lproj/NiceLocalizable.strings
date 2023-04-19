@@ -1,5 +1,8 @@
 "AppName" = "ดี";
 
+/*Common*/
+"Nicegram.PrivacyPolicy" = "นโยบายส่วนตัว";
+
 /*ChatFilter*/
 "ChatFilter.Bots" = "หุ่นยนต์";
 

@@ -68,7 +68,7 @@
 
 /*Browser*/
 /*Please, Go to «Data & Storage» to configure default browser*/
-"NiceFeatures.Use.DataStorage" = "Veuillez utiliser « %1 » pour configurer le navigateur par défaut";
+"NiceFeatures.Use.DataStorage" = "Veuillez utiliser «%1» pour configurer le navigateur par défaut";
 "NiceFeatures.Browser.Header" = "URL";
 "NiceFeatures.Browser.UseBrowser" = "Ouvrir les liens dans le navigateur";
 "NiceFeatures.Browser.UseBrowserNotice" = "Nicegram ouvrira les liens dans le navigateur externe au lieu de l'application. Le navigateur sélectionné doit être installé.";
@@ -196,20 +196,6 @@
 "DoubleBottom.Enabled.OK" = "D'ACCORD";
 "DoubleBottom.Passcode.Error" = "Veuillez définir un autre code d'accès différent de celui que vous utilisez pour le verrouillage par code d'accès";
 
-/*Nicegram Premium*/
-"NicePremium.Title" = "Nicegram\n**Fonctionnalités premium**";
-
-"NicePremium.Translator" = "Traducteur intégré";
-"NicePremium.Translator.Desc" = "Traduisez en permanence n'importe quel message dans l'application sans avoir à recourir à des traducteurs tiers";
-
-"NicePremium.SpeechToText.Desc" = "Obtenez la transcription de n'importe quel message vocal en quelques secondes et économisez une grande partie de votre temps libre";
-
-"NicePremium.MentionAll" = "@MentionAll";
-"NicePremium.MentionAll.Desc" = "Informez rapidement tous les membres du groupe et assurez-vous que tout le monde lira votre message";
-
-"NicePremium.Renews" = "Renouvellement automatique de l'abonnement";
-"NicePremium.PricePerMonth" = "Abonnez-vous à %@ par mois";
-
 /*Onboarding*/
 "NicegramOnboarding.Continue" = "Continuer";
 "NicegramOnboarding.1.Title" = "Le client nº 1 pour Telegram Messenger";
@@ -222,3 +208,5 @@
 "NicegramOnboarding.4.Desc" = "Profitez des innovations de l'équipe Nicegram et obtenez une eSIM avec un accès internet dans 133 pays. Vous pouvez également enregistrer de nouveaux comptes Telegram sur le numéro de téléphone du forfait de données eSIM.";
 "NicegramOnboarding.5.Title" = "La messagerie la plus sécurisée";
 "NicegramOnboarding.5.Desc" = "Messagerie sécurisée avec cryptage fort, appels audio et vidéo de groupe, chaînes publiques, groupes et bots, stockage illimité dans le cloud pour les discussions, partage de médias et de documents.";
+"NicegramOnboarding.6.Title" = "Rencontrer Lily";
+"NicegramOnboarding.6.Desc" = "Votre assistant personnel AI Chatbot pour simplifier votre vie!";

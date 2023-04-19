@@ -1,8 +1,8 @@
 "AppName" = "Nicegram";
 
 /*Common*/
-"Nicegram.PrivacyPolicy" = "隱私政策";
-"Nicegram.EULA" = "EULA";
+"Nicegram.PrivacyPolicy" = "隱私權政策";
+"Nicegram.EULA" = "授權條款";
 
 /*ChatFilter*/
 "ChatFilter.Bots" = "機器人";
@@ -89,7 +89,7 @@
 "Common.FAQUrl" = "https://nicegram-tw.gitbook.io/";
 "Common.FAQ.Button" = "Nicegram 常見問題";
 "Common.FAQ.Intro" = "注意：Nicegram 支援僅由開發人員和志願者提供。\n\n請先看一下 Nicegram 常見問題：它有故障排除指示和其他大多數問題的解答。";
-"IAP.Premium.Title" = "進階版功能";
+"IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "您無法抗拒的獨特功能！";
 "IAP.Premium.Features" = "訊息快速翻譯";
 "IAP.Premium.Activated" = "已升級進階版！";
@@ -113,12 +113,12 @@
 "Messages.SpeechToText" = "語音轉文字";
 "Messages.UndoSpeechToText" = "取消語音轉文字";
 "Messages.SpeechToText.LowAccuracyError" = "語音辨識失敗。\n\n這可能是由於錄音品質不好，或應用程式和錄音語言之間的差異。";
-"Messages.SelectAllFromUser" = "選擇來自這位使用者的所有訊息";
+"Messages.SelectAllFromUser" = "選取來自這個人的所有訊息";
 "Messages.ToLanguage" = "翻譯為";
 "Messages.ToLanguage.WithCode" = "翻譯為：%@";
-"Messages.TranslateError.ToLanguageNotFound" = "我們無法確定您希望將文字翻譯成何種語言。請手動選擇語言並再試一次。";
+"Messages.TranslateError.ToLanguageNotFound" = "我們無法確定您希望翻譯成何種語言，請手動選擇並再試一次。";
 "Messages.ReplyPrivately" = "私下回覆";
-"Messages.DeleteAllSystemMessages" = "全部刪除";
+"Messages.DeleteAllSystemMessages" = "刪除全部";
 
 /*NG Lab Registration Date*/
 "NGLab.RegDate.Btn" = "取得註冊日期";
@@ -158,8 +158,8 @@
 "NicegramSettings.Other.hidePhoneInSettingsNotice" = "您的電話號碼只會在介面中隱藏。要完全隱藏起來，請使用「隱私設定」。";
 "NicegramSettings.Other.showProfileId" = "顯示用戶ID";
 "NicegramSettings.Other.showRegDate" = "顯示用戶註冊日期";
-"NicegramSettings.Unblock.Header" = "解除封鎖";
-"NicegramSettings.Unblock.Button" = "解除封鎖說明";
+"NicegramSettings.Unblock.Header" = "解鎖";
+"NicegramSettings.Unblock.Button" = "解鎖指南";
 "NicegramSettings.Other.hideReactions" = "隱藏心情回應";
 "NicegramSettings.RoundVideos.DownloadVideos" = "將影片下載至圖片庫";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "忽略語言";
@@ -169,9 +169,9 @@
 "Premium.rememberFolderOnExit" = "記下應用程式關閉時所在的資料夾";
 
 /*Registration Date*/
-"NiceFeatures.RegDate.OlderThan" = "較舊於";
+"NiceFeatures.RegDate.OlderThan" = "早於";
 "NiceFeatures.RegDate.Approximately" = "大約";
-"NiceFeatures.RegDate.NewerThan" = "較新於";
+"NiceFeatures.RegDate.NewerThan" = "晚於";
 
 /*Quick Replies*/
 "NiceFeatures.QuickReplies" = "快速回覆";
@@ -180,35 +180,21 @@
 "NiceFeatures.QuickReplies.Placeholder" = "輸入文字";
 
 /*Telegram Premium*/
-"TelegramPremium.Description" = "很遺憾地，當你登入 Nicegram 應用程式時，你沒有辦法取得**Telegram Premium Features**。\n請到官方的 Telegram 應用程式並訂閱** Telegram Premium**。當你再度回到 Nicegram 時，你將可以使用所有的**Premium Festures**。";
+"TelegramPremium.Description" = "很遺憾地，當你登入 Nicegram App 時，你沒有辦法取得**Telegram Premium**。\n請到官方的 Telegram App 並訂閱** Telegram Premium**。當你再度回到 Nicegram 時，你將可以使用所有的**Premium 功能**。";
 "TelegramPremium.Title" = "恢復 Premium";
 "TelegramPremium.Failure.Title" = "失敗";
-"TelegramPremium.Failure.Description" = "出現問題。請使用 Nicegram Bot 以恢復您的終生 Premium 訂閱";
+"TelegramPremium.Failure.Description" = "出了些問題。 請使用 Nicegram Bot 恢復您的 Premium 終身訂閱";
 "TelegramPremium.Failure.Pending" = "您的要求正待處理。 請等待直到 Nicegram Bot 核准之";
-"TelegramPremium.Success.Title" = "成功 ";
+"TelegramPremium.Success.Title" = "成功";
 "TelegramPremium.Success.Description" = "您的終生 Premium 已成功恢復了！";
 
 /*Double Bottom*/
 "DoubleBottom.Title" = "Double Bottom";
 "DoubleBottom.Description" = "要啟用此功能，您必須擁有一個以上的帳號並啟用密碼鎖 (前往設定→隱私與安全→密碼鎖)";
 "DoubleBottom.Enabled.Title" = "Double Bottom 已啟用";
-"DoubleBottom.Enabled.Description" = "為了使 Double Bottom正常運作，請記住您剛才設定的密碼並重新開啟應用程式 ";
+"DoubleBottom.Enabled.Description" = "為了使 Double Bottom正常運作，請記住您剛才設定的密碼並重新開啟應用程式";
 "DoubleBottom.Enabled.OK" = "好";
 "DoubleBottom.Passcode.Error" = "請設定另一個與你的密碼鎖不同的密碼。";
-
-/*Nicegram Premium*/
-"NicePremium.Title" = "Nicegram\n**進階功能**";
-
-"NicePremium.Translator" = "內置翻譯器";
-"NicePremium.Translator.Desc" = "立即翻譯應用程式中的任何消息，而無需切換到第3方翻譯器";
-
-"NicePremium.SpeechToText.Desc" = "在幾秒鐘內轉錄任何語音消息，並節省大量時間";
-
-"NicePremium.MentionAll" = "@提及所有人";
-"NicePremium.MentionAll.Desc" = "立刻通知所有小組成員，並確保每個人都會閱讀您的訊息";
-
-"NicePremium.Renews" = "自動續訂";
-"NicePremium.PricePerMonth" = "訂閱費用每月 %@";
 
 /*Onboarding*/
 "NicegramOnboarding.Continue" = "繼續";
@@ -222,3 +208,5 @@
 "NicegramOnboarding.4.Desc" = "利用 Nicegram 團隊的創新技術並取得可在 133 個國家上網的 eSIM。您還可以用 eSIM 數據方案的電話號碼註冊新的 Telegram 帳戶。";
 "NicegramOnboarding.5.Title" = "最安全的即時通訊程式";
 "NicegramOnboarding.5.Desc" = "具有高強度加密、群組語音及視訊通話、公用頻道、群組和機器人、可用於聊天、媒體和文件共享的無限雲端儲存之安全即時通訊程式。";
+"NicegramOnboarding.6.Title" = "认识莉莉";
+"NicegramOnboarding.6.Desc" = "您的个人人工智能聊天机器人助手，简化您的生活!";

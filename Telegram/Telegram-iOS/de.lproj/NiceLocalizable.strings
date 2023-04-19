@@ -1,7 +1,7 @@
 "AppName" = "Nicegram";
 
 /*Common*/
-"Nicegram.PrivacyPolicy" = "Datenschutzerklärung";
+"Nicegram.PrivacyPolicy" = "Datenschutzbestimmungen";
 "Nicegram.EULA" = "EULA";
 
 /*ChatFilter*/
@@ -196,20 +196,6 @@
 "DoubleBottom.Enabled.OK" = "OK";
 "DoubleBottom.Passcode.Error" = "Bitte legen Sie einen anderen als den für die Passcode-Sperre verwendeten Passcode fest.";
 
-/*Nicegram Premium*/
-"NicePremium.Title" = "Nicegram\n**Premium-Funktionen**";
-
-"NicePremium.Translator" = "Integrierter Translator";
-"NicePremium.Translator.Desc" = "Übersetzen Sie sofort jede Nachricht in der App, ohne zu Drittanbietern von Übersetzungsdiensten zu wechseln\n";
-
-"NicePremium.SpeechToText.Desc" = "Erhalten Sie jede Sprachnachricht in Sekunden transkribiert und sparen Sie sich jede Menge Freizeit";
-
-"NicePremium.MentionAll" = "@MentionAll";
-"NicePremium.MentionAll.Desc" = "Informieren Sie schnell alle Gruppenmitglieder und stellen Sie sicher, dass jeder Ihre Nachricht lesen wird ";
-
-"NicePremium.Renews" = "Abonnement verlängert sich automatisch";
-"NicePremium.PricePerMonth" = "Für %@ pro Monat abonnieren";
-
 /*Onboarding*/
 "NicegramOnboarding.Continue" = "Weiter";
 "NicegramOnboarding.1.Title" = "Nr.1-Client für Telegram-Messenger";
@@ -222,3 +208,5 @@
 "NicegramOnboarding.4.Desc" = "Profitieren Sie von den Innovationen des Nicegram-Teams und erhalten Sie eine eSIM mit Internetzugang in 133 Ländern. Sie können auch neue Telegram-Konten auf der Telefonnummer des eSIM-Datentarifs registrieren.";
 "NicegramOnboarding.5.Title" = "Der sicherste Messenger";
 "NicegramOnboarding.5.Desc" = "Sicherer Messenger mit starker Verschlüsselung, Gruppen-Audio- und Videoanrufe, öffentliche Channels, Gruppen und Bots, unbegrenzter Cloud-Speicher für Chats, Medien- und Dokumentenaustausch.";
+"NicegramOnboarding.6.Title" = "Triff Lily";
+"NicegramOnboarding.6.Desc" = "Dein persönlicher KI-Chatbot-Assistent zur Vereinfachung deines Lebens!";

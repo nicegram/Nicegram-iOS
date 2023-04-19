@@ -44,5 +44,17 @@
 "NiceFeatures.Filters.ShowBadge" = "Hiển thị huy hiệu (Bộ lọc)";
 "NiceFeatures.UseClassicInfoUi" = "Sử dụng giao diện người dùng Thông tin người dùng cổ điển";
 
+/*Common*/
+"Common.ExitNow" = "Exit Now";
+"Common.Later" = "Để sa378913";
+"Common.RestartRequired" = "Machine start-up requirements";
+"NiceFeatures.Tabs.ShowNames" = "Requires a reboot";
+"Chat.ForwardAsCopy" = "Forward As Copy";
+
+/*Folder*/
+"Folder.DefaultName" = "Thư mục";
+"Folder.New" = "Xin chào";
+"Folder.Created" = "Folder created";
+
 /*Onboarding*/
 "NicegramOnboarding.Continue" = "Tiếp tục";

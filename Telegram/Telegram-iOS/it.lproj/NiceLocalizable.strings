@@ -194,25 +194,11 @@
 "DoubleBottom.Enabled.Title" = "Doppio Fondo abilitato";
 "DoubleBottom.Enabled.Description" = "Ricorda la password che hai appena impostato e riavvia l'app affinché il Doppio Fondo funzioni correttamente";
 "DoubleBottom.Enabled.OK" = "OK";
-"DoubleBottom.Passcode.Error" = "Si prega di impostare un altro codice di accesso diverso da quello utilizzato per il blocco del codice stesso.";
-
-/*Nicegram Premium*/
-"NicePremium.Title" = "Nicegram\n**Funzionalità Premium**";
-
-"NicePremium.Translator" = "Traduttore integrato";
-"NicePremium.Translator.Desc" = "Traduci istantaneamente qualsiasi messaggio nell'app senza passare a traduttori di terze parti";
-
-"NicePremium.SpeechToText.Desc" = "Trascrivi qualsiasi messaggio vocale in pochi secondi risparmiando un sacco di tempo ";
-
-"NicePremium.MentionAll" = "@MentionAll";
-"NicePremium.MentionAll.Desc" = "Informa rapidamente tutti i membri del gruppo e assicurati che tutti leggano il tuo messaggio";
-
-"NicePremium.Renews" = "L'abbonamento si rinnova automaticamente";
-"NicePremium.PricePerMonth" = "Abbonati per %@ al mese";
+"DoubleBottom.Passcode.Error" = "Si prega di impostare un altro codice di accesso diverso da quello utilizzato per il blocco del codice stesso";
 
 /*Onboarding*/
 "NicegramOnboarding.Continue" = "Continua";
-"NicegramOnboarding.1.Title" = "Il client numero 1 per Telegram";
+"NicegramOnboarding.1.Title" = "Il client numero uno per Telegram";
 "NicegramOnboarding.1.Desc" = "Unisciti a oltre 2 milioni di utenti Nicegram e accedi al client Telegram più potente e sicuro per le aziende.";
 "NicegramOnboarding.2.Title" = "Esperienza di messaggistica avanzata";
 "NicegramOnboarding.2.Desc" = "Velocizza la tua comunicazione con funzionalità uniche come un traduttore integrato, riconoscimento vocale, inoltro di messaggi senza indicare l'autore e salvataggio rapido nei preferiti.";
@@ -222,3 +208,5 @@
 "NicegramOnboarding.4.Desc" = "Approfitta delle innovazioni del team di Nicegram e ottieni una eSIM con accesso a Internet in 133 paesi. Puoi inoltre registrare nuovi account Telegram al numero di telefono del piano dati della eSIM.";
 "NicegramOnboarding.5.Title" = "Il client di messaggistica più sicuro";
 "NicegramOnboarding.5.Desc" = "Client di messaggistica sicuro con crittografia avanzata, chiamate audio e video di gruppo, canali pubblici, gruppi e bot, spazio di archiviazione cloud illimitato per le chat, condivisione di file multimediali e documenti.";
+"NicegramOnboarding.6.Title" = "Conosci Lily";
+"NicegramOnboarding.6.Desc" = "Il tuo assistente personale Chatbot d'IA per semplificare la tua vita!";

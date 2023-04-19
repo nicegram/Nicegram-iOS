@@ -11,14 +11,6 @@
 "NiceFeatures.RegDate.OlderThan" = "से पुराना ";
 "NiceFeatures.RegDate.Approximately" = "लगभग ";
 "NiceFeatures.RegDate.NewerThan" = "से नया";
-
-"NicePremium.Translator" = "बिल्ट इन ट्रांसलेटर ";
-"NicePremium.Translator.Desc" = "बिना 3rd पार्टी ट्रांसलेटर  को स्विच किए फटाफट एप्प में किसी भी संदेश का ट्रांसलेशन पाएं ";
-
-"NicePremium.SpeechToText.Desc" = "सेकंड्स में कोई भी वॉइस मैसेज का ट्रांसक्रिप्शन पाएं और अपना बहुत सारा समय बचाएं ";
-"NicePremium.MentionAll.Desc" = "फटाफट सभी ग्रुप मेंबर्स को इनफॉर्म करें और सुनिश्चित करें कि सब आपका संदेश पढ़ेंगे ";
-
-"NicePremium.Renews" = "सब्सक्रिप्शन खुद ब खुद रीन्यू हो जाएगी ";
 "NicegramOnboarding.1.Title" = "टेलीग्राम और मेसेंजर के लिए No.1 क्लाइंट \n";
 "NicegramOnboarding.1.Desc" = "2 मिलियन से ज़्यादा Nicegram यूजर्स से जुड़ें और बिज़नेस के लिए सबसे शक्तिशाली और सुरक्षित Telegram के क्लाइंट को एक्सेस पाएं ।  ";
 "NicegramOnboarding.2.Title" = "एडवांस्ड मैसेज करने का अनुभव ";

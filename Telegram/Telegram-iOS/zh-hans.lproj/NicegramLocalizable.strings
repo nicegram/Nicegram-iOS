@@ -4,7 +4,7 @@
 /*Nicegram plus*/
 /*Nicegram assistant*/
 
-"Nicegram.Assistant.Title" = "Nicegram 助理";
+"Nicegram.Assistant.Title" = "Nicegram 助手";
 "Nicegram.Assistant.MobileData" = "移动数据";
 "Nicegram.Assistant.MobileData.Esim" = "(eSIM)";
 "Nicegram.Assistant.MobileData.Description" = "直接在应用中获取移动数据";
@@ -21,7 +21,7 @@
 "Nicegram.Assistant.SpecialOffer" = "特别优惠";
 
 /*Nicegram assistant hint*/
-"Nicegram.Assistant.Hint.Title" = "Nicegram 助理";
+"Nicegram.Assistant.Hint.Title" = "Nicegram 助手";
 "Nicegram.Assistant.Hint.Subtitle" = "可用功能";
 "Nicegram.Assistant.Hint.MobileData" = "移动数据 (eSIM)";
 "Nicegram.Assistant.Hint.VirtualNumber" = "虚拟电话号码";
@@ -144,4 +144,8 @@
 
 /*Push Notifications*/
 "NicegramPush.SpecialOffer.Body" = "这里有新的特惠，来看看吧！";
+
+"Alert.TelegramLogin.Title" = "需要验证";
+"Alert.TelegramLogin.Desc" = "通过Nicegram机器人验证你的Telegram账户以继续。";
 "Alert.TelegramLogin.PositiveBtn" = "继续";
+"Alert.TelegramLogin.NegativeBtn" = "关闭";

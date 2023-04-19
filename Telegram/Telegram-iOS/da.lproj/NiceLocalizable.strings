@@ -177,18 +177,6 @@
 "DoubleBottom.Enabled.Description" = "Bitte merken Sie sich den Passcode, den Sie gerade eingestellt haben, und starten Sie die App neu, damit Double Bottom gut funktioniert";
 "DoubleBottom.Passcode.Error" = "Bitte legen Sie einen anderen als den für die Passcode-Sperre verwendeten Passcode fest.";
 
-/*Nicegram Premium*/
-"NicePremium.Title" = "Nicegram\n**Premium-Funktionen**";
-
-"NicePremium.Translator" = "Integrierter Translator";
-"NicePremium.Translator.Desc" = "Übersetzen Sie sofort jede Nachricht in der App, ohne zu Drittanbietern von Übersetzungsdiensten zu wechseln\n";
-
-"NicePremium.SpeechToText.Desc" = "Erhalten Sie jede Sprachnachricht in Sekunden transkribiert und sparen Sie sich jede Menge Freizeit";
-"NicePremium.MentionAll.Desc" = "Informieren Sie schnell alle Gruppenmitglieder und stellen Sie sicher, dass jeder Ihre Nachricht lesen wird ";
-
-"NicePremium.Renews" = "Abonnement verlängert sich automatisch";
-"NicePremium.PricePerMonth" = "Für %@ pro Monat abonnieren";
-
 /*Onboarding*/
 "NicegramOnboarding.Continue" = "Weiter";
 "NicegramOnboarding.1.Title" = "Nr.1-Client für Telegram-Messenger";

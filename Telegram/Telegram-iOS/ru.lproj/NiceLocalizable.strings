@@ -196,20 +196,6 @@
 "DoubleBottom.Enabled.OK" = "Ок";
 "DoubleBottom.Passcode.Error" = "Установите другой код доступа, отличающийся от того, который Вы используете для Блокировки кодом доступа.";
 
-/*Nicegram Premium*/
-"NicePremium.Title" = "Nicegram\n**Премиум-функции**";
-
-"NicePremium.Translator" = "Встроенный переводчик";
-"NicePremium.Translator.Desc" = "Мгновенно переводите любые сообщения прямо в приложении";
-
-"NicePremium.SpeechToText.Desc" = "Переводите любые голосовые сообщения в текст за считанные секунды";
-
-"NicePremium.MentionAll" = "@MentionAll";
-"NicePremium.MentionAll.Desc" = "Используйте возможность упомянуть всех участников группы в одно касание";
-
-"NicePremium.Renews" = "Подписка продлевается автоматически";
-"NicePremium.PricePerMonth" = "Подпишитесь за %@ в месяц";
-
 /*Onboarding*/
 "NicegramOnboarding.Continue" = "Продолжить";
 "NicegramOnboarding.1.Title" = "Клиент №1 для мессенджера Telegram";
@@ -222,3 +208,5 @@
 "NicegramOnboarding.4.Desc" = "Воспользуйтесь инновациями от команды Nicegram и получите eSIM с доступом в интернет в 133 странах. Вы также можете зарегистрировать новые аккаунты Telegram на номер телефона тарифного плана eSIM.";
 "NicegramOnboarding.5.Title" = "Самый безопасный мессенджер";
 "NicegramOnboarding.5.Desc" = "Безопасный мессенджер с надежным шифрованием, групповыми аудио- и видеозвонками, общедоступными каналами, группами и ботами, неограниченным облачным хранилищем для чатов, а также возможностью обмена медиафайлами и документами.";
+"NicegramOnboarding.6.Title" = "Встречайте ИИ-чатбота Лили!";
+"NicegramOnboarding.6.Desc" = "Ваш личный ИИ-помощник, призванный облегчить вам жизнь!";
