@@ -35,6 +35,11 @@ public class NativeControllerWrapper: ViewController {
         super.viewWillAppear(animated)
         controller.viewWillAppear(animated)
     }
+    
+    public override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        controller.viewDidAppear(animated)
+    }
 
     public override func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {
         super.containerLayoutUpdated(layout, transition: transition)
