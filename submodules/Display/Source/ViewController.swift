@@ -552,6 +552,12 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
         }
     }
     
+    // MARK: Nicegram
+    public func nativeDismiss(animated flag: Bool, completion: (() -> Void)? = nil) {
+        super.dismiss(animated: flag, completion: completion)
+    }
+    //
+    
     public final var window: WindowHost? {
         if let window = self.view.window as? WindowHost {
             return window

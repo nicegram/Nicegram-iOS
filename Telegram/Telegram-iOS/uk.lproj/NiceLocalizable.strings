@@ -196,20 +196,6 @@
 "DoubleBottom.Enabled.OK" = "Гаразд";
 "DoubleBottom.Passcode.Error" = "Будь ласка, встановіть інший пароль відмінний від того який використовуєте для блокування";
 
-/*Nicegram Premium*/
-"NicePremium.Title" = "Nicegram\n**Преміум можливості**";
-
-"NicePremium.Translator" = "Вбудований Перекладач";
-"NicePremium.Translator.Desc" = "Миттєво перекладайте будь-яке повідомлення у програмі без переходу на сторонні перекладачі";
-
-"NicePremium.SpeechToText.Desc" = "Перекладайте будь-які голосові повідомлення в текст за лічені секунди";
-
-"NicePremium.MentionAll" = "@ЗгадатиВсіх";
-"NicePremium.MentionAll.Desc" = "Швидко повідомляйте всіх учасників групи та переконайтеся, що кожен прочитає ваше повідомлення";
-
-"NicePremium.Renews" = "Підписка автоматично поновлюється";
-"NicePremium.PricePerMonth" = "Підписатися за %@/місяць";
-
 /*Onboarding*/
 "NicegramOnboarding.Continue" = "Продовжити";
 "NicegramOnboarding.1.Title" = "Клієнт №1 для месенджера Telegram";

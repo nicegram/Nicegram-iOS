@@ -4,6 +4,7 @@ import Postbox
 // MARK: Nicegram Imports
 import NGAiChat
 import NGAiChatUI
+import NGAnalytics
 import NGData
 import NGAppCache
 import NGAssistant
@@ -318,7 +319,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                     
                     // MARK: Nicegram Assistant
                     self.primaryContext?.nicegramButton = AnyComponentWithIdentity(id: "nicegram", component: AnyComponent(NavigationButtonComponent(
-                        content: .image(imageName: "NicegramMain"),
+                        content: .image(imageName: "NicegramN"),
                         pressed: { [weak self] _ in
                             self?.nicegramAssistantPressed()
                         }
@@ -3019,6 +3020,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     @objc private func nicegramAssistantPressed() {
         UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
         
+        AnalyticsTgHelper.trackAssistantOpenFromIcon()
         showNicegramAssistant(deeplink: nil)
     }
     

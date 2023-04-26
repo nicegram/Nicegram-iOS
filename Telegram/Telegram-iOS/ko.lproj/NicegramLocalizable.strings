@@ -135,4 +135,8 @@
 
 /*Push Notifications*/
 "NicegramPush.SpecialOffer.Body" = "새로운 특별 할인을 받으실 수 있으니 확인해 보세요!";
+
+"Alert.TelegramLogin.Title" = "Verification Required";
+"Alert.TelegramLogin.Desc" = "Verify your Telegram account via the Nicegram bot to continue.";
 "Alert.TelegramLogin.PositiveBtn" = "다음";
+"Alert.TelegramLogin.NegativeBtn" = "Close";

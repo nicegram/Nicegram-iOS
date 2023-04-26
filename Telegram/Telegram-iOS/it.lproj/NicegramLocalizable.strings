@@ -135,4 +135,8 @@
 
 /*Push Notifications*/
 "NicegramPush.SpecialOffer.Body" = "È disponibile una nuova offerta speciale per te; dai un'occhiata!";
+
+"Alert.TelegramLogin.Title" = "Verifica richiesta";
+"Alert.TelegramLogin.Desc" = "Verifica il tuo account Telegram tramite il bot Nicegram per continuare.";
 "Alert.TelegramLogin.PositiveBtn" = "Continua";
+"Alert.TelegramLogin.NegativeBtn" = "Chiudi";

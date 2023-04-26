@@ -171,18 +171,6 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
     lazy var ngAiOverlayNode: ASDisplayNode = {
         if #available(iOS 13.0, *) {
             let handlers = TgChatAiOverlayHandlers(
-                getUserMessage: { [weak self] in
-                    guard let self else { return "" }
-                    return self.chatPresentationInterfaceState.interfaceState.effectiveInputState.inputText.string
-                },
-                showError: { [weak self] text in
-                    guard let self else { return }
-                    let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
-                    let content: UndoOverlayContent = .info(title: nil, text: text)
-                    self.controller?.present(UndoOverlayController(presentationData: presentationData, content: content, elevatedLayout: false, animateInAsReplacement: false, action: { _ in
-                            return true
-                    }), in: .current)
-                },
                 useAnswer: { [weak self] text, image in
                     guard let self else { return }
                     if let image {

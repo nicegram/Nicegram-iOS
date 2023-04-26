@@ -26,11 +26,14 @@ import TelegramNotices
 import ReactionListContextMenuContent
 import TelegramUIPreferences
 // MARK: Nicegram Imports
+import struct NGAiChat.AiChatTgHelper
+import struct NGAiChat.AiContextMenuNotificationPayload
+import NGAiChatUI
 import NGCopyProtectedContent
-import NGUI
+import NGPremiumUI
 import NGStrings
-import NGSubscription
 import NGTranslate
+import NGUI
 import PeerInfoUI
 //
 import TranslateUI
@@ -1185,8 +1188,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                         }, action: { _, f in
                             //  MARK: Nicegram CopyProtectedContent
                             if shouldSubscribeToCopyContent(message: message) {
-                                let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                                routeToNicegramPremiumForCopyContent(presentationData: presentationData)
+                                routeToNicegramPremiumForCopyContent()
                                 return
                             }
                             //
@@ -1313,8 +1315,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                 }, action: { _, f in
                     //  MARK: Nicegram CopyProtectedContent
                     if shouldSubscribeToCopyContent(message: message) {
-                        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                        routeToNicegramPremiumForCopyContent(presentationData: presentationData)
+                        routeToNicegramPremiumForCopyContent()
                         return
                     }
                     //
@@ -1771,6 +1772,39 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             if !actions.isEmpty {
                 actions.append(.separator)
             }
+            
+            // MARK: Nicegram AiChat
+            let messageTextIsEmpty = message.text.isEmpty
+            if #available(iOS 13.0, *), !messageTextIsEmpty {
+                actions.append(.action(ContextMenuActionItem(text: AiChatUITgHelper.botName, icon: { theme in
+                    return generateTintedImage(image: AiChatUITgHelper.botIcon, color: theme.actionSheet.primaryTextColor)
+                }, action: { controller, f in
+                    var items: [ContextMenuItem] = []
+                    
+                    let commands = AiChatTgHelper.getCommandsForContextMenu()
+                    for command in commands {
+                        items.append(.action(ContextMenuActionItem(text: command.title, icon: { _ in nil }, action: { _, f in
+                            let payload = AiContextMenuNotificationPayload(
+                                command: command,
+                                text: message.text
+                            )
+                            NotificationCenter.default.post(
+                                name: AiChatTgHelper.aiContextMenuNotification,
+                                object: nil,
+                                userInfo: [
+                                    AiChatTgHelper.aiContextMenuNotificationPayloadKey: payload
+                                ]
+                            )
+                            
+                            f(.dismissWithoutContent)
+                        })))
+                    }
+                    
+                    controller.setItems(.single(ContextController.Items(content: .list(items))), minHeight: nil)
+                })))
+            }
+            //
+            
             // MARK: NG Context Menu
             let isSecretChat = message.id.peerId.namespace == Namespaces.Peer.SecretChat
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
@@ -1787,7 +1821,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                     }, action: { _, f in
                         //  MARK: Nicegram CopyProtectedContent
                         if shouldSubscribeToCopyContent(message: message) {
-                            routeToNicegramPremiumForCopyContent(presentationData: presentationData)
+                            routeToNicegramPremiumForCopyContent()
                             return
                         }
                         //
@@ -1953,9 +1987,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                                     
                                     switch error {
                                     case .needPremium:
-                                        let c = SubscriptionBuilderImpl(presentationData: presentationData).build()
-                                        c.modalPresentationStyle = .fullScreen
-                                        controllerInteraction.navigationController()?.topViewController?.present(c, animated: true)
+                                        PremiumUITgHelper.routeToPremium()
                                     case .lowAccuracy:
                                         let c = getIAPErrorController(context: context, l("Messages.SpeechToText.LowAccuracyError", locale), presentationData)
                                         controllerInteraction.presentGlobalOverlayController(c, nil)

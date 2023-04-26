@@ -1,5 +1,6 @@
 // MARK: Nicegram imports
 import NGAiChat
+import NGAnalytics
 import NGAppContext
 import var NGCore.ENV
 import struct NGCore.Env
@@ -11,7 +12,9 @@ import NGEnv
 import NGAppCache
 import NGLocalization
 import NGOnboarding
+import NGPremium
 import NGRemoteConfig
+import NGSubscription
 
 import UIKit
 import SwiftSignalKit
@@ -343,6 +346,15 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         if #available(iOS 12.0, *) {
             FirebaseApp.configure()
         }
+        
+        ENV = Env(
+            apiBaseUrl: URL(string: NGENV.esim_api_url)!,
+            apiKey: NGENV.esim_api_key,
+            premiumProductId: NGENV.premium_bundle,
+            privacyUrl: URL(string: NGENV.privacy_url)!,
+            telegramAuthBot: NGENV.telegram_auth_bot,
+            termsUrl: URL(string: NGENV.terms_url)!
+        )
 
         MobySubscriptionAnalytics.logger = MobySubscriptionAnalyticsLogger()
         let mobyApiKey = NGENV.moby_key
@@ -350,7 +362,13 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
             account.appsflyerID = nil
         } completion: { _, produncInfoResult in
             if let result = produncInfoResult,
-               let activeProduct = result.transactions.firstActiveProduct {
+               let activeProduct = result.transactions.first(where: { transaction in
+                   if transaction.productID == ENV.premiumProductId {
+                       return [RenewableProductDetails.Status.active, .trial].contains(transaction.status)
+                   } else {
+                       return false
+                   }
+               }) {
                 AppCache.currentProductID = activeProduct.productID
             } else {
                 AppCache.currentProductID = nil
@@ -365,18 +383,14 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         
         RemoteConfigServiceImpl.shared.prefetch()
         
-        ENV = Env(
-            apiBaseUrl: URL(string: NGENV.esim_api_url)!,
-            apiKey: NGENV.esim_api_key,
-            privacyUrl: URL(string: NGENV.privacy_url)!,
-            telegramAuthBot: NGENV.telegram_auth_bot,
-            termsUrl: URL(string: NGENV.terms_url)!
-        )
-        
         if #available(iOS 13.0, *) {
             AppContextTgHelper.setRemoteConfig(RemoteConfigServiceImpl.shared)
+            PremiumTgHelper.set(subscriptionService: SubscriptionAnalytics.SubscriptionService.shared)
+            AnalyticsTgHelper.set(firebaseSender: FirebaseLogger())
         }
         AiChatTgHelper.resolveTransactionsObserver().startObserving()
+        
+        AnalyticsTgHelper.trackSession()
         
         let launchStartTime = CFAbsoluteTimeGetCurrent()
         
@@ -909,6 +923,13 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         let accountManager = AccountManager<TelegramAccountManagerTypes>(basePath: rootPath + "/accounts-metadata", isTemporary: false, isReadOnly: false, useCaches: true, removeDatabaseOnError: true, hiddenAccountManager: hiddenAccountManager)
 
         self.accountManager = accountManager
+        
+        _ = (accountManager.accountRecords()
+        |> take(1))
+        .start(next: { view in
+            let profilesCount = view.records.count
+            AnalyticsTgHelper.trackProfilesCount(profilesCount)
+        })
 
         telegramUIDeclareEncodables()
         initializeAccountManagement()

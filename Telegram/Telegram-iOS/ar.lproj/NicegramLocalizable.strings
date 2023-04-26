@@ -136,4 +136,8 @@
 
 /*Push Notifications*/
 "NicegramPush.SpecialOffer.Body" = "عرض خاص جديد متاح لك، تحقق من ذلك!";
+
+"Alert.TelegramLogin.Title" = "التحقق مطلوب";
+"Alert.TelegramLogin.Desc" = "تحقق من حساب Telegram الخاص بك عبر روبوت Nicegram للمتابعة.";
 "Alert.TelegramLogin.PositiveBtn" = "الاستمرار";
+"Alert.TelegramLogin.NegativeBtn" = "غلق";

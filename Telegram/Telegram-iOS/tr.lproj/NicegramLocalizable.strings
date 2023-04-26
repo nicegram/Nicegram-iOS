@@ -135,4 +135,8 @@
 
 /*Push Notifications*/
 "NicegramPush.SpecialOffer.Body" = "Senin için yeni, özel bir teklifimiz var. Teklife göz at!";
+
+"Alert.TelegramLogin.Title" = "Doğrulama Gerekli";
+"Alert.TelegramLogin.Desc" = "Devam etmek için Telegram hesabınızı Nicegram botu aracılığıyla doğrulayın.";
 "Alert.TelegramLogin.PositiveBtn" = "Devam et";
+"Alert.TelegramLogin.NegativeBtn" = "Kapat";

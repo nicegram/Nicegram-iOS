@@ -187,7 +187,7 @@ public final class NavigationContainer: ASDisplayNode, UIGestureRecognizerDelega
     
     public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer) -> Bool {
         // MARK: Nicegram AiChat
-        if otherGestureRecognizer.name == "ng_TgChatAiOverlayCommandsPanGesture" {
+        if otherGestureRecognizer.name == "AiChatCommandsPanGestureRecognizer" {
             return false
         }
         //

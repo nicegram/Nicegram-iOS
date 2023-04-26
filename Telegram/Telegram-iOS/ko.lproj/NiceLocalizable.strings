@@ -52,23 +52,23 @@
 "Chat.ForwardAsCopy" = "복사본으로 전달";
 
 /*Folder*/
-"Folder.DefaultName" = "폴더";
-"Folder.New" = "새 폴더";
-"Folder.Created" = "폴더가 생성되었습니다.";
-"Folder.AddToExisting" = "기존 폴더에 추가";
-"Folder.Updated" = "폴더 업데이트됨";
-"Folder.Create" = "폴더 생성";
-"Folder.Create.Name" = "폴더 이름";
-"Folder.Create.Placeholder" = "폴더...";
-"Folder.LimitExceeded" = "죄송합니다. 사용자 지정 폴더는 3 개까지만 만들 수 있습니다.\n프리미엄 에서 더 많은 폴더를 사용할 수 있습니다.";
-"NiceFeatures.HideNumber" = "설정에서 전화번호 숨기기";
+"Folder.DefaultName" = "Folder";
+"Folder.New" = "New Folder";
+"Folder.Created" = "Folder created";
+"Folder.AddToExisting" = "Add to Existing Folder";
+"Folder.Updated" = "Folder updated";
+"Folder.Create" = "Create Folder...";
+"Folder.Create.Name" = "Folder Name";
+"Folder.Create.Placeholder" = "Folder...";
+"Folder.LimitExceeded" = "Sorry, you can create no more than 3 custom folders.\nMore folders are available in Premium.";
+"NiceFeatures.HideNumber" = "Hide phone in settings";
 
 /*NGWeb*/
-"NGWeb.Blocked" = "AppStore 지침으로 인해 Nicegram 에서 사용할 수 없음";
+"NGWeb.Blocked" = "Unavailable in Nicegram due to AppStore Guidelines";
 
 /*Browser*/
 /*Please, Go to «Data & Storage» to configure default browser*/
-"NiceFeatures.Use.DataStorage" = "%1 을 사용하여 기본 브라우저를 설정 하세요";
+"NiceFeatures.Use.DataStorage" = "Please, Use «%1» to configure default browser";
 "NiceFeatures.Browser.Header" = "URL 주소";
 "NiceFeatures.Browser.UseBrowser" = "브라우저에서 링크 열기";
 "NiceFeatures.Browser.UseBrowserNotice" = "인앱 브라우저 대신 외부 브라우저에서 링크를 엽니다. 선택한 브라우저는 설치되어 있어야 합니다.";
@@ -196,20 +196,6 @@
 "DoubleBottom.Enabled.OK" = "확인";
 "DoubleBottom.Passcode.Error" = "비밀번호 잠금에 사용하는 비밀번호와 다른 비밀번호를 설정하세요.";
 
-/*Nicegram Premium*/
-"NicePremium.Title" = "Nicegram\n**프리미엄 기능**";
-
-"NicePremium.Translator" = "내장된 번역기능";
-"NicePremium.Translator.Desc" = "타사 번역기로 전환할 필요 없이 앱의 모든 메시지를 즉시 번역";
-
-"NicePremium.SpeechToText.Desc" = "몇 초 만에 음성 메시지를 전사하고 많은 자유 시간을 절약하세요. ";
-
-"NicePremium.MentionAll" = "@모두멘션";
-"NicePremium.MentionAll.Desc" = "모든 그룹 구성원에게 신속하게 알리고 모든 사람이 메시지를 읽을 수 있도록 합니다.";
-
-"NicePremium.Renews" = "구독 자동 갱신";
-"NicePremium.PricePerMonth" = "매월 %@에 구독";
-
 /*Onboarding*/
 "NicegramOnboarding.Continue" = "다음";
 "NicegramOnboarding.1.Title" = "텔레그램 메신저용 №1 클라이언트";
@@ -222,3 +208,5 @@
 "NicegramOnboarding.4.Desc" = "Nicegram 팀의 혁신적인 기능을 활용하고, 133개 국가에서 인터넷 사용이 가능한 eSIM을 구매하세요. eSIM 데이터 요금제 전화번호에 새로운 텔레그램 계정을 등록할 수 있습니다.";
 "NicegramOnboarding.5.Title" = "가장 안전한 메신저";
 "NicegramOnboarding.5.Desc" = "강력한 암호화, 단체 오디오 및 비디오 통화, 공용 채널, 그룹 및 봇, 채팅과 미디어 및 문서 공유를 위한 무제한 클라우드 스토리지 기능을 갖춘 안전한 메신저입니다.";
+"NicegramOnboarding.6.Title" = "릴리를 만나보세요";
+"NicegramOnboarding.6.Desc" = "생활을 간소화하는 개인 AI 챗봇 비서!";

@@ -175,20 +175,6 @@
 "TelegramPremium.Success.Title" = "Sukces";
 "DoubleBottom.Enabled.OK" = "OK";
 
-/*Nicegram Premium*/
-"NicePremium.Title" = "Nicegram\n**Funkcje Premium**";
-
-"NicePremium.Translator" = "Wbudowany tłumacz";
-"NicePremium.Translator.Desc" = "Natychmiast przetłumacz dowolną wiadomość w aplikacji bez przełączenia na tłumaczy firm zewnętrznych";
-
-"NicePremium.SpeechToText.Desc" = "Uzyskaj transkrypcję dowolnej wiadomości głosowej w kilka sekund i zaoszczędź mnóstwo swojego wolnego czasu";
-
-"NicePremium.MentionAll" = "@Wspomnij wszystkich";
-"NicePremium.MentionAll.Desc" = "Szybko poinformuj wszystkich członków grupy i upewnij się, że wszyscy przeczytają twoją wiadomość";
-
-"NicePremium.Renews" = "Automatyczne odnawianie subskrypcji";
-"NicePremium.PricePerMonth" = "Subskrybuj za %@ na miesiąc";
-
 /*Onboarding*/
 "NicegramOnboarding.Continue" = "Kontynuuj";
 "NicegramOnboarding.1.Title" = "Klient nr 1 dla wiadomości Telegrama";

@@ -56,7 +56,7 @@ import NGData
 import NGEnv
 import NGLab
 import UndoUI
-import NGSubscription
+import NGPremiumUI
 //
 import ListMessageItem
 import GalleryData
@@ -7534,77 +7534,11 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, UIScrollViewDelegate 
     }
     
     private func processPremiumControllerOpen() {
-        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        
-        let subscriptionViewController = SubscriptionBuilderImpl(presentationData: presentationData).build()
-        subscriptionViewController.modalPresentationStyle = .fullScreen
-
-        if isPremium() {
-            if (isPremium()) {
-                self.controller?.push(premiumController(context: self.context))
-                return
-            } else {
-                let alertController = getIAPErrorController(context: self.context, "IAP.Common.ValidateError", presentationData)
-                self.controller?.present(alertController, animated: true)
-                return
-            }
+        if (isPremium()) {
+            self.controller?.push(premiumController(context: self.context))
+        } else {
+            PremiumUITgHelper.routeToPremium()
         }
-
-        let locale = presentationData.strings.baseLanguageCode
-        self.controller?.present(UndoOverlayController(presentationData: self.presentationData, content: .info(title: "", text: l("IAP.Common.Connecting", locale)), elevatedLayout: false, animateInAsReplacement: true, action: { _ in
-            return false
-        }), in: .current)
-
-        // observer
-//        let _ = NotificationCenter.default.addObserver(forName: .IAPHelperPurchaseNotification, object: nil, queue: .main, using: {  notification in
-//            let productID = notification.object as? String
-//            
-//            if productID == NicegramProducts.Premium {
-//                // NGSettings.premium = true
-//                //validatePremium(isPremium(), forceValid: true)
-//                if (isPremium()) {
-//                    (self.controller?.navigationController as? NavigationController)?.replaceTopController(premiumController(context: self.context), animated: true)
-//                } else {
-//                    let alertController = getIAPErrorController(context: self.context, "IAP.Common.ValidateError", presentationData)
-//                    self.controller?.present(alertController, in: .window(.root))
-//                }
-//            }
-//        })
-        // error observer
-//        let _ = NotificationCenter.default.addObserver(forName: .IAPHelperErrorNotification, object: nil, queue: .main, using: {  notification in
-//            let errorText = notification.object as! String
-//            let alertController = textAlertController(context: self.context, title: nil, text: errorText, actions: [ TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})])
-//            self.controller?.present(alertController, in: .window(.root))
-//        })
-        
-//        Subscribtio
-
-        self.controller?.present(subscriptionViewController, animated: true, completion: nil)
-
-//        NicegramProducts.store.requestProducts{ success, products in
-//            Queue.mainQueue().async {
-//                if success {
-//                    if let products = products {
-//                        for product in products {
-//                            if product.productIdentifier == NicegramProducts.Premium {
-//                                //premiumIntroController = getPremiumIntroController(context: self.context, presentationData: presentationData, product: product)
-//                                
-//                               // let canPay = IAPHelper.canMakePayments()
-//
-////                                self.controller?.navigationController?.pushViewController(subscriptionViewController, animated: true)
-//                                //self.controller?.push(subscriptionViewController)
-//
-//                                return
-//                            }
-//                        }
-//                        self.controller?.present(getIAPErrorController(context: self.context, "IAP.Common.ErrorFetch", presentationData), animated: true)
-//                    }
-//                } else {
-//                    self.controller?.present(getIAPErrorController(context: self.context, "IAP.Common.ErrorFetch", presentationData), animated: true)
-//                }
-//                
-//            }
-//        }
     }
     
     fileprivate func openAvatarForEditing(mode: PeerInfoAvatarEditingMode = .generic, fromGallery: Bool = false, completion: @escaping (UIImage?) -> Void = { _ in }) {

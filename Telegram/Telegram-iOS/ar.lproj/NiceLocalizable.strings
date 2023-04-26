@@ -196,20 +196,6 @@
 "DoubleBottom.Enabled.OK" = "موافق";
 "DoubleBottom.Passcode.Error" = "يرجى تعيين رمز مرور مختلف عن الذي تستخدمه في رمز مرور القفل";
 
-/*Nicegram Premium*/
-"NicePremium.Title" = "تطبيق Nicegram\n**ميزات فائقة الجودة**";
-
-"NicePremium.Translator" = "برنامج مدمج للترجمة";
-"NicePremium.Translator.Desc" = "ترجم أي رسالة في التطبيق فوراً دون الحاجة إلى الانتقال إلى برامج ترجمة خارجية";
-
-"NicePremium.SpeechToText.Desc" = "حوّل أي رسالة صوتية إلى نص مكتوب في ثوانٍ ووفر الكثير من وقت فراغك";
-
-"NicePremium.MentionAll" = "@MentionAll";
-"NicePremium.MentionAll.Desc" = "أبلغ جميع أعضاء المجموعة سريعاً وتأكد من أن جميعهم سيقرأ رسالتك";
-
-"NicePremium.Renews" = "الاشتراك يتجدد تلقائياً";
-"NicePremium.PricePerMonth" = "سعر الاشتراك الشهري %@";
-
 /*Onboarding*/
 "NicegramOnboarding.Continue" = "الاستمرار";
 "NicegramOnboarding.1.Title" = "العميل رقم 1 لتيليجرام ماسنجر";
@@ -222,3 +208,5 @@
 "NicegramOnboarding.4.Desc" = "استفد من الابتكارات من فريق نايسجرام واحصل على eSIM مع إمكانية الوصول إلى الإنترنت في 133 دولة. كما يُمكنك تسجيل حسابات تيليجرام الجديدة على رقم هاتف خطة بيانات eSIM.";
 "NicegramOnboarding.5.Title" = "برنامج المراسلة الأكثر أمانًا";
 "NicegramOnboarding.5.Desc" = "برنامج مراسلة قوي بتشفير قوي، ومكالمات صوتية ومرئية جماعية، وقنوات عامة، ومجموعات وبرمجيات بوت، وتخزين سحابي غير محدود للمحادثات، ومشاركة الوسائط والمستندات.";
+"NicegramOnboarding.6.Title" = "تعرف على ليلي";
+"NicegramOnboarding.6.Desc" = "مساعد شخصي للتحدث مع الذكاء الاصطناعي وتبسيط حياتك!";

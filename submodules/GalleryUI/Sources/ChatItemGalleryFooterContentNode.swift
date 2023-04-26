@@ -1255,7 +1255,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
             //  MARK: Nicegram CopyProtectedContent
             if shouldSubscribeToCopyContent(message: currentMessage) {
                 self.interacting?(false)
-                routeToNicegramPremiumForCopyContent(presentationData: presentationData)
+                routeToNicegramPremiumForCopyContent()
                 return
             }
             //

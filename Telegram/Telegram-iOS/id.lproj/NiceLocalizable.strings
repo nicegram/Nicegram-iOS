@@ -34,14 +34,6 @@
 "NiceFeatures.RegDate.OlderThan" = "Lebih tua dari";
 "NiceFeatures.RegDate.Approximately" = "Sekitar";
 "NiceFeatures.RegDate.NewerThan" = "Lebih baru dari";
-
-"NicePremium.Translator" = "Penerjemah bawaan";
-"NicePremium.Translator.Desc" = "Terjemahkan pesan apa pun secara instan di aplikasi tanpa beralih ke penerjemah pihak ketiga";
-
-"NicePremium.SpeechToText.Desc" = "Dapatkan pesan suara apa pun yang ditranskripsi dalam hitungan detik dan hemat banyak waktu luang anda ";
-"NicePremium.MentionAll.Desc" = "Sangat cepat memberitahu anggota grup dan pastikan semua orang akan membaca pesan anda";
-
-"NicePremium.Renews" = "Berlangganan Memperbarui Secara Otomatis";
 "NicegramOnboarding.1.Title" = "Klien №1 untuk Telegram Messenger";
 "NicegramOnboarding.1.Desc" = "Bergabunglah dengan lebih dari 2 juta pengguna Nicegram dan dapatkan akses ke klien Telegram paling ampuh dan aman untuk bisnis.";
 "NicegramOnboarding.2.Title" = "Pengalaman Perpesanan Tingkat Lanjut";

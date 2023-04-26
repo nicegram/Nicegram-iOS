@@ -136,7 +136,7 @@
 /*Push Notifications*/
 "NicegramPush.SpecialOffer.Body" = "Une nouvelle offre spéciale est disponible pour vous, consultez-la !";
 
-"Assistant.Referral.Desc" = "Invitez vos amis à **Nicegramme** pour plus de chance de gagner le jackpot!";
-"Lottery.ActiveTickets.Desc" = "Le tirage aura lieu dans %@";
-"LotteryTicket.Link" = "[https://powerball.com](https://powerball.com)";
+"Alert.TelegramLogin.Title" = "Vérification nécessaire";
+"Alert.TelegramLogin.Desc" = "Vérifiez votre compte Telegram via le bot Nicegram pour continuer.";
 "Alert.TelegramLogin.PositiveBtn" = "Continuer";
+"Alert.TelegramLogin.NegativeBtn" = "Terminer";

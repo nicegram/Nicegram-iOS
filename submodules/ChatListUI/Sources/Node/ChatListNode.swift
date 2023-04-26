@@ -95,6 +95,9 @@ public final class ChatListNodeInteraction {
     let hidePsa: (EnginePeer.Id) -> Void
     let activateChatPreview: (ChatListItem, Int64?, ASDisplayNode, ContextGesture?, CGPoint?) -> Void
     let present: (ViewController) -> Void
+    // MARK: Nicegram AiChat
+    let push: (ViewController) -> Void
+    //
     let openForumThread: (EnginePeer.Id, Int64) -> Void
     let openStorageManagement: () -> Void
     let openPasswordSetup: () -> Void
@@ -140,6 +143,9 @@ public final class ChatListNodeInteraction {
         hidePsa: @escaping (EnginePeer.Id) -> Void,
         activateChatPreview: @escaping (ChatListItem, Int64?, ASDisplayNode, ContextGesture?, CGPoint?) -> Void,
         present: @escaping (ViewController) -> Void,
+        // MARK: Nicegram AiChat
+        push: @escaping (ViewController) -> Void = { _ in },
+        //
         openForumThread: @escaping (EnginePeer.Id, Int64) -> Void,
         openStorageManagement: @escaping () -> Void,
         openPasswordSetup: @escaping () -> Void,
@@ -170,6 +176,9 @@ public final class ChatListNodeInteraction {
         self.hidePsa = hidePsa
         self.activateChatPreview = activateChatPreview
         self.present = present
+        // MARK: Nicegram AiChat
+        self.push = push
+        //
         self.animationCache = animationCache
         self.animationRenderer = animationRenderer
         self.openForumThread = openForumThread
@@ -1357,6 +1366,10 @@ public final class ChatListNode: ListView {
             }
         }, present: { [weak self] c in
             self?.present?(c)
+        },
+        // MARK: Nicegram AiChat
+        push: { [weak self] c in
+            self?.push?(c)
         }, openForumThread: { [weak self] peerId, threadId in
             guard let self else {
                 return

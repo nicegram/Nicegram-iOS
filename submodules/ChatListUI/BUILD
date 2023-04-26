@@ -6,6 +6,7 @@ NGDEPS = [
     "//Nicegram/NGModels:NGModels",
     "//Nicegram/NGSpecialOffer:NGSpecialOffer",
     "//Nicegram/NGTheme:NGTheme",
+    "//Nicegram/NGUI:NGUI",
     "//Nicegram/NGEnv:NGEnv",
     # Nicegram downloading feature
     "//submodules/SaveToCameraRoll:SaveToCameraRoll",

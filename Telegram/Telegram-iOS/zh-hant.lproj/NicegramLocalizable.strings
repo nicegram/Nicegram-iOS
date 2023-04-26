@@ -35,7 +35,7 @@
 "Nicegram.Login.Email.Title" = "電子信箱";
 "Nicegram.Login.Email.Placeholder" = "輸入您的電子郵件地址";
 "Nicegram.Login.Password.Placeholder" = "輸入您的密碼";
-"Nicegram.Login.OrContinue" = "或以 (sth.) 繼續";
+"Nicegram.Login.OrContinue" = "或者繼續";
 "Nicegram.Login.Button" = "登入";
 "Nicegram.Login.ForgotPass" = "忘記密碼？";
 "Nicegram.Login.isRegister" = "尚未註冊？";
@@ -135,4 +135,8 @@
 
 /*Push Notifications*/
 "NicegramPush.SpecialOffer.Body" = "您現在可獲得最新優惠，立即查看！";
+
+"Alert.TelegramLogin.Title" = "需要驗證";
+"Alert.TelegramLogin.Desc" = "透過 Nicegram bot 驗證您的 Telegram 帳戶來繼續。";
 "Alert.TelegramLogin.PositiveBtn" = "繼續";
+"Alert.TelegramLogin.NegativeBtn" = "Close";

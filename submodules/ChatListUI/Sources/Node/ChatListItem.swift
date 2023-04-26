@@ -1,6 +1,7 @@
 // MARK: Nicegram HideReactions, AiChat
 import NGAiChatUI
 import NGData
+import NGUI
 //
 import Foundation
 import UIKit
@@ -243,7 +244,15 @@ public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
             // MARK: Nicegram AiChat
             if peerData.peer.peerId == NicegramConstants.aiChatBotPeerId {
                 if #available(iOS 13.0, *) {
-                    Task { await AiChatUITgHelper.tryRouteToAiChatBot() }
+                    Task { @MainActor in
+                        AiChatUITgHelper.tryRouteToAiChatBotFromHome(
+                            push: { [weak self] controller in
+                                self?.interaction.push(
+                                    NativeControllerWrapper(controller: controller)
+                                )
+                            }
+                        )
+                    }
                 }
                 return
             }

@@ -1,9 +1,8 @@
 import Foundation
 import NGData
+import NGPremiumUI
 import NGRemoteConfig
-import NGSubscription
 import Postbox
-import TelegramPresentationData
 import UIKit
 
 //  MARK: - Logic
@@ -34,8 +33,8 @@ public func shouldSubscribeToCopyContent(message: Message) -> Bool {
     }
 }
 
-public func routeToNicegramPremiumForCopyContent(presentationData: PresentationData) {
-    routeToNicegramPremium(presentationData: presentationData)
+public func routeToNicegramPremiumForCopyContent() {
+    PremiumUITgHelper.routeToPremium()
 }
 
 //  MARK: - Bypass setting (Secret Menu)

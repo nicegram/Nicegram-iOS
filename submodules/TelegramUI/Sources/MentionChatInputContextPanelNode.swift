@@ -1,6 +1,6 @@
 // MARK: Nicegram Imports
 import NGData
-import NGSubscription
+import NGPremiumUI
 //
 import Foundation
 import UIKit
@@ -170,10 +170,7 @@ final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
                                 // MARK: Nicegram changes
                                 guard let peer = peer else {
                                     guard isPremium() else {
-                                        let c = SubscriptionBuilderImpl(presentationData: presentationData).build()
-                                        c.modalPresentationStyle = .fullScreen
-                                        interfaceInteraction.getNavigationController()?.topViewController?.present(c, animated: true)
-                                        
+                                        PremiumUITgHelper.routeToPremium()
                                         return (textInputState, inputMode)
                                     }
                                     let addressNames = NSMutableAttributedString()
