@@ -247,8 +247,12 @@ public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
                     Task { @MainActor in
                         AiChatUITgHelper.tryRouteToAiChatBotFromHome(
                             push: { [weak self] controller in
-                                self?.interaction.push(
-                                    NativeControllerWrapper(controller: controller)
+                                guard let self else { return }
+                                self.interaction.push(
+                                    NativeControllerWrapper(
+                                        controller: controller,
+                                        accountContext: self.context
+                                    )
                                 )
                             }
                         )

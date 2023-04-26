@@ -229,7 +229,6 @@ filegroup(
     ] + glob(
         [
             "Telegram-iOS/*.lproj/NiceLocalizable.strings",
-            "Telegram-iOS/*.lproj/NicegramLocalizable.strings"
         ]
     )
 )
@@ -239,7 +238,6 @@ filegroup(
     srcs = glob([
         "Telegram-iOS/*.lproj/Localizable.strings",
         "Telegram-iOS/*.lproj/NiceLocalizable.strings",
-        "Telegram-iOS/*.lproj/NicegramLocalizable.strings",
     ], exclude = ["Telegram-iOS/*.lproj/**/.*"]),
 )
 

@@ -4,7 +4,6 @@ import SwiftSignalKit
 import TelegramCore
 import NGData
 import NGEnv
-import NGLocalization
 import NGStrings
 
 public enum TgVoiceToTextError: Error {

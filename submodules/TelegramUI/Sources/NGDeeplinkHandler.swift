@@ -3,15 +3,14 @@ import AccountContext
 import Display
 import NGAiChatUI
 import NGAnalytics
+import NGAssistantUI
 import NGAuth
 import NGLoadingIndicator
-import NGLogging
 import NGModels
 import NGOnboarding
 import NGRemoteConfig
 import NGPremiumUI
 import NGSpecialOffer
-import NGTheme
 import NGUI
 import TelegramPresentationData
 import UIKit
@@ -113,9 +112,14 @@ private extension NGDeeplinkHandler {
     }
     
     func handleAssistant(url: URL) -> Bool {
-        AnalyticsTgHelper.trackAssistantOpenFromDeeplink()
-        showNicegramAssistant(deeplink: AssistantDeeplink())
-        return true
+        if #available(iOS 13.0, *) {
+            Task { @MainActor in
+                AssistantUITgHelper.routeToAssistantFromDeeplink()
+            }
+            return true
+        } else {
+            return false
+        }
     }
     
     func handleOnboarding(url: URL) -> Bool {
@@ -162,69 +166,25 @@ private extension NGDeeplinkHandler {
     
     @available(iOS 13.0, *)
     func handleSpecialOffer(url: URL) -> Bool {
-        let specialOfferService = SpecialOfferServiceImpl(
-            remoteConfig: RemoteConfigServiceImpl.shared
+        return SpecialOfferTgHelper.showSpecialOfferFromDeeplink(
+            id: url.queryItems["id"]
         )
-        
-        let specialOffer: SpecialOffer?
-        if let offerId = url.queryItems["id"] {
-            specialOffer = specialOfferService.getSpecialOfferWith(id: offerId)
-        } else {
-            specialOffer = specialOfferService.getMainSpecialOffer()
-        }
-        guard let specialOffer else { return false }
-        
-        guard let topController = navigationController?.topViewController else {
-            return false
-        }
-        
-        let ngTheme = NGThemeColors(
-            telegramTheme: getCurrentPresentationData().theme.intro.statusBarStyle,
-            statusBarStyle: (topController as? ViewController)?.statusBar.statusBarStyle ?? .Black
-        )
-        
-        let builder = SpecialOfferBuilderImpl(
-            specialOfferService: specialOfferService,
-            ngTheme: ngTheme
-        )
-        
-        var closeImpl: (() -> Void)?
-        
-        let c = builder.build(offerId: specialOffer.id) {
-            closeImpl?()
-        }
-        
-        closeImpl = { [weak c] in
-            c?.dismiss(animated: true)
-        }
-        
-        LoggersFactory().createDefaultEventsLogger().logEvent(
-            name: "special_offer_deeplink_with_id_\(specialOffer.id)"
-        )
-        
-        topController.present(c, animated: true)
-        
-        return true
     }
 }
 
 //  MARK: - Helpers
 
 private extension NGDeeplinkHandler {
-    func showNicegramAssistant(deeplink: Deeplink) {
-        guard let rootController = navigationController as? TelegramRootController else { return }
-        rootController.openChatsController(activateSearch: false)
-        rootController.popToRoot(animated: true)
-        rootController.chatListController?.showNicegramAssistant(deeplink: deeplink)
-    }
-    
     func getCurrentPresentationData() -> PresentationData {
         return tgAccountContext.sharedContext.currentPresentationData.with({ $0 })
     }
     
     func push(_ c: UIViewController) {
         self.navigationController?.pushViewController(
-            NativeControllerWrapper(controller: c)
+            NativeControllerWrapper(
+                controller: c,
+                accountContext: self.tgAccountContext
+            )
         )
     }
 }

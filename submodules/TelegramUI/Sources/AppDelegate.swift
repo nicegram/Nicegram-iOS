@@ -10,7 +10,6 @@ import NGLogging
 import SubscriptionAnalytics
 import NGEnv
 import NGAppCache
-import NGLocalization
 import NGOnboarding
 import NGPremium
 import NGRemoteConfig
@@ -386,7 +385,7 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         if #available(iOS 13.0, *) {
             AppContextTgHelper.setRemoteConfig(RemoteConfigServiceImpl.shared)
             PremiumTgHelper.set(subscriptionService: SubscriptionAnalytics.SubscriptionService.shared)
-            AnalyticsTgHelper.set(firebaseSender: FirebaseLogger())
+            AnalyticsTgHelper.set(firebaseSender: FirebaseAnalyticsSender())
         }
         AiChatTgHelper.resolveTransactionsObserver().startObserving()
         

@@ -7,9 +7,9 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     deps = [
+        "//submodules/UIKitRuntimeUtils:UIKitRuntimeUtils",
         "//Nicegram/NGData:NGData",
         "//Nicegram/NGStrings:NGStrings",
-        "//Nicegram/NGTheme:NGTheme",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGPremiumUI",
     ],
     visibility = [

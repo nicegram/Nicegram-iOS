@@ -2,17 +2,16 @@ load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
 NGDEPS = [
     "//Nicegram/NGData:NGData",
-    "//Nicegram/NGAssistant:NGAssistant",
     "//Nicegram/NGModels:NGModels",
-    "//Nicegram/NGSpecialOffer:NGSpecialOffer",
-    "//Nicegram/NGTheme:NGTheme",
     "//Nicegram/NGUI:NGUI",
     "//Nicegram/NGEnv:NGEnv",
     # Nicegram downloading feature
     "//submodules/SaveToCameraRoll:SaveToCameraRoll",
     "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChat",
+    "@swiftpkg_nicegram_assistant_ios//:Sources_NGAssistantUI",
     "@swiftpkg_nicegram_assistant_ios//:Sources_NGRepoTg",
     "@swiftpkg_nicegram_assistant_ios//:Sources_NGRepoUser",
+    "@swiftpkg_nicegram_assistant_ios//:Sources_NGSpecialOffer",
 ]
 
 swift_library(

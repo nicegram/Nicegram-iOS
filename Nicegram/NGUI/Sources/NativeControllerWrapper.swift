@@ -1,8 +1,10 @@
+import AccountContext
 import UIKit
 import Display
 
 public class NativeControllerWrapper: ViewController {
 
+    private let accountContext: AccountContext
     private let controller: UIViewController
     private var validLayout: ContainerViewLayout?
 
@@ -16,10 +18,15 @@ public class NativeControllerWrapper: ViewController {
 
     //  MARK: - Lifecycle
 
-    public init(controller: UIViewController) {
+    public init(controller: UIViewController, accountContext: AccountContext) {
         self.controller = controller
+        self.accountContext = accountContext
 
         super.init(navigationBarPresentationData: nil)
+        
+        _ = accountContext.sharedContext.presentationData.start { [weak self] presentationData in
+            self?.statusBar.statusBarStyle = presentationData.theme.rootController.statusBarStyle.style
+        }
     }
 
     required init(coder aDecoder: NSCoder) {
