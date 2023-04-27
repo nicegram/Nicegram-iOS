@@ -87,6 +87,26 @@
       ]
     },
     {
+      "name": "NGAssistant",
+      "c99name": "NGAssistant",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGAssistant",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
+      "name": "NGAssistantUI",
+      "c99name": "NGAssistantUI",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGAssistantUI",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
       "name": "NGAuth",
       "c99name": "NGAuth",
       "src_type": "swift",
@@ -151,6 +171,16 @@
       "c99name": "NGRepoUser",
       "src_type": "swift",
       "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGRepoUser",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
+      "name": "NGSpecialOffer",
+      "c99name": "NGSpecialOffer",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGSpecialOffer",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
         "nicegram-assistant"
@@ -264,6 +294,7 @@
       "type": "library",
       "target_labels": [
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChatUI",
+        "@swiftpkg_nicegram_assistant_ios//:Sources_NGAssistantUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGPremiumUI"
       ]
     },
@@ -349,7 +380,7 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "46e75855990203f52b3294d5fae7a41becadb432",
+        "commit": "9be55dd7e8a2852dd72c4fb1e4cd177495313472",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
         "branch": "develop"
       }
@@ -358,9 +389,9 @@
       "name": "swiftpkg_sdwebimage",
       "identity": "sdwebimage",
       "remote": {
-        "commit": "fb50c1d20f24db5322b2f8f379de3618f75fe08e",
+        "commit": "20df851f2ae27efbaeeff73e9babdf4fd839a144",
         "remote": "https://github.com/SDWebImage/SDWebImage.git",
-        "version": "5.15.5"
+        "version": "5.15.6"
       }
     },
     {

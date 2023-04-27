@@ -1,4 +1,5 @@
 import UIKit
+import UIKitRuntimeUtils
 import SnapKit
 import NGCoreUI
 import NGStrings
@@ -180,7 +181,7 @@ private extension OnboardingViewController {
 
 private extension OnboardingViewController {
     struct Constants {
-        static let inactivePageIndicatorColor = UIColor.ngInactiveButton
+        static let inactivePageIndicatorColor = UIColor.legacyInactiveButton
         static let activePageIndicatorColor = UIColor.white
         
         static let inactivePageIndicatorWidth = CGFloat(8)
@@ -247,7 +248,7 @@ private extension OnboardingViewController {
 private extension CustomButton {
     func applyMainActionStyle() {
         foregroundColor = .white
-        backgroundColor = .ngActiveButton
+        backgroundColor = .legacyBlue
         layer.cornerRadius = 6
         configureTitleLabel { label in
             label.font = .systemFont(ofSize: 16, weight: .semibold)

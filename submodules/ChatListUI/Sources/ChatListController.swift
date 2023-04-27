@@ -7,11 +7,9 @@ import NGAiChatUI
 import NGAnalytics
 import NGData
 import NGAppCache
-import NGAssistant
+import NGAssistantUI
 import NGCore
-import NGTheme
 import NGAuth
-import NGLocalization
 import NGModels
 import NGRemoteConfig
 import NGRepoTg
@@ -2044,8 +2042,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             }))
         }
         
-        showNicegramAssistantIfNeeded()
-        showSpecialOfferIfNeeded()
+        SpecialOfferTgHelper.showSpecialOfferFromHomeIfNeeded()
     }
     
     func dismissAllUndoControllers() {
@@ -3020,16 +3017,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     @objc private func nicegramAssistantPressed() {
         UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
         
-        AnalyticsTgHelper.trackAssistantOpenFromIcon()
-        showNicegramAssistant(deeplink: nil)
-    }
-    
-    private var deferredNicegramDeeplink: Deeplink?
-    
-    private func showNicegramAssistantIfNeeded() {
-        if let deferredNicegramDeeplink = deferredNicegramDeeplink {
-            self.deferredNicegramDeeplink = nil
-            showNicegramAssistant(deeplink: deferredNicegramDeeplink)
+        if #available(iOS 13.0, *) {
+            Task { AssistantUITgHelper.routeToAssistantFromHome() }
         }
     }
     
@@ -3059,89 +3048,9 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         let _ = context.sharedContext.accountManager.sharedData(keys: [SharedDataKeys.localizationSettings]).start { sharedData in
             if let localizationSettings = sharedData.entries[SharedDataKeys.localizationSettings]?.get(LocalizationSettings.self) {
                 let activeLanguageCode = localizationSettings.secondaryComponent?.languageCode ?? localizationSettings.primaryComponent.languageCode
-                LocalizationServiceImpl.shared.setLanguageCode(activeLanguageCode)
                 ng_setTgLangCode(activeLanguageCode)
             }
         }
-    }
-    
-    public func showNicegramAssistant(deeplink: Deeplink?) {
-        if #available(iOS 13, *) {
-            guard didAppear else {
-                deferredNicegramDeeplink = deeplink
-                return
-            }
-            
-            let ngTheme = NGThemeColors(
-                telegramTheme: self.presentationData.theme.intro.statusBarStyle,
-                statusBarStyle: self.statusBar.statusBarStyle
-            )
-            let personalAssistant = AssistantBuilderImpl(
-                specialOfferService: specialOfferService,
-                ngTheme: ngTheme,
-                listener: self
-            ).build(deeplink: deeplink)
-            let navigation = UINavigationController(rootViewController: personalAssistant)
-            
-            let appearance = UINavigationBarAppearance()
-            appearance.configureWithTransparentBackground()
-            appearance.titleTextAttributes = [
-                .font: UIFont.systemFont(ofSize: 16, weight: .semibold),
-                .foregroundColor: ngTheme.reverseTitleColor
-            ]
-
-            navigation.navigationBar.standardAppearance = appearance
-            navigation.navigationBar.scrollEdgeAppearance = appearance
-            
-            navigation.navigationBar.tintColor = ngTheme.navigationBarTintColor
-            navigation.modalPresentationStyle = .overFullScreen
-            
-            present(navigation, animated: false, completion: nil)
-        }
-    }
-    
-    private lazy var specialOfferService: SpecialOfferService = {
-        if #available(iOS 13.0, *) {
-            return SpecialOfferServiceImpl(remoteConfig: RemoteConfigServiceImpl.shared)
-        } else {
-            return SpecialOfferServiceMock()
-        }
-    }()
-        
-    private lazy var getFeaturedSpecialOfferUseCase: GetFeaturedSpecialOfferUseCase = GetFeaturedSpecialOfferUseCaseImpl(
-        specialOfferService: specialOfferService,
-        specialOfferScheduleService: SpecialOfferScheduleServiceImpl()
-    )
-    
-    private func showSpecialOfferIfNeeded() {
-        getFeaturedSpecialOfferUseCase.fetchFeaturedSpecialOffer { [weak self] specialOffer in
-            guard let self = self else { return }
-            
-            if specialOffer != nil {
-                DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(2)) {
-                    self.showSpecialOffer(specialOfferService: self.specialOfferService)
-                }
-            }
-        }
-    }
-    
-    private func showSpecialOffer(specialOfferService: SpecialOfferService) {
-        let ngTheme = NGThemeColors(
-            telegramTheme: self.presentationData.theme.intro.statusBarStyle, 
-            statusBarStyle: self.statusBar.statusBarStyle
-        )
-        
-        let specialOfferBuilder = SpecialOfferBuilderImpl(
-            specialOfferService: specialOfferService,
-            ngTheme: ngTheme
-        )
-        
-        let vc = specialOfferBuilder.build() { [weak self] in
-            // Because telegram ViewController subclass overrides present(_:animated:completion:)
-            self?.view.window?.rootViewController?.dismiss(animated: true)
-        }
-        
-        present(vc, animated: true)
     }
     
     public override var keyShortcuts: [KeyShortcut] {
@@ -4444,15 +4353,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         self.playedSignUpCompletedAnimation = true
         Queue.mainQueue().after(0.3) {
             self.view.addSubview(ConfettiView(frame: self.view.bounds))
-        }
-    }
-}
-
-extension ChatListControllerImpl: AssistantListener {
-    public func onOpenChat(chatURL: URL?) {
-        guard let url = chatURL else { return }
-        if UIApplication.shared.canOpenURL(url) {
-            UIApplication.shared.open(url)
         }
     }
 }

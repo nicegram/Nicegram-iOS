@@ -13,7 +13,6 @@ swift_library(
         "//submodules/TelegramCore:TelegramCore",
         "//Nicegram/NGLogging:NGLogging",
         "//Nicegram/NGData:NGData",
-        "//Nicegram/NGLocalization:NGLocalization",
         "//Nicegram/NGModels:NGModels",
         "//Nicegram/NGStrings:NGStrings",
         "//Nicegram/NGUtils:NGUtils",

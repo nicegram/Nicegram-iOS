@@ -458,3 +458,17 @@ public func nativeWindowHostView() -> (UIWindow & WindowHost, WindowHostView) {
     
     return (window, hostView)
 }
+
+// MARK: Nicegram Themes
+@available(iOS 12.0, *)
+public protocol NGWindowRootViewController {
+    func setSystemUserInterfaceStyle(_ style: UIUserInterfaceStyle)
+}
+
+@available(iOS 12.0, *)
+extension WindowRootViewController: NGWindowRootViewController {
+    public func setSystemUserInterfaceStyle(_ style: UIUserInterfaceStyle) {
+        self._systemUserInterfaceStyle.set(WindowUserInterfaceStyle(style: style))
+    }
+}
+//

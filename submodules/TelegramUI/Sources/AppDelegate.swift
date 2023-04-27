@@ -10,7 +10,6 @@ import NGLogging
 import SubscriptionAnalytics
 import NGEnv
 import NGAppCache
-import NGLocalization
 import NGOnboarding
 import NGPremium
 import NGRemoteConfig
@@ -231,7 +230,25 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
     )
 }
 
+// MARK: Nicegram Themes
+private class UserInterfaceStyleObserverWindow: UIWindow {
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        
+        if #available(iOS 12.0, *) {
+            if let root = UIApplication.findKeyWindow()?.rootViewController as? NGWindowRootViewController {
+                root.setSystemUserInterfaceStyle(traitCollection.userInterfaceStyle)
+            }
+        }
+    }
+}
+//
+
 @objc(AppDelegate) class AppDelegate: UIResponder, UIApplicationDelegate, PKPushRegistryDelegate, UNUserNotificationCenterDelegate, URLSessionDelegate, URLSessionTaskDelegate {
+    // MARK: Nicegram Themes
+    private let userInterfaceStyleObserverWindow = UserInterfaceStyleObserverWindow()
+    //
+    
     @objc var window: UIWindow?
     var nativeWindow: (UIWindow & WindowHost)?
     var mainWindow: Window1!
@@ -352,6 +369,7 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
             apiKey: NGENV.esim_api_key,
             premiumProductId: NGENV.premium_bundle,
             privacyUrl: URL(string: NGENV.privacy_url)!,
+            referralBot: NGENV.referral_bot,
             telegramAuthBot: NGENV.telegram_auth_bot,
             termsUrl: URL(string: NGENV.terms_url)!
         )
@@ -386,7 +404,7 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         if #available(iOS 13.0, *) {
             AppContextTgHelper.setRemoteConfig(RemoteConfigServiceImpl.shared)
             PremiumTgHelper.set(subscriptionService: SubscriptionAnalytics.SubscriptionService.shared)
-            AnalyticsTgHelper.set(firebaseSender: FirebaseLogger())
+            AnalyticsTgHelper.set(firebaseSender: FirebaseAnalyticsSender())
         }
         AiChatTgHelper.resolveTransactionsObserver().startObserving()
         

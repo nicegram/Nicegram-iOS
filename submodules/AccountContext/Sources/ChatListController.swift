@@ -1,6 +1,3 @@
-// MARK: Nicegram Imports
-import NGModels
-//
 import Foundation
 import UIKit
 import Postbox
@@ -21,10 +18,5 @@ public protocol ChatListController: ViewController {
     func deactivateSearch(animated: Bool)
     func activateCompose()
     func maybeAskForPeerChatRemoval(peer: EngineRenderedPeer, joined: Bool, deleteGloballyIfPossible: Bool, completion: @escaping (Bool) -> Void, removed: @escaping () -> Void)
-    
-    //  MARK: - Nicegram
-    func showNicegramAssistant(deeplink: Deeplink?)
-    //
-    
     func playSignUpCompletedAnimation()
 }
