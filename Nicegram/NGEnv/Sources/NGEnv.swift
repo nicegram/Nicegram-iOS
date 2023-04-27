@@ -20,6 +20,7 @@ public struct NGEnvObj: Decodable {
     public let google_client_id: String
     public let ecommpay_merchant_id: String
     public let ecommpay_project_id: Int
+    public let referral_bot: String
     public let remote_config_cache_duration_seconds: Double
     public let telegram_auth_bot: String
     public let google_cloud_api_key: String

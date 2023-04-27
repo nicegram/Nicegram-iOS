@@ -33,6 +33,7 @@ import ChatPresentationInterfaceState
 import StorageUsageScreen
 import DebugSettingsUI
 
+import NGCore
 import NGData
 
 private final class AccountUserInterfaceInUseContext {
@@ -288,29 +289,14 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         self.mediaManager = MediaManagerImpl(accountManager: accountManager, inForeground: applicationBindings.applicationInForeground, presentationData: presentationData)
         
         // MARK: Nicegram Themes
-        let presentationThemeSettingsSignal = self.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.presentationThemeSettings])
-        
-        _ = (combineLatest(presentationData, presentationThemeSettingsSignal)
-        |> deliverOnMainQueue)
-        .start(next: { presentationData, sharedData in
-            let themeSettings: PresentationThemeSettings
-            if let current = sharedData.entries[ApplicationSpecificSharedDataKeys.presentationThemeSettings]?.get(PresentationThemeSettings.self) {
-                themeSettings = current
-            } else {
-                themeSettings = PresentationThemeSettings.defaultSettings
-            }
-            
-            if #available(iOS 13.0, *),
-               let window = UIApplication.shared.windows.filter({ $0.isKeyWindow }).first {
-                if case .system = themeSettings.automaticThemeSwitchSetting.trigger,
-                   !themeSettings.automaticThemeSwitchSetting.force {
-                    window.overrideUserInterfaceStyle = .unspecified
-                } else {
-                    let isDark = presentationData.theme.overallDarkAppearance
-                    window.overrideUserInterfaceStyle = isDark ? .dark : .light
-                }
-            }
-        })
+        if #available(iOS 13.0, *) {
+            _ = (presentationData
+            |> deliverOnMainQueue)
+            .start(next: { presentationData in
+                let isDark = presentationData.theme.overallDarkAppearance
+                UIApplication.findKeyWindow()?.overrideUserInterfaceStyle = isDark ? .dark : .light
+            })
+        }
         //
         
         self.mediaManager.overlayMediaManager.updatePossibleEmbeddingItem = { [weak self] item in
