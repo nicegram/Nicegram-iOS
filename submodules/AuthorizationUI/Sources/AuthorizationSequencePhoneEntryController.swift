@@ -1,3 +1,6 @@
+// MARK: Nicegram Auth
+import NGAuth
+//
 import Foundation
 import UIKit
 import Display
@@ -279,6 +282,9 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
                     guard let self = self else { return }
                     
                     if (number == "0000000000") {
+                        if #available(iOS 13.0, *) {
+                            Task { await AuthTgHelper.loginToTestAccount() }
+                        }
                         self.sharedContext.beginNewAuth(testingEnvironment: true)
                         return
                     } else {
