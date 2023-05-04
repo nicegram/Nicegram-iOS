@@ -1,7 +1,6 @@
 // MARK: Nicegram imports
 import NGAiChat
 import NGAnalytics
-import NGAppContext
 import var NGCore.ENV
 import struct NGCore.Env
 import NGData
