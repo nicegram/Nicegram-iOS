@@ -13,6 +13,8 @@ import NGAppCache
 import NGOnboarding
 import NGPremium
 import NGRemoteConfig
+import _NGRemoteConfig
+import NGRepoUser
 import NGSubscription
 
 import UIKit
@@ -402,7 +404,8 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         RemoteConfigServiceImpl.shared.prefetch()
         
         if #available(iOS 13.0, *) {
-            AppContextTgHelper.setRemoteConfig(RemoteConfigServiceImpl.shared)
+            RepoUserTgHelper.initialize()
+            RemoteConfigTgHelper.set(remoteConfig: RemoteConfigServiceImpl.shared)
             PremiumTgHelper.set(subscriptionService: SubscriptionAnalytics.SubscriptionService.shared)
             AnalyticsTgHelper.set(firebaseSender: FirebaseAnalyticsSender())
         }

@@ -5,8 +5,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/hmlongco/Factory",
       "state" : {
-        "revision" : "1276137960e14561473f2dfe72b9ccf3a2e03690",
-        "version" : "2.1.4"
+        "revision" : "bf4e0ab7cfc45a921856d9ca196d834b7abf15a0",
+        "version" : "2.1.5"
       }
     },
     {
@@ -42,7 +42,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "3889ae5025ade457bf114b94a6621709dff814e8"
+        "revision" : "bf7af62981e2b451f73d51c9ea72c2e42cd7ab4a"
       }
     },
     {
