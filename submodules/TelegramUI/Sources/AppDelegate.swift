@@ -1,5 +1,6 @@
 // MARK: Nicegram imports
 import NGAiChat
+import NGAssistant
 import NGAnalytics
 import var NGCore.ENV
 import struct NGCore.Env
@@ -403,10 +404,15 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         RemoteConfigServiceImpl.shared.prefetch()
         
         if #available(iOS 13.0, *) {
-            RepoUserTgHelper.initialize()
+            AnalyticsTgHelper.set(firebaseSender: FirebaseAnalyticsSender())
             RemoteConfigTgHelper.set(remoteConfig: RemoteConfigServiceImpl.shared)
             PremiumTgHelper.set(subscriptionService: SubscriptionAnalytics.SubscriptionService.shared)
-            AnalyticsTgHelper.set(firebaseSender: FirebaseAnalyticsSender())
+            
+            RepoUserTgHelper.initialize()
+            Task {
+                await AssistantTgHelper.tryClaimDailyReward()
+            }
+            
         }
         AiChatTgHelper.resolveTransactionsObserver().startObserving()
         
