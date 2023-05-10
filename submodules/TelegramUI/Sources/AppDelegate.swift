@@ -1,7 +1,7 @@
 // MARK: Nicegram imports
 import NGAiChat
+import NGAssistant
 import NGAnalytics
-import NGAppContext
 import var NGCore.ENV
 import struct NGCore.Env
 import NGData
@@ -13,6 +13,8 @@ import NGAppCache
 import NGOnboarding
 import NGPremium
 import NGRemoteConfig
+import _NGRemoteConfig
+import NGRepoUser
 import NGSubscription
 
 import UIKit
@@ -402,9 +404,15 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         RemoteConfigServiceImpl.shared.prefetch()
         
         if #available(iOS 13.0, *) {
-            AppContextTgHelper.setRemoteConfig(RemoteConfigServiceImpl.shared)
-            PremiumTgHelper.set(subscriptionService: SubscriptionAnalytics.SubscriptionService.shared)
             AnalyticsTgHelper.set(firebaseSender: FirebaseAnalyticsSender())
+            RemoteConfigTgHelper.set(remoteConfig: RemoteConfigServiceImpl.shared)
+            PremiumTgHelper.set(subscriptionService: SubscriptionAnalytics.SubscriptionService.shared)
+            
+            RepoUserTgHelper.initialize()
+            Task {
+                await AssistantTgHelper.tryClaimDailyReward()
+            }
+            
         }
         AiChatTgHelper.resolveTransactionsObserver().startObserving()
         

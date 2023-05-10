@@ -1,5 +1,5 @@
 import AccountContext
-import NGCore
+import NGApi
 import NGData
 import NGEnv
 import NGUtils

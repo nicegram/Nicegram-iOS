@@ -77,10 +77,10 @@
       ]
     },
     {
-      "name": "NGAppContext",
-      "c99name": "NGAppContext",
+      "name": "NGApi",
+      "c99name": "NGApi",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGAppContext",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGApi",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
         "nicegram-assistant"
@@ -344,9 +344,9 @@
       "name": "swiftpkg_factory",
       "identity": "factory",
       "remote": {
-        "commit": "1276137960e14561473f2dfe72b9ccf3a2e03690",
+        "commit": "bf4e0ab7cfc45a921856d9ca196d834b7abf15a0",
         "remote": "https://github.com/hmlongco/Factory",
-        "version": "2.1.4"
+        "version": "2.1.5"
       }
     },
     {
@@ -380,7 +380,7 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "3889ae5025ade457bf114b94a6621709dff814e8",
+        "commit": "18b31ec099ddf2862fd58498ef9c2476fc898479",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
         "branch": "develop"
       }
