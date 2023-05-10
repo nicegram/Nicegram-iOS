@@ -74,10 +74,17 @@ http_archive(
 )
 
 http_archive(
-        name = "FirebaseSDK",
-        urls = ["https://github.com/firebase/firebase-ios-sdk/releases/download/v8.11.0/Firebase.zip"],
-        build_file = "@//third-party/Firebase:BUILD",
+    name = "FirebaseSDK",
+    urls = ["https://github.com/firebase/firebase-ios-sdk/releases/download/v8.11.0/Firebase.zip"],
+    build_file = "@//third-party/Firebase:BUILD",
 	sha256 = "ecf1013b5d616bb5d3acc7d9ddf257c06228c0a7364dd84d03989bae6af5ac5b",
+)
+
+http_archive(
+    name = "AppLovin",
+    urls = ["https://artifacts.applovin.com/ios/com/applovin/applovin-sdk/applovin-ios-sdk-11.9.0.zip"],
+    build_file = "@//third-party/AppLovin:BUILD",
+	sha256 = "0fc13c7b760b96a879aef234cf5894c3e5865ddf0a5152f4b94e5ca9737fd672",
 )
 
 # swift_bazel start
