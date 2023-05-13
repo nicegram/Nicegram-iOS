@@ -2044,7 +2044,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         
         if #available(iOS 13.0, *) {
             DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(2)) {
-                ifNoOverlay {
+                self.ifNoOverlay {
                     AssistantUITgHelper.presentDailyRewardsIfNeeded()
                 }
             }

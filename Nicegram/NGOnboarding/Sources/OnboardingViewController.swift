@@ -181,7 +181,7 @@ private extension OnboardingViewController {
 
 private extension OnboardingViewController {
     struct Constants {
-        static let inactivePageIndicatorColor = UIColor.legacyInactiveButton
+        static let inactivePageIndicatorColor = UIColor.hex("333334")
         static let activePageIndicatorColor = UIColor.white
         
         static let inactivePageIndicatorWidth = CGFloat(8)

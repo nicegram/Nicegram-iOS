@@ -33,7 +33,7 @@ class OnboardingPageView: UIView {
         titleLabel.textAlignment = .center
         
         descriptionLabel.font = .systemFont(ofSize: 14, weight: .regular)
-        descriptionLabel.textColor = .subtitleFourth
+        descriptionLabel.textColor = .subtitle4
         descriptionLabel.numberOfLines = 0
         descriptionLabel.textAlignment = .center
         
