@@ -2044,10 +2044,14 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         
         if #available(iOS 13.0, *) {
             DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(2)) {
-                AssistantUITgHelper.presentDailyRewardsIfNeeded()
+                ifNoOverlay {
+                    AssistantUITgHelper.presentDailyRewardsIfNeeded()
+                }
             }
         }
-        SpecialOfferTgHelper.showSpecialOfferFromHomeIfNeeded()
+        ifNoOverlay {
+            SpecialOfferTgHelper.showSpecialOfferFromHomeIfNeeded()
+        }
     }
     
     func dismissAllUndoControllers() {
@@ -3056,6 +3060,14 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 ng_setTgLangCode(activeLanguageCode)
             }
         }
+    }
+    
+    private func ifNoOverlay(perform: () -> Void) {
+        guard let window = self.context.sharedContext.mainWindow,
+              !window.hasOverlayController() else {
+            return
+        }
+        perform()
     }
     
     public override var keyShortcuts: [KeyShortcut] {
