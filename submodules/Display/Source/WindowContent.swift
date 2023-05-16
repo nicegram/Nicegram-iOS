@@ -1381,3 +1381,11 @@ public class Window1 {
         }
     }
 }
+
+// MARK: Nicegram
+public extension Window1 {
+    func hasOverlayController() -> Bool {
+        return !topPresentationContext.controllers.isEmpty
+    }
+}
+//

@@ -1,4 +1,5 @@
 // MARK: Nicegram imports
+import AppLovinAdProvider
 import NGAiChat
 import NGAssistant
 import NGAnalytics
@@ -404,15 +405,22 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         RemoteConfigServiceImpl.shared.prefetch()
         
         if #available(iOS 13.0, *) {
+            AiChatTgHelper.set(
+                appLovinAdProvider: AppLovinAdProvider(
+                    apiKey: NGENV.applovin_api_key,
+                    adUnitIdentifier: NGENV.applovin_ad_unit_id,
+                    userRepository: RepoUserTgHelper.resolveUserRepository()
+                )
+            )
             AnalyticsTgHelper.set(firebaseSender: FirebaseAnalyticsSender())
             RemoteConfigTgHelper.set(remoteConfig: RemoteConfigServiceImpl.shared)
             PremiumTgHelper.set(subscriptionService: SubscriptionAnalytics.SubscriptionService.shared)
             
             RepoUserTgHelper.initialize()
+            AiChatTgHelper.initializeAds()
             Task {
                 await AssistantTgHelper.tryClaimDailyReward()
             }
-            
         }
         AiChatTgHelper.resolveTransactionsObserver().startObserving()
         
