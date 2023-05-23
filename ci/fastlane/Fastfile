@@ -248,7 +248,6 @@ lane :generate_project do |options|
   configuration_path = resolve_telegram_configuration()
 
   sh "cd #{SOURCE_PATH} && python3 build-system/Make/Make.py \
-  --bazel=#{BAZEL_PATH} \
   --cacheDir=#{BAZEL_LOCAL_CACHE} \
   generateProject \
   --configurationPath=#{configuration_path} \

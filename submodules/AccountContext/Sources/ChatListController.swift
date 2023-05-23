@@ -19,4 +19,6 @@ public protocol ChatListController: ViewController {
     func activateCompose()
     func maybeAskForPeerChatRemoval(peer: EngineRenderedPeer, joined: Bool, deleteGloballyIfPossible: Bool, completion: @escaping (Bool) -> Void, removed: @escaping () -> Void)
     func playSignUpCompletedAnimation()
+    
+    func navigateToFolder(folderId: Int32, completion: @escaping () -> Void)
 }

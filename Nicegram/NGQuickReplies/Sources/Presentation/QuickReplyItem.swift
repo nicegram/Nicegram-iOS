@@ -452,6 +452,10 @@ class QuickReplyItemNode: ItemListRevealOptionsItemNode, ItemListItemNode, ItemL
         self.textNode.becomeFirstResponder()
     }
     
+    func selectAll() {
+        self.textNode.textView.selectAll(nil)
+    }
+    
     override func isReorderable(at point: CGPoint) -> Bool {
         if self.reorderControlNode.frame.contains(point), !self.reorderControlNode.isHidden, !self.isDisplayingRevealedOptions {
             return true
