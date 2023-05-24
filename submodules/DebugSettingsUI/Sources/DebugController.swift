@@ -110,6 +110,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     case preferredVideoCodec(Int, String, String?, Bool)
     case disableVideoAspectScaling(Bool)
     case enableNetworkFramework(Bool)
+    case enableNetworkExperiments(Bool)
     case restorePurchases(PresentationTheme)
     case logTranslationRecognition(Bool)
     case resetTranslationStates
@@ -139,7 +140,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return DebugControllerSection.translation.rawValue
         case .preferredVideoCodec:
             return DebugControllerSection.videoExperiments.rawValue
-        case .disableVideoAspectScaling, .enableNetworkFramework:
+        case .disableVideoAspectScaling, .enableNetworkFramework, .enableNetworkExperiments:
             return DebugControllerSection.videoExperiments2.rawValue
         case .hostInfo, .versionInfo, .resetPremium:
             return DebugControllerSection.info.rawValue
@@ -248,10 +249,12 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return 100
         case .enableNetworkFramework:
             return 101
-        case .hostInfo:
+        case .enableNetworkExperiments:
             return 102
-        case .versionInfo:
+        case .hostInfo:
             return 103
+        case .versionInfo:
+            return 104
         case .resetPremium:
             return 1000
         }
@@ -1338,6 +1341,16 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     }).start()
                 }
             })
+        case let .enableNetworkExperiments(value):
+            return ItemListSwitchItem(presentationData: presentationData, title: "Download X [Restart App]", value: value, sectionId: self.section, style: .blocks, updated: { value in
+                if let context = arguments.context {
+                    let _ = updateNetworkSettingsInteractively(postbox: context.account.postbox, network: context.account.network, { settings in
+                        var settings = settings
+                        settings.useExperimentalDownload = value
+                        return settings
+                    }).start()
+                }
+            })
         case .restorePurchases:
             return ItemListActionItem(presentationData: presentationData, title: "Restore Purchases", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 arguments.context?.inAppPurchaseManager?.restorePurchases(completion: { state in
@@ -1466,6 +1479,7 @@ private func debugControllerEntries(sharedContext: SharedAccountContext, present
     if isMainApp {
         entries.append(.disableVideoAspectScaling(experimentalSettings.disableVideoAspectScaling))
         entries.append(.enableNetworkFramework(networkSettings?.useNetworkFramework ?? useBetaFeatures))
+        entries.append(.enableNetworkExperiments(networkSettings?.useExperimentalDownload ?? false))
     }
 
     if let backupHostOverride = networkSettings?.backupHostOverride {

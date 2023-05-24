@@ -20,7 +20,7 @@ def swift_dependencies():
     # branch: master
     swift_package(
         name = "swiftpkg_grdb.swift",
-        commit = "655570181518ac25f7efccb83d50f86c82ee5ac5",
+        commit = "58d3673030f8a640d7278f45bf2dc21b078ecae8",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/denis15yo/GRDB.swift.git",
     )
@@ -44,7 +44,7 @@ def swift_dependencies():
     # version: 5.15.5
     swift_package(
         name = "swiftpkg_sdwebimage",
-        commit = "3289629ef6cbf1ad8c3d1dccf0cf09ac97547cd6",
+        commit = "7f9fb5d43ecd4aa714c00746f54873f354403438",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/SDWebImage/SDWebImage.git",
     )

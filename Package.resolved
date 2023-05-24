@@ -24,7 +24,7 @@
       "location" : "https://github.com/denis15yo/GRDB.swift.git",
       "state" : {
         "branch" : "master",
-        "revision" : "655570181518ac25f7efccb83d50f86c82ee5ac5"
+        "revision" : "58d3673030f8a640d7278f45bf2dc21b078ecae8"
       }
     },
     {
@@ -50,8 +50,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SDWebImage/SDWebImage.git",
       "state" : {
-        "revision" : "3289629ef6cbf1ad8c3d1dccf0cf09ac97547cd6",
-        "version" : "5.15.7"
+        "revision" : "7f9fb5d43ecd4aa714c00746f54873f354403438",
+        "version" : "5.15.8"
       }
     },
     {

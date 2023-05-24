@@ -9,16 +9,16 @@ http_archive(
     ],
 )
 
-http_archive(
+'''http_archive(
     name = "com_google_protobuf",
-    urls = ["https://github.com/protocolbuffers/protobuf/archive/v3.14.0.zip"],
-    sha256 = "bf0e5070b4b99240183b29df78155eee335885e53a8af8683964579c214ad301",
-    strip_prefix = "protobuf-3.14.0",
+    urls = ["https://github.com/protocolbuffers/protobuf/releases/download/v22.2/protobuf-22.2.zip"],
+    sha256 = "bf1f92aebd619651220711e97b3d560cdc2484718cd56d95161bfb2fadb8628e",
+    strip_prefix = "protobuf-22.2",
     type = "zip",
 )
 
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
-protobuf_deps()
+protobuf_deps()'''
 
 local_repository(
     name = "build_bazel_rules_apple",
@@ -33,6 +33,11 @@ local_repository(
 local_repository(
     name = "build_bazel_apple_support",
     path = "build-system/bazel-rules/apple_support",
+)
+
+local_repository(
+    name = "rules_xcodeproj",
+    path = "build-system/bazel-rules/rules_xcodeproj",
 )
 
 load(
@@ -56,6 +61,13 @@ load(
 
 apple_support_dependencies()
 
+load(
+    "@rules_xcodeproj//xcodeproj:repositories.bzl",
+    "xcodeproj_rules_dependencies",
+)
+
+xcodeproj_rules_dependencies()
+
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 
 bazel_skylib_workspace()
@@ -71,6 +83,12 @@ http_archive(
     urls = ["https://github.com/microsoft/appcenter-sdk-apple/releases/download/4.1.1/AppCenter-SDK-Apple-4.1.1.zip"],
     sha256 = "032907801dc7784744a1ca8fd40d3eecc34a2e27a93a4b3993f617cca204a9f3",
     build_file = "@//third-party/AppCenter:AppCenter.BUILD",
+)
+
+load("@build_bazel_rules_apple//apple:apple.bzl", "provisioning_profile_repository")
+
+provisioning_profile_repository(
+    name = "local_provisioning_profiles",
 )
 
 http_archive(
@@ -91,9 +109,9 @@ http_archive(
 
 http_archive(
     name = "rules_swift_package_manager",
-    sha256 = "e26967e8f76a654b4b15c05d8d6af30dfa4bd463bc7731ec180cd19bddc6273d",
+    sha256 = "54f358ac1ed2bcf65404bc26c9d1298486ea88bfc230f452531e7ac26bcfca8b",
     urls = [
-        "https://github.com/cgrindel/rules_swift_package_manager/releases/download/v0.4.2/rules_swift_package_manager.v0.4.2.tar.gz",
+        "https://github.com/cgrindel/rules_swift_package_manager/releases/download/v0.4.3/rules_swift_package_manager.v0.4.3.tar.gz",
     ],
 )
 
