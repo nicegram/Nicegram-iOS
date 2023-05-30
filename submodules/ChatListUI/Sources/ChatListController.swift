@@ -2193,16 +2193,21 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             }))
         }
         
+        // MARK: Nicegram
         if #available(iOS 13.0, *) {
-            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(2)) {
-                self.ifNoOverlay {
-                    AssistantUITgHelper.presentDailyRewardsIfNeeded()
+            Task {
+                let canPresentGlobally = { [self] in
+                    guard let window = self.context.sharedContext.mainWindow else {
+                        return false
+                    }
+                    return !window.hasOverlayController()
                 }
+                await AssistantUITgHelper.showAlertsFromHomeIfNeeded(
+                    canPresentGlobally: canPresentGlobally
+                )
             }
         }
-        ifNoOverlay {
-            SpecialOfferTgHelper.showSpecialOfferFromHomeIfNeeded()
-        }
+        //
     }
     
     func dismissAllUndoControllers() {
@@ -3397,14 +3402,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 ng_setTgLangCode(activeLanguageCode)
             }
         }
-    }
-    
-    private func ifNoOverlay(perform: () -> Void) {
-        guard let window = self.context.sharedContext.mainWindow,
-              !window.hasOverlayController() else {
-            return
-        }
-        perform()
     }
     
     public override var keyShortcuts: [KeyShortcut] {
