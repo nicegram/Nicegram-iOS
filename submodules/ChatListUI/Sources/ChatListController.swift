@@ -1817,6 +1817,22 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        
+        // MARK: Nicegram
+        if #available(iOS 13.0, *), !didAppear {
+            Task {
+                let canPresentGlobally = { [self] in
+                    guard let window = self.context.sharedContext.mainWindow else {
+                        return false
+                    }
+                    return !window.hasOverlayController()
+                }
+                await AssistantUITgHelper.showAlertsFromHomeIfNeeded(
+                    canPresentGlobally: canPresentGlobally
+                )
+            }
+        }
+        //
                 
         if self.powerSavingMonitoringDisposable == nil {
             self.powerSavingMonitoringDisposable = (self.context.sharedContext.automaticMediaDownloadSettings
@@ -2192,22 +2208,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 }
             }))
         }
-        
-        // MARK: Nicegram
-        if #available(iOS 13.0, *) {
-            Task {
-                let canPresentGlobally = { [self] in
-                    guard let window = self.context.sharedContext.mainWindow else {
-                        return false
-                    }
-                    return !window.hasOverlayController()
-                }
-                await AssistantUITgHelper.showAlertsFromHomeIfNeeded(
-                    canPresentGlobally: canPresentGlobally
-                )
-            }
-        }
-        //
     }
     
     func dismissAllUndoControllers() {
