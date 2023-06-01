@@ -36,7 +36,7 @@ def swift_dependencies():
     # branch: develop
     swift_package(
         name = "swiftpkg_nicegram_assistant_ios",
-        commit = "4e08867d6f2c312cd0f5a4afefd433807fec19f1",
+        commit = "503382f8eb8ab7248128a0a6547e208acfb92c10",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
     )

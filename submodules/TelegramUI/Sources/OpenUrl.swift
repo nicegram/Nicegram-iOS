@@ -140,15 +140,25 @@ func formattedConfirmationCode(_ code: Int) -> String {
 }
 
 // MARK: Nicegram Deeplink
-private func extractNicegramDeeplink(from universalLink: String) -> String? {
-    guard let url = URL(string: universalLink),
-          url.scheme == "https",
-          url.host == "nicegram.app",
-          url.path == "/deeplink",
-          let deeplinkParam = url.queryItems["url"] else {
+private func extractNicegramDeeplink(from link: String) -> String? {
+    guard let url = URL(string: link) else {
         return nil
     }
-    return deeplinkParam
+    
+    // Universal link
+    if url.scheme == "https",
+       url.host == "nicegram.app",
+       url.path == "/deeplink" {
+        return url.queryItems["url"]
+    }
+    
+    // Deeplink
+    if url.scheme == "ncg",
+       url.host == "deeplink" {
+        return url.queryItems["url"]
+    }
+    
+    return nil
 }
 //
 
