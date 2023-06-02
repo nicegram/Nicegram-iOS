@@ -25,6 +25,10 @@ public class FirebaseRemoteConfigService {
 
 extension FirebaseRemoteConfigService: RemoteConfigService {
     public func get<T>(_: T.Type, byKey key: String) -> T? where T : Decodable {
+        if T.self == String.self {
+            return remoteConfig.configValue(forKey: key).stringValue as? T
+        }
+        
         let data = remoteConfig.configValue(forKey: key).dataValue
         
         let jsonDecoder = JSONDecoder()
