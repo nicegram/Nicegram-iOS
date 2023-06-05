@@ -1279,16 +1279,63 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 network = context.context.account.network
 
                 if VarSystemNGSettings.dbReset {
-                    self.mainWindow?.presentNative(UIAlertController(title: "(1) Resetting database. Please wait...", message: "Please, restart the app!", preferredStyle: .alert))
+                    let alert = UIAlertController(
+                        title: "Resetting database. Please wait...",
+                        message: nil,
+                        preferredStyle: .alert
+                    )
+                    self.mainWindow?.presentNative(alert)
                     ngLog("Resetting DB by system settings", "System NG")
+                    
+                    let showResultAlert: (UIAlertController) -> Void = { resultAlert in
+                        alert.dismiss(animated: false) {
+                            self.mainWindow?.presentNative(resultAlert)
+                        }
+                    }
+                    let showSuccessResult: () -> Void = {
+                        let resultAlert = UIAlertController(
+                            title: "Reset completed. Restart the app",
+                            message: nil,
+                            preferredStyle: .alert
+                        )
+                        showResultAlert(resultAlert)
+                    }
+                    let showErrorResult: (Error) -> Void = { error in
+                        let resultAlert = UIAlertController(
+                            title: "ERROR. Unable to reset database",
+                            message: "\(error)",
+                            preferredStyle: .alert
+                        )
+                        showResultAlert(resultAlert)
+                    }
+                    
                     let databasePath = context.context.sharedContext.accountManager.basePath + "/db"
                     do {
                         let _ = try FileManager.default.removeItem(atPath: databasePath)
-                        ngLog("Database reset completed!", "System NG")
-                        self.mainWindow?.presentNative(UIAlertController(title: nil, message: "(2) Reset completed", preferredStyle: .alert))
-                    } catch let error as NSError {
-                        ngLog("Unable to reset database \(error)", "System NG")
-                        self.mainWindow?.presentNative(UIAlertController(title: "(2) ERROR. Unable to reset database",  message: "\(error)", preferredStyle: .alert))
+                        
+                        let isSandbox = Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
+                        if isSandbox {
+                            // Reset password, double bottom
+                            let _ = context.context.sharedContext.accountManager.transaction({ transaction -> Void in
+                                transaction.setAccessChallengeData(.none)
+                                
+                                for record in transaction.getRecords() {
+                                    transaction.updateRecord(record.id) { record in
+                                        guard let record = record else { return nil }
+                                        var attributes = record.attributes
+                                        attributes.removeAll { $0.isHiddenAccountAttribute }
+                                        return AccountRecord(id: record.id, attributes: attributes, temporarySessionId: record.temporarySessionId)
+                                    }
+                                }
+                                
+                                showSuccessResult()
+                            }).start()
+                            //
+                        } else {
+                            showSuccessResult()
+                        }
+                    } catch {
+                        showErrorResult(error)
                     }
                     VarSystemNGSettings.dbReset = false
                 }

@@ -18,10 +18,11 @@ import TelegramIntents
 
 // MARK: Nicegram import
 import NGData
+import NGInstantLock
 import NGStrings
 
 // MARK: Nicegram InstantLock
-private let instantLockTimeout: Int32 = 2
+private let instantLockTimeout = NGInstantLock.instantLockTimeout
 //
 
 private final class PasscodeOptionsControllerArguments {
