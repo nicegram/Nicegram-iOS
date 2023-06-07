@@ -137,6 +137,16 @@
       ]
     },
     {
+      "name": "NGEntryPoint",
+      "c99name": "NGEntryPoint",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGEntryPoint",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
       "name": "NGGrum",
       "c99name": "NGGrum",
       "src_type": "swift",
@@ -315,6 +325,7 @@
       "target_labels": [
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChatUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGAssistantUI",
+        "@swiftpkg_nicegram_assistant_ios//:Sources_NGEntryPoint",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGPremiumUI"
       ]
     },
@@ -400,7 +411,7 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "03e92148842cdd7c8e5cefd7c5c146fe9b8aeba7",
+        "commit": "a77396b60dd90d2ef8dc7e8897714341b95019cb",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
         "branch": "develop"
       }

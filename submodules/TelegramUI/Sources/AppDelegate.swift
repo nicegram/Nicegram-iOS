@@ -1,8 +1,8 @@
 // MARK: Nicegram imports
 import AppLovinAdProvider
 import NGAiChat
-import NGAssistant
 import NGAnalytics
+import NGEntryPoint
 import var NGCore.ENV
 import struct NGCore.Env
 import NGData
@@ -14,7 +14,6 @@ import NGAppCache
 import NGOnboarding
 import NGPremium
 import NGRemoteConfig
-import _NGRemoteConfig
 import NGRepoUser
 import NGSubscription
 
@@ -366,16 +365,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         if #available(iOS 12.0, *) {
             FirebaseApp.configure()
         }
-        
-        ENV = Env(
-            apiBaseUrl: URL(string: NGENV.esim_api_url)!,
-            apiKey: NGENV.esim_api_key,
-            premiumProductId: NGENV.premium_bundle,
-            privacyUrl: URL(string: NGENV.privacy_url)!,
-            referralBot: NGENV.referral_bot,
-            telegramAuthBot: NGENV.telegram_auth_bot,
-            termsUrl: URL(string: NGENV.terms_url)!
-        )
 
         MobySubscriptionAnalytics.logger = MobySubscriptionAnalyticsLogger()
         let mobyApiKey = NGENV.moby_key
@@ -402,29 +391,35 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             MobySubscriptionAnalytics.trackInstall(installInfo: installInfo)
         }
         
-        RemoteConfigServiceImpl.shared.prefetch()
-        
+        let appLovinAdProvider: AdProvider
+        let subscriptionService: NGPremium.SubscriptionService
         if #available(iOS 13.0, *) {
-            AiChatTgHelper.set(
-                appLovinAdProvider: AppLovinAdProvider(
-                    apiKey: NGENV.applovin_api_key,
-                    adUnitIdentifier: NGENV.applovin_ad_unit_id,
-                    userRepository: RepoUserTgHelper.resolveUserRepository()
-                )
+            appLovinAdProvider = AppLovinAdProvider(
+                apiKey: NGENV.applovin_api_key,
+                adUnitIdentifier: NGENV.applovin_ad_unit_id,
+                userRepository: RepoUserTgHelper.resolveUserRepository()
             )
-            AnalyticsTgHelper.set(firebaseSender: FirebaseAnalyticsSender())
-            RemoteConfigTgHelper.set(remoteConfig: RemoteConfigServiceImpl.shared)
-            PremiumTgHelper.set(subscriptionService: SubscriptionAnalytics.SubscriptionService.shared)
-            
-            RepoUserTgHelper.initialize()
-            AiChatTgHelper.initializeAds()
-            Task {
-                await AssistantTgHelper.tryClaimDailyReward()
-            }
+            subscriptionService = SubscriptionAnalytics.SubscriptionService.shared
+        } else {
+            appLovinAdProvider = AdProviderMock()
+            subscriptionService = SubscriptionServiceMock()
         }
-        AiChatTgHelper.resolveTransactionsObserver().startObserving()
-        
-        AnalyticsTgHelper.trackSession()
+        NGEntryPoint.onAppLaunch(
+            env: Env(
+                apiBaseUrl: URL(string: NGENV.esim_api_url)!,
+                apiKey: NGENV.esim_api_key,
+                premiumProductId: NGENV.premium_bundle,
+                privacyUrl: URL(string: NGENV.privacy_url)!,
+                referralBot: NGENV.referral_bot,
+                telegramAuthBot: NGENV.telegram_auth_bot,
+                termsUrl: URL(string: NGENV.terms_url)!,
+                webSocketUrl: NGENV.websocket_url
+            ),
+            appLovinAdProvider: appLovinAdProvider,
+            firebaseAnalyticsSender: FirebaseAnalyticsSender(),
+            remoteConfig: RemoteConfigServiceImpl.shared,
+            subscriptionService: subscriptionService
+        )
         
         let launchStartTime = CFAbsoluteTimeGetCurrent()
         
