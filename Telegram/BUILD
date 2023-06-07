@@ -554,17 +554,13 @@ official_communication_notifications_fragment = """
 <key>com.apple.developer.usernotifications.communication</key>
 <true/>
 """
-communication_notifications_fragment = official_communication_notifications_fragment if telegram_bundle_id in official_bundle_ids else ""
-
-filtering_notifications_fragment = """
-<key>com.apple.developer.usernotifications.filtering</key>
-<true/>
-"""
+# MARK: Nicegram, change 'official_bundle_ids' to 'nicegram_bundle_ids'
+communication_notifications_fragment = official_communication_notifications_fragment if telegram_bundle_id in nicegram_bundle_ids else ""
 
 store_signin_fragment = """
 <key>com.apple.developer.applesignin</key>
 <array>
-<string>Default</string>
+    <string>Default</string>
 </array>
 """
 signin_fragment = store_signin_fragment if telegram_bundle_id in store_bundle_ids else ""
@@ -582,32 +578,7 @@ plist_fragment(
         unrestricted_voip_fragment,
         carplay_fragment,
         communication_notifications_fragment,
-        filtering_notifications_fragment,
         signin_fragment,
-    ])
-)
-
-watch_extension_app_id_fragment = """
-    <key>application-identifier</key>
-    <string>{telegram_team_id}.{telegram_bundle_id}.watchkitapp.watchkitextension</string>
-""".format(
-    telegram_team_id=telegram_team_id,
-    telegram_bundle_id=telegram_bundle_id
-)
-
-watch_extension_associated_domains_fragment = """
-<key>com.apple.developer.associated-domains</key>
-<array>
-    <string>applinks:nicegram.app</string>
-</array>
-"""
-
-plist_fragment(
-    name = "TelegramWatchEntitlements",
-    extension = "entitlements",
-    template = "".join([
-        watch_extension_app_id_fragment,
-        watch_extension_associated_domains_fragment,
     ])
 )
 
@@ -639,8 +610,6 @@ filegroup(
     ]),
 )
 
-FLICK_TYPE_SRCS = glob(["Watch/FlickTypeKit/**/*.m"])
-
 objc_library(
     name = "TelegramWatchLib",
     srcs = glob([
@@ -652,7 +621,7 @@ objc_library(
         "Watch/SSignalKit/**/*.h",
         "Watch/Bridge/**/*.h",
         "Watch/WatchCommonWatch/**/*.h",
-    ]) + FLICK_TYPE_SRCS,
+    ]),
     copts = [
         "-DTARGET_OS_WATCH=1",
         "-ITelegram/Watch",
@@ -786,7 +755,6 @@ watchos_extension(
         telegram_bundle_id = telegram_bundle_id,
     ),
     bundle_name = "TelegramWatchExtension",
-    entitlements = ":TelegramWatchEntitlements.entitlements",
     infoplists = [
         ":WatchExtensionInfoPlist",
         ":VersionInfoPlist",

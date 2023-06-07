@@ -12,7 +12,7 @@ def swift_dependencies():
     # version: 2.6.1
     swift_package(
         name = "swiftpkg_floatingpanel",
-        commit = "2a29cb5b3ecf4beb67cf524a030dd74a11b956c4",
+        commit = "a0ba3af01207d21bb4800dda9f900470e1921613",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/scenee/FloatingPanel",
     )
@@ -36,7 +36,7 @@ def swift_dependencies():
     # branch: develop
     swift_package(
         name = "swiftpkg_nicegram_assistant_ios",
-        commit = "503382f8eb8ab7248128a0a6547e208acfb92c10",
+        commit = "03e92148842cdd7c8e5cefd7c5c146fe9b8aeba7",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
     )
@@ -44,7 +44,7 @@ def swift_dependencies():
     # version: 5.15.5
     swift_package(
         name = "swiftpkg_sdwebimage",
-        commit = "7f9fb5d43ecd4aa714c00746f54873f354403438",
+        commit = "c51ba84499268ea3020e6aee9e229c0f56b9d924",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/SDWebImage/SDWebImage.git",
     )
