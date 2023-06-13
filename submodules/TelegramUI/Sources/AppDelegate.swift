@@ -12,10 +12,8 @@ import SubscriptionAnalytics
 import NGEnv
 import NGAppCache
 import NGOnboarding
-import NGPremium
 import NGRemoteConfig
 import NGRepoUser
-import NGSubscription
 
 import UIKit
 import SwiftSignalKit
@@ -357,7 +355,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         testIsLaunched = true
         AppCache.appLaunchCount += 1
         
-        SubscriptionService.shared.setup()
         let _ = voipTokenPromise.get().start(next: { token in
             self.deviceToken.set(.single(token))
         })
@@ -366,7 +363,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             FirebaseApp.configure()
         }
 
-        MobySubscriptionAnalytics.logger = MobySubscriptionAnalyticsLogger()
         let mobyApiKey = NGENV.moby_key
         MobySubscriptionAnalytics.setup(apiKey: mobyApiKey) { account in
             account.appsflyerID = nil
@@ -392,17 +388,14 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }
         
         let appLovinAdProvider: AdProvider
-        let subscriptionService: NGPremium.SubscriptionService
         if #available(iOS 13.0, *) {
             appLovinAdProvider = AppLovinAdProvider(
                 apiKey: NGENV.applovin_api_key,
                 adUnitIdentifier: NGENV.applovin_ad_unit_id,
                 userRepository: RepoUserTgHelper.resolveUserRepository()
             )
-            subscriptionService = SubscriptionAnalytics.SubscriptionService.shared
         } else {
             appLovinAdProvider = AdProviderMock()
-            subscriptionService = SubscriptionServiceMock()
         }
         NGEntryPoint.onAppLaunch(
             env: Env(
@@ -417,8 +410,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             ),
             appLovinAdProvider: appLovinAdProvider,
             firebaseAnalyticsSender: FirebaseAnalyticsSender(),
-            remoteConfig: RemoteConfigServiceImpl.shared,
-            subscriptionService: subscriptionService
+            remoteConfig: RemoteConfigServiceImpl.shared
         )
         
         let launchStartTime = CFAbsoluteTimeGetCurrent()
@@ -1472,7 +1464,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         } else {
             AppCache.wasOnboardingShown = true
             if let rootController = window.rootViewController {
-                let langCode = Locale.currentAppLocale.langCode
+                let langCode = Locale.currentAppLocale.languageWithScriptCode
                 let controller = onboardingController(languageCode: langCode, onComplete: { [weak rootController] in
                     rootController?.dismiss(animated: true)
                     onNicegramOnboardingComplete()

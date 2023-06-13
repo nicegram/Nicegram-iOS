@@ -1,7 +1,6 @@
 {
   "direct_dep_identities": [
-    "nicegram-assistant-ios",
-    "swiftystorekit"
+    "nicegram-assistant-ios"
   ],
   "modules": [
     {
@@ -259,6 +258,16 @@
       ]
     },
     {
+      "name": "SubscriptionAnalytics",
+      "c99name": "SubscriptionAnalytics",
+      "src_type": "swift",
+      "label": "@swiftpkg_subscriptionanalytics_ios//:SubscriptionAnalytics_Classes_SubscriptionAnalytics",
+      "package_identity": "subscriptionanalytics-ios",
+      "product_memberships": [
+        "SubscriptionAnalytics"
+      ]
+    },
+    {
       "name": "SwiftyStoreKit",
       "c99name": "SwiftyStoreKit",
       "src_type": "swift",
@@ -362,6 +371,14 @@
       ]
     },
     {
+      "identity": "subscriptionanalytics-ios",
+      "name": "SubscriptionAnalytics",
+      "type": "library",
+      "target_labels": [
+        "@swiftpkg_subscriptionanalytics_ios//:SubscriptionAnalytics_Classes_SubscriptionAnalytics"
+      ]
+    },
+    {
       "identity": "swiftystorekit",
       "name": "SwiftyStoreKit",
       "type": "library",
@@ -411,7 +428,7 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "bc90163a8e964486bf146a2218bae07aa90f7380",
+        "commit": "eaffce7bcbf7327298fda526eed7521b2938ea41",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
         "branch": "develop"
       }
@@ -432,6 +449,15 @@
         "commit": "f222cbdf325885926566172f6f5f06af95473158",
         "remote": "https://github.com/SnapKit/SnapKit.git",
         "version": "5.6.0"
+      }
+    },
+    {
+      "name": "swiftpkg_subscriptionanalytics_ios",
+      "identity": "subscriptionanalytics-ios",
+      "remote": {
+        "commit": "53bfc6c6f26322ec647b87c338a071714ac69420",
+        "remote": "git@bitbucket.org:mobyrix/subscriptionanalytics-ios.git",
+        "version": "0.4.3"
       }
     },
     {

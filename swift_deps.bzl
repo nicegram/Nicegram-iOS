@@ -36,7 +36,7 @@ def swift_dependencies():
     # branch: develop
     swift_package(
         name = "swiftpkg_nicegram_assistant_ios",
-        commit = "bc90163a8e964486bf146a2218bae07aa90f7380",
+        commit = "eaffce7bcbf7327298fda526eed7521b2938ea41",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
     )
@@ -55,6 +55,14 @@ def swift_dependencies():
         commit = "f222cbdf325885926566172f6f5f06af95473158",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/SnapKit/SnapKit.git",
+    )
+
+    # version: 0.4.3
+    swift_package(
+        name = "swiftpkg_subscriptionanalytics_ios",
+        commit = "53bfc6c6f26322ec647b87c338a071714ac69420",
+        dependencies_index = "@//:swift_deps_index.json",
+        remote = "git@bitbucket.org:mobyrix/subscriptionanalytics-ios.git",
     )
 
     # version: 0.16.4
