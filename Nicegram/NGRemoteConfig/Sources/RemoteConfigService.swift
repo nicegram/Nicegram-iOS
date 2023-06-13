@@ -27,16 +27,6 @@ public class RemoteConfigServiceImpl {
         self.firebaseRemoteConfig = firebaseRemoteConfig
     }
     
-    //  MARK: - Public Functions
-
-    public func prefetch() {
-        if #available(iOS 13.0, *) {
-            _ = startFetchTaskIfNeeded()
-        } else {
-            firebaseRemoteConfig.prefetch(completion: {})
-        }
-    }
-    
     //  MARK: - Private Functions
 
     @available(iOS 13.0, *)
@@ -60,6 +50,14 @@ public class RemoteConfigServiceImpl {
 }
 
 extension RemoteConfigServiceImpl: RemoteConfigService {
+    public func prefetch() {
+        if #available(iOS 13.0, *) {
+            _ = startFetchTaskIfNeeded()
+        } else {
+            firebaseRemoteConfig.prefetch(completion: {})
+        }
+    }
+    
     public func get<T>(_ type: T.Type, byKey key: String) -> T? where T : Decodable {
         return firebaseRemoteConfig.get(type, byKey: key)
     }

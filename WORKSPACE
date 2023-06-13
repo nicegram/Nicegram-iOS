@@ -100,9 +100,9 @@ http_archive(
 
 http_archive(
     name = "AppLovin",
-    urls = ["https://artifacts.applovin.com/ios/com/applovin/applovin-sdk/applovin-ios-sdk-11.9.0.zip"],
+    urls = ["https://artifacts.applovin.com/ios/com/applovin/applovin-sdk/applovin-ios-sdk-11.10.1.zip"],
     build_file = "@//third-party/AppLovin:BUILD",
-	sha256 = "0fc13c7b760b96a879aef234cf5894c3e5865ddf0a5152f4b94e5ca9737fd672",
+	sha256 = "4a0e3aff4634d58307332fdaa2dbad59e4b2534a48c829aa5002d88364685c0d",
 )
 
 # swift_bazel start

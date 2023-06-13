@@ -1,8 +1,8 @@
 // MARK: Nicegram imports
 import AppLovinAdProvider
 import NGAiChat
-import NGAssistant
 import NGAnalytics
+import NGEntryPoint
 import var NGCore.ENV
 import struct NGCore.Env
 import NGData
@@ -12,11 +12,8 @@ import SubscriptionAnalytics
 import NGEnv
 import NGAppCache
 import NGOnboarding
-import NGPremium
 import NGRemoteConfig
-import _NGRemoteConfig
 import NGRepoUser
-import NGSubscription
 
 import UIKit
 import SwiftSignalKit
@@ -358,7 +355,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         testIsLaunched = true
         AppCache.appLaunchCount += 1
         
-        SubscriptionService.shared.setup()
         let _ = voipTokenPromise.get().start(next: { token in
             self.deviceToken.set(.single(token))
         })
@@ -366,18 +362,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         if #available(iOS 12.0, *) {
             FirebaseApp.configure()
         }
-        
-        ENV = Env(
-            apiBaseUrl: URL(string: NGENV.esim_api_url)!,
-            apiKey: NGENV.esim_api_key,
-            premiumProductId: NGENV.premium_bundle,
-            privacyUrl: URL(string: NGENV.privacy_url)!,
-            referralBot: NGENV.referral_bot,
-            telegramAuthBot: NGENV.telegram_auth_bot,
-            termsUrl: URL(string: NGENV.terms_url)!
-        )
 
-        MobySubscriptionAnalytics.logger = MobySubscriptionAnalyticsLogger()
         let mobyApiKey = NGENV.moby_key
         MobySubscriptionAnalytics.setup(apiKey: mobyApiKey) { account in
             account.appsflyerID = nil
@@ -402,29 +387,31 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             MobySubscriptionAnalytics.trackInstall(installInfo: installInfo)
         }
         
-        RemoteConfigServiceImpl.shared.prefetch()
-        
+        let appLovinAdProvider: AdProvider
         if #available(iOS 13.0, *) {
-            AiChatTgHelper.set(
-                appLovinAdProvider: AppLovinAdProvider(
-                    apiKey: NGENV.applovin_api_key,
-                    adUnitIdentifier: NGENV.applovin_ad_unit_id,
-                    userRepository: RepoUserTgHelper.resolveUserRepository()
-                )
+            appLovinAdProvider = AppLovinAdProvider(
+                apiKey: NGENV.applovin_api_key,
+                adUnitIdentifier: NGENV.applovin_ad_unit_id,
+                userRepository: RepoUserTgHelper.resolveUserRepository()
             )
-            AnalyticsTgHelper.set(firebaseSender: FirebaseAnalyticsSender())
-            RemoteConfigTgHelper.set(remoteConfig: RemoteConfigServiceImpl.shared)
-            PremiumTgHelper.set(subscriptionService: SubscriptionAnalytics.SubscriptionService.shared)
-            
-            RepoUserTgHelper.initialize()
-            AiChatTgHelper.initializeAds()
-            Task {
-                await AssistantTgHelper.tryClaimDailyReward()
-            }
+        } else {
+            appLovinAdProvider = AdProviderMock()
         }
-        AiChatTgHelper.resolveTransactionsObserver().startObserving()
-        
-        AnalyticsTgHelper.trackSession()
+        NGEntryPoint.onAppLaunch(
+            env: Env(
+                apiBaseUrl: URL(string: NGENV.esim_api_url)!,
+                apiKey: NGENV.esim_api_key,
+                premiumProductId: NGENV.premium_bundle,
+                privacyUrl: URL(string: NGENV.privacy_url)!,
+                referralBot: NGENV.referral_bot,
+                telegramAuthBot: NGENV.telegram_auth_bot,
+                termsUrl: URL(string: NGENV.terms_url)!,
+                webSocketUrl: NGENV.websocket_url
+            ),
+            appLovinAdProvider: appLovinAdProvider,
+            firebaseAnalyticsSender: FirebaseAnalyticsSender(),
+            remoteConfig: RemoteConfigServiceImpl.shared
+        )
         
         let launchStartTime = CFAbsoluteTimeGetCurrent()
         
@@ -1477,7 +1464,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         } else {
             AppCache.wasOnboardingShown = true
             if let rootController = window.rootViewController {
-                let langCode = Locale.currentAppLocale.langCode
+                let langCode = Locale.currentAppLocale.languageWithScriptCode
                 let controller = onboardingController(languageCode: langCode, onComplete: { [weak rootController] in
                     rootController?.dismiss(animated: true)
                     onNicegramOnboardingComplete()

@@ -26,6 +26,7 @@ public struct NGEnvObj: Decodable {
     public let google_cloud_api_key: String
     public let applovin_api_key: String
     public let applovin_ad_unit_id: String
+    public let websocket_url: URL
 }
 
 func parseNGEnv() -> NGEnvObj {

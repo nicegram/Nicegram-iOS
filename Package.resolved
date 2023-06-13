@@ -42,7 +42,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "03e92148842cdd7c8e5cefd7c5c146fe9b8aeba7"
+        "revision" : "eaffce7bcbf7327298fda526eed7521b2938ea41"
       }
     },
     {
@@ -61,6 +61,15 @@
       "state" : {
         "revision" : "f222cbdf325885926566172f6f5f06af95473158",
         "version" : "5.6.0"
+      }
+    },
+    {
+      "identity" : "subscriptionanalytics-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "git@bitbucket.org:mobyrix/subscriptionanalytics-ios.git",
+      "state" : {
+        "revision" : "53bfc6c6f26322ec647b87c338a071714ac69420",
+        "version" : "0.4.3"
       }
     },
     {

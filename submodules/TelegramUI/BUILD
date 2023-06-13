@@ -10,9 +10,7 @@ NGDEPS = [
     "//Nicegram/NGStrings:NGStrings",
     "//Nicegram/NGTranslate:NGTranslate",
     "//Nicegram/NGLab:NGLab",
-    "//Nicegram/SubscriptionAnalytics:SubscriptionAnalytics",
     "//Nicegram/NGAppCache:NGAppCache",
-    "//Nicegram/NGSubscription:NGSubscription",
     "//Nicegram/NGEnv:NGEnv",
     "//Nicegram/NGOnboarding:NGOnboarding",
     "//Nicegram/NGQuickReplies:NGQuickReplies",
@@ -22,6 +20,7 @@ NGDEPS = [
     "@FirebaseSDK//:FirebaseCrashlytics",
     "@swiftpkg_nicegram_assistant_ios//:Sources_NGAssistantUI",
     "@swiftpkg_nicegram_assistant_ios//:Sources_NGAuth",
+    "@swiftpkg_nicegram_assistant_ios//:Sources_NGEntryPoint",
     "@swiftpkg_nicegram_assistant_ios//:Sources_NGPremium",
     "@swiftpkg_nicegram_assistant_ios//:Sources__NGRemoteConfig",
 ]

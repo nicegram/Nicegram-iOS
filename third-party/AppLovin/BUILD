@@ -6,7 +6,7 @@ load(
 apple_static_xcframework_import(
     name = "AppLovin",
     xcframework_imports = glob([
-		"applovin-ios-sdk-11.9.0/AppLovinSDK.xcframework/**",
+		"applovin-ios-sdk-11.10.1/AppLovinSDK.xcframework/**",
 	]),
     deps = [
 
