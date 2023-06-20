@@ -2388,7 +2388,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             showFoldersAtBottom = false
         }
         self.chatListDisplayNode.inlineTabContainerNode.isHidden = !showFoldersAtBottom
-        self.chatListDisplayNode.mainContainerNode.currentItemNode.scroller.contentInset.bottom = showFoldersAtBottom ? 50 : 0
         self.chatListDisplayNode.inlineTabContainerNode.update(size: CGSize(width: layout.size.width, height: 40.0), sideInset: layout.safeInsets.left, filters: self.tabContainerData?.0 ?? [], selectedFilter: self.chatListDisplayNode.mainContainerNode.currentItemFilter, isReordering: self.chatListDisplayNode.isReorderingFilters || (self.chatListDisplayNode.mainContainerNode.currentItemNode.currentState.editing && !self.chatListDisplayNode.didBeginSelectingChatsWhileEditing), isEditing: false, transitionFraction: self.chatListDisplayNode.mainContainerNode.transitionFraction, presentationData: self.presentationData, transition: .animated(duration: 0.4, curve: .spring))
         //
         self.chatListDisplayNode.containerLayoutUpdated(layout, navigationBarHeight: self.cleanNavigationHeight, visualNavigationHeight: navigationBarHeight, cleanNavigationBarHeight: self.cleanNavigationHeight, transition: transition)

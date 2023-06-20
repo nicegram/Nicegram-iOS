@@ -1668,6 +1668,11 @@ final class ChatListControllerNode: ASDisplayNode, UIGestureRecognizerDelegate {
             cleanMainNavigationBarHeight = visualNavigationHeight
             mainInsets.top = visualNavigationHeight
         }
+        // MARK: Nicegram FoldersAtBottom
+        if !self.inlineTabContainerNode.isHidden {
+            mainInsets.bottom += 50
+        }
+        //
         self.mainContainerNode.update(layout: layout, navigationBarHeight: mainNavigationBarHeight, visualNavigationHeight: visualNavigationHeight, originalNavigationHeight: navigationBarHeight, cleanNavigationBarHeight: cleanMainNavigationBarHeight, insets: mainInsets, isReorderingFilters: self.isReorderingFilters, isEditing: self.isEditing, inlineNavigationLocation: self.inlineStackContainerNode?.location, inlineNavigationTransitionFraction: self.inlineStackContainerTransitionFraction, transition: transition)
         
         if let inlineStackContainerNode = self.inlineStackContainerNode {

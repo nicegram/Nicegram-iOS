@@ -101,6 +101,14 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 
 
+### upload_dsyms
+
+```sh
+[bundle exec] fastlane upload_dsyms
+```
+
+
+
 ### generate_app_store_connect_api_key
 
 ```sh
