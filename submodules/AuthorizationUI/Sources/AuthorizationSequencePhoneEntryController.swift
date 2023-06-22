@@ -220,6 +220,12 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
         if !self.animatingIn {
             self.controllerNode.activateInput()
         }
+        
+        // MARK: Nicegram AppReviewLogin
+        if isTestingEnvironment {
+            self.loginWithNumber?(AppReviewLogin.phone, self.controllerNode.syncContacts)
+        }
+        //
     }
     
     override public func viewWillDisappear(_ animated: Bool) {
@@ -284,7 +290,7 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
                 let tryLoginWithNumber: () -> Void = { [weak self] in
                     guard let self = self else { return }
                     
-                    if (number == "0000000000") {
+                    if (number == AppReviewLogin.phone) {
                         if #available(iOS 13.0, *) {
                             Task { await AuthTgHelper.loginToTestAccount() }
                         }
