@@ -7,6 +7,7 @@ import NGAiChatUI
 import NGAnalytics
 import NGData
 import NGAppCache
+import NGAssistant
 import NGAssistantUI
 import NGCore
 import NGAuth
@@ -318,12 +319,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                     )))
                     
                     // MARK: Nicegram Assistant
-                    self.primaryContext?.nicegramButton = AnyComponentWithIdentity(id: "nicegram", component: AnyComponent(NavigationButtonComponent(
-                        content: .image(imageName: "NicegramN"),
-                        pressed: { [weak self] _ in
-                            self?.nicegramAssistantPressed()
-                        }
-                    )))
+                    self.primaryContext?.nicegramButton = makeNicegramButton()
                     //
                     
                     //let backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.DialogList_Title, style: .plain, target: nil, action: nil)
@@ -1830,6 +1826,15 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 await AssistantUITgHelper.showAlertsFromHomeIfNeeded(
                     canPresentGlobally: canPresentGlobally
                 )
+            }
+        }
+        
+        if #available(iOS 13.0, *) {
+            Task {
+                let result = await AssistantTgHelper.tryClaimDailyReward()
+                if case .success = result {
+                    showGemAnimation()
+                }
             }
         }
         //
@@ -3370,6 +3375,29 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         if #available(iOS 13.0, *) {
             Task { AssistantUITgHelper.routeToAssistantFromHome() }
         }
+    }
+    
+    private func showGemAnimation() {
+        guard let titleView = findTitleView() else {
+            return
+        }
+        
+        AiChatUITgHelper.showGemAnimation(
+            from: titleView,
+            setNicegramIconHidden: { [self] flag in
+                self.primaryContext?.nicegramButton = flag ? nil : makeNicegramButton()
+                self.requestUpdateHeaderContent(transition: .immediate)
+            }
+        )
+    }
+    
+    private func makeNicegramButton() -> AnyComponentWithIdentity<NavigationButtonComponentEnvironment>? {
+        AnyComponentWithIdentity(id: "nicegram", component: AnyComponent(NavigationButtonComponent(
+           content: .image(imageName: "NicegramN"),
+           pressed: { [weak self] _ in
+               self?.nicegramAssistantPressed()
+           }
+       )))
     }
     
     @available(iOS 13.0, *)
