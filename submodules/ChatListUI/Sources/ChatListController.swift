@@ -3378,17 +3378,20 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     }
     
     private func showGemAnimation() {
-        guard let titleView = findTitleView() else {
+        guard let contentView = self.headerContentView.view as? ChatListHeaderComponent.View,
+              let gemAnimationOverlay = contentView.gemAnimationOverlay else {
             return
         }
         
-        AiChatUITgHelper.showGemAnimation(
-            from: titleView,
-            setNicegramIconHidden: { [self] flag in
-                self.primaryContext?.nicegramButton = flag ? nil : makeNicegramButton()
-                self.requestUpdateHeaderContent(transition: .immediate)
-            }
-        )
+        setNicegramIcon(hidden: true)
+        gemAnimationOverlay.animate { [self] in
+            setNicegramIcon(hidden: false)
+        }
+    }
+    
+    private func setNicegramIcon(hidden: Bool) {
+        self.primaryContext?.nicegramButton = hidden ? nil : makeNicegramButton()
+        self.requestUpdateHeaderContent(transition: .immediate)
     }
     
     private func makeNicegramButton() -> AnyComponentWithIdentity<NavigationButtonComponentEnvironment>? {
