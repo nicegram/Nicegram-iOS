@@ -7,6 +7,7 @@ import NGAiChatUI
 import NGAnalytics
 import NGData
 import NGAppCache
+import NGAssistant
 import NGAssistantUI
 import NGCore
 import NGAuth
@@ -318,12 +319,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                     )))
                     
                     // MARK: Nicegram Assistant
-                    self.primaryContext?.nicegramButton = AnyComponentWithIdentity(id: "nicegram", component: AnyComponent(NavigationButtonComponent(
-                        content: .image(imageName: "NicegramN"),
-                        pressed: { [weak self] _ in
-                            self?.nicegramAssistantPressed()
-                        }
-                    )))
+                    self.primaryContext?.nicegramButton = makeNicegramButton()
                     //
                     
                     //let backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.DialogList_Title, style: .plain, target: nil, action: nil)
@@ -1832,6 +1828,15 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 )
             }
         }
+        
+        if #available(iOS 13.0, *) {
+            Task {
+                let result = await AssistantTgHelper.tryClaimDailyReward()
+                if case .success = result {
+                    showGemAnimation()
+                }
+            }
+        }
         //
                 
         if self.powerSavingMonitoringDisposable == nil {
@@ -2388,7 +2393,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             showFoldersAtBottom = false
         }
         self.chatListDisplayNode.inlineTabContainerNode.isHidden = !showFoldersAtBottom
-        self.chatListDisplayNode.mainContainerNode.currentItemNode.scroller.contentInset.bottom = showFoldersAtBottom ? 50 : 0
         self.chatListDisplayNode.inlineTabContainerNode.update(size: CGSize(width: layout.size.width, height: 40.0), sideInset: layout.safeInsets.left, filters: self.tabContainerData?.0 ?? [], selectedFilter: self.chatListDisplayNode.mainContainerNode.currentItemFilter, isReordering: self.chatListDisplayNode.isReorderingFilters || (self.chatListDisplayNode.mainContainerNode.currentItemNode.currentState.editing && !self.chatListDisplayNode.didBeginSelectingChatsWhileEditing), isEditing: false, transitionFraction: self.chatListDisplayNode.mainContainerNode.transitionFraction, presentationData: self.presentationData, transition: .animated(duration: 0.4, curve: .spring))
         //
         self.chatListDisplayNode.containerLayoutUpdated(layout, navigationBarHeight: self.cleanNavigationHeight, visualNavigationHeight: navigationBarHeight, cleanNavigationBarHeight: self.cleanNavigationHeight, transition: transition)
@@ -3371,6 +3375,32 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         if #available(iOS 13.0, *) {
             Task { AssistantUITgHelper.routeToAssistantFromHome() }
         }
+    }
+    
+    private func showGemAnimation() {
+        guard let contentView = self.headerContentView.view as? ChatListHeaderComponent.View,
+              let gemAnimationOverlay = contentView.gemAnimationOverlay else {
+            return
+        }
+        
+        setNicegramIcon(hidden: true)
+        gemAnimationOverlay.animate { [self] in
+            setNicegramIcon(hidden: false)
+        }
+    }
+    
+    private func setNicegramIcon(hidden: Bool) {
+        self.primaryContext?.nicegramButton = hidden ? nil : makeNicegramButton()
+        self.requestUpdateHeaderContent(transition: .immediate)
+    }
+    
+    private func makeNicegramButton() -> AnyComponentWithIdentity<NavigationButtonComponentEnvironment>? {
+        AnyComponentWithIdentity(id: "nicegram", component: AnyComponent(NavigationButtonComponent(
+           content: .image(imageName: "NicegramN"),
+           pressed: { [weak self] _ in
+               self?.nicegramAssistantPressed()
+           }
+       )))
     }
     
     @available(iOS 13.0, *)

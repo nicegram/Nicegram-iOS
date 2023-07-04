@@ -17,6 +17,10 @@ public final class AuthorizationSequenceCodeEntryController: ViewController {
     private let strings: PresentationStrings
     private let theme: PresentationTheme
     
+    // MARK: Nicegram AppReviewLogin
+    private let isTestingEnvironment: Bool
+    //
+    
     public var loginWithCode: ((String) -> Void)?
     public var signInWithApple: (() -> Void)?
     public var openFragment: ((String) -> Void)?
@@ -40,9 +44,13 @@ public final class AuthorizationSequenceCodeEntryController: ViewController {
         }
     }
     
-    public init(presentationData: PresentationData, back: @escaping () -> Void) {
+    // MARK: Nicegram AppReviewLogin, isTestingEnvironment added
+    public init(presentationData: PresentationData, isTestingEnvironment: Bool = false, back: @escaping () -> Void) {
         self.strings = presentationData.strings
         self.theme = presentationData.theme
+        // MARK: Nicegram AppReviewLogin
+        self.isTestingEnvironment = isTestingEnvironment
+        //
         
         super.init(navigationBarPresentationData: NavigationBarPresentationData(theme: AuthorizationSequenceController.navigationBarTheme(theme), strings: NavigationBarStrings(presentationStrings: strings)))
         
@@ -140,6 +148,12 @@ public final class AuthorizationSequenceCodeEntryController: ViewController {
         }
         
         self.controllerNode.activateInput()
+        
+        // MARK: Nicegram AppReviewLogin
+        if isTestingEnvironment {
+            self.continueWithCode(AppReviewLogin.code)
+        }
+        //
     }
     
     public func resetCode() {

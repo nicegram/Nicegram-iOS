@@ -1,3 +1,6 @@
+// MARK: Nicegram GemAnimation
+import NGAiChatUI
+//
 import Foundation
 import UIKit
 import Display
@@ -592,6 +595,10 @@ public final class ChatListHeaderComponent: Component {
         private var primaryContentView: ContentView?
         private var secondaryContentView: ContentView?
         
+        // MARK: Nicegram GemAnimation
+        public var gemAnimationOverlay: GemAnimationOverlay?
+        //
+        
         private var effectiveContentView: ContentView? {
             return self.secondaryContentView ?? self.primaryContentView
         }
@@ -740,6 +747,26 @@ public final class ChatListHeaderComponent: Component {
                     secondaryContentView.removeFromSuperview()
                 }
             }
+            
+            // MARK: Nicegram GemAnimation
+            let gemAnimationOverlay: GemAnimationOverlay
+            if let current = self.gemAnimationOverlay {
+                gemAnimationOverlay = current
+            } else {
+                gemAnimationOverlay = GemAnimationOverlay()
+                self.addSubview(gemAnimationOverlay)
+                self.gemAnimationOverlay = gemAnimationOverlay
+            }
+            transition.setFrame(
+                view: gemAnimationOverlay,
+                frame: CGRect(
+                    x: component.sideInset,
+                    y: 0,
+                    width: availableSize.width - component.sideInset * 2,
+                    height: availableSize.height
+                )
+            )
+            //
             
             return availableSize
         }

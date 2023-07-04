@@ -2,18 +2,19 @@
 import AppLovinAdProvider
 import NGAiChat
 import NGAnalytics
-import NGEntryPoint
+import NGAppCache
 import var NGCore.ENV
 import struct NGCore.Env
 import NGData
-import NGStrings
-import NGLogging
-import SubscriptionAnalytics
+import NGEntryPoint
 import NGEnv
-import NGAppCache
+import NGLogging
+import NGLottie
 import NGOnboarding
 import NGRemoteConfig
 import NGRepoUser
+import NGStrings
+import SubscriptionAnalytics
 
 import UIKit
 import SwiftSignalKit
@@ -410,7 +411,8 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             ),
             appLovinAdProvider: appLovinAdProvider,
             firebaseAnalyticsSender: FirebaseAnalyticsSender(),
-            remoteConfig: RemoteConfigServiceImpl.shared
+            remoteConfig: RemoteConfigServiceImpl.shared,
+            lottieViewProvider: { LottieViewImpl() }
         )
         
         let launchStartTime = CFAbsoluteTimeGetCurrent()

@@ -44,6 +44,8 @@ lane :beta_build do |options|
     ) + 1,
     upload_to_tf: true
   )
+  
+  upload_dsyms()
 end
 
 lane :master_build do |options|
@@ -280,6 +282,14 @@ lane :nicegram_match do |options|
     keychain_name: KEYCHAIN_NAME,
     keychain_password: KEYCHAIN_PASSWORD,
     skip_provisioning_profiles: true
+  )
+end
+
+lane :upload_dsyms do |options|
+  upload_symbols_to_crashlytics(
+    binary_path: "#{SOURCE_PATH}/ci/upload-symbols",
+    dsym_path: "#{BUILD_WORKING_DIR}/artifacts/Telegram.DSYMs.zip",
+    gsp_path: "#{SOURCE_PATH}/Telegram/Telegram-iOS/GoogleService-Info.plist"
   )
 end
 
