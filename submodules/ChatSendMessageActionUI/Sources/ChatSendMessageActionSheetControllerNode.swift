@@ -6,7 +6,6 @@ import UIKit
 import AsyncDisplayKit
 import SwiftSignalKit
 import Display
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import AccountContext

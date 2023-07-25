@@ -29,6 +29,7 @@
 
 #import "TGMediaPickerSendActionSheetController.h"
 #import "TGOverlayControllerWindow.h"
+#import <LegacyComponents/TGPhotoEditorSparseView.h>
 
 const NSTimeInterval TGVideoMessageMaximumDuration = 60.0;
 
@@ -63,12 +64,13 @@ typedef enum
 @interface TGVideoMessageCaptureController () <TGVideoCameraPipelineDelegate, TGVideoMessageScrubberDataSource, TGVideoMessageScrubberDelegate, UIGestureRecognizerDelegate>
 {
     SQueue *_queue;
-    
+        
     AVCaptureDevicePosition _preferredPosition;
     TGVideoCameraPipeline *_capturePipeline;
     NSURL *_url;
     
     PGCameraVolumeButtonHandler *_buttonHandler;
+    bool _forStory;
     bool _autorotationWasEnabled;
     bool _dismissed;
     bool _gpuAvailable;
@@ -149,13 +151,14 @@ typedef enum
 
 @implementation TGVideoMessageCaptureController
 
-- (instancetype)initWithContext:(id<LegacyComponentsContext>)context assets:(TGVideoMessageCaptureControllerAssets *)assets transitionInView:(UIView *(^)(void))transitionInView parentController:(TGViewController *)parentController controlsFrame:(CGRect)controlsFrame isAlreadyLocked:(bool (^)(void))isAlreadyLocked liveUploadInterface:(id<TGLiveUploadInterface>)liveUploadInterface pallete:(TGModernConversationInputMicPallete *)pallete slowmodeTimestamp:(int32_t)slowmodeTimestamp slowmodeView:(UIView *(^)(void))slowmodeView canSendSilently:(bool)canSendSilently canSchedule:(bool)canSchedule reminder:(bool)reminder useRearCamTelescopy:(bool)useRearCamTelescopy
 // MARK: Nicegram (useRearCamTelescopy)
+- (instancetype)initWithContext:(id<LegacyComponentsContext>)context forStory:(bool)forStory assets:(TGVideoMessageCaptureControllerAssets *)assets transitionInView:(UIView *(^)(void))transitionInView parentController:(TGViewController *)parentController controlsFrame:(CGRect)controlsFrame isAlreadyLocked:(bool (^)(void))isAlreadyLocked liveUploadInterface:(id<TGLiveUploadInterface>)liveUploadInterface pallete:(TGModernConversationInputMicPallete *)pallete slowmodeTimestamp:(int32_t)slowmodeTimestamp slowmodeView:(UIView *(^)(void))slowmodeView canSendSilently:(bool)canSendSilently canSchedule:(bool)canSchedule reminder:(bool)reminder useRearCamTelescopy:(bool)useRearCamTelescopy
 {
     self = [super initWithContext:context];
     if (self != nil)
     {
         _context = context;
+        _forStory = forStory;
         _transitionInView = [transitionInView copy];
         self.isAlreadyLocked = isAlreadyLocked;
         _liveUploadInterface = liveUploadInterface;
@@ -260,15 +263,17 @@ typedef enum
 {
     [super loadView];
     
+    self.view = [[TGPhotoEditorSparseView alloc] initWithFrame:self.view.frame];
+    
     self.view.backgroundColor = [UIColor clearColor];
     
     CGFloat bottomOffset = self.view.frame.size.height - CGRectGetMaxY(_controlsFrame);
     if (bottomOffset > 44.0) {
         bottomOffset = 0.0f;
     }
-    CGRect wrapperFrame = TGIsPad() ? CGRectMake(0.0f, 0.0f, self.view.frame.size.width, CGRectGetMaxY(_controlsFrame) + bottomOffset) : CGRectMake(0.0f, 0.0f, self.view.frame.size.width, CGRectGetMinY(_controlsFrame));
+    CGRect wrapperFrame = TGIsPad() || _forStory ? CGRectMake(0.0f, 0.0f, self.view.frame.size.width, CGRectGetMaxY(_controlsFrame) + bottomOffset) : CGRectMake(0.0f, 0.0f, self.view.frame.size.width, CGRectGetMinY(_controlsFrame));
     
-    _wrapperView = [[UIView alloc] initWithFrame:wrapperFrame];
+    _wrapperView = [[TGPhotoEditorSparseView alloc] initWithFrame:wrapperFrame];
     _wrapperView.clipsToBounds = true;
     [self.view addSubview:_wrapperView];
     
@@ -285,7 +290,9 @@ typedef enum
             effect = [UIBlurEffect effectWithStyle:self.pallete.isDark ? UIBlurEffectStyleDark : UIBlurEffectStyleLight];
         
         _blurView = [[UIVisualEffectView alloc] initWithEffect:effect];
-        [_wrapperView addSubview:_blurView];
+        if (!_forStory) {
+            [_wrapperView addSubview:_blurView];
+        }
         
         if (type == TGVideoMessageTransitionTypeSimplified)
         {
@@ -296,7 +303,9 @@ typedef enum
             _fadeView = [[UIView alloc] initWithFrame:fadeFrame];
             _fadeView.alpha = 0.0f;
             _fadeView.backgroundColor = [curtainColor colorWithAlphaComponent:0.4f];
-            [_wrapperView addSubview:_fadeView];
+            if (!_forStory) {
+                [_wrapperView addSubview:_fadeView];
+            }
         }
     }
     else
@@ -304,7 +313,9 @@ typedef enum
         _fadeView = [[UIView alloc] initWithFrame:fadeFrame];
         _fadeView.alpha = 0.0f;
         _fadeView.backgroundColor = [curtainColor colorWithAlphaComponent:0.6f];
-        [_wrapperView addSubview:_fadeView];
+        if (!_forStory) {
+            [_wrapperView addSubview:_fadeView];
+        }
     }
     
     CGFloat minSide = MIN(_wrapperView.frame.size.width, _wrapperView.frame.size.height);
@@ -359,7 +370,7 @@ typedef enum
     
     CGRect controlsFrame = _controlsFrame;
     
-    _controlsView = [[TGVideoMessageControls alloc] initWithFrame:controlsFrame assets:_assets slowmodeTimestamp:_slowmodeTimestamp slowmodeView:_slowmodeView];
+    _controlsView = [[TGVideoMessageControls alloc] initWithFrame:controlsFrame forStory:_forStory assets:_assets slowmodeTimestamp:_slowmodeTimestamp slowmodeView:_slowmodeView];
     _controlsView.pallete = self.pallete;
     _controlsView.clipsToBounds = true;
     _controlsView.parent = self;
@@ -413,7 +424,9 @@ typedef enum
     _separatorView = [[UIView alloc] initWithFrame:CGRectMake(controlsFrame.origin.x, controlsFrame.origin.y - TGScreenPixel, controlsFrame.size.width, TGScreenPixel)];
     _separatorView.backgroundColor = self.pallete != nil ? self.pallete.borderColor : UIColorRGB(0xb2b2b2);
     _separatorView.userInteractionEnabled = false;
-    [self.view addSubview:_separatorView];
+    if (!_forStory) {
+        [self.view addSubview:_separatorView];
+    }
     
     if ([TGVideoCameraPipeline cameraPositionChangeAvailable])
     {
@@ -641,7 +654,7 @@ typedef enum
 {
     [super viewWillLayoutSubviews];
     
-    CGRect fadeFrame = TGIsPad() ? self.view.bounds : CGRectMake(0.0f, 0.0f, _wrapperView.frame.size.width, _wrapperView.frame.size.height);
+    CGRect fadeFrame = TGIsPad() || _forStory ? self.view.bounds : CGRectMake(0.0f, 0.0f, _wrapperView.frame.size.width, _wrapperView.frame.size.height);
     _blurView.frame = fadeFrame;
 }
 
@@ -689,6 +702,7 @@ typedef enum
     self.view.backgroundColor = [UIColor clearColor];
     self.view.userInteractionEnabled = false;
     
+    _circleWrapperView.layer.allowsGroupOpacity = true;
     [UIView animateWithDuration:0.15 animations:^
     {
         _circleWrapperView.alpha = 0.0f;
@@ -753,7 +767,16 @@ typedef enum
     
     [_activityDisposable dispose];
     [self stopRecording:^{}];
+    
+    if (self.didStop != nil) {
+        self.didStop();
+    }
     return true;
+}
+
+- (void)send
+{
+    [self sendPressed];
 }
 
 - (bool)sendPressed
