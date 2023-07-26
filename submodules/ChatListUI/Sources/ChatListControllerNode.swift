@@ -2181,7 +2181,7 @@ final class ChatListControllerNode: ASDisplayNode, UIGestureRecognizerDelegate {
             return
         }
         
-        if let storySubscriptions = self.controller?.orderedStorySubscriptions {
+        if let controller = self.controller, let storySubscriptions = controller.orderedStorySubscriptions, shouldDisplayStoriesInChatListHeader(storySubscriptions: storySubscriptions, isHidden: controller.location == .chatList(groupId: .archive)) {
             let _ = storySubscriptions
         
             self.tempAllowAvatarExpansion = true

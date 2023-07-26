@@ -386,7 +386,6 @@ public final class TextFieldComponent: Component {
             guard let component = self.component, !textView.attributedText.string.isEmpty && textView.selectedRange.length > 0 else {
                 return UIMenu(children: suggestedActions)
             }
-                        
             let strings = component.strings
             var actions: [UIAction] = [
                 UIAction(title: strings.TextFormat_Bold, image: nil) { [weak self] action in

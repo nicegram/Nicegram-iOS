@@ -743,7 +743,7 @@ public final class DrawingTextEntityView: DrawingEntityView, UITextViewDelegate 
             entity.referenceDrawingSize = CGSize(width: itemSize * 4.0, height: itemSize * 4.0)
             entity.scale = scale
             entity.position = textPosition.offsetBy(
-                dx: (emojiTextPosition.x * cos(rotation) + emojiTextPosition.y * sin(rotation)) * scale,
+                dx: (emojiTextPosition.x * cos(rotation) - emojiTextPosition.y * sin(rotation)) * scale,
                 dy: (emojiTextPosition.y * cos(rotation) + emojiTextPosition.x * sin(rotation)) * scale
             )
             entity.rotation = rotation
@@ -1174,7 +1174,8 @@ private class DrawingTextLayoutManager: NSLayoutManager {
                         addPath.addLine(to: CGPoint(x: d.x + self.radius, y: d.y))
                         path.append(addPath)
                     }
-
+                    last = cur
+                } else {
                     last = cur
                 }
             }

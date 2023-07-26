@@ -1174,6 +1174,7 @@ private final class NotificationServiceHandler {
                             }*/
 
                             if let storyId {
+                                content.category = "st"
                                 action = .pollStories(peerId: peerId, content: content, storyId: storyId)
                             } else {
                                 action = .poll(peerId: peerId, content: content, messageId: messageIdValue)

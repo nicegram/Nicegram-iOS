@@ -28,15 +28,17 @@ final class MediaPickerGridItem: GridItem {
     let content: MediaPickerGridItemContent
     let interaction: MediaPickerInteraction
     let theme: PresentationTheme
+    let strings: PresentationStrings
     let selectable: Bool
     let enableAnimations: Bool
     let stories: Bool
     
     let section: GridSection? = nil
     
-    init(content: MediaPickerGridItemContent, interaction: MediaPickerInteraction, theme: PresentationTheme, selectable: Bool, enableAnimations: Bool, stories: Bool) {
+    init(content: MediaPickerGridItemContent, interaction: MediaPickerInteraction, theme: PresentationTheme, strings: PresentationStrings, selectable: Bool, enableAnimations: Bool, stories: Bool) {
         self.content = content
         self.interaction = interaction
+        self.strings = strings
         self.theme = theme
         self.selectable = selectable
         self.enableAnimations = enableAnimations
@@ -55,7 +57,7 @@ final class MediaPickerGridItem: GridItem {
             return node
         case let .draft(draft, index):
             let node = MediaPickerGridItemNode()
-            node.setup(interaction: self.interaction, draft: draft, index: index, theme: self.theme, selectable: self.selectable, enableAnimations: self.enableAnimations, stories: self.stories)
+            node.setup(interaction: self.interaction, draft: draft, index: index, theme: self.theme, strings: self.strings, selectable: self.selectable, enableAnimations: self.enableAnimations, stories: self.stories)
             return node
         }
     }
@@ -71,7 +73,7 @@ final class MediaPickerGridItem: GridItem {
         case let .media(media, index):
             node.setup(interaction: self.interaction, media: media, index: index, theme: self.theme, selectable: self.selectable, enableAnimations: self.enableAnimations, stories: self.stories)
         case let .draft(draft, index):
-            node.setup(interaction: self.interaction, draft: draft, index: index, theme: self.theme, selectable: self.selectable, enableAnimations: self.enableAnimations, stories: self.stories)
+            node.setup(interaction: self.interaction, draft: draft, index: index, theme: self.theme, strings: self.strings, selectable: self.selectable, enableAnimations: self.enableAnimations, stories: self.stories)
         }
     }
 }
@@ -287,7 +289,7 @@ final class MediaPickerGridItemNode: GridItemNode {
         }
     }
     
-    func setup(interaction: MediaPickerInteraction, draft: MediaEditorDraft, index: Int, theme: PresentationTheme, selectable: Bool, enableAnimations: Bool, stories: Bool) {
+    func setup(interaction: MediaPickerInteraction, draft: MediaEditorDraft, index: Int, theme: PresentationTheme, strings: PresentationStrings, selectable: Bool, enableAnimations: Bool, stories: Bool) {
         self.interaction = interaction
         self.theme = theme
         self.selectable = selectable
@@ -310,7 +312,7 @@ final class MediaPickerGridItemNode: GridItemNode {
             }
             
             if self.draftNode.supernode == nil {
-                self.draftNode.attributedText = NSAttributedString(string: "Draft", font: Font.semibold(12.0), textColor: .white)
+                self.draftNode.attributedText = NSAttributedString(string: strings.MediaEditor_Draft, font: Font.semibold(12.0), textColor: .white)
                 self.addSubnode(self.draftNode)
             }
             
@@ -516,40 +518,45 @@ final class MediaPickerGridItemNode: GridItemNode {
                 self.currentDraftState = nil
             }
             
+            var typeIcon: UIImage?
+            var duration: String?
             if asset.isFavorite {
-                self.typeIconNode.image = generateTintedImage(image: UIImage(bundleImageName: "Media Grid/Favorite"), color: .white)
-                if self.typeIconNode.supernode == nil {
-                    self.addSubnode(self.gradientNode)
-                    self.addSubnode(self.typeIconNode)
-                    self.setNeedsLayout()
+                typeIcon = generateTintedImage(image: UIImage(bundleImageName: "Media Grid/Favorite"), color: .white)
+            } else if asset.mediaType == .video {
+                if asset.mediaSubtypes.contains(.videoHighFrameRate) {
+                    typeIcon = UIImage(bundleImageName: "Media Editor/MediaSlomo")
+                } else if asset.mediaSubtypes.contains(.videoTimelapse) {
+                    typeIcon = UIImage(bundleImageName: "Media Editor/MediaTimelapse")
+                } else {
+                    typeIcon = UIImage(bundleImageName: "Media Editor/MediaVideo")
                 }
+                duration = stringForDuration(Int32(asset.duration))
             }
             
-            if asset.mediaType == .video {
-                if !asset.isFavorite {
-                    if asset.mediaSubtypes.contains(.videoHighFrameRate) {
-                        self.typeIconNode.image = UIImage(bundleImageName: "Media Editor/MediaSlomo")
-                    } else if asset.mediaSubtypes.contains(.videoTimelapse) {
-                        self.typeIconNode.image = UIImage(bundleImageName: "Media Editor/MediaTimelapse")
-                    } else {
-                        self.typeIconNode.image = UIImage(bundleImageName: "Media Editor/MediaVideo")
-                    }
-                }
-                
-                self.durationNode.attributedText = NSAttributedString(string: stringForDuration(Int32(asset.duration)), font: Font.semibold(12.0), textColor: .white)
-                
-                if self.durationNode.supernode == nil {
+            if typeIcon != nil || duration != nil {
+                if self.gradientNode.supernode == nil {
                     self.addSubnode(self.gradientNode)
+                }
+            } else if self.gradientNode.supernode != nil {
+                self.gradientNode.removeFromSupernode()
+            }
+            
+            if let typeIcon {
+                self.typeIconNode.image = typeIcon
+                if self.typeIconNode.supernode == nil {
                     self.addSubnode(self.typeIconNode)
+                }
+            } else if self.typeIconNode.supernode != nil {
+                self.typeIconNode.removeFromSupernode()
+            }
+            
+            if let duration {
+                self.durationNode.attributedText = NSAttributedString(string: duration, font: Font.semibold(12.0), textColor: .white)
+                if self.durationNode.supernode == nil {
                     self.addSubnode(self.durationNode)
-                    self.setNeedsLayout()
                 }
-            } else {
-                if self.typeIconNode.supernode != nil {
-                    self.gradientNode.removeFromSupernode()
-                    self.typeIconNode.removeFromSupernode()
-                    self.durationNode.removeFromSupernode()
-                }
+            } else if self.durationNode.supernode != nil {
+                self.durationNode.removeFromSupernode()
             }
             
             self.currentAssetState = (fetchResult, index)

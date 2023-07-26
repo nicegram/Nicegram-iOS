@@ -53,7 +53,7 @@ final class PeerInfoStoryGridScreenComponent: Component {
         private weak var state: EmptyComponentState?
         private var environment: EnvironmentType?
         
-        private var paneNode: PeerInfoStoryPaneNode?
+        private(set) var paneNode: PeerInfoStoryPaneNode?
         private var paneStatusDisposable: Disposable?
         private(set) var paneStatusText: String?
         
@@ -171,74 +171,6 @@ final class PeerInfoStoryGridScreenComponent: Component {
                         self.environment?.controller()?.push(PeerInfoStoryGridScreen(context: component.context, peerId: component.peerId, scope: .archive))
                     })))
                 }
-                
-                /*if photoCount != 0 && videoCount != 0 {
-                 items.append(.separator)
-                 
-                 let showPhotos: Bool
-                 switch pane.contentType {
-                 case .photo, .photoOrVideo:
-                 showPhotos = true
-                 default:
-                 showPhotos = false
-                 }
-                 let showVideos: Bool
-                 switch pane.contentType {
-                 case .video, .photoOrVideo:
-                 showVideos = true
-                 default:
-                 showVideos = false
-                 }
-                 
-                 items.append(.action(ContextMenuActionItem(text: strings.SharedMedia_ShowPhotos, icon: { theme in
-                 if !showPhotos {
-                 return nil
-                 }
-                 return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor)
-                 }, action: { [weak pane] _, a in
-                 a(.default)
-                 
-                 guard let pane = pane else {
-                 return
-                 }
-                 let updatedContentType: PeerInfoVisualMediaPaneNode.ContentType
-                 switch pane.contentType {
-                 case .photoOrVideo:
-                 updatedContentType = .video
-                 case .photo:
-                 updatedContentType = .photo
-                 case .video:
-                 updatedContentType = .photoOrVideo
-                 default:
-                 updatedContentType = pane.contentType
-                 }
-                 pane.updateContentType(contentType: updatedContentType)
-                 })))
-                 items.append(.action(ContextMenuActionItem(text: strings.SharedMedia_ShowVideos, icon: { theme in
-                 if !showVideos {
-                 return nil
-                 }
-                 return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor)
-                 }, action: { [weak pane] _, a in
-                 a(.default)
-                 
-                 guard let pane = pane else {
-                 return
-                 }
-                 let updatedContentType: PeerInfoVisualMediaPaneNode.ContentType
-                 switch pane.contentType {
-                 case .photoOrVideo:
-                 updatedContentType = .photo
-                 case .photo:
-                 updatedContentType = .photoOrVideo
-                 case .video:
-                 updatedContentType = .video
-                 default:
-                 updatedContentType = pane.contentType
-                 }
-                 pane.updateContentType(contentType: updatedContentType)
-                 })))
-                 }*/
             }
 
             let contextController = ContextController(account: component.context.account, presentationData: presentationData, source: .reference(PeerInfoContextReferenceContentSource(controller: controller, sourceNode: source)), items: .single(ContextController.Items(content: .list(items))), gesture: nil)
@@ -336,6 +268,13 @@ final class PeerInfoStoryGridScreenComponent: Component {
                     disposable.dispose()
                 }
             })
+        }
+        
+        func scrollToTop() {
+            guard let paneNode = self.paneNode else {
+                return
+            }
+            let _ = paneNode.scrollToTop()
         }
         
         func update(component: PeerInfoStoryGridScreenComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<EnvironmentType>, transition: Transition) -> CGSize {
@@ -554,8 +493,6 @@ public class PeerInfoStoryGridScreen: ViewControllerComponentContainer {
         }
         moreBarButton.addTarget(self, action: #selector(self.morePressed), forControlEvents: .touchUpInside)
         
-        self.navigationItem.setRightBarButton(moreBarButtonItem, animated: false)
-        
         self.titleView = ChatTitleView(
             context: context, theme:
                 presentationData.theme,
@@ -570,6 +507,13 @@ public class PeerInfoStoryGridScreen: ViewControllerComponentContainer {
         self.navigationItem.titleView = self.titleView
         
         self.updateTitle()
+        
+        self.scrollToTop = { [weak self] in
+            guard let self, let componentView = self.node.hostView.componentView as? PeerInfoStoryGridScreenComponent.View else {
+                return
+            }
+            componentView.scrollToTop()
+        }
     }
     
     required public init(coder aDecoder: NSCoder) {
@@ -594,6 +538,8 @@ public class PeerInfoStoryGridScreen: ViewControllerComponentContainer {
                 title = nil
             }
             self.titleView?.titleContent = .custom(presentationData.strings.StoryList_TitleSaved, title, false)
+            
+            self.navigationItem.setRightBarButton(self.moreBarButtonItem, animated: false)
         case .archive:
             guard let componentView = self.node.hostView.componentView as? PeerInfoStoryGridScreenComponent.View else {
                 return
@@ -605,6 +551,19 @@ public class PeerInfoStoryGridScreen: ViewControllerComponentContainer {
                 title = presentationData.strings.StoryList_TitleArchive
             }
             self.titleView?.titleContent = .custom(title, nil, false)
+            
+            var hasMenu = false
+            if componentView.selectedCount != 0 {
+                hasMenu = true
+            } else if let paneNode = componentView.paneNode, !paneNode.isEmpty {
+                hasMenu = true
+            }
+            
+            if hasMenu {
+                self.navigationItem.setRightBarButton(self.moreBarButtonItem, animated: false)
+            } else {
+                self.navigationItem.setRightBarButton(nil, animated: false)
+            }
         }
     }
     

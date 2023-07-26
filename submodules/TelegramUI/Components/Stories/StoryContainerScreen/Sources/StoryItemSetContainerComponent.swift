@@ -271,6 +271,7 @@ public final class StoryItemSetContainerComponent: Component {
     final class VisibleItem {
         let externalState = StoryContentItem.ExternalState()
         let contentContainerView: UIView
+        let contentTintLayer = SimpleLayer()
         let view = ComponentView<StoryContentItem.Environment>()
         var currentProgress: Double = 0.0
         var isBuffering: Bool = false
@@ -282,6 +283,8 @@ public final class StoryItemSetContainerComponent: Component {
             if #available(iOS 13.0, *) {
                 self.contentContainerView.layer.cornerCurve = .continuous
             }
+            
+            self.contentTintLayer.backgroundColor = UIColor(white: 0.0, alpha: 1.0).cgColor
         }
     }
     
@@ -952,6 +955,9 @@ public final class StoryItemSetContainerComponent: Component {
             if self.sendMessageContext.shareController != nil {
                 return .pause
             }
+            if self.sendMessageContext.statusController != nil {
+                return .pause
+            }
             if let navigationController = component.controller()?.navigationController as? NavigationController {
                 let topViewController = navigationController.topViewController
                 if !(topViewController is StoryContainerScreen) && !(topViewController is MediaEditorScreen) && !(topViewController is ShareWithPeersScreen) && !(topViewController is AttachmentController) {
@@ -1119,6 +1125,7 @@ public final class StoryItemSetContainerComponent: Component {
                     if let view = visibleItem.view.view {
                         if visibleItem.contentContainerView.superview == nil {
                             self.itemsContainerView.addSubview(visibleItem.contentContainerView)
+                            self.itemsContainerView.layer.addSublayer(visibleItem.contentTintLayer)
                             visibleItem.contentContainerView.addSubview(view)
                         }
                         
@@ -1137,6 +1144,9 @@ public final class StoryItemSetContainerComponent: Component {
                         })
                         itemTransition.setBounds(view: visibleItem.contentContainerView, bounds: CGRect(origin: CGPoint(), size: itemLayout.contentFrame.size))
                         
+                        itemTransition.setPosition(layer: visibleItem.contentTintLayer, position: CGPoint(x: itemPositionX, y: itemLayout.contentFrame.center.y))
+                        itemTransition.setBounds(layer: visibleItem.contentTintLayer, bounds: CGRect(origin: CGPoint(), size: itemLayout.contentFrame.size))
+                        
                         var transform = CATransform3DMakeScale(itemScale, itemScale, 1.0)
                         if let pinchState = component.pinchState {
                             let pinchOffset = CGPoint(
@@ -1154,6 +1164,8 @@ public final class StoryItemSetContainerComponent: Component {
                         itemTransition.setTransform(view: visibleItem.contentContainerView, transform: transform)
                         itemTransition.setCornerRadius(layer: visibleItem.contentContainerView.layer, cornerRadius: 12.0 * (1.0 / itemScale))
                         
+                        itemTransition.setTransform(layer: visibleItem.contentTintLayer, transform: transform)
+                        
                         let countedFractionDistanceToCenter: CGFloat = max(0.0, min(1.0, unboundFractionDistanceToCenter / 3.0))
                         var itemAlpha: CGFloat = 1.0 * (1.0 - countedFractionDistanceToCenter) + 0.0 * countedFractionDistanceToCenter
                         itemAlpha = max(0.0, min(1.0, itemAlpha))
@@ -1161,7 +1173,7 @@ public final class StoryItemSetContainerComponent: Component {
                         let collapsedAlpha = itemAlpha * itemLayout.contentScaleFraction + 0.0 * (1.0 - itemLayout.contentScaleFraction)
                         itemAlpha = (1.0 - fractionDistanceToCenter) * itemAlpha + fractionDistanceToCenter * collapsedAlpha
                         
-                        itemTransition.setAlpha(view: visibleItem.contentContainerView, alpha: itemAlpha)
+                        itemTransition.setAlpha(layer: visibleItem.contentTintLayer, alpha: 1.0 - itemAlpha)
                         
                         var itemProgressMode = self.itemProgressMode()
                         if index != centralIndex {
@@ -1182,6 +1194,7 @@ public final class StoryItemSetContainerComponent: Component {
                 if !validIds.contains(id) {
                     removeIds.append(id)
                     visibleItem.contentContainerView.removeFromSuperview()
+                    visibleItem.contentTintLayer.removeFromSuperlayer()
                 }
             }
             for id in removeIds {
@@ -1678,7 +1691,9 @@ public final class StoryItemSetContainerComponent: Component {
                 self.sendMessageContext.setup(context: component.context, view: self, inputPanelExternalState: self.inputPanelExternalState, keyboardInputData: component.keyboardInputData)
             }
             
+            var itemChanged = false
             if self.component?.slice.item.storyItem.id != component.slice.item.storyItem.id {
+                itemChanged = self.component != nil
                 self.initializedOffset = false
                 
                 if let inputPanelView = self.inputPanel.view as? MessageInputPanelComponent.View {
@@ -1933,7 +1948,7 @@ public final class StoryItemSetContainerComponent: Component {
                     wasRecordingDismissed: self.sendMessageContext.wasRecordingDismissed,
                     timeoutValue: nil,
                     timeoutSelected: false,
-                    displayGradient: false, //(component.inputHeight != 0.0 || inputNodeVisible) && component.metrics.widthClass != .regular,
+                    displayGradient: false,
                     bottomInset: component.inputHeight != 0.0 || inputNodeVisible ? 0.0 : bottomContentInset,
                     hideKeyboard: self.sendMessageContext.currentInputMode == .media,
                     forceIsEditing: self.sendMessageContext.currentInputMode == .media,
@@ -2175,7 +2190,8 @@ public final class StoryItemSetContainerComponent: Component {
                                     return
                                 }
                                 self.openPeerStories(peer: peer, avatarNode: avatarNode)
-                            }
+                            },
+                            openPremiumIntro: {}
                         )),
                         environment: {},
                         containerSize: availableSize
@@ -2441,7 +2457,7 @@ public final class StoryItemSetContainerComponent: Component {
                 transition.setAlpha(view: soundButtonView, alpha: soundAlpha)
                 
                 if isVideo {
-                    headerRightOffset -= soundButtonSize.width + 16.0
+                    headerRightOffset -= soundButtonSize.width + 13.0
                 }
             }
             
@@ -2460,7 +2476,7 @@ public final class StoryItemSetContainerComponent: Component {
             
             if let storyPrivacyIcon {
                 let privacyIcon: ComponentView<Empty>
-                var privacyIconTransition = transition
+                var privacyIconTransition: Transition = itemChanged ? .immediate : .easeInOut(duration: 0.2)
                 if let current = self.privacyIcon {
                     privacyIcon = current
                 } else {
@@ -2468,7 +2484,7 @@ public final class StoryItemSetContainerComponent: Component {
                     privacyIcon = ComponentView()
                     self.privacyIcon = privacyIcon
                 }
-                let closeFriendIconSize = privacyIcon.update(
+                let privacyIconSize = privacyIcon.update(
                     transition: privacyIconTransition,
                     component: AnyComponent(PlainButtonComponent(
                         content: AnyComponent(
@@ -2504,7 +2520,7 @@ public final class StoryItemSetContainerComponent: Component {
                             let tooltipScreen = TooltipScreen(
                                 account: component.context.account,
                                 sharedContext: component.context.sharedContext,
-                                text: .plain(text: tooltipText), style: .default, location: TooltipScreen.Location.point(closeFriendIconView.convert(closeFriendIconView.bounds, to: self).offsetBy(dx: 1.0, dy: 6.0), .top), displayDuration: .infinite, shouldDismissOnTouch: { _, _ in
+                                text: .markdown(text: tooltipText), style: .default, location: TooltipScreen.Location.point(closeFriendIconView.convert(closeFriendIconView.bounds, to: nil).offsetBy(dx: 1.0, dy: 6.0), .top), displayDuration: .infinite, shouldDismissOnTouch: { _, _ in
                                     return .dismiss(consume: true)
                                 }
                             )
@@ -2524,7 +2540,7 @@ public final class StoryItemSetContainerComponent: Component {
                     environment: {},
                     containerSize: CGSize(width: 44.0, height: 44.0)
                 )
-                let closeFriendIconFrame = CGRect(origin: CGPoint(x: headerRightOffset - closeFriendIconSize.width - 8.0, y: 23.0), size: closeFriendIconSize)
+                let closeFriendIconFrame = CGRect(origin: CGPoint(x: headerRightOffset - privacyIconSize.width - 8.0, y: 22.0), size: privacyIconSize)
                 if let closeFriendIconView = privacyIcon.view {
                     if closeFriendIconView.superview == nil {
                         self.controlsContainerView.addSubview(closeFriendIconView)
@@ -3026,7 +3042,6 @@ public final class StoryItemSetContainerComponent: Component {
                             }
                             component.controller()?.push(controller)
                         }), elevatedLayout: false, animateInAsReplacement: false, action: { _ in true })
-                        //strongSelf.currentUndoController = undoController
                         component.controller()?.present(undoController, in: .current)
                     }
                 }
@@ -3886,7 +3901,7 @@ public final class StoryItemSetContainerComponent: Component {
                 self.requestSave()
             })))
             
-            if component.slice.item.storyItem.isPublic && (component.slice.peer.addressName != nil || !component.slice.peer._asPeer().usernames.isEmpty) && component.slice.item.storyItem.expirationTimestamp > Int32(Date().timeIntervalSince1970) {
+            if component.slice.item.storyItem.isPublic && (component.slice.peer.addressName != nil || !component.slice.peer._asPeer().usernames.isEmpty) && (component.slice.item.storyItem.expirationTimestamp > Int32(Date().timeIntervalSince1970) || component.slice.item.storyItem.isPinned) {
                 items.append(.action(ContextMenuActionItem(text: component.strings.Story_Context_CopyLink, icon: { theme in
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Link"), color: theme.contextMenu.primaryColor)
                 }, action: { [weak self] _, a in
@@ -3950,9 +3965,10 @@ public final class StoryItemSetContainerComponent: Component {
             let _ = (component.context.engine.data.get(
                 TelegramEngine.EngineData.Item.Peer.NotificationSettings(id: component.slice.peer.id),
                 TelegramEngine.EngineData.Item.NotificationSettings.Global(),
-                TelegramEngine.EngineData.Item.Contacts.Top()
+                TelegramEngine.EngineData.Item.Contacts.Top(),
+                TelegramEngine.EngineData.Item.Peer.IsContact(id: component.slice.peer.id)
             )
-            |> deliverOnMainQueue).start(next: { [weak self] settings, globalSettings, topSearchPeers in
+            |> deliverOnMainQueue).start(next: { [weak self] settings, globalSettings, topSearchPeers, isContact in
                 guard let self, let component = self.component, let controller = component.controller() else {
                     return
                 }
@@ -3964,7 +3980,7 @@ public final class StoryItemSetContainerComponent: Component {
                 
                 let isMuted = resolvedAreStoriesMuted(globalSettings: globalSettings._asGlobalNotificationSettings(), peer: component.slice.peer._asPeer(), peerSettings: settings._asNotificationSettings(), topSearchPeers: topSearchPeers)
                 
-                if !component.slice.peer.isService {
+                if !component.slice.peer.isService && isContact {
                     items.append(.action(ContextMenuActionItem(text: isMuted ? component.strings.StoryFeed_ContextNotifyOn : component.strings.StoryFeed_ContextNotifyOff, icon: { theme in
                         return generateTintedImage(image: UIImage(bundleImageName: component.slice.additionalPeerData.isMuted ? "Chat/Context Menu/Unmute" : "Chat/Context Menu/Muted"), color: theme.contextMenu.primaryColor)
                     }, action: { [weak self] _, a in
