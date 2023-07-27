@@ -12,6 +12,7 @@ public enum AuthorizationCodeRequestError {
     case phoneLimitExceeded
     case phoneBanned
     case timeout
+    case appOutdated
 }
 
 func switchToAuthorizedAccount(transaction: AccountManagerModifier<TelegramAccountManagerTypes>, account: UnauthorizedAccount) {
@@ -245,6 +246,8 @@ public func sendAuthorizationCode(accountManager: AccountManager<TelegramAccount
                 return .fail(.phoneLimitExceeded)
             } else if error.errorDescription == "PHONE_NUMBER_BANNED" {
                 return .fail(.phoneBanned)
+            } else if error.errorDescription == "UPDATE_APP_TO_LOGIN" {
+                return .fail(.appOutdated)
             } else if error.errorDescription == "SESSION_PASSWORD_NEEDED" {
                 return account.network.request(Api.functions.account.getPassword(), automaticFloodWait: false)
                 |> mapError { error -> AuthorizationCodeRequestError in
@@ -371,6 +374,8 @@ private func internalResendAuthorizationCode(accountManager: AccountManager<Tele
             return .phoneLimitExceeded
         } else if error.errorDescription == "PHONE_NUMBER_BANNED" {
             return .phoneBanned
+        } else if error.errorDescription == "UPDATE_APP_TO_LOGIN" {
+            return .appOutdated
         } else {
             return .generic(info: (Int(error.errorCode), error.errorDescription))
         }
@@ -457,6 +462,8 @@ public func resendAuthorizationCode(accountManager: AccountManager<TelegramAccou
                                 return .phoneLimitExceeded
                             } else if error.errorDescription == "PHONE_NUMBER_BANNED" {
                                 return .phoneBanned
+                            } else if error.errorDescription == "UPDATE_APP_TO_LOGIN" {
+                                return .appOutdated
                             } else {
                                 return .generic(info: (Int(error.errorCode), error.errorDescription))
                             }
@@ -1148,6 +1155,14 @@ func _internal_performPasswordRecovery(network: Network, code: String, updatedPa
         |> mapToSignal { result -> Signal<RecoveredAccountData, PasswordRecoveryError> in
             return .single(RecoveredAccountData(authorization: result))
         }
+    }
+}
+
+func _internal_invalidateLoginCodes(network: Network, codes: [String]) -> Signal<Never, NoError> {
+    return network.request(Api.functions.account.invalidateSignInCodes(codes: codes))
+    |> ignoreValues
+    |> `catch` { _ -> Signal<Never, NoError> in
+        return .never()
     }
 }
 

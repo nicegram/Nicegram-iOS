@@ -341,6 +341,17 @@ public final class MediaBox {
         return "\(self.basePath)/\(cacheString)/\(fileNameForId(id)):\(representation.uniqueId)"
     }
     
+    public func cachedRepresentationCompletePath(_ id: MediaResourceId, keepDuration: CachedMediaRepresentationKeepDuration, representationId: String) -> String {
+        let cacheString: String
+        switch keepDuration {
+        case .general:
+            cacheString = "cache"
+        case .shortLived:
+            cacheString = "short-cache"
+        }
+        return "\(self.basePath)/\(cacheString)/\(fileNameForId(id)):\(representationId)"
+    }
+    
     public func shortLivedResourceCachePathPrefix(_ id: MediaResourceId) -> String {
         let cacheString = "short-cache"
         return "\(self.basePath)/\(cacheString)/\(fileNameForId(id))"
@@ -682,9 +693,9 @@ public final class MediaBox {
                         messageIdValue = messageId.id
                     }
                     
-                    self.storageBox.add(reference: StorageBox.Reference(peerId: location.peerId.toInt64(), messageNamespace: UInt8(clamping: messageNamespace), messageId: messageIdValue), to: resource.id.stringRepresentation.data(using: .utf8)!, contentType: parameters.contentType.rawValue)
+                    self.storageBox.add(reference: StorageBox.Reference(peerId: location.peerId.toInt64(), messageNamespace: UInt8(clamping: messageNamespace), messageId: messageIdValue), to: resource.id.stringRepresentation.data(using: .utf8)!, contentType: parameters.contentType)
                 } else {
-                    self.storageBox.add(reference: StorageBox.Reference(peerId: 0, messageNamespace: 0, messageId: 0), to: resource.id.stringRepresentation.data(using: .utf8)!, contentType: parameters?.contentType.rawValue ?? 0)
+                    self.storageBox.add(reference: StorageBox.Reference(peerId: 0, messageNamespace: 0, messageId: 0), to: resource.id.stringRepresentation.data(using: .utf8)!, contentType: parameters?.contentType ?? 0)
                 }
                 
                 guard let (fileContext, releaseContext) = self.fileContext(for: resource.id) else {
@@ -858,9 +869,9 @@ public final class MediaBox {
                         messageIdValue = messageId.id
                     }
                     
-                    self.storageBox.add(reference: StorageBox.Reference(peerId: location.peerId.toInt64(), messageNamespace: UInt8(clamping: messageNamespace), messageId: messageIdValue), to: resource.id.stringRepresentation.data(using: .utf8)!, contentType: parameters.contentType.rawValue)
+                    self.storageBox.add(reference: StorageBox.Reference(peerId: location.peerId.toInt64(), messageNamespace: UInt8(clamping: messageNamespace), messageId: messageIdValue), to: resource.id.stringRepresentation.data(using: .utf8)!, contentType: parameters.contentType)
                 } else {
-                    self.storageBox.add(reference: StorageBox.Reference(peerId: 0, messageNamespace: 0, messageId: 0), to: resource.id.stringRepresentation.data(using: .utf8)!, contentType: parameters?.contentType.rawValue ?? 0)
+                    self.storageBox.add(reference: StorageBox.Reference(peerId: 0, messageNamespace: 0, messageId: 0), to: resource.id.stringRepresentation.data(using: .utf8)!, contentType: parameters?.contentType ?? 0)
                 }
                 
                 if let _ = fileSize(paths.complete) {
@@ -1388,7 +1399,7 @@ public final class MediaBox {
         }
     }
     
-    private func updateGeneralResourceIndex(lowImpact: Bool, completion: @escaping () -> Void) -> Disposable {
+    private func updateGeneralResourceIndex(otherResourceContentType: UInt8, lowImpact: Bool, completion: @escaping () -> Void) -> Disposable {
         let basePath = self.basePath
         let storageBox = self.storageBox
         
@@ -1457,7 +1468,7 @@ public final class MediaBox {
                             size = value
                         }
                         return (resourceId.data(using: .utf8)!, size)
-                    }, contentType: MediaResourceUserContentType.other.rawValue, completion: { addedCount in
+                    }, contentType: otherResourceContentType, completion: { addedCount in
                         if addedCount != 0 {
                             postboxLog("UpdateResourceIndex: added \(addedCount) unreferenced ids")
                         }
@@ -1573,8 +1584,8 @@ public final class MediaBox {
         }
     }*/
     
-    public func updateResourceIndex(lowImpact: Bool, completion: @escaping () -> Void) -> Disposable {
-        return self.updateGeneralResourceIndex(lowImpact: lowImpact, completion: {
+    public func updateResourceIndex(otherResourceContentType: UInt8, lowImpact: Bool, completion: @escaping () -> Void) -> Disposable {
+        return self.updateGeneralResourceIndex(otherResourceContentType: otherResourceContentType, lowImpact: lowImpact, completion: {
             completion()
         })
     }

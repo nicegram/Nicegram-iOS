@@ -258,7 +258,7 @@ private final class VisualMediaItemNode: ASDisplayNode {
                         })
                         
                         if let duration = file.duration {
-                            let durationString = stringForDuration(duration)
+                            let durationString = stringForDuration(Int32(duration))
                             
                             var badgeContent: ChatMessageInteractiveMediaBadgeContent?
                             var mediaDownloadState: ChatMessageInteractiveMediaDownloadState?

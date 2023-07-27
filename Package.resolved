@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/scenee/FloatingPanel",
       "state" : {
-        "revision" : "a917d6a626bd93108b5f0c42124a2c81ba3471b2",
-        "version" : "2.6.3"
+        "revision" : "0cb5307a6134a381e948d05fe0eaf4dacb349f1f",
+        "version" : "2.6.4"
       }
     },
     {
@@ -42,7 +42,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "43fe268b2a5aa6ea8b287a524006f17e0325a90f"
+        "revision" : "c22e6deafe2a51a578ae7209c5d7d8054d950c5b"
       }
     },
     {
@@ -50,8 +50,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SDWebImage/SDWebImage.git",
       "state" : {
-        "revision" : "c51ba84499268ea3020e6aee9e229c0f56b9d924",
-        "version" : "5.16.0"
+        "revision" : "633996a807442ec28df9d33b0f88ce57a0e2fdbf",
+        "version" : "5.17.0"
       }
     },
     {

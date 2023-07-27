@@ -380,11 +380,11 @@ public enum GradientImageDirection {
     case horizontal
 }
 
-public func generateGradientImage(size: CGSize, colors: [UIColor], locations: [CGFloat], direction: GradientImageDirection = .vertical) -> UIImage? {
+public func generateGradientImage(size: CGSize, scale: CGFloat = 0.0, colors: [UIColor], locations: [CGFloat], direction: GradientImageDirection = .vertical) -> UIImage? {
     guard colors.count == locations.count else {
         return nil
     }
-    UIGraphicsBeginImageContextWithOptions(size, false, 0.0)
+    UIGraphicsBeginImageContextWithOptions(size, false, scale)
     if let context = UIGraphicsGetCurrentContext() {
         let gradientColors = colors.map { $0.cgColor } as CFArray
         let colorSpace = DeviceGraphicsContextSettings.shared.colorSpace
@@ -572,7 +572,7 @@ public class DrawingContext {
         f(self.context)
     }
     
-    public init?(size: CGSize, scale: CGFloat = 0.0, opaque: Bool = false, clear: Bool = false, bytesPerRow: Int? = nil) {
+    public init?(size: CGSize, scale: CGFloat = 0.0, opaque: Bool = false, clear: Bool = false, bytesPerRow: Int? = nil, colorSpace: CGColorSpace? = nil) {
         if size.width <= 0.0 || size.height <= 0.0 {
             return nil
         }
@@ -607,7 +607,7 @@ public class DrawingContext {
             height: Int(self.scaledSize.height),
             bitsPerComponent: DeviceGraphicsContextSettings.shared.bitsPerComponent,
             bytesPerRow: self.bytesPerRow,
-            space: DeviceGraphicsContextSettings.shared.colorSpace,
+            space: colorSpace ?? DeviceGraphicsContextSettings.shared.colorSpace,
             bitmapInfo: self.bitmapInfo.rawValue,
             releaseCallback: nil,
             releaseInfo: nil
@@ -622,7 +622,7 @@ public class DrawingContext {
         }
     }
     
-    public func generateImage() -> UIImage? {
+    public func generateImage(colorSpace: CGColorSpace? = nil) -> UIImage? {
         if self.scaledSize.width.isZero || self.scaledSize.height.isZero {
             return nil
         }
@@ -639,7 +639,7 @@ public class DrawingContext {
             bitsPerComponent: self.context.bitsPerComponent,
             bitsPerPixel: self.context.bitsPerPixel,
             bytesPerRow: self.context.bytesPerRow,
-            space: DeviceGraphicsContextSettings.shared.colorSpace,
+            space: colorSpace ?? DeviceGraphicsContextSettings.shared.colorSpace,
             bitmapInfo: self.context.bitmapInfo,
             provider: dataProvider,
             decode: nil,
