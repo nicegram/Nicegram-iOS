@@ -95,6 +95,9 @@ public struct NGSettings {
     
     @NGStorage(key: "shareChannelsInfo", defaultValue: false)
     public static var shareChannelsInfo: Bool
+    
+    @NGStorage(key: "hideStories", defaultValue: false)
+    public static var hideStories: Bool
 }
 
 public struct NGWebSettings {
