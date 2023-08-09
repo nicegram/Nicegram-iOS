@@ -1,5 +1,9 @@
 "AppName" = "Nicegram";
 
+/*Common*/
+"Nicegram.PrivacyPolicy" = "Politica de Confidențialitate";
+"Nicegram.EULA" = "EULA";
+
 /*ChatFilter*/
 "ChatFilter.Bots" = "Boți";
 "ChatFilter.Channels" = "Canale";
@@ -17,6 +21,16 @@
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Stickere Animate";
 "NiceFeatures.useBackCam" = "Utilizați camera din spate (videoclipuri rotunde)";
 
+"NiceFeatures.Folders.Header" = "Foldere";
+"NiceFeatures.Account.Header" = "SETĂRI CONT";
+"NiceFeatures.Folders.TgFolders" = "Dosare de jos";
+"NiceFeatures.Folders.TgFolders.Notice" = "lista dosarelor iOS-styled";
+
+"NiceFeatures.RoundVideos.Header" = "VIDEO ROTUND";
+"NiceFeatures.RoundVideos.UseRearCamera" = "Începe cu camera posterioară";
+
+"NiceFeatures.InstantLock" = "Imediat";
+
 /*Save to Cloud*/
 "Chat.SaveToCloud" = "Salvează în Cloud";
 
@@ -28,6 +42,7 @@
 "NiceFeatures.Filters.Header" = "FILTRE (FERESTRE)";
 "NiceFeatures.Filters.Notice" = "Selectați numărul de file personalizate.\nApăsați lung pe filă pentru a schimba filtrul.";
 "NiceFeatures.Filters.ShowBadge" = "Afișați Insigne (Filtre)";
+"NiceFeatures.UseClassicInfoUi" = "Utilizează interfața clasică de informații chat";
 
 /*Common*/
 "Common.ExitNow" = "Ieșiți Acum";
@@ -76,14 +91,17 @@
 "Common.FAQ.Intro" = "Vă rugăm să rețineți că asistența Nicegram este realizată de un singur dezvoltator și de comunitate.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Funcții unice pe care nu le poți refuza!";
+"IAP.Premium.Features" = "Traducător de mesaje rapide\n\nMemorează dosarul selectat la ieșire";
 "IAP.Premium.Activated" = "Premium Activat!";
 "IAP.Common.Restore" = "Restabiliţi cumpărăturile";
 "IAP.Common.CantPay" = "Ne pare rău, dar nu puteți face achiziții din cauza restricțiilor de pe dispozitiv sau cont.";
 "IAP.Common.ErrorFetch" = "Ne pare rău, nu putem prelua achizițiile din App Store.";
 "IAP.Common.Congrats" = "Felicitări!";
 "IAP.Common.ValidateError" = "Ne pare rău, nu putem valida achiziția.";
+"IAP.Common.Connecting" = "Conectare la AppStore...";
 "Premium.OnetapTranslate" = "Butonul Traducere Rapidă";
 "Premium.IgnoreTranslate.Title" = "Limbi Ignorate";
+"Premium.IgnoreTranslate.Header" = "Butonul Traducere Rapidă va fi DEZACTIVAT pentru limbile pe care le alegeți mai jos.";
 
 /*Manage Filters*/
 "ManageFilters.Title" = "Administrează Ferestre";
@@ -92,6 +110,15 @@
 "Messages.Translate" = "Traduceți";
 "Messages.UndoTranslate" = "Anulează Traducerea";
 "Messages.TranslateError" = "Ne pare rău, traducere indisponibilă.";
+"Messages.SpeechToText" = "Tts";
+"Messages.UndoSpeechToText" = "Anulare tts";
+"Messages.SpeechToText.LowAccuracyError" = "Recunoașterea vocală a eșuat.\n\nAcest lucru se poate întâmpla din cauza calității slabe a înregistrării audio sau a diferențelor dintre limba aplicației și cea a înregistrării audio.";
+"Messages.SelectAllFromUser" = "Selectează toate de la acest utilizator";
+"Messages.ToLanguage" = "La Limba";
+"Messages.ToLanguage.WithCode" = "La limba: %@";
+"Messages.TranslateError.ToLanguageNotFound" = "Nu am reușit să determinăm limba în care doriți să traduceți textul. Vă rugăm să o selectați manual și să încercați din nou.";
+"Messages.ReplyPrivately" = "Răspuns Privat";
+"Messages.DeleteAllSystemMessages" = "Ștergeți tot";
 
 /*NG Lab Registration Date*/
 "NGLab.RegDate.Btn" = "Data înregistrării";
@@ -99,6 +126,7 @@
 "NGLab.RegDate.Notice" = "Aceasta este o dată aproximată";
 "NGLab.RegDate.MenuItem" = "înregistrat";
 "NGLab.RegDate.FetchError" = "Ne pare rău, nu putem obține data înregistrării.";
+"NGLab.BadDeviceToken" = "[iOS 11+] Dispozitivul nu poate fi verificat.";
 
 /*Backup Settings*/
 "NiceFeatures.BackupIcloud" = "Sincronizați Setările și Dosarele cu iCloud";
@@ -115,3 +143,14 @@
 "NiceFeatures.RegDate.OlderThan" = "Mai vechi de";
 "NiceFeatures.RegDate.Approximately" = "Aproximativ";
 "NiceFeatures.RegDate.NewerThan" = "Mai noi de";
+"DoubleBottom.Enabled.OK" = "OK";
+
+/*Onboarding*/
+"NicegramOnboarding.Continue" = "Continuă";
+"NicegramOnboarding.1.Title" = "Client No1 pentru Telegram Messenger";
+"NicegramOnboarding.1.Desc" = "Alătură-te celor peste 2 milioane de utilizatori Nicegram şi obţine acces la cel mai puternic şi sigur client Telegramă pentru afaceri.";
+"NicegramOnboarding.2.Title" = "Experiență de mesagerie avansată";
+"NicegramOnboarding.3.Title" = "Profil utilizator extins";
+"NicegramOnboarding.4.Title" = "Extensii unice Business";
+"NicegramOnboarding.5.Title" = "Cel mai sigur Messenger";
+"NicegramOnboarding.5.Desc" = "Securizează Messenger cu o criptare puternică, grup de apeluri audio și video, canale publice, grupuri și bot, stocare nelimitată în Cloud pentru partajarea de chaturi, media și documente.";

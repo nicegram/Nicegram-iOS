@@ -167,6 +167,7 @@
 "NicegramSettings.ShareChannelsInfoToggle.Note" = "ساهم في موسوعة ويكيبيديا الأكثر شمولاً لقنوات ومجموعات تيليجرام عن طريق إرسال معلومات القناة تلقائياً والارتباط بقاعدة البيانات الخاصة بنا. نحن لا نربط ملفك الشخصي وقناتك على تيليجرام ولا نشارك بياناتك الشخصية.";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "التطبيق يحدد لغات كل رسالة في جهازك. ويتطلب اداء عالي من الجهاز و بالتالي إستهلاك البطارية.";
 "Premium.rememberFolderOnExit" = "تذكر المجلد الحالي عند الخروج";
+"NicegramSettings.HideStories" = "إخفاء الستوري";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "أقدم من";

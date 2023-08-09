@@ -167,6 +167,7 @@
 "NicegramSettings.ShareChannelsInfoToggle.Note" = "Unterstützen Sie die umfassendste Wikipedia von Telegrammkanälen und Gruppen, indem Sie automatisch Kanal-Informationen und Links zu unserer Datenbank senden. Wir verbinden Ihr Telegramm-Profil und Ihren Kanal nicht und teilen Ihre persönlichen Daten nicht.";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Die App erkennt die Sprache jeder Nachricht auf deinem Gerät. Das ist eine Aufgabe mit hoher Priorität, die sich auf die Akkulaufzeit auswirken kann.";
 "Premium.rememberFolderOnExit" = "Aktuellen Ordner beim Beenden merken";
+"NicegramSettings.HideStories" = "Stories verbergen";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Älter als";

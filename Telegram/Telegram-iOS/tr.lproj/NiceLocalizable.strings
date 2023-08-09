@@ -167,6 +167,7 @@
 "NicegramSettings.ShareChannelsInfoToggle.Note" = "Kanal bilgilerini ve bağlantısını veri tabanımıza göndererek en kapsamlı Telegram kanalı wikipedia'sına katkıda bulunun. Telegram profilinizi ve kanalınızı bağlamayız ve kişisel verilerinizi paylaşmayız.";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Uygulama, cihazınızdaki her mesajın dilini algılar. Bu, pil ömrünüzü etkileyebilecek yüksek öncelikli bir görevdir.";
 "Premium.rememberFolderOnExit" = "Çıkışta şu anki klasörü hatırla";
+"NicegramSettings.HideStories" = "Hikayeleri Gizle";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Şundan daha eski:";
