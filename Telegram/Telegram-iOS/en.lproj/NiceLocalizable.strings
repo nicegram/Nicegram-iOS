@@ -167,6 +167,7 @@
 "NicegramSettings.ShareChannelsInfoToggle.Note" = "Contribute to the most comprehensive wikipedia of Telegram channels and groups by automatically submitting channel information and link to our database. We do not connect your telegram profile and channel and do not share your personal data.";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "App detects language of each message on your device. It's a high-performance task which can affect your battery life.";
 "Premium.rememberFolderOnExit" = "Remember current folder on exit";
+"NicegramSettings.HideStories" = "Hide Stories";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Older than";

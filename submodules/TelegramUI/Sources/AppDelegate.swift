@@ -890,6 +890,10 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     PresentationAppIcon(name: "New1", imageName: "New1"),
                     PresentationAppIcon(name: "New2", imageName: "New2"),
                     PresentationAppIcon(name: "NicegramAlt", imageName: "NicegramAlt"),
+                    PresentationAppIcon(name: "CommunityClassic", imageName: "CommunityClassic"),
+                    PresentationAppIcon(name: "CommunityOnyx", imageName: "CommunityOnyx"),
+                    PresentationAppIcon(name: "CommunityRuby", imageName: "CommunityRuby"),
+                    PresentationAppIcon(name: "CommunityWatercolor", imageName: "CommunityWatercolor"),
                 ]
                 if buildConfig.isInternalBuild {
                     icons.append(PresentationAppIcon(name: "WhiteFilledIcon", imageName: "WhiteFilledIcon"))

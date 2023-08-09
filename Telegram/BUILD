@@ -318,7 +318,6 @@ filegroup(
 
 # MARK: Nicegram AltIcons
 # removed BlackClassicIcon, BlueClassicIcon
-# added New3, NicegramAlt, NicegramBetaIcon
 alternate_icon_folders = [
     "BlackIcon",
     "BlackFilledIcon",
@@ -330,6 +329,10 @@ alternate_icon_folders = [
     "New3",
     "NicegramAlt",
     "NicegramBetaIcon",
+    "CommunityClassic",
+    "CommunityOnyx",
+    "CommunityRuby",
+    "CommunityWatercolor",
     "Premium",
     "PremiumBlack",
     "PremiumTurbo"

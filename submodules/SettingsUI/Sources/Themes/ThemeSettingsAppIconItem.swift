@@ -364,6 +364,14 @@ class ThemeSettingsAppIconItemNode: ListViewItemNode, ItemListItemNode {
                                     name = item.strings.Appearance_AppIconDefault
                                 case "NicegramAlt":
                                     name = "Special"
+                                case "CommunityClassic":
+                                    name = "NGC Classic"
+                                case "CommunityOnyx":
+                                    name = "NGC Onyx"
+                                case "CommunityRuby":
+                                    name = "NGC Ruby"
+                                case "CommunityWatercolor":
+                                    name = "NGC Watercolor"
                                 case "Premium":
                                     name = item.strings.Appearance_AppIconPremium
                                 case "PremiumBlack":

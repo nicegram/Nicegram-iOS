@@ -167,6 +167,7 @@
 "NicegramSettings.ShareChannelsInfoToggle.Note" = "將頻道資訊與連結自動提交給我們的資料庫，來為最全面的 Telegram 頻道與群組維基百科做出貢獻。我們不會連接您的 Telegram 個人檔案與頻道，也不會分享您的個人資料。";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "App 會檢測您設備上每則訊息的語言。這是一項高耗電的功能，會影響您的電池壽命。";
 "Premium.rememberFolderOnExit" = "記下應用程式關閉時所在的資料夾";
+"NicegramSettings.HideStories" = "隱藏故事";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "早於";

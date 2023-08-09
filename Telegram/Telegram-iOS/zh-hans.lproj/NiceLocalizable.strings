@@ -167,6 +167,7 @@
 "NicegramSettings.ShareChannelsInfoToggle.Note" = "通过自动提交频道信息和链接至我们的数据库，向最全面的 Telegram 频道和群组百科贡献力量。我们不会关联您的 Telegram 个人资料和频道，不会分享您的个人数据。";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "应用会检测您设备上每条消息使用的语言。这一功能需要很高的性能，可能会影响电池寿命。";
 "Premium.rememberFolderOnExit" = "退出时记住当前分组";
+"NicegramSettings.HideStories" = "隐藏故事";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "早于";

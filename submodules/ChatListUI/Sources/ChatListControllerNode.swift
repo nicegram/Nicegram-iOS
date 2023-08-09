@@ -1,3 +1,6 @@
+// MARK: Nicegram HideStories
+import NGData
+//
 import Foundation
 import UIKit
 import AsyncDisplayKit
@@ -2726,6 +2729,11 @@ final class ChatListControllerNode: ASDisplayNode, UIGestureRecognizerDelegate {
 }
 
 func shouldDisplayStoriesInChatListHeader(storySubscriptions: EngineStorySubscriptions, isHidden: Bool) -> Bool {
+    // MARK: Nicegram HideStories
+    if NGSettings.hideStories {
+        return false
+    }
+    //
     if !storySubscriptions.items.isEmpty {
         return true
     }

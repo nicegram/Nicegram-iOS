@@ -1,4 +1,4 @@
-// MARK: Nicegram HideReactions, AiChat
+// MARK: Nicegram HideReactions, AiChat, HideStories
 import NGAiChatUI
 import NGData
 import NGUI
@@ -1397,18 +1397,23 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
             self.avatarNode.setPeer(context: item.context, theme: item.presentationData.theme, peer: peer, overrideImage: .archivedChatsIcon(hiddenByDefault: groupReferenceData.hiddenByDefault), emptyColor: item.presentationData.theme.list.mediaPlaceholderColor, synchronousLoad: synchronousLoads)
         }
         
-        self.avatarNode.setStoryStats(storyStats: storyState.flatMap { storyState in
-            return AvatarNode.StoryStats(
-                totalCount: storyState.stats.totalCount,
-                unseenCount: storyState.stats.unseenCount,
-                hasUnseenCloseFriendsItems: storyState.hasUnseenCloseFriends
-            )
-        }, presentationParams: AvatarNode.StoryPresentationParams(
-            colors: AvatarNode.Colors(theme: item.presentationData.theme),
-            lineWidth: 2.33,
-            inactiveLineWidth: 1.33
-        ), transition: .immediate)
-        self.avatarNode.isUserInteractionEnabled = storyState != nil
+        // MARK: Nicegram HideStories, check hideStories flag before setStoryStats
+        if !NGSettings.hideStories {
+            self.avatarNode.setStoryStats(storyStats: storyState.flatMap { storyState in
+                return AvatarNode.StoryStats(
+                    totalCount: storyState.stats.totalCount,
+                    unseenCount: storyState.stats.unseenCount,
+                    hasUnseenCloseFriendsItems: storyState.hasUnseenCloseFriends
+                )
+            }, presentationParams: AvatarNode.StoryPresentationParams(
+                colors: AvatarNode.Colors(theme: item.presentationData.theme),
+                lineWidth: 2.33,
+                inactiveLineWidth: 1.33
+            ), transition: .immediate)
+            self.avatarNode.isUserInteractionEnabled = storyState != nil
+        } else {
+            self.avatarNode.isUserInteractionEnabled = false
+        }
         
         if let peer = peer {
             var overrideImage: AvatarNodeImageOverride?
