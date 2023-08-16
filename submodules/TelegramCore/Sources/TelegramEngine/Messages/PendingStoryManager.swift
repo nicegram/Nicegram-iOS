@@ -9,6 +9,7 @@ public extension Stories {
             case stableId
             case timestamp
             case media
+            case mediaAreas
             case text
             case entities
             case embeddedStickers
@@ -22,6 +23,7 @@ public extension Stories {
         public let stableId: Int32
         public let timestamp: Int32
         public let media: Media
+        public let mediaAreas: [MediaArea]
         public let text: String
         public let entities: [MessageTextEntity]
         public let embeddedStickers: [TelegramMediaFile]
@@ -35,6 +37,7 @@ public extension Stories {
             stableId: Int32,
             timestamp: Int32,
             media: Media,
+            mediaAreas: [MediaArea],
             text: String,
             entities: [MessageTextEntity],
             embeddedStickers: [TelegramMediaFile],
@@ -47,6 +50,7 @@ public extension Stories {
             self.stableId = stableId
             self.timestamp = timestamp
             self.media = media
+            self.mediaAreas = mediaAreas
             self.text = text
             self.entities = entities
             self.embeddedStickers = embeddedStickers
@@ -65,6 +69,7 @@ public extension Stories {
             
             let mediaData = try container.decode(Data.self, forKey: .media)
             self.media = PostboxDecoder(buffer: MemoryBuffer(data: mediaData)).decodeRootObject() as! Media
+            self.mediaAreas = try container.decodeIfPresent([MediaArea].self, forKey: .mediaAreas) ?? []
             
             self.text = try container.decode(String.self, forKey: .text)
             self.entities = try container.decode([MessageTextEntity].self, forKey: .entities)
@@ -89,6 +94,7 @@ public extension Stories {
             let mediaEncoder = PostboxEncoder()
             mediaEncoder.encodeRootObject(self.media)
             try container.encode(mediaEncoder.makeData(), forKey: .media)
+            try container.encode(self.mediaAreas, forKey: .mediaAreas)
             
             try container.encode(self.text, forKey: .text)
             try container.encode(self.entities, forKey: .entities)
@@ -112,6 +118,9 @@ public extension Stories {
                 return false
             }
             if !lhs.media.isEqual(to: rhs.media) {
+                return false
+            }
+            if lhs.mediaAreas != rhs.mediaAreas {
                 return false
             }
             if lhs.text != rhs.text {
@@ -184,6 +193,11 @@ final class PendingStoryManager {
         var currentPendingItemContext: PendingItemContext?
         
         var storyObserverContexts: [Int32: Bag<(Float) -> Void>] = [:]
+        
+        private let allStoriesEventsPipe = ValuePipe<(Int32, Int32)>()
+        var allStoriesUploadEvents: Signal<(Int32, Int32), NoError> {
+            return self.allStoriesEventsPipe.signal()
+        }
         
         private let allStoriesUploadProgressPromise = Promise<Float?>(nil)
         private var allStoriesUploadProgressValue: Float? = nil
@@ -263,6 +277,10 @@ final class PendingStoryManager {
         private func update(localState: Stories.LocalState) {
             if let currentPendingItemContext = self.currentPendingItemContext, !localState.items.contains(where: { $0.randomId == currentPendingItemContext.item.randomId }) {
                 self.currentPendingItemContext = nil
+                self.queue.after(0.1, {
+                    let _ = currentPendingItemContext
+                    print(currentPendingItemContext)
+                })
             }
             
             if self.currentPendingItemContext == nil, let firstItem = localState.items.first {
@@ -284,8 +302,7 @@ final class PendingStoryManager {
                 self.currentPendingItemContext = pendingItemContext
                 
                 let stableId = firstItem.stableId
-                Logger.shared.log("PendingStoryManager", "setting up item context for: \(firstItem.stableId) randomId: \(firstItem.randomId)")
-                pendingItemContext.disposable = (_internal_uploadStoryImpl(postbox: self.postbox, network: self.network, accountPeerId: self.accountPeerId, stateManager: self.stateManager, messageMediaPreuploadManager: self.messageMediaPreuploadManager, revalidationContext: self.revalidationContext, auxiliaryMethods: self.auxiliaryMethods, stableId: stableId, media: firstItem.media, text: firstItem.text, entities: firstItem.entities, embeddedStickers: firstItem.embeddedStickers, pin: firstItem.pin, privacy: firstItem.privacy, isForwardingDisabled: firstItem.isForwardingDisabled, period: Int(firstItem.period), randomId: firstItem.randomId)
+                pendingItemContext.disposable = (_internal_uploadStoryImpl(postbox: self.postbox, network: self.network, accountPeerId: self.accountPeerId, stateManager: self.stateManager, messageMediaPreuploadManager: self.messageMediaPreuploadManager, revalidationContext: self.revalidationContext, auxiliaryMethods: self.auxiliaryMethods, stableId: stableId, media: firstItem.media, mediaAreas: firstItem.mediaAreas, text: firstItem.text, entities: firstItem.entities, embeddedStickers: firstItem.embeddedStickers, pin: firstItem.pin, privacy: firstItem.privacy, isForwardingDisabled: firstItem.isForwardingDisabled, period: Int(firstItem.period), randomId: firstItem.randomId)
                 |> deliverOn(self.queue)).start(next: { [weak self] event in
                     guard let `self` = self else {
                         return
@@ -296,7 +313,10 @@ final class PendingStoryManager {
                             currentPendingItemContext.progress = progress
                             currentPendingItemContext.updated()
                         }
-                    case .completed:
+                    case let .completed(id):
+                        if let id = id {
+                            self.allStoriesEventsPipe.putNext((stableId, id))
+                        }
                         // wait for the local state to change via Postbox
                         break
                     }
@@ -353,6 +373,12 @@ final class PendingStoryManager {
     public func storyUploadProgress(stableId: Int32) -> Signal<Float, NoError> {
         return self.impl.signalWith { impl, subscriber in
             return impl.storyUploadProgress(stableId: stableId, next: subscriber.putNext)
+        }
+    }
+    
+    public func allStoriesUploadEvents() -> Signal<(Int32, Int32), NoError> {
+        return self.impl.signalWith { impl, subscriber in
+            return impl.allStoriesUploadEvents.start(next: subscriber.putNext)
         }
     }
 

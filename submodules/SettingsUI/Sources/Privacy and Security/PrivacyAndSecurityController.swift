@@ -578,7 +578,7 @@ private func privacyAndSecurityControllerEntries(
             entries.append(.voiceMessagePrivacy(presentationData.theme, presentationData.strings.Privacy_VoiceMessages, stringForSelectiveSettings(strings: presentationData.strings, settings: privacySettings.voiceMessages), !isPremium))
         }
         
-        entries.append(.selectivePrivacyInfo(presentationData.theme, presentationData.strings.PrivacyLastSeenSettings_GroupsAndChannelsHelp))
+        //entries.append(.selectivePrivacyInfo(presentationData.theme, presentationData.strings.PrivacyLastSeenSettings_GroupsAndChannelsHelp))
     } else {
         entries.append(.phoneNumberPrivacy(presentationData.theme, presentationData.strings.PrivacySettings_PhoneNumber, presentationData.strings.Channel_NotificationLoading))
         entries.append(.lastSeenPrivacy(presentationData.theme, presentationData.strings.PrivacySettings_LastSeen, presentationData.strings.Channel_NotificationLoading))
@@ -591,7 +591,7 @@ private func privacyAndSecurityControllerEntries(
             entries.append(.voiceMessagePrivacy(presentationData.theme, presentationData.strings.Privacy_VoiceMessages, presentationData.strings.Channel_NotificationLoading, !isPremium))
         }
     
-        entries.append(.selectivePrivacyInfo(presentationData.theme, presentationData.strings.PrivacyLastSeenSettings_GroupsAndChannelsHelp))
+        //entries.append(.selectivePrivacyInfo(presentationData.theme, presentationData.strings.PrivacyLastSeenSettings_GroupsAndChannelsHelp))
     }
     
     if canAutoarchive {
@@ -686,7 +686,7 @@ public func privacyAndSecurityController(
     let privacySettingsPromise = Promise<AccountPrivacySettings?>()
     privacySettingsPromise.set(.single(initialSettings) |> then(context.engine.privacy.requestAccountPrivacySettings() |> map(Optional.init)))
         
-    let blockedPeersContext = blockedPeersContext ?? BlockedPeersContext(account: context.account)
+    let blockedPeersContext = blockedPeersContext ?? BlockedPeersContext(account: context.account, subject: .blocked)
     let activeSessionsContext = activeSessionsContext ?? context.engine.privacy.activeSessions()
     let webSessionsContext = webSessionsContext ?? context.engine.privacy.webSessions()
     

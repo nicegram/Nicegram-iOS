@@ -1583,7 +1583,7 @@ public final class ChatListNode: ListView {
                     let _ = dismissServerProvidedSuggestion(account: self.context.account, suggestion: .restorePremium).start()
                 }
             }
-            let controller = self.context.sharedContext.makePremiumIntroController(context: self.context, source: .ads)
+            let controller = self.context.sharedContext.makePremiumIntroController(context: self.context, source: .ads, forceDark: false, dismissed: nil)
             self.push?(controller)
         }, openChatFolderUpdates: { [weak self] in
             guard let self else {

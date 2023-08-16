@@ -9,6 +9,7 @@ import Display
 import TelegramCore
 import TelegramPresentationData
 import FastBlur
+import AccountContext
 
 public struct MediaEditorPlayerState {
     public let generationTimestamp: Double
@@ -41,6 +42,7 @@ public final class MediaEditor {
         }
     }
 
+    private let context: AccountContext
     private let subject: Subject
     private var player: AVPlayer?
     private var additionalPlayer: AVPlayer?
@@ -253,7 +255,8 @@ public final class MediaEditor {
         }
     }
     
-    public init(subject: Subject, values: MediaEditorValues? = nil, hasHistogram: Bool = false) {
+    public init(context: AccountContext, subject: Subject, values: MediaEditorValues? = nil, hasHistogram: Bool = false) {
+        self.context = context
         self.subject = subject
         if let values {
             self.values = values
@@ -332,6 +335,7 @@ public final class MediaEditor {
             print("error")
         }
                 
+        let context = self.context
         let textureSource: Signal<(TextureSource, UIImage?, AVPlayer?, AVPlayer?, UIColor, UIColor), NoError>
         switch subject {
         case let .image(image, _):
@@ -340,7 +344,7 @@ public final class MediaEditor {
         case let .draft(draft):
             if draft.isVideo {
                 textureSource = Signal { subscriber in
-                    let url = URL(fileURLWithPath: draft.fullPath())
+                    let url = URL(fileURLWithPath: draft.fullPath(engine: context.engine))
                     let asset = AVURLAsset(url: url)
                     
                     let playerItem = AVPlayerItem(asset: asset)
@@ -372,7 +376,7 @@ public final class MediaEditor {
                     }
                 }
             } else {
-                guard let image = UIImage(contentsOfFile: draft.fullPath()) else {
+                guard let image = UIImage(contentsOfFile: draft.fullPath(engine: context.engine)) else {
                     return
                 }
                 let colors: (UIColor, UIColor)
@@ -499,6 +503,12 @@ public final class MediaEditor {
                 }
                 
                 if let player {
+                    player.isMuted = self.values.videoIsMuted
+                    if let trimRange = self.values.videoTrimRange {
+                        self.player?.currentItem?.forwardPlaybackEndTime = CMTime(seconds: trimRange.upperBound, preferredTimescale: CMTimeScale(1000))
+                        self.additionalPlayer?.currentItem?.forwardPlaybackEndTime = CMTime(seconds: trimRange.upperBound, preferredTimescale: CMTimeScale(1000))
+                    }
+
                     if let initialSeekPosition = self.initialSeekPosition {
                         self.initialSeekPosition = nil
                         player.seek(to: CMTime(seconds: initialSeekPosition, preferredTimescale: CMTimeScale(1000)), toleranceBefore: .zero, toleranceAfter: .zero)
@@ -560,7 +570,10 @@ public final class MediaEditor {
         } else if case .forceRendering = mode {
             self.forceRendering = true
         }
-        self.values = f(self.values)
+        let updatedValues = f(self.values)
+        if self.values != updatedValues {
+            self.values = updatedValues
+        }
         if case .skipRendering = mode {
             self.skipRendering = false
         } else if case .forceRendering = mode {
@@ -803,156 +816,5 @@ public final class MediaEditor {
                 print(error)
             }
         }
-    }
-}
-
-final class MediaEditorRenderChain {
-    fileprivate let enhancePass = EnhanceRenderPass()
-    fileprivate let sharpenPass = SharpenRenderPass()
-    fileprivate let blurPass = BlurRenderPass()
-    fileprivate let adjustmentsPass = AdjustmentsRenderPass()
-    
-    var renderPasses: [RenderPass] {
-        return [
-            self.enhancePass,
-            self.sharpenPass,
-            self.blurPass,
-            self.adjustmentsPass
-        ]
-    }
-    
-    func update(values: MediaEditorValues) {
-        for key in EditorToolKey.allCases {
-            let value = values.toolValues[key]
-            switch key {
-            case .enhance:
-                if let value = value as? Float {
-                    self.enhancePass.value = abs(value)
-                } else {
-                    self.enhancePass.value = 0.0
-                }
-            case .brightness:
-                if let value = value as? Float {
-                    self.adjustmentsPass.adjustments.exposure = value
-                } else {
-                    self.adjustmentsPass.adjustments.exposure = 0.0
-                }
-            case .contrast:
-                if let value = value as? Float {
-                    self.adjustmentsPass.adjustments.contrast = value
-                } else {
-                    self.adjustmentsPass.adjustments.contrast = 0.0
-                }
-            case .saturation:
-                if let value = value as? Float {
-                    self.adjustmentsPass.adjustments.saturation = value
-                } else {
-                    self.adjustmentsPass.adjustments.saturation = 0.0
-                }
-            case .warmth:
-                if let value = value as? Float {
-                    self.adjustmentsPass.adjustments.warmth = value
-                } else {
-                    self.adjustmentsPass.adjustments.warmth = 0.0
-                }
-            case .fade:
-                if let value = value as? Float {
-                    self.adjustmentsPass.adjustments.fade = value
-                } else {
-                    self.adjustmentsPass.adjustments.fade = 0.0
-                }
-            case .highlights:
-                if let value = value as? Float {
-                    self.adjustmentsPass.adjustments.highlights = value
-                } else {
-                    self.adjustmentsPass.adjustments.highlights = 0.0
-                }
-            case .shadows:
-                if let value = value as? Float {
-                    self.adjustmentsPass.adjustments.shadows = value
-                } else {
-                    self.adjustmentsPass.adjustments.shadows = 0.0
-                }
-            case .vignette:
-                if let value = value as? Float {
-                    self.adjustmentsPass.adjustments.vignette = value
-                } else {
-                    self.adjustmentsPass.adjustments.vignette = 0.0
-                }
-            case .grain:
-                if let value = value as? Float {
-                    self.adjustmentsPass.adjustments.grain = value
-                } else {
-                    self.adjustmentsPass.adjustments.grain = 0.0
-                }
-            case .sharpen:
-                if let value = value as? Float {
-                    self.sharpenPass.value = value
-                } else {
-                    self.sharpenPass.value = 0.0
-                }
-            case .shadowsTint:
-                if let value = value as? TintValue {
-                    if value.color != .clear {
-                        let (red, green, blue, _) = value.color.components
-                        self.adjustmentsPass.adjustments.shadowsTintColor = simd_float3(Float(red), Float(green), Float(blue))
-                        self.adjustmentsPass.adjustments.shadowsTintIntensity = value.intensity
-                    } else {
-                        self.adjustmentsPass.adjustments.shadowsTintIntensity = 0.0
-                    }
-                }
-            case .highlightsTint:
-                if let value = value as? TintValue {
-                    if value.color != .clear {
-                        let (red, green, blue, _) = value.color.components
-                        self.adjustmentsPass.adjustments.shadowsTintColor = simd_float3(Float(red), Float(green), Float(blue))
-                        self.adjustmentsPass.adjustments.highlightsTintIntensity = value.intensity
-                    } else {
-                        self.adjustmentsPass.adjustments.highlightsTintIntensity = 0.0
-                    }
-                }
-            case .blur:
-                if let value = value as? BlurValue {
-                    switch value.mode {
-                    case .off:
-                        self.blurPass.mode = .off
-                    case .linear:
-                        self.blurPass.mode = .linear
-                    case .radial:
-                        self.blurPass.mode = .radial
-                    case .portrait:
-                        self.blurPass.mode = .portrait
-                    }
-                    self.blurPass.intensity = value.intensity
-                    self.blurPass.value.size = Float(value.size)
-                    self.blurPass.value.position = simd_float2(Float(value.position.x), Float(value.position.y))
-                    self.blurPass.value.falloff = Float(value.falloff)
-                    self.blurPass.value.rotation = Float(value.rotation)
-                }
-            case .curves:
-                if var value = value as? CurvesValue {
-                    let allDataPoints = value.all.dataPoints
-                    let redDataPoints = value.red.dataPoints
-                    let greenDataPoints = value.green.dataPoints
-                    let blueDataPoints = value.blue.dataPoints
-                    
-                    self.adjustmentsPass.adjustments.hasCurves = 1.0
-                    self.adjustmentsPass.allCurve = allDataPoints
-                    self.adjustmentsPass.redCurve = redDataPoints
-                    self.adjustmentsPass.greenCurve = greenDataPoints
-                    self.adjustmentsPass.blueCurve = blueDataPoints
-                } else {
-                    self.adjustmentsPass.adjustments.hasCurves = 0.0
-                }
-            }
-        }
-    }
-}
-
-public func debugSaveImage(_ image: UIImage, name: String) {
-    let path = NSTemporaryDirectory() + "debug_\(name)_\(Int64.random(in: .min ... .max)).png"
-    print(path)
-    if let data = image.pngData() {
-        try? data.write(to: URL(fileURLWithPath: path))
     }
 }

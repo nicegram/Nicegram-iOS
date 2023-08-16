@@ -292,8 +292,8 @@ final class PeerSelectionControllerNode: ASDisplayNode {
                     return
                 }
                 var replaceImpl: ((ViewController) -> Void)?
-                let controller = context.sharedContext.makePremiumLimitController(context: context, subject: .folders, count: strongSelf.controller?.tabContainerNode?.filtersCount ?? 0, action: {
-                    let controller = context.sharedContext.makePremiumIntroController(context: context, source: .folders)
+                let controller = context.sharedContext.makePremiumLimitController(context: context, subject: .folders, count: strongSelf.controller?.tabContainerNode?.filtersCount ?? 0, forceDark: false, cancel: {}, action: {
+                    let controller = context.sharedContext.makePremiumIntroController(context: context, source: .folders, forceDark: false, dismissed: nil)
                     replaceImpl?(controller)
                 })
                 replaceImpl = { [weak controller] c in
@@ -1181,7 +1181,10 @@ final class PeerSelectionControllerNode: ASDisplayNode {
                     },
                     presentInGlobalOverlay: { _, _ in
                     },
-                    navigationController: nil
+                    navigationController: nil,
+                    parentController: { [weak self] in
+                        return self?.controller
+                    }
                 ), cancel: { [weak self] in
                     if let requestDeactivateSearch = self?.requestDeactivateSearch {
                         requestDeactivateSearch()

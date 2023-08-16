@@ -643,6 +643,20 @@ public extension TelegramEngine {
             }).start()
         }
         
+        public func peerStoriesAreReady(id: EnginePeer.Id, minId: Int32) -> Signal<Bool, NoError> {
+            return self.account.postbox.combinedView(keys: [
+                PostboxViewKey.storyItems(peerId: id)
+            ])
+            |> map { views -> Bool in
+                guard let view = views.views[PostboxViewKey.storyItems(peerId: id)] as? StoryItemsView else {
+                    return false
+                }
+                return view.items.contains(where: { item in
+                    return item.id >= minId
+                })
+            }
+        }
+        
         public func storySubscriptions(isHidden: Bool, tempKeepNewlyArchived: Bool = false) -> Signal<EngineStorySubscriptions, NoError> {
             return `deferred` { () -> Signal<EngineStorySubscriptions, NoError> in
                 let debugTimerSignal: Signal<Bool, NoError>
@@ -1022,6 +1036,7 @@ public extension TelegramEngine {
                                     timestamp: item.timestamp,
                                     expirationTimestamp: item.expirationTimestamp,
                                     media: item.media,
+                                    mediaAreas: item.mediaAreas,
                                     text: item.text,
                                     entities: item.entities,
                                     views: views[currentItems[i].id],
@@ -1033,7 +1048,8 @@ public extension TelegramEngine {
                                     isContacts: item.isContacts,
                                     isSelectedContacts: item.isSelectedContacts,
                                     isForwardingDisabled: item.isForwardingDisabled,
-                                    isEdited: item.isEdited
+                                    isEdited: item.isEdited,
+                                    myReaction: item.myReaction
                                 ))
                                 if let entry = CodableEntry(updatedItem) {
                                     currentItems[i] = StoryItemsTableEntry(value: entry, id: updatedItem.id, expirationTimestamp: updatedItem.expirationTimestamp, isCloseFriends: updatedItem.isCloseFriends)
@@ -1047,8 +1063,15 @@ public extension TelegramEngine {
             }
         }
         
-        public func uploadStory(media: EngineStoryInputMedia, text: String, entities: [MessageTextEntity], pin: Bool, privacy: EngineStoryPrivacy, isForwardingDisabled: Bool, period: Int, randomId: Int64) {
-            _internal_uploadStory(account: self.account, media: media, text: text, entities: entities, pin: pin, privacy: privacy, isForwardingDisabled: isForwardingDisabled, period: period, randomId: randomId)
+        public func uploadStory(media: EngineStoryInputMedia, mediaAreas: [MediaArea], text: String, entities: [MessageTextEntity], pin: Bool, privacy: EngineStoryPrivacy, isForwardingDisabled: Bool, period: Int, randomId: Int64) -> Signal<Int32, NoError> {
+            return _internal_uploadStory(account: self.account, media: media, mediaAreas: mediaAreas, text: text, entities: entities, pin: pin, privacy: privacy, isForwardingDisabled: isForwardingDisabled, period: period, randomId: randomId)
+        }
+        
+        public func allStoriesUploadEvents() -> Signal<(Int32, Int32), NoError> {
+            guard let pendingStoryManager = self.account.pendingStoryManager else {
+                return .complete()
+            }
+            return pendingStoryManager.allStoriesUploadEvents()
         }
         
         public func lookUpPendingStoryIdMapping(stableId: Int32) -> Int32? {
@@ -1073,12 +1096,16 @@ public extension TelegramEngine {
             _internal_cancelStoryUpload(account: self.account, stableId: stableId)
         }
         
-        public func editStory(id: Int32, media: EngineStoryInputMedia?, text: String?, entities: [MessageTextEntity]?, privacy: EngineStoryPrivacy?) -> Signal<StoryUploadResult, NoError> {
-            return _internal_editStory(account: self.account, id: id, media: media, text: text, entities: entities, privacy: privacy)
+        public func editStory(id: Int32, media: EngineStoryInputMedia?, mediaAreas: [MediaArea]?, text: String?, entities: [MessageTextEntity]?, privacy: EngineStoryPrivacy?) -> Signal<StoryUploadResult, NoError> {
+            return _internal_editStory(account: self.account, id: id, media: media, mediaAreas: mediaAreas, text: text, entities: entities, privacy: privacy)
         }
         
         public func editStoryPrivacy(id: Int32, privacy: EngineStoryPrivacy) -> Signal<Never, NoError> {
             return _internal_editStoryPrivacy(account: self.account, id: id, privacy: privacy)
+        }
+        
+        public func checkStoriesUploadAvailability() -> Signal<StoriesUploadAvailability, NoError> {
+            return _internal_checkStoriesUploadAvailability(account: self.account)
         }
         
         public func deleteStories(ids: [Int32]) -> Signal<Never, NoError> {
@@ -1093,16 +1120,20 @@ public extension TelegramEngine {
             return _internal_updateStoriesArePinned(account: self.account, ids: ids, isPinned: isPinned)
         }
         
-        public func getStoryViewList(account: Account, id: Int32, offsetTimestamp: Int32?, offsetPeerId: PeerId?, limit: Int) -> Signal<StoryViewList?, NoError> {
-            return _internal_getStoryViewList(account: account, id: id, offsetTimestamp: offsetTimestamp, offsetPeerId: offsetPeerId, limit: limit)
-        }
-        
-        public func storyViewList(id: Int32, views: EngineStoryItem.Views) -> EngineStoryViewListContext {
-            return EngineStoryViewListContext(account: self.account, storyId: id, views: views)
+        public func storyViewList(id: Int32, views: EngineStoryItem.Views, listMode: EngineStoryViewListContext.ListMode, sortMode: EngineStoryViewListContext.SortMode, searchQuery: String? = nil, parentSource: EngineStoryViewListContext? = nil) -> EngineStoryViewListContext {
+            return EngineStoryViewListContext(account: self.account, storyId: id, views: views, listMode: listMode, sortMode: sortMode, searchQuery: searchQuery, parentSource: parentSource)
         }
         
         public func exportStoryLink(peerId: EnginePeer.Id, id: Int32) -> Signal<String?, NoError> {
             return _internal_exportStoryLink(account: self.account, peerId: peerId, id: id)
+        }
+        
+        public func enableStoryStealthMode() -> Signal<Never, NoError> {
+            return _internal_enableStoryStealthMode(account: self.account)
+        }
+        
+        public func setStoryReaction(peerId: EnginePeer.Id, id: Int32, reaction: MessageReaction.Reaction?) -> Signal<Never, NoError> {
+            return _internal_setStoryReaction(account: self.account, peerId: peerId, id: id, reaction: reaction)
         }
     }
 }

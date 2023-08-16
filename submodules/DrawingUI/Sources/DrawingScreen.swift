@@ -516,6 +516,7 @@ private final class DrawingScreenComponent: CombinedComponent {
     let updateEntityView: ActionSlot<(UUID, Bool)>
     let endEditingTextEntityView: ActionSlot<(UUID, Bool)>
     let entityViewForEntity: (DrawingEntity) -> DrawingEntityView?
+    let presentGallery: (() -> Void)?
     let apply: ActionSlot<Void>
     let dismiss: ActionSlot<Void>
     
@@ -551,6 +552,7 @@ private final class DrawingScreenComponent: CombinedComponent {
         updateEntityView: ActionSlot<(UUID, Bool)>,
         endEditingTextEntityView: ActionSlot<(UUID, Bool)>,
         entityViewForEntity: @escaping (DrawingEntity) -> DrawingEntityView?,
+        presentGallery: (() -> Void)?,
         apply: ActionSlot<Void>,
         dismiss: ActionSlot<Void>,
         presentColorPicker: @escaping (DrawingColor) -> Void,
@@ -584,6 +586,7 @@ private final class DrawingScreenComponent: CombinedComponent {
         self.updateEntityView = updateEntityView
         self.endEditingTextEntityView = endEditingTextEntityView
         self.entityViewForEntity = entityViewForEntity
+        self.presentGallery = presentGallery
         self.apply = apply
         self.dismiss = dismiss
         self.presentColorPicker = presentColorPicker
@@ -665,6 +668,7 @@ private final class DrawingScreenComponent: CombinedComponent {
         private let toggleWithPreviousTool: ActionSlot<Void>
         private let insertSticker: ActionSlot<Void>
         private let insertText: ActionSlot<Void>
+        fileprivate var presentGallery: (() -> Void)?
         private let updateEntityView: ActionSlot<(UUID, Bool)>
         private let endEditingTextEntityView: ActionSlot<(UUID, Bool)>
         private let entityViewForEntity: (DrawingEntity) -> DrawingEntityView?
@@ -692,6 +696,7 @@ private final class DrawingScreenComponent: CombinedComponent {
             toggleWithPreviousTool: ActionSlot<Void>,
             insertSticker: ActionSlot<Void>,
             insertText: ActionSlot<Void>,
+            presentGallery: (() -> Void)?,
             updateEntityView: ActionSlot<(UUID, Bool)>,
             endEditingTextEntityView: ActionSlot<(UUID, Bool)>,
             entityViewForEntity: @escaping (DrawingEntity) -> DrawingEntityView?,
@@ -707,6 +712,7 @@ private final class DrawingScreenComponent: CombinedComponent {
             self.toggleWithPreviousTool = toggleWithPreviousTool
             self.insertSticker = insertSticker
             self.insertText = insertText
+            self.presentGallery = presentGallery
             self.updateEntityView = updateEntityView
             self.endEditingTextEntityView = endEditingTextEntityView
             self.entityViewForEntity = entityViewForEntity
@@ -759,7 +765,7 @@ private final class DrawingScreenComponent: CombinedComponent {
                                                emojiItems,
                                                stickerItems
                     ) |> map { emoji, stickers -> StickerPickerInputData in
-                        return StickerPickerInputData(emoji: emoji, stickers: stickers, masks: nil)
+                        return StickerPickerInputData(emoji: emoji, stickers: stickers, gifs: nil)
                     }
                     
                     stickerPickerInputData.set(signal)
@@ -1004,6 +1010,9 @@ private final class DrawingScreenComponent: CombinedComponent {
             
             self.updateEntitiesPlayback.invoke(false)
             let controller = StickerPickerScreen(context: self.context, inputData: self.stickerPickerInputData.get())
+            if let presentGallery = self.presentGallery {
+                controller.presentGallery = presentGallery
+            }
             controller.completion = { [weak self] content in
                 self?.updateEntitiesPlayback.invoke(true)
                 
@@ -1032,6 +1041,7 @@ private final class DrawingScreenComponent: CombinedComponent {
             toggleWithPreviousTool: self.toggleWithPreviousTool,
             insertSticker: self.insertSticker,
             insertText: self.insertText,
+            presentGallery: self.presentGallery,
             updateEntityView: self.updateEntityView,
             endEditingTextEntityView: self.endEditingTextEntityView,
             entityViewForEntity: self.entityViewForEntity,
@@ -1112,6 +1122,8 @@ private final class DrawingScreenComponent: CombinedComponent {
             
             let updateEntityView = component.updateEntityView
             let endEditingTextEntityView = component.endEditingTextEntityView
+            
+            state.presentGallery = component.presentGallery
             
             component.updateState.connect { [weak state] updatedState in
                 state?.updateDrawingState(updatedState)
@@ -1823,7 +1835,7 @@ private final class DrawingScreenComponent: CombinedComponent {
                         performAction.invoke(.clear)
                     }
                 ).tagged(clearAllButtonTag),
-                availableSize: CGSize(width: 100.0, height: 30.0),
+                availableSize: CGSize(width: 180.0, height: 30.0),
                 transition: context.transition
             )
             context.add(clearAllButton
@@ -2423,6 +2435,7 @@ public class DrawingScreen: ViewController, TGPhotoDrawingInterfaceController, U
                 contentWrapperView: self.contentWrapperView,
                 selectionContainerView: self.selectionContainerView,
                 isVideo: controller.isVideo,
+                autoselectEntityOnPan: false,
                 updateSelectedEntity: { [weak self] entity in
                     if let self {
                         self.updateSelectedEntity.invoke(entity)
@@ -2445,6 +2458,7 @@ public class DrawingScreen: ViewController, TGPhotoDrawingInterfaceController, U
                     }
                 },
                 onTextEditingEnded: { _ in },
+                editEntity: { _ in },
                 getCurrentImage: { [weak controller] in
                     return controller?.getCurrentImage()
                 },
@@ -2668,6 +2682,7 @@ public class DrawingScreen: ViewController, TGPhotoDrawingInterfaceController, U
                                 return nil
                             }
                         },
+                        presentGallery: self.controller?.presentGallery,
                         apply: self.apply,
                         dismiss: self.dismiss,
                         presentColorPicker: { [weak self] initialColor in
@@ -2734,6 +2749,8 @@ public class DrawingScreen: ViewController, TGPhotoDrawingInterfaceController, U
     public var requestApply: () -> Void = {}
     public var getCurrentImage: () -> UIImage? = { return nil }
     public var updateVideoPlayback: (Bool) -> Void = { _ in }
+    
+    public var presentGallery: (() -> Void)?
     
     public init(context: AccountContext, sourceHint: SourceHint? = nil, size: CGSize, originalSize: CGSize, isVideo: Bool, isAvatar: Bool, drawingView: DrawingView?, entitiesView: (UIView & TGPhotoDrawingEntitiesView)?, selectionContainerView: DrawingSelectionContainerView?, existingStickerPickerInputData: Promise<StickerPickerInputData>? = nil) {
         self.context = context
@@ -2955,13 +2972,15 @@ public final class DrawingToolsInteraction {
     private weak var contentWrapperView: UIView?
     private let selectionContainerView: DrawingSelectionContainerView
     private let isVideo: Bool
+    private let autoSelectEntityOnPan: Bool
     private let updateSelectedEntity: (DrawingEntity?) -> Void
     private let updateVideoPlayback: (Bool) -> Void
     private let updateColor: (DrawingColor) -> Void
     
     private let onInteractionUpdated: (Bool) -> Void
     private let onTextEditingEnded: (Bool) -> Void
-    
+    private let editEntity: (DrawingEntity) -> Void
+        
     public let getCurrentImage: () -> UIImage?
     private let getControllerNode: () -> ASDisplayNode?
     private let present: (ViewController, PresentationContextType, Any?) -> Void
@@ -2978,8 +2997,6 @@ public final class DrawingToolsInteraction {
     private var isActive = false
     private var validLayout: ContainerViewLayout?
     
-    private let startTimestamp = CACurrentMediaTime()
-    
     public init(
         context: AccountContext,
         drawingView: DrawingView,
@@ -2987,11 +3004,13 @@ public final class DrawingToolsInteraction {
         contentWrapperView: UIView,
         selectionContainerView: DrawingSelectionContainerView,
         isVideo: Bool,
+        autoselectEntityOnPan: Bool,
         updateSelectedEntity: @escaping (DrawingEntity?) -> Void,
         updateVideoPlayback: @escaping (Bool) -> Void,
         updateColor: @escaping (DrawingColor) -> Void,
         onInteractionUpdated: @escaping (Bool) -> Void,
         onTextEditingEnded: @escaping (Bool) -> Void,
+        editEntity: @escaping (DrawingEntity) -> Void,
         getCurrentImage: @escaping () -> UIImage?,
         getControllerNode: @escaping () -> ASDisplayNode?,
         present: @escaping (ViewController, PresentationContextType, Any?) -> Void,
@@ -3003,11 +3022,13 @@ public final class DrawingToolsInteraction {
         self.contentWrapperView = contentWrapperView
         self.selectionContainerView = selectionContainerView
         self.isVideo = isVideo
+        self.autoSelectEntityOnPan = autoselectEntityOnPan
         self.updateSelectedEntity = updateSelectedEntity
         self.updateVideoPlayback = updateVideoPlayback
         self.updateColor = updateColor
         self.onInteractionUpdated = onInteractionUpdated
         self.onTextEditingEnded = onTextEditingEnded
+        self.editEntity = editEntity
         self.getCurrentImage = getCurrentImage
         self.getControllerNode = getControllerNode
         self.present = present
@@ -3026,6 +3047,7 @@ public final class DrawingToolsInteraction {
     public func activate() {
         self.isActive = true
         
+        self.entitiesView.autoSelectEntities = self.autoSelectEntityOnPan
         self.entitiesView.selectionContainerView = self.selectionContainerView
         self.entitiesView.selectionChanged = { [weak self] entity in
             if let self {
@@ -3050,9 +3072,7 @@ public final class DrawingToolsInteraction {
             
             var isVideo = false
             if let entity = entityView.entity as? DrawingStickerEntity {
-                if case .video = entity.content {
-                    isVideo = true
-                } else if case .dualVideoReference = entity.content {
+                if case .dualVideoReference = entity.content {
                     isVideo = true
                 }
             }
@@ -3068,7 +3088,14 @@ public final class DrawingToolsInteraction {
                     self.entitiesView.remove(uuid: entityView.entity.uuid, animated: true)
                 }
             }))
-            if let entityView = entityView as? DrawingTextEntityView {
+            if let entityView = entityView as? DrawingLocationEntityView {
+                actions.append(ContextMenuAction(content: .text(title: presentationData.strings.Paint_Edit, accessibilityLabel: presentationData.strings.Paint_Edit), action: { [weak self, weak entityView] in
+                    if let self, let entityView {
+                        self.editEntity(entityView.entity)
+                        self.entitiesView.selectEntity(entityView.entity)
+                    }
+                }))
+            } else if let entityView = entityView as? DrawingTextEntityView {
                 actions.append(ContextMenuAction(content: .text(title: presentationData.strings.Paint_Edit, accessibilityLabel: presentationData.strings.Paint_Edit), action: { [weak self, weak entityView] in
                     if let self, let entityView {
                         entityView.beginEditing(accessoryView: self.textEditAccessoryView)
@@ -3119,11 +3146,8 @@ public final class DrawingToolsInteraction {
         self.isActive = false
     }
     
-    public func insertEntity(_ entity: DrawingEntity, scale: CGFloat? = nil) {
-        self.entitiesView.prepareNewEntity(entity)
-        if let scale {
-            entity.scale = scale
-        }
+    public func insertEntity(_ entity: DrawingEntity, scale: CGFloat? = nil, position: CGPoint? = nil) {
+        self.entitiesView.prepareNewEntity(entity, scale: scale, position: position)
         self.entitiesView.add(entity)
         self.entitiesView.selectEntity(entity, animate: !(entity is DrawingTextEntity))
         

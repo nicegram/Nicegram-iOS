@@ -77,6 +77,7 @@ public final class LocationViewController: ViewController {
     private var presentationData: PresentationData
     private var presentationDataDisposable: Disposable?
     private var showAll: Bool
+    private let isStoryLocation: Bool
     
     private let locationManager = LocationManager()
     private var permissionDisposable: Disposable?
@@ -84,11 +85,14 @@ public final class LocationViewController: ViewController {
     private var interaction: LocationViewInteraction?
     
     private var rightBarButtonAction: LocationViewRightBarButton = .none
+    
+    public var dismissed: () -> Void = {}
 
-    public init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, subject: EngineMessage, params: LocationViewParams) {
+    public init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, subject: EngineMessage, isStoryLocation: Bool = false, params: LocationViewParams) {
         self.context = context
         self.subject = subject
         self.showAll = params.showAll
+        self.isStoryLocation = isStoryLocation
         
         self.presentationData = updatedPresentationData?.initial ?? context.sharedContext.currentPresentationData.with { $0 }
                      
@@ -487,7 +491,7 @@ public final class LocationViewController: ViewController {
             return
         }
         
-        self.displayNode = LocationViewControllerNode(context: self.context, presentationData: self.presentationData, subject: self.subject, interaction: interaction, locationManager: self.locationManager)
+        self.displayNode = LocationViewControllerNode(context: self.context, presentationData: self.presentationData, subject: self.subject, interaction: interaction, locationManager: self.locationManager, isStoryLocation: self.isStoryLocation)
         self.displayNodeDidLoad()
         
         self.controllerNode.onAnnotationsReady = { [weak self] in
@@ -496,6 +500,8 @@ public final class LocationViewController: ViewController {
             }
             strongSelf.controllerNode.showAll()
         }
+        
+        self.controllerNode.headerNode.mapNode.disableHorizontalTransitionGesture = self.isStoryLocation
     }
     
     private func updateRightBarButton() {
@@ -526,6 +532,19 @@ public final class LocationViewController: ViewController {
     
     @objc private func showAllPressed() {
         self.controllerNode.showAll()
+    }
+    
+    private var didDismiss = false
+    public override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        if !self.didDismiss {
+            self.didDismiss = true
+            self.dismissed()
+        }
+    }
+    
+    public override func dismiss(completion: (() -> Void)? = nil) {
+        super.dismiss(completion: completion)
     }
 }
 

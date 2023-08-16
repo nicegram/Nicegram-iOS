@@ -233,6 +233,7 @@ public final class ReactionContextNode: ASDisplayNode, UIScrollViewDelegate {
     private var animationHideNode: Bool = false
     
     public var displayTail: Bool = true
+    public var forceTailToRight: Bool = false
     
     private var didAnimateIn: Bool = false
     public private(set) var isAnimatingOut: Bool = false
@@ -636,12 +637,20 @@ public final class ReactionContextNode: ASDisplayNode, UIScrollViewDelegate {
         contentSize.width = max(46.0, contentSize.width)
         contentSize.height = self.currentContentHeight
         
-        let sideInset: CGFloat = 11.0 + insets.left
+        let sideInset: CGFloat
+        if self.forceTailToRight {
+            sideInset = insets.left
+        } else {
+            sideInset = 11.0 + insets.left
+        }
         let backgroundOffset: CGPoint = CGPoint(x: 22.0, y: -7.0)
         
         var rect: CGRect
         let isLeftAligned: Bool
-        if anchorRect.minX < containerSize.width - anchorRect.maxX {
+        if self.forceTailToRight {
+            rect = CGRect(origin: CGPoint(x: anchorRect.minX - backgroundOffset.x - 4.0, y: anchorRect.minY - contentSize.height + backgroundOffset.y), size: contentSize)
+            isLeftAligned = false
+        } else if anchorRect.minX < containerSize.width - anchorRect.maxX {
             rect = CGRect(origin: CGPoint(x: anchorRect.maxX - contentSize.width + backgroundOffset.x, y: anchorRect.minY - contentSize.height + backgroundOffset.y), size: contentSize)
             isLeftAligned = true
         } else {
@@ -665,7 +674,9 @@ public final class ReactionContextNode: ASDisplayNode, UIScrollViewDelegate {
         }
         
         let cloudSourcePoint: CGFloat
-        if isLeftAligned {
+        if self.forceTailToRight {
+            cloudSourcePoint = min(rect.maxX - 46.0 / 2.0, anchorRect.maxX - 4.0)
+        } else if isLeftAligned {
             cloudSourcePoint = min(rect.maxX - 46.0 / 2.0, anchorRect.maxX - 4.0)
         } else {
             cloudSourcePoint = max(rect.minX + 46.0 / 2.0, anchorRect.minX)
@@ -1190,6 +1201,7 @@ public final class ReactionContextNode: ASDisplayNode, UIScrollViewDelegate {
             isMinimized: self.highlightedReaction != nil && !self.highlightedByHover,
             isCoveredByInput: isCoveredByInput,
             displayTail: self.displayTail,
+            forceTailToRight: self.forceTailToRight,
             transition: transition
         )
         
@@ -1593,6 +1605,7 @@ public final class ReactionContextNode: ASDisplayNode, UIScrollViewDelegate {
                 effectContainerView: self.backgroundNode.vibrancyEffectView?.contentView
             ),
             externalExpansionView: self.view,
+            customContentView: nil,
             useOpaqueTheme: false,
             hideBackground: false,
             stateContext: nil,
@@ -1775,7 +1788,7 @@ public final class ReactionContextNode: ASDisplayNode, UIScrollViewDelegate {
         }
     }
     
-    public func animateOutToReaction(value: MessageReaction.Reaction, targetView: UIView, hideNode: Bool, animateTargetContainer: UIView?, addStandaloneReactionAnimation: ((StandaloneReactionAnimation) -> Void)?, completion: @escaping () -> Void) {
+    public func animateOutToReaction(value: MessageReaction.Reaction, targetView: UIView, hideNode: Bool, forceSwitchToInlineImmediately: Bool = false, animateTargetContainer: UIView?, addStandaloneReactionAnimation: ((StandaloneReactionAnimation) -> Void)?, completion: @escaping () -> Void) {
         self.isAnimatingOutToReaction = true
         
         var foundItemNode: ReactionNode?
@@ -1807,7 +1820,7 @@ public final class ReactionContextNode: ASDisplayNode, UIScrollViewDelegate {
         if itemNode.item.listAnimation.isVideoEmoji || itemNode.item.listAnimation.isVideoSticker || itemNode.item.listAnimation.isAnimatedSticker || itemNode.item.listAnimation.isStaticEmoji {
             switch itemNode.item.reaction.rawValue {
             case .builtin:
-                switchToInlineImmediately = false
+                switchToInlineImmediately = forceSwitchToInlineImmediately
             case .custom:
                 switchToInlineImmediately = !self.didTriggerExpandedReaction
             }
@@ -2034,6 +2047,10 @@ public final class ReactionContextNode: ASDisplayNode, UIScrollViewDelegate {
                         targetView.addSubnode(itemNode)
                         itemNode.frame = selfTargetBounds
                     }
+                } else if let targetView = targetView as? UIImageView {
+                    itemNode.isHidden = true
+                    targetView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.12)
+                    targetView.layer.animateScale(from: 0.2, to: 1.0, duration: 0.12)
                 }
                 
                 if switchToInlineImmediately {
@@ -2390,13 +2407,13 @@ public final class StandaloneReactionAnimation: ASDisplayNode {
         self.isUserInteractionEnabled = false
     }
     
-    public func animateReactionSelection(context: AccountContext, theme: PresentationTheme, animationCache: AnimationCache, reaction: ReactionItem, avatarPeers: [EnginePeer], playHaptic: Bool, isLarge: Bool, forceSmallEffectAnimation: Bool = false, targetView: UIView, addStandaloneReactionAnimation: ((StandaloneReactionAnimation) -> Void)?, completion: @escaping () -> Void) {
-        self.animateReactionSelection(context: context, theme: theme, animationCache: animationCache, reaction: reaction, avatarPeers: avatarPeers, playHaptic: playHaptic, isLarge: isLarge, forceSmallEffectAnimation: forceSmallEffectAnimation, targetView: targetView, addStandaloneReactionAnimation: addStandaloneReactionAnimation, currentItemNode: nil, completion: completion)
+    public func animateReactionSelection(context: AccountContext, theme: PresentationTheme, animationCache: AnimationCache, reaction: ReactionItem, avatarPeers: [EnginePeer], playHaptic: Bool, isLarge: Bool, forceSmallEffectAnimation: Bool = false, hideCenterAnimation: Bool = false, targetView: UIView, addStandaloneReactionAnimation: ((StandaloneReactionAnimation) -> Void)?, completion: @escaping () -> Void) {
+        self.animateReactionSelection(context: context, theme: theme, animationCache: animationCache, reaction: reaction, avatarPeers: avatarPeers, playHaptic: playHaptic, isLarge: isLarge, forceSmallEffectAnimation: forceSmallEffectAnimation, hideCenterAnimation: hideCenterAnimation, targetView: targetView, addStandaloneReactionAnimation: addStandaloneReactionAnimation, currentItemNode: nil, completion: completion)
     }
         
     public var currentDismissAnimation: (() -> Void)?
     
-    public func animateReactionSelection(context: AccountContext, theme: PresentationTheme, animationCache: AnimationCache, reaction: ReactionItem, avatarPeers: [EnginePeer], playHaptic: Bool, isLarge: Bool, forceSmallEffectAnimation: Bool = false, targetView: UIView, addStandaloneReactionAnimation: ((StandaloneReactionAnimation) -> Void)?, currentItemNode: ReactionNode?, completion: @escaping () -> Void) {
+    public func animateReactionSelection(context: AccountContext, theme: PresentationTheme, animationCache: AnimationCache, reaction: ReactionItem, avatarPeers: [EnginePeer], playHaptic: Bool, isLarge: Bool, forceSmallEffectAnimation: Bool = false, hideCenterAnimation: Bool = false, targetView: UIView, addStandaloneReactionAnimation: ((StandaloneReactionAnimation) -> Void)?, currentItemNode: ReactionNode?, completion: @escaping () -> Void) {
         guard let sourceSnapshotView = targetView.snapshotContentTree() else {
             completion()
             return
@@ -2429,7 +2446,7 @@ public final class StandaloneReactionAnimation: ASDisplayNode {
             switchToInlineImmediately = false
         }
         
-        if !forceSmallEffectAnimation && !switchToInlineImmediately {
+        if !forceSmallEffectAnimation && !switchToInlineImmediately && !hideCenterAnimation {
             if let targetView = targetView as? ReactionIconView, !isLarge {
                 self.itemNodeIsEmbedded = true
                 targetView.addSubnode(itemNode)

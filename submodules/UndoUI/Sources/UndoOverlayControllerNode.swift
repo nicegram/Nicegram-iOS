@@ -19,6 +19,7 @@ import AccountContext
 import AnimatedAvatarSetNode
 
 final class UndoOverlayControllerNode: ViewControllerTracingNode {
+    private let presentationData: PresentationData
     private let elevatedLayout: Bool
     private let placementPosition: UndoOverlayController.Position
     private var statusNode: RadialStatusNode?
@@ -46,6 +47,7 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
     private let dismiss: () -> Void
     
     private var content: UndoOverlayContent
+    private let blurred: Bool
     
     private let effectView: UIView
     
@@ -59,9 +61,11 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
     
     private var fetchResourceDisposable: Disposable?
     
-    init(presentationData: PresentationData, content: UndoOverlayContent, elevatedLayout: Bool, placementPosition: UndoOverlayController.Position, action: @escaping (UndoOverlayAction) -> Bool, dismiss: @escaping () -> Void) {
+    init(presentationData: PresentationData, content: UndoOverlayContent, elevatedLayout: Bool, placementPosition: UndoOverlayController.Position, blurred: Bool, action: @escaping (UndoOverlayAction) -> Bool, dismiss: @escaping () -> Void) {
+        self.presentationData = presentationData
         self.elevatedLayout = elevatedLayout
         self.placementPosition = placementPosition
+        self.blurred = blurred
         self.content = content
         
         self.action = action
@@ -1078,7 +1082,7 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
         self.undoButtonNode = HighlightTrackingButtonNode()
         
         self.panelNode = ASDisplayNode()
-        if presentationData.theme.overallDarkAppearance {
+        if presentationData.theme.overallDarkAppearance && !self.blurred {
             self.panelNode.backgroundColor = presentationData.theme.rootController.tabBar.backgroundColor
         } else {
             self.panelNode.backgroundColor = .clear
@@ -1246,11 +1250,22 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
                     self.titleNode.attributedText = nil
                 }
                 self.textNode.attributedText = NSAttributedString(string: text, font: Font.regular(14.0), textColor: .white)
+                self.renewWithCurrentContent()
+            case let .actionSucceeded(title, text, _, destructive):
+                var undoTextColor = self.presentationData.theme.list.itemAccentColor.withMultiplied(hue: 0.933, saturation: 0.61, brightness: 1.0)
+                if destructive {
+                    undoTextColor = UIColor(rgb: 0xff7b74)
+                }
+            
+                let body = MarkdownAttributeSet(font: Font.regular(14.0), textColor: .white)
+                let bold = MarkdownAttributeSet(font: Font.semibold(14.0), textColor: .white)
+                let link = MarkdownAttributeSet(font: Font.regular(14.0), textColor: undoTextColor)
+                let attributedText = parseMarkdownIntoAttributedString(text, attributes: MarkdownAttributes(body: body, bold: bold, link: link, linkAttribute: { _ in return nil }), textAlignment: .natural)
+                self.titleNode.attributedText = NSAttributedString(string: title, font: Font.semibold(14.0), textColor: .white)
+                self.textNode.attributedText = attributedText
             default:
                 break
         }
-        
-        self.renewWithCurrentContent()
         
         if let validLayout = self.validLayout {
             self.containerLayoutUpdated(layout: validLayout, transition: .immediate)

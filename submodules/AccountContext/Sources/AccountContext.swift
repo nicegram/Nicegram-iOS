@@ -900,15 +900,15 @@ public protocol SharedAccountContext: AnyObject {
     
     func makeChatQrCodeScreen(context: AccountContext, peer: Peer, threadId: Int64?) -> ViewController
     
-    func makePremiumIntroController(context: AccountContext, source: PremiumIntroSource) -> ViewController
+    func makePremiumIntroController(context: AccountContext, source: PremiumIntroSource, forceDark: Bool, dismissed: (() -> Void)?) -> ViewController
     func makePremiumDemoController(context: AccountContext, subject: PremiumDemoSubject, action: @escaping () -> Void) -> ViewController
-    func makePremiumLimitController(context: AccountContext, subject: PremiumLimitSubject, count: Int32, action: @escaping () -> Void) -> ViewController
+    func makePremiumLimitController(context: AccountContext, subject: PremiumLimitSubject, count: Int32, forceDark: Bool, cancel: @escaping () -> Void, action: @escaping () -> Void) -> ViewController
     
     func makeStickerPackScreen(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, mainStickerPack: StickerPackReference, stickerPacks: [StickerPackReference], loadedStickerPacks: [LoadedStickerPack], parentNavigationController: NavigationController?, sendSticker: ((FileMediaReference, UIView, CGRect) -> Bool)?) -> ViewController
     
-    func makeMediaPickerScreen(context: AccountContext, completion: @escaping (Any) -> Void) -> ViewController
+    func makeMediaPickerScreen(context: AccountContext, hasSearch: Bool, completion: @escaping (Any) -> Void) -> ViewController
     
-    func makeStoryMediaPickerScreen(context: AccountContext, getSourceRect: @escaping () -> CGRect, completion: @escaping (Any, UIView, CGRect, UIImage?, @escaping (Bool?) -> (UIView, CGRect)?, @escaping () -> Void) -> Void, dismissed: @escaping () -> Void) -> ViewController
+    func makeStoryMediaPickerScreen(context: AccountContext, getSourceRect: @escaping () -> CGRect, completion: @escaping (Any, UIView, CGRect, UIImage?, @escaping (Bool?) -> (UIView, CGRect)?, @escaping () -> Void) -> Void, dismissed: @escaping () -> Void, groupsPresented: @escaping () -> Void) -> ViewController
     
     func makeProxySettingsController(sharedContext: SharedAccountContext, account: UnauthorizedAccount) -> ViewController
     
@@ -953,6 +953,11 @@ public enum PremiumIntroSource {
     case fasterDownload
     case translation
     case stories
+    case storiesDownload
+    case storiesStealthMode
+    case storiesPermanentViews
+    case storiesFormatting
+    case storiesExpirationDurations
 }
 
 public enum PremiumDemoSubject {
@@ -982,6 +987,9 @@ public enum PremiumLimitSubject {
     case linksPerSharedFolder
     case membershipInSharedFolders
     case channels
+    case expiringStories
+    case storiesWeekly
+    case storiesMonthly
 }
 
 public protocol ComposeController: ViewController {
@@ -1095,28 +1103,58 @@ public struct StoriesConfiguration {
         case disabled
     }
     
+    public enum CaptionEntitiesAvailability {
+        case enabled
+        case premium
+    }
+    
     static var defaultValue: StoriesConfiguration {
-        return StoriesConfiguration(posting: .disabled)
+        return StoriesConfiguration(posting: .disabled, captionEntities: .premium, venueSearchBot: "foursquare")
     }
     
     public let posting: PostingAvailability
+    public let captionEntities: CaptionEntitiesAvailability
+    public let venueSearchBot: String
     
-    fileprivate init(posting: PostingAvailability) {
+    fileprivate init(posting: PostingAvailability, captionEntities: CaptionEntitiesAvailability, venueSearchBot: String) {
         self.posting = posting
+        self.captionEntities = captionEntities
+        self.venueSearchBot = venueSearchBot
     }
     
     public static func with(appConfiguration: AppConfiguration) -> StoriesConfiguration {
-        if let data = appConfiguration.data, let postingString = data["stories_posting"] as? String {
-            var posting: PostingAvailability
-            switch postingString {
-            case "enabled":
-                posting = .enabled
-            case "premium":
-                posting = .premium
-            default:
+        if let data = appConfiguration.data {
+            let posting: PostingAvailability
+            let captionEntities: CaptionEntitiesAvailability
+            let venueSearchBot: String
+            if let postingString = data["stories_posting"] as? String {
+                switch postingString {
+                case "enabled":
+                    posting = .enabled
+                case "premium":
+                    posting = .premium
+                default:
+                    posting = .disabled
+                }
+            } else {
                 posting = .disabled
             }
-            return StoriesConfiguration(posting: posting)
+            if let entitiesString = data["stories_entities"] as? String {
+                switch entitiesString {
+                case "enabled":
+                    captionEntities = .enabled
+                default:
+                    captionEntities = .premium
+                }
+            } else {
+                captionEntities = .premium
+            }
+            if let venueSearchBotString = data["stories_venue_search_username"] as? String {
+                venueSearchBot = venueSearchBotString
+            } else {
+                venueSearchBot = "foursquare"
+            }
+            return StoriesConfiguration(posting: posting, captionEntities: captionEntities, venueSearchBot: venueSearchBot)
         } else {
             return .defaultValue
         }

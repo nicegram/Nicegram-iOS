@@ -1326,7 +1326,7 @@ private func finalStateWithUpdatesAndServerTime(accountPeerId: PeerId, postbox: 
                         channelsToPoll[peerId] = nil
                     }
                 }
-            case let .updatePeerBlocked(peerId, blocked):
+            case let .updatePeerBlocked(flags, peerId):
                 let userPeerId = peerId.peerId
                 updatedState.updateCachedPeerData(userPeerId, { current in
                     let previous: CachedUserData
@@ -1335,7 +1335,13 @@ private func finalStateWithUpdatesAndServerTime(accountPeerId: PeerId, postbox: 
                     } else {
                         previous = CachedUserData()
                     }
-                    return previous.withUpdatedIsBlocked(blocked == .boolTrue)
+                    var userFlags = previous.flags
+                    if (flags & (1 << 1)) != 0 {
+                        userFlags.insert(.isBlockedFromStories)
+                    } else {
+                        userFlags.remove(.isBlockedFromStories)
+                    }
+                    return previous.withUpdatedIsBlocked((flags & (1 << 0)) != 0).withUpdatedFlags(userFlags)
                 })
             case let .updateUserStatus(userId, status):
                 updatedState.mergePeerPresences([PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)): status], explicit: true)
@@ -1671,6 +1677,10 @@ private func finalStateWithUpdatesAndServerTime(accountPeerId: PeerId, postbox: 
                 updatedState.updateStory(peerId: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), story: story)
             case let .updateReadStories(userId, id):
                 updatedState.readStories(peerId: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), maxId: id)
+            case let .updateStoriesStealthMode(stealthMode):
+                updatedState.updateStoryStealthMode(stealthMode)
+            case let .updateSentStoryReaction(userId, storyId, reaction):
+                updatedState.updateStorySentReaction(peerId: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), id: storyId, reaction: reaction)
             default:
                 break
         }
@@ -2096,25 +2106,29 @@ func resolveStories<T>(postbox: Postbox, source: FetchMessageHistoryHoleSource, 
         while idOffset < allIds.count {
             let bucketLength = min(100, allIds.count - idOffset)
             let ids = Array(allIds[idOffset ..< (idOffset + bucketLength)])
-            signals.append(_internal_getStoriesById(accountPeerId: accountPeerId, postbox: postbox, source: source, peerId: peerId, peerReference: additionalPeers.get(peerId).flatMap(PeerReference.init), ids: ids)
+            signals.append(_internal_getStoriesById(accountPeerId: accountPeerId, postbox: postbox, source: source, peerId: peerId, peerReference: additionalPeers.get(peerId).flatMap(PeerReference.init), ids: ids, allowFloodWait: false)
             |> mapToSignal { result -> Signal<Never, NoError> in
-                return postbox.transaction { transaction -> Void in
-                    for id in ids {
-                        let current = transaction.getStory(id: StoryId(peerId: peerId, id: id))
-                        var updated: CodableEntry?
-                        if let updatedItem = result.first(where: { $0.id == id }) {
-                            if let entry = CodableEntry(updatedItem) {
-                                updated = entry
+                if let result = result {
+                    return postbox.transaction { transaction -> Void in
+                        for id in ids {
+                            let current = transaction.getStory(id: StoryId(peerId: peerId, id: id))
+                            var updated: CodableEntry?
+                            if let updatedItem = result.first(where: { $0.id == id }) {
+                                if let entry = CodableEntry(updatedItem) {
+                                    updated = entry
+                                }
+                            } else {
+                                updated = CodableEntry(data: Data())
                             }
-                        } else {
-                            updated = CodableEntry(data: Data())
-                        }
-                        if current != updated {
-                            transaction.setStory(id: StoryId(peerId: peerId, id: id), value: updated ?? CodableEntry(data: Data()))
+                            if current != updated {
+                                transaction.setStory(id: StoryId(peerId: peerId, id: id), value: updated ?? CodableEntry(data: Data()))
+                            }
                         }
                     }
+                    |> ignoreValues
+                } else {
+                    return .complete()
                 }
-                |> ignoreValues
             })
             idOffset += bucketLength
         }
@@ -3155,7 +3169,7 @@ private func optimizedOperations(_ operations: [AccountStateMutationOperation]) 
     var currentAddScheduledMessages: OptimizeAddMessagesState?
     for operation in operations {
         switch operation {
-        case .DeleteMessages, .DeleteMessagesWithGlobalIds, .EditMessage, .UpdateMessagePoll, .UpdateMessageReactions, .UpdateMedia, .MergeApiChats, .MergeApiUsers, .MergePeerPresences, .UpdatePeer, .ReadInbox, .ReadOutbox, .ReadGroupFeedInbox, .ResetReadState, .ResetIncomingReadState, .UpdatePeerChatUnreadMark, .ResetMessageTagSummary, .UpdateNotificationSettings, .UpdateGlobalNotificationSettings, .UpdateSecretChat, .AddSecretMessages, .ReadSecretOutbox, .AddPeerInputActivity, .UpdateCachedPeerData, .UpdatePinnedItemIds, .UpdatePinnedTopic, .UpdatePinnedTopicOrder, .ReadMessageContents, .UpdateMessageImpressionCount, .UpdateMessageForwardsCount, .UpdateInstalledStickerPacks, .UpdateRecentGifs, .UpdateChatInputState, .UpdateCall, .AddCallSignalingData, .UpdateLangPack, .UpdateMinAvailableMessage, .UpdateIsContact, .UpdatePeerChatInclusion, .UpdatePeersNearby, .UpdateTheme, .SyncChatListFilters, .UpdateChatListFilter, .UpdateChatListFilterOrder, .UpdateReadThread, .UpdateMessagesPinned, .UpdateGroupCallParticipants, .UpdateGroupCall, .UpdateAutoremoveTimeout, .UpdateAttachMenuBots, .UpdateAudioTranscription, .UpdateConfig, .UpdateExtendedMedia, .ResetForumTopic, .UpdateStory, .UpdateReadStories:
+        case .DeleteMessages, .DeleteMessagesWithGlobalIds, .EditMessage, .UpdateMessagePoll, .UpdateMessageReactions, .UpdateMedia, .MergeApiChats, .MergeApiUsers, .MergePeerPresences, .UpdatePeer, .ReadInbox, .ReadOutbox, .ReadGroupFeedInbox, .ResetReadState, .ResetIncomingReadState, .UpdatePeerChatUnreadMark, .ResetMessageTagSummary, .UpdateNotificationSettings, .UpdateGlobalNotificationSettings, .UpdateSecretChat, .AddSecretMessages, .ReadSecretOutbox, .AddPeerInputActivity, .UpdateCachedPeerData, .UpdatePinnedItemIds, .UpdatePinnedTopic, .UpdatePinnedTopicOrder, .ReadMessageContents, .UpdateMessageImpressionCount, .UpdateMessageForwardsCount, .UpdateInstalledStickerPacks, .UpdateRecentGifs, .UpdateChatInputState, .UpdateCall, .AddCallSignalingData, .UpdateLangPack, .UpdateMinAvailableMessage, .UpdateIsContact, .UpdatePeerChatInclusion, .UpdatePeersNearby, .UpdateTheme, .SyncChatListFilters, .UpdateChatListFilter, .UpdateChatListFilterOrder, .UpdateReadThread, .UpdateMessagesPinned, .UpdateGroupCallParticipants, .UpdateGroupCall, .UpdateAutoremoveTimeout, .UpdateAttachMenuBots, .UpdateAudioTranscription, .UpdateConfig, .UpdateExtendedMedia, .ResetForumTopic, .UpdateStory, .UpdateReadStories, .UpdateStoryStealthMode, .UpdateStorySentReaction:
                 if let currentAddMessages = currentAddMessages, !currentAddMessages.messages.isEmpty {
                     result.append(.AddMessages(currentAddMessages.messages, currentAddMessages.location))
                 }
@@ -4476,8 +4490,17 @@ func replayFinalState(
                 }
             case let .UpdateStory(peerId, story):
                 var updatedPeerEntries: [StoryItemsTableEntry] = transaction.getStoryItems(peerId: peerId)
-                
-                if let storedItem = Stories.StoredItem(apiStoryItem: story, peerId: peerId, transaction: transaction) {
+                let previousEntryStory = updatedPeerEntries.first(where: { item in
+                    return item.id == story.id
+                }).flatMap { item -> Stories.Item? in
+                    if let value = item.value.get(Stories.StoredItem.self), case let .item(item) = value {
+                        return item
+                    } else {
+                        return nil
+                    }
+                }
+            
+                if let storedItem = Stories.StoredItem(apiStoryItem: story, existingItem: previousEntryStory, peerId: peerId, transaction: transaction) {
                     if let currentIndex = updatedPeerEntries.firstIndex(where: { $0.id == storedItem.id }) {
                         if case .item = storedItem {
                             if let codedEntry = CodableEntry(storedItem) {
@@ -4532,6 +4555,69 @@ func replayFinalState(
                 ).postboxRepresentation)
             
                 storyUpdates.append(InternalStoryUpdate.read(peerId: peerId, maxId: maxId))
+            case let .UpdateStoryStealthMode(data):
+                var configuration = _internal_getStoryConfigurationState(transaction: transaction)
+                configuration.stealthModeState = Stories.StealthModeState(apiMode: data)
+                _internal_setStoryConfigurationState(transaction: transaction, state: configuration)
+            case let .UpdateStorySentReaction(peerId, id, reaction):
+                var updatedPeerEntries: [StoryItemsTableEntry] = transaction.getStoryItems(peerId: peerId)
+                
+                if let index = updatedPeerEntries.firstIndex(where: { item in
+                    return item.id == id
+                }) {
+                    if let value = updatedPeerEntries[index].value.get(Stories.StoredItem.self), case let .item(item) = value {
+                        let updatedItem: Stories.StoredItem = .item(Stories.Item(
+                            id: item.id,
+                            timestamp: item.timestamp,
+                            expirationTimestamp: item.expirationTimestamp,
+                            media: item.media,
+                            mediaAreas: item.mediaAreas,
+                            text: item.text,
+                            entities: item.entities,
+                            views: item.views,
+                            privacy: item.privacy,
+                            isPinned: item.isPinned,
+                            isExpired: item.isExpired,
+                            isPublic: item.isPublic,
+                            isCloseFriends: item.isCloseFriends,
+                            isContacts: item.isContacts,
+                            isSelectedContacts: item.isSelectedContacts,
+                            isForwardingDisabled: item.isForwardingDisabled,
+                            isEdited: item.isEdited,
+                            myReaction: MessageReaction.Reaction(apiReaction: reaction)
+                        ))
+                        if let entry = CodableEntry(updatedItem) {
+                            updatedPeerEntries[index] = StoryItemsTableEntry(value: entry, id: item.id, expirationTimestamp: item.expirationTimestamp, isCloseFriends: item.isCloseFriends)
+                        }
+                    }
+                }
+                transaction.setStoryItems(peerId: peerId, items: updatedPeerEntries)
+            
+                if let value = transaction.getStory(id: StoryId(peerId: peerId, id: id))?.get(Stories.StoredItem.self), case let .item(item) = value {
+                    let updatedItem: Stories.StoredItem = .item(Stories.Item(
+                        id: item.id,
+                        timestamp: item.timestamp,
+                        expirationTimestamp: item.expirationTimestamp,
+                        media: item.media,
+                        mediaAreas: item.mediaAreas,
+                        text: item.text,
+                        entities: item.entities,
+                        views: item.views,
+                        privacy: item.privacy,
+                        isPinned: item.isPinned,
+                        isExpired: item.isExpired,
+                        isPublic: item.isPublic,
+                        isCloseFriends: item.isCloseFriends,
+                        isContacts: item.isContacts,
+                        isSelectedContacts: item.isSelectedContacts,
+                        isForwardingDisabled: item.isForwardingDisabled,
+                        isEdited: item.isEdited,
+                        myReaction: MessageReaction.Reaction(apiReaction: reaction)
+                    ))
+                    if let entry = CodableEntry(updatedItem) {
+                        transaction.setStory(id: StoryId(peerId: peerId, id: id), value: entry)
+                    }
+                }
         }
     }
     

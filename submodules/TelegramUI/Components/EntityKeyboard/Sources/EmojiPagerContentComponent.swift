@@ -2210,6 +2210,12 @@ public protocol EmojiContentPeekBehavior: AnyObject {
     func setGestureRecognizerEnabled(view: UIView, isEnabled: Bool, itemAtPoint: @escaping (CGPoint) -> (AnyHashable, CALayer, TelegramMediaFile)?)
 }
 
+public protocol EmojiCustomContentView: UIView {
+    var tintContainerView: UIView { get }
+    
+    func update(theme: PresentationTheme, strings: PresentationStrings, useOpaqueTheme: Bool, availableSize: CGSize, transition: Transition) -> CGSize
+}
+
 public final class EmojiPagerContentComponent: Component {
     public static let staticEmojiMapping: [(EmojiPagerContentComponent.StaticEmojiSegment, [String])] = {
         guard let path = getAppBundle().path(forResource: "emoji1016", ofType: "txt") else {
@@ -2263,7 +2269,7 @@ public final class EmojiPagerContentComponent: Component {
             self.isDisabled = isDisabled
         }
     }
-    
+        
     public struct CustomLayout: Equatable {
         public var itemsPerRow: Int
         public var itemSize: CGFloat
@@ -2322,6 +2328,7 @@ public final class EmojiPagerContentComponent: Component {
         public let customLayout: CustomLayout?
         public let externalBackground: ExternalBackground?
         public weak var externalExpansionView: UIView?
+        public let customContentView: EmojiCustomContentView?
         public let useOpaqueTheme: Bool
         public let hideBackground: Bool
         public let scrollingStickersGridPromise = ValuePromise<Bool>(false)
@@ -2350,6 +2357,7 @@ public final class EmojiPagerContentComponent: Component {
             customLayout: CustomLayout?,
             externalBackground: ExternalBackground?,
             externalExpansionView: UIView?,
+            customContentView: EmojiCustomContentView?,
             useOpaqueTheme: Bool,
             hideBackground: Bool,
             stateContext: StateContext?,
@@ -2376,6 +2384,7 @@ public final class EmojiPagerContentComponent: Component {
             self.customLayout = customLayout
             self.externalBackground = externalBackground
             self.externalExpansionView = externalExpansionView
+            self.customContentView = customContentView
             self.useOpaqueTheme = useOpaqueTheme
             self.hideBackground = hideBackground
             self.stateContext = stateContext
@@ -2849,6 +2858,7 @@ public final class EmojiPagerContentComponent: Component {
             var verticalGroupDefaultSpacing: CGFloat
             var verticalGroupFeaturedSpacing: CGFloat
             var itemsPerRow: Int
+            var customContentHeight: CGFloat
             var contentSize: CGSize
             
             var searchInsets: UIEdgeInsets
@@ -2857,9 +2867,21 @@ public final class EmojiPagerContentComponent: Component {
             var premiumButtonInset: CGFloat
             var premiumButtonHeight: CGFloat
             
-            init(layoutType: ItemLayoutType, width: CGFloat, containerInsets: UIEdgeInsets, itemGroups: [ItemGroupDescription], expandedGroupIds: Set<AnyHashable>, curveNearBounds: Bool, displaySearch: Bool, isSearchActivated: Bool, customLayout: CustomLayout?) {
+            init(
+                layoutType: ItemLayoutType,
+                width: CGFloat,
+                containerInsets: UIEdgeInsets,
+                itemGroups: [ItemGroupDescription],
+                expandedGroupIds: Set<AnyHashable>,
+                curveNearBounds: Bool,
+                displaySearch: Bool,
+                isSearchActivated: Bool,
+                customContentHeight: CGFloat,
+                customLayout: CustomLayout?
+            ) {
                 self.layoutType = layoutType
                 self.width = width
+                self.customContentHeight = customContentHeight
                 
                 self.premiumButtonInset = 6.0
                 self.premiumButtonHeight = 50.0
@@ -2925,6 +2947,8 @@ public final class EmojiPagerContentComponent: Component {
                 let actualContentWidth = self.visibleItemSize * CGFloat(self.itemsPerRow) + self.horizontalSpacing * CGFloat(self.itemsPerRow - 1)
                 self.itemInsets.left = floorToScreenPixels((width - actualContentWidth) / 2.0)
                 self.itemInsets.right = self.itemInsets.left
+                
+                self.itemInsets.top += self.customContentHeight
                 
                 if displaySearch {
                     self.itemInsets.top += self.searchHeight - 4.0
@@ -3651,6 +3675,7 @@ public final class EmojiPagerContentComponent: Component {
         private let placeholdersContainerView: UIView
         private var visibleSearchHeader: EmojiSearchHeaderView?
         private var visibleEmptySearchResultsView: EmptySearchResultsView?
+        private var visibleCustomContentView: EmojiCustomContentView?
         private var visibleItemPlaceholderViews: [ItemLayer.Key: ItemPlaceholderView] = [:]
         private var visibleFillPlaceholdersViews: [Int: ItemPlaceholderView] = [:]
         private var visibleItemSelectionLayers: [ItemLayer.Key: ItemSelectionLayer] = [:]
@@ -6357,6 +6382,7 @@ public final class EmojiPagerContentComponent: Component {
             var updatedItemPositions: [VisualItemKey: CGPoint]?
             
             let contentAnimation = transition.userData(ContentAnimation.self)
+            let useOpaqueTheme = component.inputInteractionHolder.inputInteraction?.useOpaqueTheme ?? false
             
             var transitionHintInstalledGroupId: AnyHashable?
             var transitionHintExpandedGroupId: AnyHashable?
@@ -6483,6 +6509,80 @@ public final class EmojiPagerContentComponent: Component {
                 calculateUpdatedItemPositions = true
             }
             
+            var itemTransition = transition
+            if let previousItemLayout = self.itemLayout {
+                if previousItemLayout.width != availableSize.width {
+                    itemTransition = .immediate
+                } else if transition.userData(ContentAnimation.self) == nil {
+                    if previousItemLayout.itemInsets.top != pagerEnvironment.containerInsets.top + 9.0 {
+                    } else {
+                        itemTransition = .immediate
+                    }
+                }
+            } else {
+                itemTransition = .immediate
+            }
+            
+            var isFirstUpdate = false
+            var resetScrolling = false
+            if self.scrollView.bounds.isEmpty && component.displaySearchWithPlaceholder != nil {
+                resetScrolling = true
+            }
+            if previousComponent == nil {
+                isFirstUpdate = true
+            }
+            if previousComponent?.itemContentUniqueId != component.itemContentUniqueId {
+                resetScrolling = true
+            }
+            if resetScrolling {
+                itemTransition = .immediate
+            }
+            
+            var animateContentCrossfade = false
+            if let previousComponent, previousComponent.itemContentUniqueId != component.itemContentUniqueId, itemTransition.animation.isImmediate {
+                if !(previousComponent.contentItemGroups.contains(where: { $0.fillWithLoadingPlaceholders }) && component.contentItemGroups.contains(where: { $0.fillWithLoadingPlaceholders })) && previousComponent.itemContentUniqueId?.id != component.itemContentUniqueId?.id {
+                    animateContentCrossfade = true
+                }
+            }
+            
+            var customContentHeight: CGFloat = 0.0
+            if let customContentView = component.inputInteractionHolder.inputInteraction?.customContentView, !self.isSearchActivated {
+                var customContentViewTransition = transition
+                if let _ = self.visibleCustomContentView {
+                    
+                } else {
+                    customContentViewTransition = .immediate
+                    self.visibleCustomContentView = customContentView
+                    self.scrollView.addSubview(customContentView)
+                    self.mirrorContentScrollView.addSubview(customContentView.tintContainerView)
+                    
+                    if animateContentCrossfade {
+                        customContentView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
+                        customContentView.tintContainerView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
+                    }
+                }
+                let availableCustomContentSize = availableSize
+                let customContentViewSize = customContentView.update(theme: keyboardChildEnvironment.theme, strings: keyboardChildEnvironment.strings, useOpaqueTheme: useOpaqueTheme, availableSize: availableCustomContentSize, transition: customContentViewTransition)
+                customContentViewTransition.setFrame(view: customContentView, frame: CGRect(origin: CGPoint(x: 0.0, y: pagerEnvironment.containerInsets.top + (component.displaySearchWithPlaceholder != nil ? 54.0 : 0.0)), size: customContentViewSize))
+                
+                customContentHeight = customContentViewSize.height
+            } else {
+                if let visibleCustomContentView = self.visibleCustomContentView {
+                    self.visibleCustomContentView = nil
+                    if animateContentCrossfade {
+                        visibleCustomContentView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false, completion: { _ in
+                            visibleCustomContentView.removeFromSuperview()
+                        })
+                        visibleCustomContentView.tintContainerView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false, completion: { _ in
+                            visibleCustomContentView.tintContainerView.removeFromSuperview()
+                        })
+                    } else {
+                        visibleCustomContentView.removeFromSuperview()
+                        visibleCustomContentView.tintContainerView.removeFromSuperview()
+                    }
+                }
+            }
+            
             var itemGroups: [ItemGroupDescription] = []
             for itemGroup in component.contentItemGroups {
                 itemGroups.append(ItemGroupDescription(
@@ -6497,8 +6597,6 @@ public final class EmojiPagerContentComponent: Component {
                 ))
             }
             
-            var itemTransition = transition
-            
             let extractedExpr = ItemLayout(
                 layoutType: component.itemLayoutType,
                 width: availableSize.width,
@@ -6508,21 +6606,10 @@ public final class EmojiPagerContentComponent: Component {
                 curveNearBounds: component.warpContentsOnEdges,
                 displaySearch: component.displaySearchWithPlaceholder != nil,
                 isSearchActivated: self.isSearchActivated,
+                customContentHeight: customContentHeight,
                 customLayout: component.inputInteractionHolder.inputInteraction?.customLayout
             )
             let itemLayout = extractedExpr
-            if let previousItemLayout = self.itemLayout {
-                if previousItemLayout.width != itemLayout.width {
-                    itemTransition = .immediate
-                } else if transition.userData(ContentAnimation.self) == nil {
-                    if previousItemLayout.itemInsets.top != itemLayout.itemInsets.top {
-                    } else {
-                        itemTransition = .immediate
-                    }
-                }
-            } else {
-                itemTransition = .immediate
-            }
             self.itemLayout = itemLayout
             
             self.ignoreScrolling = true
@@ -6541,23 +6628,8 @@ public final class EmojiPagerContentComponent: Component {
             transition.setBounds(view: self.vibrancyClippingView, bounds: CGRect(origin: CGPoint(x: 0.0, y: self.isSearchActivated ? clippingTopInset : 0.0), size: availableSize))
             
             let previousSize = self.scrollView.bounds.size
-            var resetScrolling = false
-            var isFirstUpdate = false
-            if self.scrollView.bounds.isEmpty && component.displaySearchWithPlaceholder != nil {
-                resetScrolling = true
-            }
-            if previousComponent == nil {
-                isFirstUpdate = true
-            }
-            if previousComponent?.itemContentUniqueId != component.itemContentUniqueId {
-                resetScrolling = true
-            }
             self.scrollView.bounds = CGRect(origin: self.scrollView.bounds.origin, size: scrollSize)
-            
-            if resetScrolling {
-                itemTransition = .immediate
-            }
-            
+
             let warpHeight: CGFloat = 50.0
             var topWarpInset = pagerEnvironment.containerInsets.top
             if self.isSearchActivated {
@@ -6704,7 +6776,6 @@ public final class EmojiPagerContentComponent: Component {
                 }
             }
             
-            let useOpaqueTheme = component.inputInteractionHolder.inputInteraction?.useOpaqueTheme ?? false
             
             if let displaySearchWithPlaceholder = component.displaySearchWithPlaceholder {
                 let visibleSearchHeader: EmojiSearchHeaderView
@@ -6812,8 +6883,7 @@ public final class EmojiPagerContentComponent: Component {
                     visibleSearchHeader.tintContainerView.removeFromSuperview()
                 }
             }
-            
-
+             
             if let emptySearchResults = component.emptySearchResults {
                 let visibleEmptySearchResultsView: EmptySearchResultsView
                 var emptySearchResultsTransition = transition
@@ -6849,14 +6919,7 @@ public final class EmojiPagerContentComponent: Component {
                     visibleEmptySearchResultsView.tintContainerView.removeFromSuperview()
                 }
             }
-            
-            var animateContentCrossfade = false
-            if let previousComponent, previousComponent.itemContentUniqueId != component.itemContentUniqueId, itemTransition.animation.isImmediate {
-                if !(previousComponent.contentItemGroups.contains(where: { $0.fillWithLoadingPlaceholders }) && component.contentItemGroups.contains(where: { $0.fillWithLoadingPlaceholders })) && previousComponent.itemContentUniqueId?.id != component.itemContentUniqueId?.id {
-                    animateContentCrossfade = true
-                }
-            }
-            
+                        
             let crossfadeMinScale: CGFloat = 0.4
             
             if animateContentCrossfade {

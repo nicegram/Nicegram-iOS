@@ -686,6 +686,7 @@ final class AvatarEditorScreenComponent: Component {
                 customLayout: nil,
                 externalBackground: nil,
                 externalExpansionView: nil,
+                customContentView: nil,
                 useOpaqueTheme: true,
                 hideBackground: true,
                 stateContext: nil,
@@ -815,6 +816,7 @@ final class AvatarEditorScreenComponent: Component {
                 customLayout: nil,
                 externalBackground: nil,
                 externalExpansionView: nil,
+                customContentView: nil,
                 useOpaqueTheme: true,
                 hideBackground: true,
                 stateContext: nil,
@@ -1249,6 +1251,7 @@ final class AvatarEditorScreenComponent: Component {
                         externalBottomPanelContainer: nil,
                         displayTopPanelBackground: .blur,
                         topPanelExtensionUpdated: { _, _ in },
+                        topPanelScrollingOffset: { _, _ in },
                         hideInputUpdated: { _, _, _ in },
                         hideTopPanelUpdated: { [weak self] hideTopPanel, transition in
                             if let strongSelf = self {

@@ -384,7 +384,7 @@ final class ChatMessageInteractiveFileNode: ASDisplayNode {
                 if case .undo = action {
                     var replaceImpl: ((ViewController) -> Void)?
                     let controller = context.sharedContext.makePremiumDemoController(context: context, subject: .voiceToText, action: {
-                        let controller = context.sharedContext.makePremiumIntroController(context: context, source: .settings)
+                        let controller = context.sharedContext.makePremiumIntroController(context: context, source: .settings, forceDark: false, dismissed: nil)
                         replaceImpl?(controller)
                     })
                     replaceImpl = { [weak controller] c in
@@ -1510,7 +1510,7 @@ final class ChatMessageInteractiveFileNode: ASDisplayNode {
             }
         }
         
-        let state: SemanticStatusNodeState
+        var state: SemanticStatusNodeState
         var streamingState: SemanticStatusNodeState = .none
         
         let isSending = message.flags.isSending
@@ -1619,6 +1619,16 @@ final class ChatMessageInteractiveFileNode: ASDisplayNode {
             }
         } else {
             streamingState = .none
+        }
+        
+        if isSending {
+            streamingState = .none
+            
+            if case .progress = state {
+            } else {
+                let adjustedProgress: CGFloat = 0.027
+                state = .progress(value: CGFloat(adjustedProgress), cancelEnabled: true, appearance: .init(inset: 1.0, lineWidth: 2.0))
+            }
         }
         
         let backgroundNodeColor: UIColor

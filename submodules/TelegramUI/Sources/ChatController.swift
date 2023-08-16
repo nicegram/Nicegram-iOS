@@ -3780,7 +3780,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                         
                         let _ = ApplicationSpecificNotice.incrementTranslationSuggestion(accountManager: context.sharedContext.accountManager, timestamp: Int32(Date().timeIntervalSince1970)).start()
                         
-                        let controller = TranslateScreen(context: context, text: text.string, canCopy: canCopy, fromLanguage: language)
+                        let controller = TranslateScreen(context: context, text: text.string, canCopy: canCopy, fromLanguage: language, ignoredLanguages: translationSettings.ignoredLanguages)
                         controller.pushController = { [weak self] c in
                             self?.effectiveNavigationController?._keepModalDismissProgress = true
                             self?.push(c)
@@ -4604,13 +4604,32 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                                     }
                                     
                                     if let result = itemNode.targetForStoryTransition(id: storyId) {
+                                        result.isHidden = true
                                         transitionOut = StoryContainerScreen.TransitionOut(
                                             destinationView: result,
-                                            transitionView: nil,
+                                            transitionView: StoryContainerScreen.TransitionView(
+                                                makeView: { [weak result] in
+                                                    let parentView = UIView()
+                                                    if let copyView = result?.snapshotContentTree(unhide: true) {
+                                                        parentView.addSubview(copyView)
+                                                    }
+                                                    return parentView
+                                                },
+                                                updateView: { copyView, state, transition in
+                                                    guard let view = copyView.subviews.first else {
+                                                        return
+                                                    }
+                                                    let size = state.sourceSize.interpolate(to: state.destinationSize, amount: state.progress)
+                                                    transition.setPosition(view: view, position: CGPoint(x: size.width * 0.5, y: size.height * 0.5))
+                                                    transition.setScale(view: view, scale: size.width / state.destinationSize.width)
+                                                },
+                                                insertCloneTransitionView: nil
+                                            ),
                                             destinationRect: result.bounds,
                                             destinationCornerRadius: 2.0,
                                             destinationIsAvatar: false,
-                                            completed: {
+                                            completed: { [weak result] in
+                                                result?.isHidden = false
                                             }
                                         )
                                     }
@@ -13245,7 +13264,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
             if !value || concealed || botApp.flags.contains(.notActivated) {
                 let context = self.context
                                 
-                let controller = webAppLaunchConfirmationController(context: context, updatedPresentationData: self.updatedPresentationData, peer: botPeer, requestWriteAccess: !botApp.flags.contains(.notActivated) && botApp.flags.contains(.requiresWriteAccess), completion: { allowWrite in
+                let controller = webAppLaunchConfirmationController(context: context, updatedPresentationData: self.updatedPresentationData, peer: botPeer, requestWriteAccess: botApp.flags.contains(.notActivated) && botApp.flags.contains(.requiresWriteAccess), completion: { allowWrite in
                     let _ = ApplicationSpecificNotice.setBotGameNotice(accountManager: context.sharedContext.accountManager, peerId: botPeer.id).start()
                     openBotApp(allowWrite)
                 }, showMore: { [weak self] in
@@ -13561,7 +13580,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                             return
                         }
                         let hasLiveLocation = peer.id.namespace != Namespaces.Peer.SecretChat && peer.id != strongSelf.context.account.peerId && strongSelf.presentationInterfaceState.subject != .scheduledMessages
-                        let controller = LocationPickerController(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, mode: .share(peer: EnginePeer(peer), selfPeer: selfPeer, hasLiveLocation: hasLiveLocation), completion: { [weak self] location, _ in
+                        let controller = LocationPickerController(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, mode: .share(peer: EnginePeer(peer), selfPeer: selfPeer, hasLiveLocation: hasLiveLocation), completion: { [weak self] location, _, _, _, _ in
                             guard let strongSelf = self else {
                                 return
                             }
@@ -14551,7 +14570,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                 return
             }
             let hasLiveLocation = peer.id.namespace != Namespaces.Peer.SecretChat && peer.id != strongSelf.context.account.peerId && strongSelf.presentationInterfaceState.subject != .scheduledMessages
-            let controller = LocationPickerController(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, mode: .share(peer: EnginePeer(peer), selfPeer: selfPeer, hasLiveLocation: hasLiveLocation), completion: { [weak self] location, _ in
+            let controller = LocationPickerController(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, mode: .share(peer: EnginePeer(peer), selfPeer: selfPeer, hasLiveLocation: hasLiveLocation), completion: { [weak self] location, _, _, _, _ in
                 guard let strongSelf = self else {
                     return
                 }

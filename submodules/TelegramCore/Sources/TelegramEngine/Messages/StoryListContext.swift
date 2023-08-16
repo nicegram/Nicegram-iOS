@@ -13,18 +13,28 @@ enum InternalStoryUpdate {
 public final class EngineStoryItem: Equatable {
     public final class Views: Equatable {
         public let seenCount: Int
+        public let reactedCount: Int
         public let seenPeers: [EnginePeer]
+        public let hasList: Bool
         
-        public init(seenCount: Int, seenPeers: [EnginePeer]) {
+        public init(seenCount: Int, reactedCount: Int, seenPeers: [EnginePeer], hasList: Bool) {
             self.seenCount = seenCount
+            self.reactedCount = reactedCount
             self.seenPeers = seenPeers
+            self.hasList = hasList
         }
         
         public static func ==(lhs: Views, rhs: Views) -> Bool {
             if lhs.seenCount != rhs.seenCount {
                 return false
             }
+            if lhs.reactedCount != rhs.reactedCount {
+                return false
+            }
             if lhs.seenPeers != rhs.seenPeers {
+                return false
+            }
+            if lhs.hasList != rhs.hasList {
                 return false
             }
             return true
@@ -35,6 +45,7 @@ public final class EngineStoryItem: Equatable {
     public let timestamp: Int32
     public let expirationTimestamp: Int32
     public let media: EngineMedia
+    public let mediaAreas: [MediaArea]
     public let text: String
     public let entities: [MessageTextEntity]
     public let views: Views?
@@ -48,12 +59,14 @@ public final class EngineStoryItem: Equatable {
     public let isSelectedContacts: Bool
     public let isForwardingDisabled: Bool
     public let isEdited: Bool
+    public let myReaction: MessageReaction.Reaction?
     
-    public init(id: Int32, timestamp: Int32, expirationTimestamp: Int32, media: EngineMedia, text: String, entities: [MessageTextEntity], views: Views?, privacy: EngineStoryPrivacy?, isPinned: Bool, isExpired: Bool, isPublic: Bool, isPending: Bool, isCloseFriends: Bool, isContacts: Bool, isSelectedContacts: Bool, isForwardingDisabled: Bool, isEdited: Bool) {
+    public init(id: Int32, timestamp: Int32, expirationTimestamp: Int32, media: EngineMedia, mediaAreas: [MediaArea], text: String, entities: [MessageTextEntity], views: Views?, privacy: EngineStoryPrivacy?, isPinned: Bool, isExpired: Bool, isPublic: Bool, isPending: Bool, isCloseFriends: Bool, isContacts: Bool, isSelectedContacts: Bool, isForwardingDisabled: Bool, isEdited: Bool, myReaction: MessageReaction.Reaction?) {
         self.id = id
         self.timestamp = timestamp
         self.expirationTimestamp = expirationTimestamp
         self.media = media
+        self.mediaAreas = mediaAreas
         self.text = text
         self.entities = entities
         self.views = views
@@ -67,6 +80,7 @@ public final class EngineStoryItem: Equatable {
         self.isSelectedContacts = isSelectedContacts
         self.isForwardingDisabled = isForwardingDisabled
         self.isEdited = isEdited
+        self.myReaction = myReaction
     }
     
     public static func ==(lhs: EngineStoryItem, rhs: EngineStoryItem) -> Bool {
@@ -80,6 +94,9 @@ public final class EngineStoryItem: Equatable {
             return false
         }
         if lhs.media != rhs.media {
+            return false
+        }
+        if lhs.mediaAreas != rhs.mediaAreas {
             return false
         }
         if lhs.text != rhs.text {
@@ -121,6 +138,9 @@ public final class EngineStoryItem: Equatable {
         if lhs.isEdited != rhs.isEdited {
             return false
         }
+        if lhs.myReaction != rhs.myReaction {
+            return false
+        }
         return true
     }
 }
@@ -132,12 +152,15 @@ extension EngineStoryItem {
             timestamp: self.timestamp,
             expirationTimestamp: self.expirationTimestamp,
             media: self.media._asMedia(),
+            mediaAreas: self.mediaAreas,
             text: self.text,
             entities: self.entities,
             views: self.views.flatMap { views in
                 return Stories.Item.Views(
                     seenCount: views.seenCount,
-                    seenPeerIds: views.seenPeers.map(\.id)
+                    reactedCount: views.reactedCount,
+                    seenPeerIds: views.seenPeers.map(\.id),
+                    hasList: views.hasList
                 )
             },
             privacy: self.privacy.flatMap { privacy in
@@ -153,7 +176,8 @@ extension EngineStoryItem {
             isContacts: self.isContacts,
             isSelectedContacts: self.isSelectedContacts,
             isForwardingDisabled: self.isForwardingDisabled,
-            isEdited: self.isEdited
+            isEdited: self.isEdited,
+            myReaction: self.myReaction
         )
     }
 }
@@ -310,8 +334,9 @@ public final class StorySubscriptionsContext {
                 }
                 
                 let _ = (self.postbox.transaction { transaction -> Void in
+                    var updatedStealthMode: Api.StoriesStealthMode?
                     switch result {
-                    case let .allStoriesNotModified(state):
+                    case let .allStoriesNotModified(_, state, stealthMode):
                         self.loadedStateMark = .value(state)
                         let (currentStateValue, _) = transaction.getAllStorySubscriptions(key: subscriptionsKey)
                         let currentState = currentStateValue.flatMap { $0.get(Stories.SubscriptionsState.self) }
@@ -326,9 +351,11 @@ public final class StorySubscriptionsContext {
                             refreshId: currentState?.refreshId ?? UInt64.random(in: 0 ... UInt64.max),
                             hasMore: hasMore
                         )))
-                    case let .allStories(flags, _, state, userStories, users):
-                        //TODO:count
                         
+                        if isRefresh && !isHidden {
+                            updatedStealthMode = stealthMode
+                        }
+                    case let .allStories(flags, _, state, userStories, users, stealthMode):
                         let parsedPeers = AccumulatedPeers(transaction: transaction, chats: [], users: users)
                         
                         let hasMore: Bool = (flags & (1 << 0)) != 0
@@ -378,6 +405,10 @@ public final class StorySubscriptionsContext {
                             }
                         }
                         
+                        if isRefresh && !isHidden {
+                            updatedStealthMode = stealthMode
+                        }
+                        
                         transaction.replaceAllStorySubscriptions(key: subscriptionsKey, state: CodableEntry(Stories.SubscriptionsState(
                             opaqueState: state,
                             refreshId: UInt64.random(in: 0 ... UInt64.max),
@@ -385,6 +416,12 @@ public final class StorySubscriptionsContext {
                         )), peerIds: peerEntries)
                         
                         updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
+                    }
+                    
+                    if let updatedStealthMode = updatedStealthMode {
+                        var configuration = _internal_getStoryConfigurationState(transaction: transaction)
+                        configuration.stealthModeState = Stories.StealthModeState(apiMode: updatedStealthMode)
+                        _internal_setStoryConfigurationState(transaction: transaction, state: configuration)
                     }
                 }
                 |> deliverOn(self.queue)).start(completed: { [weak self] in
@@ -470,15 +507,15 @@ public final class PeerStoryListContext {
             self.peerId = peerId
             self.isArchived = isArchived
             
-            self.stateValue = State(peerReference: nil, items: [], totalCount: 0, loadMoreToken: 0, isCached: true, allEntityFiles: [:])
+            self.stateValue = State(peerReference: nil, items: [], totalCount: 0, loadMoreToken: 0, isCached: true, hasCache: false, allEntityFiles: [:])
             
-            let _ = (account.postbox.transaction { transaction -> (PeerReference?, [EngineStoryItem], Int, [MediaId: TelegramMediaFile]) in
+            let _ = (account.postbox.transaction { transaction -> (PeerReference?, [EngineStoryItem], Int, [MediaId: TelegramMediaFile], Bool) in
                 let key = ValueBoxKey(length: 8 + 1)
                 key.setInt64(0, value: peerId.toInt64())
                 key.setInt8(8, value: isArchived ? 1 : 0)
                 let cached = transaction.retrieveItemCacheEntry(id: ItemCacheEntryId(collectionId: Namespaces.CachedItemCollection.cachedPeerStoryListHeads, key: key))?.get(CachedPeerStoryListHead.self)
                 guard let cached = cached else {
-                    return (nil, [], 0, [:])
+                    return (nil, [], 0, [:], false)
                 }
                 var items: [EngineStoryItem] = []
                 var allEntityFiles: [MediaId: TelegramMediaFile] = [:]
@@ -489,14 +526,17 @@ public final class PeerStoryListContext {
                             timestamp: item.timestamp,
                             expirationTimestamp: item.expirationTimestamp,
                             media: EngineMedia(media),
+                            mediaAreas: item.mediaAreas,
                             text: item.text,
                             entities: item.entities,
                             views: item.views.flatMap { views in
                                 return EngineStoryItem.Views(
                                     seenCount: views.seenCount,
+                                    reactedCount: views.reactedCount,
                                     seenPeers: views.seenPeerIds.compactMap { id -> EnginePeer? in
                                         return transaction.getPeer(id).flatMap(EnginePeer.init)
-                                    }
+                                    },
+                                    hasList: views.hasList
                                 )
                             },
                             privacy: item.privacy.flatMap(EngineStoryPrivacy.init),
@@ -508,7 +548,8 @@ public final class PeerStoryListContext {
                             isContacts: item.isContacts,
                             isSelectedContacts: item.isSelectedContacts,
                             isForwardingDisabled: item.isForwardingDisabled,
-                            isEdited: item.isEdited
+                            isEdited: item.isEdited,
+                            myReaction: item.myReaction
                         )
                         items.append(mappedItem)
                         
@@ -527,14 +568,14 @@ public final class PeerStoryListContext {
                 
                 let peerReference = transaction.getPeer(peerId).flatMap(PeerReference.init)
                 
-                return (peerReference, items, Int(cached.totalCount), allEntityFiles)
+                return (peerReference, items, Int(cached.totalCount), allEntityFiles, true)
             }
-            |> deliverOn(self.queue)).start(next: { [weak self] peerReference, items, totalCount, allEntityFiles in
+            |> deliverOn(self.queue)).start(next: { [weak self] peerReference, items, totalCount, allEntityFiles, hasCache in
                 guard let `self` = self else {
                     return
                 }
                 
-                self.stateValue = State(peerReference: peerReference, items: items, totalCount: totalCount, loadMoreToken: 0, isCached: true, allEntityFiles: allEntityFiles)
+                self.stateValue = State(peerReference: peerReference, items: items, totalCount: totalCount, loadMoreToken: 0, isCached: true, hasCache: hasCache, allEntityFiles: allEntityFiles)
                 self.loadMore(completion: nil)
             })
         }
@@ -613,14 +654,17 @@ public final class PeerStoryListContext {
                                             timestamp: item.timestamp,
                                             expirationTimestamp: item.expirationTimestamp,
                                             media: EngineMedia(media),
+                                            mediaAreas: item.mediaAreas,
                                             text: item.text,
                                             entities: item.entities,
                                             views: item.views.flatMap { views in
                                                 return EngineStoryItem.Views(
                                                     seenCount: views.seenCount,
+                                                    reactedCount: views.reactedCount,
                                                     seenPeers: views.seenPeerIds.compactMap { id -> EnginePeer? in
                                                         return transaction.getPeer(id).flatMap(EnginePeer.init)
-                                                    }
+                                                    },
+                                                    hasList: views.hasList
                                                 )
                                             },
                                             privacy: item.privacy.flatMap(EngineStoryPrivacy.init),
@@ -632,7 +676,8 @@ public final class PeerStoryListContext {
                                             isContacts: item.isContacts,
                                             isSelectedContacts: item.isSelectedContacts,
                                             isForwardingDisabled: item.isForwardingDisabled,
-                                            isEdited: item.isEdited
+                                            isEdited: item.isEdited,
+                                            myReaction: item.myReaction
                                         )
                                         storyItems.append(mappedItem)
                                     }
@@ -665,6 +710,7 @@ public final class PeerStoryListContext {
                     updatedState.items.removeAll()
                     updatedState.isCached = false
                 }
+                updatedState.hasCache = true
                 
                 var existingIds = Set(updatedState.items.map { $0.id })
                 for item in storyItems {
@@ -760,14 +806,17 @@ public final class PeerStoryListContext {
                                                                 timestamp: item.timestamp,
                                                                 expirationTimestamp: item.expirationTimestamp,
                                                                 media: EngineMedia(media),
+                                                                mediaAreas: item.mediaAreas,
                                                                 text: item.text,
                                                                 entities: item.entities,
                                                                 views: item.views.flatMap { views in
                                                                     return EngineStoryItem.Views(
                                                                         seenCount: views.seenCount,
+                                                                        reactedCount: views.reactedCount,
                                                                         seenPeers: views.seenPeerIds.compactMap { id -> EnginePeer? in
                                                                             return peers[id].flatMap(EnginePeer.init)
-                                                                        }
+                                                                        },
+                                                                        hasList: views.hasList
                                                                     )
                                                                 },
                                                                 privacy: item.privacy.flatMap(EngineStoryPrivacy.init),
@@ -779,7 +828,8 @@ public final class PeerStoryListContext {
                                                                 isContacts: item.isContacts,
                                                                 isSelectedContacts: item.isSelectedContacts,
                                                                 isForwardingDisabled: item.isForwardingDisabled,
-                                                                isEdited: item.isEdited
+                                                                isEdited: item.isEdited,
+                                                                myReaction: item.myReaction
                                                             )
                                                             finalUpdatedState = updatedState
                                                         }
@@ -799,14 +849,17 @@ public final class PeerStoryListContext {
                                                             timestamp: item.timestamp,
                                                             expirationTimestamp: item.expirationTimestamp,
                                                             media: EngineMedia(media),
+                                                            mediaAreas: item.mediaAreas,
                                                             text: item.text,
                                                             entities: item.entities,
                                                             views: item.views.flatMap { views in
                                                                 return EngineStoryItem.Views(
                                                                     seenCount: views.seenCount,
+                                                                    reactedCount: views.reactedCount,
                                                                     seenPeers: views.seenPeerIds.compactMap { id -> EnginePeer? in
                                                                         return peers[id].flatMap(EnginePeer.init)
-                                                                    }
+                                                                    },
+                                                                    hasList: views.hasList
                                                                 )
                                                             },
                                                             privacy: item.privacy.flatMap(EngineStoryPrivacy.init),
@@ -818,7 +871,8 @@ public final class PeerStoryListContext {
                                                             isContacts: item.isContacts,
                                                             isSelectedContacts: item.isSelectedContacts,
                                                             isForwardingDisabled: item.isForwardingDisabled,
-                                                            isEdited: item.isEdited
+                                                            isEdited: item.isEdited,
+                                                            myReaction: item.myReaction
                                                         )
                                                         finalUpdatedState = updatedState
                                                     } else {
@@ -840,14 +894,17 @@ public final class PeerStoryListContext {
                                                                 timestamp: item.timestamp,
                                                                 expirationTimestamp: item.expirationTimestamp,
                                                                 media: EngineMedia(media),
+                                                                mediaAreas: item.mediaAreas,
                                                                 text: item.text,
                                                                 entities: item.entities,
                                                                 views: item.views.flatMap { views in
                                                                     return EngineStoryItem.Views(
                                                                         seenCount: views.seenCount,
+                                                                        reactedCount: views.reactedCount,
                                                                         seenPeers: views.seenPeerIds.compactMap { id -> EnginePeer? in
                                                                             return peers[id].flatMap(EnginePeer.init)
-                                                                        }
+                                                                        },
+                                                                        hasList: views.hasList
                                                                     )
                                                                 },
                                                                 privacy: item.privacy.flatMap(EngineStoryPrivacy.init),
@@ -859,7 +916,8 @@ public final class PeerStoryListContext {
                                                                 isContacts: item.isContacts,
                                                                 isSelectedContacts: item.isSelectedContacts,
                                                                 isForwardingDisabled: item.isForwardingDisabled,
-                                                                isEdited: item.isEdited
+                                                                isEdited: item.isEdited,
+                                                                myReaction: item.myReaction
                                                             ))
                                                             updatedState.items.sort(by: { lhs, rhs in
                                                                 return lhs.timestamp > rhs.timestamp
@@ -877,14 +935,17 @@ public final class PeerStoryListContext {
                                                             timestamp: item.timestamp,
                                                             expirationTimestamp: item.expirationTimestamp,
                                                             media: EngineMedia(media),
+                                                            mediaAreas: item.mediaAreas,
                                                             text: item.text,
                                                             entities: item.entities,
                                                             views: item.views.flatMap { views in
                                                                 return EngineStoryItem.Views(
                                                                     seenCount: views.seenCount,
+                                                                    reactedCount: views.reactedCount,
                                                                     seenPeers: views.seenPeerIds.compactMap { id -> EnginePeer? in
                                                                         return peers[id].flatMap(EnginePeer.init)
-                                                                    }
+                                                                    },
+                                                                    hasList: views.hasList
                                                                 )
                                                             },
                                                             privacy: item.privacy.flatMap(EngineStoryPrivacy.init),
@@ -896,7 +957,8 @@ public final class PeerStoryListContext {
                                                             isContacts: item.isContacts,
                                                             isSelectedContacts: item.isSelectedContacts,
                                                             isForwardingDisabled: item.isForwardingDisabled,
-                                                            isEdited: item.isEdited
+                                                            isEdited: item.isEdited,
+                                                            myReaction: item.myReaction
                                                         ))
                                                         updatedState.items.sort(by: { lhs, rhs in
                                                             return lhs.timestamp > rhs.timestamp
@@ -939,6 +1001,7 @@ public final class PeerStoryListContext {
         public var totalCount: Int
         public var loadMoreToken: Int?
         public var isCached: Bool
+        public var hasCache: Bool
         public var allEntityFiles: [MediaId: TelegramMediaFile]
         
         init(
@@ -947,6 +1010,7 @@ public final class PeerStoryListContext {
             totalCount: Int,
             loadMoreToken: Int?,
             isCached: Bool,
+            hasCache: Bool,
             allEntityFiles: [MediaId: TelegramMediaFile]
         ) {
             self.peerReference = peerReference
@@ -954,6 +1018,7 @@ public final class PeerStoryListContext {
             self.totalCount = totalCount
             self.loadMoreToken = loadMoreToken
             self.isCached = isCached
+            self.hasCache = hasCache
             self.allEntityFiles = allEntityFiles
         }
     }
@@ -1035,14 +1100,17 @@ public final class PeerExpiringStoryListContext {
                                         timestamp: item.timestamp,
                                         expirationTimestamp: item.expirationTimestamp,
                                         media: EngineMedia(media),
+                                        mediaAreas: item.mediaAreas,
                                         text: item.text,
                                         entities: item.entities,
                                         views: item.views.flatMap { views in
                                             return EngineStoryItem.Views(
                                                 seenCount: views.seenCount,
+                                                reactedCount: views.reactedCount,
                                                 seenPeers: views.seenPeerIds.compactMap { id -> EnginePeer? in
                                                     return transaction.getPeer(id).flatMap(EnginePeer.init)
-                                                }
+                                                },
+                                                hasList: views.hasList
                                             )
                                         },
                                         privacy: item.privacy.flatMap(EngineStoryPrivacy.init),
@@ -1054,7 +1122,8 @@ public final class PeerExpiringStoryListContext {
                                         isContacts: item.isContacts,
                                         isSelectedContacts: item.isSelectedContacts,
                                         isForwardingDisabled: item.isForwardingDisabled,
-                                        isEdited: item.isEdited
+                                        isEdited: item.isEdited,
+                                        myReaction: item.myReaction
                                     )
                                     items.append(.item(mappedItem))
                                 }
