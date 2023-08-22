@@ -60,10 +60,14 @@ public enum ContextMenuActionItemFont {
 
 public struct ContextMenuActionItemIconSource {
     public let size: CGSize
+    public let contentMode: UIView.ContentMode
+    public let cornerRadius: CGFloat
     public let signal: Signal<UIImage?, NoError>
     
-    public init(size: CGSize, signal: Signal<UIImage?, NoError>) {
+    public init(size: CGSize, contentMode: UIView.ContentMode = .scaleToFill, cornerRadius: CGFloat = 0.0, signal: Signal<UIImage?, NoError>) {
         self.size = size
+        self.contentMode = contentMode
+        self.cornerRadius = cornerRadius
         self.signal = signal
     }
 }
@@ -116,6 +120,7 @@ public final class ContextMenuActionItem {
     public let parseMarkdown: Bool
     public let badge: ContextMenuActionBadge?
     public let icon: (PresentationTheme) -> UIImage?
+    public let additionalLeftIcon: ((PresentationTheme) -> UIImage?)?
     public let iconSource: ContextMenuActionItemIconSource?
     public let iconPosition: ContextMenuActionItemIconPosition
     public let animationName: String?
@@ -132,6 +137,7 @@ public final class ContextMenuActionItem {
         parseMarkdown: Bool = false,
         badge: ContextMenuActionBadge? = nil,
         icon: @escaping (PresentationTheme) -> UIImage?,
+        additionalLeftIcon: ((PresentationTheme) -> UIImage?)? = nil,
         iconSource: ContextMenuActionItemIconSource? = nil,
         iconPosition: ContextMenuActionItemIconPosition = .right,
         animationName: String? = nil,
@@ -148,6 +154,7 @@ public final class ContextMenuActionItem {
             parseMarkdown: parseMarkdown,
             badge: badge,
             icon: icon,
+            additionalLeftIcon: additionalLeftIcon,
             iconSource: iconSource,
             iconPosition: iconPosition,
             animationName: animationName,
@@ -170,6 +177,7 @@ public final class ContextMenuActionItem {
         parseMarkdown: Bool = false,
         badge: ContextMenuActionBadge? = nil,
         icon: @escaping (PresentationTheme) -> UIImage?,
+        additionalLeftIcon: ((PresentationTheme) -> UIImage?)? = nil,
         iconSource: ContextMenuActionItemIconSource? = nil,
         iconPosition: ContextMenuActionItemIconPosition = .right,
         animationName: String? = nil,
@@ -185,6 +193,7 @@ public final class ContextMenuActionItem {
         self.parseMarkdown = parseMarkdown
         self.badge = badge
         self.icon = icon
+        self.additionalLeftIcon = additionalLeftIcon
         self.iconSource = iconSource
         self.iconPosition = iconPosition
         self.animationName = animationName

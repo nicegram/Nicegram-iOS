@@ -20,6 +20,7 @@ swift_library(
         "//submodules/Components/ComponentDisplayAdapters",
         "//submodules/Components/MultilineTextComponent",
         "//submodules/TelegramPresentationData",
+        "//submodules/TelegramUIPreferences",
         "//submodules/AccountContext",
         "//submodules/AppBundle",
         "//submodules/TelegramStringFormatting",
@@ -37,6 +38,7 @@ swift_library(
         "//submodules/TelegramUI/Components/LottieComponent",
         "//submodules/TelegramUI/Components/SwitchComponent",
         "//submodules/TooltipUI",
+        "//submodules/OverlayStatusController",
     ],
     visibility = [
         "//visibility:public",

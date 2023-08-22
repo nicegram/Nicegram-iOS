@@ -60,6 +60,7 @@ public final class TextFieldComponent: Component {
         case images([UIImage])
         case video(Data)
         case gif(Data)
+        case text
     }
     
     
@@ -76,6 +77,12 @@ public final class TextFieldComponent: Component {
         }
     }
     
+    public enum FormatMenuAvailability: Equatable {
+        case available
+        case locked
+        case none
+    }
+    
     public let context: AccountContext
     public let strings: PresentationStrings
     public let externalState: ExternalState
@@ -83,6 +90,8 @@ public final class TextFieldComponent: Component {
     public let textColor: UIColor
     public let insets: UIEdgeInsets
     public let hideKeyboard: Bool
+    public let formatMenuAvailability: FormatMenuAvailability
+    public let lockedFormatAction: () -> Void
     public let present: (ViewController) -> Void
     public let paste: (PasteData) -> Void
     
@@ -94,6 +103,8 @@ public final class TextFieldComponent: Component {
         textColor: UIColor,
         insets: UIEdgeInsets,
         hideKeyboard: Bool,
+        formatMenuAvailability: FormatMenuAvailability,
+        lockedFormatAction: @escaping () -> Void,
         present: @escaping (ViewController) -> Void,
         paste: @escaping (PasteData) -> Void
     ) {
@@ -104,6 +115,8 @@ public final class TextFieldComponent: Component {
         self.textColor = textColor
         self.insets = insets
         self.hideKeyboard = hideKeyboard
+        self.formatMenuAvailability = formatMenuAvailability
+        self.lockedFormatAction = lockedFormatAction
         self.present = present
         self.paste = paste
     }
@@ -125,6 +138,9 @@ public final class TextFieldComponent: Component {
             return false
         }
         if lhs.hideKeyboard != rhs.hideKeyboard {
+            return false
+        }
+        if lhs.formatMenuAvailability != rhs.formatMenuAvailability {
             return false
         }
         return true
@@ -284,6 +300,7 @@ public final class TextFieldComponent: Component {
                     }
                 }
                 self.state?.updated(transition: Transition(animation: .curve(duration: 0.4, curve: .spring)).withUserData(AnimationHint(kind: .textChanged)))
+                component.paste(.text)
                 return false
             }
             
@@ -333,6 +350,7 @@ public final class TextFieldComponent: Component {
                 }
             }
             
+            component.paste(.text)
             return true
         }
         
@@ -387,6 +405,22 @@ public final class TextFieldComponent: Component {
                 return UIMenu(children: suggestedActions)
             }
             let strings = component.strings
+            
+            if case .none = component.formatMenuAvailability {
+                return UIMenu(children: suggestedActions)
+            }
+            
+            if case .locked = component.formatMenuAvailability {
+                var updatedActions = suggestedActions
+                let formatAction = UIAction(title: strings.TextFormat_Format, image: nil) { [weak self] action in
+                    if let self {
+                        self.component?.lockedFormatAction()
+                    }
+                }
+                updatedActions.insert(formatAction, at: 1)
+                return UIMenu(children: updatedActions)
+            }
+                        
             var actions: [UIAction] = [
                 UIAction(title: strings.TextFormat_Bold, image: nil) { [weak self] action in
                     if let self {

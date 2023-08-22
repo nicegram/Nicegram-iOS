@@ -451,6 +451,10 @@ fileprivate let parsers: [Int32 : (BufferReader) -> Any?] = {
     dict[695856818] = { return Api.LangPackString.parse_langPackStringDeleted($0) }
     dict[1816636575] = { return Api.LangPackString.parse_langPackStringPluralized($0) }
     dict[-1361650766] = { return Api.MaskCoords.parse_maskCoords($0) }
+    dict[-1300094593] = { return Api.MediaArea.parse_inputMediaAreaVenue($0) }
+    dict[-544523486] = { return Api.MediaArea.parse_mediaAreaGeoPoint($0) }
+    dict[-1098720356] = { return Api.MediaArea.parse_mediaAreaVenue($0) }
+    dict[64088654] = { return Api.MediaAreaCoordinates.parse_mediaAreaCoordinates($0) }
     dict[940666592] = { return Api.Message.parse_message($0) }
     dict[-1868117372] = { return Api.Message.parse_messageEmpty($0) }
     dict[721967202] = { return Api.Message.parse_messageService($0) }
@@ -793,11 +797,12 @@ fileprivate let parsers: [Int32 : (BufferReader) -> Any?] = {
     dict[1087454222] = { return Api.StickerSetCovered.parse_stickerSetFullCovered($0) }
     dict[872932635] = { return Api.StickerSetCovered.parse_stickerSetMultiCovered($0) }
     dict[2008112412] = { return Api.StickerSetCovered.parse_stickerSetNoCovered($0) }
-    dict[1445635639] = { return Api.StoryItem.parse_storyItem($0) }
+    dict[1898850301] = { return Api.StoriesStealthMode.parse_storiesStealthMode($0) }
+    dict[1153718222] = { return Api.StoryItem.parse_storyItem($0) }
     dict[1374088783] = { return Api.StoryItem.parse_storyItemDeleted($0) }
     dict[-5388013] = { return Api.StoryItem.parse_storyItemSkipped($0) }
-    dict[-1491424062] = { return Api.StoryView.parse_storyView($0) }
-    dict[-748199729] = { return Api.StoryViews.parse_storyViews($0) }
+    dict[-1329730875] = { return Api.StoryView.parse_storyView($0) }
+    dict[-968094825] = { return Api.StoryViews.parse_storyViews($0) }
     dict[1964978502] = { return Api.TextWithEntities.parse_textWithEntities($0) }
     dict[-1609668650] = { return Api.Theme.parse_theme($0) }
     dict[-94849324] = { return Api.ThemeSettings.parse_themeSettings($0) }
@@ -883,7 +888,7 @@ fileprivate let parsers: [Int32 : (BufferReader) -> Any?] = {
     dict[967122427] = { return Api.Update.parse_updateNewScheduledMessage($0) }
     dict[1753886890] = { return Api.Update.parse_updateNewStickerSet($0) }
     dict[-1094555409] = { return Api.Update.parse_updateNotifySettings($0) }
-    dict[610945826] = { return Api.Update.parse_updatePeerBlocked($0) }
+    dict[-337610926] = { return Api.Update.parse_updatePeerBlocked($0) }
     dict[-1147422299] = { return Api.Update.parse_updatePeerHistoryTTL($0) }
     dict[-1263546448] = { return Api.Update.parse_updatePeerLocated($0) }
     dict[1786671974] = { return Api.Update.parse_updatePeerSettings($0) }
@@ -910,9 +915,11 @@ fileprivate let parsers: [Int32 : (BufferReader) -> Any?] = {
     dict[-1706939360] = { return Api.Update.parse_updateRecentStickers($0) }
     dict[-1821035490] = { return Api.Update.parse_updateSavedGifs($0) }
     dict[1960361625] = { return Api.Update.parse_updateSavedRingtones($0) }
+    dict[-475579104] = { return Api.Update.parse_updateSentStoryReaction($0) }
     dict[-337352679] = { return Api.Update.parse_updateServiceNotification($0) }
     dict[834816008] = { return Api.Update.parse_updateStickerSets($0) }
     dict[196268545] = { return Api.Update.parse_updateStickerSetsOrder($0) }
+    dict[738741697] = { return Api.Update.parse_updateStoriesStealthMode($0) }
     dict[542785843] = { return Api.Update.parse_updateStory($0) }
     dict[468923833] = { return Api.Update.parse_updateStoryID($0) }
     dict[-2112423005] = { return Api.Update.parse_updateTheme($0) }
@@ -1164,11 +1171,11 @@ fileprivate let parsers: [Int32 : (BufferReader) -> Any?] = {
     dict[172975040] = { return Api.storage.FileType.parse_filePng($0) }
     dict[-1432995067] = { return Api.storage.FileType.parse_fileUnknown($0) }
     dict[276907596] = { return Api.storage.FileType.parse_fileWebp($0) }
-    dict[-2086796248] = { return Api.stories.AllStories.parse_allStories($0) }
-    dict[1205903486] = { return Api.stories.AllStories.parse_allStoriesNotModified($0) }
+    dict[1369278878] = { return Api.stories.AllStories.parse_allStories($0) }
+    dict[291044926] = { return Api.stories.AllStories.parse_allStoriesNotModified($0) }
     dict[1340440049] = { return Api.stories.Stories.parse_stories($0) }
     dict[-560009955] = { return Api.stories.StoryViews.parse_storyViews($0) }
-    dict[-79726676] = { return Api.stories.StoryViewsList.parse_storyViewsList($0) }
+    dict[1189722604] = { return Api.stories.StoryViewsList.parse_storyViewsList($0) }
     dict[933691231] = { return Api.stories.UserStories.parse_userStories($0) }
     dict[543450958] = { return Api.updates.ChannelDifference.parse_channelDifference($0) }
     dict[1041346555] = { return Api.updates.ChannelDifference.parse_channelDifferenceEmpty($0) }
@@ -1539,6 +1546,10 @@ public extension Api {
                 _1.serialize(buffer, boxed)
             case let _1 as Api.MaskCoords:
                 _1.serialize(buffer, boxed)
+            case let _1 as Api.MediaArea:
+                _1.serialize(buffer, boxed)
+            case let _1 as Api.MediaAreaCoordinates:
+                _1.serialize(buffer, boxed)
             case let _1 as Api.Message:
                 _1.serialize(buffer, boxed)
             case let _1 as Api.MessageAction:
@@ -1726,6 +1737,8 @@ public extension Api {
             case let _1 as Api.StickerSet:
                 _1.serialize(buffer, boxed)
             case let _1 as Api.StickerSetCovered:
+                _1.serialize(buffer, boxed)
+            case let _1 as Api.StoriesStealthMode:
                 _1.serialize(buffer, boxed)
             case let _1 as Api.StoryItem:
                 _1.serialize(buffer, boxed)

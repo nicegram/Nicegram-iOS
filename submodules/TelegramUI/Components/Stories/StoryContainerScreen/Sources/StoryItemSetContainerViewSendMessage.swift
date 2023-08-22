@@ -42,6 +42,14 @@ import MediaPasteboardUI
 import WebPBinding
 import ContextUI
 import ChatScheduleTimeController
+import StoryStealthModeSheetScreen
+import Speak
+import TranslateUI
+import TelegramNotices
+import ObjectiveC
+import LocationUI
+
+private var ObjCKey_DeinitWatcher: Int?
 
 final class StoryItemSetContainerSendMessage {
     enum InputMode {
@@ -58,7 +66,11 @@ final class StoryItemSetContainerSendMessage {
     weak var tooltipScreen: ViewController?
     weak var actionSheet: ViewController?
     weak var statusController: ViewController?
+    weak var lookupController: UIViewController?
+    weak var menuController: ViewController?
     var isViewingAttachedStickers = false
+    
+    var currentTooltipUpdateTimer: Foundation.Timer?
     
     var currentInputMode: InputMode = .text
     private var needsInputActivation = false
@@ -83,6 +95,8 @@ final class StoryItemSetContainerSendMessage {
     let navigationActionDisposable = MetaDisposable()
     let resolvePeerByNameDisposable = MetaDisposable()
     
+    var currentSpeechHolder: SpeechSynthesizerHolder?
+    
     private(set) var isMediaRecordingLocked: Bool = false
     var wasRecordingDismissed: Bool = false
     
@@ -95,6 +109,7 @@ final class StoryItemSetContainerSendMessage {
         self.navigationActionDisposable.dispose()
         self.resolvePeerByNameDisposable.dispose()
         self.inputMediaNodeDataDisposable?.dispose()
+        self.currentTooltipUpdateTimer?.invalidate()
     }
     
     func setup(context: AccountContext, view: StoryItemSetContainerComponent.View, inputPanelExternalState: MessageInputPanelComponent.ExternalState, keyboardInputData: Signal<ChatEntityKeyboardInputNode.InputData, NoError>) {
@@ -468,125 +483,195 @@ final class StoryItemSetContainerSendMessage {
         view.updateIsProgressPaused()
     }
     
+    func performWithPossibleStealthModeConfirmation(view: StoryItemSetContainerComponent.View, action: @escaping () -> Void) {
+        guard let component = view.component, component.stealthModeTimeout != nil else {
+            action()
+            return
+        }
+        
+        let _ = (combineLatest(
+            component.context.engine.data.get(
+                TelegramEngine.EngineData.Item.Configuration.StoryConfigurationState()
+            ),
+            ApplicationSpecificNotice.storyStealthModeReplyCount(accountManager: component.context.sharedContext.accountManager)
+        )
+        |> deliverOnMainQueue).start(next: { [weak self, weak view] data, noticeCount in
+            let config = data
+            
+            guard let self, let view, let component = view.component else {
+                return
+            }
+            
+            let timestamp = Int32(Date().timeIntervalSince1970)
+            if noticeCount < 1, let activeUntilTimestamp = config.stealthModeState.actualizedNow().activeUntilTimestamp, activeUntilTimestamp > timestamp {
+                
+                let theme = component.theme
+                let updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>) = (component.context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: theme), component.context.sharedContext.presentationData |> map { $0.withUpdated(theme: theme) })
+                
+                let alertController = textAlertController(
+                    context: component.context,
+                    updatedPresentationData: updatedPresentationData,
+                    title: component.strings.Story_AlertStealthModeActiveTitle,
+                    text: component.strings.Story_AlertStealthModeActiveText,
+                    actions: [
+                        TextAlertAction(type: .defaultAction, title: component.strings.Common_Cancel, action: {}),
+                        TextAlertAction(type: .genericAction, title: component.strings.Story_AlertStealthModeActiveAction, action: {
+                            action()
+                        })
+                    ]
+                )
+                alertController.dismissed = { [weak self, weak view] _ in
+                    guard let self, let view else {
+                        return
+                    }
+                    self.actionSheet = nil
+                    view.updateIsProgressPaused()
+                }
+                self.actionSheet = alertController
+                view.updateIsProgressPaused()
+                
+                component.controller()?.presentInGlobalOverlay(alertController)
+                
+                #if DEBUG
+                #else
+                let _ = ApplicationSpecificNotice.incrementStoryStealthModeReplyCount(accountManager: component.context.sharedContext.accountManager).start()
+                #endif
+            } else {
+                action()
+            }
+        })
+    }
+    
     func performSendMessageAction(
         view: StoryItemSetContainerComponent.View,
         silentPosting: Bool = false,
         scheduleTime: Int32? = nil
     ) {
-        guard let component = view.component else {
-            return
-        }
-        let focusedItem = component.slice.item
-        guard let peerId = focusedItem.peerId else {
-            return
-        }
-        let focusedStoryId = StoryId(peerId: peerId, id: focusedItem.storyItem.id)
-        guard let inputPanelView = view.inputPanel.view as? MessageInputPanelComponent.View else {
-            return
-        }
-        let peer = component.slice.peer
-        
-        let controller = component.controller() as? StoryContainerScreen
-        
-        if let recordedAudioPreview = self.recordedAudioPreview {
-            self.recordedAudioPreview = nil
+        self.performWithPossibleStealthModeConfirmation(view: view, action: { [weak self, weak view] in
+            guard let self, let view else {
+                return
+            }
+            guard let component = view.component else {
+                return
+            }
             
-            let waveformBuffer = recordedAudioPreview.waveform.makeBitstream()
+            let focusedItem = component.slice.item
+            guard let peerId = focusedItem.peerId else {
+                return
+            }
+            let focusedStoryId = StoryId(peerId: peerId, id: focusedItem.storyItem.id)
+            guard let inputPanelView = view.inputPanel.view as? MessageInputPanelComponent.View else {
+                return
+            }
+            let peer = component.slice.peer
             
-            let messages: [EnqueueMessage] = [.message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: Int64.random(in: Int64.min ... Int64.max)), partialReference: nil, resource: recordedAudioPreview.resource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "audio/ogg", size: Int64(recordedAudioPreview.fileSize), attributes: [.Audio(isVoice: true, duration: Int(recordedAudioPreview.duration), title: nil, performer: nil, waveform: waveformBuffer)])), replyToMessageId: nil, replyToStoryId: focusedStoryId, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])]
+            let controller = component.controller() as? StoryContainerScreen
             
-            let _ = enqueueMessages(account: component.context.account, peerId: peerId, messages: messages).start()
-            
-            view.state?.updated(transition: Transition(animation: .curve(duration: 0.3, curve: .spring)))
-        } else if self.hasRecordedVideoPreview, let videoRecorderValue = self.videoRecorderValue {
-            videoRecorderValue.send()
-            self.hasRecordedVideoPreview = false
-            self.videoRecorder.set(.single(nil))
-            view.state?.updated(transition: Transition(animation: .curve(duration: 0.3, curve: .spring)))
-        } else {
-            switch inputPanelView.getSendMessageInput() {
-            case let .text(text):
-                if !text.string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    let entities = generateChatInputTextEntities(text)
-                    let _ = (component.context.engine.messages.enqueueOutgoingMessage(
-                        to: peerId,
-                        replyTo: nil,
-                        storyId: focusedStoryId,
-                        content: .text(text.string, entities),
-                        silentPosting: silentPosting,
-                        scheduleTime: scheduleTime
-                    ) |> deliverOnMainQueue).start(next: { [weak self, weak view] messageIds in
-                        Queue.mainQueue().after(0.3) {
-                            if let self, let view {
-                                self.presentMessageSentTooltip(view: view, peer: peer, messageId: messageIds.first.flatMap { $0 }, isScheduled: scheduleTime != nil)
+            if let recordedAudioPreview = self.recordedAudioPreview {
+                self.recordedAudioPreview = nil
+                
+                let waveformBuffer = recordedAudioPreview.waveform.makeBitstream()
+                
+                let messages: [EnqueueMessage] = [.message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: Int64.random(in: Int64.min ... Int64.max)), partialReference: nil, resource: recordedAudioPreview.resource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "audio/ogg", size: Int64(recordedAudioPreview.fileSize), attributes: [.Audio(isVoice: true, duration: Int(recordedAudioPreview.duration), title: nil, performer: nil, waveform: waveformBuffer)])), replyToMessageId: nil, replyToStoryId: focusedStoryId, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])]
+                
+                let _ = enqueueMessages(account: component.context.account, peerId: peerId, messages: messages).start()
+                
+                view.state?.updated(transition: Transition(animation: .curve(duration: 0.3, curve: .spring)))
+            } else if self.hasRecordedVideoPreview, let videoRecorderValue = self.videoRecorderValue {
+                videoRecorderValue.send()
+                self.hasRecordedVideoPreview = false
+                self.videoRecorder.set(.single(nil))
+                view.state?.updated(transition: Transition(animation: .curve(duration: 0.3, curve: .spring)))
+            } else {
+                switch inputPanelView.getSendMessageInput() {
+                case let .text(text):
+                    if !text.string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        let entities = generateChatInputTextEntities(text)
+                        let _ = (component.context.engine.messages.enqueueOutgoingMessage(
+                            to: peerId,
+                            replyTo: nil,
+                            storyId: focusedStoryId,
+                            content: .text(text.string, entities),
+                            silentPosting: silentPosting,
+                            scheduleTime: scheduleTime
+                        ) |> deliverOnMainQueue).start(next: { [weak self, weak view] messageIds in
+                            Queue.mainQueue().after(0.3) {
+                                if let self, let view {
+                                    self.presentMessageSentTooltip(view: view, peer: peer, messageId: messageIds.first.flatMap { $0 }, isScheduled: scheduleTime != nil)
+                                }
                             }
+                        })
+                        inputPanelView.clearSendMessageInput()
+                        
+                        self.currentInputMode = .text
+                        if hasFirstResponder(view) {
+                            view.endEditing(true)
+                        } else {
+                            view.state?.updated(transition: .spring(duration: 0.3))
                         }
-                    })
-                    inputPanelView.clearSendMessageInput()
-                    
-                    self.currentInputMode = .text
-                    if hasFirstResponder(view) {
-                        view.endEditing(true)
-                    } else {
-                        view.state?.updated(transition: .spring(duration: 0.3))
+                        controller?.requestLayout(forceUpdate: true, transition: .animated(duration: 0.3, curve: .spring))
                     }
-                    controller?.requestLayout(forceUpdate: true, transition: .animated(duration: 0.3, curve: .spring))
-                }
-            }
-        }
-    }
-    
-    func performSendStickerAction(view: StoryItemSetContainerComponent.View, fileReference: FileMediaReference) {
-        guard let component = view.component else {
-            return
-        }
-        let focusedItem = component.slice.item
-        guard let peerId = focusedItem.peerId else {
-            return
-        }
-        let focusedStoryId = StoryId(peerId: peerId, id: focusedItem.storyItem.id)
-        let peer = component.slice.peer
-        
-        let controller = component.controller() as? StoryContainerScreen
-        
-        if let navigationController = controller?.navigationController as? NavigationController {
-            var controllers = navigationController.viewControllers
-            for controller in controllers.reversed() {
-                if !(controller is StoryContainerScreen) {
-                    controllers.removeLast()
-                } else {
-                    break
-                }
-            }
-            navigationController.setViewControllers(controllers, animated: true)
-            
-            controller?.window?.forEachController({ controller in
-                if let controller = controller as? StickerPackScreenImpl {
-                    controller.dismiss()
-                }
-            })
-        }
-        
-        let _ = (component.context.engine.messages.enqueueOutgoingMessage(
-            to: peerId,
-            replyTo: nil,
-            storyId: focusedStoryId,
-            content: .file(fileReference)
-        ) |> deliverOnMainQueue).start(next: { [weak self, weak view] messageIds in
-            Queue.mainQueue().after(0.3) {
-                if let self, let view {
-                    self.presentMessageSentTooltip(view: view, peer: peer, messageId: messageIds.first.flatMap { $0 })
                 }
             }
         })
-        
-        self.currentInputMode = .text
-        if hasFirstResponder(view) {
-            view.endEditing(true)
-        } else {
-            view.state?.updated(transition: .spring(duration: 0.3))
-        }
-        controller?.requestLayout(forceUpdate: true, transition: .animated(duration: 0.3, curve: .spring))
+    }
+    
+    func performSendStickerAction(view: StoryItemSetContainerComponent.View, fileReference: FileMediaReference) {
+        self.performWithPossibleStealthModeConfirmation(view: view, action: { [weak self, weak view] in
+            guard let self, let view else {
+                return
+            }
+            guard let component = view.component else {
+                return
+            }
+            let focusedItem = component.slice.item
+            guard let peerId = focusedItem.peerId else {
+                return
+            }
+            let focusedStoryId = StoryId(peerId: peerId, id: focusedItem.storyItem.id)
+            let peer = component.slice.peer
+            
+            let controller = component.controller() as? StoryContainerScreen
+            
+            if let navigationController = controller?.navigationController as? NavigationController {
+                var controllers = navigationController.viewControllers
+                for controller in controllers.reversed() {
+                    if !(controller is StoryContainerScreen) {
+                        controllers.removeLast()
+                    } else {
+                        break
+                    }
+                }
+                navigationController.setViewControllers(controllers, animated: true)
+                
+                controller?.window?.forEachController({ controller in
+                    if let controller = controller as? StickerPackScreenImpl {
+                        controller.dismiss()
+                    }
+                })
+            }
+            
+            let _ = (component.context.engine.messages.enqueueOutgoingMessage(
+                to: peerId,
+                replyTo: nil,
+                storyId: focusedStoryId,
+                content: .file(fileReference)
+            ) |> deliverOnMainQueue).start(next: { [weak self, weak view] messageIds in
+                Queue.mainQueue().after(0.3) {
+                    if let self, let view {
+                        self.presentMessageSentTooltip(view: view, peer: peer, messageId: messageIds.first.flatMap { $0 })
+                    }
+                }
+            })
+            
+            self.currentInputMode = .text
+            if hasFirstResponder(view) {
+                view.endEditing(true)
+            } else {
+                view.state?.updated(transition: .spring(duration: 0.3))
+            }
+            controller?.requestLayout(forceUpdate: true, transition: .animated(duration: 0.3, curve: .spring))
+        })
     }
     
     func performSendContextResultAction(view: StoryItemSetContainerComponent.View, results: ChatContextResultCollection, result: ChatContextResult) {
@@ -752,7 +837,12 @@ final class StoryItemSetContainerSendMessage {
 
                                 self.videoRecorder.set(.single(nil))
 
-                                self.sendMessages(view: view, peer: peer, messages: [updatedMessage])
+                                self.performWithPossibleStealthModeConfirmation(view: view, action: { [weak self, weak view] in
+                                    guard let self, let view else {
+                                        return
+                                    }
+                                    self.sendMessages(view: view, peer: peer, messages: [updatedMessage])
+                                })
                             }, displaySlowmodeTooltip: { [weak self] view, rect in
                                 //self?.interfaceInteraction?.displaySlowmodeTooltip(view, rect)
                                 let _ = self
@@ -797,9 +887,14 @@ final class StoryItemSetContainerSendMessage {
                             
                             let waveformBuffer: Data? = data.waveform
                             
-                            self.sendMessages(view: view, peer: peer, messages: [.message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: randomId), partialReference: nil, resource: resource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "audio/ogg", size: Int64(data.compressedData.count), attributes: [.Audio(isVoice: true, duration: Int(data.duration), title: nil, performer: nil, waveform: waveformBuffer)])), replyToMessageId: nil, replyToStoryId: focusedStoryId, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])])
-                            
-                            HapticFeedback().tap()
+                            self.performWithPossibleStealthModeConfirmation(view: view, action: { [weak self, weak view] in
+                                guard let self, let view else {
+                                    return
+                                }
+                                self.sendMessages(view: view, peer: peer, messages: [.message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: randomId), partialReference: nil, resource: resource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "audio/ogg", size: Int64(data.compressedData.count), attributes: [.Audio(isVoice: true, duration: Int(data.duration), title: nil, performer: nil, waveform: waveformBuffer)])), replyToMessageId: nil, replyToStoryId: focusedStoryId, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])])
+                                
+                                HapticFeedback().tap()
+                            })
                         }
                     })
                 } else if let videoRecorderValue = self.videoRecorderValue {
@@ -1009,6 +1104,129 @@ final class StoryItemSetContainerSendMessage {
             }
             
             controller.present(shareController, in: .window(.root))
+        }
+    }
+    
+    func performShareTextAction(view: StoryItemSetContainerComponent.View, text: String) {
+        guard let component = view.component else {
+            return
+        }
+        guard let controller = component.controller() else {
+            return
+        }
+        
+        let theme = component.theme
+        let updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>) = (component.context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: theme), component.context.sharedContext.presentationData |> map { $0.withUpdated(theme: theme) })
+        
+        let shareController = ShareController(context: component.context, subject: .text(text), externalShare: true, immediateExternalShare: false, updatedPresentationData: updatedPresentationData)
+        
+        self.shareController = shareController
+        view.updateIsProgressPaused()
+        
+        shareController.dismissed = { [weak self, weak view] _ in
+            guard let self, let view else {
+                return
+            }
+            self.shareController = nil
+            view.updateIsProgressPaused()
+        }
+        
+        controller.present(shareController, in: .window(.root))
+    }
+    
+    func performTranslateTextAction(view: StoryItemSetContainerComponent.View, text: String) {
+        guard let component = view.component else {
+            return
+        }
+        
+        let _ = (component.context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.translationSettings])
+        |> take(1)
+        |> deliverOnMainQueue).start(next: { [weak self, weak view] sharedData in
+            guard let self, let view else {
+                return
+            }
+            let peer = component.slice.peer
+            
+            let _ = self
+            
+            let translationSettings: TranslationSettings
+            if let current = sharedData.entries[ApplicationSpecificSharedDataKeys.translationSettings]?.get(TranslationSettings.self) {
+                translationSettings = current
+            } else {
+                translationSettings = TranslationSettings.defaultSettings
+            }
+            
+            var showTranslateIfTopical = false
+            if case let .channel(channel) = peer, !(channel.addressName ?? "").isEmpty {
+                showTranslateIfTopical = true
+            }
+            
+            let (_, language) = canTranslateText(context: component.context, text: text, showTranslate: translationSettings.showTranslate, showTranslateIfTopical: showTranslateIfTopical, ignoredLanguages: translationSettings.ignoredLanguages)
+            
+            let _ = ApplicationSpecificNotice.incrementTranslationSuggestion(accountManager: component.context.sharedContext.accountManager, timestamp: Int32(Date().timeIntervalSince1970)).start()
+            
+            let translateController = TranslateScreen(context: component.context, forceTheme: defaultDarkPresentationTheme, text: text, canCopy: true, fromLanguage: language, ignoredLanguages: translationSettings.ignoredLanguages)
+            translateController.pushController = { [weak view] c in
+                guard let view, let component = view.component else {
+                    return
+                }
+                component.controller()?.push(c)
+            }
+            translateController.presentController = { [weak view] c in
+                guard let view, let component = view.component else {
+                    return
+                }
+                component.controller()?.present(c, in: .window(.root))
+            }
+            
+            self.actionSheet = translateController
+            view.updateIsProgressPaused()
+            
+            translateController.wasDismissed = { [weak self, weak view] in
+                guard let self, let view else {
+                    return
+                }
+                self.actionSheet = nil
+                view.updateIsProgressPaused()
+            }
+            
+            component.controller()?.present(translateController, in: .window(.root))
+        })
+    }
+    
+    func performLookupTextAction(view: StoryItemSetContainerComponent.View, text: String) {
+        guard let component = view.component else {
+            return
+        }
+        let controller = UIReferenceLibraryViewController(term: text)
+        if let window = component.controller()?.view.window {
+            controller.popoverPresentationController?.sourceView = window
+            controller.popoverPresentationController?.sourceRect = CGRect(origin: CGPoint(x: window.bounds.width / 2.0, y: window.bounds.size.height - 1.0), size: CGSize(width: 1.0, height: 1.0))
+            window.rootViewController?.present(controller, animated: true)
+            
+            final class DeinitWatcher: NSObject {
+                let f: () -> Void
+                
+                init(_ f: @escaping () -> Void) {
+                    self.f = f
+                }
+                
+                deinit {
+                    f()
+                }
+            }
+            
+            self.lookupController = controller
+            view.updateIsProgressPaused()
+            
+            objc_setAssociatedObject(controller, &ObjCKey_DeinitWatcher, DeinitWatcher { [weak self, weak view] in
+                guard let self, let view else {
+                    return
+                }
+                
+                self.lookupController = nil
+                view.updateIsProgressPaused()
+            }, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         }
     }
     
@@ -1379,7 +1597,7 @@ final class StoryItemSetContainerSendMessage {
                             let hasLiveLocation = peer.id.namespace != Namespaces.Peer.SecretChat && peer.id != component.context.account.peerId
                             let theme = component.theme
                             let updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>) = (component.context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: theme), component.context.sharedContext.presentationData |> map { $0.withUpdated(theme: theme) })
-                            let controller = LocationPickerController(context: component.context, updatedPresentationData: updatedPresentationData, mode: .share(peer: peer, selfPeer: selfPeer, hasLiveLocation: hasLiveLocation), completion: { [weak self, weak view] location, _ in
+                            let controller = LocationPickerController(context: component.context, updatedPresentationData: updatedPresentationData, mode: .share(peer: peer, selfPeer: selfPeer, hasLiveLocation: hasLiveLocation), completion: { [weak self, weak view] location, _, _, _, _ in
                                 guard let self, let view else {
                                     return
                                 }
@@ -1684,11 +1902,11 @@ final class StoryItemSetContainerSendMessage {
                 done(time)
             })
         }
-        controller.getCaptionPanelView = { [weak self, weak view] in
-            guard let self, let view else {
+        controller.getCaptionPanelView = { [weak self, weak controller, weak view] in
+            guard let self, let view, let controller else {
                 return nil
             }
-            return self.getCaptionPanelView(view: view, peer: peer)
+            return self.getCaptionPanelView(view: view, peer: peer, mediaPicker: controller)
         }
         controller.legacyCompletion = { signals, silently, scheduleTime, getAnimatedTransitionSource, sendCompletion in
             completion(signals, silently, scheduleTime, getAnimatedTransitionSource, sendCompletion)
@@ -2067,7 +2285,7 @@ final class StoryItemSetContainerSendMessage {
         })
     }
     
-    private func getCaptionPanelView(view: StoryItemSetContainerComponent.View, peer: EnginePeer) -> TGCaptionPanelView? {
+    private func getCaptionPanelView(view: StoryItemSetContainerComponent.View, peer: EnginePeer, mediaPicker: MediaPickerScreen? = nil) -> TGCaptionPanelView? {
         guard let component = view.component else {
             return nil
         }
@@ -2081,7 +2299,27 @@ final class StoryItemSetContainerSendMessage {
             guard let view else {
                 return
             }
-            view.component?.controller()?.presentInGlobalOverlay(c)
+            if let c = c as? PremiumIntroScreen {
+                view.endEditing(true)
+                if let mediaPicker {
+                    mediaPicker.closeGalleryController()
+                }
+                if let attachmentController = self.attachmentController {
+                    self.attachmentController = nil
+                    attachmentController.dismiss(animated: false, completion: nil)
+                }
+                c.wasDismissed = { [weak view] in
+                    guard let view else {
+                        return
+                    }
+                    view.updateIsProgressPaused()
+                }
+                view.component?.controller()?.push(c)
+                
+                view.updateIsProgressPaused()
+            } else {
+                view.component?.controller()?.presentInGlobalOverlay(c)
+            }
         }) as? TGCaptionPanelView
     }
     
@@ -2813,6 +3051,242 @@ final class StoryItemSetContainerSendMessage {
         })
         
         self.isViewingAttachedStickers = true
+        view.updateIsProgressPaused()
+    }
+    
+    func requestStealthMode(view: StoryItemSetContainerComponent.View) {
+        guard let component = view.component else {
+            return
+        }
+        
+        let _ = (component.context.engine.data.get(
+            TelegramEngine.EngineData.Item.Configuration.StoryConfigurationState(),
+            TelegramEngine.EngineData.Item.Configuration.App()
+        )
+        |> deliverOnMainQueue).start(next: { [weak self, weak view] config, appConfig in
+            guard let self, let view, let component = view.component, let controller = component.controller() else {
+                return
+            }
+            
+            let timestamp = Int32(Date().timeIntervalSince1970)
+            if let activeUntilTimestamp = config.stealthModeState.actualizedNow().activeUntilTimestamp, activeUntilTimestamp > timestamp {
+                let remainingActiveSeconds = activeUntilTimestamp - timestamp
+                
+                let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }.withUpdated(theme: defaultDarkPresentationTheme)
+                let text = component.strings.Story_ToastStealthModeActiveText(timeIntervalString(strings: presentationData.strings, value: remainingActiveSeconds)).string
+                let tooltipScreen = UndoOverlayController(
+                    presentationData: presentationData,
+                    content: .actionSucceeded(title: component.strings.Story_ToastStealthModeActiveTitle, text: text, cancel: "", destructive: false),
+                    elevatedLayout: false,
+                    animateInAsReplacement: false,
+                    action: { _ in
+                        return false
+                    }
+                )
+                tooltipScreen.tag = "no_auto_dismiss"
+                weak var tooltipScreenValue: UndoOverlayController? = tooltipScreen
+                self.currentTooltipUpdateTimer?.invalidate()
+                self.currentTooltipUpdateTimer = Foundation.Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true, block: { [weak self, weak view] _ in
+                    guard let self, let view, let component = view.component else {
+                        return
+                    }
+                    guard let tooltipScreenValue else {
+                        self.currentTooltipUpdateTimer?.invalidate()
+                        self.currentTooltipUpdateTimer = nil
+                        return
+                    }
+                    
+                    let timestamp = Int32(Date().timeIntervalSince1970)
+                    let remainingActiveSeconds = max(1, activeUntilTimestamp - timestamp)
+                    
+                    let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }.withUpdated(theme: defaultDarkPresentationTheme)
+                    let text = component.strings.Story_ToastStealthModeActiveText(timeIntervalString(strings: presentationData.strings, value: remainingActiveSeconds)).string
+                    tooltipScreenValue.content = .actionSucceeded(title: component.strings.Story_ToastStealthModeActiveTitle, text: text, cancel: "", destructive: false)
+                })
+                
+                self.tooltipScreen?.dismiss(animated: true)
+                self.tooltipScreen = tooltipScreen
+                controller.present(tooltipScreen, in: .current)
+                
+                view.updateIsProgressPaused()
+                
+                return
+            }
+            
+            let pastPeriod: Int32
+            let futurePeriod: Int32
+            if let data = appConfig.data, let futurePeriodF = data["stories_stealth_future_period"] as? Double, let pastPeriodF = data["stories_stealth_past_period"] as? Double {
+                futurePeriod = Int32(futurePeriodF)
+                pastPeriod = Int32(pastPeriodF)
+            } else {
+                pastPeriod = 5 * 60
+                futurePeriod = 25 * 60
+            }
+            
+            let sheet = StoryStealthModeSheetScreen(
+                context: component.context,
+                mode: .control(cooldownUntilTimestamp: config.stealthModeState.actualizedNow().cooldownUntilTimestamp),
+                backwardDuration: pastPeriod,
+                forwardDuration: futurePeriod,
+                buttonAction: { [weak self, weak view] in
+                    guard let self, let view, let component = view.component else {
+                        return
+                    }
+                    
+                    let _ = (component.context.engine.messages.enableStoryStealthMode()
+                    |> deliverOnMainQueue).start(completed: { [weak self, weak view] in
+                        guard let self, let view, let component = view.component, let controller = component.controller() else {
+                            return
+                        }
+                        
+                        let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }.withUpdated(theme: defaultDarkPresentationTheme)
+                        let text = component.strings.Story_ToastStealthModeActivatedText(timeIntervalString(strings: presentationData.strings, value: pastPeriod), timeIntervalString(strings: presentationData.strings, value: futurePeriod)).string
+                        let tooltipScreen = UndoOverlayController(
+                            presentationData: presentationData,
+                            content: .actionSucceeded(title: component.strings.Story_ToastStealthModeActivatedTitle, text: text, cancel: "", destructive: false),
+                            elevatedLayout: false,
+                            animateInAsReplacement: false,
+                            action: { _ in
+                                return false
+                            }
+                        )
+                        self.tooltipScreen?.dismiss(animated: true)
+                        self.tooltipScreen = tooltipScreen
+                        controller.present(tooltipScreen, in: .current)
+                        
+                        view.updateIsProgressPaused()
+                        
+                        HapticFeedback().success()
+                    })
+                }
+            )
+            sheet.wasDismissed = { [weak self, weak view] in
+                guard let self, let view else {
+                    return
+                }
+                self.actionSheet = nil
+                view.updateIsProgressPaused()
+            }
+            self.actionSheet = sheet
+            view.updateIsProgressPaused()
+            controller.push(sheet)
+        })
+    }
+    
+    func presentStealthModeUpgrade(view: StoryItemSetContainerComponent.View, action: @escaping () -> Void) {
+        guard let component = view.component else {
+            return
+        }
+        
+        let _ = (component.context.engine.data.get(
+            TelegramEngine.EngineData.Item.Configuration.StoryConfigurationState(),
+            TelegramEngine.EngineData.Item.Configuration.App()
+        )
+        |> deliverOnMainQueue).start(next: { [weak self, weak view] config, appConfig in
+            guard let self, let view, let component = view.component, let controller = component.controller() else {
+                return
+            }
+            
+            let pastPeriod: Int32
+            let futurePeriod: Int32
+            if let data = appConfig.data, let futurePeriodF = data["stories_stealth_future_period"] as? Double, let pastPeriodF = data["stories_stealth_past_period"] as? Double {
+                futurePeriod = Int32(futurePeriodF)
+                pastPeriod = Int32(pastPeriodF)
+            } else {
+                pastPeriod = 5 * 60
+                futurePeriod = 25 * 60
+            }
+            
+            let sheet = StoryStealthModeSheetScreen(
+                context: component.context,
+                mode: .upgrade,
+                backwardDuration: pastPeriod,
+                forwardDuration: futurePeriod,
+                buttonAction: {
+                    action()
+                }
+            )
+            sheet.wasDismissed = { [weak self, weak view] in
+                guard let self, let view else {
+                    return
+                }
+                self.actionSheet = nil
+                view.updateIsProgressPaused()
+            }
+            self.actionSheet = sheet
+            view.updateIsProgressPaused()
+            controller.push(sheet)
+        })
+    }
+    
+    func activateMediaArea(view: StoryItemSetContainerComponent.View, mediaArea: MediaArea) {
+        guard let component = view.component, let controller = component.controller() else {
+            return
+        }
+        
+        let theme = defaultDarkColorPresentationTheme
+        let updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>) = (component.context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: theme), component.context.sharedContext.presentationData |> map { $0.withUpdated(theme: theme) })
+        
+        var actions: [ContextMenuAction] = []
+        switch mediaArea {
+        case let .venue(_, venue):
+            let subject = EngineMessage(stableId: 0, stableVersion: 0, id: EngineMessage.Id(peerId: PeerId(0), namespace: 0, id: 0), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 0, flags: [], tags: [], globalTags: [], localTags: [], forwardInfo: nil, author: nil, text: "", attributes: [], media: [.geo(TelegramMediaMap(latitude: venue.latitude, longitude: venue.longitude, heading: nil, accuracyRadius: nil, geoPlace: nil, venue: venue.venue, liveBroadcastingTimeout: nil, liveProximityNotificationRadius: nil))], peers: [:], associatedMessages: [:], associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
+            
+            let context = component.context
+            actions.append(ContextMenuAction(content: .textWithIcon(title: "View Location", icon: generateTintedImage(image: UIImage(bundleImageName: "Settings/TextArrowRight"), color: .white)), action: { [weak controller, weak view] in
+                let locationController = LocationViewController(
+                    context: context,
+                    updatedPresentationData: updatedPresentationData,
+                    subject: subject,
+                    isStoryLocation: true,
+                    params: LocationViewParams(
+                        sendLiveLocation: { _ in },
+                        stopLiveLocation: { _ in },
+                        openUrl: { url in
+                            context.sharedContext.applicationBindings.openUrl(url)
+                        },
+                        openPeer: { _ in }
+                    )
+                )
+                view?.updateModalTransitionFactor(1.0, transition: .animated(duration: 0.5, curve: .spring))
+                locationController.dismissed = { [weak view] in
+                    view?.updateModalTransitionFactor(0.0, transition: .animated(duration: 0.5, curve: .spring))
+                    Queue.mainQueue().after(0.5, {
+                        view?.updateIsProgressPaused()
+                    })
+                }
+                controller?.push(locationController)
+            }))
+        }
+        
+        let referenceSize = view.controlsContainerView.frame.size
+        let size = CGSize(width: 16.0, height: mediaArea.coordinates.height / 100.0 * referenceSize.height * 1.1)
+        var frame = CGRect(x: mediaArea.coordinates.x / 100.0 * referenceSize.width - size.width / 2.0, y: mediaArea.coordinates.y / 100.0 * referenceSize.height - size.height / 2.0, width: size.width, height: size.height)
+        frame = view.controlsContainerView.convert(frame, to: nil)
+        
+        let node = controller.displayNode
+        let menuController = ContextMenuController(actions: actions, blurred: true)
+        menuController.centerHorizontally = true
+        menuController.dismissed = { [weak self, weak view] in
+            if let self, let view {
+                Queue.mainQueue().after(0.1) {
+                    self.menuController = nil
+                    view.updateIsProgressPaused()
+                }
+            }
+        }
+        controller.present(
+            menuController,
+            in: .window(.root),
+            with: ContextMenuControllerPresentationArguments(sourceNodeAndRect: { [weak node] in
+                if let node {
+                    return (node, frame, node, CGRect(origin: .zero, size: referenceSize).insetBy(dx: 0.0, dy: 64.0))
+                } else {
+                    return nil
+                }
+            })
+        )
+        self.menuController = menuController
         view.updateIsProgressPaused()
     }
 }

@@ -10,6 +10,7 @@ import TextFormat
 import InvisibleInkDustNode
 import UrlEscaping
 import TelegramPresentationData
+import TextSelectionNode
 
 final class StoryContentCaptionComponent: Component {
     enum Action {
@@ -23,6 +24,7 @@ final class StoryContentCaptionComponent: Component {
     
     final class ExternalState {
         fileprivate(set) var isExpanded: Bool = false
+        fileprivate(set) var isSelectingText: Bool = false
         
         init() {
         }
@@ -51,30 +53,39 @@ final class StoryContentCaptionComponent: Component {
     let externalState: ExternalState
     let context: AccountContext
     let strings: PresentationStrings
+    let theme: PresentationTheme
     let text: String
     let entities: [MessageTextEntity]
     let entityFiles: [EngineMedia.Id: TelegramMediaFile]
     let action: (Action) -> Void
     let longTapAction: (Action) -> Void
+    let textSelectionAction: (NSAttributedString, TextSelectionAction) -> Void
+    let controller: () -> ViewController?
     
     init(
         externalState: ExternalState,
         context: AccountContext,
         strings: PresentationStrings,
+        theme: PresentationTheme,
         text: String,
         entities: [MessageTextEntity],
         entityFiles: [EngineMedia.Id: TelegramMediaFile],
         action: @escaping (Action) -> Void,
-        longTapAction: @escaping (Action) -> Void
+        longTapAction: @escaping (Action) -> Void,
+        textSelectionAction: @escaping (NSAttributedString, TextSelectionAction) -> Void,
+        controller: @escaping () -> ViewController?
     ) {
         self.externalState = externalState
         self.context = context
         self.strings = strings
+        self.theme = theme
         self.text = text
         self.entities = entities
         self.entityFiles = entityFiles
         self.action = action
         self.longTapAction = longTapAction
+        self.textSelectionAction = textSelectionAction
+        self.controller = controller
     }
 
     static func ==(lhs: StoryContentCaptionComponent, rhs: StoryContentCaptionComponent) -> Bool {
@@ -85,6 +96,9 @@ final class StoryContentCaptionComponent: Component {
             return false
         }
         if lhs.strings !== rhs.strings {
+            return false
+        }
+        if lhs.theme !== rhs.theme {
             return false
         }
         if lhs.text != rhs.text {
@@ -136,6 +150,9 @@ final class StoryContentCaptionComponent: Component {
         
         private let collapsedText: ContentItem
         private let expandedText: ContentItem
+        private var textSelectionNode: TextSelectionNode?
+        private let textSelectionKnobContainer: UIView
+        private var textSelectionKnobSurface: UIView?
         
         private let scrollMaskContainer: UIView
         private let scrollFullMaskView: UIView
@@ -204,6 +221,9 @@ final class StoryContentCaptionComponent: Component {
             
             self.collapsedText = ContentItem(frame: CGRect())
             self.expandedText = ContentItem(frame: CGRect())
+            
+            self.textSelectionKnobContainer = UIView()
+            self.textSelectionKnobContainer.isUserInteractionEnabled = false
 
             super.init(frame: frame)
             
@@ -218,8 +238,7 @@ final class StoryContentCaptionComponent: Component {
             
             self.scrollViewContainer.mask = self.scrollMaskContainer
             
-            let tapRecognizer = UITapGestureRecognizer(target: self, action: #selector(self.tapGesture(_:)))
-            self.addGestureRecognizer(tapRecognizer)
+            self.addSubview(self.textSelectionKnobContainer)
         }
         
         required init?(coder: NSCoder) {
@@ -231,10 +250,12 @@ final class StoryContentCaptionComponent: Component {
                 return nil
             }
             
-            if let textView = self.collapsedText.textNode?.textNode.view {
+            let contentItem = self.isExpanded ? self.expandedText : self.collapsedText
+            
+            if let textView = contentItem.textNode?.textNode.view {
                 let textLocalPoint = self.convert(point, to: textView)
                 if textLocalPoint.y >= -7.0 {
-                    return textView
+                    return self.textSelectionNode?.view ?? textView
                 }
             }
             
@@ -248,6 +269,15 @@ final class StoryContentCaptionComponent: Component {
                 } else {
                     self.expand(transition: Transition(animation: .curve(duration: 0.4, curve: .spring)))
                 }
+            }
+        }
+        
+        func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+            guard let component = self.component else {
+                return
+            }
+            if component.externalState.isSelectingText {
+                self.cancelTextSelection()
             }
         }
         
@@ -292,6 +322,10 @@ final class StoryContentCaptionComponent: Component {
             self.updateScrolling(transition: transition.withUserData(InternalTransitionHint(bounceScrolling: true)))
         }
         
+        func cancelTextSelection() {
+            self.textSelectionNode?.cancelSelection()
+        }
+        
         private func updateScrolling(transition: Transition) {
             guard let component = self.component, let itemLayout = self.itemLayout else {
                 return
@@ -307,6 +341,8 @@ final class StoryContentCaptionComponent: Component {
             
             let edgeDistanceFraction = edgeDistance / 7.0
             transition.setAlpha(view: self.scrollFullMaskView, alpha: 1.0 - edgeDistanceFraction)
+            
+            transition.setBounds(view: self.textSelectionKnobContainer, bounds: CGRect(origin: CGPoint(x: 0.0, y: self.scrollView.bounds.minY), size: CGSize()))
             
             let shadowOverflow: CGFloat = 58.0
             let shadowFrame = CGRect(origin: CGPoint(x: 0.0, y:  -self.scrollView.contentOffset.y + itemLayout.containerSize.height - itemLayout.visibleTextHeight - itemLayout.verticalInset - shadowOverflow), size: CGSize(width: itemLayout.containerSize.width, height: itemLayout.visibleTextHeight + itemLayout.verticalInset + shadowOverflow))
@@ -340,6 +376,12 @@ final class StoryContentCaptionComponent: Component {
         }
         
         @objc func tapLongTapOrDoubleTapGesture(_ recognizer: TapLongTapOrDoubleTapGestureRecognizer) {
+            if let textSelectionNode = self.textSelectionNode {
+                if textSelectionNode.didRecognizeTap {
+                    return
+                }
+            }
+            
             let contentItem = self.isExpanded ? self.expandedText : self.collapsedText
             let otherContentItem = !self.isExpanded ? self.expandedText : self.collapsedText
             
@@ -386,7 +428,9 @@ final class StoryContentCaptionComponent: Component {
                                 }
                             } else {
                                 if case .tap = gesture {
-                                    if self.isExpanded {
+                                    if component.externalState.isSelectingText {
+                                        self.cancelTextSelection()
+                                    } else if self.isExpanded {
                                         self.collapse(transition: Transition(animation: .curve(duration: 0.4, curve: .spring)))
                                     } else {
                                         self.expand(transition: Transition(animation: .curve(duration: 0.4, curve: .spring)))
@@ -395,7 +439,9 @@ final class StoryContentCaptionComponent: Component {
                             }
                         } else {
                             if case .tap = gesture {
-                                if self.isExpanded {
+                                if component.externalState.isSelectingText {
+                                    self.cancelTextSelection()
+                                } else if self.isExpanded {
                                     self.collapse(transition: Transition(animation: .curve(duration: 0.4, curve: .spring)))
                                 } else {
                                     self.expand(transition: Transition(animation: .curve(duration: 0.4, curve: .spring)))
@@ -545,18 +591,6 @@ final class StoryContentCaptionComponent: Component {
                     self.collapsedText.textNode = collapsedTextNode
                     if collapsedTextNode.textNode.view.superview == nil  {
                         self.collapsedText.addSubview(collapsedTextNode.textNode.view)
-                        
-                        let recognizer = TapLongTapOrDoubleTapGestureRecognizer(target: self, action: #selector(self.tapLongTapOrDoubleTapGesture(_:)))
-                        recognizer.tapActionAtPoint = { point in
-                            return .waitForSingleTap
-                        }
-                        recognizer.highlight = { [weak self] point in
-                            guard let self else {
-                                return
-                            }
-                            self.updateTouchesAtPoint(point)
-                        }
-                        collapsedTextNode.textNode.view.addGestureRecognizer(recognizer)
                     }
                     
                     collapsedTextNode.visibilityRect = CGRect(origin: CGPoint(), size: CGSize(width: 100000.0, height: 100000.0))
@@ -623,18 +657,6 @@ final class StoryContentCaptionComponent: Component {
                     self.expandedText.textNode = expandedTextNode
                     if expandedTextNode.textNode.view.superview == nil  {
                         self.expandedText.addSubview(expandedTextNode.textNode.view)
-                        
-                        let recognizer = TapLongTapOrDoubleTapGestureRecognizer(target: self, action: #selector(self.tapLongTapOrDoubleTapGesture(_:)))
-                        recognizer.tapActionAtPoint = { point in
-                            return .waitForSingleTap
-                        }
-                        recognizer.highlight = { [weak self] point in
-                            guard let self else {
-                                return
-                            }
-                            self.updateTouchesAtPoint(point)
-                        }
-                        expandedTextNode.textNode.view.addGestureRecognizer(recognizer)
                     }
                     
                     expandedTextNode.visibilityRect = CGRect(origin: CGPoint(), size: CGSize(width: 100000.0, height: 100000.0))
@@ -684,6 +706,124 @@ final class StoryContentCaptionComponent: Component {
                         self.expandedText.dustNode = nil
                         expandedDustNode.view.removeFromSuperview()
                     }
+                }
+            }
+            
+            if self.textSelectionNode == nil, let controller = component.controller(), let textNode = self.expandedText.textNode?.textNode {
+                let selectionColor = UIColor(white: 1.0, alpha: 0.5)
+                
+                if self.textSelectionKnobSurface == nil {
+                    let textSelectionKnobSurface = UIView()
+                    self.textSelectionKnobSurface = textSelectionKnobSurface
+                    self.textSelectionKnobContainer.addSubview(textSelectionKnobSurface)
+                }
+                
+                let textSelectionNode = TextSelectionNode(theme: TextSelectionTheme(selection: selectionColor, knob: component.theme.list.itemAccentColor), strings: component.strings, textNode: textNode, updateIsActive: { [weak self] value in
+                    guard let self else {
+                        return
+                    }
+                    if component.externalState.isSelectingText != value {
+                        component.externalState.isSelectingText = value
+                        
+                        if !self.ignoreExternalState {
+                            self.state?.updated(transition: transition)
+                        }
+                    }
+                }, present: { [weak self] c, a in
+                    guard let self, let component = self.component else {
+                        return
+                    }
+                    component.controller()?.presentInGlobalOverlay(c, with: a)
+                }, rootNode: controller.displayNode, externalKnobSurface: self.textSelectionKnobSurface, performAction: { [weak self] text, action in
+                    guard let self, let component = self.component else {
+                        return
+                    }
+                    component.textSelectionAction(text, action)
+                })
+                /*textSelectionNode.updateRange = { [weak self] selectionRange in
+                 if let strongSelf = self, let dustNode = strongSelf.dustNode, !dustNode.isRevealed, let textLayout = strongSelf.textNode.textNode.cachedLayout, !textLayout.spoilers.isEmpty, let selectionRange = selectionRange {
+                 for (spoilerRange, _) in textLayout.spoilers {
+                 if let intersection = selectionRange.intersection(spoilerRange), intersection.length > 0 {
+                 dustNode.update(revealed: true)
+                 return
+                 }
+                 }
+                 }
+                 }*/
+                textSelectionNode.enableLookup = true
+                self.textSelectionNode = textSelectionNode
+                self.scrollView.addSubview(textSelectionNode.view)
+                self.scrollView.insertSubview(textSelectionNode.highlightAreaNode.view, at: 0)
+                
+                textSelectionNode.canBeginSelection = { [weak self] location in
+                    guard let self else {
+                        return false
+                    }
+                    
+                    let contentItem = self.expandedText
+                    guard let textNode = contentItem.textNode else {
+                        return false
+                    }
+                    
+                    let titleFrame = textNode.textNode.view.bounds
+                    
+                    if let (index, attributes) = textNode.textNode.attributesAtPoint(CGPoint(x: location.x - titleFrame.minX, y: location.y - titleFrame.minY)) {
+                        let action: Action?
+                        if let _ = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.Spoiler)], !(contentItem.dustNode?.isRevealed ?? true)  {
+                            return false
+                        } else if let url = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.URL)] as? String {
+                            var concealed = true
+                            if let (attributeText, fullText) = textNode.textNode.attributeSubstring(name: TelegramTextAttributes.URL, index: index) {
+                                concealed = !doesUrlMatchText(url: url, text: attributeText, fullText: fullText)
+                            }
+                            action = .url(url: url, concealed: concealed)
+                        } else if let peerMention = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.PeerMention)] as? TelegramPeerMention {
+                            action = .peerMention(peerId: peerMention.peerId, mention: peerMention.mention)
+                        } else if let peerName = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.PeerTextMention)] as? String {
+                            action = .textMention(peerName)
+                        } else if let hashtag = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.Hashtag)] as? TelegramHashtag {
+                            action = .hashtag(hashtag.peerName, hashtag.hashtag)
+                        } else if let bankCard = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.BankCard)] as? String {
+                            action = .bankCard(bankCard)
+                        } else if let emoji = attributes[NSAttributedString.Key(rawValue: ChatTextInputAttributes.customEmoji.rawValue)] as? ChatTextInputTextCustomEmojiAttribute, let file = emoji.file {
+                            action = .customEmoji(file)
+                        } else {
+                            action = nil
+                        }
+                        if action != nil {
+                            return false
+                        }
+                    }
+                    
+                    return true
+                }
+                
+                //let tapRecognizer = UITapGestureRecognizer(target: self, action: #selector(self.tapGesture(_:)))
+                //textSelectionNode.view.addGestureRecognizer(tapRecognizer)
+                
+                let _ = textSelectionNode.view
+                
+                let recognizer = TapLongTapOrDoubleTapGestureRecognizer(target: self, action: #selector(self.tapLongTapOrDoubleTapGesture(_:)))
+                /*if let selectionRecognizer = textSelectionNode.recognizer {
+                    recognizer.require(toFail: selectionRecognizer)
+                }*/
+                recognizer.tapActionAtPoint = { point in
+                    return .waitForSingleTap
+                }
+                recognizer.highlight = { [weak self] point in
+                    guard let self else {
+                        return
+                    }
+                    self.updateTouchesAtPoint(point)
+                }
+                textSelectionNode.view.addGestureRecognizer(recognizer)
+            }
+            
+            if let textSelectionNode = self.textSelectionNode, let textNode = self.expandedText.textNode?.textNode {
+                textSelectionNode.frame = textNode.frame.offsetBy(dx: self.expandedText.frame.minX, dy: self.expandedText.frame.minY)
+                textSelectionNode.highlightAreaNode.frame = textSelectionNode.frame
+                if let textSelectionKnobSurface = self.textSelectionKnobSurface {
+                    textSelectionKnobSurface.frame = textSelectionNode.frame
                 }
             }
             

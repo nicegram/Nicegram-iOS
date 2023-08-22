@@ -1866,7 +1866,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return archiveSettingsController(context: context)
     }
     
-    public func makePremiumIntroController(context: AccountContext, source: PremiumIntroSource) -> ViewController {
+    public func makePremiumIntroController(context: AccountContext, source: PremiumIntroSource, forceDark: Bool, dismissed: (() -> Void)?) -> ViewController {
         let mappedSource: PremiumSource
         switch source {
         case .settings:
@@ -1913,8 +1913,20 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             mappedSource = .translation
         case .stories:
             mappedSource = .stories
+        case .storiesDownload:
+            mappedSource = .storiesDownload
+        case .storiesStealthMode:
+            mappedSource = .storiesStealthMode
+        case .storiesPermanentViews:
+            mappedSource = .storiesPermanentViews
+        case .storiesFormatting:
+            mappedSource = .storiesFormatting
+        case .storiesExpirationDurations:
+            mappedSource = .storiesExpirationDurations
         }
-        return PremiumIntroScreen(context: context, source: mappedSource)
+        let controller = PremiumIntroScreen(context: context, source: mappedSource, forceDark: forceDark)
+        controller.wasDismissed = dismissed
+        return controller
     }
     
     public func makePremiumDemoController(context: AccountContext, subject: PremiumDemoSubject, action: @escaping () -> Void) -> ViewController {
@@ -1954,39 +1966,45 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return PremiumDemoScreen(context: context, subject: mappedSubject, action: action)
     }
     
-    public func makePremiumLimitController(context: AccountContext, subject: PremiumLimitSubject, count: Int32, action: @escaping () -> Void) -> ViewController {
+    public func makePremiumLimitController(context: AccountContext, subject: PremiumLimitSubject, count: Int32, forceDark: Bool, cancel: @escaping () -> Void, action: @escaping () -> Void) -> ViewController {
         let mappedSubject: PremiumLimitScreen.Subject
         switch subject {
         case .folders:
             mappedSubject = .folders
         case .chatsPerFolder:
-            mappedSubject =  .chatsPerFolder
+            mappedSubject = .chatsPerFolder
         case .pins:
-            mappedSubject =  .pins
+            mappedSubject = .pins
         case .files:
-            mappedSubject =  .files
+            mappedSubject = .files
         case .accounts:
-            mappedSubject =  .accounts
+            mappedSubject = .accounts
         case .linksPerSharedFolder:
             mappedSubject = .linksPerSharedFolder
         case .membershipInSharedFolders:
             mappedSubject = .membershipInSharedFolders
         case .channels:
             mappedSubject = .channels
+        case .expiringStories:
+            mappedSubject = .expiringStories
+        case .storiesWeekly:
+            mappedSubject = .storiesWeekly
+        case .storiesMonthly:
+            mappedSubject = .storiesMonthly
         }
-        return PremiumLimitScreen(context: context, subject: mappedSubject, count: count, action: action)
+        return PremiumLimitScreen(context: context, subject: mappedSubject, count: count, forceDark: forceDark, cancel: cancel, action: action)
     }
     
     public func makeStickerPackScreen(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, mainStickerPack: StickerPackReference, stickerPacks: [StickerPackReference], loadedStickerPacks: [LoadedStickerPack], parentNavigationController: NavigationController?, sendSticker: ((FileMediaReference, UIView, CGRect) -> Bool)?) -> ViewController {
         return StickerPackScreen(context: context, updatedPresentationData: updatedPresentationData, mainStickerPack: mainStickerPack, stickerPacks: stickerPacks, loadedStickerPacks: loadedStickerPacks, parentNavigationController: parentNavigationController, sendSticker: sendSticker)
     }
     
-    public func makeMediaPickerScreen(context: AccountContext, completion: @escaping (Any) -> Void) -> ViewController {
-        return mediaPickerController(context: context, completion: completion)
+    public func makeMediaPickerScreen(context: AccountContext, hasSearch: Bool, completion: @escaping (Any) -> Void) -> ViewController {
+        return mediaPickerController(context: context, hasSearch: hasSearch, completion: completion)
     }
     
-    public func makeStoryMediaPickerScreen(context: AccountContext, getSourceRect: @escaping () -> CGRect, completion: @escaping (Any, UIView, CGRect, UIImage?, @escaping (Bool?) -> (UIView, CGRect)?, @escaping () -> Void) -> Void, dismissed: @escaping () -> Void) -> ViewController {
-        return storyMediaPickerController(context: context, getSourceRect: getSourceRect, completion: completion, dismissed: dismissed)
+    public func makeStoryMediaPickerScreen(context: AccountContext, getSourceRect: @escaping () -> CGRect, completion: @escaping (Any, UIView, CGRect, UIImage?, @escaping (Bool?) -> (UIView, CGRect)?, @escaping () -> Void) -> Void, dismissed: @escaping () -> Void, groupsPresented: @escaping () -> Void) -> ViewController {
+        return storyMediaPickerController(context: context, getSourceRect: getSourceRect, completion: completion, dismissed: dismissed, groupsPresented: groupsPresented)
     }
         
     public func makeProxySettingsController(sharedContext: SharedAccountContext, account: UnauthorizedAccount) -> ViewController {

@@ -866,6 +866,62 @@ public extension TelegramEngine.EngineData.Item {
             }
         }
         
+        public struct IsBlocked: TelegramEngineDataItem, TelegramEngineMapKeyDataItem, PostboxViewDataItem {
+            public typealias Result = EnginePeerCachedInfoItem<Bool>
+
+            fileprivate var id: EnginePeer.Id
+            public var mapKey: EnginePeer.Id {
+                return self.id
+            }
+
+            public init(id: EnginePeer.Id) {
+                self.id = id
+            }
+
+            var key: PostboxViewKey {
+                return .cachedPeerData(peerId: self.id)
+            }
+
+            func extract(view: PostboxView) -> Result {
+                guard let view = view as? CachedPeerDataView else {
+                    preconditionFailure()
+                }
+                if let cachedData = view.cachedPeerData as? CachedUserData {
+                    return .known(cachedData.isBlocked)
+                } else {
+                    return .unknown
+                }
+            }
+        }
+        
+        public struct IsBlockedFromStories: TelegramEngineDataItem, TelegramEngineMapKeyDataItem, PostboxViewDataItem {
+            public typealias Result = EnginePeerCachedInfoItem<Bool>
+
+            fileprivate var id: EnginePeer.Id
+            public var mapKey: EnginePeer.Id {
+                return self.id
+            }
+
+            public init(id: EnginePeer.Id) {
+                self.id = id
+            }
+
+            var key: PostboxViewKey {
+                return .cachedPeerData(peerId: self.id)
+            }
+
+            func extract(view: PostboxView) -> Result {
+                guard let view = view as? CachedPeerDataView else {
+                    preconditionFailure()
+                }
+                if let cachedData = view.cachedPeerData as? CachedUserData {
+                    return .known(cachedData.flags.contains(.isBlockedFromStories))
+                } else {
+                    return .unknown
+                }
+            }
+        }
+        
         public struct TranslationHidden: TelegramEngineDataItem, TelegramEngineMapKeyDataItem, PostboxViewDataItem {
             public typealias Result = Bool
 
@@ -1032,6 +1088,35 @@ public extension TelegramEngine.EngineData.Item {
                 }
                 
                 return view.info?.data.get(MessageHistoryThreadData.self)
+            }
+        }
+        
+        public struct StoryStats: TelegramEngineDataItem, TelegramEngineMapKeyDataItem, PostboxViewDataItem {
+            public typealias Result = PeerStoryStats?
+
+            fileprivate var id: EnginePeer.Id
+            public var mapKey: EnginePeer.Id {
+                return self.id
+            }
+
+            public init(id: EnginePeer.Id) {
+                self.id = id
+            }
+
+            var key: PostboxViewKey {
+                return .peerStoryStats(peerIds: Set([self.id]))
+            }
+
+            func extract(view: PostboxView) -> Result {
+                guard let view = view as? PeerStoryStatsView else {
+                    preconditionFailure()
+                }
+                
+                if let result = view.storyStats[self.id] {
+                    return result
+                } else {
+                    return nil
+                }
             }
         }
     }

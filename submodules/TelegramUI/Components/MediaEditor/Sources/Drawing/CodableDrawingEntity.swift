@@ -1,4 +1,5 @@
 import Foundation
+import TelegramCore
 
 public enum CodableDrawingEntity: Equatable {
     public static func == (lhs: CodableDrawingEntity, rhs: CodableDrawingEntity) -> Bool {
@@ -10,6 +11,7 @@ public enum CodableDrawingEntity: Equatable {
     case simpleShape(DrawingSimpleShapeEntity)
     case bubble(DrawingBubbleEntity)
     case vector(DrawingVectorEntity)
+    case location(DrawingLocationEntity)
     
     public init?(entity: DrawingEntity) {
         if let entity = entity as? DrawingStickerEntity {
@@ -22,6 +24,8 @@ public enum CodableDrawingEntity: Equatable {
             self = .bubble(entity)
         } else if let entity = entity as? DrawingVectorEntity {
             self = .vector(entity)
+        } else if let entity = entity as? DrawingLocationEntity {
+            self = .location(entity)
         } else {
             return nil
         }
@@ -39,6 +43,32 @@ public enum CodableDrawingEntity: Equatable {
             return entity
         case let .vector(entity):
             return entity
+        case let .location(entity):
+            return entity
+        }
+    }
+    
+    public var mediaArea: MediaArea? {
+        switch self {
+        case let .location(entity):
+            return .venue(
+                coordinates: MediaArea.Coordinates(
+                    x: entity.position.x / 1080.0 * 100.0,
+                    y: entity.position.y / 1920.0 * 100.0,
+                    width: (entity.renderImage?.size.width ?? 0.0) * entity.scale / 1080.0 * 100.0,
+                    height: (entity.renderImage?.size.height ?? 0.0) * entity.scale / 1920.0 * 100.0,
+                    rotation: entity.rotation / .pi * 180.0
+                ),
+                venue: MediaArea.Venue(
+                    latitude: entity.location.latitude,
+                    longitude: entity.location.longitude,
+                    venue: entity.location.venue,
+                    queryId: entity.queryId,
+                    resultId: entity.resultId
+                )
+            )
+        default:
+            return nil
         }
     }
 }
@@ -55,6 +85,7 @@ extension CodableDrawingEntity: Codable {
         case simpleShape
         case bubble
         case vector
+        case location
     }
 
     public init(from decoder: Decoder) throws {
@@ -71,6 +102,8 @@ extension CodableDrawingEntity: Codable {
             self = .bubble(try container.decode(DrawingBubbleEntity.self, forKey: .entity))
         case .vector:
             self = .vector(try container.decode(DrawingVectorEntity.self, forKey: .entity))
+        case .location:
+            self = .location(try container.decode(DrawingLocationEntity.self, forKey: .entity))
         }
     }
 
@@ -91,6 +124,9 @@ extension CodableDrawingEntity: Codable {
             try container.encode(payload, forKey: .entity)
         case let .vector(payload):
             try container.encode(EntityType.vector, forKey: .type)
+            try container.encode(payload, forKey: .entity)
+        case let .location(payload):
+            try container.encode(EntityType.location, forKey: .type)
             try container.encode(payload, forKey: .entity)
         }
     }

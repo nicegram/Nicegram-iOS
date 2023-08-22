@@ -1171,9 +1171,12 @@ public class CameraScreen: ViewController {
             }
         }
         fileprivate var hasGallery = false
+        fileprivate var postingAvailable = true
         
         private var presentationData: PresentationData
         private var validLayout: ContainerViewLayout?
+        
+        fileprivate var didAppear: () -> Void = {}
         
         private let completion = ActionSlot<Signal<CameraScreen.Result, NoError>>()
         
@@ -1651,9 +1654,15 @@ public class CameraScreen: ViewController {
             guard let camera = self.camera else {
                 return
             }
-            let location = gestureRecognizer.location(in: self.mainPreviewView)
-            let point = self.mainPreviewView.cameraPoint(for: location)
-            camera.focus(at: point, autoFocus: false)
+            
+            let location = gestureRecognizer.location(in: gestureRecognizer.view)
+            if self.cameraState.isDualCameraEnabled && self.additionalPreviewContainerView.frame.contains(location) {
+                self.toggleCameraPositionAction.invoke(Void())
+            } else {
+                let location = gestureRecognizer.location(in: self.mainPreviewView)
+                let point = self.mainPreviewView.cameraPoint(for: location)
+                camera.focus(at: point, autoFocus: false)
+            }
         }
 
         @objc private func handleDoubleTap(_ gestureRecognizer: UITapGestureRecognizer) {
@@ -2134,6 +2143,7 @@ public class CameraScreen: ViewController {
                 } else if case .notDetermined = self.microphoneAuthorizationStatus {
                     self.requestDeviceAccess()
                 }
+                self.didAppear()
             }
 
             let componentSize = self.componentHost.update(
@@ -2145,7 +2155,7 @@ public class CameraScreen: ViewController {
                         cameraAuthorizationStatus: self.cameraAuthorizationStatus,
                         microphoneAuthorizationStatus: self.microphoneAuthorizationStatus,
                         hasAppeared: self.hasAppeared,
-                        isVisible: self.cameraIsActive && !self.hasGallery,
+                        isVisible: self.cameraIsActive && !self.hasGallery && self.postingAvailable,
                         panelWidth: panelWidth,
                         animateFlipAction: self.animateFlipAction,
                         animateShutter: { [weak self] in
@@ -2353,6 +2363,9 @@ public class CameraScreen: ViewController {
     
     private var audioSessionDisposable: Disposable?
     
+    private let postingAvailabilityPromise = Promise<StoriesUploadAvailability>()
+    private var postingAvailabilityDisposable: Disposable?
+    
     private let hapticFeedback = HapticFeedback()
     
     private var validLayout: ContainerViewLayout?
@@ -2393,6 +2406,8 @@ public class CameraScreen: ViewController {
         self.navigationPresentation = .flatModal
         
         self.requestAudioSession()
+        
+        self.postingAvailabilityPromise.set(self.context.engine.messages.checkStoriesUploadAvailability())
     }
 
     required public init(coder: NSCoder) {
@@ -2401,6 +2416,7 @@ public class CameraScreen: ViewController {
     
     deinit {
         self.audioSessionDisposable?.dispose()
+        self.postingAvailabilityDisposable?.dispose()
         if #available(iOS 13.0, *) {
             try? AVAudioSession.sharedInstance().setAllowHapticsAndSystemSoundsDuringRecording(false)
         }
@@ -2410,6 +2426,62 @@ public class CameraScreen: ViewController {
         self.displayNode = Node(controller: self)
 
         super.displayNodeDidLoad()
+        
+        self.node.didAppear = { [weak self] in
+            guard let self else {
+                return
+            }
+            self.postingAvailabilityDisposable = (self.postingAvailabilityPromise.get()
+            |> deliverOnMainQueue).start(next: { [weak self] availability in
+                guard let self, availability != .available else {
+                    return
+                }
+                self.node.postingAvailable = false
+                
+                let subject: PremiumLimitSubject
+                switch availability {
+                case .expiringLimit:
+                    subject = .expiringStories
+                case .weeklyLimit:
+                    subject = .storiesWeekly
+                case .monthlyLimit:
+                    subject = .storiesMonthly
+                default:
+                    subject = .expiringStories
+                }
+                
+                let context = self.context
+                var replaceImpl: ((ViewController) -> Void)?
+                let controller = self.context.sharedContext.makePremiumLimitController(context: self.context, subject: subject, count: 10, forceDark: true, cancel: { [weak self] in
+                    self?.requestDismiss(animated: true)
+                }, action: { [weak self] in
+                    let controller = context.sharedContext.makePremiumIntroController(context: context, source: .stories, forceDark: true, dismissed: { [weak self] in
+                        guard let self else {
+                            return
+                        }
+                        let _ = (self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: self.context.account.peerId))
+                        |> deliverOnMainQueue).start(next: { [weak self] peer in
+                            guard let self else {
+                                return
+                            }
+                            let isPremium = peer?.isPremium ?? false
+                            if isPremium {
+                                self.node.postingAvailable = true
+                            } else {
+                                self.requestDismiss(animated: true)
+                            }
+                        })
+                    })
+                    replaceImpl?(controller)
+                })
+                replaceImpl = { [weak controller] c in
+                    controller?.replace(with: c)
+                }
+                if let navigationController = self.context.sharedContext.mainWindow?.viewController as? NavigationController {
+                    navigationController.pushViewController(controller)
+                }
+            })
+        }
     }
     
     private func requestAudioSession() {
@@ -2479,7 +2551,22 @@ public class CameraScreen: ViewController {
                         transitionOut: transitionOut
                     )
                     if let asset = result as? PHAsset {
-                        self.completion(.single(.asset(asset)), resultTransition, dismissed)
+                        if asset.mediaType == .video && asset.duration < 1.0 {
+                            let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
+                            let alertController = textAlertController(
+                                context: self.context,
+                                forceTheme: defaultDarkColorPresentationTheme,
+                                title: nil,
+                                text: presentationData.strings.Story_Editor_VideoTooShort,
+                                actions: [
+                                    TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})
+                                ],
+                                actionLayout: .vertical
+                            )
+                            self.present(alertController, in: .window(.root))
+                        } else {
+                            self.completion(.single(.asset(asset)), resultTransition, dismissed)
+                        }
                     } else if let draft = result as? MediaEditorDraft {
                         self.completion(.single(.draft(draft)), resultTransition, dismissed)
                     }
@@ -2490,6 +2577,8 @@ public class CameraScreen: ViewController {
                     self.node.hasGallery = false
                     self.node.requestUpdateLayout(hasAppeared: self.node.hasAppeared, transition: .immediate)
                 }
+            }, groupsPresented: {
+                stopCameraCapture()
             })
             self.galleryController = controller
         }

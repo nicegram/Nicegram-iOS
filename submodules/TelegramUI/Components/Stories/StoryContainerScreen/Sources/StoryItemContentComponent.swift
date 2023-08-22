@@ -32,14 +32,16 @@ final class StoryItemContentComponent: Component {
     let item: EngineStoryItem
     let audioMode: StoryContentItem.AudioMode
     let isVideoBuffering: Bool
-
-    init(context: AccountContext, strings: PresentationStrings, peer: EnginePeer, item: EngineStoryItem, audioMode: StoryContentItem.AudioMode, isVideoBuffering: Bool) {
+    let isCurrent: Bool
+    
+    init(context: AccountContext, strings: PresentationStrings, peer: EnginePeer, item: EngineStoryItem, audioMode: StoryContentItem.AudioMode, isVideoBuffering: Bool, isCurrent: Bool) {
 		self.context = context
         self.strings = strings
         self.peer = peer
 		self.item = item
         self.audioMode = audioMode
         self.isVideoBuffering = isVideoBuffering
+        self.isCurrent = isCurrent
 	}
 
 	static func ==(lhs: StoryItemContentComponent, rhs: StoryItemContentComponent) -> Bool {
@@ -58,6 +60,9 @@ final class StoryItemContentComponent: Component {
         if lhs.isVideoBuffering != rhs.isVideoBuffering {
             return false
         }
+        if lhs.isCurrent != rhs.isCurrent {
+            return false
+        }
 		return true
 	}
 
@@ -65,6 +70,8 @@ final class StoryItemContentComponent: Component {
         private let imageView: StoryItemImageView
         private var videoNode: UniversalVideoNode?
         private var loadingEffectView: StoryItemLoadingEffectView?
+        
+        private var mediaAreasEffectView: StoryItemLoadingEffectView?
         
         private var currentMessageMedia: EngineMedia?
         private var fetchDisposable: Disposable?
@@ -94,6 +101,9 @@ final class StoryItemContentComponent: Component {
         
         private let hierarchyTrackingLayer: HierarchyTrackingLayer
         
+        private var fetchPriorityResourceId: String?
+        private var currentFetchPriority: (isMain: Bool, disposable: Disposable)?
+        
 		override init(frame: CGRect) {
             self.hierarchyTrackingLayer = HierarchyTrackingLayer()
             self.imageView = StoryItemImageView()
@@ -121,6 +131,7 @@ final class StoryItemContentComponent: Component {
             self.priorityDisposable?.dispose()
             self.currentProgressTimer?.invalidate()
             self.videoProgressDisposable?.dispose()
+            self.currentFetchPriority?.disposable.dispose()
         }
         
         private func performActionAfterImageContentLoaded(update: Bool) {
@@ -407,7 +418,7 @@ final class StoryItemContentComponent: Component {
                 }
                 progress = min(1.0, progress)
                 
-                if actualTimestamp < 0.1 {
+                if actualTimestamp < 0.3 {
                     isBuffering = false
                 }
                 
@@ -442,6 +453,8 @@ final class StoryItemContentComponent: Component {
         }
         
         func update(component: StoryItemContentComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<StoryContentItem.Environment>, transition: Transition) -> CGSize {
+            let previousItem = self.component?.item
+            
             self.component = component
             self.state = state
             let environment = environment[StoryContentItem.Environment.self].value
@@ -476,6 +489,27 @@ final class StoryItemContentComponent: Component {
                 if let videoNode = self.videoNode {
                     self.videoNode = nil
                     videoNode.view.removeFromSuperview()
+                }
+            }
+            
+            var fetchPriorityResourceId: String?
+            switch messageMedia {
+            case let .image(image):
+                if let representation = largestImageRepresentation(image.representations) {
+                    fetchPriorityResourceId = representation.resource.id.stringRepresentation
+                }
+            case let .file(file):
+                fetchPriorityResourceId = file.resource.id.stringRepresentation
+            default:
+                break
+            }
+            
+            if self.fetchPriorityResourceId != fetchPriorityResourceId || self.currentFetchPriority?.0 != component.isCurrent {
+                self.fetchPriorityResourceId = fetchPriorityResourceId
+                self.currentFetchPriority?.disposable.dispose()
+                
+                if let fetchPriorityResourceId {
+                    self.currentFetchPriority = (component.isCurrent, component.context.engine.resources.pushPriorityDownload(resourceId: fetchPriorityResourceId, priority: component.isCurrent ? 2 : 1))
                 }
             }
             
@@ -685,7 +719,7 @@ final class StoryItemContentComponent: Component {
                 if let current = self.loadingEffectView {
                     loadingEffectView = current
                 } else {
-                    loadingEffectView = StoryItemLoadingEffectView(frame: CGRect())
+                    loadingEffectView = StoryItemLoadingEffectView(effectAlpha: 0.1, borderAlpha: 0.2, duration: 1.0, hasCustomBorder: true, playOnce: false)
                     self.loadingEffectView = loadingEffectView
                     self.addSubview(loadingEffectView)
                 }
@@ -695,6 +729,68 @@ final class StoryItemContentComponent: Component {
                 loadingEffectView.layer.animateAlpha(from: loadingEffectView.alpha, to: 0.0, duration: 0.18, removeOnCompletion: false, completion: { [weak loadingEffectView] _ in
                     loadingEffectView?.removeFromSuperview()
                 })
+            }
+            
+            if self.contentLoaded {
+                if let previousItem, previousItem.mediaAreas != component.item.mediaAreas {
+                    if let mediaAreasEffectView = self.mediaAreasEffectView {
+                        self.mediaAreasEffectView = nil
+                        mediaAreasEffectView.removeFromSuperview()
+                    }
+                }
+                if !component.item.mediaAreas.isEmpty {
+                    let mediaAreasEffectView: StoryItemLoadingEffectView
+                    if let current = self.mediaAreasEffectView {
+                        mediaAreasEffectView = current
+                    } else {
+                        mediaAreasEffectView = StoryItemLoadingEffectView(effectAlpha: 0.35, borderAlpha: 0.45, gradientWidth: 150.0, duration: 1.2, hasCustomBorder: false, playOnce: true)
+                        self.mediaAreasEffectView = mediaAreasEffectView
+                        self.addSubview(mediaAreasEffectView)
+                    }
+                    mediaAreasEffectView.update(size: availableSize, transition: transition)
+                    
+                    let maskLayer: CALayer
+                    if let current = mediaAreasEffectView.layer.mask {
+                        maskLayer = current
+                    } else {
+                        maskLayer = CALayer()
+                        mediaAreasEffectView.layer.mask = maskLayer
+                    }
+                    
+                    if (maskLayer.sublayers ?? []).isEmpty {
+                        let referenceSize = availableSize
+                        for mediaArea in component.item.mediaAreas {
+                            guard case .venue = mediaArea else {
+                                continue
+                            }
+                            let size = CGSize(width: mediaArea.coordinates.width / 100.0 * referenceSize.width, height: mediaArea.coordinates.height / 100.0 * referenceSize.height)
+                            let position = CGPoint(x: mediaArea.coordinates.x / 100.0 * referenceSize.width, y: mediaArea.coordinates.y / 100.0 * referenceSize.height)
+                            let cornerRadius = size.height * 0.18
+                            
+                            let layer = CALayer()
+                            layer.backgroundColor = UIColor.white.cgColor
+                            layer.bounds = CGRect(origin: .zero, size: size)
+                            layer.position = position
+                            layer.cornerRadius = cornerRadius
+                            maskLayer.addSublayer(layer)
+                            
+                            let borderLayer = CAShapeLayer()
+                            borderLayer.strokeColor = UIColor.white.cgColor
+                            borderLayer.fillColor = UIColor.clear.cgColor
+                            borderLayer.lineWidth = 2.0
+                            borderLayer.path = CGPath(roundedRect: CGRect(origin: .zero, size: size), cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil)
+                            borderLayer.bounds = CGRect(origin: .zero, size: size)
+                            borderLayer.position = position
+                            mediaAreasEffectView.borderMaskLayer.addSublayer(borderLayer)
+                            
+                            layer.transform = CATransform3DMakeRotation(mediaArea.coordinates.rotation * Double.pi / 180.0, 0.0, 0.0, 1.0)
+                            borderLayer.transform = layer.transform
+                        }
+                    }
+                } else if let mediaAreasEffectView = self.mediaAreasEffectView {
+                    self.mediaAreasEffectView = nil
+                    mediaAreasEffectView.removeFromSuperview()
+                }
             }
             
             return availableSize

@@ -224,6 +224,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     private var preloadStorySubscriptionsDisposable: Disposable?
     private var preloadStoryResourceDisposables: [MediaId: Disposable] = [:]
     
+    private var sharedOpenStoryProgressDisposable = MetaDisposable()
+    
     private var fullScreenEffectView: RippleEffectView?
     
     public override func updateNavigationCustomData(_ data: Any?, progress: CGFloat, transition: ContainedViewLayoutTransition) {
@@ -835,6 +837,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         self.preloadStorySubscriptionsDisposable?.dispose()
         self.storyProgressDisposable?.dispose()
         self.storiesPostingAvailabilityDisposable?.dispose()
+        self.sharedOpenStoryProgressDisposable.dispose()
     }
     
     private func updateNavigationMetadata() {
@@ -1422,7 +1425,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             case .archive:
                 StoryContainerScreen.openArchivedStories(context: self.context, parentController: self, avatarNode: itemNode.avatarNode)
             case let .peer(peerId):
-                StoryContainerScreen.openPeerStories(context: self.context, peerId: peerId, parentController: self, avatarNode: itemNode.avatarNode)
+                StoryContainerScreen.openPeerStories(context: self.context, peerId: peerId, parentController: self, avatarNode: itemNode.avatarNode, sharedProgressDisposable: self.sharedOpenStoryProgressDisposable)
             }
         }
         
@@ -2088,15 +2091,19 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                             }
                         }
                         
-                        let text: String = self.presentationData.strings.ChatList_StoryFeedTooltip(itemListString).string
+                        let text: String = self.presentationData.strings.ChatList_StoryFeedTooltipUsers(itemListString).string
                         
-                        let tooltipController = TooltipController(content: .text(text), baseFontSize: self.presentationData.listsFontSize.baseDisplaySize, timeout: 30.0, dismissByTapOutside: true, dismissImmediatelyOnLayoutUpdate: true, padding: 6.0, innerPadding: UIEdgeInsets(top: 2.0, left: 3.0, bottom: 2.0, right: 3.0))
-                        self.present(tooltipController, in: .current, with: TooltipControllerPresentationArguments(sourceNodeAndRect: { [weak self] in
-                            guard let self else {
-                                return nil
+                        let tooltipScreen = TooltipScreen(
+                            account: self.context.account,
+                            sharedContext: self.context.sharedContext,
+                            text: .markdown(text: text),
+                            balancedTextLayout: true,
+                            style: .default,
+                            location: TooltipScreen.Location.point(self.displayNode.view.convert(absoluteFrame.insetBy(dx: 0.0, dy: 0.0).offsetBy(dx: 0.0, dy: 4.0), to: nil).offsetBy(dx: 1.0, dy: 2.0), .top), displayDuration: .infinite, shouldDismissOnTouch: { _, _ in
+                                return .dismiss(consume: false)
                             }
-                            return (self.displayNode, absoluteFrame.insetBy(dx: 0.0, dy: 0.0).offsetBy(dx: 0.0, dy: 4.0))
-                        }))
+                        )
+                        self.present(tooltipScreen, in: .current)
                         
                         #if !DEBUG
                         let _ = ApplicationSpecificNotice.setDisplayChatListStoriesTooltip(accountManager: self.context.sharedContext.accountManager).start()
@@ -2681,7 +2688,23 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             }
         }
         
-        if reachedCountLimit || premiumNeeded || hasActiveCall || hasActiveGroupCall {
+        if reachedCountLimit {
+            let context = self.context
+            var replaceImpl: ((ViewController) -> Void)?
+            let controller = PremiumLimitScreen(context: context, subject: .expiringStories, count: Int32(storiesCount), action: {
+                let controller = PremiumIntroScreen(context: context, source: .stories)
+                replaceImpl?(controller)
+            })
+            replaceImpl = { [weak controller] c in
+                controller?.replace(with: c)
+            }
+            if let navigationController = context.sharedContext.mainWindow?.viewController as? NavigationController {
+                navigationController.pushViewController(controller)
+            }
+            return
+        }
+        
+        if premiumNeeded || hasActiveCall || hasActiveGroupCall {
             if let storyCameraTooltip = self.storyCameraTooltip {
                 self.storyCameraTooltip = nil
                 storyCameraTooltip.dismiss()
@@ -2707,7 +2730,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                     
                     let text: String
                     if premiumNeeded {
-                        text = self.presentationData.strings.StoryFeed_TooltipPremiumPosting
+                        text = self.presentationData.strings.StoryFeed_TooltipPremiumPostingLimited
                     } else if reachedCountLimit {
                         let valueText = self.presentationData.strings.StoryFeed_TooltipStoryLimitValue(Int32(storiesCountLimit))
                         text = self.presentationData.strings.StoryFeed_TooltipStoryLimit(valueText).string
@@ -2729,7 +2752,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                         location: .point(location, .top),
                         shouldDismissOnTouch: { [weak self] point, containerFrame in
                             if containerFrame.contains(point), premiumNeeded {
-                                let controller = context.sharedContext.makePremiumIntroController(context: context, source: .stories)
+                                let controller = context.sharedContext.makePremiumIntroController(context: context, source: .stories, forceDark: false, dismissed: nil)
                                 self?.push(controller)
                                 return .dismiss(consume: true)
                             } else {
@@ -2995,7 +3018,16 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                                 undoValue = false
                             }
                             
-                            if self.location != .chatList(groupId: .archive) {
+                            if self.location == .chatList(groupId: .archive) {
+                                self.present(UndoOverlayController(presentationData: self.presentationData, content: .archivedChat(peerId: peer.id.toInt64(), title: "", text: self.presentationData.strings.StoryFeed_TooltipUnarchive(peer.compactDisplayTitle).string, undo: true), elevatedLayout: false, position: .bottom, animateInAsReplacement: false, action: { [weak self] action in
+                                    if case .undo = action {
+                                        if let self {
+                                            self.context.engine.peers.updatePeerStoriesHidden(id: peer.id, isHidden: undoValue)
+                                        }
+                                    }
+                                    return false
+                                }), in: .current)
+                            } else {
                                 self.present(UndoOverlayController(presentationData: self.presentationData, content: .archivedChat(peerId: peer.id.toInt64(), title: "", text: self.presentationData.strings.StoryFeed_TooltipArchive(peer.compactDisplayTitle).string, undo: true), elevatedLayout: false, position: .bottom, animateInAsReplacement: false, action: { [weak self] action in
                                     if case .undo = action {
                                         if let self {
@@ -3810,6 +3842,64 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 completion()
             }
         })
+    }
+    
+    public func openStoriesFromNotification(peerId: EnginePeer.Id, storyId: Int32) {
+        let presentationData = self.presentationData
+        let progressSignal = Signal<Never, NoError> { [weak self] subscriber in
+            let controller = OverlayStatusController(theme: presentationData.theme, type: .loading(cancelled: nil))
+            self?.present(controller, in: .window(.root))
+            return ActionDisposable { [weak controller] in
+                Queue.mainQueue().async() {
+                    controller?.dismiss()
+                }
+            }
+        }
+        |> runOn(Queue.mainQueue())
+        |> delay(0.8, queue: Queue.mainQueue())
+        let progressDisposable = progressSignal.start()
+        
+        let signal: Signal<Never, NoError> = self.context.engine.messages.peerStoriesAreReady(
+            id: peerId,
+            minId: storyId
+        )
+        |> filter { $0 }
+        |> deliverOnMainQueue
+        |> timeout(5.0, queue: .mainQueue(), alternate: .single(false))
+        |> take(1)
+        |> ignoreValues
+        |> afterDisposed {
+            Queue.mainQueue().async {
+                progressDisposable.dispose()
+            }
+        }
+        
+        self.sharedOpenStoryProgressDisposable.set((signal |> deliverOnMainQueue).start(completed: { [weak self] in
+            guard let self else {
+                return
+            }
+            StoryContainerScreen.openPeerStoriesCustom(
+                context: self.context,
+                peerId: peerId,
+                isHidden: false,
+                singlePeer: true,
+                parentController: self,
+                transitionIn: {
+                    return nil
+                },
+                transitionOut: { _ in
+                    return nil
+                },
+                setFocusedItem: { _ in
+                },
+                setProgress: { [weak self] signal in
+                    guard let self else {
+                        return
+                    }
+                    self.sharedOpenStoryProgressDisposable.set(signal.start())
+                }
+            )
+        }))
     }
     
     public func openStories(peerId: EnginePeer.Id) {

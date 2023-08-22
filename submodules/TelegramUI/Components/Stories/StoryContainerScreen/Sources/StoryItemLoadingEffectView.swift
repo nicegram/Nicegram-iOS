@@ -5,6 +5,10 @@ import ComponentFlow
 import Display
 
 final class StoryItemLoadingEffectView: UIView {
+    private let duration: Double
+    private let hasCustomBorder: Bool
+    private let playOnce: Bool
+    
     private let hierarchyTrackingLayer: HierarchyTrackingLayer
     
     private let gradientWidth: CGFloat
@@ -12,19 +16,25 @@ final class StoryItemLoadingEffectView: UIView {
     
     private let borderGradientView: UIImageView
     private let borderContainerView: UIView
-    private let borderMaskLayer: SimpleShapeLayer
+    let borderMaskLayer: SimpleShapeLayer
     
-    override init(frame: CGRect) {
+    private var didPlayOnce = false
+    
+    init(effectAlpha: CGFloat, borderAlpha: CGFloat, gradientWidth: CGFloat = 200.0, duration: Double, hasCustomBorder: Bool, playOnce: Bool) {
         self.hierarchyTrackingLayer = HierarchyTrackingLayer()
         
-        self.gradientWidth = 200.0
+        self.duration = duration
+        self.hasCustomBorder = hasCustomBorder
+        self.playOnce = playOnce
+        
+        self.gradientWidth = gradientWidth
         self.backgroundView = UIImageView()
         
         self.borderGradientView = UIImageView()
         self.borderContainerView = UIView()
         self.borderMaskLayer = SimpleShapeLayer()
         
-        super.init(frame: frame)
+        super.init(frame: .zero)
         
         self.layer.addSublayer(self.hierarchyTrackingLayer)
         self.hierarchyTrackingLayer.didEnterHierarchy = { [weak self] in
@@ -65,10 +75,10 @@ final class StoryItemLoadingEffectView: UIView {
                 context.drawLinearGradient(gradient, start: CGPoint(x: 0.0, y: 0.0), end: CGPoint(x: size.width, y: 0.0), options: CGGradientDrawingOptions())
             })
         }
-        self.backgroundView.image = generateGradient(0.1)
+        self.backgroundView.image = generateGradient(effectAlpha)
         self.addSubview(self.backgroundView)
         
-        self.borderGradientView.image = generateGradient(0.2)
+        self.borderGradientView.image = generateGradient(borderAlpha)
         self.borderContainerView.addSubview(self.borderGradientView)
         self.addSubview(self.borderContainerView)
         self.borderContainerView.layer.mask = self.borderMaskLayer
@@ -79,25 +89,29 @@ final class StoryItemLoadingEffectView: UIView {
     }
     
     private func updateAnimations(size: CGSize) {
-        if self.backgroundView.layer.animation(forKey: "shimmer") != nil {
+        if self.backgroundView.layer.animation(forKey: "shimmer") != nil || (self.playOnce && self.didPlayOnce) {
             return
         }
 
-        let animation = self.backgroundView.layer.makeAnimation(from: 0.0 as NSNumber, to: (size.width + self.gradientWidth + size.width * 0.2) as NSNumber, keyPath: "position.x", timingFunction: CAMediaTimingFunctionName.easeOut.rawValue, duration: 1.0, delay: 0.0, mediaTimingFunction: nil, removeOnCompletion: true, additive: true)
-        animation.repeatCount = Float.infinity
+        let animation = self.backgroundView.layer.makeAnimation(from: 0.0 as NSNumber, to: (size.width + self.gradientWidth + size.width * 0.2) as NSNumber, keyPath: "position.x", timingFunction: CAMediaTimingFunctionName.easeOut.rawValue, duration: self.duration, delay: 0.0, mediaTimingFunction: nil, removeOnCompletion: true, additive: true)
+        animation.repeatCount = self.playOnce ? 1 : Float.infinity
         self.backgroundView.layer.add(animation, forKey: "shimmer")
         self.borderGradientView.layer.add(animation, forKey: "shimmer")
+        
+        self.didPlayOnce = true
     }
     
     func update(size: CGSize, transition: Transition) {
         if self.backgroundView.bounds.size != size {
             self.backgroundView.layer.removeAllAnimations()
             
-            self.borderMaskLayer.fillColor = nil
-            self.borderMaskLayer.strokeColor = UIColor.white.cgColor
-            let lineWidth: CGFloat = 3.0
-            self.borderMaskLayer.lineWidth = lineWidth
-            self.borderMaskLayer.path = UIBezierPath(roundedRect: CGRect(origin: CGPoint(), size: size).insetBy(dx: lineWidth * 0.5, dy: lineWidth * 0.5), cornerRadius: 12.0).cgPath
+            if !self.hasCustomBorder {
+                self.borderMaskLayer.fillColor = nil
+                self.borderMaskLayer.strokeColor = UIColor.white.cgColor
+                let lineWidth: CGFloat = 3.0
+                self.borderMaskLayer.lineWidth = lineWidth
+                self.borderMaskLayer.path = UIBezierPath(roundedRect: CGRect(origin: CGPoint(), size: size).insetBy(dx: lineWidth * 0.5, dy: lineWidth * 0.5), cornerRadius: 12.0).cgPath
+            }
         }
         
         transition.setFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(x: -self.gradientWidth, y: 0.0), size: CGSize(width: self.gradientWidth, height: size.height)))

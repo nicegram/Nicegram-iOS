@@ -152,14 +152,17 @@ public final class StoryContentContextImpl: StoryContentContext {
                         timestamp: item.timestamp,
                         expirationTimestamp: item.expirationTimestamp,
                         media: EngineMedia(media),
+                        mediaAreas: item.mediaAreas,
                         text: item.text,
                         entities: item.entities,
                         views: item.views.flatMap { views in
                             return EngineStoryItem.Views(
                                 seenCount: views.seenCount,
+                                reactedCount: views.reactedCount,
                                 seenPeers: views.seenPeerIds.compactMap { id -> EnginePeer? in
                                     return peers[id].flatMap(EnginePeer.init)
-                                }
+                                },
+                                hasList: views.hasList
                             )
                         },
                         privacy: item.privacy.flatMap(EngineStoryPrivacy.init),
@@ -171,7 +174,8 @@ public final class StoryContentContextImpl: StoryContentContext {
                         isContacts: item.isContacts,
                         isSelectedContacts: item.isSelectedContacts,
                         isForwardingDisabled: item.isForwardingDisabled,
-                        isEdited: item.isEdited
+                        isEdited: item.isEdited,
+                        myReaction: item.myReaction
                     )
                 }
                 var totalCount = peerStoryItemsView.items.count
@@ -182,6 +186,7 @@ public final class StoryContentContextImpl: StoryContentContext {
                             timestamp: item.timestamp,
                             expirationTimestamp: Int32.max,
                             media: EngineMedia(item.media),
+                            mediaAreas: item.mediaAreas,
                             text: item.text,
                             entities: item.entities,
                             views: nil,
@@ -191,10 +196,11 @@ public final class StoryContentContextImpl: StoryContentContext {
                             isPublic: item.privacy.base == .everyone,
                             isPending: true,
                             isCloseFriends: item.privacy.base == .closeFriends,
-                            isContacts: item.privacy.base == .contacts && item.privacy.additionallyIncludePeers.isEmpty,
-                            isSelectedContacts: item.privacy.base == .contacts && !item.privacy.additionallyIncludePeers.isEmpty,
+                            isContacts: item.privacy.base == .contacts,
+                            isSelectedContacts: item.privacy.base == .nobody,
                             isForwardingDisabled: false,
-                            isEdited: false
+                            isEdited: false,
+                            myReaction: nil
                         ))
                         totalCount += 1
                     }
@@ -956,32 +962,36 @@ public final class SingleStoryContentContextImpl: StoryContentContext {
                 TelegramEngine.EngineData.Item.Peer.NotificationSettings(id: storyId.peerId),
                 TelegramEngine.EngineData.Item.NotificationSettings.Global()
             ),
-            context.account.postbox.transaction { transaction -> (Stories.StoredItem?, [PeerId: Peer], [MediaId: TelegramMediaFile]) in
-                guard let item = transaction.getStory(id: storyId)?.get(Stories.StoredItem.self) else {
-                    return (nil, [:], [:])
-                }
-                var peers: [PeerId: Peer] = [:]
-                var allEntityFiles: [MediaId: TelegramMediaFile] = [:]
-                if case let .item(item) = item {
-                    if let views = item.views {
-                        for id in views.seenPeerIds {
-                            if let peer = transaction.getPeer(id) {
-                                peers[peer.id] = peer
+            context.account.postbox.combinedView(keys: [PostboxViewKey.story(id: storyId)]) |> mapToSignal { views -> Signal<(Stories.StoredItem?, [PeerId: Peer], [MediaId: TelegramMediaFile]), NoError> in
+                let item = (views.views[PostboxViewKey.story(id: storyId)] as? StoryView)?.item?.get(Stories.StoredItem.self)
+            
+                return context.account.postbox.transaction { transaction -> (Stories.StoredItem?, [PeerId: Peer], [MediaId: TelegramMediaFile]) in
+                    guard let item else {
+                        return (nil, [:], [:])
+                    }
+                    var peers: [PeerId: Peer] = [:]
+                    var allEntityFiles: [MediaId: TelegramMediaFile] = [:]
+                    if case let .item(item) = item {
+                        if let views = item.views {
+                            for id in views.seenPeerIds {
+                                if let peer = transaction.getPeer(id) {
+                                    peers[peer.id] = peer
+                                }
                             }
                         }
-                    }
-                    for entity in item.entities {
-                        if case let .CustomEmoji(_, fileId) = entity.type {
-                            let mediaId = MediaId(namespace: Namespaces.Media.CloudFile, id: fileId)
-                            if allEntityFiles[mediaId] == nil {
-                                if let file = transaction.getMedia(mediaId) as? TelegramMediaFile {
-                                    allEntityFiles[file.fileId] = file
+                        for entity in item.entities {
+                            if case let .CustomEmoji(_, fileId) = entity.type {
+                                let mediaId = MediaId(namespace: Namespaces.Media.CloudFile, id: fileId)
+                                if allEntityFiles[mediaId] == nil {
+                                    if let file = transaction.getMedia(mediaId) as? TelegramMediaFile {
+                                        allEntityFiles[file.fileId] = file
+                                    }
                                 }
                             }
                         }
                     }
+                    return (item, peers, allEntityFiles)
                 }
-                return (item, peers, allEntityFiles)
             }
         )
         |> deliverOnMainQueue).start(next: { [weak self] data, itemAndPeers in
@@ -1019,14 +1029,17 @@ public final class SingleStoryContentContextImpl: StoryContentContext {
                     timestamp: itemValue.timestamp,
                     expirationTimestamp: itemValue.expirationTimestamp,
                     media: EngineMedia(media),
+                    mediaAreas: itemValue.mediaAreas,
                     text: itemValue.text,
                     entities: itemValue.entities,
                     views: itemValue.views.flatMap { views in
                         return EngineStoryItem.Views(
                             seenCount: views.seenCount,
+                            reactedCount: views.reactedCount,
                             seenPeers: views.seenPeerIds.compactMap { id -> EnginePeer? in
                                 return peers[id].flatMap(EnginePeer.init)
-                            }
+                            },
+                            hasList: views.hasList
                         )
                     },
                     privacy: itemValue.privacy.flatMap(EngineStoryPrivacy.init),
@@ -1038,7 +1051,8 @@ public final class SingleStoryContentContextImpl: StoryContentContext {
                     isContacts: itemValue.isContacts,
                     isSelectedContacts: itemValue.isSelectedContacts,
                     isForwardingDisabled: itemValue.isForwardingDisabled,
-                    isEdited: itemValue.isEdited
+                    isEdited: itemValue.isEdited,
+                    myReaction: itemValue.myReaction
                 )
                 
                 let mainItem = StoryContentItem(
@@ -1144,7 +1158,6 @@ public final class PeerStoryListContentContextImpl: StoryContentContext {
             listContext.state,
             self.focusedIdUpdated.get()
         )
-        //|> delay(0.4, queue: .mainQueue())
         |> deliverOnMainQueue).start(next: { [weak self] data, state, _ in
             guard let self else {
                 return
@@ -1170,7 +1183,7 @@ public final class PeerStoryListContentContextImpl: StoryContentContext {
             if let current = self.focusedId {
                 if let index = state.items.firstIndex(where: { $0.id == current }) {
                     focusedIndex = index
-                } else if let index = state.items.firstIndex(where: { $0.id >= current }) {
+                } else if let index = state.items.firstIndex(where: { $0.id <= current }) {
                     focusedIndex = index
                 } else if !state.items.isEmpty {
                     focusedIndex = 0
@@ -1180,7 +1193,7 @@ public final class PeerStoryListContentContextImpl: StoryContentContext {
             } else if let initialId = initialId {
                 if let index = state.items.firstIndex(where: { $0.id == initialId }) {
                     focusedIndex = index
-                } else if let index = state.items.firstIndex(where: { $0.id >= initialId }) {
+                } else if let index = state.items.firstIndex(where: { $0.id <= initialId }) {
                     focusedIndex = index
                 } else {
                     focusedIndex = nil
@@ -1458,6 +1471,23 @@ public func waitUntilStoryMediaPreloaded(context: AccountContext, peerId: Engine
         
         var statusSignals: [Signal<Never, NoError>] = []
         var loadSignals: [Signal<Never, NoError>] = []
+        var fetchPriorityDisposable: Disposable?
+        
+        var fetchPriorityResourceId: String?
+        switch storyItem.media {
+        case let .image(image):
+            if let representation = largestImageRepresentation(image.representations) {
+                fetchPriorityResourceId = representation.resource.id.stringRepresentation
+            }
+        case let .file(file):
+            fetchPriorityResourceId = file.resource.id.stringRepresentation
+        default:
+            break
+        }
+        
+        if let fetchPriorityResourceId {
+            fetchPriorityDisposable = context.engine.resources.pushPriorityDownload(resourceId: fetchPriorityResourceId, priority: 2)
+        }
         
         switch storyItem.media {
         case let .image(image):
@@ -1521,6 +1551,7 @@ public func waitUntilStoryMediaPreloaded(context: AccountContext, peerId: Engine
             return ActionDisposable {
                 statusDisposable.dispose()
                 loadDisposable.dispose()
+                fetchPriorityDisposable?.dispose()
             }
         }
     }

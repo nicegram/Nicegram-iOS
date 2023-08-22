@@ -58,13 +58,9 @@ public final class DrawingTextEntityView: DrawingEntityView, UITextViewDelegate 
         self.textView.delegate = self
         self.addSubview(self.textView)
         
-        self.emojiViewProvider = { [weak self] emoji in
-            guard let strongSelf = self else {
-                return UIView()
-            }
-                        
+        self.emojiViewProvider = { emoji in
             let pointSize: CGFloat = 128.0
-            return EmojiTextAttachmentView(context: context, userLocation: .other, emoji: emoji, file: emoji.file, cache: strongSelf.context.animationCache, renderer: strongSelf.context.animationRenderer, placeholderColor: UIColor.white.withAlphaComponent(0.12), pointSize: CGSize(width: pointSize, height: pointSize))
+            return EmojiTextAttachmentView(context: context, userLocation: .other, emoji: emoji, file: emoji.file, cache: context.animationCache, renderer: context.animationRenderer, placeholderColor: UIColor.white.withAlphaComponent(0.12), pointSize: CGSize(width: pointSize, height: pointSize))
         }
         
         self.textView.onPaste = { [weak self] in
@@ -285,9 +281,10 @@ public final class DrawingTextEntityView: DrawingEntityView, UITextViewDelegate 
         }
         
         self._isEditing = false
-        self.textView.resignFirstResponder()
         self.textView.inputView = nil
         self.textView.inputAccessoryView = nil
+        self.textView.reloadInputViews()
+        self.textView.resignFirstResponder()
         
         self.textView.isEditable = false
         self.textView.isSelectable = false
@@ -656,8 +653,8 @@ public final class DrawingTextEntityView: DrawingEntityView, UITextViewDelegate 
             self.updateEditingPosition(animated: animated)
         }
         
-        self.textView.onLayoutUpdate = {
-            self.updateEntities()
+        self.textView.onLayoutUpdate = { [weak self] in
+            self?.updateEntities()
         }
         
         super.update(animated: animated)
@@ -872,9 +869,12 @@ final class DrawingTextEntititySelectionView: DrawingEntitySelectionView {
                 } else {
                     newAngle = atan2(parentLocation.y - self.center.y, parentLocation.x - self.center.x)
                 }
-                
-                //let delta = newAngle - updatedRotation
-                updatedRotation = newAngle //" self.snapTool.update(entityView: entityView, velocity: 0.0, delta: delta, updatedRotation: newAngle)
+                var delta = newAngle - updatedRotation
+                if delta < -.pi {
+                    delta = 2.0 * .pi + delta
+                }
+                let velocityValue = sqrt(velocity.x * velocity.x + velocity.y * velocity.y) / 1000.0
+                updatedRotation = self.snapTool.update(entityView: entityView, velocity: velocityValue, delta: delta, updatedRotation: newAngle, skipMultiplier: 1.0)
             } else if self.currentHandle === self.layer {
                 updatedPosition.x += delta.x
                 updatedPosition.y += delta.y
@@ -996,7 +996,7 @@ final class DrawingTextEntititySelectionView: DrawingEntitySelectionView {
     }
 }
 
-private class DrawingTextLayoutManager: NSLayoutManager {
+final class DrawingTextLayoutManager: NSLayoutManager {
     var radius: CGFloat
     var maxIndex: Int = 0
     
@@ -1008,7 +1008,9 @@ private class DrawingTextLayoutManager: NSLayoutManager {
     var strokeOffset: CGPoint = .zero
     
     var frameColor: UIColor?
-    var frameWidthInset: CGFloat = 0.0
+    var frameInsets = UIEdgeInsets()
+    
+    var textAlignment: NSTextAlignment = .natural
     
     override init() {
         self.radius = 8.0
@@ -1023,17 +1025,22 @@ private class DrawingTextLayoutManager: NSLayoutManager {
     private func prepare() {
         self.path = nil
         self.rectArray.removeAll()
-        
+                
         self.enumerateLineFragments(forGlyphRange: NSRange(location: 0, length: ((self.textStorage?.string ?? "") as NSString).length)) { rect, usedRect, textContainer, glyphRange, _ in
             var ignoreRange = false
-            let charecterRange = self.characterRange(forGlyphRange: glyphRange, actualGlyphRange: nil)
-            let substring = ((self.textStorage?.string ?? "") as NSString).substring(with: charecterRange)
+            let characterRange = self.characterRange(forGlyphRange: glyphRange, actualGlyphRange: nil)
+            let substring = ((self.textStorage?.string ?? "") as NSString).substring(with: characterRange)
             if substring.trimmingCharacters(in: .newlines).isEmpty {
                 ignoreRange = true
             }
             
+            var usedRect = usedRect
+            if substring.hasSuffix(" ") && self.textAlignment != .right {
+                usedRect.size.width -= floorToScreenPixels(usedRect.height * 0.145)
+            }
+            
             if !ignoreRange {
-                let newRect = CGRect(origin: CGPoint(x: usedRect.minX - self.frameWidthInset, y: usedRect.minY), size: CGSize(width: usedRect.width + self.frameWidthInset * 2.0, height: usedRect.height))
+                let newRect = CGRect(origin: CGPoint(x: usedRect.minX - floorToScreenPixels(self.frameInsets.left * usedRect.height), y: usedRect.minY - floorToScreenPixels(self.frameInsets.top * usedRect.height)), size: CGSize(width: usedRect.width + floorToScreenPixels((self.frameInsets.left + self.frameInsets.right) * usedRect.height), height: usedRect.height + floorToScreenPixels((self.frameInsets.top + self.frameInsets.bottom) * usedRect.height)))
                 self.rectArray.append(newRect)
             }
         }
@@ -1057,19 +1064,27 @@ private class DrawingTextLayoutManager: NSLayoutManager {
             return
         }
         
-        let last = self.rectArray[index - 1]
-        let cur = self.rectArray[index]
+        var last = self.rectArray[index - 1]
+        var cur = self.rectArray[index]
         
-        self.radius = cur.height * 0.18
+        self.radius = cur.height * 0.2
         
-        let t1 = ((cur.minX - last.minX < 2.0 * self.radius) && (cur.minX > last.minX)) || ((cur.maxX - last.maxX > -2.0 * self.radius) && (cur.maxX < last.maxX))
-        let t2 = ((last.minX - cur.minX < 2.0 * self.radius) && (last.minX > cur.minX)) || ((last.maxX - cur.maxX > -2.0 * self.radius) && (last.maxX < cur.maxX))
+        let doubleRadius = self.radius * 2.5
+        
+        var t1 = ((cur.minX - last.minX < doubleRadius) && (cur.minX > last.minX)) || ((cur.maxX - last.maxX > -doubleRadius) && (cur.maxX < last.maxX))
+        let t2 = ((last.minX - cur.minX < doubleRadius) && (last.minX > cur.minX)) || ((last.maxX - cur.maxX > -doubleRadius) && (last.maxX < cur.maxX))
         
         if t2 {
             let newRect = CGRect(origin: CGPoint(x: cur.minX, y: last.minY), size: CGSize(width: cur.width, height: last.height))
             self.rectArray[index - 1] = newRect
             self.processRectIndex(index - 1)
         }
+        
+        last = self.rectArray[index - 1]
+        cur = self.rectArray[index]
+        
+        t1 = ((cur.minX - last.minX < doubleRadius) && (cur.minX > last.minX)) || ((cur.maxX - last.maxX > -doubleRadius) && (cur.maxX < last.maxX))
+        
         if t1 {
             let newRect = CGRect(origin: CGPoint(x: last.minX, y: cur.minY), size: CGSize(width: last.width, height: cur.height))
             self.rectArray[index] = newRect
@@ -1119,12 +1134,12 @@ private class DrawingTextLayoutManager: NSLayoutManager {
             var last: CGRect = .null
             for i in 0 ..< self.rectArray.count {
                 let cur = self.rectArray[i]
-                self.radius = cur.height * 0.18
+                self.radius = cur.height * 0.2
                 
                 path.append(UIBezierPath(roundedRect: cur, cornerRadius: self.radius))
                 if i == 0 {
                     last = cur
-                } else if i > 0 && abs(last.maxY -  cur.minY) < 10.0 {
+                } else if i > 0 && abs(last.maxY -  cur.minY) < 15.0 {
                     let a = cur.origin
                     let b = CGPoint(x: cur.maxX, y: cur.minY)
                     let c = CGPoint(x: last.minX, y: last.maxY)
@@ -1234,7 +1249,7 @@ final class SimpleTextLayer: CATextLayer {
 final class DrawingTextView: UITextView, NSLayoutManagerDelegate {
     var characterLayers: [CALayer] = []
     
-    fileprivate var drawingLayoutManager: DrawingTextLayoutManager {
+    var drawingLayoutManager: DrawingTextLayoutManager {
         return self.layoutManager as! DrawingTextLayoutManager
     }
     
@@ -1262,13 +1277,23 @@ final class DrawingTextView: UITextView, NSLayoutManagerDelegate {
             self.setNeedsDisplay()
         }
     }
-    var frameWidthInset: CGFloat = 0.0 {
+    var frameInsets: UIEdgeInsets = .zero {
         didSet {
-            self.drawingLayoutManager.frameWidthInset = self.frameWidthInset
+            self.drawingLayoutManager.frameInsets = self.frameInsets
             self.setNeedsDisplay()
         }
     }
         
+    override var textAlignment: NSTextAlignment {
+        get {
+            return super.textAlignment
+        }
+        set {
+            self.drawingLayoutManager.textAlignment = newValue
+            super.textAlignment = newValue
+        }
+    }
+    
     override var font: UIFont? {
         get {
             return super.font
@@ -1353,10 +1378,6 @@ final class DrawingTextView: UITextView, NSLayoutManagerDelegate {
     func layoutManager(_ layoutManager: NSLayoutManager, didCompleteLayoutFor textContainer: NSTextContainer?, atEnd layoutFinishedFlag: Bool) {
         self.updateCharLayers()
         if layoutFinishedFlag {
-//            if self.needsLayersUpdate {
-//                self.needsLayersUpdate = false
-//                self.updateCharLayers()
-//            }
             if let onLayoutUpdate = self.onLayoutUpdate {
                 self.onLayoutUpdate = nil
                 onLayoutUpdate()

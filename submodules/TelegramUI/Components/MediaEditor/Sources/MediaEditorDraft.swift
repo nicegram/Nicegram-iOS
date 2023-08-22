@@ -1,6 +1,7 @@
 import Foundation
 import UIKit
 import SwiftSignalKit
+import CoreLocation
 import TelegramCore
 import TelegramUIPreferences
 import PersistentStringHash
@@ -67,6 +68,9 @@ public final class MediaEditorDraft: Codable, Equatable {
         case caption
         case privacy
         case timestamp
+        case locationLatitude
+        case locationLongitude
+        case expiresOn
     }
     
     public let path: String
@@ -78,8 +82,10 @@ public final class MediaEditorDraft: Codable, Equatable {
     public let caption: NSAttributedString
     public let privacy: MediaEditorResultPrivacy?
     public let timestamp: Int32
+    public let location: CLLocationCoordinate2D?
+    public let expiresOn: Int32?
         
-    public init(path: String, isVideo: Bool, thumbnail: UIImage, dimensions: PixelDimensions, duration: Double?, values: MediaEditorValues, caption: NSAttributedString, privacy: MediaEditorResultPrivacy?, timestamp: Int32) {
+    public init(path: String, isVideo: Bool, thumbnail: UIImage, dimensions: PixelDimensions, duration: Double?, values: MediaEditorValues, caption: NSAttributedString, privacy: MediaEditorResultPrivacy?, timestamp: Int32, location: CLLocationCoordinate2D?, expiresOn: Int32?) {
         self.path = path
         self.isVideo = isVideo
         self.thumbnail = thumbnail
@@ -89,6 +95,8 @@ public final class MediaEditorDraft: Codable, Equatable {
         self.caption = caption
         self.privacy = privacy
         self.timestamp = timestamp
+        self.location = location
+        self.expiresOn = expiresOn
     }
     
     public init(from decoder: Decoder) throws {
@@ -122,6 +130,14 @@ public final class MediaEditorDraft: Codable, Equatable {
         }
         
         self.timestamp = try container.decodeIfPresent(Int32.self, forKey: .timestamp) ?? 1688909663
+        
+        if let latitude = try container.decodeIfPresent(Double.self, forKey: .locationLatitude), let longitude = try container.decodeIfPresent(Double.self, forKey: .locationLongitude) {
+            self.location = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+        } else {
+            self.location = nil
+        }
+        
+        self.expiresOn = try container.decodeIfPresent(Int32.self, forKey: .expiresOn)
     }
     
     public func encode(to encoder: Encoder) throws {
@@ -141,7 +157,7 @@ public final class MediaEditorDraft: Codable, Equatable {
         let chatInputText = ChatTextInputStateText(attributedText: self.caption)
         try container.encode(chatInputText, forKey: .caption)
         
-        if let privacy = self .privacy {
+        if let privacy = self.privacy {
             if let data = try? JSONEncoder().encode(privacy) {
                 try container.encode(data, forKey: .privacy)
             } else {
@@ -151,6 +167,15 @@ public final class MediaEditorDraft: Codable, Equatable {
             try container.encodeNil(forKey: .privacy)
         }
         try container.encode(self.timestamp, forKey: .timestamp)
+        
+        if let location = self.location {
+            try container.encode(location.latitude, forKey: .locationLatitude)
+            try container.encode(location.longitude, forKey: .locationLongitude)
+        } else {
+            try container.encodeNil(forKey: .locationLatitude)
+            try container.encodeNil(forKey: .locationLongitude)
+        }
+        try container.encodeIfPresent(self.expiresOn, forKey: .expiresOn)
     }
 }
 
@@ -188,14 +213,25 @@ public func addStoryDraft(engine: TelegramEngine, item: MediaEditorDraft) {
 
 public func removeStoryDraft(engine: TelegramEngine, path: String, delete: Bool) {
     if delete {
-        try? FileManager.default.removeItem(atPath: fullDraftPath(path))
+        try? FileManager.default.removeItem(atPath: fullDraftPath(engine: engine, path: path))
     }
     let itemId = MediaEditorDraftItemId(path.persistentHashValue)
     let _ = engine.orderedLists.removeItem(collectionId: ApplicationSpecificOrderedItemListCollectionId.storyDrafts, id: itemId.rawValue).start()
 }
 
 public func clearStoryDrafts(engine: TelegramEngine) {
-    let _ = engine.orderedLists.clear(collectionId: ApplicationSpecificOrderedItemListCollectionId.storyDrafts).start()
+    let _ = engine.data.get(TelegramEngine.EngineData.Item.OrderedLists.ListItems(collectionId: ApplicationSpecificOrderedItemListCollectionId.storyDrafts)).start(next: { items in
+        for item in items {
+            if let draft = item.contents.get(MediaEditorDraft.self) {
+                removeStoryDraft(engine: engine, path: draft.path, delete: true)
+            }
+        }
+    })
+}
+
+public func deleteAllStoryDrafts(peerId: EnginePeer.Id) {
+    let path = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0] + "/storyDrafts_\(peerId.toInt64())/"
+    try? FileManager.default.removeItem(atPath: path)
 }
 
 public func storyDrafts(engine: TelegramEngine) -> Signal<[MediaEditorDraft], NoError> {
@@ -211,12 +247,27 @@ public func storyDrafts(engine: TelegramEngine) -> Signal<[MediaEditorDraft], No
     }
 }
 
+public func updateStoryDrafts(engine: TelegramEngine) {
+    let currentTimestamp = Int32(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970)
+    let _ = engine.data.get(
+        TelegramEngine.EngineData.Item.OrderedLists.ListItems(collectionId: ApplicationSpecificOrderedItemListCollectionId.storyDrafts)
+    ).start(next: { items in
+        for item in items {
+            if let draft = item.contents.get(MediaEditorDraft.self) {
+                if let expiresOn = draft.expiresOn, expiresOn < currentTimestamp {
+                    removeStoryDraft(engine: engine, path: draft.path, delete: true)
+                }
+            }
+        }
+    })
+}
+
 public extension MediaEditorDraft {
-    func fullPath() -> String {
-        return fullDraftPath(self.path)
+    func fullPath(engine: TelegramEngine) -> String {
+        return fullDraftPath(engine: engine, path: self.path)
     }
 }
 
-private func fullDraftPath(_ path: String) -> String {
-    return NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0] + "/storyDrafts/" + path
+private func fullDraftPath(engine: TelegramEngine, path: String) -> String {
+    return NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0] + "/storyDrafts_\(engine.account.peerId.toInt64())/" + path
 }

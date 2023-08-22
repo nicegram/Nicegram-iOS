@@ -407,6 +407,7 @@ public final class EmojiSearchContent: ASDisplayNode, EntitySearchContainerNode 
             customLayout: nil,
             externalBackground: nil,
             externalExpansionView: nil,
+            customContentView: nil,
             useOpaqueTheme: true,
             hideBackground: false,
             stateContext: nil,
@@ -500,6 +501,7 @@ public final class EmojiSearchContent: ASDisplayNode, EntitySearchContainerNode 
                 externalBottomPanelContainer: nil,
                 displayTopPanelBackground: .blur,
                 topPanelExtensionUpdated: { _, _ in },
+                topPanelScrollingOffset: { _, _ in },
                 hideInputUpdated: { _, _, _ in },
                 hideTopPanelUpdated: { _, _ in
                 },

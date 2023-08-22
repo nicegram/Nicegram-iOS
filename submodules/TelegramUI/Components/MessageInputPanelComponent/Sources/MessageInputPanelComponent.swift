@@ -44,6 +44,18 @@ public final class MessageInputPanelComponent: Component {
         case emoji
     }
     
+    public struct MyReaction: Equatable {
+        public let reaction: MessageReaction.Reaction
+        public let file: TelegramMediaFile?
+        public let animationFileId: Int64?
+        
+        public init(reaction: MessageReaction.Reaction, file: TelegramMediaFile?, animationFileId: Int64?) {
+            self.reaction = reaction
+            self.file = file
+            self.animationFileId = animationFileId
+        }
+    }
+    
     public final class ExternalState {
         public fileprivate(set) var isEditing: Bool = false
         public fileprivate(set) var hasText: Bool = false
@@ -79,11 +91,16 @@ public final class MessageInputPanelComponent: Component {
     public let stopAndPreviewMediaRecording: (() -> Void)?
     public let discardMediaRecordingPreview: (() -> Void)?
     public let attachmentAction: (() -> Void)?
+    public let myReaction: MyReaction?
+    public let likeAction: (() -> Void)?
+    public let likeOptionsAction: ((UIView, ContextGesture?) -> Void)?
     public let inputModeAction: (() -> Void)?
     public let timeoutAction: ((UIView) -> Void)?
     public let forwardAction: (() -> Void)?
     public let moreAction: ((UIView, ContextGesture?) -> Void)?
     public let presentVoiceMessagesUnavailableTooltip: ((UIView) -> Void)?
+    public let presentTextLengthLimitTooltip: (() -> Void)?
+    public let presentTextFormattingTooltip: (() -> Void)?
     public let paste: (TextFieldComponent.PasteData) -> Void
     public let audioRecorder: ManagedAudioRecorder?
     public let videoRecordingStatus: InstantVideoControllerRecordingStatus?
@@ -95,9 +112,11 @@ public final class MessageInputPanelComponent: Component {
     public let timeoutSelected: Bool
     public let displayGradient: Bool
     public let bottomInset: CGFloat
+    public let isFormattingLocked: Bool
     public let hideKeyboard: Bool
     public let forceIsEditing: Bool
     public let disabledPlaceholder: String?
+    public let storyId: Int32?
     
     public init(
         externalState: ExternalState,
@@ -121,11 +140,16 @@ public final class MessageInputPanelComponent: Component {
         stopAndPreviewMediaRecording: (() -> Void)?,
         discardMediaRecordingPreview: (() -> Void)?,
         attachmentAction: (() -> Void)?,
+        myReaction: MyReaction?,
+        likeAction: (() -> Void)?,
+        likeOptionsAction: ((UIView, ContextGesture?) -> Void)?,
         inputModeAction: (() -> Void)?,
         timeoutAction: ((UIView) -> Void)?,
         forwardAction: (() -> Void)?,
         moreAction: ((UIView, ContextGesture?) -> Void)?,
         presentVoiceMessagesUnavailableTooltip: ((UIView) -> Void)?,
+        presentTextLengthLimitTooltip: (() -> Void)?,
+        presentTextFormattingTooltip: (() -> Void)?,
         paste: @escaping (TextFieldComponent.PasteData) -> Void,
         audioRecorder: ManagedAudioRecorder?,
         videoRecordingStatus: InstantVideoControllerRecordingStatus?,
@@ -137,9 +161,11 @@ public final class MessageInputPanelComponent: Component {
         timeoutSelected: Bool,
         displayGradient: Bool,
         bottomInset: CGFloat,
+        isFormattingLocked: Bool,
         hideKeyboard: Bool,
         forceIsEditing: Bool,
-        disabledPlaceholder: String?
+        disabledPlaceholder: String?,
+        storyId: Int32?
     ) {
         self.externalState = externalState
         self.context = context
@@ -162,11 +188,16 @@ public final class MessageInputPanelComponent: Component {
         self.stopAndPreviewMediaRecording = stopAndPreviewMediaRecording
         self.discardMediaRecordingPreview = discardMediaRecordingPreview
         self.attachmentAction = attachmentAction
+        self.myReaction = myReaction
+        self.likeAction = likeAction
+        self.likeOptionsAction = likeOptionsAction
         self.inputModeAction = inputModeAction
         self.timeoutAction = timeoutAction
         self.forwardAction = forwardAction
         self.moreAction = moreAction
         self.presentVoiceMessagesUnavailableTooltip = presentVoiceMessagesUnavailableTooltip
+        self.presentTextLengthLimitTooltip = presentTextLengthLimitTooltip
+        self.presentTextFormattingTooltip = presentTextFormattingTooltip
         self.paste = paste
         self.audioRecorder = audioRecorder
         self.videoRecordingStatus = videoRecordingStatus
@@ -178,9 +209,11 @@ public final class MessageInputPanelComponent: Component {
         self.timeoutSelected = timeoutSelected
         self.displayGradient = displayGradient
         self.bottomInset = bottomInset
+        self.isFormattingLocked = isFormattingLocked
         self.hideKeyboard = hideKeyboard
         self.forceIsEditing = forceIsEditing
         self.disabledPlaceholder = disabledPlaceholder
+        self.storyId = storyId
     }
     
     public static func ==(lhs: MessageInputPanelComponent, rhs: MessageInputPanelComponent) -> Bool {
@@ -244,6 +277,9 @@ public final class MessageInputPanelComponent: Component {
         if lhs.bottomInset != rhs.bottomInset {
             return false
         }
+        if lhs.isFormattingLocked != rhs.isFormattingLocked {
+            return false
+        }
         if (lhs.forwardAction == nil) != (rhs.forwardAction == nil) {
             return false
         }
@@ -257,6 +293,21 @@ public final class MessageInputPanelComponent: Component {
             return false
         }
         if lhs.disabledPlaceholder != rhs.disabledPlaceholder {
+            return false
+        }
+        if (lhs.attachmentAction == nil) != (rhs.attachmentAction == nil) {
+            return false
+        }
+        if lhs.myReaction != rhs.myReaction {
+            return false
+        }
+        if (lhs.likeAction == nil) != (rhs.likeAction == nil) {
+            return false
+        }
+        if (lhs.likeOptionsAction == nil) != (rhs.likeOptionsAction == nil) {
+            return false
+        }
+        if lhs.storyId != rhs.storyId {
             return false
         }
         return true
@@ -284,6 +335,7 @@ public final class MessageInputPanelComponent: Component {
         private let attachmentButton = ComponentView<Empty>()
         private var deleteMediaPreviewButton: ComponentView<Empty>?
         private let inputActionButton = ComponentView<Empty>()
+        private let likeButton = ComponentView<Empty>()
         private let stickerButton = ComponentView<Empty>()
         private let reactionButton = ComponentView<Empty>()
         private let timeoutButton = ComponentView<Empty>()
@@ -312,6 +364,14 @@ public final class MessageInputPanelComponent: Component {
         
         private var component: MessageInputPanelComponent?
         private weak var state: EmptyComponentState?
+        
+        public var likeButtonView: UIView? {
+            return self.likeButton.view
+        }
+        
+        public var likeIconView: UIView? {
+            return (self.likeButton.view as? MessageInputActionButtonComponent.View)?.likeIconView
+        }
         
         override init(frame: CGRect) {
             self.fieldBackgroundView = BlurredBackgroundView(color: UIColor(white: 0.0, alpha: 0.5), enableBlur: true)
@@ -408,8 +468,8 @@ public final class MessageInputPanelComponent: Component {
             }
         }
         
-        public func deactivateInput() {
-            if self.canDeactivateInput() {
+        public func deactivateInput(force: Bool = false) {
+            if self.canDeactivateInput() || force {
                 if let textFieldView = self.textField.view as? TextFieldComponent.View {
                     textFieldView.deactivateInput()
                 }
@@ -500,7 +560,7 @@ public final class MessageInputPanelComponent: Component {
         }
         
         func update(component: MessageInputPanelComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: Transition) -> CGSize {
-            var insets = UIEdgeInsets(top: 14.0, left: 7.0, bottom: 6.0, right: 41.0)
+            var insets = UIEdgeInsets(top: 14.0, left: 9.0, bottom: 6.0, right: 41.0)
             
             if let _ = component.attachmentAction {
                 insets.left = 41.0
@@ -509,10 +569,9 @@ public final class MessageInputPanelComponent: Component {
                 insets.right = 41.0
             }
             
-            let mediaInsets = UIEdgeInsets(top: insets.top, left: 7.0, bottom: insets.bottom, right: insets.right)
+            let mediaInsets = UIEdgeInsets(top: insets.top, left: 9.0, bottom: insets.bottom, right: 41.0)
             
             let baseFieldHeight: CGFloat = 40.0
-            
 
             self.component = component
             self.state = state
@@ -567,6 +626,10 @@ public final class MessageInputPanelComponent: Component {
                     textColor: UIColor(rgb: 0xffffff),
                     insets: UIEdgeInsets(top: 9.0, left: 8.0, bottom: 10.0, right: 48.0),
                     hideKeyboard: component.hideKeyboard,
+                    formatMenuAvailability: component.isFormattingLocked ? .locked : .available,
+                    lockedFormatAction: {
+                        component.presentTextFormattingTooltip?()
+                    },
                     present: { c in
                         component.presentController(c)
                     },
@@ -606,11 +669,16 @@ public final class MessageInputPanelComponent: Component {
             
             let fieldFrame = CGRect(origin: CGPoint(x: insets.left, y: insets.top), size: CGSize(width: availableSize.width - insets.left - insets.right, height: textFieldSize.height))
             
-            let fieldBackgroundFrame: CGRect
+            var fieldBackgroundFrame: CGRect
             if hasMediaRecording {
                 fieldBackgroundFrame = CGRect(origin: CGPoint(x: mediaInsets.left, y: insets.top), size: CGSize(width: availableSize.width - mediaInsets.left - mediaInsets.right, height: textFieldSize.height))
-            } else {
+            } else if isEditing {
                 fieldBackgroundFrame = fieldFrame
+            } else {
+                fieldBackgroundFrame = CGRect(origin: CGPoint(x: mediaInsets.left, y: insets.top), size: CGSize(width: availableSize.width - mediaInsets.left - insets.right, height: textFieldSize.height))
+                if component.likeAction != nil && component.forwardAction != nil {
+                    fieldBackgroundFrame.size.width -= 49.0
+                }
             }
                         
             transition.setFrame(view: self.vibrancyEffectView, frame: CGRect(origin: CGPoint(), size: fieldBackgroundFrame.size))
@@ -703,7 +771,7 @@ public final class MessageInputPanelComponent: Component {
                 }
             }
             
-            if let maxLength = component.maxLength, maxLength - self.textFieldExternalState.textLength < 5 {
+            if let maxLength = component.maxLength, maxLength - self.textFieldExternalState.textLength < 5 && isEditing {
                 let remainingLength = max(-999, maxLength - self.textFieldExternalState.textLength)
                 let counterSize = self.counter.update(
                     transition: .immediate,
@@ -741,6 +809,7 @@ public final class MessageInputPanelComponent: Component {
                     transition: transition,
                     component: AnyComponent(MessageInputActionButtonComponent(
                         mode: attachmentButtonMode,
+                        storyId: component.storyId,
                         action: { [weak self] mode, action, sendAction in
                             guard let self, let component = self.component, case .up = action else {
                                 return
@@ -787,7 +856,7 @@ public final class MessageInputPanelComponent: Component {
                     let attachmentButtonFrame = CGRect(origin: CGPoint(x: floor((insets.left - attachmentButtonSize.width) * 0.5) + (fieldBackgroundFrame.minX - fieldFrame.minX), y: size.height - insets.bottom - baseFieldHeight + floor((baseFieldHeight - attachmentButtonSize.height) * 0.5)), size: attachmentButtonSize)
                     transition.setPosition(view: attachmentButtonView, position: attachmentButtonFrame.center)
                     transition.setBounds(view: attachmentButtonView, bounds: CGRect(origin: CGPoint(), size: attachmentButtonFrame.size))
-                    transition.setAlpha(view: attachmentButtonView, alpha: (hasMediaRecording || hasMediaEditing) ? 0.0 : 1.0)
+                    transition.setAlpha(view: attachmentButtonView, alpha: (hasMediaRecording || hasMediaEditing || !isEditing) ? 0.0 : 1.0)
                     transition.setScale(view: attachmentButtonView, scale: hasMediaEditing ? 0.001 : 1.0)
                 }
             }
@@ -889,6 +958,7 @@ public final class MessageInputPanelComponent: Component {
                 transition: transition,
                 component: AnyComponent(MessageInputActionButtonComponent(
                     mode: inputActionButtonMode,
+                    storyId: component.storyId,
                     action: { [weak self] mode, action, sendAction in
                         guard let self, let component = self.component else {
                             return
@@ -907,6 +977,7 @@ public final class MessageInputPanelComponent: Component {
                                 } else {
                                     if let maxLength = component.maxLength, self.textFieldExternalState.textLength > maxLength {
                                         self.animateError()
+                                        component.presentTextLengthLimitTooltip?()
                                     } else {
                                         component.sendMessageAction()
                                     }
@@ -916,6 +987,7 @@ public final class MessageInputPanelComponent: Component {
                             if case .up = action {
                                 if let maxLength = component.maxLength, self.textFieldExternalState.textLength > maxLength {
                                     self.animateError()
+                                    component.presentTextLengthLimitTooltip?()
                                 } else {
                                     component.sendMessageAction()
                                 }
@@ -976,26 +1048,98 @@ public final class MessageInputPanelComponent: Component {
                 environment: {},
                 containerSize: CGSize(width: 33.0, height: 33.0)
             )
+            
+            let hasLikeAction: Bool
+            let displayLikeAction: Bool
+            let likeActionReplacesInputAction: Bool
+            if component.likeAction == nil {
+                hasLikeAction = false
+                displayLikeAction = false
+                likeActionReplacesInputAction = false
+            } else if isEditing {
+                hasLikeAction = false
+                displayLikeAction = false
+                likeActionReplacesInputAction = false
+            } else {
+                hasLikeAction = component.forwardAction != nil
+                likeActionReplacesInputAction = component.forwardAction == nil
+                displayLikeAction = true
+            }
+            
+            var inputActionButtonOriginX: CGFloat
+            if component.setMediaRecordingActive != nil || isEditing {
+                inputActionButtonOriginX = fieldBackgroundFrame.maxX + floorToScreenPixels((41.0 - inputActionButtonSize.width) * 0.5)
+            } else {
+                inputActionButtonOriginX = size.width
+            }
+            
+            if hasLikeAction {
+                inputActionButtonOriginX += 3.0
+            }
+            
             if let inputActionButtonView = self.inputActionButton.view {
                 if inputActionButtonView.superview == nil {
                     self.addSubview(inputActionButtonView)
                 }
-                let inputActionButtonOriginX: CGFloat
-                if component.setMediaRecordingActive != nil || isEditing {
-                    inputActionButtonOriginX = size.width - insets.right + floorToScreenPixels((insets.right - inputActionButtonSize.width) * 0.5)
-                } else {
-                    inputActionButtonOriginX = size.width
-                }
                 let inputActionButtonFrame = CGRect(origin: CGPoint(x: inputActionButtonOriginX, y: size.height - insets.bottom - baseFieldHeight + floor((baseFieldHeight - inputActionButtonSize.height) * 0.5)), size: inputActionButtonSize)
                 transition.setPosition(view: inputActionButtonView, position: inputActionButtonFrame.center)
                 transition.setBounds(view: inputActionButtonView, bounds: CGRect(origin: CGPoint(), size: inputActionButtonFrame.size))
+                transition.setAlpha(view: inputActionButtonView, alpha: likeActionReplacesInputAction ? 0.0 : 1.0)
                 
+                if hasLikeAction {
+                    inputActionButtonOriginX += 41.0
+                }
+            }
+            
+            let likeButtonSize = self.likeButton.update(
+                transition: transition,
+                component: AnyComponent(MessageInputActionButtonComponent(
+                    mode: .like(reaction: component.myReaction?.reaction, file: component.myReaction?.file, animationFileId: component.myReaction?.animationFileId),
+                    storyId: component.storyId,
+                    action: { [weak self] _, action, _ in
+                        guard let self, let component = self.component else {
+                            return
+                        }
+                        guard case .up = action else {
+                            return
+                        }
+                        component.likeAction?()
+                    },
+                    longPressAction: component.likeOptionsAction,
+                    switchMediaInputMode: {
+                    },
+                    updateMediaCancelFraction: { _ in
+                    },
+                    lockMediaRecording: {
+                    },
+                    stopAndPreviewMediaRecording: {
+                    },
+                    moreAction: { _, _ in },
+                    context: component.context,
+                    theme: component.theme,
+                    strings: component.strings,
+                    presentController: component.presentController,
+                    audioRecorder: nil,
+                    videoRecordingStatus: nil
+                )),
+                environment: {},
+                containerSize: CGSize(width: 33.0, height: 33.0)
+            )
+            if let likeButtonView = self.likeButton.view {
+                if likeButtonView.superview == nil {
+                    self.addSubview(likeButtonView)
+                }
+                let likeButtonFrame = CGRect(origin: CGPoint(x: inputActionButtonOriginX, y: size.height - insets.bottom - baseFieldHeight + floor((baseFieldHeight - likeButtonSize.height) * 0.5)), size: likeButtonSize)
+                transition.setPosition(view: likeButtonView, position: likeButtonFrame.center)
+                transition.setBounds(view: likeButtonView, bounds: CGRect(origin: CGPoint(), size: likeButtonFrame.size))
+                transition.setAlpha(view: likeButtonView, alpha: displayLikeAction ? 1.0 : 0.0)
+                inputActionButtonOriginX += 41.0
             }
         
             var fieldIconNextX = fieldBackgroundFrame.maxX - 4.0
             
             var inputModeVisible = false
-            if component.style == .story || isEditing {
+            if isEditing {
                 inputModeVisible = true
             }
             

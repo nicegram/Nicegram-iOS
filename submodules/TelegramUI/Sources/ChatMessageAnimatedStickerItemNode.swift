@@ -1431,7 +1431,7 @@ class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                         }
                     }
                     
-                    let updatedImageFrame: CGRect
+                    var updatedImageFrame: CGRect
                     var contextContentFrame: CGRect
                     if let _ = emojiString {
                         updatedImageFrame = imageFrame
@@ -1462,8 +1462,11 @@ class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                     strongSelf.contextSourceNode.contentRect = contextContentFrame
                     strongSelf.containerNode.targetNodeForActivationProgressContentRect = strongSelf.contextSourceNode.contentRect
                     
-                    let animationNodeFrame = updatedContentFrame.insetBy(dx: imageInset, dy: imageInset)
-
+                    var animationNodeFrame = updatedContentFrame.insetBy(dx: imageInset, dy: imageInset)
+                    if let telegramFile, telegramFile.isPremiumSticker {
+                        animationNodeFrame = animationNodeFrame.offsetBy(dx: 0.0, dy: 20.0)
+                    }
+                    
                     var file: TelegramMediaFile?
                     if let emojiFile = emojiFile {
                         file = emojiFile
