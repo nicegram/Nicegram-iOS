@@ -81,10 +81,6 @@ lane :build do |options|
   build_number = options[:build_number]
   upload_to_tf = options[:upload_to_tf]
 
-  # SPM dependencies
-  bazel_path = sh("cd #{SOURCE_PATH} && echo $(python3 #{SOURCE_PATH}/build-system/Make/LocateBazel.py)")
-  sh("#{bazel_path} bazel run //:swift_update_pkgs")
-
   start_time = Time.new
 
   configuration_start_time = Time.new
@@ -197,6 +193,8 @@ lane :build_bazel do |options|
   git_codesigning_repository = options[:git_codesigning_repository]
   git_codesigning_type = options[:git_codesigning_type]
 
+  update_spm_pkgs()
+
   artifacts_path = "#{BUILD_WORKING_DIR}/artifacts"
   FileUtils.rm_rf(artifacts_path)
   FileUtils.mkdir(artifacts_path)
@@ -249,6 +247,8 @@ lane :generate_project do |options|
 
   configuration_path = resolve_telegram_configuration()
 
+  update_spm_pkgs()
+
   sh "cd #{SOURCE_PATH} && python3 build-system/Make/Make.py \
   --cacheDir=#{BAZEL_LOCAL_CACHE} \
   generateProject \
@@ -267,6 +267,11 @@ lane :upload_ipa do |options|
     ipa: ipa_path,
     skip_waiting_for_build_processing: true,
   )
+end
+
+lane :update_spm_pkgs do |options|
+  bazel_path = sh("cd #{SOURCE_PATH} && echo $(python3 #{SOURCE_PATH}/build-system/Make/LocateBazel.py)")
+  sh("#{bazel_path} bazel run //:swift_update_pkgs")
 end
 
 lane :nicegram_match do |options|

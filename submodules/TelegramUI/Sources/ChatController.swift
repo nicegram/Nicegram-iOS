@@ -1,3 +1,6 @@
+// MARK: NGCard
+import NGCard
+//
 import Foundation
 import UIKit
 import Postbox
@@ -11339,6 +11342,17 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
         #endif
 
         super.viewDidAppear(animated)
+        
+        // MARK: Nicegram NGCard
+        if !self.didAppear {
+            if let peerId = self.chatLocation.peerId {
+                let int64Id = peerId.id._internalGetInt64Value()
+                if int64Id == CardTgHelper.cardBotId {
+                    CardTgHelper.trackCardBotView()
+                }
+            }
+        }
+        //
         
         // MARK: Nicegram NGStats
         if !self.didAppear {

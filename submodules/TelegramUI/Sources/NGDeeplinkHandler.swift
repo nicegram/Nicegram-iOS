@@ -5,6 +5,7 @@ import NGAiChatUI
 import NGAnalytics
 import NGAssistantUI
 import NGAuth
+import NGCardUI
 import NGLoadingIndicator
 import NGModels
 import NGOnboarding
@@ -50,24 +51,26 @@ class NGDeeplinkHandler {
             return handleAiAuth(url: url)
         case "aiLily":
             return handleAi(url: url)
-        case "nicegramPremium":
-            return handleNicegramPremium(url: url)
         case "assistant":
             return handleAssistant(url: url)
-        case "onboarding":
-            return handleOnboarding(url: url)
         case "assistant-auth":
             if #available(iOS 13.0, *) {
                 return handleLoginWithTelegram(url: url)
             } else {
                 return false
             }
+        case "nicegramPremium":
+            return handleNicegramPremium(url: url)
+        case "onboarding":
+            return handleOnboarding(url: url)
         case "specialOffer":
             if #available(iOS 13.0, *) {
                 return handleSpecialOffer(url: url)
             } else {
                 return false
             }
+        case "pstAuth":
+            return handlePstAuth(url: url)
         default:
             return false
         }
@@ -169,6 +172,16 @@ private extension NGDeeplinkHandler {
         return SpecialOfferTgHelper.showSpecialOfferFromDeeplink(
             id: url.queryItems["id"]
         )
+    }
+    
+    func handlePstAuth(url: URL) -> Bool {
+        if #available(iOS 13.0, *) {
+            Task { @MainActor in
+                CardUITgHelper.showSplashFromDeeplink()
+            }
+            return true
+        }
+        return false
     }
 }
 

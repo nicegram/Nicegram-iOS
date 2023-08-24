@@ -93,6 +93,14 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 
 
+### update_spm_pkgs
+
+```sh
+[bundle exec] fastlane update_spm_pkgs
+```
+
+
+
 ### nicegram_match
 
 ```sh

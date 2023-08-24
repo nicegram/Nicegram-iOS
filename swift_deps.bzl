@@ -12,7 +12,7 @@ def swift_dependencies():
     # version: 2.6.1
     swift_package(
         name = "swiftpkg_floatingpanel",
-        commit = "b34f1093defc43027a99834c2135a4381f5c7592",
+        commit = "debeca1fb27fe2730f5c54bbb4eb22bc9b8f7a44",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/scenee/FloatingPanel",
     )
@@ -36,9 +36,17 @@ def swift_dependencies():
     # branch: develop
     swift_package(
         name = "swiftpkg_nicegram_assistant_ios",
-        commit = "50ab1baa50d156f5b94293e828be28a9e845ba58",
+        commit = "f811119c41b2d12450ac9615b9a74316f91bc414",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
+    )
+
+    # version: 7.3.2
+    swift_package(
+        name = "swiftpkg_r.swift",
+        commit = "0e4ec17f329136b712d0a96128597b8ff2f31bdc",
+        dependencies_index = "@//:swift_deps_index.json",
+        remote = "https://github.com/mac-cain13/R.swift.git",
     )
 
     # version: 5.15.5
@@ -65,10 +73,26 @@ def swift_dependencies():
         remote = "git@bitbucket.org:mobyrix/subscriptionanalytics-ios.git",
     )
 
+    # version: 1.2.3
+    swift_package(
+        name = "swiftpkg_swift_argument_parser",
+        commit = "8f4d2753f0e4778c76d5f05ad16c74f707390531",
+        dependencies_index = "@//:swift_deps_index.json",
+        remote = "https://github.com/apple/swift-argument-parser",
+    )
+
     # version: 0.16.4
     swift_package(
         name = "swiftpkg_swiftystorekit",
         commit = "9ce911639680113dac9b554d6243e406a9758ebe",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/bizz84/SwiftyStoreKit.git",
+    )
+
+    # version: 2.9.0
+    swift_package(
+        name = "swiftpkg_xcodeedit",
+        commit = "cd466d6e8c5ffd2f2b61165d37b0646f09068e1e",
+        dependencies_index = "@//:swift_deps_index.json",
+        remote = "https://github.com/tomlokhorst/XcodeEdit",
     )

@@ -116,6 +116,26 @@
       ]
     },
     {
+      "name": "NGCard",
+      "c99name": "NGCard",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGCard",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
+      "name": "NGCardUI",
+      "c99name": "NGCardUI",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGCardUI",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
       "name": "NGCore",
       "c99name": "NGCore",
       "src_type": "swift",
@@ -226,6 +246,103 @@
       ]
     },
     {
+      "name": "RswiftGenerateInternalResources",
+      "c99name": "RswiftGenerateInternalResources",
+      "src_type": "unknown",
+      "label": "@swiftpkg_r.swift//:Plugins_RswiftGenerateInternalResources",
+      "package_identity": "r.swift",
+      "product_memberships": [
+        "RswiftGenerateInternalResources"
+      ]
+    },
+    {
+      "name": "RswiftGeneratePublicResources",
+      "c99name": "RswiftGeneratePublicResources",
+      "src_type": "unknown",
+      "label": "@swiftpkg_r.swift//:Plugins_RswiftGeneratePublicResources",
+      "package_identity": "r.swift",
+      "product_memberships": [
+        "RswiftGeneratePublicResources"
+      ]
+    },
+    {
+      "name": "RswiftGenerateResourcesCommand",
+      "c99name": "RswiftGenerateResourcesCommand",
+      "src_type": "unknown",
+      "label": "@swiftpkg_r.swift//:Plugins_RswiftGenerateResourcesCommand",
+      "package_identity": "r.swift",
+      "product_memberships": [
+        "RswiftGenerateResourcesCommand"
+      ]
+    },
+    {
+      "name": "RswiftModifyXcodePackages",
+      "c99name": "RswiftModifyXcodePackages",
+      "src_type": "unknown",
+      "label": "@swiftpkg_r.swift//:Plugins_RswiftModifyXcodePackages",
+      "package_identity": "r.swift",
+      "product_memberships": [
+        "RswiftModifyXcodePackages"
+      ]
+    },
+    {
+      "name": "RswiftGenerators",
+      "c99name": "RswiftGenerators",
+      "src_type": "swift",
+      "label": "@swiftpkg_r.swift//:Sources_RswiftGenerators",
+      "package_identity": "r.swift",
+      "product_memberships": [
+        "rswift",
+        "RswiftGenerateInternalResources",
+        "RswiftGeneratePublicResources",
+        "RswiftGenerateResourcesCommand",
+        "RswiftModifyXcodePackages"
+      ]
+    },
+    {
+      "name": "RswiftParsers",
+      "c99name": "RswiftParsers",
+      "src_type": "swift",
+      "label": "@swiftpkg_r.swift//:Sources_RswiftParsers",
+      "package_identity": "r.swift",
+      "product_memberships": [
+        "rswift",
+        "RswiftGenerateInternalResources",
+        "RswiftGeneratePublicResources",
+        "RswiftGenerateResourcesCommand",
+        "RswiftModifyXcodePackages"
+      ]
+    },
+    {
+      "name": "RswiftResources",
+      "c99name": "RswiftResources",
+      "src_type": "swift",
+      "label": "@swiftpkg_r.swift//:Sources_RswiftResources",
+      "package_identity": "r.swift",
+      "product_memberships": [
+        "rswift",
+        "RswiftLibrary",
+        "RswiftGenerateInternalResources",
+        "RswiftGeneratePublicResources",
+        "RswiftGenerateResourcesCommand",
+        "RswiftModifyXcodePackages"
+      ]
+    },
+    {
+      "name": "rswift",
+      "c99name": "rswift",
+      "src_type": "swift",
+      "label": "@swiftpkg_r.swift//:Sources_rswift",
+      "package_identity": "r.swift",
+      "product_memberships": [
+        "rswift",
+        "RswiftGenerateInternalResources",
+        "RswiftGeneratePublicResources",
+        "RswiftGenerateResourcesCommand",
+        "RswiftModifyXcodePackages"
+      ]
+    },
+    {
       "name": "SDWebImage",
       "c99name": "SDWebImage",
       "src_type": "objc",
@@ -268,6 +385,48 @@
       ]
     },
     {
+      "name": "GenerateManual",
+      "c99name": "GenerateManual",
+      "src_type": "unknown",
+      "label": "@swiftpkg_swift_argument_parser//:Plugins_GenerateManual",
+      "package_identity": "swift-argument-parser",
+      "product_memberships": [
+        "GenerateManual"
+      ]
+    },
+    {
+      "name": "ArgumentParser",
+      "c99name": "ArgumentParser",
+      "src_type": "swift",
+      "label": "@swiftpkg_swift_argument_parser//:Sources_ArgumentParser",
+      "package_identity": "swift-argument-parser",
+      "product_memberships": [
+        "ArgumentParser",
+        "GenerateManual"
+      ]
+    },
+    {
+      "name": "ArgumentParserToolInfo",
+      "c99name": "ArgumentParserToolInfo",
+      "src_type": "swift",
+      "label": "@swiftpkg_swift_argument_parser//:Sources_ArgumentParserToolInfo",
+      "package_identity": "swift-argument-parser",
+      "product_memberships": [
+        "ArgumentParser",
+        "GenerateManual"
+      ]
+    },
+    {
+      "name": "generate-manual",
+      "c99name": "generate_manual",
+      "src_type": "swift",
+      "label": "@swiftpkg_swift_argument_parser//:Tools_generate-manual",
+      "package_identity": "swift-argument-parser",
+      "product_memberships": [
+        "GenerateManual"
+      ]
+    },
+    {
       "name": "SwiftyStoreKit",
       "c99name": "SwiftyStoreKit",
       "src_type": "swift",
@@ -275,6 +434,16 @@
       "package_identity": "swiftystorekit",
       "product_memberships": [
         "SwiftyStoreKit"
+      ]
+    },
+    {
+      "name": "XcodeEdit",
+      "c99name": "XcodeEdit",
+      "src_type": "swift",
+      "label": "@swiftpkg_xcodeedit//:Sources_XcodeEdit",
+      "package_identity": "xcodeedit",
+      "product_memberships": [
+        "XcodeEdit"
       ]
     }
   ],
@@ -334,8 +503,57 @@
       "target_labels": [
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChatUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGAssistantUI",
+        "@swiftpkg_nicegram_assistant_ios//:Sources_NGCardUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGEntryPoint",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGPremiumUI"
+      ]
+    },
+    {
+      "identity": "r.swift",
+      "name": "RswiftGenerateInternalResources",
+      "type": "plugin",
+      "target_labels": [
+        "@swiftpkg_r.swift//:Plugins_RswiftGenerateInternalResources"
+      ]
+    },
+    {
+      "identity": "r.swift",
+      "name": "RswiftGeneratePublicResources",
+      "type": "plugin",
+      "target_labels": [
+        "@swiftpkg_r.swift//:Plugins_RswiftGeneratePublicResources"
+      ]
+    },
+    {
+      "identity": "r.swift",
+      "name": "RswiftGenerateResourcesCommand",
+      "type": "plugin",
+      "target_labels": [
+        "@swiftpkg_r.swift//:Plugins_RswiftGenerateResourcesCommand"
+      ]
+    },
+    {
+      "identity": "r.swift",
+      "name": "RswiftLibrary",
+      "type": "library",
+      "target_labels": [
+        "@swiftpkg_r.swift//:Sources_RswiftResources"
+      ]
+    },
+    {
+      "identity": "r.swift",
+      "name": "RswiftModifyXcodePackages",
+      "type": "plugin",
+      "target_labels": [
+        "@swiftpkg_r.swift//:Plugins_RswiftModifyXcodePackages"
+      ]
+    },
+    {
+      "identity": "r.swift",
+      "name": "rswift",
+      "type": "executable",
+      "target_labels": [
+        "@swiftpkg_r.swift//:Sources_rswift"
       ]
     },
     {
@@ -379,11 +597,35 @@
       ]
     },
     {
+      "identity": "swift-argument-parser",
+      "name": "ArgumentParser",
+      "type": "library",
+      "target_labels": [
+        "@swiftpkg_swift_argument_parser//:Sources_ArgumentParser"
+      ]
+    },
+    {
+      "identity": "swift-argument-parser",
+      "name": "GenerateManual",
+      "type": "plugin",
+      "target_labels": [
+        "@swiftpkg_swift_argument_parser//:Plugins_GenerateManual"
+      ]
+    },
+    {
       "identity": "swiftystorekit",
       "name": "SwiftyStoreKit",
       "type": "library",
       "target_labels": [
         "@swiftpkg_swiftystorekit//:Sources_SwiftyStoreKit"
+      ]
+    },
+    {
+      "identity": "xcodeedit",
+      "name": "XcodeEdit",
+      "type": "library",
+      "target_labels": [
+        "@swiftpkg_xcodeedit//:Sources_XcodeEdit"
       ]
     }
   ],
@@ -401,9 +643,9 @@
       "name": "swiftpkg_floatingpanel",
       "identity": "floatingpanel",
       "remote": {
-        "commit": "b34f1093defc43027a99834c2135a4381f5c7592",
+        "commit": "debeca1fb27fe2730f5c54bbb4eb22bc9b8f7a44",
         "remote": "https://github.com/scenee/FloatingPanel",
-        "version": "2.6.5"
+        "version": "2.7.0"
       }
     },
     {
@@ -428,9 +670,18 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "50ab1baa50d156f5b94293e828be28a9e845ba58",
+        "commit": "f811119c41b2d12450ac9615b9a74316f91bc414",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
         "branch": "develop"
+      }
+    },
+    {
+      "name": "swiftpkg_r.swift",
+      "identity": "r.swift",
+      "remote": {
+        "commit": "0e4ec17f329136b712d0a96128597b8ff2f31bdc",
+        "remote": "https://github.com/mac-cain13/R.swift.git",
+        "version": "7.3.2"
       }
     },
     {
@@ -461,12 +712,30 @@
       }
     },
     {
+      "name": "swiftpkg_swift_argument_parser",
+      "identity": "swift-argument-parser",
+      "remote": {
+        "commit": "8f4d2753f0e4778c76d5f05ad16c74f707390531",
+        "remote": "https://github.com/apple/swift-argument-parser",
+        "version": "1.2.3"
+      }
+    },
+    {
       "name": "swiftpkg_swiftystorekit",
       "identity": "swiftystorekit",
       "remote": {
         "commit": "9ce911639680113dac9b554d6243e406a9758ebe",
         "remote": "https://github.com/bizz84/SwiftyStoreKit.git",
         "version": "0.16.4"
+      }
+    },
+    {
+      "name": "swiftpkg_xcodeedit",
+      "identity": "xcodeedit",
+      "remote": {
+        "commit": "cd466d6e8c5ffd2f2b61165d37b0646f09068e1e",
+        "remote": "https://github.com/tomlokhorst/XcodeEdit",
+        "version": "2.9.0"
       }
     }
   ]

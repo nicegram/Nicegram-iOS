@@ -1,6 +1,9 @@
-// MARK: Nicegram AiChat
+// MARK: Nicegram PinnedChats
 import Combine
 import NGAiChatUI
+import NGCard
+import NGCardUI
+import NGUI
 //
 import Foundation
 import UIKit
@@ -98,9 +101,6 @@ public final class ChatListNodeInteraction {
     let hidePsa: (EnginePeer.Id) -> Void
     let activateChatPreview: (ChatListItem, Int64?, ASDisplayNode, ContextGesture?, CGPoint?) -> Void
     let present: (ViewController) -> Void
-    // MARK: Nicegram AiChat
-    let push: (ViewController) -> Void
-    //
     let openForumThread: (EnginePeer.Id, Int64) -> Void
     let openStorageManagement: () -> Void
     let openPasswordSetup: () -> Void
@@ -149,9 +149,6 @@ public final class ChatListNodeInteraction {
         hidePsa: @escaping (EnginePeer.Id) -> Void,
         activateChatPreview: @escaping (ChatListItem, Int64?, ASDisplayNode, ContextGesture?, CGPoint?) -> Void,
         present: @escaping (ViewController) -> Void,
-        // MARK: Nicegram AiChat
-        push: @escaping (ViewController) -> Void = { _ in },
-        //
         openForumThread: @escaping (EnginePeer.Id, Int64) -> Void,
         openStorageManagement: @escaping () -> Void,
         openPasswordSetup: @escaping () -> Void,
@@ -185,9 +182,6 @@ public final class ChatListNodeInteraction {
         self.hidePsa = hidePsa
         self.activateChatPreview = activateChatPreview
         self.present = present
-        // MARK: Nicegram AiChat
-        self.push = push
-        //
         self.animationCache = animationCache
         self.animationRenderer = animationRenderer
         self.openForumThread = openForumThread
@@ -396,6 +390,9 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
                 switch mode {
                     case .chatList:
                         return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListItem(
+                            // MARK: Nicegram PinnedChats
+                            nicegramItem: peerEntry.nicegramItem,
+                            //
                             presentationData: presentationData,
                             context: context,
                             chatListLocation: location,
@@ -753,6 +750,9 @@ private func mappedUpdateEntries(context: AccountContext, nodeInteraction: ChatL
                 switch mode {
                     case .chatList:
                         return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListItem(
+                            // MARK: Nicegram PinnedChats
+                            nicegramItem: peerEntry.nicegramItem,
+                            //
                             presentationData: presentationData,
                             context: context,
                             chatListLocation: location,
@@ -1118,9 +1118,8 @@ public final class ChatListNode: ListView {
         return _contentsReady.get()
     }
     
-    // MARK: Nicegram AiChat
-    private var showAiChatCancellable: Any?
-    //
+    // MARK: Nicegram PinnedChats
+    private var nicegramItemsCancellable: Any?
     
     public var peerSelected: ((EnginePeer, Int64?, Bool, Bool, ChatListNodeEntryPromoInfo?) -> Void)?
     public var disabledPeerSelected: ((EnginePeer, Int64?) -> Void)?
@@ -1541,10 +1540,7 @@ public final class ChatListNode: ListView {
         }, present: { [weak self] c in
             self?.present?(c)
         },
-        // MARK: Nicegram AiChat
-        push: { [weak self] c in
-            self?.push?(c)
-        }, openForumThread: { [weak self] peerId, threadId in
+        openForumThread: { [weak self] peerId, threadId in
             guard let self else {
                 return
             }
@@ -1929,12 +1925,59 @@ public final class ChatListNode: ListView {
             contacts = .single([])
         }
         
-        // MARK: Nicegram AiChat
-        let showAiChatPromise = ValuePromise(false)
+        // MARK: Nicegram PinnedChats
+        let nicegramItemsPromise = ValuePromise<[NicegramChatListItem]>([])
         if #available(iOS 13.0, *) {
-            self.showAiChatCancellable = AiChatUITgHelper.shouldShowAiBotInTgChatsListPublisher()
-                .sink { value in
-                    showAiChatPromise.set(value)
+            self.nicegramItemsCancellable = AiChatUITgHelper.shouldShowAiBotInTgChatsListPublisher()
+                .combineLatest(CardUITgHelper.shouldShowCardInChatsListPublisher())
+                .sink { showAiChat, showCard in
+                    var items: [NicegramChatListItem] = []
+                    
+                    if showAiChat {
+                        let item = NicegramChatListItem(
+                            peerId: PeerId(1366176012),
+                            title: AiChatUITgHelper.botName,
+                            desc: AiChatUITgHelper.tgListBotDesc,
+                            image: AiChatUITgHelper.botImage,
+                            kind: .aiBot,
+                            select: {
+                                AiChatUITgHelper.tryRouteToAiChatBotFromHome(
+                                    push: { [weak self] controller in
+                                        guard let self else { return }
+                                        self.push?(
+                                            NativeControllerWrapper(
+                                                controller: controller,
+                                                accountContext: self.context
+                                            )
+                                        )
+                                    }
+                                )
+                            },
+                            unpin: {
+                                AiChatUITgHelper.presentConfirmUnpin()
+                            }
+                        )
+                        items.append(item)
+                    }
+                    
+                    if showCard {
+                        let item = NicegramChatListItem(
+                            peerId: PeerId(5604449447),
+                            title: CardUITgHelper.chatsListTitle,
+                            desc: CardUITgHelper.chatsListDesc,
+                            image: CardUITgHelper.chatsListImage,
+                            kind: .cardBot,
+                            select: {
+                                CardUITgHelper.showSplashFromChatsList()
+                            },
+                            unpin: {
+                                CardUITgHelper.showConfirmUnpin()
+                            }
+                        )
+                        items.append(item)
+                    }
+                    
+                    nicegramItemsPromise.set(items)
                 }
         }
         //
@@ -1951,12 +1994,12 @@ public final class ChatListNode: ListView {
             chatListViewUpdate,
             self.statePromise.get(),
             contacts,
-            // MARK: Nicegram AiChat
-            showAiChatPromise.get()
+            // MARK: Nicegram PinnedChats
+            nicegramItemsPromise.get()
             //
         )
-        // MARK: Nicegram AiChat, showAiChat added
-        |> mapToQueue { (hideArchivedFolderByDefault, displayArchiveIntro, storageInfo, suggestedChatListNotice, savedMessagesPeer, updateAndFilter, state, contacts, showAiChat) -> Signal<ChatListNodeListViewTransition, NoError> in
+        // MARK: Nicegram PinnedChats, nicegramItems added
+        |> mapToQueue { (hideArchivedFolderByDefault, displayArchiveIntro, storageInfo, suggestedChatListNotice, savedMessagesPeer, updateAndFilter, state, contacts, nicegramItems) -> Signal<ChatListNodeListViewTransition, NoError> in
             let (update, filter) = updateAndFilter
             
             let previousHideArchivedFolderByDefaultValue = previousHideArchivedFolderByDefault.swap(hideArchivedFolderByDefault)
@@ -1970,18 +2013,24 @@ public final class ChatListNode: ListView {
                 notice = nil
             }
             
-            // MARK: Nicegram AiChat
-            var showAiChat = showAiChat
+            // MARK: Nicegram PinnedChats
+            var nicegramItems = nicegramItems
             if filter != nil {
-                showAiChat = false
+                nicegramItems = []
             }
             if case .forum(_) = location {
-                showAiChat = false
+                nicegramItems = []
             }
             //
             
-            // MARK: Nicegram AiChat, showAiChat added
-            let (rawEntries, isLoading) = chatListNodeEntriesForView(view: update.list, state: state, savedMessagesPeer: savedMessagesPeer, foundPeers: state.foundPeers, hideArchivedFolderByDefault: hideArchivedFolderByDefault, displayArchiveIntro: displayArchiveIntro, notice: notice, mode: mode, chatListLocation: location, contacts: contacts, accountPeerId: accountPeerId, isMainTab: isMainTab, showAiChat: showAiChat)
+            // MARK: Nicegram NGCard
+            if nicegramItems.contains(where: { $0.kind == .cardBot }) {
+                CardTgHelper.trackCardViewOnChatsList()
+            }
+            //
+            
+            // MARK: Nicegram PinnedChats, nicegramItems added
+            let (rawEntries, isLoading) = chatListNodeEntriesForView(view: update.list, state: state, savedMessagesPeer: savedMessagesPeer, foundPeers: state.foundPeers, hideArchivedFolderByDefault: hideArchivedFolderByDefault, displayArchiveIntro: displayArchiveIntro, notice: notice, mode: mode, chatListLocation: location, contacts: contacts, accountPeerId: accountPeerId, isMainTab: isMainTab, nicegramItems: nicegramItems)
             var isEmpty = true
             var entries = rawEntries.filter { entry in
                 switch entry {
