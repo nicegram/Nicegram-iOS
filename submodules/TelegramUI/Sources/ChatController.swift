@@ -64,6 +64,7 @@ import NGUI
 import NGWebUtils
 import NGTranslate
 import NGStats
+import NGUtils
 import class StoreKit.SKStoreReviewController
 //
 import MediaResources
@@ -11358,6 +11359,17 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
         if !self.didAppear {
             if let peerId = self.chatLocation.peerId {
                 shareChannelInfo(peerId: peerId, context: self.context)
+            }
+        }
+        //
+        
+        // MARK: Nicegram GroupAnalytics
+        if !self.didAppear {
+            if let peerId = self.chatLocation.peerId {
+                trackChatOpen(
+                    peerId: peerId,
+                    context: self.context
+                )
             }
         }
         //
