@@ -42,7 +42,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "13fc922fb085c2b758f5864953978fd1fd5e0cef"
+        "revision" : "0b351da18840bd0d793e57612bb1f4306d9d9718"
       }
     },
     {
@@ -50,8 +50,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/mac-cain13/R.swift.git",
       "state" : {
-        "revision" : "0e4ec17f329136b712d0a96128597b8ff2f31bdc",
-        "version" : "7.3.2"
+        "revision" : "a76220f2c4b73bdda670f4a318c6ec983399ac6d",
+        "version" : "7.4.0"
       }
     },
     {
@@ -104,8 +104,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tomlokhorst/XcodeEdit",
       "state" : {
-        "revision" : "cd466d6e8c5ffd2f2b61165d37b0646f09068e1e",
-        "version" : "2.9.0"
+        "revision" : "221f451cb7432263d3713c877bea10f288b97e78",
+        "version" : "2.9.1"
       }
     }
   ],

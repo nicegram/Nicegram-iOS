@@ -670,7 +670,7 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "13fc922fb085c2b758f5864953978fd1fd5e0cef",
+        "commit": "0b351da18840bd0d793e57612bb1f4306d9d9718",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
         "branch": "develop"
       }
@@ -679,9 +679,9 @@
       "name": "swiftpkg_r.swift",
       "identity": "r.swift",
       "remote": {
-        "commit": "0e4ec17f329136b712d0a96128597b8ff2f31bdc",
+        "commit": "a76220f2c4b73bdda670f4a318c6ec983399ac6d",
         "remote": "https://github.com/mac-cain13/R.swift.git",
-        "version": "7.3.2"
+        "version": "7.4.0"
       }
     },
     {
@@ -733,9 +733,9 @@
       "name": "swiftpkg_xcodeedit",
       "identity": "xcodeedit",
       "remote": {
-        "commit": "cd466d6e8c5ffd2f2b61165d37b0646f09068e1e",
+        "commit": "221f451cb7432263d3713c877bea10f288b97e78",
         "remote": "https://github.com/tomlokhorst/XcodeEdit",
-        "version": "2.9.0"
+        "version": "2.9.1"
       }
     }
   ]

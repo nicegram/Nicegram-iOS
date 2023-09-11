@@ -2,6 +2,7 @@ default_platform :ios
 
 require 'base64'
 require 'fileutils'
+require 'json'
 require 'spaceship'
 
 APP_STORE_CONNECT_API_KEY_ID = ENV["APP_STORE_CONNECT_API_KEY_ID"]
@@ -49,9 +50,13 @@ lane :beta_build do |options|
 end
 
 lane :master_build do |options|
+  versions = JSON.parse(File.read("#{SOURCE_PATH}/versions.json"))
+  app_version = versions["app"]
+
   build_number = latest_testflight_build_number(
     api_key: generate_app_store_connect_api_key(),
-    app_identifier: BUNDLE_ID
+    app_identifier: BUNDLE_ID,
+    version: app_version
   )
 
   sh("echo BUILD_NUMBER=#{build_number} >> $GITHUB_ENV")
