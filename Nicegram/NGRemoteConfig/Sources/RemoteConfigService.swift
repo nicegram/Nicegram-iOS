@@ -84,6 +84,12 @@ extension RemoteConfigServiceImpl: RemoteConfig {
         return self.get(Payload.self, byKey: variable.key) ?? variable.defaultValue
     }
     
+    public func getString(_ variable: RemoteVariable<String>) -> String {
+        firebaseRemoteConfig.getString(
+            byKey: variable.key
+        )
+    }
+    
     @available(iOS 13.0, *)
     public func asyncGet<Payload>(_ variable: RemoteVariable<Payload>) async -> Payload {
         let task = startFetchTaskIfNeeded()

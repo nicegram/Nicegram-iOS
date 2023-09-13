@@ -23,12 +23,8 @@ public class FirebaseRemoteConfigService {
     }
 }
 
-extension FirebaseRemoteConfigService: RemoteConfigService {
-    public func get<T>(_: T.Type, byKey key: String) -> T? where T : Decodable {
-        if T.self == String.self {
-            return remoteConfig.configValue(forKey: key).stringValue as? T
-        }
-        
+public extension FirebaseRemoteConfigService {
+    func get<T>(_: T.Type, byKey key: String) -> T? where T : Decodable {
         let data = remoteConfig.configValue(forKey: key).dataValue
         
         let jsonDecoder = JSONDecoder()
@@ -36,7 +32,15 @@ extension FirebaseRemoteConfigService: RemoteConfigService {
         return (try? jsonDecoder.decode(T.self, from: data))
     }
     
-    public func fetch<T>(_: T.Type, byKey key: String, completion: ((T?) -> ())?) where T : Decodable {
+    func getString(byKey key: String) -> String {
+        remoteConfig
+            .configValue(
+                forKey: key
+            )
+            .stringValue ?? ""
+    }
+    
+    func fetch<T>(_: T.Type, byKey key: String, completion: ((T?) -> ())?) where T : Decodable {
         fetchRemoteConfig { [weak self] in
             completion?(self?.get(T.self, byKey: key))
         }

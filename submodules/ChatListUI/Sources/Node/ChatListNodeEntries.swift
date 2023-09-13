@@ -89,6 +89,9 @@ enum ChatListNotice: Equatable {
 
 enum ChatListNodeEntry: Comparable, Identifiable {
     struct PeerEntryData: Equatable {
+        // MARK: Nicegram PinnedChats
+        var nicegramItem: NicegramChatListItem?
+        //
         var index: EngineChatList.Item.Index
         var presentationData: ChatListPresentationData
         var messages: [EngineMessage]
@@ -114,6 +117,9 @@ enum ChatListNodeEntry: Comparable, Identifiable {
         var storyState: ChatListNodeState.StoryState?
         
         init(
+            // MARK: Nicegram PinnedChats
+            nicegramItem: NicegramChatListItem? = nil,
+            //
             index: EngineChatList.Item.Index,
             presentationData: ChatListPresentationData,
             messages: [EngineMessage],
@@ -138,6 +144,9 @@ enum ChatListNodeEntry: Comparable, Identifiable {
             revealed: Bool,
             storyState: ChatListNodeState.StoryState?
         ) {
+            // MARK: Nicegram PinnedChats
+            self.nicegramItem = nicegramItem
+            //
             self.index = index
             self.presentationData = presentationData
             self.messages = messages
@@ -568,8 +577,8 @@ struct ChatListContactPeer {
     }
 }
 
-// MARK: Nicegram AiChat, showAiChat added
-func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, savedMessagesPeer: EnginePeer?, foundPeers: [(EnginePeer, EnginePeer?)], hideArchivedFolderByDefault: Bool, displayArchiveIntro: Bool, notice: ChatListNotice?, mode: ChatListNodeMode, chatListLocation: ChatListControllerLocation, contacts: [ChatListContactPeer], accountPeerId: EnginePeer.Id, isMainTab: Bool, showAiChat: Bool) -> (entries: [ChatListNodeEntry], loading: Bool) {
+// MARK: Nicegram PinnedChats, nicegramItems added
+func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, savedMessagesPeer: EnginePeer?, foundPeers: [(EnginePeer, EnginePeer?)], hideArchivedFolderByDefault: Bool, displayArchiveIntro: Bool, notice: ChatListNotice?, mode: ChatListNodeMode, chatListLocation: ChatListControllerLocation, contacts: [ChatListContactPeer], accountPeerId: EnginePeer.Id, isMainTab: Bool, nicegramItems: [NicegramChatListItem]) -> (entries: [ChatListNodeEntry], loading: Bool) {
     var groupItems = view.groupItems
     if isMainTab && state.archiveStoryState != nil && groupItems.isEmpty {
         groupItems.append(EngineChatList.GroupItem(
@@ -906,16 +915,30 @@ func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, 
         }
     }
     
-    // MARK: Nicegram AiChat
-    if showAiChat {
+    // MARK: Nicegram PinnedChats
+    for nicegramItem in nicegramItems {
+        let peerId = nicegramItem.peerId
         result.append(.PeerEntry(ChatListNodeEntry.PeerEntryData(
-            index: .chatList(EngineChatList.Item.Index.ChatList.absoluteUpperBound),
+            nicegramItem: nicegramItem,
+            index: .chatList(
+                ChatListIndex(
+                    pinningIndex: nil,
+                    messageIndex: MessageIndex(
+                        id: MessageId(
+                            peerId: peerId,
+                            namespace: 0,
+                            id: 0
+                        ),
+                        timestamp: 0
+                    )
+                )
+            ),
             presentationData: state.presentationData,
             messages: [],
             readState: nil,
             isRemovedFromTotalUnreadCount: false,
             draftState: nil,
-            peer: EngineRenderedPeer(peerId: NicegramConstants.aiChatBotPeerId, peers: [:], associatedMedia: [:]),
+            peer: EngineRenderedPeer(peerId: peerId, peers: [:], associatedMedia: [:]),
             threadInfo: nil,
             presence: nil,
             hasUnseenMentions: false,
@@ -944,8 +967,26 @@ func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, 
     return (result, view.isLoading)
 }
 
-// MARK: Nicegram AiChat
-struct NicegramConstants {
-    static let aiChatBotPeerId = PeerId(1366176012)
+// MARK: Nicegram PinnedChats
+public struct NicegramChatListItem {
+    let peerId: PeerId
+    let title: String
+    let desc: String
+    let image: UIImage?
+    let kind: Kind
+    
+    let select: () -> Void
+    let unpin: () -> Void
+    
+    enum Kind {
+        case aiBot
+        case cardBot
+    }
+}
+
+extension NicegramChatListItem: Equatable {
+    public static func == (lhs: NicegramChatListItem, rhs: NicegramChatListItem) -> Bool {
+        lhs.peerId == rhs.peerId
+    }
 }
 //

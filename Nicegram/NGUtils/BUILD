@@ -8,6 +8,7 @@ swift_library(
     ]),
     deps = [
         "//submodules/AccountContext:AccountContext",
+        "@swiftpkg_nicegram_assistant_ios//:Sources_NGAnalytics",
     ],
     visibility = [
         "//visibility:public",

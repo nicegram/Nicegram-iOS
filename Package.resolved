@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/scenee/FloatingPanel",
       "state" : {
-        "revision" : "b34f1093defc43027a99834c2135a4381f5c7592",
-        "version" : "2.6.5"
+        "revision" : "debeca1fb27fe2730f5c54bbb4eb22bc9b8f7a44",
+        "version" : "2.7.0"
       }
     },
     {
@@ -42,7 +42,16 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "50ab1baa50d156f5b94293e828be28a9e845ba58"
+        "revision" : "13fc922fb085c2b758f5864953978fd1fd5e0cef"
+      }
+    },
+    {
+      "identity" : "r.swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/mac-cain13/R.swift.git",
+      "state" : {
+        "revision" : "0e4ec17f329136b712d0a96128597b8ff2f31bdc",
+        "version" : "7.3.2"
       }
     },
     {
@@ -50,8 +59,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SDWebImage/SDWebImage.git",
       "state" : {
-        "revision" : "633996a807442ec28df9d33b0f88ce57a0e2fdbf",
-        "version" : "5.17.0"
+        "revision" : "36e484b317522667a4b2de9b50daaa01dfa30809",
+        "version" : "5.18.0"
       }
     },
     {
@@ -73,12 +82,30 @@
       }
     },
     {
+      "identity" : "swift-argument-parser",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-argument-parser",
+      "state" : {
+        "revision" : "8f4d2753f0e4778c76d5f05ad16c74f707390531",
+        "version" : "1.2.3"
+      }
+    },
+    {
       "identity" : "swiftystorekit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/bizz84/SwiftyStoreKit.git",
       "state" : {
         "revision" : "9ce911639680113dac9b554d6243e406a9758ebe",
         "version" : "0.16.4"
+      }
+    },
+    {
+      "identity" : "xcodeedit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tomlokhorst/XcodeEdit",
+      "state" : {
+        "revision" : "cd466d6e8c5ffd2f2b61165d37b0646f09068e1e",
+        "version" : "2.9.0"
       }
     }
   ],

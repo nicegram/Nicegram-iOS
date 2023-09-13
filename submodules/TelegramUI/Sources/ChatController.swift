@@ -1,3 +1,6 @@
+// MARK: NGCard
+import NGCard
+//
 import Foundation
 import UIKit
 import Postbox
@@ -61,6 +64,7 @@ import NGUI
 import NGWebUtils
 import NGTranslate
 import NGStats
+import NGUtils
 import class StoreKit.SKStoreReviewController
 //
 import MediaResources
@@ -11340,10 +11344,32 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
 
         super.viewDidAppear(animated)
         
+        // MARK: Nicegram NGCard
+        if !self.didAppear {
+            if let peerId = self.chatLocation.peerId {
+                let int64Id = peerId.id._internalGetInt64Value()
+                if int64Id == CardTgHelper.cardBotId {
+                    CardTgHelper.trackCardBotView()
+                }
+            }
+        }
+        //
+        
         // MARK: Nicegram NGStats
         if !self.didAppear {
             if let peerId = self.chatLocation.peerId {
                 shareChannelInfo(peerId: peerId, context: self.context)
+            }
+        }
+        //
+        
+        // MARK: Nicegram GroupAnalytics
+        if !self.didAppear {
+            if let peerId = self.chatLocation.peerId {
+                trackChatOpen(
+                    peerId: peerId,
+                    context: self.context
+                )
             }
         }
         //
