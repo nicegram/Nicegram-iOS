@@ -306,8 +306,7 @@ public final class AuthorizationSequenceController: NavigationController, MFMail
         if let currentController = currentController {
             controller = currentController
         } else {
-            // MARK: Nicegram AppReviewLogin, isTestingEnvironment added
-            controller = AuthorizationSequenceCodeEntryController(presentationData: self.presentationData, isTestingEnvironment: self.account.testingEnvironment, back: { [weak self] in
+            controller = AuthorizationSequenceCodeEntryController(presentationData: self.presentationData, back: { [weak self] in
                 guard let strongSelf = self else {
                     return
                 }

@@ -36,7 +36,7 @@ def swift_dependencies():
     # branch: develop
     swift_package(
         name = "swiftpkg_nicegram_assistant_ios",
-        commit = "0eb5f9e164cdd077f8f2bef421cd854ca307d0af",
+        commit = "831c51e1d94266c52bd584e5f9e67bc3ee514452",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
     )
@@ -44,9 +44,9 @@ def swift_dependencies():
     # version: 7.3.2
     swift_package(
         name = "swiftpkg_r.swift",
-        commit = "a76220f2c4b73bdda670f4a318c6ec983399ac6d",
+        commit = "d9854928eee74ba3188290e9a283cac6ba9f1c81",
         dependencies_index = "@//:swift_deps_index.json",
-        remote = "https://github.com/mac-cain13/R.swift.git",
+        remote = "https://github.com/denis15yo/R.swift.git",
     )
 
     # version: 5.15.5
@@ -92,7 +92,7 @@ def swift_dependencies():
     # version: 2.9.0
     swift_package(
         name = "swiftpkg_xcodeedit",
-        commit = "221f451cb7432263d3713c877bea10f288b97e78",
+        commit = "b6b67389a0f1a6fdd9c6457a8ab5b02eaab13c5c",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/tomlokhorst/XcodeEdit",
     )
