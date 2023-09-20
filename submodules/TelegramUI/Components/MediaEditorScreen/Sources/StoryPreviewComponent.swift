@@ -250,10 +250,11 @@ final class StoryPreviewComponent: Component {
                     theme: presentationData.theme,
                     strings: presentationData.strings,
                     style: .story,
-                    placeholder: presentationData.strings.Story_InputPlaceholderReplyPrivately,
+                    placeholder: .plain(presentationData.strings.Story_InputPlaceholderReplyPrivately),
                     maxLength: nil,
                     queryTypes: [],
                     alwaysDarkWhenHasText: false,
+                    resetInputContents: nil,
                     nextInputMode: { _ in return .stickers },
                     areVoiceMessagesAvailable: false,
                     presentController: { _ in },
@@ -289,9 +290,12 @@ final class StoryPreviewComponent: Component {
                     bottomInset: 0.0,
                     isFormattingLocked: false,
                     hideKeyboard: false,
+                    customInputView: nil,
                     forceIsEditing: false,
                     disabledPlaceholder: nil,
-                    storyId: nil
+                    isChannel: false,
+                    storyItem: nil,
+                    chatLocation: nil
                 )),
                 environment: {},
                 containerSize: CGSize(width: availableSize.width, height: 200.0)

@@ -1,6 +1,9 @@
 // MARK: Nicegram AiChat
 import NGAiChatUI
 //
+// MARK: Nicegram NuHub
+import FeatNuHubUI
+//
 import Foundation
 import UIKit
 import Postbox
@@ -429,6 +432,10 @@ public enum ChatHistoryListSource {
 
 public final class ChatHistoryListNode: ListView, ChatHistoryNode {
     static let fixedAdMessageStableId: UInt32 = UInt32.max - 5000
+    
+    // MARK: Nicegram NuHub
+    var showNgNuBanner = false
+    //
     
     private let context: AccountContext
     private let chatLocation: ChatLocation
@@ -3331,13 +3338,20 @@ public final class ChatHistoryListNode: ListView, ChatHistoryNode {
     }
         
     public func updateLayout(transition: ContainedViewLayoutTransition, updateSizeAndInsets: ListViewUpdateSizeAndInsets, additionalScrollDistance: CGFloat, scrollToTop: Bool, completion: @escaping () -> Void) {
-        // MARK: Nicegram AiChat
+        
+        // MARK: Nicegram AiChat, NuHub
         var insets = updateSizeAndInsets.insets
+        var additionalBotInset: CGFloat = 0
         if AiChatUITgHelper.shouldShowAiBotInTgChat() {
-            insets.top += 60
+            additionalBotInset = max(additionalBotInset, 60)
         }
+        if showNgNuBanner {
+            additionalBotInset = max(additionalBotInset, NuHubUITgHelper.chatBannerHeight)
+        }
+        insets.top += additionalBotInset
         let updateSizeAndInsets = updateSizeAndInsets.with(insets: insets)
         //
+        
         var scrollToItem: ListViewScrollToItem?
         var postScrollToItem: ListViewScrollToItem?
         if scrollToTop, case .known = self.visibleContentOffset() {

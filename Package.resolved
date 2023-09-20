@@ -41,8 +41,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "7728e5e96e1fe76a62931c703b19be348b17d2a6"
+        "branch" : "nu-hub",
+        "revision" : "0eb5f9e164cdd077f8f2bef421cd854ca307d0af"
       }
     },
     {
@@ -59,8 +59,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SDWebImage/SDWebImage.git",
       "state" : {
-        "revision" : "36e484b317522667a4b2de9b50daaa01dfa30809",
-        "version" : "5.18.0"
+        "revision" : "6e844d19679c9e0833ccc363d7f5a7c5f0c5f5d7",
+        "version" : "5.18.1"
       }
     },
     {

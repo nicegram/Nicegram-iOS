@@ -634,7 +634,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
     func setMessage(_ message: Message, displayInfo: Bool = true, translateToLanguage: String? = nil, peerIsCopyProtected: Bool = false) {
         self.currentMessage = message
         
-        let canDelete: Bool
+        var canDelete: Bool
         var canShare = !message.containsSecretMedia
 
         var canFullscreen = false
@@ -721,6 +721,10 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
         //  MARK: Nicegram CopyProtectedContent
         canShare = shouldShowInterfaceForCopyContent(message: message)
         //
+        
+        if message.containsSecretMedia {
+            canDelete = false
+        }
         
         var authorNameText: String?
         if let forwardInfo = message.forwardInfo, forwardInfo.flags.contains(.isImported), let authorSignature = forwardInfo.authorSignature {
@@ -885,6 +889,10 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
             displayCaption = !self.textNode.isHidden && !isLandscape
         } else {
             displayCaption = !self.textNode.isHidden
+        }
+        
+        if metrics.isTablet {
+            self.fullscreenButton.isHidden = true
         }
         
         var textFrame = CGRect()

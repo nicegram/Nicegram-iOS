@@ -5,6 +5,7 @@ import AsyncDisplayKit
 
 enum RadialStatusIcon {
     case custom(UIImage)
+    case timeout
     case play(UIColor)
     case pause(UIColor)
 }
@@ -20,7 +21,9 @@ private final class RadialStatusIconContentNodeParameters: NSObject {
 }
 
 final class RadialStatusIconContentNode: RadialStatusContentNode {
-    private let icon: RadialStatusIcon
+    let icon: RadialStatusIcon
+    
+    private var animationNode: FireIconNode?
     
     init(icon: RadialStatusIcon, synchronous: Bool) {
         self.icon = icon
@@ -28,8 +31,27 @@ final class RadialStatusIconContentNode: RadialStatusContentNode {
         super.init()
         
         self.displaysAsynchronously = !synchronous
-        self.isLayerBacked = true
+//        self.isLayerBacked = true
         self.isOpaque = false
+        
+        if case .timeout = icon {
+            let animationNode = FireIconNode(animate: true)
+            self.animationNode = animationNode
+            self.addSubnode(animationNode)
+        }
+    }
+    
+    override func layout() {
+        super.layout()
+        
+        var factor: CGFloat = 0.75
+        var offset: CGFloat = 0.0415
+        if self.bounds.width < 30.0 {
+            factor = 1.0
+            offset = 0.0
+        }
+        let size = floorToScreenPixels(self.bounds.width * factor)
+        self.animationNode?.frame = CGRect(x: floorToScreenPixels((self.bounds.width - size) / 2.0), y: ceil(self.bounds.height * offset), width: size, height: size)
     }
     
     override func drawParameters(forAsyncLayer layer: _ASDisplayLayer) -> NSObjectProtocol? {
@@ -48,6 +70,8 @@ final class RadialStatusIconContentNode: RadialStatusContentNode {
         if let parameters = parameters as? RadialStatusIconContentNodeParameters {
             let diameter = min(bounds.size.width, bounds.size.height)
             switch parameters.icon {
+                case .timeout:
+                    break
                 case let .play(color):
                     context.setFillColor(color.cgColor)
                     

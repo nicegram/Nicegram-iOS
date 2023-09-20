@@ -46,6 +46,36 @@
       ]
     },
     {
+      "name": "CoreSwiftUI",
+      "c99name": "CoreSwiftUI",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_CoreSwiftUI",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
+      "name": "FeatNuHub",
+      "c99name": "FeatNuHub",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatNuHub",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
+      "name": "FeatNuHubUI",
+      "c99name": "FeatNuHubUI",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatNuHubUI",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
       "name": "NGAiChat",
       "c99name": "NGAiChat",
       "src_type": "swift",
@@ -501,6 +531,7 @@
       "name": "nicegram-assistant",
       "type": "library",
       "target_labels": [
+        "@swiftpkg_nicegram_assistant_ios//:Sources_FeatNuHubUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChatUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGAssistantUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGCardUI",
@@ -670,9 +701,9 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "7728e5e96e1fe76a62931c703b19be348b17d2a6",
+        "commit": "0eb5f9e164cdd077f8f2bef421cd854ca307d0af",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
-        "branch": "develop"
+        "branch": "nu-hub"
       }
     },
     {
@@ -688,9 +719,9 @@
       "name": "swiftpkg_sdwebimage",
       "identity": "sdwebimage",
       "remote": {
-        "commit": "36e484b317522667a4b2de9b50daaa01dfa30809",
+        "commit": "6e844d19679c9e0833ccc363d7f5a7c5f0c5f5d7",
         "remote": "https://github.com/SDWebImage/SDWebImage.git",
-        "version": "5.18.0"
+        "version": "5.18.1"
       }
     },
     {

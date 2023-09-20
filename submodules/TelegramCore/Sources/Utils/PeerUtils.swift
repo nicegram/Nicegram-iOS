@@ -15,6 +15,17 @@ public extension Peer {
         }
     }
     
+    // MARK: Nicegram
+    func restrictionReason(contentSettings: ContentSettings) -> String? {
+        restrictionText(platform: "ios", contentSettings: contentSettings, extractReason: true)
+    }
+    
+    func hasPornRestriction(contentSettings: ContentSettings) -> Bool {
+        let reason = restrictionReason(contentSettings: contentSettings)
+        return reason?.contains("porn") ?? false
+    }
+    //
+    
     // MARK: Nicegram (extractReason)
     func restrictionText(platform: String, contentSettings: ContentSettings, extractReason: Bool = false) -> String? {
         var restrictionInfo: PeerAccessRestrictionInfo?

@@ -510,8 +510,8 @@ public extension TelegramEngine {
             return _internal_requestWebView(postbox: self.account.postbox, network: self.account.network, stateManager: self.account.stateManager, peerId: peerId, botId: botId, url: url, payload: payload, themeParams: themeParams, fromMenu: fromMenu, replyToMessageId: replyToMessageId, threadId: threadId)
         }
         
-        public func requestSimpleWebView(botId: PeerId, url: String, inline: Bool, themeParams: [String: Any]?) -> Signal<String, RequestSimpleWebViewError> {
-            return _internal_requestSimpleWebView(postbox: self.account.postbox, network: self.account.network, botId: botId, url: url, inline: inline, themeParams: themeParams)
+        public func requestSimpleWebView(botId: PeerId, url: String?, source: RequestSimpleWebViewSource, themeParams: [String: Any]?) -> Signal<String, RequestSimpleWebViewError> {
+            return _internal_requestSimpleWebView(postbox: self.account.postbox, network: self.account.network, botId: botId, url: url, source: source, themeParams: themeParams)
         }
         
         public func requestAppWebView(peerId: PeerId, appReference: BotAppReference, payload: String?, themeParams: [String: Any]?, allowWrite: Bool) -> Signal<String, RequestAppWebViewError> {
@@ -521,6 +521,18 @@ public extension TelegramEngine {
         public func sendWebViewData(botId: PeerId, buttonText: String, data: String) -> Signal<Never, SendWebViewDataError> {
             return _internal_sendWebViewData(postbox: self.account.postbox, network: self.account.network, stateManager: self.account.stateManager, botId: botId, buttonText: buttonText, data: data)
         }
+        
+        public func canBotSendMessages(botId: PeerId) -> Signal<Bool, NoError> {
+            return _internal_canBotSendMessages(postbox: self.account.postbox, network: self.account.network, botId: botId)
+        }
+
+        public func allowBotSendMessages(botId: PeerId) -> Signal<Never, NoError> {
+            return _internal_allowBotSendMessages(postbox: self.account.postbox, network: self.account.network, stateManager: self.account.stateManager, botId: botId)
+        }
+
+        public func invokeBotCustomMethod(botId: PeerId, method: String, params: String) -> Signal<String, InvokeBotCustomMethodError> {
+            return _internal_invokeBotCustomMethod(postbox: self.account.postbox, network: self.account.network, botId: botId, method: method, params: params)
+        }
                 
         public func addBotToAttachMenu(botId: PeerId, allowWrite: Bool) -> Signal<Bool, AddBotToAttachMenuError> {
             return _internal_addBotToAttachMenu(accountPeerId: self.account.peerId, postbox: self.account.postbox, network: self.account.network, botId: botId, allowWrite: allowWrite)
@@ -528,6 +540,10 @@ public extension TelegramEngine {
         
         public func removeBotFromAttachMenu(botId: PeerId) -> Signal<Bool, NoError> {
             return _internal_removeBotFromAttachMenu(accountPeerId: self.account.peerId, postbox: self.account.postbox, network: self.account.network, botId: botId)
+        }
+        
+        public func acceptAttachMenuBotDisclaimer(botId: PeerId) -> Signal<Never, NoError> {
+            return _internal_acceptAttachMenuBotDisclaimer(postbox: self.account.postbox, botId: botId)
         }
         
         public func getAttachMenuBot(botId: PeerId, cached: Bool = false) -> Signal<AttachMenuBot, GetAttachMenuBotError> {

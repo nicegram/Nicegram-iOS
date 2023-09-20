@@ -6,6 +6,9 @@ import NGRemoteConfig
 import NGStrings
 import UndoUI
 //
+// MARK: Nicegram NuHub
+import FeatNuHubUI
+//
 import Foundation
 import UIKit
 import AsyncDisplayKit
@@ -201,6 +204,10 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
             return ASDisplayNode()
         }
     }()
+    //
+    
+    // MARK: Nicegram NuHub
+    private let ngNuBannerNode = ASDisplayNode()
     //
     
     let navigateButtons: ChatHistoryNavigationButtons
@@ -681,6 +688,21 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
             self.addSubnode(self.ngAiOverlayNode)
         }
         //
+        
+        // MARK: Nicegram NuHub
+        if #available(iOS 15.0, *), let controller {
+            self.addSubnode(self.ngNuBannerNode)
+            NuHubUITgHelper.showChatBanner(
+                view: self.ngNuBannerNode.view,
+                controller: controller,
+                close: { [weak self] in
+                    self?.setNgNuBanner(hidden: true)
+                }
+            )
+        }
+        self.ngNuBannerNode.isHidden = true
+        //
+        
         self.addSubnode(self.presentationContextMarker)
         self.contentContainerNode.addSubnode(self.contentDimNode)
 
@@ -856,6 +878,38 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
             }
         })
     }
+    
+    // MARK: Nicegram NuHub
+    @available(iOS 15.0, *)
+    private func updateNgNuBannerVisibility() {
+        guard let peer = self.chatPresentationInterfaceState.renderedPeer?.peer else {
+            return
+        }
+        
+        let hasPornRestriction = peer.hasPornRestriction(
+            contentSettings: self.context.currentContentSettings.with { $0 }
+        )
+        
+        let show = NuHubUITgHelper.shouldShowNuHubInChat() && hasPornRestriction
+        
+        setNgNuBanner(hidden: !show)
+    }
+    
+    private func setNgNuBanner(hidden: Bool) {
+        guard self.ngNuBannerNode.isHidden != hidden else {
+            return
+        }
+        
+        self.ngNuBannerNode.isHidden = hidden
+        self.historyNode.showNgNuBanner = !hidden
+        self.updateLayoutInternal(
+            transition: .animated(
+                duration: 0.3,
+                curve: .linear
+            )
+        )
+    }
+    //
     
     private func updateIsEmpty(_ emptyType: ChatHistoryNodeLoadState.EmptyType?, wasLoading: Bool, animated: Bool) {
         self.emptyType = emptyType
@@ -1906,6 +1960,24 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
             )
         )
         //
+        
+        // MARK: Nicegram NuHub
+        let bannerHeight = NuHubUITgHelper.chatBannerHeight
+        
+        transition.updateFrame(
+            node: self.ngNuBannerNode,
+            frame: CGRect(
+                origin: CGPoint(
+                    x: 0,
+                    y: apparentNavigateButtonsFrame.maxY - bannerHeight
+                ),
+                size: CGSize(
+                    width: layout.size.width,
+                    height: bannerHeight
+                )
+            )
+        )
+        //
     
         if let titleAccessoryPanelNode = self.titleAccessoryPanelNode, let titleAccessoryPanelFrame = titleAccessoryPanelFrame, !titleAccessoryPanelNode.frame.equalTo(titleAccessoryPanelFrame) {
             titleAccessoryPanelNode.frame = titleAccessoryPanelFrame
@@ -2490,7 +2562,13 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
             if hideUnblock {
                 showUnblockButton = false
             }
+            
+            // MARK: Nicegram NuHub
+            if #available(iOS 15.0, *) {
+                updateNgNuBannerVisibility()
+            }
             //
+            
             if let restrictionText = restrictionText {
                 if self.restrictedNode == nil {
                     let restrictedNode = ChatRecentActionsEmptyNode(theme: chatPresentationInterfaceState.theme, chatWallpaper: chatPresentationInterfaceState.chatWallpaper, chatBubbleCorners: chatPresentationInterfaceState.bubbleCorners)

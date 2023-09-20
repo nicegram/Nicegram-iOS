@@ -10,6 +10,7 @@
 
 import AccountContext
 import Display
+import FeatNuHubUI
 import Foundation
 import ItemListUI
 import NGData
@@ -23,10 +24,10 @@ import TelegramNotices
 import TelegramPresentationData
 import TelegramUIPreferences
 import UIKit
+import class NGCoreUI.SharedLoadingView
 import NGEnv
 import NGWebUtils
 import NGAppCache
-import NGLoadingIndicator
 import NGDoubleBottom
 import NGQuickReplies
 import NGRemoteConfig
@@ -115,6 +116,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     case shareChannelsInfoToggle(String, Bool)
     case shareChannelsInfoNote(String)
     
+    case showNuInChatsList(Bool)
 
     // MARK: Section
 
@@ -138,6 +140,8 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return NicegramSettingsControllerSection.SecretMenu.rawValue
         case .shareChannelsInfoToggle, .shareChannelsInfoNote:
             return NicegramSettingsControllerSection.ShareChannelsInfo.rawValue
+        case .showNuInChatsList:
+            return NicegramSettingsControllerSection.Unblock.rawValue
         }
     }
 
@@ -212,6 +216,9 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return 6000
         case .shareChannelsInfoNote:
             return 6001
+            
+        case .showNuInChatsList:
+            return 6100
         }
     }
 
@@ -369,6 +376,12 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
+        case let .showNuInChatsList(lhsValue):
+            if case let .showNuInChatsList(rhsValue) = rhs, lhsValue == rhsValue {
+                return true
+            } else {
+                return false
+            }
         }
     }
 
@@ -486,7 +499,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: section)
         case let .restorePremium(text, id):
             return ItemListActionItem(presentationData: presentationData, title: text, kind: .neutral, alignment: .natural, sectionId: section, style: .blocks) {
-                NGLoadingIndicator.shared.startAnimating()
+                SharedLoadingView.start()
                 guard var urlComponents = URLComponents(string: NGENV.restore_url) else { return }
                 urlComponents.queryItems = [
                     URLQueryItem(name: "id", value: id)
@@ -503,7 +516,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                         200 ..< 300 ~= response.statusCode,           // is statusCode 2XX
                         error == nil                                  // was there no error
                     else {
-                        NGLoadingIndicator.shared.stopAnimating()
+                        SharedLoadingView.stop()
                         DispatchQueue.main.async {
                             let controller = standardTextAlertController(
                                 theme: AlertControllerTheme(presentationData: arguments.context.sharedContext.currentPresentationData.with { $0 }),
@@ -519,7 +532,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                     }
                     let responseObject = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
 
-                    NGLoadingIndicator.shared.stopAnimating()
+                    SharedLoadingView.stop()
 
                     if let premiumData = responseObject?["data"] as? [String: Any], let premiumAccess = premiumData["premiumAccess"] as? Bool {
                         if premiumAccess {
@@ -568,6 +581,14 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             })
         case let .shareChannelsInfoNote(text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: section)
+        case let .showNuInChatsList(value):
+            if #available(iOS 15.0, *) {
+                return ItemListSwitchItem(presentationData: presentationData, title: NuHubUITgHelper.showInChatsListTitle, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
+                    NuHubUITgHelper.set(showNuHubInChatsList: value)
+                })
+            } else {
+                return ItemListTextItem(presentationData: presentationData, text: .plain("Not svailable"), sectionId: section)
+            }
         }
     }
 }
@@ -663,6 +684,11 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     
     entries.append(.shareChannelsInfoToggle(l("NicegramSettings.ShareChannelsInfoToggle", locale), isShareChannelsInfoEnabled()))
     entries.append(.shareChannelsInfoNote(l("NicegramSettings.ShareChannelsInfoToggle.Note", locale)))
+    
+    if #available(iOS 15.0, *),
+       NuHubUITgHelper.isNuOnChatsListAvailable() {
+        entries.append(.showNuInChatsList(NuHubUITgHelper.getShowNuHubInChatsList()))
+    }
     
     return entries
 }
