@@ -2,7 +2,7 @@ load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
 NGDEPS = [
     "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChatUI",
-    "@swiftpkg_nicegram_assistant_ios//:Sources_FeatNuHubUI",
+    "@swiftpkg_nicegram_assistant_ios//:Sources_FeatImagesHubUI",
 ]
 
 swift_library(

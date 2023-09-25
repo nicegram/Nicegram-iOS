@@ -56,20 +56,20 @@
       ]
     },
     {
-      "name": "FeatNuHub",
-      "c99name": "FeatNuHub",
+      "name": "FeatImagesHub",
+      "c99name": "FeatImagesHub",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatNuHub",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatImagesHub",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
         "nicegram-assistant"
       ]
     },
     {
-      "name": "FeatNuHubUI",
-      "c99name": "FeatNuHubUI",
+      "name": "FeatImagesHubUI",
+      "c99name": "FeatImagesHubUI",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatNuHubUI",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatImagesHubUI",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
         "nicegram-assistant"
@@ -531,7 +531,7 @@
       "name": "nicegram-assistant",
       "type": "library",
       "target_labels": [
-        "@swiftpkg_nicegram_assistant_ios//:Sources_FeatNuHubUI",
+        "@swiftpkg_nicegram_assistant_ios//:Sources_FeatImagesHubUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChatUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGAssistantUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGCardUI",
@@ -701,16 +701,16 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "831c51e1d94266c52bd584e5f9e67bc3ee514452",
+        "commit": "797efa7eae4a280b4e38351806615e25005050b7",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
-        "branch": "nu-hub"
+        "branch": "develop"
       }
     },
     {
       "name": "swiftpkg_r.swift",
       "identity": "r.swift",
       "remote": {
-        "commit": "d9854928eee74ba3188290e9a283cac6ba9f1c81",
+        "commit": "77c0d9c202b9ac83c1992111b76b3fb10468015b",
         "remote": "https://github.com/denis15yo/R.swift.git",
         "branch": "main"
       }
@@ -719,9 +719,9 @@
       "name": "swiftpkg_sdwebimage",
       "identity": "sdwebimage",
       "remote": {
-        "commit": "6e844d19679c9e0833ccc363d7f5a7c5f0c5f5d7",
+        "commit": "936f1c7067728d16c362ba4fb93c17df78b5fd79",
         "remote": "https://github.com/SDWebImage/SDWebImage.git",
-        "version": "5.18.1"
+        "version": "5.18.2"
       }
     },
     {

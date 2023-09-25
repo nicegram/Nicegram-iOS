@@ -13,6 +13,8 @@ public class LottieViewImpl: UIView {
     public override init(frame: CGRect) {
         super.init(frame: frame)
         
+        animationView.backgroundBehavior = .pauseAndRestore
+        
         addSubview(animationView)
         animationView.snp.makeConstraints { make in
             make.edges.equalToSuperview()

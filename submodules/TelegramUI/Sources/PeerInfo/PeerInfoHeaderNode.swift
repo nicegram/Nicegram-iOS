@@ -425,6 +425,7 @@ final class PeerInfoAvatarTransformContainerNode: ASDisplayNode {
     private let playbackStartDisposable = MetaDisposable()
     
     var storyData: (totalCount: Int, unseenCount: Int, hasUnseenCloseFriends: Bool)?
+    var storyProgress: Float?
     
     init(context: AccountContext) {
         self.context = context
@@ -463,13 +464,23 @@ final class PeerInfoAvatarTransformContainerNode: ASDisplayNode {
             theme.list.controlSecondaryColor,
             theme.list.controlSecondaryColor
         ]
-        self.avatarNode.setStoryStats(storyStats: self.storyData.flatMap { storyData in
-            return AvatarNode.StoryStats(
+        var storyStats: AvatarNode.StoryStats?
+        if let storyData = self.storyData {
+            storyStats = AvatarNode.StoryStats(
                 totalCount: storyData.totalCount,
                 unseenCount: storyData.unseenCount,
-                hasUnseenCloseFriendsItems: storyData.hasUnseenCloseFriends
+                hasUnseenCloseFriendsItems: storyData.hasUnseenCloseFriends,
+                progress: self.storyProgress
             )
-        }, presentationParams: AvatarNode.StoryPresentationParams(
+        } else if let storyProgress = self.storyProgress {
+            storyStats = AvatarNode.StoryStats(
+                totalCount: 1,
+                unseenCount: 1,
+                hasUnseenCloseFriendsItems: false,
+                progress: storyProgress
+            )
+        }
+        self.avatarNode.setStoryStats(storyStats: storyStats, presentationParams: AvatarNode.StoryPresentationParams(
             colors: colors,
             lineWidth: 3.0,
             inactiveLineWidth: 1.5
@@ -1402,6 +1413,8 @@ final class PeerInfoHeaderNavigationButton: HighlightableButtonNode {
             if self.isWhite != oldValue {
                 if case .qrCode = self.key, let theme = self.theme {
                     self.iconNode.image = self.isWhite ? generateTintedImage(image: PresentationResourcesRootController.navigationQrCodeIcon(theme), color: .white) : PresentationResourcesRootController.navigationQrCodeIcon(theme)
+                } else if case .postStory = self.key, let theme = self.theme {
+                    self.iconNode.image = self.isWhite ? generateTintedImage(image: PresentationResourcesRootController.navigationPostStoryIcon(theme), color: .white) : PresentationResourcesRootController.navigationPostStoryIcon(theme)
                 }
                 
                 self.regularTextNode.isHidden = self.isWhite
@@ -1503,6 +1516,10 @@ final class PeerInfoHeaderNavigationButton: HighlightableButtonNode {
                 case .moreToSearch:
                     text = ""
                     accessibilityText = ""
+                case .postStory:
+                    text = ""
+                    accessibilityText = presentationData.strings.Story_Privacy_PostStory
+                    icon = PresentationResourcesRootController.navigationPostStoryIcon(presentationData.theme)
             }
             self.accessibilityLabel = accessibilityText
             self.containerNode.isGestureEnabled = isGestureEnabled
@@ -1582,6 +1599,7 @@ enum PeerInfoHeaderNavigationButtonKey {
     case more
     case qrCode
     case moreToSearch
+    case postStory
 }
 
 struct PeerInfoHeaderNavigationButtonSpec: Equatable {
@@ -1631,7 +1649,6 @@ final class PeerInfoHeaderNavigationButtonContainerNode: SparseNode {
                     buttonNode = PeerInfoHeaderNavigationButton()
                     self.leftButtonNodes[spec.key] = buttonNode
                     self.addSubnode(buttonNode)
-                    buttonNode.isWhite = self.isWhite
                     buttonNode.action = { [weak self] _, gesture in
                         guard let strongSelf = self, let buttonNode = strongSelf.leftButtonNodes[spec.key] else {
                             return
@@ -1653,6 +1670,8 @@ final class PeerInfoHeaderNavigationButtonContainerNode: SparseNode {
                     buttonNode.frame = buttonFrame
                     buttonNode.alpha = 0.0
                     transition.updateAlpha(node: buttonNode, alpha: alphaFactor * alphaFactor)
+                    
+                    buttonNode.isWhite = self.isWhite
                 } else {
                     transition.updateFrameAdditiveToCenter(node: buttonNode, frame: buttonFrame)
                     transition.updateAlpha(node: buttonNode, alpha: alphaFactor * alphaFactor)
@@ -1716,7 +1735,6 @@ final class PeerInfoHeaderNavigationButtonContainerNode: SparseNode {
                     buttonNode = PeerInfoHeaderNavigationButton()
                     self.rightButtonNodes[key] = buttonNode
                     self.addSubnode(buttonNode)
-                    buttonNode.isWhite = self.isWhite
                 }
                 buttonNode.action = { [weak self] _, gesture in
                     guard let strongSelf = self, let buttonNode = strongSelf.rightButtonNodes[key] else {
@@ -1726,7 +1744,10 @@ final class PeerInfoHeaderNavigationButtonContainerNode: SparseNode {
                 }
                 let buttonSize = buttonNode.update(key: spec.key, presentationData: presentationData, height: size.height)
                 var nextButtonOrigin = spec.isForExpandedView ? nextExpandedButtonOrigin : nextRegularButtonOrigin
-                let buttonFrame = CGRect(origin: CGPoint(x: nextButtonOrigin - buttonSize.width, y: expandOffset + (spec.isForExpandedView ? maximumExpandOffset : 0.0)), size: buttonSize)
+                var buttonFrame = CGRect(origin: CGPoint(x: nextButtonOrigin - buttonSize.width, y: expandOffset + (spec.isForExpandedView ? maximumExpandOffset : 0.0)), size: buttonSize)
+                if case .postStory = spec.key {
+                    buttonFrame.origin.x -= 12.0
+                }
                 nextButtonOrigin -= buttonSize.width + 4.0
                 if spec.isForExpandedView {
                     nextExpandedButtonOrigin = nextButtonOrigin
@@ -1735,6 +1756,8 @@ final class PeerInfoHeaderNavigationButtonContainerNode: SparseNode {
                 }
                 let alphaFactor: CGFloat = spec.isForExpandedView ? expandFraction : (1.0 - expandFraction)
                 if wasAdded {
+                    buttonNode.isWhite = self.isWhite
+                    
                     if key == .moreToSearch {
                         buttonNode.layer.animateScale(from: 0.001, to: 1.0, duration: 0.2)
                     }
@@ -1782,7 +1805,10 @@ final class PeerInfoHeaderNavigationButtonContainerNode: SparseNode {
                 if let buttonNode = self.rightButtonNodes[key] {
                     let buttonSize = buttonNode.bounds.size
                     var nextButtonOrigin = spec.isForExpandedView ? nextExpandedButtonOrigin : nextRegularButtonOrigin
-                    let buttonFrame = CGRect(origin: CGPoint(x: nextButtonOrigin - buttonSize.width, y: expandOffset + (spec.isForExpandedView ? maximumExpandOffset : 0.0)), size: buttonSize)
+                    var buttonFrame = CGRect(origin: CGPoint(x: nextButtonOrigin - buttonSize.width, y: expandOffset + (spec.isForExpandedView ? maximumExpandOffset : 0.0)), size: buttonSize)
+                    if case .postStory = spec.key {
+                        buttonFrame.origin.x -= 12.0
+                    }
                     nextButtonOrigin -= buttonSize.width + 4.0
                     if spec.isForExpandedView {
                         nextExpandedButtonOrigin = nextButtonOrigin

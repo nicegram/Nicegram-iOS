@@ -10,7 +10,7 @@
 
 import AccountContext
 import Display
-import FeatNuHubUI
+import FeatImagesHubUI
 import Foundation
 import ItemListUI
 import NGData
@@ -27,7 +27,10 @@ import UIKit
 import class NGCoreUI.SharedLoadingView
 import NGEnv
 import NGWebUtils
+import NGAiChatUI
+import NGCardUI
 import NGAppCache
+import var NGCoreUI.strings
 import NGDoubleBottom
 import NGQuickReplies
 import NGRemoteConfig
@@ -68,6 +71,7 @@ private enum NicegramSettingsControllerSection: Int32 {
     case Other
     case QuickReplies
     case ShareChannelsInfo
+    case PinnedBots
 }
 
 
@@ -87,6 +91,17 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     case showContactsTab(String, Bool)
     case showCallsTab(String, Bool)
     case showTabNames(String, Bool)
+    
+    case pinnedBotsHeader
+    
+    @available(iOS 13.0, *)
+    case aiPin
+    
+    @available(iOS 13.0, *)
+    case pstPin
+    
+    @available(iOS 15.0, *)
+    case imagesHubPin
 
     case FoldersHeader(String)
     case foldersAtBottom(String, Bool)
@@ -115,8 +130,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     
     case shareChannelsInfoToggle(String, Bool)
     case shareChannelsInfoNote(String)
-    
-    case showNuInChatsList(Bool)
 
     // MARK: Section
 
@@ -140,8 +153,8 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return NicegramSettingsControllerSection.SecretMenu.rawValue
         case .shareChannelsInfoToggle, .shareChannelsInfoNote:
             return NicegramSettingsControllerSection.ShareChannelsInfo.rawValue
-        case .showNuInChatsList:
-            return NicegramSettingsControllerSection.Unblock.rawValue
+        case .pinnedBotsHeader, .aiPin, .pstPin, .imagesHubPin:
+            return NicegramSettingsControllerSection.PinnedBots.rawValue
         }
     }
 
@@ -178,6 +191,15 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
         case .foldersAtBottomNotice:
             return 1900
+            
+        case .pinnedBotsHeader:
+            return 1950
+        case .aiPin:
+            return 1951
+        case .pstPin:
+            return 1952
+        case .imagesHubPin:
+            return 1953
 
         case .RoundVideosHeader:
             return 2000
@@ -216,9 +238,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return 6000
         case .shareChannelsInfoNote:
             return 6001
-            
-        case .showNuInChatsList:
-            return 6100
         }
     }
 
@@ -376,8 +395,26 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
-        case let .showNuInChatsList(lhsValue):
-            if case let .showNuInChatsList(rhsValue) = rhs, lhsValue == rhsValue {
+        case .pinnedBotsHeader:
+            if case .pinnedBotsHeader = rhs {
+                return true
+            } else {
+                return false
+            }
+        case .aiPin:
+            if case .aiPin = rhs {
+                return true
+            } else {
+                return false
+            }
+        case .pstPin:
+            if case .pstPin = rhs {
+                return true
+            } else {
+                return false
+            }
+        case .imagesHubPin:
+            if case .imagesHubPin = rhs {
                 return true
             } else {
                 return false
@@ -581,13 +618,59 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             })
         case let .shareChannelsInfoNote(text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: section)
-        case let .showNuInChatsList(value):
-            if #available(iOS 15.0, *) {
-                return ItemListSwitchItem(presentationData: presentationData, title: NuHubUITgHelper.showInChatsListTitle, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
-                    NuHubUITgHelper.set(showNuHubInChatsList: value)
-                })
+        case .pinnedBotsHeader:
+            return ItemListSectionHeaderItem(
+                presentationData: presentationData,
+                text: NGCoreUI.strings.ngSettingsPinnedChats().localizedUppercase,
+                sectionId: section
+            )
+        case .aiPin:
+            if #available(iOS 13.0, *) {
+                return ItemListSwitchItem(
+                    presentationData: presentationData,
+                    title: AiChatUITgHelper.showInChatsListToggle,
+                    value: AiChatUITgHelper.getShowAiInChatsList(),
+                    enabled: true,
+                    sectionId: section,
+                    style: .blocks,
+                    updated: { value in
+                        AiChatUITgHelper.set(showAiInChatsList: value)
+                    }
+                )
             } else {
-                return ItemListTextItem(presentationData: presentationData, text: .plain("Not svailable"), sectionId: section)
+                fatalError()
+            }
+        case .pstPin:
+            if #available(iOS 13.0.0, *) {
+                return ItemListSwitchItem(
+                    presentationData: presentationData,
+                    title: CardUITgHelper.showInChatsListToggle,
+                    value: CardUITgHelper.getShowCardInChatsList(),
+                    enabled: true,
+                    sectionId: section,
+                    style: .blocks,
+                    updated: { value in
+                        CardUITgHelper.set(showCardInChatsList: value)
+                    }
+                )
+            } else {
+                fatalError()
+            }
+        case .imagesHubPin:
+            if #available(iOS 15.0, *) {
+                return ItemListSwitchItem(
+                    presentationData: presentationData,
+                    title: ImagesHubUITgHelper.showInChatsListToggle,
+                    value: ImagesHubUITgHelper.getShowImagesHubInChatsList(),
+                    enabled: true,
+                    sectionId: section,
+                    style: .blocks,
+                    updated: { value in
+                        ImagesHubUITgHelper.set(showImagesHubInChatsList: value)
+                    }
+                )
+            } else {
+                fatalError()
             }
         }
     }
@@ -633,6 +716,23 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     entries.append(.foldersAtBottomNotice(
         l("NicegramSettings.Folders.foldersAtBottomNotice", locale)
     ))
+    
+    entries.append(.pinnedBotsHeader)
+    
+    if #available(iOS 13.0, *),
+       AiChatUITgHelper.isAiOnChatsListAvailable() {
+        entries.append(.aiPin)
+    }
+    
+    if #available(iOS 13.0, *),
+       CardUITgHelper.isCardOnChatsListAvailable() {
+        entries.append(.pstPin)
+    }
+    
+    if #available(iOS 15.0, *),
+       ImagesHubUITgHelper.isImagesHubOnChatsListAvailable() {
+        entries.append(.imagesHubPin)
+    }
 
     entries.append(.RoundVideosHeader(l("NicegramSettings.RoundVideos",
                                         locale)))
@@ -684,11 +784,6 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     
     entries.append(.shareChannelsInfoToggle(l("NicegramSettings.ShareChannelsInfoToggle", locale), isShareChannelsInfoEnabled()))
     entries.append(.shareChannelsInfoNote(l("NicegramSettings.ShareChannelsInfoToggle.Note", locale)))
-    
-    if #available(iOS 15.0, *),
-       NuHubUITgHelper.isNuOnChatsListAvailable() {
-        entries.append(.showNuInChatsList(NuHubUITgHelper.getShowNuHubInChatsList()))
-    }
     
     return entries
 }

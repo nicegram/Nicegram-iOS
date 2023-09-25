@@ -260,7 +260,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
         fileprivate var webView: WebAppWebView?
         private var placeholderIcon: (UIImage, Bool)?
         private var placeholderNode: ShimmerEffectNode?
-    
+            
         fileprivate let loadingProgressPromise = Promise<CGFloat?>(nil)
         
         fileprivate var mainButtonState: AttachmentMainButtonState? {
@@ -495,7 +495,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
             }
          
             let theme = self.presentationData.theme
-            self.placeholderNode?.update(backgroundColor: self.backgroundColor ?? .clear, foregroundColor: theme.list.mediaPlaceholderColor, shimmeringColor: theme.list.itemBlocksBackgroundColor.withAlphaComponent(0.4), shapes: shapes, horizontal: true, size: placeholderSize)
+            self.placeholderNode?.update(backgroundColor: .clear, foregroundColor: theme.list.mediaPlaceholderColor, shimmeringColor: theme.list.itemBlocksBackgroundColor.withAlphaComponent(0.4), shapes: shapes, horizontal: true, size: placeholderSize, mask: true)
             
             return placeholderSize
         }
@@ -528,6 +528,9 @@ public final class WebAppController: ViewController, AttachmentContainable {
             
             let transition = ContainedViewLayoutTransition.animated(duration: 0.2, curve: .linear)
             transition.updateAlpha(layer: webView.layer, alpha: 1.0)
+            
+            self.updateHeaderBackgroundColor(transition: transition)
+            
             if let placeholderNode = self.placeholderNode {
                 self.placeholderNode = nil
                 transition.updateAlpha(node: placeholderNode, alpha: 0.0, completion: { [weak placeholderNode] _ in
@@ -1534,7 +1537,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 self?.controllerNode.webView?.reload()
             })))
             
-            if let _ = attachMenuBot, [.attachMenu, .settings].contains(source) {
+            if let _ = attachMenuBot, [.attachMenu, .settings, .generic].contains(source) {
                 items.append(.action(ContextMenuActionItem(text: presentationData.strings.WebApp_RemoveBot, textColor: .destructive, icon: { theme in
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Delete"), color: theme.contextMenu.destructiveColor)
                 }, action: { [weak self] c, _ in
@@ -1555,7 +1558,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
             return ContextController.Items(content: .list(items))
         }
         
-        let contextController = ContextController(account: self.context.account, presentationData: self.presentationData, source: .reference(WebAppContextReferenceContentSource(controller: self, sourceNode: node)), items: items, gesture: gesture)
+        let contextController = ContextController(presentationData: self.presentationData, source: .reference(WebAppContextReferenceContentSource(controller: self, sourceNode: node)), items: items, gesture: gesture)
         self.presentInGlobalOverlay(contextController)
     }
     

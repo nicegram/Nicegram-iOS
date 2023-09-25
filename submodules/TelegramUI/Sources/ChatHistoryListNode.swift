@@ -1,8 +1,8 @@
 // MARK: Nicegram AiChat
 import NGAiChatUI
 //
-// MARK: Nicegram NuHub
-import FeatNuHubUI
+// MARK: Nicegram ImagesHub
+import FeatImagesHubUI
 //
 import Foundation
 import UIKit
@@ -433,8 +433,8 @@ public enum ChatHistoryListSource {
 public final class ChatHistoryListNode: ListView, ChatHistoryNode {
     static let fixedAdMessageStableId: UInt32 = UInt32.max - 5000
     
-    // MARK: Nicegram NuHub
-    var showNgNuBanner = false
+    // MARK: Nicegram ImagesHub
+    var showNgBanner = false
     //
     
     private let context: AccountContext
@@ -3345,8 +3345,8 @@ public final class ChatHistoryListNode: ListView, ChatHistoryNode {
         if AiChatUITgHelper.shouldShowAiBotInTgChat() {
             additionalBotInset = max(additionalBotInset, 60)
         }
-        if showNgNuBanner {
-            additionalBotInset = max(additionalBotInset, NuHubUITgHelper.chatBannerHeight)
+        if showNgBanner {
+            additionalBotInset = max(additionalBotInset, ImagesHubUITgHelper.chatBannerHeight)
         }
         insets.top += additionalBotInset
         let updateSizeAndInsets = updateSizeAndInsets.with(insets: insets)

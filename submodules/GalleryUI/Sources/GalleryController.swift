@@ -106,7 +106,8 @@ private let internalMimePrefixes: [String] = [
     "image/jpeg",
     "image/jpg",
     "image/png",
-    "image/heic"
+    "image/heic",
+    "image/jxl"
 ]
 
 public func internalDocumentItemSupportsMimeType(_ type: String, fileName: String?) -> Bool {
@@ -1125,7 +1126,7 @@ public class GalleryController: ViewController, StandalonePresentableController,
                     if let strongSelf = self, strongSelf.traceVisibility() {
                         let _ = strongSelf.context.engine.messages.addSecretChatMessageScreenshot(peerId: id.peerId).start()
                     }
-                })
+                }).strict()
             }
         default:
             break
@@ -1218,6 +1219,8 @@ public class GalleryController: ViewController, StandalonePresentableController,
                     self?.dismiss(forceAway: true)
                 })
             }
+        }, controller: { [weak self] in
+            return self
         })
         
         let disableTapNavigation = !(self.context.sharedContext.currentMediaDisplaySettings.with { $0 }.showNextMediaOnTap)

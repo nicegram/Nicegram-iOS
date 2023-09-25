@@ -85,7 +85,7 @@ enum ChatListNotice: Equatable {
     case premiumUpgrade(discount: Int32)
     case premiumAnnualDiscount(discount: Int32)
     case premiumRestore(discount: Int32)
-    case reviewLogin(newSessionReview: NewSessionReview)
+    case reviewLogin(newSessionReview: NewSessionReview, totalCount: Int)
 }
 
 enum ChatListNodeEntry: Comparable, Identifiable {
@@ -982,7 +982,7 @@ public struct NicegramChatListItem {
     enum Kind {
         case aiBot
         case cardBot
-        case nuHub
+        case imagesHub
     }
 }
 

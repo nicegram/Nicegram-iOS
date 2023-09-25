@@ -40,7 +40,7 @@ swift_library(
         "//Nicegram/NGSecretMenu:NGSecretMenu",
         "//Nicegram/NGStats:NGStats",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChatUI",
-        "@swiftpkg_nicegram_assistant_ios//:Sources_FeatNuHubUI",
+        "@swiftpkg_nicegram_assistant_ios//:Sources_FeatImagesHubUI",
     ],
     visibility = [
         "//visibility:public",

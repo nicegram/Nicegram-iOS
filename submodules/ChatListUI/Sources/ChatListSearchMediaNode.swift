@@ -684,7 +684,7 @@ final class ChatListSearchMediaNode: ASDisplayNode, UIScrollViewDelegate {
             for (_, itemNode) in strongSelf.visibleMediaItems {
                 itemNode.updateHiddenMedia()
             }
-        })
+        }).strict()
     }
     
     deinit {

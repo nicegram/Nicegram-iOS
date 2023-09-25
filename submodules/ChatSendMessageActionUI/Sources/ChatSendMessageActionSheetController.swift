@@ -88,7 +88,7 @@ public final class ChatSendMessageActionSheetController: ViewController {
                     strongSelf.controllerNode.updatePresentationData(presentationData)
                 }
             }
-        })
+        }).strict()
         
         self.statusBar.statusBarStyle = .Hide
         self.statusBar.ignoreInCall = true

@@ -6,8 +6,8 @@ import NGRemoteConfig
 import NGStrings
 import UndoUI
 //
-// MARK: Nicegram NuHub
-import FeatNuHubUI
+// MARK: Nicegram ImagesHub
+import FeatImagesHubUI
 //
 import Foundation
 import UIKit
@@ -36,6 +36,8 @@ import ChatInputNode
 import ChatEntityKeyboardInputNode
 import ChatControllerInteraction
 import ChatAvatarNavigationNode
+import AccessoryPanelNode
+import ForwardAccessoryPanelNode
 
 final class VideoNavigationControllerDropContentItem: NavigationControllerDropContentItem {
     let itemNode: OverlayMediaItemNode
@@ -84,6 +86,55 @@ private struct ChatControllerNodeDerivedLayoutState {
     var inputNodeHeight: CGFloat?
     var inputNodeAdditionalHeight: CGFloat?
     var upperInputPositionBound: CGFloat?
+}
+
+class HistoryNodeContainer: ASDisplayNode {
+    private(set) var secretContainer: UIView?
+    public var isSecret: Bool = false {
+        didSet {
+            if self.isSecret != oldValue {
+                if self.isNodeLoaded {
+                    (self.view as? UITextField)?.isSecureTextEntry = self.isSecret
+                }
+            }
+        }
+    }
+    
+    init(isSecret: Bool) {
+        self.isSecret = isSecret
+        
+        super.init()
+        
+        self.setViewBlock {
+            let captureProtectedView = UITextField(frame: CGRect())
+            captureProtectedView.isSecureTextEntry = self.isSecret
+            self.secretContainer = captureProtectedView.subviews.first
+            return captureProtectedView
+        }
+        
+        let _ = self.view
+    }
+    
+    override func addSubnode(_ subnode: ASDisplayNode) {
+        if let secretContainer = self.secretContainer {
+            secretContainer.addSubnode(subnode)
+        } else {
+            super.addSubnode(subnode)
+        }
+    }
+    
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        if let secretContainer = self.secretContainer {
+            return secretContainer.hitTest(point, with: event)
+        } else {
+            return super.hitTest(point, with: event)
+        }
+    }
+    
+    func updateSize(size: CGSize, transition: ContainedViewLayoutTransition) {
+        /*if let secretContainer = self.secretContainer {
+        }*/
+    }
 }
 
 class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
@@ -206,8 +257,8 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
     }()
     //
     
-    // MARK: Nicegram NuHub
-    private let ngNuBannerNode = ASDisplayNode()
+    // MARK: Nicegram ImagesHub
+    private let ngBannerNode = ASDisplayNode()
     //
     
     let navigateButtons: ChatHistoryNavigationButtons
@@ -496,9 +547,10 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         //self.historyScrollingArea = SparseDiscreteScrollingArea()
         //self.historyNode.historyScrollingArea = self.historyScrollingArea
 
+        //self.historyNodeContainer = HistoryNodeContainer(isSecret: chatLocation.peerId?.namespace == Namespaces.Peer.SecretChat)
         self.historyNodeContainer = ASDisplayNode()
+        
         self.historyNodeContainer.addSubnode(self.historyNode)
-        //self.historyNodeContainer.addSubnode(self.historyScrollingArea)
 
         var getContentAreaInScreenSpaceImpl: (() -> CGRect)?
         var onTransitionEventImpl: ((ContainedViewLayoutTransition) -> Void)?
@@ -689,18 +741,18 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         }
         //
         
-        // MARK: Nicegram NuHub
+        // MARK: Nicegram ImagesHub
         if #available(iOS 15.0, *), let controller {
-            self.addSubnode(self.ngNuBannerNode)
-            NuHubUITgHelper.showChatBanner(
-                view: self.ngNuBannerNode.view,
+            self.addSubnode(self.ngBannerNode)
+            ImagesHubUITgHelper.showChatBanner(
+                view: self.ngBannerNode.view,
                 controller: controller,
                 close: { [weak self] in
-                    self?.setNgNuBanner(hidden: true)
+                    self?.setNgBanner(hidden: true)
                 }
             )
         }
-        self.ngNuBannerNode.isHidden = true
+        self.ngBannerNode.isHidden = true
         //
         
         self.addSubnode(self.presentationContextMarker)
@@ -879,9 +931,9 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         })
     }
     
-    // MARK: Nicegram NuHub
+    // MARK: Nicegram ImagesHub
     @available(iOS 15.0, *)
-    private func updateNgNuBannerVisibility() {
+    private func updateNgBannerVisibility() {
         guard let peer = self.chatPresentationInterfaceState.renderedPeer?.peer else {
             return
         }
@@ -890,18 +942,18 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
             contentSettings: self.context.currentContentSettings.with { $0 }
         )
         
-        let show = NuHubUITgHelper.shouldShowNuHubInChat() && hasPornRestriction
+        let show = ImagesHubUITgHelper.shouldShowImagesHubInChat() && hasPornRestriction
         
-        setNgNuBanner(hidden: !show)
+        setNgBanner(hidden: !show)
     }
     
-    private func setNgNuBanner(hidden: Bool) {
-        guard self.ngNuBannerNode.isHidden != hidden else {
+    private func setNgBanner(hidden: Bool) {
+        guard self.ngBannerNode.isHidden != hidden else {
             return
         }
         
-        self.ngNuBannerNode.isHidden = hidden
-        self.historyNode.showNgNuBanner = !hidden
+        self.ngBannerNode.isHidden = hidden
+        self.historyNode.showNgBanner = !hidden
         self.updateLayoutInternal(
             transition: .animated(
                 duration: 0.3,
@@ -967,6 +1019,10 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
             case .inline:
                 statusBar.statusBarStyle = .Ignore
             }
+        }
+        
+        if let historyNodeContainer = self.historyNodeContainer as? HistoryNodeContainer {
+            historyNodeContainer.isSecret = self.chatPresentationInterfaceState.copyProtectionEnabled || self.chatLocation.peerId?.namespace == Namespaces.Peer.SecretChat
         }
 
         var previousListBottomInset: CGFloat?
@@ -1596,6 +1652,10 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         transition.updateBounds(node: self.historyNodeContainer, bounds: contentBounds)
         transition.updatePosition(node: self.historyNodeContainer, position: contentBounds.center)
         
+        if let historyNodeContainer = self.historyNodeContainer as? HistoryNodeContainer {
+            historyNodeContainer.updateSize(size: contentBounds.size, transition: transition)
+        }
+        
         transition.updateBounds(node: self.historyNode, bounds: CGRect(origin: CGPoint(), size: contentBounds.size))
         transition.updatePosition(node: self.historyNode, position: CGPoint(x: contentBounds.size.width / 2.0, y: contentBounds.size.height / 2.0))
         if let blurredHistoryNode = self.blurredHistoryNode {
@@ -1961,11 +2021,11 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         )
         //
         
-        // MARK: Nicegram NuHub
-        let bannerHeight = NuHubUITgHelper.chatBannerHeight
+        // MARK: Nicegram ImagesHub
+        let bannerHeight = ImagesHubUITgHelper.chatBannerHeight
         
         transition.updateFrame(
-            node: self.ngNuBannerNode,
+            node: self.ngBannerNode,
             frame: CGRect(
                 origin: CGPoint(
                     x: 0,
@@ -2563,9 +2623,9 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                 showUnblockButton = false
             }
             
-            // MARK: Nicegram NuHub
+            // MARK: Nicegram ImagesHub
             if #available(iOS 15.0, *) {
-                updateNgNuBannerVisibility()
+                updateNgBannerVisibility()
             }
             //
             

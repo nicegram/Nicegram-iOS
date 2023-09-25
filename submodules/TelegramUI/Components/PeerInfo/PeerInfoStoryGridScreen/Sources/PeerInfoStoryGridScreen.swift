@@ -110,7 +110,7 @@ final class PeerInfoStoryGridScreenComponent: Component {
                     guard let paneNode = self.paneNode, !paneNode.selectedIds.isEmpty else {
                         return
                     }
-                    let _ = component.context.engine.messages.deleteStories(ids: Array(paneNode.selectedIds)).start()
+                    let _ = component.context.engine.messages.deleteStories(peerId: component.peerId, ids: Array(paneNode.selectedIds)).start()
             
                     let presentationData = component.context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: environment.theme)
                     let text: String = presentationData.strings.StoryList_TooltipStoriesDeleted(Int32(paneNode.selectedIds.count))
@@ -191,7 +191,7 @@ final class PeerInfoStoryGridScreenComponent: Component {
                 }
             }
 
-            let contextController = ContextController(account: component.context.account, presentationData: presentationData, source: .reference(PeerInfoContextReferenceContentSource(controller: controller, sourceNode: source)), items: .single(ContextController.Items(content: .list(items))), gesture: nil)
+            let contextController = ContextController(presentationData: presentationData, source: .reference(PeerInfoContextReferenceContentSource(controller: controller, sourceNode: source)), items: .single(ContextController.Items(content: .list(items))), gesture: nil)
             contextController.passthroughTouchEvent = { [weak self] sourceView, point in
                 guard let self else {
                     return .ignore
@@ -351,7 +351,7 @@ final class PeerInfoStoryGridScreenComponent: Component {
                             switch component.scope {
                             case .saved:
                                 let selectedCount = paneNode.selectedItems.count
-                                let _ = component.context.engine.messages.updateStoriesArePinned(ids: paneNode.selectedItems, isPinned: false).start()
+                                let _ = component.context.engine.messages.updateStoriesArePinned(peerId: component.peerId, ids: paneNode.selectedItems, isPinned: false).start()
                                 
                                 paneNode.setIsSelectionModeActive(false)
                                 (self.environment?.controller() as? PeerInfoStoryGridScreen)?.updateTitle()
@@ -367,14 +367,24 @@ final class PeerInfoStoryGridScreenComponent: Component {
                                     action: { _ in return false }
                                 ), in: .current)
                             case .archive:
-                                let _ = component.context.engine.messages.updateStoriesArePinned(ids: paneNode.selectedItems, isPinned: true).start()
+                                let _ = component.context.engine.messages.updateStoriesArePinned(peerId: component.peerId, ids: paneNode.selectedItems, isPinned: true).start()
                                 
                                 let presentationData = component.context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: environment.theme)
                                 
-                                let title: String = presentationData.strings.StoryList_TooltipStoriesSavedToProfile(Int32(paneNode.selectedIds.count))
+                                let title: String
+                                let text: String
+                                
+                                if component.peerId == component.context.account.peerId {
+                                    title = presentationData.strings.StoryList_TooltipStoriesSavedToProfile(Int32(paneNode.selectedIds.count))
+                                    text = presentationData.strings.StoryList_TooltipStoriesSavedToProfileText
+                                } else {
+                                    title = presentationData.strings.StoryList_TooltipStoriesSavedToChannel(Int32(paneNode.selectedIds.count))
+                                    text = presentationData.strings.Story_ToastSavedToChannelText
+                                }
+                                
                                 environment.controller()?.present(UndoOverlayController(
                                     presentationData: presentationData,
-                                    content: .info(title: title, text: presentationData.strings.StoryList_TooltipStoriesSavedToProfileText, timeout: nil),
+                                    content: .info(title: title, text: text, timeout: nil),
                                     elevatedLayout: false,
                                     animateInAsReplacement: false,
                                     action: { _ in return false }

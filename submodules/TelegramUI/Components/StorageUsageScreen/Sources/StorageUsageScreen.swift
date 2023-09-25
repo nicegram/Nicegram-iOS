@@ -2063,7 +2063,6 @@ final class StorageUsageScreenComponent: Component {
                             let items = ContextController.Items(content: .list(itemList))
                             
                             let controller = ContextController(
-                                account: component.context.account,
                                 presentationData: presentationData,
                                 source: .extracted(StorageUsageListContextExtractedContentSource(contentView: sourceView)), items: .single(items), recognizer: nil, gesture: gesture)
                             
@@ -2595,7 +2594,6 @@ final class StorageUsageScreenComponent: Component {
                 case let .gallery(gallery):
                     gallery.setHintWillBePresentedInPreviewingContext(true)
                     let contextController = ContextController(
-                        account: component.context.account,
                         presentationData: presentationData,
                         source: .controller(StorageUsageListContextGalleryContentSourceImpl(
                             controller: gallery,
@@ -2699,7 +2697,6 @@ final class StorageUsageScreenComponent: Component {
             let items = ContextController.Items(content: .list(itemList))
             
             let controller = ContextController(
-                account: component.context.account,
                 presentationData: presentationData,
                 source: .extracted(StorageUsageListContextExtractedContentSource(contentView: sourceView)), items: .single(items), recognizer: nil, gesture: gesture)
             
@@ -3254,7 +3251,6 @@ final class StorageUsageScreenComponent: Component {
                     let source: ContextContentSource = .reference(StorageUsageContextReferenceContentSource(sourceView: sourceLabelView))
                     
                     let contextController = ContextController(
-                        account: context.account,
                         presentationData: presentationData,
                         source: source,
                         items: items,
