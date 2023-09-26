@@ -284,7 +284,7 @@ lane :update_spm_pkgs do |options|
   bazel_path = sh("cd #{SOURCE_PATH} && echo $(python3 #{SOURCE_PATH}/build-system/Make/LocateBazel.py)")
   sh("#{bazel_path} bazel run //:swift_update_pkgs")
   
-  xcode_select("/Applications/Xcode_15.app")
+  xcode_select("/Applications/Xcode_15.0.app")
 end
 
 lane :nicegram_match do |options|
