@@ -18,6 +18,7 @@
       "c99name": "FloatingPanel",
       "src_type": "swift",
       "label": "@swiftpkg_floatingpanel//:Sources_FloatingPanel",
+      "modulemap_label": "@swiftpkg_floatingpanel//:Sources_FloatingPanel_modulemap",
       "package_identity": "floatingpanel",
       "product_memberships": [
         "FloatingPanel"
@@ -27,7 +28,8 @@
       "name": "GRDB",
       "c99name": "GRDB",
       "src_type": "swift",
-      "label": "@swiftpkg_grdb.swift//:GRDB",
+      "label": "@swiftpkg_grdb.swift//:GRDB_GRDB",
+      "modulemap_label": "@swiftpkg_grdb.swift//:GRDB_GRDB_modulemap",
       "package_identity": "grdb.swift",
       "product_memberships": [
         "GRDB",
@@ -180,6 +182,7 @@
       "c99name": "NGCoreUI",
       "src_type": "swift",
       "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGCoreUI",
+      "modulemap_label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGCoreUI_modulemap",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
         "nicegram-assistant"
@@ -334,6 +337,7 @@
       "c99name": "RswiftParsers",
       "src_type": "swift",
       "label": "@swiftpkg_r.swift//:Sources_RswiftParsers",
+      "modulemap_label": "@swiftpkg_r.swift//:Sources_RswiftParsers_modulemap",
       "package_identity": "r.swift",
       "product_memberships": [
         "rswift",
@@ -373,23 +377,23 @@
       ]
     },
     {
-      "name": "SDWebImage",
-      "c99name": "SDWebImage",
+      "name": "SDWebImageMapKit",
+      "c99name": "SDWebImageMapKit",
       "src_type": "objc",
-      "label": "@swiftpkg_sdwebimage//:SDWebImage",
+      "label": "@swiftpkg_sdwebimage//:SDWebImageMapKit_SDWebImageMapKit",
       "package_identity": "sdwebimage",
       "product_memberships": [
-        "SDWebImage",
         "SDWebImageMapKit"
       ]
     },
     {
-      "name": "SDWebImageMapKit",
-      "c99name": "SDWebImageMapKit",
+      "name": "SDWebImage",
+      "c99name": "SDWebImage",
       "src_type": "objc",
-      "label": "@swiftpkg_sdwebimage//:SDWebImageMapKit",
+      "label": "@swiftpkg_sdwebimage//:SDWebImage_SDWebImage",
       "package_identity": "sdwebimage",
       "product_memberships": [
+        "SDWebImage",
         "SDWebImageMapKit"
       ]
     },
@@ -499,7 +503,7 @@
       "name": "GRDB",
       "type": "library",
       "target_labels": [
-        "@swiftpkg_grdb.swift//:GRDB"
+        "@swiftpkg_grdb.swift//:GRDB_GRDB"
       ]
     },
     {
@@ -507,7 +511,7 @@
       "name": "GRDB-dynamic",
       "type": "library",
       "target_labels": [
-        "@swiftpkg_grdb.swift//:GRDB"
+        "@swiftpkg_grdb.swift//:GRDB_GRDB"
       ]
     },
     {
@@ -592,7 +596,7 @@
       "name": "SDWebImage",
       "type": "library",
       "target_labels": [
-        "@swiftpkg_sdwebimage//:SDWebImage"
+        "@swiftpkg_sdwebimage//:SDWebImage_SDWebImage"
       ]
     },
     {
@@ -600,7 +604,7 @@
       "name": "SDWebImageMapKit",
       "type": "library",
       "target_labels": [
-        "@swiftpkg_sdwebimage//:SDWebImageMapKit"
+        "@swiftpkg_sdwebimage//:SDWebImageMapKit_SDWebImageMapKit"
       ]
     },
     {
@@ -701,7 +705,7 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "797efa7eae4a280b4e38351806615e25005050b7",
+        "commit": "05606a962f8b5436752f66196f13acc259008a12",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
         "branch": "develop"
       }

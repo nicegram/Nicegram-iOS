@@ -227,9 +227,10 @@ public func accountWithId(accountManager: AccountManager<TelegramAccountManagerT
                                 )!, forKey: id as NSNumber)
                             }
                             
-                            let data = NSKeyedArchiver.archivedData(withRootObject: dict)
                             transaction.setState(backupState)
-                            transaction.setKeychainEntry(data, forKey: "persistent:datacenterAuthInfoById")
+                            if let data = try? NSKeyedArchiver.archivedData(withRootObject: dict, requiringSecureCoding: false) {
+                                transaction.setKeychainEntry(data, forKey: "persistent:datacenterAuthInfoById")
+                            }
                         }
                         let appConfig = transaction.getPreferencesEntry(key: PreferencesKeys.appConfiguration)?.get(AppConfiguration.self) ?? .defaultValue
                         
@@ -867,7 +868,7 @@ public func accountBackupData(postbox: Postbox) -> Signal<AccountBackupData?, No
         guard let authInfoData = transaction.keychainEntryForKey("persistent:datacenterAuthInfoById") else {
             return nil
         }
-        guard let authInfo = NSKeyedUnarchiver.unarchiveObject(with: authInfoData) as? NSDictionary else {
+        guard let authInfo = MTDeprecated.unarchiveDeprecated(with: authInfoData) as? NSDictionary else {
             return nil
         }
         guard let datacenterAuthInfo = authInfo.object(forKey: state.masterDatacenterId as NSNumber) as? MTDatacenterAuthInfo else {

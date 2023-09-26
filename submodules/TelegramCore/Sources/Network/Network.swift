@@ -18,6 +18,10 @@ public enum ConnectionStatus: Equatable {
     case online(proxyAddress: String?)
 }
 
+public func legacy_unarchiveDeprecated(data: Data) -> Any? {
+    return MTDeprecated.unarchiveDeprecated(with: data)
+}
+
 private struct MTProtoConnectionFlags: OptionSet {
     let rawValue: Int
     
@@ -1126,21 +1130,38 @@ class Keychain: NSObject, MTKeychain {
             return
         }
         MTContext.perform(objCTry: {
-            let data = NSKeyedArchiver.archivedData(withRootObject: object)
-            self.set(group + ":" + aKey, data)
+            if let data = try? NSKeyedArchiver.archivedData(withRootObject: object, requiringSecureCoding: false) {
+                self.set(group + ":" + aKey, data)
+            }
         })
     }
     
-    func object(forKey aKey: String!, group: String!) -> Any! {
+    func dictionary(forKey aKey: String!, group: String!) -> [AnyHashable : Any]? {
         guard let aKey = aKey, let group = group else {
             return nil
         }
         if let data = self.get(group + ":" + aKey) {
-            var result: Any?
-            MTContext.perform(objCTry: {
-                result = NSKeyedUnarchiver.unarchiveObject(with: data as Data)
-            })
-            return result
+            var result: NSDictionary?
+            result = MTDeprecated.unarchiveDeprecated(with: data as Data) as? NSDictionary
+            if let result = result {
+                return result as? [AnyHashable : Any]
+            }
+            assertionFailure("Unexpected keychain entry type")
+        }
+        return nil
+    }
+    
+    func number(forKey aKey: String!, group: String!) -> NSNumber? {
+        guard let aKey = aKey, let group = group else {
+            return nil
+        }
+        if let data = self.get(group + ":" + aKey) {
+            var result: NSNumber?
+            result = MTDeprecated.unarchiveDeprecated(with: data as Data) as? NSNumber
+            if let result = result {
+                return result
+            }
+            assertionFailure("Unexpected keychain entry type")
         }
         return nil
     }

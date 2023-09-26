@@ -227,7 +227,7 @@ lane :build_bazel do |options|
   --gitCodesigningRepository=#{git_codesigning_repository} \
   --gitCodesigningType=#{git_codesigning_type} \
   --buildNumber=#{build_number} \
-  --configuration=release_universal \
+  --configuration=release_arm64 \
   --outputBuildArtifactsPath=#{artifacts_path} "
 
   error_callback = lambda do |result|
@@ -275,8 +275,16 @@ lane :upload_ipa do |options|
 end
 
 lane :update_spm_pkgs do |options|
+# WORKAROUND for Xcode 15 issue
+# https://github.com/cgrindel/rules_swift_package_manager/issues/551
+# Fallback to Xcode_14.3.1 for swift_update_pkgs, then restore Xcode_15
+
+  xcode_select("/Applications/Xcode_14.3.1.app")
+
   bazel_path = sh("cd #{SOURCE_PATH} && echo $(python3 #{SOURCE_PATH}/build-system/Make/LocateBazel.py)")
   sh("#{bazel_path} bazel run //:swift_update_pkgs")
+  
+  xcode_select("/Applications/Xcode_15.app")
 end
 
 lane :nicegram_match do |options|

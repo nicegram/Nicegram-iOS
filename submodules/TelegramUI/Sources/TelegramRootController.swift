@@ -96,7 +96,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         super.init(mode: .automaticMasterDetail, theme: NavigationControllerTheme(presentationTheme: self.presentationData.theme))
         
         self.presentationDataDisposable = (context.sharedContext.presentationData
-        |> deliverOnMainQueue).start(next: { [weak self] presentationData in
+        |> deliverOnMainQueue).startStrict(next: { [weak self] presentationData in
             if let strongSelf = self {
                 strongSelf.detailsPlaceholderNode?.updatePresentationData(presentationData)
                 
@@ -112,12 +112,12 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         if context.sharedContext.applicationBindings.isMainApp {
             self.applicationInFocusDisposable = (context.sharedContext.applicationBindings.applicationIsActive
             |> distinctUntilChanged
-            |> deliverOn(Queue.mainQueue())).start(next: { value in
+            |> deliverOn(Queue.mainQueue())).startStrict(next: { value in
                 context.sharedContext.mainWindow?.setForceBadgeHidden(!value)
             })
             
             self.storyUploadEventsDisposable = (context.engine.messages.allStoriesUploadEvents()
-            |> deliverOnMainQueue).start(next: { [weak self] event in
+            |> deliverOnMainQueue).startStrict(next: { [weak self] event in
                 guard let self else {
                     return
                 }
@@ -407,7 +407,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                         storyTarget = target
                         
                         let _ = (self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: targetPeerId))
-                        |> deliverOnMainQueue).start(next: { [weak self] peer in
+                        |> deliverOnMainQueue).startStandalone(next: { [weak self] peer in
                             guard let self, let peer else {
                                 return
                             }
@@ -449,7 +449,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                                     |> filter { $0 }
                                     |> take(1)
                                     |> timeout(isPeerArchived ? 0.5 : 0.25, queue: .mainQueue(), alternate: .single(true))
-                                    |> deliverOnMainQueue).start(completed: { [weak chatListController] in
+                                    |> deliverOnMainQueue).startStandalone(completed: { [weak chatListController] in
                                         guard let chatListController else {
                                             return
                                         }
@@ -473,7 +473,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                                         let entities = generateChatInputTextEntities(caption)
                                         Logger.shared.log("MediaEditor", "Calling uploadStory for image, randomId \(randomId)")
                                         let _ = (context.engine.messages.uploadStory(target: target, media: .image(dimensions: dimensions, data: imageData, stickers: stickers), mediaAreas: mediaAreas, text: caption.string, entities: entities, pin: options.pin, privacy: options.privacy, isForwardingDisabled: options.isForwardingDisabled, period: options.timeout, randomId: randomId)
-                                        |> deliverOnMainQueue).start(next: { stableId in
+                                        |> deliverOnMainQueue).startStandalone(next: { stableId in
                                             moveStorySource(engine: context.engine, peerId: context.account.peerId, from: randomId, to: Int64(stableId))
                                         })
                                         
@@ -507,7 +507,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                                         Logger.shared.log("MediaEditor", "Calling uploadStory for video, randomId \(randomId)")
                                         let entities = generateChatInputTextEntities(caption)
                                         let _ = (context.engine.messages.uploadStory(target: target, media: .video(dimensions: dimensions, duration: duration, resource: resource, firstFrameFile: firstFrameFile, stickers: stickers), mediaAreas: mediaAreas, text: caption.string, entities: entities, pin: options.pin, privacy: options.privacy, isForwardingDisabled: options.isForwardingDisabled, period: options.timeout, randomId: randomId)
-                                        |> deliverOnMainQueue).start(next: { stableId in
+                                        |> deliverOnMainQueue).startStandalone(next: { stableId in
                                             moveStorySource(engine: context.engine, peerId: context.account.peerId, from: randomId, to: Int64(stableId))
                                         })
                                         

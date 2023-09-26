@@ -383,6 +383,8 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
             self.scrollNode.view.contentInsetAdjustmentBehavior = .never
         }
         
+        self.effectView.effect = makeCustomZoomBlurEffect(isLight: self.presentationData.theme.rootController.keyboardColor == .light)
+        
         if let snapshotView = self.sourceSendButton.view.snapshotView(afterScreenUpdates: false) {
             self.sendButtonNode.view.addSubview(snapshotView)
         }
@@ -478,10 +480,8 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
         }
         
         self.textInputNode.textView.setContentOffset(self.textInputNode.textView.contentOffset, animated: false)
-        
-        UIView.animate(withDuration: 0.2, animations: {
-            self.effectView.effect = makeCustomZoomBlurEffect(isLight: self.presentationData.theme.rootController.keyboardColor == .light)
-        }, completion: { _ in })
+                
+        self.effectView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
         self.dimNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
         self.contentContainerNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
         self.messageBackgroundNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.3)
@@ -565,23 +565,31 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
         var completedBubble = false
         var completedAlpha = false
         
+        var completed = false
         let intermediateCompletion: () -> Void = { [weak self] in
-            if completedEffect && completedButton && completedBubble && completedAlpha {
+            if completedEffect && completedButton && completedBubble && completedAlpha && !completed {
+                completed = true
                 self?.textInputNode.isHidden = false
                 self?.sourceSendButton.isHidden = false
                 completion()
             }
         }
         
-        UIView.animate(withDuration: 0.2, animations: {
-            self.effectView.effect = nil
-        }, completion: { _ in
+        self.effectView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false, completion: { _ in
             completedEffect = true
             intermediateCompletion()
         })
-        
         self.dimNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false)
         self.contentContainerNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false, completion: { _ in })
+        
+        Queue.mainQueue().after(0.45) {
+            if !completed {
+                completed = true
+                self.textInputNode.isHidden = false
+                self.sourceSendButton.isHidden = false
+                completion()
+            }
+        }
         
         if self.animateInputField {
             if cancel {
@@ -593,7 +601,7 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
                 })
             } else {
                 self.textInputNode.isHidden = false
-                self.messageClipNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, removeOnCompletion: false, completion: { _ in
+                self.messageClipNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false, completion: { _ in
                     completedAlpha = true
                     intermediateCompletion()
                 })
