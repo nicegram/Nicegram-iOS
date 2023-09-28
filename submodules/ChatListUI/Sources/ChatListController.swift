@@ -16,6 +16,7 @@ import NGRemoteConfig
 import NGRepoTg
 import NGRepoUser
 import NGSpecialOffer
+import NGTranslate
 import NGEnv
 
 import SwiftSignalKit
@@ -4540,6 +4541,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             if let localizationSettings = sharedData.entries[SharedDataKeys.localizationSettings]?.get(LocalizationSettings.self) {
                 let activeLanguageCode = localizationSettings.secondaryComponent?.languageCode ?? localizationSettings.primaryComponent.languageCode
                 ng_setTgLangCode(activeLanguageCode)
+                setPreferredTranslationTargetLanguage(code: activeLanguageCode)
             }
         }
     }
