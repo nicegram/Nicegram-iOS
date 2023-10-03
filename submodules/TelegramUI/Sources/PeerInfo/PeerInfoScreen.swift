@@ -847,7 +847,7 @@ private func settingsItems(data: PeerInfoScreenData?, context: AccountContext, p
     var ngId = 0
 
     // MARK: Nicegram AiChat
-    if AiChatUITgHelper.shouldShowAiBotInSettings() {
+    if AiChatUITgHelper.isAiBotFeatureEnabled() {
         items[.nicegram]!.append(PeerInfoScreenDisclosureItem(id: -1, text: AiChatUITgHelper.botName, icon: PresentationResourcesSettings.aiChatIcon, action: {
                  interaction.openSettings(.nicegramAiChatBot)
         }))

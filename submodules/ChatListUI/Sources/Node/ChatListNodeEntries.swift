@@ -851,6 +851,50 @@ func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, 
             }
         }
         
+        // MARK: Nicegram PinnedChats
+        for nicegramItem in nicegramItems {
+            let peerId = nicegramItem.peerId
+            result.append(.PeerEntry(ChatListNodeEntry.PeerEntryData(
+                nicegramItem: nicegramItem,
+                index: .chatList(
+                    ChatListIndex(
+                        pinningIndex: nil,
+                        messageIndex: MessageIndex(
+                            id: MessageId(
+                                peerId: peerId,
+                                namespace: 0,
+                                id: 0
+                            ),
+                            timestamp: 0
+                        )
+                    )
+                ),
+                presentationData: state.presentationData,
+                messages: [],
+                readState: nil,
+                isRemovedFromTotalUnreadCount: false,
+                draftState: nil,
+                peer: EngineRenderedPeer(peerId: peerId, peers: [:], associatedMedia: [:]),
+                threadInfo: nil,
+                presence: nil,
+                hasUnseenMentions: false,
+                hasUnseenReactions: false,
+                editing: state.editing,
+                hasActiveRevealControls: false,
+                selected: false,
+                inputActivities: nil,
+                promoInfo: nil,
+                hasFailedMessages: false,
+                isContact: false,
+                autoremoveTimeout: nil,
+                forumTopicData: nil,
+                topForumTopicItems: [],
+                revealed: false,
+                storyState: nil
+            )))
+        }
+        //
+        
         if !view.hasLater, case .chatList = mode {
             for groupReference in groupItems {
                 let messageIndex = EngineMessage.Index(id: EngineMessage.Id(peerId: EnginePeer.Id(0), namespace: 0, id: 0), timestamp: 1)
@@ -915,50 +959,6 @@ func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, 
             }
         }
     }
-    
-    // MARK: Nicegram PinnedChats
-    for nicegramItem in nicegramItems {
-        let peerId = nicegramItem.peerId
-        result.append(.PeerEntry(ChatListNodeEntry.PeerEntryData(
-            nicegramItem: nicegramItem,
-            index: .chatList(
-                ChatListIndex(
-                    pinningIndex: nil,
-                    messageIndex: MessageIndex(
-                        id: MessageId(
-                            peerId: peerId,
-                            namespace: 0,
-                            id: 0
-                        ),
-                        timestamp: 0
-                    )
-                )
-            ),
-            presentationData: state.presentationData,
-            messages: [],
-            readState: nil,
-            isRemovedFromTotalUnreadCount: false,
-            draftState: nil,
-            peer: EngineRenderedPeer(peerId: peerId, peers: [:], associatedMedia: [:]),
-            threadInfo: nil,
-            presence: nil,
-            hasUnseenMentions: false,
-            hasUnseenReactions: false,
-            editing: state.editing,
-            hasActiveRevealControls: false,
-            selected: false,
-            inputActivities: nil,
-            promoInfo: nil,
-            hasFailedMessages: false,
-            isContact: false,
-            autoremoveTimeout: nil,
-            forumTopicData: nil,
-            topForumTopicItems: [],
-            revealed: false,
-            storyState: nil
-        )))
-    }
-    //
 
     if result.count >= 1, case .HoleEntry = result[result.count - 1] {
         return ([.HeaderEntry], true)

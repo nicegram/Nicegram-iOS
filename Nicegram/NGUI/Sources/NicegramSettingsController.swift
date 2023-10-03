@@ -717,21 +717,26 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
         l("NicegramSettings.Folders.foldersAtBottomNotice", locale)
     ))
     
-    entries.append(.pinnedBotsHeader)
+    var pinnedBots: [NicegramSettingsControllerEntry] = []
     
     if #available(iOS 13.0, *),
-       AiChatUITgHelper.isAiOnChatsListAvailable() {
-        entries.append(.aiPin)
+       AiChatUITgHelper.canPinAiBot() {
+        pinnedBots.append(.aiPin)
     }
     
     if #available(iOS 13.0, *),
-       CardUITgHelper.isCardOnChatsListAvailable() {
-        entries.append(.pstPin)
+       CardUITgHelper.canPinCardBot() {
+        pinnedBots.append(.pstPin)
     }
     
     if #available(iOS 15.0, *),
-       ImagesHubUITgHelper.isImagesHubOnChatsListAvailable() {
-        entries.append(.imagesHubPin)
+       ImagesHubUITgHelper.canPinImageBot() {
+        pinnedBots.append(.imagesHubPin)
+    }
+    
+    if !pinnedBots.isEmpty {
+        entries.append(.pinnedBotsHeader)
+        pinnedBots.forEach { entries.append($0) }
     }
 
     entries.append(.RoundVideosHeader(l("NicegramSettings.RoundVideos",

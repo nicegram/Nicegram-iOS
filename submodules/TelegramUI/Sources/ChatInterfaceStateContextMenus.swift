@@ -1699,32 +1699,35 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             // MARK: Nicegram AiChat
             let messageTextIsEmpty = message.text.isEmpty
             if #available(iOS 13.0, *), !messageTextIsEmpty {
-                actions.append(.action(ContextMenuActionItem(text: AiChatUITgHelper.botName, icon: { theme in
-                    return generateTintedImage(image: AiChatUITgHelper.botIcon, color: theme.actionSheet.primaryTextColor)
-                }, action: { controller, f in
-                    var items: [ContextMenuItem] = []
-                    
-                    let commands = AiChatTgHelper.getCommandsForContextMenu()
-                    for command in commands {
-                        items.append(.action(ContextMenuActionItem(text: command.title, icon: { _ in nil }, action: { _, f in
-                            let payload = AiContextMenuNotificationPayload(
-                                command: command,
-                                text: message.text
-                            )
-                            NotificationCenter.default.post(
-                                name: AiChatTgHelper.aiContextMenuNotification,
-                                object: nil,
-                                userInfo: [
-                                    AiChatTgHelper.aiContextMenuNotificationPayloadKey: payload
-                                ]
-                            )
-                            
-                            f(.dismissWithoutContent)
-                        })))
-                    }
-                    
-                    controller.setItems(.single(ContextController.Items(content: .list(items))), minHeight: nil)
-                })))
+                let commands = AiChatTgHelper.getCommandsForContextMenu()
+                
+                if !commands.isEmpty {
+                    actions.append(.action(ContextMenuActionItem(text: AiChatUITgHelper.botName, icon: { theme in
+                        return generateTintedImage(image: AiChatUITgHelper.botIcon, color: theme.actionSheet.primaryTextColor)
+                    }, action: { controller, f in
+                        var items: [ContextMenuItem] = []
+                        
+                        for command in commands {
+                            items.append(.action(ContextMenuActionItem(text: command.title, icon: { _ in nil }, action: { _, f in
+                                let payload = AiContextMenuNotificationPayload(
+                                    command: command,
+                                    text: message.text
+                                )
+                                NotificationCenter.default.post(
+                                    name: AiChatTgHelper.aiContextMenuNotification,
+                                    object: nil,
+                                    userInfo: [
+                                        AiChatTgHelper.aiContextMenuNotificationPayloadKey: payload
+                                    ]
+                                )
+                                
+                                f(.dismissWithoutContent)
+                            })))
+                        }
+                        
+                        controller.setItems(.single(ContextController.Items(content: .list(items))), minHeight: nil)
+                    })))
+                }
             }
             //
             
