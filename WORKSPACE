@@ -107,9 +107,9 @@ http_archive(
 
 http_archive(
     name = "rules_swift_package_manager",
-    sha256 = "4b88fcd529895ec9a8046a2af42eb55c1e5fef3a81e889cdb8f557c14b83ea1a",
+    sha256 = "5fa4bb1ed4d105ac0d10234b8442ba7c489058697afef7dbf59dbd35bff8892e",
     urls = [
-        "https://github.com/cgrindel/rules_swift_package_manager/releases/download/v0.11.1/rules_swift_package_manager.v0.11.1.tar.gz",
+        "https://github.com/cgrindel/rules_swift_package_manager/releases/download/v0.13.1/rules_swift_package_manager.v0.13.1.tar.gz",
     ],
 )
 

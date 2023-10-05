@@ -26,7 +26,7 @@ objc_library(
         "-DAPP_CONFIG_API_HASH=\\\"{}\\\"".format(telegram_api_hash),
         "-DAPP_CONFIG_APP_CENTER_ID=\\\"{}\\\"".format(telegram_app_center_id),
         "-DAPP_CONFIG_IS_INTERNAL_BUILD={}".format(telegram_is_internal_build),
-        "-DAPP_CONFIG_IS_APPSTORE_BUILD={}".format(telegram_is_appstore_build),
+        "-DAPP_CONFIG_IS_APPSTORE_BUILD={}".format("true" if telegram_is_appstore_build else "false"),
         "-DAPP_CONFIG_APPSTORE_ID={}".format(telegram_appstore_id),
         "-DAPP_SPECIFIC_URL_SCHEME=\\\"{}\\\"".format(telegram_app_specific_url_scheme),
         "-DAPP_CONFIG_IS_ICLOUD_ENABLED={}".format("true" if telegram_enable_icloud else "false"),

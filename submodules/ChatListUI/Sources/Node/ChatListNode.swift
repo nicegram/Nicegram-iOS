@@ -2103,7 +2103,9 @@ public final class ChatListNode: ListView {
                             image: ImagesHubUITgHelper.chatsListImage,
                             kind: .imagesHub,
                             select: {
-                                ImagesHubUITgHelper.showFeed()
+                                ImagesHubUITgHelper.showFeed(
+                                    source: .pin
+                                )
                             },
                             unpin: {
                                 ImagesHubUITgHelper.showConfirmUnpin()

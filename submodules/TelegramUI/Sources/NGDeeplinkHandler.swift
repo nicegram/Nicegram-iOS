@@ -1,6 +1,7 @@
 import Foundation
 import AccountContext
 import Display
+import FeatImagesHubUI
 import NGAiChatUI
 import NGAnalytics
 import NGAssistantUI
@@ -59,6 +60,8 @@ class NGDeeplinkHandler {
             } else {
                 return false
             }
+        case "generateImage":
+            return handleGenerateImage(url: url)
         case "nicegramPremium":
             return handleNicegramPremium(url: url)
         case "onboarding":
@@ -107,6 +110,20 @@ private extension NGDeeplinkHandler {
             return true
         }
         return false
+    }
+    
+    func handleGenerateImage(url: URL) -> Bool {
+        if #available(iOS 15.0, *) {
+            Task { @MainActor in
+                ImagesHubUITgHelper.showFeed(
+                    source: .deeplink,
+                    forceGeneration: true
+                )
+            }
+            return true
+        } else {
+            return false
+        }
     }
     
     func handleNicegramPremium(url: URL) -> Bool {

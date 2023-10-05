@@ -366,6 +366,16 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         if #available(iOS 12.0, *) {
             FirebaseApp.configure()
         }
+        
+        let appVersion = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "unknown"
+        
+        let baseAppBundleId = Bundle.main.bundleIdentifier!
+        let appGroupName = "group.\(baseAppBundleId)"
+        let maybeAppGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)
+        
+        let buildConfig = BuildConfig(baseAppBundleId: baseAppBundleId)
+        self.buildConfig = buildConfig
+        let signatureDict = BuildConfigExtra.signatureDict()
 
         let mobyApiKey = NGENV.moby_key
         MobySubscriptionAnalytics.setup(apiKey: mobyApiKey) { account in
@@ -405,6 +415,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             env: Env(
                 apiBaseUrl: URL(string: NGENV.esim_api_url)!,
                 apiKey: NGENV.esim_api_key,
+                isAppStoreBuild: buildConfig.isAppStoreBuild,
                 premiumProductId: NGENV.premium_bundle,
                 privacyUrl: URL(string: NGENV.privacy_url)!,
                 referralBot: NGENV.referral_bot,
@@ -548,16 +559,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }
         })
         self.clearNotificationsManager = clearNotificationsManager
-        
-        let appVersion = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "unknown"
-        
-        let baseAppBundleId = Bundle.main.bundleIdentifier!
-        let appGroupName = "group.\(baseAppBundleId)"
-        let maybeAppGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)
-        
-        let buildConfig = BuildConfig(baseAppBundleId: baseAppBundleId)
-        self.buildConfig = buildConfig
-        let signatureDict = BuildConfigExtra.signatureDict()
         
         let apiId: Int32 = buildConfig.apiId
         let apiHash: String = buildConfig.apiHash

@@ -99,7 +99,9 @@ lane :build do |options|
     type: "appstore"
   )
 
-  telegram_configuration_path = resolve_telegram_configuration()
+  telegram_configuration_path = resolve_telegram_configuration(
+    is_appstore_build: upload_to_tf
+  )
 
   configuration_end_time = Time.new
   building_start_time = Time.new
@@ -173,6 +175,8 @@ lane :upload_nice_localization do |options|
 end
 
 lane :resolve_telegram_configuration do |options|
+  is_appstore_build = options[:is_appstore_build] || true
+
   telegram_configuration_path = "#{BUILD_WORKING_DIR}/telegram-configuration.json"
 
   env_path = "#{SOURCE_PATH}/ng-env.txt"
@@ -186,8 +190,12 @@ lane :resolve_telegram_configuration do |options|
     raise "Unknown environment in #{env_path}"
   end
 
-  telegram_configuration = Base64.decode64(telegram_configuration_base64)
-  File.write(telegram_configuration_path, telegram_configuration)
+  telegram_configuration_string = Base64.decode64(telegram_configuration_base64)
+  
+  telegram_configuration = JSON.parse(telegram_configuration_string)
+  telegram_configuration["is_appstore_build"] = is_appstore_build
+  
+  File.write(telegram_configuration_path, JSON.pretty_generate(telegram_configuration))
 
   telegram_configuration_path
 end
@@ -275,16 +283,8 @@ lane :upload_ipa do |options|
 end
 
 lane :update_spm_pkgs do |options|
-# WORKAROUND for Xcode 15 issue
-# https://github.com/cgrindel/rules_swift_package_manager/issues/551
-# Fallback to Xcode_14.3.1 for swift_update_pkgs, then restore Xcode_15
-
-  xcode_select("/Applications/Xcode_14.3.1.app")
-
   bazel_path = sh("cd #{SOURCE_PATH} && echo $(python3 #{SOURCE_PATH}/build-system/Make/LocateBazel.py)")
   sh("#{bazel_path} bazel run //:swift_update_pkgs")
-  
-  xcode_select("/Applications/Xcode_15.0.app")
 end
 
 lane :nicegram_match do |options|
