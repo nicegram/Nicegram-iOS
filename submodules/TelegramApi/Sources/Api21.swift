@@ -610,17 +610,23 @@ public extension Api {
 }
 public extension Api {
     enum StoryViews: TypeConstructorDescription {
-        case storyViews(flags: Int32, viewsCount: Int32, reactionsCount: Int32, recentViewers: [Int64]?)
+        case storyViews(flags: Int32, viewsCount: Int32, forwardsCount: Int32?, reactions: [Api.ReactionCount]?, reactionsCount: Int32?, recentViewers: [Int64]?)
     
     public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
     switch self {
-                case .storyViews(let flags, let viewsCount, let reactionsCount, let recentViewers):
+                case .storyViews(let flags, let viewsCount, let forwardsCount, let reactions, let reactionsCount, let recentViewers):
                     if boxed {
-                        buffer.appendInt32(-968094825)
+                        buffer.appendInt32(-1923523370)
                     }
                     serializeInt32(flags, buffer: buffer, boxed: false)
                     serializeInt32(viewsCount, buffer: buffer, boxed: false)
-                    serializeInt32(reactionsCount, buffer: buffer, boxed: false)
+                    if Int(flags) & Int(1 << 2) != 0 {serializeInt32(forwardsCount!, buffer: buffer, boxed: false)}
+                    if Int(flags) & Int(1 << 3) != 0 {buffer.appendInt32(481674261)
+                    buffer.appendInt32(Int32(reactions!.count))
+                    for item in reactions! {
+                        item.serialize(buffer, true)
+                    }}
+                    if Int(flags) & Int(1 << 4) != 0 {serializeInt32(reactionsCount!, buffer: buffer, boxed: false)}
                     if Int(flags) & Int(1 << 0) != 0 {buffer.appendInt32(481674261)
                     buffer.appendInt32(Int32(recentViewers!.count))
                     for item in recentViewers! {
@@ -632,8 +638,8 @@ public extension Api {
     
     public func descriptionFields() -> (String, [(String, Any)]) {
         switch self {
-                case .storyViews(let flags, let viewsCount, let reactionsCount, let recentViewers):
-                return ("storyViews", [("flags", flags as Any), ("viewsCount", viewsCount as Any), ("reactionsCount", reactionsCount as Any), ("recentViewers", recentViewers as Any)])
+                case .storyViews(let flags, let viewsCount, let forwardsCount, let reactions, let reactionsCount, let recentViewers):
+                return ("storyViews", [("flags", flags as Any), ("viewsCount", viewsCount as Any), ("forwardsCount", forwardsCount as Any), ("reactions", reactions as Any), ("reactionsCount", reactionsCount as Any), ("recentViewers", recentViewers as Any)])
     }
     }
     
@@ -643,17 +649,25 @@ public extension Api {
             var _2: Int32?
             _2 = reader.readInt32()
             var _3: Int32?
-            _3 = reader.readInt32()
-            var _4: [Int64]?
+            if Int(_1!) & Int(1 << 2) != 0 {_3 = reader.readInt32() }
+            var _4: [Api.ReactionCount]?
+            if Int(_1!) & Int(1 << 3) != 0 {if let _ = reader.readInt32() {
+                _4 = Api.parseVector(reader, elementSignature: 0, elementType: Api.ReactionCount.self)
+            } }
+            var _5: Int32?
+            if Int(_1!) & Int(1 << 4) != 0 {_5 = reader.readInt32() }
+            var _6: [Int64]?
             if Int(_1!) & Int(1 << 0) != 0 {if let _ = reader.readInt32() {
-                _4 = Api.parseVector(reader, elementSignature: 570911930, elementType: Int64.self)
+                _6 = Api.parseVector(reader, elementSignature: 570911930, elementType: Int64.self)
             } }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = _3 != nil
-            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
-            if _c1 && _c2 && _c3 && _c4 {
-                return Api.StoryViews.storyViews(flags: _1!, viewsCount: _2!, reactionsCount: _3!, recentViewers: _4)
+            let _c3 = (Int(_1!) & Int(1 << 2) == 0) || _3 != nil
+            let _c4 = (Int(_1!) & Int(1 << 3) == 0) || _4 != nil
+            let _c5 = (Int(_1!) & Int(1 << 4) == 0) || _5 != nil
+            let _c6 = (Int(_1!) & Int(1 << 0) == 0) || _6 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
+                return Api.StoryViews.storyViews(flags: _1!, viewsCount: _2!, forwardsCount: _3, reactions: _4, reactionsCount: _5, recentViewers: _6)
             }
             else {
                 return nil
@@ -1124,6 +1138,7 @@ public extension Api {
         case updateMessagePollVote(pollId: Int64, peer: Api.Peer, options: [Buffer], qts: Int32)
         case updateMessageReactions(flags: Int32, peer: Api.Peer, msgId: Int32, topMsgId: Int32?, reactions: Api.MessageReactions)
         case updateMoveStickerSetToTop(flags: Int32, stickerset: Int64)
+        case updateNewAuthorization(flags: Int32, hash: Int64, date: Int32?, device: String?, location: String?)
         case updateNewChannelMessage(message: Api.Message, pts: Int32, ptsCount: Int32)
         case updateNewEncryptedMessage(message: Api.EncryptedMessage, qts: Int32)
         case updateNewMessage(message: Api.Message, pts: Int32, ptsCount: Int32)
@@ -1150,19 +1165,19 @@ public extension Api {
         case updateReadFeaturedStickers
         case updateReadHistoryInbox(flags: Int32, folderId: Int32?, peer: Api.Peer, maxId: Int32, stillUnreadCount: Int32, pts: Int32, ptsCount: Int32)
         case updateReadHistoryOutbox(peer: Api.Peer, maxId: Int32, pts: Int32, ptsCount: Int32)
-        case updateReadMessagesContents(messages: [Int32], pts: Int32, ptsCount: Int32)
-        case updateReadStories(userId: Int64, maxId: Int32)
+        case updateReadMessagesContents(flags: Int32, messages: [Int32], pts: Int32, ptsCount: Int32, date: Int32?)
+        case updateReadStories(peer: Api.Peer, maxId: Int32)
         case updateRecentEmojiStatuses
         case updateRecentReactions
         case updateRecentStickers
         case updateSavedGifs
         case updateSavedRingtones
-        case updateSentStoryReaction(userId: Int64, storyId: Int32, reaction: Api.Reaction)
+        case updateSentStoryReaction(peer: Api.Peer, storyId: Int32, reaction: Api.Reaction)
         case updateServiceNotification(flags: Int32, inboxDate: Int32?, type: String, message: String, media: Api.MessageMedia, entities: [Api.MessageEntity])
         case updateStickerSets(flags: Int32)
         case updateStickerSetsOrder(flags: Int32, order: [Int64])
         case updateStoriesStealthMode(stealthMode: Api.StoriesStealthMode)
-        case updateStory(userId: Int64, story: Api.StoryItem)
+        case updateStory(peer: Api.Peer, story: Api.StoryItem)
         case updateStoryID(id: Int32, randomId: Int64)
         case updateTheme(theme: Api.Theme)
         case updateTranscribedAudio(flags: Int32, peer: Api.Peer, msgId: Int32, transcriptionId: Int64, text: String)
@@ -1756,6 +1771,16 @@ public extension Api {
                     serializeInt32(flags, buffer: buffer, boxed: false)
                     serializeInt64(stickerset, buffer: buffer, boxed: false)
                     break
+                case .updateNewAuthorization(let flags, let hash, let date, let device, let location):
+                    if boxed {
+                        buffer.appendInt32(-1991136273)
+                    }
+                    serializeInt32(flags, buffer: buffer, boxed: false)
+                    serializeInt64(hash, buffer: buffer, boxed: false)
+                    if Int(flags) & Int(1 << 0) != 0 {serializeInt32(date!, buffer: buffer, boxed: false)}
+                    if Int(flags) & Int(1 << 0) != 0 {serializeString(device!, buffer: buffer, boxed: false)}
+                    if Int(flags) & Int(1 << 0) != 0 {serializeString(location!, buffer: buffer, boxed: false)}
+                    break
                 case .updateNewChannelMessage(let message, let pts, let ptsCount):
                     if boxed {
                         buffer.appendInt32(1656358105)
@@ -1982,10 +2007,11 @@ public extension Api {
                     serializeInt32(pts, buffer: buffer, boxed: false)
                     serializeInt32(ptsCount, buffer: buffer, boxed: false)
                     break
-                case .updateReadMessagesContents(let messages, let pts, let ptsCount):
+                case .updateReadMessagesContents(let flags, let messages, let pts, let ptsCount, let date):
                     if boxed {
-                        buffer.appendInt32(1757493555)
+                        buffer.appendInt32(-131960447)
                     }
+                    serializeInt32(flags, buffer: buffer, boxed: false)
                     buffer.appendInt32(481674261)
                     buffer.appendInt32(Int32(messages.count))
                     for item in messages {
@@ -1993,12 +2019,13 @@ public extension Api {
                     }
                     serializeInt32(pts, buffer: buffer, boxed: false)
                     serializeInt32(ptsCount, buffer: buffer, boxed: false)
+                    if Int(flags) & Int(1 << 0) != 0 {serializeInt32(date!, buffer: buffer, boxed: false)}
                     break
-                case .updateReadStories(let userId, let maxId):
+                case .updateReadStories(let peer, let maxId):
                     if boxed {
-                        buffer.appendInt32(-21679014)
+                        buffer.appendInt32(-145845461)
                     }
-                    serializeInt64(userId, buffer: buffer, boxed: false)
+                    peer.serialize(buffer, true)
                     serializeInt32(maxId, buffer: buffer, boxed: false)
                     break
                 case .updateRecentEmojiStatuses:
@@ -2031,11 +2058,11 @@ public extension Api {
                     }
                     
                     break
-                case .updateSentStoryReaction(let userId, let storyId, let reaction):
+                case .updateSentStoryReaction(let peer, let storyId, let reaction):
                     if boxed {
-                        buffer.appendInt32(-475579104)
+                        buffer.appendInt32(2103604867)
                     }
-                    serializeInt64(userId, buffer: buffer, boxed: false)
+                    peer.serialize(buffer, true)
                     serializeInt32(storyId, buffer: buffer, boxed: false)
                     reaction.serialize(buffer, true)
                     break
@@ -2077,11 +2104,11 @@ public extension Api {
                     }
                     stealthMode.serialize(buffer, true)
                     break
-                case .updateStory(let userId, let story):
+                case .updateStory(let peer, let story):
                     if boxed {
-                        buffer.appendInt32(542785843)
+                        buffer.appendInt32(1974712216)
                     }
-                    serializeInt64(userId, buffer: buffer, boxed: false)
+                    peer.serialize(buffer, true)
                     story.serialize(buffer, true)
                     break
                 case .updateStoryID(let id, let randomId):
@@ -2305,6 +2332,8 @@ public extension Api {
                 return ("updateMessageReactions", [("flags", flags as Any), ("peer", peer as Any), ("msgId", msgId as Any), ("topMsgId", topMsgId as Any), ("reactions", reactions as Any)])
                 case .updateMoveStickerSetToTop(let flags, let stickerset):
                 return ("updateMoveStickerSetToTop", [("flags", flags as Any), ("stickerset", stickerset as Any)])
+                case .updateNewAuthorization(let flags, let hash, let date, let device, let location):
+                return ("updateNewAuthorization", [("flags", flags as Any), ("hash", hash as Any), ("date", date as Any), ("device", device as Any), ("location", location as Any)])
                 case .updateNewChannelMessage(let message, let pts, let ptsCount):
                 return ("updateNewChannelMessage", [("message", message as Any), ("pts", pts as Any), ("ptsCount", ptsCount as Any)])
                 case .updateNewEncryptedMessage(let message, let qts):
@@ -2357,10 +2386,10 @@ public extension Api {
                 return ("updateReadHistoryInbox", [("flags", flags as Any), ("folderId", folderId as Any), ("peer", peer as Any), ("maxId", maxId as Any), ("stillUnreadCount", stillUnreadCount as Any), ("pts", pts as Any), ("ptsCount", ptsCount as Any)])
                 case .updateReadHistoryOutbox(let peer, let maxId, let pts, let ptsCount):
                 return ("updateReadHistoryOutbox", [("peer", peer as Any), ("maxId", maxId as Any), ("pts", pts as Any), ("ptsCount", ptsCount as Any)])
-                case .updateReadMessagesContents(let messages, let pts, let ptsCount):
-                return ("updateReadMessagesContents", [("messages", messages as Any), ("pts", pts as Any), ("ptsCount", ptsCount as Any)])
-                case .updateReadStories(let userId, let maxId):
-                return ("updateReadStories", [("userId", userId as Any), ("maxId", maxId as Any)])
+                case .updateReadMessagesContents(let flags, let messages, let pts, let ptsCount, let date):
+                return ("updateReadMessagesContents", [("flags", flags as Any), ("messages", messages as Any), ("pts", pts as Any), ("ptsCount", ptsCount as Any), ("date", date as Any)])
+                case .updateReadStories(let peer, let maxId):
+                return ("updateReadStories", [("peer", peer as Any), ("maxId", maxId as Any)])
                 case .updateRecentEmojiStatuses:
                 return ("updateRecentEmojiStatuses", [])
                 case .updateRecentReactions:
@@ -2371,8 +2400,8 @@ public extension Api {
                 return ("updateSavedGifs", [])
                 case .updateSavedRingtones:
                 return ("updateSavedRingtones", [])
-                case .updateSentStoryReaction(let userId, let storyId, let reaction):
-                return ("updateSentStoryReaction", [("userId", userId as Any), ("storyId", storyId as Any), ("reaction", reaction as Any)])
+                case .updateSentStoryReaction(let peer, let storyId, let reaction):
+                return ("updateSentStoryReaction", [("peer", peer as Any), ("storyId", storyId as Any), ("reaction", reaction as Any)])
                 case .updateServiceNotification(let flags, let inboxDate, let type, let message, let media, let entities):
                 return ("updateServiceNotification", [("flags", flags as Any), ("inboxDate", inboxDate as Any), ("type", type as Any), ("message", message as Any), ("media", media as Any), ("entities", entities as Any)])
                 case .updateStickerSets(let flags):
@@ -2381,8 +2410,8 @@ public extension Api {
                 return ("updateStickerSetsOrder", [("flags", flags as Any), ("order", order as Any)])
                 case .updateStoriesStealthMode(let stealthMode):
                 return ("updateStoriesStealthMode", [("stealthMode", stealthMode as Any)])
-                case .updateStory(let userId, let story):
-                return ("updateStory", [("userId", userId as Any), ("story", story as Any)])
+                case .updateStory(let peer, let story):
+                return ("updateStory", [("peer", peer as Any), ("story", story as Any)])
                 case .updateStoryID(let id, let randomId):
                 return ("updateStoryID", [("id", id as Any), ("randomId", randomId as Any)])
                 case .updateTheme(let theme):
@@ -3619,6 +3648,29 @@ public extension Api {
                 return nil
             }
         }
+        public static func parse_updateNewAuthorization(_ reader: BufferReader) -> Update? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: Int64?
+            _2 = reader.readInt64()
+            var _3: Int32?
+            if Int(_1!) & Int(1 << 0) != 0 {_3 = reader.readInt32() }
+            var _4: String?
+            if Int(_1!) & Int(1 << 0) != 0 {_4 = parseString(reader) }
+            var _5: String?
+            if Int(_1!) & Int(1 << 0) != 0 {_5 = parseString(reader) }
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
+            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
+            let _c5 = (Int(_1!) & Int(1 << 0) == 0) || _5 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 {
+                return Api.Update.updateNewAuthorization(flags: _1!, hash: _2!, date: _3, device: _4, location: _5)
+            }
+            else {
+                return nil
+            }
+        }
         public static func parse_updateNewChannelMessage(_ reader: BufferReader) -> Update? {
             var _1: Api.Message?
             if let signature = reader.readInt32() {
@@ -4066,33 +4118,41 @@ public extension Api {
             }
         }
         public static func parse_updateReadMessagesContents(_ reader: BufferReader) -> Update? {
-            var _1: [Int32]?
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: [Int32]?
             if let _ = reader.readInt32() {
-                _1 = Api.parseVector(reader, elementSignature: -1471112230, elementType: Int32.self)
+                _2 = Api.parseVector(reader, elementSignature: -1471112230, elementType: Int32.self)
             }
-            var _2: Int32?
-            _2 = reader.readInt32()
             var _3: Int32?
             _3 = reader.readInt32()
+            var _4: Int32?
+            _4 = reader.readInt32()
+            var _5: Int32?
+            if Int(_1!) & Int(1 << 0) != 0 {_5 = reader.readInt32() }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            if _c1 && _c2 && _c3 {
-                return Api.Update.updateReadMessagesContents(messages: _1!, pts: _2!, ptsCount: _3!)
+            let _c4 = _4 != nil
+            let _c5 = (Int(_1!) & Int(1 << 0) == 0) || _5 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 {
+                return Api.Update.updateReadMessagesContents(flags: _1!, messages: _2!, pts: _3!, ptsCount: _4!, date: _5)
             }
             else {
                 return nil
             }
         }
         public static func parse_updateReadStories(_ reader: BufferReader) -> Update? {
-            var _1: Int64?
-            _1 = reader.readInt64()
+            var _1: Api.Peer?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.Peer
+            }
             var _2: Int32?
             _2 = reader.readInt32()
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             if _c1 && _c2 {
-                return Api.Update.updateReadStories(userId: _1!, maxId: _2!)
+                return Api.Update.updateReadStories(peer: _1!, maxId: _2!)
             }
             else {
                 return nil
@@ -4114,8 +4174,10 @@ public extension Api {
             return Api.Update.updateSavedRingtones
         }
         public static func parse_updateSentStoryReaction(_ reader: BufferReader) -> Update? {
-            var _1: Int64?
-            _1 = reader.readInt64()
+            var _1: Api.Peer?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.Peer
+            }
             var _2: Int32?
             _2 = reader.readInt32()
             var _3: Api.Reaction?
@@ -4126,7 +4188,7 @@ public extension Api {
             let _c2 = _2 != nil
             let _c3 = _3 != nil
             if _c1 && _c2 && _c3 {
-                return Api.Update.updateSentStoryReaction(userId: _1!, storyId: _2!, reaction: _3!)
+                return Api.Update.updateSentStoryReaction(peer: _1!, storyId: _2!, reaction: _3!)
             }
             else {
                 return nil
@@ -4203,8 +4265,10 @@ public extension Api {
             }
         }
         public static func parse_updateStory(_ reader: BufferReader) -> Update? {
-            var _1: Int64?
-            _1 = reader.readInt64()
+            var _1: Api.Peer?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.Peer
+            }
             var _2: Api.StoryItem?
             if let signature = reader.readInt32() {
                 _2 = Api.parse(reader, signature: signature) as? Api.StoryItem
@@ -4212,7 +4276,7 @@ public extension Api {
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             if _c1 && _c2 {
-                return Api.Update.updateStory(userId: _1!, story: _2!)
+                return Api.Update.updateStory(peer: _1!, story: _2!)
             }
             else {
                 return nil

@@ -84,7 +84,7 @@ public final class AuthorizationSequenceController: NavigationController, MFMail
         |> distinctUntilChanged
         |> deliverOnMainQueue).start(next: { [weak self] state in
             self?.updateState(state: state)
-        })
+        }).strict()
     }
     
     required public init(coder aDecoder: NSCoder) {
@@ -306,8 +306,7 @@ public final class AuthorizationSequenceController: NavigationController, MFMail
         if let currentController = currentController {
             controller = currentController
         } else {
-            // MARK: Nicegram AppReviewLogin, isTestingEnvironment added
-            controller = AuthorizationSequenceCodeEntryController(presentationData: self.presentationData, isTestingEnvironment: self.account.testingEnvironment, back: { [weak self] in
+            controller = AuthorizationSequenceCodeEntryController(presentationData: self.presentationData, back: { [weak self] in
                 guard let strongSelf = self else {
                     return
                 }
@@ -1062,7 +1061,7 @@ public final class AuthorizationSequenceController: NavigationController, MFMail
                         avatarVideo = Signal<TelegramMediaResource?, NoError> { subscriber in
                             let entityRenderer: LegacyPaintEntityRenderer? = avatarAdjustments.flatMap { adjustments in
                                 if let paintingData = adjustments.paintingData, paintingData.hasAnimation {
-                                    return LegacyPaintEntityRenderer(account: nil, adjustments: adjustments)
+                                    return LegacyPaintEntityRenderer(postbox: nil, adjustments: adjustments)
                                 } else {
                                     return nil
                                 }
@@ -1312,7 +1311,7 @@ public final class AuthorizationSequenceController: NavigationController, MFMail
     public static func defaultCountryCode() -> Int32 {
         var countryId: String? = nil
         let networkInfo = CTTelephonyNetworkInfo()
-        if let carrier = networkInfo.subscriberCellularProvider {
+        if let carrier = networkInfo.serviceSubscriberCellularProviders?.values.first {
             countryId = carrier.isoCountryCode
         }
         

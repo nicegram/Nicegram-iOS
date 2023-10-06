@@ -100,7 +100,7 @@ class BazelCommandLine:
 
             # https://github.com/bazelbuild/rules_swift
             # Use -Osize instead of -O when building swift modules.
-            '--features=swift.opt_uses_osize',
+            #'--features=swift.opt_uses_osize',
 
             # --num-threads 0 forces swiftc to generate one object file per module; it:
             # 1. resolves issues with the linker caused by the swift-objc mixing.
@@ -623,7 +623,7 @@ def build(bazel, arguments):
             sys.exit(1)
         shutil.copyfile(ipa_paths[0], artifacts_path + '/Telegram.ipa')
 
-        dsym_paths = glob.glob('bazel-out/applebin_ios-ios_arm*-opt-ST-*/bin/Telegram/*.dSYM')
+        dsym_paths = glob.glob('bazel-bin/Telegram/**/*.dSYM')
         for dsym_path in dsym_paths:
             file_name = os.path.basename(dsym_path)
             shutil.copytree(dsym_path, artifacts_path + '/DSYMs/{}'.format(file_name))

@@ -32,6 +32,9 @@ swift_library(
         "//submodules/ItemListPeerItem:ItemListPeerItem",
         "//submodules/ItemListPeerActionItem:ItemListPeerActionItem",
         "//submodules/ContextUI:ContextUI",
+        "//submodules/PremiumUI:PremiumUI",
+        "//submodules/InviteLinksUI:InviteLinksUI",
+        "//submodules/ShareController:ShareController",
     ],
     visibility = [
         "//visibility:public",

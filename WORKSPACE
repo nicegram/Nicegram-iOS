@@ -9,16 +9,14 @@ http_archive(
     ],
 )
 
-'''http_archive(
-    name = "com_google_protobuf",
-    urls = ["https://github.com/protocolbuffers/protobuf/releases/download/v22.2/protobuf-22.2.zip"],
-    sha256 = "bf1f92aebd619651220711e97b3d560cdc2484718cd56d95161bfb2fadb8628e",
-    strip_prefix = "protobuf-22.2",
-    type = "zip",
+http_archive(
+    name = "bazel_features",
+    sha256 = "9fcb3d7cbe908772462aaa52f02b857a225910d30daa3c252f670e3af6d8036d",
+    strip_prefix = "bazel_features-1.0.0",
+    url = "https://github.com/bazel-contrib/bazel_features/releases/download/v1.0.0/bazel_features-v1.0.0.tar.gz",
 )
-
-load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
-protobuf_deps()'''
+load("@bazel_features//:deps.bzl", "bazel_features_deps")
+bazel_features_deps()
 
 local_repository(
     name = "build_bazel_rules_apple",
@@ -109,9 +107,9 @@ http_archive(
 
 http_archive(
     name = "rules_swift_package_manager",
-    sha256 = "54f358ac1ed2bcf65404bc26c9d1298486ea88bfc230f452531e7ac26bcfca8b",
+    sha256 = "5fa4bb1ed4d105ac0d10234b8442ba7c489058697afef7dbf59dbd35bff8892e",
     urls = [
-        "https://github.com/cgrindel/rules_swift_package_manager/releases/download/v0.4.3/rules_swift_package_manager.v0.4.3.tar.gz",
+        "https://github.com/cgrindel/rules_swift_package_manager/releases/download/v0.13.1/rules_swift_package_manager.v0.13.1.tar.gz",
     ],
 )
 

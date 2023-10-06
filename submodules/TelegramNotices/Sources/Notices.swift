@@ -179,6 +179,8 @@ private enum ApplicationSpecificGlobalNotice: Int32 {
     case displayChatListArchiveTooltip = 45
     case displayStoryReactionTooltip = 46
     case storyStealthModeReplyCount = 47
+    case viewOnceTooltip = 48
+    case displayStoryUnmuteTooltip = 49
     
     var key: ValueBoxKey {
         let v = ValueBoxKey(length: 4)
@@ -423,6 +425,14 @@ private struct ApplicationSpecificNoticeKeys {
     
     static func storyStealthModeReplyCount() -> NoticeEntryKey {
         return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.storyStealthModeReplyCount.key)
+    }
+    
+    static func viewOnceTooltip() -> NoticeEntryKey {
+        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.viewOnceTooltip.key)
+    }
+    
+    static func displayStoryUnmuteTooltip() -> NoticeEntryKey {
+        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.displayStoryUnmuteTooltip.key)
     }
 }
 
@@ -1610,5 +1620,43 @@ public struct ApplicationSpecificNotice {
             }
         }
         |> ignoreValues
+    }
+
+    public static func incrementViewOnceTooltip(accountManager: AccountManager<TelegramAccountManagerTypes>, count: Int = 1) -> Signal<Int, NoError> {
+        return accountManager.transaction { transaction -> Int in
+            var currentValue: Int32 = 0
+            if let value = transaction.getNotice(ApplicationSpecificNoticeKeys.viewOnceTooltip())?.get(ApplicationSpecificCounterNotice.self) {
+                currentValue = value.value
+            }
+            let previousValue = currentValue
+            currentValue += Int32(count)
+
+            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+                transaction.setNotice(ApplicationSpecificNoticeKeys.viewOnceTooltip(), entry)
+            }
+            
+            return Int(previousValue)
+        }
+    }
+    
+    public static func setDisplayStoryUnmuteTooltip(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Never, NoError> {
+        return accountManager.transaction { transaction -> Void in
+            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
+                transaction.setNotice(ApplicationSpecificNoticeKeys.displayStoryUnmuteTooltip(), entry)
+            }
+        }
+        |> ignoreValues
+    }
+    
+    public static func displayStoryUnmuteTooltip(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Bool, NoError> {
+        return accountManager.noticeEntry(key: ApplicationSpecificNoticeKeys.displayStoryUnmuteTooltip())
+        |> map { view -> Bool in
+            if let _ = view.value?.get(ApplicationSpecificBoolNotice.self) {
+                return true
+            } else {
+                return false
+            }
+        }
+        |> take(1)
     }
 }

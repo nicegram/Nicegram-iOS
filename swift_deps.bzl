@@ -4,7 +4,7 @@ def swift_dependencies():
     # version: 2.1.3
     swift_package(
         name = "swiftpkg_factory",
-        commit = "061b3afe0358a0da7ce568f8272c847910be3dd7",
+        commit = "8d20074d8a5ac79d6902faecbdbafaf0a0326f49",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/hmlongco/Factory",
     )
@@ -36,7 +36,7 @@ def swift_dependencies():
     # branch: develop
     swift_package(
         name = "swiftpkg_nicegram_assistant_ios",
-        commit = "13fc922fb085c2b758f5864953978fd1fd5e0cef",
+        commit = "0368e82947f3b201347cdb7f863848c1509d5490",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
     )
@@ -44,15 +44,15 @@ def swift_dependencies():
     # version: 7.3.2
     swift_package(
         name = "swiftpkg_r.swift",
-        commit = "0e4ec17f329136b712d0a96128597b8ff2f31bdc",
+        commit = "77c0d9c202b9ac83c1992111b76b3fb10468015b",
         dependencies_index = "@//:swift_deps_index.json",
-        remote = "https://github.com/mac-cain13/R.swift.git",
+        remote = "https://github.com/denis15yo/R.swift.git",
     )
 
     # version: 5.15.5
     swift_package(
         name = "swiftpkg_sdwebimage",
-        commit = "36e484b317522667a4b2de9b50daaa01dfa30809",
+        commit = "936f1c7067728d16c362ba4fb93c17df78b5fd79",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/SDWebImage/SDWebImage.git",
     )
@@ -92,7 +92,7 @@ def swift_dependencies():
     # version: 2.9.0
     swift_package(
         name = "swiftpkg_xcodeedit",
-        commit = "cd466d6e8c5ffd2f2b61165d37b0646f09068e1e",
+        commit = "b6b67389a0f1a6fdd9c6457a8ab5b02eaab13c5c",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/tomlokhorst/XcodeEdit",
     )

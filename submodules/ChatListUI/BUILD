@@ -5,6 +5,7 @@ NGDEPS = [
     "//Nicegram/NGModels:NGModels",
     "//Nicegram/NGUI:NGUI",
     "//Nicegram/NGEnv:NGEnv",
+    "//Nicegram/NGTranslate:NGTranslate",
     # Nicegram downloading feature
     "//submodules/SaveToCameraRoll:SaveToCameraRoll",
     "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChat",
@@ -113,6 +114,7 @@ swift_library(
         "//submodules/TelegramUI/Components/Stories/AvatarStoryIndicatorComponent",
         "//submodules/TelegramUI/Components/PeerInfo/PeerInfoStoryGridScreen",
         "//submodules/TelegramUI/Components/Settings/ArchiveInfoScreen",
+        "//submodules/TelegramUI/Components/Settings/NewSessionInfoScreen",
     ],
     visibility = [
         "//visibility:public",

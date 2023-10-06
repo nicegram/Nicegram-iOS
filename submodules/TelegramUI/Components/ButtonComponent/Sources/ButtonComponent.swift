@@ -93,19 +93,22 @@ public final class ButtonTextContentComponent: Component {
     public let textColor: UIColor
     public let badgeBackground: UIColor
     public let badgeForeground: UIColor
+    public let combinedAlignment: Bool
     
     public init(
         text: String,
         badge: Int,
         textColor: UIColor,
         badgeBackground: UIColor,
-        badgeForeground: UIColor
+        badgeForeground: UIColor,
+        combinedAlignment: Bool = false
     ) {
         self.text = text
         self.badge = badge
         self.textColor = textColor
         self.badgeBackground = badgeBackground
         self.badgeForeground = badgeForeground
+        self.combinedAlignment = combinedAlignment
     }
     
     public static func ==(lhs: ButtonTextContentComponent, rhs: ButtonTextContentComponent) -> Bool {
@@ -122,6 +125,9 @@ public final class ButtonTextContentComponent: Component {
             return false
         }
         if lhs.badgeForeground != rhs.badgeForeground {
+            return false
+        }
+        if lhs.combinedAlignment != rhs.combinedAlignment {
             return false
         }
         return true
@@ -184,7 +190,7 @@ public final class ButtonTextContentComponent: Component {
                             font: Font.semibold(15.0),
                             color: component.badgeForeground,
                             items: [
-                                AnimatedTextComponent.Item(id: AnyHashable(0), content: .number(component.badge))
+                                AnimatedTextComponent.Item(id: AnyHashable(0), content: .number(component.badge, minDigits: 0))
                             ]
                         ))
                     )),
@@ -194,23 +200,26 @@ public final class ButtonTextContentComponent: Component {
             }
             
             var size = contentSize
+            var measurementSize = size
             if let badgeSize {
-                //size.width += badgeSpacing
-                //size.width += badgeSize.width
+                if component.combinedAlignment {
+                    measurementSize.width += badgeSpacing
+                    measurementSize.width += badgeSize.width
+                }
                 size.height = max(size.height, badgeSize.height)
             }
             
-            let contentFrame = CGRect(origin: CGPoint(x: floor((size.width - contentSize.width) * 0.5), y: floor((size.height - contentSize.height) * 0.5)), size: contentSize)
+            let contentFrame = CGRect(origin: CGPoint(x: floor((size.width - measurementSize.width) * 0.5), y: floor((size.height - measurementSize.height) * 0.5)), size: measurementSize)
             
             if let contentView = self.content.view {
                 if contentView.superview == nil {
                     self.addSubview(contentView)
                 }
-                transition.setFrame(view: contentView, frame: contentFrame)
+                transition.setFrame(view: contentView, frame: CGRect(origin: contentFrame.origin, size: contentSize))
             }
             
             if let badgeSize, let badge = self.badge {
-                let badgeFrame = CGRect(origin: CGPoint(x: contentFrame.maxX + badgeSpacing, y: floor((size.height - badgeSize.height) * 0.5) + 1.0), size: badgeSize)
+                let badgeFrame = CGRect(origin: CGPoint(x: contentFrame.minX + contentSize.width + badgeSpacing, y: floor((size.height - badgeSize.height) * 0.5) + 1.0), size: badgeSize)
                 
                 if let badgeView = badge.view {
                     var animateIn = false
@@ -288,6 +297,7 @@ public final class ButtonComponent: Component {
     public let background: Background
     public let content: AnyComponentWithIdentity<Empty>
     public let isEnabled: Bool
+    public let tintWhenDisabled: Bool
     public let allowActionWhenDisabled: Bool
     public let displaysProgress: Bool
     public let action: () -> Void
@@ -296,6 +306,7 @@ public final class ButtonComponent: Component {
         background: Background,
         content: AnyComponentWithIdentity<Empty>,
         isEnabled: Bool,
+        tintWhenDisabled: Bool = true,
         allowActionWhenDisabled: Bool = false,
         displaysProgress: Bool,
         action: @escaping () -> Void
@@ -303,6 +314,7 @@ public final class ButtonComponent: Component {
         self.background = background
         self.content = content
         self.isEnabled = isEnabled
+        self.tintWhenDisabled = tintWhenDisabled
         self.allowActionWhenDisabled = allowActionWhenDisabled
         self.displaysProgress = displaysProgress
         self.action = action
@@ -316,6 +328,9 @@ public final class ButtonComponent: Component {
             return false
         }
         if lhs.isEnabled != rhs.isEnabled {
+            return false
+        }
+        if lhs.tintWhenDisabled != rhs.tintWhenDisabled {
             return false
         }
         if lhs.allowActionWhenDisabled != rhs.allowActionWhenDisabled {
@@ -389,7 +404,7 @@ public final class ButtonComponent: Component {
             var contentAlpha: CGFloat = 1.0
             if component.displaysProgress {
                 contentAlpha = 0.0
-            } else if !component.isEnabled {
+            } else if !component.isEnabled && component.tintWhenDisabled {
                 contentAlpha = 0.7
             }
 

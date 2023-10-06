@@ -10,11 +10,17 @@ private let botWebViewPlatform = "macos"
 private let botWebViewPlatform = "ios"
 #endif
 
+public enum RequestSimpleWebViewSource {
+    case generic
+    case inline
+    case settings
+}
+
 public enum RequestSimpleWebViewError {
     case generic
 }
 
-func _internal_requestSimpleWebView(postbox: Postbox, network: Network, botId: PeerId, url: String, inline: Bool, themeParams: [String: Any]?) -> Signal<String, RequestSimpleWebViewError> {
+func _internal_requestSimpleWebView(postbox: Postbox, network: Network, botId: PeerId, url: String?, source: RequestSimpleWebViewSource, themeParams: [String: Any]?) -> Signal<String, RequestSimpleWebViewError> {
     var serializedThemeParams: Api.DataJSON?
     if let themeParams = themeParams, let data = try? JSONSerialization.data(withJSONObject: themeParams, options: []), let dataString = String(data: data, encoding: .utf8) {
         serializedThemeParams = .dataJSON(data: dataString)
@@ -28,10 +34,18 @@ func _internal_requestSimpleWebView(postbox: Postbox, network: Network, botId: P
         if let _ = serializedThemeParams {
             flags |= (1 << 0)
         }
-        if inline {
+        switch source {
+        case .inline:
             flags |= (1 << 1)
+        case .settings:
+            flags |= (1 << 2)
+        default:
+            break
         }
-        return network.request(Api.functions.messages.requestSimpleWebView(flags: flags, bot: inputUser, url: url, themeParams: serializedThemeParams, platform: botWebViewPlatform))
+        if let _ = url {
+            flags |= (1 << 3)
+        }
+        return network.request(Api.functions.messages.requestSimpleWebView(flags: flags, bot: inputUser, url: url, startParam: nil, themeParams: serializedThemeParams, platform: botWebViewPlatform))
         |> mapError { _ -> RequestSimpleWebViewError in
             return .generic
         }
@@ -234,5 +248,74 @@ func _internal_requestAppWebView(postbox: Postbox, network: Network, stateManage
         }
     }
     |> castError(RequestAppWebViewError.self)
+    |> switchToLatest
+}
+
+func _internal_canBotSendMessages(postbox: Postbox, network: Network, botId: PeerId) -> Signal<Bool, NoError> {
+    return postbox.transaction { transaction -> Signal<Bool, NoError> in
+        guard let bot = transaction.getPeer(botId), let inputUser = apiInputUser(bot) else {
+            return .single(false)
+        }
+
+        return network.request(Api.functions.bots.canSendMessage(bot: inputUser))
+        |> `catch` { _ -> Signal<Api.Bool, NoError> in
+            return .single(.boolFalse)
+        }
+        |> map { result -> Bool in
+            if case .boolTrue = result {
+                return true
+            } else {
+                return false
+            }
+        }
+    }
+    |> switchToLatest
+}
+
+func _internal_allowBotSendMessages(postbox: Postbox, network: Network, stateManager: AccountStateManager, botId: PeerId) -> Signal<Never, NoError> {
+    return postbox.transaction { transaction -> Signal<Never, NoError> in
+        guard let bot = transaction.getPeer(botId), let inputUser = apiInputUser(bot) else {
+            return .never()
+        }
+
+        return network.request(Api.functions.bots.allowSendMessage(bot: inputUser))
+        |> map(Optional.init)
+        |> `catch` { _ -> Signal<Api.Updates?, NoError> in
+            return .single(nil)
+        }
+        |> map { updates -> Api.Updates? in
+            if let updates = updates {
+                stateManager.addUpdates(updates)
+            }
+            return updates
+        }
+        |> ignoreValues
+    }
+    |> switchToLatest
+}
+
+public enum InvokeBotCustomMethodError {
+    case generic
+}
+
+func _internal_invokeBotCustomMethod(postbox: Postbox, network: Network, botId: PeerId, method: String, params: String) -> Signal<String, InvokeBotCustomMethodError> {
+    let params = Api.DataJSON.dataJSON(data: params)
+    return postbox.transaction { transaction -> Signal<String, InvokeBotCustomMethodError> in
+        guard let bot = transaction.getPeer(botId), let inputUser = apiInputUser(bot) else {
+            return .fail(.generic)
+        }
+        return network.request(Api.functions.bots.invokeWebViewCustomMethod(bot: inputUser, customMethod: method, params: params))
+        |> mapError { _ -> InvokeBotCustomMethodError in
+            return .generic
+        }
+        |> map { result -> String in
+            if case let .dataJSON(data) = result {
+                return data
+            } else {
+                return ""
+            }
+        }
+    }
+    |> castError(InvokeBotCustomMethodError.self)
     |> switchToLatest
 }

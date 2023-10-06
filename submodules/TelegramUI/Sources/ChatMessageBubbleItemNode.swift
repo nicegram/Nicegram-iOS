@@ -161,14 +161,26 @@ private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> ([
                         result.append((message, ChatMessageStoryMentionContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .freeform, neighborSpacing: .default)))
                     }
                 } else {
-                    if let storyItem = message.associatedStories[story.storyId], storyItem.data.isEmpty {
-                    } else {
-                        result.append((message, ChatMessageMediaBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .media, neighborSpacing: .default)))
+                    var hideStory = false
+                    if let peer = message.peers[story.storyId.peerId] as? TelegramChannel, peer.username == nil, peer.usernames.isEmpty {
+                        switch peer.participationStatus {
+                        case .member:
+                            break
+                        case .kicked, .left:
+                            hideStory = true
+                        }
                     }
                     
-                    if let storyItem = message.associatedStories[story.storyId], let storedItem = storyItem.get(Stories.StoredItem.self), case let .item(item) = storedItem {
-                        if !item.text.isEmpty {
-                            isStoryWithText = true
+                    if !hideStory {
+                        if let storyItem = message.associatedStories[story.storyId], storyItem.data.isEmpty {
+                        } else {
+                            result.append((message, ChatMessageMediaBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .media, neighborSpacing: .default)))
+                        }
+                        
+                        if let storyItem = message.associatedStories[story.storyId], let storedItem = storyItem.get(Stories.StoredItem.self), case let .item(item) = storedItem {
+                            if !item.text.isEmpty {
+                                isStoryWithText = true
+                            }
                         }
                     }
                 }
@@ -2130,15 +2142,23 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewItemNode
                 
                 forwardSource = firstMessage.peers[storyMedia.storyId.peerId]
                 
-                var isExpired: Bool = false
+                var storyType: ChatMessageForwardInfoNode.StoryType = .regular
                 if let storyItem = firstMessage.associatedStories[storyMedia.storyId], storyItem.data.isEmpty {
-                    isExpired = true
+                    storyType = .expired
+                }
+                if let peer = firstMessage.peers[storyMedia.storyId.peerId] as? TelegramChannel, peer.username == nil, peer.usernames.isEmpty {
+                    switch peer.participationStatus {
+                    case .member:
+                        break
+                    case .kicked, .left:
+                        storyType = .unavailable
+                    }
                 }
                 
-                let sizeAndApply = forwardInfoLayout(item.presentationData, item.presentationData.strings, .bubble(incoming: incoming), forwardSource, nil, nil, ChatMessageForwardInfoNode.StoryData(isExpired: isExpired), CGSize(width: maximumNodeWidth - layoutConstants.text.bubbleInsets.left - layoutConstants.text.bubbleInsets.right, height: CGFloat.greatestFiniteMagnitude))
+                let sizeAndApply = forwardInfoLayout(item.presentationData, item.presentationData.strings, .bubble(incoming: incoming), forwardSource, nil, nil, ChatMessageForwardInfoNode.StoryData(storyType: storyType), CGSize(width: maximumNodeWidth - layoutConstants.text.bubbleInsets.left - layoutConstants.text.bubbleInsets.right, height: CGFloat.greatestFiniteMagnitude))
                 forwardInfoSizeApply = (sizeAndApply.0, { width in sizeAndApply.1(width) })
                 
-                if isExpired {
+                if storyType != .regular {
                     headerSize.height += 6.0
                 }
                 
@@ -2146,7 +2166,7 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewItemNode
                 headerSize.width = max(headerSize.width, forwardInfoSizeApply.0.width + bubbleWidthInsets)
                 headerSize.height += forwardInfoSizeApply.0.height
                 
-                if isExpired {
+                if storyType != .regular {
                     headerSize.height += 16.0
                 }
             }
@@ -4055,7 +4075,7 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewItemNode
                         return .action({ [weak self] in
                             if let item = self?.item {
                                 let _ = (item.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
-                                |> deliverOnMainQueue).start(next: { peer in
+                                |> deliverOnMainQueue).startStandalone(next: { peer in
                                     if let self = self, let item = self.item, let peer = peer {
                                         item.controllerInteraction.openPeer(peer, openProfile ? .info : .chat(textInputState: nil, subject: nil, peekData: nil), nil, .default)
                                     }
@@ -4445,10 +4465,13 @@ class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewItemNode
             case let .message(message, _, _, _, _):
                 for media in message.media {
                     if let action = media as? TelegramMediaAction {
-                        if case .phoneCall = action.action { } else {
+                        if case .phoneCall = action.action {
+                        } else {
                             canHaveSelection = false
                             break
                         }
+                    } else if media is TelegramMediaExpiredContent {
+                        canHaveSelection = false
                     }
                 }
                 if message.adAttribute != nil {

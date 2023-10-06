@@ -18,7 +18,9 @@ public final class AttachMenuBots: Equatable, Codable {
             case `default` = 0
             case iOSStatic
             case iOSAnimated
+            case iOSSettingsStatic
             case macOSAnimated
+            case macOSSettingsStatic
             case placeholder
             
             init?(string: String) {
@@ -29,6 +31,10 @@ public final class AttachMenuBots: Equatable, Codable {
                         self = .iOSStatic
                     case "ios_animated":
                         self = .iOSAnimated
+                    case "ios_side_menu_static":
+                        self = .iOSSettingsStatic
+                    case "macos_side_menu_static":
+                        self = .macOSSettingsStatic
                     case "macos_animated":
                         self = .macOSAnimated
                     case "placeholder_static":
@@ -52,6 +58,10 @@ public final class AttachMenuBots: Equatable, Codable {
             
             public static let hasSettings = Flags(rawValue: 1 << 0)
             public static let requiresWriteAccess = Flags(rawValue: 1 << 1)
+            public static let showInAttachMenu = Flags(rawValue: 1 << 2)
+            public static let showInSettings = Flags(rawValue: 1 << 3)
+            public static let showInSettingsDisclaimer = Flags(rawValue: 1 << 4)
+            public static let notActivated = Flags(rawValue: 1 << 5)
         }
         
         public struct PeerFlags: OptionSet, Codable {
@@ -187,6 +197,10 @@ public final class AttachMenuBots: Equatable, Codable {
             
             try container.encode(Int32(self.flags.rawValue), forKey: .flags)
         }
+        
+        func withUpdatedFlags(_ flags: Flags) -> Bot {
+            return Bot(peerId: self.peerId, name: self.name, icons: self.icons, peerTypes: self.peerTypes, flags: flags)
+        }
     }
     
     private enum CodingKeys: String, CodingKey {
@@ -302,7 +316,7 @@ func managedSynchronizeAttachMenuBots(accountPeerId: PeerId, postbox: Postbox, n
                                         }
                                         if !icons.isEmpty {
                                             var peerTypes: AttachMenuBots.Bot.PeerFlags = []
-                                            for apiType in apiPeerTypes {
+                                            for apiType in apiPeerTypes ?? [] {
                                                 switch apiType {
                                                     case .attachMenuPeerTypeSameBotPM:
                                                         peerTypes.insert(.sameBot)
@@ -317,11 +331,23 @@ func managedSynchronizeAttachMenuBots(accountPeerId: PeerId, postbox: Postbox, n
                                                 }
                                             }
                                             var flags: AttachMenuBots.Bot.Flags = []
+                                            if (apiFlags & (1 << 0)) != 0 {
+                                                flags.insert(.notActivated)
+                                            }
                                             if (apiFlags & (1 << 1)) != 0 {
                                                 flags.insert(.hasSettings)
                                             }
                                             if (apiFlags & (1 << 2)) != 0 {
                                                 flags.insert(.requiresWriteAccess)
+                                            }
+                                            if (apiFlags & (1 << 3)) != 0 {
+                                                flags.insert(.showInAttachMenu)
+                                            }
+                                            if (apiFlags & (1 << 4)) != 0 {
+                                                flags.insert(.showInSettings)
+                                            }
+                                            if (apiFlags & (1 << 5)) != 0 {
+                                                flags.insert(.showInSettingsDisclaimer)
                                             }
                                             resultBots.append(AttachMenuBots.Bot(peerId: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(botId)), name: name, icons: icons, peerTypes: peerTypes, flags: flags))
                                         }
@@ -400,6 +426,8 @@ func _internal_addBotToAttachMenu(accountPeerId: PeerId, postbox: Postbox, netwo
 }
 
 func _internal_removeBotFromAttachMenu(accountPeerId: PeerId, postbox: Postbox, network: Network, botId: PeerId) -> Signal<Bool, NoError> {
+    let _ = removeCachedAttachMenuBot(postbox: postbox, botId: botId).start()
+    
     return postbox.transaction { transaction -> Signal<Bool, NoError> in
         guard let peer = transaction.getPeer(botId), let inputUser = apiInputUser(peer) else {
             return .complete()
@@ -419,21 +447,38 @@ func _internal_removeBotFromAttachMenu(accountPeerId: PeerId, postbox: Postbox, 
         |> afterCompleted {
             let _ = (managedSynchronizeAttachMenuBots(accountPeerId: accountPeerId, postbox: postbox, network: network, force: true)
             |> take(1)).start(completed: {
-                let _ = removeCachedAttachMenuBot(postbox: postbox, botId: botId)
+                let _ = removeCachedAttachMenuBot(postbox: postbox, botId: botId).start()
             })
         }
     }
     |> switchToLatest
 }
 
+func _internal_acceptAttachMenuBotDisclaimer(postbox: Postbox, botId: PeerId) -> Signal<Never, NoError> {
+    return postbox.transaction { transaction in
+        if let attachMenuBots = cachedAttachMenuBots(transaction: transaction) {
+            var updatedAttachMenuBots = attachMenuBots
+            if let index = attachMenuBots.bots.firstIndex(where: { $0.peerId == botId }) {
+                var updatedFlags = attachMenuBots.bots[index].flags
+                updatedFlags.remove(.showInSettingsDisclaimer)
+                let updatedBot = attachMenuBots.bots[index].withUpdatedFlags(updatedFlags)
+                var updatedBots = attachMenuBots.bots
+                updatedBots[index] = updatedBot
+                updatedAttachMenuBots = AttachMenuBots(hash: attachMenuBots.hash, bots: updatedBots)
+            }
+            setCachedAttachMenuBots(transaction: transaction, attachMenuBots: updatedAttachMenuBots)
+        }
+    } |> ignoreValues
+}
+
 public struct AttachMenuBot {
-    public let peer: Peer
+    public let peer: EnginePeer
     public let shortName: String
     public let icons: [AttachMenuBots.Bot.IconName: TelegramMediaFile]
     public let peerTypes: AttachMenuBots.Bot.PeerFlags
     public let flags: AttachMenuBots.Bot.Flags
     
-    init(peer: Peer, shortName: String, icons: [AttachMenuBots.Bot.IconName: TelegramMediaFile], peerTypes: AttachMenuBots.Bot.PeerFlags, flags: AttachMenuBots.Bot.Flags) {
+    public init(peer: EnginePeer, shortName: String, icons: [AttachMenuBots.Bot.IconName: TelegramMediaFile], peerTypes: AttachMenuBots.Bot.PeerFlags, flags: AttachMenuBots.Bot.Flags) {
         self.peer = peer
         self.shortName = shortName
         self.icons = icons
@@ -450,7 +495,7 @@ func _internal_attachMenuBots(postbox: Postbox) -> Signal<[AttachMenuBot], NoErr
         var resultBots: [AttachMenuBot] = []
         for bot in cachedBots {
             if let peer = transaction.getPeer(bot.peerId) {
-                resultBots.append(AttachMenuBot(peer: peer, shortName: bot.name, icons: bot.icons, peerTypes: bot.peerTypes, flags: bot.flags))
+                resultBots.append(AttachMenuBot(peer: EnginePeer(peer), shortName: bot.name, icons: bot.icons, peerTypes: bot.peerTypes, flags: bot.flags))
             }
         }
         return resultBots
@@ -465,7 +510,7 @@ func _internal_getAttachMenuBot(accountPeerId: PeerId, postbox: Postbox, network
     return postbox.transaction { transaction -> Signal<AttachMenuBot, GetAttachMenuBotError> in
         if cached, let cachedBots = cachedAttachMenuBots(transaction: transaction)?.bots {
             if let bot = cachedBots.first(where: { $0.peerId == botId }), let peer = transaction.getPeer(bot.peerId) {
-                return .single(AttachMenuBot(peer: peer, shortName: bot.name, icons: bot.icons, peerTypes: bot.peerTypes, flags: bot.flags))
+                return .single(AttachMenuBot(peer: EnginePeer(peer), shortName: bot.name, icons: bot.icons, peerTypes: bot.peerTypes, flags: bot.flags))
             }
         }
         
@@ -505,7 +550,7 @@ func _internal_getAttachMenuBot(accountPeerId: PeerId, postbox: Postbox, network
                                     }
                                 }
                                 var peerTypes: AttachMenuBots.Bot.PeerFlags = []
-                                for apiType in apiPeerTypes {
+                                for apiType in apiPeerTypes ?? [] {
                                     switch apiType {
                                         case .attachMenuPeerTypeSameBotPM:
                                             peerTypes.insert(.sameBot)
@@ -526,7 +571,16 @@ func _internal_getAttachMenuBot(accountPeerId: PeerId, postbox: Postbox, network
                                 if (apiFlags & (1 << 2)) != 0 {
                                     flags.insert(.requiresWriteAccess)
                                 }
-                                return .single(AttachMenuBot(peer: peer, shortName: name, icons: icons, peerTypes: peerTypes, flags: flags))
+                                if (apiFlags & (1 << 3)) != 0 {
+                                    flags.insert(.showInAttachMenu)
+                                }
+                                if (apiFlags & (1 << 4)) != 0 {
+                                    flags.insert(.showInSettings)
+                                }
+                                if (apiFlags & (1 << 5)) != 0 {
+                                    flags.insert(.showInSettingsDisclaimer)
+                                }
+                                return .single(AttachMenuBot(peer: EnginePeer(peer), shortName: name, icons: icons, peerTypes: peerTypes, flags: flags))
                         }
                 }
             }
@@ -569,6 +623,7 @@ public final class BotApp: Equatable, Codable {
         
         public static let notActivated = Flags(rawValue: 1 << 0)
         public static let requiresWriteAccess = Flags(rawValue: 1 << 1)
+        public static let hasSettings = Flags(rawValue: 1 << 2)
     }
     
     public let id: Int64
@@ -697,7 +752,7 @@ func _internal_getBotApp(account: Account, reference: BotAppReference) -> Signal
         }
         |> mapToSignal { result -> Signal<BotApp, GetBotAppError> in
             switch result {
-                case let .botApp(botAppFlags, app):
+            case let .botApp(botAppFlags, app):
                 switch app {
                 case let .botApp(flags, id, accessHash, shortName, title, description, photo, document, hash):
                     let _ = flags
@@ -708,10 +763,13 @@ func _internal_getBotApp(account: Account, reference: BotAppReference) -> Signal
                     if (botAppFlags & (1 << 1)) != 0 {
                         appFlags.insert(.requiresWriteAccess)
                     }
+                    if (botAppFlags & (1 << 2)) != 0 {
+                        appFlags.insert(.hasSettings)
+                    }
                     return .single(BotApp(id: id, accessHash: accessHash, shortName: shortName, title: title, description: description, photo: telegramMediaImageFromApiPhoto(photo), document: document.flatMap(telegramMediaFileFromApiDocument), hash: hash, flags: appFlags))
-                case .botAppNotModified:
-                    return .complete()
-                }
+            case .botAppNotModified:
+                return .complete()
+            }
             }
         }
     }

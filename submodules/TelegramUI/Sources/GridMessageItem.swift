@@ -235,7 +235,7 @@ final class GridMessageItemNode: GridItemNode {
                 self.mediaBadgeNode.isHidden = false
                 
                 self.resourceStatus = nil
-                self.fetchStatusDisposable.set((messageMediaFileStatus(context: context, messageId: messageId, file: file) |> deliverOnMainQueue).start(next: { [weak self] status in
+                self.fetchStatusDisposable.set((messageMediaFileStatus(context: context, messageId: messageId, file: file) |> deliverOnMainQueue).startStrict(next: { [weak self] status in
                     if let strongSelf = self, let item = strongSelf.item {
                         strongSelf.resourceStatus = status
                         
@@ -281,16 +281,16 @@ final class GridMessageItemNode: GridItemNode {
                                 switch status {
                                     case let .Fetching(_, progress):
                                         let progressString = String(format: "%d%%", Int(progress * 100.0))
-                                        badgeContent = .text(inset: 12.0, backgroundColor: mediaBadgeBackgroundColor, foregroundColor: mediaBadgeTextColor, text: NSAttributedString(string: progressString))
+                                        badgeContent = .text(inset: 12.0, backgroundColor: mediaBadgeBackgroundColor, foregroundColor: mediaBadgeTextColor, text: NSAttributedString(string: progressString), iconName: nil)
                                         mediaDownloadState = .compactFetching(progress: 0.0)
                                     case .Local:
-                                        badgeContent = .text(inset: 0.0, backgroundColor: mediaBadgeBackgroundColor, foregroundColor: mediaBadgeTextColor, text: NSAttributedString(string: durationString))
+                                        badgeContent = .text(inset: 0.0, backgroundColor: mediaBadgeBackgroundColor, foregroundColor: mediaBadgeTextColor, text: NSAttributedString(string: durationString), iconName: nil)
                                     case .Remote, .Paused:
-                                        badgeContent = .text(inset: 12.0, backgroundColor: mediaBadgeBackgroundColor, foregroundColor: mediaBadgeTextColor, text: NSAttributedString(string: durationString))
+                                        badgeContent = .text(inset: 12.0, backgroundColor: mediaBadgeBackgroundColor, foregroundColor: mediaBadgeTextColor, text: NSAttributedString(string: durationString), iconName: nil)
                                         mediaDownloadState = .compactRemote
                                 }
                             } else {
-                                badgeContent = .text(inset: 0.0, backgroundColor: mediaBadgeBackgroundColor, foregroundColor: mediaBadgeTextColor, text: NSAttributedString(string: durationString))
+                                badgeContent = .text(inset: 0.0, backgroundColor: mediaBadgeBackgroundColor, foregroundColor: mediaBadgeTextColor, text: NSAttributedString(string: durationString), iconName: nil)
                             }
                             
                             strongSelf.mediaBadgeNode.update(theme: item.theme, content: badgeContent, mediaDownloadState: mediaDownloadState, alignment: .right, animated: false, badgeAnimated: false)
@@ -434,7 +434,7 @@ final class GridMessageItemNode: GridItemNode {
                 case .Local:
                     let _ = controllerInteraction.openMessage(message, .default)
                 case .Remote, .Paused:
-                    self.fetchDisposable.set(messageMediaFileInteractiveFetched(context: context, message: message, file: file, userInitiated: true).start())
+                    self.fetchDisposable.set(messageMediaFileInteractiveFetched(context: context, message: message, file: file, userInitiated: true).startStrict())
             }
         }
     }

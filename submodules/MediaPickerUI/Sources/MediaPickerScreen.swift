@@ -169,6 +169,7 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
     fileprivate var interaction: MediaPickerInteraction?
     
     private let peer: EnginePeer?
+    private let isScheduledMessages: Bool
     private let threadTitle: String?
     private let chatLocation: ChatLocation?
     private let bannedSendPhotos: (Int32, Bool)?
@@ -676,68 +677,70 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
                     
                     if !controller.didSetupGroups {
                         controller.didSetupGroups = true
-                        controller.groupsPromise.set(
-                            combineLatest(
-                                self.mediaAssetsContext.fetchAssetsCollections(.album),
-                                self.mediaAssetsContext.fetchAssetsCollections(.smartAlbum)
-                            )
-                            |> map { albums, smartAlbums -> [MediaGroupItem] in
-                                var collections: [PHAssetCollection] = []
-                                smartAlbums.enumerateObjects { collection, _, _ in
-                                    if [.smartAlbumUserLibrary, .smartAlbumFavorites].contains(collection.assetCollectionSubtype) {
-                                        collections.append(collection)
+                        Queue.concurrentDefaultQueue().after(0.3) {
+                            controller.groupsPromise.set(
+                                combineLatest(
+                                    self.mediaAssetsContext.fetchAssetsCollections(.album),
+                                    self.mediaAssetsContext.fetchAssetsCollections(.smartAlbum)
+                                )
+                                |> map { albums, smartAlbums -> [MediaGroupItem] in
+                                    var collections: [PHAssetCollection] = []
+                                    smartAlbums.enumerateObjects { collection, _, _ in
+                                        if [.smartAlbumUserLibrary, .smartAlbumFavorites].contains(collection.assetCollectionSubtype) {
+                                            collections.append(collection)
+                                        }
                                     }
-                                }
-                                smartAlbums.enumerateObjects { collection, index, _ in
-                                    var supportedAlbums: [PHAssetCollectionSubtype] = [
-                                        .smartAlbumBursts,
-                                        .smartAlbumPanoramas,
-                                        .smartAlbumScreenshots,
-                                        .smartAlbumSelfPortraits,
-                                        .smartAlbumSlomoVideos,
-                                        .smartAlbumTimelapses,
-                                        .smartAlbumVideos,
-                                        .smartAlbumAllHidden
-                                    ]
-                                    if #available(iOS 11, *) {
-                                        supportedAlbums.append(.smartAlbumAnimated)
-                                        supportedAlbums.append(.smartAlbumDepthEffect)
-                                        supportedAlbums.append(.smartAlbumLivePhotos)
+                                    smartAlbums.enumerateObjects { collection, index, _ in
+                                        var supportedAlbums: [PHAssetCollectionSubtype] = [
+                                            .smartAlbumBursts,
+                                            .smartAlbumPanoramas,
+                                            .smartAlbumScreenshots,
+                                            .smartAlbumSelfPortraits,
+                                            .smartAlbumSlomoVideos,
+                                            .smartAlbumTimelapses,
+                                            .smartAlbumVideos,
+                                            .smartAlbumAllHidden
+                                        ]
+                                        if #available(iOS 11, *) {
+                                            supportedAlbums.append(.smartAlbumAnimated)
+                                            supportedAlbums.append(.smartAlbumDepthEffect)
+                                            supportedAlbums.append(.smartAlbumLivePhotos)
+                                        }
+                                        if supportedAlbums.contains(collection.assetCollectionSubtype) {
+                                            let result = PHAsset.fetchAssets(in: collection, options: nil)
+                                            if result.count > 0 {
+                                                collections.append(collection)
+                                            }
+                                        }
                                     }
-                                    if supportedAlbums.contains(collection.assetCollectionSubtype) {
+                                    albums.enumerateObjects(options: [.reverse]) { collection, _, _ in
                                         let result = PHAsset.fetchAssets(in: collection, options: nil)
                                         if result.count > 0 {
                                             collections.append(collection)
                                         }
                                     }
-                                }
-                                albums.enumerateObjects(options: [.reverse]) { collection, _, _ in
-                                    let result = PHAsset.fetchAssets(in: collection, options: nil)
-                                    if result.count > 0 {
-                                        collections.append(collection)
-                                    }
-                                }
-                                
-                                var items: [MediaGroupItem] = []
-                                for collection in collections {
-                                    let result = PHAsset.fetchAssets(in: collection, options: nil)
-                                    let firstItem: PHAsset?
-                                    if [.smartAlbumUserLibrary, .smartAlbumFavorites].contains(collection.assetCollectionSubtype) {
-                                        firstItem = result.lastObject
-                                    } else {
-                                        firstItem = result.firstObject
-                                    }
-                                    items.append(
-                                        MediaGroupItem(
-                                            collection: collection,
-                                            firstItem: firstItem,
-                                            count: result.count
+                                    
+                                    var items: [MediaGroupItem] = []
+                                    for collection in collections {
+                                        let result = PHAsset.fetchAssets(in: collection, options: nil)
+                                        let firstItem: PHAsset?
+                                        if [.smartAlbumUserLibrary, .smartAlbumFavorites].contains(collection.assetCollectionSubtype) {
+                                            firstItem = result.lastObject
+                                        } else {
+                                            firstItem = result.firstObject
+                                        }
+                                        items.append(
+                                            MediaGroupItem(
+                                                collection: collection,
+                                                firstItem: firstItem,
+                                                count: result.count
+                                            )
                                         )
-                                    )
+                                    }
+                                    return items
                                 }
-                                return items
-                            }
-                        )
+                            )
+                        }
                     }
                 } else if case .notDetermined = mediaAccess, !self.requestedMediaAccess {
                     self.requestedMediaAccess = true
@@ -968,7 +971,7 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
             
             self.openingMedia = true
             
-            self.currentGalleryController = presentLegacyMediaPickerGallery(context: controller.context, peer: controller.peer, threadTitle: controller.threadTitle, chatLocation: controller.chatLocation, presentationData: self.presentationData, source: .fetchResult(fetchResult: fetchResult, index: index, reversed: reversed), immediateThumbnail: immediateThumbnail, selectionContext: interaction.selectionState, editingContext: interaction.editingState, hasSilentPosting: true, hasSchedule: hasSchedule, hasTimer: hasTimer, updateHiddenMedia: { [weak self] id in
+            self.currentGalleryController = presentLegacyMediaPickerGallery(context: controller.context, peer: controller.peer, threadTitle: controller.threadTitle, chatLocation: controller.chatLocation, isScheduledMessages: controller.isScheduledMessages, presentationData: self.presentationData, source: .fetchResult(fetchResult: fetchResult, index: index, reversed: reversed), immediateThumbnail: immediateThumbnail, selectionContext: interaction.selectionState, editingContext: interaction.editingState, hasSilentPosting: true, hasSchedule: hasSchedule, hasTimer: hasTimer, updateHiddenMedia: { [weak self] id in
                 self?.hiddenMediaId.set(.single(id))
             }, initialLayout: layout, transitionHostView: { [weak self] in
                 return self?.gridNode.view
@@ -1007,7 +1010,7 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
             }
             
             self.openingMedia = true
-            self.currentGalleryController = presentLegacyMediaPickerGallery(context: controller.context, peer: controller.peer, threadTitle: controller.threadTitle, chatLocation: controller.chatLocation, presentationData: self.presentationData, source: .selection(item: item), immediateThumbnail: immediateThumbnail, selectionContext: interaction.selectionState, editingContext: interaction.editingState, hasSilentPosting: true, hasSchedule: true, hasTimer: hasTimer, updateHiddenMedia: { [weak self] id in
+            self.currentGalleryController = presentLegacyMediaPickerGallery(context: controller.context, peer: controller.peer, threadTitle: controller.threadTitle, chatLocation: controller.chatLocation, isScheduledMessages: controller.isScheduledMessages, presentationData: self.presentationData, source: .selection(item: item), immediateThumbnail: immediateThumbnail, selectionContext: interaction.selectionState, editingContext: interaction.editingState, hasSilentPosting: true, hasSchedule: true, hasTimer: hasTimer, updateHiddenMedia: { [weak self] id in
                 self?.hiddenMediaId.set(.single(id))
             }, initialLayout: layout, transitionHostView: { [weak self] in
                 return self?.selectionNode?.view
@@ -1522,6 +1525,7 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
         peer: EnginePeer?,
         threadTitle: String?,
         chatLocation: ChatLocation?,
+        isScheduledMessages: Bool = false,
         bannedSendPhotos: (Int32, Bool)?,
         bannedSendVideos: (Int32, Bool)?,
         subject: Subject,
@@ -1539,6 +1543,7 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
         self.peer = peer
         self.threadTitle = threadTitle
         self.chatLocation = chatLocation
+        self.isScheduledMessages = isScheduledMessages
         self.bannedSendPhotos = bannedSendPhotos
         self.bannedSendVideos = bannedSendVideos
         self.subject = subject
@@ -1850,7 +1855,6 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
             
             self.titleView.isHighlighted = true
             let contextController = ContextController(
-                account: self.context.account,
                 presentationData: self.presentationData,
                 source: .reference(MediaPickerContextReferenceContentSource(controller: self, sourceNode: self.titleView.contextSourceNode)),
                 items: .single(ContextController.Items(content: .custom(content))),
@@ -2103,7 +2107,7 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
         var updateNavigationStackImpl: ((AttachmentContainable) -> Void)?
         let groupsController = MediaGroupsScreen(context: self.context, updatedPresentationData: self.updatedPresentationData, mediaAssetsContext: self.controllerNode.mediaAssetsContext, embedded: embedded, openGroup: { [weak self] collection in
             if let strongSelf = self {
-                let mediaPicker = MediaPickerScreen(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, peer: strongSelf.peer, threadTitle: strongSelf.threadTitle, chatLocation: strongSelf.chatLocation, bannedSendPhotos: strongSelf.bannedSendPhotos, bannedSendVideos: strongSelf.bannedSendVideos, subject: .assets(collection, mode), editingContext: strongSelf.interaction?.editingState, selectionContext: strongSelf.interaction?.selectionState)
+                let mediaPicker = MediaPickerScreen(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, peer: strongSelf.peer, threadTitle: strongSelf.threadTitle, chatLocation: strongSelf.chatLocation, isScheduledMessages: strongSelf.isScheduledMessages, bannedSendPhotos: strongSelf.bannedSendPhotos, bannedSendVideos: strongSelf.bannedSendVideos, subject: .assets(collection, mode), editingContext: strongSelf.interaction?.editingState, selectionContext: strongSelf.interaction?.selectionState)
                 
                 mediaPicker.presentSchedulePicker = strongSelf.presentSchedulePicker
                 mediaPicker.presentTimerPicker = strongSelf.presentTimerPicker
@@ -2226,7 +2230,7 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
                     return ContextController.Items(content: .list(items))
                 }
             
-                let contextController = ContextController(account: self.context.account, presentationData: self.presentationData, source: .reference(MediaPickerContextReferenceContentSource(controller: self, sourceNode: node)), items: items, gesture: gesture)
+                let contextController = ContextController(presentationData: self.presentationData, source: .reference(MediaPickerContextReferenceContentSource(controller: self, sourceNode: node)), items: items, gesture: gesture)
                 self.presentInGlobalOverlay(contextController)
         }
     }

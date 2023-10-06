@@ -105,7 +105,7 @@ final class ContactMultiselectionControllerNode: ASDisplayNode {
             let chatListFilters = chatSelection.chatListFilters
             
             placeholder = placeholderValue
-            let chatListNode = ChatListNode(context: context, location: .chatList(groupId: .root), previewing: false, fillPreloadItems: false, mode: .peers(filter: [.excludeSecretChats], isSelecting: true, additionalCategories: additionalCategories?.categories ?? [], chatListFilters: chatListFilters, displayAutoremoveTimeout: chatSelection.displayAutoremoveTimeout, displayPresence: chatSelection.displayPresence), isPeerEnabled: isPeerEnabled, theme: self.presentationData.theme, fontSize: self.presentationData.listsFontSize, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, nameSortOrder: self.presentationData.nameSortOrder, nameDisplayOrder: self.presentationData.nameDisplayOrder, animationCache: self.animationCache, animationRenderer: self.animationRenderer, disableAnimations: true, isInlineMode: false, autoSetReady: true)
+            let chatListNode = ChatListNode(context: context, location: .chatList(groupId: .root), previewing: false, fillPreloadItems: false, mode: .peers(filter: [.excludeSecretChats], isSelecting: true, additionalCategories: additionalCategories?.categories ?? [], chatListFilters: chatListFilters, displayAutoremoveTimeout: chatSelection.displayAutoremoveTimeout, displayPresence: chatSelection.displayPresence), isPeerEnabled: isPeerEnabled, theme: self.presentationData.theme, fontSize: self.presentationData.listsFontSize, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, nameSortOrder: self.presentationData.nameSortOrder, nameDisplayOrder: self.presentationData.nameDisplayOrder, animationCache: self.animationCache, animationRenderer: self.animationRenderer, disableAnimations: true, isInlineMode: false, autoSetReady: true, isMainTab: false)
             chatListNode.passthroughPeerSelection = true
             chatListNode.disabledPeerSelected = { peer, _ in
                 attemptDisabledItemSelection?(peer)
@@ -235,7 +235,7 @@ final class ContactMultiselectionControllerNode: ASDisplayNode {
                             searchResultsNode.frame = CGRect(origin: CGPoint(), size: layout.size)
                         }
                         
-                        strongSelf.searchResultsReadyDisposable.set((searchResultsNode.ready |> deliverOnMainQueue).start(next: { _ in
+                        strongSelf.searchResultsReadyDisposable.set((searchResultsNode.ready |> deliverOnMainQueue).startStrict(next: { _ in
                             if let strongSelf = self, let searchResultsNode = strongSelf.searchResultsNode {
                                 strongSelf.insertSubnode(searchResultsNode, aboveSubnode: strongSelf.contentNode.node)
                             }

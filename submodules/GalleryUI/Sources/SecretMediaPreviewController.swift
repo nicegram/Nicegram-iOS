@@ -11,6 +11,8 @@ import RadialStatusNode
 import ScreenCaptureDetection
 import AppBundle
 import LocalizedPeerData
+import TooltipUI
+import TelegramNotices
 
 private func galleryMediaForMedia(media: Media) -> Media? {
     if let media = media as? TelegramMediaImage {
@@ -54,26 +56,39 @@ private func mediaForMessage(message: Message) -> Media? {
 }
 
 private final class SecretMediaPreviewControllerNode: GalleryControllerNode {
-    private var timeoutNode: RadialStatusNode?
+    fileprivate var timeoutNode: RadialStatusNode?
     
     private var validLayout: (ContainerViewLayout, CGFloat)?
-    
-    var beginTimeAndTimeout: (Double, Double)? {
+        
+    var beginTimeAndTimeout: (Double, Double, Bool)? {
         didSet {
-            if let (beginTime, timeout) = self.beginTimeAndTimeout {
+            if let (beginTime, timeout, isOutgoing) = self.beginTimeAndTimeout {
+                var beginTime = beginTime
                 if self.timeoutNode == nil {
                     let timeoutNode = RadialStatusNode(backgroundNodeColor: UIColor(white: 0.0, alpha: 0.5))
                     self.timeoutNode = timeoutNode
-                    var iconImage: UIImage?
-                    if let image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/SecretMediaIcon"), color: .white) {
-                        let factor: CGFloat = 0.48
-                        iconImage = generateImage(CGSize(width: floor(image.size.width * factor), height: floor(image.size.height * factor)), contextGenerator: { size, context in
-                            context.clear(CGRect(origin: CGPoint(), size: size))
-                            context.draw(image.cgImage!, in: CGRect(origin: CGPoint(), size: size))
-                        })
+                    let icon: RadialStatusNodeState.SecretTimeoutIcon
+                    let timeoutValue = Int32(timeout)
+                    
+                    let state: RadialStatusNodeState
+                    if timeoutValue == 0 && isOutgoing {
+                        state = .staticTimeout
+                    } else if timeoutValue == viewOnceTimeout {
+                        beginTime = CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970
+                        
+                        if let image = generateTintedImage(image: UIImage(bundleImageName: "Media Gallery/ViewOnce"), color: .white) {
+                            icon = .image(image)
+                        } else {
+                            icon = .flame
+                        }
+                        state = .secretTimeout(color: .white, icon: icon, beginTime: beginTime, timeout: timeout, sparks: isOutgoing ? false : true)
+                    } else {
+                        state = .secretTimeout(color: .white, icon: .flame, beginTime: beginTime, timeout: timeout, sparks: true)
                     }
-                    timeoutNode.transitionToState(.secretTimeout(color: .white, icon: iconImage, beginTime: beginTime, timeout: timeout, sparks: true), completion: {})
+                    timeoutNode.transitionToState(state, completion: {})
                     self.addSubnode(timeoutNode)
+  
+                    timeoutNode.addTarget(self, action: #selector(self.statusTapGesture), forControlEvents: .touchUpInside)
                     
                     if let (layout, navigationHeight) = self.validLayout {
                         self.layoutTimeoutNode(layout, navigationBarHeight: navigationHeight, transition: .immediate)
@@ -85,6 +100,15 @@ private final class SecretMediaPreviewControllerNode: GalleryControllerNode {
             }
         }
     }
+    
+    var statusPressed: (UIView) -> Void = { _ in }
+    @objc private func statusTapGesture() {
+        if let sourceView = self.timeoutNode?.view {
+            self.statusPressed(sourceView)
+        }
+    }
+    
+    var onDismissTransitionUpdate: (CGFloat) -> Void = { _ in }
     
     override func animateIn(animateContent: Bool, useSimpleAnimation: Bool) {
         super.animateIn(animateContent: animateContent, useSimpleAnimation: useSimpleAnimation)
@@ -102,6 +126,7 @@ private final class SecretMediaPreviewControllerNode: GalleryControllerNode {
     
     override func updateDismissTransition(_ value: CGFloat) {
         self.timeoutNode?.alpha = value
+        self.onDismissTransitionUpdate(value)
     }
     
     override func containerLayoutUpdated(_ layout: ContainerViewLayout, navigationBarHeight: CGFloat, transition: ContainedViewLayoutTransition) {
@@ -139,7 +164,12 @@ public final class SecretMediaPreviewController: ViewController {
     private var messageView: MessageView?
     private var currentNodeMessageId: MessageId?
     private var currentNodeMessageIsVideo = false
+    private var currentNodeMessageIsViewOnce = false
+    private var currentMessageIsDismissed = false
     private var tempFile: TempBoxFile?
+    
+    private let centralItemAttributesDisposable = DisposableSet();
+    private let footerContentNode = Promise<(GalleryFooterContentNode?, GalleryOverlayContentNode?)>()
     
     private let _hiddenMedia = Promise<(MessageId, Media)?>(nil)
     private var hiddenMediaManagerIndex: Int?
@@ -147,6 +177,8 @@ public final class SecretMediaPreviewController: ViewController {
     private let presentationData: PresentationData
     
     private var screenCaptureEventsDisposable: Disposable?
+    
+    private weak var tooltipController: TooltipScreen?
     
     public init(context: AccountContext, messageId: MessageId) {
         self.context = context
@@ -177,6 +209,15 @@ public final class SecretMediaPreviewController: ViewController {
                 return nil
             }
         })
+        
+        self.centralItemAttributesDisposable.add(self.footerContentNode.get().start(next: { [weak self] footerContentNode, _ in
+            guard let self else {
+                return
+            }
+            self.controllerNode.updatePresentationState({
+                $0.withUpdatedFooterContentNode(footerContentNode)
+            }, transition: .immediate)
+        }))
     }
     
     required public init(coder aDecoder: NSCoder) {
@@ -193,6 +234,7 @@ public final class SecretMediaPreviewController: ViewController {
         if let tempFile = self.tempFile {
             TempBox.shared.dispose(tempFile)
         }
+        self.centralItemAttributesDisposable.dispose()
     }
     
     @objc func donePressed() {
@@ -209,9 +251,23 @@ public final class SecretMediaPreviewController: ViewController {
             self?.dismiss(forceAway: true)
         }, replaceRootController: { _, _ in
         }, editMedia: { _ in
+        }, controller: { [weak self] in
+            return self
         })
         self.displayNode = SecretMediaPreviewControllerNode(controllerInteraction: controllerInteraction)
         self.displayNodeDidLoad()
+        
+        self.controllerNode.statusPressed = { [weak self] _ in
+            if let self {
+                self.presentViewOnceTooltip()
+            }
+        }
+        
+        self.controllerNode.onDismissTransitionUpdate = { [weak self] _ in
+            if let self {
+                self.dismissAllTooltips()
+            }
+        }
         
         self.controllerNode.statusBar = self.statusBar
         self.controllerNode.navigationBar = self.navigationBar
@@ -254,7 +310,7 @@ public final class SecretMediaPreviewController: ViewController {
                 var hiddenItem: (MessageId, Media)?
                 if let _ = index {
                     if let message = strongSelf.messageView?.message, let media = mediaForMessage(message: message) {
-                        var beginTimeAndTimeout: (Double, Double)?
+                        var beginTimeAndTimeout: (Double, Double, Bool)?
                         var videoDuration: Double?
                         for media in message.media {
                             if let file = media as? TelegramMediaFile {
@@ -262,40 +318,64 @@ public final class SecretMediaPreviewController: ViewController {
                             }
                         }
                         
+                        var timerStarted = false
+                        let isOutgoing = !message.flags.contains(.Incoming)
                         if let attribute = message.autoclearAttribute {
+                            strongSelf.currentNodeMessageIsViewOnce = attribute.timeout == viewOnceTimeout
+                            
                             if let countdownBeginTime = attribute.countdownBeginTime {
-                                if let videoDuration = videoDuration {
-                                    beginTimeAndTimeout = (CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970, videoDuration)
+                                timerStarted = true
+                                if let videoDuration = videoDuration, attribute.timeout != viewOnceTimeout {
+                                    beginTimeAndTimeout = (CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970, max(videoDuration, Double(attribute.timeout)), isOutgoing)
                                 } else {
-                                    beginTimeAndTimeout = (Double(countdownBeginTime), Double(attribute.timeout))
+                                    beginTimeAndTimeout = (Double(countdownBeginTime), Double(attribute.timeout), isOutgoing)
                                 }
+                            } else if isOutgoing {
+                                beginTimeAndTimeout = (CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970, attribute.timeout != viewOnceTimeout ? 0.0 : Double(viewOnceTimeout), isOutgoing)
                             }
                         } else if let attribute = message.autoremoveAttribute {
+                            strongSelf.currentNodeMessageIsViewOnce = attribute.timeout == viewOnceTimeout
+                            
                             if let countdownBeginTime = attribute.countdownBeginTime {
-                                if let videoDuration = videoDuration {
-                                    beginTimeAndTimeout = (CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970, videoDuration)
+                                timerStarted = true
+                                if let videoDuration = videoDuration, attribute.timeout != viewOnceTimeout {
+                                    beginTimeAndTimeout = (CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970, max(videoDuration, Double(attribute.timeout)), isOutgoing)
                                 } else {
-                                    beginTimeAndTimeout = (Double(countdownBeginTime), Double(attribute.timeout))
+                                    beginTimeAndTimeout = (Double(countdownBeginTime), Double(attribute.timeout), isOutgoing)
                                 }
-                            }
+                            } else if isOutgoing {
+                               beginTimeAndTimeout = (CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970, attribute.timeout != viewOnceTimeout ? 0.0 : Double(viewOnceTimeout), isOutgoing)
+                           }
                         }
                         
                         if let file = media as? TelegramMediaFile {
                             if file.isAnimated {
                                 strongSelf.title = strongSelf.presentationData.strings.SecretGif_Title
                             } else {
-                                strongSelf.title = strongSelf.presentationData.strings.SecretVideo_Title
+                                if strongSelf.currentNodeMessageIsViewOnce {
+                                    strongSelf.title = strongSelf.presentationData.strings.SecretVideo_ViewOnce_Title
+                                } else {
+                                    strongSelf.title = strongSelf.presentationData.strings.SecretVideo_Title
+                                }
                             }
                         } else {
-                            strongSelf.title = strongSelf.presentationData.strings.SecretImage_Title
+                            if strongSelf.currentNodeMessageIsViewOnce {
+                                strongSelf.title = strongSelf.presentationData.strings.SecretImage_ViewOnce_Title
+                            } else {
+                                strongSelf.title = strongSelf.presentationData.strings.SecretImage_Title
+                            }
                         }
                         
                         if let beginTimeAndTimeout = beginTimeAndTimeout {
                             strongSelf.controllerNode.beginTimeAndTimeout = beginTimeAndTimeout
                         }
                         
-                        if !message.flags.contains(.Incoming) {
-                            if let _ = beginTimeAndTimeout {
+                        if message.flags.contains(.Incoming) || strongSelf.currentNodeMessageIsVideo {
+                            if let node = strongSelf.controllerNode.pager.centralItemNode() {
+                                strongSelf.footerContentNode.set(node.footerContent())
+                            }
+                        } else {
+                            if timerStarted {
                                 strongSelf.controllerNode.updatePresentationState({
                                     $0.withUpdatedFooterContentNode(nil)
                                 }, transition: .immediate)
@@ -373,9 +453,23 @@ public final class SecretMediaPreviewController: ViewController {
                 self.controllerNode.animateIn(animateContent: !nodeAnimatesItself, useSimpleAnimation: false)
             }
         }
+        
+        if self.currentNodeMessageIsViewOnce {
+            let _ = (ApplicationSpecificNotice.incrementViewOnceTooltip(accountManager: self.context.sharedContext.accountManager)
+            |> deliverOnMainQueue).start(next: { [weak self] count in
+                guard let self else {
+                    return
+                }
+                if count < 2 {
+                    self.presentViewOnceTooltip()
+                }
+            })
+        }
     }
     
     private func dismiss(forceAway: Bool) {
+        self.dismissAllTooltips()
+        
         var animatedOutNode = true
         var animatedOutInterface = false
         
@@ -417,6 +511,7 @@ public final class SecretMediaPreviewController: ViewController {
             if self.currentNodeMessageId != message.id {
                 self.currentNodeMessageId = message.id
                 var tempFilePath: String?
+                var duration: Double = 0.0
                 for media in message.media {
                     if let file = media as? TelegramMediaFile {
                         if let path = self.context.account.postbox.mediaBox.completedResourcePath(file.resource) {
@@ -425,12 +520,21 @@ public final class SecretMediaPreviewController: ViewController {
                             tempFilePath = tempFile.path
                             self.currentNodeMessageIsVideo = true
                         }
+                        duration = file.duration ?? 0.0
                         break
                     }
                 }
-                
+                                
                 guard let item = galleryItemForEntry(context: self.context, presentationData: self.presentationData, entry: MessageHistoryEntry(message: message, isRead: false, location: nil, monthLocation: nil, attributes: MutableMessageHistoryEntryAttributes(authorIsContact: false)), streamVideos: false, hideControls: true, isSecret: true, playbackRate: { nil }, tempFilePath: tempFilePath, playbackCompleted: { [weak self] in
-                    self?.dismiss(forceAway: false)
+                    if let self {
+                        if self.currentNodeMessageIsViewOnce || (duration < 30.0 && !self.currentMessageIsDismissed) {
+                            if let node = self.controllerNode.pager.centralItemNode() as? UniversalVideoGalleryItemNode {
+                                node.seekToStart()
+                            }
+                        } else {
+                            self.dismiss(forceAway: false)
+                        }
+                    }
                 }, present: { _, _ in }) else {
                     self._ready.set(.single(true))
                     return
@@ -443,28 +547,34 @@ public final class SecretMediaPreviewController: ViewController {
                 self._ready.set(ready |> map { true })
                 self.markMessageAsConsumedDisposable.set(self.context.engine.messages.markMessageContentAsConsumedInteractively(messageId: message.id).start())
             } else {
-                var beginTimeAndTimeout: (Double, Double)?
+                var beginTimeAndTimeout: (Double, Double, Bool)?
                 var videoDuration: Double?
                 for media in message.media {
                     if let file = media as? TelegramMediaFile {
                         videoDuration = file.duration
                     }
                 }
+                
+                let isOutgoing = !message.flags.contains(.Incoming)
                 if let attribute = message.autoclearAttribute {
                     if let countdownBeginTime = attribute.countdownBeginTime {
-                        if let videoDuration = videoDuration {
-                            beginTimeAndTimeout = (CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970, videoDuration)
+                        if let videoDuration = videoDuration, attribute.timeout != viewOnceTimeout {
+                            beginTimeAndTimeout = (CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970, max(videoDuration, Double(attribute.timeout)), isOutgoing)
                         } else {
-                            beginTimeAndTimeout = (Double(countdownBeginTime), Double(attribute.timeout))
+                            beginTimeAndTimeout = (Double(countdownBeginTime), Double(attribute.timeout), isOutgoing)
                         }
+                    } else if isOutgoing {
+                        beginTimeAndTimeout = (CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970, attribute.timeout != viewOnceTimeout ? 0.0 : Double(viewOnceTimeout), isOutgoing)
                     }
                 } else if let attribute = message.autoremoveAttribute {
                     if let countdownBeginTime = attribute.countdownBeginTime {
-                        if let videoDuration = videoDuration {
-                            beginTimeAndTimeout = (CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970, videoDuration)
+                        if let videoDuration = videoDuration, attribute.timeout != viewOnceTimeout {
+                            beginTimeAndTimeout = (CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970, max(videoDuration, Double(attribute.timeout)), isOutgoing)
                         } else {
-                            beginTimeAndTimeout = (Double(countdownBeginTime), Double(attribute.timeout))
+                            beginTimeAndTimeout = (Double(countdownBeginTime), Double(attribute.timeout), isOutgoing)
                         }
+                    } else if isOutgoing {
+                        beginTimeAndTimeout = (CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970, attribute.timeout != viewOnceTimeout ? 0.0 : Double(viewOnceTimeout), isOutgoing)
                     }
                 }
                 
@@ -478,10 +588,58 @@ public final class SecretMediaPreviewController: ViewController {
             if !self.didSetReady {
                 self._ready.set(.single(true))
             }
-            if !self.currentNodeMessageIsVideo {
+            if !(self.currentNodeMessageIsVideo || self.currentNodeMessageIsViewOnce) {
                 self.dismiss()
             }
+            self.currentMessageIsDismissed = true
         }
+    }
+    
+    private func dismissAllTooltips() {
+        if let tooltipController = self.tooltipController {
+            self.tooltipController = nil
+            tooltipController.dismiss()
+        }
+    }
+    
+    private func presentViewOnceTooltip() {
+        guard self.currentNodeMessageIsViewOnce, let sourceView = self.controllerNode.timeoutNode?.view else {
+            return
+        }
+                
+        self.dismissAllTooltips()
+        
+        let absoluteFrame = sourceView.convert(sourceView.bounds, to: nil)
+        let location = CGRect(origin: CGPoint(x: absoluteFrame.midX, y: absoluteFrame.maxY + 2.0), size: CGSize())
+        
+        let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
+        let iconName = "anim_autoremove_on"
+        let text: String
+        if self.currentNodeMessageIsVideo {
+            text = presentationData.strings.Gallery_ViewOnceVideoTooltip
+        } else {
+            text = presentationData.strings.Gallery_ViewOncePhotoTooltip
+        }
+        
+        let tooltipController = TooltipScreen(
+            account: self.context.account,
+            sharedContext: self.context.sharedContext,
+            text: .plain(text: text),
+            balancedTextLayout: true,
+            constrainWidth: 210.0,
+            style: .customBlur(UIColor(rgb: 0x18181a), 0.0),
+            arrowStyle: .small,
+            icon: .animation(name: iconName, delay: 0.1, tintColor: nil),
+            location: .point(location, .top),
+            displayDuration: .default,
+            inset: 8.0,
+            cornerRadius: 8.0,
+            shouldDismissOnTouch: { _, _ in
+                return .ignore
+            }
+        )
+        self.tooltipController = tooltipController
+        self.present(tooltipController, in: .window(.root))
     }
     
     public override func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {

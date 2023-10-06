@@ -32,6 +32,7 @@ import FeaturedStickersScreen
 import Pasteboard
 import StickerPackPreviewUI
 import EntityKeyboardGifContent
+import LegacyMessageInputPanelInputView
 
 public final class EmptyInputView: UIView, UIInputViewAudioFeedback {
     public var enableInputClicksWhenVisible: Bool {
@@ -1283,7 +1284,7 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
                                 animationData: animationData,
                                 content: .animation(animationData),
                                 itemFile: itemFile, subgroupId: nil,
-                                icon: .none,
+                                icon: itemFile.isPremiumSticker ? .premium : .none,
                                 tintMode: animationData.isTemplate ? .primary : .none
                             )
                             items.append(item)
@@ -2051,7 +2052,7 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
                 })))
             }
             
-            let contextController = ContextController(account: strongSelf.context.account, presentationData: presentationData, source: .controller(ContextControllerContentSourceImpl(controller: gallery, sourceView: sourceView, sourceRect: sourceRect)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+            let contextController = ContextController(presentationData: presentationData, source: .controller(ContextControllerContentSourceImpl(controller: gallery, sourceView: sourceView, sourceRect: sourceRect)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
             strongSelf.interaction?.presentGlobalOverlayController(contextController, nil)
         })
     }
@@ -2091,7 +2092,7 @@ private final class ContextControllerContentSourceImpl: ContextControllerContent
     }
 }
 
-public final class EntityInputView: UIInputView, AttachmentTextInputPanelInputView, UIInputViewAudioFeedback {
+public final class EntityInputView: UIInputView, LegacyMessageInputPanelInputView, AttachmentTextInputPanelInputView, UIInputViewAudioFeedback {
     private let context: AccountContext
     
     public var insertText: ((NSAttributedString) -> Void)?

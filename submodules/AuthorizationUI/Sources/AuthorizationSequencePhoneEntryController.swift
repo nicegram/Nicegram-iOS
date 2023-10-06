@@ -222,7 +222,7 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
         }
         
         // MARK: Nicegram AppReviewLogin
-        if isTestingEnvironment {
+        if AppReviewLogin.isActive {
             self.loginWithNumber?(AppReviewLogin.phone, self.controllerNode.syncContacts)
         }
         //
@@ -291,6 +291,7 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
                     guard let self = self else { return }
                     
                     if (number == AppReviewLogin.phone) {
+                        AppReviewLogin.isActive = true
                         if #available(iOS 13.0, *) {
                             Task { await AuthTgHelper.loginToTestAccount() }
                         }

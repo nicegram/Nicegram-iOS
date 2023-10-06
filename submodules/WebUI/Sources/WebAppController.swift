@@ -38,6 +38,8 @@ public class WebAppCancelButtonNode: ASDisplayNode {
     
     public var state: State = .cancel
     
+    private var color: UIColor?
+    
     private var _theme: PresentationTheme
     public var theme: PresentationTheme {
         get {
@@ -49,6 +51,25 @@ public class WebAppCancelButtonNode: ASDisplayNode {
         }
     }
     private let strings: PresentationStrings
+    
+    public func updateColor(_ color: UIColor?, transition: ContainedViewLayoutTransition) {
+        let previousColor = self.color
+        self.color = color
+        
+        if case let .animated(duration, curve) = transition, previousColor != color {
+            if let snapshotView = self.view.snapshotContentTree() {
+                snapshotView.frame = self.bounds
+                self.view.addSubview(snapshotView)
+                
+                snapshotView.layer.animateAlpha(from: 1.0, to: 0.0, duration: duration, timingFunction: curve.timingFunction, removeOnCompletion: false, completion: { _ in
+                    snapshotView.removeFromSuperview()
+                })
+                self.arrowNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: duration, timingFunction: curve.timingFunction)
+                self.labelNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: duration, timingFunction: curve.timingFunction)
+            }
+        }
+        self.setState(self.state, animated: false, animateScale: false, force: true)
+    }
     
     public init(theme: PresentationTheme, strings: PresentationStrings) {
         self._theme = theme
@@ -124,13 +145,15 @@ public class WebAppCancelButtonNode: ASDisplayNode {
             self.buttonNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: duration)
         }
         
+        let color = self.color ?? self.theme.rootController.navigationBar.accentTextColor
+        
         self.arrowNode.isHidden = state == .cancel
-        self.labelNode.attributedText = NSAttributedString(string: state == .cancel ? self.strings.Common_Cancel : self.strings.Common_Back, font: Font.regular(17.0), textColor: self.theme.rootController.navigationBar.accentTextColor)
+        self.labelNode.attributedText = NSAttributedString(string: state == .cancel ? self.strings.Common_Cancel : self.strings.Common_Back, font: Font.regular(17.0), textColor: color)
         
         let labelSize = self.labelNode.updateLayout(CGSize(width: 120.0, height: 56.0))
         
         self.buttonNode.frame = CGRect(origin: .zero, size: CGSize(width: labelSize.width, height: self.buttonNode.frame.height))
-        self.arrowNode.image = NavigationBarTheme.generateBackArrowImage(color: self.theme.rootController.navigationBar.accentTextColor)
+        self.arrowNode.image = NavigationBarTheme.generateBackArrowImage(color: color)
         if let image = self.arrowNode.image {
             self.arrowNode.frame = CGRect(origin: self.arrowNode.frame.origin, size: image.size)
         }
@@ -148,6 +171,24 @@ public class WebAppCancelButtonNode: ASDisplayNode {
 }
 
 public struct WebAppParameters {
+    public enum Source {
+        case generic
+        case menu
+        case attachMenu
+        case inline
+        case simple
+        case settings
+        
+        var isSimple: Bool {
+            if [.simple, .inline, .settings].contains(self) {
+                return true
+            } else {
+                return false
+            }
+        }
+    }
+    
+    let source: Source
     let peerId: PeerId
     let botId: PeerId
     let botName: String
@@ -156,12 +197,10 @@ public struct WebAppParameters {
     let payload: String?
     let buttonText: String?
     let keepAliveSignal: Signal<Never, KeepWebViewError>?
-    let fromMenu: Bool
-    let fromAttachMenu: Bool
-    let isInline: Bool
-    let isSimple: Bool
+    let forceHasSettings: Bool
     
     public init(
+        source: Source,
         peerId: PeerId,
         botId: PeerId,
         botName: String,
@@ -170,11 +209,9 @@ public struct WebAppParameters {
         payload: String?,
         buttonText: String?,
         keepAliveSignal: Signal<Never, KeepWebViewError>?,
-        fromMenu: Bool,
-        fromAttachMenu: Bool,
-        isInline: Bool,
-        isSimple: Bool
+        forceHasSettings: Bool
     ) {
+        self.source = source
         self.peerId = peerId
         self.botId = botId
         self.botName = botName
@@ -183,10 +220,7 @@ public struct WebAppParameters {
         self.payload = payload
         self.buttonText = buttonText
         self.keepAliveSignal = keepAliveSignal
-        self.fromMenu = fromMenu
-        self.fromAttachMenu = fromAttachMenu
-        self.isInline = isInline
-        self.isSimple = isSimple
+        self.forceHasSettings = forceHasSettings
     }
 }
 
@@ -226,7 +260,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
         fileprivate var webView: WebAppWebView?
         private var placeholderIcon: (UIImage, Bool)?
         private var placeholderNode: ShimmerEffectNode?
-    
+            
         fileprivate let loadingProgressPromise = Promise<CGFloat?>(nil)
         
         fileprivate var mainButtonState: AttachmentMainButtonState? {
@@ -286,13 +320,13 @@ public final class WebAppController: ViewController, AttachmentContainable {
             }
             self.webView = webView
             
+            self.addSubnode(self.backgroundNode)
+            self.addSubnode(self.headerBackgroundNode)
+            
             let placeholderNode = ShimmerEffectNode()
             placeholderNode.allowsGroupOpacity = true
             self.addSubnode(placeholderNode)
             self.placeholderNode = placeholderNode
-            
-            self.addSubnode(self.backgroundNode)
-            self.addSubnode(self.headerBackgroundNode)
             
             let placeholder: Signal<(FileMediaReference, Bool)?, NoError>
             if durgerKingBotIds.contains(controller.botId.id._internalGetInt64Value()) {
@@ -305,7 +339,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                     return .complete()
                 }
                 |> mapToSignal { bot -> Signal<(FileMediaReference, Bool)?, NoError> in
-                    if let bot = bot, let peerReference = PeerReference(bot.peer) {
+                    if let bot = bot, let peerReference = PeerReference(bot.peer._asPeer()) {
                         var imageFile: TelegramMediaFile?
                         var isPlaceholder = false
                         if let file = bot.icons[.placeholder] {
@@ -368,7 +402,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 })
             })
                 
-            if let url = controller.url, !controller.fromMenu {
+            if let url = controller.url, controller.source != .menu {
                 self.queryId = controller.queryId
                 if let parsedUrl = URL(string: url) {
                     self.webView?.load(URLRequest(url: parsedUrl))
@@ -387,28 +421,40 @@ public final class WebAppController: ViewController, AttachmentContainable {
                     })
                 }
             } else {
-                let _ = (context.engine.messages.requestWebView(peerId: controller.peerId, botId: controller.botId, url: controller.url, payload: controller.payload, themeParams: generateWebAppThemeParams(presentationData.theme), fromMenu: controller.fromMenu, replyToMessageId: controller.replyToMessageId, threadId: controller.threadId)
-                |> deliverOnMainQueue).start(next: { [weak self] result in
-                    guard let strongSelf = self else {
-                        return
-                    }
-                    if let parsedUrl = URL(string: result.url) {
-                        strongSelf.queryId = result.queryId
-                        strongSelf.webView?.load(URLRequest(url: parsedUrl))
-                        
-                        strongSelf.keepAliveDisposable = (result.keepAliveSignal
-                        |> deliverOnMainQueue).start(error: { [weak self] _ in
-                            if let strongSelf = self {
-                                strongSelf.controller?.dismiss()
-                            }
-                        }, completed: { [weak self] in
-                            if let strongSelf = self {
-                                strongSelf.controller?.completion()
-                                strongSelf.controller?.dismiss()
-                            }
-                        })
-                    }
-                })
+                if controller.source.isSimple {
+                    let _ = (context.engine.messages.requestSimpleWebView(botId: controller.botId, url: nil, source: .settings, themeParams: generateWebAppThemeParams(presentationData.theme))
+                    |> deliverOnMainQueue).start(next: { [weak self] result in
+                        guard let strongSelf = self else {
+                            return
+                        }
+                        if let parsedUrl = URL(string: result) {
+                            strongSelf.webView?.load(URLRequest(url: parsedUrl))
+                        }
+                    })
+                } else {
+                    let _ = (context.engine.messages.requestWebView(peerId: controller.peerId, botId: controller.botId, url: controller.url, payload: controller.payload, themeParams: generateWebAppThemeParams(presentationData.theme), fromMenu: controller.source == .menu, replyToMessageId: controller.replyToMessageId, threadId: controller.threadId)
+                    |> deliverOnMainQueue).start(next: { [weak self] result in
+                        guard let strongSelf = self else {
+                            return
+                        }
+                        if let parsedUrl = URL(string: result.url) {
+                            strongSelf.queryId = result.queryId
+                            strongSelf.webView?.load(URLRequest(url: parsedUrl))
+                            
+                            strongSelf.keepAliveDisposable = (result.keepAliveSignal
+                            |> deliverOnMainQueue).start(error: { [weak self] _ in
+                                if let strongSelf = self {
+                                    strongSelf.controller?.dismiss()
+                                }
+                            }, completed: { [weak self] in
+                                if let strongSelf = self {
+                                    strongSelf.controller?.completion()
+                                    strongSelf.controller?.dismiss()
+                                }
+                            })
+                        }
+                    })
+                }
             }
         }
         
@@ -449,7 +495,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
             }
          
             let theme = self.presentationData.theme
-            self.placeholderNode?.update(backgroundColor: self.backgroundColor ?? .clear, foregroundColor: theme.list.mediaPlaceholderColor, shimmeringColor: theme.list.itemBlocksBackgroundColor.withAlphaComponent(0.4), shapes: shapes, horizontal: true, size: placeholderSize)
+            self.placeholderNode?.update(backgroundColor: .clear, foregroundColor: theme.list.mediaPlaceholderColor, shimmeringColor: theme.list.itemBlocksBackgroundColor.withAlphaComponent(0.4), shapes: shapes, horizontal: true, size: placeholderSize, mask: true)
             
             return placeholderSize
         }
@@ -482,6 +528,9 @@ public final class WebAppController: ViewController, AttachmentContainable {
             
             let transition = ContainedViewLayoutTransition.animated(duration: 0.2, curve: .linear)
             transition.updateAlpha(layer: webView.layer, alpha: 1.0)
+            
+            self.updateHeaderBackgroundColor(transition: transition)
+            
             if let placeholderNode = self.placeholderNode {
                 self.placeholderNode = nil
                 transition.updateAlpha(node: placeholderNode, alpha: 0.0, completion: { [weak placeholderNode] _ in
@@ -546,12 +595,16 @@ public final class WebAppController: ViewController, AttachmentContainable {
             }
             self.controller?.present(promptController, in: .window(.root))
         }
-                
+        
+        private func updateNavigationBarAlpha(transition: ContainedViewLayoutTransition) {
+            let contentOffset = self.webView?.scrollView.contentOffset.y ?? 0.0
+            let backgroundAlpha = min(30.0, contentOffset) / 30.0
+            self.controller?.navigationBar?.updateBackgroundAlpha(backgroundAlpha, transition: transition)
+        }
+        
         private var targetContentOffset: CGPoint?
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
-            let contentOffset = scrollView.contentOffset.y
-            self.controller?.navigationBar?.updateBackgroundAlpha(min(30.0, contentOffset) / 30.0, transition: .immediate)
-            
+            self.updateNavigationBarAlpha(transition: .immediate)
             if let targetContentOffset = self.targetContentOffset, scrollView.contentOffset != targetContentOffset {
                 scrollView.contentOffset = targetContentOffset
             }
@@ -678,11 +731,11 @@ public final class WebAppController: ViewController, AttachmentContainable {
                         }
                     }
                 case "web_app_data_send":
-                    if controller.isSimple, let eventData = body["eventData"] as? String {
+                    if controller.source.isSimple, let eventData = body["eventData"] as? String {
                         self.handleSendData(data: eventData)
                     }
                 case "web_app_setup_main_button":
-                    if let webView = self.webView, !webView.didTouchOnce && controller.url == nil && controller.fromAttachMenu {
+                    if let webView = self.webView, !webView.didTouchOnce && controller.url == nil && controller.source == .attachMenu {
                         self.delayedScriptMessage = message
                     } else if let json = json {
                         if var isVisible = json["is_visible"] as? Bool {
@@ -821,8 +874,14 @@ public final class WebAppController: ViewController, AttachmentContainable {
                         transition.updateBackgroundColor(node: self.backgroundNode, color: color)
                     }
                 case "web_app_set_header_color":
-                    if let json = json, let colorKey = json["color_key"] as? String, ["bg_color", "secondary_bg_color"].contains(colorKey) {
-                        self.headerColorKey = colorKey
+                    if let json = json {
+                        if let colorKey = json["color_key"] as? String, ["bg_color", "secondary_bg_color"].contains(colorKey) {
+                            self.headerColor = nil
+                            self.headerColorKey = colorKey
+                        } else if let hexColor = json["color"] as? String, let color = UIColor(hexString: hexColor) {
+                            self.headerColor = color
+                            self.headerColorKey = nil
+                        }
                         self.updateHeaderBackgroundColor(transition: .animated(duration: 0.2, curve: .linear))
                     }
                 case "web_app_open_popup":
@@ -917,6 +976,20 @@ public final class WebAppController: ViewController, AttachmentContainable {
                         }
                         self.sendClipboardTextEvent(requestId: requestId, fillData: fillData)
                     }
+                case "web_app_request_write_access":
+                    self.requestWriteAccess()
+                case "web_app_request_phone":
+                    self.shareAccountContact()
+                case "web_app_invoke_custom_method":
+                    if let json, let requestId = json["req_id"] as? String, let method = json["method"] as? String, let params = json["params"] {
+                        var paramsString: String?
+                        if let string = params as? String {
+                            paramsString = string
+                        } else if let data1 = try? JSONSerialization.data(withJSONObject: params, options: []), let convertedString = String(data: data1, encoding: String.Encoding.utf8) {
+                            paramsString = convertedString
+                        }
+                        self.invokeCustomMethod(requestId: requestId, method: method, params: paramsString ?? "{}")
+                    }
                 default:
                     break
             }
@@ -924,16 +997,37 @@ public final class WebAppController: ViewController, AttachmentContainable {
         
         fileprivate var needDismissConfirmation = false
         
+        fileprivate var headerColor: UIColor?
+        fileprivate var headerPrimaryTextColor: UIColor?
         private var headerColorKey: String?
+        
         private func updateHeaderBackgroundColor(transition: ContainedViewLayoutTransition) {
+            guard let controller = self.controller else {
+                return
+            }
+            
             let color: UIColor?
+            var primaryTextColor: UIColor?
+            var secondaryTextColor: UIColor?
             var backgroundColor = self.presentationData.theme.list.plainBackgroundColor
             var secondaryBackgroundColor = self.presentationData.theme.list.blocksBackgroundColor
             if self.presentationData.theme.list.blocksBackgroundColor.rgb == self.presentationData.theme.list.plainBackgroundColor.rgb {
                 backgroundColor = self.presentationData.theme.list.modalPlainBackgroundColor
                 secondaryBackgroundColor = self.presentationData.theme.list.plainBackgroundColor
             }
-            if let headerColorKey = self.headerColorKey {
+            if let headerColor = self.headerColor {
+                color = headerColor
+                let textColor = headerColor.lightness > 0.5 ? UIColor(rgb: 0x000000) : UIColor(rgb: 0xffffff)
+                func calculateSecondaryAlpha(luminance: CGFloat, targetContrast: CGFloat) -> CGFloat {
+                    let targetLuminance = luminance > 0.5 ? 0.0 : 1.0
+                    let adaptiveAlpha = (luminance - targetLuminance + targetContrast) / targetContrast
+                    return max(0.5, min(0.64, adaptiveAlpha))
+                }
+                
+                primaryTextColor = textColor
+                self.headerPrimaryTextColor = textColor
+                secondaryTextColor = textColor.withAlphaComponent(calculateSecondaryAlpha(luminance: headerColor.lightness, targetContrast: 2.5))
+            } else if let headerColorKey = self.headerColorKey {
                 switch headerColorKey {
                     case "bg_color":
                         color = backgroundColor
@@ -945,6 +1039,13 @@ public final class WebAppController: ViewController, AttachmentContainable {
             } else {
                 color = nil
             }
+            
+            self.updateNavigationBarAlpha(transition: transition)
+            controller.updateNavigationBarTheme(transition: transition)
+            
+            controller.titleView?.updateTextColors(primary: primaryTextColor, secondary: secondaryTextColor, transition: transition)
+            controller.cancelButtonNode.updateColor(primaryTextColor, transition: transition)
+            controller.moreButtonNode.updateColor(primaryTextColor, transition: transition)
             transition.updateBackgroundColor(node: self.headerBackgroundNode, color: color ?? .clear)
             transition.updateBackgroundColor(node: self.topOverscrollNode, color: color ?? .clear)
         }
@@ -959,7 +1060,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 var resultString: String?
                 if let string = data as? String {
                     resultString = string
-                } else if let data1 = try? JSONSerialization.data(withJSONObject: data, options: JSONSerialization.WritingOptions.prettyPrinted), let convertedString = String(data: data1, encoding: String.Encoding.utf8) {
+                } else if let data1 = try? JSONSerialization.data(withJSONObject: data, options: []), let convertedString = String(data: data1, encoding: String.Encoding.utf8) {
                     resultString = convertedString
                 }
                 if let resultString = resultString {
@@ -1066,6 +1167,153 @@ public final class WebAppController: ViewController, AttachmentContainable {
             }
             self.webView?.sendEvent(name: "clipboard_text_received", data: paramsString)
         }
+        
+        fileprivate func requestWriteAccess() {
+            guard let controller = self.controller, !self.dismissed else {
+                return
+            }
+            
+            let sendEvent: (Bool) -> Void = { success in
+                var paramsString: String
+                if success {
+                    paramsString = "{status: \"allowed\"}"
+                } else {
+                    paramsString = "{status: \"cancelled\"}"
+                }
+                self.webView?.sendEvent(name: "write_access_requested", data: paramsString)
+            }
+            
+            let _ = (self.context.engine.messages.canBotSendMessages(botId: controller.botId)
+            |> deliverOnMainQueue).start(next: { [weak self] result in
+                guard let self, let controller = self.controller else {
+                    return
+                }
+                if result {
+                    sendEvent(true)
+                } else {
+                    let alertController = textAlertController(context: self.context, updatedPresentationData: controller.updatedPresentationData, title: self.presentationData.strings.WebApp_AllowWriteTitle, text: self.presentationData.strings.WebApp_AllowWriteConfirmation(controller.botName).string, actions: [TextAlertAction(type: .genericAction, title: self.presentationData.strings.Common_Cancel, action: {
+                        sendEvent(false)
+                    }), TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Common_OK, action: { [weak self] in
+                        guard let self else {
+                            return
+                        }
+                        
+                        let _ = (self.context.engine.messages.allowBotSendMessages(botId: controller.botId)
+                        |> deliverOnMainQueue).start(completed: {
+                            sendEvent(true)
+                        })
+                    })], parseMarkdown: true)
+                    alertController.dismissed = { byOutsideTap in
+                        if byOutsideTap {
+                            sendEvent(false)
+                        }
+                    }
+                    controller.present(alertController, in: .window(.root))
+                }
+            })
+        }
+        
+        fileprivate func shareAccountContact() {
+            guard let controller = self.controller, let botId = self.controller?.botId, let botName = self.controller?.botName else {
+                return
+            }
+            
+            
+            let sendEvent: (Bool) -> Void = { success in
+                var paramsString: String
+                if success {
+                    paramsString = "{status: \"sent\"}"
+                } else {
+                    paramsString = "{status: \"cancelled\"}"
+                }
+                self.webView?.sendEvent(name: "phone_requested", data: paramsString)
+            }
+            
+            let context = self.context
+            let _ = (self.context.engine.data.get(
+                TelegramEngine.EngineData.Item.Peer.Peer(id: self.context.account.peerId),
+                TelegramEngine.EngineData.Item.Peer.IsBlocked(id: botId)
+            )
+            |> deliverOnMainQueue).start(next: { [weak self, weak controller] accountPeer, isBlocked in
+                guard let self, let controller, let accountPeer else {
+                    return
+                }
+                var requiresUnblock = false
+                if case let .known(value) = isBlocked, value {
+                    requiresUnblock = true
+                }
+                
+                let text: String
+                if requiresUnblock {
+                    text = self.presentationData.strings.WebApp_SharePhoneConfirmationUnblock(botName).string
+                } else {
+                    text = self.presentationData.strings.WebApp_SharePhoneConfirmation(botName).string
+                }
+                
+                let alertController = textAlertController(context: self.context, updatedPresentationData: controller.updatedPresentationData, title: self.presentationData.strings.WebApp_SharePhoneTitle, text: text, actions: [TextAlertAction(type: .genericAction, title: self.presentationData.strings.Common_Cancel, action: {
+                    sendEvent(false)
+                }), TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Common_OK, action: { [weak self] in
+                    guard let self, case let .user(user) = accountPeer, let phone = user.phone, !phone.isEmpty else {
+                        return
+                    }
+                    
+                    let sendMessageSignal = enqueueMessages(account: self.context.account, peerId: botId, messages: [
+                        .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: TelegramMediaContact(firstName: user.firstName ?? "", lastName: user.lastName ?? "", phoneNumber: phone, peerId: user.id, vCardData: nil)), replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
+                    ])
+                    |> mapToSignal { messageIds in
+                        if let maybeMessageId = messageIds.first, let messageId = maybeMessageId {
+                            return context.account.pendingMessageManager.pendingMessageStatus(messageId)
+                            |> mapToSignal { status, _ -> Signal<Bool, NoError> in
+                                if status != nil {
+                                    return .never()
+                                } else {
+                                    return .single(true)
+                                }
+                            }
+                            |> take(1)
+                        } else {
+                            return .complete()
+                        }
+                    }
+                    
+                    let sendMessage = {
+                        let _ = (sendMessageSignal
+                        |> deliverOnMainQueue).start(completed: {
+                            sendEvent(true)
+                        })
+                    }
+                    
+                    if requiresUnblock {
+                        let _ = (context.engine.privacy.requestUpdatePeerIsBlocked(peerId: botId, isBlocked: false)
+                        |> deliverOnMainQueue).start(completed: {
+                            sendMessage()
+                        })
+                    } else {
+                        sendMessage()
+                    }
+                })], parseMarkdown: true)
+                alertController.dismissed = { byOutsideTap in
+                    if byOutsideTap {
+                        sendEvent(false)
+                    }
+                }
+                controller.present(alertController, in: .window(.root))
+            })
+        }
+        
+        fileprivate func invokeCustomMethod(requestId: String, method: String, params: String) {
+            guard let controller = self.controller, !self.dismissed else {
+                return
+            }
+            let _ = (self.context.engine.messages.invokeBotCustomMethod(botId: controller.botId, method: method, params: params)
+            |> deliverOnMainQueue).start(next: { [weak self] result in
+                guard let self else {
+                    return
+                }
+                let paramsString = "{req_id: \"\(requestId)\", result: \(result)}"
+                self.webView?.sendEvent(name: "custom_method_invoked", data: paramsString)
+            })
+        }
     }
     
     fileprivate var controllerNode: Node {
@@ -1073,10 +1321,11 @@ public final class WebAppController: ViewController, AttachmentContainable {
     }
     
     private var titleView: CounterContollerTitleView?
-    private let cancelButtonNode: WebAppCancelButtonNode
-    private let moreButtonNode: MoreButtonNode
+    fileprivate let cancelButtonNode: WebAppCancelButtonNode
+    fileprivate let moreButtonNode: MoreButtonNode
     
     private let context: AccountContext
+    private let source: WebAppParameters.Source
     private let peerId: PeerId
     private let botId: PeerId
     private let botName: String
@@ -1084,10 +1333,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
     private let queryId: Int64?
     private let payload: String?
     private let buttonText: String?
-    private let fromMenu: Bool
-    private let fromAttachMenu: Bool
-    private let isInline: Bool
-    private let isSimple: Bool
+    private let forceHasSettings: Bool
     private let keepAliveSignal: Signal<Never, KeepWebViewError>?
     private let replyToMessageId: MessageId?
     private let threadId: Int64?
@@ -1103,6 +1349,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
     
     public init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, params: WebAppParameters, replyToMessageId: MessageId?, threadId: Int64?) {
         self.context = context
+        self.source = params.source
         self.peerId = params.peerId
         self.botId = params.botId
         self.botName = params.botName
@@ -1110,10 +1357,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
         self.queryId = params.queryId
         self.payload = params.payload
         self.buttonText = params.buttonText
-        self.fromMenu = params.fromMenu
-        self.fromAttachMenu = params.fromAttachMenu
-        self.isInline = params.isInline
-        self.isSimple = params.isSimple
+        self.forceHasSettings = params.forceHasSettings
         self.keepAliveSignal = params.keepAliveSignal
         self.replyToMessageId = replyToMessageId
         self.threadId = threadId
@@ -1157,10 +1401,9 @@ public final class WebAppController: ViewController, AttachmentContainable {
             if let strongSelf = self {
                 strongSelf.presentationData = presentationData
                 
-                let navigationBarPresentationData = NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: presentationData.theme), strings: NavigationBarStrings(back: "", close: ""))
-                strongSelf.navigationBar?.updatePresentationData(navigationBarPresentationData)
+                strongSelf.updateNavigationBarTheme(transition: .immediate)
                 strongSelf.titleView?.theme = presentationData.theme
-                
+
                 strongSelf.cancelButtonNode.theme = presentationData.theme
                 strongSelf.moreButtonNode.theme = presentationData.theme
                 
@@ -1178,6 +1421,32 @@ public final class WebAppController: ViewController, AttachmentContainable {
     deinit {
         assert(true)
         self.presentationDataDisposable?.dispose()
+    }
+    
+    fileprivate func updateNavigationBarTheme(transition: ContainedViewLayoutTransition) {
+        let navigationBarPresentationData: NavigationBarPresentationData
+        if let backgroundColor = self.controllerNode.headerColor, let textColor = self.controllerNode.headerPrimaryTextColor {
+            navigationBarPresentationData = NavigationBarPresentationData(
+                theme: NavigationBarTheme(
+                    buttonColor: textColor,
+                    disabledButtonColor: textColor,
+                    primaryTextColor: textColor,
+                    backgroundColor: backgroundColor,
+                    enableBackgroundBlur: true,
+                    separatorColor: UIColor(rgb: 0x000000, alpha: 0.25),
+                    badgeBackgroundColor: .clear,
+                    badgeStrokeColor: .clear,
+                    badgeTextColor: .clear
+                ),
+                strings: NavigationBarStrings(back: "", close: "")
+            )
+        } else {
+            navigationBarPresentationData = NavigationBarPresentationData(
+                theme: NavigationBarTheme(rootControllerTheme: self.presentationData.theme),
+                strings: NavigationBarStrings(back: "", close: "")
+            )
+        }
+        self.navigationBar?.updatePresentationData(navigationBarPresentationData)
     }
     
     @objc private func cancelPressed() {
@@ -1200,15 +1469,30 @@ public final class WebAppController: ViewController, AttachmentContainable {
         
         let peerId = self.peerId
         let botId = self.botId
+        let url = self.url
+        let forceHasSettings = self.forceHasSettings
+        
+        let source = self.source
         
         let items = context.engine.messages.attachMenuBots()
         |> take(1)
         |> map { [weak self] attachMenuBots -> ContextController.Items in
             var items: [ContextMenuItem] = []
             
-            let attachMenuBot = attachMenuBots.first(where: { $0.peer.id == botId})
+            let attachMenuBot = attachMenuBots.first(where: { $0.peer.id == botId && !$0.flags.contains(.notActivated) })
             
-            if self?.url == nil, let attachMenuBot = attachMenuBot, attachMenuBot.flags.contains(.hasSettings) {
+            let hasSettings: Bool
+            if url == nil {
+                if forceHasSettings {
+                    hasSettings = true
+                } else {
+                    hasSettings = attachMenuBot?.flags.contains(.hasSettings) == true
+                }
+            } else {
+                hasSettings = forceHasSettings
+            }
+            
+            if hasSettings {
                 items.append(.action(ContextMenuActionItem(text: presentationData.strings.WebApp_Settings, icon: { theme in
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Settings"), color: theme.contextMenu.primaryColor)
                 }, action: { [weak self] c, _ in
@@ -1253,7 +1537,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 self?.controllerNode.webView?.reload()
             })))
             
-            if let _ = attachMenuBot, self?.url == nil {
+            if let _ = attachMenuBot, [.attachMenu, .settings, .generic].contains(source) {
                 items.append(.action(ContextMenuActionItem(text: presentationData.strings.WebApp_RemoveBot, textColor: .destructive, icon: { theme in
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Delete"), color: theme.contextMenu.destructiveColor)
                 }, action: { [weak self] c, _ in
@@ -1261,7 +1545,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                     
                     if let strongSelf = self {
                         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                        strongSelf.present(textAlertController(context: context, title: presentationData.strings.WebApp_RemoveConfirmationTitle, text: presentationData.strings.WebApp_RemoveConfirmationText(strongSelf.botName).string, actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {}), TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: { [weak self] in
+                        strongSelf.present(textAlertController(context: context, title: presentationData.strings.WebApp_RemoveConfirmationTitle, text: presentationData.strings.WebApp_RemoveAllConfirmationText(strongSelf.botName).string, actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {}), TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: { [weak self] in
                             if let strongSelf = self {
                                 let _ = context.engine.messages.removeBotFromAttachMenu(botId: strongSelf.botId).start()
                                 strongSelf.dismiss()
@@ -1274,7 +1558,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
             return ContextController.Items(content: .list(items))
         }
         
-        let contextController = ContextController(account: self.context.account, presentationData: self.presentationData, source: .reference(WebAppContextReferenceContentSource(controller: self, sourceNode: node)), items: items, gesture: gesture)
+        let contextController = ContextController(presentationData: self.presentationData, source: .reference(WebAppContextReferenceContentSource(controller: self, sourceNode: node)), items: items, gesture: gesture)
         self.presentInGlobalOverlay(contextController)
     }
     
@@ -1408,7 +1692,7 @@ public func standaloneWebAppController(
     didDismiss: @escaping () -> Void = {},
     getNavigationController: @escaping () -> NavigationController? = { return nil },
     getSourceRect: (() -> CGRect?)? = nil) -> ViewController {
-    let controller = AttachmentController(context: context, updatedPresentationData: updatedPresentationData, chatLocation: .peer(id: params.peerId), buttons: [.standalone], initialButton: .standalone, fromMenu: params.fromMenu, hasTextInput: false, makeEntityInputView: {
+    let controller = AttachmentController(context: context, updatedPresentationData: updatedPresentationData, chatLocation: .peer(id: params.peerId), buttons: [.standalone], initialButton: .standalone, fromMenu: params.source == .menu, hasTextInput: false, makeEntityInputView: {
         return nil
     })
     controller.getInputContainerNode = getInputContainerNode

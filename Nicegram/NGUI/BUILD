@@ -33,7 +33,6 @@ swift_library(
         "//Nicegram/NGLogging:NGLogging",
         "//Nicegram/NGStrings:NGStrings",
         "//Nicegram/NGAppCache:NGAppCache",
-        "//Nicegram/NGLoadingIndicator:NGLoadingIndicator",
         "//Nicegram/NGWebUtils:NGWebUtils",
         "//Nicegram/NGEnv:NGEnv",
         "//Nicegram/NGDoubleBottom:NGDoubleBottom",
@@ -41,6 +40,7 @@ swift_library(
         "//Nicegram/NGSecretMenu:NGSecretMenu",
         "//Nicegram/NGStats:NGStats",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChatUI",
+        "@swiftpkg_nicegram_assistant_ios//:Sources_FeatImagesHubUI",
     ],
     visibility = [
         "//visibility:public",

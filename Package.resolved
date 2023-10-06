@@ -5,8 +5,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/hmlongco/Factory",
       "state" : {
-        "revision" : "061b3afe0358a0da7ce568f8272c847910be3dd7",
-        "version" : "2.2.0"
+        "revision" : "8d20074d8a5ac79d6902faecbdbafaf0a0326f49",
+        "version" : "2.3.0"
       }
     },
     {
@@ -41,17 +41,17 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "13fc922fb085c2b758f5864953978fd1fd5e0cef"
+        "branch" : "revert-prompts-api",
+        "revision" : "0368e82947f3b201347cdb7f863848c1509d5490"
       }
     },
     {
       "identity" : "r.swift",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/mac-cain13/R.swift.git",
+      "location" : "https://github.com/denis15yo/R.swift.git",
       "state" : {
-        "revision" : "0e4ec17f329136b712d0a96128597b8ff2f31bdc",
-        "version" : "7.3.2"
+        "branch" : "main",
+        "revision" : "77c0d9c202b9ac83c1992111b76b3fb10468015b"
       }
     },
     {
@@ -59,8 +59,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SDWebImage/SDWebImage.git",
       "state" : {
-        "revision" : "36e484b317522667a4b2de9b50daaa01dfa30809",
-        "version" : "5.18.0"
+        "revision" : "936f1c7067728d16c362ba4fb93c17df78b5fd79",
+        "version" : "5.18.2"
       }
     },
     {
@@ -104,8 +104,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tomlokhorst/XcodeEdit",
       "state" : {
-        "revision" : "cd466d6e8c5ffd2f2b61165d37b0646f09068e1e",
-        "version" : "2.9.0"
+        "revision" : "b6b67389a0f1a6fdd9c6457a8ab5b02eaab13c5c",
+        "version" : "2.9.2"
       }
     }
   ],

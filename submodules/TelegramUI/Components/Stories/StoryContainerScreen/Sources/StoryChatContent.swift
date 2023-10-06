@@ -55,9 +55,7 @@ public final class StoryContentContextImpl: StoryContentContext {
                 PostboxViewKey.storyItems(peerId: peerId),
                 PostboxViewKey.peerPresences(peerIds: Set([peerId]))
             ]
-            if peerId == context.account.peerId {
-                inputKeys.append(PostboxViewKey.storiesState(key: .local))
-            }
+            inputKeys.append(PostboxViewKey.storiesState(key: .local))
             self.disposable = (combineLatest(queue: .mainQueue(),
                 self.currentFocusedIdUpdatedPromise.get(),
                 context.account.postbox.combinedView(
@@ -90,6 +88,18 @@ public final class StoryContentContextImpl: StoryContentContext {
                                         }
                                     }
                                 }
+                                for mediaArea in itemValue.mediaAreas {
+                                    if case let .reaction(_, reaction, _) = mediaArea {
+                                        if case let .custom(fileId) = reaction {
+                                            let mediaId = MediaId(namespace: Namespaces.Media.CloudFile, id: fileId)
+                                            if allEntityFiles[mediaId] == nil {
+                                                if let file = transaction.getMedia(mediaId) as? TelegramMediaFile {
+                                                    allEntityFiles[file.fileId] = file
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -97,7 +107,7 @@ public final class StoryContentContextImpl: StoryContentContext {
                     return (views, peers, globalNotificationSettings, allEntityFiles)
                 }
             }
-            |> deliverOnMainQueue).start(next: { [weak self] views, peers, globalNotificationSettings, allEntityFiles in
+            |> deliverOnMainQueue).startStrict(next: { [weak self] views, peers, globalNotificationSettings, allEntityFiles in
                 guard let self else {
                     return
                 }
@@ -159,9 +169,11 @@ public final class StoryContentContextImpl: StoryContentContext {
                             return EngineStoryItem.Views(
                                 seenCount: views.seenCount,
                                 reactedCount: views.reactedCount,
+                                forwardCount: views.forwardCount,
                                 seenPeers: views.seenPeerIds.compactMap { id -> EnginePeer? in
                                     return peers[id].flatMap(EnginePeer.init)
                                 },
+                                reactions: views.reactions,
                                 hasList: views.hasList
                             )
                         },
@@ -175,34 +187,45 @@ public final class StoryContentContextImpl: StoryContentContext {
                         isSelectedContacts: item.isSelectedContacts,
                         isForwardingDisabled: item.isForwardingDisabled,
                         isEdited: item.isEdited,
+                        isMy: item.isMy,
                         myReaction: item.myReaction
                     )
                 }
                 var totalCount = peerStoryItemsView.items.count
-                if peerId == context.account.peerId, let stateView = views.views[PostboxViewKey.storiesState(key: .local)] as? StoryStatesView, let localState = stateView.value?.get(Stories.LocalState.self) {
+                if let stateView = views.views[PostboxViewKey.storiesState(key: .local)] as? StoryStatesView, let localState = stateView.value?.get(Stories.LocalState.self) {
                     for item in localState.items {
-                        mappedItems.append(EngineStoryItem(
-                            id: item.stableId,
-                            timestamp: item.timestamp,
-                            expirationTimestamp: Int32.max,
-                            media: EngineMedia(item.media),
-                            mediaAreas: item.mediaAreas,
-                            text: item.text,
-                            entities: item.entities,
-                            views: nil,
-                            privacy: item.privacy,
-                            isPinned: item.pin,
-                            isExpired: false,
-                            isPublic: item.privacy.base == .everyone,
-                            isPending: true,
-                            isCloseFriends: item.privacy.base == .closeFriends,
-                            isContacts: item.privacy.base == .contacts,
-                            isSelectedContacts: item.privacy.base == .nobody,
-                            isForwardingDisabled: false,
-                            isEdited: false,
-                            myReaction: nil
-                        ))
-                        totalCount += 1
+                        var matches = false
+                        if peerId == context.account.peerId, case .myStories = item.target {
+                            matches = true
+                        } else if case .peer(peerId) = item.target {
+                            matches = true
+                        }
+                        
+                        if matches {
+                            mappedItems.append(EngineStoryItem(
+                                id: item.stableId,
+                                timestamp: item.timestamp,
+                                expirationTimestamp: Int32.max,
+                                media: EngineMedia(item.media),
+                                mediaAreas: item.mediaAreas,
+                                text: item.text,
+                                entities: item.entities,
+                                views: nil,
+                                privacy: item.privacy,
+                                isPinned: item.pin,
+                                isExpired: false,
+                                isPublic: item.privacy.base == .everyone,
+                                isPending: true,
+                                isCloseFriends: item.privacy.base == .closeFriends,
+                                isContacts: item.privacy.base == .contacts,
+                                isSelectedContacts: item.privacy.base == .nobody,
+                                isForwardingDisabled: false,
+                                isEdited: false,
+                                isMy: true,
+                                myReaction: nil
+                            ))
+                            totalCount += 1
+                        }
                     }
                 }
                 
@@ -215,7 +238,7 @@ public final class StoryContentContextImpl: StoryContentContext {
                         if let currentMappedItems = self.currentMappedItems {
                             if let previousIndex = currentMappedItems.firstIndex(where: { $0.id == currentFocusedId }) {
                                 if currentMappedItems[previousIndex].isPending {
-                                    if let updatedId = context.engine.messages.lookUpPendingStoryIdMapping(stableId: currentFocusedId) {
+                                    if let updatedId = context.engine.messages.lookUpPendingStoryIdMapping(peerId: peerId, stableId: currentFocusedId) {
                                         if let index = mappedItems.firstIndex(where: { $0.id == updatedId }) {
                                             focusedIndex = index
                                         }
@@ -361,7 +384,7 @@ public final class StoryContentContextImpl: StoryContentContext {
             self.nextPeerContext = nextPeerContext
             
             self.centralDisposable = (centralPeerContext.updated.get()
-            |> deliverOnMainQueue).start(next: { [weak self] _ in
+            |> deliverOnMainQueue).startStrict(next: { [weak self] _ in
                 guard let self else {
                     return
                 }
@@ -370,7 +393,7 @@ public final class StoryContentContextImpl: StoryContentContext {
             
             if let previousPeerContext {
                 self.previousDisposable = (previousPeerContext.updated.get()
-                |> deliverOnMainQueue).start(next: { [weak self] _ in
+                |> deliverOnMainQueue).startStrict(next: { [weak self] _ in
                     guard let self else {
                         return
                     }
@@ -380,7 +403,7 @@ public final class StoryContentContextImpl: StoryContentContext {
             
             if let nextPeerContext {
                 self.nextDisposable = (nextPeerContext.updated.get()
-                |> deliverOnMainQueue).start(next: { [weak self] _ in
+                |> deliverOnMainQueue).startStrict(next: { [weak self] _ in
                     guard let self else {
                         return
                     }
@@ -470,7 +493,7 @@ public final class StoryContentContextImpl: StoryContentContext {
                 context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Peer(id: focusedPeerId)),
                 singlePeerListContext.state
             )
-            |> deliverOnMainQueue).start(next: { [weak self] peer, state in
+            |> deliverOnMainQueue).startStrict(next: { [weak self] peer, state in
                 guard let self, let peer else {
                     return
                 }
@@ -564,7 +587,7 @@ public final class StoryContentContextImpl: StoryContentContext {
             })
         } else {
             self.storySubscriptionsDisposable = (context.engine.messages.storySubscriptions(isHidden: isHidden, tempKeepNewlyArchived: true)
-            |> deliverOnMainQueue).start(next: { [weak self] storySubscriptions in
+            |> deliverOnMainQueue).startStrict(next: { [weak self] storySubscriptions in
                 guard let self else {
                     return
                 }
@@ -666,6 +689,8 @@ public final class StoryContentContextImpl: StoryContentContext {
             disposable.dispose()
         }
         self.storySubscriptionsDisposable?.dispose()
+        self.currentStateUpdatedDisposable?.dispose()
+        self.pendingStateReadyDisposable?.dispose()
     }
     
     private func updatePeerContexts() {
@@ -698,7 +723,7 @@ public final class StoryContentContextImpl: StoryContentContext {
                             }
                         }
                         for (peerId, ids) in idsByPeerId {
-                            self.requestStoryDisposables.add(self.context.engine.messages.refreshStories(peerId: peerId, ids: ids).start())
+                            self.requestStoryDisposables.add(self.context.engine.messages.refreshStories(peerId: peerId, ids: ids).startStrict())
                         }
                     }
                 }
@@ -748,7 +773,7 @@ public final class StoryContentContextImpl: StoryContentContext {
                     )
                     self.pendingState = pendingState
                     self.pendingStateReadyDisposable = (pendingState.updated.get()
-                    |> deliverOnMainQueue).start(next: { [weak self, weak pendingState] _ in
+                    |> deliverOnMainQueue).startStrict(next: { [weak self, weak pendingState] _ in
                         guard let self, let pendingState, self.pendingState === pendingState, pendingState.isReady else {
                             return
                         }
@@ -762,7 +787,7 @@ public final class StoryContentContextImpl: StoryContentContext {
                         
                         self.currentStateUpdatedDisposable?.dispose()
                         self.currentStateUpdatedDisposable = (pendingState.updated.get()
-                        |> deliverOnMainQueue).start(next: { [weak self, weak pendingState] _ in
+                        |> deliverOnMainQueue).startStrict(next: { [weak self, weak pendingState] _ in
                             guard let self, let pendingState, self.currentState === pendingState else {
                                 return
                             }
@@ -818,10 +843,19 @@ public final class StoryContentContextImpl: StoryContentContext {
             let peer = possibleItems[i].0
             let item = possibleItems[i].1
             if let peerReference = PeerReference(peer._asPeer()), let mediaId = item.media.id {
+                var reactions: [MessageReaction.Reaction] = []
+                for mediaArea in item.mediaAreas {
+                    if case let .reaction(_, reaction, _) = mediaArea {
+                        if !reactions.contains(reaction) {
+                            reactions.append(reaction)
+                        }
+                    }
+                }
                 resultResources[mediaId] = StoryPreloadInfo(
                     peer: peerReference,
                     storyId: item.id,
                     media: item.media,
+                    reactions: reactions,
                     priority: .top(position: nextPriority)
                 )
                 nextPriority += 1
@@ -832,7 +866,7 @@ public final class StoryContentContextImpl: StoryContentContext {
         for (id, info) in resultResources.sorted(by: { $0.value.priority < $1.value.priority }) {
             validIds.append(id)
             if self.preloadStoryResourceDisposables[id] == nil {
-                self.preloadStoryResourceDisposables[id] = preloadStoryMedia(context: context, peer: info.peer, storyId: info.storyId, media: info.media).start()
+                self.preloadStoryResourceDisposables[id] = preloadStoryMedia(context: context, peer: info.peer, storyId: info.storyId, media: info.media, reactions: info.reactions).startStrict()
             }
         }
         
@@ -858,7 +892,7 @@ public final class StoryContentContextImpl: StoryContentContext {
         for (peerId, ids) in pollIdByPeerId {
             for id in ids {
                 if self.pollStoryMetadataDisposables[StoryId(peerId: peerId, id: id)] == nil {
-                    self.pollStoryMetadataDisposables[StoryId(peerId: peerId, id: id)] = self.context.engine.messages.refreshStoryViews(peerId: peerId, ids: ids).start()
+                    self.pollStoryMetadataDisposables[StoryId(peerId: peerId, id: id)] = self.context.engine.messages.refreshStoryViews(peerId: peerId, ids: ids).startStrict()
                 }
             }
         }
@@ -921,7 +955,7 @@ public final class StoryContentContextImpl: StoryContentContext {
     
     public func markAsSeen(id: StoryId) {
         if !self.context.sharedContext.immediateExperimentalUISettings.skipReadHistory {
-            let _ = self.context.engine.messages.markStoryAsSeen(peerId: id.peerId, id: id.id, asPinned: false).start()
+            let _ = self.context.engine.messages.markStoryAsSeen(peerId: id.peerId, id: id.id, asPinned: false).startStandalone()
         }
     }
 }
@@ -989,12 +1023,24 @@ public final class SingleStoryContentContextImpl: StoryContentContext {
                                 }
                             }
                         }
+                        for mediaArea in item.mediaAreas {
+                            if case let .reaction(_, reaction, _) = mediaArea {
+                                if case let .custom(fileId) = reaction {
+                                    let mediaId = MediaId(namespace: Namespaces.Media.CloudFile, id: fileId)
+                                    if allEntityFiles[mediaId] == nil {
+                                        if let file = transaction.getMedia(mediaId) as? TelegramMediaFile {
+                                            allEntityFiles[file.fileId] = file
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                     return (item, peers, allEntityFiles)
                 }
             }
         )
-        |> deliverOnMainQueue).start(next: { [weak self] data, itemAndPeers in
+        |> deliverOnMainQueue).startStrict(next: { [weak self] data, itemAndPeers in
             guard let self else {
                 return
             }
@@ -1019,7 +1065,7 @@ public final class SingleStoryContentContextImpl: StoryContentContext {
                 if !self.requestedStoryKeys.contains(storyKey) {
                     self.requestedStoryKeys.insert(storyKey)
                     
-                    self.requestStoryDisposables.add(self.context.engine.messages.refreshStories(peerId: storyId.peerId, ids: [storyId.id]).start())
+                    self.requestStoryDisposables.add(self.context.engine.messages.refreshStories(peerId: storyId.peerId, ids: [storyId.id]).startStrict())
                 }
             }
             
@@ -1036,9 +1082,11 @@ public final class SingleStoryContentContextImpl: StoryContentContext {
                         return EngineStoryItem.Views(
                             seenCount: views.seenCount,
                             reactedCount: views.reactedCount,
+                            forwardCount: views.forwardCount,
                             seenPeers: views.seenPeerIds.compactMap { id -> EnginePeer? in
                                 return peers[id].flatMap(EnginePeer.init)
                             },
+                            reactions: views.reactions,
                             hasList: views.hasList
                         )
                     },
@@ -1052,6 +1100,7 @@ public final class SingleStoryContentContextImpl: StoryContentContext {
                     isSelectedContacts: itemValue.isSelectedContacts,
                     isForwardingDisabled: itemValue.isForwardingDisabled,
                     isEdited: itemValue.isEdited,
+                    isMy: itemValue.isMy,
                     myReaction: itemValue.myReaction
                 )
                 
@@ -1111,7 +1160,7 @@ public final class SingleStoryContentContextImpl: StoryContentContext {
     public func markAsSeen(id: StoryId) {
         if self.readGlobally {
             if !self.context.sharedContext.immediateExperimentalUISettings.skipReadHistory {
-                let _ = self.context.engine.messages.markStoryAsSeen(peerId: id.peerId, id: id.id, asPinned: false).start()
+                let _ = self.context.engine.messages.markStoryAsSeen(peerId: id.peerId, id: id.id, asPinned: false).startStandalone()
             }
         }
     }
@@ -1158,7 +1207,7 @@ public final class PeerStoryListContentContextImpl: StoryContentContext {
             listContext.state,
             self.focusedIdUpdated.get()
         )
-        |> deliverOnMainQueue).start(next: { [weak self] data, state, _ in
+        |> deliverOnMainQueue).startStrict(next: { [weak self] data, state, _ in
             guard let self else {
                 return
             }
@@ -1318,10 +1367,20 @@ public final class PeerStoryListContentContextImpl: StoryContentContext {
                         let peer = possibleItems[i].0
                         let item = possibleItems[i].1
                         if let peerReference = PeerReference(peer._asPeer()), let mediaId = item.media.id {
+                            var reactions: [MessageReaction.Reaction] = []
+                            for mediaArea in item.mediaAreas {
+                                if case let .reaction(_, reaction, _) = mediaArea {
+                                    if !reactions.contains(reaction) {
+                                        reactions.append(reaction)
+                                    }
+                                }
+                            }
+                            
                             resultResources[mediaId] = StoryPreloadInfo(
                                 peer: peerReference,
                                 storyId: item.id,
                                 media: item.media,
+                                reactions: reactions,
                                 priority: .top(position: nextPriority)
                             )
                             nextPriority += 1
@@ -1334,7 +1393,7 @@ public final class PeerStoryListContentContextImpl: StoryContentContext {
                     if let mediaId = info.media.id {
                         validIds.append(mediaId)
                         if self.preloadStoryResourceDisposables[mediaId] == nil {
-                            self.preloadStoryResourceDisposables[mediaId] = preloadStoryMedia(context: context, peer: info.peer, storyId: info.storyId, media: info.media).start()
+                            self.preloadStoryResourceDisposables[mediaId] = preloadStoryMedia(context: context, peer: info.peer, storyId: info.storyId, media: info.media, reactions: info.reactions).startStrict()
                         }
                     }
                 }
@@ -1359,7 +1418,7 @@ public final class PeerStoryListContentContextImpl: StoryContentContext {
                     }
                 }
                 for (peerId, ids) in pollIdByPeerId {
-                    self.pollStoryMetadataDisposables.add(self.context.engine.messages.refreshStoryViews(peerId: peerId, ids: ids).start())
+                    self.pollStoryMetadataDisposables.add(self.context.engine.messages.refreshStoryViews(peerId: peerId, ids: ids).startStrict())
                 }
             }
         })
@@ -1415,12 +1474,12 @@ public final class PeerStoryListContentContextImpl: StoryContentContext {
     
     public func markAsSeen(id: StoryId) {
         if !self.context.sharedContext.immediateExperimentalUISettings.skipReadHistory {
-            let _ = self.context.engine.messages.markStoryAsSeen(peerId: id.peerId, id: id.id, asPinned: true).start()
+            let _ = self.context.engine.messages.markStoryAsSeen(peerId: id.peerId, id: id.id, asPinned: true).startStandalone()
         }
     }
 }
 
-public func preloadStoryMedia(context: AccountContext, peer: PeerReference, storyId: Int32, media: EngineMedia) -> Signal<Never, NoError> {
+public func preloadStoryMedia(context: AccountContext, peer: PeerReference, storyId: Int32, media: EngineMedia, reactions: [MessageReaction.Reaction]) -> Signal<Never, NoError> {
     var signals: [Signal<Never, NoError>] = []
     
     switch media {
@@ -1452,6 +1511,127 @@ public func preloadStoryMedia(context: AccountContext, peer: PeerReference, stor
         |> ignoreValues)
     default:
         break
+    }
+    
+    var builtinReactions: [String] = []
+    var customReactions: [Int64] = []
+    for reaction in reactions {
+        switch reaction {
+        case let .builtin(value):
+            if !builtinReactions.contains(value) {
+                builtinReactions.append(value)
+            }
+        case let .custom(fileId):
+            if !customReactions.contains(fileId) {
+                customReactions.append(fileId)
+            }
+        }
+    }
+    if !builtinReactions.isEmpty {
+        signals.append(context.engine.stickers.availableReactions()
+        |> take(1)
+        |> mapToSignal { availableReactions -> Signal<Never, NoError> in
+            guard let availableReactions = availableReactions else {
+                return .complete()
+            }
+            
+            var files: [TelegramMediaFile] = []
+            
+            for reaction in availableReactions.reactions {
+                for value in builtinReactions {
+                    if case .builtin(value) = reaction.value {
+                        files.append(reaction.selectAnimation)
+                    }
+                }
+            }
+            
+            return combineLatest(files.map { file -> Signal<Void, NoError> in
+                return Signal { subscriber in
+                    let loadSignal = fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .other, userContentType: .sticker, reference: .standalone(resource: file.resource))
+                    |> ignoreValues
+                    |> `catch` { _ -> Signal<Never, NoError> in
+                        return .complete()
+                    }
+                    
+                    let statusSignal = context.account.postbox.mediaBox.resourceStatus(file.resource)
+                    |> filter { status in
+                        if case .Local = status {
+                            return true
+                        } else {
+                            return false
+                        }
+                    }
+                    |> take(1)
+                    |> map { _ -> Void in
+                        return Void()
+                    }
+                    
+                    //let fileFetchPriorityDisposable = context.engine.resources.pushPriorityDownload(resourceId: file.resource.id.stringRepresentation, priority: 1)
+                    
+                    let statusDisposable = statusSignal.start(completed: {
+                        subscriber.putCompletion()
+                    })
+                    let loadDisposable = loadSignal.start()
+                    
+                    return ActionDisposable {
+                        statusDisposable.dispose()
+                        loadDisposable.dispose()
+                        //fileFetchPriorityDisposable.dispose()
+                    }
+                }
+            })
+            |> ignoreValues
+        })
+    }
+    if !customReactions.isEmpty {
+        signals.append(context.engine.stickers.resolveInlineStickers(fileIds: customReactions)
+        |> take(1)
+        |> mapToSignal { resolvedFiles -> Signal<Never, NoError> in
+            var files: [TelegramMediaFile] = []
+            
+            for (_, file) in resolvedFiles {
+                if customReactions.contains(file.fileId.id) {
+                    files.append(file)
+                }
+            }
+            
+            return combineLatest(files.map { file -> Signal<Void, NoError> in
+                return Signal { subscriber in
+                    let loadSignal = fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .other, userContentType: .sticker, reference: .standalone(resource: file.resource))
+                    |> ignoreValues
+                    |> `catch` { _ -> Signal<Never, NoError> in
+                        return .complete()
+                    }
+                    
+                    let statusSignal = context.account.postbox.mediaBox.resourceStatus(file.resource)
+                    |> filter { status in
+                        if case .Local = status {
+                            return true
+                        } else {
+                            return false
+                        }
+                    }
+                    |> take(1)
+                    |> map { _ -> Void in
+                        return Void()
+                    }
+                    
+                    let statusDisposable = statusSignal.start(completed: {
+                        subscriber.putCompletion()
+                    })
+                    let loadDisposable = loadSignal.start()
+                    
+                    //let fileFetchPriorityDisposable = context.engine.resources.pushPriorityDownload(resourceId: file.resource.id.stringRepresentation, priority: 1)
+                    
+                    return ActionDisposable {
+                        statusDisposable.dispose()
+                        loadDisposable.dispose()
+                        //fileFetchPriorityDisposable.dispose()
+                    }
+                }
+            })
+            |> ignoreValues
+        })
     }
     
     return combineLatest(signals) |> ignoreValues
@@ -1542,6 +1722,127 @@ public func waitUntilStoryMediaPreloaded(context: AccountContext, peerId: Engine
             break
         }
         
+        var builtinReactions: [String] = []
+        var customReactions: [Int64] = []
+        for mediaArea in storyItem.mediaAreas {
+            if case let .reaction(_, reaction, _) = mediaArea {
+                switch reaction {
+                case let .builtin(value):
+                    if !builtinReactions.contains(value) {
+                        builtinReactions.append(value)
+                    }
+                case let .custom(fileId):
+                    if !customReactions.contains(fileId) {
+                        customReactions.append(fileId)
+                    }
+                }
+            }
+        }
+        if !builtinReactions.isEmpty {
+            statusSignals.append(context.engine.stickers.availableReactions()
+            |> take(1)
+            |> mapToSignal { availableReactions -> Signal<Never, NoError> in
+                guard let availableReactions = availableReactions else {
+                    return .complete()
+                }
+                
+                var files: [TelegramMediaFile] = []
+                
+                for reaction in availableReactions.reactions {
+                    for value in builtinReactions {
+                        if case .builtin(value) = reaction.value {
+                            files.append(reaction.selectAnimation)
+                        }
+                    }
+                }
+                
+                return combineLatest(files.map { file -> Signal<Void, NoError> in
+                    return Signal { subscriber in
+                        let loadSignal = fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .other, userContentType: .sticker, reference: .standalone(resource: file.resource))
+                        |> ignoreValues
+                        |> `catch` { _ -> Signal<Never, NoError> in
+                            return .complete()
+                        }
+                        
+                        let statusSignal = context.account.postbox.mediaBox.resourceStatus(file.resource)
+                        |> filter { status in
+                            if case .Local = status {
+                                return true
+                            } else {
+                                return false
+                            }
+                        }
+                        |> take(1)
+                        |> map { _ -> Void in
+                            return Void()
+                        }
+                        
+                        let statusDisposable = statusSignal.start(completed: {
+                            subscriber.putCompletion()
+                        })
+                        let loadDisposable = loadSignal.start()
+                        let fileFetchPriorityDisposable = context.engine.resources.pushPriorityDownload(resourceId: file.resource.id.stringRepresentation, priority: 1)
+                        
+                        return ActionDisposable {
+                            statusDisposable.dispose()
+                            loadDisposable.dispose()
+                            fileFetchPriorityDisposable.dispose()
+                        }
+                    }
+                })
+                |> ignoreValues
+            })
+        }
+        if !customReactions.isEmpty {
+            statusSignals.append(context.engine.stickers.resolveInlineStickers(fileIds: customReactions)
+            |> take(1)
+            |> mapToSignal { resolvedFiles -> Signal<Never, NoError> in
+                var files: [TelegramMediaFile] = []
+                
+                for (_, file) in resolvedFiles {
+                    if customReactions.contains(file.fileId.id) {
+                        files.append(file)
+                    }
+                }
+                
+                return combineLatest(files.map { file -> Signal<Void, NoError> in
+                    return Signal { subscriber in
+                        let loadSignal = fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .other, userContentType: .sticker, reference: .standalone(resource: file.resource))
+                        |> ignoreValues
+                        |> `catch` { _ -> Signal<Never, NoError> in
+                            return .complete()
+                        }
+                        
+                        let statusSignal = context.account.postbox.mediaBox.resourceStatus(file.resource)
+                        |> filter { status in
+                            if case .Local = status {
+                                return true
+                            } else {
+                                return false
+                            }
+                        }
+                        |> take(1)
+                        |> map { _ -> Void in
+                            return Void()
+                        }
+                        
+                        let statusDisposable = statusSignal.start(completed: {
+                            subscriber.putCompletion()
+                        })
+                        let loadDisposable = loadSignal.start()
+                        let fileFetchPriorityDisposable = context.engine.resources.pushPriorityDownload(resourceId: file.resource.id.stringRepresentation, priority: 1)
+                        
+                        return ActionDisposable {
+                            statusDisposable.dispose()
+                            loadDisposable.dispose()
+                            fileFetchPriorityDisposable.dispose()
+                        }
+                    }
+                })
+                |> ignoreValues
+            })
+        }
+        
         return Signal { subscriber in
             let statusDisposable = combineLatest(statusSignals).start(completed: {
                 subscriber.putCompletion()
@@ -1564,6 +1865,16 @@ func extractItemEntityFiles(item: EngineStoryItem, allEntityFiles: [MediaId: Tel
             let mediaId = MediaId(namespace: Namespaces.Media.CloudFile, id: fileId)
             if let file = allEntityFiles[mediaId] {
                 result[file.fileId] = file
+            }
+        }
+    }
+    for mediaArea in item.mediaAreas {
+        if case let .reaction(_, reaction, _) = mediaArea {
+            if case let .custom(fileId) = reaction {
+                let mediaId = MediaId(namespace: Namespaces.Media.CloudFile, id: fileId)
+                if let file = allEntityFiles[mediaId] {
+                    result[file.fileId] = file
+                }
             }
         }
     }

@@ -304,7 +304,9 @@ public func chatListFilterPresetListController(context: AccountContext, mode: Ch
             let limit = limits.maxFoldersCount
             let premiumLimit = premiumLimits.maxFoldersCount
             if filters.count >= premiumLimit {
-                let controller = PremiumLimitScreen(context: context, subject: .folders, count: Int32(filters.count), action: {})
+                let controller = PremiumLimitScreen(context: context, subject: .folders, count: Int32(filters.count), action: {
+                    return true
+                })
                 pushControllerImpl?(controller)
                 return
             } else if filters.count >= limit && !isPremium {
@@ -312,6 +314,7 @@ public func chatListFilterPresetListController(context: AccountContext, mode: Ch
                 let controller = PremiumLimitScreen(context: context, subject: .folders, count: Int32(filters.count), action: {
                     let controller = PremiumIntroScreen(context: context, source: .folders)
                     replaceImpl?(controller)
+                    return true
                 })
                 replaceImpl = { [weak controller] c in
                     controller?.replace(with: c)
@@ -353,7 +356,9 @@ public func chatListFilterPresetListController(context: AccountContext, mode: Ch
             let limit = limits.maxFoldersCount
             let premiumLimit = premiumLimits.maxFoldersCount
             if filters.count >= premiumLimit {
-                let controller = PremiumLimitScreen(context: context, subject: .folders, count: Int32(filters.count), action: {})
+                let controller = PremiumLimitScreen(context: context, subject: .folders, count: Int32(filters.count), action: {
+                    return true
+                })
                 pushControllerImpl?(controller)
                 return
             } else if filters.count >= limit && !isPremium {
@@ -361,6 +366,7 @@ public func chatListFilterPresetListController(context: AccountContext, mode: Ch
                 let controller = PremiumLimitScreen(context: context, subject: .folders, count: Int32(filters.count), action: {
                     let controller = PremiumIntroScreen(context: context, source: .folders)
                     replaceImpl?(controller)
+                    return true
                 })
                 replaceImpl = { [weak controller] c in
                     controller?.replace(with: c)
@@ -475,7 +481,7 @@ public func chatListFilterPresetListController(context: AccountContext, mode: Ch
                                 }
                                 return filters
                             }
-                            |> deliverOnMainQueue).start()
+                            |> deliverOnMainQueue).startStandalone()
                         })
                     ]),
                     ActionSheetItemGroup(items: [
@@ -535,7 +541,7 @@ public func chatListFilterPresetListController(context: AccountContext, mode: Ch
             rightNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Done), style: .bold, enabled: true, action: {
                 let _ = (updatedFilterOrder.get()
                 |> take(1)
-                |> deliverOnMainQueue).start(next: { [weak updatedFilterOrder] updatedFilterOrderValue in
+                |> deliverOnMainQueue).startStandalone(next: { [weak updatedFilterOrder] updatedFilterOrderValue in
                     if let updatedFilterOrderValue = updatedFilterOrderValue {
                         let _ = (context.engine.peers.updateChatListFiltersInteractively { filters in
                             var updatedFilters: [ChatListFilter] = []

@@ -40,6 +40,9 @@ import AttachmentTextInputPanelNode
 import ChatEntityKeyboardInputNode
 import HashtagSearchUI
 import PeerInfoStoryGridScreen
+import TelegramAccountAuxiliaryMethods
+import PeerSelectionController
+import LegacyMessageInputPanel
 
 import NGCore
 import NGData
@@ -539,7 +542,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             var addedAuthSignal: Signal<UnauthorizedAccount?, NoError> = .single(nil)
             for (id, attributes) in records {
                 if self.activeAccountsValue?.accounts.firstIndex(where: { $0.0 == id}) == nil {
-                    addedSignals.append(accountWithId(accountManager: accountManager, networkArguments: networkArguments, id: id, encryptionParameters: encryptionParameters, supplementary: !applicationBindings.isMainApp, rootPath: rootPath, beginWithTestingEnvironment: attributes.isTestingEnvironment, backupData: attributes.backupData, auxiliaryMethods: makeTelegramAccountAuxiliaryMethods(appDelegate: appDelegate))
+                    addedSignals.append(accountWithId(accountManager: accountManager, networkArguments: networkArguments, id: id, encryptionParameters: encryptionParameters, supplementary: !applicationBindings.isMainApp, rootPath: rootPath, beginWithTestingEnvironment: attributes.isTestingEnvironment, backupData: attributes.backupData, auxiliaryMethods: makeTelegramAccountAuxiliaryMethods(uploadInBackground: appDelegate?.uploadInBackround))
                     |> mapToSignal { result -> Signal<AddedAccountResult, NoError> in
                         switch result {
                             case let .authorized(account):
@@ -561,7 +564,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                 }
             }
             if let authRecord = authRecord, authRecord.0 != self.activeAccountsValue?.currentAuth?.id {
-                addedAuthSignal = accountWithId(accountManager: accountManager, networkArguments: networkArguments, id: authRecord.0, encryptionParameters: encryptionParameters, supplementary: !applicationBindings.isMainApp, rootPath: rootPath, beginWithTestingEnvironment: authRecord.1, backupData: nil, auxiliaryMethods: makeTelegramAccountAuxiliaryMethods(appDelegate: appDelegate))
+                addedAuthSignal = accountWithId(accountManager: accountManager, networkArguments: networkArguments, id: authRecord.0, encryptionParameters: encryptionParameters, supplementary: !applicationBindings.isMainApp, rootPath: rootPath, beginWithTestingEnvironment: authRecord.1, backupData: nil, auxiliaryMethods: makeTelegramAccountAuxiliaryMethods(uploadInBackground: appDelegate?.uploadInBackround))
                 |> mapToSignal { result -> Signal<UnauthorizedAccount?, NoError> in
                     switch result {
                         case let .unauthorized(account):
@@ -926,7 +929,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             return true
         })
         
-        let _ = managedCleanupAccounts(networkArguments: networkArguments, accountManager: self.accountManager, rootPath: rootPath, auxiliaryMethods: makeTelegramAccountAuxiliaryMethods(appDelegate: appDelegate), encryptionParameters: encryptionParameters).start()
+        let _ = managedCleanupAccounts(networkArguments: networkArguments, accountManager: self.accountManager, rootPath: rootPath, auxiliaryMethods: makeTelegramAccountAuxiliaryMethods(uploadInBackground: appDelegate?.uploadInBackround), encryptionParameters: encryptionParameters).start()
         
         self.updateNotificationTokensRegistration()
         
@@ -1668,6 +1671,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         }, openWebView: { _, _, _, _ in
         }, activateAdAction: { _ in
         }, openRequestedPeerSelection: { _, _, _ in
+        }, saveMediaToFiles: { _ in
         }, requestMessageUpdate: { _, _ in
         }, cancelInteractiveKeyboardGestures: {
         }, dismissTextInput: {
@@ -1757,100 +1761,17 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return makeAttachmentFileControllerImpl(context: context, updatedPresentationData: updatedPresentationData, bannedSendMedia: bannedSendMedia, presentGallery: presentGallery, presentFiles: presentFiles, send: send)
     }
     
-    public func makeGalleryCaptionPanelView(context: AccountContext, chatLocation: ChatLocation, customEmojiAvailable: Bool, present: @escaping (ViewController) -> Void, presentInGlobalOverlay: @escaping (ViewController) -> Void) -> NSObject? {
-        var presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        presentationData = presentationData.withUpdated(theme: defaultDarkColorPresentationTheme)
-        
-        var presentationInterfaceState = ChatPresentationInterfaceState(chatWallpaper: .builtin(WallpaperSettings()), theme: presentationData.theme, strings: presentationData.strings, dateTimeFormat: presentationData.dateTimeFormat, nameDisplayOrder: presentationData.nameDisplayOrder, limitsConfiguration: context.currentLimitsConfiguration.with { $0 }, fontSize: presentationData.chatFontSize, bubbleCorners: presentationData.chatBubbleCorners, accountPeerId: context.account.peerId, mode: .standard(previewing: false), chatLocation: chatLocation, subject: nil, peerNearbyData: nil, greetingData: nil, pendingUnpinnedAllMessages: false, activeGroupCallInfo: nil, hasActiveGroupCall: false, importState: nil, threadData: nil, isGeneralThreadClosed: nil)
-        
-        var updateChatPresentationInterfaceStateImpl: (((ChatPresentationInterfaceState) -> ChatPresentationInterfaceState) -> Void)?
-        var ensureFocusedImpl: (() -> Void)?
-        
-        let interfaceInteraction = ChatPanelInterfaceInteraction(updateTextInputStateAndMode: { f in
-            updateChatPresentationInterfaceStateImpl?({
-                let (updatedState, updatedMode) = f($0.interfaceState.effectiveInputState, $0.inputMode)
-                return $0.updatedInterfaceState { interfaceState in
-                    return interfaceState.withUpdatedEffectiveInputState(updatedState)
-                }.updatedInputMode({ _ in updatedMode })
-            })
-        }, updateInputModeAndDismissedButtonKeyboardMessageId: { f in
-            updateChatPresentationInterfaceStateImpl?({
-                let (updatedInputMode, updatedClosedButtonKeyboardMessageId) = f($0)
-                return $0.updatedInputMode({ _ in return updatedInputMode }).updatedInterfaceState({
-                    $0.withUpdatedMessageActionsState({ value in
-                        var value = value
-                        value.closedButtonKeyboardMessageId = updatedClosedButtonKeyboardMessageId
-                        return value
-                    })
-                })
-            })
-        }, openLinkEditing: {
-            var selectionRange: Range<Int>?
-            var text: NSAttributedString?
-            var inputMode: ChatInputMode?
-            updateChatPresentationInterfaceStateImpl?({ state in
-                selectionRange = state.interfaceState.effectiveInputState.selectionRange
-                if let selectionRange = selectionRange {
-                    text = state.interfaceState.effectiveInputState.inputText.attributedSubstring(from: NSRange(location: selectionRange.startIndex, length: selectionRange.count))
-                }
-                inputMode = state.inputMode
-                return state
-            })
-            
-            var link: String?
-            if let text {
-                text.enumerateAttributes(in: NSMakeRange(0, text.length)) { attributes, _, _ in
-                    if let linkAttribute = attributes[ChatTextInputAttributes.textUrl] as? ChatTextInputTextUrlAttribute {
-                        link = linkAttribute.url
-                    }
-                }
+    public func makeGalleryCaptionPanelView(context: AccountContext, chatLocation: ChatLocation, isScheduledMessages: Bool, customEmojiAvailable: Bool, present: @escaping (ViewController) -> Void, presentInGlobalOverlay: @escaping (ViewController) -> Void) -> NSObject? {
+        let inputPanelNode = LegacyMessageInputPanelNode(
+            context: context,
+            chatLocation: chatLocation,
+            isScheduledMessages: isScheduledMessages,
+            present: present,
+            presentInGlobalOverlay: presentInGlobalOverlay,
+            makeEntityInputView: {
+                return EntityInputView(context: context, isDark: true, areCustomEmojiEnabled: customEmojiAvailable)
             }
-            
-            let controller = chatTextLinkEditController(sharedContext: context.sharedContext, updatedPresentationData: (presentationData, .never()), account: context.account, text: text?.string ?? "", link: link, apply: { link in
-                if let inputMode = inputMode, let selectionRange = selectionRange {
-                    if let link = link {
-                        updateChatPresentationInterfaceStateImpl?({
-                            return $0.updatedInterfaceState({
-                                $0.withUpdatedEffectiveInputState(chatTextInputAddLinkAttribute($0.effectiveInputState, selectionRange: selectionRange, url: link))
-                            })
-                        })
-                    }
-                    ensureFocusedImpl?()
-                    updateChatPresentationInterfaceStateImpl?({
-                        return $0.updatedInputMode({ _ in return inputMode }).updatedInterfaceState({
-                            $0.withUpdatedEffectiveInputState(ChatTextInputState(inputText: $0.effectiveInputState.inputText, selectionRange: selectionRange.endIndex ..< selectionRange.endIndex))
-                        })
-                    })
-                }
-            })
-            present(controller)
-        })
-        
-        let inputPanelNode = AttachmentTextInputPanelNode(context: context, presentationInterfaceState: presentationInterfaceState, isCaption: true, presentController: { c in
-            presentInGlobalOverlay(c)
-        }, makeEntityInputView: {
-            return EntityInputView(context: context, isDark: true, areCustomEmojiEnabled: customEmojiAvailable)
-        })
-        inputPanelNode.interfaceInteraction = interfaceInteraction
-        inputPanelNode.effectivePresentationInterfaceState = {
-            return presentationInterfaceState
-        }
-        
-        updateChatPresentationInterfaceStateImpl = { [weak inputPanelNode] f in
-            let updatedPresentationInterfaceState = f(presentationInterfaceState)
-            let updateInputTextState = presentationInterfaceState.interfaceState.effectiveInputState != updatedPresentationInterfaceState.interfaceState.effectiveInputState
-            
-            presentationInterfaceState = updatedPresentationInterfaceState
-            
-            if let inputPanelNode = inputPanelNode, updateInputTextState {
-                inputPanelNode.updateInputTextState(updatedPresentationInterfaceState.interfaceState.effectiveInputState, animated: true)
-            }
-        }
-        
-        ensureFocusedImpl =  { [weak inputPanelNode] in
-            inputPanelNode?.ensureFocused()
-        }
-        
+        )
         return inputPanelNode
     }
     
@@ -1923,6 +1844,10 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             mappedSource = .storiesFormatting
         case .storiesExpirationDurations:
             mappedSource = .storiesExpirationDurations
+        case .storiesSuggestedReactions:
+            mappedSource = .storiesSuggestedReactions
+        case let .channelBoost(peerId):
+            mappedSource = .channelBoost(peerId)
         }
         let controller = PremiumIntroScreen(context: context, source: mappedSource, forceDark: forceDark)
         controller.wasDismissed = dismissed
@@ -1966,7 +1891,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return PremiumDemoScreen(context: context, subject: mappedSubject, action: action)
     }
     
-    public func makePremiumLimitController(context: AccountContext, subject: PremiumLimitSubject, count: Int32, forceDark: Bool, cancel: @escaping () -> Void, action: @escaping () -> Void) -> ViewController {
+    public func makePremiumLimitController(context: AccountContext, subject: PremiumLimitSubject, count: Int32, forceDark: Bool, cancel: @escaping () -> Void, action: @escaping () -> Bool) -> ViewController {
         let mappedSubject: PremiumLimitScreen.Subject
         switch subject {
         case .folders:
@@ -1991,6 +1916,8 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             mappedSubject = .storiesWeekly
         case .storiesMonthly:
             mappedSubject = .storiesMonthly
+        case let .storiesChannelBoost(peer, isCurrent, level, currentLevelBoosts, nextLevelBoosts, link, boosted):
+            mappedSubject = .storiesChannelBoost(peer: peer, isCurrent: isCurrent, level: level, currentLevelBoosts: currentLevelBoosts, nextLevelBoosts: nextLevelBoosts, link: link, boosted: boosted)
         }
         return PremiumLimitScreen(context: context, subject: mappedSubject, count: count, forceDark: forceDark, cancel: cancel, action: action)
     }

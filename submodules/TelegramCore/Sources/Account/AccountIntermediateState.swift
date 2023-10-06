@@ -95,7 +95,7 @@ enum AccountStateMutationOperation {
     case UpdatePinnedItemIds(PeerGroupId, AccountStateUpdatePinnedItemIdsOperation)
     case UpdatePinnedTopic(peerId: PeerId, threadId: Int64, isPinned: Bool)
     case UpdatePinnedTopicOrder(peerId: PeerId, threadIds: [Int64])
-    case ReadMessageContents((PeerId?, [Int32]))
+    case ReadMessageContents(peerIdsAndMessageIds: (PeerId?, [Int32]), date: Int32?)
     case UpdateMessageImpressionCount(MessageId, Int32)
     case UpdateMessageForwardsCount(MessageId, Int32)
     case UpdateInstalledStickerPacks(AccountStateUpdateStickerPacksOperation)
@@ -124,6 +124,7 @@ enum AccountStateMutationOperation {
     case UpdateReadStories(peerId: PeerId, maxId: Int32)
     case UpdateStoryStealthMode(data: Api.StoriesStealthMode)
     case UpdateStorySentReaction(peerId: PeerId, id: Int32, reaction: Api.Reaction)
+    case UpdateNewAuthorization(isUnconfirmed: Bool, hash: Int64, date: Int32, device: String, location: String)
 }
 
 struct HoleFromPreviousState {
@@ -467,7 +468,7 @@ struct AccountMutableState {
         
         for chat in chats {
             switch chat {
-                case let .channel(_, _, _, _, _, _, _, _, _, _, _, _, participantsCount, _):
+                case let .channel(_, _, _, _, _, _, _, _, _, _, _, _, participantsCount, _, _):
                     if let participantsCount = participantsCount {
                         self.addOperation(.UpdateCachedPeerData(chat.peerId, { current in
                             var previous: CachedChannelData
@@ -573,8 +574,8 @@ struct AccountMutableState {
         self.addOperation(.UpdatePinnedTopicOrder(peerId: peerId, threadIds: threadIds))
     }
     
-    mutating func addReadMessagesContents(_ peerIdsAndMessageIds: (PeerId?, [Int32])) {
-        self.addOperation(.ReadMessageContents(peerIdsAndMessageIds))
+    mutating func addReadMessagesContents(_ peerIdsAndMessageIds: (PeerId?, [Int32]), date: Int32?) {
+        self.addOperation(.ReadMessageContents(peerIdsAndMessageIds: peerIdsAndMessageIds, date: date))
     }
     
     mutating func addUpdateMessageImpressionCount(id: MessageId, count: Int32) {
@@ -653,9 +654,13 @@ struct AccountMutableState {
         self.addOperation(.UpdateStorySentReaction(peerId: peerId, id: id, reaction: reaction))
     }
     
+    mutating func updateNewAuthorization(isUnconfirmed: Bool, hash: Int64, date: Int32, device: String, location: String) {
+        self.addOperation(.UpdateNewAuthorization(isUnconfirmed: isUnconfirmed, hash: hash, date: date, device: device, location: location))
+    }
+    
     mutating func addOperation(_ operation: AccountStateMutationOperation) {
         switch operation {
-        case .DeleteMessages, .DeleteMessagesWithGlobalIds, .EditMessage, .UpdateMessagePoll, .UpdateMessageReactions, .UpdateMedia, .ReadOutbox, .ReadGroupFeedInbox, .MergePeerPresences, .UpdateSecretChat, .AddSecretMessages, .ReadSecretOutbox, .AddPeerInputActivity, .UpdateCachedPeerData, .UpdatePinnedItemIds, .UpdatePinnedTopic, .UpdatePinnedTopicOrder, .ReadMessageContents, .UpdateMessageImpressionCount, .UpdateMessageForwardsCount, .UpdateInstalledStickerPacks, .UpdateRecentGifs, .UpdateChatInputState, .UpdateCall, .AddCallSignalingData, .UpdateLangPack, .UpdateMinAvailableMessage, .UpdatePeerChatUnreadMark, .UpdateIsContact, .UpdatePeerChatInclusion, .UpdatePeersNearby, .UpdateTheme, .SyncChatListFilters, .UpdateChatListFilterOrder, .UpdateChatListFilter, .UpdateReadThread, .UpdateGroupCallParticipants, .UpdateGroupCall, .UpdateMessagesPinned, .UpdateAutoremoveTimeout, .UpdateAttachMenuBots, .UpdateAudioTranscription, .UpdateConfig, .UpdateExtendedMedia, .ResetForumTopic, .UpdateStory, .UpdateReadStories, .UpdateStoryStealthMode, .UpdateStorySentReaction:
+        case .DeleteMessages, .DeleteMessagesWithGlobalIds, .EditMessage, .UpdateMessagePoll, .UpdateMessageReactions, .UpdateMedia, .ReadOutbox, .ReadGroupFeedInbox, .MergePeerPresences, .UpdateSecretChat, .AddSecretMessages, .ReadSecretOutbox, .AddPeerInputActivity, .UpdateCachedPeerData, .UpdatePinnedItemIds, .UpdatePinnedTopic, .UpdatePinnedTopicOrder, .ReadMessageContents, .UpdateMessageImpressionCount, .UpdateMessageForwardsCount, .UpdateInstalledStickerPacks, .UpdateRecentGifs, .UpdateChatInputState, .UpdateCall, .AddCallSignalingData, .UpdateLangPack, .UpdateMinAvailableMessage, .UpdatePeerChatUnreadMark, .UpdateIsContact, .UpdatePeerChatInclusion, .UpdatePeersNearby, .UpdateTheme, .SyncChatListFilters, .UpdateChatListFilterOrder, .UpdateChatListFilter, .UpdateReadThread, .UpdateGroupCallParticipants, .UpdateGroupCall, .UpdateMessagesPinned, .UpdateAutoremoveTimeout, .UpdateAttachMenuBots, .UpdateAudioTranscription, .UpdateConfig, .UpdateExtendedMedia, .ResetForumTopic, .UpdateStory, .UpdateReadStories, .UpdateStoryStealthMode, .UpdateStorySentReaction, .UpdateNewAuthorization:
                 break
             case let .AddMessages(messages, location):
                 for message in messages {

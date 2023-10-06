@@ -30,6 +30,7 @@ public final class ChatSendMessageActionSheetController: ViewController {
     private let context: AccountContext
     
     private let peerId: EnginePeer.Id?
+    private let isScheduledMessages: Bool
     private let forwardMessageIds: [EngineMessage.Id]?
     private let hasEntityKeyboard: Bool
     
@@ -54,9 +55,10 @@ public final class ChatSendMessageActionSheetController: ViewController {
     public var emojiViewProvider: ((ChatTextInputTextCustomEmojiAttribute) -> UIView)?
 
     // MARK: Nicegram TranslateEnteredMessage, change (translate + chooseLanguage)
-    public init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, peerId: EnginePeer.Id?, forwardMessageIds: [EngineMessage.Id]?, hasEntityKeyboard: Bool, gesture: ContextGesture, sourceSendButton: ASDisplayNode, textInputNode: EditableTextNode, attachment: Bool = false, canSendWhenOnline: Bool, completion: @escaping () -> Void, sendMessage: @escaping (SendMode) -> Void, translate: @escaping () -> Void = {}, chooseLanguage: @escaping () -> Void = {}, schedule: @escaping () -> Void) {
+    public init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, peerId: EnginePeer.Id?, isScheduledMessages: Bool = false, forwardMessageIds: [EngineMessage.Id]?, hasEntityKeyboard: Bool, gesture: ContextGesture, sourceSendButton: ASDisplayNode, textInputNode: EditableTextNode, attachment: Bool = false, canSendWhenOnline: Bool, completion: @escaping () -> Void, sendMessage: @escaping (SendMode) -> Void, translate: @escaping () -> Void = {}, chooseLanguage: @escaping () -> Void = {}, schedule: @escaping () -> Void) {
         self.context = context
         self.peerId = peerId
+        self.isScheduledMessages = isScheduledMessages
         self.forwardMessageIds = forwardMessageIds
         self.hasEntityKeyboard = hasEntityKeyboard
         self.gesture = gesture
@@ -86,7 +88,7 @@ public final class ChatSendMessageActionSheetController: ViewController {
                     strongSelf.controllerNode.updatePresentationData(presentationData)
                 }
             }
-        })
+        }).strict()
         
         self.statusBar.statusBarStyle = .Hide
         self.statusBar.ignoreInCall = true
@@ -113,6 +115,9 @@ public final class ChatSendMessageActionSheetController: ViewController {
             reminders = peerId == context.account.peerId
             isSecret = peerId.namespace == Namespaces.Peer.SecretChat
             canSchedule = !isSecret
+        }
+        if self.isScheduledMessages {
+            canSchedule = false
         }
         
         // MARK: Nicegram TranslateEnteredMessage

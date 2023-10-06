@@ -1,12 +1,13 @@
 import Foundation
 import AccountContext
 import Display
+import FeatImagesHubUI
 import NGAiChatUI
 import NGAnalytics
 import NGAssistantUI
 import NGAuth
 import NGCardUI
-import NGLoadingIndicator
+import class NGCoreUI.SharedLoadingView
 import NGModels
 import NGOnboarding
 import NGRemoteConfig
@@ -59,6 +60,8 @@ class NGDeeplinkHandler {
             } else {
                 return false
             }
+        case "generateImage":
+            return handleGenerateImage(url: url)
         case "nicegramPremium":
             return handleNicegramPremium(url: url)
         case "onboarding":
@@ -109,6 +112,20 @@ private extension NGDeeplinkHandler {
         return false
     }
     
+    func handleGenerateImage(url: URL) -> Bool {
+        if #available(iOS 15.0, *) {
+            Task { @MainActor in
+                ImagesHubUITgHelper.showFeed(
+                    source: .deeplink,
+                    forceGeneration: true
+                )
+            }
+            return true
+        } else {
+            return false
+        }
+    }
+    
     func handleNicegramPremium(url: URL) -> Bool {
         PremiumUITgHelper.routeToPremium()
         return true
@@ -148,13 +165,13 @@ private extension NGDeeplinkHandler {
     func handleLoginWithTelegram(url: URL) -> Bool {
         let initTgLoginUseCase = AuthTgHelper.resolveInitTgLoginUseCase()
         
-        NGLoadingIndicator.shared.startAnimating()
+        SharedLoadingView.start()
         // Retain initTgLoginUseCase
         Task {
             let result = await initTgLoginUseCase(source: .general)
             
             await MainActor.run {
-                NGLoadingIndicator.shared.stopAnimating()
+                SharedLoadingView.stop()
                 
                 switch result {
                 case .success(let url):

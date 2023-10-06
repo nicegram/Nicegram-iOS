@@ -13,6 +13,8 @@ public class LottieViewImpl: UIView {
     public override init(frame: CGRect) {
         super.init(frame: frame)
         
+        animationView.backgroundBehavior = .pauseAndRestore
+        
         addSubview(animationView)
         animationView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
@@ -31,7 +33,32 @@ extension LottieViewImpl: LottieView {
         }
     }
     
-    public func setAnimation(name: String, bundle: Bundle) {
-        animationView.animation = Animation.named(name, bundle: bundle)
+    public func setAnimation(fileUrl: URL?) {
+        guard let fileUrl else { return }
+        animationView.animation = Animation.filepath(
+            fileUrl._wrapperPath()
+        )
+    }
+    
+    public func setLoopMode(_ loopMode: LoopMode) {
+        let mode: LottieLoopMode
+        switch loopMode {
+        case .playOnce:
+            mode = .playOnce
+        case .loop:
+            mode = .loop
+        case .autoReverse:
+            mode = .autoReverse
+        case .repeat(let float):
+            mode = .repeat(float)
+        case .repeatBackwards(let float):
+            mode = .repeatBackwards(float)
+        }
+        
+        animationView.loopMode = mode
+    }
+    
+    public func stop() {
+        animationView.stop()
     }
 }

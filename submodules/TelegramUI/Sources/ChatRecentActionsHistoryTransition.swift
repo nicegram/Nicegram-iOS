@@ -67,7 +67,7 @@ private func filterOriginalMessageFlags(_ message: Message) -> Message {
 
 private func filterMessageChannelPeer(_ peer: Peer) -> Peer {
     if let peer = peer as? TelegramChannel {
-        return TelegramChannel(id: peer.id, accessHash: peer.accessHash, title: peer.title, username: peer.username, photo: peer.photo, creationDate: peer.creationDate, version: peer.version, participationStatus: peer.participationStatus, info: .group(TelegramChannelGroupInfo(flags: [])), flags: peer.flags, restrictionInfo: peer.restrictionInfo, adminRights: peer.adminRights, bannedRights: peer.bannedRights, defaultBannedRights: peer.defaultBannedRights, usernames: peer.usernames)
+        return TelegramChannel(id: peer.id, accessHash: peer.accessHash, title: peer.title, username: peer.username, photo: peer.photo, creationDate: peer.creationDate, version: peer.version, participationStatus: peer.participationStatus, info: .group(TelegramChannelGroupInfo(flags: [])), flags: peer.flags, restrictionInfo: peer.restrictionInfo, adminRights: peer.adminRights, bannedRights: peer.bannedRights, defaultBannedRights: peer.defaultBannedRights, usernames: peer.usernames, storiesHidden: peer.storiesHidden)
     }
     return peer
 }
@@ -792,6 +792,9 @@ struct ChatRecentActionsEntry: Comparable, Identifiable {
                                     (.canPostMessages, self.presentationData.strings.Channel_AdminLog_CanSendMessages),
                                     (.canDeleteMessages, self.presentationData.strings.Channel_AdminLog_CanDeleteMessagesOfOthers),
                                     (.canEditMessages, self.presentationData.strings.Channel_AdminLog_CanEditMessages),
+                                    (.canPostStories, self.presentationData.strings.Channel_AdminLog_CanPostStories),
+                                    (.canDeleteStories, self.presentationData.strings.Channel_AdminLog_CanDeleteStoriesOfOthers),
+                                    (.canEditStories, self.presentationData.strings.Channel_AdminLog_CanEditStoriesOfOthers),
                                     (.canInviteUsers, self.presentationData.strings.Channel_AdminLog_CanInviteUsersViaLink),
                                     (.canPinMessages, self.presentationData.strings.Channel_AdminLog_CanPinMessages),
                                     (.canAddAdmins, self.presentationData.strings.Channel_AdminLog_CanAddAdmins),
@@ -1351,7 +1354,7 @@ struct ChatRecentActionsEntry: Comparable, Identifiable {
                 var text: String = ""
                 var entities: [MessageTextEntity] = []
                 
-                let rawText: PresentationStrings.FormattedString = self.presentationData.strings.Channel_AdminLog_DeletedInviteLink(author.flatMap(EnginePeer.init)?.displayTitle(strings: self.presentationData.strings, displayOrder: self.presentationData.nameDisplayOrder) ?? "", invite.link?.replacingOccurrences(of: "https://", with: "") ?? "")
+                let rawText: PresentationStrings.FormattedString = self.presentationData.strings.Channel_AdminLog_DeletedInviteLink(author.flatMap(EnginePeer.init)?.displayTitle(strings: self.presentationData.strings, displayOrder: self.presentationData.nameDisplayOrder) ?? "", invite.link_?.replacingOccurrences(of: "https://", with: "") ?? "")
                 
                 appendAttributedText(text: rawText, generateEntities: { index in
                     if index == 0, let author = author {
@@ -1377,7 +1380,7 @@ struct ChatRecentActionsEntry: Comparable, Identifiable {
                 var text: String = ""
                 var entities: [MessageTextEntity] = []
                 
-                let rawText: PresentationStrings.FormattedString = self.presentationData.strings.Channel_AdminLog_RevokedInviteLink(author.flatMap(EnginePeer.init)?.displayTitle(strings: self.presentationData.strings, displayOrder: self.presentationData.nameDisplayOrder) ?? "", invite.link?.replacingOccurrences(of: "https://", with: "") ?? "")
+                let rawText: PresentationStrings.FormattedString = self.presentationData.strings.Channel_AdminLog_RevokedInviteLink(author.flatMap(EnginePeer.init)?.displayTitle(strings: self.presentationData.strings, displayOrder: self.presentationData.nameDisplayOrder) ?? "", invite.link_?.replacingOccurrences(of: "https://", with: "") ?? "")
                 
                 appendAttributedText(text: rawText, generateEntities: { index in
                     if index == 0, let author = author {
@@ -1403,7 +1406,7 @@ struct ChatRecentActionsEntry: Comparable, Identifiable {
                 var text: String = ""
                 var entities: [MessageTextEntity] = []
                 
-                let rawText: PresentationStrings.FormattedString = self.presentationData.strings.Channel_AdminLog_EditedInviteLink(author.flatMap(EnginePeer.init)?.displayTitle(strings: self.presentationData.strings, displayOrder: self.presentationData.nameDisplayOrder) ?? "", updatedInvite.link?.replacingOccurrences(of: "https://", with: "") ?? "")
+                let rawText: PresentationStrings.FormattedString = self.presentationData.strings.Channel_AdminLog_EditedInviteLink(author.flatMap(EnginePeer.init)?.displayTitle(strings: self.presentationData.strings, displayOrder: self.presentationData.nameDisplayOrder) ?? "", updatedInvite.link_?.replacingOccurrences(of: "https://", with: "") ?? "")
                 
                 appendAttributedText(text: rawText, generateEntities: { index in
                     if index == 0, let author = author {
@@ -1431,9 +1434,9 @@ struct ChatRecentActionsEntry: Comparable, Identifiable {
                 
                 let rawText: PresentationStrings.FormattedString
                 if joinedViaFolderLink {
-                    rawText = self.presentationData.strings.Channel_AdminLog_JoinedViaFolderInviteLink(author.flatMap(EnginePeer.init)?.displayTitle(strings: self.presentationData.strings, displayOrder: self.presentationData.nameDisplayOrder) ?? "", invite.link?.replacingOccurrences(of: "https://", with: "") ?? "")
+                    rawText = self.presentationData.strings.Channel_AdminLog_JoinedViaFolderInviteLink(author.flatMap(EnginePeer.init)?.displayTitle(strings: self.presentationData.strings, displayOrder: self.presentationData.nameDisplayOrder) ?? "", invite.link_?.replacingOccurrences(of: "https://", with: "") ?? "")
                 } else {
-                    rawText = self.presentationData.strings.Channel_AdminLog_JoinedViaInviteLink(author.flatMap(EnginePeer.init)?.displayTitle(strings: self.presentationData.strings, displayOrder: self.presentationData.nameDisplayOrder) ?? "", invite.link?.replacingOccurrences(of: "https://", with: "") ?? "")
+                    rawText = self.presentationData.strings.Channel_AdminLog_JoinedViaInviteLink(author.flatMap(EnginePeer.init)?.displayTitle(strings: self.presentationData.strings, displayOrder: self.presentationData.nameDisplayOrder) ?? "", invite.link_?.replacingOccurrences(of: "https://", with: "") ?? "")
                 }
                 
                 appendAttributedText(text: rawText, generateEntities: { index in
@@ -1898,4 +1901,15 @@ func chatRecentActionsHistoryPreparedTransition(from fromEntries: [ChatRecentAct
     let updates = updateIndices.map { ListViewUpdateItem(index: $0.0, previousIndex: $0.2, item: $0.1.item(context: context, peer: peer, controllerInteraction: controllerInteraction), directionHint: nil) }
     
     return ChatRecentActionsHistoryTransition(filteredEntries: toEntries, type: type, deletions: deletions, insertions: insertions, updates: updates, canLoadEarlier: canLoadEarlier, displayingResults: displayingResults, isEmpty: toEntries.isEmpty)
+}
+
+private extension ExportedInvitation {
+    var link_: String? {
+        switch self {
+        case let .link(link, _, _, _, _, _, _, _, _, _, _, _):
+            return link
+        case .publicJoinRequest:
+            return nil
+        }
+    }
 }

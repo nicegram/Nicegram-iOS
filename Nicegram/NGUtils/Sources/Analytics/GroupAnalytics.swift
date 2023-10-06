@@ -1,4 +1,5 @@
 import AccountContext
+import FirebaseAnalytics
 import NGAnalytics
 import Postbox
 import SwiftSignalKit
@@ -63,7 +64,8 @@ private func trackChatOpen(
         "type": type.rawValue,
         "participantsCount": roundedMemberCount,
         "hasRestrictions": hasRestrictions,
-        "visibility": visibility.rawValue
+        "visibility": visibility.rawValue,
+        AnalyticsParameterValue: memberCount
     ]
     
     let analyticsManager = AnalyticsContainer.shared.analyticsManager()

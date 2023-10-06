@@ -57,6 +57,7 @@ import AuthorizationUI
 import ManagedFile
 import DeviceProximity
 import MediaEditor
+import TelegramUIDeclareEncodables
 
 #if canImport(AppCenter)
 import AppCenter
@@ -255,6 +256,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     var nativeWindow: (UIWindow & WindowHost)?
     var mainWindow: Window1!
     private var dataImportSplash: LegacyDataImportSplash?
+    private var memoryUsageOverlayView: UILabel?
     
     private var buildConfig: BuildConfig?
     let episodeId = arc4random()
@@ -271,7 +273,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     let hasActiveAudioSession = Promise<Bool>(false)
     
     private let sharedContextPromise = Promise<SharedApplicationContext>()
-    private let watchCommunicationManagerPromise = Promise<WatchCommunicationManager?>()
+    //private let watchCommunicationManagerPromise = Promise<WatchCommunicationManager?>()
 
     private var accountManager: AccountManager<TelegramAccountManagerTypes>?
     private var accountManagerState: AccountManagerState?
@@ -364,6 +366,16 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         if #available(iOS 12.0, *) {
             FirebaseApp.configure()
         }
+        
+        let appVersion = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "unknown"
+        
+        let baseAppBundleId = Bundle.main.bundleIdentifier!
+        let appGroupName = "group.\(baseAppBundleId)"
+        let maybeAppGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)
+        
+        let buildConfig = BuildConfig(baseAppBundleId: baseAppBundleId)
+        self.buildConfig = buildConfig
+        let signatureDict = BuildConfigExtra.signatureDict()
 
         let mobyApiKey = NGENV.moby_key
         MobySubscriptionAnalytics.setup(apiKey: mobyApiKey) { account in
@@ -403,6 +415,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             env: Env(
                 apiBaseUrl: URL(string: NGENV.esim_api_url)!,
                 apiKey: NGENV.esim_api_key,
+                isAppStoreBuild: buildConfig.isAppStoreBuild,
                 premiumProductId: NGENV.premium_bundle,
                 privacyUrl: URL(string: NGENV.privacy_url)!,
                 referralBot: NGENV.referral_bot,
@@ -546,16 +559,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }
         })
         self.clearNotificationsManager = clearNotificationsManager
-        
-        let appVersion = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "unknown"
-        
-        let baseAppBundleId = Bundle.main.bundleIdentifier!
-        let appGroupName = "group.\(baseAppBundleId)"
-        let maybeAppGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)
-        
-        let buildConfig = BuildConfig(baseAppBundleId: baseAppBundleId)
-        self.buildConfig = buildConfig
-        let signatureDict = BuildConfigExtra.signatureDict()
         
         let apiId: Int32 = buildConfig.apiId
         let apiHash: String = buildConfig.apiHash
@@ -1100,7 +1103,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     return .single(nil)
                 }
             }
-            let watchTasks = self.context.get()
+            /*let watchTasks = self.context.get()
             |> mapToSignal { context -> Signal<AccountRecordId?, NoError> in
                 if let context = context, let watchManager = context.context.watchManager {
                     let accountId = context.context.account.id
@@ -1119,7 +1122,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 } else {
                     return .single(nil)
                 }
-            }
+            }*/
             let wakeupManager = SharedWakeupManager(beginBackgroundTask: { name, expiration in
                 let id = application.beginBackgroundTask(withName: name, expirationHandler: expiration)
                 Logger.shared.log("App \(self.episodeId)", "Begin background task \(name): \(id)")
@@ -1131,7 +1134,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 application.endBackgroundTask(id)
             }, backgroundTimeRemaining: { application.backgroundTimeRemaining }, acquireIdleExtension: {
                 return applicationBindings.pushIdleTimerExtension()
-            }, activeAccounts: sharedContext.activeAccountContexts |> map { ($0.0?.account, $0.1.map { ($0.0, $0.1.account) }) }, liveLocationPolling: liveLocationPolling, watchTasks: watchTasks, inForeground: applicationBindings.applicationInForeground, hasActiveAudioSession: self.hasActiveAudioSession.get(), notificationManager: notificationManager, mediaManager: sharedContext.mediaManager, callManager: sharedContext.callManager, accountUserInterfaceInUse: { id in
+            }, activeAccounts: sharedContext.activeAccountContexts |> map { ($0.0?.account, $0.1.map { ($0.0, $0.1.account) }) }, liveLocationPolling: liveLocationPolling, watchTasks: .single(nil), inForeground: applicationBindings.applicationInForeground, hasActiveAudioSession: self.hasActiveAudioSession.get(), notificationManager: notificationManager, mediaManager: sharedContext.mediaManager, callManager: sharedContext.callManager, accountUserInterfaceInUse: { id in
                 return sharedContext.accountUserInterfaceInUse(id)
             })
             let sharedApplicationContext = SharedApplicationContext(sharedContext: sharedContext, notificationManager: notificationManager, wakeupManager: wakeupManager)
@@ -1150,7 +1153,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             return .single(sharedApplicationContext)
         })
         
-        let watchManagerArgumentsPromise = Promise<WatchManagerArguments?>()
+        //let watchManagerArgumentsPromise = Promise<WatchManagerArguments?>()
             
         self.context.set(self.sharedContextPromise.get()
         |> deliverOnMainQueue
@@ -1189,7 +1192,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             |> deliverOnMainQueue
             |> map { accountAndSettings -> AuthorizedApplicationContext? in
                 return accountAndSettings.flatMap { context, callListSettings in
-                    return AuthorizedApplicationContext(sharedApplicationContext: sharedApplicationContext, mainWindow: self.mainWindow, watchManagerArguments: watchManagerArgumentsPromise.get(), context: context as! AccountContextImpl, accountManager: sharedApplicationContext.sharedContext.accountManager, showCallsTab: callListSettings.showTab, reinitializedNotificationSettings: {
+                    return AuthorizedApplicationContext(sharedApplicationContext: sharedApplicationContext, mainWindow: self.mainWindow, watchManagerArguments: .single(nil), context: context as! AccountContextImpl, accountManager: sharedApplicationContext.sharedContext.accountManager, showCallsTab: callListSettings.showTab, reinitializedNotificationSettings: {
                         let _ = (self.context.get()
                         |> take(1)
                         |> deliverOnMainQueue).start(next: { context in
@@ -1519,7 +1522,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }).start()
         }))
         
-        self.watchCommunicationManagerPromise.set(watchCommunicationManager(context: self.context.get() |> flatMap { WatchCommunicationManagerContext(context: $0.context) }, allowBackgroundTimeExtension: { timeout in
+        /*self.watchCommunicationManagerPromise.set(watchCommunicationManager(context: self.context.get() |> flatMap { WatchCommunicationManagerContext(context: $0.context) }, allowBackgroundTimeExtension: { timeout in
             let _ = (self.sharedContextPromise.get()
             |> take(1)).start(next: { sharedContext in
                 sharedContext.wakeupManager.allowBackgroundTimeExtension(timeout: timeout)
@@ -1531,7 +1534,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             } else {
                 watchManagerArgumentsPromise.set(.single(nil))
             }
-        })
+        })*/
         
         self.resetBadge()
         
@@ -1700,6 +1703,51 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }
         
         let _ = self.urlSession(identifier: "\(baseAppBundleId).backroundSession")
+        
+        var previousReportedMemoryConsumption = 0
+        let _ = Foundation.Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true, block: { _ in
+            let value = getMemoryConsumption()
+            if abs(value - previousReportedMemoryConsumption) > 1 * 1024 * 1024 {
+                previousReportedMemoryConsumption = value
+                Logger.shared.log("App \(self.episodeId)", "Memory consumption: \(value / (1024 * 1024)) MB")
+                
+                if self.contextValue?.context.sharedContext.immediateExperimentalUISettings.crashOnMemoryPressure == true {
+                    let memoryUsageOverlayView: UILabel
+                    if let current = self.memoryUsageOverlayView {
+                        memoryUsageOverlayView = current
+                    } else {
+                        memoryUsageOverlayView = UILabel()
+                        if #available(iOS 13.0, *) {
+                            memoryUsageOverlayView.textColor = .label
+                        } else {
+                            memoryUsageOverlayView.textColor = .black
+                        }
+                        memoryUsageOverlayView.font = Font.regular(11.0)
+                        memoryUsageOverlayView.layer.zPosition = 1000.0
+                        self.memoryUsageOverlayView = memoryUsageOverlayView
+                        self.window?.addSubview(memoryUsageOverlayView)
+                        
+                        memoryUsageOverlayView.center = CGPoint(x: 5.0, y: 36.0)
+                    }
+                    
+                    memoryUsageOverlayView.text = "\(value / (1024 * 1024)) MB"
+                    memoryUsageOverlayView.sizeToFit()
+                } else {
+                    if let memoryUsageOverlayView = self.memoryUsageOverlayView {
+                        self.memoryUsageOverlayView = nil
+                        memoryUsageOverlayView.removeFromSuperview()
+                    }
+                }
+                
+                if !buildConfig.isAppStoreBuild {
+                    if value >= 2000 * 1024 * 1024 {
+                        if self.contextValue?.context.sharedContext.immediateExperimentalUISettings.crashOnMemoryPressure == true {
+                            preconditionFailure()
+                        }
+                    }
+                }
+            }
+        })
         
         return true
     }
@@ -3397,4 +3445,23 @@ fileprivate extension PostboxAccessChallengeData {
         case .plaintextPassword(let value): return (value, false)
         }
     }
+}
+    
+private func getMemoryConsumption() -> Int {
+    guard let memory_offset = MemoryLayout.offset(of: \task_vm_info_data_t.min_address) else {
+        return 0
+    }
+    let TASK_VM_INFO_COUNT = mach_msg_type_number_t(MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<integer_t>.size)
+    let TASK_VM_INFO_REV1_COUNT = mach_msg_type_number_t(memory_offset / MemoryLayout<integer_t>.size)
+    var info = task_vm_info_data_t()
+    var count = TASK_VM_INFO_COUNT
+    let kr = withUnsafeMutablePointer(to: &info) { infoPtr in
+        infoPtr.withMemoryRebound(to: integer_t.self, capacity: Int(count)) { intPtr in
+            task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), intPtr, &count)
+        }
+    }
+    guard kr == KERN_SUCCESS, count >= TASK_VM_INFO_REV1_COUNT else {
+        return 0
+    }
+    return Int(info.phys_footprint)
 }

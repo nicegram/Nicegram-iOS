@@ -227,9 +227,10 @@ public func accountWithId(accountManager: AccountManager<TelegramAccountManagerT
                                 )!, forKey: id as NSNumber)
                             }
                             
-                            let data = NSKeyedArchiver.archivedData(withRootObject: dict)
                             transaction.setState(backupState)
-                            transaction.setKeychainEntry(data, forKey: "persistent:datacenterAuthInfoById")
+                            if let data = try? NSKeyedArchiver.archivedData(withRootObject: dict, requiringSecureCoding: false) {
+                                transaction.setKeychainEntry(data, forKey: "persistent:datacenterAuthInfoById")
+                            }
                         }
                         let appConfig = transaction.getPreferencesEntry(key: PreferencesKeys.appConfiguration)?.get(AppConfiguration.self) ?? .defaultValue
                         
@@ -715,12 +716,12 @@ public enum AccountNetworkState: Equatable {
 }
 
 public final class AccountAuxiliaryMethods {
-    public let fetchResource: (Account, MediaResource, Signal<[(Range<Int64>, MediaBoxFetchPriority)], NoError>, MediaResourceFetchParameters?) -> Signal<MediaResourceDataFetchResult, MediaResourceDataFetchError>?
+    public let fetchResource: (Postbox, MediaResource, Signal<[(Range<Int64>, MediaBoxFetchPriority)], NoError>, MediaResourceFetchParameters?) -> Signal<MediaResourceDataFetchResult, MediaResourceDataFetchError>?
     public let fetchResourceMediaReferenceHash: (MediaResource) -> Signal<Data?, NoError>
     public let prepareSecretThumbnailData: (MediaResourceData) -> (PixelDimensions, Data)?
     public let backgroundUpload: (Postbox, Network, MediaResource) -> Signal<String?, NoError>
     
-    public init(fetchResource: @escaping (Account, MediaResource, Signal<[(Range<Int64>, MediaBoxFetchPriority)], NoError>, MediaResourceFetchParameters?) -> Signal<MediaResourceDataFetchResult, MediaResourceDataFetchError>?, fetchResourceMediaReferenceHash: @escaping (MediaResource) -> Signal<Data?, NoError>, prepareSecretThumbnailData: @escaping (MediaResourceData) -> (PixelDimensions, Data)?, backgroundUpload: @escaping (Postbox, Network, MediaResource) -> Signal<String?, NoError>) {
+    public init(fetchResource: @escaping (Postbox, MediaResource, Signal<[(Range<Int64>, MediaBoxFetchPriority)], NoError>, MediaResourceFetchParameters?) -> Signal<MediaResourceDataFetchResult, MediaResourceDataFetchError>?, fetchResourceMediaReferenceHash: @escaping (MediaResource) -> Signal<Data?, NoError>, prepareSecretThumbnailData: @escaping (MediaResourceData) -> (PixelDimensions, Data)?, backgroundUpload: @escaping (Postbox, Network, MediaResource) -> Signal<String?, NoError>) {
         self.fetchResource = fetchResource
         self.fetchResourceMediaReferenceHash = fetchResourceMediaReferenceHash
         self.prepareSecretThumbnailData = prepareSecretThumbnailData
@@ -867,7 +868,7 @@ public func accountBackupData(postbox: Postbox) -> Signal<AccountBackupData?, No
         guard let authInfoData = transaction.keychainEntryForKey("persistent:datacenterAuthInfoById") else {
             return nil
         }
-        guard let authInfo = NSKeyedUnarchiver.unarchiveObject(with: authInfoData) as? NSDictionary else {
+        guard let authInfo = MTDeprecated.unarchiveDeprecated(with: authInfoData) as? NSDictionary else {
             return nil
         }
         guard let datacenterAuthInfo = authInfo.object(forKey: state.masterDatacenterId as NSNumber) as? MTDatacenterAuthInfo else {
@@ -1212,21 +1213,47 @@ public class Account {
         self.managedOperationsDisposable.add(managedSynchronizePeerStoriesOperations(postbox: self.postbox, network: self.network, stateManager: self.stateManager).start())
         self.managedOperationsDisposable.add(managedLocalTypingActivities(activities: self.localInputActivityManager.allActivities(), postbox: self.stateManager.postbox, network: self.stateManager.network, accountPeerId: self.stateManager.accountPeerId).start())
         
-        let extractedExpr: [Signal<AccountRunningImportantTasks, NoError>] = [
-            managedSynchronizeChatInputStateOperations(postbox: self.postbox, network: self.network) |> map { $0 ? AccountRunningImportantTasks.other : [] },
-            self.pendingMessageManager.hasPendingMessages |> map { !$0.isEmpty ? AccountRunningImportantTasks.pendingMessages : [] },
-            (self.pendingStoryManager?.hasPending ?? .single(false)) |> map {
-                hasPending in hasPending ? AccountRunningImportantTasks.pendingMessages : []
+        let extractedExpr1: [Signal<AccountRunningImportantTasks, NoError>] = [
+            managedSynchronizeChatInputStateOperations(postbox: self.postbox, network: self.network) |> map { inputStates in
+                if inputStates {
+                    print("inputStates: true")
+                }
+                return inputStates ? AccountRunningImportantTasks.other : []
             },
-            self.pendingUpdateMessageManager.updatingMessageMedia |> map {
-                !$0.isEmpty ? AccountRunningImportantTasks.pendingMessages : []
+            self.pendingMessageManager.hasPendingMessages |> map { hasPendingMessages in
+                if !hasPendingMessages.isEmpty {
+                    print("hasPendingMessages: true")
+                }
+                return !hasPendingMessages.isEmpty ? AccountRunningImportantTasks.pendingMessages : []
             },
-            self.pendingPeerMediaUploadManager.uploadingPeerMedia |> map {
-                !$0.isEmpty ? AccountRunningImportantTasks.pendingMessages : []
+            (self.pendingStoryManager?.hasPending ?? .single(false)) |> map { hasPending in
+                if hasPending {
+                    print("hasPending: true")
+                }
+                return hasPending ? AccountRunningImportantTasks.pendingMessages : []
             },
-            self.accountPresenceManager.isPerformingUpdate() |> map { $0 ? AccountRunningImportantTasks.other : [] },
+            self.pendingUpdateMessageManager.updatingMessageMedia |> map { updatingMessageMedia in
+                if !updatingMessageMedia.isEmpty {
+                    print("updatingMessageMedia: true")
+                }
+                return !updatingMessageMedia.isEmpty ? AccountRunningImportantTasks.pendingMessages : []
+            },
+            self.pendingPeerMediaUploadManager.uploadingPeerMedia |> map { uploadingPeerMedia in
+                if !uploadingPeerMedia.isEmpty {
+                    print("uploadingPeerMedia: true")
+                }
+                return !uploadingPeerMedia.isEmpty ? AccountRunningImportantTasks.pendingMessages : []
+            },
+            self.accountPresenceManager.isPerformingUpdate() |> map { presenceUpdate in
+                if presenceUpdate {
+                    print("accountPresenceManager isPerformingUpdate: true")
+                    return []
+                }
+                return presenceUpdate ? AccountRunningImportantTasks.other : []
+            },
             //self.notificationAutolockReportManager.isPerformingUpdate() |> map { $0 ? AccountRunningImportantTasks.other : [] }
         ]
+        let extractedExpr: [Signal<AccountRunningImportantTasks, NoError>] = extractedExpr1
         let importantBackgroundOperations: [Signal<AccountRunningImportantTasks, NoError>] = extractedExpr
         let importantBackgroundOperationsRunning = combineLatest(queue: Queue(), importantBackgroundOperations)
         |> map { values -> AccountRunningImportantTasks in
@@ -1444,7 +1471,7 @@ public typealias TransformOutgoingMessageMedia = (_ postbox: Postbox, _ network:
 public func setupAccount(_ account: Account, fetchCachedResourceRepresentation: FetchCachedResourceRepresentation? = nil, transformOutgoingMessageMedia: TransformOutgoingMessageMedia? = nil) {
     account.postbox.mediaBox.fetchResource = { [weak account] resource, intervals, parameters -> Signal<MediaResourceDataFetchResult, MediaResourceDataFetchError> in
         if let strongAccount = account {
-            if let result = strongAccount.auxiliaryMethods.fetchResource(strongAccount, resource, intervals, parameters) {
+            if let result = strongAccount.auxiliaryMethods.fetchResource(strongAccount.postbox, resource, intervals, parameters) {
                 return result
             } else if let result = fetchResource(account: strongAccount, resource: resource, intervals: intervals, parameters: parameters) {
                 return result
@@ -1541,6 +1568,9 @@ public func standaloneStateManager(
                             |> mapToSignal { phoneNumber in
                                 Logger.shared.log("StandaloneStateManager", "received phone number")
                                 
+                                let mediaReferenceRevalidationContext = MediaReferenceRevalidationContext()
+                                let networkStatsContext = NetworkStatsContext(postbox: postbox)
+                                
                                 return initializedNetwork(
                                     accountId: id,
                                     arguments: networkArguments,
@@ -1557,6 +1587,31 @@ public func standaloneStateManager(
                                 )
                                 |> map { network -> AccountStateManager? in
                                     Logger.shared.log("StandaloneStateManager", "received network")
+                                    
+                                    postbox.mediaBox.fetchResource = { resource, intervals, parameters -> Signal<MediaResourceDataFetchResult, MediaResourceDataFetchError> in
+                                        if let result = auxiliaryMethods.fetchResource(
+                                            postbox,
+                                            resource,
+                                            intervals,
+                                            parameters
+                                        ) {
+                                            return result
+                                        } else if let result = fetchResource(
+                                            accountPeerId: authorizedState.peerId,
+                                            postbox: postbox,
+                                            network: network,
+                                            mediaReferenceRevalidationContext: mediaReferenceRevalidationContext,
+                                            networkStatsContext: networkStatsContext,
+                                            isTestingEnvironment: authorizedState.isTestingEnvironment,
+                                            resource: resource,
+                                            intervals: intervals,
+                                            parameters: parameters
+                                        ) {
+                                            return result
+                                        } else {
+                                            return .never()
+                                        }
+                                    }
                                     
                                     return AccountStateManager(
                                         accountPeerId: authorizedState.peerId,

@@ -42,6 +42,28 @@
 
 #import <LegacyComponents/TGPhotoCaptionInputMixin.h>
 
+@interface TGMediaPickerGalleryWrapperView: UIView
+{
+    
+}
+@end
+
+@implementation TGMediaPickerGalleryWrapperView
+
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
+    __block UIView *result = nil;
+    [self.subviews enumerateObjectsWithOptions:NSEnumerationReverse usingBlock:^(__kindof UIView * _Nonnull view, NSUInteger idx, BOOL * _Nonnull stop) {
+        UIView *hitTestView = [view hitTest:[self convertPoint:point toView:view] withEvent:event];
+        if (hitTestView != nil) {
+            *stop = true;
+            result = hitTestView;
+        }
+    }];
+    return result;
+}
+
+@end
+
 @interface TGMediaPickerGalleryInterfaceView () <ASWatcher>
 {
     id<TGModernGalleryItem> _currentItem;
@@ -112,6 +134,12 @@
         
         _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
         
+        _adjustmentsDisposable = [[SMetaDisposable alloc] init];
+        _captionDisposable = [[SMetaDisposable alloc] init];
+        _itemSelectedDisposable = [[SMetaDisposable alloc] init];
+        _itemAvailabilityDisposable = [[SMetaDisposable alloc] init];
+        _tooltipDismissDisposable = [[SMetaDisposable alloc] init];
+        
         _context = context;
         _selectionContext = selectionContext;
         _editingContext = editingContext;
@@ -121,7 +149,7 @@
         _itemHeaderViews = [[NSMutableArray alloc] init];
         _itemFooterViews = [[NSMutableArray alloc] init];
         
-        _wrapperView = [[UIView alloc] initWithFrame:CGRectZero];
+        _wrapperView = [[TGMediaPickerGalleryWrapperView alloc] initWithFrame:CGRectZero];
         [self addSubview:_wrapperView];
         
         _headerWrapperView = [[UIView alloc] init];
@@ -148,6 +176,8 @@
             strongSelf->_portraitToolbarView.doneButton.userInteractionEnabled = false;
             strongSelf->_landscapeToolbarView.doneButton.userInteractionEnabled = false;
             strongSelf->_donePressed(strongSelf->_currentItem);
+            
+            [strongSelf->_captionMixin onAnimateOut];
         };
         void(^toolbarDoneLongPressed)(id) = ^(id sender)
         {
@@ -231,7 +261,7 @@
             _photoCounterButton.userInteractionEnabled = false;
             [_wrapperView addSubview:_photoCounterButton];
             
-            _selectionChangedDisposable = [[_selectionContext selectionChangedSignal] startWithNext:^(id next)
+            _selectionChangedDisposable = [[_selectionContext selectionChangedSignal] startStrictWithNext:^(id next)
             {
                 __strong TGMediaPickerGalleryInterfaceView *strongSelf = weakSelf;
                 if (strongSelf == nil)
@@ -245,29 +275,29 @@
                     [strongSelf->_checkButton setNumber:[strongSelf->_selectionContext indexOfItem:selectableItem]];
                 
                 [strongSelf updateGroupingButtonVisibility];
-            }];
+            } file:__FILE_NAME__ line:__LINE__];
             
             if (_selectionContext.allowGrouping)
             {
                 if (_editingContext != nil)
                 {
-                    _timersChangedDisposable = [_editingContext.timersUpdatedSignal startWithNext:^(__unused NSNumber *next)
+                    _timersChangedDisposable = [_editingContext.timersUpdatedSignal startStrictWithNext:^(__unused NSNumber *next)
                     {
                         __strong TGMediaPickerGalleryInterfaceView *strongSelf = weakSelf;
                         if (strongSelf == nil)
                             return;
                         
                         [strongSelf updateGroupingButtonVisibility];
-                    }];
+                    } file:__FILE_NAME__ line:__LINE__];
                     
-                    _adjustmentsChangedDisposable = [_editingContext.adjustmentsUpdatedSignal startWithNext:^(__unused NSNumber *next)
+                    _adjustmentsChangedDisposable = [_editingContext.adjustmentsUpdatedSignal startStrictWithNext:^(__unused NSNumber *next)
                     {
                         __strong TGMediaPickerGalleryInterfaceView *strongSelf = weakSelf;
                         if (strongSelf == nil)
                             return;
                         
                         [strongSelf updateGroupingButtonVisibility];
-                    }];
+                    } file:__FILE_NAME__ line:__LINE__];
                 }
                 
                 [self updateGroupingButtonVisibility];
@@ -275,11 +305,6 @@
         }
         
         [self updateEditorButtonsForItem:focusItem animated:false];
-        
-        _adjustmentsDisposable = [[SMetaDisposable alloc] init];
-        _captionDisposable = [[SMetaDisposable alloc] init];
-        _itemSelectedDisposable = [[SMetaDisposable alloc] init];
-        _itemAvailabilityDisposable = [[SMetaDisposable alloc] init];
         
         _captionMixin = [[TGPhotoCaptionInputMixin alloc] init];
         _captionMixin.panelParentView = ^UIView *
@@ -350,6 +375,20 @@
             } completion:nil];
         };
         
+        _captionMixin.timerUpdated = ^(NSNumber *timeout) {
+            __strong TGMediaPickerGalleryInterfaceView *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
+            if (![strongSelf->_currentItem conformsToProtocol:@protocol(TGModernGalleryEditableItem)])
+                return;
+            
+            id<TGModernGalleryEditableItem> galleryEditableItem = (id<TGModernGalleryEditableItem>)strongSelf->_currentItem;
+            [strongSelf->_editingContext setTimer:timeout forItem:galleryEditableItem.editableMediaItem];
+            
+            [strongSelf->_selectionContext setItem:(id<TGMediaSelectableItem>)galleryEditableItem.editableMediaItem selected:true animated:true sender:nil];
+        };
+        
         _captionMixin.stickersContext = stickersContext;
         [_captionMixin createInputPanelIfNeeded];
         
@@ -380,6 +419,7 @@
     [_itemAvailabilityDisposable dispose];
     [_selectionChangedDisposable dispose];
     [_timersChangedDisposable dispose];
+    [_adjustmentsChangedDisposable dispose];
 }
 
 - (bool)updateGroupingButtonVisibility
@@ -528,7 +568,7 @@
         }
         [_checkButton setNumber:[_selectionContext indexOfItem:selectableItem]];
         signal = [_selectionContext itemInformativeSelectedSignal:selectableItem];
-        [_itemSelectedDisposable setDisposable:[signal startWithNext:^(TGMediaSelectionChange *next)
+        [_itemSelectedDisposable setDisposable:[signal startStrictWithNext:^(TGMediaSelectionChange *next)
         {
             __strong TGMediaPickerGalleryInterfaceView *strongSelf = weakSelf;
             if (strongSelf == nil)
@@ -536,13 +576,13 @@
             
             if (next.sender != strongSelf->_checkButton)
                 [strongSelf->_checkButton setSelected:next.selected animated:next.animated];
-        }]];
+        } file:__FILE_NAME__ line:__LINE__]];
     }
     
     [self updateEditorButtonsForItem:item animated:true];
     
     __weak TGModernGalleryItemView *weakItemView = itemView;
-    [_itemAvailabilityDisposable setDisposable:[[[itemView contentAvailabilityStateSignal] deliverOn:[SQueue mainQueue]] startWithNext:^(id next)
+    [_itemAvailabilityDisposable setDisposable:[[[itemView contentAvailabilityStateSignal] deliverOn:[SQueue mainQueue]] startStrictWithNext:^(id next)
     {
         __strong TGMediaPickerGalleryInterfaceView *strongSelf = weakSelf;
         __strong TGModernGalleryItemView *strongItemView = weakItemView;
@@ -573,7 +613,7 @@
             }
             strongSelf->_muteButton.hidden = !sendableAsGif;
         }
-    }]];
+    } file:__FILE_NAME__ line:__LINE__]];
     
     UIImage *muteIcon = [TGPhotoEditorInterfaceAssets muteIcon];
     UIImage *muteActiveIcon = [TGPhotoEditorInterfaceAssets muteActiveIcon];
@@ -726,13 +766,13 @@
     if ([item conformsToProtocol:@protocol(TGModernGalleryEditableItem)])
     {
         id<TGMediaEditableItem> editableMediaItem = [galleryEditableItem editableMediaItem];
-        [_captionDisposable setDisposable:[[galleryEditableItem.editingContext captionSignalForItem:editableMediaItem] startWithNext:^(NSAttributedString *caption)
+        [_captionDisposable setDisposable:[[galleryEditableItem.editingContext captionSignalForItem:editableMediaItem] startStrictWithNext:^(NSAttributedString *caption)
         {
             __strong TGMediaPickerGalleryInterfaceView *strongSelf = weakSelf;
             if (strongSelf == nil)
                 return;
             [strongSelf->_captionMixin setCaption:caption animated:animated];
-        }]];
+        } file:__FILE_NAME__ line:__LINE__]];
     }
     
     if (_editingContext == nil || _editingContext.inhibitEditing)
@@ -791,7 +831,7 @@
             } else {
                 return [SSignal never];
             }
-        }] deliverOn:[SQueue mainQueue]] startWithNext:^(NSDictionary *dict)
+        }] deliverOn:[SQueue mainQueue]] startStrictWithNext:^(NSDictionary *dict)
         {
             __strong TGMediaPickerGalleryInterfaceView *strongSelf = weakSelf;
             if (strongSelf == nil)
@@ -799,6 +839,8 @@
             
             id<TGMediaEditAdjustments> adjustments = dict[@"adjustments"];
             NSNumber *timer = dict[@"timer"];
+            
+            [strongSelf->_captionMixin setTimeout:[timer intValue] isVideo:editableMediaItem.isVideo];
             
             if ([adjustments isKindOfClass:[TGVideoEditAdjustments class]])
             {
@@ -815,7 +857,7 @@
                 originalSize = editableMediaItem.originalSize;
 
             [strongSelf updateEditorButtonsForAdjustments:adjustments dimensions:originalSize timer:timer];
-        }]];
+        } file:__FILE_NAME__ line:__LINE__]];
     }
     else
     {
@@ -1285,11 +1327,16 @@
 
 - (void)animateTransitionOutWithDuration:(NSTimeInterval)__unused duration
 {
-    
+    [_captionMixin onAnimateOut];
+}
+
+- (void)onDismiss {
+    [_captionMixin onAnimateOut];
 }
 
 - (void)setTransitionOutProgress:(CGFloat)transitionOutProgress manual:(bool)manual
 {
+    [_captionMixin onAnimateOut];
     if (transitionOutProgress > FLT_EPSILON)
         [self setAllInterfaceHidden:true delay:0.0 animated:true];
     else if (!manual)

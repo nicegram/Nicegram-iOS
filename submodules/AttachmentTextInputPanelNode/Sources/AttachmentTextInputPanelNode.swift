@@ -327,7 +327,7 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
     
     private var maxCaptionLength: Int32?
     
-    public init(context: AccountContext, presentationInterfaceState: ChatPresentationInterfaceState, isCaption: Bool = false, isAttachment: Bool = false, presentController: @escaping (ViewController) -> Void, makeEntityInputView: @escaping () -> AttachmentTextInputPanelInputView?) {
+    public init(context: AccountContext, presentationInterfaceState: ChatPresentationInterfaceState, isCaption: Bool = false, isAttachment: Bool = false, isScheduledMessages: Bool = false, presentController: @escaping (ViewController) -> Void, makeEntityInputView: @escaping () -> AttachmentTextInputPanelInputView?) {
         self.context = context
         self.presentationInterfaceState = presentationInterfaceState
         self.isCaption = isCaption
@@ -374,8 +374,13 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
         
         super.init()
         
-        self.actionButtons.sendButtonLongPressed = { [weak self] node, gesture in
-            self?.interfaceInteraction?.displaySendMessageOptions(node, gesture)
+        if !isScheduledMessages {
+            self.actionButtons.sendButtonLongPressed = { [weak self] node, gesture in
+                self?.interfaceInteraction?.displaySendMessageOptions(node, gesture)
+            }
+            self.actionButtons.sendButtonLongPressEnabled = true
+        } else {
+            self.actionButtons.sendButtonLongPressEnabled = false
         }
         
         self.actionButtons.sendButton.addTarget(self, action: #selector(self.sendButtonPressed), forControlEvents: .touchUpInside)
@@ -446,8 +451,9 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
     public var sendPressed: ((NSAttributedString?) -> Void)?
     public var focusUpdated: ((Bool) -> Void)?
     public var heightUpdated: ((Bool) -> Void)?
+    public var timerUpdated: ((NSNumber?) -> Void)?
     
-    public func updateLayoutSize(_ size: CGSize, sideInset: CGFloat, animated: Bool) -> CGFloat {
+    public func updateLayoutSize(_ size: CGSize, keyboardHeight: CGFloat, sideInset: CGFloat, animated: Bool) -> CGFloat {
         guard let presentationInterfaceState = self.presentationInterfaceState else {
             return 0.0
         }
@@ -460,8 +466,19 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
         }
     }
     
-    public func dismissInput() {
+    public func setTimeout(_ timeout: Int32, isVideo: Bool) {
+    }
+    
+    public func animate(_ view: UIView, frame: CGRect) {
+        
+    }
+    
+    public func onAnimateOut() {
+    }
+    
+    public func dismissInput() -> Bool {
         self.ensureUnfocused()
+        return true
     }
     
     public func baseHeight() -> CGFloat {
@@ -716,8 +733,6 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
                     }
                     self.textPlaceholderNode.frame = CGRect(origin: self.textPlaceholderNode.frame.origin, size: placeholderSize)
                 }
-                
-                self.actionButtons.sendButtonLongPressEnabled = true
             }
             
             let sendButtonHasApplyIcon = self.isCaption || interfaceState.interfaceState.editMessage != nil
@@ -1681,7 +1696,7 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
             }
         }
         if let sendPressed = self.sendPressed, let presentationInterfaceState = self.effectivePresentationInterfaceState?() {
-            self.dismissInput()
+            let _ = self.dismissInput()
             let effectiveInputText = presentationInterfaceState.interfaceState.composeInputState.inputText
             sendPressed(effectiveInputText)
             return

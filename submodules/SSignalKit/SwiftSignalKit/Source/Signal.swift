@@ -23,18 +23,40 @@ public func |> <T, U>(value: T, function: ((T) -> U)) -> U {
     return function(value)
 }
 
-private final class SubscriberDisposable<T, E> : Disposable {
-    private let subscriber: Subscriber<T, E>
-    private let disposable: Disposable
+private final class SubscriberDisposable<T, E>: Disposable, CustomStringConvertible {
+    private weak var subscriber: Subscriber<T, E>?
     
-    init(subscriber: Subscriber<T, E>, disposable: Disposable) {
+    private var lock = pthread_mutex_t()
+    private var disposable: Disposable?
+    
+    init(subscriber: Subscriber<T, E>, disposable: Disposable?) {
         self.subscriber = subscriber
         self.disposable = disposable
+        
+        pthread_mutex_init(&self.lock, nil)
+    }
+    
+    deinit {
+        pthread_mutex_destroy(&self.lock)
     }
     
     func dispose() {
-        subscriber.markTerminatedWithoutDisposal()
-        disposable.dispose()
+        var subscriber: Subscriber<T, E>?
+        
+        var disposeItem: Disposable?
+        pthread_mutex_lock(&self.lock)
+        disposeItem = self.disposable
+        subscriber = self.subscriber
+        self.subscriber = nil
+        self.disposable = nil
+        pthread_mutex_unlock(&self.lock)
+        
+        disposeItem?.dispose()
+        subscriber?.markTerminatedWithoutDisposal()
+    }
+    
+    public var description: String {
+        return "SubscriberDisposable { disposable: \(self.disposable == nil ? "nil" : "hasValue") }"
     }
 }
 
@@ -48,8 +70,22 @@ public final class Signal<T, E> {
     public func start(next: ((T) -> Void)! = nil, error: ((E) -> Void)! = nil, completed: (() -> Void)! = nil) -> Disposable {
         let subscriber = Subscriber<T, E>(next: next, error: error, completed: completed)
         let disposable = self.generator(subscriber)
-        subscriber.assignDisposable(disposable)
-        return SubscriberDisposable(subscriber: subscriber, disposable: disposable)
+        let wrappedDisposable = subscriber.assignDisposable(disposable)
+        return SubscriberDisposable(subscriber: subscriber, disposable: wrappedDisposable)
+    }
+    
+    public func startStandalone(next: ((T) -> Void)! = nil, error: ((E) -> Void)! = nil, completed: (() -> Void)! = nil) -> Disposable {
+        let subscriber = Subscriber<T, E>(next: next, error: error, completed: completed)
+        let disposable = self.generator(subscriber)
+        let wrappedDisposable = subscriber.assignDisposable(disposable)
+        return SubscriberDisposable(subscriber: subscriber, disposable: wrappedDisposable)
+    }
+    
+    public func startStrict(next: ((T) -> Void)! = nil, error: ((E) -> Void)! = nil, completed: (() -> Void)! = nil, file: String = #file, line: Int = #line) -> Disposable {
+        let subscriber = Subscriber<T, E>(next: next, error: error, completed: completed)
+        let disposable = self.generator(subscriber)
+        let wrappedDisposable = subscriber.assignDisposable(disposable)
+        return SubscriberDisposable(subscriber: subscriber, disposable: wrappedDisposable).strict(file: file, line: line)
     }
     
     public static func single(_ value: T) -> Signal<T, E> {

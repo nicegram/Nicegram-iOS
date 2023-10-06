@@ -18,6 +18,7 @@
       "c99name": "FloatingPanel",
       "src_type": "swift",
       "label": "@swiftpkg_floatingpanel//:Sources_FloatingPanel",
+      "modulemap_label": "@swiftpkg_floatingpanel//:Sources_FloatingPanel_modulemap",
       "package_identity": "floatingpanel",
       "product_memberships": [
         "FloatingPanel"
@@ -27,7 +28,8 @@
       "name": "GRDB",
       "c99name": "GRDB",
       "src_type": "swift",
-      "label": "@swiftpkg_grdb.swift//:GRDB",
+      "label": "@swiftpkg_grdb.swift//:GRDB_GRDB",
+      "modulemap_label": "@swiftpkg_grdb.swift//:GRDB_GRDB_modulemap",
       "package_identity": "grdb.swift",
       "product_memberships": [
         "GRDB",
@@ -43,6 +45,36 @@
       "product_memberships": [
         "LNExtensionExecutor",
         "LNExtensionExecutor-Static"
+      ]
+    },
+    {
+      "name": "CoreSwiftUI",
+      "c99name": "CoreSwiftUI",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_CoreSwiftUI",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
+      "name": "FeatImagesHub",
+      "c99name": "FeatImagesHub",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatImagesHub",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
+      "name": "FeatImagesHubUI",
+      "c99name": "FeatImagesHubUI",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatImagesHubUI",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
       ]
     },
     {
@@ -150,6 +182,7 @@
       "c99name": "NGCoreUI",
       "src_type": "swift",
       "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGCoreUI",
+      "modulemap_label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGCoreUI_modulemap",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
         "nicegram-assistant"
@@ -304,6 +337,7 @@
       "c99name": "RswiftParsers",
       "src_type": "swift",
       "label": "@swiftpkg_r.swift//:Sources_RswiftParsers",
+      "modulemap_label": "@swiftpkg_r.swift//:Sources_RswiftParsers_modulemap",
       "package_identity": "r.swift",
       "product_memberships": [
         "rswift",
@@ -343,23 +377,23 @@
       ]
     },
     {
-      "name": "SDWebImage",
-      "c99name": "SDWebImage",
+      "name": "SDWebImageMapKit",
+      "c99name": "SDWebImageMapKit",
       "src_type": "objc",
-      "label": "@swiftpkg_sdwebimage//:SDWebImage",
+      "label": "@swiftpkg_sdwebimage//:SDWebImageMapKit_SDWebImageMapKit",
       "package_identity": "sdwebimage",
       "product_memberships": [
-        "SDWebImage",
         "SDWebImageMapKit"
       ]
     },
     {
-      "name": "SDWebImageMapKit",
-      "c99name": "SDWebImageMapKit",
+      "name": "SDWebImage",
+      "c99name": "SDWebImage",
       "src_type": "objc",
-      "label": "@swiftpkg_sdwebimage//:SDWebImageMapKit",
+      "label": "@swiftpkg_sdwebimage//:SDWebImage_SDWebImage",
       "package_identity": "sdwebimage",
       "product_memberships": [
+        "SDWebImage",
         "SDWebImageMapKit"
       ]
     },
@@ -469,7 +503,7 @@
       "name": "GRDB",
       "type": "library",
       "target_labels": [
-        "@swiftpkg_grdb.swift//:GRDB"
+        "@swiftpkg_grdb.swift//:GRDB_GRDB"
       ]
     },
     {
@@ -477,7 +511,7 @@
       "name": "GRDB-dynamic",
       "type": "library",
       "target_labels": [
-        "@swiftpkg_grdb.swift//:GRDB"
+        "@swiftpkg_grdb.swift//:GRDB_GRDB"
       ]
     },
     {
@@ -501,6 +535,7 @@
       "name": "nicegram-assistant",
       "type": "library",
       "target_labels": [
+        "@swiftpkg_nicegram_assistant_ios//:Sources_FeatImagesHubUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChatUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGAssistantUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGCardUI",
@@ -561,7 +596,7 @@
       "name": "SDWebImage",
       "type": "library",
       "target_labels": [
-        "@swiftpkg_sdwebimage//:SDWebImage"
+        "@swiftpkg_sdwebimage//:SDWebImage_SDWebImage"
       ]
     },
     {
@@ -569,7 +604,7 @@
       "name": "SDWebImageMapKit",
       "type": "library",
       "target_labels": [
-        "@swiftpkg_sdwebimage//:SDWebImageMapKit"
+        "@swiftpkg_sdwebimage//:SDWebImageMapKit_SDWebImageMapKit"
       ]
     },
     {
@@ -634,9 +669,9 @@
       "name": "swiftpkg_factory",
       "identity": "factory",
       "remote": {
-        "commit": "061b3afe0358a0da7ce568f8272c847910be3dd7",
+        "commit": "8d20074d8a5ac79d6902faecbdbafaf0a0326f49",
         "remote": "https://github.com/hmlongco/Factory",
-        "version": "2.2.0"
+        "version": "2.3.0"
       }
     },
     {
@@ -670,27 +705,27 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "13fc922fb085c2b758f5864953978fd1fd5e0cef",
+        "commit": "0368e82947f3b201347cdb7f863848c1509d5490",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
-        "branch": "develop"
+        "branch": "revert-prompts-api"
       }
     },
     {
       "name": "swiftpkg_r.swift",
       "identity": "r.swift",
       "remote": {
-        "commit": "0e4ec17f329136b712d0a96128597b8ff2f31bdc",
-        "remote": "https://github.com/mac-cain13/R.swift.git",
-        "version": "7.3.2"
+        "commit": "77c0d9c202b9ac83c1992111b76b3fb10468015b",
+        "remote": "https://github.com/denis15yo/R.swift.git",
+        "branch": "main"
       }
     },
     {
       "name": "swiftpkg_sdwebimage",
       "identity": "sdwebimage",
       "remote": {
-        "commit": "36e484b317522667a4b2de9b50daaa01dfa30809",
+        "commit": "936f1c7067728d16c362ba4fb93c17df78b5fd79",
         "remote": "https://github.com/SDWebImage/SDWebImage.git",
-        "version": "5.18.0"
+        "version": "5.18.2"
       }
     },
     {
@@ -733,9 +768,9 @@
       "name": "swiftpkg_xcodeedit",
       "identity": "xcodeedit",
       "remote": {
-        "commit": "cd466d6e8c5ffd2f2b61165d37b0646f09068e1e",
+        "commit": "b6b67389a0f1a6fdd9c6457a8ab5b02eaab13c5c",
         "remote": "https://github.com/tomlokhorst/XcodeEdit",
-        "version": "2.9.0"
+        "version": "2.9.2"
       }
     }
   ]

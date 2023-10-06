@@ -128,7 +128,7 @@ genrule(
     ],
 )
 
-minimum_os_version = "11.0"
+minimum_os_version = "12.0"
 minimum_watchos_version="9.0"
 
 empty_languages = [
@@ -459,6 +459,7 @@ official_apple_pay_merchants = [
     "merchant.org.telegram.billinenet.test",
     "merchant.org.telegram.billinenet.prod",
     "merchant.org.telegram.portmone.test",
+    "merchant.org.telegram.ecommpay.test",
 ]
 
 official_bundle_ids = [
@@ -1231,7 +1232,8 @@ swift_library(
         "-warnings-as-errors",
     ],
     deps = [
-        "//submodules/TelegramUI:TelegramUI"
+        "//submodules/TelegramUI:TelegramUI",
+        "//submodules/TelegramUI/Components/ShareExtensionContext"
     ],
 )
 
@@ -2054,9 +2056,9 @@ xcodeproj(
         "Debug": {
             "//command_line_option:compilation_mode": "dbg",
         },
-        #"Release": {
-        #    "//command_line_option:compilation_mode": "opt",
-        #},
+        "Release": {
+            "//command_line_option:compilation_mode": "opt",
+        },
     },
     default_xcode_configuration = "Debug"
 

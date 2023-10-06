@@ -10,6 +10,7 @@ swift_library(
         "//submodules/UIKitRuntimeUtils:UIKitRuntimeUtils",
         "//Nicegram/NGData:NGData",
         "//Nicegram/NGStrings:NGStrings",
+        "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChat",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGPremiumUI",
     ],
     visibility = [

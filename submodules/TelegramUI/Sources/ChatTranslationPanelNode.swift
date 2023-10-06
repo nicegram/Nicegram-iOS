@@ -178,7 +178,7 @@ final class ChatTranslationPanelNode: ASDisplayNode {
     }
     
     @objc private func closePressed() {
-        let _ = ApplicationSpecificNotice.incrementTranslationSuggestion(accountManager: self.context.sharedContext.accountManager, count: -100, timestamp: Int32(Date().timeIntervalSince1970) + 60 * 60 * 24 * 7).start()
+        let _ = ApplicationSpecificNotice.incrementTranslationSuggestion(accountManager: self.context.sharedContext.accountManager, count: -100, timestamp: Int32(Date().timeIntervalSince1970) + 60 * 60 * 24 * 7).startStandalone()
     }
     
     @objc private func buttonPressed() {
@@ -339,7 +339,7 @@ final class ChatTranslationPanelNode: ASDisplayNode {
         }
             
         if let controller = self.interfaceInteraction?.chatController() {
-            let contextController = ContextController(account: self.context.account, presentationData: presentationData, source: .reference(TranslationContextReferenceContentSource(controller: controller, sourceNode: node)), items: items, gesture: gesture)
+            let contextController = ContextController(presentationData: presentationData, source: .reference(TranslationContextReferenceContentSource(controller: controller, sourceNode: node)), items: items, gesture: gesture)
             self.interfaceInteraction?.presentGlobalOverlayController(contextController, nil)
         }
     }
