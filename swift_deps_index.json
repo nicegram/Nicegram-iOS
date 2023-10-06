@@ -705,7 +705,7 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "e92cfa4e7d70393f9d6f0a52c935571ec6fa384e",
+        "commit": "0368e82947f3b201347cdb7f863848c1509d5490",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
         "branch": "revert-prompts-api"
       }
