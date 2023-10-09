@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - beta
-      - beta-hotfix
       
   workflow_dispatch:
 

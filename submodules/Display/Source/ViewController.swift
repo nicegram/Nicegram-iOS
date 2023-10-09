@@ -539,6 +539,13 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
     }
     
     override open func dismiss(animated flag: Bool, completion: (() -> Void)? = nil) {
+        // MARK: Nicegram
+        if presentedViewController != nil {
+            super.dismiss(animated: flag, completion: completion)
+            return
+        }
+        //
+        
         if let navigationController = self.navigationController as? NavigationController {
             var animated = flag
             if case .standaloneModal = self.navigationPresentation {
@@ -549,12 +556,6 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
             self.presentingViewController?.dismiss(animated: flag, completion: nil)
         }
     }
-    
-    // MARK: Nicegram
-    public func nativeDismiss(animated flag: Bool, completion: (() -> Void)? = nil) {
-        super.dismiss(animated: flag, completion: completion)
-    }
-    //
     
     public final var window: WindowHost? {
         if let window = self.view.window as? WindowHost {

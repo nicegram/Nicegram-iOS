@@ -88,6 +88,12 @@ open class TabBarControllerImpl: ViewController, TabBarController {
         }
     }
     
+    // MARK: Nicegram Assistant, tooltip
+    public var tabBarView: UIView {
+        tabBarControllerNode.tabBarNode.view
+    }
+    //
+    
     open override func updateNavigationCustomData(_ data: Any?, progress: CGFloat, transition: ContainedViewLayoutTransition) {
         for controller in self.controllers {
             controller.updateNavigationCustomData(data, progress: progress, transition: transition)

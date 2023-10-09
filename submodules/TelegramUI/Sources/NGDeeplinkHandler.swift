@@ -132,9 +132,11 @@ private extension NGDeeplinkHandler {
     }
     
     func handleAssistant(url: URL) -> Bool {
-        if #available(iOS 13.0, *) {
+        if #available(iOS 15.0, *) {
             Task { @MainActor in
-                AssistantUITgHelper.routeToAssistantFromDeeplink()
+                AssistantUITgHelper.routeToAssistant(
+                    source: .deeplink
+                )
             }
             return true
         } else {
