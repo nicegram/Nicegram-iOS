@@ -1,3 +1,4 @@
+import Foundation
 import NGEnv
 import _NGRemoteConfig
 
@@ -19,7 +20,16 @@ public class RemoteConfigServiceImpl {
     //  MARK: - Lifecycle
     
     public static let shared: RemoteConfigServiceImpl = {
-        let firebaseRemoteConfig = FirebaseRemoteConfigService(cacheDuration: NGENV.remote_config_cache_duration_seconds)
+        let cacheDuration: TimeInterval
+        #if DEBUG
+        cacheDuration = 10
+        #else
+        cacheDuration = NGENV.remote_config_cache_duration_seconds
+        #endif
+        
+        let firebaseRemoteConfig = FirebaseRemoteConfigService(
+            cacheDuration: cacheDuration
+        )
         return .init(firebaseRemoteConfig: firebaseRemoteConfig)
     }()
     

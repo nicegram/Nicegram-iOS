@@ -1,3 +1,6 @@
+// MARK: Nicegram StickerMaker
+import FeatPartners
+//
 import Foundation
 import UIKit
 import Postbox
@@ -1855,6 +1858,18 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                 controller.setItems(.single(ContextController.Items(content: .list(ngContextItems))), minHeight: nil)
             })))
             
+            // MARK: Nicegram StickerMaker
+            if data.messageActions.options.contains(.viewStickerPack),
+               StickerMaker.showConfig.contextMenu {
+                actions.append(.action(ContextMenuActionItem(text: StickerMaker.buttonTitle, icon: { theme in
+                    return generateTintedImage(image: StickerMaker.contextMenuIcon, color: theme.actionSheet.primaryTextColor)
+                }, action: { _, f in
+                    StickerMaker.openFromContextMenu()
+                    f(.dismissWithoutContent)
+                })))
+            }
+            //
+               
             // MARK: Nicegram SelectAllMessagesWithAuthor
             if let authorId = message.author?.id {
                 actions.append(.action(ContextMenuActionItem(text: l("Messages.SelectAllFromUser", locale), icon: { theme in
