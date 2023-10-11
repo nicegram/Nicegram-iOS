@@ -274,7 +274,9 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
             
             self.assistantController = assistantController
             
-            controllers.append(assistantController)
+            if NGSettings.showNicegramTab {
+                controllers.append(assistantController)
+            }
             
             AssistantUITgHelper.routeToAssistantImpl = { [weak self] in
                 guard let self, let rootTabController else {
@@ -342,7 +344,8 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         controllers.append(self.chatListController!)
         
         // MARK: Nicegram Assistant
-        if let assistantController {
+        if let assistantController,
+           NGSettings.showNicegramTab {
             controllers.append(assistantController)
         }
         //
