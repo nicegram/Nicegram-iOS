@@ -90,6 +90,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     case TabsHeader(String)
     case showContactsTab(String, Bool)
     case showCallsTab(String, Bool)
+    case showNicegramTab
     case showTabNames(String, Bool)
     
     case pinnedBotsHeader
@@ -135,7 +136,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
     var section: ItemListSectionId {
         switch self {
-        case .TabsHeader, .showContactsTab, .showCallsTab, .showTabNames:
+        case .TabsHeader, .showContactsTab, .showCallsTab, .showNicegramTab, .showTabNames:
             return NicegramSettingsControllerSection.Tabs.rawValue
         case .FoldersHeader, .foldersAtBottom, .foldersAtBottomNotice:
             return NicegramSettingsControllerSection.Folders.rawValue
@@ -179,7 +180,10 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
         case .showCallsTab:
             return 1500
-
+            
+        case .showNicegramTab:
+            return 1550
+            
         case .showTabNames:
             return 1600
 
@@ -261,6 +265,13 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
         case let .showCallsTab(lhsText, lhsVar0Bool):
             if case let .showCallsTab(rhsText, rhsVar0Bool) = rhs, lhsText == rhsText, lhsVar0Bool == rhsVar0Bool {
+                return true
+            } else {
+                return false
+            }
+            
+        case .showNicegramTab:
+            if case .showNicegramTab = rhs {
                 return true
             } else {
                 return false
@@ -454,6 +465,12 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                 if value {
                     let _ = ApplicationSpecificNotice.incrementCallsTabTips(accountManager: arguments.context.sharedContext.accountManager, count: 4).start()
                 }
+            })
+            
+        case .showNicegramTab:
+            return ItemListSwitchItem(presentationData: presentationData, title: strings.showAssistantTab(), value: NGSettings.showNicegramTab, enabled: true, sectionId: section, style: .blocks, updated: { value in
+                NGSettings.showNicegramTab = value
+                arguments.updateTabs()
             })
             
         case let .showTabNames(text, value):
@@ -702,6 +719,9 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
         presentationData.strings.CallSettings_TabIcon,
         showCalls
     ))
+    if #available(iOS 15.0, *) {
+        entries.append(.showNicegramTab)
+    }
     entries.append(.showTabNames(
         l("NicegramSettings.Tabs.showTabNames", locale),
         NGSettings.showTabNames
@@ -816,7 +836,7 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
 
     let showCallsTab = context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.callListSettings])
         |> map { sharedData -> Bool in
-            var value = true
+            var value = false
             if let settings = sharedData.entries[ApplicationSpecificSharedDataKeys.callListSettings]?.get(CallListSettings.self) {
                 value = settings.showTab
             }

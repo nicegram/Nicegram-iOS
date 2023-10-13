@@ -1,6 +1,7 @@
 // MARK: Nicegram PinnedChats
 import Combine
 import FeatImagesHubUI
+import FeatPinnedChats
 import NGAiChatUI
 import NGCard
 import NGCardUI
@@ -2034,86 +2035,21 @@ public final class ChatListNode: ListView {
         }
         
         // MARK: Nicegram PinnedChats
-        let nicegramItemsPromise = ValuePromise<[NicegramChatListItem]>([])
+        let nicegramItemsPromise = ValuePromise<[NGPinnedChat]>([])
         if #available(iOS 13.0, *) {
-            let showImagesHubPublisher: AnyPublisher<Bool, Never>
-            if #available(iOS 15.0, *) {
-                showImagesHubPublisher = ImagesHubUITgHelper.shouldShowImagesHubInChatsListPublisher()
-            } else {
-                showImagesHubPublisher = Just(false).eraseToAnyPublisher()
-            }
-            
-            self.nicegramItemsCancellable = AiChatUITgHelper.shouldShowAiBotInTgChatsListPublisher()
-                .combineLatest(
-                    CardUITgHelper.shouldShowCardInChatsListPublisher(),
-                    showImagesHubPublisher
+            self.nicegramItemsCancellable = NGPinnedChats
+                .publisher(
+                    push: { [weak self] controller in
+                        guard let self else { return }
+                        self.push?(
+                            NativeControllerWrapper(
+                                controller: controller,
+                                accountContext: self.context
+                            )
+                        )
+                    }
                 )
-                .sink { showAiChat, showCard, showImagesHub in
-                    var items: [NicegramChatListItem] = []
-                    
-                    if showAiChat {
-                        let item = NicegramChatListItem(
-                            peerId: PeerId(1366176012),
-                            title: AiChatUITgHelper.botName,
-                            desc: AiChatUITgHelper.tgListBotDesc,
-                            image: AiChatUITgHelper.botImage,
-                            kind: .aiBot,
-                            select: {
-                                AiChatUITgHelper.tryRouteToAiChatBotFromHome(
-                                    push: { [weak self] controller in
-                                        guard let self else { return }
-                                        self.push?(
-                                            NativeControllerWrapper(
-                                                controller: controller,
-                                                accountContext: self.context
-                                            )
-                                        )
-                                    }
-                                )
-                            },
-                            unpin: {
-                                AiChatUITgHelper.presentConfirmUnpin()
-                            }
-                        )
-                        items.append(item)
-                    }
-                    
-                    if showCard {
-                        let item = NicegramChatListItem(
-                            peerId: PeerId(5604449447),
-                            title: CardUITgHelper.chatsListTitle,
-                            desc: CardUITgHelper.chatsListDesc,
-                            image: CardUITgHelper.chatsListImage,
-                            kind: .cardBot,
-                            select: {
-                                CardUITgHelper.showSplashFromChatsList()
-                            },
-                            unpin: {
-                                CardUITgHelper.showConfirmUnpin()
-                            }
-                        )
-                        items.append(item)
-                    }
-                    
-                    if #available(iOS 15.0, *), showImagesHub {
-                        let item = NicegramChatListItem(
-                            peerId: PeerId(1651108698),
-                            title: ImagesHubUITgHelper.chatsListTitle,
-                            desc: ImagesHubUITgHelper.chatsListDesc,
-                            image: ImagesHubUITgHelper.chatsListImage,
-                            kind: .imagesHub,
-                            select: {
-                                ImagesHubUITgHelper.showFeed(
-                                    source: .pin
-                                )
-                            },
-                            unpin: {
-                                ImagesHubUITgHelper.showConfirmUnpin()
-                            }
-                        )
-                        items.append(item)
-                    }
-                    
+                .sink { items in
                     nicegramItemsPromise.set(items)
                 }
         }
@@ -2161,7 +2097,7 @@ public final class ChatListNode: ListView {
             //
             
             // MARK: Nicegram NGCard
-            if nicegramItems.contains(where: { $0.kind == .cardBot }) {
+            if nicegramItems.contains(where: { $0.id == NGPinnedChat.cardBotId }) {
                 CardTgHelper.trackCardViewOnChatsList()
             }
             //

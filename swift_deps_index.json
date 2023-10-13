@@ -78,6 +78,26 @@
       ]
     },
     {
+      "name": "FeatPartners",
+      "c99name": "FeatPartners",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPartners",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
+      "name": "FeatPinnedChats",
+      "c99name": "FeatPinnedChats",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPinnedChats",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
       "name": "NGAiChat",
       "c99name": "NGAiChat",
       "src_type": "swift",
@@ -536,6 +556,8 @@
       "type": "library",
       "target_labels": [
         "@swiftpkg_nicegram_assistant_ios//:Sources_FeatImagesHubUI",
+        "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPartners",
+        "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPinnedChats",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChatUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGAssistantUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGCardUI",
@@ -669,18 +691,18 @@
       "name": "swiftpkg_factory",
       "identity": "factory",
       "remote": {
-        "commit": "8d20074d8a5ac79d6902faecbdbafaf0a0326f49",
+        "commit": "8ca11a7bd1ede031e8e6d7a912bb116e2e43961b",
         "remote": "https://github.com/hmlongco/Factory",
-        "version": "2.3.0"
+        "version": "2.3.1"
       }
     },
     {
       "name": "swiftpkg_floatingpanel",
       "identity": "floatingpanel",
       "remote": {
-        "commit": "debeca1fb27fe2730f5c54bbb4eb22bc9b8f7a44",
+        "commit": "dd238884bf85e96a4c6c2703fc2fc1ff0f5c7494",
         "remote": "https://github.com/scenee/FloatingPanel",
-        "version": "2.7.0"
+        "version": "2.8.0"
       }
     },
     {
@@ -705,9 +727,9 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "0368e82947f3b201347cdb7f863848c1509d5490",
+        "commit": "34a8009b7beb51b8d18a90446134c7e166bd8ff9",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
-        "branch": "revert-prompts-api"
+        "branch": "develop"
       }
     },
     {
@@ -723,9 +745,9 @@
       "name": "swiftpkg_sdwebimage",
       "identity": "sdwebimage",
       "remote": {
-        "commit": "936f1c7067728d16c362ba4fb93c17df78b5fd79",
+        "commit": "1f06ef5007b6a580b3873ed2adee19e05d3b215a",
         "remote": "https://github.com/SDWebImage/SDWebImage.git",
-        "version": "5.18.2"
+        "version": "5.18.3"
       }
     },
     {

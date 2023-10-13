@@ -1,3 +1,14 @@
+// MARK: Nicegram Assistant
+import CoreSwiftUI
+import NGAssistantUI
+import let NGCoreUI.images
+import var NGCoreUI.strings
+import NGUI
+import SwiftUI
+//
+// MARK: Nicegram Grum
+import NGGrumUI
+//
 // MARK: Nicegram imports
 import NGData
 //
@@ -70,6 +81,11 @@ private class DetailsChatPlaceholderNode: ASDisplayNode, NavigationDetailsPlaceh
 }
 
 public final class TelegramRootController: NavigationController, TelegramRootControllerInterface {
+    
+    // MARK: Nicegram Assistant
+    public var assistantController: ViewController?
+    //
+    
     private let context: AccountContext
     
     public var rootTabController: TabBarController?
@@ -138,6 +154,50 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         self.storyUploadEventsDisposable?.dispose()
     }
     
+    // MARK: Nicegram Assistant
+    private var didAppear = false
+    
+    override public func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        if #available(iOS 15.0, *), !didAppear {
+            Task {
+                let canPresent = { [weak self] in
+                    guard let window = self?.context.sharedContext.mainWindow else {
+                        return false
+                    }
+                    return !window.hasOverlayController()
+                }
+                await AssistantUITgHelper.showAlertsFromHomeIfNeeded(
+                    canPresent: canPresent,
+                    showAssitantTooltip: { [weak self] in
+                        self?.showNicegramTooltip(
+                            backgroundColor: .secondarySystemBackground,
+                            content: { AssistantPopover() }
+                        )
+                    },
+                    showGrumTooltip: { [weak self] in
+                        self?.showNicegramTooltip(
+                            backgroundColor: .grumBg,
+                            content: {
+                                GrumPopover(
+                                    openAssistant: {
+                                        AssistantUITgHelper.routeToAssistant(
+                                            source: .generic
+                                        )
+                                    }
+                                )
+                            }
+                        )
+                    }
+                )
+            }
+        }
+        
+        didAppear = true
+    }
+    //
+    
     public func getContactsController() -> ViewController? {
         return self.contactsController
     }
@@ -199,6 +259,41 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         }
         controllers.append(chatListController)
         
+        // MARK: Nicegram Assistant
+        if #available(iOS 15.0, *) {
+            let assistantController = NativeControllerWrapper(
+                controller: AssistantUITgHelper.assistantController(),
+                accountContext: self.context,
+                adjustSafeArea: true
+            )
+            assistantController.tabBarItem = UITabBarItem(
+                title: NGCoreUI.strings.assistantTabTitle(),
+                image: NGCoreUI.images.logoNicegram(),
+                tag: 0
+            )
+            
+            self.assistantController = assistantController
+            
+            if NGSettings.showNicegramTab {
+                controllers.append(assistantController)
+            }
+            
+            AssistantUITgHelper.routeToAssistantImpl = { [weak self] in
+                guard let self, let rootTabController else {
+                    return
+                }
+                
+                let assistantIndex = rootTabController.controllers.firstIndex {
+                    $0 === assistantController
+                }
+                if let assistantIndex {
+                    popToRoot(animated: true)
+                    rootTabController.selectedIndex = assistantIndex
+                }
+            }
+        }
+        //
+        
         var restoreSettignsController: (ViewController & SettingsController)?
         if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
             restoreSettignsController = sharedContext.switchingData.settingsController
@@ -218,7 +313,12 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         accountSettingsController.parentController = self
         controllers.append(accountSettingsController)
                 
-        tabBarController.setControllers(controllers, selectedIndex: restoreSettignsController != nil ? (controllers.count - 1) : (controllers.count - 2))
+        // MARK: Nicegram Assistant
+        // calculate chatListControllerIndex (instead of (controllers.count - 2))
+        let chatListControllerIndex = controllers.firstIndex {
+            $0 is ChatListController
+        } ?? 0
+        tabBarController.setControllers(controllers, selectedIndex: restoreSettignsController != nil ? (controllers.count - 1) : chatListControllerIndex)
         
         self.contactsController = contactsController
         self.callListController = callListController
@@ -242,10 +342,56 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
             controllers.append(self.callListController!)
         }
         controllers.append(self.chatListController!)
+        
+        // MARK: Nicegram Assistant
+        if let assistantController,
+           NGSettings.showNicegramTab {
+            controllers.append(assistantController)
+        }
+        //
+        
         controllers.append(self.accountSettingsController!)
         
         rootTabController.setControllers(controllers, selectedIndex: nil)
     }
+    
+    // MARK: Nicegram Assistant
+    @available(iOS 13.0, *)
+    public func showNicegramTooltip<Content: View>(
+        backgroundColor: UIColor,
+        content: () -> Content
+    ) {
+        guard let rootTabController = rootTabController as? TabBarControllerImpl else {
+            return
+        }
+        
+        let index = rootTabController.controllers.firstIndex {
+            $0 === assistantController
+        }
+        guard let index else {
+            return
+        }
+        
+        let tabBarView = rootTabController.tabBarView
+        let tabWidth = tabBarView.frame.width / CGFloat(rootTabController.controllers.count)
+        
+        let sourceRect = CGRect(
+            x: tabWidth * CGFloat(index),
+            y: 0,
+            width: tabWidth,
+            height: tabBarView.frame.height
+        )
+        
+        Popover.show(
+            on: rootTabController,
+            sourceView: tabBarView,
+            sourceRect: sourceRect,
+            backgroundColor: backgroundColor,
+            permittedArrowDirections: .down,
+            content: content
+        )
+    }
+    //
     
     public func openChatsController(activateSearch: Bool, filter: ChatListSearchFilter = .chats, query: String? = nil) {
         guard let rootTabController = self.rootTabController else {

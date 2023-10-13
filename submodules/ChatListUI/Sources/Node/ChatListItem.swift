@@ -1,4 +1,5 @@
 // MARK: Nicegram HideReactions, HideStories
+import FeatPinnedChats
 import NGData
 //
 import Foundation
@@ -181,7 +182,7 @@ public enum ChatListItemContent {
 
 public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
     // MARK: Nicegram PinnedChats
-    let nicegramItem: NicegramChatListItem?
+    let nicegramItem: NGPinnedChat?
     //
     let presentationData: ChatListPresentationData
     let context: AccountContext
@@ -218,7 +219,7 @@ public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
     }
     
     // MARK: Nicegram PinnedChats, nicegramItem added
-    public init(nicegramItem: NicegramChatListItem? = nil, presentationData: ChatListPresentationData, context: AccountContext, chatListLocation: ChatListControllerLocation, filterData: ChatListItemFilterData?, index: EngineChatList.Item.Index, content: ChatListItemContent, editing: Bool, hasActiveRevealControls: Bool, selected: Bool, header: ListViewItemHeader?, enableContextActions: Bool, hiddenOffset: Bool, interaction: ChatListNodeInteraction) {
+    public init(nicegramItem: NGPinnedChat? = nil, presentationData: ChatListPresentationData, context: AccountContext, chatListLocation: ChatListControllerLocation, filterData: ChatListItemFilterData?, index: EngineChatList.Item.Index, content: ChatListItemContent, editing: Bool, hasActiveRevealControls: Bool, selected: Bool, header: ListViewItemHeader?, enableContextActions: Bool, hiddenOffset: Bool, interaction: ChatListNodeInteraction) {
         // MARK: Nicegram PinnedChats
         self.nicegramItem = nicegramItem
         //
@@ -289,7 +290,11 @@ public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
         case let .peer(peerData):
             // MARK: Nicegram PinnedChats
             if let nicegramItem {
-                nicegramItem.select()
+                if #available(iOS 13.0, *) {
+                    Task { @MainActor in
+                        nicegramItem.select()
+                    }
+                }
                 return
             }
             //
@@ -1503,7 +1508,7 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
         
         // MARK: Nicegram PinnedChats
         if let nicegramItem = item.nicegramItem {
-            self.avatarNode.setPeer(context: item.context, theme: item.presentationData.theme, peer: nil, nicegramImage: nicegramItem.image)
+            self.avatarNode.setPeer(context: item.context, theme: item.presentationData.theme, peer: nil, nicegramImage: nicegramItem.image?.roundedImage)
         }
         //
         
@@ -4000,4 +4005,18 @@ private extension ChatListItem {
         nicegramItem != nil
     }
 }
+
+private extension UIImage {
+    var roundedImage: UIImage? {
+        let rect = CGRect(origin: .zero, size: size)
+        UIGraphicsBeginImageContextWithOptions(size, false, 0)
+        UIBezierPath(roundedRect: rect, cornerRadius: size.height / 2).addClip()
+        draw(in: rect)
+        
+        let image = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        return image
+    }
+}
+
 //

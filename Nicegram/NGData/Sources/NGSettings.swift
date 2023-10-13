@@ -63,6 +63,9 @@ public struct NGSettings {
     @NGStorage(key: "showContactsTab", defaultValue: true)
     public static var showContactsTab: Bool
     
+    @NGStorage(key: "showNicegramTab", defaultValue: true)
+    public static var showNicegramTab: Bool
+    
     @NGStorage(key: "sendWithEnter", defaultValue: false)
     public static var sendWithEnter: Bool
     

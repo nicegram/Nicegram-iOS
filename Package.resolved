@@ -5,8 +5,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/hmlongco/Factory",
       "state" : {
-        "revision" : "8d20074d8a5ac79d6902faecbdbafaf0a0326f49",
-        "version" : "2.3.0"
+        "revision" : "8ca11a7bd1ede031e8e6d7a912bb116e2e43961b",
+        "version" : "2.3.1"
       }
     },
     {
@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/scenee/FloatingPanel",
       "state" : {
-        "revision" : "debeca1fb27fe2730f5c54bbb4eb22bc9b8f7a44",
-        "version" : "2.7.0"
+        "revision" : "dd238884bf85e96a4c6c2703fc2fc1ff0f5c7494",
+        "version" : "2.8.0"
       }
     },
     {
@@ -41,8 +41,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "revert-prompts-api",
-        "revision" : "0368e82947f3b201347cdb7f863848c1509d5490"
+        "branch" : "develop",
+        "revision" : "34a8009b7beb51b8d18a90446134c7e166bd8ff9"
       }
     },
     {
@@ -59,8 +59,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SDWebImage/SDWebImage.git",
       "state" : {
-        "revision" : "936f1c7067728d16c362ba4fb93c17df78b5fd79",
-        "version" : "5.18.2"
+        "revision" : "1f06ef5007b6a580b3873ed2adee19e05d3b215a",
+        "version" : "5.18.3"
       }
     },
     {

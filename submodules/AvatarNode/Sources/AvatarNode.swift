@@ -996,7 +996,6 @@ public final class AvatarNode: ASDisplayNode {
         self.contentNode.playArchiveAnimation()
     }
     
-    // MARK: Nicegram, nicegramImage added
     public func setPeer(
         accountPeerId: EnginePeer.Id,
         postbox: Postbox,
@@ -1055,6 +1054,7 @@ public final class AvatarNode: ASDisplayNode {
         )
     }
     
+    // MARK: Nicegram, nicegramImage added
     public func setPeer(
         context: AccountContext,
         account: Account? = nil,

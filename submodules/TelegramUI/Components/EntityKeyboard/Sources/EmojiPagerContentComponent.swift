@@ -1,3 +1,6 @@
+// MARK: Nicegram StickerMaker
+import FeatPartners
+//
 import Foundation
 import UIKit
 import Display
@@ -1609,6 +1612,10 @@ public final class EmojiSearchHeaderView: UIView, UITextFieldDelegate {
     private var textFrame: CGRect?
     private var textField: EmojiSearchTextField?
     
+    // MARK: Nicegram StickerMaker
+    private let stickerMakerButton = StickerMakerButton()
+    //
+    
     private var tapRecognizer: UITapGestureRecognizer?
     private(set) var currentPresetSearchTerm: [String]?
     
@@ -1640,6 +1647,10 @@ public final class EmojiSearchHeaderView: UIView, UITextFieldDelegate {
         self.cancelButton = HighlightTrackingButton()
         
         super.init(frame: CGRect())
+        
+        // MARK: Nicegram StickerMaker
+        self.addSubview(stickerMakerButton)
+        //
         
         self.layer.addSublayer(self.backgroundLayer)
         self.tintContainerView.layer.addSublayer(self.tintBackgroundLayer)
@@ -2132,6 +2143,24 @@ public final class EmojiSearchHeaderView: UIView, UITextFieldDelegate {
             }
         }
         let _ = hasText
+        
+        // MARK: Nicegram StickerMaker
+        transition.setFrame(
+            view: stickerMakerButton,
+            frame: CGRect(
+                origin: CGPoint(
+                    x: backgroundFrame.minX,
+                    y: backgroundFrame.maxY + StickerMakerButton.searchStickersConfig.topPadding
+                ),
+                size: CGSize(
+                    width: backgroundFrame.width,
+                    height: StickerMakerButton.height
+                )
+            )
+        )
+        
+        stickerMakerButton.isHidden = !StickerMaker.showConfig.stickerSearch
+        //
         
         /*self.tintTextView.view?.isHidden = hasText
         self.textView.view?.isHidden = hasText*/
@@ -2913,6 +2942,13 @@ public final class EmojiPagerContentComponent: Component {
                 
                 self.searchHeight = 54.0
                 self.searchInsets = UIEdgeInsets(top: max(0.0, containerInsets.top - 8.0), left: containerInsets.left, bottom: 0.0, right: containerInsets.right)
+                
+                // MARK: Nicegram StickerMaker
+                if StickerMaker.showConfig.stickerSearch {
+                    let additionalHeight = StickerMakerButton.height + StickerMakerButton.searchStickersConfig.topPadding
+                    self.searchHeight += additionalHeight
+                }
+                //
                 
                 self.curveNearBounds = curveNearBounds
                 

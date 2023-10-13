@@ -6,7 +6,7 @@ public class NativeControllerWrapper: ViewController {
 
     private let accountContext: AccountContext
     private let controller: UIViewController
-    private var validLayout: ContainerViewLayout?
+    private let adjustSafeArea: Bool
 
     public override var childForStatusBarStyle: UIViewController? {
         return controller
@@ -18,9 +18,14 @@ public class NativeControllerWrapper: ViewController {
 
     //  MARK: - Lifecycle
 
-    public init(controller: UIViewController, accountContext: AccountContext) {
+    public init(
+        controller: UIViewController,
+        accountContext: AccountContext,
+        adjustSafeArea: Bool = false
+    ) {
         self.controller = controller
         self.accountContext = accountContext
+        self.adjustSafeArea = adjustSafeArea
 
         super.init(navigationBarPresentationData: nil)
         
@@ -40,6 +45,7 @@ public class NativeControllerWrapper: ViewController {
 
     public override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        self.addControllerIfNeeded()
         controller.viewWillAppear(animated)
     }
     
@@ -51,30 +57,38 @@ public class NativeControllerWrapper: ViewController {
     public override func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {
         super.containerLayoutUpdated(layout, transition: transition)
 
-        self.validLayout = layout
-        let controllerFrame = CGRect(origin: CGPoint(), size: layout.size)
-
-        if case .immediate = transition {
-            self.controller.view.frame = controllerFrame
-        } else {
-            UIView.animate(withDuration: 0.3, animations: {
-                self.controller.view.frame = controllerFrame
-            })
+        if adjustSafeArea {
+            controller.additionalSafeAreaInsets = max(
+                layout.safeInsets, layout.intrinsicInsets
+            )
         }
-    }
-    
-    public override func dismiss(animated flag: Bool, completion: (() -> Void)? = nil) {
-        self.nativeDismiss(animated: flag, completion: completion)
     }
 
     //  MARK: - Private Functions
 
     private func addControllerIfNeeded() {
+        guard controller.parent == nil else {
+            return
+        }
+        
         self.addChild(controller)
         self.displayNode.view.addSubview(controller.view)
-        if let layout = self.validLayout {
-            controller.view.frame = CGRect(origin: CGPoint(), size: layout.size)
+        controller.view.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
         }
         controller.didMove(toParent: self)
     }
+}
+
+private func max(_ insets: UIEdgeInsets...) -> UIEdgeInsets {
+    var result = UIEdgeInsets.zero
+    for inset in insets {
+        result = UIEdgeInsets(
+            top: max(result.top, inset.top),
+            left: max(result.left, inset.left),
+            bottom: max(result.bottom, inset.bottom),
+            right: max(result.right, inset.right)
+        )
+    }
+    return result
 }

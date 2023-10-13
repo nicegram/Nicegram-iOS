@@ -8,6 +8,7 @@ NGDEPS = [
     "//Nicegram/NGTranslate:NGTranslate",
     # Nicegram downloading feature
     "//submodules/SaveToCameraRoll:SaveToCameraRoll",
+    "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPinnedChats",
     "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChat",
     "@swiftpkg_nicegram_assistant_ios//:Sources_NGAssistantUI",
     "@swiftpkg_nicegram_assistant_ios//:Sources_NGRepoTg",
