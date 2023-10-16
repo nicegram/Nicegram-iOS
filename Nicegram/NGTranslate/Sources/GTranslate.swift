@@ -71,7 +71,7 @@ public func getGoogleLang(_ userLang: String) -> String {
     
     // Google lang for Chineses
     switch (lang) {
-        case "zh-hans":
+        case "zh-hans", "zh":
             return "zh-CN"
         case "zh-hant":
             return "zh-TW"

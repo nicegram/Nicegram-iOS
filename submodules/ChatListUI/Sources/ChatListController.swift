@@ -337,6 +337,23 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                         }
                     )))
                     
+                    // MARK: Nicegram Assistant
+                    if #available(iOS 15.0, *) {
+                        self.primaryContext?.nicegramButton = AnyComponentWithIdentity(
+                            id: "nicegram",
+                            component: AnyComponent(NicegramButtonComponent(
+                                pressed: {
+                                    Task {
+                                        AssistantUITgHelper.routeToAssistant(
+                                            source: .generic
+                                        )
+                                    }
+                                }
+                            ))
+                        )
+                    }
+                    //
+                    
                     //let backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.DialogList_Title, style: .plain, target: nil, action: nil)
                     //backBarButtonItem.accessibilityLabel = self.presentationData.strings.Common_Back
                     //self.navigationItem.backBarButtonItem = backBarButtonItem
@@ -2132,6 +2149,16 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        
+        // MARK: Nicegram
+        if #available(iOS 15.0, *), !didAppear {
+            Task {
+                if await AssistantTgHelper.shouldShowGemAnimation() {
+                    showGemAnimation()
+                }
+            }
+        }
+        //
                 
         if self.powerSavingMonitoringDisposable == nil {
             self.powerSavingMonitoringDisposable = (self.context.sharedContext.automaticMediaDownloadSettings
@@ -4457,6 +4484,16 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     }
     
     @available(iOS 13.0, *)
+    private func showGemAnimation() {
+        findAssistantButton()?.showGemAnimation()
+    }
+    
+    @available(iOS 13.0, *)
+    private func findAssistantButton() -> AssistantButton? {
+        view.viewWithTag(AssistantButton.tag) as? AssistantButton
+    }
+    
+    @available(iOS 13.0, *)
     private func nicegramInit() {
         RepoTgHelper.setTelegramId(context.account.peerId.id._internalGetInt64Value())
         
@@ -5959,6 +5996,10 @@ private final class ChatListLocationContext {
     private(set) var chatTitleComponent: ChatTitleComponent?
     private(set) var chatListTitle: NetworkStatusTitle?
     
+    // MARK: Nicegram Assistant
+    var nicegramButton: AnyComponentWithIdentity<NavigationButtonComponentEnvironment>?
+    //
+    
     var leftButton: AnyComponentWithIdentity<NavigationButtonComponentEnvironment>?
     var rightButton: AnyComponentWithIdentity<NavigationButtonComponentEnvironment>?
     var proxyButton: AnyComponentWithIdentity<NavigationButtonComponentEnvironment>?
@@ -5975,6 +6016,11 @@ private final class ChatListLocationContext {
         if let proxyButton = self.proxyButton {
             result.append(proxyButton)
         }
+        // MARK: Nicegram Assistant
+        if let nicegramButton = self.nicegramButton {
+            result.append(nicegramButton)
+        }
+        //
         return result
     }
     

@@ -262,7 +262,9 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         // MARK: Nicegram Assistant
         if #available(iOS 15.0, *) {
             let assistantController = NativeControllerWrapper(
-                controller: AssistantUITgHelper.assistantController(),
+                controller: AssistantUITgHelper.assistantController(
+                    close: nil
+                ),
                 accountContext: self.context,
                 adjustSafeArea: true
             )
@@ -286,9 +288,22 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                 let assistantIndex = rootTabController.controllers.firstIndex {
                     $0 === assistantController
                 }
+                
                 if let assistantIndex {
                     popToRoot(animated: true)
                     rootTabController.selectedIndex = assistantIndex
+                } else {
+                    guard let presentingController = UIApplication.topViewController else {
+                        return
+                    }
+                    
+                    let controller = AssistantUITgHelper.assistantController(
+                        close: { [weak presentingController] in
+                            presentingController?.dismiss(animated: true)
+                        }
+                    )
+                    controller.modalPresentationStyle = .overFullScreen
+                    presentingController.present(controller, animated: true)
                 }
             }
         }
