@@ -1613,7 +1613,9 @@ public final class EmojiSearchHeaderView: UIView, UITextFieldDelegate {
     private var textField: EmojiSearchTextField?
     
     // MARK: Nicegram StickerMaker
-    private let stickerMakerButton = StickerMakerButton()
+    private let stickerMakerButton = StickerMakerButton(
+        location: .stickerSearch
+    )
     //
     
     private var tapRecognizer: UITapGestureRecognizer?
