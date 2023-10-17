@@ -227,7 +227,9 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
         private var requestedCameraAccess = false
         
         // MARK: Nicegram InLab
-        private let inLabNode = ASDisplayNode { InLabButton() }
+        private let inLabNode = ASDisplayNode {
+            InLabButton(location: .galleryAttachment)
+        }
         //
         
         private let containerNode: ASDisplayNode

@@ -93,7 +93,9 @@ private enum StickerPackNextAction {
 private final class StickerPackContainer: ASDisplayNode {
     
     // MARK: Nicegram StickerMaker
-    private let stickerMakerNode = ASDisplayNode { StickerMakerButton() }
+    private let stickerMakerNode = ASDisplayNode {
+        StickerMakerButton(location: .stickerPack)
+    }
     //
     
     let index: Int

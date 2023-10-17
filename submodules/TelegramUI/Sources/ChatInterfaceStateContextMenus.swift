@@ -1864,7 +1864,9 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                 actions.append(.action(ContextMenuActionItem(text: StickerMaker.buttonTitle, icon: { theme in
                     return generateTintedImage(image: StickerMaker.contextMenuIcon, color: theme.actionSheet.primaryTextColor)
                 }, action: { _, f in
-                    StickerMaker.openFromContextMenu()
+                    StickerMaker.open(
+                        from: .contextMenu
+                    )
                     f(.dismissWithoutContent)
                 })))
             }

@@ -1613,7 +1613,9 @@ public final class EmojiSearchHeaderView: UIView, UITextFieldDelegate {
     private var textField: EmojiSearchTextField?
     
     // MARK: Nicegram StickerMaker
-    private let stickerMakerButton = StickerMakerButton()
+    private let stickerMakerButton = StickerMakerButton(
+        location: .stickerSearch
+    )
     //
     
     private var tapRecognizer: UITapGestureRecognizer?
@@ -6632,7 +6634,23 @@ public final class EmojiPagerContentComponent: Component {
                 }
                 let availableCustomContentSize = availableSize
                 let customContentViewSize = customContentView.update(theme: keyboardChildEnvironment.theme, strings: keyboardChildEnvironment.strings, useOpaqueTheme: useOpaqueTheme, availableSize: availableCustomContentSize, transition: customContentViewTransition)
-                customContentViewTransition.setFrame(view: customContentView, frame: CGRect(origin: CGPoint(x: 0.0, y: pagerEnvironment.containerInsets.top + (component.displaySearchWithPlaceholder != nil ? 54.0 : 0.0)), size: customContentViewSize))
+            
+                // MARK: Nicegram StickerMaker
+                var searchHeight: CGFloat
+                if component.displaySearchWithPlaceholder != nil {
+                    searchHeight = 54
+                    
+                    if StickerMaker.showConfig.stickerSearch {
+                        let additionalHeight = StickerMakerButton.height + StickerMakerButton.searchStickersConfig.topPadding
+                        searchHeight += additionalHeight
+                    }
+                } else {
+                    searchHeight = 0
+                }
+                //
+                
+                // MARK: Nicegram StickerMaker, use searchHeight for 'y' calculation
+                customContentViewTransition.setFrame(view: customContentView, frame: CGRect(origin: CGPoint(x: 0.0, y: pagerEnvironment.containerInsets.top + searchHeight), size: customContentViewSize))
                 
                 customContentHeight = customContentViewSize.height
             } else {
