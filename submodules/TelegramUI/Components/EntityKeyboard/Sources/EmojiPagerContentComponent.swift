@@ -1613,7 +1613,7 @@ public final class EmojiSearchHeaderView: UIView, UITextFieldDelegate {
     private var textField: EmojiSearchTextField?
     
     // MARK: Nicegram StickerMaker
-    private let stickerMakerButton = StickerMakerButton(
+    let stickerMakerButton = StickerMakerButton(
         location: .stickerSearch
     )
     //
@@ -2160,8 +2160,6 @@ public final class EmojiSearchHeaderView: UIView, UITextFieldDelegate {
                 )
             )
         )
-        
-        stickerMakerButton.isHidden = !StickerMaker.showConfig.stickerSearch
         //
         
         /*self.tintTextView.view?.isHidden = hasText
@@ -2694,6 +2692,12 @@ public final class EmojiPagerContentComponent: Component {
         }
     }
     
+    // MARK: Nicegram StickerMaker
+    public var isStickersTab: Bool {
+        id == AnyHashable("stickers")
+    }
+    //
+    
     public let id: AnyHashable
     public let context: AccountContext
     public let avatarPeer: EnginePeer?
@@ -2924,6 +2928,9 @@ public final class EmojiPagerContentComponent: Component {
             var premiumButtonHeight: CGFloat
             
             init(
+                // MARK: Nicegram StickerMaker
+                showStickerMakerButton: Bool,
+                //
                 layoutType: ItemLayoutType,
                 width: CGFloat,
                 containerInsets: UIEdgeInsets,
@@ -2946,7 +2953,7 @@ public final class EmojiPagerContentComponent: Component {
                 self.searchInsets = UIEdgeInsets(top: max(0.0, containerInsets.top - 8.0), left: containerInsets.left, bottom: 0.0, right: containerInsets.right)
                 
                 // MARK: Nicegram StickerMaker
-                if StickerMaker.showConfig.stickerSearch {
+                if showStickerMakerButton {
                     let additionalHeight = StickerMakerButton.height + StickerMakerButton.searchStickersConfig.topPadding
                     self.searchHeight += additionalHeight
                 }
@@ -6389,6 +6396,11 @@ public final class EmojiPagerContentComponent: Component {
             self.component = component
             self.state = state
             
+            // MARK: Nicegram StickerMaker
+            let showStickerMaker = component.isStickersTab && StickerMaker.showConfig.stickerSearch
+            self.visibleSearchHeader?.stickerMakerButton.isHidden = !showStickerMaker
+            //
+            
             if component.searchAlwaysActive {
                 self.isSearchActivated = true
             }
@@ -6640,7 +6652,7 @@ public final class EmojiPagerContentComponent: Component {
                 if component.displaySearchWithPlaceholder != nil {
                     searchHeight = 54
                     
-                    if StickerMaker.showConfig.stickerSearch {
+                    if showStickerMaker {
                         let additionalHeight = StickerMakerButton.height + StickerMakerButton.searchStickersConfig.topPadding
                         searchHeight += additionalHeight
                     }
@@ -6685,6 +6697,9 @@ public final class EmojiPagerContentComponent: Component {
             }
             
             let extractedExpr = ItemLayout(
+                // MARK: Nicegram StickerMaker
+                showStickerMakerButton: showStickerMaker,
+                //
                 layoutType: component.itemLayoutType,
                 width: availableSize.width,
                 containerInsets: UIEdgeInsets(top: pagerEnvironment.containerInsets.top + 9.0, left: pagerEnvironment.containerInsets.left, bottom: 9.0 + pagerEnvironment.containerInsets.bottom, right: pagerEnvironment.containerInsets.right),

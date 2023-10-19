@@ -344,7 +344,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                             component: AnyComponent(NicegramButtonComponent(
                                 pressed: {
                                     Task {
-                                        AssistantUITgHelper.routeToAssistant(
+                                        AssistantUITgHelper.presentAssistantModally(
                                             source: .generic
                                         )
                                     }
