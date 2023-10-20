@@ -280,7 +280,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                 controllers.append(assistantController)
             }
             
-            AssistantUITgHelper.routeToAssistantImpl = { [weak self] in
+            AssistantUITgHelper.routeToAssistantImpl = { [weak self] source in
                 guard let self, let rootTabController else {
                     return
                 }
@@ -290,20 +290,14 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                 }
                 
                 if let assistantIndex {
+                    AssistantUITgHelper.assistantSource = source
+                    
                     popToRoot(animated: true)
                     rootTabController.selectedIndex = assistantIndex
                 } else {
-                    guard let presentingController = UIApplication.topViewController else {
-                        return
-                    }
-                    
-                    let controller = AssistantUITgHelper.assistantController(
-                        close: { [weak presentingController] in
-                            presentingController?.dismiss(animated: true)
-                        }
+                    AssistantUITgHelper.presentAssistantModally(
+                        source: source
                     )
-                    controller.modalPresentationStyle = .overFullScreen
-                    presentingController.present(controller, animated: true)
                 }
             }
         }
