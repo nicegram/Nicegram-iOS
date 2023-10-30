@@ -20,7 +20,6 @@ import AudioToolbox
 import UndoUI
 import ContextUI
 import GalleryUI
-import AttachmentTextInputPanelNode
 import TelegramPresentationData
 import TelegramNotices
 import StickerPeekUI
@@ -33,6 +32,7 @@ import Pasteboard
 import StickerPackPreviewUI
 import EntityKeyboardGifContent
 import LegacyMessageInputPanelInputView
+import AttachmentTextInputPanelNode
 
 public final class EmptyInputView: UIView, UIInputViewAudioFeedback {
     public var enableInputClicksWhenVisible: Bool {
@@ -160,7 +160,20 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
         let animationCache = context.animationCache
         let animationRenderer = context.animationRenderer
         
-        let emojiItems = EmojiPagerContentComponent.emojiInputData(context: context, animationCache: animationCache, animationRenderer: animationRenderer, isStandalone: false, isStatusSelection: false, isReactionSelection: false, isEmojiSelection: true, hasTrending: hasTrending, topReactionItems: [], areUnicodeEmojiEnabled: true, areCustomEmojiEnabled: areCustomEmojiEnabled, chatPeerId: chatPeerId, hasSearch: hasSearch, hideBackground: hideBackground)
+        let emojiItems = EmojiPagerContentComponent.emojiInputData(
+            context: context,
+            animationCache: animationCache,
+            animationRenderer: animationRenderer,
+            isStandalone: false,
+            subject: .emoji,
+            hasTrending: hasTrending,
+            topReactionItems: [],
+            areUnicodeEmojiEnabled: true,
+            areCustomEmojiEnabled: areCustomEmojiEnabled,
+            chatPeerId: chatPeerId,
+            hasSearch: hasSearch,
+            hideBackground: hideBackground
+        )
         
         let stickerNamespaces: [ItemCollectionId.Namespace] = [Namespaces.ItemCollection.CloudStickerPacks]
         let stickerOrderedItemListCollectionIds: [Int32] = [Namespaces.OrderedItemList.CloudSavedStickers, Namespaces.OrderedItemList.CloudRecentStickers, Namespaces.OrderedItemList.CloudAllPremiumStickers]
@@ -2092,7 +2105,7 @@ private final class ContextControllerContentSourceImpl: ContextControllerContent
     }
 }
 
-public final class EntityInputView: UIInputView, LegacyMessageInputPanelInputView, AttachmentTextInputPanelInputView, UIInputViewAudioFeedback {
+public final class EntityInputView: UIInputView, AttachmentTextInputPanelInputView, LegacyMessageInputPanelInputView, UIInputViewAudioFeedback {
     private let context: AccountContext
     
     public var insertText: ((NSAttributedString) -> Void)?
@@ -2267,7 +2280,19 @@ public final class EntityInputView: UIInputView, LegacyMessageInputPanelInputVie
         
         let semaphore = DispatchSemaphore(value: 0)
         var emojiComponent: EmojiPagerContentComponent?
-        let _ = EmojiPagerContentComponent.emojiInputData(context: context, animationCache: self.animationCache, animationRenderer: self.animationRenderer, isStandalone: true, isStatusSelection: false, isReactionSelection: false, isEmojiSelection: false, hasTrending: false, topReactionItems: [], areUnicodeEmojiEnabled: true, areCustomEmojiEnabled: areCustomEmojiEnabled, chatPeerId: nil, forceHasPremium: forceHasPremium).start(next: { value in
+        let _ = EmojiPagerContentComponent.emojiInputData(
+            context: context,
+            animationCache: self.animationCache,
+            animationRenderer: self.animationRenderer,
+            isStandalone: true,
+            subject: .generic,
+            hasTrending: false, 
+            topReactionItems: [],
+            areUnicodeEmojiEnabled: true,
+            areCustomEmojiEnabled: areCustomEmojiEnabled,
+            chatPeerId: nil,
+            forceHasPremium: forceHasPremium
+        ).start(next: { value in
             emojiComponent = value
             semaphore.signal()
         })
@@ -2282,7 +2307,20 @@ public final class EntityInputView: UIInputView, LegacyMessageInputPanelInputVie
                     gifs: nil,
                     availableGifSearchEmojies: []
                 ),
-                updatedInputData: EmojiPagerContentComponent.emojiInputData(context: context, animationCache: self.animationCache, animationRenderer: self.animationRenderer, isStandalone: true, isStatusSelection: false, isReactionSelection: false, isEmojiSelection: false, hasTrending: false, topReactionItems: [], areUnicodeEmojiEnabled: true, areCustomEmojiEnabled: areCustomEmojiEnabled, chatPeerId: nil, forceHasPremium: forceHasPremium, hideBackground: hideBackground) |> map { emojiComponent -> ChatEntityKeyboardInputNode.InputData in
+                updatedInputData: EmojiPagerContentComponent.emojiInputData(
+                    context: context,
+                    animationCache: self.animationCache,
+                    animationRenderer: self.animationRenderer,
+                    isStandalone: true,
+                    subject: .generic,
+                    hasTrending: false,
+                    topReactionItems: [], 
+                    areUnicodeEmojiEnabled: true,
+                    areCustomEmojiEnabled: areCustomEmojiEnabled,
+                    chatPeerId: nil,
+                    forceHasPremium: forceHasPremium,
+                    hideBackground: hideBackground
+                ) |> map { emojiComponent -> ChatEntityKeyboardInputNode.InputData in
                     return ChatEntityKeyboardInputNode.InputData(
                         emoji: emojiComponent,
                         stickers: nil,
@@ -2354,7 +2392,9 @@ public final class EntityInputView: UIInputView, LegacyMessageInputPanelInputVie
             hasActiveGroupCall: false,
             importState: nil,
             threadData: nil,
-            isGeneralThreadClosed: nil
+            isGeneralThreadClosed: nil,
+            replyMessage: nil,
+            accountPeerColor: nil
         )
 
         let _ = inputNode.updateLayout(

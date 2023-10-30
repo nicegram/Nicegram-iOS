@@ -58,6 +58,7 @@ import ManagedFile
 import DeviceProximity
 import MediaEditor
 import TelegramUIDeclareEncodables
+import ContextMenuScreen
 
 #if canImport(AppCenter)
 import AppCenter
@@ -401,16 +402,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             MobySubscriptionAnalytics.trackInstall(installInfo: installInfo)
         }
         
-        let appLovinAdProvider: AdProvider
-        if #available(iOS 13.0, *) {
-            appLovinAdProvider = AppLovinAdProvider(
-                apiKey: NGENV.applovin_api_key,
-                adUnitIdentifier: NGENV.applovin_ad_unit_id,
-                userRepository: RepoUserTgHelper.resolveUserRepository()
-            )
-        } else {
-            appLovinAdProvider = AdProviderMock()
-        }
         NGEntryPoint.onAppLaunch(
             env: Env(
                 apiBaseUrl: URL(string: NGENV.esim_api_url)!,
@@ -423,10 +414,26 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 termsUrl: URL(string: NGENV.terms_url)!,
                 webSocketUrl: NGENV.websocket_url
             ),
-            appLovinAdProvider: appLovinAdProvider,
-            firebaseAnalyticsSender: FirebaseAnalyticsSender(),
-            remoteConfig: RemoteConfigServiceImpl.shared,
-            lottieViewProvider: { LottieViewImpl() }
+            appLovinAdProvider: {
+                if #available(iOS 13.0, *) {
+                    AppLovinAdProvider(
+                        apiKey: NGENV.applovin_api_key,
+                        adUnitIdentifier: NGENV.applovin_ad_unit_id,
+                        userRepository: RepoUserTgHelper.resolveUserRepository()
+                    )
+                } else {
+                    AdProviderMock()
+                }
+            },
+            firebaseAnalyticsSender: {
+                FirebaseAnalyticsSender()
+            },
+            remoteConfig: {
+                RemoteConfigServiceImpl.shared
+            },
+            lottieView: {
+                LottieViewImpl()
+            }
         )
         
         let launchStartTime = CFAbsoluteTimeGetCurrent()
@@ -703,6 +710,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }, openUrl: { url in
             UIApplication.shared.open(url, options: [:], completionHandler: nil)
         })
+        setContextMenuControllerProvider { arguments in
+            return ContextMenuControllerImpl(arguments)
+        }
         
         if #available(iOS 10.0, *) {
             UNUserNotificationCenter.current().delegate = self
@@ -906,7 +916,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 icons.append(PresentationAppIcon(name: "Premium", imageName: "Premium", isPremium: true))
                 icons.append(PresentationAppIcon(name: "PremiumBlack", imageName: "PremiumBlack", isPremium: true))
                 icons.append(PresentationAppIcon(name: "PremiumTurbo", imageName: "PremiumTurbo", isPremium: true))
-                
+                                
                 return icons
             } else {
                 return []
@@ -1742,7 +1752,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 if !buildConfig.isAppStoreBuild {
                     if value >= 2000 * 1024 * 1024 {
                         if self.contextValue?.context.sharedContext.immediateExperimentalUISettings.crashOnMemoryPressure == true {
-                            preconditionFailure()
                         }
                     }
                 }
@@ -2803,7 +2812,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                         if let threadId {
                             replyToMessageId = MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: Int32(clamping: threadId))
                         }
-                        return enqueueMessages(account: account, peerId: peerId, messages: [EnqueueMessage.message(text: text, attributes: [], inlineStickers: [:], mediaReference: nil, replyToMessageId: replyToMessageId, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])])
+                        return enqueueMessages(account: account, peerId: peerId, messages: [EnqueueMessage.message(text: text, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: nil, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])])
                         |> map { messageIds -> MessageId? in
                             if messageIds.isEmpty {
                                 return nil

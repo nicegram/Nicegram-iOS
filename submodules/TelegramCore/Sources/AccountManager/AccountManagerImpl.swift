@@ -75,6 +75,7 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
             return (atomicState.records.sorted(by: { $0.key.int64 < $1.key.int64 }).map({ $1 }), atomicState.currentRecordId)
         } catch let e {
             postboxLog("decode atomic state error: \(e)")
+            postboxLogSync()
             preconditionFailure()
         }
     }
@@ -91,10 +92,16 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
         self.temporarySessionId = temporarySessionId
         let _ = try? FileManager.default.createDirectory(atPath: basePath, withIntermediateDirectories: true, attributes: nil)
         guard let guardValueBox = SqliteValueBox(basePath: basePath + "/guard_db", queue: queue, isTemporary: isTemporary, isReadOnly: false, useCaches: useCaches, removeDatabaseOnError: removeDatabaseOnError, encryptionParameters: nil, upgradeProgress: { _ in }) else {
+            postboxLog("Could not open guard value box at \(basePath + "/guard_db")")
+            postboxLogSync()
+            preconditionFailure()
             return nil
         }
         self.guardValueBox = guardValueBox
         guard let valueBox = SqliteValueBox(basePath: basePath + "/db", queue: queue, isTemporary: isTemporary, isReadOnly: isReadOnly, useCaches: useCaches, removeDatabaseOnError: removeDatabaseOnError, encryptionParameters: nil, upgradeProgress: { _ in }) else {
+            postboxLog("Could not open value box at \(basePath + "/db")")
+            postboxLogSync()
+            preconditionFailure()
             return nil
         }
         self.valueBox = valueBox
@@ -112,6 +119,7 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
             } catch let e {
                 postboxLog("decode atomic state error: \(e)")
                 let _ = try? FileManager.default.removeItem(atPath: self.atomicStatePath)
+                postboxLogSync()
                 preconditionFailure()
             }
         } catch let e {
@@ -274,9 +282,11 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
         if let data = try? JSONEncoder().encode(self.currentAtomicState) {
             if let _ = try? data.write(to: URL(fileURLWithPath: self.atomicStatePath), options: [.atomic]) {
             } else {
+                postboxLogSync()
                 preconditionFailure()
             }
         } else {
+            postboxLogSync()
             preconditionFailure()
         }
     }
@@ -555,6 +565,7 @@ public final class AccountManager<Types: AccountManagerTypes> {
             if let value = AccountManagerImpl<Types>(queue: queue, basePath: basePath, isTemporary: isTemporary, isReadOnly: isReadOnly, useCaches: useCaches, removeDatabaseOnError: removeDatabaseOnError, temporarySessionId: temporarySessionId, hiddenAccountManager: hiddenAccountManager) {
                 return value
             } else {
+                postboxLogSync()
                 preconditionFailure()
             }
         })

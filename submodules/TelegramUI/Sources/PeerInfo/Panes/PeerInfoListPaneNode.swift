@@ -17,6 +17,7 @@ import UndoUI
 import ChatPresentationInterfaceState
 import ChatControllerInteraction
 import PeerInfoVisualMediaPaneNode
+import ChatMessageItemView
 
 final class PeerInfoListPaneNode: ASDisplayNode, PeerInfoPaneNode {
     private let context: AccountContext
@@ -127,7 +128,7 @@ final class PeerInfoListPaneNode: ASDisplayNode, PeerInfoPaneNode {
                     return .single(nil)
                 }
             }
-            |> deliverOnMainQueue).start(next: { [weak self] playlistStateAndType in
+            |> deliverOnMainQueue).startStrict(next: { [weak self] playlistStateAndType in
                 guard let strongSelf = self else {
                     return
                 }
@@ -275,7 +276,7 @@ final class PeerInfoListPaneNode: ASDisplayNode, PeerInfoPaneNode {
                         })
                         return rate
                     }
-                    |> deliverOnMainQueue).start(next: { baseRate in
+                    |> deliverOnMainQueue).startStandalone(next: { baseRate in
                         guard let strongSelf = self, let (_, _, _, _, type, _) = strongSelf.playlistStateAndType else {
                             return
                         }
@@ -366,7 +367,7 @@ final class PeerInfoListPaneNode: ASDisplayNode, PeerInfoPaneNode {
                     }
                     if let id = state.id as? PeerMessagesMediaPlaylistItemId, let playlistLocation = strongSelf.playlistLocation as? PeerMessagesPlaylistLocation, case let .messages(chatLocation, _, _) = playlistLocation {
                         if type == .music {
-                            let signal = strongSelf.context.sharedContext.messageFromPreloadedChatHistoryViewForLocation(id: id.messageId, location: ChatHistoryLocationInput(content: .InitialSearch(location: .id(id.messageId), count: 60, highlight: true), id: 0), context: strongSelf.context, chatLocation: .peer(id: id.messageId.peerId), subject: nil, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>(value: nil), tagMask: MessageTags.music)
+                            let signal = strongSelf.context.sharedContext.messageFromPreloadedChatHistoryViewForLocation(id: id.messageId, location: ChatHistoryLocationInput(content: .InitialSearch(subject: MessageHistoryInitialSearchSubject(location: .id(id.messageId), quote: nil), count: 60, highlight: true), id: 0), context: strongSelf.context, chatLocation: .peer(id: id.messageId.peerId), subject: nil, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>(value: nil), tagMask: MessageTags.music)
                             
                             var cancelImpl: (() -> Void)?
                             let presentationData = strongSelf.context.sharedContext.currentPresentationData.with { $0 }
@@ -392,7 +393,7 @@ final class PeerInfoListPaneNode: ASDisplayNode, PeerInfoPaneNode {
                                     progressDisposable.dispose()
                                 }
                             }
-                            |> deliverOnMainQueue).start(next: { index in
+                            |> deliverOnMainQueue).startStandalone(next: { index in
                                 guard let strongSelf = self else {
                                     return
                                 }
@@ -409,7 +410,7 @@ final class PeerInfoListPaneNode: ASDisplayNode, PeerInfoPaneNode {
                                 } else if index.1 {
                                     if !progressStarted {
                                         progressStarted = true
-                                        progressDisposable.set(progressSignal.start())
+                                        progressDisposable.set(progressSignal.startStandalone())
                                     }
                                 }
                             }, completed: {

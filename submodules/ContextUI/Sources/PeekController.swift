@@ -38,7 +38,7 @@ public final class PeekController: ViewController, ContextControllerProtocol {
         return nil
     }
     
-    public func setItems(_ items: Signal<ContextController.Items, NoError>, minHeight: ContextController.ActionsHeight?) {
+    public func setItems(_ items: Signal<ContextController.Items, NoError>, minHeight: ContextController.ActionsHeight?, animated: Bool) {
     }
 
     public func setItems(_ items: Signal<ContextController.Items, NoError>, minHeight: ContextController.ActionsHeight?, previousActionsTransition: ContextController.PreviousActionsTransition) {
@@ -125,5 +125,9 @@ public final class PeekController: ViewController, ContextControllerProtocol {
         self.controllerNode.animateOut(to: self.getSourceRect(), completion: { [weak self] in
             self?.presentingViewController?.dismiss(animated: false, completion: nil)
         })
+    }
+    
+    public func dismiss(result: ContextMenuActionResult, completion: (() -> Void)?) {
+        self.dismiss(completion: completion)
     }
 }

@@ -989,7 +989,9 @@ private func finalStateWithUpdatesAndServerTime(accountPeerId: PeerId, postbox: 
                     if previousState.pts >= pts {
                     } else if previousState.pts + ptsCount == pts {
                         switch apiWebpage {
-                            case let .webPageEmpty(id):
+                            case let .webPageEmpty(flags, id, url):
+                                let _ = flags
+                                let _ = url
                                 updatedState.updateMedia(MediaId(namespace: Namespaces.Media.CloudWebpage, id: id), media: nil)
                             default:
                                 if let webpage = telegramMediaWebpageFromApiWebpage(apiWebpage, url: nil) {
@@ -1119,7 +1121,7 @@ private func finalStateWithUpdatesAndServerTime(accountPeerId: PeerId, postbox: 
                     if updatedState.peers[peerId] == nil {
                         updatedState.updatePeer(peerId, { peer in
                             if peer == nil {
-                                return TelegramUser(id: peerId, accessHash: nil, firstName: "Telegram Notifications", lastName: nil, username: nil, phone: nil, photo: [], botInfo: BotUserInfo(flags: [], inlinePlaceholder: nil), restrictionInfo: nil, flags: [.isVerified], emojiStatus: nil, usernames: [], storiesHidden: nil)
+                                return TelegramUser(id: peerId, accessHash: nil, firstName: "Telegram Notifications", lastName: nil, username: nil, phone: nil, photo: [], botInfo: BotUserInfo(flags: [], inlinePlaceholder: nil), restrictionInfo: nil, flags: [.isVerified], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil)
                             } else {
                                 return peer
                             }
@@ -1146,9 +1148,15 @@ private func finalStateWithUpdatesAndServerTime(accountPeerId: PeerId, postbox: 
                         let messageText = text
                         var medias: [Media] = []
                         
-                        let (mediaValue, expirationTimer, nonPremium, hasSpoiler) = textMediaAndExpirationTimerFromApiMedia(media, peerId)
+                        let (mediaValue, expirationTimer, nonPremium, hasSpoiler, webpageAttributes) = textMediaAndExpirationTimerFromApiMedia(media, peerId)
                         if let mediaValue = mediaValue {
                             medias.append(mediaValue)
+                            
+                            if mediaValue is TelegramMediaWebpage {
+                                if let webpageAttributes = webpageAttributes {
+                                    attributes.append(WebpagePreviewMessageAttribute(leadingPreview: false, forceLargeMedia: webpageAttributes.forceLargeMedia, isManuallyAdded: webpageAttributes.isManuallyAdded, isSafe: webpageAttributes.isSafe))
+                                }
+                            }
                         }
                         if let expirationTimer = expirationTimer {
                             attributes.append(AutoclearTimeoutMessageAttribute(timeout: expirationTimer, countdownBeginTime: nil))
@@ -1204,7 +1212,9 @@ private func finalStateWithUpdatesAndServerTime(accountPeerId: PeerId, postbox: 
                 }
             case let .updateWebPage(apiWebpage, _, _):
                 switch apiWebpage {
-                    case let .webPageEmpty(id):
+                    case let .webPageEmpty(flags, id, url):
+                        let _ = flags
+                        let _ = url
                         updatedState.updateMedia(MediaId(namespace: Namespaces.Media.CloudWebpage, id: id), media: nil)
                     default:
                         if let webpage = telegramMediaWebpageFromApiWebpage(apiWebpage, url: nil) {
@@ -1523,12 +1533,52 @@ private func finalStateWithUpdatesAndServerTime(accountPeerId: PeerId, postbox: 
                 switch draft {
                     case .draftMessageEmpty:
                         inputState = nil
-                    case let .draftMessage(_, replyToMsgId, message, entities, date):
-                        var replyToMessageId: MessageId?
-                        if let replyToMsgId = replyToMsgId {
-                            replyToMessageId = MessageId(peerId: peer.peerId, namespace: Namespaces.Message.Cloud, id: replyToMsgId)
+                    case let .draftMessage(_, replyToMsgHeader, message, entities, media, date):
+                        let _ = media
+                        var replySubject: EngineMessageReplySubject?
+                        if let replyToMsgHeader = replyToMsgHeader {
+                            switch replyToMsgHeader {
+                            case let .inputReplyToMessage(_, replyToMsgId, topMsgId, replyToPeerId, quoteText, quoteEntities):
+                                let _ = topMsgId
+                                
+                                var quote: EngineMessageReplyQuote?
+                                if let quoteText = quoteText {
+                                    quote = EngineMessageReplyQuote(
+                                        text: quoteText,
+                                        entities: messageTextEntitiesFromApiEntities(quoteEntities ?? []),
+                                        media: nil
+                                    )
+                                }
+                                
+                                var parsedReplyToPeerId: PeerId?
+                                switch replyToPeerId {
+                                case let .inputPeerChannel(channelId, _):
+                                    parsedReplyToPeerId = PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelId))
+                                case let .inputPeerChannelFromMessage(_, _, channelId):
+                                    parsedReplyToPeerId = PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelId))
+                                case let .inputPeerChat(chatId):
+                                    parsedReplyToPeerId = PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value(chatId))
+                                case .inputPeerEmpty:
+                                    break
+                                case .inputPeerSelf:
+                                    parsedReplyToPeerId = accountPeerId
+                                case let .inputPeerUser(userId, _):
+                                    parsedReplyToPeerId = PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId))
+                                case let .inputPeerUserFromMessage(_, _, userId):
+                                    parsedReplyToPeerId = PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId))
+                                case .none:
+                                    break
+                                }
+                                
+                                replySubject = EngineMessageReplySubject(
+                                    messageId: MessageId(peerId: parsedReplyToPeerId ?? peer.peerId, namespace: Namespaces.Message.Cloud, id: replyToMsgId),
+                                    quote: quote
+                                )
+                            case .inputReplyToStory:
+                                break
+                            }
                         }
-                        inputState = SynchronizeableChatInputState(replyToMessageId: replyToMessageId, text: message, entities: messageTextEntitiesFromApiEntities(entities ?? []), timestamp: date, textSelection: nil)
+                        inputState = SynchronizeableChatInputState(replySubject: replySubject, text: message, entities: messageTextEntitiesFromApiEntities(entities ?? []), timestamp: date, textSelection: nil)
                 }
                 var threadId: Int64?
                 if let topMsgId = topMsgId {
@@ -1757,7 +1807,7 @@ private func finalStateWithUpdatesAndServerTime(accountPeerId: PeerId, postbox: 
         |> mapToSignal { finalState in
             return resolveAssociatedMessages(postbox: postbox, network: network, state: finalState)
             |> mapToSignal { resultingState -> Signal<AccountFinalState, NoError> in
-                return resolveAssociatedStories(postbox: postbox, network: network, accountPeerId: accountPeerId, state: finalState)
+                return resolveAssociatedStories(postbox: postbox, network: network, accountPeerId: accountPeerId, state: resultingState)
                 |> mapToSignal { resultingState -> Signal<AccountFinalState, NoError> in
                     return resolveMissingPeerChatInfos(network: network, state: resultingState)
                     |> map { resultingState, resolveError -> AccountFinalState in
@@ -2938,7 +2988,9 @@ private func pollChannel(accountPeerId: PeerId, postbox: Postbox, network: Netwo
                         updatedState.addUpdateMessageImpressionCount(id: MessageId(peerId: peer.id, namespace: Namespaces.Message.Cloud, id: id), count: views)
                     case let .updateChannelWebPage(_, apiWebpage, _, _):
                         switch apiWebpage {
-                        case let .webPageEmpty(id):
+                        case let .webPageEmpty(flags, id, url):
+                            let _ = flags
+                            let _ = url
                             updatedState.updateMedia(MediaId(namespace: Namespaces.Media.CloudWebpage, id: id), media: nil)
                         default:
                             if let webpage = telegramMediaWebpageFromApiWebpage(apiWebpage, url: nil) {
@@ -4464,7 +4516,7 @@ func replayFinalState(
                             }
                             updatedExtendedMedia = .preview(dimensions: dimensions, immediateThumbnailData: immediateThumbnailData, videoDuration: videoDuration)
                         case let .messageExtendedMedia(apiMedia):
-                            let (media, _, _, _) = textMediaAndExpirationTimerFromApiMedia(apiMedia, currentMessage.id.peerId)
+                            let (media, _, _, _, _) = textMediaAndExpirationTimerFromApiMedia(apiMedia, currentMessage.id.peerId)
                             if let media = media {
                                 updatedExtendedMedia = .full(media: media)
                             } else {

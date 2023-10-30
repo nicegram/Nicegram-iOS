@@ -26,7 +26,7 @@ public class LottieViewImpl: UIView {
     }
 }
 
-extension LottieViewImpl: LottieView {
+extension LottieViewImpl: LottieViewProtocol {
     public func play(completion: @escaping () -> Void) {
         animationView.play { _ in
             completion()

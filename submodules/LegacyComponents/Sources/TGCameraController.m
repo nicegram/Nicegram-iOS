@@ -1536,7 +1536,7 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
         }];
         
         bool hasCamera = !self.inhibitMultipleCapture && (((_intent == TGCameraControllerGenericIntent || _intent == TGCameraControllerGenericPhotoOnlyIntent || _intent == TGCameraControllerGenericVideoOnlyIntent) && !_shortcut) || (_intent == TGCameraControllerPassportMultipleIntent));
-        TGMediaPickerGalleryModel *model = [[TGMediaPickerGalleryModel alloc] initWithContext:windowContext items:galleryItems focusItem:focusItem selectionContext:_items.count > 1 ? selectionContext : nil editingContext:editingContext hasCaptions:self.allowCaptions allowCaptionEntities:self.allowCaptionEntities hasTimer:self.hasTimer onlyCrop:_intent == TGCameraControllerPassportIntent || _intent == TGCameraControllerPassportIdIntent || _intent == TGCameraControllerPassportMultipleIntent inhibitDocumentCaptions:self.inhibitDocumentCaptions hasSelectionPanel:true hasCamera:hasCamera recipientName:self.recipientName];
+        TGMediaPickerGalleryModel *model = [[TGMediaPickerGalleryModel alloc] initWithContext:windowContext items:galleryItems focusItem:focusItem selectionContext:_items.count > 1 ? selectionContext : nil editingContext:editingContext hasCaptions:self.allowCaptions allowCaptionEntities:self.allowCaptionEntities hasTimer:self.hasTimer onlyCrop:_intent == TGCameraControllerPassportIntent || _intent == TGCameraControllerPassportIdIntent || _intent == TGCameraControllerPassportMultipleIntent inhibitDocumentCaptions:self.inhibitDocumentCaptions hasSelectionPanel:true hasCamera:hasCamera recipientName:self.recipientName isScheduledMessages:false];
         model.inhibitMute = self.inhibitMute;
         model.controller = galleryController;
         model.stickersContext = self.stickersContext;
@@ -2407,13 +2407,23 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
     
     self.view.hidden = true;
     
+    __weak TGCameraController *weakSelf = self;
+    __weak TGOverlayController *weakResultController = resultController;
+    
     [resultController.view.layer animatePositionFrom:resultController.view.layer.position to:CGPointMake(resultController.view.layer.position.x, resultController.view.layer.position.y + resultController.view.bounds.size.height) duration:0.3 timingFunction:kCAMediaTimingFunctionSpring removeOnCompletion:false completion:^(__unused bool finished) {
-        if (resultController.customDismissSelf) {
-            resultController.customDismissSelf();
-        } else {
-            [resultController dismiss];
+        TGCameraController *strongSelf = weakSelf;
+        TGOverlayController *strongResultController = weakResultController;
+        
+        if (strongResultController) {
+            if (strongResultController.customDismissSelf) {
+                strongResultController.customDismissSelf();
+            } else {
+                [strongResultController dismiss];
+            }
         }
-        [self dismiss];
+        if (strongSelf) {
+            [strongSelf dismiss];
+        }
     }];
 }
 

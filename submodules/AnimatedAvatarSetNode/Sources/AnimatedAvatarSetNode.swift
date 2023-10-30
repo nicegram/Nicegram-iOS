@@ -100,7 +100,7 @@ private final class ContentNode: ASDisplayNode {
                 self.updateImage(image: image, size: size, spacing: spacing)
 
                 let disposable = (signal
-                |> deliverOnMainQueue).start(next: { [weak self] imageVersions in
+                |> deliverOnMainQueue).startStrict(next: { [weak self] imageVersions in
                     guard let strongSelf = self else {
                         return
                     }
@@ -109,11 +109,11 @@ private final class ContentNode: ASDisplayNode {
                         strongSelf.updateImage(image: image, size: size, spacing: spacing)
                     }
                 })
-                self.disposable = disposable.strict()
+                self.disposable = disposable
             } else {
                 let image = generateImage(size, rotatedContext: { size, context in
                     context.clear(CGRect(origin: CGPoint(), size: size))
-                    drawPeerAvatarLetters(context: context, size: size, font: avatarFont, letters: peer.displayLetters, peerId: peer.id)
+                    drawPeerAvatarLetters(context: context, size: size, font: avatarFont, letters: peer.displayLetters, peerId: peer.id, nameColor: peer.nameColor)
                 })!
                 self.updateImage(image: image, size: size, spacing: spacing)
             }
@@ -333,7 +333,7 @@ public final class AnimatedAvatarSetView: UIView {
                     self.updateImage(image: image, size: size, spacing: spacing)
 
                     let disposable = (signal
-                    |> deliverOnMainQueue).start(next: { [weak self] imageVersions in
+                    |> deliverOnMainQueue).startStrict(next: { [weak self] imageVersions in
                         guard let strongSelf = self else {
                             return
                         }
@@ -342,11 +342,11 @@ public final class AnimatedAvatarSetView: UIView {
                             strongSelf.updateImage(image: image, size: size, spacing: spacing)
                         }
                     })
-                    self.disposable = disposable.strict()
+                    self.disposable = disposable
                 } else {
                     let image = generateImage(size, rotatedContext: { size, context in
                         context.clear(CGRect(origin: CGPoint(), size: size))
-                        drawPeerAvatarLetters(context: context, size: size, font: avatarFont, letters: peer.displayLetters, peerId: peer.id)
+                        drawPeerAvatarLetters(context: context, size: size, font: avatarFont, letters: peer.displayLetters, peerId: peer.id, nameColor: peer.nameColor)
                     })!
                     self.updateImage(image: image, size: size, spacing: spacing)
                 }

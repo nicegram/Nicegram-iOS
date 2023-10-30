@@ -17,6 +17,11 @@ private func rtfStringWithAppliedEntities(_ text: String, entities: [MessageText
         }
     })
     test.removeAttribute(ChatTextInputAttributes.customEmoji, range: NSRange(location: 0, length: test.length))
+    
+    test.enumerateAttribute(ChatTextInputAttributes.quote, in: NSRange(location: 0, length: sourceString.length), using: { value, range, _ in
+        if value != nil {
+        }
+    })
 
     if let data = try? test.data(from: NSRange(location: 0, length: test.length), documentAttributes: [NSAttributedString.DocumentAttributeKey.documentType: NSAttributedString.DocumentType.rtf]) {
         if var rtf = String(data: data, encoding: .windowsCP1252) {
@@ -31,6 +36,18 @@ private func rtfStringWithAppliedEntities(_ text: String, entities: [MessageText
     } else {
         return text
     }
+}
+
+struct AppSpecificPasteboardString: Codable {
+    var text: String
+    var entities: [MessageTextEntity]
+}
+
+private func appSpecificStringWithAppliedEntities(_ text: String, entities: [MessageTextEntity]) -> Data {
+    guard let data = try? JSONEncoder().encode(AppSpecificPasteboardString(text: text, entities: entities)) else {
+        return Data()
+    }
+    return data
 }
 
 private func chatInputStateString(attributedString: NSAttributedString) -> NSAttributedString? {
@@ -64,6 +81,9 @@ private func chatInputStateString(attributedString: NSAttributedString) -> NSAtt
         if let value = attributes[ChatTextInputAttributes.customEmoji] as? ChatTextInputTextCustomEmojiAttribute {
             string.addAttribute(ChatTextInputAttributes.customEmoji, value: value, range: range)
         }
+        if let value = attributes[ChatTextInputAttributes.quote] as? ChatTextInputTextQuoteAttribute {
+            string.addAttribute(ChatTextInputAttributes.quote, value: value, range: range)
+        }
     })
     return string
 }
@@ -92,12 +112,20 @@ public func chatInputStateStringFromRTF(_ data: Data, type: NSAttributedString.D
     return nil
 }
 
+public func chatInputStateStringFromAppSpecificString(data: Data) -> NSAttributedString? {
+    guard let string = try? JSONDecoder().decode(AppSpecificPasteboardString.self, from: data) else {
+        return nil
+    }
+    return chatInputStateStringWithAppliedEntities(string.text, entities: string.entities)
+}
+
 public func storeMessageTextInPasteboard(_ text: String, entities: [MessageTextEntity]?) {
     var items: [String: Any] = [:]
     items[kUTTypeUTF8PlainText as String] = text
     
     if let entities = entities {
         items[kUTTypeRTF as String] = rtfStringWithAppliedEntities(text, entities: entities)
+        items["private.telegramtext"] = appSpecificStringWithAppliedEntities(text, entities: entities)
     }
     UIPasteboard.general.items = [items]
 }

@@ -9,10 +9,8 @@
 @interface PGCameraCaptureSession : AVCaptureSession
 
 @property (nonatomic, readonly) AVCaptureDevice *videoDevice;
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-@property (nonatomic, readonly) AVCaptureStillImageOutput *imageOutput;
-#pragma clang diagnostic pop
+
+@property (nonatomic, readonly) AVCapturePhotoOutput *imageOutput;
 @property (nonatomic, readonly) AVCaptureVideoDataOutput *videoOutput;
 @property (nonatomic, readonly) AVCaptureAudioDataOutput *audioOutput;
 @property (nonatomic, readonly) AVCaptureMetadataOutput *metadataOutput;
@@ -22,6 +20,7 @@
 @property (nonatomic, assign) bool alwaysSetFlash;
 @property (nonatomic, assign) PGCameraMode currentMode;
 @property (nonatomic, assign) PGCameraFlashMode currentFlashMode;
+@property (nonatomic, readonly) AVCaptureFlashMode currentDeviceFlashMode;
 
 @property (nonatomic, assign) PGCameraPosition currentCameraPosition;
 @property (nonatomic, readonly) PGCameraPosition preferredCameraPosition;

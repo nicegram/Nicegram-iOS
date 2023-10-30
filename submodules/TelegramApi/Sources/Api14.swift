@@ -321,20 +321,28 @@ public extension Api {
     }
 }
 public extension Api {
-    enum MessageReplyHeader: TypeConstructorDescription {
-        case messageReplyHeader(flags: Int32, replyToMsgId: Int32, replyToPeerId: Api.Peer?, replyToTopId: Int32?)
+    indirect enum MessageReplyHeader: TypeConstructorDescription {
+        case messageReplyHeader(flags: Int32, replyToMsgId: Int32?, replyToPeerId: Api.Peer?, replyFrom: Api.MessageFwdHeader?, replyMedia: Api.MessageMedia?, replyToTopId: Int32?, quoteText: String?, quoteEntities: [Api.MessageEntity]?)
         case messageReplyStoryHeader(userId: Int64, storyId: Int32)
     
     public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
     switch self {
-                case .messageReplyHeader(let flags, let replyToMsgId, let replyToPeerId, let replyToTopId):
+                case .messageReplyHeader(let flags, let replyToMsgId, let replyToPeerId, let replyFrom, let replyMedia, let replyToTopId, let quoteText, let quoteEntities):
                     if boxed {
-                        buffer.appendInt32(-1495959709)
+                        buffer.appendInt32(1860946621)
                     }
                     serializeInt32(flags, buffer: buffer, boxed: false)
-                    serializeInt32(replyToMsgId, buffer: buffer, boxed: false)
+                    if Int(flags) & Int(1 << 4) != 0 {serializeInt32(replyToMsgId!, buffer: buffer, boxed: false)}
                     if Int(flags) & Int(1 << 0) != 0 {replyToPeerId!.serialize(buffer, true)}
+                    if Int(flags) & Int(1 << 5) != 0 {replyFrom!.serialize(buffer, true)}
+                    if Int(flags) & Int(1 << 8) != 0 {replyMedia!.serialize(buffer, true)}
                     if Int(flags) & Int(1 << 1) != 0 {serializeInt32(replyToTopId!, buffer: buffer, boxed: false)}
+                    if Int(flags) & Int(1 << 6) != 0 {serializeString(quoteText!, buffer: buffer, boxed: false)}
+                    if Int(flags) & Int(1 << 7) != 0 {buffer.appendInt32(481674261)
+                    buffer.appendInt32(Int32(quoteEntities!.count))
+                    for item in quoteEntities! {
+                        item.serialize(buffer, true)
+                    }}
                     break
                 case .messageReplyStoryHeader(let userId, let storyId):
                     if boxed {
@@ -348,8 +356,8 @@ public extension Api {
     
     public func descriptionFields() -> (String, [(String, Any)]) {
         switch self {
-                case .messageReplyHeader(let flags, let replyToMsgId, let replyToPeerId, let replyToTopId):
-                return ("messageReplyHeader", [("flags", flags as Any), ("replyToMsgId", replyToMsgId as Any), ("replyToPeerId", replyToPeerId as Any), ("replyToTopId", replyToTopId as Any)])
+                case .messageReplyHeader(let flags, let replyToMsgId, let replyToPeerId, let replyFrom, let replyMedia, let replyToTopId, let quoteText, let quoteEntities):
+                return ("messageReplyHeader", [("flags", flags as Any), ("replyToMsgId", replyToMsgId as Any), ("replyToPeerId", replyToPeerId as Any), ("replyFrom", replyFrom as Any), ("replyMedia", replyMedia as Any), ("replyToTopId", replyToTopId as Any), ("quoteText", quoteText as Any), ("quoteEntities", quoteEntities as Any)])
                 case .messageReplyStoryHeader(let userId, let storyId):
                 return ("messageReplyStoryHeader", [("userId", userId as Any), ("storyId", storyId as Any)])
     }
@@ -359,19 +367,37 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Int32?
-            _2 = reader.readInt32()
+            if Int(_1!) & Int(1 << 4) != 0 {_2 = reader.readInt32() }
             var _3: Api.Peer?
             if Int(_1!) & Int(1 << 0) != 0 {if let signature = reader.readInt32() {
                 _3 = Api.parse(reader, signature: signature) as? Api.Peer
             } }
-            var _4: Int32?
-            if Int(_1!) & Int(1 << 1) != 0 {_4 = reader.readInt32() }
+            var _4: Api.MessageFwdHeader?
+            if Int(_1!) & Int(1 << 5) != 0 {if let signature = reader.readInt32() {
+                _4 = Api.parse(reader, signature: signature) as? Api.MessageFwdHeader
+            } }
+            var _5: Api.MessageMedia?
+            if Int(_1!) & Int(1 << 8) != 0 {if let signature = reader.readInt32() {
+                _5 = Api.parse(reader, signature: signature) as? Api.MessageMedia
+            } }
+            var _6: Int32?
+            if Int(_1!) & Int(1 << 1) != 0 {_6 = reader.readInt32() }
+            var _7: String?
+            if Int(_1!) & Int(1 << 6) != 0 {_7 = parseString(reader) }
+            var _8: [Api.MessageEntity]?
+            if Int(_1!) & Int(1 << 7) != 0 {if let _ = reader.readInt32() {
+                _8 = Api.parseVector(reader, elementSignature: 0, elementType: Api.MessageEntity.self)
+            } }
             let _c1 = _1 != nil
-            let _c2 = _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 4) == 0) || _2 != nil
             let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
-            let _c4 = (Int(_1!) & Int(1 << 1) == 0) || _4 != nil
-            if _c1 && _c2 && _c3 && _c4 {
-                return Api.MessageReplyHeader.messageReplyHeader(flags: _1!, replyToMsgId: _2!, replyToPeerId: _3, replyToTopId: _4)
+            let _c4 = (Int(_1!) & Int(1 << 5) == 0) || _4 != nil
+            let _c5 = (Int(_1!) & Int(1 << 8) == 0) || _5 != nil
+            let _c6 = (Int(_1!) & Int(1 << 1) == 0) || _6 != nil
+            let _c7 = (Int(_1!) & Int(1 << 6) == 0) || _7 != nil
+            let _c8 = (Int(_1!) & Int(1 << 7) == 0) || _8 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 {
+                return Api.MessageReplyHeader.messageReplyHeader(flags: _1!, replyToMsgId: _2, replyToPeerId: _3, replyFrom: _4, replyMedia: _5, replyToTopId: _6, quoteText: _7, quoteEntities: _8)
             }
             else {
                 return nil
@@ -668,6 +694,64 @@ public extension Api {
         }
         public static func parse_inputMessagesFilterVoice(_ reader: BufferReader) -> MessagesFilter? {
             return Api.MessagesFilter.inputMessagesFilterVoice
+        }
+    
+    }
+}
+public extension Api {
+    enum MyBoost: TypeConstructorDescription {
+        case myBoost(flags: Int32, slot: Int32, peer: Api.Peer?, date: Int32, expires: Int32, cooldownUntilDate: Int32?)
+    
+    public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
+    switch self {
+                case .myBoost(let flags, let slot, let peer, let date, let expires, let cooldownUntilDate):
+                    if boxed {
+                        buffer.appendInt32(-1001897636)
+                    }
+                    serializeInt32(flags, buffer: buffer, boxed: false)
+                    serializeInt32(slot, buffer: buffer, boxed: false)
+                    if Int(flags) & Int(1 << 0) != 0 {peer!.serialize(buffer, true)}
+                    serializeInt32(date, buffer: buffer, boxed: false)
+                    serializeInt32(expires, buffer: buffer, boxed: false)
+                    if Int(flags) & Int(1 << 1) != 0 {serializeInt32(cooldownUntilDate!, buffer: buffer, boxed: false)}
+                    break
+    }
+    }
+    
+    public func descriptionFields() -> (String, [(String, Any)]) {
+        switch self {
+                case .myBoost(let flags, let slot, let peer, let date, let expires, let cooldownUntilDate):
+                return ("myBoost", [("flags", flags as Any), ("slot", slot as Any), ("peer", peer as Any), ("date", date as Any), ("expires", expires as Any), ("cooldownUntilDate", cooldownUntilDate as Any)])
+    }
+    }
+    
+        public static func parse_myBoost(_ reader: BufferReader) -> MyBoost? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: Int32?
+            _2 = reader.readInt32()
+            var _3: Api.Peer?
+            if Int(_1!) & Int(1 << 0) != 0 {if let signature = reader.readInt32() {
+                _3 = Api.parse(reader, signature: signature) as? Api.Peer
+            } }
+            var _4: Int32?
+            _4 = reader.readInt32()
+            var _5: Int32?
+            _5 = reader.readInt32()
+            var _6: Int32?
+            if Int(_1!) & Int(1 << 1) != 0 {_6 = reader.readInt32() }
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
+            let _c4 = _4 != nil
+            let _c5 = _5 != nil
+            let _c6 = (Int(_1!) & Int(1 << 1) == 0) || _6 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
+                return Api.MyBoost.myBoost(flags: _1!, slot: _2!, peer: _3, date: _4!, expires: _5!, cooldownUntilDate: _6)
+            }
+            else {
+                return nil
+            }
         }
     
     }

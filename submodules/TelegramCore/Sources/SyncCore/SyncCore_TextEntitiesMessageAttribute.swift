@@ -1,3 +1,4 @@
+import Foundation
 import Postbox
 
 public enum MessageTextEntityType: Equatable {
@@ -314,4 +315,62 @@ public class TextEntitiesMessageAttribute: MessageAttribute, Equatable {
     public static func ==(lhs: TextEntitiesMessageAttribute, rhs: TextEntitiesMessageAttribute) -> Bool {
         return lhs.entities == rhs.entities
     }
+}
+
+public func messageTextEntitiesInRange(entities: [MessageTextEntity], range: NSRange, onlyQuoteable: Bool) -> [MessageTextEntity] {
+    let range: Range<Int> = range.lowerBound ..< range.upperBound
+    var result: [MessageTextEntity] = []
+    loop: for entity in entities {
+        if onlyQuoteable {
+            switch entity.type {
+            case .Bold, .Italic, .Strikethrough, .Underline, .Spoiler, .CustomEmoji:
+                break
+            default:
+                continue loop
+            }
+        }
+        if entity.range.overlaps(range) {
+            var mappedRange = entity.range.clamped(to: range)
+            mappedRange = (mappedRange.lowerBound - range.lowerBound) ..< (mappedRange.upperBound - range.lowerBound)
+            result.append(MessageTextEntity(range: mappedRange, type: entity.type))
+        }
+    }
+    return result
+}
+
+public func quoteMaxLength(appConfig: AppConfiguration) -> Int {
+    if let data = appConfig.data, let quoteLengthMax = data["quote_length_max"] as? Double {
+        return Int(quoteLengthMax)
+    }
+    return 1024
+}
+
+public func trimStringWithEntities(string: String, entities: [MessageTextEntity], maxLength: Int) -> (string: String, entities: [MessageTextEntity]) {
+    let nsString = string as NSString
+    var range = 0 ..< nsString.length
+    
+    while range.lowerBound < nsString.length {
+        let c = nsString.character(at: range.lowerBound)
+        if c == 0x0a || c == 0x20 {
+            range = (range.lowerBound + 1) ..< range.upperBound
+        } else {
+            break
+        }
+    }
+    
+    while range.upperBound > range.lowerBound {
+        let c = nsString.character(at: range.upperBound - 1)
+        if c == 0x0a || c == 0x20 {
+            range = range.lowerBound ..< (range.upperBound - 1)
+        } else {
+            break
+        }
+    }
+    
+    while range.upperBound - range.lowerBound > maxLength {
+        range = range.lowerBound ..< (range.upperBound - 1)
+    }
+    
+    let nsRange = NSRange(location: range.lowerBound, length: range.upperBound - range.lowerBound)
+    return (nsString.substring(with: nsRange), messageTextEntitiesInRange(entities: entities, range: nsRange, onlyQuoteable: false))
 }

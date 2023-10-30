@@ -1292,4 +1292,64 @@ public struct PresentationResourcesChat {
             return generateTintedImage(image: UIImage(bundleImageName: "Stories/InputLikeOn"), color: UIColor(rgb: 0xFF3B30))
         })
     }
+    
+    public static func chatReplyBackgroundTemplateImage(_ theme: PresentationTheme, dashedOutgoing: Bool) -> UIImage? {
+        let key: PresentationResourceKey = dashedOutgoing ? .chatReplyBackgroundTemplateOutgoingDashedImage : .chatReplyBackgroundTemplateIncomingImage
+        return theme.image(key.rawValue, { theme in
+            let radius: CGFloat = 4.0
+            let lineWidth: CGFloat = 3.0
+            
+            return generateImage(CGSize(width: radius * 2.0 + 4.0, height: radius * 2.0 + 8.0), rotatedContext: { size, context in
+                context.clear(CGRect(origin: CGPoint(), size: size))
+                
+                context.addPath(UIBezierPath(roundedRect: CGRect(origin: CGPoint(), size: size), cornerRadius: radius).cgPath)
+                context.clip()
+                
+                context.setFillColor(UIColor.white.withMultipliedAlpha(0.1).cgColor)
+                context.fill(CGRect(origin: CGPoint(), size: size))
+                
+                context.setFillColor(UIColor.white.withAlphaComponent(dashedOutgoing ? 0.2 : 1.0).cgColor)
+                context.fill(CGRect(origin: CGPoint(), size: CGSize(width: lineWidth, height: size.height)))
+            })?.stretchableImage(withLeftCapWidth: Int(radius) + 2, topCapHeight: Int(radius) + 3).withRenderingMode(.alwaysTemplate)
+        })
+    }
+    
+    public static func chatReplyServiceBackgroundTemplateImage(_ theme: PresentationTheme) -> UIImage? {
+        return theme.image(PresentationResourceKey.chatReplyServiceBackgroundTemplateImage.rawValue, { theme in
+            let radius: CGFloat = 3.0
+            
+            return generateImage(CGSize(width: radius * 2.0 + 1.0, height: radius * 2.0), rotatedContext: { size, context in
+                context.clear(CGRect(origin: CGPoint(), size: size))
+                
+                context.addPath(UIBezierPath(roundedRect: CGRect(origin: CGPoint(), size: CGSize(width: radius, height: size.height)), cornerRadius: radius).cgPath)
+                context.fillPath()
+            })?.stretchableImage(withLeftCapWidth: Int(radius), topCapHeight: Int(radius)).withRenderingMode(.alwaysTemplate)
+        })
+    }
+    
+    public static func chatBubbleCloseIcon(_ theme: PresentationTheme) -> UIImage? {
+        return theme.image(PresentationResourceKey.chatBubbleCloseIcon.rawValue, { theme in
+            return generateImage(CGSize(width: 12.0, height: 12.0), rotatedContext: { size, context in
+                context.clear(CGRect(origin: .zero, size: size))
+                
+                let color = theme.chat.message.incoming.secondaryTextColor
+                context.setAlpha(color.alpha)
+                context.setBlendMode(.copy)
+                
+                context.setStrokeColor(theme.chat.message.incoming.secondaryTextColor.withAlphaComponent(1.0).cgColor)
+                context.setLineWidth(1.0 + UIScreenPixel)
+                context.setLineCap(.round)
+                
+                let bounds = CGRect(origin: .zero, size: size).insetBy(dx: 1.0 + UIScreenPixel, dy: 1.0 + UIScreenPixel)
+                
+                context.move(to: CGPoint(x: bounds.minX, y: bounds.minY))
+                context.addLine(to: CGPoint(x: bounds.maxX, y: bounds.maxY))
+                context.strokePath()
+                
+                context.move(to: CGPoint(x: bounds.maxX, y: bounds.minY))
+                context.addLine(to: CGPoint(x: bounds.minX, y: bounds.maxY))
+                context.strokePath()
+            })
+        })
+    }
 }

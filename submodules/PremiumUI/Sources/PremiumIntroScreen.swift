@@ -28,6 +28,7 @@ import UniversalMediaPlayer
 import CheckNode
 import AnimationCache
 import MultiAnimationRenderer
+import TelegramNotices
 
 public enum PremiumSource: Equatable {
     public static func == (lhs: PremiumSource, rhs: PremiumSource) -> Bool {
@@ -1432,12 +1433,15 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
         var selectedProductId: String?
         var validPurchases: [InAppPurchaseManager.ReceiptPurchase] = []
         
+        var newPerks: [String] = []
+        
         var isPremium: Bool?
         
         private var disposable: Disposable?
         private(set) var configuration = PremiumIntroConfiguration.defaultValue
     
         private var stickersDisposable: Disposable?
+        private var newPerksDisposable: Disposable?
         private var preloadDisposableSet =  DisposableSet()
         
         var price: String? {
@@ -1515,12 +1519,24 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                     }
                 }
             })
+            
+            
+            self.newPerksDisposable = (ApplicationSpecificNotice.dismissedPremiumAppIconsBadge(accountManager: context.sharedContext.accountManager)
+            |> deliverOnMainQueue).startStrict(next: { [weak self] dismissedPremiumAppIconsBadge in
+                guard let self else {
+                    return
+                }
+                let newPerks: [String] = []
+                self.newPerks = newPerks
+                self.updated()
+            })
         }
         
         deinit {
             self.disposable?.dispose()
             self.preloadDisposableSet.dispose()
             self.stickersDisposable?.dispose()
+            self.newPerksDisposable?.dispose()
         }
     }
     
@@ -1824,7 +1840,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                                     subtitleColor: subtitleColor,
                                     arrowColor: arrowColor,
                                     accentColor: accentColor,
-                                    badge: perk.identifier == "stories" ? strings.Premium_New : nil
+                                    badge: state.newPerks.contains(perk.identifier) ? strings.Premium_New : nil
                                 )
                             )
                         ),
@@ -1854,6 +1870,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                                 demoSubject = .animatedUserpics
                             case .appIcons:
                                 demoSubject = .appIcons
+//                                let _ = ApplicationSpecificNotice.setDismissedPremiumAppIconsBadge(accountManager: accountContext.sharedContext.accountManager).startStandalone()
                             case .animatedEmoji:
                                 demoSubject = .animatedEmoji
                             case .emojiStatus:
@@ -2087,6 +2104,7 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
     let context: AccountContext
     let source: PremiumSource
     let forceDark: Bool
+    let forceHasPremium: Bool
     let updateInProgress: (Bool) -> Void
     let present: (ViewController) -> Void
     let push: (ViewController) -> Void
@@ -2096,10 +2114,11 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
     let completion: () -> Void
     
     // MARK: Nicegram (dismiss)
-    init(context: AccountContext, source: PremiumSource, forceDark: Bool, updateInProgress: @escaping (Bool) -> Void, present: @escaping (ViewController) -> Void, push: @escaping (ViewController) -> Void, dismiss: @escaping () -> Void, completion: @escaping () -> Void) {
+    init(context: AccountContext, source: PremiumSource, forceDark: Bool, forceHasPremium: Bool, updateInProgress: @escaping (Bool) -> Void, present: @escaping (ViewController) -> Void, push: @escaping (ViewController) -> Void, dismiss: @escaping () -> Void, completion: @escaping () -> Void) {
         self.context = context
         self.source = source
         self.forceDark = forceDark
+        self.forceHasPremium = forceHasPremium
         self.updateInProgress = updateInProgress
         self.present = present
         self.push = push
@@ -2117,6 +2136,9 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
             return false
         }
         if lhs.forceDark != rhs.forceDark {
+            return false
+        }
+        if lhs.forceHasPremium != rhs.forceHasPremium {
             return false
         }
         return true
@@ -2182,7 +2204,7 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
         }
         
         // MARK: Nicegram (dismiss)
-        init(context: AccountContext, source: PremiumSource, updateInProgress: @escaping (Bool) -> Void, present: @escaping (ViewController) -> Void, dismiss: @escaping () -> Void, completion: @escaping () -> Void) {
+        init(context: AccountContext, source: PremiumSource, forceHasPremium: Bool, updateInProgress: @escaping (Bool) -> Void, present: @escaping (ViewController) -> Void, dismiss: @escaping () -> Void, completion: @escaping () -> Void) {
             self.context = context
             self.updateInProgress = updateInProgress
             self.present = present
@@ -2226,6 +2248,10 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
                 otherPeerName = .single(nil)
             }
             
+            if forceHasPremium {
+                self.isPremium = true
+            }
+            
             self.disposable = combineLatest(
                 queue: Queue.mainQueue(),
                 availableProducts,
@@ -2249,7 +2275,7 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
                     }
                     
                     strongSelf.products = products
-                    strongSelf.isPremium = isPremium
+                    strongSelf.isPremium = forceHasPremium || isPremium
                     strongSelf.otherPeerName = otherPeerName
                     
                     if !hadProducts {
@@ -2330,11 +2356,12 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
             self.updateInProgress(true)
             self.updated(transition: .immediate)
             
-            let _ = (self.context.engine.payments.canPurchasePremium(purpose: isUpgrade ? .upgrade : .subscription)
+            let purpose: AppStoreTransactionPurpose = isUpgrade ? .upgrade : .subscription
+            let _ = (self.context.engine.payments.canPurchasePremium(purpose: purpose)
             |> deliverOnMainQueue).start(next: { [weak self] available in
                 if let strongSelf = self {
                     if available {
-                        strongSelf.paymentDisposable.set((inAppPurchaseManager.buyProduct(premiumProduct.storeProduct, isUpgrade: isUpgrade)
+                        strongSelf.paymentDisposable.set((inAppPurchaseManager.buyProduct(premiumProduct.storeProduct, purpose: purpose)
                         |> deliverOnMainQueue).start(next: { [weak self] status in
                             if let strongSelf = self, case .purchased = status {
                                 strongSelf.activationDisposable.set((strongSelf.context.account.postbox.peerView(id: strongSelf.context.account.peerId)
@@ -2429,7 +2456,7 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
     
     func makeState() -> State {
         // MARK: Nicegram (dismiss)
-        return State(context: self.context, source: self.source, updateInProgress: self.updateInProgress, present: self.present, dismiss: self.dismiss, completion: self.completion)
+        return State(context: self.context, source: self.source, forceHasPremium: self.forceHasPremium, updateInProgress: self.updateInProgress, present: self.present, dismiss: self.dismiss, completion: self.completion)
     }
     
     static var body: Body {
@@ -2879,7 +2906,7 @@ public final class PremiumIntroScreen: ViewControllerComponentContainer {
     public weak var containerView: UIView?
     public var animationColor: UIColor?
     
-    public init(context: AccountContext, modal: Bool = true, source: PremiumSource, forceDark: Bool = false) {
+    public init(context: AccountContext, modal: Bool = true, source: PremiumSource, forceDark: Bool = false, forceHasPremium: Bool = false) {
         self.context = context
             
         var updateInProgressImpl: ((Bool) -> Void)?
@@ -2893,6 +2920,7 @@ public final class PremiumIntroScreen: ViewControllerComponentContainer {
             context: context,
             source: source,
             forceDark: forceDark,
+            forceHasPremium: forceHasPremium,
             updateInProgress: { inProgress in
                 updateInProgressImpl?(inProgress)
             },
@@ -2945,8 +2973,8 @@ public final class PremiumIntroScreen: ViewControllerComponentContainer {
         //
         
         completionImpl = { [weak self] in
-            if let strongSelf = self {
-                strongSelf.view.addSubview(ConfettiView(frame: strongSelf.view.bounds))
+            if let self {
+                self.animateSuccess()
             }
         }
     }
@@ -2958,6 +2986,10 @@ public final class PremiumIntroScreen: ViewControllerComponentContainer {
     @objc private func cancelPressed() {
         self.dismiss()
         self.wasDismissed?()
+    }
+    
+    public func animateSuccess() {
+        self.view.addSubview(ConfettiView(frame: self.view.bounds))
     }
     
     public override func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {

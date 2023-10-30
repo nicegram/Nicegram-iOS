@@ -788,6 +788,7 @@ public final class ChatListContainerNode: ASDisplayNode, UIGestureRecognizerDele
                 }, openArchiveSettings: { [weak self] in
                     self?.openArchiveSettings()
                 }, autoSetReady: !animated, isMainTab: index == 0)
+                self.pendingItemNode?.2.dispose()
                 let disposable = MetaDisposable()
                 self.pendingItemNode = (id, itemNode, disposable)
                 
@@ -804,6 +805,7 @@ public final class ChatListContainerNode: ASDisplayNode, UIGestureRecognizerDele
                         return
                     }
                     
+                    strongSelf.pendingItemNode?.2.dispose()
                     strongSelf.pendingItemNode = nil
                     itemNode.listNode.tempTopInset = strongSelf.tempTopInset
                     

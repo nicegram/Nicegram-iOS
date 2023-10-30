@@ -36,6 +36,7 @@ import LocationUI
 import LegacyMediaPickerUI
 import ReactionSelectionNode
 import VolumeSliderContextItem
+import TelegramStringFormatting
 
 enum DrawingScreenType {
     case drawing
@@ -1016,7 +1017,9 @@ final class MediaEditorScreenComponent: Component {
                     hasActiveGroupCall: false,
                     importState: nil,
                     threadData: nil,
-                    isGeneralThreadClosed: nil
+                    isGeneralThreadClosed: nil,
+                    replyMessage: nil,
+                    accountPeerColor: nil
                 )
                 
                 let availableInputMediaWidth = previewSize.width
@@ -1959,9 +1962,7 @@ public final class MediaEditorScreen: ViewController, UIDropInteractionDelegate 
                     animationCache: controller.context.animationCache,
                     animationRenderer: controller.context.animationRenderer,
                     isStandalone: false,
-                    isStatusSelection: false,
-                    isReactionSelection: false,
-                    isEmojiSelection: true,
+                    subject: .emoji,
                     hasTrending: true,
                     topReactionItems: [],
                     areUnicodeEmojiEnabled: true,
@@ -3065,16 +3066,7 @@ public final class MediaEditorScreen: ViewController, UIDropInteractionDelegate 
             if !self.didSetupStaticEmojiPack {
                 self.staticEmojiPack.set(self.context.engine.stickers.loadedStickerPack(reference: .name("staticemoji"), forceActualized: false))
             }
-            
-            func flag(countryCode: String) -> String {
-                let base : UInt32 = 127397
-                var flagString = ""
-                for v in countryCode.uppercased().unicodeScalars {
-                    flagString.unicodeScalars.append(UnicodeScalar(base + v.value)!)
-                }
-                return flagString
-            }
-            
+                        
             var location: CLLocationCoordinate2D?
             if let subject = self.subject {
                 if case let .asset(asset) = subject {
@@ -3095,7 +3087,7 @@ public final class MediaEditorScreen: ViewController, UIDropInteractionDelegate 
                 if let self  {
                     let emojiFile: Signal<TelegramMediaFile?, NoError>
                     if let countryCode {
-                        let flagEmoji = flag(countryCode: countryCode)
+                        let flag = flagEmoji(countryCode: countryCode)
                         emojiFile = self.staticEmojiPack.get()
                         |> filter { result in
                             if case .result = result {
@@ -3114,7 +3106,7 @@ public final class MediaEditorScreen: ViewController, UIDropInteractionDelegate 
                                         break
                                     }
                                 }
-                                if let displayText, displayText.hasPrefix(flagEmoji) {
+                                if let displayText, displayText.hasPrefix(flag) {
                                     return true
                                 } else {
                                     return false
@@ -3999,7 +3991,7 @@ public final class MediaEditorScreen: ViewController, UIDropInteractionDelegate 
             adminedChannels: self.adminedChannels.get(),
             blockedPeersContext: self.storiesBlockedPeers
         )
-        let _ = (stateContext.ready |> filter { $0 } |> take(1) |> deliverOnMainQueue).start(next: { [weak self] _ in
+        let _ = (stateContext.ready |> filter { $0 } |> take(1) |> deliverOnMainQueue).startStandalone(next: { [weak self] _ in
             guard let self else {
                 return
             }
@@ -4257,7 +4249,8 @@ public final class MediaEditorScreen: ViewController, UIDropInteractionDelegate 
                 content = .info(
                     title: presentationData.strings.Story_Editor_TooltipReachedReactionLimitTitle,
                     text: presentationData.strings.Story_Editor_TooltipReachedReactionLimitText(value).string,
-                    timeout: nil
+                    timeout: nil,
+                    customUndoText: nil
                 )
             } else {
                 let value = presentationData.strings.Story_Editor_TooltipPremiumReactionLimitValue(premiumLimits.maxStoriesSuggestedReactions)

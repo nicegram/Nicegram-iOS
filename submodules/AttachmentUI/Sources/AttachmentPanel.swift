@@ -19,6 +19,8 @@ import MediaResources
 import MultilineTextComponent
 import ShimmerEffect
 import TextFormat
+import LegacyMessageInputPanel
+import LegacyMessageInputPanelInputView
 
 private let buttonSize = CGSize(width: 88.0, height: 49.0)
 private let smallButtonWidth: CGFloat = 69.0
@@ -85,7 +87,7 @@ private final class IconComponent: Component {
                     
                     self.disposable = (svgIconImageFile(account: component.account, fileReference: fileReference)
                     |> runOn(Queue.concurrentDefaultQueue())
-                    |> deliverOnMainQueue).start(next: { [weak self] transform in
+                    |> deliverOnMainQueue).startStrict(next: { [weak self] transform in
                         let arguments = TransformImageArguments(corners: ImageCorners(), imageSize: availableSize, boundingSize: availableSize, intrinsicInsets: UIEdgeInsets())
                         let drawingContext = transform(arguments)
                         let image = drawingContext?.generateImage()?.withRenderingMode(.alwaysTemplate)
@@ -372,54 +374,6 @@ private final class LoadingProgressNode: ASDisplayNode {
         super.layout()
         
         self.foregroundNode.cornerRadius = self.frame.height / 2.0
-    }
-}
-
-public struct AttachmentMainButtonState {
-    public enum Background {
-        case color(UIColor)
-        case premium
-    }
-    
-    public enum Progress: Equatable {
-        case none
-        case side
-        case center
-    }
-    
-    public enum Font: Equatable {
-        case regular
-        case bold
-    }
-    
-    public let text: String?
-    public let font: Font
-    public let background: Background
-    public let textColor: UIColor
-    public let isVisible: Bool
-    public let progress: Progress
-    public let isEnabled: Bool
-    
-    public init(
-        text: String?,
-        font: Font,
-        background: Background,
-        textColor: UIColor,
-        isVisible: Bool,
-        progress: Progress,
-        isEnabled: Bool
-    ) {
-        self.text = text
-        self.font = font
-        self.background = background
-        self.textColor = textColor
-        self.isVisible = isVisible
-        self.progress = progress
-        self.isEnabled = isEnabled
-    }
-    
-    static var initial: AttachmentMainButtonState {
-        return AttachmentMainButtonState(text: nil, font: .bold, background: .color(.clear), textColor: .clear, isVisible: false, progress: .none, isEnabled: false)
     }
 }
 
@@ -783,7 +737,7 @@ final class AttachmentPanel: ASDisplayNode, UIScrollViewDelegate {
         
         self.makeEntityInputView = makeEntityInputView
                 
-        self.presentationInterfaceState = ChatPresentationInterfaceState(chatWallpaper: .builtin(WallpaperSettings()), theme: self.presentationData.theme, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, nameDisplayOrder: self.presentationData.nameDisplayOrder, limitsConfiguration: self.context.currentLimitsConfiguration.with { $0 }, fontSize: self.presentationData.chatFontSize, bubbleCorners: self.presentationData.chatBubbleCorners, accountPeerId: self.context.account.peerId, mode: .standard(previewing: false), chatLocation: chatLocation ?? .peer(id: context.account.peerId), subject: nil, peerNearbyData: nil, greetingData: nil, pendingUnpinnedAllMessages: false, activeGroupCallInfo: nil, hasActiveGroupCall: false, importState: nil, threadData: nil, isGeneralThreadClosed: nil)
+        self.presentationInterfaceState = ChatPresentationInterfaceState(chatWallpaper: .builtin(WallpaperSettings()), theme: self.presentationData.theme, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, nameDisplayOrder: self.presentationData.nameDisplayOrder, limitsConfiguration: self.context.currentLimitsConfiguration.with { $0 }, fontSize: self.presentationData.chatFontSize, bubbleCorners: self.presentationData.chatBubbleCorners, accountPeerId: self.context.account.peerId, mode: .standard(previewing: false), chatLocation: chatLocation ?? .peer(id: context.account.peerId), subject: nil, peerNearbyData: nil, greetingData: nil, pendingUnpinnedAllMessages: false, activeGroupCallInfo: nil, hasActiveGroupCall: false, importState: nil, threadData: nil, isGeneralThreadClosed: nil, replyMessage: nil, accountPeerColor: nil)
         
         self.containerNode = ASDisplayNode()
         self.containerNode.clipsToBounds = true
@@ -827,6 +781,8 @@ final class AttachmentPanel: ASDisplayNode, UIScrollViewDelegate {
                 strongSelf.updateChatPresentationInterfaceState(animated: true, { $0.updatedInterfaceState({ $0.withUpdatedForwardOptionsState($0.forwardOptionsState) }) })
             }
         }, presentForwardOptions: { _ in
+        }, presentReplyOptions: { _ in
+        }, presentLinkOptions: { _ in
         }, shareSelectedMessages: {
         }, updateTextInputStateAndMode: { [weak self] f in
             if let strongSelf = self {
@@ -968,7 +924,7 @@ final class AttachmentPanel: ASDisplayNode, UIScrollViewDelegate {
             }
             let _ = (strongSelf.context.account.viewTracker.peerView(peerId)
             |> take(1)
-            |> deliverOnMainQueue).start(next: { [weak self] peerView in
+            |> deliverOnMainQueue).startStandalone(next: { [weak self] peerView in
                 guard let strongSelf = self, let peer = peerViewMainPeer(peerView) else {
                     return
                 }
@@ -983,7 +939,7 @@ final class AttachmentPanel: ASDisplayNode, UIScrollViewDelegate {
                     sendWhenOnlineAvailable = false
                 }
                 
-                let controller = ChatSendMessageActionSheetController(context: strongSelf.context, peerId: strongSelf.presentationInterfaceState.chatLocation.peerId, forwardMessageIds: strongSelf.presentationInterfaceState.interfaceState.forwardMessageIds, hasEntityKeyboard: hasEntityKeyboard, gesture: gesture, sourceSendButton: node, textInputNode: textInputNode, attachment: true, canSendWhenOnline: sendWhenOnlineAvailable, completion: {
+                let controller = ChatSendMessageActionSheetController(context: strongSelf.context, peerId: strongSelf.presentationInterfaceState.chatLocation.peerId, forwardMessageIds: strongSelf.presentationInterfaceState.interfaceState.forwardMessageIds, hasEntityKeyboard: hasEntityKeyboard, gesture: gesture, sourceSendButton: node, textInputView: textInputNode.textView, attachment: true, canSendWhenOnline: sendWhenOnlineAvailable, completion: {
                 }, sendMessage: { [weak textInputPanelNode] mode in
                     switch mode {
                     case .generic:
@@ -1032,7 +988,7 @@ final class AttachmentPanel: ASDisplayNode, UIScrollViewDelegate {
         }, statuses: nil)
         
         self.presentationDataDisposable = ((updatedPresentationData?.signal ?? context.sharedContext.presentationData)
-        |> deliverOnMainQueue).start(next: { [weak self] presentationData in
+        |> deliverOnMainQueue).startStrict(next: { [weak self] presentationData in
             if let strongSelf = self {
                 strongSelf.presentationData = presentationData
                 
@@ -1168,7 +1124,7 @@ final class AttachmentPanel: ASDisplayNode, UIScrollViewDelegate {
                                     self.iconDisposables[file.fileId] = accountFullSizeData.start()
                                 }
                             } else {
-                                self.iconDisposables[file.fileId] = freeMediaFileInteractiveFetched(account: self.context.account, userLocation: .other, fileReference: .attachBot(peer: peer, media: file)).start()
+                                self.iconDisposables[file.fileId] = freeMediaFileInteractiveFetched(account: self.context.account, userLocation: .other, fileReference: .attachBot(peer: peer, media: file)).startStrict()
                             }
                         }
                     }

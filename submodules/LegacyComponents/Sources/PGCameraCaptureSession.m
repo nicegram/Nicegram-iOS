@@ -130,8 +130,10 @@ const NSInteger PGCameraFrameRate = 30;
         [self setFrameRate:PGCameraFrameRate forDevice:_videoDevice];
     }
     
-    AVCaptureStillImageOutput *imageOutput = [[AVCaptureStillImageOutput alloc] init];
-    [imageOutput setOutputSettings:@{AVVideoCodecKey : AVVideoCodecJPEG}];
+    AVCapturePhotoOutput *imageOutput = [[AVCapturePhotoOutput alloc] init];
+    if (@available(iOS 13.0, *)) {
+        [imageOutput setMaxPhotoQualityPrioritization:AVCapturePhotoQualityPrioritizationBalanced];
+    }
     if ([self canAddOutput:imageOutput])
     {
 #if !TARGET_IPHONE_SIMULATOR
@@ -700,6 +702,10 @@ const NSInteger PGCameraFrameRate = 30;
 }
 
 #pragma mark - Flash
+
+- (AVCaptureFlashMode)currentDeviceFlashMode {
+    return [PGCameraCaptureSession _deviceFlashModeForCameraFlashMode:self.currentFlashMode];
+}
 
 - (PGCameraFlashMode)currentFlashMode
 {

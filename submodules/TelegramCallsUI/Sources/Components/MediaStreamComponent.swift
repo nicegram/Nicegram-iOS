@@ -270,7 +270,7 @@ public final class MediaStreamComponent: CombinedComponent {
         let moreButtonTag = local.moreButtonTag
         let moreAnimationTag = local.moreAnimationTag
         
-        func makeBody() -> CGSize {
+        let makeBody: () -> CGSize = { [weak local] in
             let canEnforceOrientation = UIDevice.current.model != "iPad"
             var forceFullScreenInLandscape: Bool { canEnforceOrientation && true }
             let environment = context.environment[ViewControllerComponentContainer.Environment.self].value
@@ -289,13 +289,20 @@ public final class MediaStreamComponent: CombinedComponent {
             let state = context.state
             let controller = environment.controller
             
-            context.state.deactivatePictureInPictureIfVisible.connect {
+            context.state.deactivatePictureInPictureIfVisible.connect { [weak state] in
                 guard let controller = controller(), controller.view.window != nil else {
                     return
                 }
                 
+                guard let state else {
+                    return
+                }
                 state.updated(transition: .easeInOut(duration: 3))
-                deactivatePictureInPicture.invoke(Void())
+                
+                guard let local else {
+                    return
+                }
+                local.deactivatePictureInPicture.invoke(Void())
             }
             let isFullscreen: Bool
             let isLandscape = context.availableSize.width > context.availableSize.height
@@ -347,8 +354,7 @@ public final class MediaStreamComponent: CombinedComponent {
                 availableSize: CGSize(width: context.availableSize.width, height: dismissTapAreaHeight),
                 transition: context.transition
             )
-            //            (controller() as? MediaStreamComponentController)?.prefersOnScreenNavigationHidden = isFullscreen
-            //            (controller() as? MediaStreamComponentController)?.window?.invalidatePrefersOnScreenNavigationHidden()
+            
             let video = video.update(
                 component: MediaStreamVideoComponent(
                     call: context.component.call,
@@ -832,6 +838,8 @@ public final class MediaStreamComponent: CombinedComponent {
                             UIColor(red: 0.314, green: 0.161, blue: 0.197, alpha: 1).cgColor
                         ],
                         image: generateImage(CGSize(width: 44.0 * imageRenderScale, height: 44 * imageRenderScale), opaque: false, rotatedContext: { size, context in
+                            context.clear(CGRect(origin: CGPoint(), size: size))
+                            
                             context.translateBy(x: size.width / 2, y: size.height / 2)
                             context.scaleBy(x: 0.4, y: 0.4)
                             context.translateBy(x: -size.width / 2, y: -size.height / 2)
@@ -1989,7 +1997,7 @@ final class RoundGradientButtonComponent: Component {
     final class View: UIView {
         let gradientLayer = CAGradientLayer()
         let iconView = UIImageView()
-        let titleLabel = UILabel()
+        let titleLabel = ComponentView<Empty>()
         
         override init(frame: CGRect = .zero) {
             super.init(frame: frame)
@@ -2001,27 +2009,43 @@ final class RoundGradientButtonComponent: Component {
             self.layer.addSublayer(gradientLayer)
             self.addSubview(iconView)
             self.clipsToBounds = false
-            
-            self.addSubview(titleLabel)
-            titleLabel.textAlignment = .center
-            iconView.contentMode = .scaleAspectFit
-            titleLabel.font = .systemFont(ofSize: 13)
-            titleLabel.textColor = .white
         }
         
         required init?(coder: NSCoder) {
             fatalError("init(coder:) has not been implemented")
         }
         
-        override func layoutSubviews() {
-            super.layoutSubviews()
-            titleLabel.invalidateIntrinsicContentSize()
-            let heightForIcon = bounds.height - max(round(titleLabel.intrinsicContentSize.height), 12) - 8.0
-            iconView.frame = .init(x: bounds.midX - heightForIcon / 2, y: 0, width: heightForIcon, height: heightForIcon)
-            gradientLayer.masksToBounds = true
-            gradientLayer.cornerRadius = min(iconView.frame.width, iconView.frame.height) / 2
-            gradientLayer.frame = iconView.frame
-            titleLabel.frame = .init(x: 0, y: bounds.height - titleLabel.intrinsicContentSize.height, width: bounds.width, height: titleLabel.intrinsicContentSize.height)
+        func update(component: RoundGradientButtonComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: Transition) -> CGSize {
+            self.iconView.image = component.image ?? component.icon.flatMap { UIImage(bundleImageName: $0) }
+            let gradientColors: [CGColor]
+            if component.gradientColors.count == 1 {
+                gradientColors = [component.gradientColors[0], component.gradientColors[0]]
+            } else {
+                gradientColors = component.gradientColors
+            }
+            self.gradientLayer.colors = gradientColors
+            
+            let titleSize = self.titleLabel.update(
+                transition: .immediate,
+                component: AnyComponent(Text(text: component.title, font: Font.regular(13.0), color: .white)),
+                environment: {},
+                containerSize: CGSize(width: 100.0, height: 100.0)
+            )
+            
+            let heightForIcon = availableSize.height - max(round(titleSize.height), 12) - 8.0
+            self.iconView.frame = .init(x: availableSize.width * 0.5 - heightForIcon / 2, y: 0, width: heightForIcon, height: heightForIcon)
+            self.gradientLayer.masksToBounds = true
+            self.gradientLayer.cornerRadius = min(self.iconView.frame.width, self.iconView.frame.height) / 2
+            self.gradientLayer.frame = self.iconView.frame
+            
+            if let titleView = self.titleLabel.view {
+                if titleView.superview == nil {
+                    self.addSubview(titleView)
+                }
+                titleView.frame = CGRect(origin: CGPoint(x: floor((availableSize.width - titleSize.width) * 0.5), y: availableSize.height - titleSize.height), size: titleSize)
+            }
+                                           
+            return availableSize
         }
     }
     
@@ -2030,17 +2054,7 @@ final class RoundGradientButtonComponent: Component {
     }
     
     func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: Transition) -> CGSize {
-        view.iconView.image = image ?? icon.flatMap { UIImage(bundleImageName: $0) }
-        let gradientColors: [CGColor]
-        if self.gradientColors.count == 1 {
-            gradientColors = [self.gradientColors[0], self.gradientColors[0]]
-        } else {
-            gradientColors = self.gradientColors
-        }
-        view.gradientLayer.colors = gradientColors
-        view.titleLabel.text = title
-        view.setNeedsLayout()
-        return availableSize
+        return view.update(component: self, availableSize: availableSize, state: state, environment: environment, transition: transition)
     }
 }
 

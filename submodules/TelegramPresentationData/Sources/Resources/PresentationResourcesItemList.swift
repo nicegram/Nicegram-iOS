@@ -63,6 +63,12 @@ public struct PresentationResourcesItemList {
         })
     }
     
+    public static func roundPlusIconImage(_ theme: PresentationTheme) -> UIImage? {
+        return theme.image(PresentationResourceKey.itemListRoundPlusIcon.rawValue, { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat List/AddRoundIcon"), color: theme.list.itemAccentColor)
+        })
+    }
+    
     public static func deleteIconImage(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.itemListDeleteIcon.rawValue, { theme in
             return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionTrash"), color: theme.list.itemDestructiveColor)
@@ -267,6 +273,12 @@ public struct PresentationResourcesItemList {
     public static func cloudIcon(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.itemListCloudIcon.rawValue, { theme in
             return generateTintedImage(image: UIImage(bundleImageName: "Chat/Attach Menu/Cloud"), color: theme.list.itemAccentColor)
+        })
+    }
+    
+    public static func addBoostsIcon(_ theme: PresentationTheme) -> UIImage? {
+        return theme.image(PresentationResourceKey.itemListAddBoostsIcon.rawValue, { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Premium/AddBoosts"), color: theme.list.itemAccentColor)
         })
     }
     

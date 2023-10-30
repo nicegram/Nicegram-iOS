@@ -38,6 +38,17 @@ import ChatControllerInteraction
 import ChatAvatarNavigationNode
 import AccessoryPanelNode
 import ForwardAccessoryPanelNode
+import ChatOverscrollControl
+import ChatInputPanelNode
+import ChatInputContextPanelNode
+import TextSelectionNode
+import ReplyAccessoryPanelNode
+import ChatMessageItemView
+import ChatMessageSelectionNode
+import ManagedDiceAnimationNode
+import ChatMessageTransitionNode
+import ChatLoadingNode
+import ChatRecentActionsController
 
 final class VideoNavigationControllerDropContentItem: NavigationControllerDropContentItem {
     let itemNode: OverlayMediaItemNode
@@ -316,7 +327,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
     
     private var dropDimNode: ASDisplayNode?
 
-    let messageTransitionNode: ChatMessageTransitionNode
+    let messageTransitionNode: ChatMessageTransitionNodeImpl
 
     private let presentationContextMarker = ASDisplayNode()
     
@@ -449,96 +460,210 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         self.inputContextOverTextPanelContainer = ChatControllerTitlePanelNodeContainer()
         
         var source: ChatHistoryListSource
-        if case let .forwardedMessages(_, messageIds, options) = subject {
-            let messages = combineLatest(context.account.postbox.messagesAtIds(messageIds), context.account.postbox.loadedPeerWithId(context.account.peerId), options)
-            |> map { messages, accountPeer, options -> ([Message], Int32, Bool) in
-                var messages = messages
-                let forwardedMessageIds = Set(messages.map { $0.id })
-                messages.sort(by: { lhsMessage, rhsMessage in
-                    return lhsMessage.timestamp > rhsMessage.timestamp
-                })
-                messages = messages.map { message in
-                    var flags = message.flags
-                    flags.remove(.Incoming)
-                    flags.remove(.IsIncomingMask)
-                    
-                    var hideNames = options.hideNames
-                    if message.id.peerId == accountPeer.id && message.forwardInfo == nil {
-                        hideNames = true
-                    }
-                    
-                    var attributes = message.attributes
-                    attributes = attributes.filter({ attribute in
-                        if attribute is EditedMessageAttribute {
-                            return false
+        if case let .messageOptions(_, messageIds, info) = subject {
+            switch info {
+            case let .forward(forward):
+                let messages = combineLatest(context.account.postbox.messagesAtIds(messageIds), context.account.postbox.loadedPeerWithId(context.account.peerId), forward.options)
+                |> map { messages, accountPeer, options -> ([Message], Int32, Bool) in
+                    var messages = messages
+                    let forwardedMessageIds = Set(messages.map { $0.id })
+                    messages.sort(by: { lhsMessage, rhsMessage in
+                        return lhsMessage.index > rhsMessage.index
+                    })
+                    messages = messages.map { message in
+                        var flags = message.flags
+                        flags.remove(.Incoming)
+                        flags.remove(.IsIncomingMask)
+                        
+                        var hideNames = options.hideNames
+                        if message.id.peerId == accountPeer.id && message.forwardInfo == nil {
+                            hideNames = true
                         }
-                        if let attribute = attribute as? ReplyMessageAttribute {
-                            if !forwardedMessageIds.contains(attribute.messageId) || hideNames {
+                        
+                        var attributes = message.attributes
+                        attributes = attributes.filter({ attribute in
+                            if attribute is EditedMessageAttribute {
                                 return false
                             }
-                        }
-                        if attribute is ReplyMarkupMessageAttribute {
-                            return false
-                        }
-                        if attribute is ReplyThreadMessageAttribute {
-                            return false
-                        }
-                        if attribute is ViewCountMessageAttribute{
-                            return false
-                        }
-                        if attribute is ForwardCountMessageAttribute {
-                            return false
-                        }
-                        if attribute is ReactionsMessageAttribute {
-                            return false
-                        }
-                        return true
-                    })
-                    
-                    var messageText = message.text
-                    var messageMedia = message.media
-                    var hasDice = false
-                    if hideNames {
-                        for media in message.media {
-                            if options.hideCaptions {
-                                if media is TelegramMediaImage || media is TelegramMediaFile {
-                                    messageText = ""
-                                    break
+                            if let attribute = attribute as? ReplyMessageAttribute {
+                                if attribute.quote != nil {
+                                } else {
+                                    if !forwardedMessageIds.contains(attribute.messageId) || hideNames {
+                                        return false
+                                    }
                                 }
                             }
-                            if let poll = media as? TelegramMediaPoll {
-                                var updatedMedia = message.media.filter { !($0 is TelegramMediaPoll) }
-                                updatedMedia.append(TelegramMediaPoll(pollId: poll.pollId, publicity: poll.publicity, kind: poll.kind, text: poll.text, options: poll.options, correctAnswers: poll.correctAnswers, results: TelegramMediaPollResults(voters: nil, totalVoters: nil, recentVoters: [], solution: nil), isClosed: false, deadlineTimeout: nil))
-                                messageMedia = updatedMedia
+                            if attribute is ReplyMarkupMessageAttribute {
+                                return false
                             }
-                            if let _ = media as? TelegramMediaDice {
-                                hasDice = true
+                            if attribute is ReplyThreadMessageAttribute {
+                                return false
+                            }
+                            if attribute is ViewCountMessageAttribute {
+                                return false
+                            }
+                            if attribute is ForwardCountMessageAttribute {
+                                return false
+                            }
+                            if attribute is ReactionsMessageAttribute {
+                                return false
+                            }
+                            return true
+                        })
+                        
+                        var messageText = message.text
+                        var messageMedia = message.media
+                        var hasDice = false
+                        
+                        if hideNames {
+                            for media in message.media {
+                                if options.hideCaptions {
+                                    if media is TelegramMediaImage || media is TelegramMediaFile {
+                                        messageText = ""
+                                        break
+                                    }
+                                }
+                                if let poll = media as? TelegramMediaPoll {
+                                    var updatedMedia = message.media.filter { !($0 is TelegramMediaPoll) }
+                                    updatedMedia.append(TelegramMediaPoll(pollId: poll.pollId, publicity: poll.publicity, kind: poll.kind, text: poll.text, options: poll.options, correctAnswers: poll.correctAnswers, results: TelegramMediaPollResults(voters: nil, totalVoters: nil, recentVoters: [], solution: nil), isClosed: false, deadlineTimeout: nil))
+                                    messageMedia = updatedMedia
+                                }
+                                if let _ = media as? TelegramMediaDice {
+                                    hasDice = true
+                                }
                             }
                         }
+                        
+                        var forwardInfo: MessageForwardInfo?
+                        if let existingForwardInfo = message.forwardInfo {
+                            forwardInfo = MessageForwardInfo(author: existingForwardInfo.author, source: existingForwardInfo.source, sourceMessageId: nil, date: 0, authorSignature: nil, psaType: nil, flags: [])
+                        }
+                        else {
+                            forwardInfo = MessageForwardInfo(author: message.author, source: nil, sourceMessageId: nil, date: 0, authorSignature: nil, psaType: nil, flags: [])
+                        }
+                        if hideNames && !hasDice {
+                            forwardInfo = nil
+                        }
+                        
+                        return message.withUpdatedFlags(flags).withUpdatedText(messageText).withUpdatedMedia(messageMedia).withUpdatedTimestamp(Int32(context.account.network.context.globalTime())).withUpdatedAttributes(attributes).withUpdatedAuthor(accountPeer).withUpdatedForwardInfo(forwardInfo)
                     }
                     
-                    var forwardInfo: MessageForwardInfo?
-                    if let existingForwardInfo = message.forwardInfo {
-                        forwardInfo = MessageForwardInfo(author: existingForwardInfo.author, source: existingForwardInfo.source, sourceMessageId: nil, date: 0, authorSignature: nil, psaType: nil, flags: [])
-                    }
-                    else {
-                        forwardInfo = MessageForwardInfo(author: message.author, source: nil, sourceMessageId: nil, date: 0, authorSignature: nil, psaType: nil, flags: [])
-                    }
-                    if hideNames && !hasDice {
-                        forwardInfo = nil
-                    }
-                    
-                    return message.withUpdatedFlags(flags).withUpdatedText(messageText).withUpdatedMedia(messageMedia).withUpdatedTimestamp(Int32(context.account.network.context.globalTime())).withUpdatedAttributes(attributes).withUpdatedAuthor(accountPeer).withUpdatedForwardInfo(forwardInfo)
+                    return (messages, Int32(messages.count), false)
                 }
-                
-                return (messages, Int32(messages.count), false)
+                source = .custom(messages: messages, messageId: MessageId(peerId: PeerId(0), namespace: 0, id: 0), quote: nil, loadMore: nil)
+            case let .reply(reply):
+                let messages = combineLatest(context.account.postbox.messagesAtIds(messageIds), context.account.postbox.loadedPeerWithId(context.account.peerId))
+                |> map { messages, accountPeer -> ([Message], Int32, Bool) in
+                    var messages = messages
+                    messages.sort(by: { lhsMessage, rhsMessage in
+                        return lhsMessage.timestamp > rhsMessage.timestamp
+                    })
+                    messages = messages.map { message in
+                        return message
+                    }
+                    
+                    return (messages, Int32(messages.count), false)
+                }
+                source = .custom(messages: messages, messageId: messageIds.first ?? MessageId(peerId: PeerId(0), namespace: 0, id: 0), quote: reply.quote?.text, loadMore: nil)
+            case let .link(link):
+                let messages = link.options
+                |> mapToSignal { options -> Signal<(ChatControllerSubject.LinkOptions, Peer, Message?, [StoryId: CodableEntry]), NoError> in
+                    let stories: Signal<[StoryId: CodableEntry], NoError>
+                    if case let .Loaded(content) = options.webpage.content, let story = content.story {
+                        stories = context.account.postbox.transaction { transaction -> [StoryId: CodableEntry] in
+                            var result: [StoryId: CodableEntry] = [:]
+                            if let storyValue = transaction.getStory(id: story.storyId) {
+                                result[story.storyId] = storyValue
+                            }
+                            return result
+                        }
+                    } else {
+                        stories = .single([:])
+                    }
+                    
+                    if let replyMessageId = options.replyMessageId {
+                        return combineLatest(
+                            context.account.postbox.messagesAtIds([replyMessageId]),
+                            context.account.postbox.loadedPeerWithId(context.account.peerId),
+                            stories
+                        )
+                        |> map { messages, peer, stories -> (ChatControllerSubject.LinkOptions, Peer, Message?, [StoryId: CodableEntry]) in
+                            return (options, peer, messages.first, stories)
+                        }
+                    } else {
+                        return combineLatest(
+                            context.account.postbox.loadedPeerWithId(context.account.peerId),
+                            stories
+                        )
+                        |> map { peer, stories -> (ChatControllerSubject.LinkOptions, Peer, Message?, [StoryId: CodableEntry]) in
+                            return (options, peer, nil, stories)
+                        }
+                    }
+                }
+                |> map { options, accountPeer, replyMessage, stories -> ([Message], Int32, Bool) in
+                    var peers = SimpleDictionary<PeerId, Peer>()
+                    peers[accountPeer.id] = accountPeer
+                    
+                    var associatedMessages = SimpleDictionary<MessageId, Message>()
+                    
+                    var media: [Media] = []
+                    if case let .Loaded(content) = options.webpage.content {
+                        media.append(TelegramMediaWebpage(webpageId: options.webpage.webpageId, content: .Loaded(content)))
+                    }
+                    
+                    let associatedStories: [StoryId: CodableEntry] = stories
+                    
+                    var attributes: [MessageAttribute] = []
+                    
+                    attributes.append(TextEntitiesMessageAttribute(entities: options.messageEntities))
+                    attributes.append(WebpagePreviewMessageAttribute(leadingPreview: !options.linkBelowText, forceLargeMedia: options.largeMedia, isManuallyAdded: true, isSafe: false))
+                    
+                    if let replyMessage {
+                        associatedMessages[replyMessage.id] = replyMessage
+                        
+                        var mappedQuote: EngineMessageReplyQuote?
+                        if let quote = options.replyQuote {
+                            mappedQuote = EngineMessageReplyQuote(text: quote, entities: [], media: nil)
+                        }
+                        
+                        attributes.append(ReplyMessageAttribute(messageId: replyMessage.id, threadMessageId: nil, quote: mappedQuote, isQuote: mappedQuote != nil))
+                    }
+                    
+                    let message = Message(
+                        stableId: 1,
+                        stableVersion: 1,
+                        id: MessageId(peerId: accountPeer.id, namespace: 0, id: 1),
+                        globallyUniqueId: nil,
+                        groupingKey: nil,
+                        groupInfo: nil,
+                        threadId: nil,
+                        timestamp: Int32(Date().timeIntervalSince1970),
+                        flags: [],
+                        tags: [],
+                        globalTags: [],
+                        localTags: [],
+                        forwardInfo: nil,
+                        author: accountPeer,
+                        text: options.messageText,
+                        attributes: attributes,
+                        media: media,
+                        peers: peers,
+                        associatedMessages: associatedMessages,
+                        associatedMessageIds: [],
+                        associatedMedia: [:],
+                        associatedThreadInfo: nil,
+                        associatedStories: associatedStories
+                    )
+                    
+                    return ([message], 1, false)
+                }
+                source = .custom(messages: messages, messageId: MessageId(peerId: PeerId(0), namespace: 0, id: 0), quote: nil, loadMore: nil)
             }
-            source = .custom(messages: messages, messageId: MessageId(peerId: PeerId(0), namespace: 0, id: 0), loadMore: nil)
         } else {
             source = .default
         }
 
-        var getMessageTransitionNode: (() -> ChatMessageTransitionNode?)?
+        var getMessageTransitionNode: (() -> ChatMessageTransitionNodeImpl?)?
         self.historyNode = ChatHistoryListNode(context: context, updatedPresentationData: controller?.updatedPresentationData ?? (context.sharedContext.currentPresentationData.with({ $0 }), context.sharedContext.presentationData), chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, tagMask: nil, source: source, subject: subject, controllerInteraction: controllerInteraction, selectedMessages: self.selectedMessagesPromise.get(), messageTransitionNode: {
             return getMessageTransitionNode?()
         })
@@ -554,7 +679,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
 
         var getContentAreaInScreenSpaceImpl: (() -> CGRect)?
         var onTransitionEventImpl: ((ContainedViewLayoutTransition) -> Void)?
-        self.messageTransitionNode = ChatMessageTransitionNode(listNode: self.historyNode, getContentAreaInScreenSpace: {
+        self.messageTransitionNode = ChatMessageTransitionNodeImpl(listNode: self.historyNode, getContentAreaInScreenSpace: {
             return getContentAreaInScreenSpaceImpl?() ?? CGRect()
         }, onTransitionEvent: { transition in
             onTransitionEventImpl?(transition)
@@ -995,6 +1120,13 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         if let inputNode = self.inputNode as? ChatEntityKeyboardInputNode {
             inputNode.simulateUpdateLayout(isVisible: isInFocus)
         }
+    }
+    
+    func preferredContentSizeForLayout(_ layout: ContainerViewLayout) -> CGSize? {
+        var height = self.historyNode.scroller.contentSize.height
+        height += 3.0
+        height = min(height, layout.size.height)
+        return CGSize(width: layout.size.width, height: height)
     }
     
     func containerLayoutUpdated(_ layout: ContainerViewLayout, navigationBarHeight: CGFloat, transition protoTransition: ContainedViewLayoutTransition, listViewTransaction: (ListViewUpdateSizeAndInsets, CGFloat, Bool, @escaping () -> Void) -> Void, updateExtraNavigationBarBackgroundHeight: (CGFloat, CGFloat, ContainedViewLayoutTransition) -> Void) {
@@ -1468,7 +1600,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                 accessoryPanelNode.dismiss = { [weak self, weak accessoryPanelNode] in
                     if let strongSelf = self, let accessoryPanelNode = accessoryPanelNode, strongSelf.accessoryPanelNode === accessoryPanelNode {
                         if let _ = accessoryPanelNode as? ReplyAccessoryPanelNode {
-                            strongSelf.requestUpdateChatInterfaceState(.animated(duration: 0.4, curve: .spring), false, { $0.withUpdatedReplyMessageId(nil) })
+                            strongSelf.requestUpdateChatInterfaceState(.animated(duration: 0.4, curve: .spring), false, { $0.withUpdatedReplyMessageSubject(nil) })
                         } else if let _ = accessoryPanelNode as? ForwardAccessoryPanelNode {
                             strongSelf.requestUpdateChatInterfaceState(.animated(duration: 0.4, curve: .spring), false, { $0.withUpdatedForwardMessageIds(nil).withUpdatedForwardOptionsState(nil) })
                         } else if let _ = accessoryPanelNode as? EditAccessoryPanelNode {
@@ -2934,8 +3066,8 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         }
     }
     
-    func textInputNode() -> EditableTextNode? {
-        return self.textInputPanelNode?.textInputNode
+    func textInputView() -> UITextView? {
+        return self.textInputPanelNode?.textInputNode?.textView
     }
     
     func updateRecordedMediaDeleted(_ isDeleted: Bool) {
@@ -3152,6 +3284,33 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         switch self.chatPresentationInterfaceState.mode {
         case .standard(previewing: true):
+            if let subject = self.controller?.subject, case let .messageOptions(_, _, info) = subject, case .reply = info {
+                if let controller = self.controller {
+                    if let result = controller.presentationContext.hitTest(view: self.view, point: point, with: event) {
+                        return result
+                    }
+                }
+                
+                if let result = self.historyNode.view.hitTest(self.view.convert(point, to: self.historyNode.view), with: event), let node = result.asyncdisplaykit_node {
+                    if node is TextSelectionNode {
+                        return result
+                    }
+                }
+            } else if let subject = self.controller?.subject, case let .messageOptions(_, _, info) = subject, case .link = info {
+                if let controller = self.controller {
+                    if let result = controller.presentationContext.hitTest(view: self.view, point: point, with: event) {
+                        return result
+                    }
+                }
+                
+                if let result = self.historyNode.view.hitTest(self.view.convert(point, to: self.historyNode.view), with: event), let node = result.asyncdisplaykit_node {
+                    if let textNode = node as? TextAccessibilityOverlayNode {
+                        let _ = textNode
+                        return result
+                    }
+                }
+            }
+            
             if let result = self.historyNode.view.hitTest(self.view.convert(point, to: self.historyNode.view), with: event), let node = result.asyncdisplaykit_node, node is ChatMessageSelectionNode || node is GridMessageSelectionNode {
                 return result
             }
@@ -3433,6 +3592,54 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                     return
                 }
                 
+                if let replyMessageSubject = self.chatPresentationInterfaceState.interfaceState.replyMessageSubject, let quote = replyMessageSubject.quote {
+                    if let replyMessage = self.chatPresentationInterfaceState.replyMessage {
+                        let nsText = replyMessage.text as NSString
+                        var startIndex = 0
+                        var found = false
+                        while true {
+                            let range = nsText.range(of: quote.text, range: NSRange(location: startIndex, length: nsText.length - startIndex))
+                            if range.location != NSNotFound {
+                                let subEntities = messageTextEntitiesInRange(entities: replyMessage.textEntitiesAttribute?.entities ?? [], range: range, onlyQuoteable: true)
+                                if subEntities == quote.entities {
+                                    found = true
+                                    break
+                                }
+                                
+                                startIndex = range.upperBound
+                            } else {
+                                break
+                            }
+                        }
+                        
+                        if !found {
+                            let authorName: String = (replyMessage.author.flatMap(EnginePeer.init))?.compactDisplayTitle ?? ""
+                            let errorTextData =  self.chatPresentationInterfaceState.strings.Chat_ErrorQuoteOutdatedText(authorName)
+                            let errorText = errorTextData.string
+                            self.controller?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: self.context.sharedContext.currentPresentationData.with({ $0 })), title: self.chatPresentationInterfaceState.strings.Chat_ErrorQuoteOutdatedTitle, text: errorText, actions: [
+                                TextAlertAction(type: .genericAction, title: self.chatPresentationInterfaceState.strings.Common_Cancel, action: {}),
+                                TextAlertAction(type: .defaultAction, title: self.chatPresentationInterfaceState.strings.Chat_ErrorQuoteOutdatedActionEdit, action: { [weak self] in
+                                    guard let self, let controller = self.controller else {
+                                        return
+                                    }
+                                    controller.updateChatPresentationInterfaceState(interactive: false, { presentationInterfaceState in
+                                        return presentationInterfaceState.updatedInterfaceState { interfaceState in
+                                            guard var replyMessageSubject = interfaceState.replyMessageSubject else {
+                                                return interfaceState
+                                            }
+                                            replyMessageSubject.quote = nil
+                                            return interfaceState.withUpdatedReplyMessageSubject(replyMessageSubject)
+                                        }
+                                    })
+                                    presentChatLinkOptions(selfController: controller, sourceNode: controller.displayNode)
+                                }),
+                            ], parseMarkdown: true), in: .window(.root))
+                            
+                            return
+                        }
+                    }
+                }
+                
                 let timestamp = CACurrentMediaTime()
                 if self.lastSendTimestamp + 0.15 > timestamp {
                     return
@@ -3444,7 +3651,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                 let trimmedInputText = effectiveInputText.string.trimmingCharacters(in: .whitespacesAndNewlines)
                 let peerId = effectivePresentationInterfaceState.chatLocation.peerId
                 if peerId?.namespace != Namespaces.Peer.SecretChat, let interactiveEmojis = self.interactiveEmojis, interactiveEmojis.emojis.contains(trimmedInputText), effectiveInputText.attribute(ChatTextInputAttributes.customEmoji, at: 0, effectiveRange: nil) == nil {
-                    messages.append(.message(text: "", attributes: [], inlineStickers: [:], mediaReference: AnyMediaReference.standalone(media: TelegramMediaDice(emoji: trimmedInputText)), replyToMessageId: self.chatPresentationInterfaceState.interfaceState.replyMessageId, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
+                    messages.append(.message(text: "", attributes: [], inlineStickers: [:], mediaReference: AnyMediaReference.standalone(media: TelegramMediaDice(emoji: trimmedInputText)), threadId: self.chatLocation.threadId, replyToMessageId: self.chatPresentationInterfaceState.interfaceState.replyMessageSubject?.subjectModel, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
                 } else {
                     let inputText = convertMarkdownToAttributes(effectiveInputText)
                     
@@ -3456,10 +3663,13 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                                 attributes.append(TextEntitiesMessageAttribute(entities: entities))
                             }
                             var webpage: TelegramMediaWebpage?
-                            if self.chatPresentationInterfaceState.interfaceState.composeDisableUrlPreview != nil {
-                                attributes.append(OutgoingContentInfoMessageAttribute(flags: [.disableLinkPreviews]))
-                            } else {
-                                webpage = self.chatPresentationInterfaceState.urlPreview?.1
+                            if let urlPreview = self.chatPresentationInterfaceState.urlPreview {
+                                if self.chatPresentationInterfaceState.interfaceState.composeDisableUrlPreviews.contains(urlPreview.url) {
+                                    attributes.append(OutgoingContentInfoMessageAttribute(flags: [.disableLinkPreviews]))
+                                } else {
+                                    webpage = urlPreview.webPage
+                                    attributes.append(WebpagePreviewMessageAttribute(leadingPreview: !urlPreview.positionBelowText, forceLargeMedia: urlPreview.largeMedia, isManuallyAdded: true, isSafe: false))
+                                }
                             }
                             
                             var bubbleUpEmojiOrStickersets: [ItemCollectionId] = []
@@ -3477,7 +3687,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                                 bubbleUpEmojiOrStickersets.removeAll()
                             }
 
-                            messages.append(.message(text: text.string, attributes: attributes, inlineStickers: inlineStickers, mediaReference: webpage.flatMap(AnyMediaReference.standalone), replyToMessageId: self.chatPresentationInterfaceState.interfaceState.replyMessageId, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: bubbleUpEmojiOrStickersets))
+                            messages.append(.message(text: text.string, attributes: attributes, inlineStickers: inlineStickers, mediaReference: webpage.flatMap(AnyMediaReference.standalone), threadId: self.chatLocation.threadId, replyToMessageId: self.chatPresentationInterfaceState.interfaceState.replyMessageSubject?.subjectModel, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: bubbleUpEmojiOrStickersets))
                         }
                     }
 
@@ -3525,7 +3735,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                         }
                         if self.shouldAnimateMessageTransition, let inputPanelNode = self.inputPanelNode as? ChatTextInputPanelNode, let textInput = inputPanelNode.makeSnapshotForTransition() {
                             usedCorrelationId = correlationId
-                            let source: ChatMessageTransitionNode.Source = .textInput(textInput: textInput, replyPanel: replyPanel)
+                            let source: ChatMessageTransitionNodeImpl.Source = .textInput(textInput: textInput, replyPanel: replyPanel)
                             self.messageTransitionNode.add(correlationId: correlationId, source: source, initiated: {
                             })
                         }
@@ -3537,7 +3747,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                             
                             strongSelf.ignoreUpdateHeight = true
                             textInputPanelNode.text = ""
-                            strongSelf.requestUpdateChatInterfaceState(.immediate, true, { $0.withUpdatedReplyMessageId(nil).withUpdatedForwardMessageIds(nil).withUpdatedForwardOptionsState(nil).withUpdatedComposeDisableUrlPreview(nil) })
+                            strongSelf.requestUpdateChatInterfaceState(.immediate, true, { $0.withUpdatedReplyMessageSubject(nil).withUpdatedForwardMessageIds(nil).withUpdatedForwardOptionsState(nil).withUpdatedComposeDisableUrlPreviews([]) })
                             strongSelf.ignoreUpdateHeight = false
                         }
                     }, usedCorrelationId)

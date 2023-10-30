@@ -268,6 +268,12 @@ private func updatedContextQueryResultStateForQuery(context: AccountContext, pee
             
             let chatPeer = peer
             let contextBot = context.engine.peers.resolvePeerByName(name: addressName)
+            |> mapToSignal { result -> Signal<EnginePeer?, NoError> in
+                guard case let .result(result) = result else {
+                    return .complete()
+                }
+                return .single(result)
+            }
             |> castError(ChatContextQueryError.self)
             |> mapToSignal { peer -> Signal<(ChatPresentationInputQueryResult?) -> ChatPresentationInputQueryResult?, ChatContextQueryError> in
                 if case let .user(user) = peer, let botInfo = user.botInfo, let _ = botInfo.inlinePlaceholder {
@@ -505,30 +511,34 @@ func searchQuerySuggestionResultStateForChatInterfacePresentationState(_ chatPre
 
 private let dataDetector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType([.link]).rawValue)
 
-func detectUrl(_ inputText: NSAttributedString?) -> String? {
-    var detectedUrl: String?
+func detectUrls(_ inputText: NSAttributedString?) -> [String] {
+    var detectedUrls: [String] = []
     if let text = inputText, let dataDetector = dataDetector {
         let utf16 = text.string.utf16
         
         let nsRange = NSRange(location: 0, length: utf16.count)
         let matches = dataDetector.matches(in: text.string, options: [], range: nsRange)
-        if let match = matches.first {
+        for match in matches {
             let urlText = (text.string as NSString).substring(with: match.range)
-            detectedUrl = urlText
+            detectedUrls.append(urlText)
         }
         
-        if detectedUrl == nil {
-            inputText?.enumerateAttribute(ChatTextInputAttributes.textUrl, in: nsRange, options: [], using: { value, range, stop in
-                if let value = value as? ChatTextInputTextUrlAttribute {
-                    detectedUrl = value.url
+        inputText?.enumerateAttribute(ChatTextInputAttributes.textUrl, in: nsRange, options: [], using: { value, range, stop in
+            if let value = value as? ChatTextInputTextUrlAttribute {
+                if !detectedUrls.contains(value.url) {
+                    detectedUrls.append(value.url)
                 }
-            })
-        }
+            }
+        })
     }
-    return detectedUrl
+    return detectedUrls
 }
 
-func urlPreviewStateForInputText(_ inputText: NSAttributedString?, context: AccountContext, currentQuery: String?) -> (String?, Signal<(TelegramMediaWebpage?) -> TelegramMediaWebpage?, NoError>)? {
+struct UrlPreviewState {
+    var detectedUrl: String
+}
+
+func urlPreviewStateForInputText(_ inputText: NSAttributedString?, context: AccountContext, currentQuery: UrlPreviewState?) -> (UrlPreviewState?, Signal<(TelegramMediaWebpage?) -> TelegramMediaWebpage?, NoError>)? {
     guard let _ = inputText else {
         if currentQuery != nil {
             return (nil, .single({ _ in return nil }))
@@ -537,10 +547,17 @@ func urlPreviewStateForInputText(_ inputText: NSAttributedString?, context: Acco
         }
     }
     if let _ = dataDetector {
-        let detectedUrl = detectUrl(inputText)
-        if detectedUrl != currentQuery {
+        let detectedUrl = detectUrls(inputText).first
+        if detectedUrl != currentQuery?.detectedUrl {
             if let detectedUrl = detectedUrl {
-                return (detectedUrl, webpagePreview(account: context.account, url: detectedUrl) |> map { value in
+                return (UrlPreviewState(detectedUrl: detectedUrl), webpagePreview(account: context.account, url: detectedUrl)
+                |> mapToSignal { result -> Signal<TelegramMediaWebpage?, NoError> in
+                    guard case let .result(result) = result else {
+                        return .complete()
+                    }
+                    return .single(result)
+                }
+                |> map { value in
                     return { _ in return value }
                 })
             } else {

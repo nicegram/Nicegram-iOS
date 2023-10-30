@@ -300,7 +300,13 @@ public enum ResolvedUrl {
     case premiumOffer(reference: String?)
     case chatFolder(slug: String)
     case story(peerId: PeerId, id: Int32)
-    case boost(peerId: PeerId, status: ChannelBoostStatus?, canApplyStatus: CanApplyBoostStatus)
+    case boost(peerId: PeerId, status: ChannelBoostStatus?, myBoostStatus: MyBoostStatus?)
+    case premiumGiftCode(slug: String)
+}
+
+public enum ResolveUrlResult {
+    case progress
+    case result(ResolvedUrl)
 }
 
 public enum NavigateToChatKeepStack {
@@ -662,9 +668,10 @@ public final class ContactSelectionControllerParams {
     public let displayDeviceContacts: Bool
     public let displayCallIcons: Bool
     public let multipleSelection: Bool
+    public let requirePhoneNumbers: Bool
     public let confirmation: (ContactListPeer) -> Signal<Bool, NoError>
     
-    public init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, autoDismiss: Bool = true, title: @escaping (PresentationStrings) -> String, options: [ContactListAdditionalOption] = [], displayDeviceContacts: Bool = false, displayCallIcons: Bool = false, multipleSelection: Bool = false, confirmation: @escaping (ContactListPeer) -> Signal<Bool, NoError> = { _ in .single(true) }) {
+    public init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, autoDismiss: Bool = true, title: @escaping (PresentationStrings) -> String, options: [ContactListAdditionalOption] = [], displayDeviceContacts: Bool = false, displayCallIcons: Bool = false, multipleSelection: Bool = false, requirePhoneNumbers: Bool = false, confirmation: @escaping (ContactListPeer) -> Signal<Bool, NoError> = { _ in .single(true) }) {
         self.context = context
         self.updatedPresentationData = updatedPresentationData
         self.autoDismiss = autoDismiss
@@ -673,6 +680,7 @@ public final class ContactSelectionControllerParams {
         self.displayDeviceContacts = displayDeviceContacts
         self.displayCallIcons = displayCallIcons
         self.multipleSelection = multipleSelection
+        self.requirePhoneNumbers = requirePhoneNumbers
         self.confirmation = confirmation
     }
 }
@@ -890,12 +898,15 @@ public protocol SharedAccountContext: AnyObject {
     func chatAvailableMessageActions(engine: TelegramEngine, accountPeerId: EnginePeer.Id, messageIds: Set<EngineMessage.Id>) -> Signal<ChatAvailableMessageActions, NoError>
     func chatAvailableMessageActions(engine: TelegramEngine, accountPeerId: EnginePeer.Id, messageIds: Set<EngineMessage.Id>, messages: [EngineMessage.Id: EngineMessage], peers: [EnginePeer.Id: EnginePeer]) -> Signal<ChatAvailableMessageActions, NoError>
     func resolveUrl(context: AccountContext, peerId: PeerId?, url: String, skipUrlAuth: Bool) -> Signal<ResolvedUrl, NoError>
+    func resolveUrlWithProgress(context: AccountContext, peerId: PeerId?, url: String, skipUrlAuth: Bool) -> Signal<ResolveUrlResult, NoError>
     func openResolvedUrl(_ resolvedUrl: ResolvedUrl, context: AccountContext, urlContext: OpenURLContext, navigationController: NavigationController?, forceExternal: Bool, openPeer: @escaping (EnginePeer, ChatControllerInteractionNavigateToPeer) -> Void, sendFile: ((FileMediaReference) -> Void)?, sendSticker: ((FileMediaReference, UIView, CGRect) -> Bool)?, requestMessageActionUrlAuth: ((MessageActionUrlSubject) -> Void)?, joinVoiceChat: ((PeerId, String?, CachedChannelData.ActiveCall) -> Void)?, present: @escaping (ViewController, Any?) -> Void, dismissInput: @escaping () -> Void, contentContext: Any?)
     func openAddContact(context: AccountContext, firstName: String, lastName: String, phoneNumber: String, label: String, present: @escaping (ViewController, Any?) -> Void, pushController: @escaping (ViewController) -> Void, completed: @escaping () -> Void)
     func openAddPersonContact(context: AccountContext, peerId: PeerId, pushController: @escaping (ViewController) -> Void, present: @escaping (ViewController, Any?) -> Void)
     func presentContactsWarningSuppression(context: AccountContext, present: (ViewController, Any?) -> Void)
     func openImagePicker(context: AccountContext, completion: @escaping (UIImage) -> Void, present: @escaping (ViewController) -> Void)
     func openAddPeerMembers(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, parentController: ViewController, groupPeer: Peer, selectAddMemberDisposable: MetaDisposable, addMemberDisposable: MetaDisposable)
+    func openChatInstantPage(context: AccountContext, message: Message, sourcePeerType: MediaAutoDownloadPeerType?, navigationController: NavigationController)
+    func openChatWallpaper(context: AccountContext, message: Message, present: @escaping (ViewController, Any?) -> Void)
     
     func makeRecentSessionsController(context: AccountContext, activeSessionsContext: ActiveSessionsContext) -> ViewController & RecentSessionsController
     
@@ -914,6 +925,8 @@ public protocol SharedAccountContext: AnyObject {
     func makeProxySettingsController(sharedContext: SharedAccountContext, account: UnauthorizedAccount) -> ViewController
     
     func makeInstalledStickerPacksController(context: AccountContext, mode: InstalledStickerPacksControllerMode, forceTheme: PresentationTheme?) -> ViewController
+    
+    func makeChannelStatsController(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, peerId: EnginePeer.Id, boosts: Bool, boostStatus: ChannelBoostStatus?, statsDatacenterId: Int32) -> ViewController
     
     func makeDebugSettingsController(context: AccountContext?) -> ViewController?
     
@@ -993,7 +1006,7 @@ public enum PremiumLimitSubject {
     case expiringStories
     case storiesWeekly
     case storiesMonthly
-    case storiesChannelBoost(peer: EnginePeer, isCurrent: Bool, level: Int32, currentLevelBoosts: Int32, nextLevelBoosts: Int32?, link: String?, boosted: Bool)
+    case storiesChannelBoost(peer: EnginePeer, isCurrent: Bool, level: Int32, currentLevelBoosts: Int32, nextLevelBoosts: Int32?, link: String?, myBoostCount: Int32, canBoostAgain: Bool)
 }
 
 public protocol ComposeController: ViewController {
@@ -1037,6 +1050,7 @@ public protocol AccountContext: AnyObject {
     
     var isPremium: Bool { get }
     var userLimits: EngineConfiguration.UserLimits { get }
+    var peerNameColors: PeerNameColors { get }
     
     var imageCache: AnyObject? { get }
     
@@ -1055,17 +1069,21 @@ public protocol AccountContext: AnyObject {
 
 public struct PremiumConfiguration {
     public static var defaultValue: PremiumConfiguration {
-        return PremiumConfiguration(isPremiumDisabled: false, showPremiumGiftInAttachMenu: false, showPremiumGiftInTextField: false)
+        return PremiumConfiguration(isPremiumDisabled: false, showPremiumGiftInAttachMenu: false, showPremiumGiftInTextField: false, giveawayGiftsPurchaseAvailable: false, boostsPerGiftCount: 3)
     }
     
     public let isPremiumDisabled: Bool
     public let showPremiumGiftInAttachMenu: Bool
     public let showPremiumGiftInTextField: Bool
+    public let giveawayGiftsPurchaseAvailable: Bool
+    public let boostsPerGiftCount: Int32
     
-    fileprivate init(isPremiumDisabled: Bool, showPremiumGiftInAttachMenu: Bool, showPremiumGiftInTextField: Bool) {
+    fileprivate init(isPremiumDisabled: Bool, showPremiumGiftInAttachMenu: Bool, showPremiumGiftInTextField: Bool, giveawayGiftsPurchaseAvailable: Bool, boostsPerGiftCount: Int32) {
         self.isPremiumDisabled = isPremiumDisabled
         self.showPremiumGiftInAttachMenu = showPremiumGiftInAttachMenu
         self.showPremiumGiftInTextField = showPremiumGiftInTextField
+        self.giveawayGiftsPurchaseAvailable = giveawayGiftsPurchaseAvailable
+        self.boostsPerGiftCount = boostsPerGiftCount
     }
     
     public static func with(appConfiguration: AppConfiguration) -> PremiumConfiguration {
@@ -1073,7 +1091,9 @@ public struct PremiumConfiguration {
             return PremiumConfiguration(
                 isPremiumDisabled: data["premium_purchase_blocked"] as? Bool ?? false,
                 showPremiumGiftInAttachMenu: data["premium_gift_attach_menu_icon"] as? Bool ?? false,
-                showPremiumGiftInTextField: data["premium_gift_text_field_icon"] as? Bool ?? false
+                showPremiumGiftInTextField: data["premium_gift_text_field_icon"] as? Bool ?? false,
+                giveawayGiftsPurchaseAvailable: data["giveaway_gifts_purchase_available"] as? Bool ?? false,
+                boostsPerGiftCount: Int32(data["boosts_per_sent_gift"] as? Double ?? 3)
             )
         } else {
             return .defaultValue
@@ -1185,5 +1205,140 @@ public struct StickersSearchConfiguration {
         } else {
             return .defaultValue
         }
+    }
+}
+
+public class PeerNameColors: Equatable {
+    public struct Colors: Equatable {
+        public let main: UIColor
+        public let secondary: UIColor?
+        public let tertiary: UIColor?
+        
+        init(main: UIColor, secondary: UIColor?, tertiary: UIColor?) {
+            self.main = main
+            self.secondary = secondary
+            self.tertiary = tertiary
+        }
+        
+        init(main: UIColor) {
+            self.main = main
+            self.secondary = nil
+            self.tertiary = nil
+        }
+        
+        init?(colors: [UIColor]) {
+            guard let first = colors.first else {
+                return nil
+            }
+            self.main = first
+            if colors.count == 3 {
+                self.secondary = colors[1]
+                self.tertiary = colors[2]
+            } else if colors.count == 2, let second = colors.last {
+                self.secondary = second
+                self.tertiary = nil
+            } else {
+                self.secondary = nil
+                self.tertiary = nil
+            }
+        }
+    }
+    
+    public static var defaultSingleColors: [Int32: Colors] {
+        return [
+            0: Colors(main: UIColor(rgb: 0xcc5049)),
+            1: Colors(main: UIColor(rgb: 0xd67722)),
+            2: Colors(main: UIColor(rgb: 0x955cdb)),
+            3: Colors(main: UIColor(rgb: 0x40a920)),
+            4: Colors(main: UIColor(rgb: 0x309eba)),
+            5: Colors(main: UIColor(rgb: 0x368ad1)),
+            6: Colors(main: UIColor(rgb: 0xc7508b))
+        ]
+    }
+    
+    public static var defaultValue: PeerNameColors {
+        return PeerNameColors(
+            colors: defaultSingleColors,
+            darkColors: [:],
+            displayOrder: [5, 3, 1, 0, 2, 4, 6]
+        )
+    }
+    
+    public let colors: [Int32: Colors]
+    public let darkColors: [Int32: Colors]
+    public let displayOrder: [Int32]
+    
+    public func get(_ color: PeerNameColor, dark: Bool = false) -> Colors {
+        if dark, let colors = self.darkColors[color.rawValue] {
+            return colors
+        } else if let colors = self.colors[color.rawValue] {
+            return colors
+        } else {
+            return PeerNameColors.defaultSingleColors[5]!
+        }
+    }
+    
+    fileprivate init(colors: [Int32: Colors], darkColors: [Int32: Colors], displayOrder: [Int32]) {
+        self.colors = colors
+        self.darkColors = darkColors
+        self.displayOrder = displayOrder
+    }
+    
+    public static func with(appConfiguration: AppConfiguration) -> PeerNameColors {
+        if let data = appConfiguration.data {
+            var colors = PeerNameColors.defaultSingleColors
+            var darkColors: [Int32: Colors] = [:]
+            
+            if let peerColors = data["peer_colors"] as? [String: [String]] {
+                for (key, values) in peerColors {
+                    if let index = Int32(key) {
+                        let colorsArray = values.compactMap { UIColor(hexString: $0) }
+                        if let colorValues = Colors(colors: colorsArray) {
+                            colors[index] = colorValues
+                        }
+                    }
+                }
+            }
+            
+            if let darkPeerColors = data["dark_peer_colors"] as? [String: [String]] {
+                for (key, values) in darkPeerColors {
+                    if let index = Int32(key) {
+                        let colorsArray = values.compactMap { UIColor(hexString: $0) }
+                        if let colorValues = Colors(colors: colorsArray) {
+                            darkColors[index] = colorValues
+                        }
+                    }
+                }
+            }
+            
+            var displayOrder: [Int32] = []
+            if let order = data["peer_colors_available"] as? [Double] {
+                displayOrder = order.map { Int32($0) }
+            }
+            if displayOrder.isEmpty {
+                displayOrder = PeerNameColors.defaultValue.displayOrder
+            }
+            
+            return PeerNameColors(
+                colors: colors,
+                darkColors: darkColors,
+                displayOrder: displayOrder
+            )
+        } else {
+            return .defaultValue
+        }
+    }
+    
+    public static func == (lhs: PeerNameColors, rhs: PeerNameColors) -> Bool {
+        if lhs.colors != rhs.colors {
+            return false
+        }
+        if lhs.darkColors != rhs.darkColors {
+            return false
+        }
+        if lhs.displayOrder != rhs.displayOrder {
+            return false
+        }
+        return true
     }
 }

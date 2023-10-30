@@ -26,6 +26,7 @@ public enum MessageContentKindKey {
     case dice
     case invoice
     case story
+    case giveaway
 }
 
 public enum MessageContentKind: Equatable {
@@ -48,6 +49,7 @@ public enum MessageContentKind: Equatable {
     case dice(String)
     case invoice(String)
     case story
+    case giveaway
     
     public func isSemanticallyEqual(to other: MessageContentKind) -> Bool {
         switch self {
@@ -165,6 +167,12 @@ public enum MessageContentKind: Equatable {
             } else {
                 return false
             }
+        case .giveaway:
+            if case .giveaway = other {
+                return true
+            } else {
+                return false
+            }
         }
     }
     
@@ -208,6 +216,8 @@ public enum MessageContentKind: Equatable {
             return .invoice
         case .story:
             return .story
+        case .giveaway:
+            return .giveaway
         }
     }
 }
@@ -344,6 +354,14 @@ public func mediaContentKind(_ media: EngineMedia, message: EngineMessage? = nil
         }
     case .story:
         return .story
+    case .giveaway:
+        return .giveaway
+    case let .webpage(webpage):
+        if let message, message.text.isEmpty, case let .Loaded(content) = webpage.content {
+            return .text(NSAttributedString(string: content.displayUrl))
+        } else {
+            return nil
+        }
     default:
         return nil
     }
@@ -397,6 +415,8 @@ public func stringForMediaKind(_ kind: MessageContentKind, strings: Presentation
         return (NSAttributedString(string: text), true)
     case .story:
         return (NSAttributedString(string: strings.Message_Story), true)
+    case .giveaway:
+        return (NSAttributedString(string: strings.Message_Giveaway), true)
     }
 }
 

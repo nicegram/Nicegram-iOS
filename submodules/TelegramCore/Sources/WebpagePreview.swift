@@ -5,13 +5,18 @@ import TelegramApi
 import MtProtoKit
 
 
-public func webpagePreview(account: Account, url: String, webpageId: MediaId? = nil) -> Signal<TelegramMediaWebpage?, NoError> {
+public enum WebpagePreviewResult : Equatable {
+    case progress
+    case result(TelegramMediaWebpage?)
+}
+
+public func webpagePreview(account: Account, url: String, webpageId: MediaId? = nil) -> Signal<WebpagePreviewResult, NoError> {
     return webpagePreviewWithProgress(account: account, url: url)
-    |> mapToSignal { next -> Signal<TelegramMediaWebpage?, NoError> in
+    |> mapToSignal { next -> Signal<WebpagePreviewResult, NoError> in
         if case let .result(result) = next {
-            return .single(result)
+            return .single(.result(result))
         } else {
-            return .complete()
+            return .single(.progress)
         }
     }
 }
@@ -47,7 +52,8 @@ public func webpagePreviewWithProgress(account: Account, url: String, webpageId:
                             }
                         }
                         switch result {
-                            case let .messageMediaWebPage(webpage):
+                            case let .messageMediaWebPage(flags, webpage):
+                                let _ = flags
                                 if let media = telegramMediaWebpageFromApiWebpage(webpage, url: url) {
                                     if case .Loaded = media.content {
                                         return .single(.result(media))
@@ -74,45 +80,73 @@ public func webpagePreviewWithProgress(account: Account, url: String, webpageId:
     |> switchToLatest
 }
 
-public func actualizedWebpage(postbox: Postbox, network: Network, webpage: TelegramMediaWebpage) -> Signal<TelegramMediaWebpage, NoError> {
+public func actualizedWebpage(account: Account, webpage: TelegramMediaWebpage) -> Signal<TelegramMediaWebpage, NoError> {
     if case let .Loaded(content) = webpage.content {
-        return network.request(Api.functions.messages.getWebPage(url: content.url, hash: content.hash))
-            |> map(Optional.init)
-            |> `catch` { _ -> Signal<Api.WebPage?, NoError> in
-                return .single(nil)
-            }
-            |> mapToSignal { result -> Signal<TelegramMediaWebpage, NoError> in
-                if let result = result, let updatedWebpage = telegramMediaWebpageFromApiWebpage(result, url: nil), case .Loaded = updatedWebpage.content, updatedWebpage.webpageId == webpage.webpageId {
-                    return postbox.transaction { transaction -> TelegramMediaWebpage in
-                        updateMessageMedia(transaction: transaction, id: webpage.webpageId, media: updatedWebpage)
-                        return updatedWebpage
+        return account.network.request(Api.functions.messages.getWebPage(url: content.url, hash: content.hash))
+        |> map(Optional.init)
+        |> `catch` { _ -> Signal<Api.messages.WebPage?, NoError> in
+            return .single(nil)
+        }
+        |> mapToSignal { result -> Signal<TelegramMediaWebpage, NoError> in
+            if let result = result {
+                return account.postbox.transaction { transaction -> Signal<TelegramMediaWebpage, NoError> in
+                    switch result {
+                    case let .webPage(apiWebpage, chats, users):
+                        let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
+                        updatePeers(transaction: transaction, accountPeerId: account.peerId, peers: parsedPeers)
+
+                        if let updatedWebpage = telegramMediaWebpageFromApiWebpage(apiWebpage, url: nil), case .Loaded = updatedWebpage.content, updatedWebpage.webpageId == webpage.webpageId {
+                            return .single(updatedWebpage)
+                        } else if case let .webPageNotModified(_, viewsValue) = apiWebpage, let views = viewsValue, case let .Loaded(content) = webpage.content {
+                            let updatedContent: TelegramMediaWebpageContent = .Loaded(TelegramMediaWebpageLoadedContent(
+                                url: content.url,
+                                displayUrl: content.displayUrl,
+                                hash: content.hash,
+                                type: content.type,
+                                websiteName: content.websiteName,
+                                title: content.title,
+                                text: content.text,
+                                embedUrl: content.embedUrl,
+                                embedType: content.embedType,
+                                embedSize: content.embedSize,
+                                duration: content.duration,
+                                author: content.author,
+                                isMediaLargeByDefault: content.isMediaLargeByDefault,
+                                image: content.image,
+                                file: content.file,
+                                story: content.story,
+                                attributes: content.attributes,
+                                instantPage: content.instantPage.flatMap({ InstantPage(blocks: $0.blocks, media: $0.media, isComplete: $0.isComplete, rtl: $0.rtl, url: $0.url, views: views) })
+                            ))
+                            let updatedWebpage = TelegramMediaWebpage(webpageId: webpage.webpageId, content: updatedContent)
+                            updateMessageMedia(transaction: transaction, id: webpage.webpageId, media: updatedWebpage)
+                            return .single(updatedWebpage)
+                        }
                     }
-                } else if let result = result, case let .webPageNotModified(_, viewsValue) = result, let views = viewsValue, case let .Loaded(content) = webpage.content {
-                    let updatedContent: TelegramMediaWebpageContent = .Loaded(TelegramMediaWebpageLoadedContent(url: content.url, displayUrl: content.displayUrl, hash: content.hash, type: content.type, websiteName: content.websiteName, title: content.title, text: content.text, embedUrl: content.embedUrl, embedType: content.embedType, embedSize: content.embedSize, duration: content.duration, author: content.author, image: content.image, file: content.file, story: content.story, attributes: content.attributes, instantPage: content.instantPage.flatMap({ InstantPage(blocks: $0.blocks, media: $0.media, isComplete: $0.isComplete, rtl: $0.rtl, url: $0.url, views: views) })))
-                    let updatedWebpage = TelegramMediaWebpage(webpageId: webpage.webpageId, content: updatedContent)
-                    return postbox.transaction { transaction -> TelegramMediaWebpage in
-                        updateMessageMedia(transaction: transaction, id: webpage.webpageId, media: updatedWebpage)
-                        return updatedWebpage
-                    }
-                } else {
                     return .complete()
                 }
+                |> switchToLatest
+            } else {
+                return .complete()
             }
+        }
     } else {
         return .complete()
     }
 }
 
-func updatedRemoteWebpage(postbox: Postbox, network: Network, webPage: WebpageReference) -> Signal<TelegramMediaWebpage?, NoError> {
+func updatedRemoteWebpage(postbox: Postbox, network: Network, accountPeerId: EnginePeer.Id, webPage: WebpageReference) -> Signal<TelegramMediaWebpage?, NoError> {
     if case let .webPage(id, url) = webPage.content {
         return network.request(Api.functions.messages.getWebPage(url: url, hash: 0))
         |> map(Optional.init)
-        |> `catch` { _ -> Signal<Api.WebPage?, NoError> in
+        |> `catch` { _ -> Signal<Api.messages.WebPage?, NoError> in
             return .single(nil)
         }
         |> mapToSignal { result -> Signal<TelegramMediaWebpage?, NoError> in
-            if let result = result, let updatedWebpage = telegramMediaWebpageFromApiWebpage(result, url: nil), case .Loaded = updatedWebpage.content, updatedWebpage.webpageId.id == id {
+            if let result = result, case let .webPage(webpage, chats, users) = result, let updatedWebpage = telegramMediaWebpageFromApiWebpage(webpage, url: nil), case .Loaded = updatedWebpage.content, updatedWebpage.webpageId.id == id {
                 return postbox.transaction { transaction -> TelegramMediaWebpage? in
+                    let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
+                    updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
                     if transaction.getMedia(updatedWebpage.webpageId) != nil {
                         updateMessageMedia(transaction: transaction, id: updatedWebpage.webpageId, media: updatedWebpage)
                     }

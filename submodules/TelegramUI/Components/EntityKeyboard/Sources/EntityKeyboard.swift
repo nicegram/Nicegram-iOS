@@ -136,6 +136,7 @@ public final class EntityKeyboardComponent: Component {
     public let clipContentToTopPanel: Bool
     public let useExternalSearchContainer: Bool
     public let hidePanels: Bool
+    public let customTintColor: UIColor?
     
     public init(
         // MARK: Nicegram OpenGifsShortcut
@@ -172,7 +173,8 @@ public final class EntityKeyboardComponent: Component {
         isExpanded: Bool,
         clipContentToTopPanel: Bool,
         useExternalSearchContainer: Bool,
-        hidePanels: Bool = false
+        hidePanels: Bool = false,
+        customTintColor: UIColor? = nil
     ) {
         // MARK: Nicegram OpenGifsShortcut
         self.defaultTab = defaultTab
@@ -209,6 +211,7 @@ public final class EntityKeyboardComponent: Component {
         self.clipContentToTopPanel = clipContentToTopPanel
         self.useExternalSearchContainer = useExternalSearchContainer
         self.hidePanels = hidePanels
+        self.customTintColor = customTintColor
     }
     
     public static func ==(lhs: EntityKeyboardComponent, rhs: EntityKeyboardComponent) -> Bool {
@@ -275,7 +278,9 @@ public final class EntityKeyboardComponent: Component {
         if lhs.useExternalSearchContainer != rhs.useExternalSearchContainer {
             return false
         }
-        
+        if lhs.customTintColor != rhs.customTintColor {
+            return false
+        }
         return true
     }
     
@@ -359,6 +364,7 @@ public final class EntityKeyboardComponent: Component {
                                     icon: icon,
                                     theme: component.theme,
                                     useAccentColor: false,
+                                    customTintColor: component.customTintColor,
                                     title: title,
                                     pressed: { [weak self] in
                                         self?.scrollToItemGroup(contentId: "masks", groupId: itemGroup.supergroupId, subgroupId: nil)
@@ -394,6 +400,7 @@ public final class EntityKeyboardComponent: Component {
                 contentTopPanels.append(AnyComponentWithIdentity(id: "masks", component: AnyComponent(EntityKeyboardTopPanelComponent(
                     id: "masks",
                     theme: component.theme,
+                    customTintColor: component.customTintColor,
                     items: topMaskItems,
                     containerSideInset: component.containerInsets.left + component.topPanelInsets.left,
                     defaultActiveItemId: maskContent.panelItemGroups.first?.groupId,
@@ -448,6 +455,7 @@ public final class EntityKeyboardComponent: Component {
                             icon: .featured,
                             theme: component.theme,
                             useAccentColor: false,
+                            customTintColor: component.customTintColor,
                             title: component.strings.Stickers_Trending,
                             pressed: { [weak self] in
                                 self?.component?.stickerContent?.inputInteractionHolder.inputInteraction?.openFeatured?()
@@ -493,6 +501,7 @@ public final class EntityKeyboardComponent: Component {
                                         icon: icon,
                                         theme: component.theme,
                                         useAccentColor: false,
+                                        customTintColor: component.customTintColor,
                                         title: title,
                                         pressed: { [weak self] in
                                             self?.scrollToItemGroup(contentId: "stickers", groupId: itemGroup.supergroupId, subgroupId: nil)
@@ -529,6 +538,7 @@ public final class EntityKeyboardComponent: Component {
                 contentTopPanels.append(AnyComponentWithIdentity(id: "stickers", component: AnyComponent(EntityKeyboardTopPanelComponent(
                     id: "stickers",
                     theme: component.theme,
+                    customTintColor: component.customTintColor,
                     items: topStickerItems,
                     containerSideInset: component.containerInsets.left + component.topPanelInsets.left,
                     defaultActiveItemId: stickerContent.panelItemGroups.first?.groupId,
@@ -591,6 +601,7 @@ public final class EntityKeyboardComponent: Component {
                                             icon: icon,
                                             theme: component.theme,
                                             useAccentColor: false,
+                                            customTintColor: component.customTintColor,
                                             title: title,
                                             pressed: { [weak self] in
                                                 self?.scrollToItemGroup(contentId: "emoji", groupId: itemGroup.supergroupId, subgroupId: nil)
@@ -628,6 +639,7 @@ public final class EntityKeyboardComponent: Component {
                                         animationRenderer: emojiContent.animationRenderer,
                                         theme: component.theme,
                                         title: itemGroup.title ?? "",
+                                        customTintColor: itemGroup.customTintColor,
                                         pressed: { [weak self] in
                                             self?.scrollToItemGroup(contentId: "emoji", groupId: itemGroup.supergroupId, subgroupId: nil)
                                         }
@@ -640,6 +652,7 @@ public final class EntityKeyboardComponent: Component {
                 contentTopPanels.append(AnyComponentWithIdentity(id: "emoji", component: AnyComponent(EntityKeyboardTopPanelComponent(
                     id: "emoji",
                     theme: component.theme,
+                    customTintColor: component.customTintColor,
                     items: topEmojiItems,
                     containerSideInset: component.containerInsets.left + component.topPanelInsets.left,
                     activeContentItemIdUpdated: emojiContentItemIdUpdated,

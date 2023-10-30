@@ -452,14 +452,14 @@ public extension Api {
 }
 public extension Api {
     enum User: TypeConstructorDescription {
-        case user(flags: Int32, flags2: Int32, id: Int64, accessHash: Int64?, firstName: String?, lastName: String?, username: String?, phone: String?, photo: Api.UserProfilePhoto?, status: Api.UserStatus?, botInfoVersion: Int32?, restrictionReason: [Api.RestrictionReason]?, botInlinePlaceholder: String?, langCode: String?, emojiStatus: Api.EmojiStatus?, usernames: [Api.Username]?, storiesMaxId: Int32?)
+        case user(flags: Int32, flags2: Int32, id: Int64, accessHash: Int64?, firstName: String?, lastName: String?, username: String?, phone: String?, photo: Api.UserProfilePhoto?, status: Api.UserStatus?, botInfoVersion: Int32?, restrictionReason: [Api.RestrictionReason]?, botInlinePlaceholder: String?, langCode: String?, emojiStatus: Api.EmojiStatus?, usernames: [Api.Username]?, storiesMaxId: Int32?, color: Int32?, backgroundEmojiId: Int64?)
         case userEmpty(id: Int64)
     
     public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
     switch self {
-                case .user(let flags, let flags2, let id, let accessHash, let firstName, let lastName, let username, let phone, let photo, let status, let botInfoVersion, let restrictionReason, let botInlinePlaceholder, let langCode, let emojiStatus, let usernames, let storiesMaxId):
+                case .user(let flags, let flags2, let id, let accessHash, let firstName, let lastName, let username, let phone, let photo, let status, let botInfoVersion, let restrictionReason, let botInlinePlaceholder, let langCode, let emojiStatus, let usernames, let storiesMaxId, let color, let backgroundEmojiId):
                     if boxed {
-                        buffer.appendInt32(-1414139616)
+                        buffer.appendInt32(-346018011)
                     }
                     serializeInt32(flags, buffer: buffer, boxed: false)
                     serializeInt32(flags2, buffer: buffer, boxed: false)
@@ -486,6 +486,8 @@ public extension Api {
                         item.serialize(buffer, true)
                     }}
                     if Int(flags2) & Int(1 << 5) != 0 {serializeInt32(storiesMaxId!, buffer: buffer, boxed: false)}
+                    if Int(flags2) & Int(1 << 7) != 0 {serializeInt32(color!, buffer: buffer, boxed: false)}
+                    if Int(flags2) & Int(1 << 6) != 0 {serializeInt64(backgroundEmojiId!, buffer: buffer, boxed: false)}
                     break
                 case .userEmpty(let id):
                     if boxed {
@@ -498,8 +500,8 @@ public extension Api {
     
     public func descriptionFields() -> (String, [(String, Any)]) {
         switch self {
-                case .user(let flags, let flags2, let id, let accessHash, let firstName, let lastName, let username, let phone, let photo, let status, let botInfoVersion, let restrictionReason, let botInlinePlaceholder, let langCode, let emojiStatus, let usernames, let storiesMaxId):
-                return ("user", [("flags", flags as Any), ("flags2", flags2 as Any), ("id", id as Any), ("accessHash", accessHash as Any), ("firstName", firstName as Any), ("lastName", lastName as Any), ("username", username as Any), ("phone", phone as Any), ("photo", photo as Any), ("status", status as Any), ("botInfoVersion", botInfoVersion as Any), ("restrictionReason", restrictionReason as Any), ("botInlinePlaceholder", botInlinePlaceholder as Any), ("langCode", langCode as Any), ("emojiStatus", emojiStatus as Any), ("usernames", usernames as Any), ("storiesMaxId", storiesMaxId as Any)])
+                case .user(let flags, let flags2, let id, let accessHash, let firstName, let lastName, let username, let phone, let photo, let status, let botInfoVersion, let restrictionReason, let botInlinePlaceholder, let langCode, let emojiStatus, let usernames, let storiesMaxId, let color, let backgroundEmojiId):
+                return ("user", [("flags", flags as Any), ("flags2", flags2 as Any), ("id", id as Any), ("accessHash", accessHash as Any), ("firstName", firstName as Any), ("lastName", lastName as Any), ("username", username as Any), ("phone", phone as Any), ("photo", photo as Any), ("status", status as Any), ("botInfoVersion", botInfoVersion as Any), ("restrictionReason", restrictionReason as Any), ("botInlinePlaceholder", botInlinePlaceholder as Any), ("langCode", langCode as Any), ("emojiStatus", emojiStatus as Any), ("usernames", usernames as Any), ("storiesMaxId", storiesMaxId as Any), ("color", color as Any), ("backgroundEmojiId", backgroundEmojiId as Any)])
                 case .userEmpty(let id):
                 return ("userEmpty", [("id", id as Any)])
     }
@@ -550,6 +552,10 @@ public extension Api {
             } }
             var _17: Int32?
             if Int(_2!) & Int(1 << 5) != 0 {_17 = reader.readInt32() }
+            var _18: Int32?
+            if Int(_2!) & Int(1 << 7) != 0 {_18 = reader.readInt32() }
+            var _19: Int64?
+            if Int(_2!) & Int(1 << 6) != 0 {_19 = reader.readInt64() }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
@@ -567,8 +573,10 @@ public extension Api {
             let _c15 = (Int(_1!) & Int(1 << 30) == 0) || _15 != nil
             let _c16 = (Int(_2!) & Int(1 << 0) == 0) || _16 != nil
             let _c17 = (Int(_2!) & Int(1 << 5) == 0) || _17 != nil
-            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 && _c11 && _c12 && _c13 && _c14 && _c15 && _c16 && _c17 {
-                return Api.User.user(flags: _1!, flags2: _2!, id: _3!, accessHash: _4, firstName: _5, lastName: _6, username: _7, phone: _8, photo: _9, status: _10, botInfoVersion: _11, restrictionReason: _12, botInlinePlaceholder: _13, langCode: _14, emojiStatus: _15, usernames: _16, storiesMaxId: _17)
+            let _c18 = (Int(_2!) & Int(1 << 7) == 0) || _18 != nil
+            let _c19 = (Int(_2!) & Int(1 << 6) == 0) || _19 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 && _c11 && _c12 && _c13 && _c14 && _c15 && _c16 && _c17 && _c18 && _c19 {
+                return Api.User.user(flags: _1!, flags2: _2!, id: _3!, accessHash: _4, firstName: _5, lastName: _6, username: _7, phone: _8, photo: _9, status: _10, botInfoVersion: _11, restrictionReason: _12, botInlinePlaceholder: _13, langCode: _14, emojiStatus: _15, usernames: _16, storiesMaxId: _17, color: _18, backgroundEmojiId: _19)
             }
             else {
                 return nil
@@ -1369,9 +1377,9 @@ public extension Api {
 public extension Api {
     enum WebPage: TypeConstructorDescription {
         case webPage(flags: Int32, id: Int64, url: String, displayUrl: String, hash: Int32, type: String?, siteName: String?, title: String?, description: String?, photo: Api.Photo?, embedUrl: String?, embedType: String?, embedWidth: Int32?, embedHeight: Int32?, duration: Int32?, author: String?, document: Api.Document?, cachedPage: Api.Page?, attributes: [Api.WebPageAttribute]?)
-        case webPageEmpty(id: Int64)
+        case webPageEmpty(flags: Int32, id: Int64, url: String?)
         case webPageNotModified(flags: Int32, cachedPageViews: Int32?)
-        case webPagePending(id: Int64, date: Int32)
+        case webPagePending(flags: Int32, id: Int64, url: String?, date: Int32)
     
     public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
     switch self {
@@ -1403,11 +1411,13 @@ public extension Api {
                         item.serialize(buffer, true)
                     }}
                     break
-                case .webPageEmpty(let id):
+                case .webPageEmpty(let flags, let id, let url):
                     if boxed {
-                        buffer.appendInt32(-350980120)
+                        buffer.appendInt32(555358088)
                     }
+                    serializeInt32(flags, buffer: buffer, boxed: false)
                     serializeInt64(id, buffer: buffer, boxed: false)
+                    if Int(flags) & Int(1 << 0) != 0 {serializeString(url!, buffer: buffer, boxed: false)}
                     break
                 case .webPageNotModified(let flags, let cachedPageViews):
                     if boxed {
@@ -1416,11 +1426,13 @@ public extension Api {
                     serializeInt32(flags, buffer: buffer, boxed: false)
                     if Int(flags) & Int(1 << 0) != 0 {serializeInt32(cachedPageViews!, buffer: buffer, boxed: false)}
                     break
-                case .webPagePending(let id, let date):
+                case .webPagePending(let flags, let id, let url, let date):
                     if boxed {
-                        buffer.appendInt32(-981018084)
+                        buffer.appendInt32(-1328464313)
                     }
+                    serializeInt32(flags, buffer: buffer, boxed: false)
                     serializeInt64(id, buffer: buffer, boxed: false)
+                    if Int(flags) & Int(1 << 0) != 0 {serializeString(url!, buffer: buffer, boxed: false)}
                     serializeInt32(date, buffer: buffer, boxed: false)
                     break
     }
@@ -1430,12 +1442,12 @@ public extension Api {
         switch self {
                 case .webPage(let flags, let id, let url, let displayUrl, let hash, let type, let siteName, let title, let description, let photo, let embedUrl, let embedType, let embedWidth, let embedHeight, let duration, let author, let document, let cachedPage, let attributes):
                 return ("webPage", [("flags", flags as Any), ("id", id as Any), ("url", url as Any), ("displayUrl", displayUrl as Any), ("hash", hash as Any), ("type", type as Any), ("siteName", siteName as Any), ("title", title as Any), ("description", description as Any), ("photo", photo as Any), ("embedUrl", embedUrl as Any), ("embedType", embedType as Any), ("embedWidth", embedWidth as Any), ("embedHeight", embedHeight as Any), ("duration", duration as Any), ("author", author as Any), ("document", document as Any), ("cachedPage", cachedPage as Any), ("attributes", attributes as Any)])
-                case .webPageEmpty(let id):
-                return ("webPageEmpty", [("id", id as Any)])
+                case .webPageEmpty(let flags, let id, let url):
+                return ("webPageEmpty", [("flags", flags as Any), ("id", id as Any), ("url", url as Any)])
                 case .webPageNotModified(let flags, let cachedPageViews):
                 return ("webPageNotModified", [("flags", flags as Any), ("cachedPageViews", cachedPageViews as Any)])
-                case .webPagePending(let id, let date):
-                return ("webPagePending", [("id", id as Any), ("date", date as Any)])
+                case .webPagePending(let flags, let id, let url, let date):
+                return ("webPagePending", [("flags", flags as Any), ("id", id as Any), ("url", url as Any), ("date", date as Any)])
     }
     }
     
@@ -1513,11 +1525,17 @@ public extension Api {
             }
         }
         public static func parse_webPageEmpty(_ reader: BufferReader) -> WebPage? {
-            var _1: Int64?
-            _1 = reader.readInt64()
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: Int64?
+            _2 = reader.readInt64()
+            var _3: String?
+            if Int(_1!) & Int(1 << 0) != 0 {_3 = parseString(reader) }
             let _c1 = _1 != nil
-            if _c1 {
-                return Api.WebPage.webPageEmpty(id: _1!)
+            let _c2 = _2 != nil
+            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
+            if _c1 && _c2 && _c3 {
+                return Api.WebPage.webPageEmpty(flags: _1!, id: _2!, url: _3)
             }
             else {
                 return nil
@@ -1538,14 +1556,20 @@ public extension Api {
             }
         }
         public static func parse_webPagePending(_ reader: BufferReader) -> WebPage? {
-            var _1: Int64?
-            _1 = reader.readInt64()
-            var _2: Int32?
-            _2 = reader.readInt32()
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: Int64?
+            _2 = reader.readInt64()
+            var _3: String?
+            if Int(_1!) & Int(1 << 0) != 0 {_3 = parseString(reader) }
+            var _4: Int32?
+            _4 = reader.readInt32()
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            if _c1 && _c2 {
-                return Api.WebPage.webPagePending(id: _1!, date: _2!)
+            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
+            let _c4 = _4 != nil
+            if _c1 && _c2 && _c3 && _c4 {
+                return Api.WebPage.webPagePending(flags: _1!, id: _2!, url: _3, date: _4!)
             }
             else {
                 return nil
