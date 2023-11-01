@@ -266,7 +266,7 @@ lane :generate_project do |options|
   --cacheDir=#{BAZEL_LOCAL_CACHE} \
   generateProject \
   --configurationPath=#{configuration_path} \
-  --buildNumber=172 \
+  --buildNumber=555 \
   --gitCodesigningRepository=#{SIGN_URL} \
   --gitCodesigningType=development"
 end
