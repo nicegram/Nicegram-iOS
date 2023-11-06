@@ -741,13 +741,14 @@ public extension Api {
         case messageMediaGame(game: Api.Game)
         case messageMediaGeo(geo: Api.GeoPoint)
         case messageMediaGeoLive(flags: Int32, geo: Api.GeoPoint, heading: Int32?, period: Int32, proximityNotificationRadius: Int32?)
+        case messageMediaGiveaway(flags: Int32, channels: [Int64], countriesIso2: [String]?, quantity: Int32, months: Int32, untilDate: Int32)
         case messageMediaInvoice(flags: Int32, title: String, description: String, photo: Api.WebDocument?, receiptMsgId: Int32?, currency: String, totalAmount: Int64, startParam: String, extendedMedia: Api.MessageExtendedMedia?)
         case messageMediaPhoto(flags: Int32, photo: Api.Photo?, ttlSeconds: Int32?)
         case messageMediaPoll(poll: Api.Poll, results: Api.PollResults)
         case messageMediaStory(flags: Int32, peer: Api.Peer, id: Int32, story: Api.StoryItem?)
         case messageMediaUnsupported
         case messageMediaVenue(geo: Api.GeoPoint, title: String, address: String, provider: String, venueId: String, venueType: String)
-        case messageMediaWebPage(webpage: Api.WebPage)
+        case messageMediaWebPage(flags: Int32, webpage: Api.WebPage)
     
     public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
     switch self {
@@ -805,6 +806,25 @@ public extension Api {
                     serializeInt32(period, buffer: buffer, boxed: false)
                     if Int(flags) & Int(1 << 1) != 0 {serializeInt32(proximityNotificationRadius!, buffer: buffer, boxed: false)}
                     break
+                case .messageMediaGiveaway(let flags, let channels, let countriesIso2, let quantity, let months, let untilDate):
+                    if boxed {
+                        buffer.appendInt32(1478887012)
+                    }
+                    serializeInt32(flags, buffer: buffer, boxed: false)
+                    buffer.appendInt32(481674261)
+                    buffer.appendInt32(Int32(channels.count))
+                    for item in channels {
+                        serializeInt64(item, buffer: buffer, boxed: false)
+                    }
+                    if Int(flags) & Int(1 << 1) != 0 {buffer.appendInt32(481674261)
+                    buffer.appendInt32(Int32(countriesIso2!.count))
+                    for item in countriesIso2! {
+                        serializeString(item, buffer: buffer, boxed: false)
+                    }}
+                    serializeInt32(quantity, buffer: buffer, boxed: false)
+                    serializeInt32(months, buffer: buffer, boxed: false)
+                    serializeInt32(untilDate, buffer: buffer, boxed: false)
+                    break
                 case .messageMediaInvoice(let flags, let title, let description, let photo, let receiptMsgId, let currency, let totalAmount, let startParam, let extendedMedia):
                     if boxed {
                         buffer.appendInt32(-156940077)
@@ -860,10 +880,11 @@ public extension Api {
                     serializeString(venueId, buffer: buffer, boxed: false)
                     serializeString(venueType, buffer: buffer, boxed: false)
                     break
-                case .messageMediaWebPage(let webpage):
+                case .messageMediaWebPage(let flags, let webpage):
                     if boxed {
-                        buffer.appendInt32(-1557277184)
+                        buffer.appendInt32(-571405253)
                     }
+                    serializeInt32(flags, buffer: buffer, boxed: false)
                     webpage.serialize(buffer, true)
                     break
     }
@@ -885,6 +906,8 @@ public extension Api {
                 return ("messageMediaGeo", [("geo", geo as Any)])
                 case .messageMediaGeoLive(let flags, let geo, let heading, let period, let proximityNotificationRadius):
                 return ("messageMediaGeoLive", [("flags", flags as Any), ("geo", geo as Any), ("heading", heading as Any), ("period", period as Any), ("proximityNotificationRadius", proximityNotificationRadius as Any)])
+                case .messageMediaGiveaway(let flags, let channels, let countriesIso2, let quantity, let months, let untilDate):
+                return ("messageMediaGiveaway", [("flags", flags as Any), ("channels", channels as Any), ("countriesIso2", countriesIso2 as Any), ("quantity", quantity as Any), ("months", months as Any), ("untilDate", untilDate as Any)])
                 case .messageMediaInvoice(let flags, let title, let description, let photo, let receiptMsgId, let currency, let totalAmount, let startParam, let extendedMedia):
                 return ("messageMediaInvoice", [("flags", flags as Any), ("title", title as Any), ("description", description as Any), ("photo", photo as Any), ("receiptMsgId", receiptMsgId as Any), ("currency", currency as Any), ("totalAmount", totalAmount as Any), ("startParam", startParam as Any), ("extendedMedia", extendedMedia as Any)])
                 case .messageMediaPhoto(let flags, let photo, let ttlSeconds):
@@ -897,8 +920,8 @@ public extension Api {
                 return ("messageMediaUnsupported", [])
                 case .messageMediaVenue(let geo, let title, let address, let provider, let venueId, let venueType):
                 return ("messageMediaVenue", [("geo", geo as Any), ("title", title as Any), ("address", address as Any), ("provider", provider as Any), ("venueId", venueId as Any), ("venueType", venueType as Any)])
-                case .messageMediaWebPage(let webpage):
-                return ("messageMediaWebPage", [("webpage", webpage as Any)])
+                case .messageMediaWebPage(let flags, let webpage):
+                return ("messageMediaWebPage", [("flags", flags as Any), ("webpage", webpage as Any)])
     }
     }
     
@@ -1012,6 +1035,36 @@ public extension Api {
             let _c5 = (Int(_1!) & Int(1 << 1) == 0) || _5 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 {
                 return Api.MessageMedia.messageMediaGeoLive(flags: _1!, geo: _2!, heading: _3, period: _4!, proximityNotificationRadius: _5)
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_messageMediaGiveaway(_ reader: BufferReader) -> MessageMedia? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: [Int64]?
+            if let _ = reader.readInt32() {
+                _2 = Api.parseVector(reader, elementSignature: 570911930, elementType: Int64.self)
+            }
+            var _3: [String]?
+            if Int(_1!) & Int(1 << 1) != 0 {if let _ = reader.readInt32() {
+                _3 = Api.parseVector(reader, elementSignature: -1255641564, elementType: String.self)
+            } }
+            var _4: Int32?
+            _4 = reader.readInt32()
+            var _5: Int32?
+            _5 = reader.readInt32()
+            var _6: Int32?
+            _6 = reader.readInt32()
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = (Int(_1!) & Int(1 << 1) == 0) || _3 != nil
+            let _c4 = _4 != nil
+            let _c5 = _5 != nil
+            let _c6 = _6 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
+                return Api.MessageMedia.messageMediaGiveaway(flags: _1!, channels: _2!, countriesIso2: _3, quantity: _4!, months: _5!, untilDate: _6!)
             }
             else {
                 return nil
@@ -1149,13 +1202,16 @@ public extension Api {
             }
         }
         public static func parse_messageMediaWebPage(_ reader: BufferReader) -> MessageMedia? {
-            var _1: Api.WebPage?
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: Api.WebPage?
             if let signature = reader.readInt32() {
-                _1 = Api.parse(reader, signature: signature) as? Api.WebPage
+                _2 = Api.parse(reader, signature: signature) as? Api.WebPage
             }
             let _c1 = _1 != nil
-            if _c1 {
-                return Api.MessageMedia.messageMediaWebPage(webpage: _1!)
+            let _c2 = _2 != nil
+            if _c1 && _c2 {
+                return Api.MessageMedia.messageMediaWebPage(flags: _1!, webpage: _2!)
             }
             else {
                 return nil

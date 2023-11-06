@@ -737,9 +737,7 @@ private final class DrawingScreenComponent: CombinedComponent {
                         animationCache: context.animationCache,
                         animationRenderer: context.animationRenderer,
                         isStandalone: false,
-                        isStatusSelection: false,
-                        isReactionSelection: false,
-                        isEmojiSelection: true,
+                        subject: .emoji,
                         hasTrending: false,
                         topReactionItems: [],
                         areUnicodeEmojiEnabled: true,
@@ -3132,7 +3130,7 @@ public final class DrawingToolsInteraction {
                 }
             }
             let entityFrame = entityView.convert(entityView.selectionBounds, to: node.view).offsetBy(dx: 0.0, dy: -6.0)
-            let controller = ContextMenuController(actions: actions)
+            let controller = makeContextMenuController(actions: actions)
             let bounds = node.bounds.insetBy(dx: 0.0, dy: 160.0)
             self.present(
                 controller,

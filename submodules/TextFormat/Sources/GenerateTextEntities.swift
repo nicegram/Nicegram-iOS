@@ -144,7 +144,7 @@ private func commitEntity(_ utf16: String.UTF16View, _ type: CurrentEntityType, 
     }
 }
 
-public func generateChatInputTextEntities(_ text: NSAttributedString, maxAnimatedEmojisInText: Int? = nil) -> [MessageTextEntity] {
+public func generateChatInputTextEntities(_ text: NSAttributedString, maxAnimatedEmojisInText: Int? = nil, generateLinks: Bool = false) -> [MessageTextEntity] {
     var entities: [MessageTextEntity] = []
 
     text.enumerateAttributes(in: NSRange(location: 0, length: text.length), options: [], using: { attributes, range, _ in
@@ -167,9 +167,20 @@ public func generateChatInputTextEntities(_ text: NSAttributedString, maxAnimate
                 entities.append(MessageTextEntity(range: range.lowerBound ..< range.upperBound, type: .Spoiler))
             } else if key == ChatTextInputAttributes.customEmoji, let value = value as? ChatTextInputTextCustomEmojiAttribute {
                 entities.append(MessageTextEntity(range: range.lowerBound ..< range.upperBound, type: .CustomEmoji(stickerPack: nil, fileId: value.fileId)))
+            } else if key == ChatTextInputAttributes.code {
+                entities.append(MessageTextEntity(range: range.lowerBound ..< range.upperBound, type: .Code))
+            } else if key == ChatTextInputAttributes.quote {
+                entities.append(MessageTextEntity(range: range.lowerBound ..< range.upperBound, type: .BlockQuote))
             }
         }
     })
+    
+    for entity in generateTextEntities(text.string, enabledTypes: .allUrl) {
+        if case .Url = entity.type {
+            entities.append(entity)
+        }
+    }
+    
     return entities
 }
 

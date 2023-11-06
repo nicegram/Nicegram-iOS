@@ -429,7 +429,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
         )
         self.textNode.visibility = true
         
-        let textSelectionNode = TextSelectionNode(theme: TextSelectionTheme(selection: defaultDarkPresentationTheme.list.itemAccentColor.withMultipliedAlpha(0.5), knob: defaultDarkPresentationTheme.list.itemAccentColor), strings: presentationData.strings, textNode: self.textNode, updateIsActive: { [weak self] value in
+        let textSelectionNode = TextSelectionNode(theme: TextSelectionTheme(selection: defaultDarkPresentationTheme.list.itemAccentColor.withMultipliedAlpha(0.5), knob: defaultDarkPresentationTheme.list.itemAccentColor, isDark: true), strings: presentationData.strings, textNode: self.textNode, updateIsActive: { [weak self] value in
             guard let self else {
                 return
             }
@@ -534,6 +534,8 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
                     //component.controller()?.present(translateController, in: .window(.root))
                     self.controllerInteraction?.presentController(translateController, nil)
                 })
+            case .quote:
+                break
             }
         })
         
@@ -553,6 +555,8 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
                 if let _ = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.Spoiler)] {
                     return false
                 } else if let _ = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.URL)] as? String {
+                    return false
+                } else if let _ = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.Timecode)] {
                     return false
                 } else if let _ = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.PeerMention)] as? TelegramPeerMention {
                     return false
@@ -727,6 +731,21 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
             default:
                 break
         }
+    }
+    
+    override public func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        let result = super.hitTest(point, with: event)
+        
+        if let textSelectionNode = self.textSelectionNode, result === textSelectionNode.view {
+            let localPoint = self.view.convert(point, to: textSelectionNode.view)
+            if !textSelectionNode.canBeginSelection(localPoint) {
+                if let result = self.textNode.view.hitTest(self.view.convert(point, to: self.textNode.view), with: event) {
+                    return result
+                }
+            }
+        }
+        
+        return result
     }
     
     private func actionForAttributes(_ attributes: [NSAttributedString.Key: Any], _ index: Int) -> GalleryControllerInteractionTapAction? {
@@ -1062,9 +1081,10 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
             self.fullscreenButton.isHidden = true
         }
         
-        var textFrame = CGRect()
-        var visibleTextHeight: CGFloat = 0.0
         if !self.textNode.isHidden {
+            var textFrame = CGRect()
+            var visibleTextHeight: CGFloat = 0.0
+            
             let sideInset: CGFloat = 8.0 + leftInset
             let topInset: CGFloat = 8.0
             let textBottomInset: CGFloat = 8.0
@@ -1092,7 +1112,11 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, UIScroll
                     self.scrollNode.frame = scrollNodeFrame
                 }
                 
-                textOffset = min(400.0, self.scrollNode.view.contentOffset.y)
+                var maxTextOffset: CGFloat = size.height - bottomInset - 238.0 - UIScreenPixel
+                if let _ = self.scrubberView {
+                    maxTextOffset -= 44.0
+                }
+                textOffset = min(maxTextOffset, self.scrollNode.view.contentOffset.y)
                 panelHeight = max(0.0, panelHeight + visibleTextPanelHeight + textOffset)
                 
                 if self.scrollNode.view.isScrollEnabled {

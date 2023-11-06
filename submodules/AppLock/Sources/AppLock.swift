@@ -92,6 +92,9 @@ public final class AppLockContextImpl: AppLockContext {
     private let rootPath: String
     private let syncQueue = Queue()
     
+    private var disposable: Disposable?
+    private var autolockTimeoutDisposable: Disposable?
+    
     private let applicationBindings: TelegramApplicationBindings
     private let accountManager: AccountManager<TelegramAccountManagerTypes>
     private let presentationDataSignal: Signal<PresentationData, NoError>
@@ -172,14 +175,14 @@ public final class AppLockContextImpl: AppLockContext {
             strongSelf.hiddenAccountsAccessChallengeData = value
         })
         
-        let _ = (combineLatest(queue: .mainQueue(),
+        self.disposable = (combineLatest(queue: .mainQueue(),
             accountManager.accessChallengeData(),
             accountManager.sharedData(keys: Set([ApplicationSpecificSharedDataKeys.presentationPasscodeSettings])),
             presentationDataSignal,
             applicationBindings.applicationIsActive,
             self.currentState.get()
         )
-        |> deliverOnMainQueue).start(next: { [weak self] accessChallengeData, sharedData, presentationData, appInForeground, state in
+        |> deliverOnMainQueue).startStrict(next: { [weak self] accessChallengeData, sharedData, presentationData, appInForeground, state in
             guard let strongSelf = self else {
                 return
             }
@@ -363,8 +366,8 @@ public final class AppLockContextImpl: AppLockContext {
             strongSelf.accountManager.hiddenAccountManager.unlockedAccountRecordIdPromise.set(nil)
         })
         
-        let _ = (self.autolockTimeout.get()
-        |> deliverOnMainQueue).start(next: { [weak self] autolockTimeout in
+        self.autolockTimeoutDisposable = (self.autolockTimeout.get()
+        |> deliverOnMainQueue).startStrict(next: { [weak self] autolockTimeout in
             self?.updateLockState { state in
                 var state = state
                 state.autolockTimeout = autolockTimeout
@@ -383,6 +386,16 @@ public final class AppLockContextImpl: AppLockContext {
             }).start() { [weak self] isAccountHidden in
                 self?.isCurrentAccountHidden = isAccountHidden
             }
+    }
+    
+    deinit {
+        // MARK: Nicegram DB Changes
+        self.hiddenAccountsAccessChallengeDataDisposable?.dispose()
+        self.applicationInForegroundDisposable?.dispose()
+        //
+        
+        self.disposable?.dispose()
+        self.autolockTimeoutDisposable?.dispose()
     }
     
     private func updateTimestampRenewTimer(shouldRun: Bool) {
@@ -495,10 +508,5 @@ public final class AppLockContextImpl: AppLockContext {
             state.unlockAttempts = unlockAttempts
             return state
         }
-    }
-    // MARK: Nicegram DB Changes
-    deinit {
-        self.hiddenAccountsAccessChallengeDataDisposable?.dispose()
-        self.applicationInForegroundDisposable?.dispose()
     }
 }

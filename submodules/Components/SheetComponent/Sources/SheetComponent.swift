@@ -37,8 +37,17 @@ public final class SheetComponentEnvironment: Equatable {
     }
 }
 
+public let sheetComponentTag = GenericComponentViewTag()
 public final class SheetComponent<ChildEnvironmentType: Equatable>: Component {
     public typealias EnvironmentType = (ChildEnvironmentType, SheetComponentEnvironment)
+    
+    public class ExternalState {
+        public fileprivate(set) var contentHeight: CGFloat
+        
+        public init() {
+            self.contentHeight = 0.0
+        }
+    }
     
     public enum BackgroundColor: Equatable {
         public enum BlurStyle: Equatable {
@@ -52,15 +61,21 @@ public final class SheetComponent<ChildEnvironmentType: Equatable>: Component {
     
     public let content: AnyComponent<ChildEnvironmentType>
     public let backgroundColor: BackgroundColor
+    public let followContentSizeChanges: Bool
+    public let externalState: ExternalState?
     public let animateOut: ActionSlot<Action<()>>
     
     public init(
         content: AnyComponent<ChildEnvironmentType>,
         backgroundColor: BackgroundColor,
+        followContentSizeChanges: Bool = false,
+        externalState: ExternalState? = nil,
         animateOut: ActionSlot<Action<()>>
     ) {
         self.content = content
         self.backgroundColor = backgroundColor
+        self.followContentSizeChanges = followContentSizeChanges
+        self.externalState = externalState
         self.animateOut = animateOut
     }
     
@@ -69,6 +84,9 @@ public final class SheetComponent<ChildEnvironmentType: Equatable>: Component {
             return false
         }
         if lhs.backgroundColor != rhs.backgroundColor {
+            return false
+        }
+        if lhs.followContentSizeChanges != rhs.followContentSizeChanges {
             return false
         }
         if lhs.animateOut != rhs.animateOut {
@@ -90,12 +108,24 @@ public final class SheetComponent<ChildEnvironmentType: Equatable>: Component {
         }
     }
         
-    public final class View: UIView, UIScrollViewDelegate {
+    public final class View: UIView, UIScrollViewDelegate, ComponentTaggedView {
+        public final class Tag {
+            public init() {
+            }
+        }
+        
+        public func matches(tag: Any) -> Bool {
+            if let _ = tag as? Tag {
+                return true
+            }
+            return false
+        }
+        
         private let dimView: UIView
         private let scrollView: ScrollView
         private let backgroundView: UIView
         private var effectView: UIVisualEffectView?
-        private let contentView: ComponentHostView<ChildEnvironmentType>
+        private let contentView: ComponentView<ChildEnvironmentType>
         
         private var isAnimatingOut: Bool = false
         private var previousIsDisplaying: Bool = false
@@ -120,7 +150,7 @@ public final class SheetComponent<ChildEnvironmentType: Equatable>: Component {
             self.backgroundView.layer.cornerRadius = 12.0
             self.backgroundView.layer.masksToBounds = true
             
-            self.contentView = ComponentHostView<ChildEnvironmentType>()
+            self.contentView = ComponentView<ChildEnvironmentType>()
             
             super.init(frame: frame)
             
@@ -128,7 +158,6 @@ public final class SheetComponent<ChildEnvironmentType: Equatable>: Component {
             
             self.addSubview(self.dimView)
             self.scrollView.addSubview(self.backgroundView)
-            self.scrollView.addSubview(self.contentView)
             self.addSubview(self.scrollView)
             
             self.dimView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.dimViewTapGesture(_:))))
@@ -157,6 +186,10 @@ public final class SheetComponent<ChildEnvironmentType: Equatable>: Component {
             if case .ended = recognizer.state {
                 self.dismiss?(true)
             }
+        }
+        
+        public func dismissAnimated() {
+            self.dismiss?(true)
         }
         
         private var scrollingOut = false
@@ -228,18 +261,21 @@ public final class SheetComponent<ChildEnvironmentType: Equatable>: Component {
             self.isUserInteractionEnabled = false
             self.dimView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, removeOnCompletion: false)
             
+            guard let contentView = self.contentView.view else {
+                return
+            }
             if let initialVelocity = initialVelocity {
                 let transition = ContainedViewLayoutTransition.animated(duration: 0.35, curve: .customSpring(damping: 124.0, initialVelocity: initialVelocity))
                 
                 let contentOffset = (self.scrollView.contentOffset.y + self.scrollView.contentInset.top - self.scrollView.contentSize.height) * -1.0
-                let dismissalOffset = self.scrollView.contentSize.height + abs(self.contentView.frame.minY)
+                let dismissalOffset = self.scrollView.contentSize.height + abs(contentView.frame.minY)
                 let delta = dismissalOffset - contentOffset
                 
                 transition.updatePosition(layer: self.scrollView.layer, position: CGPoint(x: self.scrollView.center.x, y: self.scrollView.center.y + delta), completion: { _ in
                     completion()
                 })
             } else {
-                self.scrollView.layer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: self.scrollView.contentSize.height + abs(self.contentView.frame.minY)), duration: 0.25, timingFunction: CAMediaTimingFunctionName.easeInEaseOut.rawValue, removeOnCompletion: false, additive: true, completion: { _ in
+                self.scrollView.layer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: self.scrollView.contentSize.height + abs(contentView.frame.minY)), duration: 0.25, timingFunction: CAMediaTimingFunctionName.easeInEaseOut.rawValue, removeOnCompletion: false, additive: true, completion: { _ in
                     completion()
                 })
             }
@@ -293,6 +329,7 @@ public final class SheetComponent<ChildEnvironmentType: Equatable>: Component {
                 containerSize = CGSize(width: availableSize.width, height: .greatestFiniteMagnitude)
             }
             
+            self.contentView.parentState = state
             let contentSize = self.contentView.update(
                 transition: transition,
                 component: component.content,
@@ -301,31 +338,39 @@ public final class SheetComponent<ChildEnvironmentType: Equatable>: Component {
                 },
                 containerSize: containerSize
             )
+            component.externalState?.contentHeight = contentSize.height
             
             self.ignoreScrolling = true
-
-            if sheetEnvironment.isCentered {
-                let y: CGFloat = floorToScreenPixels((availableSize.height - contentSize.height) / 2.0)
-                transition.setFrame(view: self.contentView, frame: CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - contentSize.width) / 2.0), y: -y), size: contentSize), completion: nil)
-                transition.setFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - contentSize.width) / 2.0), y: -y), size: contentSize), completion: nil)
-                if let effectView = self.effectView {
-                    transition.setFrame(view: effectView, frame: CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - contentSize.width) / 2.0), y: -y), size: contentSize), completion: nil)
+            if let contentView = self.contentView.view {
+                if contentView.superview == nil {
+                    self.scrollView.addSubview(contentView)
                 }
-            } else {
-                transition.setFrame(view: self.contentView, frame: CGRect(origin: .zero, size: contentSize), completion: nil)
-                transition.setFrame(view: self.backgroundView, frame: CGRect(origin: .zero, size: CGSize(width: contentSize.width, height: contentSize.height + 1000.0)), completion: nil)
-                if let effectView = self.effectView {
-                    transition.setFrame(view: effectView, frame: CGRect(origin: .zero, size: CGSize(width: contentSize.width, height: contentSize.height + 1000.0)), completion: nil)
+                if sheetEnvironment.isCentered {
+                    let y: CGFloat = floorToScreenPixels((availableSize.height - contentSize.height) / 2.0)
+                    transition.setFrame(view: contentView, frame: CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - contentSize.width) / 2.0), y: -y), size: contentSize), completion: nil)
+                    transition.setFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - contentSize.width) / 2.0), y: -y), size: contentSize), completion: nil)
+                    if let effectView = self.effectView {
+                        transition.setFrame(view: effectView, frame: CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - contentSize.width) / 2.0), y: -y), size: contentSize), completion: nil)
+                    }
+                } else {
+                    transition.setFrame(view: contentView, frame: CGRect(origin: .zero, size: contentSize), completion: nil)
+                    transition.setFrame(view: self.backgroundView, frame: CGRect(origin: .zero, size: CGSize(width: contentSize.width, height: contentSize.height + 1000.0)), completion: nil)
+                    if let effectView = self.effectView {
+                        transition.setFrame(view: effectView, frame: CGRect(origin: .zero, size: CGSize(width: contentSize.width, height: contentSize.height + 1000.0)), completion: nil)
+                    }
                 }
             }
             transition.setFrame(view: self.scrollView, frame: CGRect(origin: CGPoint(), size: availableSize), completion: nil)
             
+            let previousContentSize = self.scrollView.contentSize
             self.scrollView.contentSize = contentSize
             self.scrollView.contentInset = UIEdgeInsets(top: max(0.0, availableSize.height - contentSize.height) + contentSize.height, left: 0.0, bottom: 0.0, right: 0.0)
             self.ignoreScrolling = false
             
             if let currentAvailableSize = self.currentAvailableSize, currentAvailableSize.height != availableSize.height {
                 self.scrollView.contentOffset = CGPoint(x: 0.0, y: -(availableSize.height - contentSize.height))
+            } else if component.followContentSizeChanges, !previousContentSize.height.isZero, previousContentSize != contentSize {
+                transition.setBounds(view: self.scrollView, bounds: CGRect(origin: CGPoint(x: 0.0, y: -(availableSize.height - contentSize.height)), size: availableSize))
             }
             if self.currentHasInputHeight != previousHasInputHeight {
                 transition.setBounds(view: self.scrollView, bounds: CGRect(origin: CGPoint(x: 0.0, y: -(availableSize.height - contentSize.height)), size: self.scrollView.bounds.size))

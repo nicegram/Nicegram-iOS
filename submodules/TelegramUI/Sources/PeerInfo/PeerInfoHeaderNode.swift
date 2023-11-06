@@ -2855,7 +2855,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
                                         } else {
                                             return .complete()
                                         }
-                                    }).start(next: { fileAndPackTitle in
+                                    }).startStrict(next: { fileAndPackTitle in
                                         guard let strongSelf = self else {
                                             return
                                         }

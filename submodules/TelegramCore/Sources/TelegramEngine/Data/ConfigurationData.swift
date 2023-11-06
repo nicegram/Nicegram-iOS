@@ -56,6 +56,10 @@ public enum EngineConfiguration {
         public let maxStoriesWeeklyCount: Int32
         public let maxStoriesMonthlyCount: Int32
         public let maxStoriesSuggestedReactions: Int32
+        public let maxGiveawayChannelsCount: Int32
+        public let maxGiveawayCountriesCount: Int32
+        public let maxGiveawayPeriodSeconds: Int32
+        public let minChannelNameColorLevel: Int32
         
         public static var defaultValue: UserLimits {
             return UserLimits(UserLimitsConfiguration.defaultValue)
@@ -81,7 +85,11 @@ public enum EngineConfiguration {
             maxExpiringStoriesCount: Int32,
             maxStoriesWeeklyCount: Int32,
             maxStoriesMonthlyCount: Int32,
-            maxStoriesSuggestedReactions: Int32
+            maxStoriesSuggestedReactions: Int32,
+            maxGiveawayChannelsCount: Int32,
+            maxGiveawayCountriesCount: Int32,
+            maxGiveawayPeriodSeconds: Int32,
+            minChannelNameColorLevel: Int32
         ) {
             self.maxPinnedChatCount = maxPinnedChatCount
             self.maxArchivedPinnedChatCount = maxArchivedPinnedChatCount
@@ -103,6 +111,10 @@ public enum EngineConfiguration {
             self.maxStoriesWeeklyCount = maxStoriesWeeklyCount
             self.maxStoriesMonthlyCount = maxStoriesMonthlyCount
             self.maxStoriesSuggestedReactions = maxStoriesSuggestedReactions
+            self.maxGiveawayChannelsCount = maxGiveawayChannelsCount
+            self.maxGiveawayCountriesCount = maxGiveawayCountriesCount
+            self.maxGiveawayPeriodSeconds = maxGiveawayPeriodSeconds
+            self.minChannelNameColorLevel = minChannelNameColorLevel
         }
     }
 }
@@ -159,7 +171,11 @@ public extension EngineConfiguration.UserLimits {
             maxExpiringStoriesCount: userLimitsConfiguration.maxExpiringStoriesCount,
             maxStoriesWeeklyCount: userLimitsConfiguration.maxStoriesWeeklyCount,
             maxStoriesMonthlyCount: userLimitsConfiguration.maxStoriesMonthlyCount,
-            maxStoriesSuggestedReactions: userLimitsConfiguration.maxStoriesSuggestedReactions
+            maxStoriesSuggestedReactions: userLimitsConfiguration.maxStoriesSuggestedReactions,
+            maxGiveawayChannelsCount: userLimitsConfiguration.maxGiveawayChannelsCount,
+            maxGiveawayCountriesCount: userLimitsConfiguration.maxGiveawayCountriesCount,
+            maxGiveawayPeriodSeconds: userLimitsConfiguration.maxGiveawayPeriodSeconds,
+            minChannelNameColorLevel: userLimitsConfiguration.minChannelNameColorLevel
         )
     }
 }

@@ -61,7 +61,7 @@ public func customizeDefaultDarkPresentationTheme(theme: PresentationTheme, edit
                 0x0771ff,
                 0x9047ff,
                 0xa256bf,
-            ]
+            ].reversed()
         } else {
             bubbleColors = [accentColor.withMultiplied(hue: 0.966, saturation: 0.61, brightness: 0.98).rgb, accentColor.rgb]
         }
@@ -444,7 +444,7 @@ public func makeDefaultDarkPresentationTheme(extendingThemeReference: Presentati
         ),
         itemCheckColors: PresentationThemeFillStrokeForeground(
             fillColor: UIColor(rgb: 0xffffff),
-            strokeColor: UIColor(rgb: 0xffffff, alpha: 0.5),
+            strokeColor: UIColor(rgb: 0xffffff, alpha: 0.3),
             foregroundColor:  UIColor(rgb: 0x000000)
         ),
         controlSecondaryColor: UIColor(rgb: 0xffffff, alpha: 0.5),

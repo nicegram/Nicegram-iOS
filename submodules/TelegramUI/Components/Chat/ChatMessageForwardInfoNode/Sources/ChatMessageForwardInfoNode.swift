@@ -6,6 +6,7 @@ import Postbox
 import TelegramCore
 import TelegramPresentationData
 import LocalizedPeerData
+import AccountContext
 
 public enum ChatMessageForwardInfoType: Equatable {
     case bubble(incoming: Bool)
@@ -106,10 +107,10 @@ public class ChatMessageForwardInfoNode: ASDisplayNode {
         }
     }
     
-    public static func asyncLayout(_ maybeNode: ChatMessageForwardInfoNode?) -> (_ presentationData: ChatPresentationData, _ strings: PresentationStrings, _ type: ChatMessageForwardInfoType, _ peer: Peer?, _ authorName: String?, _ psaType: String?, _ storyData: StoryData?, _ constrainedSize: CGSize) -> (CGSize, (CGFloat) -> ChatMessageForwardInfoNode) {
+    public static func asyncLayout(_ maybeNode: ChatMessageForwardInfoNode?) -> (_ context: AccountContext, _ presentationData: ChatPresentationData, _ strings: PresentationStrings, _ type: ChatMessageForwardInfoType, _ peer: Peer?, _ authorName: String?, _ psaType: String?, _ storyData: StoryData?, _ constrainedSize: CGSize) -> (CGSize, (CGFloat) -> ChatMessageForwardInfoNode) {
         let textNodeLayout = TextNode.asyncLayout(maybeNode?.textNode)
         
-        return { presentationData, strings, type, peer, authorName, psaType, storyData, constrainedSize in
+        return { context, presentationData, strings, type, peer, authorName, psaType, storyData, constrainedSize in
             let fontSize = floor(presentationData.fontSize.baseDisplaySize * 13.0 / 17.0)
             let prefixFont = Font.regular(fontSize)
             let peerFont = Font.medium(fontSize)
@@ -162,7 +163,15 @@ public class ChatMessageForwardInfoNode: ASDisplayNode {
                             completeSourceString = strings.Message_GenericForwardedPsa(peerString)
                         }
                     } else {
-                        titleColor = incoming ? presentationData.theme.theme.chat.message.incoming.accentTextColor : presentationData.theme.theme.chat.message.outgoing.accentTextColor
+                        if incoming {
+                            if let nameColor = peer?.nameColor {
+                                titleColor = context.peerNameColors.get(nameColor, dark: presentationData.theme.theme.overallDarkAppearance).main
+                            } else {
+                                titleColor = presentationData.theme.theme.chat.message.incoming.accentTextColor
+                            }
+                        } else {
+                            titleColor = presentationData.theme.theme.chat.message.outgoing.accentTextColor
+                        }
                         
                         if let storyData = storyData {
                             switch storyData.storyType {

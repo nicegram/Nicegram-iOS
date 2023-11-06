@@ -52,14 +52,17 @@ public class WebAppCancelButtonNode: ASDisplayNode {
     }
     private let strings: PresentationStrings
     
+    private weak var colorSnapshotView: UIView?
+    
     public func updateColor(_ color: UIColor?, transition: ContainedViewLayoutTransition) {
         let previousColor = self.color
         self.color = color
-        
-        if case let .animated(duration, curve) = transition, previousColor != color {
+                
+        if case let .animated(duration, curve) = transition, previousColor != color, !self.animatingStateChange {
             if let snapshotView = self.view.snapshotContentTree() {
                 snapshotView.frame = self.bounds
                 self.view.addSubview(snapshotView)
+                self.colorSnapshotView = snapshotView
                 
                 snapshotView.layer.animateAlpha(from: 1.0, to: 0.0, duration: duration, timingFunction: curve.timingFunction, removeOnCompletion: false, completion: { _ in
                     snapshotView.removeFromSuperview()
@@ -124,6 +127,11 @@ public class WebAppCancelButtonNode: ASDisplayNode {
             return
         }
         self.state = state
+        
+        if let colorSnapshotView = self.colorSnapshotView {
+            self.colorSnapshotView = nil
+            colorSnapshotView.removeFromSuperview()
+        }
         
         if animated, let snapshotView = self.buttonNode.view.snapshotContentTree() {
             self.animatingStateChange = true
@@ -225,12 +233,9 @@ public struct WebAppParameters {
 }
 
 public func generateWebAppThemeParams(_ presentationTheme: PresentationTheme) -> [String: Any] {
-    var backgroundColor = presentationTheme.list.plainBackgroundColor.rgb
-    var secondaryBackgroundColor = presentationTheme.list.blocksBackgroundColor.rgb
-    if presentationTheme.list.blocksBackgroundColor.rgb == presentationTheme.list.plainBackgroundColor.rgb {
-        backgroundColor = presentationTheme.list.modalPlainBackgroundColor.rgb
-        secondaryBackgroundColor = presentationTheme.list.plainBackgroundColor.rgb
-    }
+    let backgroundColor = presentationTheme.list.plainBackgroundColor.rgb
+    let secondaryBackgroundColor = presentationTheme.list.blocksBackgroundColor.rgb
+
     return [
         "bg_color": Int32(bitPattern: backgroundColor),
         "secondary_bg_color": Int32(bitPattern: secondaryBackgroundColor),
@@ -238,7 +243,13 @@ public func generateWebAppThemeParams(_ presentationTheme: PresentationTheme) ->
         "hint_color": Int32(bitPattern: presentationTheme.list.itemSecondaryTextColor.rgb),
         "link_color": Int32(bitPattern: presentationTheme.list.itemAccentColor.rgb),
         "button_color": Int32(bitPattern: presentationTheme.list.itemCheckColors.fillColor.rgb),
-        "button_text_color": Int32(bitPattern: presentationTheme.list.itemCheckColors.foregroundColor.rgb)
+        "button_text_color": Int32(bitPattern: presentationTheme.list.itemCheckColors.foregroundColor.rgb),
+        "header_bg_color": Int32(bitPattern: presentationTheme.rootController.navigationBar.opaqueBackgroundColor.rgb),
+        "accent_text_color": Int32(bitPattern: presentationTheme.list.itemAccentColor.rgb),
+        "section_bg_color": Int32(bitPattern: presentationTheme.list.itemBlocksBackgroundColor.rgb),
+        "section_header_text_color": Int32(bitPattern: presentationTheme.list.freeTextColor.rgb),
+        "subtitle_text_color": Int32(bitPattern: presentationTheme.list.itemSecondaryTextColor.rgb),
+        "destructive_text_color": Int32(bitPattern: presentationTheme.list.itemDestructiveColor.rgb)
     ]
 }
 
@@ -295,13 +306,13 @@ public final class WebAppController: ViewController, AttachmentContainable {
             self.topOverscrollNode = ASDisplayNode()
             
             super.init()
-            
+                                     
             if self.presentationData.theme.list.plainBackgroundColor.rgb == 0x000000 {
                 self.backgroundColor = self.presentationData.theme.list.itemBlocksBackgroundColor
             } else {
                 self.backgroundColor = self.presentationData.theme.list.plainBackgroundColor
             }
-                         
+            
             let webView = WebAppWebView()
             webView.alpha = 0.0
             webView.navigationDelegate = self
@@ -768,7 +779,8 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 case "web_app_open_tg_link":
                     if let json = json, let path = json["path_full"] as? String {
                         controller.openUrl("https://t.me\(path)", false, { [weak controller] in
-                            controller?.dismiss()
+                            let _ = controller
+//                            controller?.dismiss()
                         })
                     }
                 case "web_app_open_invoice":
@@ -808,6 +820,12 @@ public final class WebAppController: ViewController, AttachmentContainable {
                             self.webView?.lastTouchTimestamp = nil
                             if tryInstantView {
                                 let _ = (resolveInstantViewUrl(account: self.context.account, url: url)
+                                |> mapToSignal { result -> Signal<ResolvedUrl, NoError> in
+                                    guard case let .result(result) = result else {
+                                        return .complete()
+                                    }
+                                    return .single(result)
+                                }
                                 |> deliverOnMainQueue).start(next: { [weak self] result in
                                     guard let strongSelf = self else {
                                         return
@@ -968,13 +986,28 @@ public final class WebAppController: ViewController, AttachmentContainable {
                     }
                 case "web_app_read_text_from_clipboard":
                     if let json = json, let requestId = json["req_id"] as? String {
-                        let currentTimestamp = CACurrentMediaTime()
-                        var fillData = false
-                        if let lastTouchTimestamp = self.webView?.lastTouchTimestamp, currentTimestamp < lastTouchTimestamp + 10.0, self.controller?.url == nil {
-                            self.webView?.lastTouchTimestamp = nil
-                            fillData = true
-                        }
-                        self.sendClipboardTextEvent(requestId: requestId, fillData: fillData)
+                        let botId = controller.botId
+                        let isAttachMenu = controller.url == nil
+                        
+                        let _ = (self.context.engine.messages.attachMenuBots()
+                        |> take(1)
+                        |> deliverOnMainQueue).startStandalone(next: { [weak self] attachMenuBots in
+                            guard let self else {
+                                return
+                            }
+                            let currentTimestamp = CACurrentMediaTime()
+                            var fillData = false
+                            
+                            let attachMenuBot = attachMenuBots.first(where: { $0.peer.id == botId && !$0.flags.contains(.notActivated) })
+                            if isAttachMenu || attachMenuBot != nil {
+                                if let lastTouchTimestamp = self.webView?.lastTouchTimestamp, currentTimestamp < lastTouchTimestamp + 10.0 {
+                                    self.webView?.lastTouchTimestamp = nil
+                                    fillData = true
+                                }
+                            }
+                            
+                            self.sendClipboardTextEvent(requestId: requestId, fillData: fillData)
+                        })
                     }
                 case "web_app_request_write_access":
                     self.requestWriteAccess()
@@ -989,6 +1022,10 @@ public final class WebAppController: ViewController, AttachmentContainable {
                             paramsString = convertedString
                         }
                         self.invokeCustomMethod(requestId: requestId, method: method, params: paramsString ?? "{}")
+                    }
+                case "web_app_setup_settings_button":
+                    if let json = json, let isVisible = json["is_visible"] as? Bool {
+                        self.controller?.hasSettings = isVisible
                     }
                 default:
                     break
@@ -1009,12 +1046,8 @@ public final class WebAppController: ViewController, AttachmentContainable {
             let color: UIColor?
             var primaryTextColor: UIColor?
             var secondaryTextColor: UIColor?
-            var backgroundColor = self.presentationData.theme.list.plainBackgroundColor
-            var secondaryBackgroundColor = self.presentationData.theme.list.blocksBackgroundColor
-            if self.presentationData.theme.list.blocksBackgroundColor.rgb == self.presentationData.theme.list.plainBackgroundColor.rgb {
-                backgroundColor = self.presentationData.theme.list.modalPlainBackgroundColor
-                secondaryBackgroundColor = self.presentationData.theme.list.plainBackgroundColor
-            }
+            let backgroundColor = self.presentationData.theme.list.plainBackgroundColor
+            let secondaryBackgroundColor = self.presentationData.theme.list.blocksBackgroundColor
             if let headerColor = self.headerColor {
                 color = headerColor
                 let textColor = headerColor.lightness > 0.5 ? UIColor(rgb: 0x000000) : UIColor(rgb: 0xffffff)
@@ -1258,7 +1291,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                     }
                     
                     let sendMessageSignal = enqueueMessages(account: self.context.account, peerId: botId, messages: [
-                        .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: TelegramMediaContact(firstName: user.firstName ?? "", lastName: user.lastName ?? "", phoneNumber: phone, peerId: user.id, vCardData: nil)), replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
+                        .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: TelegramMediaContact(firstName: user.firstName ?? "", lastName: user.lastName ?? "", phoneNumber: phone, peerId: user.id, vCardData: nil)), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
                     ])
                     |> mapToSignal { messageIds in
                         if let maybeMessageId = messageIds.first, let messageId = maybeMessageId {
@@ -1342,6 +1375,8 @@ public final class WebAppController: ViewController, AttachmentContainable {
     fileprivate let updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?
     private var presentationDataDisposable: Disposable?
     
+    private var hasSettings = false
+    
     public var openUrl: (String, Bool, @escaping () -> Void) -> Void = { _, _, _ in }
     public var getNavigationController: () -> NavigationController? = { return nil }
     public var completion: () -> Void = {}
@@ -1363,7 +1398,11 @@ public final class WebAppController: ViewController, AttachmentContainable {
         self.threadId = threadId
         
         self.updatedPresentationData = updatedPresentationData
-        self.presentationData = updatedPresentationData?.initial ?? context.sharedContext.currentPresentationData.with { $0 }
+        
+        var presentationData = updatedPresentationData?.initial ?? context.sharedContext.currentPresentationData.with { $0 }
+        let updatedTheme = presentationData.theme.withModalBlocksBackground()
+        presentationData = presentationData.withUpdated(theme: updatedTheme)
+        self.presentationData = presentationData
         
         self.cancelButtonNode = WebAppCancelButtonNode(theme: self.presentationData.theme, strings: self.presentationData.strings)
         
@@ -1399,6 +1438,8 @@ public final class WebAppController: ViewController, AttachmentContainable {
         self.presentationDataDisposable = ((updatedPresentationData?.signal ?? context.sharedContext.presentationData)
         |> deliverOnMainQueue).start(next: { [weak self] presentationData in
             if let strongSelf = self {
+                let updatedTheme = presentationData.theme.withModalBlocksBackground()
+                let presentationData = presentationData.withUpdated(theme: updatedTheme)
                 strongSelf.presentationData = presentationData
                 
                 strongSelf.updateNavigationBarTheme(transition: .immediate)
@@ -1469,10 +1510,10 @@ public final class WebAppController: ViewController, AttachmentContainable {
         
         let peerId = self.peerId
         let botId = self.botId
-        let url = self.url
-        let forceHasSettings = self.forceHasSettings
         
         let source = self.source
+        
+        let hasSettings = self.hasSettings
         
         let items = context.engine.messages.attachMenuBots()
         |> take(1)
@@ -1480,17 +1521,6 @@ public final class WebAppController: ViewController, AttachmentContainable {
             var items: [ContextMenuItem] = []
             
             let attachMenuBot = attachMenuBots.first(where: { $0.peer.id == botId && !$0.flags.contains(.notActivated) })
-            
-            let hasSettings: Bool
-            if url == nil {
-                if forceHasSettings {
-                    hasSettings = true
-                } else {
-                    hasSettings = attachMenuBot?.flags.contains(.hasSettings) == true
-                }
-            } else {
-                hasSettings = forceHasSettings
-            }
             
             if hasSettings {
                 items.append(.action(ContextMenuActionItem(text: presentationData.strings.WebApp_Settings, icon: { theme in

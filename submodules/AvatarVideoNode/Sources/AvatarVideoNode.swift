@@ -25,7 +25,7 @@ public final class AvatarVideoNode: ASDisplayNode {
     
     private var emojiMarkup: TelegramMediaImage.EmojiMarkup?
     
-    private var fileDisposable: Disposable?
+    private var fileDisposable = MetaDisposable()
     private var animationFile: TelegramMediaFile?
     private var itemLayer: EmojiPagerContentComponent.View.ItemLayer?
     private var useAnimationNode = false
@@ -55,7 +55,7 @@ public final class AvatarVideoNode: ASDisplayNode {
     }
     
     deinit {
-        self.fileDisposable?.dispose()
+        self.fileDisposable.dispose()
         self.stickerFetchedDisposable.dispose()
         self.playbackStartDisposable.dispose()
     }
@@ -76,7 +76,7 @@ public final class AvatarVideoNode: ASDisplayNode {
         }
         
         if self.useAnimationNode {
-            self.stickerFetchedDisposable.set(freeMediaFileResourceInteractiveFetched(account: self.context.account, userLocation: .other, fileReference: stickerPackFileReference(animationFile), resource: chatMessageStickerResource(file: animationFile, small: false)).start())
+            self.stickerFetchedDisposable.set(freeMediaFileResourceInteractiveFetched(account: self.context.account, userLocation: .other, fileReference: stickerPackFileReference(animationFile), resource: chatMessageStickerResource(file: animationFile, small: false)).startStrict())
             
             let animationNode = DefaultAnimatedStickerNodeImpl()
             animationNode.autoplay = false
@@ -174,27 +174,27 @@ public final class AvatarVideoNode: ASDisplayNode {
         
         switch markup.content {
         case let .emoji(fileId):
-            self.fileDisposable = (self.context.engine.stickers.resolveInlineStickers(fileIds: [fileId])
-            |> deliverOnMainQueue).start(next: { [weak self] files in
+            self.fileDisposable.set((self.context.engine.stickers.resolveInlineStickers(fileIds: [fileId])
+            |> deliverOnMainQueue).startStrict(next: { [weak self] files in
                 if let strongSelf = self, let file = files.values.first {
                     strongSelf.animationFile = file
                     strongSelf.setupAnimation()
                 }
-            }).strict()
+            }))
         case let .sticker(packReference, fileId):
-            self.fileDisposable = (self.context.engine.stickers.loadedStickerPack(reference: packReference, forceActualized: false)
+            self.fileDisposable.set((self.context.engine.stickers.loadedStickerPack(reference: packReference, forceActualized: false)
             |> map { pack -> TelegramMediaFile? in
                 if case let .result(_, items, _) = pack, let item = items.first(where: { $0.file.fileId.id == fileId }) {
                     return item.file
                 }
                 return nil
             }
-            |> deliverOnMainQueue).start(next: { [weak self] file in
+            |> deliverOnMainQueue).startStrict(next: { [weak self] file in
                 if let strongSelf = self, let file {
                     strongSelf.animationFile = file
                     strongSelf.setupAnimation()
                 }
-            }).strict()
+            }))
         }
     }
     
@@ -265,7 +265,7 @@ public final class AvatarVideoNode: ASDisplayNode {
                         return playing
                     }
                     |> take(1)
-                    |> deliverOnMainQueue).start(completed: { [weak self] in
+                    |> deliverOnMainQueue).startStrict(completed: { [weak self] in
                         if let strongSelf = self {
                             Queue.mainQueue().after(0.15) {
                                 strongSelf.videoNode?.isHidden = false

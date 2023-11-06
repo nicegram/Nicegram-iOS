@@ -393,7 +393,18 @@ final class InnerTextSelectionTipContainerNode: ASDisplayNode {
         var icon: UIImage?
         switch tip {
         case .textSelection:
-            var rawText = self.presentationData.strings.ChatContextMenu_TextSelectionTip
+            var rawText = self.presentationData.strings.ChatContextMenu_TextSelectionTip2
+            if let range = rawText.range(of: "|") {
+                rawText.removeSubrange(range)
+                self.text = rawText
+                self.targetSelectionIndex = NSRange(range, in: rawText).lowerBound
+            } else {
+                self.text = rawText
+                self.targetSelectionIndex = 1
+            }
+            icon = UIImage(bundleImageName: "Chat/Context Menu/Tip")
+        case .quoteSelection:
+            var rawText = presentationData.strings.ChatContextMenu_QuoteSelectionTip
             if let range = rawText.range(of: "|") {
                 rawText.removeSubrange(range)
                 self.text = rawText
@@ -446,7 +457,7 @@ final class InnerTextSelectionTipContainerNode: ASDisplayNode {
         self.highlightBackgroundNode.clipsToBounds = true
         self.highlightBackgroundNode.cornerRadius = 14.0
         
-        let textSelectionNode = TextSelectionNode(theme: TextSelectionTheme(selection: presentationData.theme.contextMenu.primaryColor.withAlphaComponent(0.15), knob: presentationData.theme.contextMenu.primaryColor, knobDiameter: 8.0), strings: presentationData.strings, textNode: self.textNode.textNode, updateIsActive: { _ in
+        let textSelectionNode = TextSelectionNode(theme: TextSelectionTheme(selection: presentationData.theme.contextMenu.primaryColor.withAlphaComponent(0.15), knob: presentationData.theme.contextMenu.primaryColor, knobDiameter: 8.0, isDark: presentationData.theme.overallDarkAppearance), strings: presentationData.strings, textNode: self.textNode.textNode, updateIsActive: { _ in
         }, present: { _, _ in
         }, rootNode: { [weak self] in
             return self

@@ -103,8 +103,8 @@ class ForwardPrivacyChatPreviewItemNode: ListViewItemNode {
         self.containerNode = ASDisplayNode()
         self.containerNode.subnodeTransform = CATransform3DMakeRotation(CGFloat.pi, 0.0, 0.0, 1.0)
         
-        self.tooltipContainerNode = ContextMenuContainerNode(blurred: false)
-        self.tooltipContainerNode.backgroundColor = UIColor(white: 0.0, alpha: 0.8)
+        self.tooltipContainerNode = ContextMenuContainerNode(isBlurred: false, isDark: true)
+        self.tooltipContainerNode.containerNode.backgroundColor = UIColor(white: 0.0, alpha: 0.8)
         
         self.textNode = ImmediateTextNode()
         self.textNode.isUserInteractionEnabled = false
@@ -119,7 +119,7 @@ class ForwardPrivacyChatPreviewItemNode: ListViewItemNode {
         
         self.addSubnode(self.containerNode)
         
-        self.tooltipContainerNode.addSubnode(self.textNode)
+        self.tooltipContainerNode.containerNode.addSubnode(self.textNode)
         
         self.addSubnode(self.tooltipContainerNode)
     }
@@ -133,9 +133,9 @@ class ForwardPrivacyChatPreviewItemNode: ListViewItemNode {
         return { item, params, neighbors in
             if currentBackgroundNode == nil {
                 currentBackgroundNode = createWallpaperBackgroundNode(context: item.context, forChatDisplay: false)
+                currentBackgroundNode?.update(wallpaper: item.wallpaper)
+                currentBackgroundNode?.updateBubbleTheme(bubbleTheme: item.theme, bubbleCorners: item.chatBubbleCorners)
             }
-            currentBackgroundNode?.update(wallpaper: item.wallpaper)
-            currentBackgroundNode?.updateBubbleTheme(bubbleTheme: item.theme, bubbleCorners: item.chatBubbleCorners)
             
             let insets: UIEdgeInsets
             let separatorHeight = UIScreenPixel
@@ -145,7 +145,7 @@ class ForwardPrivacyChatPreviewItemNode: ListViewItemNode {
             var peers = SimpleDictionary<PeerId, Peer>()
             let messages = SimpleDictionary<MessageId, Message>()
             
-            peers[peerId] = TelegramUser(id: peerId, accessHash: nil, firstName: item.peerName, lastName: "", username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil)
+            peers[peerId] = TelegramUser(id: peerId, accessHash: nil, firstName: item.peerName, lastName: "", username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: .blue, backgroundEmojiId: nil)
             
             let forwardInfo = MessageForwardInfo(author: item.linkEnabled ? peers[peerId] : nil, source: nil, sourceMessageId: nil, date: 0, authorSignature: item.linkEnabled ? nil : item.peerName, psaType: nil, flags: [])
             
@@ -188,6 +188,11 @@ class ForwardPrivacyChatPreviewItemNode: ListViewItemNode {
             return (layout, { [weak self] in
                 if let strongSelf = self {
                     strongSelf.item = item
+                    
+                    if let currentBackgroundNode {
+                        currentBackgroundNode.update(wallpaper: item.wallpaper)
+                        currentBackgroundNode.updateBubbleTheme(bubbleTheme: item.theme, bubbleCorners: item.chatBubbleCorners)
+                    }
                     
                     strongSelf.containerNode.frame = CGRect(origin: CGPoint(), size: contentSize)
                     

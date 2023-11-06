@@ -13,6 +13,7 @@ import AppBundle
 import ContextUI
 import TextFormat
 import EmojiTextAttachmentView
+import ChatInputTextNode
 
 private let leftInset: CGFloat = 16.0
 private let rightInset: CGFloat = 16.0
@@ -172,7 +173,7 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
     private var presentationData: PresentationData
     private let sourceSendButton: ASDisplayNode
     private let textFieldFrame: CGRect
-    private let textInputNode: EditableTextNode
+    private let textInputView: UITextView
     private let attachment: Bool
     private let forwardedCount: Int?
     private let hasEntityKeyboard: Bool
@@ -189,8 +190,10 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
     
     private let messageClipNode: ASDisplayNode
     private let messageBackgroundNode: ASImageNode
-    private let fromMessageTextNode: EditableTextNode
-    private let toMessageTextNode: EditableTextNode
+    private let fromMessageTextScrollView: UIScrollView
+    private let fromMessageTextNode: ChatInputTextNode
+    private let toMessageTextScrollView: UIScrollView
+    private let toMessageTextNode: ChatInputTextNode
     private let scrollNode: ASScrollNode
     
     private var fromCustomEmojiContainerView: CustomEmojiContainerView?
@@ -207,12 +210,12 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
     private var emojiViewProvider: ((ChatTextInputTextCustomEmojiAttribute) -> UIView)?
     
     // MARK: Nicegram TranslateEnteredMessage, change (canTranslate + interlocutorLangCode + translate + chooseLanguage)
-    init(context: AccountContext, presentationData: PresentationData, reminders: Bool, gesture: ContextGesture, sourceSendButton: ASDisplayNode, textInputNode: EditableTextNode, attachment: Bool, canSendWhenOnline: Bool, forwardedCount: Int?, hasEntityKeyboard: Bool, emojiViewProvider: ((ChatTextInputTextCustomEmojiAttribute) -> UIView)?, send: (() -> Void)?, sendSilently: (() -> Void)?, sendWhenOnline: (() -> Void)?, schedule: (() -> Void)?, canTranslate: Bool, interlocutorLangCode: String?, translate: (() -> Void)?, chooseLanguage: (() -> ())?, cancel: (() -> Void)?) {
+    init(context: AccountContext, presentationData: PresentationData, reminders: Bool, gesture: ContextGesture, sourceSendButton: ASDisplayNode, textInputView: UITextView, attachment: Bool, canSendWhenOnline: Bool, forwardedCount: Int?, hasEntityKeyboard: Bool, emojiViewProvider: ((ChatTextInputTextCustomEmojiAttribute) -> UIView)?, send: (() -> Void)?, sendSilently: (() -> Void)?, sendWhenOnline: (() -> Void)?, schedule: (() -> Void)?, canTranslate: Bool, interlocutorLangCode: String?, translate: (() -> Void)?, chooseLanguage: (() -> ())?, cancel: (() -> Void)?) {
         self.context = context
         self.presentationData = presentationData
         self.sourceSendButton = sourceSendButton
-        self.textFieldFrame = textInputNode.convert(textInputNode.bounds, to: nil)
-        self.textInputNode = textInputNode
+        self.textFieldFrame = textInputView.convert(textInputView.bounds, to: nil)
+        self.textInputView = textInputView
         self.attachment = attachment
         self.forwardedCount = forwardedCount
         self.hasEntityKeyboard = hasEntityKeyboard
@@ -237,11 +240,17 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
         self.messageClipNode.transform = CATransform3DMakeScale(1.0, -1.0, 1.0)
         self.messageBackgroundNode = ASImageNode()
         self.messageBackgroundNode.isUserInteractionEnabled = true
-        self.fromMessageTextNode = EditableTextNode()
+        self.fromMessageTextNode = ChatInputTextNode(disableTiling: true)
+        self.fromMessageTextNode.textView.isScrollEnabled = false
         self.fromMessageTextNode.isUserInteractionEnabled = false
-        self.toMessageTextNode = EditableTextNode()
-        self.toMessageTextNode.alpha = 0.0
+        self.fromMessageTextScrollView = UIScrollView()
+        self.fromMessageTextScrollView.isUserInteractionEnabled = false
+        self.toMessageTextNode = ChatInputTextNode(disableTiling: true)
+        self.toMessageTextNode.textView.isScrollEnabled = false
         self.toMessageTextNode.isUserInteractionEnabled = false
+        self.toMessageTextScrollView = UIScrollView()
+        self.toMessageTextScrollView.alpha = 0.0
+        self.toMessageTextScrollView.isUserInteractionEnabled = false
         
         self.scrollNode = ASScrollNode()
         self.scrollNode.transform = CATransform3DMakeScale(1.0, -1.0, 1.0)
@@ -291,8 +300,32 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
                         
         self.sendButtonNode.addTarget(self, action: #selector(self.sendButtonPressed), forControlEvents: .touchUpInside)
         
-        if let attributedText = textInputNode.attributedText, !attributedText.string.isEmpty {
+        if let attributedText = textInputView.attributedText, !attributedText.string.isEmpty {
             self.animateInputField = true
+            if let textInputView = self.textInputView as? ChatInputTextView {
+                if let textTheme = textInputView.theme {
+                    self.fromMessageTextNode.textView.theme = textTheme
+                    
+                    let mainColor = presentationData.theme.chat.message.outgoing.accentControlColor
+                    let mappedLineStyle: ChatInputTextView.Theme.Quote.LineStyle
+                    switch textTheme.quote.lineStyle {
+                    case .solid:
+                        mappedLineStyle = .solid(color: mainColor)
+                    case .doubleDashed:
+                        mappedLineStyle = .doubleDashed(mainColor: mainColor, secondaryColor: .clear)
+                    case .tripleDashed:
+                        mappedLineStyle = .tripleDashed(mainColor: mainColor, secondaryColor: .clear, tertiaryColor: .clear)
+                    }
+                    
+                    self.toMessageTextNode.textView.theme = ChatInputTextView.Theme(
+                        quote: ChatInputTextView.Theme.Quote(
+                            background: mainColor.withMultipliedAlpha(0.1),
+                            foreground: mainColor,
+                            lineStyle: mappedLineStyle
+                        )
+                    )
+                }
+            }
             self.fromMessageTextNode.attributedText = attributedText
             
             if let toAttributedText = self.fromMessageTextNode.attributedText?.mutableCopy() as? NSMutableAttributedString {
@@ -323,8 +356,10 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
         self.addSubnode(self.sendButtonNode)
         self.scrollNode.addSubnode(self.messageClipNode)
         self.messageClipNode.addSubnode(self.messageBackgroundNode)
-        self.messageClipNode.addSubnode(self.fromMessageTextNode)
-        self.messageClipNode.addSubnode(self.toMessageTextNode)
+        self.messageClipNode.view.addSubview(self.fromMessageTextScrollView)
+        self.fromMessageTextScrollView.addSubview(self.fromMessageTextNode.view)
+        self.messageClipNode.view.addSubview(self.toMessageTextScrollView)
+        self.toMessageTextScrollView.addSubview(self.toMessageTextNode.view)
         
         self.contentNodes.forEach(self.contentContainerNode.addSubnode)
         
@@ -413,7 +448,7 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
         self.updateTextContents(rects: customEmojiRects, textInputNode: self.toMessageTextNode, from: false)
     }
     
-    func updateTextContents(rects: [(CGRect, ChatTextInputTextCustomEmojiAttribute)], textInputNode: EditableTextNode, from: Bool) {
+    func updateTextContents(rects: [(CGRect, ChatTextInputTextCustomEmojiAttribute)], textInputNode: ChatInputTextNode, from: Bool) {
         if !rects.isEmpty {
             let customEmojiContainerView: CustomEmojiContainerView
             if from, let current = self.fromCustomEmojiContainerView {
@@ -460,7 +495,7 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
         
         self.contentContainerNode.backgroundColor = self.presentationData.theme.contextMenu.backgroundColor
         
-        if let toAttributedText = self.textInputNode.attributedText?.mutableCopy() as? NSMutableAttributedString {
+        if let toAttributedText = self.textInputView.attributedText?.mutableCopy() as? NSMutableAttributedString {
             toAttributedText.addAttribute(NSAttributedString.Key.foregroundColor, value: self.presentationData.theme.chat.message.outgoing.primaryTextColor, range: NSMakeRange(0, (toAttributedText.string as NSString).length))
             self.toMessageTextNode.attributedText = toAttributedText
         }
@@ -479,7 +514,7 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
             return
         }
         
-        self.textInputNode.textView.setContentOffset(self.textInputNode.textView.contentOffset, animated: false)
+        self.textInputView.setContentOffset(self.textInputView.contentOffset, animated: false)
                 
         self.effectView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
         self.dimNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
@@ -488,12 +523,12 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
         
         self.sourceSendButton.isHidden = true
         if self.animateInputField {
-            self.fromMessageTextNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, removeOnCompletion: false)
-            self.toMessageTextNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.3, removeOnCompletion: false)
+            self.fromMessageTextScrollView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, removeOnCompletion: false)
+            self.toMessageTextScrollView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.3, removeOnCompletion: false)
         } else {
             self.messageBackgroundNode.isHidden = true
-            self.fromMessageTextNode.isHidden = true
-            self.toMessageTextNode.isHidden = true
+            self.fromMessageTextScrollView.isHidden = true
+            self.toMessageTextScrollView.isHidden = true
         }
         
         let duration = 0.4
@@ -501,7 +536,7 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
         self.sendButtonNode.layer.animatePosition(from: self.sendButtonFrame.center, to: self.sendButtonNode.position, duration: duration, timingFunction: kCAMediaTimingFunctionSpring)
         
         var initialWidth = self.textFieldFrame.width + 32.0
-        if self.textInputNode.textView.attributedText.string.isEmpty {
+        if self.textInputView.attributedText.string.isEmpty {
             initialWidth = ceil(layout.size.width - self.textFieldFrame.origin.x - self.sendButtonFrame.width - layout.safeInsets.left - layout.safeInsets.right + 21.0)
         }
         
@@ -529,12 +564,12 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
         self.messageBackgroundNode.layer.animatePosition(from: CGPoint(x: (initialWidth - self.messageClipNode.bounds.width) / 2.0, y: delta), to: CGPoint(), duration: duration, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
        
         var textXOffset: CGFloat = 0.0
-        let textYOffset = self.textInputNode.textView.contentSize.height - self.textInputNode.textView.contentOffset.y - self.textInputNode.textView.frame.height
-        if self.textInputNode.textView.numberOfLines == 1 && self.textInputNode.isRTL {
+        let textYOffset = self.textInputView.contentSize.height - self.textInputView.contentOffset.y - self.textInputView.frame.height
+        if self.textInputView.numberOfLines == 1 && self.textInputView.isRTL {
             textXOffset = initialWidth - self.messageClipNode.bounds.width
         }
-        self.fromMessageTextNode.layer.animatePosition(from: CGPoint(x: textXOffset, y: delta * 2.0 + textYOffset), to: CGPoint(), duration: duration, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
-        self.toMessageTextNode.layer.animatePosition(from: CGPoint(x: textXOffset, y: delta * 2.0 + textYOffset), to: CGPoint(), duration: duration, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
+        self.fromMessageTextScrollView.layer.animatePosition(from: CGPoint(x: textXOffset, y: delta * 2.0 + textYOffset), to: CGPoint(), duration: duration, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
+        self.toMessageTextScrollView.layer.animatePosition(from: CGPoint(x: textXOffset, y: delta * 2.0 + textYOffset), to: CGPoint(), duration: duration, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
         
         let contentOffset = CGPoint(x:  self.sendButtonFrame.midX - self.contentContainerNode.frame.midX, y:  self.sendButtonFrame.midY - self.contentContainerNode.frame.midY)
     
@@ -545,7 +580,7 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
         
         Queue.mainQueue().after(0.01, {
             if self.animateInputField {
-                self.textInputNode.isHidden = true
+                self.textInputView.isHidden = true
             }
             self.updateTextContents()
         })
@@ -569,7 +604,7 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
         let intermediateCompletion: () -> Void = { [weak self] in
             if completedEffect && completedButton && completedBubble && completedAlpha && !completed {
                 completed = true
-                self?.textInputNode.isHidden = false
+                self?.textInputView.isHidden = false
                 self?.sourceSendButton.isHidden = false
                 completion()
             }
@@ -585,7 +620,7 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
         Queue.mainQueue().after(0.45) {
             if !completed {
                 completed = true
-                self.textInputNode.isHidden = false
+                self.textInputView.isHidden = false
                 self.sourceSendButton.isHidden = false
                 completion()
             }
@@ -593,14 +628,14 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
         
         if self.animateInputField {
             if cancel {
-                self.fromMessageTextNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.3, delay: 0.15, removeOnCompletion: false)
-                self.toMessageTextNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, delay: 0.15, removeOnCompletion: false)
+                self.fromMessageTextScrollView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.3, delay: 0.15, removeOnCompletion: false)
+                self.toMessageTextScrollView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, delay: 0.15, removeOnCompletion: false)
                 self.messageBackgroundNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, delay: 0.15, removeOnCompletion: false, completion: { _ in
                     completedAlpha = true
                     intermediateCompletion()
                 })
             } else {
-                self.textInputNode.isHidden = false
+                self.textInputView.isHidden = false
                 self.messageClipNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false, completion: { _ in
                     completedAlpha = true
                     intermediateCompletion()
@@ -623,11 +658,11 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
         }
         
         var initialWidth = self.textFieldFrame.width + 32.0
-        if self.textInputNode.textView.attributedText.string.isEmpty {
+        if self.textInputView.attributedText.string.isEmpty {
             initialWidth = ceil(layout.size.width - self.textFieldFrame.origin.x - self.sendButtonFrame.width - layout.safeInsets.left - layout.safeInsets.right + 21.0)
         }
         
-        let toFrame = CGRect(origin: CGPoint(), size: CGSize(width: initialWidth, height: self.textFieldFrame.height + 1.0))
+        let toFrame = CGRect(origin: CGPoint(x: 0.0, y: -1.0), size: CGSize(width: initialWidth, height: self.textFieldFrame.height + 2.0))
         let delta = (toFrame.height - self.messageClipNode.bounds.height) / 2.0
                 
         if cancel && self.animateInputField {
@@ -641,7 +676,7 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
                 clipDelta -= self.contentContainerNode.frame.height + 16.0
             }
             
-            self.messageClipNode.layer.animateBounds(from: self.messageClipNode.bounds, to: toFrame, duration: duration, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false, completion: { _ in
+            self.messageClipNode.layer.animateBounds(from: self.messageClipNode.bounds, to: toFrame.offsetBy(dx: 0.0, dy: 1.0), duration: duration, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false, completion: { _ in
                 completedBubble = true
                 intermediateCompletion()
             })
@@ -651,12 +686,12 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
             self.messageBackgroundNode.layer.animatePosition(from: CGPoint(), to: CGPoint(x: (initialWidth - self.messageClipNode.bounds.width) / 2.0, y: delta), duration: duration, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false, additive: true)
             
             var textXOffset: CGFloat = 0.0
-            let textYOffset = self.textInputNode.textView.contentSize.height - self.textInputNode.textView.contentOffset.y - self.textInputNode.textView.frame.height
-            if self.textInputNode.textView.numberOfLines == 1 && self.textInputNode.isRTL {
+            let textYOffset = self.textInputView.contentSize.height - self.textInputView.contentOffset.y - self.textInputView.frame.height
+            if self.textInputView.numberOfLines == 1 && self.textInputView.isRTL {
                 textXOffset = initialWidth - self.messageClipNode.bounds.width
             }
-            self.fromMessageTextNode.layer.animatePosition(from: CGPoint(), to: CGPoint(x: textXOffset, y: delta * 2.0 + textYOffset), duration: duration, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false, additive: true)
-            self.toMessageTextNode.layer.animatePosition(from: CGPoint(), to: CGPoint(x: textXOffset, y: delta * 2.0 + textYOffset), duration: duration, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false, additive: true)
+            self.fromMessageTextScrollView.layer.animatePosition(from: CGPoint(), to: CGPoint(x: textXOffset, y: delta * 2.0 + textYOffset), duration: duration, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false, additive: true)
+            self.toMessageTextScrollView.layer.animatePosition(from: CGPoint(), to: CGPoint(x: textXOffset, y: delta * 2.0 + textYOffset), duration: duration, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false, additive: true)
         } else {
             completedBubble = true
         }
@@ -733,23 +768,26 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
         messageFrame.size.width += 32.0
         messageFrame.origin.x -= 13.0
         messageFrame.origin.y = layout.size.height - messageFrame.origin.y - messageFrame.size.height - 1.0
+        
+        let messageHeightAddition: CGFloat = max(0.0, 35.0 - messageFrame.size.height)
+        
         if inputHeight.isZero || layout.isNonExclusive {
             messageFrame.origin.y += menuHeightWithInset
         }
         
-        if self.textInputNode.textView.attributedText.string.isEmpty {
+        if self.textInputView.attributedText.string.isEmpty {
             messageFrame.size.width = ceil(layout.size.width - messageFrame.origin.x - sendButtonFrame.width - layout.safeInsets.left - layout.safeInsets.right + 8.0)
         }
         
         var messageOriginDelta: CGFloat = 0.0
-        if self.textInputNode.textView.numberOfLines == 1 || self.textInputNode.textView.attributedText.string.isEmpty {
+        if self.textInputView.numberOfLines == 1 || self.textInputView.attributedText.string.isEmpty {
             let textWidth = min(self.toMessageTextNode.textView.sizeThatFits(layout.size).width + 36.0, messageFrame.width)
             messageOriginDelta = messageFrame.width - textWidth
             messageFrame.origin.x += messageOriginDelta
             messageFrame.size.width = textWidth
         }
         
-        let messageHeight = max(messageFrame.size.height, self.textInputNode.textView.contentSize.height + 2.0)
+        let messageHeight = max(messageFrame.size.height, self.textInputView.contentSize.height + 2.0)
         messageFrame.size.height = messageHeight
         
         transition.updateFrame(node: self.scrollNode, frame: CGRect(origin: CGPoint(), size: layout.size))
@@ -763,20 +801,38 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
         let clipFrame = messageFrame
         transition.updateFrame(node: self.messageClipNode, frame: clipFrame)
         
-        let backgroundFrame = CGRect(origin: CGPoint(), size: messageFrame.size)
+        var backgroundFrame = CGRect(origin: CGPoint(), size: messageFrame.size)
+        backgroundFrame.origin.y -= messageHeightAddition * 0.5
+        backgroundFrame.size.height += messageHeightAddition
         transition.updateFrame(node: self.messageBackgroundNode, frame: backgroundFrame)
         
         var textFrame = self.textFieldFrame
         textFrame.origin = CGPoint(x: 13.0, y: 6.0 - UIScreenPixel)
-        textFrame.size.height = self.textInputNode.textView.contentSize.height
-        textFrame.size.width -= self.textInputNode.textContainerInset.right
+        textFrame.size.height = self.textInputView.contentSize.height
         
-        if self.textInputNode.isRTL {
+        if let textInputView = self.textInputView as? ChatInputTextView {
+            textFrame.origin.y -= 5.0
+            
+            self.fromMessageTextNode.textView.defaultTextContainerInset = textInputView.defaultTextContainerInset
+            self.toMessageTextNode.textView.defaultTextContainerInset = textInputView.defaultTextContainerInset
+        }
+        /*if let textInputView = self.textInputView as? ChatInputTextView {
+            textFrame.size.width -= textInputView.defaultTextContainerInset.right
+        } else {
+            textFrame.size.width -= self.textInputView.textContainerInset.right
+        }*/
+        
+        if self.textInputView.isRTL {
             textFrame.origin.x -= messageOriginDelta
         }
         
-        self.fromMessageTextNode.frame = textFrame
-        self.toMessageTextNode.frame = textFrame
+        self.fromMessageTextScrollView.frame = textFrame
+        self.fromMessageTextNode.frame = CGRect(origin: CGPoint(), size: textFrame.size)
+        self.fromMessageTextNode.updateLayout(size: textFrame.size)
+        
+        self.toMessageTextScrollView.frame = textFrame
+        self.toMessageTextNode.frame = CGRect(origin: CGPoint(), size: textFrame.size)
+        self.toMessageTextNode.updateLayout(size: textFrame.size)
     }
     
     @objc private func dimTapGesture(_ recognizer: UITapGestureRecognizer) {

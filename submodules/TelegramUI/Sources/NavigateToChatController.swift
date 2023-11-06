@@ -17,6 +17,7 @@ import LegacyInstantVideoController
 import StoryContainerScreen
 import CameraScreen
 import MediaEditorScreen
+import ChatControllerInteraction
 
 public func navigateToChatControllerImpl(_ params: NavigateToChatControllerParams) {
     if case let .peer(peer) = params.chatLocation, case let .channel(channel) = peer, channel.flags.contains(.isForum) {
@@ -72,11 +73,11 @@ public func navigateToChatControllerImpl(_ params: NavigateToChatControllerParam
                     controller.updateTextInputState(updateTextInputState)
                 }
                 var popAndComplete = true
-                if let subject = params.subject, case let .message(messageSubject, _, timecode) = subject {
+                if let subject = params.subject, case let .message(messageSubject, highlight, timecode) = subject {
                     if case let .id(messageId) = messageSubject {
                         let navigationController = params.navigationController
                         let animated = params.animated
-                        controller.navigateToMessage(messageLocation: .id(messageId, timecode), animated: isFirst, completion: { [weak navigationController, weak controller] in
+                        controller.navigateToMessage(messageLocation: .id(messageId, NavigateToMessageParams(timestamp: timecode, quote: highlight?.quote)), animated: isFirst, completion: { [weak navigationController, weak controller] in
                             if let navigationController = navigationController, let controller = controller {
                                 let _ = navigationController.popToViewController(controller, animated: animated)
                             }
@@ -316,7 +317,7 @@ public func navigateToForumThreadImpl(context: AccountContext, peerId: EnginePee
                 context: context,
                 chatLocation: .replyThread(result.message),
                 chatLocationContextHolder: result.contextHolder,
-                subject: messageId.flatMap { .message(id: .id($0), highlight: true, timecode: nil) },
+                subject: messageId.flatMap { .message(id: .id($0), highlight: ChatControllerSubject.MessageHighlight(quote: nil), timecode: nil) },
                 activateInput: actualActivateInput,
                 keepStack: keepStack
             )

@@ -187,7 +187,7 @@ func openResolvedUrlImpl(_ resolvedUrl: ResolvedUrl, context: AccountContext, ur
             dismissInput()
             navigationController?.pushViewController(controller)
         case let .channelMessage(peer, messageId, timecode):
-            openPeer(EnginePeer(peer), .chat(textInputState: nil, subject: .message(id: .id(messageId), highlight: true, timecode: timecode), peekData: nil))
+            openPeer(EnginePeer(peer), .chat(textInputState: nil, subject: .message(id: .id(messageId), highlight: ChatControllerSubject.MessageHighlight(quote: nil), timecode: timecode), peekData: nil))
         case let .replyThreadMessage(replyThreadMessage, messageId):
             if let navigationController = navigationController {
                 let _ = ChatControllerImpl.openMessageReplies(context: context, navigationController: navigationController, present: { c, a in
@@ -318,6 +318,12 @@ func openResolvedUrlImpl(_ resolvedUrl: ResolvedUrl, context: AccountContext, ur
             if let to = to {
                 if to.hasPrefix("@") {
                     let _ = (context.engine.peers.resolvePeerByName(name: String(to[to.index(to.startIndex, offsetBy: 1)...]))
+                    |> mapToSignal { result -> Signal<EnginePeer?, NoError> in
+                        guard case let .result(result) = result else {
+                            return .complete()
+                        }
+                        return .single(result)
+                    }
                     |> deliverOnMainQueue).startStandalone(next: { peer in
                         if let peer = peer {
                             context.sharedContext.applicationBindings.dismissNativeController()
@@ -595,7 +601,7 @@ func openResolvedUrlImpl(_ resolvedUrl: ResolvedUrl, context: AccountContext, ur
             }
         case let .startAttach(peerId, payload, choose):
             let presentError: (String) -> Void = { errorText in
-                present(UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: errorText, timeout: nil), elevatedLayout: true, animateInAsReplacement: false, action: { _ in
+                present(UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: errorText, timeout: nil, customUndoText: nil), elevatedLayout: true, animateInAsReplacement: false, action: { _ in
                     return true
                 }), nil)
             }
@@ -835,122 +841,118 @@ func openResolvedUrlImpl(_ resolvedUrl: ResolvedUrl, context: AccountContext, ur
                     }), nil)
                 }
             })
-        case let .boost(peerId, status, canApplyStatus):
+        case let .boost(peerId, status, myBoostStatus):
+            var isCurrent = false
+            if case let .chat(chatPeerId, _) = urlContext, chatPeerId == peerId {
+                isCurrent = true
+            }
             var forceDark = false
             if let updatedPresentationData, updatedPresentationData.initial.theme.overallDarkAppearance {
                 forceDark = true
             }
-            let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
-            |> deliverOnMainQueue).startStandalone(next: { peer in
-                guard let peer, let status else {
-                    return
+        
+            var dismissedImpl: (() -> Void)?
+            if let storyProgressPauseContext = contentContext as? StoryProgressPauseContext {
+                let updateExternalController = storyProgressPauseContext.update
+                dismissedImpl = {
+                    updateExternalController(nil)
                 }
-                
-                var isBoosted = false
-                if case let .error(error) = canApplyStatus, case .peerBoostAlreadyActive = error {
-                    isBoosted = true
-                }
-                
-                var isCurrent = false
-                if case let .chat(chatPeerId, _) = urlContext, chatPeerId == peerId {
-                    isCurrent = true
-                }
-                
-                var currentLevel = Int32(status.level)
-                var currentLevelBoosts = Int32(status.currentLevelBoosts)
-                var nextLevelBoosts = status.nextLevelBoosts.flatMap(Int32.init)
-                
-                if isBoosted && status.boosts == currentLevelBoosts {
-                    currentLevel = max(0, currentLevel - 1)
-                    nextLevelBoosts = currentLevelBoosts
-                    currentLevelBoosts = max(0, currentLevelBoosts - 1)
-                }
-                
-                let subject: PremiumLimitScreen.Subject = .storiesChannelBoost(peer: peer, isCurrent: isCurrent, level: currentLevel, currentLevelBoosts: currentLevelBoosts, nextLevelBoosts: nextLevelBoosts, link: nil, boosted: isBoosted)
-                let nextSubject: PremiumLimitScreen.Subject = .storiesChannelBoost(peer: peer, isCurrent: isCurrent, level: currentLevel, currentLevelBoosts: currentLevelBoosts, nextLevelBoosts: nextLevelBoosts, link: nil, boosted: true)
-                let nextCount = Int32(status.boosts + 1)
-                
-                var updateImpl: (() -> Void)?
-                var dismissImpl: (() -> Void)?
-                let controller = PremiumLimitScreen(context: context, subject: subject, count: Int32(status.boosts), forceDark: forceDark, action: {
-                    if isBoosted {
-                        return true
-                    }
-                    var dismiss = false
-                    switch canApplyStatus {
-                    case .ok:
-                        updateImpl?()
-                    case let .replace(previousPeer):
-                        let text = presentationData.strings.ChannelBoost_ReplaceBoost(previousPeer.compactDisplayTitle, peer.compactDisplayTitle).string
-                        let controller = replaceBoostConfirmationController(context: context, fromPeer: previousPeer, toPeer: peer, text: text, commit: {
-                            updateImpl?()
-                        })
-                        present(controller, nil)
-                    case let .error(error):
-                        let title: String?
-                        let text: String
-                        
-                        var actions: [TextAlertAction] = [
-                            TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})
-                        ]
-                        
-                        switch error {
-                        case .generic:
-                            title = nil
-                            text = presentationData.strings.Login_UnknownError
-                        case let .floodWait(timeout):
-                            title = presentationData.strings.ChannelBoost_Error_BoostTooOftenTitle
-                            let valueText = timeIntervalString(strings: presentationData.strings, value: timeout, usage: .afterTime, preferLowerValue: false)
-                            text = presentationData.strings.ChannelBoost_Error_BoostTooOftenText(valueText).string
-                            dismiss = true
-                        case .premiumRequired:
-                            title = presentationData.strings.ChannelBoost_Error_PremiumNeededTitle
-                            text = presentationData.strings.ChannelBoost_Error_PremiumNeededText
-                            actions = [
-                                TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_Cancel, action: {}),
-                                TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_Yes, action: {
-                                    dismissImpl?()
-                                    let controller = context.sharedContext.makePremiumIntroController(context: context, source: .channelBoost(peerId), forceDark: false, dismissed: nil)
-                                    navigationController?.pushViewController(controller)
-                                })
-                            ]
-                        case .giftedPremiumNotAllowed:
-                            title = presentationData.strings.ChannelBoost_Error_GiftedPremiumNotAllowedTitle
-                            text = presentationData.strings.ChannelBoost_Error_GiftedPremiumNotAllowedText
-                            dismiss = true
-                        case .peerBoostAlreadyActive:
-                            return true
-                        }
-                        
-                        let controller = textAlertController(sharedContext: context.sharedContext, updatedPresentationData: updatedPresentationData, title: title, text: text, actions: actions, parseMarkdown: true)
-                        present(controller, nil)
-                    }
-                    return dismiss
-                },
+            }
+        
+            PremiumBoostScreen(
+                context: context,
+                contentContext: contentContext,
+                peerId: peerId,
+                isCurrent: isCurrent,
+                status: status,
+                myBoostStatus: myBoostStatus,
+                forceDark: forceDark,
                 openPeer: { peer in
                     openPeer(peer, .chat(textInputState: nil, subject: nil, peekData: nil))
-                })
-                navigationController?.pushViewController(controller)
-                
-                if let storyProgressPauseContext = contentContext as? StoryProgressPauseContext {
-                    storyProgressPauseContext.update(controller)
+                },
+                presentController: { [weak navigationController] c in
+                    (navigationController?.viewControllers.last as? ViewController)?.present(c, in: .window(.root))
+                },
+                pushController: { [weak navigationController] c in
+                    navigationController?.pushViewController(c)
                     
-                    let updateExternalController = storyProgressPauseContext.update
-                    controller.disposed = {
-                        updateExternalController(nil)
+                    if c is PremiumLimitScreen {
+                        if let storyProgressPauseContext = contentContext as? StoryProgressPauseContext {
+                            storyProgressPauseContext.update(c)
+                        }
                     }
+                }, dismissed: {
+                    dismissedImpl?()
                 }
-                
-                updateImpl = { [weak controller] in
-                    if let _ = status.nextLevelBoosts {
-                        let _ = context.engine.peers.applyChannelBoost(peerId: peerId).startStandalone()
-                        controller?.updateSubject(nextSubject, count: nextCount)
-                    } else {
-                        dismissImpl?()
+            )
+        case let .premiumGiftCode(slug):
+            var forceDark = false
+            if let updatedPresentationData, updatedPresentationData.initial.theme.overallDarkAppearance {
+                forceDark = true
+            }
+            let _ = (context.engine.payments.checkPremiumGiftCode(slug: slug)
+            |> deliverOnMainQueue).startStandalone(next: { [weak navigationController] giftCode in
+                if let giftCode {
+                    var dismissImpl: (() -> Void)?
+                    let controller = PremiumGiftCodeScreen(
+                        context: context,
+                        subject: .giftCode(giftCode),
+                        forceDark: forceDark,
+                        action: { [weak navigationController] in
+                            let _ = (context.engine.payments.applyPremiumGiftCode(slug: slug)
+                            |> deliverOnMainQueue).startStandalone(completed: {
+                                dismissImpl?()
+                                
+                                let controller = PremiumIntroScreen(context: context, source: .settings, forceDark: forceDark, forceHasPremium: true)
+                                navigationController?.pushViewController(controller)
+                                Queue.mainQueue().after(0.3, {
+                                    controller.animateSuccess()
+                                })
+                            })
+                        },
+                        openPeer: { peer in
+                            if peer.id != context.account.peerId {
+                                openPeer(peer, .chat(textInputState: nil, subject: nil, peekData: nil))
+                            }
+                        },
+                        openMessage: { messageId in
+                            let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: messageId.peerId))
+                            |> deliverOnMainQueue).startStandalone(next: { peer in
+                                guard let peer else {
+                                    return
+                                }
+                                openPeer(peer, .chat(textInputState: nil, subject: .message(id: .id(messageId), highlight: ChatControllerSubject.MessageHighlight(quote: nil), timecode: nil), peekData: nil))
+                            })
+                        },
+                        shareLink: { link in
+                            let messages: [EnqueueMessage] = [.message(text: link, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])]
+                            
+                            let peerSelectionController = context.sharedContext.makePeerSelectionController(PeerSelectionControllerParams(context: context, filter: [.onlyWriteable, .excludeDisabled], multipleSelection: false, selectForumThreads: true))
+                            peerSelectionController.peerSelected = { [weak peerSelectionController] peer, threadId in
+                                if let _ = peerSelectionController {
+                                    Queue.mainQueue().after(0.88) {
+                                        HapticFeedback().success()
+                                    }
+
+                                    let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                                    (navigationController?.topViewController as? ViewController)?.present(UndoOverlayController(presentationData: presentationData, content: .forward(savedMessages: true, text: peer.id == context.account.peerId ? presentationData.strings.GiftLink_LinkSharedToSavedMessages : presentationData.strings.GiftLink_LinkSharedToChat(peer.compactDisplayTitle).string), elevatedLayout: false, animateInAsReplacement: true, action: { _ in return false }), in: .window(.root))
+                                    
+                                    let _ = (enqueueMessages(account: context.account, peerId: peer.id, messages: messages)
+                                    |> deliverOnMainQueue).startStandalone()
+                                    if let peerSelectionController = peerSelectionController {
+                                        peerSelectionController.dismiss()
+                                    }
+                                }
+                            }
+                            navigationController?.pushViewController(peerSelectionController)
+                        }
+                    )
+                    dismissImpl = { [weak controller] in
+                        controller?.dismissAnimated()
                     }
-                }
-                dismissImpl = { [weak controller] in
-                    controller?.dismiss()
+                    navigationController?.pushViewController(controller)
+                } else {
+                    present(textAlertController(context: context, updatedPresentationData: updatedPresentationData, title: nil, text: presentationData.strings.Login_UnknownError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), nil)
                 }
             })
     }

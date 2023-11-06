@@ -403,6 +403,7 @@ public final class StoryItemSetContainerComponent: Component {
         let itemsContainerView: UIView
         let controlsContainerView: UIView
         let controlsClippingView: UIView
+        let controlsNavigationClippingView: UIView
         let topContentGradientView: UIImageView
         let bottomContentGradientLayer: SimpleGradientLayer
         let contentDimView: UIView
@@ -411,6 +412,7 @@ public final class StoryItemSetContainerComponent: Component {
         let closeButtonIconView: UIImageView
         
         let navigationStrip = ComponentView<MediaNavigationStripComponent.EnvironmentType>()
+        let seekLabel = ComponentView<Empty>()
         
         var centerInfoItem: InfoItem?
         var leftInfoItem: InfoItem?
@@ -508,6 +510,12 @@ public final class StoryItemSetContainerComponent: Component {
                 self.controlsClippingView.layer.cornerCurve = .continuous
             }
             
+            self.controlsNavigationClippingView = SparseContainerView()
+            self.controlsNavigationClippingView.clipsToBounds = true
+            if #available(iOS 13.0, *) {
+                self.controlsNavigationClippingView.layer.cornerCurve = .continuous
+            }
+            
             self.topContentGradientView = UIImageView()
             if let image = StoryItemSetContainerComponent.shadowImage {
                 self.topContentGradientView.image = image.stretchableImage(withLeftCapWidth: 0, topCapHeight: Int(image.size.height - 1.0))
@@ -539,11 +547,12 @@ public final class StoryItemSetContainerComponent: Component {
             self.itemsContainerView.addGestureRecognizer(self.scroller.panGestureRecognizer)
             
             self.componentContainerView.addSubview(self.itemsContainerView)
+            self.componentContainerView.addSubview(self.controlsNavigationClippingView)
             self.componentContainerView.addSubview(self.controlsClippingView)
             self.componentContainerView.addSubview(self.controlsContainerView)
             
             self.controlsClippingView.addSubview(self.contentDimView)
-            self.controlsClippingView.addSubview(self.topContentGradientView)
+            self.controlsNavigationClippingView.addSubview(self.topContentGradientView)
             self.layer.addSublayer(self.bottomContentGradientLayer)
             
             self.componentContainerView.addSubview(self.viewListsContainer)
@@ -2054,6 +2063,9 @@ public final class StoryItemSetContainerComponent: Component {
                     duration: 0.3
                 )
                 
+                self.controlsNavigationClippingView.layer.animatePosition(from: sourceLocalFrame.center, to: self.controlsNavigationClippingView.center, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring)
+                self.controlsNavigationClippingView.layer.animateBounds(from: CGRect(origin: CGPoint(x: innerSourceLocalFrame.minX, y: innerSourceLocalFrame.minY), size: sourceLocalFrame.size), to: self.controlsNavigationClippingView.bounds, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring)
+                
                 if let component = self.component, let visibleItemView = self.visibleItems[component.slice.item.storyItem.id]?.view.view {
                     let innerScale = innerSourceLocalFrame.width / visibleItemView.bounds.width
                     let innerFromFrame = CGRect(origin: CGPoint(x: innerSourceLocalFrame.minX, y: innerSourceLocalFrame.minY), size: CGSize(width: innerSourceLocalFrame.width, height: visibleItemView.bounds.height * innerScale))
@@ -2264,6 +2276,7 @@ public final class StoryItemSetContainerComponent: Component {
                             unclippedContainerView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, removeOnCompletion: false)
                             self.controlsContainerView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, removeOnCompletion: false)
                             self.controlsClippingView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, removeOnCompletion: false)
+                            self.controlsNavigationClippingView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, removeOnCompletion: false)
                             
                             for transitionViewImpl in transitionViewsImpl {
                                 transition.setFrame(view: transitionViewImpl, frame: sourceLocalFrame)
@@ -2317,6 +2330,9 @@ public final class StoryItemSetContainerComponent: Component {
                     duration: 0.3,
                     removeOnCompletion: false
                 )
+                
+                self.controlsNavigationClippingView.layer.animatePosition(from: self.controlsNavigationClippingView.center, to: sourceLocalFrame.center, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false)
+                self.controlsNavigationClippingView.layer.animateBounds(from: self.controlsNavigationClippingView.bounds, to: CGRect(origin: CGPoint(x: innerSourceLocalFrame.minX, y: innerSourceLocalFrame.minY), size: sourceLocalFrame.size), duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false)
                 
                 self.overlayContainerView.clipsToBounds = true
                 let overlayToFrame = sourceLocalFrame
@@ -2382,6 +2398,7 @@ public final class StoryItemSetContainerComponent: Component {
                         unclippedContainerView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false)
                         self.controlsContainerView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false)
                         self.controlsClippingView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false)
+                        self.controlsNavigationClippingView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false)
                         
                         for transitionViewImpl in transitionViewsImpl {
                             transition.setFrame(view: transitionViewImpl, frame: sourceLocalFrame)
@@ -2522,6 +2539,8 @@ public final class StoryItemSetContainerComponent: Component {
                 displayLink.add(to: .main, forMode: .common)
                 #endif*/
             }
+            
+            let previousComponent = self.component
             
             var isFirstItem = false
             var itemChanged = false
@@ -2689,8 +2708,6 @@ public final class StoryItemSetContainerComponent: Component {
             
             let inputPlaceholder: MessageInputPanelComponent.Placeholder
             if let stealthModeTimeout = component.stealthModeTimeout {
-                //TODO:localize
-                
                 let minutes = Int(stealthModeTimeout / 60)
                 let seconds = Int(stealthModeTimeout % 60)
                 
@@ -3305,7 +3322,7 @@ public final class StoryItemSetContainerComponent: Component {
                                             let presentationData = component.context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: component.theme)
                                             self.component?.presentController(UndoOverlayController(
                                                 presentationData: presentationData,
-                                                content: .info(title: nil, text: component.strings.Story_ToastShowStoriesTo(peer.compactDisplayTitle).string, timeout: nil),
+                                                content: .info(title: nil, text: component.strings.Story_ToastShowStoriesTo(peer.compactDisplayTitle).string, timeout: nil, customUndoText: nil),
                                                 elevatedLayout: false,
                                                 position: .top,
                                                 animateInAsReplacement: false,
@@ -3326,7 +3343,7 @@ public final class StoryItemSetContainerComponent: Component {
                                             let presentationData = component.context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: component.theme)
                                             self.component?.presentController(UndoOverlayController(
                                                 presentationData: presentationData,
-                                                content: .info(title: nil, text: component.strings.Story_ToastHideStoriesFrom(peer.compactDisplayTitle).string, timeout: nil),
+                                                content: .info(title: nil, text: component.strings.Story_ToastHideStoriesFrom(peer.compactDisplayTitle).string, timeout: nil, customUndoText: nil),
                                                 elevatedLayout: false,
                                                 position: .top,
                                                 animateInAsReplacement: false,
@@ -3603,6 +3620,9 @@ public final class StoryItemSetContainerComponent: Component {
             transition.setPosition(view: self.controlsClippingView, position: contentFrame.center)
             transition.setBounds(view: self.controlsClippingView, bounds: CGRect(origin: CGPoint(), size: contentFrame.size))
             
+            transition.setPosition(view: self.controlsNavigationClippingView, position: contentFrame.center)
+            transition.setBounds(view: self.controlsNavigationClippingView, bounds: CGRect(origin: CGPoint(), size: contentFrame.size))
+            
             var transform = CATransform3DMakeScale(contentVisualScale, contentVisualScale, 1.0)
             if let pinchState = component.pinchState {
                 let pinchOffset = CGPoint(
@@ -3619,6 +3639,7 @@ public final class StoryItemSetContainerComponent: Component {
             }
             transition.setTransform(view: self.controlsContainerView, transform: transform)
             transition.setTransform(view: self.controlsClippingView, transform: transform)
+            transition.setTransform(view: self.controlsNavigationClippingView, transform: transform)
             
             transition.setCornerRadius(layer: self.controlsClippingView.layer, cornerRadius: 12.0 * (1.0 / contentVisualScale))
             
@@ -3870,6 +3891,7 @@ public final class StoryItemSetContainerComponent: Component {
             let controlsContainerAlpha = (component.hideUI || self.isEditingStory || self.viewListDisplayState != .hidden) ? 0.0 : 1.0
             transition.setAlpha(view: self.controlsContainerView, alpha: controlsContainerAlpha)
             transition.setAlpha(view: self.controlsClippingView, alpha: controlsContainerAlpha)
+            transition.setAlpha(view: self.controlsNavigationClippingView, alpha: self.isEditingStory || self.viewListDisplayState != .hidden ? 0.0 : 1.0)
             
             let focusedItem: StoryContentItem? = component.slice.item
             
@@ -4068,7 +4090,7 @@ public final class StoryItemSetContainerComponent: Component {
                             }
                             switch action {
                             case let .url(url, concealed):
-                                openUserGeneratedUrl(context: component.context, peerId: component.slice.peer.id, url: url, concealed: concealed, skipUrlAuth: false, skipConcealedAlert: false, present: { [weak self] c in
+                                let _ = openUserGeneratedUrl(context: component.context, peerId: component.slice.peer.id, url: url, concealed: concealed, skipUrlAuth: false, skipConcealedAlert: false, present: { [weak self] c in
                                     guard let self, let component = self.component, let controller = component.controller() else {
                                         return
                                     }
@@ -4096,7 +4118,7 @@ public final class StoryItemSetContainerComponent: Component {
                                 return
                             }
                             self.sendMessageContext.presentTextEntityActions(view: self, action: action, openUrl: { [weak self] url, concealed in
-                                openUserGeneratedUrl(context: component.context, peerId: component.slice.peer.id, url: url, concealed: concealed, skipUrlAuth: false, skipConcealedAlert: false, present: { [weak self] c in
+                                let _ = openUserGeneratedUrl(context: component.context, peerId: component.slice.peer.id, url: url, concealed: concealed, skipUrlAuth: false, skipConcealedAlert: false, present: { [weak self] c in
                                     guard let self, let component = self.component, let controller = component.controller() else {
                                         return
                                     }
@@ -4140,6 +4162,8 @@ public final class StoryItemSetContainerComponent: Component {
                                 }
                             case .translate:
                                 self.sendMessageContext.performTranslateTextAction(view: self, text: text.string)
+                            case .quote:
+                                break
                             }
                         },
                         controller: { [weak self] in
@@ -4235,9 +4259,7 @@ public final class StoryItemSetContainerComponent: Component {
                                 animationCache: animationCache,
                                 animationRenderer: animationRenderer,
                                 isStandalone: false,
-                                isStatusSelection: false,
-                                isReactionSelection: true,
-                                isEmojiSelection: false,
+                                subject: .reaction,
                                 hasTrending: false,
                                 topReactionItems: mappedReactionItems,
                                 areUnicodeEmojiEnabled: false,
@@ -4395,6 +4417,7 @@ public final class StoryItemSetContainerComponent: Component {
                                         attributes: messageAttributes,
                                         inlineStickers: inlineStickers,
                                         mediaReference: nil,
+                                        threadId: nil,
                                         replyToMessageId: nil,
                                         replyToStoryId: StoryId(peerId: component.slice.peer.id, id: component.slice.item.storyItem.id),
                                         localGroupingKey: nil,
@@ -4414,7 +4437,7 @@ public final class StoryItemSetContainerComponent: Component {
                                                 presentationData: presentationData,
                                                 content: .sticker(context: context, file: animation, loop: false, title: nil, text: component.strings.Story_ToastReactionSent, undoText: component.strings.Story_ToastViewInChat, customAction: { [weak self] in
                                                     if let messageId = messageIds.first, let self {
-                                                        self.navigateToPeer(peer: peer, chat: true, subject: messageId.flatMap { .message(id: .id($0), highlight: false, timecode: nil) })
+                                                        self.navigateToPeer(peer: peer, chat: true, subject: messageId.flatMap { .message(id: .id($0), highlight: nil, timecode: nil) })
                                                     }
                                                 }),
                                                 elevatedLayout: false,
@@ -4582,7 +4605,7 @@ public final class StoryItemSetContainerComponent: Component {
             //transition.setAlpha(layer: self.bottomContentGradientLayer, alpha: inputPanelIsOverlay ? 1.0 : 0.0)
             transition.setAlpha(layer: self.bottomContentGradientLayer, alpha: 0.0)
             
-            var topGradientAlpha: CGFloat = (component.hideUI || self.viewListDisplayState != .hidden || self.isEditingStory) ? 0.0 : 1.0
+            var topGradientAlpha: CGFloat = (self.viewListDisplayState != .hidden || self.isEditingStory) ? 0.0 : 1.0
             var normalDimAlpha: CGFloat = 0.0
             var forceDimAnimation = false
             if let captionItem = self.captionItem {
@@ -4642,10 +4665,9 @@ public final class StoryItemSetContainerComponent: Component {
             
             let startTime9 = CFAbsoluteTimeGetCurrent()
             
+            let navigationStripSideInset: CGFloat = 8.0
+            let navigationStripTopInset: CGFloat = 8.0
             if let focusedItem, let visibleItem = self.visibleItems[focusedItem.storyItem.id], let index = focusedItem.position {
-                let navigationStripSideInset: CGFloat = 8.0
-                let navigationStripTopInset: CGFloat = 8.0
-                
                 var index = max(0, min(index, component.slice.totalCount - 1))
                 var count = component.slice.totalCount
                 if let dayCounters = focusedItem.dayCounters {
@@ -4653,11 +4675,18 @@ public final class StoryItemSetContainerComponent: Component {
                     count = dayCounters.totalCount
                 }
                 
-                let _ = self.navigationStrip.update(
-                    transition: transition,
+                let isSeeking = component.isProgressPaused && component.hideUI && isVideo
+                
+                var navigationStripTransition = transition
+                if let previousComponent, (previousComponent.isProgressPaused && component.hideUI) != isSeeking {
+                    navigationStripTransition = .easeInOut(duration: 0.3)
+                }
+                let navigationStripSize = self.navigationStrip.update(
+                    transition: navigationStripTransition,
                     component: AnyComponent(MediaNavigationStripComponent(
                         index: index,
-                        count: count
+                        count: count,
+                        isSeeking: isSeeking
                     )),
                     environment: {
                         MediaNavigationStripComponent.EnvironmentType(
@@ -4665,15 +4694,35 @@ public final class StoryItemSetContainerComponent: Component {
                             currentIsBuffering: visibleItem.isBuffering
                         )
                     },
-                    containerSize: CGSize(width: availableSize.width - navigationStripSideInset * 2.0, height: 2.0)
+                    containerSize: CGSize(width: availableSize.width - navigationStripSideInset * 2.0, height: 6.0)
                 )
                 if let navigationStripView = self.navigationStrip.view {
                     if navigationStripView.superview == nil {
                         navigationStripView.isUserInteractionEnabled = false
-                        self.controlsClippingView.addSubview(navigationStripView)
+                        self.controlsNavigationClippingView.addSubview(navigationStripView)
                     }
-                    transition.setFrame(view: navigationStripView, frame: CGRect(origin: CGPoint(x: navigationStripSideInset, y: navigationStripTopInset), size: CGSize(width: availableSize.width - navigationStripSideInset * 2.0, height: 2.0)))
-                    transition.setAlpha(view: navigationStripView, alpha: self.isEditingStory ? 0.0 : 1.0)
+                    transition.setFrame(view: navigationStripView, frame: CGRect(origin: CGPoint(x: navigationStripSideInset, y: navigationStripTopInset), size: CGSize(width: availableSize.width - navigationStripSideInset * 2.0, height: navigationStripSize.height)))
+                    
+                    let hideUI = component.hideUI && !isVideo
+                    transition.setAlpha(view: navigationStripView, alpha: self.isEditingStory || hideUI ? 0.0 : 1.0)
+                }
+                
+                let seekLabelSize = self.seekLabel.update(
+                    transition: .immediate,
+                    component: AnyComponent(Text(text: component.strings.Story_SlideToSeek, font: Font.semibold(14.0), color: .white)),
+                    environment: {},
+                    containerSize: availableSize
+                )
+                if let seekLabelView = self.seekLabel.view {
+                    if seekLabelView.superview == nil {
+                        seekLabelView.alpha = 0.0
+                        seekLabelView.isUserInteractionEnabled = false
+                        self.controlsNavigationClippingView.addSubview(seekLabelView)
+                    }
+                    seekLabelView.bounds = CGRect(origin: .zero, size: seekLabelSize)
+                    navigationStripTransition.setPosition(view: seekLabelView, position: CGPoint(x: availableSize.width / 2.0, y: navigationStripTopInset + 22.0 + 6.0 - (!isSeeking ? 12.0 : 0.0)))
+                    navigationStripTransition.setAlpha(view: seekLabelView, alpha: isSeeking ? 1.0 : 0.0)
+                    navigationStripTransition.setScale(view: seekLabelView, scale: isSeeking ? 1.0 : 0.02)
                 }
             }
             
@@ -4737,7 +4786,7 @@ public final class StoryItemSetContainerComponent: Component {
             let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
             let controller = UndoOverlayController(
                 presentationData: presentationData,
-                content: .info(title: nil, text: text, timeout: nil),
+                content: .info(title: nil, text: text, timeout: nil, customUndoText: nil),
                 elevatedLayout: false,
                 animateInAsReplacement: false,
                 blurred: true,
@@ -5101,7 +5150,11 @@ public final class StoryItemSetContainerComponent: Component {
                         case let .image(image, dimensions):
                             updateProgressImpl?(0.0)
                             
-                            if let imageData = compressImageToJPEG(image, quality: 0.7) {
+                            let tempFile = TempBox.shared.tempFile(fileName: "file")
+                            defer {
+                                TempBox.shared.dispose(tempFile)
+                            }
+                            if let imageData = compressImageToJPEG(image, quality: 0.7, tempFilePath: tempFile.path) {
                                 updateDisposable.set((context.engine.messages.editStory(peerId: peerId, id: id, media: .image(dimensions: dimensions, data: imageData, stickers: stickers), mediaAreas: mediaAreas, text: updatedText, entities: updatedEntities, privacy: nil)
                                 |> deliverOnMainQueue).startStrict(next: { [weak self] result in
                                     guard let self else {
@@ -5142,7 +5195,11 @@ public final class StoryItemSetContainerComponent: Component {
                                     resource = VideoLibraryMediaResource(localIdentifier: localIdentifier, conversion: .compress(adjustments))
                                 }
                                 
-                                let firstFrameImageData = firstFrameImage.flatMap { compressImageToJPEG($0, quality: 0.6) }
+                                let tempFile = TempBox.shared.tempFile(fileName: "file")
+                                defer {
+                                    TempBox.shared.dispose(tempFile)
+                                }
+                                let firstFrameImageData = firstFrameImage.flatMap { compressImageToJPEG($0, quality: 0.6, tempFilePath: tempFile.path) }
                                 let firstFrameFile = firstFrameImageData.flatMap { data -> TempBoxFile? in
                                     let file = TempBox.shared.tempFile(fileName: "image.jpg")
                                     if let _ = try? data.write(to: URL(fileURLWithPath: file.path)) {
@@ -5540,6 +5597,12 @@ public final class StoryItemSetContainerComponent: Component {
                 }
             }
             
+            for mediaArea in component.slice.item.storyItem.mediaAreas {
+                if case let .reaction(_, reaction, _) = mediaArea, case let .custom(fileId) = reaction {
+                    emojiFileIds.append(fileId)
+                }
+            }
+            
             if !emojiFileIds.isEmpty || hasLinkedStickers, let peerReference = PeerReference(component.slice.peer._asPeer()) {
                 let context = component.context
                 
@@ -5714,7 +5777,7 @@ public final class StoryItemSetContainerComponent: Component {
                 if component.slice.item.storyItem.isPinned {
                     self.component?.presentController(UndoOverlayController(
                         presentationData: presentationData,
-                        content: .info(title: nil, text: component.strings.Story_ToastRemovedFromProfileText, timeout: nil),
+                        content: .info(title: nil, text: component.strings.Story_ToastRemovedFromProfileText, timeout: nil, customUndoText: nil),
                         elevatedLayout: false,
                         animateInAsReplacement: false,
                         blurred: true,
@@ -5723,7 +5786,7 @@ public final class StoryItemSetContainerComponent: Component {
                 } else {
                     self.component?.presentController(UndoOverlayController(
                         presentationData: presentationData,
-                        content: .info(title: component.strings.Story_ToastSavedToProfileTitle, text: component.strings.Story_ToastSavedToProfileText, timeout: nil),
+                        content: .info(title: component.strings.Story_ToastSavedToProfileTitle, text: component.strings.Story_ToastSavedToProfileText, timeout: nil, customUndoText: nil),
                         elevatedLayout: false,
                         animateInAsReplacement: false,
                         blurred: true,
@@ -5865,7 +5928,7 @@ public final class StoryItemSetContainerComponent: Component {
                     if component.slice.item.storyItem.isPinned {
                         self.scheduledStoryUnpinnedUndoOverlay = UndoOverlayController(
                             presentationData: presentationData,
-                            content: .info(title: nil, text: presentationData.strings.Story_ToastRemovedFromChannelText, timeout: nil),
+                            content: .info(title: nil, text: presentationData.strings.Story_ToastRemovedFromChannelText, timeout: nil, customUndoText: nil),
                             elevatedLayout: false,
                             animateInAsReplacement: false,
                             blurred: true,
@@ -5874,7 +5937,7 @@ public final class StoryItemSetContainerComponent: Component {
                     } else {
                         self.component?.presentController(UndoOverlayController(
                             presentationData: presentationData,
-                            content: .info(title: presentationData.strings.Story_ToastSavedToChannelTitle, text: presentationData.strings.Story_ToastSavedToChannelText, timeout: nil),
+                            content: .info(title: presentationData.strings.Story_ToastSavedToChannelTitle, text: presentationData.strings.Story_ToastSavedToChannelText, timeout: nil, customUndoText: nil),
                             elevatedLayout: false,
                             animateInAsReplacement: false,
                             blurred: true,
@@ -6375,7 +6438,7 @@ public final class StoryItemSetContainerComponent: Component {
         }
         
         func maybeDisplayUnmuteVideoTooltip() {
-            guard let component = self.component, component.visibilityFraction == 1.0 else {
+            guard let component = self.component, component.visibilityFraction == 1.0 && !component.isProgressPaused else {
                 return
             }
             guard let soundButtonView = self.soundButton.view else {

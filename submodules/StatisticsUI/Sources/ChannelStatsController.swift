@@ -20,8 +20,9 @@ import InviteLinksUI
 import UndoUI
 import ShareController
 import ItemListPeerActionItem
+import PremiumUI
 
-private let maxUsersDisplayedLimit: Int32 = 50
+private let maxUsersDisplayedLimit: Int32 = 5
 
 private final class ChannelStatsControllerArguments {
     let context: AccountContext
@@ -30,18 +31,24 @@ private final class ChannelStatsControllerArguments {
     let contextAction: (MessageId, ASDisplayNode, ContextGesture?) -> Void
     let copyBoostLink: (String) -> Void
     let shareBoostLink: (String) -> Void
-    let openPeer: (EnginePeer) -> Void
+    let openBoost: (ChannelBoostersContext.State.Boost) -> Void
     let expandBoosters: () -> Void
+    let openGifts: () -> Void
+    let createPrepaidGiveaway: (PrepaidGiveaway) -> Void
+    let updateGiftsSelected: (Bool) -> Void
         
-    init(context: AccountContext, loadDetailedGraph: @escaping (StatsGraph, Int64) -> Signal<StatsGraph?, NoError>, openMessage: @escaping (MessageId) -> Void, contextAction: @escaping (MessageId, ASDisplayNode, ContextGesture?) -> Void, copyBoostLink: @escaping (String) -> Void, shareBoostLink: @escaping (String) -> Void, openPeer: @escaping (EnginePeer) -> Void, expandBoosters: @escaping () -> Void) {
+    init(context: AccountContext, loadDetailedGraph: @escaping (StatsGraph, Int64) -> Signal<StatsGraph?, NoError>, openMessage: @escaping (MessageId) -> Void, contextAction: @escaping (MessageId, ASDisplayNode, ContextGesture?) -> Void, copyBoostLink: @escaping (String) -> Void, shareBoostLink: @escaping (String) -> Void, openBoost: @escaping (ChannelBoostersContext.State.Boost) -> Void, expandBoosters: @escaping () -> Void, openGifts: @escaping () -> Void, createPrepaidGiveaway: @escaping (PrepaidGiveaway) -> Void, updateGiftsSelected: @escaping (Bool) -> Void) {
         self.context = context
         self.loadDetailedGraph = loadDetailedGraph
         self.openMessageStats = openMessage
         self.contextAction = contextAction
         self.copyBoostLink = copyBoostLink
         self.shareBoostLink = shareBoostLink
-        self.openPeer = openPeer
+        self.openBoost = openBoost
         self.expandBoosters = expandBoosters
+        self.openGifts = openGifts
+        self.createPrepaidGiveaway = createPrepaidGiveaway
+        self.updateGiftsSelected = updateGiftsSelected
     }
 }
 
@@ -59,8 +66,10 @@ private enum StatsSection: Int32 {
     case instantPageInteractions
     case boostLevel
     case boostOverview
+    case boostPrepaid
     case boosters
     case boostLink
+    case gifts
 }
 
 private enum StatsEntry: ItemListNodeEntry {
@@ -102,15 +111,23 @@ private enum StatsEntry: ItemListNodeEntry {
     case boostOverviewTitle(PresentationTheme, String)
     case boostOverview(PresentationTheme, ChannelBoostStatus)
     
+    case boostPrepaidTitle(PresentationTheme, String)
+    case boostPrepaid(Int32, PresentationTheme, String, String, PrepaidGiveaway)
+    case boostPrepaidInfo(PresentationTheme, String)
+    
     case boostersTitle(PresentationTheme, String)
     case boostersPlaceholder(PresentationTheme, String)
-    case booster(Int32, PresentationTheme, PresentationDateTimeFormat, EnginePeer, Int32)
+    case boosterTabs(PresentationTheme, String, String, Bool)
+    case booster(Int32, PresentationTheme, PresentationDateTimeFormat, ChannelBoostersContext.State.Boost)
     case boostersExpand(PresentationTheme, String)
     case boostersInfo(PresentationTheme, String)
     
     case boostLinkTitle(PresentationTheme, String)
     case boostLink(PresentationTheme, String)
     case boostLinkInfo(PresentationTheme, String)
+    
+    case gifts(PresentationTheme, String)
+    case giftsInfo(PresentationTheme, String)
     
     var section: ItemListSectionId {
         switch self {
@@ -140,10 +157,14 @@ private enum StatsEntry: ItemListNodeEntry {
                 return StatsSection.boostLevel.rawValue
             case .boostOverviewTitle, .boostOverview:
                 return StatsSection.boostOverview.rawValue
-        case .boostersTitle, .boostersPlaceholder, .booster, .boostersExpand, .boostersInfo:
+            case .boostPrepaidTitle, .boostPrepaid, .boostPrepaidInfo:
+                return StatsSection.boostPrepaid.rawValue
+            case .boostersTitle, .boostersPlaceholder, .boosterTabs, .booster, .boostersExpand, .boostersInfo:
                 return StatsSection.boosters.rawValue
             case .boostLinkTitle, .boostLink, .boostLinkInfo:
                 return StatsSection.boostLink.rawValue
+            case .gifts, .giftsInfo:
+                return StatsSection.gifts.rawValue
         }
     }
     
@@ -199,12 +220,20 @@ private enum StatsEntry: ItemListNodeEntry {
                 return 2001
             case .boostOverview:
                 return 2002
-            case .boostersTitle:
+            case .boostPrepaidTitle:
                 return 2003
+            case let .boostPrepaid(index, _, _, _, _):
+                return 2004 + index
+            case .boostPrepaidInfo:
+                return 2100
+            case .boostersTitle:
+                return 2101
             case .boostersPlaceholder:
-                return 2004
-            case let .booster(index, _, _, _, _):
-                return 2005 + index
+                return 2102
+            case .boosterTabs:
+                return 2103
+            case let .booster(index, _, _, _):
+                return 2104 + index
             case .boostersExpand:
                 return 10000
             case .boostersInfo:
@@ -215,6 +244,10 @@ private enum StatsEntry: ItemListNodeEntry {
                 return 10003
             case .boostLinkInfo:
                 return 10004
+            case .gifts:
+                return 10005
+            case .giftsInfo:
+                return 10006
         }
     }
     
@@ -370,6 +403,24 @@ private enum StatsEntry: ItemListNodeEntry {
                 } else {
                     return false
                 }
+            case let .boostPrepaidTitle(lhsTheme, lhsText):
+                if case let .boostPrepaidTitle(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+                    return true
+                } else {
+                    return false
+                }
+            case let .boostPrepaid(lhsIndex, lhsTheme, lhsTitle, lhsSubtitle, lhsPrepaidGiveaway):
+                if case let .boostPrepaid(rhsIndex, rhsTheme, rhsTitle, rhsSubtitle, rhsPrepaidGiveaway) = rhs, lhsIndex == rhsIndex, lhsTheme === rhsTheme, lhsTitle == rhsTitle, lhsSubtitle == rhsSubtitle, lhsPrepaidGiveaway == rhsPrepaidGiveaway {
+                    return true
+                } else {
+                    return false
+                }
+            case let .boostPrepaidInfo(lhsTheme, lhsText):
+                if case let .boostPrepaidInfo(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+                    return true
+                } else {
+                    return false
+                }
             case let .boostersTitle(lhsTheme, lhsText):
                 if case let .boostersTitle(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
                     return true
@@ -382,8 +433,14 @@ private enum StatsEntry: ItemListNodeEntry {
                 } else {
                     return false
                 }
-            case let .booster(lhsIndex, lhsTheme, lhsDateTimeFormat, lhsPeer, lhsExpires):
-                if case let .booster(rhsIndex, rhsTheme, rhsDateTimeFormat, rhsPeer, rhsExpires) = rhs, lhsIndex == rhsIndex, lhsTheme === rhsTheme, lhsDateTimeFormat == rhsDateTimeFormat, lhsPeer == rhsPeer, lhsExpires == rhsExpires {
+            case let .boosterTabs(lhsTheme, lhsBoostText, lhsGiftText, lhsGiftSelected):
+                if case let .boosterTabs(rhsTheme, rhsBoostText, rhsGiftText, rhsGiftSelected) = rhs, lhsTheme === rhsTheme, lhsBoostText == rhsBoostText, lhsGiftText == rhsGiftText, lhsGiftSelected == rhsGiftSelected {
+                    return true
+                } else {
+                    return false
+                }
+            case let .booster(lhsIndex, lhsTheme, lhsDateTimeFormat, lhsBoost):
+                if case let .booster(rhsIndex, rhsTheme, rhsDateTimeFormat, rhsBoost) = rhs, lhsIndex == rhsIndex, lhsTheme === rhsTheme, lhsDateTimeFormat == rhsDateTimeFormat, lhsBoost == rhsBoost {
                     return true
                 } else {
                     return false
@@ -418,6 +475,18 @@ private enum StatsEntry: ItemListNodeEntry {
                 } else {
                     return false
                 }
+            case let .gifts(lhsTheme, lhsText):
+                if case let .gifts(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+                    return true
+                } else {
+                    return false
+                }
+            case let .giftsInfo(lhsTheme, lhsText):
+                if case let .giftsInfo(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+                    return true
+                } else {
+                    return false
+                }
         }
     }
     
@@ -441,11 +510,14 @@ private enum StatsEntry: ItemListNodeEntry {
                  let .postsTitle(_, text),
                  let .instantPageInteractionsTitle(_, text),
                  let .boostOverviewTitle(_, text),
+                 let .boostPrepaidTitle(_, text),
                  let .boostersTitle(_, text),
                  let .boostLinkTitle(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
-            case let .boostersInfo(_, text),
-                 let .boostLinkInfo(_, text):
+            case let .boostPrepaidInfo(_, text),
+                 let .boostersInfo(_, text),
+                 let .boostLinkInfo(_, text),
+                 let .giftsInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .markdown(text), sectionId: self.section)
             case let .overview(_, stats):
                 return StatsOverviewItem(presentationData: presentationData, stats: stats, sectionId: self.section, style: .blocks)
@@ -472,11 +544,64 @@ private enum StatsEntry: ItemListNodeEntry {
                 }, contextAction: { node, gesture in
                     arguments.contextAction(message.id, node, gesture)
                 })
-            case let .booster(_, _, dateTimeFormat, peer, expires):
-                let expiresValue = stringForMediumDate(timestamp: expires, strings: presentationData.strings, dateTimeFormat: dateTimeFormat)
-                return ItemListPeerItem(presentationData: presentationData, dateTimeFormat: PresentationDateTimeFormat(), nameDisplayOrder: presentationData.nameDisplayOrder, context: arguments.context, peer: peer, presence: nil, text: .text(presentationData.strings.Stats_Boosts_ExpiresOn(expiresValue).string, .secondary), label: .none, editing: ItemListPeerItemEditing(editable: false, editing: false, revealed: false), switchValue: nil, enabled: true, selectable: peer.id != arguments.context.account.peerId, sectionId: self.section, action: {
-                    arguments.openPeer(peer)
-                }, setPeerIdWithRevealedOptions: { _, _ in }, removePeer: { _ in })
+            case let .boosterTabs(_, boostText, giftText, giftSelected):
+                return BoostsTabsItem(theme: presentationData.theme, boostsText: boostText, giftsText: giftText, selectedTab: giftSelected ? .gifts : .boosts, sectionId: self.section, selectionUpdated: { tab in
+                    arguments.updateGiftsSelected(tab == .gifts)
+                })
+            case let .booster(_, _, _, boost):
+                let count = boost.multiplier
+                let expiresValue = stringForDate(timestamp: boost.expires, strings: presentationData.strings)
+                let expiresString: String
+                
+                let durationMonths = Int32(round(Float(boost.expires - boost.date) / (86400.0 * 30.0)))
+                let durationString = presentationData.strings.Stats_Boosts_ShortMonth("\(durationMonths)").string
+            
+                let title: String
+                let icon: GiftOptionItem.Icon
+                var label: String?
+                if boost.flags.contains(.isGiveaway) {
+                    label = "🏆 \(presentationData.strings.Stats_Boosts_Giveaway)"
+                } else if boost.flags.contains(.isGift) {
+                    label = "🎁 \(presentationData.strings.Stats_Boosts_Gift)"
+                }
+            
+                let color: GiftOptionItem.Icon.Color
+                if durationMonths > 11 {
+                    color = .red
+                } else if durationMonths > 5 {
+                    color = .blue
+                } else {
+                    color = .green
+                }
+            
+                if boost.flags.contains(.isUnclaimed) {
+                    title = presentationData.strings.Stats_Boosts_Unclaimed
+                    icon = .image(color: color, name: "Premium/Unclaimed")
+                    expiresString = "\(durationString) • \(expiresValue)"
+                } else if let peer = boost.peer {
+                    title = peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
+                    icon = .peer(peer)
+                    if let _ = label {
+                        expiresString = expiresValue
+                    } else {
+                        expiresString = presentationData.strings.Stats_Boosts_ExpiresOn(expiresValue).string
+                    }
+                } else {
+                    if boost.flags.contains(.isUnclaimed) {
+                        title = presentationData.strings.Stats_Boosts_Unclaimed
+                        icon = .image(color: color, name: "Premium/Unclaimed")
+                    } else if boost.flags.contains(.isGiveaway) {
+                        title = presentationData.strings.Stats_Boosts_ToBeDistributed
+                        icon = .image(color: color, name: "Premium/ToBeDistributed")
+                    } else {
+                        title = "Unknown"
+                        icon = .image(color: color, name: "Premium/ToBeDistributed")
+                    }
+                    expiresString = "\(durationString) • \(expiresValue)"
+                }
+                return GiftOptionItem(presentationData: presentationData, context: arguments.context, icon: icon, title: title, titleFont: .bold, titleBadge: count > 1 ? "\(count)" : nil, subtitle: expiresString, label: label.flatMap { .semitransparent($0) }, sectionId: self.section, action: {
+                    arguments.openBoost(boost)
+                })
             case let .boostersExpand(theme, title):
                 return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.downArrowImage(theme), title: title, sectionId: self.section, editing: false, action: {
                     arguments.expandBoosters()
@@ -496,6 +621,25 @@ private enum StatsEntry: ItemListNodeEntry {
                 }, contextAction: nil, viewAction: nil, tag: nil)
             case let .boostersPlaceholder(_, text):
                 return ItemListPlaceholderItem(theme: presentationData.theme, text: text, sectionId: self.section, style: .blocks)
+            case let .gifts(theme, title):
+                return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.addBoostsIcon(theme), title: title, sectionId: self.section, editing: false, action: {
+                    arguments.openGifts()
+                })
+            case let .boostPrepaid(_, _, title, subtitle, prepaidGiveaway):
+                let color: GiftOptionItem.Icon.Color
+                switch prepaidGiveaway.months {
+                case 3:
+                    color = .green
+                case 6:
+                    color = .blue
+                case 12:
+                    color = .red
+                default:
+                    color = .blue
+                }
+                return GiftOptionItem(presentationData: presentationData, context: arguments.context, icon: .image(color: color, name: "Premium/Giveaway"), title: title, titleFont: .bold, titleBadge: "\(prepaidGiveaway.quantity * 4)", subtitle: subtitle, label: nil, sectionId: self.section, action: {
+                    arguments.createPrepaidGiveaway(prepaidGiveaway)
+                })
         }
     }
 }
@@ -508,15 +652,18 @@ public enum ChannelStatsSection {
 private struct ChannelStatsControllerState: Equatable {
     let section: ChannelStatsSection
     let boostersExpanded: Bool
+    let giftsSelected: Bool
   
     init() {
         self.section = .stats
         self.boostersExpanded = false
+        self.giftsSelected = false
     }
     
-    init(section: ChannelStatsSection, boostersExpanded: Bool) {
+    init(section: ChannelStatsSection, boostersExpanded: Bool, giftsSelected: Bool) {
         self.section = section
         self.boostersExpanded = boostersExpanded
+        self.giftsSelected = giftsSelected
     }
     
     static func ==(lhs: ChannelStatsControllerState, rhs: ChannelStatsControllerState) -> Bool {
@@ -526,20 +673,27 @@ private struct ChannelStatsControllerState: Equatable {
         if lhs.boostersExpanded != rhs.boostersExpanded {
             return false
         }
+        if lhs.giftsSelected != rhs.giftsSelected {
+            return false
+        }
         return true
     }
     
     func withUpdatedSection(_ section: ChannelStatsSection) -> ChannelStatsControllerState {
-        return ChannelStatsControllerState(section: section, boostersExpanded: self.boostersExpanded)
+        return ChannelStatsControllerState(section: section, boostersExpanded: self.boostersExpanded, giftsSelected: self.giftsSelected)
     }
     
     func withUpdatedBoostersExpanded(_ boostersExpanded: Bool) -> ChannelStatsControllerState {
-        return ChannelStatsControllerState(section: self.section, boostersExpanded: boostersExpanded)
+        return ChannelStatsControllerState(section: self.section, boostersExpanded: boostersExpanded, giftsSelected: self.giftsSelected)
+    }
+    
+    func withUpdatedGiftsSelected(_ giftsSelected: Bool) -> ChannelStatsControllerState {
+        return ChannelStatsControllerState(section: self.section, boostersExpanded: self.boostersExpanded, giftsSelected: giftsSelected)
     }
 }
 
 
-private func channelStatsControllerEntries(state: ChannelStatsControllerState, peer: EnginePeer?, data: ChannelStats?, messages: [Message]?, interactions: [MessageId: ChannelStatsMessageInteractions]?, boostData: ChannelBoostStatus?, boostersState: ChannelBoostersContext.State?, presentationData: PresentationData) -> [StatsEntry] {
+private func channelStatsControllerEntries(state: ChannelStatsControllerState, peer: EnginePeer?, data: ChannelStats?, messages: [Message]?, interactions: [MessageId: ChannelStatsMessageInteractions]?, boostData: ChannelBoostStatus?, boostersState: ChannelBoostersContext.State?, giftsState: ChannelBoostersContext.State?, presentationData: PresentationData, giveawayAvailable: Bool) -> [StatsEntry] {
     var entries: [StatsEntry] = []
     
     switch state.section {
@@ -620,15 +774,25 @@ private func channelStatsControllerEntries(state: ChannelStatsControllerState, p
             entries.append(.boostOverviewTitle(presentationData.theme, presentationData.strings.Stats_Boosts_OverviewHeader))
             entries.append(.boostOverview(presentationData.theme, boostData))
             
+            if !boostData.prepaidGiveaways.isEmpty {
+                entries.append(.boostPrepaidTitle(presentationData.theme, presentationData.strings.Stats_Boosts_PrepaidGiveawaysTitle))
+                var i: Int32 = 0
+                for giveaway in boostData.prepaidGiveaways {
+                    entries.append(.boostPrepaid(i, presentationData.theme, presentationData.strings.Stats_Boosts_PrepaidGiveawayCount(giveaway.quantity), presentationData.strings.Stats_Boosts_PrepaidGiveawayMonths("\(giveaway.months)").string, giveaway))
+                    i += 1
+                }
+                entries.append(.boostPrepaidInfo(presentationData.theme, presentationData.strings.Stats_Boosts_PrepaidGiveawaysInfo))
+            }
+            
             let boostersTitle: String
             let boostersPlaceholder: String?
             let boostersFooter: String?
             if let boostersState, boostersState.count > 0 {
-                boostersTitle = presentationData.strings.Stats_Boosts_Boosters(boostersState.count)
+                boostersTitle = presentationData.strings.Stats_Boosts_Boosts(boostersState.count)
                 boostersPlaceholder = nil
                 boostersFooter = presentationData.strings.Stats_Boosts_BoostersInfo
             } else {
-                boostersTitle = presentationData.strings.Stats_Boosts_BoostersNone
+                boostersTitle = presentationData.strings.Stats_Boosts_BoostsNone
                 boostersPlaceholder = presentationData.strings.Stats_Boosts_NoBoostersYet
                 boostersFooter = nil
             }
@@ -638,10 +802,30 @@ private func channelStatsControllerEntries(state: ChannelStatsControllerState, p
                 entries.append(.boostersPlaceholder(presentationData.theme, boostersPlaceholder))
             }
             
+            var boostsCount: Int32 = 0
             if let boostersState {
+                boostsCount = boostersState.count
+            }
+            var giftsCount: Int32 = 0
+            if let giftsState {
+                giftsCount = giftsState.count
+            }
+            
+            if boostsCount > 0 && giftsCount > 0 && boostsCount != giftsCount {
+                entries.append(.boosterTabs(presentationData.theme, presentationData.strings.Stats_Boosts_TabBoosts(boostsCount), presentationData.strings.Stats_Boosts_TabGifts(giftsCount), state.giftsSelected))
+            }
+            
+            let selectedState: ChannelBoostersContext.State?
+            if state.giftsSelected {
+                selectedState = giftsState
+            } else {
+                selectedState = boostersState
+            }
+            
+            if let selectedState {
                 var boosterIndex: Int32 = 0
                 
-                var boosters: [ChannelBoostersContext.State.Booster] = boostersState.boosters
+                var boosters: [ChannelBoostersContext.State.Boost] = selectedState.boosts
                 var effectiveExpanded = state.boostersExpanded
                 if boosters.count > maxUsersDisplayedLimit && !state.boostersExpanded {
                     boosters = Array(boosters.prefix(Int(maxUsersDisplayedLimit)))
@@ -650,12 +834,12 @@ private func channelStatsControllerEntries(state: ChannelStatsControllerState, p
                 }
                 
                 for booster in boosters {
-                    entries.append(.booster(boosterIndex, presentationData.theme, presentationData.dateTimeFormat, booster.peer, booster.expires))
+                    entries.append(.booster(boosterIndex, presentationData.theme, presentationData.dateTimeFormat, booster))
                     boosterIndex += 1
                 }
                 
                 if !effectiveExpanded {
-                    entries.append(.boostersExpand(presentationData.theme, presentationData.strings.PeopleNearby_ShowMorePeople(Int32(boostersState.count) - maxUsersDisplayedLimit)))
+                    entries.append(.boostersExpand(presentationData.theme, presentationData.strings.Stats_Boosts_ShowMoreBoosts(Int32(selectedState.count) - maxUsersDisplayedLimit)))
                 }
             }
             
@@ -664,18 +848,13 @@ private func channelStatsControllerEntries(state: ChannelStatsControllerState, p
             }
             
             entries.append(.boostLinkTitle(presentationData.theme, presentationData.strings.Stats_Boosts_LinkHeader))
-            
-            if let peer {
-                let link: String
-                if let addressName = peer.addressName, !addressName.isEmpty {
-                    link = "t.me/\(addressName)?boost"
-                } else {
-                    link = "t.me/c/\(peer.id.id._internalGetInt64Value())?boost"
-                }
-                entries.append(.boostLink(presentationData.theme, link))
-            }
-            
+            entries.append(.boostLink(presentationData.theme, boostData.url))
             entries.append(.boostLinkInfo(presentationData.theme, presentationData.strings.Stats_Boosts_LinkInfo))
+            
+            if giveawayAvailable {
+                entries.append(.gifts(presentationData.theme, presentationData.strings.Stats_Boosts_GetBoosts))
+                entries.append(.giftsInfo(presentationData.theme, presentationData.strings.Stats_Boosts_GetBoostsInfo))
+            }
         }
     }
     
@@ -683,11 +862,13 @@ private func channelStatsControllerEntries(state: ChannelStatsControllerState, p
 }
 
 public func channelStatsController(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, peerId: PeerId, section: ChannelStatsSection = .stats, boostStatus: ChannelBoostStatus? = nil, statsDatacenterId: Int32?) -> ViewController {
-    let statePromise = ValuePromise(ChannelStatsControllerState(section: section, boostersExpanded: false), ignoreRepeated: true)
-    let stateValue = Atomic(value: ChannelStatsControllerState(section: section, boostersExpanded: false))
+    let statePromise = ValuePromise(ChannelStatsControllerState(section: section, boostersExpanded: false, giftsSelected: false), ignoreRepeated: true)
+    let stateValue = Atomic(value: ChannelStatsControllerState(section: section, boostersExpanded: false, giftsSelected: false))
     let updateState: ((ChannelStatsControllerState) -> ChannelStatsControllerState) -> Void = { f in
         statePromise.set(stateValue.modify { f($0) })
     }
+    
+    let premiumConfiguration = PremiumConfiguration.with(appConfiguration: context.currentAppConfiguration.with { $0 })
     
     var openMessageStatsImpl: ((MessageId) -> Void)?
     var contextActionImpl: ((MessageId, ASDisplayNode, ContextGesture?) -> Void)?
@@ -721,12 +902,16 @@ public func channelStatsController(context: AccountContext, updatedPresentationD
     if let boostStatus {
         boostData = .single(boostStatus)
     } else {
-        boostData = context.engine.peers.getChannelBoostStatus(peerId: peerId)
+        boostData = .single(nil) |> then(context.engine.peers.getChannelBoostStatus(peerId: peerId))
     }
-    let boostersContext = ChannelBoostersContext(account: context.account, peerId: peerId)
+    let boostsContext = ChannelBoostersContext(account: context.account, peerId: peerId, gift: false)
+    let giftsContext = ChannelBoostersContext(account: context.account, peerId: peerId, gift: true)
     
+    var dismissAllTooltipsImpl: (() -> Void)?
     var presentImpl: ((ViewController) -> Void)?
-    var navigateToProfileImpl: ((EnginePeer) -> Void)?
+    var pushImpl: ((ViewController) -> Void)?
+    var navigateToChatImpl: ((EnginePeer) -> Void)?
+    var navigateToMessageImpl: ((EngineMessage.Id) -> Void)?
     
     let arguments = ChannelStatsControllerArguments(context: context, loadDetailedGraph: { graph, x -> Signal<StatsGraph?, NoError> in
         return statsContext.loadDetailedGraph(graph, x: x)
@@ -735,13 +920,11 @@ public func channelStatsController(context: AccountContext, updatedPresentationD
     }, contextAction: { messageId, node, gesture in
         contextActionImpl?(messageId, node, gesture)
     }, copyBoostLink: { link in
-        UIPasteboard.general.string = "https://\(link)"
+        UIPasteboard.general.string = link
                 
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
         presentImpl?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(text: presentationData.strings.ChannelBoost_BoostLinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }))
-    }, shareBoostLink: { link in
-        let link = "https://\(link)"
-        
+    }, shareBoostLink: { link in        
         let shareController = ShareController(context: context, subject: .url(link), updatedPresentationData: updatedPresentationData)
         shareController.completed = {  peerIds in
             let _ = (context.engine.data.get(
@@ -783,11 +966,45 @@ public func channelStatsController(context: AccountContext, updatedPresentationD
         }
         presentImpl?(shareController)
     },
-    openPeer: { peer in
-        navigateToProfileImpl?(peer)
+    openBoost: { boost in
+        dismissAllTooltipsImpl?()
+        
+        if let peer = boost.peer, !boost.flags.contains(.isGiveaway) && !boost.flags.contains(.isGift) {
+            navigateToChatImpl?(peer)
+            return
+        }
+        
+        if boost.peer == nil, boost.flags.contains(.isGiveaway) && !boost.flags.contains(.isUnclaimed) {
+            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+            presentImpl?(UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: presentationData.strings.Stats_Boosts_TooltipToBeDistributed, timeout: nil, customUndoText: nil), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }))
+            return
+        }
+        
+        let controller = PremiumGiftCodeScreen(
+            context: context,
+            subject: .boost(peerId, boost),
+            action: {},
+            openPeer: { peer in
+                navigateToChatImpl?(peer)
+            },
+            openMessage: { messageId in
+                navigateToMessageImpl?(messageId)
+            })
+        pushImpl?(controller)
     },
     expandBoosters: {
         updateState { $0.withUpdatedBoostersExpanded(true) }
+    },
+    openGifts: {
+        let controller = createGiveawayController(context: context, peerId: peerId, subject: .generic)
+        pushImpl?(controller)
+    },
+    createPrepaidGiveaway: { prepaidGiveaway in
+        let controller = createGiveawayController(context: context, peerId: peerId, subject: .prepaid(prepaidGiveaway))
+        pushImpl?(controller)
+    },
+    updateGiftsSelected: { selected in
+        updateState { $0.withUpdatedGiftsSelected(selected).withUpdatedBoostersExpanded(false) }
     })
     
     let messageView = context.account.viewTracker.aroundMessageHistoryViewForLocation(.peer(peerId: peerId, threadId: nil), index: .upperBound, anchorIndex: .upperBound, count: 100, fixedCombinedReadStates: nil)
@@ -808,11 +1025,12 @@ public func channelStatsController(context: AccountContext, updatedPresentationD
         dataPromise.get(),
         messagesPromise.get(),
         boostData,
-        boostersContext.state,
+        boostsContext.state,
+        giftsContext.state,
         longLoadingSignal
     )
     |> deliverOnMainQueue
-    |> map { presentationData, state, peer, data, messageView, boostData, boostersState, longLoading -> (ItemListControllerState, (ItemListNodeState, Any)) in
+    |> map { presentationData, state, peer, data, messageView, boostData, boostersState, giftsState, longLoading -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let previous = previousData.swap(data)
         var emptyStateItem: ItemListControllerEmptyStateItem?
         switch state.section {
@@ -838,11 +1056,9 @@ public func channelStatsController(context: AccountContext, updatedPresentationD
             map[interactions.messageId] = interactions
             return map
         }
-        
-        
-        
+                
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .sectionControl([presentationData.strings.Stats_Statistics, presentationData.strings.Stats_Boosts], state.section == .boosts ? 1 : 0), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: true)
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: channelStatsControllerEntries(state: state, peer: peer, data: data, messages: messages, interactions: interactions, boostData: boostData, boostersState: boostersState, presentationData: presentationData), style: .blocks, emptyStateItem: emptyStateItem, crossfadeState: previous == nil, animateChanges: false)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: channelStatsControllerEntries(state: state, peer: peer, data: data, messages: messages, interactions: interactions, boostData: boostData, boostersState: boostersState, giftsState: giftsState, presentationData: presentationData, giveawayAvailable: premiumConfiguration.giveawayGiftsPurchaseAvailable), style: .blocks, emptyStateItem: emptyStateItem, crossfadeState: previous == nil, animateChanges: false)
         
         return (controllerState, (listState, arguments))
     }
@@ -862,7 +1078,7 @@ public func channelStatsController(context: AccountContext, updatedPresentationD
     controller.visibleBottomContentOffsetChanged = { offset in
         let state = stateValue.with { $0 }
         if case let .known(value) = offset, value < 100.0, case .boosts = state.section, state.boostersExpanded {
-            boostersContext.loadMore()
+            boostsContext.loadMore()
         }
     }
     controller.titleControlValueChanged = { value in
@@ -891,7 +1107,7 @@ public func channelStatsController(context: AccountContext, updatedPresentationD
                     }
                     
                     if let navigationController = controller?.navigationController as? NavigationController {
-                        context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: context, chatLocation: .peer(peer), subject: .message(id: .id(messageId), highlight: true, timecode: nil)))
+                        context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: context, chatLocation: .peer(peer), subject: .message(id: .id(messageId), highlight: ChatControllerSubject.MessageHighlight(quote: nil), timecode: nil)))
                     }
                 })
             })
@@ -900,13 +1116,44 @@ public func channelStatsController(context: AccountContext, updatedPresentationD
         let contextController = ContextController(presentationData: presentationData, source: .extracted(ChannelStatsContextExtractedContentSource(controller: controller, sourceNode: sourceNode, keepInPlace: false)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
         controller.presentInGlobalOverlay(contextController)
     }
+    dismissAllTooltipsImpl = { [weak controller] in
+        if let controller {
+            controller.window?.forEachController({ controller in
+                if let controller = controller as? UndoOverlayController {
+                    controller.dismiss()
+                }
+            })
+            controller.forEachController({ controller in
+                if let controller = controller as? UndoOverlayController {
+                    controller.dismiss()
+                }
+                return true
+            })
+        }
+    }
     presentImpl = { [weak controller] c in
         controller?.present(c, in: .window(.root))
     }
-    navigateToProfileImpl = { [weak controller] peer in
-        if let navigationController = controller?.navigationController as? NavigationController, let controller = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer._asPeer(), mode: .generic, avatarInitiallyExpanded: peer.largeProfileImage != nil, fromChat: false, requestsContext: nil) {
-            navigationController.pushViewController(controller)
+    pushImpl = { [weak controller] c in
+        controller?.push(c)
+    }
+    navigateToChatImpl = { [weak controller] peer in
+        if let navigationController = controller?.navigationController as? NavigationController {
+            context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: context, chatLocation: .peer(peer), keepStack: .always, purposefulAction: {}, peekData: nil))
         }
+    }
+    navigateToMessageImpl = { [weak controller] messageId in
+        let _ = (context.engine.data.get(
+            TelegramEngine.EngineData.Item.Peer.Peer(id: messageId.peerId)
+        )
+        |> deliverOnMainQueue).start(next: { peer in
+            guard let peer = peer else {
+                return
+            }
+            if let navigationController = controller?.navigationController as? NavigationController {
+                context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: context, chatLocation: .peer(peer), subject: .message(id: .id(messageId), highlight: ChatControllerSubject.MessageHighlight(quote: nil), timecode: nil), keepStack: .always, useExisting: false, purposefulAction: {}, peekData: nil))
+            }
+        })
     }
     return controller
 }

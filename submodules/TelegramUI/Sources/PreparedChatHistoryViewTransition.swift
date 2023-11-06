@@ -6,8 +6,10 @@ import Display
 import MergeLists
 import AccountContext
 import ChatControllerInteraction
+import ChatHistoryEntry
+import ChatMessageBubbleItemNode
 
-func preparedChatHistoryViewTransition(from fromView: ChatHistoryView?, to toView: ChatHistoryView, reason: ChatHistoryViewTransitionReason, reverse: Bool, chatLocation: ChatLocation, controllerInteraction: ChatControllerInteraction, scrollPosition: ChatHistoryViewScrollPosition?, scrollAnimationCurve: ListViewAnimationCurve?, initialData: InitialMessageHistoryData?, keyboardButtonsMessage: Message?, cachedData: CachedPeerData?, cachedDataMessages: [MessageId: Message]?, readStateData: [PeerId: ChatHistoryCombinedInitialReadStateData]?, flashIndicators: Bool, updatedMessageSelection: Bool, messageTransitionNode: ChatMessageTransitionNode?, allUpdated: Bool) -> ChatHistoryViewTransition {
+func preparedChatHistoryViewTransition(from fromView: ChatHistoryView?, to toView: ChatHistoryView, reason: ChatHistoryViewTransitionReason, reverse: Bool, chatLocation: ChatLocation, controllerInteraction: ChatControllerInteraction, scrollPosition: ChatHistoryViewScrollPosition?, scrollAnimationCurve: ListViewAnimationCurve?, initialData: InitialMessageHistoryData?, keyboardButtonsMessage: Message?, cachedData: CachedPeerData?, cachedDataMessages: [MessageId: Message]?, readStateData: [PeerId: ChatHistoryCombinedInitialReadStateData]?, flashIndicators: Bool, updatedMessageSelection: Bool, messageTransitionNode: ChatMessageTransitionNodeImpl?, allUpdated: Bool) -> ChatHistoryViewTransition {
     var mergeResult: (deleteIndices: [Int], indicesAndItems: [(Int, ChatHistoryEntry, Int?)], updateIndices: [(Int, ChatHistoryEntry, Int)])
     let allUpdated = allUpdated || (fromView?.associatedData != toView.associatedData)
     if reverse {
@@ -134,7 +136,7 @@ func preparedChatHistoryViewTransition(from fromView: ChatHistoryView?, to toVie
         adjustedUpdateItems.append(ChatHistoryViewTransitionUpdateEntry(index: adjustedIndex, previousIndex: adjustedPreviousIndex, entry: entry, directionHint: directionHint))
     }
     
-    var scrolledToIndex: MessageHistoryAnchorIndex?
+    var scrolledToIndex: MessageHistoryScrollToSubject?
     var scrolledToSomeIndex = false
     
     let curve: ListViewAnimationCurve = scrollAnimationCurve ?? .Default(duration: nil)
@@ -192,13 +194,25 @@ func preparedChatHistoryViewTransition(from fromView: ChatHistoryView?, to toVie
                         index += 1
                     }
                 }
-            case let .index(scrollIndex, position, directionHint, animated, highlight, displayLink):
+            case let .index(scrollSubject, position, directionHint, animated, highlight, displayLink):
+                let scrollIndex = scrollSubject
+                var position = position
                 if case .center = position, highlight {
-                    scrolledToIndex = scrollIndex
+                    scrolledToIndex = scrollSubject
+                }
+                if case .center = position, let quote = scrollSubject.quote {
+                    position = .center(.custom({ itemNode in
+                        if let itemNode = itemNode as? ChatMessageBubbleItemNode {
+                            if let quoteRect = itemNode.getQuoteRect(quote: quote) {
+                                return quoteRect.midY
+                            }
+                        }
+                        return 0.0
+                    }))
                 }
                 var index = toView.filteredEntries.count - 1
                 for entry in toView.filteredEntries {
-                    if scrollIndex.isLessOrEqual(to: entry.index) {
+                    if scrollIndex.index.isLessOrEqual(to: entry.index) {
                         scrollToItem = ListViewScrollToItem(index: index, position: position, animated: animated, curve: curve, directionHint: directionHint, displayLink: displayLink)
                         break
                     }
@@ -208,7 +222,7 @@ func preparedChatHistoryViewTransition(from fromView: ChatHistoryView?, to toVie
                 if scrollToItem == nil {
                     var index = 0
                     for entry in toView.filteredEntries.reversed() {
-                        if !scrollIndex.isLess(than: entry.index) {
+                        if !scrollIndex.index.isLess(than: entry.index) {
                             scrolledToSomeIndex = true
                             scrollToItem = ListViewScrollToItem(index: index, position: position, animated: animated, curve: curve, directionHint: directionHint)
                             break

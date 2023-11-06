@@ -17,6 +17,7 @@ import ItemListUI
 import ChatPresentationInterfaceState
 import ChatControllerInteraction
 import ChatContextQuery
+import ChatInputContextPanelNode
 
 private struct MentionChatInputContextPanelEntry: Comparable, Identifiable {
     let index: Int

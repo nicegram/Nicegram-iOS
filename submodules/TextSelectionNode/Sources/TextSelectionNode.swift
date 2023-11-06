@@ -61,11 +61,13 @@ public final class TextSelectionTheme {
     public let selection: UIColor
     public let knob: UIColor
     public let knobDiameter: CGFloat
+    public let isDark: Bool
     
-    public init(selection: UIColor, knob: UIColor, knobDiameter: CGFloat = 12.0) {
+    public init(selection: UIColor, knob: UIColor, knobDiameter: CGFloat = 12.0, isDark: Bool) {
         self.selection = selection
         self.knob = knob
         self.knobDiameter = knobDiameter
+        self.isDark = isDark
     }
 }
 
@@ -204,12 +206,13 @@ public final class TextSelectionNodeView: UIView {
     }
 }
 
-public enum TextSelectionAction {
+public enum TextSelectionAction: Equatable {
     case copy
     case share
     case lookup
     case speak
     case translate
+    case quote(range: Range<Int>)
 }
 
 public final class TextSelectionNode: ASDisplayNode {
@@ -219,6 +222,7 @@ public final class TextSelectionNode: ASDisplayNode {
     private let updateIsActive: (Bool) -> Void
     public var canBeginSelection: (CGPoint) -> Bool = { _ in true }
     public var updateRange: ((NSRange?) -> Void)?
+    public var presentMenu: ((UIView, CGPoint, [ContextMenuAction]) -> Void)?
     private let present: (ViewController, Any?) -> Void
     private let rootNode: () -> ASDisplayNode?
     private let performAction: (NSAttributedString, TextSelectionAction) -> Void
@@ -234,11 +238,19 @@ public final class TextSelectionNode: ASDisplayNode {
     public private(set) var recognizer: TextSelectionGestureRecognizer?
     private var displayLinkAnimator: DisplayLinkAnimator?
     
+    public var enableCopy: Bool = true
     public var enableLookup: Bool = true
+    public var enableQuote: Bool = false
+    public var enableTranslate: Bool = true
+    public var enableShare: Bool = true
+    
+    public var menuSkipCoordnateConversion: Bool = false
     
     public var didRecognizeTap: Bool {
         return self.recognizer?.didRecognizeTap ?? false
     }
+    
+    private weak var contextMenu: ContextMenuController?
     
     public init(theme: TextSelectionTheme, strings: PresentationStrings, textNode: TextNode, updateIsActive: @escaping (Bool) -> Void, present: @escaping (ViewController, Any?) -> Void, rootNode: @escaping () -> ASDisplayNode?, externalKnobSurface: UIView? = nil, performAction: @escaping (NSAttributedString, TextSelectionAction) -> Void) {
         self.theme = theme
@@ -436,6 +448,126 @@ public final class TextSelectionNode: ASDisplayNode {
         self.displayLinkAnimator = displayLinkAnimator
     }
     
+    public func setSelection(range: NSRange, displayMenu: Bool) {
+        guard let cachedLayout = self.textNode.cachedLayout, let attributedString = cachedLayout.attributedString else {
+            return
+        }
+        let range = self.convertSelectionFromOriginalText(attributedString: attributedString, range: range)
+        
+        self.currentRange = (range.lowerBound, range.upperBound)
+        self.updateSelection(range: range, animateIn: true)
+        self.updateIsActive(true)
+        
+        if displayMenu {
+            self.displayMenu()
+        }
+    }
+    
+    private func convertSelectionToOriginalText(attributedString: NSAttributedString, range: NSRange) -> NSRange {
+        var adjustedRange = range
+        
+        do {
+            attributedString.enumerateAttribute(originalTextAttributeKey, in: NSRange(location: 0, length: range.lowerBound), options: [], using: { value, range, stop in
+                guard let value = value as? OriginalTextAttribute else {
+                    return
+                }
+                let updatedSubstring = NSMutableAttributedString(string: value.string)
+                let difference = updatedSubstring.length - range.length
+                
+                adjustedRange.location += difference
+            })
+        }
+        
+        do {
+            attributedString.enumerateAttribute(originalTextAttributeKey, in: range, options: [], using: { value, range, stop in
+                guard let value = value as? OriginalTextAttribute else {
+                    return
+                }
+                let updatedSubstring = NSMutableAttributedString(string: value.string)
+                let difference = updatedSubstring.length - range.length
+                
+                adjustedRange.length += difference
+            })
+        }
+        
+        return adjustedRange
+    }
+    
+    private func convertSelectionFromOriginalText(attributedString: NSAttributedString, range: NSRange) -> NSRange {
+        var adjustedRange = range
+        
+        final class PreviousText: NSObject {
+            let id: Int
+            let string: String
+            
+            init(id: Int, string: String) {
+                self.id = id
+                self.string = string
+            }
+        }
+        
+        var nextId = 0
+        let attributedString = NSMutableAttributedString(attributedString: attributedString)
+        var fullRange = NSRange(location: 0, length: attributedString.length)
+        while true {
+            var found = false
+            attributedString.enumerateAttribute(originalTextAttributeKey, in: fullRange, options: [], using: { value, range, stop in
+                if let value = value as? OriginalTextAttribute {
+                    let updatedSubstring = NSMutableAttributedString(string: value.string)
+                    
+                    let replacementRange = NSRange(location: 0, length: updatedSubstring.length)
+                    updatedSubstring.addAttributes(attributedString.attributes(at: range.location, effectiveRange: nil), range: replacementRange)
+                    updatedSubstring.addAttribute(NSAttributedString.Key(rawValue: "__previous_text"), value: PreviousText(id: nextId, string: attributedString.attributedSubstring(from: range).string), range: replacementRange)
+                    nextId += 1
+                    
+                    attributedString.replaceCharacters(in: range, with: updatedSubstring)
+                    let updatedRange = NSRange(location: range.location, length: updatedSubstring.length)
+                    
+                    found = true
+                    stop.pointee = ObjCBool(true)
+                    fullRange = NSRange(location: updatedRange.upperBound, length: fullRange.upperBound - range.upperBound)
+                }
+            })
+            if !found {
+                break
+            }
+        }
+        
+        do {
+            attributedString.enumerateAttribute(NSAttributedString.Key(rawValue: "__previous_text"), in: NSRange(location: 0, length: range.lowerBound), options: [], using: { value, range, stop in
+                guard let value = value as? PreviousText else {
+                    return
+                }
+                let updatedSubstring = NSMutableAttributedString(string: value.string)
+                let difference = updatedSubstring.length - range.length
+                
+                adjustedRange.location += difference
+            })
+        }
+        
+        do {
+            attributedString.enumerateAttribute(NSAttributedString.Key(rawValue: "__previous_text"), in: range, options: [], using: { value, range, stop in
+                guard let value = value as? PreviousText else {
+                    return
+                }
+                let updatedSubstring = NSMutableAttributedString(string: value.string)
+                let difference = updatedSubstring.length - range.length
+                
+                adjustedRange.length += difference
+            })
+        }
+        
+        return adjustedRange
+    }
+    
+    public func getSelection() -> NSRange? {
+        guard let currentRange = self.currentRange, let cachedLayout = self.textNode.cachedLayout, let attributedString = cachedLayout.attributedString else {
+            return nil
+        }
+        let range = NSRange(location: min(currentRange.0, currentRange.1), length: max(currentRange.0, currentRange.1) - min(currentRange.0, currentRange.1))
+        return self.convertSelectionToOriginalText(attributedString: attributedString, range: range)
+    }
+    
     private func updateSelection(range: NSRange?, animateIn: Bool) {
         self.updateRange?(range)
         
@@ -524,6 +656,9 @@ public final class TextSelectionNode: ASDisplayNode {
         self.currentRange = nil
         self.recognizer?.isSelecting = false
         self.updateSelection(range: nil, animateIn: false)
+        
+        self.contextMenu?.dismiss()
+        self.contextMenu = nil
     }
     
     public func cancelSelection() {
@@ -548,8 +683,8 @@ public final class TextSelectionNode: ASDisplayNode {
         while true {
             var found = false
             string.enumerateAttribute(originalTextAttributeKey, in: fullRange, options: [], using: { value, range, stop in
-                if let value = value as? String {
-                    let updatedSubstring = NSMutableAttributedString(string: value)
+                if let value = value as? OriginalTextAttribute {
+                    let updatedSubstring = NSMutableAttributedString(string: value.string)
                     
                     let replacementRange = NSRange(location: 0, length: updatedSubstring.length)
                     updatedSubstring.addAttributes(string.attributes(at: range.location, effectiveRange: nil), range: replacementRange)
@@ -567,11 +702,21 @@ public final class TextSelectionNode: ASDisplayNode {
             }
         }
         
+        let adjustedRange = self.convertSelectionToOriginalText(attributedString: attributedString, range: range)
+        
         var actions: [ContextMenuAction] = []
-        actions.append(ContextMenuAction(content: .text(title: self.strings.Conversation_ContextMenuCopy, accessibilityLabel: self.strings.Conversation_ContextMenuCopy), action: { [weak self] in
-            self?.performAction(string, .copy)
-            self?.cancelSelection()
-        }))
+        if self.enableCopy {
+            actions.append(ContextMenuAction(content: .text(title: self.strings.Conversation_ContextMenuCopy, accessibilityLabel: self.strings.Conversation_ContextMenuCopy), action: { [weak self] in
+                self?.performAction(string, .copy)
+                self?.cancelSelection()
+            }))
+        }
+        if self.enableQuote {
+            actions.append(ContextMenuAction(content: .text(title: self.strings.Conversation_ContextMenuQuote, accessibilityLabel: self.strings.Conversation_ContextMenuQuote), action: { [weak self] in
+                self?.performAction(string, .quote(range: adjustedRange.lowerBound ..< adjustedRange.upperBound))
+                self?.cancelSelection()
+            }))
+        }
         if self.enableLookup {
             actions.append(ContextMenuAction(content: .text(title: self.strings.Conversation_ContextMenuLookUp, accessibilityLabel: self.strings.Conversation_ContextMenuLookUp), action: { [weak self] in
                 self?.performAction(string, .lookup)
@@ -579,10 +724,12 @@ public final class TextSelectionNode: ASDisplayNode {
             }))
         }
         if #available(iOS 15.0, *) {
-            actions.append(ContextMenuAction(content: .text(title: self.strings.Conversation_ContextMenuTranslate, accessibilityLabel: self.strings.Conversation_ContextMenuTranslate), action: { [weak self] in
-                self?.performAction(string, .translate)
-                self?.cancelSelection()
-            }))
+            if self.enableTranslate {
+                actions.append(ContextMenuAction(content: .text(title: self.strings.Conversation_ContextMenuTranslate, accessibilityLabel: self.strings.Conversation_ContextMenuTranslate), action: { [weak self] in
+                    self?.performAction(string, .translate)
+                    self?.cancelSelection()
+                }))
+            }
         }
 //        if isSpeakSelectionEnabled() {
 //            actions.append(ContextMenuAction(content: .text(title: self.strings.Conversation_ContextMenuSpeak, accessibilityLabel: self.strings.Conversation_ContextMenuSpeak), action: { [weak self] in
@@ -590,16 +737,47 @@ public final class TextSelectionNode: ASDisplayNode {
 //                self?.dismissSelection()
 //            }))
 //        }
-        actions.append(ContextMenuAction(content: .text(title: self.strings.Conversation_ContextMenuShare, accessibilityLabel: self.strings.Conversation_ContextMenuShare), action: { [weak self] in
-            self?.performAction(string, .share)
-            self?.cancelSelection()
-        }))
         
-        self.present(ContextMenuController(actions: actions, catchTapsOutside: false, hasHapticFeedback: false), ContextMenuControllerPresentationArguments(sourceNodeAndRect: { [weak self] in
+        let realFullRange = NSRange(location: 0, length: attributedString.length)
+        if range != realFullRange {
+            actions.append(ContextMenuAction(content: .text(title: self.strings.TextSelection_SelectAll, accessibilityLabel: self.strings.TextSelection_SelectAll), action: { [weak self] in
+                guard let self else {
+                    return
+                }
+                self.contextMenu?.dismiss()
+                self.setSelection(range: realFullRange, displayMenu: true)
+            }))
+        } else if self.enableShare {
+            actions.append(ContextMenuAction(content: .text(title: self.strings.Conversation_ContextMenuShare, accessibilityLabel: self.strings.Conversation_ContextMenuShare), action: { [weak self] in
+                self?.performAction(string, .share)
+                self?.cancelSelection()
+            }))
+        }
+        
+        self.contextMenu?.dismiss()
+        
+        let contextMenu = makeContextMenuController(actions: actions, catchTapsOutside: false, hasHapticFeedback: false, isDark: self.theme.isDark, skipCoordnateConversion: self.menuSkipCoordnateConversion)
+        contextMenu.dismissOnTap = { [weak self] view, point in
+            guard let self else {
+                return true
+            }
+            if self.knobAtPoint(view.convert(point, to: self.view)) == nil {
+                //self.cancelSelection()
+                return true
+            }
+            return true
+        }
+        self.contextMenu = contextMenu
+        self.present(contextMenu, ContextMenuControllerPresentationArguments(sourceNodeAndRect: { [weak self] in
             guard let strongSelf = self, let rootNode = strongSelf.rootNode() else {
                 return nil
             }
-            return (strongSelf, completeRect, rootNode, rootNode.bounds)
+            
+            if strongSelf.menuSkipCoordnateConversion {
+                return (strongSelf, strongSelf.view.convert(completeRect, to: rootNode.view), rootNode, rootNode.bounds)
+            } else {
+                return (strongSelf, completeRect, rootNode, rootNode.bounds)
+            }
         }, bounce: false))
     }
     
