@@ -4269,7 +4269,15 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                         for attribute in item.message.attributes {
                             if let attribute = attribute as? ReplyMessageAttribute {
                                 if let threadId = item.message.threadId, makeThreadIdMessageId(peerId: item.message.id.peerId, threadId: threadId) == attribute.messageId, let quotedReply = item.message.attributes.first(where: { $0 is QuotedReplyMessageAttribute }) as? QuotedReplyMessageAttribute {
-                                    return .action(InternalBubbleTapAction.Action({
+                                    return .action(InternalBubbleTapAction.Action({ [weak self, weak replyInfoNode] in
+                                        guard let self, let item = self.item, let replyInfoNode else {
+                                            return
+                                        }
+                                        if attribute.isQuote, !replyInfoNode.isQuoteExpanded {
+                                            replyInfoNode.isQuoteExpanded = true
+                                            item.controllerInteraction.requestMessageUpdate(item.message.id, false)
+                                            return
+                                        }
                                         item.controllerInteraction.attemptedNavigationToPrivateQuote(quotedReply.peerId.flatMap { item.message.peers[$0] })
                                     }, contextMenuOnLongPress: true))
                                 }
@@ -4289,7 +4297,16 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                                     item.controllerInteraction.navigateToStory(item.message, attribute.storyId)
                                 }, contextMenuOnLongPress: true))
                             } else if let attribute = attribute as? QuotedReplyMessageAttribute {
-                                return .action(InternalBubbleTapAction.Action({
+                                return .action(InternalBubbleTapAction.Action({ [weak self, weak replyInfoNode] in
+                                    guard let self, let item = self.item, let replyInfoNode else {
+                                        return
+                                    }
+                                    if attribute.isQuote, !replyInfoNode.isQuoteExpanded {
+                                        replyInfoNode.isQuoteExpanded = true
+                                        item.controllerInteraction.requestMessageUpdate(item.message.id, false)
+                                        return
+                                    }
+                                    
                                     item.controllerInteraction.attemptedNavigationToPrivateQuote(attribute.peerId.flatMap { item.message.peers[$0] })
                                 }, contextMenuOnLongPress: true))
                             }
@@ -4922,7 +4939,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
             if let backgroundType = self.backgroundType {
                 let graphics = PresentationResourcesChat.principalGraphics(theme: item.presentationData.theme.theme, wallpaper: item.presentationData.theme.wallpaper, bubbleCorners: item.presentationData.chatBubbleCorners)
                 
-                if self.highlightedState != nil {
+                if self.highlightedState != nil, !(self.backgroundNode.layer.mask is SimpleLayer) {
                     let backgroundHighlightNode: ChatMessageBackground
                     if let current = self.backgroundHighlightNode {
                         backgroundHighlightNode = current
@@ -4951,7 +4968,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                         }
                         
                         backgroundHighlightNode.customHighlightColor = highlightColor
-                        backgroundHighlightNode.setType(type: backgroundType, highlighted: true, graphics: graphics, maskMode: true, hasWallpaper: false, transition: .immediate, backgroundNode: nil)
+                        backgroundHighlightNode.setType(type: backgroundType, highlighted: true, graphics: graphics, maskMode: true, hasWallpaper: true, transition: .immediate, backgroundNode: nil)
                         
                         backgroundHighlightNode.frame = self.backgroundNode.frame
                         backgroundHighlightNode.updateLayout(size: backgroundHighlightNode.frame.size, transition: .immediate)

@@ -3361,6 +3361,9 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
         }, setupReply: { [weak self] messageId in
             self?.interfaceInteraction?.setupReplyMessage(messageId, { _, f in f() })
         }, canSetupReply: { [weak self] message in
+            if message.adAttribute != nil {
+                return .none
+            }
             if !message.flags.contains(.Incoming) {
                 if !message.flags.intersection([.Failed, .Sending, .Unsent]).isEmpty {
                     return .none
@@ -13733,6 +13736,26 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                     }
                     completion(controller, controller.mediaPickerContext)
                     strongSelf.controllerNavigationDisposable.set(nil)
+                    
+                    if bot.flags.contains(.notActivated) {
+                        let alertController = webAppTermsAlertController(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, bot: bot, completion: { [weak self] allowWrite in
+                            guard let self else {
+                                return
+                            }
+                            if bot.flags.contains(.showInSettingsDisclaimer) {
+                                let _ = self.context.engine.messages.acceptAttachMenuBotDisclaimer(botId: bot.peer.id).startStandalone()
+                            }
+                            let _ = (self.context.engine.messages.addBotToAttachMenu(botId: bot.peer.id, allowWrite: allowWrite)
+                            |> deliverOnMainQueue).startStandalone(error: { _ in
+                            }, completed: { [weak controller] in
+                                controller?.refresh()
+                            })
+                        },
+                        dismissed: {
+                            strongSelf.attachmentController?.dismiss(animated: true)
+                        })
+                        strongSelf.present(alertController, in: .window(.root))
+                    }
                 default:
                     break
                 }
@@ -19438,14 +19461,16 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
     }
     
     func displayGiveawayStatusInfo(messageId: EngineMessage.Id, giveawayInfo: PremiumGiveawayInfo) {
-        let _ = (self.context.engine.data.get(TelegramEngine.EngineData.Item.Messages.Message(id: messageId))
-        |> deliverOnMainQueue).startStandalone(next: { [weak self] message in
-            guard let self, let message else {
+        presentGiveawayInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, messageId: messageId, giveawayInfo: giveawayInfo, present: { [weak self] c in
+            guard let self else {
                 return
             }
-            if let controller = giveawayInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, message: message, giveawayInfo: giveawayInfo) {
-                self.present(controller, in: .window(.root))
+            self.present(c, in: .window(.root))
+        }, openLink: { [weak self] slug in
+            guard let self else {
+                return
             }
+            self.openResolved(result: .premiumGiftCode(slug: slug), sourceMessageId: messageId)
         })
     }
 }

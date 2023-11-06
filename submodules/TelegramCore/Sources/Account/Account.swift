@@ -183,6 +183,7 @@ public func accountWithId(accountManager: AccountManager<TelegramAccountManagerT
         seedConfiguration: telegramPostboxSeedConfiguration,
         encryptionParameters: encryptionParameters,
         timestampForAbsoluteTimeBasedOperations: Int32(CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970),
+        isMainProcess: !supplementary,
         isTemporary: false,
         isReadOnly: false,
         useCopy: false,
@@ -1511,6 +1512,7 @@ public func standaloneStateManager(
         seedConfiguration: telegramPostboxSeedConfiguration,
         encryptionParameters: encryptionParameters,
         timestampForAbsoluteTimeBasedOperations: Int32(CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970),
+        isMainProcess: false,
         isTemporary: false,
         isReadOnly: false,
         useCopy: false,
@@ -1588,7 +1590,10 @@ public func standaloneStateManager(
                                 |> map { network -> AccountStateManager? in
                                     Logger.shared.log("StandaloneStateManager", "received network")
                                     
-                                    postbox.mediaBox.fetchResource = { resource, intervals, parameters -> Signal<MediaResourceDataFetchResult, MediaResourceDataFetchError> in
+                                    postbox.mediaBox.fetchResource = { [weak postbox] resource, intervals, parameters -> Signal<MediaResourceDataFetchResult, MediaResourceDataFetchError> in
+                                        guard let postbox else {
+                                            return .never()
+                                        }
                                         if let result = auxiliaryMethods.fetchResource(
                                             postbox,
                                             resource,
