@@ -18,7 +18,7 @@ import ChatMessageDateAndStatusNode
 import ChatMessageBubbleContentNode
 import ChatMessageItemCommon
 import ChatMessageAttachedContentButtonNode
-import UndoUI
+import ChatControllerInteraction
 
 private let titleFont = Font.medium(15.0)
 private let textFont = Font.regular(13.0)
@@ -68,7 +68,7 @@ public class ChatMessageGiveawayBubbleContentNode: ChatMessageBubbleContentNode 
         }
     }
     
-    private var setupTimestamp: Double?
+    private var currentProgressDisposable: Disposable?
     
     required public init() {
         self.placeholderNode = StickerShimmerEffectNode()
@@ -137,21 +137,25 @@ public class ChatMessageGiveawayBubbleContentNode: ChatMessageBubbleContentNode 
             item.controllerInteraction.openPeer(peer, .chat(textInputState: nil, subject: nil, peekData: nil), nil, .default)
         }
     }
-    
-    override public func accessibilityActivate() -> Bool {
-        self.buttonPressed()
-        return true
-    }
-    
+
     required public init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
+    deinit {
+        self.currentProgressDisposable?.dispose()
+    }
+
     override public func didLoad() {
         super.didLoad()
         
         let tapRecognizer = UITapGestureRecognizer(target: self, action: #selector(self.bubbleTap(_:)))
         self.view.addGestureRecognizer(tapRecognizer)
+    }
+
+    override public func accessibilityActivate() -> Bool {
+        self.buttonPressed()
+        return true
     }
     
     @objc private func bubbleTap(_ gestureRecognizer: UITapGestureRecognizer) {
@@ -443,7 +447,7 @@ public class ChatMessageGiveawayBubbleContentNode: ChatMessageBubbleContentNode 
                     
                     let statusSizeAndApply = statusSuggestedWidthAndContinue?.1(boundingWidth - sideInsets)
                     
-                    var layoutSize = CGSize(width: contentWidth, height: 49.0 + prizeTitleLayout.size.height + prizeTextLayout.size.height + participantsTitleLayout.size.height + participantsTextLayout.size.height + dateTitleLayout.size.height + dateTextLayout.size.height + buttonSize.height + buttonSpacing + 120.0)
+                    var layoutSize = CGSize(width: boundingWidth, height: 49.0 + prizeTitleLayout.size.height + prizeTextLayout.size.height + participantsTitleLayout.size.height + participantsTextLayout.size.height + dateTitleLayout.size.height + dateTextLayout.size.height + buttonSize.height + buttonSpacing + 120.0)
                     
                     if countriesTextLayout.size.height > 0.0 {
                         layoutSize.height += countriesTextLayout.size.height + 7.0
@@ -592,7 +596,33 @@ public class ChatMessageGiveawayBubbleContentNode: ChatMessageBubbleContentNode 
 
     @objc private func buttonPressed() {
         if let item = self.item {
-            let _ = item.controllerInteraction.openMessage(item.message, .default)
+            let _ = item.controllerInteraction.openMessage(item.message, OpenMessageParams(mode: .default, progress: self.makeProgress()))
+        }
+    }
+    
+    private func makeProgress() -> Promise<Bool> {
+        let progress = Promise<Bool>()
+        self.currentProgressDisposable?.dispose()
+        self.currentProgressDisposable = (progress.get()
+        |> distinctUntilChanged
+        |> deliverOnMainQueue).start(next: { [weak self] hasProgress in
+            guard let self else {
+                return
+            }
+            self.displayProgress = hasProgress
+        })
+        return progress
+    }
+    
+    private var displayProgress = false {
+        didSet {
+            if self.displayProgress != oldValue {
+                if self.displayProgress {
+                    self.buttonNode.startShimmering()
+                } else {
+                    self.buttonNode.stopShimmering()
+                }
+            }
         }
     }
     

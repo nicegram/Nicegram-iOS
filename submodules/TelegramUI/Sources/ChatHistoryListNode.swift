@@ -37,6 +37,7 @@ import ChatMessageItem
 import ChatMessageItemImpl
 import ChatMessageItemView
 import ChatMessageTransitionNode
+import ChatControllerInteraction
 
 // MARK: Nicegram AiChat
 private extension ListViewUpdateSizeAndInsets {
@@ -215,7 +216,7 @@ private func maxMessageIndexForEntries(_ view: ChatHistoryView, indexRange: (Int
 extension ListMessageItemInteraction {
     convenience init(controllerInteraction: ChatControllerInteraction) {
         self.init(openMessage: { message, mode -> Bool in
-            return controllerInteraction.openMessage(message, mode)
+            return controllerInteraction.openMessage(message, OpenMessageParams(mode: mode))
         }, openMessageContextMenu: { message, bool, node, rect, gesture in
             controllerInteraction.openMessageContextMenu(message, bool, node, rect, gesture, nil)
         }, toggleMessagesSelection: { messageId, selected in

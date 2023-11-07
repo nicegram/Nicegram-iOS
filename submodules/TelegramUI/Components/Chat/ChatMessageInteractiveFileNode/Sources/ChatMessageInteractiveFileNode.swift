@@ -492,6 +492,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                         guard let strongSelf = self else {
                             return
                         }
+                        strongSelf.transcribeDisposable?.dispose()
                         strongSelf.transcribeDisposable = nil
                     })
                 } else {
@@ -503,6 +504,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                         // MARK: Nicegram Speech2Text
                         strongSelf.audioTranscriptionState = .expanded
                         //
+                        strongSelf.transcribeDisposable?.dispose()
                         strongSelf.transcribeDisposable = nil
                     })
                 }
