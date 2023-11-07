@@ -235,7 +235,6 @@ public struct WebAppParameters {
 public func generateWebAppThemeParams(_ presentationTheme: PresentationTheme) -> [String: Any] {
     let backgroundColor = presentationTheme.list.plainBackgroundColor.rgb
     let secondaryBackgroundColor = presentationTheme.list.blocksBackgroundColor.rgb
-
     return [
         "bg_color": Int32(bitPattern: backgroundColor),
         "secondary_bg_color": Int32(bitPattern: secondaryBackgroundColor),
@@ -329,6 +328,13 @@ public final class WebAppController: ViewController, AttachmentContainable {
                     strongSelf.handleScriptMessage(delayedScriptMessage)
                 }
             }
+            if #available(iOS 13.0, *) {
+                if self.presentationData.theme.overallDarkAppearance {
+                    webView.overrideUserInterfaceStyle = .dark
+                } else {
+                    webView.overrideUserInterfaceStyle = .unspecified
+                }
+            }
             self.webView = webView
             
             self.addSubnode(self.backgroundNode)
@@ -413,6 +419,32 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 })
             })
                 
+            self.setupWebView()
+        }
+        
+        deinit {
+            self.placeholderDisposable?.dispose()
+            self.iconDisposable?.dispose()
+            self.keepAliveDisposable?.dispose()
+            self.paymentDisposable?.dispose()
+            
+            self.webView?.removeObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress))
+        }
+        
+        override func didLoad() {
+            super.didLoad()
+            
+            guard let webView = self.webView else {
+                return
+            }
+            self.view.addSubview(webView)
+            webView.scrollView.insertSubview(self.topOverscrollNode.view, at: 0)
+        }
+        
+        func setupWebView() {
+            guard let controller = self.controller else {
+                return
+            }
             if let url = controller.url, controller.source != .menu {
                 self.queryId = controller.queryId
                 if let parsedUrl = URL(string: url) {
@@ -433,7 +465,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 }
             } else {
                 if controller.source.isSimple {
-                    let _ = (context.engine.messages.requestSimpleWebView(botId: controller.botId, url: nil, source: .settings, themeParams: generateWebAppThemeParams(presentationData.theme))
+                    let _ = (self.context.engine.messages.requestSimpleWebView(botId: controller.botId, url: nil, source: .settings, themeParams: generateWebAppThemeParams(presentationData.theme))
                     |> deliverOnMainQueue).start(next: { [weak self] result in
                         guard let strongSelf = self else {
                             return
@@ -443,7 +475,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                         }
                     })
                 } else {
-                    let _ = (context.engine.messages.requestWebView(peerId: controller.peerId, botId: controller.botId, url: controller.url, payload: controller.payload, themeParams: generateWebAppThemeParams(presentationData.theme), fromMenu: controller.source == .menu, replyToMessageId: controller.replyToMessageId, threadId: controller.threadId)
+                    let _ = (self.context.engine.messages.requestWebView(peerId: controller.peerId, botId: controller.botId, url: controller.url, payload: controller.payload, themeParams: generateWebAppThemeParams(presentationData.theme), fromMenu: controller.source == .menu, replyToMessageId: controller.replyToMessageId, threadId: controller.threadId)
                     |> deliverOnMainQueue).start(next: { [weak self] result in
                         guard let strongSelf = self else {
                             return
@@ -467,25 +499,6 @@ public final class WebAppController: ViewController, AttachmentContainable {
                     })
                 }
             }
-        }
-        
-        deinit {
-            self.placeholderDisposable?.dispose()
-            self.iconDisposable?.dispose()
-            self.keepAliveDisposable?.dispose()
-            self.paymentDisposable?.dispose()
-            
-            self.webView?.removeObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress))
-        }
-        
-        override func didLoad() {
-            super.didLoad()
-            
-            guard let webView = self.webView else {
-                return
-            }
-            self.view.addSubview(webView)
-            webView.scrollView.insertSubview(self.topOverscrollNode.view, at: 0)
         }
         
         @objc fileprivate func mainButtonPressed() {
@@ -1113,6 +1126,14 @@ public final class WebAppController: ViewController, AttachmentContainable {
             }
             self.updateHeaderBackgroundColor(transition: .immediate)
             self.sendThemeChangedEvent()
+            
+            if #available(iOS 13.0, *) {
+                if self.presentationData.theme.overallDarkAppearance {
+                    self.webView?.overrideUserInterfaceStyle = .dark
+                } else {
+                    self.webView?.overrideUserInterfaceStyle = .unspecified
+                }
+            }
         }
         
         private func sendThemeChangedEvent() {
@@ -1622,6 +1643,10 @@ public final class WebAppController: ViewController, AttachmentContainable {
     
     public func prepareForReuse() {
         self.updateTabBarAlpha(1.0, .immediate)
+    }
+    
+    public func refresh() {
+        self.controllerNode.setupWebView()
     }
     
     public func requestDismiss(completion: @escaping () -> Void) {

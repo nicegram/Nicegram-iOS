@@ -184,6 +184,7 @@ private struct PeerNameColorScreenState: Equatable {
     var updatedNameColor: PeerNameColor?
     var updatedBackgroundEmojiId: Int64?
     var inProgress: Bool = false
+    var needsBoosts: Bool = false
 }
 
 private func peerNameColorScreenEntries(
@@ -253,7 +254,11 @@ private func peerNameColorScreenEntries(
             colors: nameColors,
             currentColor: nameColor
         ))
-        entries.append(.colorDescription(presentationData.strings.NameColor_ChatPreview_Description_Account))
+        if case .channel = peer {
+            entries.append(.colorDescription(presentationData.strings.NameColor_ChatPreview_Description_Channel))
+        } else {
+            entries.append(.colorDescription(presentationData.strings.NameColor_ChatPreview_Description_Account))
+        }
         
         if let emojiContent {
             entries.append(.backgroundEmojiHeader(presentationData.strings.NameColor_BackgroundEmoji_Title, backgroundEmojiId != nil ? presentationData.strings.NameColor_BackgroundEmoji_Remove : nil))
@@ -279,6 +284,8 @@ public func PeerNameColorScreen(
     let updateState: ((PeerNameColorScreenState) -> PeerNameColorScreenState) -> Void = { f in
         statePromise.set(stateValue.modify { f($0) })
     }
+    
+    let premiumConfiguration = PremiumConfiguration.with(appConfiguration: context.currentAppConfiguration.with { $0 })
     
     var presentImpl: ((ViewController) -> Void)?
     var pushImpl: ((ViewController) -> Void)?
@@ -416,7 +423,7 @@ public func PeerNameColorScreen(
                         elevatedLayout: false,
                         action: { action in
                             if case .info = action {
-                                let controller = context.sharedContext.makePremiumIntroController(context: context, source: .storiesSuggestedReactions, forceDark: false, dismissed: nil)
+                                let controller = context.sharedContext.makePremiumIntroController(context: context, source: .nameColor, forceDark: false, dismissed: nil)
                                 pushImpl?(controller)
                             }
                             return true
@@ -528,11 +535,16 @@ public func PeerNameColorScreen(
     }
     
     let controller = ItemListController(context: context, state: signal)
+    controller.supportedOrientations = ViewControllerSupportedOrientations(regularSize: .all, compactSize: .portrait)
     presentImpl = { [weak controller] c in
         guard let controller else {
             return
         }
-        controller.present(c, in: .current)
+        if c is UndoOverlayController {
+            controller.present(c, in: .current)
+        } else {
+            controller.present(c, in: .window(.root))
+        }
     }
     pushImpl = { [weak controller] c in
         guard let controller else {
@@ -550,11 +562,13 @@ public func PeerNameColorScreen(
         return attemptNavigationImpl?(f) ?? true
     }
     attemptNavigationImpl = { f in
-        if !context.isPremium {
-            f()
+        if case .account = subject, !context.isPremium {
             return true
         }
         let state = stateValue.with({ $0 })
+        if case .channel = subject, state.needsBoosts {
+            return true
+        }
         var hasChanges = false
         if state.updatedNameColor != nil || state.updatedBackgroundEmojiId != nil {
             hasChanges = true
@@ -572,24 +586,40 @@ public func PeerNameColorScreen(
             ]))
             return false
         } else {
-            f()
             return true
         }
     }
-    applyChangesImpl = {
+    applyChangesImpl = { [weak controller] in
         let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
         |> deliverOnMainQueue).startStandalone(next: { peer in
             guard let peer else {
                 return
             }
             let state = stateValue.with { $0 }
-                                
+            if state.updatedNameColor == nil && state.updatedBackgroundEmojiId == nil {
+                dismissImpl?()
+                return
+            }
+            
+            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+
             let nameColor = state.updatedNameColor ?? peer.nameColor
             let backgroundEmojiId = state.updatedBackgroundEmojiId ?? peer.backgroundEmojiId
+            let colors = context.peerNameColors.get(nameColor ?? .blue, dark: presentationData.theme.overallDarkAppearance)
             
             switch subject {
             case .account:
                 let _ = context.engine.accountData.updateNameColorAndEmoji(nameColor: nameColor ?? .blue, backgroundEmojiId: backgroundEmojiId ?? 0).startStandalone()
+                
+                if let navigationController = controller?.navigationController as? NavigationController {
+                    Queue.mainQueue().after(0.25) {
+                        if let lastController = navigationController.viewControllers.last as? ViewController {
+                            let tipController = UndoOverlayController(presentationData: presentationData, content: .image(image: generatePeerNameColorImage(nameColor: colors, isDark: presentationData.theme.overallDarkAppearance,  bounds: CGSize(width: 32.0, height: 32.0), size: CGSize(width: 22.0, height: 22.0))!, title: nil, text: presentationData.strings.NameColor_YourColorUpdated, round: false, undoText: nil), elevatedLayout: false, position: .bottom, animateInAsReplacement: false, action: { _ in return false })
+                            lastController.present(tipController, in: .window(.root))
+                        }
+                    }
+                }
+                
                 dismissImpl?()
             case let .channel(peerId):
                 updateState { state in
@@ -601,6 +631,12 @@ public func PeerNameColorScreen(
                 |> deliverOnMainQueue).startStandalone(next: {
                 }, error: { error in
                     if case .channelBoostRequired = error {
+                        updateState { state in
+                            var updatedState = state
+                            updatedState.needsBoosts = true
+                            return updatedState
+                        }
+                        
                         let _ = combineLatest(
                             queue: Queue.mainQueue(),
                             context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId)),
@@ -610,29 +646,43 @@ public func PeerNameColorScreen(
                                 return
                             }
                             
+                            updateState { state in
+                                var updatedState = state
+                                updatedState.inProgress = false
+                                return updatedState
+                            }
+                            
                             let link = status.url
                             let controller = PremiumLimitScreen(context: context, subject: .storiesChannelBoost(peer: peer, boostSubject: .nameColors, isCurrent: true, level: Int32(status.level), currentLevelBoosts: Int32(status.currentLevelBoosts), nextLevelBoosts: status.nextLevelBoosts.flatMap(Int32.init), link: link, myBoostCount: 0, canBoostAgain: false), count: Int32(status.boosts), action: {
                                 UIPasteboard.general.string = link
                                 let presentationData = context.sharedContext.currentPresentationData.with { $0 }
                                 presentImpl?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(text: presentationData.strings.ChannelBoost_BoostLinkCopied), elevatedLayout: false, position: .bottom, animateInAsReplacement: false, action: { _ in return false }))
                                 return true
-                            }, openStats: nil, openGift: {
+                            }, openStats: nil, openGift: premiumConfiguration.giveawayGiftsPurchaseAvailable ? {
                                 let controller = createGiveawayController(context: context, peerId: peerId, subject: .generic)
                                 pushImpl?(controller)
-                            })
+                            } : nil)
                             pushImpl?(controller)
                             
                             HapticFeedback().impact(.light)
                         })
                     } else {
-                        
-                    }
-                    updateState { state in
-                        var updatedState = state
-                        updatedState.inProgress = false
-                        return updatedState
+                        updateState { state in
+                            var updatedState = state
+                            updatedState.inProgress = false
+                            return updatedState
+                        }
                     }
                 }, completed: {
+                    if let navigationController = controller?.navigationController as? NavigationController {
+                        Queue.mainQueue().after(0.25) {
+                            if let lastController = navigationController.viewControllers.last as? ViewController {
+                                let tipController = UndoOverlayController(presentationData: presentationData, content: .image(image: generatePeerNameColorImage(nameColor: colors, isDark: presentationData.theme.overallDarkAppearance, bounds: CGSize(width: 32.0, height: 32.0), size: CGSize(width: 22.0, height: 22.0))!, title: nil, text: presentationData.strings.NameColor_ChannelColorUpdated, round: false, undoText: nil), elevatedLayout: false, position: .bottom, animateInAsReplacement: false, action: { _ in return false })
+                                lastController.present(tipController, in: .window(.root))
+                            }
+                        }
+                    }
+                    
                     dismissImpl?()
                 })
             }

@@ -168,7 +168,11 @@ private enum OldChannelsEntry: ItemListNodeEntry {
         let arguments = arguments as! OldChannelsItemArguments
         switch self {
         case let .info(count, limit, premiumLimit, text, isPremiumDisabled):
-            return IncreaseLimitHeaderItem(theme: presentationData.theme, strings: presentationData.strings, icon: .group, count: count, limit: limit, premiumCount: premiumLimit, text: text, isPremiumDisabled: isPremiumDisabled, sectionId: self.section)
+            // MARK: Nicegram JoinGroupLimit
+            let nicegramNotice = "Logging out from your account and logging in again may fix this error"
+            //
+            // MARK: Nicegram JoinGroupLimit, nicegramNotice added
+            return IncreaseLimitHeaderItem(nicegramNotice: nicegramNotice, theme: presentationData.theme, strings: presentationData.strings, icon: .group, count: count, limit: limit, premiumCount: premiumLimit, text: text, isPremiumDisabled: isPremiumDisabled, sectionId: self.section)
         case let .peersHeader(title):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: title, sectionId: self.section)
         case let .peer(_, peer, selected):

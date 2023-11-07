@@ -57,7 +57,9 @@ public final class ChatMessageWebpageBubbleContentNode: ChatMessageBubbleContent
                         if content.embedUrl == nil && (content.title != nil || content.text != nil) && content.story == nil {
                             var shouldOpenUrl = true
                             if let file = content.file {
-                                if !file.isVideo, !file.isVideoSticker, !file.isAnimated, !file.isAnimatedSticker, !file.isSticker, !file.isMusic {
+                                if file.isVideo {
+                                    shouldOpenUrl = false
+                                } else if !file.isVideoSticker, !file.isAnimated, !file.isAnimatedSticker, !file.isSticker, !file.isMusic {
                                     shouldOpenUrl = false
                                 } else if file.isMusic || file.isVoice {
                                     shouldOpenUrl = false
@@ -89,7 +91,7 @@ public final class ChatMessageWebpageBubbleContentNode: ChatMessageBubbleContent
                     case .automaticPlayback:
                         openChatMessageMode = .automaticPlayback
                 }
-                if !item.controllerInteraction.openMessage(item.message, openChatMessageMode) {
+                if !item.controllerInteraction.openMessage(item.message, OpenMessageParams(mode: openChatMessageMode)) {
                     if let webPage = strongSelf.webPage, case let .Loaded(content) = webPage.content {
                         var isConcealed = true
                         if item.message.text.contains(content.url) {
@@ -121,7 +123,7 @@ public final class ChatMessageWebpageBubbleContentNode: ChatMessageBubbleContent
                     }
                     if let webpage = webPageContent {
                         if webpage.story != nil {
-                            let _ = item.controllerInteraction.openMessage(item.message, .default)
+                            let _ = item.controllerInteraction.openMessage(item.message, OpenMessageParams(mode: .default))
                         } else if webpage.instantPage != nil {
                             strongSelf.contentNode.openMedia?(.default)
                         } else {

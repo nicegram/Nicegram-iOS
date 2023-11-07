@@ -66,7 +66,7 @@ private class AvatarNodeParameters: NSObject {
     }
 }
 
-private func calculateColors(explicitColorIndex: Int?, peerId: EnginePeer.Id?, nameColor: PeerNameColor?, icon: AvatarNodeIcon, theme: PresentationTheme?) -> [UIColor] {
+private func calculateColors(context: AccountContext?, explicitColorIndex: Int?, peerId: EnginePeer.Id?, nameColor: PeerNameColor?, icon: AvatarNodeIcon, theme: PresentationTheme?) -> [UIColor] {
     let colorIndex: Int
     if let explicitColorIndex = explicitColorIndex {
         colorIndex = explicitColorIndex
@@ -114,7 +114,29 @@ private func calculateColors(explicitColorIndex: Int?, peerId: EnginePeer.Id?, n
         }
     } else {
         if let nameColor {
-            colors = AvatarNode.gradientColors[Int(nameColor.rawValue) % AvatarNode.gradientColors.count]
+            if let context, nameColor.rawValue > 13 {
+                let nameColors = context.peerNameColors.get(nameColor)
+                let hue = nameColors.main.hsb.h
+                var index: Int = 0
+                if hue > 0.9 || hue < 0.02 {
+                    index = 0
+                } else if hue < 0.1 {
+                    index = 1
+                } else if hue < 0.4 {
+                    index = 3
+                } else if hue < 0.5 {
+                    index = 4
+                } else if hue < 0.6 {
+                    index = 5
+                } else if hue < 0.75 {
+                    index = 2
+                } else {
+                    index = 6
+                }
+                colors = AvatarNode.gradientColors[index % AvatarNode.gradientColors.count]
+            } else {
+                colors = AvatarNode.gradientColors[Int(nameColor.rawValue) % AvatarNode.gradientColors.count]
+            }
         } else {
             colors = AvatarNode.gradientColors[colorIndex % AvatarNode.gradientColors.count]
         }
@@ -493,7 +515,7 @@ public final class AvatarNode: ASDisplayNode {
                         self.editOverlayNode?.isHidden = true
                     }
                     
-                    parameters = AvatarNodeParameters(theme: theme, accountPeerId: accountPeerId, peerId: peer.id, colors: calculateColors(explicitColorIndex: nil, peerId: peer.id, nameColor: peer.nameColor, icon: icon, theme: theme), letters: peer.displayLetters, font: self.font, icon: icon, explicitColorIndex: nil, hasImage: true, clipStyle: clipStyle)
+                    parameters = AvatarNodeParameters(theme: theme, accountPeerId: accountPeerId, peerId: peer.id, colors: calculateColors(context: nil, explicitColorIndex: nil, peerId: peer.id, nameColor: peer.nameColor, icon: icon, theme: theme), letters: peer.displayLetters, font: self.font, icon: icon, explicitColorIndex: nil, hasImage: true, clipStyle: clipStyle)
                 } else {
                     self.imageReady.set(.single(true))
                     self.displaySuspended = false
@@ -502,7 +524,7 @@ public final class AvatarNode: ASDisplayNode {
                     }
                     
                     self.editOverlayNode?.isHidden = true
-                    let colors = calculateColors(explicitColorIndex: nil, peerId: peer?.id ?? EnginePeer.Id(0), nameColor: peer?.nameColor, icon: icon, theme: theme)
+                    let colors = calculateColors(context: nil, explicitColorIndex: nil, peerId: peer?.id ?? EnginePeer.Id(0), nameColor: peer?.nameColor, icon: icon, theme: theme)
                     parameters = AvatarNodeParameters(theme: theme, accountPeerId: accountPeerId, peerId: peer?.id ?? EnginePeer.Id(0), colors: colors, letters: peer?.displayLetters ?? [], font: self.font, icon: icon, explicitColorIndex: nil, hasImage: false, clipStyle: clipStyle)
                     
                     if let badgeView = self.badgeView {
@@ -662,7 +684,7 @@ public final class AvatarNode: ASDisplayNode {
                         self.editOverlayNode?.isHidden = true
                     }
                     
-                    parameters = AvatarNodeParameters(theme: theme, accountPeerId: account.peerId, peerId: peer.id, colors: calculateColors(explicitColorIndex: nil, peerId: peer.id, nameColor: peer.nameColor, icon: icon, theme: theme), letters: peer.displayLetters, font: self.font, icon: icon, explicitColorIndex: nil, hasImage: true, clipStyle: clipStyle)
+                    parameters = AvatarNodeParameters(theme: theme, accountPeerId: account.peerId, peerId: peer.id, colors: calculateColors(context: genericContext, explicitColorIndex: nil, peerId: peer.id, nameColor: peer.nameColor, icon: icon, theme: theme), letters: peer.displayLetters, font: self.font, icon: icon, explicitColorIndex: nil, hasImage: true, clipStyle: clipStyle)
                 }
                 // MARK: Nicegram changes
                 else if let signal = nicegramAvatarImage(nicegramImage: nicegramImage) {
@@ -678,7 +700,7 @@ public final class AvatarNode: ASDisplayNode {
                         return next?.0
                     })
                     
-                    parameters = AvatarNodeParameters(theme: theme, accountPeerId: account.peerId, peerId: peer?.id ?? EnginePeer.Id(0), colors: calculateColors(explicitColorIndex: nil, peerId: peer?.id ?? EnginePeer.Id(0), nameColor: peer?.nameColor, icon: icon, theme: theme), letters: peer?.displayLetters ?? [], font: self.font, icon: icon, explicitColorIndex: nil, hasImage: true, clipStyle: clipStyle)
+                    parameters = AvatarNodeParameters(theme: theme, accountPeerId: account.peerId, peerId: peer?.id ?? EnginePeer.Id(0), colors: calculateColors(context: genericContext, explicitColorIndex: nil, peerId: peer?.id ?? EnginePeer.Id(0), nameColor: peer?.nameColor, icon: icon, theme: theme), letters: peer?.displayLetters ?? [], font: self.font, icon: icon, explicitColorIndex: nil, hasImage: true, clipStyle: clipStyle)
                 } else {
                     self.imageReady.set(.single(true))
                     self.displaySuspended = false
@@ -687,7 +709,7 @@ public final class AvatarNode: ASDisplayNode {
                     }
                     
                     self.editOverlayNode?.isHidden = true
-                    let colors = calculateColors(explicitColorIndex: nil, peerId: peer?.id ?? EnginePeer.Id(0), nameColor: peer?.nameColor, icon: icon, theme: theme)
+                    let colors = calculateColors(context: genericContext, explicitColorIndex: nil, peerId: peer?.id ?? EnginePeer.Id(0), nameColor: peer?.nameColor, icon: icon, theme: theme)
                     parameters = AvatarNodeParameters(theme: theme, accountPeerId: account.peerId, peerId: peer?.id ?? EnginePeer.Id(0), colors: colors, letters: peer?.displayLetters ?? [], font: self.font, icon: icon, explicitColorIndex: nil, hasImage: false, clipStyle: clipStyle)
                     
                     if let badgeView = self.badgeView {
@@ -724,9 +746,9 @@ public final class AvatarNode: ASDisplayNode {
                 
                 let parameters: AvatarNodeParameters
                 if let icon = icon, case .phone = icon {
-                    parameters = AvatarNodeParameters(theme: nil, accountPeerId: nil, peerId: nil, colors: calculateColors(explicitColorIndex: explicitIndex, peerId: nil, nameColor: nil, icon: .phoneIcon, theme: nil), letters: [], font: self.font, icon: .phoneIcon, explicitColorIndex: explicitIndex, hasImage: false, clipStyle: .round)
+                    parameters = AvatarNodeParameters(theme: nil, accountPeerId: nil, peerId: nil, colors: calculateColors(context: nil, explicitColorIndex: explicitIndex, peerId: nil, nameColor: nil, icon: .phoneIcon, theme: nil), letters: [], font: self.font, icon: .phoneIcon, explicitColorIndex: explicitIndex, hasImage: false, clipStyle: .round)
                 } else {
-                    parameters = AvatarNodeParameters(theme: nil, accountPeerId: nil, peerId: nil, colors: calculateColors(explicitColorIndex: explicitIndex, peerId: nil, nameColor: nil, icon: .none, theme: nil), letters: letters, font: self.font, icon: .none, explicitColorIndex: explicitIndex, hasImage: false, clipStyle: .round)
+                    parameters = AvatarNodeParameters(theme: nil, accountPeerId: nil, peerId: nil, colors: calculateColors(context: nil, explicitColorIndex: explicitIndex, peerId: nil, nameColor: nil, icon: .none, theme: nil), letters: letters, font: self.font, icon: .none, explicitColorIndex: explicitIndex, hasImage: false, clipStyle: .round)
                 }
                 
                 self.displaySuspended = true

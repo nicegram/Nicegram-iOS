@@ -113,6 +113,13 @@ public let telegramPostboxSeedConfiguration: SeedConfiguration = {
                     break
                 }
             }
+            var derivedData: DerivedDataMessageAttribute?
+            for attribute in previous {
+                if let attribute = attribute as? DerivedDataMessageAttribute {
+                    derivedData = attribute
+                    break
+                }
+            }
             
             if let audioTranscription = audioTranscription {
                 var found = false
@@ -125,6 +132,19 @@ public let telegramPostboxSeedConfiguration: SeedConfiguration = {
                 }
                 if !found {
                     updated.append(audioTranscription)
+                }
+            }
+            if let derivedData = derivedData {
+                var found = false
+                for i in 0 ..< updated.count {
+                    if let attribute = updated[i] as? DerivedDataMessageAttribute {
+                        updated[i] = derivedData
+                        found = true
+                        break
+                    }
+                }
+                if !found {
+                    updated.append(derivedData)
                 }
             }
         },
@@ -172,7 +192,7 @@ public enum AccountTransactionError {
 
 public func accountTransaction<T>(rootPath: String, id: AccountRecordId, encryptionParameters: ValueBoxEncryptionParameters, isReadOnly: Bool, useCopy: Bool = false, useCaches: Bool = true, removeDatabaseOnError: Bool = true, transaction: @escaping (Postbox, Transaction) -> T) -> Signal<T, AccountTransactionError> {
     let path = "\(rootPath)/\(accountRecordIdPathName(id))"
-    let postbox = openPostbox(basePath: path + "/postbox", seedConfiguration: telegramPostboxSeedConfiguration, encryptionParameters: encryptionParameters, timestampForAbsoluteTimeBasedOperations: Int32(CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970), isTemporary: true, isReadOnly: isReadOnly, useCopy: useCopy, useCaches: useCaches, removeDatabaseOnError: removeDatabaseOnError)
+    let postbox = openPostbox(basePath: path + "/postbox", seedConfiguration: telegramPostboxSeedConfiguration, encryptionParameters: encryptionParameters, timestampForAbsoluteTimeBasedOperations: Int32(CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970), isMainProcess: false, isTemporary: true, isReadOnly: isReadOnly, useCopy: useCopy, useCaches: useCaches, removeDatabaseOnError: removeDatabaseOnError)
     return postbox
     |> castError(AccountTransactionError.self)
     |> mapToSignal { value -> Signal<T, AccountTransactionError> in

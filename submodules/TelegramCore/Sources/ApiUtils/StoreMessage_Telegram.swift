@@ -343,7 +343,7 @@ func textMediaAndExpirationTimerFromApiMedia(_ media: Api.MessageMedia?, _ peerI
                 return (TelegramMediaExpiredContent(data: .file), nil, nil, nil, nil)
             }
         case let .messageMediaWebPage(flags, webpage):
-            if let mediaWebpage = telegramMediaWebpageFromApiWebpage(webpage, url: nil) {
+            if let mediaWebpage = telegramMediaWebpageFromApiWebpage(webpage) {
                 var webpageForceLargeMedia: Bool?
                 if (flags & (1 << 0)) != 0 {
                     webpageForceLargeMedia = true
@@ -533,8 +533,8 @@ func messageTextEntitiesFromApiEntities(_ entities: [Api.MessageEntity]) -> [Mes
             result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .Italic))
         case let .messageEntityCode(offset, length):
             result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .Code))
-        case let .messageEntityPre(offset, length, _):
-            result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .Pre))
+        case let .messageEntityPre(offset, length, language):
+            result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .Pre(language: language)))
         case let .messageEntityTextUrl(offset, length, url):
             result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .TextUrl(url: url)))
         case let .messageEntityMentionName(offset, length, userId):
@@ -606,9 +606,15 @@ extension StoreMessage {
                                         threadId = makeMessageThreadId(threadIdValue)
                                     }
                                 } else {
-                                    let threadIdValue = MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: replyToTopId)
-                                    threadMessageId = threadIdValue
-                                    threadId = makeMessageThreadId(threadIdValue)
+                                    if peerId.namespace == Namespaces.Peer.CloudChannel {
+                                        let threadIdValue = MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: replyToTopId)
+                                        threadMessageId = threadIdValue
+                                        threadId = makeMessageThreadId(threadIdValue)
+                                    } else {
+                                        let threadIdValue = MessageId(peerId: replyToPeerId?.peerId ?? peerId, namespace: Namespaces.Message.Cloud, id: replyToTopId)
+                                        threadMessageId = threadIdValue
+                                        threadId = makeMessageThreadId(threadIdValue)
+                                    }
                                 }
                             } else if peerId.namespace == Namespaces.Peer.CloudChannel {
                                 let threadIdValue = MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: replyToMsgId)

@@ -98,11 +98,23 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
             return nil
         }
         self.guardValueBox = guardValueBox
-        guard let valueBox = SqliteValueBox(basePath: basePath + "/db", queue: queue, isTemporary: isTemporary, isReadOnly: isReadOnly, useCaches: useCaches, removeDatabaseOnError: removeDatabaseOnError, encryptionParameters: nil, upgradeProgress: { _ in }) else {
-            postboxLog("Could not open value box at \(basePath + "/db")")
+        
+        var valueBox: SqliteValueBox?
+        for i in 0 ..< 3 {
+            if let valueBoxValue = SqliteValueBox(basePath: basePath + "/db", queue: queue, isTemporary: isTemporary, isReadOnly: isReadOnly, useCaches: useCaches, removeDatabaseOnError: removeDatabaseOnError, encryptionParameters: nil, upgradeProgress: { _ in }) {
+                valueBox = valueBoxValue
+                break
+            } else {
+                postboxLog("Could not open value box at \(basePath + "/db") (try \(i))")
+                postboxLogSync()
+                
+                Thread.sleep(forTimeInterval: 0.1 + 0.5 * Double(i))
+            }
+        }
+        guard let valueBox = valueBox else {
+            postboxLog("Giving up on opening value box at \(basePath + "/db")")
             postboxLogSync()
             preconditionFailure()
-            return nil
         }
         self.valueBox = valueBox
         
@@ -118,18 +130,27 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
                 self.currentAtomicState = atomicState
             } catch let e {
                 postboxLog("decode atomic state error: \(e)")
-                let _ = try? FileManager.default.removeItem(atPath: self.atomicStatePath)
                 postboxLogSync()
+                
+                if removeDatabaseOnError {
+                    let _ = try? FileManager.default.removeItem(atPath: self.atomicStatePath)
+                }
                 preconditionFailure()
             }
         } catch let e {
             postboxLog("load atomic state error: \(e)")
-            var legacyRecordDict: [AccountRecordId: AccountRecord<Types.Attribute>] = [:]
-            for record in self.legacyRecordTable.getRecords() {
-                legacyRecordDict[record.id] = record
+            postboxLogSync()
+            
+            if removeDatabaseOnError {
+                var legacyRecordDict: [AccountRecordId: AccountRecord<Types.Attribute>] = [:]
+                for record in self.legacyRecordTable.getRecords() {
+                    legacyRecordDict[record.id] = record
+                }
+                self.currentAtomicState = AccountManagerAtomicState(records: legacyRecordDict, currentRecordId: self.legacyMetadataTable.getCurrentAccountId(), currentAuthRecord: self.legacyMetadataTable.getCurrentAuthAccount(), accessChallengeData: self.legacyMetadataTable.getAccessChallengeData())
+                self.syncAtomicStateToFile()
+            } else {
+                preconditionFailure()
             }
-            self.currentAtomicState = AccountManagerAtomicState(records: legacyRecordDict, currentRecordId: self.legacyMetadataTable.getCurrentAccountId(), currentAuthRecord: self.legacyMetadataTable.getCurrentAuthAccount(), accessChallengeData: self.legacyMetadataTable.getAccessChallengeData())
-            self.syncAtomicStateToFile()
         }
         
         let tableAccessChallengeData = self.legacyMetadataTable.getAccessChallengeData()
@@ -569,7 +590,7 @@ public final class AccountManager<Types: AccountManagerTypes> {
                 preconditionFailure()
             }
         })
-        self.mediaBox = MediaBox(basePath: basePath + "/media")
+        self.mediaBox = MediaBox(basePath: basePath + "/media", isMainProcess: removeDatabaseOnError)
         // MARK: Nicegram DB Changes
         self.hiddenAccountManager = hiddenAccountManager
         hiddenAccountManager.configureAccountsAccessChallengeData(accountManager: self)

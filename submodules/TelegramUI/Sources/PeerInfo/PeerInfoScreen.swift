@@ -885,25 +885,24 @@ private func settingsItems(data: PeerInfoScreenData?, context: AccountContext, p
     var appIndex = 1000
     if let settings = data.globalSettings {
         for bot in settings.bots {
-            if bot.flags.contains(.showInSettings) {
-                let iconSignal: Signal<UIImage?, NoError>
-                if let peer = PeerReference(bot.peer._asPeer()), let icon = bot.icons[.iOSSettingsStatic] {
-                    let fileReference: FileMediaReference = .attachBot(peer: peer, media: icon)
-                    iconSignal = instantPageImageFile(account: context.account, userLocation: .other, fileReference: fileReference, fetched: true)
-                    |> map { generator -> UIImage? in
-                        let size = CGSize(width: 29.0, height: 29.0)
-                        let context = generator(TransformImageArguments(corners: ImageCorners(), imageSize: size, boundingSize: size, intrinsicInsets: .zero))
-                        return context?.generateImage()
-                    }
-                    let _ = freeMediaFileInteractiveFetched(account: context.account, userLocation: .other, fileReference: fileReference).startStandalone()
-                } else {
-                    iconSignal = .single(UIImage(bundleImageName: "Settings/Menu/Websites")!)
+            let iconSignal: Signal<UIImage?, NoError>
+            if let peer = PeerReference(bot.peer._asPeer()), let icon = bot.icons[.iOSSettingsStatic] {
+                let fileReference: FileMediaReference = .attachBot(peer: peer, media: icon)
+                iconSignal = instantPageImageFile(account: context.account, userLocation: .other, fileReference: fileReference, fetched: true)
+                |> map { generator -> UIImage? in
+                    let size = CGSize(width: 29.0, height: 29.0)
+                    let context = generator(TransformImageArguments(corners: ImageCorners(), imageSize: size, boundingSize: size, intrinsicInsets: .zero))
+                    return context?.generateImage()
                 }
-                items[.apps]!.append(PeerInfoScreenDisclosureItem(id: bot.peer.id.id._internalGetInt64Value(), text: bot.shortName, icon: nil, iconSignal: iconSignal, action: {
-                    interaction.openBotApp(bot)
-                }))
-                appIndex += 1
+                let _ = freeMediaFileInteractiveFetched(account: context.account, userLocation: .other, fileReference: fileReference).startStandalone()
+            } else {
+                iconSignal = .single(UIImage(bundleImageName: "Settings/Menu/Websites")!)
             }
+            let label: PeerInfoScreenDisclosureItem.Label = bot.flags.contains(.notActivated) || bot.flags.contains(.showInSettingsDisclaimer) ? .titleBadge(presentationData.strings.Settings_New, presentationData.theme.list.itemAccentColor) : .none
+            items[.apps]!.append(PeerInfoScreenDisclosureItem(id: bot.peer.id.id._internalGetInt64Value(), label: label, text: bot.shortName, icon: nil, iconSignal: iconSignal, action: {
+                interaction.openBotApp(bot)
+            }))
+            appIndex += 1
         }
     }
     
@@ -1753,7 +1752,7 @@ private func editingItems(data: PeerInfoScreenData?, state: PeerInfoState, chatL
                 
                 if isCreator || (channel.adminRights?.rights.contains(.canChangeInfo) == true) {
                     let colors = context.peerNameColors.get(data.peer?.nameColor ?? .blue, dark: presentationData.theme.overallDarkAppearance)
-                    items[.peerSettings]!.append(PeerInfoScreenDisclosureItem(id: ItemNameColor, label: .semitransparentBadge(EnginePeer(channel).compactDisplayTitle, colors.main), text: "Channel Color", icon: UIImage(bundleImageName: "Chat/Info/NameColorIcon"), action: {
+                    items[.peerSettings]!.append(PeerInfoScreenDisclosureItem(id: ItemNameColor, label: .semitransparentBadge(EnginePeer(channel).compactDisplayTitle, colors.main), text: presentationData.strings.Channel_ChannelColor, icon: UIImage(bundleImageName: "Chat/Info/NameColorIcon"), action: {
                         interaction.editingOpenNameColorSetup()
                     }))
                 }
@@ -2540,7 +2539,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
             }
         )
         
-        self._chatInterfaceInteraction = ChatControllerInteraction(openMessage: { [weak self] message, mode in
+        self._chatInterfaceInteraction = ChatControllerInteraction(openMessage: { [weak self] message, _ in
             guard let strongSelf = self else {
                 return false
             }
@@ -4200,6 +4199,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
         self.expiringStoryListDisposable?.dispose()
         self.postingAvailabilityDisposable?.dispose()
         self.storyUploadProgressDisposable?.dispose()
+        self.updateAvatarDisposable.dispose()
     }
     
     override func didLoad() {
@@ -4658,7 +4658,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
             self?.controller?.present(c, in: .window(.root), with: a)
         }, dismissInput: { [weak self] in
             self?.view.endEditing(true)
-        }, contentContext: nil)
+        }, contentContext: nil, progress: nil)
     }
     
     private func openUrl(url: String, concealed: Bool, external: Bool, forceExternal: Bool = false, commit: @escaping () -> Void = {}) {
@@ -4684,7 +4684,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                 self?.controller?.present(c, in: .window(.root), with: a)
             }, dismissInput: {
                 self?.view.endEditing(true)
-            }, contentContext: nil)
+            }, contentContext: nil, progress: nil)
         })
     }
     
@@ -4896,6 +4896,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                 guard let self else {
                     return
                 }
+                let showInstalledTooltip = !bot.flags.contains(.showInSettingsDisclaimer)
                 if bot.flags.contains(.showInSettingsDisclaimer) {
                     let _ = self.context.engine.messages.acceptAttachMenuBotDisclaimer(botId: bot.peer.id).startStandalone()
                 }
@@ -4903,7 +4904,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                     let _ = (self.context.engine.messages.addBotToAttachMenu(botId: bot.peer.id, allowWrite: allowWrite)
                     |> deliverOnMainQueue).startStandalone(error: { _ in
                     }, completed: {
-                        proceed(true)
+                        proceed(showInstalledTooltip)
                     })
                 } else {
                     proceed(false)
@@ -5605,7 +5606,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                                         return
                                     }
                                     self.controller?.view.endEditing(true)
-                                }, contentContext: nil)
+                                }, contentContext: nil, progress: nil)
                             }, action: nil as ((ContextControllerProtocol, @escaping (ContextMenuActionResult) -> Void) -> Void)?)))
                             
                             c.pushItems(items: .single(ContextController.Items(content: .list(subItems))))
@@ -5794,7 +5795,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                                         return
                                     }
                                     self.controller?.view.endEditing(true)
-                                }, contentContext: nil)
+                                }, contentContext: nil, progress: nil)
                             }, action: nil as ((ContextControllerProtocol, @escaping (ContextMenuActionResult) -> Void) -> Void)?)))
                             
                             c.pushItems(items: .single(ContextController.Items(content: .list(subItems))))
@@ -5922,7 +5923,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                                         return
                                     }
                                     self.controller?.view.endEditing(true)
-                                }, contentContext: nil)
+                                }, contentContext: nil, progress: nil)
                             }, action: nil as ((ContextControllerProtocol, @escaping (ContextMenuActionResult) -> Void) -> Void)?)))
                             
                             c.pushItems(items: .single(ContextController.Items(content: .list(subItems))))
@@ -7243,7 +7244,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
             controller?.present(c, in: .window(.root), with: a)
         }, dismissInput: { [weak controller] in
             controller?.view.endEditing(true)
-        }, contentContext: nil)
+        }, contentContext: nil, progress: nil)
     }
     
     private func performBotCommand(command: PeerInfoBotCommand) {
@@ -8936,7 +8937,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                 strongSelf.context.sharedContext.openResolvedUrl(resolvedUrl, context: strongSelf.context, urlContext: .generic, navigationController: strongSelf.controller?.navigationController as? NavigationController, forceExternal: false, openPeer: { peer, navigation in
                 }, sendFile: nil, sendSticker: nil, requestMessageActionUrlAuth: nil, joinVoiceChat: nil, present: { [weak self] controller, arguments in
                     self?.controller?.push(controller)
-                }, dismissInput: {}, contentContext: nil)
+                }, dismissInput: {}, contentContext: nil, progress: nil)
             }
         })
     }
