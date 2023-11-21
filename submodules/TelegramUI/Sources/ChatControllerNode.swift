@@ -6,8 +6,8 @@ import NGRemoteConfig
 import NGStrings
 import UndoUI
 //
-// MARK: Nicegram ImagesHub
-import FeatImagesHubUI
+// MARK: Nicegram ChatBanner
+import FeatChatBanner
 //
 import Foundation
 import UIKit
@@ -268,8 +268,19 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
     }()
     //
     
-    // MARK: Nicegram ImagesHub
+    // MARK: Nicegram ChatBanner
     private let ngBannerNode = ASDisplayNode()
+    private lazy var ngBannerModel = {
+        if #available(iOS 13.0, *) {
+            BannerViewModel(
+                setBannerVisible: { [weak self] visible in
+                    self?.setNgBanner(hidden: !visible)
+                }
+            )
+        } else {
+            fatalError()
+        }
+    }()
     //
     
     let navigateButtons: ChatHistoryNavigationButtons
@@ -866,15 +877,13 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         }
         //
         
-        // MARK: Nicegram ImagesHub
+        // MARK: Nicegram ChatBanner
         if #available(iOS 15.0, *), let controller {
             self.addSubnode(self.ngBannerNode)
-            ImagesHubUITgHelper.showChatBanner(
-                view: self.ngBannerNode.view,
-                controller: controller,
-                close: { [weak self] in
-                    self?.setNgBanner(hidden: true)
-                }
+            ChatBannerTgHelper.show(
+                viewModel: ngBannerModel,
+                containerView: self.ngBannerNode.view,
+                containerController: controller
             )
         }
         self.ngBannerNode.isHidden = true
@@ -1056,20 +1065,31 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         })
     }
     
-    // MARK: Nicegram ImagesHub
+    // MARK: Nicegram ChatBanner
     @available(iOS 15.0, *)
     private func updateNgBannerVisibility() {
         guard let peer = self.chatPresentationInterfaceState.renderedPeer?.peer else {
             return
         }
         
-        let hasPornRestriction = peer.hasPornRestriction(
+        let isChannel = switch EnginePeer(peer) {
+        case .channel, .legacyGroup:
+            true
+        case .user, .secretChat:
+            false
+        }
+        let isPrivate = (peer.addressName == nil)
+        let isRestricted = peer.hasPornRestriction(
             contentSettings: self.context.currentContentSettings.with { $0 }
         )
         
-        let show = ImagesHubUITgHelper.shouldShowImagesHubInChat() && hasPornRestriction
-        
-        setNgBanner(hidden: !show)
+        ngBannerModel.set(
+            chatData: ChatData(
+                isChannel: isChannel,
+                isPrivate: isPrivate,
+                isRestricted: isRestricted
+            )
+        )
     }
     
     private func setNgBanner(hidden: Bool) {
@@ -2153,8 +2173,8 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         )
         //
         
-        // MARK: Nicegram ImagesHub
-        let bannerHeight = ImagesHubUITgHelper.chatBannerHeight
+        // MARK: Nicegram ChatBanner
+        let bannerHeight = ChatBannerTgHelper.bannerHeight
         
         transition.updateFrame(
             node: self.ngBannerNode,
@@ -2755,7 +2775,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                 showUnblockButton = false
             }
             
-            // MARK: Nicegram ImagesHub
+            // MARK: Nicegram ChatBanner
             if #available(iOS 15.0, *) {
                 updateNgBannerVisibility()
             }

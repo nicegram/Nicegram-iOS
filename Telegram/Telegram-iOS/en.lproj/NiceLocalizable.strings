@@ -182,12 +182,6 @@
 
 /*Telegram Premium*/
 "TelegramPremium.Description" = "Unfortunately, you can’t get **Telegram Premium Features** while being logged in to the Nicegram app. Please go to the official Telegram app and subscribe to **Telegram Premium**. As you go back to Nicegram, all **Premium Features** will be available to use.";
-"TelegramPremium.Title" = "Restore premium";
-"TelegramPremium.Failure.Title" = "Failure";
-"TelegramPremium.Failure.Description" = "Something went wrong. Please, use Nicegram Bot to restore your Premium Lifetime Subscription";
-"TelegramPremium.Failure.Pending" = "Your request is pending. Please, wait until Nicegram Bot approves it";
-"TelegramPremium.Success.Title" = "Success";
-"TelegramPremium.Success.Description" = "Your Premium Lifetime Subscription has been successfully restored!";
 
 /*Double Bottom*/
 "DoubleBottom.Title" = "Double bottom";

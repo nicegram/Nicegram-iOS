@@ -837,7 +837,14 @@ public func createGiveawayController(context: AccountContext, updatedPresentatio
             badgeCount = Int32(state.peers.count) * 4
         }
         let footerItem = CreateGiveawayFooterItem(theme: presentationData.theme, title: state.mode == .gift ? presentationData.strings.BoostGift_GiftPremium : presentationData.strings.BoostGift_StartGiveaway, badgeCount: badgeCount, isLoading: state.updating, action: {
-            buyActionImpl?()
+            if case .prepaid = subject {
+                let alertController = textAlertController(context: context, title: presentationData.strings.BoostGift_StartConfirmation_Title, text: presentationData.strings.BoostGift_StartConfirmation_Text, actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {}), TextAlertAction(type: .defaultAction, title: presentationData.strings.BoostGift_StartConfirmation_Start, action: {
+                    buyActionImpl?()
+                })], parseMarkdown: true)
+                presentControllerImpl?(alertController)
+            } else {
+                buyActionImpl?()
+            }
         })
         let leftNavigationButton = ItemListNavigationButton(content: .none, style: .regular, enabled: false, action: {})
         
@@ -896,58 +903,58 @@ public func createGiveawayController(context: AccountContext, updatedPresentatio
     
     buyActionImpl = { [weak controller] in
         let state = stateValue.with { $0 }
-        guard let products = productsValue.with({ $0 }), !products.isEmpty else {
-            return
-        }
-        
+
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-    
-        var selectedProduct: PremiumGiftProduct?
-        let selectedMonths = state.selectedMonths ?? 12
-        switch state.mode {
-        case .giveaway:
-            if let product = products.first(where: { $0.months == selectedMonths && $0.giftOption.users == state.subscriptions }) {
-                selectedProduct = product
-            }
-        case .gift:
-            if let product = products.first(where: { $0.months == selectedMonths && $0.giftOption.users == 1 }) {
-                selectedProduct = product
-            }
-        }
-        
-        guard let selectedProduct else {
-            let alertController = textAlertController(context: context, title: presentationData.strings.BoostGift_ReduceQuantity_Title, text: presentationData.strings.BoostGift_ReduceQuantity_Text("\(state.subscriptions)", "\(selectedMonths)", "\(25)").string, actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {}), TextAlertAction(type: .defaultAction, title: presentationData.strings.BoostGift_ReduceQuantity_Reduce, action: {
-                updateState { state in
-                    var updatedState = state
-                    updatedState.subscriptions = 25
-                    return updatedState
-                }
-            })], parseMarkdown: true)
-            presentControllerImpl?(alertController)
-            return
-        }
-        
-        let (currency, amount) = selectedProduct.storeProduct.priceCurrencyAndAmount
-        
-        let purpose: AppStoreTransactionPurpose
-        let quantity: Int32
-        switch state.mode {
-        case .giveaway:
-            purpose = .giveaway(boostPeer: peerId, additionalPeerIds: state.channels.filter { $0 != peerId }, countries: state.countries, onlyNewSubscribers: state.onlyNewEligible, randomId: Int64.random(in: .min ..< .max), untilDate: state.time, currency: currency, amount: amount)
-            quantity = selectedProduct.giftOption.storeQuantity
-        case .gift:
-            purpose = .giftCode(peerIds: state.peers, boostPeer: peerId, currency: currency, amount: amount)
-            quantity = Int32(state.peers.count)
-        }
-                
-        updateState { state in
-            var updatedState = state
-            updatedState.updating = true
-            return updatedState
-        }
-        
+                     
         switch subject {
         case .generic:
+            guard let products = productsValue.with({ $0 }), !products.isEmpty else {
+                return
+            }
+            var selectedProduct: PremiumGiftProduct?
+            let selectedMonths = state.selectedMonths ?? 12
+            switch state.mode {
+            case .giveaway:
+                if let product = products.first(where: { $0.months == selectedMonths && $0.giftOption.users == state.subscriptions }) {
+                    selectedProduct = product
+                }
+            case .gift:
+                if let product = products.first(where: { $0.months == selectedMonths && $0.giftOption.users == 1 }) {
+                    selectedProduct = product
+                }
+            }
+            
+            guard let selectedProduct else {
+                let alertController = textAlertController(context: context, title: presentationData.strings.BoostGift_ReduceQuantity_Title, text: presentationData.strings.BoostGift_ReduceQuantity_Text("\(state.subscriptions)", "\(selectedMonths)", "\(25)").string, actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {}), TextAlertAction(type: .defaultAction, title: presentationData.strings.BoostGift_ReduceQuantity_Reduce, action: {
+                    updateState { state in
+                        var updatedState = state
+                        updatedState.subscriptions = 25
+                        return updatedState
+                    }
+                })], parseMarkdown: true)
+                presentControllerImpl?(alertController)
+                return
+            }
+            
+            updateState { state in
+                var updatedState = state
+                updatedState.updating = true
+                return updatedState
+            }
+            
+            let (currency, amount) = selectedProduct.storeProduct.priceCurrencyAndAmount
+            
+            let purpose: AppStoreTransactionPurpose
+            let quantity: Int32
+            switch state.mode {
+            case .giveaway:
+                purpose = .giveaway(boostPeer: peerId, additionalPeerIds: state.channels.filter { $0 != peerId }, countries: state.countries, onlyNewSubscribers: state.onlyNewEligible, randomId: Int64.random(in: .min ..< .max), untilDate: state.time, currency: currency, amount: amount)
+                quantity = selectedProduct.giftOption.storeQuantity
+            case .gift:
+                purpose = .giftCode(peerIds: state.peers, boostPeer: peerId, currency: currency, amount: amount)
+                quantity = Int32(state.peers.count)
+            }
+            
             let _ = (context.engine.payments.canPurchasePremium(purpose: purpose)
             |> deliverOnMainQueue).startStandalone(next: { [weak controller] available in
                 if available, let inAppPurchaseManager = context.inAppPurchaseManager {
@@ -1033,6 +1040,12 @@ public func createGiveawayController(context: AccountContext, updatedPresentatio
                 }
             })
         case let .prepaid(prepaidGiveaway):
+            updateState { state in
+                var updatedState = state
+                updatedState.updating = true
+                return updatedState
+            }
+            
             let _ = (context.engine.payments.launchPrepaidGiveaway(peerId: peerId, id: prepaidGiveaway.id, additionalPeerIds: state.channels.filter { $0 != peerId }, countries: state.countries, onlyNewSubscribers: state.onlyNewEligible, randomId: Int64.random(in: .min ..< .max), untilDate: state.time)
             |> deliverOnMainQueue).startStandalone(completed: {
                 if let controller, let navigationController = controller.navigationController as? NavigationController {

@@ -122,7 +122,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     
     case Account(String)
     case doubleBottom(String)
-    case restorePremium(String, String)
     
     case unblockHeader(String)
     case unblock(String, URL)
@@ -150,7 +149,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return NicegramSettingsControllerSection.QuickReplies.rawValue
         case .unblockHeader, .unblock:
             return NicegramSettingsControllerSection.Unblock.rawValue
-        case .Account, .restorePremium, .doubleBottom:
+        case .Account, .doubleBottom:
             return NicegramSettingsControllerSection.Account.rawValue
         case .secretMenu:
             return NicegramSettingsControllerSection.SecretMenu.rawValue
@@ -230,9 +229,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
         case .Account:
             return 2500
-            
-        case .restorePremium:
-            return 2600
             
         case .doubleBottom:
             return 2700
@@ -368,12 +364,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             }
         case let .Account(lhsText):
             if case let .Account(rhsText) = rhs, lhsText == rhsText {
-                return true
-            } else {
-                return false
-            }
-        case let .restorePremium(lhsText, lhsId):
-            if case let .restorePremium(rhsText, rhsId) = rhs, lhsText == rhsText, lhsId == rhsId {
                 return true
             } else {
                 return false
@@ -557,72 +547,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             }
         case let .Account(text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: section)
-        case let .restorePremium(text, id):
-            return ItemListActionItem(presentationData: presentationData, title: text, kind: .neutral, alignment: .natural, sectionId: section, style: .blocks) {
-                SharedLoadingView.start()
-                guard var urlComponents = URLComponents(string: NGENV.restore_url) else { return }
-                urlComponents.queryItems = [
-                    URLQueryItem(name: "id", value: id)
-                ]
-                guard let url = urlComponents.url else { return }
-                var request = URLRequest(url: url)
-                request.httpMethod = "GET"
-                let task = URLSession.shared.dataTask(with: request) { (data, response, error) in
-                    var alertTitle = ""
-                    var alertText = ""
-                    guard
-                        let data = data,                              // is there data
-                        let response = response as? HTTPURLResponse,  // is there HTTP response
-                        200 ..< 300 ~= response.statusCode,           // is statusCode 2XX
-                        error == nil                                  // was there no error
-                    else {
-                        SharedLoadingView.stop()
-                        DispatchQueue.main.async {
-                            let controller = standardTextAlertController(
-                                theme: AlertControllerTheme(presentationData: arguments.context.sharedContext.currentPresentationData.with { $0 }),
-                                title: l("TelegramPremium.Failure.Title", locale),
-                                text: l("TelegramPremium.Failure.Description", locale),
-                                actions: [
-                                    TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})
-                                ]
-                            )
-                            arguments.presentController(controller, nil)
-                        }
-                        return
-                    }
-                    let responseObject = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
-
-                    SharedLoadingView.stop()
-
-                    if let premiumData = responseObject?["data"] as? [String: Any], let premiumAccess = premiumData["premiumAccess"] as? Bool {
-                        if premiumAccess {
-                            AppCache.hasUnlimPremium = true
-                            alertTitle = l("TelegramPremium.Success.Title", locale)
-                            alertText = l("TelegramPremium.Success.Description", locale)
-                        } else {
-                            AppCache.hasUnlimPremium = false
-                            alertTitle = l("TelegramPremium.Failure.Title", locale)
-                            alertText = l("TelegramPremium.Failure.Pending", locale)
-                        }
-                    } else {
-                        alertTitle = l("TelegramPremium.Failure.Title", locale)
-                        alertText =  l("TelegramPremium.Failure.Description", locale)
-                    }
-
-                    DispatchQueue.main.async {
-                        let controller = standardTextAlertController(
-                            theme: AlertControllerTheme(presentationData: arguments.context.sharedContext.currentPresentationData.with { $0 }),
-                            title: alertTitle,
-                            text: alertText,
-                            actions: [
-                                TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})
-                            ]
-                        )
-                        arguments.presentController(controller, nil)
-                    }
-                }
-                task.resume()
-            }
         case let .doubleBottom(text):
             return ItemListActionItem(presentationData: presentationData, title: text, kind: .neutral, alignment: .natural, sectionId: section, style: .blocks) {
                 arguments.pushController(doubleBottomListController(context: arguments.context, presentationData: arguments.context.sharedContext.currentPresentationData.with { $0 }, accountsContexts: arguments.accountsContexts))
@@ -792,7 +716,6 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
 
     
     entries.append(.Account(l("NiceFeatures.Account.Header", locale)))
-    entries.append(.restorePremium(l("TelegramPremium.Title", locale), "\(context.account.peerId.id._internalGetInt64Value())"))
     if !context.account.isHidden || !VarSystemNGSettings.inDoubleBottom {
         entries.append(.doubleBottom(l("DoubleBottom.Title", locale)))
     }

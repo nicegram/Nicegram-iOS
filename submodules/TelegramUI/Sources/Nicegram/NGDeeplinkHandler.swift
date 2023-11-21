@@ -2,6 +2,9 @@ import Foundation
 import AccountContext
 import Display
 import FeatImagesHubUI
+import FeatPremiumUI
+import FeatRewardsUI
+import FeatTasks
 import NGAiChatUI
 import NGAnalytics
 import NGAssistantUI
@@ -11,7 +14,6 @@ import class NGCoreUI.SharedLoadingView
 import NGModels
 import NGOnboarding
 import NGRemoteConfig
-import NGPremiumUI
 import NGSpecialOffer
 import NGUI
 import TelegramPresentationData
@@ -66,6 +68,13 @@ class NGDeeplinkHandler {
             return handleNicegramPremium(url: url)
         case "onboarding":
             return handleOnboarding(url: url)
+        case "profit":
+            if #available(iOS 15.0, *) {
+                Task { @MainActor in
+                    RewardsUITgHelper.showRewards()
+                }   
+            }
+            return true
         case "specialOffer":
             if #available(iOS 13.0, *) {
                 return handleSpecialOffer(url: url)
@@ -74,6 +83,12 @@ class NGDeeplinkHandler {
             }
         case "pstAuth":
             return handlePstAuth(url: url)
+        case "task":
+            if #available(iOS 15.0, *) {
+                let taskDeeplinkHandler = TasksContainer.shared.taskDeeplinkHandler()
+                taskDeeplinkHandler.handle(url)
+            }
+            return true
         default:
             return false
         }

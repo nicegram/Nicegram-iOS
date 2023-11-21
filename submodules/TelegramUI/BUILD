@@ -19,12 +19,13 @@ NGDEPS = [
     "//Nicegram/NGStats:NGStats",
     "//Nicegram/NGModels:NGModels",
     "@FirebaseSDK//:FirebaseCrashlytics",
+    "@swiftpkg_nicegram_assistant_ios//:Sources_FeatChatBanner",
     "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPartners",
+    "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPremium",
     "@swiftpkg_nicegram_assistant_ios//:Sources_NGAssistantUI",
     "@swiftpkg_nicegram_assistant_ios//:Sources_NGAuth",
     "@swiftpkg_nicegram_assistant_ios//:Sources_NGCardUI",
     "@swiftpkg_nicegram_assistant_ios//:Sources_NGEntryPoint",
-    "@swiftpkg_nicegram_assistant_ios//:Sources_NGPremium",
     "@swiftpkg_nicegram_assistant_ios//:Sources__NGRemoteConfig",
 ]
 

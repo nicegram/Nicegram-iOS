@@ -1804,6 +1804,14 @@ ios_extension(
     ],
 )
 
+# MARK: Nicegram
+nicegram_queries_schemes = """
+<string>appesim</string>
+<string>com.sticker.studio</string>
+<string>inlab</string>
+<string>plnt</string>
+"""
+
 plist_fragment(
     name = "TelegramInfoPlist",
     extension = "plist",
@@ -1832,6 +1840,7 @@ plist_fragment(
     <false/>
     <key>LSApplicationQueriesSchemes</key>
     <array>
+        {nicegram_queries_schemes}
         <string>instagram</string>
         <string>comgooglemaps-x-callback</string>
         <string>foursquare</string>
@@ -1976,6 +1985,7 @@ plist_fragment(
     <key>UIApplicationSupportsIndirectInputEvents</key>
     <true/>
     """.format(
+        nicegram_queries_schemes = nicegram_queries_schemes,
         telegram_bundle_id = telegram_bundle_id,
     )
 )

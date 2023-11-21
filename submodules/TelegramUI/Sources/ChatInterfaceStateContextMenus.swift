@@ -29,11 +29,11 @@ import TelegramNotices
 import ReactionListContextMenuContent
 import TelegramUIPreferences
 // MARK: Nicegram Imports
+import FeatPremiumUI
 import struct NGAiChat.AiChatTgHelper
 import struct NGAiChat.AiContextMenuNotificationPayload
 import NGAiChatUI
 import NGCopyProtectedContent
-import NGPremiumUI
 import NGStrings
 import NGTranslate
 import NGUI
@@ -586,6 +586,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
     var loadStickerSaveStatus: MediaId?
     var loadCopyMediaResource: MediaResource?
     var isAction = false
+    var isGiveawayLaunch = false
     var diceEmoji: String?
     if messages.count == 1 {
         for media in messages[0].media {
@@ -600,6 +601,9 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                 }
             } else if media is TelegramMediaAction || media is TelegramMediaExpiredContent {
                 isAction = true
+                if let action = media as? TelegramMediaAction, case .giveawayLaunched = action.action {
+                    isGiveawayLaunch = true
+                }
             } else if let image = media as? TelegramMediaImage {
                 if !messages[0].containsSecretMedia {
                     loadCopyMediaResource = largestImageRepresentation(image.representations)?.resource
@@ -658,6 +662,10 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
     } else {
         canReply = false
         canPin = false
+    }
+    
+    if isGiveawayLaunch {
+        canReply = false
     }
     
     if let peer = messages[0].peers[messages[0].id.peerId] {
@@ -946,7 +954,6 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             resourceAvailable = false
         }
         
-
         if !isPremium && isDownloading {
             var isLargeFile = false
             for media in message.media {
