@@ -22,11 +22,16 @@ extension UrlOpenerImpl: UrlOpener {
         let navigationController = sharedContext.mainWindow?.viewController as? NavigationController
         let presentationData = sharedContext.currentPresentationData.with { $0 }
         
+        let telegramHosts = ["t.me", "telegram.me"]
+        let isTelegramHost = telegramHosts.contains(url._wrapperHost() ?? "")
+        
+        let forceExternal = !isTelegramHost
+        
         sharedContext.openExternalUrl(
             context: accountContext,
             urlContext: .generic,
             url: url.absoluteString,
-            forceExternal: false,
+            forceExternal: forceExternal,
             presentationData: presentationData,
             navigationController: navigationController,
             dismissInput: {}
