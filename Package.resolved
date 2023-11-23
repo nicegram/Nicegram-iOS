@@ -41,8 +41,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "release-1.4.7",
-        "revision" : "2da524fe270de466c1e03a81572f82dc29452981"
+        "branch" : "develop",
+        "revision" : "c3686ba5c4f4ad5eb0273bc9dfd5784e0971a5a2"
       }
     },
     {

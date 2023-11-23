@@ -2553,6 +2553,15 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
                     }
                 }
             }
+            
+            // MARK: Nicegram PinnedChats
+            if let nicegramBadge = item.nicegramItem?.badge {
+                currentCredibilityIconContent = .image(
+                    image: nicegramBadge
+                )
+            }
+            //
+            
             if let currentSecretIconImage = currentSecretIconImage {
                 titleIconsWidth += currentSecretIconImage.size.width + 2.0
             }
