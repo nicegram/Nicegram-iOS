@@ -1,6 +1,6 @@
 // MARK: Nicegram Imports
+import FeatPremiumUI
 import NGData
-import NGPremiumUI
 import NGStrings
 import NGTelegramIntegration
 import NGTranslate

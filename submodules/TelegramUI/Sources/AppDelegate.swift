@@ -1,10 +1,10 @@
 // MARK: Nicegram imports
 import AppLovinAdProvider
+import FeatTasks
 import NGAiChat
 import NGAnalytics
 import NGAppCache
-import var NGCore.ENV
-import struct NGCore.Env
+import NGCore
 import NGData
 import NGEntryPoint
 import NGEnv
@@ -381,20 +381,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         let mobyApiKey = NGENV.moby_key
         MobySubscriptionAnalytics.setup(apiKey: mobyApiKey) { account in
             account.appsflyerID = nil
-        } completion: { _, produncInfoResult in
-            if let result = produncInfoResult,
-               let activeProduct = result.transactions.first(where: { transaction in
-                   if transaction.productID == ENV.premiumProductId {
-                       return [RenewableProductDetails.Status.active, .trial].contains(transaction.status)
-                   } else {
-                       return false
-                   }
-               }) {
-                AppCache.currentProductID = activeProduct.productID
-            } else {
-                AppCache.currentProductID = nil
-            }
-        }
+        } completion: { _, _ in }
 
         if AppCache.appLaunchCount == 1 {
             let installTime = (time_t)(Date().timeIntervalSince1970)
@@ -1214,6 +1201,26 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 }
             }
         })
+        
+        // MARK: Nicegram
+        if #available(iOS 13.0, *) {
+            let _ = self.context.get().start(next: { context in
+                if let context = context {
+                    TasksContainer.shared.channelSubscriptionChecker.register {
+                        ChannelSubscriptionCheckerImpl(context: context.context)
+                    }
+                }
+            })
+        }
+        
+        let _ = self.context.get().start(next: { context in
+            if let context = context {
+                CoreContainer.shared.urlOpener.register {
+                    UrlOpenerImpl(accountContext: context.context)
+                }
+            }
+        })
+        //
         
         self.authContext.set(self.sharedContextPromise.get()
         |> deliverOnMainQueue
@@ -2743,6 +2750,16 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     
     // MARK: Nicegram DB Changes
         func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+            // MARK: Nicegram Notifications
+            let userInfo = response.notification.request.content.userInfo
+            if let nicegramDeeplink = userInfo["nicegramDeeplink"] as? String,
+               let url = URL(string: nicegramDeeplink) {
+                UIApplication.shared.open(url)
+                completionHandler()
+                return
+            }
+            //
+            
             let hiddenIdsAndPasscodeSettings = self.sharedContextPromise.get() |> mapToSignal { context in
                 return context.sharedContext.accountManager.transaction({ transaction -> (hiddenIds: [AccountRecordId], hasMasterPasscode: Bool) in
                     let hiddenIds = transaction.getRecords().filter { $0.attributes.contains(where: { $0.isHiddenAccountAttribute }) }.map { $0.id }
@@ -2989,12 +3006,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         downloadLocale(lang)
         #endif
     }
-    
-//    private func fetchPremium() {
-//        if (isPremium()) {
-//            validatePremium(true)
-//        }
-//    }
     
     private func maybeCheckForUpdates() {
         #if targetEnvironment(simulator)

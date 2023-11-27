@@ -558,9 +558,17 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
     private var swipeToReplyFeedback: HapticFeedback?
     
     private var nameNode: TextNode?
+    private var nameButtonNode: HighlightTrackingButtonNode?
+    private var nameHighlightNode: ASImageNode?
+    private var viaMeasureNode: TextNode?
+    
     private var adminBadgeNode: TextNode?
     private var credibilityIconView: ComponentHostView<Empty>?
     private var credibilityIconComponent: EmojiStatusComponent?
+    private var credibilityIconContent: EmojiStatusComponent.Content?
+    private var credibilityButtonNode: HighlightTrackingButtonNode?
+    private var credibilityHighlightNode: ASImageNode?
+    
     private var closeButtonNode: HighlightTrackingButtonNode?
     private var closeIconNode: ASImageNode?
     
@@ -1094,7 +1102,15 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                         return .fail
                     }
                 }
-                                
+                
+                if let nameButtonNode = strongSelf.nameButtonNode, nameButtonNode.frame.contains(point) {
+                    return .fail
+                }
+                
+                if let credibilityButtonNode = strongSelf.credibilityButtonNode, credibilityButtonNode.frame.contains(point) {
+                    return .fail
+                }
+                                                
                 if let nameNode = strongSelf.nameNode, nameNode.frame.contains(point) {
                     if let item = strongSelf.item {
                         for attribute in item.message.attributes {
@@ -1257,6 +1273,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
         }
         
         let authorNameLayout = TextNode.asyncLayout(self.nameNode)
+        let viaMeasureLayout = TextNode.asyncLayout(self.viaMeasureNode)
         let adminBadgeLayout = TextNode.asyncLayout(self.adminBadgeNode)
         let threadInfoLayout = ChatMessageThreadInfoNode.asyncLayout(self.threadInfoNode)
         let forwardInfoLayout = ChatMessageForwardInfoNode.asyncLayout(self.forwardInfoNode)
@@ -1280,6 +1297,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
             return ChatMessageBubbleItemNode.beginLayout(selfReference: weakSelf, item, params, mergedTop, mergedBottom, dateHeaderAtBottom,
                 currentContentClassesPropertiesAndLayouts: currentContentClassesPropertiesAndLayouts,
                 authorNameLayout: authorNameLayout,
+                viaMeasureLayout: viaMeasureLayout,
                 adminBadgeLayout: adminBadgeLayout,
                 threadInfoLayout: threadInfoLayout,
                 forwardInfoLayout: forwardInfoLayout,
@@ -1299,6 +1317,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
     private static func beginLayout(selfReference: Weak<ChatMessageBubbleItemNode>, _ item: ChatMessageItem, _ params: ListViewItemLayoutParams, _ mergedTop: ChatMessageMerge, _ mergedBottom: ChatMessageMerge, _ dateHeaderAtBottom: Bool,
         currentContentClassesPropertiesAndLayouts: [(Message, AnyClass, Bool, (_ item: ChatMessageBubbleContentItem, _ layoutConstants: ChatMessageItemLayoutConstants, _ preparePosition: ChatMessageBubblePreparePosition, _ messageSelection: Bool?, _ constrainedSize: CGSize, _ avatarInset: CGFloat) -> (ChatMessageBubbleContentProperties, CGSize?, CGFloat, (CGSize, ChatMessageBubbleContentPosition) -> (CGFloat, (CGFloat) -> (CGSize, (ListViewItemUpdateAnimation, Bool, ListViewItemApply?) -> Void))))],
         authorNameLayout: (TextNodeLayoutArguments) -> (TextNodeLayout, () -> TextNode),
+        viaMeasureLayout: (TextNodeLayoutArguments) -> (TextNodeLayout, () -> TextNode),
         adminBadgeLayout: (TextNodeLayoutArguments) -> (TextNodeLayout, () -> TextNode),
         threadInfoLayout: (ChatMessageThreadInfoNode.Arguments) -> (CGSize, (Bool) -> ChatMessageThreadInfoNode),
         forwardInfoLayout: (AccountContext, ChatPresentationData, PresentationStrings, ChatMessageForwardInfoType, Peer?, String?, String?, ChatMessageForwardInfoNode.StoryData?, CGSize) -> (CGSize, (CGFloat) -> ChatMessageForwardInfoNode),
@@ -1620,6 +1639,10 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
         var hasInstantVideo = false
         for contentNodeItemValue in contentNodeMessagesAndClasses {
             let contentNodeItem = contentNodeItemValue as (message: Message, type: AnyClass, attributes: ChatMessageEntryAttributes, bubbleAttributes: BubbleItemAttributes)
+            if contentNodeItem.type == ChatMessageGiveawayBubbleContentNode.self {
+                maximumContentWidth = min(305.0, maximumContentWidth)
+                break
+            }
             if contentNodeItem.type == ChatMessageInstantVideoBubbleContentNode.self, !contentNodeItem.bubbleAttributes.isAttachment {
                 maximumContentWidth = baseWidth - 20.0
                 hasInstantVideo = true
@@ -2158,6 +2181,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
         var nameNodeOriginY: CGFloat = 0.0
         var nameNodeSizeApply: (CGSize, () -> TextNode?) = (CGSize(), { nil })
         var adminNodeSizeApply: (CGSize, () -> TextNode?) = (CGSize(), { nil })
+        var viaWidth: CGFloat = 0.0
 
         var threadInfoOriginY: CGFloat = 0.0
         var threadInfoSizeApply: (CGSize, (Bool) -> ChatMessageThreadInfoNode?) = (CGSize(), {  _ in nil })
@@ -2196,6 +2220,8 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 } else if authorIsChannel, case .peer = item.chatLocation {
                     adminBadgeString = NSAttributedString(string: " \(item.presentationData.strings.Channel_Status)", font: inlineBotPrefixFont, textColor: messageTheme.secondaryTextColor)
                 }
+                
+                var viaSuffix: NSAttributedString?
                 if let authorNameString = authorNameString, let authorNameColor = authorNameColor, let inlineBotNameString = inlineBotNameString {
                     let mutableString = NSMutableAttributedString(string: "\(authorNameString) ", attributes: [NSAttributedString.Key.font: nameFont, NSAttributedString.Key.foregroundColor: authorNameColor])
                     let bodyAttributes = MarkdownAttributeSet(font: nameFont, textColor: inlineBotNameColor)
@@ -2203,6 +2229,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     let botString = addAttributesToStringWithRanges(item.presentationData.strings.Conversation_MessageViaUser("@\(inlineBotNameString)")._tuple, body: bodyAttributes, argumentAttributes: [0: boldAttributes])
                     mutableString.append(botString)
                     attributedString = mutableString
+                    viaSuffix = botString
                 } else if let authorNameString = authorNameString, let authorNameColor = authorNameColor {
                     attributedString = NSAttributedString(string: authorNameString, font: nameFont, textColor: authorNameColor)
                 } else if let inlineBotNameString = inlineBotNameString {
@@ -2237,6 +2264,11 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     return sizeAndApply.1()
                 })
 
+                if let viaSuffix {
+                    let (viaLayout, _) = viaMeasureLayout(TextNodeLayoutArguments(attributedString: viaSuffix, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: max(0, maximumNodeWidth - layoutConstants.text.bubbleInsets.left - layoutConstants.text.bubbleInsets.right - credibilityIconWidth - adminBadgeSizeAndApply.0.size.width - closeButtonWidth), height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
+                    viaWidth = viaLayout.size.width + 3.0
+                }
+                
                 nameNodeOriginY = headerSize.height
                 headerSize.width = max(headerSize.width, nameNodeSizeApply.0.width + adminBadgeSizeAndApply.0.size.width + credibilityIconWidth + closeButtonWidth + bubbleWidthInsets)
                 headerSize.height += nameNodeSizeApply.0.height
@@ -2822,6 +2854,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 backgroundFrame: backgroundFrame,
                 deliveryFailedInset: deliveryFailedInset,
                 nameNodeSizeApply: nameNodeSizeApply,
+                viaWidth: viaWidth,
                 contentOrigin: contentOrigin,
                 nameNodeOriginY: nameNodeOriginY,
                 authorNameColor: authorNameColor,
@@ -2875,6 +2908,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
         backgroundFrame: CGRect,
         deliveryFailedInset: CGFloat,
         nameNodeSizeApply: (CGSize, () -> TextNode?),
+        viaWidth: CGFloat,
         contentOrigin: CGPoint,
         nameNodeOriginY: CGFloat,
         authorNameColor: UIColor?,
@@ -2907,6 +2941,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
             return
         }
         
+        let themeUpdated = strongSelf.appliedItem?.presentationData.theme.theme !== item.presentationData.theme.theme
         let previousContextFrame = strongSelf.mainContainerNode.frame
         strongSelf.mainContainerNode.frame = CGRect(origin: CGPoint(), size: layout.contentSize)
         strongSelf.mainContextSourceNode.frame = CGRect(origin: CGPoint(), size: layout.contentSize)
@@ -3021,6 +3056,46 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 animation.animator.updateFrame(layer: nameNode.layer, frame: nameNodeFrame, completion: nil)
             }
             
+            let nameButtonNode: HighlightTrackingButtonNode
+            let nameHighlightNode: ASImageNode
+            if let currentButton = strongSelf.nameButtonNode, let currentHighlight = strongSelf.nameHighlightNode {
+                nameButtonNode = currentButton
+                nameHighlightNode = currentHighlight
+            } else {
+                nameHighlightNode = ASImageNode()
+                nameHighlightNode.alpha = 0.0
+                nameHighlightNode.displaysAsynchronously = false
+                nameHighlightNode.isUserInteractionEnabled = false
+                strongSelf.clippingNode.addSubnode(nameHighlightNode)
+                strongSelf.nameHighlightNode = nameHighlightNode
+                
+                nameButtonNode = HighlightTrackingButtonNode()
+                nameButtonNode.highligthedChanged = { [weak nameHighlightNode] highlighted in
+                    guard let nameHighlightNode else {
+                        return
+                    }
+                    if highlighted {
+                        nameHighlightNode.layer.removeAnimation(forKey: "opacity")
+                        nameHighlightNode.alpha = 1.0
+                    } else {
+                        nameHighlightNode.alpha = 0.0
+                        nameHighlightNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2)
+                    }
+                }
+                nameButtonNode.addTarget(strongSelf, action: #selector(strongSelf.nameButtonPressed), forControlEvents: .touchUpInside)
+                strongSelf.clippingNode.addSubnode(nameButtonNode)
+                strongSelf.nameButtonNode = nameButtonNode
+            }
+            var nameHiglightFrame = nameNodeFrame
+            nameHiglightFrame.size.width -= viaWidth
+            nameHighlightNode.frame = nameHiglightFrame.insetBy(dx: -2.0, dy: -1.0)
+            nameButtonNode.frame = nameHiglightFrame.insetBy(dx: -2.0, dy: -3.0)
+            
+            let nameColor = authorNameColor ?? item.presentationData.theme.theme.chat.message.outgoing.accentTextColor
+            if themeUpdated {
+                nameHighlightNode.image = generateFilledRoundedRectImage(size: CGSize(width: 8.0, height: 8.0), cornerRadius: 4.0, color: nameColor.withAlphaComponent(0.1))?.stretchableImage(withLeftCapWidth: 4, topCapHeight: 4)
+            }
+            
             if let currentCredibilityIcon = currentCredibilityIcon {
                 let credibilityIconView: ComponentHostView<Empty>
                 if let current = strongSelf.credibilityIconView {
@@ -3045,6 +3120,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     action: nil
                 )
                 strongSelf.credibilityIconComponent = credibilityIconComponent
+                strongSelf.credibilityIconContent = currentCredibilityIcon
                 
                 let credibilityIconSize = credibilityIconView.update(
                     transition: .immediate,
@@ -3053,10 +3129,49 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     containerSize: CGSize(width: 20.0, height: 20.0)
                 )
                 
-                credibilityIconView.frame = CGRect(origin: CGPoint(x: nameNode.frame.maxX + 3.0, y: nameNode.frame.minY + floor((nameNode.bounds.height - credibilityIconSize.height) / 2.0)), size: credibilityIconSize)
+                let credibilityIconFrame = CGRect(origin: CGPoint(x: nameNode.frame.maxX + 3.0, y: nameNode.frame.minY + floor((nameNode.bounds.height - credibilityIconSize.height) / 2.0)), size: credibilityIconSize)
+                credibilityIconView.frame = credibilityIconFrame
+                
+                let credibilityButtonNode: HighlightTrackingButtonNode
+                let credibilityHighlightNode: ASImageNode
+                if let currentButton = strongSelf.credibilityButtonNode, let currentHighlight = strongSelf.credibilityHighlightNode {
+                    credibilityButtonNode = currentButton
+                    credibilityHighlightNode = currentHighlight
+                } else {
+                    credibilityHighlightNode = ASImageNode()
+                    credibilityHighlightNode.alpha = 0.0
+                    credibilityHighlightNode.displaysAsynchronously = false
+                    credibilityHighlightNode.isUserInteractionEnabled = false
+                    strongSelf.clippingNode.addSubnode(credibilityHighlightNode)
+                    strongSelf.credibilityHighlightNode = credibilityHighlightNode
+                    
+                    credibilityButtonNode = HighlightTrackingButtonNode()
+                    credibilityButtonNode.highligthedChanged = { [weak credibilityHighlightNode] highlighted in
+                        guard let credibilityHighlightNode else {
+                            return
+                        }
+                        if highlighted {
+                            credibilityHighlightNode.layer.removeAnimation(forKey: "opacity")
+                            credibilityHighlightNode.alpha = 1.0
+                        } else {
+                            credibilityHighlightNode.alpha = 0.0
+                            credibilityHighlightNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2)
+                        }
+                    }
+                    credibilityButtonNode.addTarget(strongSelf, action: #selector(strongSelf.credibilityButtonPressed), forControlEvents: .touchUpInside)
+                    strongSelf.clippingNode.addSubnode(credibilityButtonNode)
+                    strongSelf.credibilityButtonNode = credibilityButtonNode
+                }
+                credibilityHighlightNode.frame = credibilityIconFrame.insetBy(dx: -1.0, dy: -1.0)
+                credibilityButtonNode.frame = credibilityIconFrame.insetBy(dx: -2.0, dy: -3.0)
+                
+                if themeUpdated {
+                    credibilityHighlightNode.image = generateFilledRoundedRectImage(size: CGSize(width: 8.0, height: 8.0), cornerRadius: 4.0, color: nameColor.withAlphaComponent(0.1))?.stretchableImage(withLeftCapWidth: 4, topCapHeight: 4)
+                }
             } else {
                 strongSelf.credibilityIconView?.removeFromSuperview()
                 strongSelf.credibilityIconView = nil
+                strongSelf.credibilityIconContent = nil
             }
             
             if let adminBadgeNode = adminNodeSizeApply.1() {
@@ -3156,6 +3271,14 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 strongSelf.adminBadgeNode = nil
                 strongSelf.credibilityIconView?.removeFromSuperview()
                 strongSelf.credibilityIconView = nil
+                strongSelf.nameButtonNode?.removeFromSupernode()
+                strongSelf.nameButtonNode = nil
+                strongSelf.nameHighlightNode?.removeFromSupernode()
+                strongSelf.nameHighlightNode = nil
+                strongSelf.credibilityButtonNode?.removeFromSupernode()
+                strongSelf.credibilityButtonNode = nil
+                strongSelf.credibilityHighlightNode?.removeFromSupernode()
+                strongSelf.credibilityHighlightNode = nil
             }
         }
         
@@ -4656,6 +4779,14 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
             return result
         }
         
+        if let nameButtonNode = self.nameButtonNode, nameButtonNode.frame.contains(point) {
+            return nameButtonNode.view
+        }
+        
+        if let credibilityButtonNode = self.credibilityButtonNode, credibilityButtonNode.frame.contains(point) {
+            return credibilityButtonNode.view
+        }
+        
         if let shareButtonNode = self.shareButtonNode, shareButtonNode.frame.contains(point) {
             return shareButtonNode.view
         }
@@ -5115,6 +5246,28 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
     @objc private func closeButtonPressed() {
         if let item = self.item {
             item.controllerInteraction.openNoAdsDemo()
+        }
+    }
+    
+    @objc private func nameButtonPressed() {
+        if let item = self.item, let peer = item.message.author {
+            let messageReference = MessageReference(item.message)
+            if let channel = peer as? TelegramChannel, case .broadcast = channel.info {
+                item.controllerInteraction.openPeer(EnginePeer(peer), .chat(textInputState: nil, subject: nil, peekData: nil), messageReference, .default)
+            } else {
+                item.controllerInteraction.openPeer(EnginePeer(peer), .info, messageReference, .groupParticipant(storyStats: nil, avatarHeaderNode: nil))
+            }
+        }
+    }
+    
+    @objc private func credibilityButtonPressed() {
+        if let item = self.item, let credibilityIconView = self.credibilityIconView, let iconContent = self.credibilityIconContent, let peer = item.message.author {
+            var emojiFileId: Int64?
+            if case let .animation(content, _, _, _, _) = iconContent {
+                emojiFileId = content.fileId.id
+            }
+            
+            item.controllerInteraction.openPremiumStatusInfo(peer.id, credibilityIconView, emojiFileId, peer.nameColor ?? .blue)
         }
     }
     

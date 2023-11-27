@@ -4495,24 +4495,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     private func nicegramInit() {
         RepoTgHelper.setTelegramId(context.account.peerId.id._internalGetInt64Value())
         
-        Task {
-            let initAiChatUseCase = AiChatTgHelper.resolveInitAiChatUseCase()
-            try await initAiChatUseCase()
-        }
-        
-        if #available(iOS 15.0, *) {
-            Task {
-                let checkAiPremiumSubUseCase = AiChatTgHelper.resolveCheckAiPremiumSubUseCase()
-                await checkAiPremiumSubUseCase()
-                
-                let getCurrentUserUseCase = RepoUserTgHelper.resolveGetCurrentUserUseCase()
-                if getCurrentUserUseCase.isAuthorized() {
-                    let refreshAiBillingInfoUseCase = AiChatTgHelper.resolveRefreshAiBillingInfoUseCase()
-                    try await refreshAiBillingInfoUseCase()
-                }
-            }
-        }
-        
         // Localization
         let _ = context.sharedContext.accountManager.sharedData(keys: [SharedDataKeys.localizationSettings]).start { sharedData in
             if let localizationSettings = sharedData.entries[SharedDataKeys.localizationSettings]?.get(LocalizationSettings.self) {

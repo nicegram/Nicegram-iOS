@@ -218,13 +218,17 @@ public class ChatMessageGiveawayBubbleContentNode: ChatMessageBubbleContentNode 
             let backgroundColor = incoming ? item.presentationData.theme.theme.chat.message.incoming.bubble.withoutWallpaper.fill.first! : item.presentationData.theme.theme.chat.message.outgoing.bubble.withoutWallpaper.fill.first!
             let textColor = incoming ? item.presentationData.theme.theme.chat.message.incoming.primaryTextColor : item.presentationData.theme.theme.chat.message.outgoing.primaryTextColor
             let accentColor = incoming ? item.presentationData.theme.theme.chat.message.incoming.accentTextColor : item.presentationData.theme.theme.chat.message.outgoing.accentTextColor
+            var badgeTextColor: UIColor = .white
+            if badgeTextColor.distance(to: accentColor) < 1 {
+                badgeTextColor = incoming ? item.presentationData.theme.theme.chat.message.incoming.bubble.withoutWallpaper.fill.first! : item.presentationData.theme.theme.chat.message.outgoing.bubble.withoutWallpaper.fill.first!
+            }
             
             var updatedBadgeImage: UIImage?
             if themeUpdated {
                 updatedBadgeImage = generateStretchableFilledCircleImage(diameter: 21.0, color: accentColor, strokeColor: backgroundColor, strokeWidth: 1.0 + UIScreenPixel, backgroundColor: nil)
             }
             
-            let badgeString = NSAttributedString(string: "X\(giveaway?.quantity ?? 1)", font: Font.with(size: 10.0, design: .round , weight: .bold, traits: .monospacedNumbers), textColor: .white)
+            let badgeString = NSAttributedString(string: "X\(giveaway?.quantity ?? 1)", font: Font.with(size: 10.0, design: .round , weight: .bold, traits: .monospacedNumbers), textColor: badgeTextColor)
             
             let prizeTitleString = NSAttributedString(string: item.presentationData.strings.Chat_Giveaway_Message_PrizeTitle, font: titleFont, textColor: textColor)
             var prizeTextString: NSAttributedString?
@@ -315,7 +319,7 @@ public class ChatMessageGiveawayBubbleContentNode: ChatMessageBubbleContentNode 
                 let (participantsTitleLayout, participantsTitleApply) = makeParticipantsTitleLayout(TextNodeLayoutArguments(attributedString: participantsTitleString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: maxTextWidth, height: CGFloat.greatestFiniteMagnitude), alignment: .center, cutout: nil, insets: UIEdgeInsets()))
                 let (participantsTextLayout, participantsTextApply) = makeParticipantsTextLayout(TextNodeLayoutArguments(attributedString: participantsTextString, backgroundColor: nil, maximumNumberOfLines: 5, truncationType: .end, constrainedSize: CGSize(width: maxTextWidth, height: CGFloat.greatestFiniteMagnitude), alignment: .center, cutout: nil, insets: UIEdgeInsets()))
                 
-                let (countriesTextLayout, countriesTextApply) = makeCountriesTextLayout(TextNodeLayoutArguments(attributedString: countriesTextString, backgroundColor: nil, maximumNumberOfLines: 5, truncationType: .end, constrainedSize: CGSize(width: maxTextWidth, height: CGFloat.greatestFiniteMagnitude), alignment: .center, cutout: nil, insets: UIEdgeInsets()))
+                let (countriesTextLayout, countriesTextApply) = makeCountriesTextLayout(TextNodeLayoutArguments(attributedString: countriesTextString, backgroundColor: nil, maximumNumberOfLines: 0, truncationType: .end, constrainedSize: CGSize(width: maxTextWidth, height: CGFloat.greatestFiniteMagnitude), alignment: .center, cutout: nil, insets: UIEdgeInsets()))
                 
                 let (dateTitleLayout, dateTitleApply) = makeDateTitleLayout(TextNodeLayoutArguments(attributedString: dateTitleString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: maxTextWidth, height: CGFloat.greatestFiniteMagnitude), alignment: .center, cutout: nil, insets: UIEdgeInsets()))
                 let (dateTextLayout, dateTextApply) = makeDateTextLayout(TextNodeLayoutArguments(attributedString: dateTextString, backgroundColor: nil, maximumNumberOfLines: 5, truncationType: .end, constrainedSize: CGSize(width: maxTextWidth, height: CGFloat.greatestFiniteMagnitude), alignment: .center, cutout: nil, insets: UIEdgeInsets()))
@@ -433,7 +437,7 @@ public class ChatMessageGiveawayBubbleContentNode: ChatMessageBubbleContentNode 
                         }
                     }
                 }
-                let (channelsWidth, continueChannelLayout) = makeChannelsLayout(item.context, 240.0, channelPeers, accentColor, accentColor.withAlphaComponent(0.1))
+                let (channelsWidth, continueChannelLayout) = makeChannelsLayout(item.context, 220.0, channelPeers, accentColor, accentColor.withAlphaComponent(0.1), incoming, item.presentationData.theme.theme.overallDarkAppearance)
                 maxContentWidth = max(maxContentWidth, channelsWidth)
                 maxContentWidth += 30.0
                 
@@ -645,11 +649,11 @@ private final class PeerButtonsStackNode: ASDisplayNode {
     var buttonNodes: [PeerButtonNode] = []
     var openPeer: (EnginePeer) -> Void = { _ in }
     
-    static func asyncLayout(_ current: PeerButtonsStackNode) -> (_ context: AccountContext, _ width: CGFloat, _ peers: [EnginePeer], _ titleColor: UIColor, _ backgroundColor: UIColor) -> (CGFloat, (CGFloat) -> (CGSize, () -> PeerButtonsStackNode)) {
+    static func asyncLayout(_ current: PeerButtonsStackNode) -> (_ context: AccountContext, _ width: CGFloat, _ peers: [EnginePeer], _ titleColor: UIColor, _ backgroundColor: UIColor, _ incoming: Bool, _ dark: Bool) -> (CGFloat, (CGFloat) -> (CGSize, () -> PeerButtonsStackNode)) {
         let currentChannelButtons = current.buttonNodes.isEmpty ? nil : current.buttonNodes
         let maybeMakeChannelButtons = current.buttonNodes.map(PeerButtonNode.asyncLayout)
         
-        return { context, width, peers, titleColor, backgroundColor in
+        return { context, width, peers, titleColor, backgroundColor, incoming, dark in
             let targetNode = current
             
             var buttonNodes: [PeerButtonNode] = []
@@ -677,6 +681,13 @@ private final class PeerButtonsStackNode: ASDisplayNode {
             for i in 0 ..< makeChannelButtonLayouts.count {
                 let peer = peers[i]
                 let makeChannelButtonLayout = makeChannelButtonLayouts[i]
+                
+                var titleColor = titleColor
+                var backgroundColor = backgroundColor
+                if incoming, let nameColor = peer.nameColor {
+                    titleColor = context.peerNameColors.get(nameColor, dark: dark).main
+                    backgroundColor = titleColor.withAlphaComponent(0.1)
+                }
                 
                 let (buttonWidth, buttonContinue) = makeChannelButtonLayout(context, width, peer, titleColor, backgroundColor)
                 sizes.append(CGSize(width: buttonWidth, height: buttonHeight))

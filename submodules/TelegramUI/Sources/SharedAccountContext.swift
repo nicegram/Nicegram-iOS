@@ -1693,6 +1693,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         }, saveMediaToFiles: { _ in
         }, openNoAdsDemo: {
         }, displayGiveawayParticipationStatus: { _ in
+        }, openPremiumStatusInfo: { _, _, _, _ in
         }, requestMessageUpdate: { _, _ in
         }, cancelInteractiveKeyboardGestures: {
         }, dismissTextInput: {
