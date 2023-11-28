@@ -53,6 +53,7 @@ import NGAiChatUI
 import NGWebUtils
 import NGStrings
 import NGUI
+import NGCore
 import NGData
 import NGEnv
 import NGLab
@@ -8791,8 +8792,8 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
             case .support:
                 // MARK: Nicegram GermanSupport
                 if self.presentationData.strings.baseLanguageCode.lowercased().contains("de"),
-                   let url = URL(string: "ncg://resolve?domain=EinleitungHilfeTelegram") {
-                    UIApplication.shared.open(url)
+                   let url = URL(string: "https://t.me/EinleitungHilfeTelegram") {
+                    CoreContainer.shared.urlOpener().open(url)
                     break
                 }
                 //

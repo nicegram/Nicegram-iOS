@@ -31,6 +31,7 @@ import NGWebUtils
 import NGAiChatUI
 import NGCardUI
 import NGAppCache
+import NGCore
 import var NGCoreUI.strings
 import NGDoubleBottom
 import NGQuickReplies
@@ -543,7 +544,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: section)
         case let .unblock(text, url):
             return ItemListActionItem(presentationData: presentationData, title: text, kind: .neutral, alignment: .natural, sectionId: section, style: .blocks) {
-                UIApplication.shared.openURL(url)
+                CoreContainer.shared.urlOpener().open(url)
             }
         case let .Account(text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: section)

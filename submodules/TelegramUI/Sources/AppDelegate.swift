@@ -2754,7 +2754,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             let userInfo = response.notification.request.content.userInfo
             if let nicegramDeeplink = userInfo["nicegramDeeplink"] as? String,
                let url = URL(string: nicegramDeeplink) {
-                UIApplication.shared.open(url)
+                CoreContainer.shared.urlOpener().open(url)
                 completionHandler()
                 return
             }
