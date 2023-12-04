@@ -586,7 +586,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
     var loadStickerSaveStatus: MediaId?
     var loadCopyMediaResource: MediaResource?
     var isAction = false
-    var isGiveawayLaunch = false
+    var isGiveawayServiceMessage = false
     var diceEmoji: String?
     if messages.count == 1 {
         for media in messages[0].media {
@@ -601,8 +601,13 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                 }
             } else if media is TelegramMediaAction || media is TelegramMediaExpiredContent {
                 isAction = true
-                if let action = media as? TelegramMediaAction, case .giveawayLaunched = action.action {
-                    isGiveawayLaunch = true
+                if let action = media as? TelegramMediaAction {
+                    switch action.action {
+                    case .giveawayLaunched, .giveawayResults:
+                        isGiveawayServiceMessage = true
+                    default:
+                        break
+                    }
                 }
             } else if let image = media as? TelegramMediaImage {
                 if !messages[0].containsSecretMedia {
@@ -664,7 +669,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
         canPin = false
     }
     
-    if isGiveawayLaunch {
+    if isGiveawayServiceMessage {
         canReply = false
     }
     

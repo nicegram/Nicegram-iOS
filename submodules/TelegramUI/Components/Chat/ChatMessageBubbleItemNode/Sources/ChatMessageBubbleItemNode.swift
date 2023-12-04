@@ -88,6 +88,8 @@ import ChatMessageUnsupportedBubbleContentNode
 import ChatMessageWallpaperBubbleContentNode
 import ChatMessageGiftBubbleContentNode
 import ChatMessageGiveawayBubbleContentNode
+import ChatMessageJoinedChannelBubbleContentNode
+import UIKitRuntimeUtils
 
 private struct BubbleItemAttributes {
     var isAttachment: Bool
@@ -206,6 +208,8 @@ private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> ([
                     result.append((message, ChatMessageWallpaperBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
                 } else if case .giftCode = action.action {
                     result.append((message, ChatMessageGiftBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
+                } else if case .joinedChannel = action.action {
+                    result.append((message, ChatMessageJoinedChannelBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
                 } else {
                     result.append((message, ChatMessageActionBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
                 }
@@ -595,7 +599,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
     private var backgroundType: ChatMessageBackgroundType?
     
     private struct HighlightedState: Equatable {
-        var quote: String?
+        var quote: ChatInterfaceHighlightedState.Quote?
     }
     private var highlightedState: HighlightedState?
     
@@ -1383,7 +1387,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     ignoreForward = true
                     effectiveAuthor = forwardInfo.author
                     if effectiveAuthor == nil, let authorSignature = forwardInfo.authorSignature  {
-                        effectiveAuthor = TelegramUser(id: PeerId(namespace: Namespaces.Peer.Empty, id: PeerId.Id._internalFromInt64Value(Int64(authorSignature.persistentHashValue % 32))), accessHash: nil, firstName: authorSignature, lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil)
+                        effectiveAuthor = TelegramUser(id: PeerId(namespace: Namespaces.Peer.Empty, id: PeerId.Id._internalFromInt64Value(Int64(authorSignature.persistentHashValue % 32))), accessHash: nil, firstName: authorSignature, lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil)
                     }
                 }
                 displayAuthorInfo = !mergedTop.merged && incoming && effectiveAuthor != nil
@@ -1399,7 +1403,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 displayAuthorInfo = !mergedTop.merged && incoming
             } else if let forwardInfo = item.content.firstMessage.forwardInfo, forwardInfo.flags.contains(.isImported), let authorSignature = forwardInfo.authorSignature {
                 ignoreForward = true
-                effectiveAuthor = TelegramUser(id: PeerId(namespace: Namespaces.Peer.Empty, id: PeerId.Id._internalFromInt64Value(Int64(authorSignature.persistentHashValue % 32))), accessHash: nil, firstName: authorSignature, lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil)
+                effectiveAuthor = TelegramUser(id: PeerId(namespace: Namespaces.Peer.Empty, id: PeerId.Id._internalFromInt64Value(Int64(authorSignature.persistentHashValue % 32))), accessHash: nil, firstName: authorSignature, lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil)
                 displayAuthorInfo = !mergedTop.merged && incoming
             } else if let adAttribute = item.content.firstMessage.adAttribute, let author = item.content.firstMessage.author {
                 ignoreForward = true
@@ -1639,6 +1643,10 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
         var hasInstantVideo = false
         for contentNodeItemValue in contentNodeMessagesAndClasses {
             let contentNodeItem = contentNodeItemValue as (message: Message, type: AnyClass, attributes: ChatMessageEntryAttributes, bubbleAttributes: BubbleItemAttributes)
+            if contentNodeItem.type == ChatMessageJoinedChannelBubbleContentNode.self {
+                maximumContentWidth = baseWidth
+                break
+            }
             if contentNodeItem.type == ChatMessageGiveawayBubbleContentNode.self {
                 maximumContentWidth = min(305.0, maximumContentWidth)
                 break
@@ -1961,7 +1969,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
         var currentCredibilityIcon: EmojiStatusComponent.Content?
         
         var initialDisplayHeader = true
-        if hidesHeaders {
+        if hidesHeaders || item.message.adAttribute != nil {
             initialDisplayHeader = false
         } else if let backgroundHiding, case .always = backgroundHiding {
             initialDisplayHeader = false
@@ -2236,6 +2244,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     let bodyAttributes = MarkdownAttributeSet(font: inlineBotPrefixFont, textColor: inlineBotNameColor)
                     let boldAttributes = MarkdownAttributeSet(font: nameFont, textColor: inlineBotNameColor)
                     attributedString = addAttributesToStringWithRanges(item.presentationData.strings.Conversation_MessageViaUser("@\(inlineBotNameString)")._tuple, body: bodyAttributes, argumentAttributes: [0: boldAttributes])
+                    viaSuffix = attributedString
                 } else {
                     attributedString = NSAttributedString(string: "", font: nameFont, textColor: inlineBotNameColor)
                 }
@@ -4191,16 +4200,26 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
             strongSelf.mainContextSourceNode.layoutUpdated?(strongSelf.mainContextSourceNode.bounds.size, animation)
         }
         
+        var hasMenuGesture = true
         if let subject = item.associatedData.subject, case let .messageOptions(_, _, info) = subject {
             if case .link = info {
             } else {
                 strongSelf.tapRecognizer?.isEnabled = false
             }
             strongSelf.replyRecognizer?.isEnabled = false
-            strongSelf.mainContainerNode.isGestureEnabled = false
-            for contentContainer in strongSelf.contentContainers {
-                contentContainer.containerNode.isGestureEnabled = false
+            hasMenuGesture = false
+        }
+        for media in item.message.media {
+            if let action = media as? TelegramMediaAction {
+                if case .joinedChannel = action.action {
+                    hasMenuGesture = false
+                    break
+                }
             }
+        }
+        strongSelf.mainContainerNode.isGestureEnabled = hasMenuGesture
+        for contentContainer in strongSelf.contentContainers {
+            contentContainer.containerNode.isGestureEnabled = hasMenuGesture
         }
         
         strongSelf.updateSearchTextHighlightState()
@@ -4413,7 +4432,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                                     if let replyInfoNode = self.replyInfoNode {
                                         progress = replyInfoNode.makeProgress()
                                     }
-                                    item.controllerInteraction.navigateToMessage(item.message.id, attribute.messageId, NavigateToMessageParams(timestamp: nil, quote: attribute.isQuote ? attribute.quote?.text : nil, progress: progress))
+                                    item.controllerInteraction.navigateToMessage(item.message.id, attribute.messageId, NavigateToMessageParams(timestamp: nil, quote: attribute.isQuote ? attribute.quote.flatMap { quote in NavigateToMessageParams.Quote(string: quote.text, offset: quote.offset) } : nil, progress: progress))
                                 }, contextMenuOnLongPress: true))
                             } else if let attribute = attribute as? ReplyStoryAttribute {
                                 return .action(InternalBubbleTapAction.Action({
@@ -4461,7 +4480,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                                 }
                                 item.controllerInteraction.navigateToMessage(item.message.id, sourceMessageId, NavigateToMessageParams(timestamp: nil, quote: nil))
                             } else if let peer = forwardInfo.source ?? forwardInfo.author {
-                                item.controllerInteraction.openPeer(EnginePeer(peer), peer is TelegramUser ? .info : .chat(textInputState: nil, subject: nil, peekData: nil), nil, .default)
+                                item.controllerInteraction.openPeer(EnginePeer(peer), peer is TelegramUser ? .info(nil) : .chat(textInputState: nil, subject: nil, peekData: nil), nil, .default)
                             } else if let _ = forwardInfo.authorSignature {
                                 item.controllerInteraction.displayMessageTooltip(item.message.id, item.presentationData.strings.Conversation_ForwardAuthorHiddenTooltip, forwardInfoNode, nil)
                             }
@@ -4481,7 +4500,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                             } else {
                                 if let peer = item.message.peers[story.storyId.peerId] {
                                     return .action(InternalBubbleTapAction.Action {
-                                        item.controllerInteraction.openPeer(EnginePeer(peer), peer is TelegramUser ? .info : .chat(textInputState: nil, subject: nil, peekData: nil), nil, .default)
+                                        item.controllerInteraction.openPeer(EnginePeer(peer), peer is TelegramUser ? .info(nil) : .chat(textInputState: nil, subject: nil, peekData: nil), nil, .default)
                                     })
                                 }
                             }
@@ -4535,7 +4554,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                                 let _ = (item.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
                                 |> deliverOnMainQueue).startStandalone(next: { peer in
                                     if let self = self, let item = self.item, let peer = peer {
-                                        item.controllerInteraction.openPeer(peer, openProfile ? .info : .chat(textInputState: nil, subject: nil, peekData: nil), nil, .default)
+                                        item.controllerInteraction.openPeer(peer, openProfile ? .info(nil) : .chat(textInputState: nil, subject: nil, peekData: nil), nil, .default)
                                     }
                                 })
                             }
@@ -5063,7 +5082,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
             
             for contentNode in self.contentNodes {
                 if let contentNode = contentNode as? ChatMessageTextBubbleContentNode {
-                    contentNode.updateQuoteTextHighlightState(text: nil, color: .clear, animated: true)
+                    contentNode.updateQuoteTextHighlightState(text: nil, offset: nil, color: .clear, animated: true)
                 }
             }
             
@@ -5116,7 +5135,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                                     var quoteFrame: CGRect?
                                     for contentNode in self.contentNodes {
                                         if let contentNode = contentNode as? ChatMessageTextBubbleContentNode {
-                                            contentNode.updateQuoteTextHighlightState(text: quote, color: highlightColor, animated: false)
+                                            contentNode.updateQuoteTextHighlightState(text: quote.string, offset: quote.offset, color: highlightColor, animated: false)
                                             var sourceFrame = backgroundHighlightNode.view.convert(backgroundHighlightNode.bounds, to: contentNode.view)
                                             if item.message.effectivelyIncoming(item.context.account.peerId) {
                                                 sourceFrame.origin.x += 6.0
@@ -5255,7 +5274,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
             if let channel = peer as? TelegramChannel, case .broadcast = channel.info {
                 item.controllerInteraction.openPeer(EnginePeer(peer), .chat(textInputState: nil, subject: nil, peekData: nil), messageReference, .default)
             } else {
-                item.controllerInteraction.openPeer(EnginePeer(peer), .info, messageReference, .groupParticipant(storyStats: nil, avatarHeaderNode: nil))
+                item.controllerInteraction.openPeer(EnginePeer(peer), .info(nil), messageReference, .groupParticipant(storyStats: nil, avatarHeaderNode: nil))
             }
         }
     }
@@ -5630,10 +5649,10 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
         return nil
     }
     
-    public func getQuoteRect(quote: String) -> CGRect? {
+    public func getQuoteRect(quote: String, offset: Int?) -> CGRect? {
         for contentNode in self.contentNodes {
             if let contentNode = contentNode as? ChatMessageTextBubbleContentNode {
-                if let result = contentNode.getQuoteRect(quote: quote) {
+                if let result = contentNode.getQuoteRect(quote: quote, offset: offset) {
                     return contentNode.view.convert(result, to: self.view)
                 }
             }
@@ -5654,5 +5673,76 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
     
     override public func contentFrame() -> CGRect {
         return self.backgroundNode.frame
+    }
+    
+    override public func makeContentSnapshot() -> (UIImage, CGRect)? {
+        UIGraphicsBeginImageContextWithOptions(self.backgroundNode.view.bounds.size, false, 0.0)
+        let context = UIGraphicsGetCurrentContext()!
+        
+        context.translateBy(x: -self.backgroundNode.frame.minX, y: -self.backgroundNode.frame.minY)
+        
+        context.translateBy(x: -self.mainContextSourceNode.contentNode.view.frame.minX, y: -self.mainContextSourceNode.contentNode.view.frame.minY)
+        for subview in self.mainContextSourceNode.contentNode.view.subviews {
+            if subview.isHidden || subview.alpha == 0.0 {
+                continue
+            }
+            if subview === self.backgroundWallpaperNode.view {
+                var targetPortalView: UIView?
+                for backgroundSubview0 in subview.subviews {
+                    for backgroundSubview1 in backgroundSubview0.subviews {
+                        if isViewPortalView(backgroundSubview1) {
+                            targetPortalView = backgroundSubview1
+                            break
+                        }
+                    }
+                }
+                
+                if let targetPortalView, let sourceView = getPortalViewSourceView(targetPortalView) {
+                    context.saveGState()
+                    context.translateBy(x: subview.frame.minX, y: subview.frame.minY)
+                    
+                    if let mask = subview.mask {
+                        let maskImage = generateImage(subview.bounds.size, rotatedContext: { size, context in
+                            context.clear(CGRect(origin: CGPoint(), size: size))
+                            UIGraphicsPushContext(context)
+                            mask.drawHierarchy(in: mask.frame, afterScreenUpdates: false)
+                            UIGraphicsPopContext()
+                        })
+                        if let cgImage = maskImage?.cgImage {
+                            context.translateBy(x: subview.frame.midX, y: subview.frame.midY)
+                            context.scaleBy(x: 1.0, y: -1.0)
+                            context.translateBy(x: -subview.frame.midX, y: -subview.frame.midY)
+                            
+                            context.clip(to: subview.bounds, mask: cgImage)
+                            
+                            context.translateBy(x: subview.frame.midX, y: subview.frame.midY)
+                            context.scaleBy(x: 1.0, y: -1.0)
+                            context.translateBy(x: -subview.frame.midX, y: -subview.frame.midY)
+                        }
+                    }
+                    
+                    let sourceLocalFrame = sourceView.convert(sourceView.bounds, to: subview)
+                    for sourceSubview in sourceView.subviews {
+                        sourceSubview.drawHierarchy(in: CGRect(origin: sourceLocalFrame.origin, size: sourceSubview.bounds.size), afterScreenUpdates: false)
+                    }
+                    
+                    context.resetClip()
+                    context.restoreGState()
+                } else {
+                    subview.drawHierarchy(in: subview.frame, afterScreenUpdates: false)
+                }
+            } else {
+                subview.drawHierarchy(in: subview.frame, afterScreenUpdates: false)
+            }
+        }
+        
+        let image = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        guard let image else {
+            return nil
+        }
+        
+        return (image, self.backgroundNode.frame)
     }
 }
