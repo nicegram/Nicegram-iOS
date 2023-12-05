@@ -263,9 +263,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         // MARK: Nicegram Assistant
         if #available(iOS 15.0, *) {
             let assistantController = NativeControllerWrapper(
-                controller: AssistantUITgHelper.assistantTab(
-                    close: nil
-                ),
+                controller: AssistantUITgHelper.assistantTab(),
                 accountContext: self.context,
                 adjustSafeArea: true
             )
