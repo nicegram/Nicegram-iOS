@@ -211,7 +211,7 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
                     present(c, a)
                 }, dismissInput: {
                     self?.dismissInput()
-                }, contentContext: nil, progress: nil)
+                }, contentContext: nil, progress: nil, completion: nil)
             })
         }, clearRecentSearch: { [weak self] in
             guard let strongSelf = self else {

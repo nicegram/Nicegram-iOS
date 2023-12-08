@@ -59,6 +59,7 @@ import DeviceProximity
 import MediaEditor
 import TelegramUIDeclareEncodables
 import ContextMenuScreen
+import MetalEngine
 
 #if canImport(AppCenter)
 import AppCenter
@@ -445,9 +446,12 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         self.window = window
         self.nativeWindow = window
         
+        hostView.containerView.layer.addSublayer(MetalEngine.shared.rootLayer)
+        
         if !UIDevice.current.isBatteryMonitoringEnabled {
             UIDevice.current.isBatteryMonitoringEnabled = true
         }
+        
         
         let clearNotificationsManager = ClearNotificationsManager(getNotificationIds: { completion in
             if #available(iOS 10.0, *) {
@@ -2754,7 +2758,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             let userInfo = response.notification.request.content.userInfo
             if let nicegramDeeplink = userInfo["nicegramDeeplink"] as? String,
                let url = URL(string: nicegramDeeplink) {
-                UIApplication.shared.open(url)
+                CoreContainer.shared.urlOpener().open(url)
                 completionHandler()
                 return
             }

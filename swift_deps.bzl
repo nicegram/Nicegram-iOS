@@ -36,7 +36,7 @@ def swift_dependencies():
     # branch: develop
     swift_package(
         name = "swiftpkg_nicegram_assistant_ios",
-        commit = "c3686ba5c4f4ad5eb0273bc9dfd5784e0971a5a2",
+        commit = "35b2c2c88c8d2cb3d25cfa95e15e588f90578994",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
     )
@@ -52,7 +52,7 @@ def swift_dependencies():
     # version: 5.15.5
     swift_package(
         name = "swiftpkg_sdwebimage",
-        commit = "1b9a2e902cbde5fdf362faa0f4fd76ea74d74305",
+        commit = "0383fd49fe4d9ae43f150f24693550ebe6ef0d14",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/SDWebImage/SDWebImage.git",
     )
@@ -76,7 +76,7 @@ def swift_dependencies():
     # version: 1.2.3
     swift_package(
         name = "swiftpkg_swift_argument_parser",
-        commit = "8f4d2753f0e4778c76d5f05ad16c74f707390531",
+        commit = "c8ed701b513cf5177118a175d85fbbbcd707ab41",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/apple/swift-argument-parser",
     )

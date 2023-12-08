@@ -10,6 +10,7 @@ import NGAnalytics
 import NGAssistantUI
 import NGAuth
 import NGCardUI
+import NGCore
 import class NGCoreUI.SharedLoadingView
 import NGModels
 import NGOnboarding
@@ -180,22 +181,19 @@ private extension NGDeeplinkHandler {
     
     @available(iOS 13.0, *)
     func handleLoginWithTelegram(url: URL) -> Bool {
-        let initTgLoginUseCase = AuthTgHelper.resolveInitTgLoginUseCase()
-        
-        SharedLoadingView.start()
-        // Retain initTgLoginUseCase
-        Task {
+        Task { @MainActor in
+            let initTgLoginUseCase = AuthTgHelper.resolveInitTgLoginUseCase()
+            
+            SharedLoadingView.start()
+            
             let result = await initTgLoginUseCase(source: .general)
             
-            await MainActor.run {
-                SharedLoadingView.stop()
-                
-                switch result {
-                case .success(let url):
-                    UIApplication.shared.open(url)
-                case .failure(_):
-                    break
-                }
+            SharedLoadingView.stop()
+            switch result {
+            case .success(let url):
+                CoreContainer.shared.urlOpener().open(url)
+            case .failure(_):
+                break
             }
         }
         return true
