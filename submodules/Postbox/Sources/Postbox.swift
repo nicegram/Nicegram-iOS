@@ -2358,12 +2358,24 @@ final class PostboxImpl {
                 }
             }
         }
+        let updatedCachedPeerData = self.cachedPeerDataTable.transactionUpdatedPeers()
         let transactionParticipationInTotalUnreadCountUpdates = self.peerNotificationSettingsTable.transactionParticipationInTotalUnreadCountUpdates(postbox: self, transaction: currentTransaction)
         
         let updatedMessageThreadPeerIds = self.messageHistoryThreadIndexTable.replay(threadsTable: self.messageHistoryThreadsTable, namespaces: self.seedConfiguration.chatMessagesNamespaces, updatedIds: self.messageHistoryThreadsTable.updatedIds)
         let alteredInitialPeerThreadsSummaries = self.peerThreadsSummaryTable.update(peerIds: updatedMessageThreadPeerIds.union(self.currentUpdatedPeerThreadCombinedStates), indexTable: self.messageHistoryThreadIndexTable, combinedStateTable: self.peerThreadCombinedStateTable, tagsSummaryTable: self.messageHistoryTagsSummaryTable)
         
-        self.chatListIndexTable.commitWithTransaction(postbox: self, currentTransaction: currentTransaction, alteredInitialPeerCombinedReadStates: alteredInitialPeerCombinedReadStates, updatedPeers: updatedPeers, transactionParticipationInTotalUnreadCountUpdates: transactionParticipationInTotalUnreadCountUpdates, alteredInitialPeerThreadsSummaries: alteredInitialPeerThreadsSummaries, updatedTotalUnreadStates: &self.currentUpdatedTotalUnreadStates, updatedGroupTotalUnreadSummaries: &self.currentUpdatedGroupTotalUnreadSummaries, currentUpdatedGroupSummarySynchronizeOperations: &self.currentUpdatedGroupSummarySynchronizeOperations)
+        self.chatListIndexTable.commitWithTransaction(
+            postbox: self,
+            currentTransaction: currentTransaction,
+            alteredInitialPeerCombinedReadStates: alteredInitialPeerCombinedReadStates,
+            updatedPeers: updatedPeers,
+            updatedCachedPeerData: updatedCachedPeerData,
+            transactionParticipationInTotalUnreadCountUpdates: transactionParticipationInTotalUnreadCountUpdates,
+            alteredInitialPeerThreadsSummaries: alteredInitialPeerThreadsSummaries,
+            updatedTotalUnreadStates: &self.currentUpdatedTotalUnreadStates,
+            updatedGroupTotalUnreadSummaries: &self.currentUpdatedGroupTotalUnreadSummaries,
+            currentUpdatedGroupSummarySynchronizeOperations: &self.currentUpdatedGroupSummarySynchronizeOperations
+        )
         
         self.peerTable.commitDependentTables()
         
@@ -3679,9 +3691,9 @@ final class PostboxImpl {
         }
     }
     
-    public func mergedOperationLogView(tag: PeerOperationLogTag, limit: Int) -> Signal<PeerMergedOperationLogView, NoError> {
+    public func mergedOperationLogView(tag: PeerOperationLogTag, filterByPeerId: PeerId?, limit: Int) -> Signal<PeerMergedOperationLogView, NoError> {
         return self.transactionSignal { subscriber, transaction in
-            let view = MutablePeerMergedOperationLogView(postbox: self, tag: tag, limit: limit)
+            let view = MutablePeerMergedOperationLogView(postbox: self, tag: tag, filterByPeerId: filterByPeerId, limit: limit)
             
             subscriber.putNext(PeerMergedOperationLogView(view))
             
@@ -4663,12 +4675,12 @@ public class Postbox {
         }
     }
 
-    public func mergedOperationLogView(tag: PeerOperationLogTag, limit: Int) -> Signal<PeerMergedOperationLogView, NoError> {
+    public func mergedOperationLogView(tag: PeerOperationLogTag, filterByPeerId: PeerId? = nil, limit: Int) -> Signal<PeerMergedOperationLogView, NoError> {
         return Signal { subscriber in
             let disposable = MetaDisposable()
 
             self.impl.with { impl in
-                disposable.set(impl.mergedOperationLogView(tag: tag, limit: limit).start(next: subscriber.putNext, error: subscriber.putError, completed: subscriber.putCompletion))
+                disposable.set(impl.mergedOperationLogView(tag: tag, filterByPeerId: filterByPeerId, limit: limit).start(next: subscriber.putNext, error: subscriber.putError, completed: subscriber.putCompletion))
             }
 
             return disposable

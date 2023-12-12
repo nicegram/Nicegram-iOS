@@ -48,10 +48,50 @@
       ]
     },
     {
+      "name": "Tapjoy",
+      "c99name": "Tapjoy",
+      "src_type": "binary",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Frameworks_Tapjoy.xcframework_Tapjoy",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
       "name": "CoreSwiftUI",
       "c99name": "CoreSwiftUI",
       "src_type": "swift",
       "label": "@swiftpkg_nicegram_assistant_ios//:Sources_CoreSwiftUI",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
+      "name": "FeatAmbassadors",
+      "c99name": "FeatAmbassadors",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatAmbassadors",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
+      "name": "FeatBilling",
+      "c99name": "FeatBilling",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatBilling",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
+      "name": "FeatChatBanner",
+      "c99name": "FeatChatBanner",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatChatBanner",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
         "nicegram-assistant"
@@ -92,6 +132,66 @@
       "c99name": "FeatPinnedChats",
       "src_type": "swift",
       "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPinnedChats",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
+      "name": "FeatPremium",
+      "c99name": "FeatPremium",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPremium",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
+      "name": "FeatPremiumUI",
+      "c99name": "FeatPremiumUI",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPremiumUI",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
+      "name": "FeatRewards",
+      "c99name": "FeatRewards",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatRewards",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
+      "name": "FeatRewardsUI",
+      "c99name": "FeatRewardsUI",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatRewardsUI",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
+      "name": "FeatTasks",
+      "c99name": "FeatTasks",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatTasks",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
+      "name": "FeatTasksUI",
+      "c99name": "FeatTasksUI",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatTasksUI",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
         "nicegram-assistant"
@@ -233,26 +333,6 @@
       "c99name": "NGGrumUI",
       "src_type": "swift",
       "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGGrumUI",
-      "package_identity": "nicegram-assistant-ios",
-      "product_memberships": [
-        "nicegram-assistant"
-      ]
-    },
-    {
-      "name": "NGPremium",
-      "c99name": "NGPremium",
-      "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGPremium",
-      "package_identity": "nicegram-assistant-ios",
-      "product_memberships": [
-        "nicegram-assistant"
-      ]
-    },
-    {
-      "name": "NGPremiumUI",
-      "c99name": "NGPremiumUI",
-      "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGPremiumUI",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
         "nicegram-assistant"
@@ -555,14 +635,15 @@
       "name": "nicegram-assistant",
       "type": "library",
       "target_labels": [
+        "@swiftpkg_nicegram_assistant_ios//:Sources_FeatChatBanner",
         "@swiftpkg_nicegram_assistant_ios//:Sources_FeatImagesHubUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPartners",
         "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPinnedChats",
+        "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPremiumUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChatUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGAssistantUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGCardUI",
-        "@swiftpkg_nicegram_assistant_ios//:Sources_NGEntryPoint",
-        "@swiftpkg_nicegram_assistant_ios//:Sources_NGPremiumUI"
+        "@swiftpkg_nicegram_assistant_ios//:Sources_NGEntryPoint"
       ]
     },
     {
@@ -700,9 +781,9 @@
       "name": "swiftpkg_floatingpanel",
       "identity": "floatingpanel",
       "remote": {
-        "commit": "dd238884bf85e96a4c6c2703fc2fc1ff0f5c7494",
+        "commit": "5b33d3d5ff1f50f4a2d64158ccfe8c07b5a3e649",
         "remote": "https://github.com/scenee/FloatingPanel",
-        "version": "2.8.0"
+        "version": "2.8.1"
       }
     },
     {
@@ -727,7 +808,7 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "f28250170cbb93bec05af53beca534af77ddc409",
+        "commit": "a9b33bd5307c9fe69fb30642122c4244b591c73f",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
         "branch": "prompts-api"
       }
@@ -745,9 +826,9 @@
       "name": "swiftpkg_sdwebimage",
       "identity": "sdwebimage",
       "remote": {
-        "commit": "fd1950de05a5ad77cb252fd88576c1e1809ee50d",
+        "commit": "e278c13e46e8d20c895c221e922c6ac6b72aaca9",
         "remote": "https://github.com/SDWebImage/SDWebImage.git",
-        "version": "5.18.4"
+        "version": "5.18.7"
       }
     },
     {
@@ -772,9 +853,9 @@
       "name": "swiftpkg_swift_argument_parser",
       "identity": "swift-argument-parser",
       "remote": {
-        "commit": "8f4d2753f0e4778c76d5f05ad16c74f707390531",
+        "commit": "c8ed701b513cf5177118a175d85fbbbcd707ab41",
         "remote": "https://github.com/apple/swift-argument-parser",
-        "version": "1.2.3"
+        "version": "1.3.0"
       }
     },
     {

@@ -185,6 +185,9 @@ private enum ApplicationSpecificGlobalNotice: Int32 {
     case displayStoryInteractionGuide = 51
     case dismissedPremiumAppIconsBadge = 52
     case replyQuoteTextSelectionTip = 53
+    case dismissedPremiumWallpapersBadge = 54
+    case dismissedPremiumColorsBadge = 55
+    case multipleReactionsSuggestion = 56
     
     var key: ValueBoxKey {
         let v = ValueBoxKey(length: 4)
@@ -450,9 +453,17 @@ private struct ApplicationSpecificNoticeKeys {
     static func dismissedPremiumAppIconsBadge() -> NoticeEntryKey {
         return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.dismissedPremiumAppIconsBadge.key)
     }
-    
     static func replyQuoteTextSelectionTip() -> NoticeEntryKey {
         return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.replyQuoteTextSelectionTip.key)
+    }
+    static func dismissedPremiumWallpapersBadge() -> NoticeEntryKey {
+        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.dismissedPremiumWallpapersBadge.key)
+    }
+    static func dismissedPremiumColorsBadge() -> NoticeEntryKey {
+        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.dismissedPremiumColorsBadge.key)
+    }
+    static func multipleReactionsSuggestion() -> NoticeEntryKey {
+        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.multipleReactionsSuggestion.key)
     }
 }
 
@@ -1771,5 +1782,74 @@ public struct ApplicationSpecificNotice {
             }
         }
         |> take(1)
+    }
+    
+    public static func setDismissedPremiumWallpapersBadge(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Never, NoError> {
+        return accountManager.transaction { transaction -> Void in
+            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
+                transaction.setNotice(ApplicationSpecificNoticeKeys.dismissedPremiumWallpapersBadge(), entry)
+            }
+        }
+        |> ignoreValues
+    }
+    
+    public static func dismissedPremiumWallpapersBadge(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Bool, NoError> {
+        return accountManager.noticeEntry(key: ApplicationSpecificNoticeKeys.dismissedPremiumWallpapersBadge())
+        |> map { view -> Bool in
+            if let _ = view.value?.get(ApplicationSpecificBoolNotice.self) {
+                return true
+            } else {
+                return false
+            }
+        }
+        |> take(1)
+    }
+    
+    public static func setDismissedPremiumColorsBadge(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Never, NoError> {
+        return accountManager.transaction { transaction -> Void in
+            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
+                transaction.setNotice(ApplicationSpecificNoticeKeys.dismissedPremiumColorsBadge(), entry)
+            }
+        }
+        |> ignoreValues
+    }
+    
+    public static func dismissedPremiumColorsBadge(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Bool, NoError> {
+        return accountManager.noticeEntry(key: ApplicationSpecificNoticeKeys.dismissedPremiumColorsBadge())
+        |> map { view -> Bool in
+            if let _ = view.value?.get(ApplicationSpecificBoolNotice.self) {
+                return true
+            } else {
+                return false
+            }
+        }
+        |> take(1)
+    }
+    
+    public static func getMultipleReactionsSuggestion(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Int32, NoError> {
+        return accountManager.transaction { transaction -> Int32 in
+            if let value = transaction.getNotice(ApplicationSpecificNoticeKeys.multipleReactionsSuggestion())?.get(ApplicationSpecificCounterNotice.self) {
+                return value.value
+            } else {
+                return 0
+            }
+        }
+    }
+    
+    public static func incrementMultipleReactionsSuggestion(accountManager: AccountManager<TelegramAccountManagerTypes>, count: Int = 1) -> Signal<Int, NoError> {
+        return accountManager.transaction { transaction -> Int in
+            var currentValue: Int32 = 0
+            if let value = transaction.getNotice(ApplicationSpecificNoticeKeys.multipleReactionsSuggestion())?.get(ApplicationSpecificCounterNotice.self) {
+                currentValue = value.value
+            }
+            let previousValue = currentValue
+            currentValue += Int32(count)
+
+            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+                transaction.setNotice(ApplicationSpecificNoticeKeys.multipleReactionsSuggestion(), entry)
+            }
+            
+            return Int(previousValue)
+        }
     }
 }

@@ -1,3 +1,4 @@
+import FeatPremium
 import Foundation
 import NGAppCache
 
@@ -130,7 +131,13 @@ public var VarNGSharedSettings = NGSharedSettings()
 
 
 public func isPremium() -> Bool {
-    return AppCache.haveValidSubscription
+    if #available(iOS 13.0, *) {
+        return PremiumContainer.shared
+            .getPremiumStatusUseCase()
+            .hasPremiumOnDeviceNonIsolated()
+    } else {
+        return false
+    }
 }
 
 public func usetrButton() -> [(Bool, [String])] {

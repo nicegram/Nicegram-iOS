@@ -6,8 +6,8 @@ import NGRemoteConfig
 import NGStrings
 import UndoUI
 //
-// MARK: Nicegram ImagesHub
-import FeatImagesHubUI
+// MARK: Nicegram ChatBanner
+import FeatChatBanner
 //
 import Foundation
 import UIKit
@@ -49,6 +49,7 @@ import ManagedDiceAnimationNode
 import ChatMessageTransitionNode
 import ChatLoadingNode
 import ChatRecentActionsController
+import UIKitRuntimeUtils
 
 final class VideoNavigationControllerDropContentItem: NavigationControllerDropContentItem {
     let itemNode: OverlayMediaItemNode
@@ -100,13 +101,10 @@ private struct ChatControllerNodeDerivedLayoutState {
 }
 
 class HistoryNodeContainer: ASDisplayNode {
-    private(set) var secretContainer: UIView?
-    public var isSecret: Bool = false {
+    var isSecret: Bool {
         didSet {
             if self.isSecret != oldValue {
-                if self.isNodeLoaded {
-                    (self.view as? UITextField)?.isSecureTextEntry = self.isSecret
-                }
+                setLayerDisableScreenshots(self.layer, self.isSecret)
             }
         }
     }
@@ -116,35 +114,9 @@ class HistoryNodeContainer: ASDisplayNode {
         
         super.init()
         
-        self.setViewBlock {
-            let captureProtectedView = UITextField(frame: CGRect())
-            captureProtectedView.isSecureTextEntry = self.isSecret
-            self.secretContainer = captureProtectedView.subviews.first
-            return captureProtectedView
+        if self.isSecret {
+            setLayerDisableScreenshots(self.layer, self.isSecret)
         }
-        
-        let _ = self.view
-    }
-    
-    override func addSubnode(_ subnode: ASDisplayNode) {
-        if let secretContainer = self.secretContainer {
-            secretContainer.addSubnode(subnode)
-        } else {
-            super.addSubnode(subnode)
-        }
-    }
-    
-    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        if let secretContainer = self.secretContainer {
-            return secretContainer.hitTest(point, with: event)
-        } else {
-            return super.hitTest(point, with: event)
-        }
-    }
-    
-    func updateSize(size: CGSize, transition: ContainedViewLayoutTransition) {
-        /*if let secretContainer = self.secretContainer {
-        }*/
     }
 }
 
@@ -172,7 +144,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
     let contentContainerNode: ASDisplayNode
     let contentDimNode: ASDisplayNode
     let backgroundNode: WallpaperBackgroundNode
-    let historyNode: ChatHistoryListNode
+    let historyNode: ChatHistoryListNodeImpl
     var blurredHistoryNode: ASImageNode?
     let historyNodeContainer: ASDisplayNode
     let loadingNode: ChatLoadingNode
@@ -268,8 +240,19 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
     }()
     //
     
-    // MARK: Nicegram ImagesHub
+    // MARK: Nicegram ChatBanner
     private let ngBannerNode = ASDisplayNode()
+    private lazy var ngBannerModel = {
+        if #available(iOS 13.0, *) {
+            BannerViewModel(
+                setBannerVisible: { [weak self] visible in
+                    self?.setNgBanner(hidden: !visible)
+                }
+            )
+        } else {
+            fatalError()
+        }
+    }()
     //
     
     let navigateButtons: ChatHistoryNavigationButtons
@@ -347,7 +330,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
     private var isLoadingValue: Bool = false
     private var isLoadingEarlier: Bool = false
     private func updateIsLoading(isLoading: Bool, earlier: Bool, animated: Bool) {
-        let useLoadingPlaceholder = "".isEmpty
+        let useLoadingPlaceholder = self.chatLocation.peerId?.namespace != Namespaces.Peer.CloudUser
         
         let updated = isLoading != self.isLoadingValue || (isLoading && earlier && !self.isLoadingEarlier)
         
@@ -564,7 +547,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                     
                     return (messages, Int32(messages.count), false)
                 }
-                source = .custom(messages: messages, messageId: messageIds.first ?? MessageId(peerId: PeerId(0), namespace: 0, id: 0), quote: reply.quote?.text, loadMore: nil)
+                source = .custom(messages: messages, messageId: messageIds.first ?? MessageId(peerId: PeerId(0), namespace: 0, id: 0), quote: reply.quote.flatMap { quote in ChatHistoryListSource.Quote(text: quote.text, offset: quote.offset) }, loadMore: nil)
             case let .link(link):
                 let messages = link.options
                 |> mapToSignal { options -> Signal<(ChatControllerSubject.LinkOptions, Peer, Message?, [StoryId: CodableEntry]), NoError> in
@@ -623,7 +606,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                         
                         var mappedQuote: EngineMessageReplyQuote?
                         if let quote = options.replyQuote {
-                            mappedQuote = EngineMessageReplyQuote(text: quote, entities: [], media: nil)
+                            mappedQuote = EngineMessageReplyQuote(text: quote, offset: nil, entities: [], media: nil)
                         }
                         
                         attributes.append(ReplyMessageAttribute(messageId: replyMessage.id, threadMessageId: nil, quote: mappedQuote, isQuote: mappedQuote != nil))
@@ -664,7 +647,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         }
 
         var getMessageTransitionNode: (() -> ChatMessageTransitionNodeImpl?)?
-        self.historyNode = ChatHistoryListNode(context: context, updatedPresentationData: controller?.updatedPresentationData ?? (context.sharedContext.currentPresentationData.with({ $0 }), context.sharedContext.presentationData), chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, tagMask: nil, source: source, subject: subject, controllerInteraction: controllerInteraction, selectedMessages: self.selectedMessagesPromise.get(), messageTransitionNode: {
+        self.historyNode = ChatHistoryListNodeImpl(context: context, updatedPresentationData: controller?.updatedPresentationData ?? (context.sharedContext.currentPresentationData.with({ $0 }), context.sharedContext.presentationData), chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, tagMask: nil, source: source, subject: subject, controllerInteraction: controllerInteraction, selectedMessages: self.selectedMessagesPromise.get(), messageTransitionNode: {
             return getMessageTransitionNode?()
         })
         self.historyNode.rotated = true
@@ -672,8 +655,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         //self.historyScrollingArea = SparseDiscreteScrollingArea()
         //self.historyNode.historyScrollingArea = self.historyScrollingArea
 
-        //self.historyNodeContainer = HistoryNodeContainer(isSecret: chatLocation.peerId?.namespace == Namespaces.Peer.SecretChat)
-        self.historyNodeContainer = ASDisplayNode()
+        self.historyNodeContainer = HistoryNodeContainer(isSecret: chatLocation.peerId?.namespace == Namespaces.Peer.SecretChat)
         
         self.historyNodeContainer.addSubnode(self.historyNode)
 
@@ -866,15 +848,13 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         }
         //
         
-        // MARK: Nicegram ImagesHub
+        // MARK: Nicegram ChatBanner
         if #available(iOS 15.0, *), let controller {
             self.addSubnode(self.ngBannerNode)
-            ImagesHubUITgHelper.showChatBanner(
-                view: self.ngBannerNode.view,
-                controller: controller,
-                close: { [weak self] in
-                    self?.setNgBanner(hidden: true)
-                }
+            ChatBannerTgHelper.show(
+                viewModel: ngBannerModel,
+                containerView: self.ngBannerNode.view,
+                containerController: controller
             )
         }
         self.ngBannerNode.isHidden = true
@@ -1056,20 +1036,31 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         })
     }
     
-    // MARK: Nicegram ImagesHub
+    // MARK: Nicegram ChatBanner
     @available(iOS 15.0, *)
     private func updateNgBannerVisibility() {
         guard let peer = self.chatPresentationInterfaceState.renderedPeer?.peer else {
             return
         }
         
-        let hasPornRestriction = peer.hasPornRestriction(
+        let isChannel = switch EnginePeer(peer) {
+        case .channel, .legacyGroup:
+            true
+        case .user, .secretChat:
+            false
+        }
+        let isPrivate = (peer.addressName == nil)
+        let isRestricted = peer.hasPornRestriction(
             contentSettings: self.context.currentContentSettings.with { $0 }
         )
         
-        let show = ImagesHubUITgHelper.shouldShowImagesHubInChat() && hasPornRestriction
-        
-        setNgBanner(hidden: !show)
+        ngBannerModel.set(
+            chatData: ChatData(
+                isChannel: isChannel,
+                isPrivate: isPrivate,
+                isRestricted: isRestricted
+            )
+        )
     }
     
     private func setNgBanner(hidden: Bool) {
@@ -1784,10 +1775,6 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         transition.updateBounds(node: self.historyNodeContainer, bounds: contentBounds)
         transition.updatePosition(node: self.historyNodeContainer, position: contentBounds.center)
         
-        if let historyNodeContainer = self.historyNodeContainer as? HistoryNodeContainer {
-            historyNodeContainer.updateSize(size: contentBounds.size, transition: transition)
-        }
-        
         transition.updateBounds(node: self.historyNode, bounds: CGRect(origin: CGPoint(), size: contentBounds.size))
         transition.updatePosition(node: self.historyNode, position: CGPoint(x: contentBounds.size.width / 2.0, y: contentBounds.size.height / 2.0))
         if let blurredHistoryNode = self.blurredHistoryNode {
@@ -2153,8 +2140,8 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         )
         //
         
-        // MARK: Nicegram ImagesHub
-        let bannerHeight = ImagesHubUITgHelper.chatBannerHeight
+        // MARK: Nicegram ChatBanner
+        let bannerHeight = ChatBannerTgHelper.bannerHeight
         
         transition.updateFrame(
             node: self.ngBannerNode,
@@ -2645,7 +2632,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
             
             let themeUpdated = presentationReadyUpdated || (self.chatPresentationInterfaceState.theme !== chatPresentationInterfaceState.theme)
             
-            self.backgroundNode.update(wallpaper: chatPresentationInterfaceState.chatWallpaper)
+            self.backgroundNode.update(wallpaper: chatPresentationInterfaceState.chatWallpaper, animated: true)
             
             self.historyNode.verticalScrollIndicatorColor = UIColor(white: 0.5, alpha: 0.8)
             self.loadingPlaceholderNode?.updatePresentationInterfaceState(chatPresentationInterfaceState)
@@ -2755,7 +2742,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                 showUnblockButton = false
             }
             
-            // MARK: Nicegram ImagesHub
+            // MARK: Nicegram ChatBanner
             if #available(iOS 15.0, *) {
                 updateNgBannerVisibility()
             }
@@ -3923,7 +3910,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
 
     final class SnapshotState {
         let backgroundNode: WallpaperBackgroundNode
-        fileprivate let historySnapshotState: ChatHistoryListNode.SnapshotState
+        fileprivate let historySnapshotState: ChatHistoryListNodeImpl.SnapshotState
         let titleViewSnapshotState: ChatTitleView.SnapshotState?
         let avatarSnapshotState: ChatAvatarNavigationNode.SnapshotState?
         let navigationButtonsSnapshotState: ChatHistoryNavigationButtons.SnapshotState
@@ -3934,7 +3921,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
 
         fileprivate init(
             backgroundNode: WallpaperBackgroundNode,
-            historySnapshotState: ChatHistoryListNode.SnapshotState,
+            historySnapshotState: ChatHistoryListNodeImpl.SnapshotState,
             titleViewSnapshotState: ChatTitleView.SnapshotState?,
             avatarSnapshotState: ChatAvatarNavigationNode.SnapshotState?,
             navigationButtonsSnapshotState: ChatHistoryNavigationButtons.SnapshotState,

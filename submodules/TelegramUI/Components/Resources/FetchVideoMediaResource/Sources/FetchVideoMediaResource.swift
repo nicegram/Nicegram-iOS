@@ -857,11 +857,16 @@ private extension MediaEditorValues {
             videoIsMuted: false,
             videoIsFullHd: true,
             videoIsMirrored: false,
+            videoVolume: 1.0,
             additionalVideoPath: nil,
+            additionalVideoIsDual: false,
             additionalVideoPosition: nil,
             additionalVideoScale: nil,
             additionalVideoRotation: nil,
             additionalVideoPositionChanges: [],
+            additionalVideoTrimRange: nil,
+            additionalVideoOffset: nil,
+            additionalVideoVolume: nil,
             drawing: nil,
             entities: [],
             toolValues: [:],
@@ -886,6 +891,11 @@ private extension MediaEditorValues {
         if let paintingData = legacyAdjustments.paintingData {
             if let entitiesData = paintingData.entitiesData {
                 entities = decodeCodableDrawingEntities(data: entitiesData)
+                
+                let hasAnimation = entities.first(where: { $0.entity.isAnimated }) != nil
+                if !hasAnimation {
+                    entities = []
+                }
             }
             if let imagePath = paintingData.imagePath, let image = UIImage(contentsOfFile: imagePath) {
                 drawing = image
@@ -988,11 +998,16 @@ private extension MediaEditorValues {
             videoIsMuted: legacyAdjustments.sendAsGif,
             videoIsFullHd: true,
             videoIsMirrored: false,
+            videoVolume: 1.0,
             additionalVideoPath: nil,
+            additionalVideoIsDual: false,
             additionalVideoPosition: nil,
             additionalVideoScale: nil,
             additionalVideoRotation: nil,
             additionalVideoPositionChanges: [],
+            additionalVideoTrimRange: nil,
+            additionalVideoOffset: nil,
+            additionalVideoVolume: nil,
             drawing: drawing,
             entities: entities,
             toolValues: toolValues,

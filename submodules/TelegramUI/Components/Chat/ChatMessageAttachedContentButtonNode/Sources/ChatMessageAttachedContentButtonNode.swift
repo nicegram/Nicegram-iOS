@@ -7,7 +7,7 @@ import ChatPresentationInterfaceState
 import ShimmerEffect
 
 private let buttonFont = Font.semibold(14.0)
-private let sharedBackgroundImage = generateStretchableFilledCircleImage(radius: 4.0, color: UIColor.white)?.withRenderingMode(.alwaysTemplate)
+private let sharedBackgroundImage = generateStretchableFilledCircleImage(radius: 6.0, color: UIColor.white)?.withRenderingMode(.alwaysTemplate)
 
 public final class ChatMessageAttachedContentButtonNode: HighlightTrackingButtonNode {
     private let textNode: TextNode
@@ -60,7 +60,7 @@ public final class ChatMessageAttachedContentButtonNode: HighlightTrackingButton
             shimmerEffectNode = current
         } else {
             shimmerEffectNode = ShimmerEffectForegroundNode()
-            shimmerEffectNode.cornerRadius = 5.0
+            shimmerEffectNode.cornerRadius = 6.0
             self.insertSubnode(shimmerEffectNode, at: 0)
             self.shimmerEffectNode = shimmerEffectNode
         }
@@ -78,7 +78,7 @@ public final class ChatMessageAttachedContentButtonNode: HighlightTrackingButton
             return
         }
         self.shimmerEffectNode = nil
-        shimmerEffectNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, completion: { [weak shimmerEffectNode] _ in
+        shimmerEffectNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false, completion: { [weak shimmerEffectNode] _ in
             shimmerEffectNode?.removeFromSupernode()
         })
     }

@@ -16,6 +16,7 @@ import TextFormat
 import ChatMessageItemView
 import ChatMessageBubbleItemNode
 import TelegramNotices
+import ChatMessageWebpageBubbleContentNode
 
 private enum OptionsId: Hashable {
     case reply
@@ -302,7 +303,7 @@ private func generateChatReplyOptionItems(selfController: ChatControllerImpl, ch
         var quote: EngineMessageReplyQuote?
         let trimmedText = trimStringWithEntities(string: textSelection.text, entities: textSelection.entities, maxLength: quoteMaxLength(appConfig: selfController.context.currentAppConfiguration.with({ $0 })))
         if !trimmedText.string.isEmpty {
-            quote = EngineMessageReplyQuote(text: trimmedText.string, entities: trimmedText.entities, media: nil)
+            quote = EngineMessageReplyQuote(text: trimmedText.string, offset: textSelection.offset, entities: trimmedText.entities, media: nil)
         }
         
         selfController.updateChatPresentationInterfaceState(animated: false, interactive: true, { $0.updatedInterfaceState({ $0.withUpdatedReplyMessageSubject(ChatInterfaceState.ReplyMessageSubject(messageId: replySubject.messageId, quote: quote)).withoutSelectionState() }) })
@@ -367,7 +368,7 @@ private func generateChatReplyOptionItems(selfController: ChatControllerImpl, ch
                                 var quote: EngineMessageReplyQuote?
                                 let trimmedText = trimStringWithEntities(string: textSelection.text, entities: textSelection.entities, maxLength: quoteMaxLength(appConfig: selfController.context.currentAppConfiguration.with({ $0 })))
                                 if !trimmedText.string.isEmpty {
-                                    quote = EngineMessageReplyQuote(text: trimmedText.string, entities: trimmedText.entities, media: nil)
+                                    quote = EngineMessageReplyQuote(text: trimmedText.string, offset: textSelection.offset, entities: trimmedText.entities, media: nil)
                                 }
                                 
                                 selfController.updateChatPresentationInterfaceState(animated: false, interactive: true, { $0.updatedInterfaceState({ $0.withUpdatedReplyMessageSubject(ChatInterfaceState.ReplyMessageSubject(messageId: replySubject.messageId, quote: quote)).withoutSelectionState() }) })
@@ -492,7 +493,7 @@ private func chatReplyOptions(selfController: ChatControllerImpl, sourceNode: AS
     
     var replyQuote: ChatControllerSubject.MessageOptionsInfo.Quote?
     if let quote = replySubject.quote {
-        replyQuote = ChatControllerSubject.MessageOptionsInfo.Quote(messageId: replySubject.messageId, text: quote.text)
+        replyQuote = ChatControllerSubject.MessageOptionsInfo.Quote(messageId: replySubject.messageId, text: quote.text, offset: quote.offset)
     }
     selectionState.set(selfController.context.account.postbox.messagesAtIds([replySubject.messageId])
     |> map { messages -> ChatControllerSubject.MessageOptionsInfo.SelectionState in
@@ -710,7 +711,13 @@ private func chatLinkOptions(selfController: ChatControllerImpl, sourceNode: ASD
         
         var largeMedia = false
         if webpageHasLargeMedia {
-            largeMedia = urlPreview.largeMedia ?? true
+            if let value = urlPreview.largeMedia {
+                largeMedia = value
+            } else if case let .Loaded(content) = urlPreview.webPage.content {
+                largeMedia = !defaultWebpageImageSizeIsSmall(webpage: content)
+            } else {
+                largeMedia = true
+            }
         } else {
             largeMedia = false
         }

@@ -396,6 +396,7 @@ swift_library(
         "//submodules/DrawingUI:DrawingUIResources",
         "//submodules/TelegramUI:TelegramUIResources",
         "//submodules/TelegramUI:TelegramUIAssets",
+        "//submodules/TelegramUI/Components/Calls/CallScreen:Assets",
         ":GeneratedPresentationStrings/Resources/PresentationStrings.data",
         ":GoogleService-Info",
     ] + NGRESOURCES,
@@ -1804,6 +1805,14 @@ ios_extension(
     ],
 )
 
+# MARK: Nicegram
+nicegram_queries_schemes = """
+<string>appesim</string>
+<string>com.sticker.studio</string>
+<string>inlab</string>
+<string>plnt</string>
+"""
+
 plist_fragment(
     name = "TelegramInfoPlist",
     extension = "plist",
@@ -1832,6 +1841,7 @@ plist_fragment(
     <false/>
     <key>LSApplicationQueriesSchemes</key>
     <array>
+        {nicegram_queries_schemes}
         <string>instagram</string>
         <string>comgooglemaps-x-callback</string>
         <string>foursquare</string>
@@ -1976,6 +1986,7 @@ plist_fragment(
     <key>UIApplicationSupportsIndirectInputEvents</key>
     <true/>
     """.format(
+        nicegram_queries_schemes = nicegram_queries_schemes,
         telegram_bundle_id = telegram_bundle_id,
     )
 )
@@ -2069,12 +2080,11 @@ xcodeproj(
         "Debug": {
             "//command_line_option:compilation_mode": "dbg",
         },
-        #"Release": {
-        #    "//command_line_option:compilation_mode": "opt",
-        #},
+        "Release": {
+            "//command_line_option:compilation_mode": "opt",
+        },
     },
     default_xcode_configuration = "Debug"
-
 )
 
 # Temporary targets used to simplify webrtc build tests

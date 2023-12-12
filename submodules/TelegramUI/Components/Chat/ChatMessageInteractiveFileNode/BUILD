@@ -5,7 +5,7 @@ NGDEPS = [
     "//Nicegram/NGTelegramIntegration:NGTelegramIntegration",
     "//Nicegram/NGTranslate:NGTranslate",
     "//Nicegram/NGUI:NGUI",
-    "@swiftpkg_nicegram_assistant_ios//:Sources_NGPremiumUI",
+    "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPremiumUI",
 ]
 
 swift_library(

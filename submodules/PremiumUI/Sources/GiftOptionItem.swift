@@ -304,12 +304,14 @@ class GiftOptionItemNode: ItemListRevealOptionsItemNode {
             let (labelLayout, labelApply) = makeLabelLayout(TextNodeLayoutArguments(attributedString: labelAttributedString, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width, height: .greatestFiniteMagnitude)))
             
             var textConstrainedWidth = params.width - leftInset - 8.0 - editingOffset - rightInset - labelLayout.size.width - avatarInset
+            var subtitleConstrainedWidth = textConstrainedWidth
             if let label = item.label, case .semitransparent = label {
                 textConstrainedWidth -= 54.0
+                subtitleConstrainedWidth -= 30.0
             }
             
             let (titleLayout, titleApply) = makeTitleLayout(TextNodeLayoutArguments(attributedString: titleAttributedString, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: textConstrainedWidth, height: .greatestFiniteMagnitude)))
-            let (statusLayout, statusApply) = makeStatusLayout(TextNodeLayoutArguments(attributedString: statusAttributedString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: textConstrainedWidth, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
+            let (statusLayout, statusApply) = makeStatusLayout(TextNodeLayoutArguments(attributedString: statusAttributedString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: subtitleConstrainedWidth, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
             let (badgeLayout, badgeApply) = makeBadgeLayout(TextNodeLayoutArguments(attributedString: badgeAttributedString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: textConstrainedWidth, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
@@ -565,6 +567,15 @@ class GiftOptionItemNode: ItemListRevealOptionsItemNode {
                         transition.updateFrame(node: strongSelf.labelNode, frame: labelFrame)
                     } else {
                         transition.updateFrame(node: strongSelf.labelNode, frame: CGRect(origin: CGPoint(x: layoutSize.width - rightInset - labelLayout.size.width - 18.0, y: floorToScreenPixels((layout.contentSize.height - labelLayout.size.height) / 2.0)), size: labelLayout.size))
+                        
+                        if let labelIconNode = strongSelf.labelIconNode {
+                            strongSelf.labelIconNode = nil
+                            labelIconNode.removeFromSupernode()
+                        }
+                        if let labelBackgroundNode = strongSelf.labelBackgroundNode {
+                            strongSelf.labelBackgroundNode = nil
+                            labelBackgroundNode.removeFromSupernode()
+                        }
                     }
                     
                     if item.subtitleActive {

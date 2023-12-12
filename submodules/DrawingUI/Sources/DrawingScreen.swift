@@ -834,9 +834,14 @@ private final class DrawingScreenComponent: CombinedComponent {
         
         func updateColor(_ color: DrawingColor, animated: Bool = false) {
             self.currentColor = color
-            if let selectedEntity = self.selectedEntity {
-                selectedEntity.color = color
-                self.updateEntityView.invoke((selectedEntity.uuid, false))
+            if let selectedEntity = self.selectedEntity, let selectedEntityView = self.entityViewForEntity(selectedEntity) {
+                if let textEntity = selectedEntity as? DrawingTextEntity, let textEntityView = selectedEntityView as? DrawingTextEntityView {
+                    textEntity.setColor(color, range: textEntityView.selectedRange)
+                    textEntityView.update(animated: false, keepSelectedRange: true)
+                } else {
+                    selectedEntity.color = color
+                    selectedEntityView.update(animated: false)
+                }
             } else {
                 self.drawingState = self.drawingState.withUpdatedColor(color)
                 self.updateToolState.invoke(self.drawingState.currentToolState)
@@ -2460,6 +2465,9 @@ public class DrawingScreen: ViewController, TGPhotoDrawingInterfaceController, U
                 },
                 onTextEditingEnded: { _ in },
                 editEntity: { _ in },
+                shouldDeleteEntity: { _ in
+                    return true
+                },
                 getCurrentImage: { [weak controller] in
                     return controller?.getCurrentImage()
                 },
@@ -2981,7 +2989,8 @@ public final class DrawingToolsInteraction {
     private let onInteractionUpdated: (Bool) -> Void
     private let onTextEditingEnded: (Bool) -> Void
     private let editEntity: (DrawingEntity) -> Void
-        
+    private let shouldDeleteEntity: (DrawingEntity) -> Bool
+    
     public let getCurrentImage: () -> UIImage?
     private let getControllerNode: () -> ASDisplayNode?
     private let present: (ViewController, PresentationContextType, Any?) -> Void
@@ -3012,6 +3021,7 @@ public final class DrawingToolsInteraction {
         onInteractionUpdated: @escaping (Bool) -> Void,
         onTextEditingEnded: @escaping (Bool) -> Void,
         editEntity: @escaping (DrawingEntity) -> Void,
+        shouldDeleteEntity: @escaping (DrawingEntity) -> Bool,
         getCurrentImage: @escaping () -> UIImage?,
         getControllerNode: @escaping () -> ASDisplayNode?,
         present: @escaping (ViewController, PresentationContextType, Any?) -> Void,
@@ -3030,6 +3040,7 @@ public final class DrawingToolsInteraction {
         self.onInteractionUpdated = onInteractionUpdated
         self.onTextEditingEnded = onTextEditingEnded
         self.editEntity = editEntity
+        self.shouldDeleteEntity = shouldDeleteEntity
         self.getCurrentImage = getCurrentImage
         self.getControllerNode = getControllerNode
         self.present = present
@@ -3071,14 +3082,19 @@ public final class DrawingToolsInteraction {
                 return
             }
             
+            var isRectangleImage = false
             var isVideo = false
+            var isAdditional = false
             if let entity = entityView.entity as? DrawingStickerEntity {
-                if case .dualVideoReference = entity.content {
+                if case let .dualVideoReference(isAdditionalValue) = entity.content {
                     isVideo = true
+                    isAdditional = isAdditionalValue
+                } else if case let .image(_, type) = entity.content, case .rectangle = type {
+                    isRectangleImage = true
                 }
             }
             
-            guard !isVideo else {
+            guard !isVideo || isAdditional else {
                 return
             }
             
@@ -3086,7 +3102,9 @@ public final class DrawingToolsInteraction {
             var actions: [ContextMenuAction] = []
             actions.append(ContextMenuAction(content: .text(title: presentationData.strings.Paint_Delete, accessibilityLabel: presentationData.strings.Paint_Delete), action: { [weak self, weak entityView] in
                 if let self, let entityView {
-                    self.entitiesView.remove(uuid: entityView.entity.uuid, animated: true)
+                    if self.shouldDeleteEntity(entityView.entity) {
+                        self.entitiesView.remove(uuid: entityView.entity.uuid, animated: true)
+                    }
                 }
             }))
             if let entityView = entityView as? DrawingLocationEntityView {
@@ -3103,7 +3121,7 @@ public final class DrawingToolsInteraction {
                         self.entitiesView.selectEntity(entityView.entity)
                     }
                 }))
-            } else if entityView is DrawingStickerEntityView || entityView is DrawingBubbleEntityView {
+            } else if (entityView is DrawingStickerEntityView || entityView is DrawingBubbleEntityView) && !isVideo {
                 actions.append(ContextMenuAction(content: .text(title: presentationData.strings.Paint_Flip, accessibilityLabel: presentationData.strings.Paint_Flip), action: { [weak self] in
                     if let self {
                         self.flipSelectedEntity()
@@ -3129,6 +3147,21 @@ public final class DrawingToolsInteraction {
                     }))
                 }
             }
+            #if DEBUG
+            if isRectangleImage {
+                actions.append(ContextMenuAction(content: .text(title: "Cut Out", accessibilityLabel: "Cut Out"), action: { [weak self, weak entityView] in
+                    if let self, let entityView, let entity = entityView.entity as? DrawingStickerEntity, case let .image(image, _) = entity.content {
+                        let _ = (cutoutStickerImage(from: image)
+                        |> deliverOnMainQueue).start(next: { result in
+                            if let result {
+                                let newEntity = DrawingStickerEntity(content: .image(result, .sticker))
+                                self.insertEntity(newEntity)
+                            }
+                        })
+                    }
+                }))
+            }
+            #endif
             let entityFrame = entityView.convert(entityView.selectionBounds, to: node.view).offsetBy(dx: 0.0, dy: -6.0)
             let controller = makeContextMenuController(actions: actions)
             let bounds = node.bounds.insetBy(dx: 0.0, dy: 160.0)
@@ -3487,7 +3520,7 @@ public final class DrawingToolsInteraction {
                                     return
                                 }
                                 entityView.suspendEditing()
-                                self?.presentColorPicker(initialColor: textEntity.color, dismissed: {
+                                self?.presentColorPicker(initialColor: textEntity.color(in: entityView.selectedRange), dismissed: {
                                     entityView.resumeEditing()
                                 })
                             },

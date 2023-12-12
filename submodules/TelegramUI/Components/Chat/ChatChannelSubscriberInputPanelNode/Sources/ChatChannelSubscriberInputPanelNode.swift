@@ -1,3 +1,6 @@
+// MARK: Nicegram Tasks
+import FeatTasks
+//
 import Foundation
 import UIKit
 import AsyncDisplayKit
@@ -225,6 +228,18 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
                         strongSelf.isJoining = false
                     }
                 }
+                
+                // MARK: Nicegram Tasks
+                if #available(iOS 15.0, *) {
+                    Task {
+                        let tryCompleteOngoingSubscribeTaskUseCase = TasksContainer.shared.tryCompleteOngoingSubscribeTaskUseCase()
+                        
+                        await tryCompleteOngoingSubscribeTaskUseCase(
+                            channelId: peer.addressName ?? ""
+                        )
+                    }
+                }
+                //
             }).startStrict(error: { [weak self] error in
                 guard let strongSelf = self, let presentationInterfaceState = strongSelf.presentationInterfaceState, let peer = presentationInterfaceState.renderedPeer?.peer else {
                     return

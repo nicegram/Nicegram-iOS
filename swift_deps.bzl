@@ -12,7 +12,7 @@ def swift_dependencies():
     # version: 2.6.1
     swift_package(
         name = "swiftpkg_floatingpanel",
-        commit = "dd238884bf85e96a4c6c2703fc2fc1ff0f5c7494",
+        commit = "5b33d3d5ff1f50f4a2d64158ccfe8c07b5a3e649",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/scenee/FloatingPanel",
     )
@@ -36,7 +36,7 @@ def swift_dependencies():
     # branch: develop
     swift_package(
         name = "swiftpkg_nicegram_assistant_ios",
-        commit = "f28250170cbb93bec05af53beca534af77ddc409",
+        commit = "a9b33bd5307c9fe69fb30642122c4244b591c73f",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
     )
@@ -52,7 +52,7 @@ def swift_dependencies():
     # version: 5.15.5
     swift_package(
         name = "swiftpkg_sdwebimage",
-        commit = "fd1950de05a5ad77cb252fd88576c1e1809ee50d",
+        commit = "e278c13e46e8d20c895c221e922c6ac6b72aaca9",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/SDWebImage/SDWebImage.git",
     )
@@ -76,7 +76,7 @@ def swift_dependencies():
     # version: 1.2.3
     swift_package(
         name = "swiftpkg_swift_argument_parser",
-        commit = "8f4d2753f0e4778c76d5f05ad16c74f707390531",
+        commit = "c8ed701b513cf5177118a175d85fbbbcd707ab41",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/apple/swift-argument-parser",
     )

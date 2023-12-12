@@ -25,7 +25,7 @@ public struct UserLimitsConfiguration: Equatable {
     public let maxGiveawayChannelsCount: Int32
     public let maxGiveawayCountriesCount: Int32
     public let maxGiveawayPeriodSeconds: Int32
-    public let minChannelNameColorLevel: Int32
+    public let maxChannelRecommendationsCount: Int32
     
     public static var defaultValue: UserLimitsConfiguration {
         return UserLimitsConfiguration(
@@ -52,7 +52,7 @@ public struct UserLimitsConfiguration: Equatable {
             maxGiveawayChannelsCount: 10,
             maxGiveawayCountriesCount: 10,
             maxGiveawayPeriodSeconds: 86400 * 7,
-            minChannelNameColorLevel: 10
+            maxChannelRecommendationsCount: 10
         )
     }
 
@@ -80,7 +80,7 @@ public struct UserLimitsConfiguration: Equatable {
         maxGiveawayChannelsCount: Int32,
         maxGiveawayCountriesCount: Int32,
         maxGiveawayPeriodSeconds: Int32,
-        minChannelNameColorLevel: Int32
+        maxChannelRecommendationsCount: Int32
     ) {
         self.maxPinnedChatCount = maxPinnedChatCount
         self.maxArchivedPinnedChatCount = maxArchivedPinnedChatCount
@@ -105,7 +105,7 @@ public struct UserLimitsConfiguration: Equatable {
         self.maxGiveawayChannelsCount = maxGiveawayChannelsCount
         self.maxGiveawayCountriesCount = maxGiveawayCountriesCount
         self.maxGiveawayPeriodSeconds = maxGiveawayPeriodSeconds
-        self.minChannelNameColorLevel = minChannelNameColorLevel
+        self.maxChannelRecommendationsCount = maxChannelRecommendationsCount
     }
 }
 
@@ -153,6 +153,6 @@ extension UserLimitsConfiguration {
         self.maxGiveawayChannelsCount = getGeneralValue("giveaway_add_peers_max", orElse: defaultValue.maxGiveawayChannelsCount)
         self.maxGiveawayCountriesCount = getGeneralValue("giveaway_countries_max", orElse: defaultValue.maxGiveawayCountriesCount)
         self.maxGiveawayPeriodSeconds = getGeneralValue("giveaway_period_max", orElse: defaultValue.maxGiveawayPeriodSeconds)
-        self.minChannelNameColorLevel = getGeneralValue("channel_color_level_min", orElse: defaultValue.minChannelNameColorLevel)
+        self.maxChannelRecommendationsCount = getValue("recommended_channels_limit", orElse: defaultValue.maxChannelRecommendationsCount)
     }
 }

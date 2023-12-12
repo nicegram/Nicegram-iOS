@@ -513,7 +513,7 @@ private final class QrCodeScanScreenNode: ViewControllerTracingNode, UIScrollVie
         self.errorTextNode.textAlignment = .center
         self.errorTextNode.isHidden = true
         
-        self.camera = Camera(configuration: .init(preset: .hd1920x1080, position: .back, audio: false, photo: true, metadata: true, preferredFps: 60), previewView: self.previewView)
+        self.camera = Camera(configuration: .init(preset: .hd1920x1080, position: .back, audio: false, photo: true, metadata: true), previewView: self.previewView)
         
         super.init()
         
@@ -916,7 +916,7 @@ private final class QrCodeScanScreenNode: ViewControllerTracingNode, UIScrollVie
             self?.controller?.present(c, in: .window(.root), with: a)
         }, dismissInput: { [weak self] in
             self?.view.endEditing(true)
-        }, contentContext: nil, progress: nil)
+        }, contentContext: nil, progress: nil, completion: nil)
         
         return true
     }

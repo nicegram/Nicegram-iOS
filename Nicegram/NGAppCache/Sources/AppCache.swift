@@ -9,9 +9,6 @@ public final class AppCache {
     @UserDefaultsBacked(key: "firstAppLaunchDate", storage: .standard, defaultValue: nil)
     public static var firstAppLaunchDate: Date?
 
-    @UserDefaultsBacked(key: "currentProductID", storage: .standard, defaultValue: nil)
-    public static var currentProductID: String?
-
     @UserDefaultsBacked(key: "currentUserID", storage: .standard, defaultValue: nil)
     public  static var currentUserID: String?
 
@@ -20,9 +17,6 @@ public final class AppCache {
 
     @UserDefaultsBacked(key: "wasLauchedBefore", storage: .standard, defaultValue: false)
     private static var _wasLauchedBefore: Bool
-
-    @UserDefaultsBacked(key: "hasUnlimPremium", storage: .standard, defaultValue: false)
-    public static var hasUnlimPremium: Bool
     
     @UserDefaultsBacked(key: "wasOnboardingShown", storage: .standard, defaultValue: false)
     public static var wasOnboardingShown: Bool
@@ -37,10 +31,6 @@ public final class AppCache {
         set {
             _wasLauchedBefore = newValue
         }
-    }
-
-    public static var haveValidSubscription: Bool {
-        return currentProductID != nil || hasUnlimPremium
     }
     
     public static var mobileIdentifier: String {

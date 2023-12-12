@@ -1,6 +1,6 @@
+import FeatPremiumUI
 import Foundation
 import NGData
-import NGPremiumUI
 import NGRemoteConfig
 import Postbox
 import UIKit

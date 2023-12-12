@@ -720,6 +720,10 @@ open class ChatMessageItemView: ListViewItemNode, ChatMessageItemNodeProtocol {
         return nil
     }
     
+    open func makeContentSnapshot() -> (UIImage, CGRect)? {
+        return nil
+    }
+    
     open func getMessageContextSourceNode(stableId: UInt32?) -> ContextExtractedContentContainingNode? {
         return nil
     }
@@ -823,7 +827,7 @@ open class ChatMessageItemView: ListViewItemNode, ChatMessageItemNodeProtocol {
                     let _ = (item.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
                     |> deliverOnMainQueue).startStandalone(next: { peer in
                         if let peer = peer {
-                            item.controllerInteraction.openPeer(peer, .info, nil, .default)
+                            item.controllerInteraction.openPeer(peer, .info(nil), nil, .default)
                         }
                     })
                 case let .openWebView(url, simple):

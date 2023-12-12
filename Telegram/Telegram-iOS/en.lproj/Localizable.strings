@@ -5305,6 +5305,7 @@ Sorry for the inconvenience.";
 "Stats.LanguagesTitle" = "LANGUAGES";
 "Stats.PostsTitle" = "RECENT POSTS";
 
+"Stats.MessageViews.NoViews" = "No views";
 "Stats.MessageViews_0" = "%@ views";
 "Stats.MessageViews_1" = "%@ view";
 "Stats.MessageViews_2" = "%@ views";
@@ -10215,9 +10216,9 @@ Sorry for the inconvenience.";
 "ReassignBoost.ExpiresOn" = "Boost expires on %@";
 "ReassignBoost.WaitForCooldown" = "Wait until the boost is available or get **%1$@** more boosts by gifting a **Telegram Premium** subscription.";
 
-"ReassignBoost.Success" = "%1$@ are reassigned from %2$@.";
-"ReassignBoost.Boosts_1" = "%@ boost";
-"ReassignBoost.Boosts_any" = "%@ boosts";
+"ReassignBoost.Success" = "%1$@ from %2$@.";
+"ReassignBoost.Boosts_1" = "%@ boost is reassigned";
+"ReassignBoost.Boosts_any" = "%@ boosts are reassigned";
 "ReassignBoost.OtherChannels_1" = "%@ other channel";
 "ReassignBoost.OtherChannels_any" = "%@ other channels";
 
@@ -10297,8 +10298,8 @@ Sorry for the inconvenience.";
 "Stats.Boosts.Gift" = "Gift";
 "Stats.Boosts.TabBoosts_1" = "%@ Boost";
 "Stats.Boosts.TabBoosts_any" = "%@ Boosts";
-"Stats.Boosts.TabGifts_1" = "%@ Boost";
-"Stats.Boosts.TabGifts_any" = "%@ Boosts";
+"Stats.Boosts.TabGifts_1" = "%@ Gift";
+"Stats.Boosts.TabGifts_any" = "%@ Gifts";
 "Stats.Boosts.ToBeDistributed" = "To Be Distributed";
 "Stats.Boosts.Unclaimed" = "Unclaimed";
 "Stats.Boosts.GetBoosts" = "Get Boosts via Gifts";
@@ -10364,6 +10365,8 @@ Sorry for the inconvenience.";
 "Chat.Giveaway.Info.DidntWin" = "You didn't win a prize in this giveaway.";
 "Chat.Giveaway.Info.ViewPrize" = "View My Prize";
 
+"Chat.Giveaway.Info.FullDate" = "**%1$@** on **%2$@**";
+
 "Chat.Giveaway.Toast.NotAllowed" = "You can't participate in this giveaway.";
 "Chat.Giveaway.Toast.Participating" = "You are participating in this giveaway.";
 "Chat.Giveaway.Toast.NotQualified" = "You are not qualified for this giveaway yet.";
@@ -10414,6 +10417,7 @@ Sorry for the inconvenience.";
 
 "ChannelBoost.EnableColors" = "Enable Colors";
 "ChannelBoost.EnableColorsText" = "Your channel needs %1$@ to change channel color.\n\nAsk your **Premium** subscribers to boost your channel with this link:";
+"ChannelBoost.EnableColorsLevelText" = "Your channel needs **Level %1$@** to change channel color.\n\nAsk your **Premium** subscribers to boost your channel with this link:";
 "ChannelBoost.BoostAgain" = "Boost Again";
 
 "Settings.New" = "NEW";
@@ -10423,3 +10427,190 @@ Sorry for the inconvenience.";
 "Channel.ChannelColor" = "Channel Color";
 
 "TextFormat.Code" = "Code";
+
+"Notification.ChannelJoinedByYou" = "You joined the channel";
+
+"CountriesList.SelectCountries" = "Select Countries";
+"CountriesList.SaveCountries" = "Save Countries";
+"CountriesList.SelectUpTo_1" = "select up to %@ country";
+"CountriesList.SelectUpTo_any" = "select up to %@ countries";
+"CountriesList.Search" = "Search";
+"CountriesList.MaximumReached" = "You can select up to %@.";
+"CountriesList.MaximumReached.Countries_1" = "%@ country";
+"CountriesList.MaximumReached.Countries_any" = "%@ countries";
+
+"Message.GiveawayOngoing" = "Giveaway: %1$@ on %2$@";
+"Message.GiveawayOngoing.Winners_1" = "%@ winner to be selected";
+"Message.GiveawayOngoing.Winners_any" = "%@ winners to be selected";
+
+"Message.GiveawayFinished" = "Giveaway: %1$@ on %2$@";
+"Message.GiveawayFinished.Winners_1" = "%@ winner was selected";
+"Message.GiveawayFinished.Winners_any" = "%@ winners were selected";
+
+"Message.GiveawayStarted" = "Channel started a giveaway";
+"Message.GiveawayStartedOther" = "%@ started a giveaway";
+
+"Conversation.PinnedGiveaway" = "Giveaway";
+
+"Conversation.PinnedGiveaway.Ongoing" = "%1$@ on %2$@";
+"Conversation.PinnedGiveaway.Ongoing.Winners_1" = "%@ winner to be selected";
+"Conversation.PinnedGiveaway.Ongoing.Winners_any" = "%@ winners to be selected";
+
+"Conversation.PinnedGiveaway.Finished" = "%1$@ on %2$@";
+"Conversation.PinnedGiveaway.Finished.Winners_1" = "%@ winner was selected";
+"Conversation.PinnedGiveaway.Finished.Winners_any" = "%@ winners were selected";
+
+"BoostGift.StartConfirmation.Title" = "Start Giveaway";
+"BoostGift.StartConfirmation.Text" = "Are you sure you want to start giveaway now?";
+"BoostGift.StartConfirmation.Start" = "Start";
+
+"Channel.Info.Stats" = "Statistics and Boosts";
+
+"BoostGift.StartConfirmation.Title" = "Start Giveaway";
+"BoostGift.StartConfirmation.Text" = "Are you sure you want to start giveaway now?";
+"BoostGift.StartConfirmation.Start" = "Start";
+
+"Channel.Info.Stats" = "Statistics and Boosts";
+
+"Conversation.FreeTranscriptionLimitTooltip_1" = "You have **%@** free voice transcription left this week.";
+"Conversation.FreeTranscriptionLimitTooltip_any" = "You have **%@** free voice transcriptions left this week.";
+
+"Conversation.FreeTranscriptionCooldownTooltip_1" = "You have used all your **%@** free transcription this week.";
+"Conversation.FreeTranscriptionCooldownTooltip_any" = "You have used all your **%@** free transcriptions this week.";
+"Conversation.FreeTranscriptionWaitOrSubscribe" = "Wait until **%@** to use it again or subscribe to [Telegram Premium]() now.";
+
+"Notification.GiveawayResults_1" = "**%@** winner of the giveaway was randomly selected by Telegram and received their gift link in a private message.";
+"Notification.GiveawayResults_any" = "**%@** winners of the giveaway were randomly selected by Telegram and received their gift links in private messages.";
+
+"Notification.GiveawayResultsNoWinners_1" = "Due to the giveaway terms, no winners could be selected by Telegram, a gift link was forwarded to channel administrators.";
+"Notification.GiveawayResultsNoWinners_any" = "Due to the giveaway terms, no winners could be selected by Telegram, all **%@** gift links were forwarded to channel administrators.";
+
+"Notification.GiveawayResultsMixedWinners_1" = "**%@** winner of the giveaway was randomly selected by Telegram and received their gift link in a private message.";
+"Notification.GiveawayResultsMixedWinners_any" = "**%@** winners of the giveaway were randomly selected by Telegram and received their gift links in private messages.";
+"Notification.GiveawayResultsMixedUnclaimed_1" = "**%@** undistributed gift link was forwarded to channel administrators";
+"Notification.GiveawayResultsMixedUnclaimed_any" = "**%@** undistributed gift links were forwarded to channel administrators";
+
+"Chat.Giveaway.DeleteConfirmation.Title" = "Do you want to delete the Giveaway Announcement?";
+"Chat.Giveaway.DeleteConfirmation.Text" = "Deleting this message won't cancel the giveaway - the winners will still be selected on **%@**.\n\nOnce deleted, the Giveaway Announcement cannot be recovered.";
+
+"Chat.SimilarChannels" = "Similar Channels";
+"Chat.SimilarChannels.Join" = "Join";
+"Chat.SimilarChannels.JoinedChannel" = "You joined channel **%@**.";
+"Chat.SimilarChannels.MoreChannels" = "More Channels";
+
+"Wallpaper.ApplyForMe" = "Apply for Me";
+"Wallpaper.ApplyForBoth" = "Apply for Me and %@";
+
+"Premium.VoiceToText.Proceed" = "About Telegram Premium";
+"Premium.Wallpaper.Proceed" = "About Telegram Premium";
+"Premium.Colors.Proceed" = "About Telegram Premium";
+
+"Notification.YouChangedWallpaperBoth" = "You set a new wallpaper for %@ and you.";
+
+"Stats.ReactionsByEmotionTitle" = "REACTIONS BY EMOTION";
+"Stats.StoryInteractionsTitle" = "STORIES INTERACTIONS";
+"Stats.StoryReactionsByEmotionTitle" = "STORIES REACTIONS BY EMOTION";
+
+"Stats.MessageReactionsTitle" = "REACTIONS";
+
+"MediaEditor.RemoveVideo" = "Remove Video";
+
+"Conversation.LaunchApp" = "LAUNCH APP";
+
+"Message.AdSponsoredLabel" = "Sponsored";
+"Message.AdRecommendedLabel" = "Recommended";
+
+"Stats.StoryTitle" = "Story Statistics";
+
+"Channel.Info.Settings" = "Channel Settings";
+
+"Story.Context.ViewStats" = "View Statistics";
+
+"Share.RepostStory" = "Repost\nStory";
+
+"PeerInfo.PaneRecommended" = "Similar Channels";
+
+"Story.ViewList.ContextSortReposts" = "Reposts First";
+
+"ShortTime.JustNow" = "now";
+"ShortTime.MinutesAgo_1" = "%@m";
+"ShortTime.MinutesAgo_any" = "%@m";
+"ShortTime.HoursAgo_1" = "%@h";
+"ShortTime.HoursAgo_any" = "%@h";
+"ShortTime.AtDate" = "%@";
+"ShortTime.AtPreciseDate" = "%@ at %@";
+
+"Stats.Message.Reactions" = "Reactions";
+"Stats.ReactionsPerPost" = "Reactions Per Post";
+"Stats.ViewsPerStory" = "Views Per Story";
+"Stats.SharesPerStory" = "Shares Per Story";
+"Stats.ReactionsPerStory" = "Reactions Per Story";
+
+"Channel.SimilarChannels.ShowMore" = "Show More Channels";
+"Channel.SimilarChannels.ShowMoreInfo" = "Subscribe to [Telegram Premium]()\nto unlock up to **100** similar channels.";
+
+"Premium.Colors" = "Name and Profile Colors";
+"Premium.ColorsInfo" = "Choose a color and logo for your profile and replies to your messages.";
+
+"Premium.Wallpapers" = "Wallpapers for Both Sides";
+"Premium.WallpapersInfo" = "Set custom wallpapers for you and your chat partner.";
+
+"MediaEditor.VideoRemovalConfirmation" = "Are you sure you want to delete video message?";
+"MediaEditor.HoldToRecordVideo" = "Hold to record video";
+
+"Chat.ChannelRecommendation.PremiumTooltip" = "Subcribe to [Telegram Premium]() to unlock up to **100** channels.";
+
+"Story.ForwardAuthorHiddenTooltip" = "The account was hidden by the user";
+
+"Premium.Limits.RecommendedChannels" = "Similar Channels";
+"Premium.Limits.RecommendedChannelsInfo" = "View up to 100 similar channels.";
+
+"ChannelBoost.CustomReactions" = "Custom Reactions";
+"ChannelBoost.CustomReactionsText" = "Your channel needs to reach **Level %1$@** to add **%2$@** custom emoji as reactions.\n\nAsk your **Premium** subscribers to boost your channel with this link:";
+
+"Settings.YourColor" = "Your Color";
+
+"ChannelReactions.Reactions" = "Reactions";
+"ChannelReactions.UnsavedChangesAlertTitle" = "Unsaved Changes";
+"ChannelReactions.UnsavedChangesAlertText" = "You have changed the list of reactions. Apply changes?";
+"ChannelReactions.UnsavedChangesAlertDiscard" = "Discard";
+"ChannelReactions.UnsavedChangesAlertApply" = "Apply";
+"ChannelReactions.ToastMaxReactionsReached" = "You can select at most 100 reactions.";
+
+"ChannelReactions.ToastLevelBoostRequiredTemplate" = "Your channel needs to reach **%1$@** to add **%2$@** as reactions.**";
+"ChannelReactions.ToastLevelBoostRequiredTemplateLevel_1" = "Level 1";
+"ChannelReactions.ToastLevelBoostRequiredTemplateLevel_any" = "Level %d";
+"ChannelReactions.ToastLevelBoostRequiredTemplateEmojiCount_1" = "1 custom emoji";
+"ChannelReactions.ToastLevelBoostRequiredTemplateEmojiCount_any" = "%d custom emoji";
+
+"ChannelReactions.GeneralInfoLabel" = "You can add emoji from any emoji pack as a reaction.";
+"ChannelReactions.ReactionsSectionTitle" = "AVAILABLE REACTIONS";
+"ChannelReactions.ReactionsInfoLabel" = "You can also [create your own]() emoji packs and use them.";
+"ChannelReactions.SaveAction" = "Update Reactions";
+"ChannelReactions.LevelRequiredLabel" = "Level %1$@ Required";
+"ChannelReactions.InputPlaceholder" = "Add Reactions...";
+
+"ProfileColorSetup.ResetAction" = "Reset Profile Color";
+"ProfileColorSetup.IconSectionTitle" = "ADD ICON TO PROFILE";
+"ProfileColorSetup.AccountColorInfoLabel" = "Choose a color for your profile";
+"ProfileColorSetup.ChannelColorInfoLabel" = "Choose a color for channel's profile";
+"ProfileColorSetup.TitleName" = "Name";
+"ProfileColorSetup.TitleProfile" = "Profile";
+"ProfileColorSetup.TitleChannelColor" = "Set Channel Color";
+"ProfileColorSetup.ToastAccountColorUpdated" = "Your color has been updated.";
+
+"Chat.TopicIsClosedLabel" = "Topic \"%1$@\" is closed";
+"Chat.InputPlaceholderReplyInTopic" = "Reply in %1$@";
+"Chat.InputPlaceholderMessageInTopic" = "Message in %1$@";
+
+"Chat.Reactions.MultiplePremiumTooltip" = "You can set multiple reactions with [Telegram Premium]().";
+
+"Notification.Wallpaper.Remove" = "Remove";
+"Chat.RemoveWallpaper.Title" = "Remove Wallpaper";
+"Chat.RemoveWallpaper.Text" = "Are you sure you want to reset the wallpaper?";
+"Chat.RemoveWallpaper.Remove" = "Remove";
+
+"MediaEditor.Shortcut.Image" = "Image";
+"MediaEditor.Shortcut.Location" = "Location";
+"MediaEditor.Shortcut.Reaction" = "Reaction";
+"MediaEditor.Shortcut.Audio" = "Audio";

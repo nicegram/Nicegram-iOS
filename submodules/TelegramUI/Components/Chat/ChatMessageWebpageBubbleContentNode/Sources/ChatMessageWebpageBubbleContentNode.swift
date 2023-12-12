@@ -22,6 +22,31 @@ import ChatControllerInteraction
 
 private let titleFont: UIFont = Font.semibold(15.0)
 
+public func defaultWebpageImageSizeIsSmall(webpage: TelegramMediaWebpageLoadedContent) -> Bool {
+    let type = websiteType(of: webpage.websiteName)
+    
+    let mainMedia: Media?
+    switch type {
+    case .instagram, .twitter:
+        mainMedia = webpage.story ?? webpage.image ?? webpage.file
+    default:
+        mainMedia = webpage.story ?? webpage.file ?? webpage.image
+    }
+    
+    if let image = mainMedia as? TelegramMediaImage {
+        if let type = webpage.type, (["photo", "video", "embed", "gif", "document", "telegram_album"] as [String]).contains(type) {
+        } else if let type = webpage.type, (["article"] as [String]).contains(type) {
+            return true
+        } else if let _ = largestImageRepresentation(image.representations)?.dimensions {
+            if webpage.instantPage == nil {
+                return true
+            }
+        }
+    }
+    
+    return false
+}
+
 public final class ChatMessageWebpageBubbleContentNode: ChatMessageBubbleContentNode {
     private var webPage: TelegramMediaWebpage?
     
@@ -309,10 +334,7 @@ public final class ChatMessageWebpageBubbleContentNode: ChatMessageBubbleContent
                         }
                         mediaAndFlags = (image, flags)
                     } else if let _ = largestImageRepresentation(image.representations)?.dimensions {
-                        var flags = ChatMessageAttachedContentNodeMediaFlags()
-                        if webpage.instantPage == nil {
-                            flags.insert(.preferMediaInline)
-                        }
+                        let flags = ChatMessageAttachedContentNodeMediaFlags()
                         mediaAndFlags = (image, flags)
                     }
                 } else if let story = mainMedia as? TelegramMediaStory {
@@ -441,6 +463,10 @@ public final class ChatMessageWebpageBubbleContentNode: ChatMessageBubbleContent
                     }
                 }
                 
+                if defaultWebpageImageSizeIsSmall(webpage: webpage) {
+                    mediaAndFlags?.1.insert(.preferMediaInline)
+                }
+                
                 if let webPageContent, let isMediaLargeByDefault = webPageContent.isMediaLargeByDefault, !isMediaLargeByDefault {
                     mediaAndFlags?.1.insert(.preferMediaInline)
                 } else if let attribute = item.message.attributes.first(where: { $0 is WebpagePreviewMessageAttribute }) as? WebpagePreviewMessageAttribute {
@@ -453,8 +479,15 @@ public final class ChatMessageWebpageBubbleContentNode: ChatMessageBubbleContent
                     }
                 }
             } else if let adAttribute = item.message.adAttribute {
-                title = nil
-                subtitle = nil
+                switch adAttribute.messageType {
+                case .sponsored:
+                    title = item.presentationData.strings.Message_AdSponsoredLabel
+                case .recommended:
+                    title = item.presentationData.strings.Message_AdRecommendedLabel
+                }
+                subtitle = item.message.author.flatMap {
+                    NSAttributedString(string: EnginePeer($0).compactDisplayTitle, font: titleFont)
+                }
                 text = item.message.text
                 for attribute in item.message.attributes {
                     if let attribute = attribute as? TextEntitiesMessageAttribute {
@@ -470,8 +503,14 @@ public final class ChatMessageWebpageBubbleContentNode: ChatMessageBubbleContent
                     }
                 }
 
-                if let author = item.message.author as? TelegramUser, author.botInfo != nil {
-                    actionTitle = item.presentationData.strings.Conversation_ViewBot
+                if let buttonText = adAttribute.buttonText {
+                    actionTitle = buttonText.uppercased()
+                } else if let author = item.message.author as? TelegramUser, author.botInfo != nil {
+                    if case .botApp = adAttribute.target {
+                        actionTitle = item.presentationData.strings.Conversation_LaunchApp
+                    } else {
+                        actionTitle = item.presentationData.strings.Conversation_ViewBot
+                    }
                 } else if let author = item.message.author as? TelegramChannel, case .group = author.info {
                     if case let .peer(_, messageId, _) = adAttribute.target, messageId != nil {
                         actionTitle = item.presentationData.strings.Conversation_ViewPost
@@ -488,7 +527,7 @@ public final class ChatMessageWebpageBubbleContentNode: ChatMessageBubbleContent
                         actionTitle = item.presentationData.strings.Conversation_ViewChannel
                     }
                 }
-                displayLine = false
+                displayLine = true
             }
             
             let (initialWidth, continueLayout) = contentNodeLayout(item.presentationData, item.controllerInteraction.automaticMediaDownloadSettings, item.associatedData, item.attributes, item.context, item.controllerInteraction, item.message, item.read, item.chatLocation, title, subtitle, text, entities, mediaAndFlags, badge, actionIcon, actionTitle, displayLine, layoutConstants, preparePosition, constrainedSize, item.controllerInteraction.presentationContext.animationCache, item.controllerInteraction.presentationContext.animationRenderer)

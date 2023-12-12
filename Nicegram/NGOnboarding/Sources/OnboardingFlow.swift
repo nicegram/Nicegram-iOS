@@ -1,8 +1,8 @@
+import FeatPremiumUI
 import Foundation
 import UIKit
 import NGAiChat
 import NGData
-import NGPremiumUI
 import NGStrings
 
 public func onboardingController(languageCode: String, onComplete: @escaping () -> Void) -> UIViewController {

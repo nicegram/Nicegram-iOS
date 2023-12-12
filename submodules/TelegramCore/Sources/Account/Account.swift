@@ -1204,7 +1204,7 @@ public class Account {
             pendingMessageManager?.updatePendingMessageIds(view.ids)
         }))
         
-        self.managedOperationsDisposable.add(managedSecretChatOutgoingOperations(auxiliaryMethods: auxiliaryMethods, postbox: self.postbox, network: self.network).start())
+        self.managedOperationsDisposable.add(managedSecretChatOutgoingOperations(auxiliaryMethods: auxiliaryMethods, postbox: self.postbox, network: self.network, accountPeerId: peerId, mode: .all).start())
         self.managedOperationsDisposable.add(managedCloudChatRemoveMessagesOperations(postbox: self.postbox, network: self.network, stateManager: self.stateManager).start())
         self.managedOperationsDisposable.add(managedAutoremoveMessageOperations(network: self.network, postbox: self.postbox, isRemove: true).start())
         self.managedOperationsDisposable.add(managedAutoremoveMessageOperations(network: self.network, postbox: self.postbox, isRemove: false).start())
@@ -1591,7 +1591,7 @@ public func standaloneStateManager(
                                     Logger.shared.log("StandaloneStateManager", "received network")
                                     
                                     postbox.mediaBox.fetchResource = { [weak postbox] resource, intervals, parameters -> Signal<MediaResourceDataFetchResult, MediaResourceDataFetchError> in
-                                        guard let postbox else {
+                                        guard let postbox = postbox else {
                                             return .never()
                                         }
                                         if let result = auxiliaryMethods.fetchResource(
