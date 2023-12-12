@@ -48,6 +48,16 @@
       ]
     },
     {
+      "name": "Tapjoy",
+      "c99name": "Tapjoy",
+      "src_type": "binary",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Frameworks_Tapjoy.xcframework_Tapjoy",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
       "name": "CoreSwiftUI",
       "c99name": "CoreSwiftUI",
       "src_type": "swift",
@@ -798,7 +808,7 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "35b2c2c88c8d2cb3d25cfa95e15e588f90578994",
+        "commit": "26f4b898e9c7a0ef1e9304e0c1d8db35eca32da6",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
         "branch": "develop"
       }
@@ -816,9 +826,9 @@
       "name": "swiftpkg_sdwebimage",
       "identity": "sdwebimage",
       "remote": {
-        "commit": "0383fd49fe4d9ae43f150f24693550ebe6ef0d14",
+        "commit": "e278c13e46e8d20c895c221e922c6ac6b72aaca9",
         "remote": "https://github.com/SDWebImage/SDWebImage.git",
-        "version": "5.18.6"
+        "version": "5.18.7"
       }
     },
     {

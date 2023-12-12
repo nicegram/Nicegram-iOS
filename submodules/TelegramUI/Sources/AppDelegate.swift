@@ -398,6 +398,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 premiumProductId: NGENV.premium_bundle,
                 privacyUrl: URL(string: NGENV.privacy_url)!,
                 referralBot: NGENV.referral_bot,
+                tapjoyApiKey: NGENV.tapjoy_api_key,
                 telegramAuthBot: NGENV.telegram_auth_bot,
                 termsUrl: URL(string: NGENV.terms_url)!,
                 webSocketUrl: NGENV.websocket_url
@@ -416,11 +417,11 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             firebaseAnalyticsSender: {
                 FirebaseAnalyticsSender()
             },
-            remoteConfig: {
-                RemoteConfigServiceImpl.shared
-            },
             lottieView: {
                 LottieViewImpl()
+            },
+            remoteConfig: {
+                RemoteConfigServiceImpl.shared
             }
         )
         

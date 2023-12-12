@@ -5305,6 +5305,7 @@ Sorry for the inconvenience.";
 "Stats.LanguagesTitle" = "LANGUAGES";
 "Stats.PostsTitle" = "RECENT POSTS";
 
+"Stats.MessageViews.NoViews" = "No views";
 "Stats.MessageViews_0" = "%@ views";
 "Stats.MessageViews_1" = "%@ view";
 "Stats.MessageViews_2" = "%@ views";
@@ -10575,12 +10576,19 @@ Sorry for the inconvenience.";
 "ChannelReactions.UnsavedChangesAlertDiscard" = "Discard";
 "ChannelReactions.UnsavedChangesAlertApply" = "Apply";
 "ChannelReactions.ToastMaxReactionsReached" = "You can select at most 100 reactions.";
-"ChannelReactions.ToastLevelBoostRequired" = "Your channel needs to reach **Level %1$@** to add **%2$@** custom emoji as reactions.**";
+
+"ChannelReactions.ToastLevelBoostRequiredTemplate" = "Your channel needs to reach **%1$@** to add **%2$@** as reactions.**";
+"ChannelReactions.ToastLevelBoostRequiredTemplateLevel_1" = "Level 1";
+"ChannelReactions.ToastLevelBoostRequiredTemplateLevel_any" = "Level %d";
+"ChannelReactions.ToastLevelBoostRequiredTemplateEmojiCount_1" = "1 custom emoji";
+"ChannelReactions.ToastLevelBoostRequiredTemplateEmojiCount_any" = "%d custom emoji";
+
 "ChannelReactions.GeneralInfoLabel" = "You can add emoji from any emoji pack as a reaction.";
 "ChannelReactions.ReactionsSectionTitle" = "AVAILABLE REACTIONS";
 "ChannelReactions.ReactionsInfoLabel" = "You can also [create your own]() emoji packs and use them.";
 "ChannelReactions.SaveAction" = "Update Reactions";
 "ChannelReactions.LevelRequiredLabel" = "Level %1$@ Required";
+"ChannelReactions.InputPlaceholder" = "Add Reactions...";
 
 "ProfileColorSetup.ResetAction" = "Reset Profile Color";
 "ProfileColorSetup.IconSectionTitle" = "ADD ICON TO PROFILE";
@@ -10596,3 +10604,13 @@ Sorry for the inconvenience.";
 "Chat.InputPlaceholderMessageInTopic" = "Message in %1$@";
 
 "Chat.Reactions.MultiplePremiumTooltip" = "You can set multiple reactions with [Telegram Premium]().";
+
+"Notification.Wallpaper.Remove" = "Remove";
+"Chat.RemoveWallpaper.Title" = "Remove Wallpaper";
+"Chat.RemoveWallpaper.Text" = "Are you sure you want to reset the wallpaper?";
+"Chat.RemoveWallpaper.Remove" = "Remove";
+
+"MediaEditor.Shortcut.Image" = "Image";
+"MediaEditor.Shortcut.Location" = "Location";
+"MediaEditor.Shortcut.Reaction" = "Reaction";
+"MediaEditor.Shortcut.Audio" = "Audio";
