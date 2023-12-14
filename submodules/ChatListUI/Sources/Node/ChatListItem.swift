@@ -293,6 +293,7 @@ public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
                 if #available(iOS 13.0, *) {
                     Task { @MainActor in
                         nicegramItem.select()
+                        interaction.clearHighlightAnimated(true)
                     }
                 }
                 return

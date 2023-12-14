@@ -81,6 +81,11 @@ public final class ChatListNodeInteraction {
     }
     
     let activateSearch: () -> Void
+    
+    // MARK: Nicegram PinnedChats
+    let clearHighlightAnimated: (Bool) -> Void
+    //
+    
     let peerSelected: (EnginePeer, EnginePeer?, Int64?, ChatListNodeEntryPromoInfo?) -> Void
     let disabledPeerSelected: (EnginePeer, Int64?) -> Void
     let togglePeerSelected: (EnginePeer, Int64?) -> Void
@@ -131,6 +136,9 @@ public final class ChatListNodeInteraction {
         animationCache: AnimationCache,
         animationRenderer: MultiAnimationRenderer,
         activateSearch: @escaping () -> Void,
+        // MARK: Nicegram PinnedChats
+        clearHighlightAnimated: @escaping (Bool) -> Void = { _ in },
+        //
         peerSelected: @escaping (EnginePeer, EnginePeer?, Int64?, ChatListNodeEntryPromoInfo?) -> Void,
         disabledPeerSelected: @escaping (EnginePeer, Int64?) -> Void,
         togglePeerSelected: @escaping (EnginePeer, Int64?) -> Void,
@@ -166,6 +174,9 @@ public final class ChatListNodeInteraction {
         openStories: @escaping (ChatListNode.OpenStoriesSubject, ASDisplayNode?) -> Void
     ) {
         self.activateSearch = activateSearch
+        // MARK: Nicegram PinnedChats
+        self.clearHighlightAnimated = clearHighlightAnimated
+        //
         self.peerSelected = peerSelected
         self.disabledPeerSelected = disabledPeerSelected
         self.togglePeerSelected = togglePeerSelected
@@ -1325,6 +1336,10 @@ public final class ChatListNode: ListView {
             if let strongSelf = self, let activateSearch = strongSelf.activateSearch {
                 activateSearch()
             }
+            // MARK: Nicegram PinnedChats
+        }, clearHighlightAnimated: { [weak self] flag in
+            self?.clearHighlightAnimated(flag)
+            //
         }, peerSelected: { [weak self] peer, _, threadId, promoInfo in
             if let strongSelf = self, let peerSelected = strongSelf.peerSelected {
                 peerSelected(peer, threadId, true, true, promoInfo)
