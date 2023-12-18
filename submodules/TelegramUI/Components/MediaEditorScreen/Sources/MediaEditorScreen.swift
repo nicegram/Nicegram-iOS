@@ -38,10 +38,13 @@ import ReactionSelectionNode
 import VolumeSliderContextItem
 import TelegramStringFormatting
 import ForwardInfoPanelComponent
+import ContextReferenceButtonComponent
 
 private let playbackButtonTag = GenericComponentViewTag()
 private let muteButtonTag = GenericComponentViewTag()
 private let saveButtonTag = GenericComponentViewTag()
+private let switchCameraButtonTag = GenericComponentViewTag()
+private let stickerButtonTag = GenericComponentViewTag()
 
 final class MediaEditorScreenComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -869,19 +872,25 @@ final class MediaEditorScreenComponent: Component {
             
             let stickerButtonSize = self.stickerButton.update(
                 transition: transition,
-                component: AnyComponent(Button(
+                component: AnyComponent(ContextReferenceButtonComponent(
                     content: AnyComponent(Image(
                         image: state.image(.sticker),
                         size: CGSize(width: 30.0, height: 30.0)
                     )),
-                    action: { [weak self] in
+                    tag: stickerButtonTag,
+                    minSize: CGSize(width: 30.0, height: 30.0),
+                    action: { [weak self] view, gesture in
                         guard let environment = self?.environment, let controller = environment.controller() as? MediaEditorScreen else {
                             return
                         }
                         guard !controller.node.recording.isActive else {
                             return
                         }
-                        openDrawing(.sticker)
+                        if let gesture {
+                            controller.presentEntityShortcuts(sourceView: view, gesture: gesture)
+                        } else {
+                            openDrawing(.sticker)
+                        }
                     }
                 )),
                 environment: {},
@@ -1168,17 +1177,7 @@ final class MediaEditorScreenComponent: Component {
                         guard let controller else {
                             return
                         }
-                        let context = controller.context
-                        let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
-                        |> deliverOnMainQueue).start(next: { [weak controller] peer in
-                            let hasPremium: Bool
-                            if case let .user(user) = peer {
-                                hasPremium = user.isPremium
-                            } else {
-                                hasPremium = false
-                            }
-                            controller?.presentTimeoutSetup(sourceView: view, gesture: gesture, hasPremium: hasPremium)
-                        })
+                        controller.presentTimeoutSetup(sourceView: view, gesture: gesture)
                     },
                     forwardAction: nil,
                     moreAction: nil,
@@ -1736,11 +1735,15 @@ final class MediaEditorScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(Button(
                     content: AnyComponent(
-                        FlipButtonContentComponent()
+                        FlipButtonContentComponent(tag: switchCameraButtonTag)
                     ),
                     action: { [weak self] in
                         if let self, let environment = self.environment, let controller = environment.controller() as? MediaEditorScreen {
                             controller.node.recording.togglePosition()
+                            
+                            if let view = self.switchCameraButton.findTaggedView(tag: switchCameraButtonTag) as? FlipButtonContentComponent.View {
+                                view.playAnimation()
+                            }
                         }
                     }
                 ).withIsExclusive(false)),
@@ -1963,6 +1966,7 @@ public final class MediaEditorScreen: ViewController, UIDropInteractionDelegate 
         private var availableReactions: [ReactionItem] = []
         private var availableReactionsDisposable: Disposable?
         
+        private var panGestureRecognizer: UIPanGestureRecognizer?
         private var dismissPanGestureRecognizer: UIPanGestureRecognizer?
         
         private var isDisplayingTool = false
@@ -2368,7 +2372,8 @@ public final class MediaEditorScreen: ViewController, UIDropInteractionDelegate 
             panGestureRecognizer.delegate = self
             panGestureRecognizer.minimumNumberOfTouches = 1
             panGestureRecognizer.maximumNumberOfTouches = 2
-            self.previewContainerView.addGestureRecognizer(panGestureRecognizer)
+            self.view.addGestureRecognizer(panGestureRecognizer)
+            self.panGestureRecognizer = panGestureRecognizer
             
             let pinchGestureRecognizer = UIPinchGestureRecognizer(target: self, action: #selector(self.handlePinch(_:)))
             pinchGestureRecognizer.delegate = self
@@ -2406,8 +2411,14 @@ public final class MediaEditorScreen: ViewController, UIDropInteractionDelegate 
                 },
                 updateColor: { [weak self] color in
                     if let self, let selectedEntityView = self.entitiesView.selectedEntityView {
-                        selectedEntityView.entity.color = color
-                        selectedEntityView.update(animated: false)
+                        let selectedEntity = selectedEntityView.entity
+                        if let textEntity = selectedEntity as? DrawingTextEntity, let textEntityView = selectedEntityView as? DrawingTextEntityView, textEntityView.isEditing {
+                            textEntity.setColor(color, range: textEntityView.selectedRange)
+                            textEntityView.update(animated: false, keepSelectedRange: true)
+                        } else {
+                            selectedEntity.color = color
+                            selectedEntityView.update(animated: false)
+                        }
                     }
                 },
                 onInteractionUpdated: { [weak self] isInteracting in
@@ -2516,6 +2527,17 @@ public final class MediaEditorScreen: ViewController, UIDropInteractionDelegate 
                 let location = gestureRecognizer.location(in: self.entitiesView)
                 if self.controller?.isEmbeddedEditor == true || self.isDisplayingTool || self.entitiesView.hasSelection || self.entitiesView.getView(at: location) != nil {
                     return false
+                }
+                return true
+            } else if gestureRecognizer === self.panGestureRecognizer {
+                let location = gestureRecognizer.location(in: self.view)
+                if location.x > self.view.frame.width - 44.0 && location.y > self.view.frame.height - 180.0 {
+                    return false
+                }
+                if let reactionNode = self.view.subviews.last?.asyncdisplaykit_node as? ReactionContextNode {
+                    if let hitTestResult = self.view.hitTest(location, with: nil), hitTestResult.isDescendant(of: reactionNode.view) {
+                        return false
+                    }
                 }
                 return true
             } else {
@@ -3495,6 +3517,33 @@ public final class MediaEditorScreen: ViewController, UIDropInteractionDelegate 
             self.controller?.present(contextController, in: .window(.root))
         }
         
+        func addReaction() {
+            guard let controller = self.controller else {
+                return
+            }
+            let maxReactionCount = self.context.userLimits.maxStoriesSuggestedReactions
+            var currentReactionCount = 0
+            self.entitiesView.eachView { entityView in
+                if let stickerEntity = entityView.entity as? DrawingStickerEntity, case let .file(_, type) = stickerEntity.content, case .reaction = type {
+                    currentReactionCount += 1
+                }
+            }
+            if currentReactionCount >= maxReactionCount {
+                controller.presentReactionPremiumSuggestion()
+                return
+            }
+        
+            let heart = "❤️".strippedEmoji
+            if let reaction = self.availableReactions.first(where: { reaction in
+                return reaction.reaction.rawValue == .builtin(heart)
+            }) {
+                let stickerEntity = DrawingStickerEntity(content: .file(reaction.stillAnimation, .reaction(.builtin(heart), .white)))
+                self.interaction?.insertEntity(stickerEntity, scale: 1.175)
+            }
+            
+            self.mediaEditor?.play()
+        }
+        
         func updateModalTransitionFactor(_ value: CGFloat, transition: ContainedViewLayoutTransition) {
             guard let layout = self.validLayout, case .compact = layout.metrics.widthClass else {
                 return
@@ -3684,30 +3733,10 @@ public final class MediaEditorScreen: ViewController, UIDropInteractionDelegate 
                                     }
                                     controller.addReaction = { [weak self, weak controller] in
                                         if let self {
-                                            let maxReactionCount = self.context.userLimits.maxStoriesSuggestedReactions
-                                            var currentReactionCount = 0
-                                            self.entitiesView.eachView { entityView in
-                                                if let stickerEntity = entityView.entity as? DrawingStickerEntity, case let .file(_, type) = stickerEntity.content, case .reaction = type {
-                                                    currentReactionCount += 1
-                                                }
-                                            }
-                                            if currentReactionCount >= maxReactionCount {
-                                                self.controller?.presentReactionPremiumSuggestion()
-                                                return
-                                            }
+                                            self.addReaction()
                                             
                                             self.stickerScreen = nil
                                             controller?.dismiss(animated: true)
-                                            
-                                            let heart = "❤️".strippedEmoji
-                                            if let reaction = self.availableReactions.first(where: { reaction in
-                                                return reaction.reaction.rawValue == .builtin(heart)
-                                            }) {
-                                                let stickerEntity = DrawingStickerEntity(content: .file(reaction.stillAnimation, .reaction(.builtin(heart), .white)))
-                                                self.interaction?.insertEntity(stickerEntity, scale: 1.175)
-                                            }
-                                            
-                                            self.mediaEditor?.play()
                                         }
                                     }
                                     controller.pushController = { [weak self] c in
@@ -4382,11 +4411,55 @@ public final class MediaEditorScreen: ViewController, UIDropInteractionDelegate 
         })
     }
     
-    func presentTimeoutSetup(sourceView: UIView, gesture: ContextGesture?, hasPremium: Bool) {
+    func presentEntityShortcuts(sourceView: UIView, gesture: ContextGesture) {
         self.hapticFeedback.impact(.light)
         
+        let presentationData = self.context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: defaultDarkPresentationTheme)
+        
         var items: [ContextMenuItem] = []
-
+        
+        items.append(.action(ContextMenuActionItem(text: presentationData.strings.MediaEditor_Shortcut_Image, icon: { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Image"), color: theme.contextMenu.primaryColor)
+        }, action: { [weak self] _, a in
+            a(.default)
+            
+            self?.node.presentGallery()
+        })))
+        items.append(.action(ContextMenuActionItem(text: presentationData.strings.MediaEditor_Shortcut_Location, icon: { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Media Editor/LocationSmall"), color: theme.contextMenu.primaryColor)
+        }, action: { [weak self] _, a in
+            a(.default)
+            
+            self?.node.presentLocationPicker()
+        })))
+        items.append(.action(ContextMenuActionItem(text: presentationData.strings.MediaEditor_Shortcut_Reaction, icon: { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Reactions"), color: theme.contextMenu.primaryColor)
+        }, action: { [weak self] _, a in
+            a(.default)
+            
+            self?.node.addReaction()
+        })))
+        items.append(.action(ContextMenuActionItem(text: presentationData.strings.MediaEditor_Shortcut_Audio, icon: { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Media Editor/AudioSmall"), color: theme.contextMenu.primaryColor)
+        }, action: { [weak self] _, a in
+            a(.default)
+            
+            self?.node.presentAudioPicker()
+        })))
+        
+        let contextController = ContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: self, sourceView: sourceView)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+        self.present(contextController, in: .window(.root))
+    }
+    
+    func presentTimeoutSetup(sourceView: UIView, gesture: ContextGesture?) {
+        self.hapticFeedback.impact(.light)
+        
+        let hasPremium = self.context.isPremium
+        let presentationData = self.context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: defaultDarkPresentationTheme)
+        let title = presentationData.strings.Story_Editor_ExpirationText
+        let currentValue = self.state.privacy.timeout
+        let emptyAction: ((ContextMenuActionItem.Action) -> Void)? = nil
+        
         let updateTimeout: (Int?) -> Void = { [weak self] timeout in
             guard let self else {
                 return
@@ -4399,12 +4472,8 @@ public final class MediaEditorScreen: ViewController, UIDropInteractionDelegate 
                 pin: self.state.privacy.pin
             )
         }
-                
-        let presentationData = self.context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: defaultDarkPresentationTheme)
-        let title = presentationData.strings.Story_Editor_ExpirationText
-        let currentValue = self.state.privacy.timeout
-        let emptyAction: ((ContextMenuActionItem.Action) -> Void)? = nil
         
+        var items: [ContextMenuItem] = []
         items.append(.action(ContextMenuActionItem(text: title, textLayout: .multiline, textFont: .small, icon: { _ in return nil }, action: emptyAction)))
         
         items.append(.action(ContextMenuActionItem(text: presentationData.strings.Story_Editor_ExpirationValue(6), icon: { theme in

@@ -15,6 +15,7 @@ public struct NGEnvObj: Decodable {
     public let esim_api_key: String
     public let referral_bot: String
     public let remote_config_cache_duration_seconds: Double
+    public let tapjoy_api_key: String
     public let telegram_auth_bot: String
     public let google_cloud_api_key: String
     public let applovin_api_key: String

@@ -16,6 +16,7 @@ import TinyThumbnail
 import ImageBlur
 import TelegramVoip
 import MetalEngine
+import DeviceAccess
 
 final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeProtocol {
     private let sharedContext: SharedAccountContext
@@ -32,6 +33,7 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
     
     private var callStartTimestamp: Double?
     
+    private var callState: PresentationCallState?
     var isMuted: Bool = false
     
     var toggleMute: (() -> Void)?
@@ -56,6 +58,7 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
     private var isMicrophoneMutedDisposable: Disposable?
     private var audioLevelDisposable: Disposable?
     
+    private var localVideo: AdaptedCallVideoSource?
     private var remoteVideo: AdaptedCallVideoSource?
     
     init(
@@ -94,7 +97,13 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
             guard let self else {
                 return
             }
-            let _ = self
+            self.toggleVideo()
+        }
+        self.callScreen.flipCameraAction = { [weak self] in
+            guard let self else {
+                return
+            }
+            self.call.switchVideoCamera()
         }
         self.callScreen.microhoneMuteAction = { [weak self] in
             guard let self else {
@@ -108,15 +117,23 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
             }
             self.endCall?()
         }
+        self.callScreen.backAction = { [weak self] in
+            guard let self else {
+                return
+            }
+            self.back?()
+        }
         
         self.callScreenState = PrivateCallScreen.State(
             lifecycleState: .connecting,
             name: " ",
+            shortName: " ",
             avatarImage: nil,
             audioOutput: .internalSpeaker,
             isMicrophoneMuted: false,
             localVideo: nil,
-            remoteVideo: nil
+            remoteVideo: nil,
+            isRemoteBatteryLow: false
         )
         if let peer = call.peer {
             self.updatePeer(peer: peer)
@@ -176,6 +193,93 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
         }
     }
     
+    private func toggleVideo() {
+        guard let callState = self.callState else {
+            return
+        }
+        switch callState.state {
+        case .active:
+            switch callState.videoState {
+            case .active(let isScreencast), .paused(let isScreencast):
+                if isScreencast {
+                    (self.call as? PresentationCallImpl)?.disableScreencast()
+                } else {
+                    self.call.disableVideo()
+                }
+            default:
+                DeviceAccess.authorizeAccess(to: .camera(.videoCall), onlyCheck: true, presentationData: self.presentationData, present: { [weak self] c, a in
+                    if let strongSelf = self {
+                        strongSelf.present?(c)
+                    }
+                }, openSettings: { [weak self] in
+                    self?.sharedContext.applicationBindings.openSettings()
+                }, _: { [weak self] ready in
+                    guard let self, ready else {
+                        return
+                    }
+                    let proceed = { [weak self] in
+                        guard let self else {
+                            return
+                        }
+                        /*switch callState.videoState {
+                        case .inactive:
+                            self.isRequestingVideo = true
+                            self.updateButtonsMode()
+                        default:
+                            break
+                        }*/
+                        self.call.requestVideo()
+                    }
+                    
+                    self.call.makeOutgoingVideoView(completion: { [weak self] outgoingVideoView in
+                        guard let self else {
+                            return
+                        }
+                        
+                        if let outgoingVideoView = outgoingVideoView {
+                            outgoingVideoView.view.backgroundColor = .black
+                            outgoingVideoView.view.clipsToBounds = true
+                            
+                            var updateLayoutImpl: ((ContainerViewLayout, CGFloat) -> Void)?
+                            
+                            let outgoingVideoNode = CallVideoNode(videoView: outgoingVideoView, disabledText: nil, assumeReadyAfterTimeout: true, isReadyUpdated: { [weak self] in
+                                guard let self, let (layout, navigationBarHeight) = self.validLayout else {
+                                    return
+                                }
+                                updateLayoutImpl?(layout, navigationBarHeight)
+                            }, orientationUpdated: { [weak self] in
+                                guard let self, let (layout, navigationBarHeight) = self.validLayout else {
+                                    return
+                                }
+                                updateLayoutImpl?(layout, navigationBarHeight)
+                            }, isFlippedUpdated: { [weak self] _ in
+                                guard let self, let (layout, navigationBarHeight) = self.validLayout else {
+                                    return
+                                }
+                                updateLayoutImpl?(layout, navigationBarHeight)
+                            })
+                            
+                            let controller = VoiceChatCameraPreviewController(sharedContext: self.sharedContext, cameraNode: outgoingVideoNode, shareCamera: { _, _ in
+                                proceed()
+                            }, switchCamera: { [weak self] in
+                                Queue.mainQueue().after(0.1) {
+                                    self?.call.switchVideoCamera()
+                                }
+                            })
+                            self.present?(controller)
+                            
+                            updateLayoutImpl = { [weak controller] layout, navigationBarHeight in
+                                controller?.containerLayoutUpdated(layout, transition: .immediate)
+                            }
+                        }
+                    })
+                })
+            }
+        default:
+            break
+        }
+    }
+    
     private func resolvedEmojiKey(data: Data) -> [String] {
         if let emojiKey = self.emojiKey, emojiKey.data == data {
             return emojiKey.resolvedKey
@@ -186,6 +290,8 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
     }
     
     func updateCallState(_ callState: PresentationCallState) {
+        self.callState = callState
+        
         let mappedLifecycleState: PrivateCallScreen.State.LifecycleState
         switch callState.state {
         case .waiting:
@@ -227,18 +333,45 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
             mappedLifecycleState = .terminated(PrivateCallScreen.State.TerminatedState(duration: duration))
         }
         
-        switch callState.remoteVideoState {
-        case .active, .paused:
-            if self.remoteVideo == nil, let call = self.call as? PresentationCallImpl, let videoStreamSignal = call.video(isIncoming: true) {
-                self.remoteVideo = AdaptedCallVideoSource(videoStreamSignal: videoStreamSignal)
-            }
-        case .inactive:
+        switch callState.state {
+        case .terminating, .terminated:
+            self.localVideo = nil
             self.remoteVideo = nil
+        default:
+            switch callState.videoState {
+            case .active(let isScreencast), .paused(let isScreencast):
+                if isScreencast {
+                    self.localVideo = nil
+                } else {
+                    if self.localVideo == nil, let call = self.call as? PresentationCallImpl, let videoStreamSignal = call.video(isIncoming: false) {
+                        self.localVideo = AdaptedCallVideoSource(videoStreamSignal: videoStreamSignal)
+                    }
+                }
+            case .inactive, .notAvailable:
+                self.localVideo = nil
+            }
+            
+            switch callState.remoteVideoState {
+            case .active, .paused:
+                if self.remoteVideo == nil, let call = self.call as? PresentationCallImpl, let videoStreamSignal = call.video(isIncoming: true) {
+                    self.remoteVideo = AdaptedCallVideoSource(videoStreamSignal: videoStreamSignal)
+                }
+            case .inactive:
+                self.remoteVideo = nil
+            }
         }
         
         if var callScreenState = self.callScreenState {
             callScreenState.lifecycleState = mappedLifecycleState
             callScreenState.remoteVideo = self.remoteVideo
+            callScreenState.localVideo = self.localVideo
+            
+            switch callState.remoteBatteryLevel {
+            case .low:
+                callScreenState.isRemoteBatteryLow = true
+            case .normal:
+                callScreenState.isRemoteBatteryLow = false
+            }
             
             if self.callScreenState != callScreenState {
                 self.callScreenState = callScreenState
@@ -380,7 +513,7 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
 
 private final class AdaptedCallVideoSource: VideoSource {
     private static let queue = Queue(name: "AdaptedCallVideoSource")
-    var updated: (() -> Void)?
+    private var onUpdatedListeners = Bag<() -> Void>()
     private(set) var currentOutput: Output?
     
     private var textureCache: CVMetalTextureCache?
@@ -396,7 +529,7 @@ private final class AdaptedCallVideoSource: VideoSource {
             }
             
             let rotationAngle: Float
-            switch videoFrameData.orientation {
+            switch videoFrameData.deviceRelativeOrientation ?? videoFrameData.orientation {
             case .rotation0:
                 rotationAngle = 0.0
             case .rotation90:
@@ -405,6 +538,47 @@ private final class AdaptedCallVideoSource: VideoSource {
                 rotationAngle = Float.pi
             case .rotation270:
                 rotationAngle = Float.pi * 3.0 / 2.0
+            }
+            
+            var mirrorDirection: Output.MirrorDirection = []
+            
+            var sourceId: Int = 0
+            if videoFrameData.mirrorHorizontally || videoFrameData.mirrorVertically {
+                sourceId = 1
+            }
+            
+            if let deviceRelativeOrientation = videoFrameData.deviceRelativeOrientation, deviceRelativeOrientation != videoFrameData.orientation {
+                let shouldMirror = videoFrameData.mirrorHorizontally || videoFrameData.mirrorVertically
+                
+                var mirrorHorizontally = false
+                var mirrorVertically = false
+                
+                if shouldMirror {
+                    switch deviceRelativeOrientation {
+                    case .rotation0:
+                        mirrorHorizontally = true
+                    case .rotation90:
+                        mirrorVertically = true
+                    case .rotation180:
+                        mirrorHorizontally = true
+                    case .rotation270:
+                        mirrorVertically = true
+                    }
+                }
+                
+                if mirrorHorizontally {
+                    mirrorDirection.insert(.horizontal)
+                }
+                if mirrorVertically {
+                    mirrorDirection.insert(.vertical)
+                }
+            } else {
+                if videoFrameData.mirrorHorizontally {
+                    mirrorDirection.insert(.horizontal)
+                }
+                if videoFrameData.mirrorVertically {
+                    mirrorDirection.insert(.vertical)
+                }
             }
             
             AdaptedCallVideoSource.queue.async { [weak self] in
@@ -425,7 +599,14 @@ private final class AdaptedCallVideoSource: VideoSource {
                         return
                     }
                     
-                    output = Output(y: yTexture, uv: uvTexture, rotationAngle: rotationAngle, sourceId: videoFrameData.mirrorHorizontally || videoFrameData.mirrorVertically ? 1 : 0)
+                    output = Output(
+                        resolution: CGSize(width: CGFloat(yTexture.width), height: CGFloat(yTexture.height)),
+                        y: yTexture,
+                        uv: uvTexture,
+                        rotationAngle: rotationAngle,
+                        mirrorDirection: mirrorDirection,
+                        sourceId: sourceId
+                    )
                 default:
                     return
                 }
@@ -435,10 +616,25 @@ private final class AdaptedCallVideoSource: VideoSource {
                         return
                     }
                     self.currentOutput = output
-                    self.updated?()
+                    for onUpdated in self.onUpdatedListeners.copyItems() {
+                        onUpdated()
+                    }
                 }
             }
         })
+    }
+    
+    func addOnUpdated(_ f: @escaping () -> Void) -> Disposable {
+        let index = self.onUpdatedListeners.add(f)
+        
+        return ActionDisposable { [weak self] in
+            DispatchQueue.main.async {
+                guard let self else {
+                    return
+                }
+                self.onUpdatedListeners.remove(index)
+            }
+        }
     }
     
     deinit {

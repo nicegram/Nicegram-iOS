@@ -834,9 +834,14 @@ private final class DrawingScreenComponent: CombinedComponent {
         
         func updateColor(_ color: DrawingColor, animated: Bool = false) {
             self.currentColor = color
-            if let selectedEntity = self.selectedEntity {
-                selectedEntity.color = color
-                self.updateEntityView.invoke((selectedEntity.uuid, false))
+            if let selectedEntity = self.selectedEntity, let selectedEntityView = self.entityViewForEntity(selectedEntity) {
+                if let textEntity = selectedEntity as? DrawingTextEntity, let textEntityView = selectedEntityView as? DrawingTextEntityView {
+                    textEntity.setColor(color, range: textEntityView.selectedRange)
+                    textEntityView.update(animated: false, keepSelectedRange: true)
+                } else {
+                    selectedEntity.color = color
+                    selectedEntityView.update(animated: false)
+                }
             } else {
                 self.drawingState = self.drawingState.withUpdatedColor(color)
                 self.updateToolState.invoke(self.drawingState.currentToolState)
@@ -3077,12 +3082,15 @@ public final class DrawingToolsInteraction {
                 return
             }
             
+            var isRectangleImage = false
             var isVideo = false
             var isAdditional = false
             if let entity = entityView.entity as? DrawingStickerEntity {
                 if case let .dualVideoReference(isAdditionalValue) = entity.content {
                     isVideo = true
                     isAdditional = isAdditionalValue
+                } else if case let .image(_, type) = entity.content, case .rectangle = type {
+                    isRectangleImage = true
                 }
             }
             
@@ -3139,6 +3147,21 @@ public final class DrawingToolsInteraction {
                     }))
                 }
             }
+            #if DEBUG
+            if isRectangleImage {
+                actions.append(ContextMenuAction(content: .text(title: "Cut Out", accessibilityLabel: "Cut Out"), action: { [weak self, weak entityView] in
+                    if let self, let entityView, let entity = entityView.entity as? DrawingStickerEntity, case let .image(image, _) = entity.content {
+                        let _ = (cutoutStickerImage(from: image)
+                        |> deliverOnMainQueue).start(next: { result in
+                            if let result {
+                                let newEntity = DrawingStickerEntity(content: .image(result, .sticker))
+                                self.insertEntity(newEntity)
+                            }
+                        })
+                    }
+                }))
+            }
+            #endif
             let entityFrame = entityView.convert(entityView.selectionBounds, to: node.view).offsetBy(dx: 0.0, dy: -6.0)
             let controller = makeContextMenuController(actions: actions)
             let bounds = node.bounds.insetBy(dx: 0.0, dy: 160.0)
@@ -3497,7 +3520,7 @@ public final class DrawingToolsInteraction {
                                     return
                                 }
                                 entityView.suspendEditing()
-                                self?.presentColorPicker(initialColor: textEntity.color, dismissed: {
+                                self?.presentColorPicker(initialColor: textEntity.color(in: entityView.selectedRange), dismissed: {
                                     entityView.resumeEditing()
                                 })
                             },
