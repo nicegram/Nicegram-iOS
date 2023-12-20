@@ -40,9 +40,9 @@
 "NiceFeatures.Notifications.Fix" = "Désactiver les notifications indésirables";
 "NiceFeatures.Notifications.FixNotice" = "Utile si vous recevez des notifications de chats en sourdine.\nLes réponses à partir des notifications, des libellés de compte et des aperçus multimédias ne seront pas disponibles.";
 "NiceFeatures.Filters.Header" = "FILTRES (ONGLETS)";
-"NiceFeatures.Filters.Notice" = "Sélectionnez le nombre d'onglets personnalisés.\nAppuyez longuement sur l'onglet pour changer de filtre.";
+"NiceFeatures.Filters.Notice" = "Sélectionnez le nombre d'onglets personnalisés.\nAppuyez longuement sur l'onglet pour modifier le filtre.";
 "NiceFeatures.Filters.ShowBadge" = "Afficher les badges (filtres)";
-"NiceFeatures.UseClassicInfoUi" = "Utiliser l'interface utilisateur d'informations de chat classique";
+"NiceFeatures.UseClassicInfoUi" = "Utiliser l'interface utilisateur classique d'informations sur le chat";
 
 /*Common*/
 "Common.ExitNow" = "Quitter maintenant";
@@ -79,19 +79,19 @@
 "Premium.UnlimitedPins.Header" = "CHATS ÉPINGLÉS ILLIMITÉS";
 "Premium.SyncPins" = "Synchroniser les chats épinglés";
 "Premium.SyncPins.Notice.ON" = "Si vous modifiez les chats épinglés dans un autre client, ils CHANGERONT dans Nicegram.";
-"Premium.SyncPins.Notice.OFF" = "Si vous modifiez les chats épinglés dans un autre client, ils NE CHANGERONT PAS dans Nicegram.";
+"Premium.SyncPins.Notice.OFF" = "Si vous modifiez les discussions épinglées dans un autre client, elles NE CHANGERONT PAS dans Nicegram.";
 "Premium.Missed.Header" = "Messages manqués";
 "Premium.Missed" = "Notifier les messages manqués";
-"Premium.Missed.Notice" = "Lorsque vous ouvrez l'application après un long délai (sommeil, révisions, etc.), Nicegram vous informera des messages privés non lus et des mentions.";
+"Premium.Missed.Notice" = "Lorsque vous ouvrez l'application après un long délai (dormir, étudier, etc.), Nicegram vous informera des messages privés et des mentions non lus.";
 "Folder.DeleteAsk" = "Supprimer le dossier";
-"Folder.NeedPremium" = "Ce dossier est uniquement disponible avec Premium. Vous pouvez obtenir Premium ou supprimer un dossier en le faisant glisser sur le côté.";
+"Folder.NeedPremium" = "Ce dossier est uniquement disponible avec Premium. Vous pouvez obtenir Premium ou supprimer un dossier par glissement.";
 "Common.SupportChatUsername" = "nicegramchat";
 "Common.FAQUrl" = "https://nicegram.app/faq/";
 "Common.FAQ.Button" = "FAQ Nicegram";
-"Common.FAQ.Intro" = "Veuillez noter que l'assistance Nicegram est seulement assurée par le développeur et la communauté.\n\nTout d'abord, jetez un œil à la FAQ Nicegram : elle contient des conseils de dépannage importants et des réponses à la plupart des questions.";
+"Common.FAQ.Intro" = "Veuillez noter que le support Nicegram est assuré par le seul développeur et communauté.\n\nTout d’abord, jetez un œil à la FAQ Nicegram : elle contient des conseils de dépannage importants et des réponses à la plupart des questions.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Des fonctionnalités uniques que vous ne pouvez pas refuser !";
-"IAP.Premium.Features" = "Traducteur de message rapide\n\nMémoriser le dossier sélectionné en quittant";
+"IAP.Premium.Features" = "Traducteur de messages rapides\n\nMémoriser le dossier sélectionné à la sortie";
 "IAP.Premium.Activated" = "Premium activé !";
 "IAP.Common.Restore" = "Restaurer les achats";
 "IAP.Common.CantPay" = "Désolé, mais vous ne pouvez pas effectuer d'achats en raison des restrictions de votre appareil ou de votre compte.";
@@ -182,18 +182,12 @@
 
 /*Telegram Premium*/
 "TelegramPremium.Description" = "Malheureusement, vous ne pouvez pas obtenir les ** fonctionnalités Premium de Telegram ** lorsque vous êtes connecté à l'application Nicegram. Veuillez vous rendre sur l'application officielle Telegram et vous abonner à **Telegram Premium**. Lorsque vous reviendrez sur Nicegram, toutes les **Fonctionnalités Premium** seront disponibles à l'utilisation.";
-"TelegramPremium.Title" = "Restaurer l'abonnement premium";
-"TelegramPremium.Failure.Title" = "Échec";
-"TelegramPremium.Failure.Description" = "Quelque chose s'est mal passé. Veuillez utiliser Nicegram Bot pour restaurer votre abonnement Premium à vie";
-"TelegramPremium.Failure.Pending" = "Votre demande est en attente. S'il vous plaît, attendez que Nicegram Bot l'approuve";
-"TelegramPremium.Success.Title" = "Succès";
-"TelegramPremium.Success.Description" = "Votre abonnement Premium à vie a été restauré avec succès !";
 
 /*Double Bottom*/
-"DoubleBottom.Title" = "Double fond";
+"DoubleBottom.Title" = "Double bottom";
 "DoubleBottom.Description" = "Pour activer cette fonctionnalité, vous devez avoir plus d'un compte et activer le verrouillage par code (allez dans Paramètres → Confidentialité et sécurité → Verrouillage par code)";
-"DoubleBottom.Enabled.Title" = "Le double fond est activé";
-"DoubleBottom.Enabled.Description" = "N'oubliez pas le mot de passe que vous venez de définir et redémarrez l'application pour que le double fond fonctionne correctement";
+"DoubleBottom.Enabled.Title" = "Double Bottom est activé";
+"DoubleBottom.Enabled.Description" = "N'oubliez pas le mot de passe que vous venez de définir et redémarrez l'application pour que le Double Bottom fonctionne correctement";
 "DoubleBottom.Enabled.OK" = "D'ACCORD";
 "DoubleBottom.Passcode.Error" = "Veuillez définir un autre code d'accès différent de celui que vous utilisez pour le verrouillage par code d'accès";
 
@@ -211,3 +205,11 @@
 "NicegramOnboarding.5.Desc" = "Messagerie sécurisée avec cryptage fort, appels audio et vidéo de groupe, chaînes publiques, groupes et bots, stockage illimité dans le cloud pour les discussions, partage de médias et de documents.";
 "NicegramOnboarding.6.Title" = "Rencontrer Lily";
 "NicegramOnboarding.6.Desc" = "Votre assistant personnel AI Chatbot pour simplifier votre vie!";
+
+/*Rounded Videos*/
+"RoundedVideos.ButtonTitle" = "Envoyer en tant que vidéo arrondie";
+"RoundedVideos.MoreButtonTooltip" = "Convertissez des vidéos carrées en cercles à envoyer en un seul clic.";
+"RoundedVideos.SendButtonTooltip" = "Appuyez longuement pour envoyer votre vidéo sous forme de cercle élégant.";
+
+/*Stealth Mode*/
+"StealthMode.Toggle" = "Mode Furtif";

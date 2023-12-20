@@ -182,12 +182,6 @@
 
 /*Telegram Premium*/
 "TelegramPremium.Description" = "Desafortunadamente, no puede obtener **Funciones premium de Telegram** mientras está conectado a la aplicación Nicegram. Vaya a la aplicación oficial de Telegram y suscríbase a **Telegram Premium**. Cuando regrese a Nicegram, todas las **Características Premium** estarán disponibles para su uso.";
-"TelegramPremium.Title" = "Restaurar prémium";
-"TelegramPremium.Failure.Title" = "Error";
-"TelegramPremium.Failure.Description" = "Algo salió mal. Utilice Nicegram Bot para restaurar su suscripción prémium de por vida";
-"TelegramPremium.Failure.Pending" = "Su solicitud está en curso. Por favor, espere hasta que Nicegram Bot lo apruebe";
-"TelegramPremium.Success.Title" = "Éxito";
-"TelegramPremium.Success.Description" = "¡Su suscripción prémium de por vida se restauró con éxito!";
 
 /*Double Bottom*/
 "DoubleBottom.Title" = "Double bottom";
@@ -211,3 +205,11 @@
 "NicegramOnboarding.5.Desc" = "Servicio de mensajería seguro con cifrado robusto, llamadas de audio y vídeo grupales, canales públicos, grupos y \"bots\", almacenamiento ilimitado en la nube para chats, multimedia y documentos compartidos.";
 "NicegramOnboarding.6.Title" = "Conoce a Lily";
 "NicegramOnboarding.6.Desc" = "¡Tu chatbot de IA - el asistente personal diseñado para simplificar tu vida!";
+
+/*Rounded Videos*/
+"RoundedVideos.ButtonTitle" = "Enviar como Vídeo Redondeado";
+"RoundedVideos.MoreButtonTooltip" = "Convierte videos cuadrados en círculos para enviar con un solo toque.";
+"RoundedVideos.SendButtonTooltip" = "Mantén presionado para enviar tu video como un círculo elegante.";
+
+/*Stealth Mode*/
+"StealthMode.Toggle" = "Modo Sigiloso";

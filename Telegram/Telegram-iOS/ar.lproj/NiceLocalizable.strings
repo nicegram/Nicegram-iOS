@@ -1,4 +1,4 @@
-"AppName" = "NiceGram";
+"AppName" = "Nicegram";
 
 /*Common*/
 "Nicegram.PrivacyPolicy" = "سياسة الخصوصية";
@@ -182,12 +182,6 @@
 
 /*Telegram Premium*/
 "TelegramPremium.Description" = "للأسف، لا يمكنك الحصول على**ميزات تيليجرام المُميّز** أثناء تسجيلك الدخول في تطبيق Nicegram. يرجى الانتقال إلى تطبيق تيليجرام الرسمي والاشتراك في **تيليجرام المُميّز**. وعندما تعود إلى تطبيق Nicegram، ستجد جميع **ميزات تيليجرام المُميّز** متاحة للاستخدام.";
-"TelegramPremium.Title" = "استعادة اشتراك premium";
-"TelegramPremium.Failure.Title" = "خطأ";
-"TelegramPremium.Failure.Description" = "لقد حدث خطأ ما. يرجى استخدم Nicegram Bot لاستعادة اشتراك Premium Lifetime الخاص بك";
-"TelegramPremium.Failure.Pending" = "طلبك معلق. يرجى الانتظار حتى تتم الموافقة عليه من قبل Nicegram Bot";
-"TelegramPremium.Success.Title" = "تم بنجاح";
-"TelegramPremium.Success.Description" = "تمت استعادة اشتراك Premium Lifetime الخاص بك بنجاح!";
 
 /*Double Bottom*/
 "DoubleBottom.Title" = "Double bottom";
@@ -211,3 +205,11 @@
 "NicegramOnboarding.5.Desc" = "برنامج مراسلة قوي بتشفير قوي، ومكالمات صوتية ومرئية جماعية، وقنوات عامة، ومجموعات وبرمجيات بوت، وتخزين سحابي غير محدود للمحادثات، ومشاركة الوسائط والمستندات.";
 "NicegramOnboarding.6.Title" = "تعرف على ليلي";
 "NicegramOnboarding.6.Desc" = "مساعد شخصي للتحدث مع الذكاء الاصطناعي وتبسيط حياتك!";
+
+/*Rounded Videos*/
+"RoundedVideos.ButtonTitle" = "أرسل كفيديو دائري";
+"RoundedVideos.MoreButtonTooltip" = "حول الفيديوهات المربعة لترسل كدوائر بنقرة واحدة.";
+"RoundedVideos.SendButtonTooltip" = "اضغط مطولاً لإرسال فيديوك على شكل دائرة أنيقة.";
+
+/*Stealth Mode*/
+"StealthMode.Toggle" = "وضع التخفي";

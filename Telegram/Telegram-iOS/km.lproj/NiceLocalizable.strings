@@ -1,0 +1,89 @@
+"AppName" = "Nicegram";
+
+/*Common*/
+"Nicegram.PrivacyPolicy" = "គោលកាណ៍ឯកជនភាព";
+"Nicegram.EULA" = "EULA";
+"ChatFilter.Channels" = "កាណាល់";
+"ChatFilter.Private" = "អត្ថជន";
+"ChatFilter.Groups" = "ក្រុម";
+"ChatFilter.Unread" = "មិនបានអាន";
+"ChatFilter.Unmuted" = "មិនស្ងាត់";
+"ChatFilter.Favourites" = "សំណព្វ";
+
+/*Nice Features*/
+"NiceFeatures.Title" = "Nicegram";
+"NiceFeatures.Tabs.Header" = "ថេប";
+"NiceFeatures.Tabs.ShowContacts" = "បង្ហាញថេបទំនាក់ទំនង";
+"NiceFeatures.ChatScreen.Header" = "អេក្រង់ឈែត";
+"NiceFeatures.ChatScreen.AnimatedStickers" = "រូបជីវចល";
+"NiceFeatures.useBackCam" = "ប្រើកាមេរ៉ាខាងក្រោយ (រង្វង់វីដេអូ)";
+
+"NiceFeatures.Folders.Header" = "ថត";
+"NiceFeatures.Account.Header" = "ការកំណត់គណនី";
+"NiceFeatures.Folders.TgFolders" = "ថតឯបាត";
+"NiceFeatures.Folders.TgFolders.Notice" = "ស្ទាយ៍បញ្ជីថត iOS";
+
+"NiceFeatures.RoundVideos.Header" = "រង្វង់វីដេអូ";
+"NiceFeatures.RoundVideos.UseRearCamera" = "ចាប់ផ្ដើមជាមួយកាមេរ៉ាក្រោយ";
+
+"NiceFeatures.InstantLock" = "ភ្លាមៗ";
+
+/*Save to Cloud*/
+"Chat.SaveToCloud" = "រក្សាទុកទៅពពក";
+
+/*Open Pin*/
+"Chat.OpenPin" = "បង្ហាញខ្ទាស់";
+"ChatFilter.Admin" = "មេក្រុម";
+"NiceFeatures.Notifications.Fix" = "វិកលកម្មរំលឹកដែលមិនចង់បាន";
+"NiceFeatures.Notifications.FixNotice" = "មានប្រយោជន៍ បើអ្នកទទួលបានការជូនដំណឹងពីឈែតដែលបានស្ងាត់។ ការឆ្លើយតបពីរម្លឹក ស្លាកគណនី និងការមើលមេឌាជាមុននឹងមិនអាចប្រើបានទេ។";
+"NiceFeatures.Filters.Header" = "តម្រង (ថេប)";
+"NiceFeatures.Filters.Notice" = "ជ្រើសចំនួននៃថេបផ្ទាល់ខ្លួន។\nប៉ះឱ្យយូរ ថេបដើម្បីផ្លាស់តម្រង។";
+
+/*Common*/
+"Common.ExitNow" = "ចាកចេញឥឡូវ";
+"Common.Later" = "ពេលក្រោយ";
+"Common.RestartRequired" = "តម្រូវ​ឲ្យ​ចាប់ផ្ដើម​ឡើង​វិញ!";
+"NiceFeatures.Tabs.ShowNames" = "បង្ហាញឈ្មោះថេប";
+"Chat.ForwardAsCopy" = "បញ្ជូនបន្តជាចម្លង";
+
+/*Folder*/
+"Folder.DefaultName" = "ថត";
+"Folder.New" = "ថតថ្មី";
+"Folder.Created" = "ថតត្រូវបានបង្កើត";
+"Folder.AddToExisting" = "បន្ថែមទៅថតដែលមានស្រាប់";
+"Folder.Updated" = "ថតត្រូវបានអាប់ដេត";
+"Folder.Create" = "បង្កើតថត…";
+"Folder.Create.Name" = "ឈ្មោះថត";
+"Folder.Create.Placeholder" = "ថត…";
+"Folder.LimitExceeded" = "សូមទោស, អ្នកអាចបង្កើតថតមិនច្រើនជាង ៣ឡើយ។\nថតបន្ថែមអាចប្រើបានក្នុង ព្រីមៀរ។";
+"NiceFeatures.HideNumber" = "លាក់លេខទូរសព្ទក្នុងការកំណត់";
+
+/*NGWeb*/
+"NGWeb.Blocked" = "មិនអាចប្រើបានក្នុង Nicegram ពាក់ព័ន្ធនឹងគោលការណ៍ណែនាំហាងកម្មវិធី";
+
+/*Browser*/
+/*Please, Go to «Data & Storage» to configure default browser*/
+"NiceFeatures.Use.DataStorage" = "សូមប្រើ «%1» ដើម្បីរៀបរចនារចនាសម្ព័ន្ធច្បោលបុរេជម្រើស";
+"NiceFeatures.Browser.Header" = "URLs";
+"NiceFeatures.Browser.UseBrowser" = "បើកបញ្ជាប់ក្នុងច្បោល";
+"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram នឹងបើកបញ្ជាន់ក្នុងច្បោលក្រៅជំនួសក្នុងកម្មវិធី។ ច្បោលដែលជ្រើសគួរតែបានដំឡើង។";
+"ChatFilter.Missed" = "បានខកខាន";
+
+/*Premium*/
+"Premium.Title" = "ព្រីមៀរ";
+"Premium.UnlimitedPins.Header" = "ខ្ទាស់ឈែតដោយឥតកំណត់";
+"Premium.SyncPins" = "កម្មការឈែតដែលខ្ទាស់";
+"Premium.SyncPins.Notice.ON" = "បើអ្នកផ្លាស់ប្ដូរឈែតដែលខ្ទាស់ក្នុងអតិថូបករណ៍ផ្សេង ពួកគេនឹងផ្លាស់ប្ដូរក្នុង Nicegram។";
+"Premium.SyncPins.Notice.OFF" = "បើអ្នកផ្លាស់ប្ដូរឈែតដែលខ្ទាស់ក្នុងអតិថូបករណ៍ផ្សេង ពួកគេនឹងមិនផ្លាស់ប្ដូរក្នុង Nicegram ទេ។";
+"Premium.Missed.Header" = "សារដែលខកខាន";
+"Premium.Missed" = "រម្លឹកសារដែលខកខាន";
+"Premium.Missed.Notice" = "នៅពេលអ្នកបើកកម្មវិធី បន្ទាប់ពីការពន្យារពេលយូរ (គេង សិក្សា។ល។) Nicegram នឹងរម្លឹកអ្នកអំពីសារឯកជន និងប្រារព្ធដែលមិនទាន់អាន។";
+"Folder.DeleteAsk" = "លុបថត";
+"Folder.NeedPremium" = "ថតនេះអាចប្រើបានជាមួយ Premium ប៉ុណ្ណោះ។ អ្នកអាចប្រើព្រីមៀរ ឬលុបថតដោយអូស។";
+"Common.SupportChatUsername" = "nicegramchat";
+"Common.FAQUrl" = "https://nicegram.app/faq/";
+"Common.FAQ.Button" = "Nicegram FAQ";
+"Common.FAQ.Intro" = "សូមចំណាំថា ការគាំទ្រ Nicegram ធ្វើឡើងដោយអ្នកអភិវឌ្ឍន៍ និងសហគមន៍តែមួយគត់។\n\nជាដំបូង សូមក្រឡេកមើល FAQ Nicegram៖ វាមានគន្លឹះដោះស្រាយបញ្ហាសំខាន់ៗ និងចម្លើយចំពោះសំណួរភាគច្រើន។";
+"IAP.Premium.Title" = "ព្រីមៀរ";
+"IAP.Premium.Subtitle" = "លក្ខណៈពិសេសប្លែក ដែលអ្នកមិនអាចបដិសេធ!";
+"IAP.Premium.Features" = "អ្នកបកប្រែសាររហ័ស\n\nចងចាំថតដែលបានជ្រើសនៅពេលចេញ";

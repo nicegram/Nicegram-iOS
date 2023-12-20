@@ -182,18 +182,12 @@
 
 /*Telegram Premium*/
 "TelegramPremium.Description" = "Ne yazık ki, Nicegram uygulamasında oturum açarken **Telegram Premium Özellikleri**'ni alamazsınız. Lütfen resmi Telegram uygulamasına gidin ve **Telegram Premium**'a abone olun. Nicegram'a geri döndüğünüzde, tüm **Premium Özellikler** kullanıma hazır olacaktır.";
-"TelegramPremium.Title" = "Premium'u geri yükleyin";
-"TelegramPremium.Failure.Title" = "Hata";
-"TelegramPremium.Failure.Description" = "Bir şeyler yanlış gitti. Premium Ömür Boyu Üyeliği geri yüklemek için lütfen Nicegram Bot'u kullanın";
-"TelegramPremium.Failure.Pending" = "Talebiniz beklemededir. Nicegram Bot onu onaylayana kadar lütfen bekleyin";
-"TelegramPremium.Success.Title" = "Başarılı";
-"TelegramPremium.Success.Description" = "Premium Ömür Boyu Üyeliğiniz başarılı bir şekilde geri yüklendi!";
 
 /*Double Bottom*/
-"DoubleBottom.Title" = "Çift Dip";
+"DoubleBottom.Title" = "Double bottom";
 "DoubleBottom.Description" = "Bu özelliği etkinleştirmek için birden fazla hesabınızın olması ve Parola Kilidini açmanız gerekir (Ayarlar → Gizlilik & Güvenlik  → Parola Kilidi)";
-"DoubleBottom.Enabled.Title" = "Çift Dip etkinleştirildi";
-"DoubleBottom.Enabled.Description" = "Lütfen az önce belirlediğiniz şifreyi hatırlayın ve Çift Dibin iyi çalışması için uygulamayı yeniden başlatın.";
+"DoubleBottom.Enabled.Title" = "Double Bottom etkinleştirildi";
+"DoubleBottom.Enabled.Description" = "Lütfen az önce belirlediğiniz şifreyi hatırlayın ve Double Bottom iyi çalışması için uygulamayı yeniden başlatın";
 "DoubleBottom.Enabled.OK" = "TAMAM";
 "DoubleBottom.Passcode.Error" = "Lütfen Parola Kilidi için mevcut kullandığınızdan farklı bir parola belirleyin";
 
@@ -211,3 +205,11 @@
 "NicegramOnboarding.5.Desc" = "Güçlü Şifreleme, Grup Sesli ve Görüntülü Aramalar, Genel kanallar, Gruplar ve Botlar, Sohbetler Belgeler ve Dökümanlar için Limitsiz Bulut depolaması ile Güvenli Messenger.";
 "NicegramOnboarding.6.Title" = "Lily ile Tanışın";
 "NicegramOnboarding.6.Desc" = "Hayatınızı Basitleştirmek için Kişisel Yapay Zeka Sohbet Robotu Asistanınız!";
+
+/*Rounded Videos*/
+"RoundedVideos.ButtonTitle" = "Yuvarlak Video Olarak Gönder";
+"RoundedVideos.MoreButtonTooltip" = "Kare videoları tek dokunuşla daire olarak göndermek için dönüştürün.";
+"RoundedVideos.SendButtonTooltip" = "Videonuzu şık bir daire olarak göndermek için uzun basın.";
+
+/*Stealth Mode*/
+"StealthMode.Toggle" = "Gizli Mod";

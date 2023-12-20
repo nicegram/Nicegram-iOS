@@ -182,18 +182,12 @@
 
 /*Telegram Premium*/
 "TelegramPremium.Description" = "遗憾的是，您无法在登录 Nicegram 应用后获取 **Telegram 高级功能**。请前往官方 Telegram 应用并订阅 **Telegram 高级版**。在您返回 Nicegram 后，所有**高级功能**将可用。";
-"TelegramPremium.Title" = "恢复高级版";
-"TelegramPremium.Failure.Title" = "失败";
-"TelegramPremium.Failure.Description" = "出现了问题。请使用 Nicegram 机器人恢复你的高级版终身订阅。";
-"TelegramPremium.Failure.Pending" = "你的请求待处理。请等待 Nicegram 机器人批准它";
-"TelegramPremium.Success.Title" = "成功";
-"TelegramPremium.Success.Description" = "你的高级版终身订阅已成功恢复！";
 
 /*Double Bottom*/
-"DoubleBottom.Title" = "双底";
+"DoubleBottom.Title" = "Double bottom";
 "DoubleBottom.Description" = "要启用此功能，你需有超过一个账户，并将密码锁切换到打开状态（ 转向设置 → 隐私与安全  → 密码锁）";
-"DoubleBottom.Enabled.Title" = "双底已启用";
-"DoubleBottom.Enabled.Description" = "请记住你刚设置的密码，并重启应用，以便“双底”可以正常运作";
+"DoubleBottom.Enabled.Title" = "Double bottom已启用";
+"DoubleBottom.Enabled.Description" = "请记住你刚设置的密码，并重启应用，以便“Double Bottom”可以正常运作";
 "DoubleBottom.Enabled.OK" = "确认";
 "DoubleBottom.Passcode.Error" = "请设置另一个与密码锁不同的密码";
 
@@ -211,3 +205,11 @@
 "NicegramOnboarding.5.Desc" = "安全的通讯工具，拥有强加密、群组音频和视频电话、公共频道、群聊和机器人、无限制的聊天云存储空间、媒体和文档共享功能。";
 "NicegramOnboarding.6.Title" = "认识莉莉";
 "NicegramOnboarding.6.Desc" = "您的个人人工智能聊天机器人助手，简化您的生活!";
+
+/*Rounded Videos*/
+"RoundedVideos.ButtonTitle" = "以圆形视频发送";
+"RoundedVideos.MoreButtonTooltip" = "一键将方形视频转换为圆形发送。";
+"RoundedVideos.SendButtonTooltip" = "长按以将您的视频以时尚圆形发送。";
+
+/*Stealth Mode*/
+"StealthMode.Toggle" = "隐身模式";

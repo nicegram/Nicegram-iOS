@@ -1,4 +1,4 @@
-"AppName" = "Найсграм";
+"AppName" = "Nicegram";
 
 /*Common*/
 "Nicegram.PrivacyPolicy" = "Политика конфиденциальности Nicegram";
@@ -14,7 +14,7 @@
 "ChatFilter.Favourites" = "Важные";
 
 /*Nice Features*/
-"NiceFeatures.Title" = "Найсграм";
+"NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "ВКЛАДКИ";
 "NiceFeatures.Tabs.ShowContacts" = "Вкладка «Контакты»";
 "NiceFeatures.ChatScreen.Header" = "ЧАТ";
@@ -182,18 +182,12 @@
 
 /*Telegram Premium*/
 "TelegramPremium.Description" = "К сожалению, вы не можете получить **функции Telegram Premium**, если вы вошли в приложение Nicegram. Перейдите в официальное приложение Telegram и подпишитесь на **Telegram Premium**. Когда вы вернетесь в Nicegram, все **функции Premium** будут доступны для использования. ";
-"TelegramPremium.Title" = "Восстановить премиум-подписку";
-"TelegramPremium.Failure.Title" = "Ошибка";
-"TelegramPremium.Failure.Description" = "Что-то пошло не так. Воспользуйтесь ботом Nicegram, чтобы восстановить пожизненную премиум-подписку";
-"TelegramPremium.Failure.Pending" = "Ваш запрос ожидает рассмотрения. Пожалуйста, подождите, пока бот Nicegram его одобрит";
-"TelegramPremium.Success.Title" = "Готово";
-"TelegramPremium.Success.Description" = "Ваша пожизненная премиум-подписка успешно восстановлена!";
 
 /*Double Bottom*/
-"DoubleBottom.Title" = "Двойное дно";
+"DoubleBottom.Title" = "Double bottom";
 "DoubleBottom.Description" = "Чтобы включить эту функцию, у вас должно быть более одного аккаунта и включена блокировка кодом (перейдите в «Настройки» → «Конфиденциальность и безопасность» → «Блокировка кодом»).";
-"DoubleBottom.Enabled.Title" = "Двойное дно включено";
-"DoubleBottom.Enabled.Description" = "Пожалуйста, запомните код доступа, который вы только что установили, и перезапустите приложение, чтобы «Двойное дно» работало правильно";
+"DoubleBottom.Enabled.Title" = "Double Bottom включено";
+"DoubleBottom.Enabled.Description" = "Пожалуйста, запомните код доступа, который вы только что установили, и перезапустите приложение, чтобы «Double Bottom» работало правильно";
 "DoubleBottom.Enabled.OK" = "Ок";
 "DoubleBottom.Passcode.Error" = "Установите другой код доступа, отличающийся от того, который Вы используете для Блокировки кодом доступа.";
 
@@ -211,3 +205,11 @@
 "NicegramOnboarding.5.Desc" = "Безопасный мессенджер с надежным шифрованием, групповыми аудио- и видеозвонками, общедоступными каналами, группами и ботами, неограниченным облачным хранилищем для чатов, а также возможностью обмена медиафайлами и документами.";
 "NicegramOnboarding.6.Title" = "Встречайте ИИ-чатбота Лили!";
 "NicegramOnboarding.6.Desc" = "Ваш личный ИИ-помощник, призванный облегчить вам жизнь!";
+
+/*Rounded Videos*/
+"RoundedVideos.ButtonTitle" = "Отправить как круглое видео";
+"RoundedVideos.MoreButtonTooltip" = "Конвертируйте квадратные видео в круглые одним нажатием.";
+"RoundedVideos.SendButtonTooltip" = "Удерживайте, чтобы отправить видео в кружке.";
+
+/*Stealth Mode*/
+"StealthMode.Toggle" = "Режим инкогнито";

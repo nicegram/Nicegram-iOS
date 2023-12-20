@@ -343,7 +343,8 @@
     
     CGFloat itemHeight = 44.0;
     CGFloat containerWidth = 240.0;
-    CGFloat containerHeight = (_canSendSilently + _canSchedule + _hasTimer + _canSendWhenOnline) * itemHeight;
+    // MARK: Nicegram RoundedVideos, add _canSendAsRoundedVideo
+    CGFloat containerHeight = (_canSendAsRoundedVideo + _canSendSilently + _canSchedule + _hasTimer + _canSendWhenOnline) * itemHeight;
     // MARK: Nicegram RoundedVideos, _sendAsRoundedVideoButton added
     containerWidth = MAX(containerWidth, MAX(_sendAsRoundedVideoButton.buttonLabel.frame.size.width, MAX(_timerButton.buttonLabel.frame.size.width, MAX(_sendSilentlyButton.buttonLabel.frame.size.width, MAX(_sendWhenOnlineButton.buttonLabel.frame.size.width, _scheduleButton.buttonLabel.frame.size.width)))) + 84.0);
     if (!_dismissed) {

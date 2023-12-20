@@ -182,12 +182,6 @@
 
 /*Telegram Premium*/
 "TelegramPremium.Description" = "Leider können Sie **Telegram Premium Features** nicht nutzen, solange Sie in der Nicegram-App eingeloggt sind. Gehen Sie bitte zur offiziellen Telegram-App und abonnieren Sie **Telegram Premium**. Wenn Sie zu Nicegram zurückkehren, stehen Ihnen alle **Premium-Funktionen** zur Verfügung.";
-"TelegramPremium.Title" = "Prämie wiederherstellen";
-"TelegramPremium.Failure.Title" = "Fehlschlag";
-"TelegramPremium.Failure.Description" = "Etwas ist schief gelaufen. Bitte verwenden Sie Nicegram Bot, um Ihr Premium-Abonnement auf Lebenszeit wiederherzustellen.";
-"TelegramPremium.Failure.Pending" = "Ihre Anfrage ist in Bearbeitung. Bitte warten Sie, bis Nicegram Bot Ihre Anfrage genehmigt hat.";
-"TelegramPremium.Success.Title" = "Erfolg";
-"TelegramPremium.Success.Description" = "Ihr Premium-Lifetime-Abonnement wurde erfolgreich wiederhergestellt!";
 
 /*Double Bottom*/
 "DoubleBottom.Title" = "Double Bottom";
@@ -211,3 +205,11 @@
 "NicegramOnboarding.5.Desc" = "Sicherer Messenger mit starker Verschlüsselung, Gruppen-Audio- und Videoanrufe, öffentliche Channels, Gruppen und Bots, unbegrenzter Cloud-Speicher für Chats, Medien- und Dokumentenaustausch.";
 "NicegramOnboarding.6.Title" = "Triff Lily";
 "NicegramOnboarding.6.Desc" = "Dein persönlicher KI-Chatbot-Assistent zur Vereinfachung deines Lebens!";
+
+/*Rounded Videos*/
+"RoundedVideos.ButtonTitle" = "Als rundes Video senden";
+"RoundedVideos.MoreButtonTooltip" = "Quadratische Videos mit einem Tippen in Kreise umwandeln und senden.";
+"RoundedVideos.SendButtonTooltip" = "Lange drücken, um Ihr Video als stilvollen Kreis zu senden.";
+
+/*Stealth Mode*/
+"StealthMode.Toggle" = "Tarnmodus";

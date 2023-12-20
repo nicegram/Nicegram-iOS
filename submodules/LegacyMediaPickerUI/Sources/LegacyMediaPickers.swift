@@ -403,7 +403,7 @@ private func ngMapLegacyAssetPickerValues(
             
             let chunks = NGRoundedVideos.trim(range: trimTimeRange)
             
-            for chunk in chunks {
+            for (index, chunk) in chunks.enumerated() {
                 let chunkAdjustments = TGVideoEditAdjustments(
                     originalSize: originalSize,
                     cropRect: adjustments?.cropRect ?? .zero,
@@ -419,13 +419,22 @@ private func ngMapLegacyAssetPickerValues(
                     preset: TGMediaVideoConversionPresetVideoMessage
                 )
                 
+                var chunkUniqueId = itemWrapper.uniqueId
+                chunkUniqueId?.append("-\(index)")
+                
+                let chunkCaption: NSAttributedString? = if index == chunks.startIndex {
+                    caption
+                } else {
+                    nil
+                }
+                
                 let newValue: NSDictionary = [
                     "item": LegacyAssetItemWrapper(
-                        item: .video(data: data, thumbnail: thumbnail, adjustments: chunkAdjustments, caption: caption, asFile: asFile, asAnimation: asAnimation, stickers: stickers),
+                        item: .video(data: data, thumbnail: thumbnail, adjustments: chunkAdjustments, caption: chunkCaption, asFile: asFile, asAnimation: asAnimation, stickers: stickers),
                         timer: itemWrapper.timer,
                         spoiler: itemWrapper.spoiler,
                         groupedId: nil,
-                        uniqueId: itemWrapper.uniqueId
+                        uniqueId: chunkUniqueId
                     )
                 ]
                 result.append(newValue)
@@ -932,10 +941,30 @@ public func legacyAssetPickerEnqueueMessages(context: AccountContext, account: A
                             } else {
                                 item.groupedId
                             }
+                        
+                            let messageText = if sendAsRoundedVideo {
+                                ""
+                            } else {
+                                text.string
+                            }
                             //
                             
-                            // MARK: Nicegram RoundedVideos, change to 'localGroupingKey: localGroupingKey'
-                            messages.append(LegacyAssetPickerEnqueueMessage(message: .message(text: text.string, attributes: attributes, inlineStickers: [:], mediaReference: .standalone(media: media), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: localGroupingKey, correlationId: nil, bubbleUpEmojiOrStickersets: bubbleUpEmojiOrStickersets), uniqueId: item.uniqueId, isFile: asFile))
+                            // MARK: Nicegram RoundedVideos, change (text, localGroupingKey)
+                            messages.append(LegacyAssetPickerEnqueueMessage(message: .message(text: messageText, attributes: attributes, inlineStickers: [:], mediaReference: .standalone(media: media), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: localGroupingKey, correlationId: nil, bubbleUpEmojiOrStickersets: bubbleUpEmojiOrStickersets), uniqueId: item.uniqueId, isFile: asFile))
+                        
+                            // MARK: Nicegram RoundedVideos
+                            if sendAsRoundedVideo {
+                                let videoMessageText = text
+                                    .string
+                                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                                
+                                if !videoMessageText.isEmpty {
+                                    var uniqueId = item.uniqueId
+                                    uniqueId?.append("-text")
+                                    messages.append(LegacyAssetPickerEnqueueMessage(message: .message(text: videoMessageText, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: localGroupingKey, correlationId: nil, bubbleUpEmojiOrStickersets: []), uniqueId: uniqueId, isFile: false))
+                                }
+                            }
+                            //
                     }
                 }
             }

@@ -182,17 +182,11 @@
 
 /*Telegram Premium*/
 "TelegramPremium.Description" = "Niestety, nie można uzyskać **Telegram Premium Features** będąc zalogowanym do aplikacji Nicegram. Proszę przejdź do oficjalnej aplikacji Telegram i zasubskrybuj **Telegram Premium**. Po powrocie do Nicegram wszystkie **Premium Features** będą dostępne do użytku.";
-"TelegramPremium.Title" = "Przywróć Premium";
-"TelegramPremium.Failure.Title" = "Niepowodzenie";
-"TelegramPremium.Failure.Description" = "Coś poszło nie tak. Proszę użyj Nicegram Bota, aby przywrócić swoje dożywotnie subskrypcję Premium";
-"TelegramPremium.Failure.Pending" = "Twoje żądanie jest oczekujące. Proszę czekać, aż Nicegram Bot je zatwierdzi";
-"TelegramPremium.Success.Title" = "Sukces";
-"TelegramPremium.Success.Description" = "Twoja subskrypcja Premium na całe życie została pomyślnie przywrócona!";
 
 /*Double Bottom*/
-"DoubleBottom.Title" = "Podwójny dołek";
+"DoubleBottom.Title" = "Double bottom";
 "DoubleBottom.Description" = "Aby włączyć tę funkcję, musisz mieć więcej niż jedno konto i włączyć blokadę kodem dostępu (przejdź do Ustawienia → Prywatność i bezpieczeństwo → Blokada kodem dostępu)";
-"DoubleBottom.Enabled.Title" = "Double Bottom is enabled";
+"DoubleBottom.Enabled.Title" = "Double Bottom jest włączony";
 "DoubleBottom.Enabled.Description" = "Pamiętaj hasło, które właśnie ustawiłeś i zrestartuj aplikację, aby Double Dół działał poprawnie";
 "DoubleBottom.Enabled.OK" = "OK";
 "DoubleBottom.Passcode.Error" = "Proszę ustaw inny kod dostępu, różny od tego, którego używasz do blokady kodem dostępu";
@@ -211,3 +205,11 @@
 "NicegramOnboarding.5.Desc" = "Bezpieczny komunikator z silnym szyfrowaniem, grupowym rozmowami audio i wideo, publicznymi kanałami, grupami i botami, nieograniczonym przechowywaniem w chmurze, udostępnianiem czatów, multimediów i dokumentów.";
 "NicegramOnboarding.6.Title" = "Spotkaj Lily";
 "NicegramOnboarding.6.Desc" = "Twój osobisty asystent chatbot SI do upraszczania życia!";
+
+/*Rounded Videos*/
+"RoundedVideos.ButtonTitle" = "Wyślij jako zaokrąglone wideo";
+"RoundedVideos.MoreButtonTooltip" = "Przekształć kwadratowe wideo w koła jednym dotknięciem.";
+"RoundedVideos.SendButtonTooltip" = "Przytrzymaj, aby wysłać swoje wideo jako stylowy krąg.";
+
+/*Stealth Mode*/
+"StealthMode.Toggle" = "Tryb Ukryty";
