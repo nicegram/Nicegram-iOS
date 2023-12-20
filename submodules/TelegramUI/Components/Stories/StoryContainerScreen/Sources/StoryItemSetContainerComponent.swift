@@ -6456,9 +6456,14 @@ public final class StoryItemSetContainerComponent: Component {
                 }
                 
                 if !component.slice.item.storyItem.isForwardingDisabled {
+                    // MARK: Nicegram SaveStories
+                    let hasPremium = "".isEmpty
+                    //
+                    
                     let saveText: String = component.strings.Story_Context_SaveToGallery
                     items.append(.action(ContextMenuActionItem(text: saveText, icon: { theme in
-                        return generateTintedImage(image: UIImage(bundleImageName: accountUser.isPremium ? "Chat/Context Menu/Download" : "Chat/Context Menu/DownloadLocked"), color: theme.contextMenu.primaryColor)
+                        // MARK: Nicegram SaveStories, change accountUser.isPremium to hasPremium
+                        return generateTintedImage(image: UIImage(bundleImageName: hasPremium ? "Chat/Context Menu/Download" : "Chat/Context Menu/DownloadLocked"), color: theme.contextMenu.primaryColor)
                     }, action: { [weak self] _, a in
                         a(.default)
                         
@@ -6466,7 +6471,8 @@ public final class StoryItemSetContainerComponent: Component {
                             return
                         }
                         
-                        if accountUser.isPremium {
+                        // MARK: Nicegram SaveStories, change accountUser.isPremium to hasPremium
+                        if hasPremium {
                             self.requestSave()
                         } else {
                             self.presentSaveUpgradeScreen()

@@ -315,17 +315,6 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         
         self.mediaManager = MediaManagerImpl(accountManager: accountManager, inForeground: applicationBindings.applicationInForeground, presentationData: presentationData)
         
-        // MARK: Nicegram Themes
-        if #available(iOS 13.0, *) {
-            _ = (presentationData
-            |> deliverOnMainQueue)
-            .start(next: { presentationData in
-                let isDark = presentationData.theme.overallDarkAppearance
-                UIApplication.findKeyWindow()?.overrideUserInterfaceStyle = isDark ? .dark : .light
-            })
-        }
-        //
-        
         self.mediaManager.overlayMediaManager.updatePossibleEmbeddingItem = { [weak self] item in
             guard let strongSelf = self else {
                 return

@@ -1,6 +1,10 @@
 // MARK: Nicegram InLab
 import FeatPartners
 //
+// MARK: Nicegram RoundedVideos
+import NGRoundedVideos
+import TooltipUI
+//
 import Foundation
 import UIKit
 import Display
@@ -1902,6 +1906,57 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
         })
     }
     
+    // MARK: Nicegram RoundedVideos
+    private func maybeShowRoundedVideoTooltip() {
+        Queue.mainQueue().after(0.3) { [weak self] in
+            guard let self else {
+                return
+            }
+            
+            guard !NGRoundedVideos.sawMoreButtonTooltip else {
+                return
+            }
+            
+            guard canSendAsRoundedVideo(
+                currentItem: nil,
+                editingContext: self.interaction?.editingState,
+                selectionContext: self.interaction?.selectionState
+            ) else {
+                return
+            }
+            
+            guard self.moreButtonNode.iconNode.iconState == .more else {
+                return
+            }
+            
+            let moreButtonView = self.moreButtonNode.view
+            let tooltipRect = moreButtonView
+                .convert(
+                    moreButtonView.bounds,
+                    to: self.view
+                )
+            
+            let tooltipScreen = TooltipScreen(
+                account: self.context.account,
+                sharedContext: self.context.sharedContext,
+                text: .markdown(
+                    text: NGRoundedVideos.Resources.moreButtonTooltip()
+                ),
+                balancedTextLayout: true,
+                style: .default,
+                location: .point(tooltipRect, .top),
+                displayDuration: .infinite,
+                shouldDismissOnTouch: { _, _ in
+                    .dismiss(consume: false)
+                }
+            )
+            self.present(tooltipScreen, in: .current)
+            
+            NGRoundedVideos.sawMoreButtonTooltip = true
+        }
+    }
+    //
+    
     private weak var undoOverlayController: UndoOverlayController?
     private func showSelectionUndo(item: TGMediaSelectableItem) {
         let scale = min(2.0, UIScreenScale)
@@ -2019,6 +2074,10 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
                 }
             }
         }
+        
+        // MARK: Nicegram RoundedVideos
+        maybeShowRoundedVideoTooltip()
+        //
     }
     
     private func updateThemeAndStrings() {
@@ -2217,6 +2276,25 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
                             self?.controllerNode.send(asFile: true, silently: false, scheduleTime: nil, animated: true, completion: {})
                         })))
                     }
+                    
+                    // MARK: Nicegram RoundedVideos
+                    if canSendAsRoundedVideo(
+                        currentItem: nil,
+                        editingContext: self?.interaction?.editingState,
+                        selectionContext: self?.interaction?.selectionState
+                    ) {
+                        items.append(.action(ContextMenuActionItem(text: NGRoundedVideos.Resources.buttonTitle(), icon: { theme in
+                            return generateTintedImage(image: NGRoundedVideos.Resources.buttonIcon(), color: theme.contextMenu.primaryColor)
+                        }, action: { [weak self] _, f in
+                            f(.default)
+                            
+                            NGRoundedVideos.sendAsRoundedVideo = true
+                            
+                            self?.controllerNode.send(asFile: false, silently: false, scheduleTime: nil, animated: true, completion: {})
+                        })))
+                    }
+                    //
+                    
                     if selectionCount > 1 {
                         if !items.isEmpty {
                             items.append(.separator)

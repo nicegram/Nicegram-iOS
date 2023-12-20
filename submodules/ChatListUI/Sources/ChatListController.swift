@@ -788,12 +788,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             self.reloadFilters()
         }
         
-        // MARK: Nicegram
-        if #available(iOS 13.0, *) {
-            self.nicegramInit()
-        }
-        //
-        
         self.storiesPostingAvailabilityDisposable = (self.context.account.postbox.preferencesView(keys: [PreferencesKeys.appConfiguration])
         |> map { view -> AppConfiguration in
             let appConfiguration: AppConfiguration = view.values[PreferencesKeys.appConfiguration]?.get(AppConfiguration.self) ?? AppConfiguration.defaultValue
@@ -4524,20 +4518,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     @available(iOS 13.0, *)
     private func findAssistantButton() -> AssistantButton? {
         view.viewWithTag(AssistantButton.tag) as? AssistantButton
-    }
-    
-    @available(iOS 13.0, *)
-    private func nicegramInit() {
-        RepoTgHelper.setTelegramId(context.account.peerId.id._internalGetInt64Value())
-        
-        // Localization
-        let _ = context.sharedContext.accountManager.sharedData(keys: [SharedDataKeys.localizationSettings]).start { sharedData in
-            if let localizationSettings = sharedData.entries[SharedDataKeys.localizationSettings]?.get(LocalizationSettings.self) {
-                let activeLanguageCode = localizationSettings.secondaryComponent?.languageCode ?? localizationSettings.primaryComponent.languageCode
-                ng_setTgLangCode(activeLanguageCode)
-                setPreferredTranslationTargetLanguage(code: activeLanguageCode)
-            }
-        }
     }
     
     public override var keyShortcuts: [KeyShortcut] {

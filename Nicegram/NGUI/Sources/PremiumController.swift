@@ -17,6 +17,7 @@ import ItemListUI
 import AccountContext
 import TelegramNotices
 import NGData
+import NGStealthMode
 import NGStrings
 
 private struct SelectionState: Equatable {
@@ -45,6 +46,7 @@ private enum premiumControllerSection: Int32 {
     case notifyMissed
     case manageFilters
     case other
+    case stealthMode
     case test
 }
 
@@ -79,6 +81,8 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
 
     case testButton(PresentationTheme, String)
     case ignoretr(PresentationTheme, String)
+    
+    case stealthMode(Bool)
 
     var section: ItemListSectionId {
         switch self {
@@ -94,6 +98,8 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return premiumControllerSection.other.rawValue
         case .testButton:
             return premiumControllerSection.test.rawValue
+        case .stealthMode:
+            return premiumControllerSection.stealthMode.rawValue
         }
 
     }
@@ -124,6 +130,8 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return 11000
         case .ignoretr:
             return 12000
+        case .stealthMode:
+            return 13000
         case .testButton:
             return 999999
         }
@@ -217,6 +225,12 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
+        case let .stealthMode(lhsValue):
+            if case let .stealthMode(rhsValue) = rhs, lhsValue == rhsValue {
+                return true
+            } else {
+                return false
+            }
         }
 
     }
@@ -270,9 +284,12 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.toggleSetting(value, .rememberFilterOnExit)
             })
+        case let .stealthMode(value):
+            return ItemListSwitchItem(presentationData: presentationData, title: NGStealthMode.Resources.toggleTitle(), value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                NGStealthMode.setStealthModeEnabled(value)
+            })
         }
     }
-
 }
 
 
@@ -286,6 +303,8 @@ private func premiumControllerEntries(presentationData: PresentationData) -> [Pr
     entries.append(.rememberFolderOnExit(theme, l("Premium.rememberFolderOnExit", locale), NGSettings.rememberFolderOnExit))
     entries.append(.onetaptr(theme, l("Premium.OnetapTranslate", locale), NGSettings.oneTapTr))
     entries.append(.ignoretr(theme, l("Premium.IgnoreTranslate.Title", locale)))
+    
+    entries.append(.stealthMode(NGStealthMode.isStealthModeEnabled()))
 
     #if DEBUG
     entries.append(.testButton(theme, "TEST"))

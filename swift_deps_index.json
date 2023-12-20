@@ -128,6 +128,16 @@
       ]
     },
     {
+      "name": "FeatPersistentStorage",
+      "c99name": "FeatPersistentStorage",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPersistentStorage",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
       "name": "FeatPinnedChats",
       "c99name": "FeatPinnedChats",
       "src_type": "swift",
@@ -333,6 +343,16 @@
       "c99name": "NGGrumUI",
       "src_type": "swift",
       "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGGrumUI",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
+      "name": "NGLocalization",
+      "c99name": "NGLocalization",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGLocalization",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
         "nicegram-assistant"
@@ -808,7 +828,7 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "05f2392cbf916a604d9d7e87dc640e7d4651dc12",
+        "commit": "96c8ca93e0051e1f64a423d1211fb49c549ba902",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
         "branch": "develop"
       }

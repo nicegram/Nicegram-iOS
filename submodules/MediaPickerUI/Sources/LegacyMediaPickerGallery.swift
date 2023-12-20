@@ -1,3 +1,7 @@
+// MARK: Nicegram RoundedVideos
+import NGRoundedVideos
+import TooltipUI
+//
 import Foundation
 import UIKit
 import Display
@@ -268,11 +272,20 @@ func presentLegacyMediaPickerGallery(context: AccountContext, peer: EnginePeer?,
                     sendWhenOnlineAvailable = .single(false)
                 }
                 
+                // MARK: Nicegram RoundedVideos
+                let canSendAsRoundedVideo = canSendAsRoundedVideo(
+                    currentItem: item,
+                    editingContext: editingContext,
+                    selectionContext: selectionContext
+                )
+                //
+                
                 let _ = (sendWhenOnlineAvailable
                          |> take(1)
                          |> deliverOnMainQueue).start(next: { sendWhenOnlineAvailable in
                     let legacySheetController = LegacyController(presentation: .custom, theme: presentationData.theme, initialLayout: nil)
-                    let sheetController = TGMediaPickerSendActionSheetController(context: legacyController.context, isDark: true, sendButtonFrame: model.interfaceView.doneButtonFrame, canSendSilently: hasSilentPosting, canSendWhenOnline: sendWhenOnlineAvailable && effectiveHasSchedule, canSchedule: effectiveHasSchedule, reminder: reminder, hasTimer: hasTimer)
+                    // MARK: Nicegram RoundedVideos, canSendAsRoundedVideo added
+                    let sheetController = TGMediaPickerSendActionSheetController(context: legacyController.context, isDark: true, sendButtonFrame: model.interfaceView.doneButtonFrame, canSendAsRoundedVideo: canSendAsRoundedVideo,  canSendSilently: hasSilentPosting, canSendWhenOnline: sendWhenOnlineAvailable && effectiveHasSchedule, canSchedule: effectiveHasSchedule, reminder: reminder, hasTimer: hasTimer)
                     let dismissImpl = { [weak model] in
                         model?.dismiss(true, false)
                         dismissAll()
@@ -282,6 +295,15 @@ func presentLegacyMediaPickerGallery(context: AccountContext, peer: EnginePeer?,
                             dismissImpl()
                         })
                     }
+                    // MARK: Nicegram RoundedVideos
+                    sheetController.sendAsRoundedVideo = {
+                        NGRoundedVideos.sendAsRoundedVideo = true
+                        
+                        completed(item.asset, false, nil, {
+                            dismissImpl()
+                        })
+                    }
+                    //
                     sheetController.sendSilently = { [weak model] in
                         model?.interfaceView.onDismiss()
                         
@@ -363,6 +385,46 @@ func presentLegacyMediaPickerGallery(context: AccountContext, peer: EnginePeer?,
         }
     }
     present(legacyController, nil)
+    
+    // MARK: Nicegram RoundedVideos
+    Queue.mainQueue().after(1) { [weak model, weak legacyController, weak editingContext, weak selectionContext] in
+        guard let model, let legacyController else {
+            return
+        }
+        
+        guard !NGRoundedVideos.sawSendButtonTooltip else {
+            return
+        }
+        
+        guard canSendAsRoundedVideo(
+            currentItem: focusItem as? TGMediaPickerGalleryItem,
+            editingContext: editingContext,
+            selectionContext: selectionContext
+        ) else {
+            return
+        }
+        
+        let tooltipRect = model.interfaceView.doneButtonFrame
+        
+        let tooltipScreen = TooltipScreen(
+            account: context.account,
+            sharedContext: context.sharedContext,
+            text: .markdown(
+                text: NGRoundedVideos.Resources.sendButtonTooltip()
+            ),
+            balancedTextLayout: true,
+            style: .default,
+            location: .point(tooltipRect, .bottom),
+            displayDuration: .infinite,
+            shouldDismissOnTouch: { _, _ in
+                .dismiss(consume: false)
+            }
+        )
+        legacyController.present(tooltipScreen, in: .current)
+        
+        NGRoundedVideos.sawSendButtonTooltip = true
+    }
+    //
     
     return controller
 }

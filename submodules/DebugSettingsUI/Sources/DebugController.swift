@@ -81,7 +81,6 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     case logToConsole(PresentationTheme, Bool)
     case redactSensitiveData(PresentationTheme, Bool)
     case keepChatNavigationStack(PresentationTheme, Bool)
-    case skipReadHistory(PresentationTheme, Bool)
     case unidirectionalSwipeToReply(Bool)
     case dustEffect(Bool)
     case callUIV2(Bool)
@@ -141,7 +140,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return DebugControllerSection.logging.rawValue
         case .webViewInspection, .resetWebViewCache:
             return DebugControllerSection.web.rawValue
-        case .keepChatNavigationStack, .skipReadHistory, .unidirectionalSwipeToReply, .dustEffect, .callUIV2, .crashOnSlowQueries, .crashOnMemoryPressure:
+        case .keepChatNavigationStack, .unidirectionalSwipeToReply, .dustEffect, .callUIV2, .crashOnSlowQueries, .crashOnMemoryPressure:
             return DebugControllerSection.experiments.rawValue
         case .clearTips, .resetNotifications, .crash, .resetData, .resetDatabase, .resetDatabaseAndCache, .resetHoles, .reindexUnread, .resetCacheIndex, .reindexCache, .resetBiometricsData, .optimizeDatabase, .photoPreview, .knockoutWallpaper, .storiesExperiment, .storiesJpegExperiment, .playlistPlayback, .enableQuickReactionSwitch, .voiceConference, .experimentalCompatibility, .enableDebugDataDisplay, .acceleratedStickers, .inlineForums, .localTranscription, .enableReactionOverrides, .restorePurchases:
             return DebugControllerSection.experiments.rawValue
@@ -196,8 +195,6 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return 14
         case .keepChatNavigationStack:
             return 15
-        case .skipReadHistory:
-            return 16
         case .unidirectionalSwipeToReply:
             return 17
         case .dustEffect:
@@ -990,14 +987,6 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     return settings
                 }).start()
             })
-        case let .skipReadHistory(_, value):
-            return ItemListSwitchItem(presentationData: presentationData, title: "Skip read history", value: value, sectionId: self.section, style: .blocks, updated: { value in
-                let _ = updateExperimentalUISettingsInteractively(accountManager: arguments.sharedContext.accountManager, { settings in
-                    var settings = settings
-                    settings.skipReadHistory = value
-                    return settings
-                }).start()
-            })
         case let .unidirectionalSwipeToReply(value):
             return ItemListSwitchItem(presentationData: presentationData, title: "Legacy swipe to reply", value: value, sectionId: self.section, style: .blocks, updated: { value in
                 let _ = updateExperimentalUISettingsInteractively(accountManager: arguments.sharedContext.accountManager, { settings in
@@ -1499,7 +1488,6 @@ private func debugControllerEntries(sharedContext: SharedAccountContext, present
         entries.append(.resetWebViewCache(presentationData.theme))
         
         entries.append(.keepChatNavigationStack(presentationData.theme, experimentalSettings.keepChatNavigationStack))
-        entries.append(.skipReadHistory(presentationData.theme, experimentalSettings.skipReadHistory))
         entries.append(.unidirectionalSwipeToReply(experimentalSettings.unidirectionalSwipeToReply))
         entries.append(.dustEffect(experimentalSettings.dustEffect))
         entries.append(.callUIV2(experimentalSettings.callUIV2))

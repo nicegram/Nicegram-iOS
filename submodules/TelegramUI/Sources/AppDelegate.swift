@@ -12,7 +12,9 @@ import NGLogging
 import NGLottie
 import NGOnboarding
 import NGRemoteConfig
+import NGRepoTg
 import NGRepoUser
+import NGStealthMode
 import NGStrings
 import SubscriptionAnalytics
 
@@ -1225,6 +1227,45 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 }
             }
         })
+        
+        if #available(iOS 13.0, *) {
+            let _ = self.context.get().start(next: { context in
+                if let context = context {
+                    let accountContext = context.context
+                    RepoTgHelper.setTelegramId(
+                        accountContext.account.peerId.id._internalGetInt64Value()
+                    )
+                }
+            })
+        }
+        
+        let _ = self.sharedContextPromise.get().start(next: { sharedContext in
+            NGStealthMode.initialize(
+                sharedContext: sharedContext.sharedContext
+            )
+        })
+        
+        let presentationDataSignal = self.sharedContextPromise.get()
+        |> mapToSignal { sharedContext in
+            sharedContext.sharedContext.presentationData
+        }
+        
+        let _ = presentationDataSignal.start(next: { presentationData in
+            ng_setTgLangCode(presentationData.strings.baseLanguageCode)
+        })
+        
+        if #available(iOS 13.0, *) {
+            let darkAppearanceSignal = presentationDataSignal
+            |> map {
+                $0.theme.overallDarkAppearance
+            }
+            |> distinctUntilChanged
+            |> deliverOnMainQueue
+            
+            let _ = darkAppearanceSignal.start(next: { isDark in
+                UIApplication.findKeyWindow()?.overrideUserInterfaceStyle = isDark ? .dark : .light
+            })
+        }
         //
         
         self.authContext.set(self.sharedContextPromise.get()
@@ -2079,9 +2120,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         |> deliverOnMainQueue).start(next: { context in
             if let context = context {
                 Queue().async {
-                	let presentationData = context.context.sharedContext.currentPresentationData.with({ $0 })
                 	self.fetchNGUserSettings(context.context.account.peerId.id._internalGetInt64Value())
-                	self.fetchLocale(lang: presentationData.strings.baseLanguageCode)
                 }
             }
         })
@@ -3004,12 +3043,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     
     private func fetchGlobalNGSettings() {
         updateGlobalNGSettings()
-    }
-    
-    private func fetchLocale(lang: String) {
-        #if !targetEnvironment(simulator)
-        downloadLocale(lang)
-        #endif
     }
     
     private func maybeCheckForUpdates() {
