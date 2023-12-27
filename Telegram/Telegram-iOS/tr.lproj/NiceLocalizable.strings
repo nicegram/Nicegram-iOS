@@ -112,7 +112,6 @@
 "Messages.TranslateError" = "Üzgünüz, çeviri kullanılamıyor.";
 "Messages.SpeechToText" = "Konuşmadan Metne";
 "Messages.UndoSpeechToText" = "Konuşmadan Metne Özelliğini Geri Al";
-"Messages.SpeechToText.LowAccuracyError" = "Konuşma tanıma başarısız oldu.\n\nBu, ses kaydının kalitesizliğinden ya da uygulamanın dili ile ses kaydının dili arasındaki farklılıklardan kaynaklanabilir.";
 "Messages.SelectAllFromUser" = "Bu Kullanıcıdan Olan Bütün Mesajları Seç";
 "Messages.ToLanguage" = "Hedef Dil";
 "Messages.ToLanguage.WithCode" = "Hedef Dil: %@";
@@ -179,9 +178,6 @@
 "NiceFeatures.QuickReplies.Description" = "Aşağıdaki butonu kullanarak istediğiniz sayıda yanıt ekleyebilirsiniz. Hızlı yanıtı kullanmak için ** \"&\" sembolünü** mesaj giriş alanına girin.";
 "NiceFeatures.QuickReplies.AddNew" = "Yeni Ekle";
 "NiceFeatures.QuickReplies.Placeholder" = "Metin Gir";
-
-/*Telegram Premium*/
-"TelegramPremium.Description" = "Ne yazık ki, Nicegram uygulamasında oturum açarken **Telegram Premium Özellikleri**'ni alamazsınız. Lütfen resmi Telegram uygulamasına gidin ve **Telegram Premium**'a abone olun. Nicegram'a geri döndüğünüzde, tüm **Premium Özellikler** kullanıma hazır olacaktır.";
 
 /*Double Bottom*/
 "DoubleBottom.Title" = "Double bottom";

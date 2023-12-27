@@ -1250,10 +1250,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             sharedContext.sharedContext.presentationData
         }
         
-        let _ = presentationDataSignal.start(next: { presentationData in
-            ng_setTgLangCode(presentationData.strings.baseLanguageCode)
-        })
-        
         if #available(iOS 13.0, *) {
             let darkAppearanceSignal = presentationDataSignal
             |> map {
@@ -1327,6 +1323,10 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         // MARK: Nicegram Onboarding (we put the telegram start navigation code in a closure that we will call when we are done with processing our onboarding)
         let onNicegramOnboardingComplete = {
         //
+        let _ = presentationDataSignal.start(next: { presentationData in
+            ng_setTgLangCode(presentationData.strings.baseLanguageCode)
+        })
+            
         let contextReadyDisposable = MetaDisposable()
         
         let startTime = CFAbsoluteTimeGetCurrent()
@@ -1537,11 +1537,12 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         } else {
             AppCache.wasOnboardingShown = true
             if let rootController = window.rootViewController {
-                let langCode = Locale.currentAppLocale.languageWithScriptCode
-                let controller = onboardingController(languageCode: langCode, onComplete: { [weak rootController] in
-                    rootController?.dismiss(animated: true)
-                    onNicegramOnboardingComplete()
-                })
+                let controller = onboardingController(
+                    onComplete: { [weak rootController] in
+                        rootController?.dismiss(animated: true)
+                        onNicegramOnboardingComplete()
+                    }
+                )
                 
                 controller.modalPresentationStyle = .fullScreen
                 rootController.present(controller, animated: false)
@@ -2338,7 +2339,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             stableId: callUpdate.callId,
             handle: "\(callUpdate.peer.id.id._internalGetInt64Value())",
             phoneNumber: phoneNumber.flatMap(formatPhoneNumber),
-            isVideo: false,
+            isVideo: callUpdate.isVideo,
             displayTitle: callUpdate.peer.debugDisplayTitle,
             completion: { error in
                 if let error = error {

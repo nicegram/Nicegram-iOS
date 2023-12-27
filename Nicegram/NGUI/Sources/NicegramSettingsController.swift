@@ -11,7 +11,6 @@
 import AccountContext
 import Display
 import FeatImagesHubUI
-import FeatPartners
 import Foundation
 import ItemListUI
 import NGData
@@ -83,7 +82,6 @@ private enum EasyToggleType {
     case showRegDate
     case hideReactions
     case hideStories
-    case hidePartnerIntegrations
 }
 
 
@@ -534,10 +532,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                     VarSystemNGSettings.hideReactions = value
                 case .hideStories:
                     NGSettings.hideStories = value
-                case .hidePartnerIntegrations:
-                    if #available(iOS 13.0, *) {
-                        Partners.hideIntegrations = value
-                    }
                 }
             })
         case let .unblockHeader(text):
@@ -737,11 +731,6 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     
     entries.append(.easyToggle(toggleIndex, .hideStories, l("NicegramSettings.HideStories", locale), NGSettings.hideStories))
     toggleIndex += 1
-    
-    if #available(iOS 13.0, *) {
-        entries.append(.easyToggle(toggleIndex, .hidePartnerIntegrations, Partners.hideIntegrationsTitle, Partners.hideIntegrations))
-        toggleIndex += 1
-    }
     
     entries.append(.shareChannelsInfoToggle(l("NicegramSettings.ShareChannelsInfoToggle", locale), isShareChannelsInfoEnabled()))
     entries.append(.shareChannelsInfoNote(l("NicegramSettings.ShareChannelsInfoToggle.Note", locale)))

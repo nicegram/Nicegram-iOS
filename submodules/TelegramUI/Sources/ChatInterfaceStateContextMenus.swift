@@ -1,6 +1,3 @@
-// MARK: Nicegram StickerMaker
-import FeatPartners
-//
 import Foundation
 import UIKit
 import Postbox
@@ -179,6 +176,9 @@ private func canEditMessage(accountPeerId: PeerId, limitsConfiguration: EngineCo
                 hasUneditableAttributes = true
                 break
             } else if let _ = media as? TelegramMediaGiveaway {
+                hasUneditableAttributes = true
+                break
+            } else if let _ = media as? TelegramMediaGiveawayResults {
                 hasUneditableAttributes = true
                 break
             }
@@ -1897,20 +1897,6 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
 
                 controller.setItems(.single(ContextController.Items(content: .list(ngContextItems))), minHeight: nil, animated: true)
             })))
-            
-            // MARK: Nicegram StickerMaker
-            if data.messageActions.options.contains(.viewStickerPack),
-               StickerMaker.showConfig.contextMenu {
-                actions.append(.action(ContextMenuActionItem(text: StickerMaker.buttonTitle, icon: { theme in
-                    return generateTintedImage(image: StickerMaker.contextMenuIcon, color: theme.actionSheet.primaryTextColor)
-                }, action: { _, f in
-                    StickerMaker.open(
-                        from: .contextMenu
-                    )
-                    f(.dismissWithoutContent)
-                })))
-            }
-            //
                
             // MARK: Nicegram SelectAllMessagesWithAuthor
             if let authorId = message.author?.id {

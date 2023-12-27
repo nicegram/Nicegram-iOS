@@ -112,7 +112,6 @@
 "Messages.TranslateError" = "Ne pare rău, traducere indisponibilă.";
 "Messages.SpeechToText" = "Tts";
 "Messages.UndoSpeechToText" = "Anulare tts";
-"Messages.SpeechToText.LowAccuracyError" = "Recunoașterea vocală a eșuat.\n\nAcest lucru se poate întâmpla din cauza calității slabe a înregistrării audio sau a diferențelor dintre limba aplicației și cea a înregistrării audio.";
 "Messages.SelectAllFromUser" = "Selectează toate de la acest utilizator";
 "Messages.ToLanguage" = "La Limba";
 "Messages.ToLanguage.WithCode" = "La limba: %@";

@@ -112,7 +112,6 @@
 "Messages.TranslateError" = "抱歉，無法翻譯。";
 "Messages.SpeechToText" = "語音轉文字";
 "Messages.UndoSpeechToText" = "取消語音轉文字";
-"Messages.SpeechToText.LowAccuracyError" = "語音辨識失敗。\n\n這可能是由於錄音品質不好，或應用程式和錄音語言之間的差異。";
 "Messages.SelectAllFromUser" = "選取來自這個人的所有訊息";
 "Messages.ToLanguage" = "翻譯為";
 "Messages.ToLanguage.WithCode" = "翻譯為：%@";
@@ -179,9 +178,6 @@
 "NiceFeatures.QuickReplies.Description" = "您可以使用下面的按鈕新增無限數量的回覆。如要使用快速回覆，請在訊息輸入欄中輸入**符號「&」**。";
 "NiceFeatures.QuickReplies.AddNew" = "新增";
 "NiceFeatures.QuickReplies.Placeholder" = "輸入文字";
-
-/*Telegram Premium*/
-"TelegramPremium.Description" = "很遺憾地，當你登入 Nicegram App 時，你沒有辦法取得**Telegram Premium**。\n請到官方的 Telegram App 並訂閱** Telegram Premium**。當你再度回到 Nicegram 時，你將可以使用所有的**Premium 功能**。";
 
 /*Double Bottom*/
 "DoubleBottom.Title" = "Double Bottom";

@@ -112,7 +112,6 @@
 "Messages.TranslateError" = "عفوًا، الترجمة غير متوفرة.";
 "Messages.SpeechToText" = "نص البيان2";
 "Messages.UndoSpeechToText" = "إلغاء نص البيان2";
-"Messages.SpeechToText.LowAccuracyError" = "فشل التعرّف على الحديث.\n\nيُمكن أن يحدث ذلك نتيجة لجودة التسجيل الصوتي الرديئة أو بسبب الاختلاف بين لغة التطبيق ولغة التسجيل الصوتي.";
 "Messages.SelectAllFromUser" = "حدد كافة الرسائل الواردة من هذا المستخدم";
 "Messages.ToLanguage" = "إلى اللغة";
 "Messages.ToLanguage.WithCode" = "إلى اللغة: %@";
@@ -179,9 +178,6 @@
 "NiceFeatures.QuickReplies.Description" = "يمكنك إضافة عدد غير محدود من الردود باستخدام الزر أدناه. لاستخدام الرد السريع، أدخل **الرمز \"&\"** في حقل إدخال الرسالة.";
 "NiceFeatures.QuickReplies.AddNew" = "أضف رداً جديداً";
 "NiceFeatures.QuickReplies.Placeholder" = "أدخل النص";
-
-/*Telegram Premium*/
-"TelegramPremium.Description" = "للأسف، لا يمكنك الحصول على**ميزات تيليجرام المُميّز** أثناء تسجيلك الدخول في تطبيق Nicegram. يرجى الانتقال إلى تطبيق تيليجرام الرسمي والاشتراك في **تيليجرام المُميّز**. وعندما تعود إلى تطبيق Nicegram، ستجد جميع **ميزات تيليجرام المُميّز** متاحة للاستخدام.";
 
 /*Double Bottom*/
 "DoubleBottom.Title" = "Double bottom";

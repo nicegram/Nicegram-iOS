@@ -255,6 +255,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             groupCallPanelSource = .all
         case let .forum(peerId):
             groupCallPanelSource = .peer(peerId)
+        case .savedMessagesChats:
+            groupCallPanelSource = .none
         }
         
         self.tabsNode = SparseNode()
@@ -282,6 +284,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         case let .forum(peerId):
             title = ""
             self.forumChannelTracker = ForumChannelTopics(account: self.context.account, peerId: peerId)
+        case .savedMessagesChats:
+            title = ""
         }
         
         let primaryContext = ChatListLocationContext(
@@ -368,6 +372,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                         )))
                     case .forum:
                         break
+                    case .savedMessagesChats:
+                        break
                     }
                     
                     let backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Back, style: .plain, target: nil, action: nil)
@@ -375,6 +381,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                     self.navigationItem.backBarButtonItem = backBarButtonItem
                 }
             case .forum:
+                break
+            case .savedMessagesChats:
                 break
             }
         }
@@ -863,6 +871,11 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                     return false
                 }
                 return true
+            }
+        case .savedMessagesChats:
+            self.navigationBar?.userInfo = nil
+            self.navigationBar?.allowsCustomTransition = {
+                return false
             }
         }
     }
@@ -1391,7 +1404,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                         if let threadId = threadId {
                             let source: ContextContentSource
                             let chatController = strongSelf.context.sharedContext.makeChatController(context: strongSelf.context, chatLocation: .replyThread(message: ChatReplyThreadMessage(
-                                messageId: MessageId(peerId: peer.peerId, namespace: Namespaces.Message.Cloud, id: Int32(clamping: threadId)), channelMessageId: nil, isChannelPost: false, isForumPost: true, maxMessage: nil, maxReadIncomingMessageId: nil, maxReadOutgoingMessageId: nil, unreadCount: 0, initialFilledHoles: IndexSet(), initialAnchor: .automatic, isNotAvailable: false
+                                messageId: MessageId(peerId: peer.peerId, namespace: Namespaces.Message.Cloud, id: Int32(clamping: threadId)), threadId: threadId, channelMessageId: nil, isChannelPost: false, isForumPost: true, maxMessage: nil, maxReadIncomingMessageId: nil, maxReadOutgoingMessageId: nil, unreadCount: 0, initialFilledHoles: IndexSet(), initialAnchor: .automatic, isNotAvailable: false
                             )), subject: nil, botStart: nil, mode: .standard(previewing: true))
                             chatController.canReadHistory.set(false)
                             source = .controller(ContextControllerContentSourceImpl(controller: chatController, sourceNode: node, navigationController: strongSelf.navigationController as? NavigationController))
@@ -1427,7 +1440,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                     }
                     let source: ContextContentSource
                     let chatController = strongSelf.context.sharedContext.makeChatController(context: strongSelf.context, chatLocation: .replyThread(message: ChatReplyThreadMessage(
-                        messageId: MessageId(peerId: peer.peerId, namespace: Namespaces.Message.Cloud, id: Int32(clamping: threadId)), channelMessageId: nil, isChannelPost: false, isForumPost: true, maxMessage: nil, maxReadIncomingMessageId: nil, maxReadOutgoingMessageId: nil, unreadCount: 0, initialFilledHoles: IndexSet(), initialAnchor: .automatic, isNotAvailable: false
+                        messageId: MessageId(peerId: peer.peerId, namespace: Namespaces.Message.Cloud, id: Int32(clamping: threadId)), threadId: threadId, channelMessageId: nil, isChannelPost: false, isForumPost: true, maxMessage: nil, maxReadIncomingMessageId: nil, maxReadOutgoingMessageId: nil, unreadCount: 0, initialFilledHoles: IndexSet(), initialAnchor: .automatic, isNotAvailable: false
                     )), subject: nil, botStart: nil, mode: .standard(previewing: true))
                     chatController.canReadHistory.set(false)
                     source = .controller(ContextControllerContentSourceImpl(controller: chatController, sourceNode: node, navigationController: strongSelf.navigationController as? NavigationController))
@@ -1952,7 +1965,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                     if let mediaId = info.media.id {
                         validIds.append(mediaId)
                         if self.preloadStoryResourceDisposables[mediaId] == nil {
-                            self.preloadStoryResourceDisposables[mediaId] = preloadStoryMedia(context: self.context, peer: info.peer, storyId: info.storyId, media: info.media, reactions: info.reactions).startStrict()
+                            self.preloadStoryResourceDisposables[mediaId] = preloadStoryMedia(context: self.context, info: info).startStrict()
                         }
                     }
                 }
@@ -4904,6 +4917,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                         strongSelf.present(textAlertController(context: strongSelf.context, title: nil, text: text, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), in: .window(.root))
                     })
                 }))
+            case .savedMessagesChats:
+                break
             }
         }
     }
@@ -6203,6 +6218,9 @@ private final class ChatListLocationContext {
                     presentationData: presentationData
                 )
             })
+        case .savedMessagesChats:
+            self.didSetReady = true
+            self.ready.set(.single(true))
         }
         
         let context = self.context
@@ -6239,6 +6257,8 @@ private final class ChatListLocationContext {
                     |> map { options -> (ChatListSelectionOptions, Set<PeerId>, Set<Int64>)? in
                         return (options, selectedPeerIds, selectedThreadIds)
                     }
+                case .savedMessagesChats:
+                    return .single(nil)
                 }
                 
             } else {
@@ -6364,6 +6384,8 @@ private final class ChatListLocationContext {
                 defaultTitle = presentationData.strings.ChatList_ArchivedChatsTitle
             }
         case .forum:
+            defaultTitle = ""
+        case .savedMessagesChats:
             defaultTitle = ""
         }
         let previousEditingAndNetworkState = self.previousEditingAndNetworkStateValue.swap((stateAndFilterId.state.editing, networkState))
@@ -6606,7 +6628,7 @@ private final class ChatListLocationContext {
                 strings: presentationData.strings,
                 dateTimeFormat: presentationData.dateTimeFormat,
                 nameDisplayOrder: presentationData.nameDisplayOrder,
-                content: .peer(peerView: peerView, customTitle: nil, onlineMemberCount: onlineMemberCount, isScheduledMessages: false, isMuted: nil, customMessageCount: nil, isEnabled: true),
+                content: .peer(peerView: ChatTitleContent.PeerData(peerView: peerView), customTitle: nil, onlineMemberCount: onlineMemberCount, isScheduledMessages: false, isMuted: nil, customMessageCount: nil, isEnabled: true),
                 tapped: { [weak self] in
                     guard let self else {
                         return
@@ -6683,6 +6705,8 @@ private final class ChatListLocationContext {
             }
         case let .forum(peerId):
             ChatListControllerImpl.openMoreMenu(context: self.context, peerId: peerId, sourceController: parentController, isViewingAsTopics: true, sourceView: sourceView, gesture: nil)
+        case .savedMessagesChats:
+            break
         }
     }
 }

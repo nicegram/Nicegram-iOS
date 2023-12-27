@@ -5,10 +5,9 @@ import NGAiChat
 import NGData
 import NGStrings
 
-public func onboardingController(languageCode: String, onComplete: @escaping () -> Void) -> UIViewController {
+public func onboardingController(onComplete: @escaping () -> Void) -> UIViewController {
     let controller = OnboardingViewController(
-        items: onboardingPages(languageCode: languageCode),
-        languageCode: languageCode,
+        items: onboardingPages(),
         onComplete: {
             if isPremium() {
                 onComplete()
@@ -23,7 +22,7 @@ public func onboardingController(languageCode: String, onComplete: @escaping () 
     return controller
 }
 
-private func onboardingPages(languageCode: String) -> [OnboardingPageViewModel] {
+private func onboardingPages() -> [OnboardingPageViewModel] {
     let aiPageIndex = 6
     
     var pages = Array(1...6)
@@ -41,8 +40,8 @@ private func onboardingPages(languageCode: String) -> [OnboardingPageViewModel] 
     
     return pages.map { index in
         OnboardingPageViewModel(
-            title: l("NicegramOnboarding.\(index).Title", languageCode),
-            description: l("NicegramOnboarding.\(index).Desc", languageCode),
+            title: l("NicegramOnboarding.\(index).Title"),
+            description: l("NicegramOnboarding.\(index).Desc"),
             videoURL: Bundle.main.url(forResource: "Nicegram_Onboarding-DS_v\(index)", withExtension: "mp4")!
         )
     }

@@ -112,7 +112,6 @@
 "Messages.TranslateError" = "抱歉，翻译不可用。";
 "Messages.SpeechToText" = "语音转文本";
 "Messages.UndoSpeechToText" = "撤销语音转文本";
-"Messages.SpeechToText.LowAccuracyError" = "语音识别失败。\n\n这可能是由于录音质量太差或应用程序的语言与录音中的语言不同造成的。";
 "Messages.SelectAllFromUser" = "选择来自该用户的所有消息";
 "Messages.ToLanguage" = "为语言";
 "Messages.ToLanguage.WithCode" = "为语言: %@";
@@ -179,9 +178,6 @@
 "NiceFeatures.QuickReplies.Description" = "您可以使用下方按钮添加无限数量的回复。如需使用快速回复，请在消息输入框中输入** \"&\"符**。";
 "NiceFeatures.QuickReplies.AddNew" = "新增";
 "NiceFeatures.QuickReplies.Placeholder" = "输入文本";
-
-/*Telegram Premium*/
-"TelegramPremium.Description" = "遗憾的是，您无法在登录 Nicegram 应用后获取 **Telegram 高级功能**。请前往官方 Telegram 应用并订阅 **Telegram 高级版**。在您返回 Nicegram 后，所有**高级功能**将可用。";
 
 /*Double Bottom*/
 "DoubleBottom.Title" = "Double bottom";

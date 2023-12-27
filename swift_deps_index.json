@@ -98,6 +98,16 @@
       ]
     },
     {
+      "name": "FeatChatListBanner",
+      "c99name": "FeatChatListBanner",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatChatListBanner",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
       "name": "FeatImagesHub",
       "c99name": "FeatImagesHub",
       "src_type": "swift",
@@ -112,16 +122,6 @@
       "c99name": "FeatImagesHubUI",
       "src_type": "swift",
       "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatImagesHubUI",
-      "package_identity": "nicegram-assistant-ios",
-      "product_memberships": [
-        "nicegram-assistant"
-      ]
-    },
-    {
-      "name": "FeatPartners",
-      "c99name": "FeatPartners",
-      "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPartners",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
         "nicegram-assistant"
@@ -657,7 +657,6 @@
       "target_labels": [
         "@swiftpkg_nicegram_assistant_ios//:Sources_FeatChatBanner",
         "@swiftpkg_nicegram_assistant_ios//:Sources_FeatImagesHubUI",
-        "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPartners",
         "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPinnedChats",
         "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPremiumUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChatUI",
@@ -828,7 +827,7 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "1170cc87a0c0e3fe3cd1b9d809bcac7dd4961128",
+        "commit": "b0d993e6fcb6e48734d8361c26bd401752ac5513",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
         "branch": "develop"
       }

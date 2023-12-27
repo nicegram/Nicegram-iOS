@@ -112,7 +112,6 @@
 "Messages.TranslateError" = "Tłumaczenie niedostępne.";
 "Messages.SpeechToText" = "Mowa na tekst";
 "Messages.UndoSpeechToText" = "Cofnij mowę na tekst";
-"Messages.SpeechToText.LowAccuracyError" = "Nie udało się rozpoznać mowy.\n\nMoże to być spowodowane niską jakością nagrania dźwiękowego lub różnicami między językiem aplikacji a językiem nagrania dźwiękowego.";
 "Messages.SelectAllFromUser" = "Zaznacz wszystkie od tego użytkownika";
 "Messages.ToLanguage" = "Na język";
 "Messages.ToLanguage.WithCode" = "Na język: %@";
@@ -179,9 +178,6 @@
 "NiceFeatures.QuickReplies.Description" = "Możesz dodać nieograniczoną liczbę odpowiedzi, korzystając z przycisku poniżej. Aby skorzystać z szybkiej odpowiedzi, wpisz w polu wprowadzania wiadomości **symbol \"&\"**.";
 "NiceFeatures.QuickReplies.AddNew" = "Dodaj nowy";
 "NiceFeatures.QuickReplies.Placeholder" = "Wpisz tekst";
-
-/*Telegram Premium*/
-"TelegramPremium.Description" = "Niestety, nie można uzyskać **Telegram Premium Features** będąc zalogowanym do aplikacji Nicegram. Proszę przejdź do oficjalnej aplikacji Telegram i zasubskrybuj **Telegram Premium**. Po powrocie do Nicegram wszystkie **Premium Features** będą dostępne do użytku.";
 
 /*Double Bottom*/
 "DoubleBottom.Title" = "Double bottom";

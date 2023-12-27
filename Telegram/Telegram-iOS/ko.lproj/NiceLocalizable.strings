@@ -112,7 +112,6 @@
 "Messages.TranslateError" = "죄송합니다. 번역 할 수 없습니다.";
 "Messages.SpeechToText" = "음성-텍스트 변환";
 "Messages.UndoSpeechToText" = "음성-텍스트 변환 취소";
-"Messages.SpeechToText.LowAccuracyError" = "음성 인식 실패 \n\n오디오 녹음의 질이 좋지 않거나 앱 프로그램과 오디오 녹음의 언어 차이로 인해 발생할 수 있습니다.";
 "Messages.SelectAllFromUser" = "이 사용자에게서 온 모든 메시지 선택 \n\n";
 "Messages.ToLanguage" = "언어";
 "Messages.ToLanguage.WithCode" = "언어: %@";
@@ -179,9 +178,6 @@
 "NiceFeatures.QuickReplies.Description" = "아래 버튼을 사용하여 답장을 무제한으로 추가할 수 있습니다. 빠른 답장을 사용하려면 메시지 입력 필드에 **기호 \"&\"**를 입력하십시오.";
 "NiceFeatures.QuickReplies.AddNew" = "새로 추가";
 "NiceFeatures.QuickReplies.Placeholder" = "내용 입력";
-
-/*Telegram Premium*/
-"TelegramPremium.Description" = "죄송하지만 Nicegram 앱에 로그인된 상태로는 **텔레그램 프리미엄 기능**을 구매하실 수 없습니다. 공식 텔레그램 앱으로 이동해 **텔레그램 프리미엄**을 구독하시기 바랍니다. Nicegram으로 돌아오시면 모든 **프리미엄 기능**을 이용하실 수 있게 됩니다.";
 
 /*Double Bottom*/
 "DoubleBottom.Title" = "Double bottom";

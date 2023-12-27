@@ -181,7 +181,7 @@
 "NiceFeatures.QuickReplies.Placeholder" = "Enter Text";
 
 /*Telegram Premium*/
-"TelegramPremium.Description" = "Unfortunately, you can’t get **Telegram Premium Features** while being logged in to the Nicegram app. Please go to the official Telegram app and subscribe to **Telegram Premium**. As you go back to Nicegram, all **Premium Features** will be available to use.";
+"TelegramPremium.Description" = "Unfortunately, you can’t get Telegram Premium Features while being logged in to the Nicegram app. Please go to the official Telegram app and subscribe to Telegram Premium. As you go back to Nicegram, all Premium Features will be available to use.";
 
 /*Double Bottom*/
 "DoubleBottom.Title" = "Double bottom";

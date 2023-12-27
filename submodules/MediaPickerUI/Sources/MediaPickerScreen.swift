@@ -1,6 +1,3 @@
-// MARK: Nicegram InLab
-import FeatPartners
-//
 // MARK: Nicegram RoundedVideos
 import NGRoundedVideos
 import TooltipUI
@@ -230,12 +227,6 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
         private var requestedMediaAccess = false
         private var requestedCameraAccess = false
         
-        // MARK: Nicegram InLab
-        private let inLabNode = ASDisplayNode {
-            InLabButton(location: .galleryAttachment)
-        }
-        //
-        
         private let containerNode: ASDisplayNode
         private let backgroundNode: NavigationBackgroundNode
         fileprivate let gridNode: GridNode
@@ -312,7 +303,6 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
             self.containerNode.addSubnode(self.backgroundNode)
             self.containerNode.addSubnode(self.gridNode)
             self.containerNode.addSubnode(self.scrollingArea)
-            self.containerNode.addSubnode(self.inLabNode)
             
             let selectedCollection = controller.selectedCollection.get()
             let preloadPromise = self.preloadPromise
@@ -1390,33 +1380,10 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
                 cameraRect = nil
             }
             
-            // MARK: Nicegram InLab
-            let inLabSideInset = layout.safeInsets.left + 16
-            let inLabFrame = CGRect(
-                x: inLabSideInset,
-                y: insets.top,
-                width: innerBounds.width - inLabSideInset * 2,
-                height: InLabButton.height
-            )
-            transition.updateFrame(
-                node: self.inLabNode,
-                frame: inLabFrame
-            )
-            
-            var gridFrame = innerBounds
-            if InLab.showConfig.galleryAttachment {
-                gridFrame.origin.y = inLabFrame.height + 12
-            }
-            
-            inLabNode.isHidden = !InLab.showConfig.galleryAttachment
-            //
-            
             let cleanGridInsets = UIEdgeInsets(top: insets.top, left: layout.safeInsets.left, bottom: layout.intrinsicInsets.bottom, right: layout.safeInsets.right)
             let gridInsets = UIEdgeInsets(top: insets.top + manageHeight, left: layout.safeInsets.left, bottom: layout.intrinsicInsets.bottom, right: layout.safeInsets.right)
-            // MARK: Nicegram InLab, change innerBounds to gridFrame
-            transition.updateFrame(node: self.gridNode, frame: gridFrame)
-            // MARK: Nicegram InLab, change innerBounds to gridFrame
-            self.scrollingArea.frame = gridFrame
+            transition.updateFrame(node: self.gridNode, frame: innerBounds)
+            self.scrollingArea.frame = innerBounds
             
             transition.updateFrame(node: self.backgroundNode, frame: innerBounds)
             self.backgroundNode.update(size: bounds.size, transition: transition)
@@ -2109,7 +2076,7 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
         self.undoOverlayController?.dismissWithCommitAction()
     }
     
-    public func requestDismiss(completion: @escaping () -> Void) {        
+    public func requestDismiss(completion: @escaping () -> Void) {
         if let selectionState = self.interaction?.selectionState, selectionState.count() > 0 {
             self.isDismissing = true
             
