@@ -181,7 +181,7 @@
 "NiceFeatures.QuickReplies.Placeholder" = "Enter Text";
 
 /*Telegram Premium*/
-"TelegramPremium.Description" = "Unfortunately, you can’t get **Telegram Premium Features** while being logged in to the Nicegram app. Please go to the official Telegram app and subscribe to **Telegram Premium**. As you go back to Nicegram, all **Premium Features** will be available to use.";
+"TelegramPremium.Description" = "Unfortunately, you can’t get Telegram Premium Features while being logged in to the Nicegram app. Please go to the official Telegram app and subscribe to Telegram Premium. As you go back to Nicegram, all Premium Features will be available to use.";
 
 /*Double Bottom*/
 "DoubleBottom.Title" = "Double bottom";
@@ -205,3 +205,11 @@
 "NicegramOnboarding.5.Desc" = "Secure Messenger with Strong Encryption, Group Audio and Video Calls, Public Channels, Groups and Bots, Unlimited Cloud Storage for Chats, Media and Documents sharing.";
 "NicegramOnboarding.6.Title" = "Meet Lily";
 "NicegramOnboarding.6.Desc" = "Your Personal AI Chatbot Assistant for Simplifying Your Life!";
+
+/*Rounded Videos*/
+"RoundedVideos.ButtonTitle" = "Send as Rounded Video";
+"RoundedVideos.MoreButtonTooltip" = "Convert square videos to send as circles with one tap.";
+"RoundedVideos.SendButtonTooltip" = "Long-press to send your video as a stylish circle.";
+
+/*Stealth Mode*/
+"StealthMode.Toggle" = "Stealth Mode";

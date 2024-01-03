@@ -112,7 +112,6 @@
 "Messages.TranslateError" = "Lo sentimos, la traducción no está disponible.";
 "Messages.SpeechToText" = "Voz a texto";
 "Messages.UndoSpeechToText" = "Deshacer Voz a texto";
-"Messages.SpeechToText.LowAccuracyError" = "El reconocimiento de voz ha fallado.\n\nEsto podría ocurrir debido a la mala calidad de la grabación de audio o a las diferencias entre el idioma de la aplicación y el de la grabación de audio.";
 "Messages.SelectAllFromUser" = "Seleccionar todo de este usuario";
 "Messages.ToLanguage" = "Al idioma";
 "Messages.ToLanguage.WithCode" = "Al idioma: %@";
@@ -180,15 +179,6 @@
 "NiceFeatures.QuickReplies.AddNew" = "Agregar nuevo";
 "NiceFeatures.QuickReplies.Placeholder" = "Ingrese texto";
 
-/*Telegram Premium*/
-"TelegramPremium.Description" = "Desafortunadamente, no puede obtener **Funciones premium de Telegram** mientras está conectado a la aplicación Nicegram. Vaya a la aplicación oficial de Telegram y suscríbase a **Telegram Premium**. Cuando regrese a Nicegram, todas las **Características Premium** estarán disponibles para su uso.";
-"TelegramPremium.Title" = "Restaurar prémium";
-"TelegramPremium.Failure.Title" = "Error";
-"TelegramPremium.Failure.Description" = "Algo salió mal. Utilice Nicegram Bot para restaurar su suscripción prémium de por vida";
-"TelegramPremium.Failure.Pending" = "Su solicitud está en curso. Por favor, espere hasta que Nicegram Bot lo apruebe";
-"TelegramPremium.Success.Title" = "Éxito";
-"TelegramPremium.Success.Description" = "¡Su suscripción prémium de por vida se restauró con éxito!";
-
 /*Double Bottom*/
 "DoubleBottom.Title" = "Double bottom";
 "DoubleBottom.Description" = "Para habilitar esta función, debe tener más de una cuenta y activar el Bloqueo con código de acceso (vaya a Configuración → Privacidad y seguridad → Bloqueo con código de acceso)";
@@ -211,3 +201,11 @@
 "NicegramOnboarding.5.Desc" = "Servicio de mensajería seguro con cifrado robusto, llamadas de audio y vídeo grupales, canales públicos, grupos y \"bots\", almacenamiento ilimitado en la nube para chats, multimedia y documentos compartidos.";
 "NicegramOnboarding.6.Title" = "Conoce a Lily";
 "NicegramOnboarding.6.Desc" = "¡Tu chatbot de IA - el asistente personal diseñado para simplificar tu vida!";
+
+/*Rounded Videos*/
+"RoundedVideos.ButtonTitle" = "Enviar como Vídeo Redondeado";
+"RoundedVideos.MoreButtonTooltip" = "Convierte videos cuadrados en círculos para enviar con un solo toque.";
+"RoundedVideos.SendButtonTooltip" = "Mantén presionado para enviar tu video como un círculo elegante.";
+
+/*Stealth Mode*/
+"StealthMode.Toggle" = "Modo Sigiloso";

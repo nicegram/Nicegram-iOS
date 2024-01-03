@@ -98,6 +98,16 @@
       ]
     },
     {
+      "name": "FeatChatListBanner",
+      "c99name": "FeatChatListBanner",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatChatListBanner",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
       "name": "FeatImagesHub",
       "c99name": "FeatImagesHub",
       "src_type": "swift",
@@ -118,10 +128,10 @@
       ]
     },
     {
-      "name": "FeatPartners",
-      "c99name": "FeatPartners",
+      "name": "FeatPersistentStorage",
+      "c99name": "FeatPersistentStorage",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPartners",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPersistentStorage",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
         "nicegram-assistant"
@@ -333,6 +343,16 @@
       "c99name": "NGGrumUI",
       "src_type": "swift",
       "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGGrumUI",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
+      "name": "NGLocalization",
+      "c99name": "NGLocalization",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGLocalization",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
         "nicegram-assistant"
@@ -637,7 +657,6 @@
       "target_labels": [
         "@swiftpkg_nicegram_assistant_ios//:Sources_FeatChatBanner",
         "@swiftpkg_nicegram_assistant_ios//:Sources_FeatImagesHubUI",
-        "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPartners",
         "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPinnedChats",
         "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPremiumUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChatUI",
@@ -808,7 +827,7 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "05f2392cbf916a604d9d7e87dc640e7d4651dc12",
+        "commit": "b0d993e6fcb6e48734d8361c26bd401752ac5513",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
         "branch": "develop"
       }

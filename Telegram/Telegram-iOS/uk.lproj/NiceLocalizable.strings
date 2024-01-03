@@ -112,7 +112,6 @@
 "Messages.TranslateError" = "На жаль, переклад недоступний.";
 "Messages.SpeechToText" = "Голос в текст";
 "Messages.UndoSpeechToText" = "Скасувати голос у текст";
-"Messages.SpeechToText.LowAccuracyError" = "Помилка розпізнавання мовлення.\n\nЦе може статися через погану якість аудіозапису або відмінності між мовою програми та аудіозапису.";
 "Messages.SelectAllFromUser" = "Вибрати все цього користувача";
 "Messages.ToLanguage" = "На мову";
 "Messages.ToLanguage.WithCode" = "На мову: %@";
@@ -178,15 +177,6 @@
 "NiceFeatures.QuickReplies.Description" = "Ви можете додати необмежену кількість відповідей за допомогою кнопки нижче. Щоб використовувати швидку відповідь, введіть **символ \"&\"** у поле введення повідомлення.";
 "NiceFeatures.QuickReplies.AddNew" = "Додати нову";
 "NiceFeatures.QuickReplies.Placeholder" = "Введіть текст";
-
-/*Telegram Premium*/
-"TelegramPremium.Description" = "На жаль, ви не можете отримати **Преміум можливості Telegram** під час входу в додаток Nicegram. Перейдіть в офіційний додаток Telegram і підпишіться на **Telegram Premium**. Коли ви повернетесь до Nicegram, усі **Преміум можливості будуть доступні для використання.";
-"TelegramPremium.Title" = "Відновити преміум-версію";
-"TelegramPremium.Failure.Title" = "Помилка";
-"TelegramPremium.Failure.Description" = "Щось пішло не так. Будь ласка, використовуйте Nicegram Bot, щоб відновити вашу довічну Преміум підписку";
-"TelegramPremium.Failure.Pending" = "Ваш запит очікує очікування. Будь ласка, почекайте поки Nicegram Bot схвалить його";
-"TelegramPremium.Success.Title" = "Успішно";
-"TelegramPremium.Success.Description" = "Ваша пожиттєва Преміум підписка була успішно відновлена!";
 
 /*Double Bottom*/
 "DoubleBottom.Title" = "Подвійне дно";

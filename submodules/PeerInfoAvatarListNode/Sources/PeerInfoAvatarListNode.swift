@@ -166,6 +166,7 @@ public enum PeerInfoAvatarListItem: Equatable {
         }
     }
     
+    
     var videoRepresentations: [VideoRepresentationWithReference] {
         switch self {
             case .custom:
@@ -602,7 +603,12 @@ private final class VariableBlurView: UIVisualEffectView {
         fatalError("init(coder:) has not been implemented")
     }
     
-    override func updateTraitsIfNeeded() {
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        if #available(iOS 13.0, *) {
+            if self.traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
+                self.resetEffect()
+            }
+        }
     }
     
     private func resetEffect() {

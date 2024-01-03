@@ -1,5 +1,4 @@
 import Foundation
-import NGCore
 
 public final class AppCache {
     // Old key 'appLaunchCount'
@@ -31,16 +30,6 @@ public final class AppCache {
         set {
             _wasLauchedBefore = newValue
         }
-    }
-    
-    public static var mobileIdentifier: String {
-        if let identifier = KeychainWrapper.standard.string(forKey: "ng_mobileIdentifier", withAccessibility: .afterFirstUnlock),
-           !identifier.isEmpty {
-            return identifier
-        }
-        let newIdentifier = UUID().uuidString
-        KeychainWrapper.standard.set(newIdentifier, forKey: "ng_mobileIdentifier", withAccessibility: .afterFirstUnlock)
-        return newIdentifier
     }
 
     private init() {}

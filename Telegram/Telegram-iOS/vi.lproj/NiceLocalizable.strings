@@ -112,7 +112,6 @@
 "Messages.TranslateError" = "Sorry, translation unavailable.";
 "Messages.SpeechToText" = "Speech2Text";
 "Messages.UndoSpeechToText" = "Undo Speech2Text";
-"Messages.SpeechToText.LowAccuracyError" = "Speech recognition failed.\n\nThis could happen due to the poor quality of the audio recording or differences between the language of the application and of the audio recording.";
 "Messages.SelectAllFromUser" = "Select All From This User";
 "Messages.ToLanguage" = "To Language";
 "Messages.ToLanguage.WithCode" = "To Language: %@";

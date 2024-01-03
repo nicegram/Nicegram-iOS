@@ -28,13 +28,11 @@ class OnboardingViewController: UIViewController {
     //  MARK: - Logic
     
     private let items: [OnboardingPageViewModel]
-    private let languageCode: String
     
     //  MARK: - Lifecycle
     
-    init(items: [OnboardingPageViewModel], languageCode: String, onComplete: @escaping () -> Void) {
+    init(items: [OnboardingPageViewModel], onComplete: @escaping () -> Void) {
         self.items = items
-        self.languageCode = languageCode
         self.onComplete = onComplete
         
         super.init(nibName: nil, bundle: nil)
@@ -55,7 +53,7 @@ class OnboardingViewController: UIViewController {
         scrollView.delegate = self
         
         display(items: self.items)
-        display(buttonTitle: l("NicegramOnboarding.Continue", languageCode))
+        display(buttonTitle: l("NicegramOnboarding.Continue"))
         
         nextButton.touchUpInside = { [weak self] in
             self?.goToNextPage()

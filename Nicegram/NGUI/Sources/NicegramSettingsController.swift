@@ -11,7 +11,6 @@
 import AccountContext
 import Display
 import FeatImagesHubUI
-import FeatPartners
 import Foundation
 import ItemListUI
 import NGData
@@ -83,7 +82,6 @@ private enum EasyToggleType {
     case showRegDate
     case hideReactions
     case hideStories
-    case hidePartnerIntegrations
 }
 
 
@@ -534,10 +532,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                     VarSystemNGSettings.hideReactions = value
                 case .hideStories:
                     NGSettings.hideStories = value
-                case .hidePartnerIntegrations:
-                    if #available(iOS 13.0, *) {
-                        Partners.hideIntegrations = value
-                    }
                 }
             })
         case let .unblockHeader(text):
@@ -640,10 +634,10 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
         entries.append(.unblock(l("NicegramSettings.Unblock.Button", locale), nicegramUnblockUrl))
     }
 
-    entries.append(.TabsHeader(l("NicegramSettings.Tabs",
+    entries.append(.TabsHeader(l("NiceFeatures.Tabs.Header",
                                  locale)))
     entries.append(.showContactsTab(
-        l("NicegramSettings.Tabs.showContactsTab", locale),
+        l("NiceFeatures.Tabs.ShowContacts", locale),
         NGSettings.showContactsTab
     ))
     entries.append(.showCallsTab(
@@ -654,18 +648,18 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
         entries.append(.showNicegramTab)
     }
     entries.append(.showTabNames(
-        l("NicegramSettings.Tabs.showTabNames", locale),
+        l("NiceFeatures.Tabs.ShowNames", locale),
         NGSettings.showTabNames
     ))
 
-    entries.append(.FoldersHeader(l("NicegramSettings.Folders",
+    entries.append(.FoldersHeader(l("NiceFeatures.Folders.Header",
                                     locale)))
     entries.append(.foldersAtBottom(
-        l("NicegramSettings.Folders.foldersAtBottom", locale),
+        l("NiceFeatures.Folders.TgFolders", locale),
         experimentalSettings.foldersTabAtBottom
     ))
     entries.append(.foldersAtBottomNotice(
-        l("NicegramSettings.Folders.foldersAtBottomNotice", locale)
+        l("NiceFeatures.Folders.TgFolders.Notice", locale)
     ))
     
     var pinnedBots: [NicegramSettingsControllerEntry] = []
@@ -690,10 +684,10 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
         pinnedBots.forEach { entries.append($0) }
     }
 
-    entries.append(.RoundVideosHeader(l("NicegramSettings.RoundVideos",
+    entries.append(.RoundVideosHeader(l("NiceFeatures.RoundVideos.Header",
                                         locale)))
     entries.append(.startWithRearCam(
-        l("NicegramSettings.RoundVideos.startWithRearCam", locale),
+        l("NiceFeatures.RoundVideos.UseRearCamera", locale),
         NGSettings.useRearCamTelescopy
     ))
     entries.append(.shouldDownloadVideo(
@@ -704,7 +698,7 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     entries.append(.OtherHeader(
         presentationData.strings.ChatSettings_Other.uppercased()))
     entries.append(.hidePhoneInSettings(
-        l("NicegramSettings.Other.hidePhoneInSettings", locale),
+        l("NiceFeatures.HideNumber", locale),
         NGSettings.hidePhoneSettings
     ))
     entries.append(.hidePhoneInSettingsNotice(
@@ -737,11 +731,6 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     
     entries.append(.easyToggle(toggleIndex, .hideStories, l("NicegramSettings.HideStories", locale), NGSettings.hideStories))
     toggleIndex += 1
-    
-    if #available(iOS 13.0, *) {
-        entries.append(.easyToggle(toggleIndex, .hidePartnerIntegrations, Partners.hideIntegrationsTitle, Partners.hideIntegrations))
-        toggleIndex += 1
-    }
     
     entries.append(.shareChannelsInfoToggle(l("NicegramSettings.ShareChannelsInfoToggle", locale), isShareChannelsInfoEnabled()))
     entries.append(.shareChannelsInfoNote(l("NicegramSettings.ShareChannelsInfoToggle.Note", locale)))

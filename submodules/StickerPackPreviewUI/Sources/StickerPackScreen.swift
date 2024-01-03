@@ -1,6 +1,3 @@
-// MARK: Nicegram StickerMaker
-import FeatPartners
-//
 import Foundation
 import UIKit
 import Display
@@ -91,13 +88,6 @@ private enum StickerPackNextAction {
 }
 
 private final class StickerPackContainer: ASDisplayNode {
-    
-    // MARK: Nicegram StickerMaker
-    private let stickerMakerNode = ASDisplayNode {
-        StickerMakerButton(location: .stickerPack)
-    }
-    //
-    
     let index: Int
     private let context: AccountContext
     private weak var controller: StickerPackScreenImpl?
@@ -256,10 +246,6 @@ private final class StickerPackContainer: ASDisplayNode {
         self.addSubnode(self.topContainerNode)
         self.topContainerNode.addSubnode(self.cancelButtonNode)
         self.topContainerNode.addSubnode(self.moreButtonNode)
-        
-        // MARK: Nicegram StickerMaker
-        self.addSubnode(self.stickerMakerNode)
-        //
                 
         self.gridNode.presentationLayoutUpdated = { [weak self] presentationLayout, transition in
             self?.gridPresentationLayoutUpdated(presentationLayout, transition: transition)
@@ -1259,14 +1245,7 @@ private final class StickerPackContainer: ASDisplayNode {
         }
         
         let buttonSideInset: CGFloat = 16.0
-        // MARK: Nicegram StickerMaker, change let to var
-        var titleAreaInset: CGFloat = 56.0
-        
-        // MARK: Nicegram StickerMaker
-        if StickerMaker.showConfig.stickerPack {
-            titleAreaInset += StickerMakerButton.height
-        }
-        //
+        let titleAreaInset: CGFloat = 56.0
         
         var actionAreaHeight: CGFloat = buttonHeight
         actionAreaHeight += insets.bottom + actionAreaBottomInset
@@ -1406,21 +1385,6 @@ private final class StickerPackContainer: ASDisplayNode {
         self.titleBackgroundnode.update(size: CGSize(width: layout.size.width, height: 56.0), transition: .immediate)
         
         transition.updateFrame(node: self.topContainerNode, frame: CGRect(origin: CGPoint(x: backgroundFrame.minX, y: backgroundFrame.minY), size: CGSize(width: backgroundFrame.width, height: 56.0)))
-        
-        // MARK: Nicegram StickerMaker
-        let stickerMakerSideInset = layout.safeInsets.left + 16
-        transition.updateFrame(
-            node: self.stickerMakerNode,
-            frame: CGRect(
-                x: stickerMakerSideInset,
-                y: backgroundFrame.minY + 56,
-                width: layout.size.width - stickerMakerSideInset * 2,
-                height: StickerMakerButton.height
-            )
-        )
-        
-        self.stickerMakerNode.isHidden = !StickerMaker.showConfig.stickerPack
-        //
         
         let transition = ContainedViewLayoutTransition.animated(duration: 0.2, curve: .easeInOut)
         transition.updateAlpha(node: self.titleSeparatorNode, alpha: unclippedBackgroundY < minBackgroundY ? 1.0 : 0.0)

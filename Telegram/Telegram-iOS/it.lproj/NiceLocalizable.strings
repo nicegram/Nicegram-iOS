@@ -112,7 +112,6 @@
 "Messages.TranslateError" = "Spiacente, traduzione non disponibile.";
 "Messages.SpeechToText" = "Speech2Text";
 "Messages.UndoSpeechToText" = "Annulla Speech2Text";
-"Messages.SpeechToText.LowAccuracyError" = "Riconoscimento vocale fallito.\n\nCiò può essere dovuto a una scarsa qualità della registrazione audio o a differenze tra la lingua dell'applicazione e la lingua della registrazione audio.";
 "Messages.SelectAllFromUser" = "Seleziona tutto da questo utente";
 "Messages.ToLanguage" = "Nella lingua";
 "Messages.ToLanguage.WithCode" = "Nella lingua: %@";
@@ -180,20 +179,11 @@
 "NiceFeatures.QuickReplies.AddNew" = "Aggiungi nuovo";
 "NiceFeatures.QuickReplies.Placeholder" = "Inserisci il testo";
 
-/*Telegram Premium*/
-"TelegramPremium.Description" = "Sfortunatamente non puoi ottenere le **Funzionalità di Telegram Premium** tramite Nicegram. Apri l'app ufficiale di Telegram e iscriviti a **Telegram Premium** lì. Torna su Nicegram e tutte le **Funzionalità Premium** saranno disponibili.";
-"TelegramPremium.Title" = "Ripristina Premium";
-"TelegramPremium.Failure.Title" = "Errore";
-"TelegramPremium.Failure.Description" = "Qualcosa è andato storto. Per favore, usa il Bot di Nicegram per ripristinare il tuo abbonamento Premium a vita";
-"TelegramPremium.Failure.Pending" = "La tua richiesta è in fase di elaborazione. Per favore, attendi che il Bot di Nicegram la approvi";
-"TelegramPremium.Success.Title" = "Successo";
-"TelegramPremium.Success.Description" = "Il tuo abbonamento Premium a vita è stato ripristinato con successo!";
-
 /*Double Bottom*/
-"DoubleBottom.Title" = "Doppio Fondo";
+"DoubleBottom.Title" = "Double bottom";
 "DoubleBottom.Description" = "Per abilitare questa funzione, devi avere più di un account e attivare il Blocco con password (vai su Impostazioni → Privacy e sicurezza → Blocco con password)";
-"DoubleBottom.Enabled.Title" = "Doppio Fondo abilitato";
-"DoubleBottom.Enabled.Description" = "Ricorda la password che hai appena impostato e riavvia l'app affinché il Doppio Fondo funzioni correttamente";
+"DoubleBottom.Enabled.Title" = "Double Bottom abilitato";
+"DoubleBottom.Enabled.Description" = "Ricorda la password che hai appena impostato e riavvia l'app affinché il Double Bottom funzioni correttamente";
 "DoubleBottom.Enabled.OK" = "OK";
 "DoubleBottom.Passcode.Error" = "Si prega di impostare un altro codice di accesso diverso da quello utilizzato per il blocco del codice stesso";
 
@@ -211,3 +201,11 @@
 "NicegramOnboarding.5.Desc" = "Client di messaggistica sicuro con crittografia avanzata, chiamate audio e video di gruppo, canali pubblici, gruppi e bot, spazio di archiviazione cloud illimitato per le chat, condivisione di file multimediali e documenti.";
 "NicegramOnboarding.6.Title" = "Conosci Lily";
 "NicegramOnboarding.6.Desc" = "Il tuo assistente personale Chatbot d'IA per semplificare la tua vita!";
+
+/*Rounded Videos*/
+"RoundedVideos.ButtonTitle" = "Invia come video rotondo";
+"RoundedVideos.MoreButtonTooltip" = "Converti i video quadrati in cerchi da inviare con un solo tocco.";
+"RoundedVideos.SendButtonTooltip" = "Premi a lungo per inviare il tuo video come un cerchio elegante.";
+
+/*Stealth Mode*/
+"StealthMode.Toggle" = "Modalità Stealth";

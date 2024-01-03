@@ -1,3 +1,6 @@
+// MARK: Nicegram RoundedVideos
+import NGRoundedVideos
+//
 import Foundation
 import UIKit
 import LegacyComponents
@@ -352,10 +355,116 @@ public struct LegacyAssetPickerEnqueueMessage {
     public var isFile: Bool
 }
 
+// MARK: Nicegram RoundedVideos
+private func ngMapLegacyAssetPickerValues(
+    _ values: Any?,
+    sendAsRoundedVideo: Bool
+) -> Any? {
+    guard sendAsRoundedVideo else {
+        return values
+    }
+    
+    var result: [Any] = []
+    for value in (values as! NSArray) {
+        if let itemWrapper = (value as? NSDictionary)?.object(forKey: "item") as? LegacyAssetItemWrapper,
+           case let .video(data, thumbnail, adjustments, caption, asFile, asAnimation, stickers) = itemWrapper.item {
+            let trimTimeRange: CMTimeRange
+            if let adjustments,
+               !adjustments.trimTimeRange().isEmpty {
+                trimTimeRange = adjustments.trimTimeRange()
+            } else {
+                let duration: Double
+                switch data {
+                case let .asset(asset):
+                    duration = asset.videoDuration
+                case let .tempFile(_, _, _duration):
+                    duration = _duration
+                }
+                trimTimeRange = CMTimeRange(
+                    start: .zero,
+                    duration: CMTime(
+                        seconds: duration,
+                        preferredTimescale: 60
+                    )
+                )
+            }
+            
+            let originalSize: CGSize
+            if let adjustments {
+                originalSize = adjustments.originalSize
+            } else {
+                switch data {
+                case let .asset(asset):
+                    originalSize = asset.dimensions
+                case let .tempFile(_, _dimensions, _):
+                    originalSize = _dimensions
+                }
+            }
+            
+            let chunks = NGRoundedVideos.trim(range: trimTimeRange)
+            
+            for (index, chunk) in chunks.enumerated() {
+                let chunkAdjustments = TGVideoEditAdjustments(
+                    originalSize: originalSize,
+                    cropRect: adjustments?.cropRect ?? .zero,
+                    cropOrientation: adjustments?.cropOrientation ?? .up,
+                    cropRotation: adjustments?.cropRotation ?? .zero,
+                    cropLockedAspectRatio: adjustments?.cropLockedAspectRatio ?? 1,
+                    cropMirrored: adjustments?.cropMirrored ?? false,
+                    trimStartValue: chunk.start.seconds,
+                    trimEndValue: chunk.end.seconds,
+                    toolValues: adjustments?.toolValues,
+                    paintingData: adjustments?.paintingData,
+                    sendAsGif: adjustments?.sendAsGif ?? false,
+                    preset: TGMediaVideoConversionPresetVideoMessage
+                )
+                
+                var chunkUniqueId = itemWrapper.uniqueId
+                chunkUniqueId?.append("-\(index)")
+                
+                let chunkCaption: NSAttributedString? = if index == chunks.startIndex {
+                    caption
+                } else {
+                    nil
+                }
+                
+                let newValue: NSDictionary = [
+                    "item": LegacyAssetItemWrapper(
+                        item: .video(data: data, thumbnail: thumbnail, adjustments: chunkAdjustments, caption: chunkCaption, asFile: asFile, asAnimation: asAnimation, stickers: stickers),
+                        timer: itemWrapper.timer,
+                        spoiler: itemWrapper.spoiler,
+                        groupedId: nil,
+                        uniqueId: chunkUniqueId
+                    )
+                ]
+                result.append(newValue)
+            }
+        } else {
+            result.append(value)
+        }
+    }
+    
+    return result
+}
+//
+
 public func legacyAssetPickerEnqueueMessages(context: AccountContext, account: Account, signals: [Any]) -> Signal<[LegacyAssetPickerEnqueueMessage], Void> {
+    
+    // MARK: Nicegram RoundedVideos
+    let sendAsRoundedVideo = NGRoundedVideos.sendAsRoundedVideo
+    NGRoundedVideos.sendAsRoundedVideo = false
+    //
+    
     return Signal { subscriber in
         let disposable = SSignal.combineSignals(signals).start(next: { anyValues in
             var messages: [LegacyAssetPickerEnqueueMessage] = []
+            
+            // MARK: Nicegram RoundedVideos
+            let anyValues = ngMapLegacyAssetPickerValues(
+                anyValues,
+                sendAsRoundedVideo: sendAsRoundedVideo
+            )
+            //
             
             outer: for item in (anyValues as! NSArray) {
                 if let item = (item as? NSDictionary)?.object(forKey: "item") as? LegacyAssetItemWrapper {
@@ -751,8 +860,22 @@ public func legacyAssetPickerEnqueueMessages(context: AccountContext, account: A
                             if asAnimation {
                                 fileAttributes.append(.Animated)
                             }
+                            
+                            // MARK: Nicegram RoundedVideos
+                            let videoFlags: TelegramMediaVideoFlags = if sendAsRoundedVideo {
+                                [.instantRoundVideo]
+                            } else {
+                                [.supportsStreaming]
+                            }
+                        
+                            if sendAsRoundedVideo {
+                                finalDimensions = NGRoundedVideos.Constants.videoSize
+                            }
+                            //
+                        
                             if !asFile {
-                                fileAttributes.append(.Video(duration: finalDuration, size: PixelDimensions(finalDimensions), flags: [.supportsStreaming], preloadSize: nil))
+                                // MARK: Nicegram RoundedVideos, change to 'flags: videoFlags'
+                                fileAttributes.append(.Video(duration: finalDuration, size: PixelDimensions(finalDimensions), flags: videoFlags, preloadSize: nil))
                                 if let adjustments = adjustments {
                                     if adjustments.sendAsGif {
                                         fileAttributes.append(.Animated)
@@ -811,8 +934,37 @@ public func legacyAssetPickerEnqueueMessages(context: AccountContext, account: A
                                     }
                                 }
                             }
+                        
+                            // MARK: Nicegram RoundedVideos
+                            let localGroupingKey: Int64? = if sendAsRoundedVideo {
+                                nil
+                            } else {
+                                item.groupedId
+                            }
+                        
+                            let messageText = if sendAsRoundedVideo {
+                                ""
+                            } else {
+                                text.string
+                            }
+                            //
                             
-                            messages.append(LegacyAssetPickerEnqueueMessage(message: .message(text: text.string, attributes: attributes, inlineStickers: [:], mediaReference: .standalone(media: media), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: item.groupedId, correlationId: nil, bubbleUpEmojiOrStickersets: bubbleUpEmojiOrStickersets), uniqueId: item.uniqueId, isFile: asFile))
+                            // MARK: Nicegram RoundedVideos, change (text, localGroupingKey)
+                            messages.append(LegacyAssetPickerEnqueueMessage(message: .message(text: messageText, attributes: attributes, inlineStickers: [:], mediaReference: .standalone(media: media), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: localGroupingKey, correlationId: nil, bubbleUpEmojiOrStickersets: bubbleUpEmojiOrStickersets), uniqueId: item.uniqueId, isFile: asFile))
+                        
+                            // MARK: Nicegram RoundedVideos
+                            if sendAsRoundedVideo {
+                                let videoMessageText = text
+                                    .string
+                                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                                
+                                if !videoMessageText.isEmpty {
+                                    var uniqueId = item.uniqueId
+                                    uniqueId?.append("-text")
+                                    messages.append(LegacyAssetPickerEnqueueMessage(message: .message(text: videoMessageText, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: localGroupingKey, correlationId: nil, bubbleUpEmojiOrStickersets: []), uniqueId: uniqueId, isFile: false))
+                                }
+                            }
+                            //
                     }
                 }
             }

@@ -95,7 +95,7 @@ private extension TgVoiceToTextProcessor {
     }
     
     func makeRecognitionConfig() -> GoogleRecognitionConfig {
-        let mainCode = Locale.currentAppLocale.languageWithScriptCode
+        let mainCode = Bundle.main.preferredLocalizations.first ?? "en"
         var additionalCodes = Set(
             additionalLanguageCodes + [
                 Locale.current.languageWithScriptCode,

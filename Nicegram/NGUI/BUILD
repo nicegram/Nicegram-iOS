@@ -39,6 +39,7 @@ swift_library(
         "//Nicegram/NGQuickReplies:NGQuickReplies",
         "//Nicegram/NGSecretMenu:NGSecretMenu",
         "//Nicegram/NGStats:NGStats",
+        "//Nicegram/NGStealthMode:NGStealthMode",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChatUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_FeatImagesHubUI",
     ],

@@ -112,7 +112,6 @@
 "Messages.TranslateError" = "抱歉，無法翻譯。";
 "Messages.SpeechToText" = "語音轉文字";
 "Messages.UndoSpeechToText" = "取消語音轉文字";
-"Messages.SpeechToText.LowAccuracyError" = "語音辨識失敗。\n\n這可能是由於錄音品質不好，或應用程式和錄音語言之間的差異。";
 "Messages.SelectAllFromUser" = "選取來自這個人的所有訊息";
 "Messages.ToLanguage" = "翻譯為";
 "Messages.ToLanguage.WithCode" = "翻譯為：%@";
@@ -180,15 +179,6 @@
 "NiceFeatures.QuickReplies.AddNew" = "新增";
 "NiceFeatures.QuickReplies.Placeholder" = "輸入文字";
 
-/*Telegram Premium*/
-"TelegramPremium.Description" = "很遺憾地，當你登入 Nicegram App 時，你沒有辦法取得**Telegram Premium**。\n請到官方的 Telegram App 並訂閱** Telegram Premium**。當你再度回到 Nicegram 時，你將可以使用所有的**Premium 功能**。";
-"TelegramPremium.Title" = "恢復 Premium";
-"TelegramPremium.Failure.Title" = "失敗";
-"TelegramPremium.Failure.Description" = "出了些問題。 請使用 Nicegram Bot 恢復您的 Premium 終身訂閱";
-"TelegramPremium.Failure.Pending" = "您的要求正待處理。 請等待直到 Nicegram Bot 核准之";
-"TelegramPremium.Success.Title" = "成功";
-"TelegramPremium.Success.Description" = "您的終生 Premium 已成功恢復了！";
-
 /*Double Bottom*/
 "DoubleBottom.Title" = "Double Bottom";
 "DoubleBottom.Description" = "要啟用此功能，您必須擁有一個以上的帳號並啟用密碼鎖 (前往設定→隱私與安全→密碼鎖)";
@@ -211,3 +201,11 @@
 "NicegramOnboarding.5.Desc" = "具有高強度加密、群組語音及視訊通話、公用頻道、群組和機器人、可用於聊天、媒體和文件共享的無限雲端儲存之安全即時通訊程式。";
 "NicegramOnboarding.6.Title" = "认识莉莉";
 "NicegramOnboarding.6.Desc" = "您的个人人工智能聊天机器人助手，简化您的生活!";
+
+/*Rounded Videos*/
+"RoundedVideos.ButtonTitle" = "以圓形影片發送";
+"RoundedVideos.MoreButtonTooltip" = "一鍵將方形影片轉換為圓形發送。";
+"RoundedVideos.SendButtonTooltip" = "長按以將您的影片以時尚圓形發送。";
+
+/*Stealth Mode*/
+"StealthMode.Toggle" = "隱形模式";

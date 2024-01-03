@@ -84,6 +84,15 @@ class NGDeeplinkHandler {
             }
         case "pstAuth":
             return handlePstAuth(url: url)
+        case "refferaldraw":
+            if #available(iOS 15.0, *) {
+                Task { @MainActor in
+                    AssistantUITgHelper.showReferralDrawFromDeeplink()
+                }
+                return true
+            } else {
+                return false
+            }
         case "task":
             if #available(iOS 15.0, *) {
                 let taskDeeplinkHandler = TasksContainer.shared.taskDeeplinkHandler()
@@ -161,11 +170,9 @@ private extension NGDeeplinkHandler {
     }
     
     func handleOnboarding(url: URL) -> Bool {
-        let presentationData = getCurrentPresentationData()
-        
         var dismissImpl: (() -> Void)?
         
-        let c = onboardingController(languageCode: presentationData.strings.baseLanguageCode) {
+        let c = onboardingController() {
             dismissImpl?()
         }
         c.modalPresentationStyle = .fullScreen

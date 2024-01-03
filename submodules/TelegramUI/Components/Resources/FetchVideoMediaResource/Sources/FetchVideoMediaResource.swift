@@ -1,3 +1,6 @@
+// MARK: Nicegram RoundedVideos
+import NGRoundedVideos
+//
 import Foundation
 import UIKit
 import Postbox
@@ -867,6 +870,7 @@ private extension MediaEditorValues {
             additionalVideoTrimRange: nil,
             additionalVideoOffset: nil,
             additionalVideoVolume: nil,
+            nightTheme: false,
             drawing: nil,
             entities: [],
             toolValues: [:],
@@ -984,12 +988,37 @@ private extension MediaEditorValues {
             qualityPreset = defaultPreset
         }
         
+        // MARK: Nicegram RoundedVideos
+        let cropRect: CGRect
+        let cropScale: CGFloat
+        if qualityPreset == .videoMessage {
+            let originalCropRect: CGRect
+            if legacyAdjustments.cropRect.isEmpty {
+                originalCropRect = CGRect(
+                    origin: .zero,
+                    size: legacyAdjustments.originalSize
+                )
+            } else {
+                originalCropRect = legacyAdjustments.cropRect
+            }
+            
+            (cropRect, cropScale) = NGRoundedVideos.calcCropRectAndScale(
+                originalCropRect: originalCropRect
+            )
+        } else {
+            cropRect = legacyAdjustments.cropRect
+            cropScale = 1
+        }
+        //
+        
         self.init(
             peerId: EnginePeer.Id(0),
             originalDimensions: PixelDimensions(legacyAdjustments.originalSize),
             cropOffset: .zero,
-            cropRect: legacyAdjustments.cropRect,
-            cropScale: 1.0,
+            // MARK: Nicegram RoundedVideos
+            cropRect: cropRect,
+            cropScale: cropScale,
+            //
             cropRotation: legacyAdjustments.cropRotation,
             cropMirroring: legacyAdjustments.cropMirrored,
             cropOrientation: legacyAdjustments.cropOrientation.cropOrientation,
@@ -1008,6 +1037,7 @@ private extension MediaEditorValues {
             additionalVideoTrimRange: nil,
             additionalVideoOffset: nil,
             additionalVideoVolume: nil,
+            nightTheme: false,
             drawing: drawing,
             entities: entities,
             toolValues: toolValues,

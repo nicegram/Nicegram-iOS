@@ -53,6 +53,18 @@ func chatMessageDisplaySendMessageOptions(selfController: ChatControllerImpl, no
             let _ = ApplicationSpecificNotice.incrementSendWhenOnlineTip(accountManager: selfController.context.sharedContext.accountManager, count: 4).startStandalone()
         }
         
+        // MARK: Nicegram TranslateEnteredMessage
+        let peerId = selfController.presentationInterfaceState.chatLocation.peerId
+        let isSecretChat = (peerId?.namespace == Namespaces.Peer.SecretChat)
+        
+        let inputText = selfController.presentationInterfaceState.interfaceState.effectiveInputState.inputText.string
+        let isInputTextEmpty = inputText
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .isEmpty
+        
+        let canTranslate = !isSecretChat && !isInputTextEmpty
+        //
+        
         let controller = ChatSendMessageActionSheetController(context: selfController.context, updatedPresentationData: selfController.updatedPresentationData, peerId: selfController.presentationInterfaceState.chatLocation.peerId, forwardMessageIds: selfController.presentationInterfaceState.interfaceState.forwardMessageIds, hasEntityKeyboard: hasEntityKeyboard, gesture: gesture, sourceSendButton: node, textInputView: textInputView, canSendWhenOnline: sendWhenOnlineAvailable, completion: { [weak selfController] in
             guard let selfController else {
                 return
@@ -78,7 +90,7 @@ func chatMessageDisplaySendMessageOptions(selfController: ChatControllerImpl, no
                     selfController.openScheduledMessages()
                 }
             }
-        }, /* MARK: Nicegram TranslateEnteredMessage (translate + chooseLanguage) */ translate: { [weak selfController] in
+        }, /* MARK: Nicegram TranslateEnteredMessage (canTranslate, translate, chooseLanguage) */ canTranslate: canTranslate, translate: { [weak selfController] in
             guard let selfController else { return }
             let chatId = selfController.chatLocation.peerId
             let textToTranslate = selfController.presentationInterfaceState.interfaceState.effectiveInputState.inputText.string

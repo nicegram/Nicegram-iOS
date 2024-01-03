@@ -24,9 +24,9 @@
 "NiceFeatures.Folders.Header" = "PASTAS";
 "NiceFeatures.Account.Header" = "CONFIGURAÇÕES DA CONTA";
 "NiceFeatures.Folders.TgFolders" = "Pastas embaixo";
-"NiceFeatures.Folders.TgFolders.Notice" = "lista de pastas com estilo iOS";
+"NiceFeatures.Folders.TgFolders.Notice" = "Lista de pastas com estilo iOS";
 
-"NiceFeatures.RoundVideos.Header" = "Vídeo mensagens";
+"NiceFeatures.RoundVideos.Header" = "Mensagem video ";
 "NiceFeatures.RoundVideos.UseRearCamera" = "Iniciar com a câmera traseira";
 
 "NiceFeatures.InstantLock" = "Imediatamente";
@@ -112,7 +112,6 @@
 "Messages.TranslateError" = "Desculpe, tradução indisponível.";
 "Messages.SpeechToText" = "Voz para Texto";
 "Messages.UndoSpeechToText" = "Desfazer Voz para Texto";
-"Messages.SpeechToText.LowAccuracyError" = "Falha no reconhecimento de fala.\n\nIsso pode acontecer devido à má qualidade da gravação do áudio ou diferenças entre o idioma do aplicativo e da gravação do áudio.";
 "Messages.SelectAllFromUser" = "Selecionar tudo deste usuário";
 "Messages.ToLanguage" = "Para o idioma";
 "Messages.ToLanguage.WithCode" = "Para o idioma: %@";
@@ -180,19 +179,10 @@
 "NiceFeatures.QuickReplies.AddNew" = "Adicionar novo";
 "NiceFeatures.QuickReplies.Placeholder" = "Inserir texto";
 
-/*Telegram Premium*/
-"TelegramPremium.Description" = "Infelizmente, você não consegue ter acesso aos **Recursos do Telegram Premium** enquanto estiver autenticado no aplicativo Nicegram. Por favor, acesse o aplicativo oficial do Telegram e assine o **Telegram Premium**. Após retornar ao Nicegram, todos os **Recursos Premium** estarão disponíveis para uso.";
-"TelegramPremium.Title" = "Restaurar Premium";
-"TelegramPremium.Failure.Title" = "Falha";
-"TelegramPremium.Failure.Description" = "Algo deu errado. Por favor, use o Nicegram Bot para restaurar sua Assinatura Premium Vitalícia";
-"TelegramPremium.Failure.Pending" = "Sua solicitação está pendente. Por favor, aguarde pela aprovação do Nicegram Bot";
-"TelegramPremium.Success.Title" = "Aprovado ";
-"TelegramPremium.Success.Description" = "Sua Assinatura Premium Vitalícia foi restaurada com sucesso!";
-
 /*Double Bottom*/
-"DoubleBottom.Title" = "Fundo Duplo";
+"DoubleBottom.Title" = "Double Bottom";
 "DoubleBottom.Description" = "Para habilitar esse recurso, você deve ter mais de uma conta e ativar o Bloqueio por Código (acesse Configurações → Privacidade e Segurança → Bloqueio por Código)";
-"DoubleBottom.Enabled.Title" = "O Fundo Duplo está ativado";
+"DoubleBottom.Enabled.Title" = "O Double Bottom está ativado";
 "DoubleBottom.Enabled.Description" = "Lembre-se da senha que você acabou de definir e reinicie o aplicativo para que o Fundo Duplo funcione bem";
 "DoubleBottom.Enabled.OK" = "OK";
 "DoubleBottom.Passcode.Error" = "Por favor, defina outra senha, diferente da que você usa como senha de bloqueio";
@@ -211,3 +201,11 @@
 "NicegramOnboarding.5.Desc" = "Proteja o Aplicativo de Mensagens com Criptografia de Alta Segurança, Chamadas de Áudio e Vídeo em Grupo, Canais Públicos, Grupos e Bots, Armazenamento Ilimitado em Nuvem para as Conversas, compartilhamento de Mídia e Documentos.";
 "NicegramOnboarding.6.Title" = "Conheça a Lily";
 "NicegramOnboarding.6.Desc" = "Seu assistente pessoal de IA Chatbot para simplificar sua vida!";
+
+/*Rounded Videos*/
+"RoundedVideos.ButtonTitle" = "Enviar como Vídeo Arredondado";
+"RoundedVideos.MoreButtonTooltip" = "Converta vídeos quadrados em círculos para enviar com apenas um toque.";
+"RoundedVideos.SendButtonTooltip" = "Pressione e segure para enviar seu vídeo como um círculo estiloso.";
+
+/*Stealth Mode*/
+"StealthMode.Toggle" = "Modo Furtivo";

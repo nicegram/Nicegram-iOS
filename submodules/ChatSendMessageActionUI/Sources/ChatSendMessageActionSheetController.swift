@@ -23,6 +23,7 @@ public final class ChatSendMessageActionSheetController: ViewController {
     }
     
     // MARK: Nicegram TranslateEnteredMessage
+    private let canTranslate: Bool
     private let translate: () -> Void
     private let chooseLanguage: () -> Void
     //
@@ -54,8 +55,8 @@ public final class ChatSendMessageActionSheetController: ViewController {
     
     public var emojiViewProvider: ((ChatTextInputTextCustomEmojiAttribute) -> UIView)?
 
-    // MARK: Nicegram TranslateEnteredMessage, change (translate + chooseLanguage)
-    public init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, peerId: EnginePeer.Id?, isScheduledMessages: Bool = false, forwardMessageIds: [EngineMessage.Id]?, hasEntityKeyboard: Bool, gesture: ContextGesture, sourceSendButton: ASDisplayNode, textInputView: UITextView, attachment: Bool = false, canSendWhenOnline: Bool, completion: @escaping () -> Void, sendMessage: @escaping (SendMode) -> Void, translate: @escaping () -> Void = {}, chooseLanguage: @escaping () -> Void = {}, schedule: @escaping () -> Void) {
+    // MARK: Nicegram TranslateEnteredMessage, add (canTranslate, translate, chooseLanguage)
+    public init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, peerId: EnginePeer.Id?, isScheduledMessages: Bool = false, forwardMessageIds: [EngineMessage.Id]?, hasEntityKeyboard: Bool, gesture: ContextGesture, sourceSendButton: ASDisplayNode, textInputView: UITextView, attachment: Bool = false, canSendWhenOnline: Bool, completion: @escaping () -> Void, sendMessage: @escaping (SendMode) -> Void, canTranslate: Bool = false, translate: @escaping () -> Void = {}, chooseLanguage: @escaping () -> Void = {}, schedule: @escaping () -> Void) {
         self.context = context
         self.peerId = peerId
         self.isScheduledMessages = isScheduledMessages
@@ -69,6 +70,7 @@ public final class ChatSendMessageActionSheetController: ViewController {
         self.completion = completion
         self.sendMessage = sendMessage
         // MARK: Nicegram TranslateEnteredMessage
+        self.canTranslate = canTranslate
         self.translate = translate
         self.chooseLanguage = chooseLanguage
         //
@@ -121,9 +123,6 @@ public final class ChatSendMessageActionSheetController: ViewController {
         }
         
         // MARK: Nicegram TranslateEnteredMessage
-        let isSecretChat = (peerId?.namespace == Namespaces.Peer.SecretChat)
-        let canTranslate = !isSecretChat
-        
         let interlocutorLangCode = getCachedLanguageCode(forChatWith: peerId)
         //
         // MARK: Nicegram TranslateEnteredMessage, change (interlocutorLangCode + translate + chooseLanguage)
@@ -139,7 +138,7 @@ public final class ChatSendMessageActionSheetController: ViewController {
         }, schedule: !canSchedule ? nil : { [weak self] in
             self?.schedule()
             self?.dismiss(cancel: false)
-        }, canTranslate: canTranslate, interlocutorLangCode: interlocutorLangCode, translate: { [weak self] in
+        }, canTranslate: self.canTranslate, interlocutorLangCode: interlocutorLangCode, translate: { [weak self] in
             self?.translate()
             self?.dismiss(cancel: false)
         }, chooseLanguage: { [weak self] in

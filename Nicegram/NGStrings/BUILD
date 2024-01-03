@@ -7,8 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     deps = [
-        "//Nicegram/NGLogging:NGLogging",
-        "//submodules/AppBundle:AppBundle"
+        "@swiftpkg_nicegram_assistant_ios//:Sources_NGLocalization"
     ],
     visibility = [
         "//visibility:public",
