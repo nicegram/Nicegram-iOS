@@ -453,7 +453,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
     private var currentPanelStatusData: PeerInfoStatusData?
     func update(width: CGFloat, containerHeight: CGFloat, containerInset: CGFloat, statusBarHeight: CGFloat, navigationHeight: CGFloat, isModalOverlay: Bool, isMediaOnly: Bool, contentOffset: CGFloat, paneContainerY: CGFloat, presentationData: PresentationData, peer: Peer?, cachedData: CachedPeerData?, threadData: MessageHistoryThreadData?, peerNotificationSettings: TelegramPeerNotificationSettings?, threadNotificationSettings: TelegramPeerNotificationSettings?, globalNotificationSettings: EngineGlobalNotificationSettings?, statusData: PeerInfoStatusData?, panelStatusData: (PeerInfoStatusData?, PeerInfoStatusData?, CGFloat?), isSecretChat: Bool, isContact: Bool, isSettings: Bool, state: PeerInfoState, metrics: LayoutMetrics, deviceMetrics: DeviceMetrics, transition: ContainedViewLayoutTransition, additive: Bool, animateHeader: Bool) -> CGFloat {
         var threadData = threadData
-        if case let .replyThread(replyThreadMessage) = self.chatLocation, replyThreadMessage.messageId.peerId == self.context.account.peerId {
+        if case let .replyThread(replyThreadMessage) = self.chatLocation, replyThreadMessage.peerId == self.context.account.peerId {
             threadData = nil
         }
         
@@ -971,6 +971,8 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             var title: String
             if peer.id == self.context.account.peerId && !self.isSettings {
                 title = presentationData.strings.Conversation_SavedMessages
+            } else if peer.id.isAnonymousSavedMessages {
+                title = presentationData.strings.ChatList_AuthorHidden
             } else if let threadData = threadData {
                 title = threadData.info.title
             } else {
@@ -1618,7 +1620,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             if self.isSettings {
                 expandablePart += 20.0
             } else {
-                if case let .replyThread(replyThreadMessage) = self.chatLocation, replyThreadMessage.messageId.peerId == self.context.account.peerId {
+                if case let .replyThread(replyThreadMessage) = self.chatLocation, replyThreadMessage.peerId == self.context.account.peerId {
                     expandablePart = 0.0
                 } else if peer?.id == self.context.account.peerId {
                     expandablePart = 0.0

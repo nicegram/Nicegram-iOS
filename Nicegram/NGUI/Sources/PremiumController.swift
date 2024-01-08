@@ -6,8 +6,9 @@
 //  Copyright © 2019 Nicegram. All rights reserved.
 //
 
-import Foundation
 import Display
+import FeatSpeechToText
+import Foundation
 import SwiftSignalKit
 import Postbox
 import TelegramCore
@@ -46,6 +47,7 @@ private enum premiumControllerSection: Int32 {
     case notifyMissed
     case manageFilters
     case other
+    case speechToText
     case stealthMode
     case test
 }
@@ -82,6 +84,8 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
     case testButton(PresentationTheme, String)
     case ignoretr(PresentationTheme, String)
     
+    case useOpenAi(Bool)
+    
     case stealthMode(Bool)
 
     var section: ItemListSectionId {
@@ -98,6 +102,8 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return premiumControllerSection.other.rawValue
         case .testButton:
             return premiumControllerSection.test.rawValue
+        case .useOpenAi:
+            return premiumControllerSection.speechToText.rawValue
         case .stealthMode:
             return premiumControllerSection.stealthMode.rawValue
         }
@@ -130,8 +136,10 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return 11000
         case .ignoretr:
             return 12000
-        case .stealthMode:
+        case .useOpenAi:
             return 13000
+        case .stealthMode:
+            return 14000
         case .testButton:
             return 999999
         }
@@ -225,6 +233,12 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
+        case let .useOpenAi(lhsValue):
+            if case let .useOpenAi(rhsValue) = rhs, lhsValue == rhsValue {
+                return true
+            } else {
+                return false
+            }
         case let .stealthMode(lhsValue):
             if case let .stealthMode(rhsValue) = rhs, lhsValue == rhsValue {
                 return true
@@ -284,6 +298,17 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.toggleSetting(value, .rememberFilterOnExit)
             })
+        case let .useOpenAi(value):
+            return ItemListSwitchItem(presentationData: presentationData, title: l("SpeechToText.UseOpenAi"), value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                if #available(iOS 13.0, *) {
+                    Task {
+                        let setPreferredProviderTypeUseCase = SpeechToTextContainer.shared.setPreferredProviderTypeUseCase()
+                        await setPreferredProviderTypeUseCase(
+                            value ? .openAi : .google
+                        )
+                    }
+                }
+            })
         case let .stealthMode(value):
             return ItemListSwitchItem(presentationData: presentationData, title: NGStealthMode.Resources.toggleTitle(), value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 NGStealthMode.setStealthModeEnabled(value)
@@ -293,7 +318,7 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
 }
 
 
-private func premiumControllerEntries(presentationData: PresentationData) -> [PremiumControllerEntry] {
+private func premiumControllerEntries(presentationData: PresentationData, useOpenAi: Bool) -> [PremiumControllerEntry] {
     var entries: [PremiumControllerEntry] = []
 
     let theme = presentationData.theme
@@ -303,6 +328,8 @@ private func premiumControllerEntries(presentationData: PresentationData) -> [Pr
     entries.append(.rememberFolderOnExit(theme, l("Premium.rememberFolderOnExit", locale), NGSettings.rememberFolderOnExit))
     entries.append(.onetaptr(theme, l("Premium.OnetapTranslate", locale), NGSettings.oneTapTr))
     entries.append(.ignoretr(theme, l("Premium.IgnoreTranslate.Title", locale)))
+    
+    entries.append(.useOpenAi(useOpenAi))
     
     entries.append(.stealthMode(NGStealthMode.isStealthModeEnabled()))
 
@@ -343,10 +370,18 @@ public func premiumController(context: AccountContext) -> ViewController {
     let updateState: ((SelectionState) -> SelectionState) -> Void = { f in
         statePromise.set(stateValue.modify { f($0) })
     }
-
-
-    func updateTabs() {
-       //
+    
+    let useOpenAiSignal: Signal<Bool, NoError>
+    if #available(iOS 13.0, *) {
+        let getPreferredProviderTypeUseCase = SpeechToTextContainer.shared.getPreferredProviderTypeUseCase()
+        
+        useOpenAiSignal = getPreferredProviderTypeUseCase
+            .publisher()
+            .map { $0 == .openAi }
+            .toSignal()
+            .setNoError()
+    } else {
+        useOpenAiSignal = .single(false)
     }
 
     let arguments = PremiumControllerArguments(toggleSetting: { value, setting in
@@ -454,10 +489,10 @@ public func premiumController(context: AccountContext) -> ViewController {
 
 
 
-    let signal = combineLatest(context.sharedContext.presentationData, statePromise.get())
-        |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
+    let signal = combineLatest(context.sharedContext.presentationData, statePromise.get(), useOpenAiSignal)
+        |> map { presentationData, state, useOpenAi -> (ItemListControllerState, (ItemListNodeState, Any)) in
 
-            let entries = premiumControllerEntries(presentationData: presentationData)
+            let entries = premiumControllerEntries(presentationData: presentationData, useOpenAi: useOpenAi)
 
             var _ = 0
             var scrollToItem: ListViewScrollToItem?

@@ -100,7 +100,7 @@ private func chatForwardOptions(selfController: ChatControllerImpl, sourceNode: 
     }
     |> distinctUntilChanged
     
-    let chatController = selfController.context.sharedContext.makeChatController(context: selfController.context, chatLocation: .peer(id: peerId), subject: .messageOptions(peerIds: [peerId], ids: selfController.presentationInterfaceState.interfaceState.forwardMessageIds ?? [], info: .forward(ChatControllerSubject.MessageOptionsInfo.Forward(options: forwardOptions))), botStart: nil, mode: .standard(previewing: true))
+    let chatController = selfController.context.sharedContext.makeChatController(context: selfController.context, chatLocation: .peer(id: peerId), subject: .messageOptions(peerIds: [peerId], ids: selfController.presentationInterfaceState.interfaceState.forwardMessageIds ?? [], info: .forward(ChatControllerSubject.MessageOptionsInfo.Forward(options: forwardOptions))), botStart: nil, mode: .standard(.previewing))
     chatController.canReadHistory.set(false)
     
     let messageIds = selfController.presentationInterfaceState.interfaceState.forwardMessageIds ?? []
@@ -417,7 +417,9 @@ private func generateChatReplyOptionItems(selfController: ChatControllerImpl, ch
             if message.id.peerId.namespace == Namespaces.Peer.SecretChat {
                 canReplyInAnotherChat = false
             }
-            
+            if message.minAutoremoveOrClearTimeout == viewOnceTimeout {
+                canReplyInAnotherChat = false
+            }
         }
         
         if canReplyInAnotherChat {
@@ -508,7 +510,7 @@ private func chatReplyOptions(selfController: ChatControllerImpl, sourceNode: AS
     }
     |> distinctUntilChanged)
     
-    guard let chatController = selfController.context.sharedContext.makeChatController(context: selfController.context, chatLocation: .peer(id: peerId), subject: .messageOptions(peerIds: [replySubject.messageId.peerId], ids: [replySubject.messageId], info: .reply(ChatControllerSubject.MessageOptionsInfo.Reply(quote: replyQuote, selectionState: selectionState))), botStart: nil, mode: .standard(previewing: true)) as? ChatControllerImpl else {
+    guard let chatController = selfController.context.sharedContext.makeChatController(context: selfController.context, chatLocation: .peer(id: peerId), subject: .messageOptions(peerIds: [replySubject.messageId.peerId], ids: [replySubject.messageId], info: .reply(ChatControllerSubject.MessageOptionsInfo.Reply(quote: replyQuote, selectionState: selectionState))), botStart: nil, mode: .standard(.previewing)) as? ChatControllerImpl else {
         return nil
     }
     chatController.canReadHistory.set(false)
@@ -736,7 +738,7 @@ private func chatLinkOptions(selfController: ChatControllerImpl, sourceNode: ASD
     }
     |> distinctUntilChanged
     
-    guard let chatController = selfController.context.sharedContext.makeChatController(context: selfController.context, chatLocation: .peer(id: peerId), subject: .messageOptions(peerIds: [peerId], ids: selfController.presentationInterfaceState.interfaceState.forwardMessageIds ?? [], info: .link(ChatControllerSubject.MessageOptionsInfo.Link(options: linkOptions))), botStart: nil, mode: .standard(previewing: true)) as? ChatControllerImpl else {
+    guard let chatController = selfController.context.sharedContext.makeChatController(context: selfController.context, chatLocation: .peer(id: peerId), subject: .messageOptions(peerIds: [peerId], ids: selfController.presentationInterfaceState.interfaceState.forwardMessageIds ?? [], info: .link(ChatControllerSubject.MessageOptionsInfo.Link(options: linkOptions))), botStart: nil, mode: .standard(.previewing)) as? ChatControllerImpl else {
         return nil
     }
     chatController.canReadHistory.set(false)

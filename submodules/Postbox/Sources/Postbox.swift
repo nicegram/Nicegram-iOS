@@ -1084,6 +1084,11 @@ public final class Transaction {
         assert(!self.disposed)
         self.postbox?.scanMessages(peerId: peerId, namespace: namespace, tag: tag, f)
     }
+    
+    public func scanMessages(peerId: PeerId, threadId: Int64, namespace: MessageId.Namespace, tag: MessageTags, _ f: (Message) -> Bool) {
+        assert(!self.disposed)
+        self.postbox?.scanMessages(peerId: peerId, threadId: threadId, namespace: namespace, tag: tag, f)
+    }
 
     public func scanTopMessages(peerId: PeerId, namespace: MessageId.Namespace, limit: Int, _ f: (Message) -> Bool) {
         assert(!self.disposed)
@@ -1345,6 +1350,26 @@ public final class Transaction {
     
     public func getPeerStoryStats(peerId: PeerId) -> PeerStoryStats? {
         return fetchPeerStoryStats(postbox: self.postbox!, peerId: peerId)
+    }
+    
+    public func searchSubPeers(peerId: PeerId, query: String, indexNameMapping: [PeerId: [PeerIndexNameRepresentation]]) -> [Peer] {
+        let allThreads = self.postbox!.messageHistoryThreadIndexTable.getAll(peerId: peerId)
+        var matchingPeers: [(Peer, MessageIndex)] = []
+        for (threadId, index, _) in allThreads {
+            if let peer = self.postbox!.peerTable.get(PeerId(threadId)) {
+                if let mappings = indexNameMapping[peer.id] {
+                    inner: for mapping in mappings {
+                        if mapping.matchesByTokens(query) {
+                            matchingPeers.append((peer, index))
+                            break inner
+                        }
+                    }
+                } else if peer.indexName.matchesByTokens(query) {
+                    matchingPeers.append((peer, index))
+                }
+            }
+        }
+        return matchingPeers.sorted(by: { $0.1 > $1.1 }).map(\.0)
     }
 }
 
@@ -1756,7 +1781,7 @@ final class PostboxImpl {
         self.messageHistoryThreadTagsTable = MessageHistoryThreadTagsTable(valueBox: self.valueBox, table: MessageHistoryThreadTagsTable.tableSpec(71), useCaches: useCaches, seedConfiguration: self.seedConfiguration, summaryTable: self.messageHistoryTagsSummaryTable)
         self.messageHistoryThreadHoleIndexTable = MessageHistoryThreadHoleIndexTable(valueBox: self.valueBox, table: MessageHistoryThreadHoleIndexTable.tableSpec(63), useCaches: useCaches, metadataTable: self.messageHistoryMetadataTable, seedConfiguration: self.seedConfiguration)
         self.messageHistoryThreadReverseIndexTable = MessageHistoryThreadReverseIndexTable(valueBox: self.valueBox, table: MessageHistoryThreadReverseIndexTable.tableSpec(72), useCaches: useCaches)
-        self.messageHistoryThreadIndexTable = MessageHistoryThreadIndexTable(valueBox: self.valueBox, table: MessageHistoryThreadIndexTable.tableSpec(73), reverseIndexTable: self.messageHistoryThreadReverseIndexTable, useCaches: useCaches)
+        self.messageHistoryThreadIndexTable = MessageHistoryThreadIndexTable(valueBox: self.valueBox, table: MessageHistoryThreadIndexTable.tableSpec(73), reverseIndexTable: self.messageHistoryThreadReverseIndexTable, seedConfiguration: seedConfiguration, useCaches: useCaches)
         self.messageHistoryThreadPinnedTable = MessageHistoryThreadPinnedTable(valueBox: self.valueBox, table: MessageHistoryThreadPinnedTable.tableSpec(76), useCaches: useCaches)
         self.globalMessageHistoryTagsTable = GlobalMessageHistoryTagsTable(valueBox: self.valueBox, table: GlobalMessageHistoryTagsTable.tableSpec(39), useCaches: useCaches)
         self.localMessageHistoryTagsTable = LocalMessageHistoryTagsTable(valueBox: self.valueBox, table: GlobalMessageHistoryTagsTable.tableSpec(52), useCaches: useCaches)
@@ -3945,6 +3970,28 @@ final class PostboxImpl {
         var index = MessageIndex.lowerBound(peerId: peerId, namespace: namespace)
         while true {
             let indices = self.messageHistoryTagsTable.laterIndices(tag: tag, peerId: peerId, namespace: namespace, index: index, includeFrom: false, count: 10)
+            for index in indices {
+                if let message = self.messageHistoryTable.getMessage(index) {
+                    if !f(self.renderIntermediateMessage(message)) {
+                        break
+                    }
+                } else {
+                    assertionFailure()
+                    break
+                }
+            }
+            if let last = indices.last {
+                index = last
+            } else {
+                break
+            }
+        }
+    }
+    
+    fileprivate func scanMessages(peerId: PeerId, threadId: Int64, namespace: MessageId.Namespace, tag: MessageTags, _ f: (Message) -> Bool) {
+        var index = MessageIndex.lowerBound(peerId: peerId, namespace: namespace)
+        while true {
+            let indices = self.messageHistoryThreadTagsTable.laterIndices(tag: tag, threadId: threadId, peerId: peerId, namespace: namespace, index: index, includeFrom: false, count: 10)
             for index in indices {
                 if let message = self.messageHistoryTable.getMessage(index) {
                     if !f(self.renderIntermediateMessage(message)) {

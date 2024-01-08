@@ -267,7 +267,7 @@ private func canViewReadStats(message: Message, participantCount: Int?, isMessag
     return true
 }
 
-func canReplyInChat(_ chatPresentationInterfaceState: ChatPresentationInterfaceState) -> Bool {
+func canReplyInChat(_ chatPresentationInterfaceState: ChatPresentationInterfaceState, accountPeerId: PeerId) -> Bool {
     guard let peer = chatPresentationInterfaceState.renderedPeer?.peer else {
         return false
     }
@@ -285,8 +285,13 @@ func canReplyInChat(_ chatPresentationInterfaceState: ChatPresentationInterfaceS
     switch chatPresentationInterfaceState.mode {
     case .inline:
         return false
+    case .standard(.embedded):
+        return false
     default:
         break
+    }
+    if case let .replyThread(replyThreadMessage) = chatPresentationInterfaceState.chatLocation, replyThreadMessage.peerId == accountPeerId {
+        return false
     }
     
     if let channel = peer as? TelegramChannel, channel.flags.contains(.isForum) {
@@ -370,7 +375,7 @@ func messageMediaEditingOptions(message: Message) -> MessageMediaEditingOptions 
                     case .Sticker:
                         return []
                     case .Animated:
-                        return []
+                        break
                     case let .Video(_, _, flags, _):
                         if flags.contains(.instantRoundVideo) {
                             return []
@@ -440,6 +445,11 @@ func updatedChatEditInterfaceMessageState(state: ChatPresentationInterfaceState,
 func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState: ChatPresentationInterfaceState, context: AccountContext, messages: [Message], controllerInteraction: ChatControllerInteraction?, selectAll: Bool, interfaceInteraction: ChatPanelInterfaceInteraction?, readStats: MessageReadStats? = nil, messageNode: ChatMessageItemView? = nil) -> Signal<ContextController.Items, NoError> {
     guard let interfaceInteraction = interfaceInteraction, let controllerInteraction = controllerInteraction else {
         return .single(ContextController.Items(content: .list([])))
+    }
+    
+    var isEmbeddedMode = false
+    if case .standard(.embedded) = chatPresentationInterfaceState.mode {
+        isEmbeddedMode = true
     }
     
     var hasExpandedAudioTranscription = false
@@ -527,7 +537,6 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
         actions.append(.separator)
 
         if chatPresentationInterfaceState.copyProtectionEnabled {
-            
         } else {
             actions.append(.action(ContextMenuActionItem(text: chatPresentationInterfaceState.strings.Conversation_ContextMenuCopy, icon: { theme in
                 return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Copy"), color: theme.actionSheet.primaryTextColor)
@@ -623,7 +632,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
         }
     }
     
-    var canReply = canReplyInChat(chatPresentationInterfaceState)
+    var canReply = canReplyInChat(chatPresentationInterfaceState, accountPeerId: context.account.peerId)
     var canPin = false
     let canSelect = !isAction
     
@@ -736,7 +745,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
 
     let readCounters: Signal<Bool, NoError>
     if case let .replyThread(threadMessage) = chatPresentationInterfaceState.chatLocation, threadMessage.isForumPost {
-        readCounters = context.engine.data.get(TelegramEngine.EngineData.Item.Peer.ThreadData(id: threadMessage.messageId.peerId, threadId: Int64(threadMessage.messageId.id)))
+        readCounters = context.engine.data.get(TelegramEngine.EngineData.Item.Peer.ThreadData(id: threadMessage.peerId, threadId: threadMessage.threadId))
         |> map { threadData -> Bool in
             guard let threadData else {
                 return false
@@ -787,7 +796,20 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             loggingSettings = LoggingSettings.defaultSettings
         }
         
-        return (MessageContextMenuData(starStatus: stickerSaveStatus, canReply: canReply, canPin: canPin, canEdit: canEdit, canSelect: canSelect, resourceStatus: resourceStatus, messageActions: messageActions), updatingMessageMedia, infoSummaryData, appConfig, isMessageRead, messageViewsPrivacyTips, availableReactions, translationSettings, loggingSettings, notificationSoundList, accountPeer)
+        return (MessageContextMenuData(
+            starStatus: stickerSaveStatus,
+            canReply: canReply && !isEmbeddedMode,
+            canPin: canPin && !isEmbeddedMode,
+            canEdit: canEdit && !isEmbeddedMode,
+            canSelect: canSelect && !isEmbeddedMode,
+            resourceStatus: resourceStatus,
+            messageActions: isEmbeddedMode ? ChatAvailableMessageActions(
+                options: [],
+                banAuthor: nil,
+                disableDelete: true,
+                isCopyProtected: messageActions.isCopyProtected
+            ) : messageActions
+        ), updatingMessageMedia, infoSummaryData, appConfig, isMessageRead, messageViewsPrivacyTips, availableReactions, translationSettings, loggingSettings, notificationSoundList, accountPeer)
     }
     
     return dataSignal
@@ -905,7 +927,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             actions.insert(.separator, at: 1)
         }
         
-        if !hasRateTranscription {
+        if !hasRateTranscription && message.minAutoremoveOrClearTimeout == nil {
             for media in message.media {
                 if let file = media as? TelegramMediaFile, let size = file.size, size < 1 * 1024 * 1024, let duration = file.duration, duration < 60, (["audio/mpeg", "audio/mp3", "audio/mpeg3", "audio/ogg"] as [String]).contains(file.mimeType.lowercased()) {
                     let fileName = file.fileName ?? "Tone"
@@ -1319,7 +1341,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                 } else {
                     for attribute in messages[0].attributes {
                         if let attribute = attribute as? ReplyThreadMessageAttribute, attribute.count > 0 {
-                            threadId = makeMessageThreadId(messages[0].id)
+                            threadId = Int64(messages[0].id.id)
                             threadMessageCount = Int(attribute.count)
                         }
                     }
@@ -1327,7 +1349,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             } else {
                 for attribute in messages[0].attributes {
                     if let attribute = attribute as? ReplyThreadMessageAttribute, attribute.count > 0 {
-                        threadId = makeMessageThreadId(messages[0].id)
+                        threadId = Int64(messages[0].id.id)
                         threadMessageCount = Int(attribute.count)
                     }
                 }
@@ -1475,7 +1497,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             }, action: { _, f in
                 var threadMessageId: MessageId?
                 if case let .replyThread(replyThreadMessage) = chatPresentationInterfaceState.chatLocation {
-                    threadMessageId = replyThreadMessage.messageId
+                    threadMessageId = replyThreadMessage.effectiveMessageId
                 }
                 let _ = (context.engine.messages.exportMessageLink(peerId: message.id.peerId, messageId: message.id, isThread: threadMessageId != nil)
                 |> map { result -> String? in
@@ -1926,7 +1948,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             }
             //
             
-            //  MARK: - Nicegram Speech2Text
+            // MARK: Nicegram Speech2Text
             
             if !isSecretChat,
                let mediaFile = message.media.compactMap({ $0 as? TelegramMediaFile }).first(where: { $0.isVoice }) {
@@ -1945,22 +1967,26 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                         return generateTintedImage(image: UIImage(bundleImageName: "NicegramN"), color: theme.actionSheet.primaryTextColor)
                     } action: { controller, f in
                         if mode == "do" {
-                            let processor = TgVoiceToTextProcessor(mediaBox: context.account.postbox.mediaBox, additionalLanguageCodes: [locale])
-                            message.setSpeechToTextLoading(context: context)
-                            processor.recognize(mediaFile: mediaFile) { result in
-                                switch result {
-                                case .success(let translation):
-                                    message.setSpeechToTextTranslation(translation, context: context)
-                                case .failure(let error):
-                                    message.removeSpeechToTextMeta(context: context)
+                            if #available(iOS 13.0, *) {
+                                Task { @MainActor in
+                                    let manager = TgSpeechToTextManager(mediaBox: context.account.postbox.mediaBox)
                                     
-                                    switch error {
-                                    case .needPremium:
+                                    message.setSpeechToTextLoading(context: context)
+                                    
+                                    let result = await manager.convertSpeechToText(
+                                        mediaFile: mediaFile
+                                    )
+                                    
+                                    switch result {
+                                    case .success(let translation):
+                                        message.setSpeechToTextTranslation(translation, context: context)
+                                    case .needsPremium:
+                                        message.removeSpeechToTextMeta(context: context)
+                                        
                                         PremiumUITgHelper.routeToPremium()
-                                    case .lowAccuracy:
-                                        let c = getIAPErrorController(context: context, l("Messages.SpeechToText.LowAccuracyError", locale), presentationData)
-                                        controllerInteraction.presentGlobalOverlayController(c, nil)
-                                    case .underlying(_):
+                                    case .error(let error):
+                                        message.removeSpeechToTextMeta(context: context)
+                                        
                                         let c = getIAPErrorController(context: context, error.localizedDescription, presentationData)
                                         controllerInteraction.presentGlobalOverlayController(c, nil)
                                     }
