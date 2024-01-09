@@ -556,6 +556,10 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                                 return
                             }
                             
+                            guard !isPremium() else {
+                                return
+                            }
+                            
                             let tooltipController = UndoOverlayController(
                                 presentationData: presentationData,
                                 content: .universal(

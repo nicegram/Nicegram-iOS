@@ -176,20 +176,6 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                             backgroundColor: .secondarySystemBackground,
                             content: { AssistantPopover() }
                         )
-                    },
-                    showGrumTooltip: { [weak self] in
-                        self?.showNicegramTooltip(
-                            backgroundColor: .grumBg,
-                            content: {
-                                GrumPopover(
-                                    openAssistant: {
-                                        AssistantUITgHelper.routeToAssistant(
-                                            source: .generic
-                                        )
-                                    }
-                                )
-                            }
-                        )
                     }
                 )
             }
