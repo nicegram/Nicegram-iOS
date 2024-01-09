@@ -141,7 +141,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
     private var wasPending: Bool = false
     private var didChangeFromPendingToSent: Bool = false
     
-    required public init() {
+    required public init(rotated: Bool) {
         self.contextSourceNode = ContextExtractedContentContainingNode()
         self.containerNode = ContextControllerSourceNode()
         self.imageNode = TransformImageNode()
@@ -156,7 +156,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
         self.textNode.textNode.displaysAsynchronously = false
         self.textNode.textNode.isUserInteractionEnabled = false
         
-        super.init(layerBacked: false)
+        super.init(rotated: rotated)
         
         self.containerNode.shouldBegin = { [weak self] location in
             guard let strongSelf = self else {
@@ -313,7 +313,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                     return false
                 }
                 
-                if case let .replyThread(replyThreadMessage) = item.chatLocation, replyThreadMessage.isChannelPost, replyThreadMessage.messageId.peerId != item.content.firstMessage.id.peerId {
+                if case let .replyThread(replyThreadMessage) = item.chatLocation, replyThreadMessage.isChannelPost, replyThreadMessage.peerId != item.content.firstMessage.id.peerId {
                     return false
                 }
                 
@@ -826,8 +826,8 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                     hasAvatar = true
                 }
             case let .replyThread(replyThreadMessage):
-                if replyThreadMessage.messageId.peerId != item.context.account.peerId {
-                    if replyThreadMessage.messageId.peerId.isGroupOrChannel && item.message.author != nil {
+                if replyThreadMessage.peerId != item.context.account.peerId {
+                    if replyThreadMessage.peerId.isGroupOrChannel && item.message.author != nil {
                         var isBroadcastChannel = false
                         if let peer = item.message.peers[item.message.id.peerId] as? TelegramChannel, case .broadcast = peer.info {
                             isBroadcastChannel = true
@@ -1102,7 +1102,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                 }
                                 
                 if let replyAttribute = attribute as? ReplyMessageAttribute {
-                    if case let .replyThread(replyThreadMessage) = item.chatLocation, replyThreadMessage.messageId == replyAttribute.messageId {
+                    if case let .replyThread(replyThreadMessage) = item.chatLocation, Int32(clamping: replyThreadMessage.threadId) == replyAttribute.messageId.id {
                     } else {
                         replyMessage = item.message.associatedMessages[replyAttribute.messageId]
                     }

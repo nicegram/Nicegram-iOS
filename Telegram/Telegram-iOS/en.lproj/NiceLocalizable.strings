@@ -112,7 +112,6 @@
 "Messages.TranslateError" = "Sorry, translation unavailable.";
 "Messages.SpeechToText" = "Speech2Text";
 "Messages.UndoSpeechToText" = "Undo Speech2Text";
-"Messages.SpeechToText.LowAccuracyError" = "Speech recognition failed.\n\nThis could happen due to the poor quality of the audio recording or differences between the language of the application and of the audio recording.";
 "Messages.SelectAllFromUser" = "Select All From This User";
 "Messages.ToLanguage" = "To Language";
 "Messages.ToLanguage.WithCode" = "To Language: %@";
@@ -211,5 +210,12 @@
 "RoundedVideos.MoreButtonTooltip" = "Convert square videos to send as circles with one tap.";
 "RoundedVideos.SendButtonTooltip" = "Long-press to send your video as a stylish circle.";
 
+/*Speech to text*/
+"SpeechToText.UseOpenAi" = "OpenAI Speech2Text";
+"SpeechToText.Toast" = "[Subscribe to Nicegram Premium]() for faster and better OpenAI Speech2Text technologies!";
+
 /*Stealth Mode*/
 "StealthMode.Toggle" = "Stealth Mode";
+
+/*Confirm Call*/
+"ConfirmCall.Desc" = "Are you sure you want to make a call?";

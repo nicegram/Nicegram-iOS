@@ -188,6 +188,16 @@
       ]
     },
     {
+      "name": "FeatSpeechToText",
+      "c99name": "FeatSpeechToText",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatSpeechToText",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
       "name": "FeatTasks",
       "c99name": "FeatTasks",
       "src_type": "swift",
@@ -659,6 +669,7 @@
         "@swiftpkg_nicegram_assistant_ios//:Sources_FeatImagesHubUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPinnedChats",
         "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPremiumUI",
+        "@swiftpkg_nicegram_assistant_ios//:Sources_FeatSpeechToText",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChatUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGAssistantUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGCardUI",
@@ -827,7 +838,7 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "b0d993e6fcb6e48734d8361c26bd401752ac5513",
+        "commit": "2cf7fd3fa9abeaee81fd2b970681ab3ae83043f4",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
         "branch": "develop"
       }
@@ -845,18 +856,18 @@
       "name": "swiftpkg_sdwebimage",
       "identity": "sdwebimage",
       "remote": {
-        "commit": "e278c13e46e8d20c895c221e922c6ac6b72aaca9",
+        "commit": "fd010e54231331fc19338f81c6d072cd9ace2825",
         "remote": "https://github.com/SDWebImage/SDWebImage.git",
-        "version": "5.18.7"
+        "version": "5.18.8"
       }
     },
     {
       "name": "swiftpkg_snapkit",
       "identity": "snapkit",
       "remote": {
-        "commit": "f222cbdf325885926566172f6f5f06af95473158",
+        "commit": "e74fe2a978d1216c3602b129447c7301573cc2d8",
         "remote": "https://github.com/SnapKit/SnapKit.git",
-        "version": "5.6.0"
+        "version": "5.7.0"
       }
     },
     {

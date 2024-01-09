@@ -758,7 +758,13 @@ public enum ChatControllerSubject: Equatable {
 }
 
 public enum ChatControllerPresentationMode: Equatable {
-    case standard(previewing: Bool)
+    public enum StandardPresentation: Equatable {
+        case `default`
+        case previewing
+        case embedded(invertDirection: Bool)
+    }
+    
+    case standard(StandardPresentation)
     case overlay(NavigationController?)
     case inline(NavigationController?)
 }
@@ -917,6 +923,10 @@ public protocol ChatController: ViewController {
     func cancelSelectingMessages()
     func activateSearch(domain: ChatSearchDomain, query: String)
     func beginClearHistory(type: InteractiveHistoryClearingType)
+    
+    func performScrollToTop() -> Bool
+    func transferScrollingVelocity(_ velocity: CGFloat)
+    func updateIsScrollingLockedAtTop(isScrollingLockedAtTop: Bool)
 }
 
 public protocol ChatMessagePreviewItemNode: AnyObject {

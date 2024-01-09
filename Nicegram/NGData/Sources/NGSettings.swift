@@ -134,7 +134,7 @@ public func isPremium() -> Bool {
     if #available(iOS 13.0, *) {
         return PremiumContainer.shared
             .getPremiumStatusUseCase()
-            .hasPremiumOnDeviceNonIsolated()
+            .hasPremiumOnDevice()
     } else {
         return false
     }

@@ -144,6 +144,7 @@ swift_library(
         "//submodules/SolidRoundedButtonNode",
         "//submodules/TelegramUI/Components/PeerInfo/PeerInfoPaneNode",
         "//submodules/TelegramUI/Components/PeerInfo/PeerInfoChatListPaneNode",
+        "//submodules/TelegramUI/Components/PeerInfo/PeerInfoChatPaneNode",
         "//submodules/MediaPickerUI",
         "//submodules/AttachmentUI",
         "//submodules/TelegramUI/Components/Settings/BoostLevelIconComponent",

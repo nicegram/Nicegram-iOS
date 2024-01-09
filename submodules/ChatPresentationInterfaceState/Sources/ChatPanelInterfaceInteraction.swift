@@ -7,6 +7,7 @@ import TelegramCore
 import Display
 import AccountContext
 import ContextUI
+import TooltipUI
 
 public enum ChatLoadingMessageSubject {
     case generic
@@ -16,7 +17,7 @@ public enum ChatLoadingMessageSubject {
 public enum ChatFinishMediaRecordingAction {
     case dismiss
     case preview
-    case send
+    case send(viewOnce: Bool)
 }
 
 public final class ChatPanelInterfaceInteractionStatuses {
@@ -115,7 +116,7 @@ public final class ChatPanelInterfaceInteraction {
     public let stopMediaRecording: () -> Void
     public let lockMediaRecording: () -> Void
     public let deleteRecordedMedia: () -> Void
-    public let sendRecordedMedia: (Bool) -> Void
+    public let sendRecordedMedia: (Bool, Bool) -> Void
     public let displayRestrictedInfo: (ChatPanelRestrictionInfoSubject, ChatPanelRestrictionInfoDisplayType) -> Void
     public let displayVideoUnmuteTip: (CGPoint?) -> Void
     public let switchMediaRecordingMode: () -> Void
@@ -228,7 +229,7 @@ public final class ChatPanelInterfaceInteraction {
         stopMediaRecording: @escaping () -> Void,
         lockMediaRecording: @escaping () -> Void,
         deleteRecordedMedia: @escaping () -> Void,
-        sendRecordedMedia: @escaping (Bool) -> Void,
+        sendRecordedMedia: @escaping (Bool, Bool) -> Void,
         displayRestrictedInfo: @escaping (ChatPanelRestrictionInfoSubject, ChatPanelRestrictionInfoDisplayType) -> Void,
         displayVideoUnmuteTip: @escaping (CGPoint?) -> Void,
         switchMediaRecordingMode: @escaping () -> Void,
@@ -456,7 +457,7 @@ public final class ChatPanelInterfaceInteraction {
         }, stopMediaRecording: {
         }, lockMediaRecording: {
         }, deleteRecordedMedia: {
-        }, sendRecordedMedia: { _ in
+        }, sendRecordedMedia: { _, _ in
         }, displayRestrictedInfo: { _, _ in
         }, displayVideoUnmuteTip: { _ in
         }, switchMediaRecordingMode: {

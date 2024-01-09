@@ -51,6 +51,7 @@ import ChatRecentActionsController
 import PeerInfoScreen
 import ChatQrCodeScreen
 import UndoUI
+import ChatMessageNotificationItem
 
 import NGCore
 import NGData
@@ -91,6 +92,15 @@ public final class SharedAccountContextImpl: SharedAccountContext {
     public let basePath: String
     public let accountManager: AccountManager<TelegramAccountManagerTypes>
     public let appLockContext: AppLockContext
+    public var notificationController: NotificationContainerController? {
+        didSet {
+            if self.notificationController !== oldValue {
+                if let oldValue {
+                    oldValue.setBlocking(nil)
+                }
+            }
+        }
+    }
     
     private let navigateToChatImpl: (AccountRecordId, PeerId, MessageId?) -> Void
     
@@ -141,6 +151,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
     public let hasOngoingCall = ValuePromise<Bool>(false)
     private let callState = Promise<PresentationCallState?>(nil)
     private var awaitingCallConnectionDisposable: Disposable?
+    private var callPeerDisposable: Disposable?
     
     private var groupCallController: VoiceChatController?
     public var currentGroupCallController: ViewController? {
@@ -232,7 +243,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
     private let energyUsageAutomaticDisposable = MetaDisposable()
     
     // MARK: Nicegram DB Changes, openDoubleBottomFlow added
-    init(mainWindow: Window1?, sharedContainerPath: String, basePath: String, encryptionParameters: ValueBoxEncryptionParameters, accountManager: AccountManager<TelegramAccountManagerTypes>, appLockContext: AppLockContext, applicationBindings: TelegramApplicationBindings, initialPresentationDataAndSettings: InitialPresentationDataAndSettings, networkArguments: NetworkInitializationArguments, hasInAppPurchases: Bool, rootPath: String, legacyBasePath: String?, apsNotificationToken: Signal<Data?, NoError>, voipNotificationToken: Signal<Data?, NoError>, firebaseSecretStream: Signal<[String: String], NoError>, setNotificationCall: @escaping (PresentationCall?) -> Void, navigateToChat: @escaping (AccountRecordId, PeerId, MessageId?) -> Void, displayUpgradeProgress: @escaping (Float?) -> Void = { _ in }, openDoubleBottomFlow: @escaping (AccountContext) -> Void = { _ in }, appDelegate: AppDelegate?) {
+    init(mainWindow: Window1?, sharedContainerPath: String, basePath: String, encryptionParameters: ValueBoxEncryptionParameters, accountManager: AccountManager<TelegramAccountManagerTypes>, appLockContext: AppLockContext, notificationController: NotificationContainerController?, applicationBindings: TelegramApplicationBindings, initialPresentationDataAndSettings: InitialPresentationDataAndSettings, networkArguments: NetworkInitializationArguments, hasInAppPurchases: Bool, rootPath: String, legacyBasePath: String?, apsNotificationToken: Signal<Data?, NoError>, voipNotificationToken: Signal<Data?, NoError>, firebaseSecretStream: Signal<[String: String], NoError>, setNotificationCall: @escaping (PresentationCall?) -> Void, navigateToChat: @escaping (AccountRecordId, PeerId, MessageId?) -> Void, displayUpgradeProgress: @escaping (Float?) -> Void = { _ in }, openDoubleBottomFlow: @escaping (AccountContext) -> Void = { _ in }, appDelegate: AppDelegate?) {
         assert(Queue.mainQueue().isCurrent())
         
     precondition(!testHasInstance)
@@ -247,6 +258,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         self.navigateToChatImpl = navigateToChat
         self.displayUpgradeProgress = displayUpgradeProgress
         self.appLockContext = appLockContext
+        self.notificationController = notificationController
         self.hasInAppPurchases = hasInAppPurchases
         
         self.accountManager.mediaBox.fetchCachedResourceRepresentation = { (resource, representation) -> Signal<CachedMediaResourceRepresentationResult, NoError> in
@@ -797,17 +809,51 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                     self.callController = nil
                     self.hasOngoingCall.set(false)
                     
+                    self.notificationController?.setBlocking(nil)
+                    
+                    self.callPeerDisposable?.dispose()
+                    self.callPeerDisposable = nil
+                    
                     if let call {
                         self.callState.set(call.state
                         |> map(Optional.init))
                         self.hasOngoingCall.set(true)
                         setNotificationCall(call)
                         
-                        if !call.isOutgoing && call.isIntegratedWithCallKit {
+                        if call.isOutgoing {
+                            self.presentControllerWithCurrentCall()
+                        } else {
+                            if !call.isIntegratedWithCallKit {
+                                self.callPeerDisposable?.dispose()
+                                self.callPeerDisposable = (call.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: call.peerId))
+                                |> deliverOnMainQueue).startStrict(next: { [weak self, weak call] peer in
+                                    guard let self, let call, let peer else {
+                                        return
+                                    }
+                                    if self.call !== call {
+                                        return
+                                    }
+                                    
+                                    let presentationData = self.currentPresentationData.with { $0 }
+                                    self.notificationController?.setBlocking(ChatCallNotificationItem(context: call.context, strings: presentationData.strings, nameDisplayOrder: presentationData.nameDisplayOrder, peer: peer, isVideo: call.isVideo, action: { [weak call] answerAction in
+                                        guard let call else {
+                                            return
+                                        }
+                                        if answerAction {
+                                            call.answer()
+                                        } else {
+                                            call.rejectBusy()
+                                        }
+                                    }))
+                                })
+                            }
+                            
                             self.awaitingCallConnectionDisposable = (call.state
                             |> filter { state in
                                 switch state.state {
                                 case .ringing:
+                                    return false
+                                case .terminating, .terminated:
                                     return false
                                 default:
                                     return true
@@ -818,10 +864,12 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                                 guard let self else {
                                     return
                                 }
+                                self.notificationController?.setBlocking(nil)
                                 self.presentControllerWithCurrentCall()
+                                
+                                self.callPeerDisposable?.dispose()
+                                self.callPeerDisposable = nil
                             })
-                        } else{
-                            self.presentControllerWithCurrentCall()
                         }
                     } else {
                         self.callState.set(.single(nil))
@@ -891,6 +939,29 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             let callSignal: Signal<PresentationCall?, NoError> = .single(nil)
             |> then(
                 callManager.currentCallSignal
+                |> deliverOnMainQueue
+                |> mapToSignal { call -> Signal<PresentationCall?, NoError> in
+                    guard let call else {
+                        return .single(nil)
+                    }
+                    return call.state
+                    |> map { [weak call] state -> PresentationCall? in
+                        guard let call else {
+                            return nil
+                        }
+                        switch state.state {
+                        case .ringing:
+                            return nil
+                        case .terminating, .terminated:
+                            return nil
+                        default:
+                            return call
+                        }
+                    }
+                }
+                |> distinctUntilChanged(isEqual: { lhs, rhs in
+                    return lhs === rhs
+                })
             )
             let groupCallSignal: Signal<PresentationGroupCall?, NoError> = .single(nil)
             |> then(
@@ -1072,6 +1143,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         self.groupCallDisposable?.dispose()
         self.callStateDisposable?.dispose()
         self.awaitingCallConnectionDisposable?.dispose()
+        self.callPeerDisposable?.dispose()
         // MARK: Nicegram DB Changes
         self.activeAccountsSettingsDisposable?.dispose()
         self.applicationInForegroundDisposable?.dispose()
@@ -1736,7 +1808,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return presentAddMembersImpl(context: context, updatedPresentationData: updatedPresentationData, parentController: parentController, groupPeer: groupPeer, selectAddMemberDisposable: selectAddMemberDisposable, addMemberDisposable: addMemberDisposable)
     }
     
-    public func makeChatMessagePreviewItem(context: AccountContext, messages: [Message], theme: PresentationTheme, strings: PresentationStrings, wallpaper: TelegramWallpaper, fontSize: PresentationFontSize, chatBubbleCorners: PresentationChatBubbleCorners, dateTimeFormat: PresentationDateTimeFormat, nameOrder: PresentationPersonNameOrder, forcedResourceStatus: FileMediaResourceStatus?, tapMessage: ((Message) -> Void)?, clickThroughMessage: (() -> Void)? = nil, backgroundNode: ASDisplayNode?, availableReactions: AvailableReactions?, accountPeer: Peer?, isCentered: Bool) -> ListViewItem {
+    public func makeChatMessagePreviewItem(context: AccountContext, messages: [Message], theme: PresentationTheme, strings: PresentationStrings, wallpaper: TelegramWallpaper, fontSize: PresentationFontSize, chatBubbleCorners: PresentationChatBubbleCorners, dateTimeFormat: PresentationDateTimeFormat, nameOrder: PresentationPersonNameOrder, forcedResourceStatus: FileMediaResourceStatus?, tapMessage: ((Message) -> Void)?, clickThroughMessage: (() -> Void)? = nil, backgroundNode: ASDisplayNode?, availableReactions: AvailableReactions?, accountPeer: Peer?, isCentered: Bool, isPreview: Bool) -> ListViewItem {
         let controllerInteraction: ChatControllerInteraction
 
         controllerInteraction = ChatControllerInteraction(openMessage: { _, _ in
@@ -1831,7 +1903,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             chatLocation = .peer(id: messages.first!.id.peerId)
         }
         
-        return ChatMessageItemImpl(presentationData: ChatPresentationData(theme: ChatPresentationThemeData(theme: theme, wallpaper: wallpaper), fontSize: fontSize, strings: strings, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameOrder, disableAnimations: false, largeEmoji: false, chatBubbleCorners: chatBubbleCorners, animatedEmojiScale: 1.0, isPreview: true), context: context, chatLocation: chatLocation, associatedData: ChatMessageItemAssociatedData(automaticDownloadPeerType: .contact, automaticDownloadPeerId: nil, automaticDownloadNetworkType: .cellular, isRecentActions: false, subject: nil, contactsPeerIds: Set(), animatedEmojiStickers: [:], forcedResourceStatus: forcedResourceStatus, availableReactions: availableReactions, defaultReaction: nil, isPremium: false, accountPeer: accountPeer.flatMap(EnginePeer.init), forceInlineReactions: true), controllerInteraction: controllerInteraction, content: content, disableDate: true, additionalContent: nil)
+        return ChatMessageItemImpl(presentationData: ChatPresentationData(theme: ChatPresentationThemeData(theme: theme, wallpaper: wallpaper), fontSize: fontSize, strings: strings, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameOrder, disableAnimations: false, largeEmoji: false, chatBubbleCorners: chatBubbleCorners, animatedEmojiScale: 1.0, isPreview: isPreview), context: context, chatLocation: chatLocation, associatedData: ChatMessageItemAssociatedData(automaticDownloadPeerType: .contact, automaticDownloadPeerId: nil, automaticDownloadNetworkType: .cellular, isRecentActions: false, subject: nil, contactsPeerIds: Set(), animatedEmojiStickers: [:], forcedResourceStatus: forcedResourceStatus, availableReactions: availableReactions, defaultReaction: nil, isPremium: false, accountPeer: accountPeer.flatMap(EnginePeer.init), forceInlineReactions: true), controllerInteraction: controllerInteraction, content: content, disableDate: true, additionalContent: nil)
     }
     
     public func makeChatMessageDateHeaderItem(context: AccountContext, timestamp: Int32, theme: PresentationTheme, strings: PresentationStrings, wallpaper: TelegramWallpaper, fontSize: PresentationFontSize, chatBubbleCorners: PresentationChatBubbleCorners, dateTimeFormat: PresentationDateTimeFormat, nameOrder: PresentationPersonNameOrder) -> ListViewItemHeader {
@@ -1938,10 +2010,12 @@ public final class SharedAccountContextImpl: SharedAccountContext {
     }
     
     public func makePremiumIntroController(context: AccountContext, source: PremiumIntroSource, forceDark: Bool, dismissed: (() -> Void)?) -> ViewController {
+        var modal = true
         let mappedSource: PremiumSource
         switch source {
         case .settings:
             mappedSource = .settings
+            modal = false
         case .stickers:
             mappedSource = .stickers
         case .reactions:
@@ -2005,7 +2079,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         case .wallpapers:
             mappedSource = .wallpapers
         }
-        let controller = PremiumIntroScreen(context: context, source: mappedSource, forceDark: forceDark)
+        let controller = PremiumIntroScreen(context: context, modal: modal, source: mappedSource, forceDark: forceDark)
         controller.wasDismissed = dismissed
         return controller
     }
@@ -2082,16 +2156,16 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return PremiumLimitScreen(context: context, subject: mappedSubject, count: count, forceDark: forceDark, cancel: cancel, action: action)
     }
     
-    public func makePremiumGiftController(context: AccountContext) -> ViewController {
+    public func makePremiumGiftController(context: AccountContext, source: PremiumGiftSource) -> ViewController {
         let options = Promise<[PremiumGiftCodeOption]>()
         options.set(context.engine.payments.premiumGiftCodeOptions(peerId: nil))
-        
+                
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
 
         let limit: Int32 = 10
         var reachedLimitImpl: ((Int32) -> Void)?
         let controller = context.sharedContext.makeContactMultiselectionController(ContactMultiselectionControllerParams(context: context, mode: .premiumGifting, options: [], isPeerEnabled: { peer in
-            if case let .user(user) = peer, user.botInfo == nil {
+            if case let .user(user) = peer, user.botInfo == nil && !peer.isService && !user.flags.contains(.isSupport) {
                 return true
             } else {
                 return false
@@ -2123,11 +2197,14 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                     }
                 })
             }
+            guard !peerIds.isEmpty else {
+                return
+            }
             
             let mappedOptions = options.filter { $0.users == 1 }.map { CachedPremiumGiftOption(months: $0.months, currency: $0.currency, amount: $0.amount, botUrl: "", storeProductId: $0.storeProductId) }
             var pushImpl: ((ViewController) -> Void)?
             var filterImpl: (() -> Void)?
-            let giftController = PremiumGiftScreen(context: context, peerIds: peerIds, options: mappedOptions, source: .settings, pushController: { c in
+            let giftController = PremiumGiftScreen(context: context, peerIds: peerIds, options: mappedOptions, source: source, pushController: { c in
                 pushImpl?(c)
             }, completion: {
                 filterImpl?()

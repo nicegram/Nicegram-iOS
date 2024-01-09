@@ -89,13 +89,13 @@ public class ChatMessageInstantVideoItemNode: ChatMessageItemView, UIGestureReco
     
     fileprivate var wasPlaying = false
     
-    required public init() {
+    required public init(rotated: Bool) {
         self.contextSourceNode = ContextExtractedContentContainingNode()
         self.containerNode = ContextControllerSourceNode()
         self.interactiveVideoNode = ChatMessageInteractiveInstantVideoNode()
         self.messageAccessibilityArea = AccessibilityAreaNode()
         
-        super.init(layerBacked: false)
+        super.init(rotated: rotated)
         
         self.interactiveVideoNode.shouldOpen = { [weak self] in
             if let strongSelf = self {
@@ -221,7 +221,7 @@ public class ChatMessageInstantVideoItemNode: ChatMessageItemView, UIGestureReco
                     return false
                 }
                 
-                if case let .replyThread(replyThreadMessage) = item.chatLocation, replyThreadMessage.isChannelPost, replyThreadMessage.messageId.peerId != item.content.firstMessage.id.peerId {
+                if case let .replyThread(replyThreadMessage) = item.chatLocation, replyThreadMessage.isChannelPost, replyThreadMessage.peerId != item.content.firstMessage.id.peerId {
                     return false
                 }
                 
@@ -495,7 +495,7 @@ public class ChatMessageInstantVideoItemNode: ChatMessageItemView, UIGestureReco
                 }
                 
                 if let replyAttribute = attribute as? ReplyMessageAttribute {
-                    if case let .replyThread(replyThreadMessage) = item.chatLocation, replyThreadMessage.messageId == replyAttribute.messageId {
+                    if case let .replyThread(replyThreadMessage) = item.chatLocation, Int32(clamping: replyThreadMessage.threadId) == replyAttribute.messageId.id {
                     } else {
                         replyMessage = item.message.associatedMessages[replyAttribute.messageId]
                     }

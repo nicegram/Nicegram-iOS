@@ -42,6 +42,7 @@ swift_library(
         "//Nicegram/NGStealthMode:NGStealthMode",
         "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChatUI",
         "@swiftpkg_nicegram_assistant_ios//:Sources_FeatImagesHubUI",
+        "@swiftpkg_nicegram_assistant_ios//:Sources_FeatSpeechToText",
     ],
     visibility = [
         "//visibility:public",
