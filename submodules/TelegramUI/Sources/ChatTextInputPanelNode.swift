@@ -40,6 +40,7 @@ import ChatTextInputMediaRecordingButton
 import ChatContextQuery
 import ChatInputTextNode
 import ChatInputPanelNode
+import TelegramNotices
 
 private let accessoryButtonFont = Font.medium(14.0)
 private let counterFont = Font.with(size: 14.0, design: .regular, traits: [.monospacedNumbers])
@@ -2786,7 +2787,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
     }
     
     @objc private func viewOncePressed() {
-        guard let interfaceState = self.presentationInterfaceState else {
+        guard let context = self.context, let interfaceState = self.presentationInterfaceState else {
             return
         }
         self.viewOnce = !self.viewOnce
@@ -2796,6 +2797,8 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
         self.tooltipController?.dismiss()
         if self.viewOnce {
             self.displayViewOnceTooltip(text: interfaceState.strings.Chat_PlayVoiceMessageOnceTooltip)
+            
+            let _ = ApplicationSpecificNotice.incrementVoiceMessagesPlayOnceSuggestion(accountManager: context.sharedContext.accountManager, count: 3).startStandalone()
         }
     }
     

@@ -273,9 +273,6 @@ private func canViewReadStats(message: Message, participantCount: Int?, isMessag
         if user.flags.contains(.isSupport) {
             return false
         }
-        if "".isEmpty {
-            return false
-        }
     default:
         return false
     }

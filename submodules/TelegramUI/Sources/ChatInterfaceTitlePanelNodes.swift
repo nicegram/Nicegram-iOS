@@ -20,7 +20,7 @@ func titlePanelForChatPresentationInterfaceState(_ chatPresentationInterfaceStat
             return nil
         }
     }
-    /*if let search = chatPresentationInterfaceState.search {
+    if let search = chatPresentationInterfaceState.search, chatPresentationInterfaceState.hasSearchTags {
         if chatPresentationInterfaceState.chatLocation.peerId == context.account.peerId, case .everything = search.domain {
             if let currentPanel = currentPanel as? ChatSearchTitleAccessoryPanelNode {
                 return currentPanel
@@ -32,7 +32,7 @@ func titlePanelForChatPresentationInterfaceState(_ chatPresentationInterfaceStat
         } else {
             return nil
         }
-    }*/
+    }
     
     var inhibitTitlePanelDisplay = false
     switch chatPresentationInterfaceState.subject {

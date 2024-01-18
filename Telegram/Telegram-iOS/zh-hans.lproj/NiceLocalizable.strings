@@ -179,6 +179,9 @@
 "NiceFeatures.QuickReplies.AddNew" = "新增";
 "NiceFeatures.QuickReplies.Placeholder" = "输入文本";
 
+/*Telegram Premium*/
+"TelegramPremium.Description" = "遗憾的是，当您登录到Nicegram应用程序时，您无法获取Telegram Premium功能。请前往官方的Telegram应用程序并订阅Telegram Premium。当您返回Nicegram时，所有Premium功能将可供使用。";
+
 /*Double Bottom*/
 "DoubleBottom.Title" = "Double bottom";
 "DoubleBottom.Description" = "要启用此功能，你需有超过一个账户，并将密码锁切换到打开状态（ 转向设置 → 隐私与安全  → 密码锁）";
@@ -207,5 +210,17 @@
 "RoundedVideos.MoreButtonTooltip" = "一键将方形视频转换为圆形发送。";
 "RoundedVideos.SendButtonTooltip" = "长按以将您的视频以时尚圆形发送。";
 
+/*Speech to text*/
+"SpeechToText.UseOpenAi" = "OpenAI 语音转文本";
+"SpeechToText.Toast" = "[订阅Nicegram Premium]() 更快更好的 OpenAI 语音转文本技术！";
+
 /*Stealth Mode*/
 "StealthMode.Toggle" = "隐身模式";
+
+/*Confirm Call*/
+"ConfirmCall.Desc" = "您确定要拨打电话吗？";
+
+/*Hidden Chats*/
+"ChatContextMenu.Hide" = "隐藏";
+"ChatContextMenu.Unhide" = "取消隐藏";
+"HiddenChatsTooltip" = "长按 'N' 标志以显示隐藏的秘密聊天";

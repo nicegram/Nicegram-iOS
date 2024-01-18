@@ -179,6 +179,9 @@
 "NiceFeatures.QuickReplies.AddNew" = "새로 추가";
 "NiceFeatures.QuickReplies.Placeholder" = "내용 입력";
 
+/*Telegram Premium*/
+"TelegramPremium.Description" = "안타깝게도 Nicegram 앱에 로그인한 상태에서는 Telegram 프리미엄 기능을 이용할 수 없습니다. 공식 Telegram 앱으로 이동하여 Telegram 프리미엄에 가입하십시오. Nicegram으로 돌아오면 모든 프리미엄 기능을 사용할 수 있습니다.";
+
 /*Double Bottom*/
 "DoubleBottom.Title" = "Double bottom";
 "DoubleBottom.Description" = "이 기능을 활성화하려면 계정이 한 개 이상 필요하며 암호 잠금으로 전환해야 합니다(설정→개인정보 및 보안→암호 잠금 이동).";
@@ -207,5 +210,17 @@
 "RoundedVideos.MoreButtonTooltip" = "한 번의 탭으로 정사각형 비디오를 원형으로 변환하여 보내기.";
 "RoundedVideos.SendButtonTooltip" = "길게 눌러 스타일리시한 원형으로 비디오를 보내세요.";
 
+/*Speech to text*/
+"SpeechToText.UseOpenAi" = "OpenAI 음성에서 텍스트로";
+"SpeechToText.Toast" = "OpenAI 음성에서 텍스트로 기술을 더 빠르고 좋게 이용하려면 [Nicegram Premium에 가입하세요]()!";
+
 /*Stealth Mode*/
 "StealthMode.Toggle" = "스텔스 모드";
+
+/*Confirm Call*/
+"ConfirmCall.Desc" = "전화를 걸겠습니까?";
+
+/*Hidden Chats*/
+"ChatContextMenu.Hide" = "숨기기";
+"ChatContextMenu.Unhide" = "숨김 해제";
+"HiddenChatsTooltip" = "숨겨진 비밀 채팅을 보려면 'N' 로고를 누르고 있으세요";

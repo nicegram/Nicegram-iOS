@@ -5251,7 +5251,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                     isPremiumRequiredForMessaging
                 ).startStrict(next: { [weak self] peerView, globalNotificationSettings, onlineMemberCount, hasScheduledMessages, peerReportNotice, pinnedCount, threadInfo, hasSearchTags, isPremiumRequiredForMessaging in
                     if let strongSelf = self {
-                        if strongSelf.peerView === peerView && strongSelf.reportIrrelvantGeoNotice == peerReportNotice && strongSelf.hasScheduledMessages == hasScheduledMessages && strongSelf.threadInfo == threadInfo {
+                        if strongSelf.peerView === peerView && strongSelf.reportIrrelvantGeoNotice == peerReportNotice && strongSelf.hasScheduledMessages == hasScheduledMessages && strongSelf.threadInfo == threadInfo && strongSelf.presentationInterfaceState.hasSearchTags == hasSearchTags && strongSelf.presentationInterfaceState.isPremiumRequiredForMessaging == isPremiumRequiredForMessaging {
                             return
                         }
                         
@@ -5472,6 +5472,9 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                                 }
                             }
                         }
+                        if strongSelf.presentationInterfaceState.search != nil && strongSelf.presentationInterfaceState.hasSearchTags {
+                            didDisplayActionsPanel = true
+                        }
                         
                         var displayActionsPanel = false
                         if let contactStatus = contactStatus, !contactStatus.isEmpty, let peerStatusSettings = contactStatus.peerStatusSettings {
@@ -5488,6 +5491,9 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                                     displayActionsPanel = true
                                 }
                             }
+                        }
+                        if strongSelf.presentationInterfaceState.search != nil && hasSearchTags {
+                            displayActionsPanel = true
                         }
                         
                         if displayActionsPanel != didDisplayActionsPanel {
@@ -15896,6 +15902,8 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
         
         switch recordedMediaPreview {
         case let .audio(audio):
+            self.audioRecorder.set(.single(nil))
+            
             var isScheduledMessages = false
             if case .scheduledMessages = self.presentationInterfaceState.subject {
                 isScheduledMessages = true
