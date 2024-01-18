@@ -102,6 +102,7 @@ jobs:
       BAZEL_USER_ROOT: /private/var/tmp/_bazel_telegram
       BUILD_WORKING_DIR: /Users/telegram/build-working-dir
       BUNDLE_ID: app.nicegram
+      GOOGLE_APPLICATION_CREDENTIALS_BASE64: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_BASE64 }}
       KEYCHAIN_NAME: ${{ secrets.KEYCHAIN_NAME }}
       KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
       MATCH_PASSWORD: ${{ secrets.SIGN_REPO_DECRYPT_PASSWORD }}
