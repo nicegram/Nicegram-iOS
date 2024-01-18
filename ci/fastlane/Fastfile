@@ -2,6 +2,7 @@ default_platform :ios
 
 require 'base64'
 require 'fileutils'
+require 'googleauth'
 require 'json'
 require 'spaceship'
 
@@ -14,6 +15,7 @@ BAZEL_REMOTE_CACHE = ENV["BAZEL_REMOTE_CACHE"]
 BAZEL_USER_ROOT = ENV["BAZEL_USER_ROOT"]
 BUILD_WORKING_DIR = ENV["BUILD_WORKING_DIR"]
 BUNDLE_ID = ENV["BUNDLE_ID"]
+GOOGLE_APPLICATION_CREDENTIALS_BASE64 = ENV["GOOGLE_APPLICATION_CREDENTIALS_BASE64"] 
 KEYCHAIN_NAME = ENV["KEYCHAIN_NAME"]
 KEYCHAIN_PASSWORD = ENV["KEYCHAIN_PASSWORD"]
 SIGN_URL = ENV["SIGN_URL"]
@@ -86,12 +88,6 @@ lane :build do |options|
   build_number = options[:build_number]
   upload_to_tf = options[:upload_to_tf]
 
-  start_time = Time.new
-
-  configuration_start_time = Time.new
-
-  log(message: "Preparing for build...")
-
   # Create temp keychain
   ensure_temp_keychain(name: KEYCHAIN_NAME, password: KEYCHAIN_PASSWORD)
   # Match because Telegram script doesnt import certificates
@@ -103,11 +99,9 @@ lane :build do |options|
     is_appstore_build: upload_to_tf
   )
 
-  configuration_end_time = Time.new
-  building_start_time = Time.new
+  update_remote_config_defaults()
 
   # Build
-  log(message: "🔨 Building Nicegram (#{build_number})...")
   ipa_path = build_bazel(
     build_number: build_number,
     configuration_path: telegram_configuration_path,
@@ -115,29 +109,10 @@ lane :build do |options|
     git_codesigning_type: "appstore"
   )
 
-  building_end_time = Time.new
-  uploading_start_time = Time.new
-
   # Upload to testflight
-  log(message: "✔️ Build completed, uploading...")
   if upload_to_tf
     upload_ipa(ipa: ipa_path)
   end
-
-  uploading_end_time = Time.new
-  end_time = Time.new
-
-  configuration_time = (configuration_end_time - configuration_start_time).to_i
-  building_time = (building_end_time - building_start_time).to_i
-  uploading_time = (uploading_end_time - uploading_start_time).to_i
-  total_time = (end_time - start_time).to_i
-
-  log(message: "✅ DONE Building Nicegram (#{build_number})\n"\
-      "Configuration time = #{configuration_time} sec.\n"\
-      "Building time = #{building_time} sec.\n"\
-      "Uploading time = #{uploading_time} sec.\n"\
-      "Total time = #{total_time} sec."
-  )
 
   delete_keychain_if_exists(name: KEYCHAIN_NAME)
 end
@@ -280,6 +255,32 @@ lane :upload_ipa do |options|
     ipa: ipa_path,
     skip_waiting_for_build_processing: true,
   )
+end
+
+lane :update_remote_config_defaults do |options|
+  credentials_file_path = "./GOOGLE_APPLICATION_CREDENTIALS"
+  File.write(
+    credentials_file_path, 
+    Base64.decode64(GOOGLE_APPLICATION_CREDENTIALS_BASE64)
+  )
+
+  scope = [
+    "https://www.googleapis.com/auth/firebase.remoteconfig"
+  ]
+
+  auth = Google::Auth::ServiceAccountCredentials.make_creds(
+    json_key_io: File.open(credentials_file_path),
+    scope: scope
+  )
+  token = auth.fetch_access_token!["access_token"]
+  
+  sh "curl https://firebaseremoteconfig.googleapis.com/v1/projects/nicegram-55d94/remoteConfig:downloadDefaults?format=PLIST \
+  --compressed \
+  -H \"Authorization: Bearer #{token}\" \
+  -o #{SOURCE_PATH}/Telegram/Telegram-iOS/FirebaseRemoteConfigDefaults.plist \
+  "
+
+  File.delete(credentials_file_path)
 end
 
 lane :update_spm_pkgs do |options|

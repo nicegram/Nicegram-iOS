@@ -559,7 +559,6 @@ public extension Api {
         case updateReadChannelOutbox(channelId: Int64, maxId: Int32)
         case updateReadFeaturedEmojiStickers
         case updateReadFeaturedStickers
-        case updateReadFeed(flags: Int32, filterId: Int32, maxPosition: Api.FeedPosition, unreadCount: Int32?, unreadMutedCount: Int32?)
         case updateReadHistoryInbox(flags: Int32, folderId: Int32?, peer: Api.Peer, maxId: Int32, stillUnreadCount: Int32, pts: Int32, ptsCount: Int32)
         case updateReadHistoryOutbox(peer: Api.Peer, maxId: Int32, pts: Int32, ptsCount: Int32)
         case updateReadMessagesContents(flags: Int32, messages: [Int32], pts: Int32, ptsCount: Int32, date: Int32?)
@@ -569,6 +568,7 @@ public extension Api {
         case updateRecentStickers
         case updateSavedDialogPinned(flags: Int32, peer: Api.DialogPeer)
         case updateSavedGifs
+        case updateSavedReactionTags
         case updateSavedRingtones
         case updateSentStoryReaction(peer: Api.Peer, storyId: Int32, reaction: Api.Reaction)
         case updateServiceNotification(flags: Int32, inboxDate: Int32?, type: String, message: String, media: Api.MessageMedia, entities: [Api.MessageEntity])
@@ -1452,16 +1452,6 @@ public extension Api {
                     }
                     
                     break
-                case .updateReadFeed(let flags, let filterId, let maxPosition, let unreadCount, let unreadMutedCount):
-                    if boxed {
-                        buffer.appendInt32(1951948721)
-                    }
-                    serializeInt32(flags, buffer: buffer, boxed: false)
-                    serializeInt32(filterId, buffer: buffer, boxed: false)
-                    maxPosition.serialize(buffer, true)
-                    if Int(flags) & Int(1 << 0) != 0 {serializeInt32(unreadCount!, buffer: buffer, boxed: false)}
-                    if Int(flags) & Int(1 << 0) != 0 {serializeInt32(unreadMutedCount!, buffer: buffer, boxed: false)}
-                    break
                 case .updateReadHistoryInbox(let flags, let folderId, let peer, let maxId, let stillUnreadCount, let pts, let ptsCount):
                     if boxed {
                         buffer.appendInt32(-1667805217)
@@ -1532,6 +1522,12 @@ public extension Api {
                 case .updateSavedGifs:
                     if boxed {
                         buffer.appendInt32(-1821035490)
+                    }
+                    
+                    break
+                case .updateSavedReactionTags:
+                    if boxed {
+                        buffer.appendInt32(969307186)
                     }
                     
                     break
@@ -1877,8 +1873,6 @@ public extension Api {
                 return ("updateReadFeaturedEmojiStickers", [])
                 case .updateReadFeaturedStickers:
                 return ("updateReadFeaturedStickers", [])
-                case .updateReadFeed(let flags, let filterId, let maxPosition, let unreadCount, let unreadMutedCount):
-                return ("updateReadFeed", [("flags", flags as Any), ("filterId", filterId as Any), ("maxPosition", maxPosition as Any), ("unreadCount", unreadCount as Any), ("unreadMutedCount", unreadMutedCount as Any)])
                 case .updateReadHistoryInbox(let flags, let folderId, let peer, let maxId, let stillUnreadCount, let pts, let ptsCount):
                 return ("updateReadHistoryInbox", [("flags", flags as Any), ("folderId", folderId as Any), ("peer", peer as Any), ("maxId", maxId as Any), ("stillUnreadCount", stillUnreadCount as Any), ("pts", pts as Any), ("ptsCount", ptsCount as Any)])
                 case .updateReadHistoryOutbox(let peer, let maxId, let pts, let ptsCount):
@@ -1897,6 +1891,8 @@ public extension Api {
                 return ("updateSavedDialogPinned", [("flags", flags as Any), ("peer", peer as Any)])
                 case .updateSavedGifs:
                 return ("updateSavedGifs", [])
+                case .updateSavedReactionTags:
+                return ("updateSavedReactionTags", [])
                 case .updateSavedRingtones:
                 return ("updateSavedRingtones", [])
                 case .updateSentStoryReaction(let peer, let storyId, let reaction):
@@ -3701,31 +3697,6 @@ public extension Api {
         public static func parse_updateReadFeaturedStickers(_ reader: BufferReader) -> Update? {
             return Api.Update.updateReadFeaturedStickers
         }
-        public static func parse_updateReadFeed(_ reader: BufferReader) -> Update? {
-            var _1: Int32?
-            _1 = reader.readInt32()
-            var _2: Int32?
-            _2 = reader.readInt32()
-            var _3: Api.FeedPosition?
-            if let signature = reader.readInt32() {
-                _3 = Api.parse(reader, signature: signature) as? Api.FeedPosition
-            }
-            var _4: Int32?
-            if Int(_1!) & Int(1 << 0) != 0 {_4 = reader.readInt32() }
-            var _5: Int32?
-            if Int(_1!) & Int(1 << 0) != 0 {_5 = reader.readInt32() }
-            let _c1 = _1 != nil
-            let _c2 = _2 != nil
-            let _c3 = _3 != nil
-            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
-            let _c5 = (Int(_1!) & Int(1 << 0) == 0) || _5 != nil
-            if _c1 && _c2 && _c3 && _c4 && _c5 {
-                return Api.Update.updateReadFeed(flags: _1!, filterId: _2!, maxPosition: _3!, unreadCount: _4, unreadMutedCount: _5)
-            }
-            else {
-                return nil
-            }
-        }
         public static func parse_updateReadHistoryInbox(_ reader: BufferReader) -> Update? {
             var _1: Int32?
             _1 = reader.readInt32()
@@ -3847,6 +3818,9 @@ public extension Api {
         }
         public static func parse_updateSavedGifs(_ reader: BufferReader) -> Update? {
             return Api.Update.updateSavedGifs
+        }
+        public static func parse_updateSavedReactionTags(_ reader: BufferReader) -> Update? {
+            return Api.Update.updateSavedReactionTags
         }
         public static func parse_updateSavedRingtones(_ reader: BufferReader) -> Update? {
             return Api.Update.updateSavedRingtones

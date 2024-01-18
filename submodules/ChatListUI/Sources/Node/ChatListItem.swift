@@ -100,6 +100,7 @@ public enum ChatListItemContent {
         public var topForumTopicItems: [EngineChatList.ForumTopicData]
         public var autoremoveTimeout: Int32?
         public var storyState: StoryState?
+        public var requiresPremiumForMessaging: Bool
         
         public init(
             messages: [EngineMessage],
@@ -119,7 +120,8 @@ public enum ChatListItemContent {
             forumTopicData: EngineChatList.ForumTopicData?,
             topForumTopicItems: [EngineChatList.ForumTopicData],
             autoremoveTimeout: Int32?,
-            storyState: StoryState?
+            storyState: StoryState?,
+            requiresPremiumForMessaging: Bool
         ) {
             self.messages = messages
             self.peer = peer
@@ -139,6 +141,7 @@ public enum ChatListItemContent {
             self.topForumTopicItems = topForumTopicItems
             self.autoremoveTimeout = autoremoveTimeout
             self.storyState = storyState
+            self.requiresPremiumForMessaging = requiresPremiumForMessaging
         }
     }
     
@@ -1441,7 +1444,11 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
             } else if peer.id.isAnonymousSavedMessages {
                 overrideImage = .anonymousSavedMessagesIcon
             } else if peer.id == item.context.account.peerId && !displayAsMessage {
-                overrideImage = .savedMessagesIcon
+                if case .savedMessagesChats = item.chatListLocation {
+                    overrideImage = .myNotesIcon
+                } else {
+                    overrideImage = .savedMessagesIcon
+                }
             } else if peer.isDeleted {
                 overrideImage = .deletedIcon
             }
@@ -2364,7 +2371,11 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
                     } else if isPeerGroup {
                         titleAttributedString = NSAttributedString(string: item.presentationData.strings.ChatList_ArchivedChatsTitle, font: titleFont, textColor: theme.titleColor)
                     } else if itemPeer.chatMainPeer?.id == item.context.account.peerId {
-                        titleAttributedString = NSAttributedString(string: item.presentationData.strings.DialogList_SavedMessages, font: titleFont, textColor: theme.titleColor)
+                        if case .savedMessagesChats = item.chatListLocation {
+                            titleAttributedString = NSAttributedString(string: item.presentationData.strings.DialogList_MyNotes, font: titleFont, textColor: theme.titleColor)
+                        } else {
+                            titleAttributedString = NSAttributedString(string: item.presentationData.strings.DialogList_SavedMessages, font: titleFont, textColor: theme.titleColor)
+                        }
                     } else if let id = itemPeer.chatMainPeer?.id, id.isReplies {
                          titleAttributedString = NSAttributedString(string: item.presentationData.strings.DialogList_Replies, font: titleFont, textColor: theme.titleColor)
                     } else if let id = itemPeer.chatMainPeer?.id, id.isAnonymousSavedMessages {
@@ -2681,7 +2692,8 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
             
             var isFirstForumThreadSelectable = false
             var forumThreads: [(id: Int64, title: NSAttributedString, iconId: Int64?, iconColor: Int32)] = []
-            if forumThread != nil || !topForumTopicItems.isEmpty {
+            if case .savedMessagesChats = item.chatListLocation {
+            } else if forumThread != nil || !topForumTopicItems.isEmpty {
                 if let forumThread = forumThread {
                     isFirstForumThreadSelectable = forumThread.isUnread
                     forumThreads.append((id: forumThread.id, title: NSAttributedString(string: forumThread.title, font: textFont, textColor: forumThread.isUnread || isSearching ? theme.authorNameColor : theme.messageTextColor), iconId: forumThread.iconId, iconColor: forumThread.iconColor))

@@ -1,3 +1,6 @@
+// MARK: Nicegram PhoneEntryBanner
+import FeatPhoneEntryBanner
+//
 import Foundation
 import UIKit
 import AsyncDisplayKit
@@ -292,6 +295,10 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
     private let theme: PresentationTheme
     private let hasOtherAccounts: Bool
     
+    // MARK: Nicegram PhoneEntryBanner
+    let ngBannerNode = ASDisplayNode { UIView() }
+    //
+    
     private let animationNode: AnimatedStickerNode
     private let managedAnimationNode: ManagedPhoneAnimationNode
     private let titleNode: ASTextNode
@@ -415,6 +422,11 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         })
         
         self.backgroundColor = theme.list.plainBackgroundColor
+        
+        // MARK: Nicegram PhoneEntryBanner
+        ngBannerNode.isHidden = true
+        self.addSubnode(ngBannerNode)
+        //
         
         self.addSubnode(self.titleNode)
         self.addSubnode(self.noticeNode)
@@ -569,6 +581,28 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
             AuthorizationLayoutItem(node: self.noticeNode, size: noticeSize, spacingBefore: AuthorizationLayoutItemSpacing(weight: 18.0, maxValue: 18.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)),
             AuthorizationLayoutItem(node: self.phoneAndCountryNode, size: CGSize(width: maximumWidth, height: 115.0), spacingBefore: AuthorizationLayoutItemSpacing(weight: 30.0, maxValue: 30.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)),
         ]
+        
+        // MARK: Nicegram PhoneEntryBanner
+        let showBanner = if #available(iOS 15.0, *) {
+            true
+        } else {
+            false
+        }
+        
+        if showBanner {
+            if let index = items.firstIndex(where: { $0.node === phoneAndCountryNode}) {
+                let bannerItem = AuthorizationLayoutItem(
+                    node: self.ngBannerNode,
+                    size: CGSize(width: maximumWidth, height: 110),
+                    spacingBefore: AuthorizationLayoutItemSpacing(weight: 0, maxValue: 0),
+                    spacingAfter: AuthorizationLayoutItemSpacing(weight: 0, maxValue: 0)
+                )
+                items.insert(bannerItem, at: index)
+                
+                ngBannerNode.isHidden = false
+            }
+        }
+        //
         
         if layout.size.width > 320.0 {
             items.insert(AuthorizationLayoutItem(node: self.animationNode, size: animationSize, spacingBefore: AuthorizationLayoutItemSpacing(weight: 10.0, maxValue: 10.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)), at: 0)

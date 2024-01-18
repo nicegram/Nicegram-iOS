@@ -323,6 +323,13 @@ filegroup(
 )
 
 filegroup(
+    name = "FirebaseRemoteConfigDefaults",
+    srcs = glob([
+        "Telegram-iOS/FirebaseRemoteConfigDefaults.plist",
+    ]),
+)
+
+filegroup(
     name = "AdditionalIcons",
     srcs = glob([
         "Telegram-iOS/*.png",
@@ -374,7 +381,11 @@ objc_library(
     ],
 )
 
-NGRESOURCES = ["//Nicegram/NGUI:NGUIAssets"]
+NGRESOURCES = [
+    ":FirebaseRemoteConfigDefaults",
+    ":GoogleService-Info",
+    "//Nicegram/NGUI:NGUIAssets",
+]
 NGRESOURCES_DEPS = ["//Nicegram/NGUI:NGUI"]
 
 swift_library(
@@ -398,7 +409,6 @@ swift_library(
         "//submodules/TelegramUI:TelegramUIAssets",
         "//submodules/TelegramUI/Components/Calls/CallScreen:Assets",
         ":GeneratedPresentationStrings/Resources/PresentationStrings.data",
-        ":GoogleService-Info",
     ] + NGRESOURCES,
     deps = [
         "//submodules/TelegramUI:TelegramUI",

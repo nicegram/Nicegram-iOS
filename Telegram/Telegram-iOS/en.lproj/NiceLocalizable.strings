@@ -219,3 +219,8 @@
 
 /*Confirm Call*/
 "ConfirmCall.Desc" = "Are you sure you want to make a call?";
+
+/*Hidden Chats*/
+"ChatContextMenu.Hide" = "Hide";
+"ChatContextMenu.Unhide" = "Unhide";
+"HiddenChatsTooltip" = "Press and hold the 'N' logo to reveal hidden secret chats";

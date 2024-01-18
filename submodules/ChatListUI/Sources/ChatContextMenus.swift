@@ -1,3 +1,7 @@
+// MARK: Nicegram HiddenChats
+import FeatHiddenChats
+import NGStrings
+//
 import Foundation
 import UIKit
 import SwiftSignalKit
@@ -451,6 +455,73 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                                     f(.default)
                                 })
                             })))
+                            
+                            // MARK: Nicegram HiddenChats
+                            if #available(iOS 13.0, *) {
+                                let hiddenChatsContainer = HiddenChatsContainer.shared
+                                
+                                let getChatStatusUseCase = hiddenChatsContainer.getChatStatusUseCase()
+                                let hideChatUseCase = hiddenChatsContainer.hideChatUseCase()
+                                let unhideChatUseCase = hiddenChatsContainer.unhideChatUseCase()
+                                let preferencesRepository = hiddenChatsContainer.preferencesRepository()
+                                
+                                let intPeerId = peerId.id._internalGetInt64Value()
+                                
+                                let isChatHidden = getChatStatusUseCase.isChatHidden(
+                                    peerId: intPeerId
+                                )
+                                
+                                if isChatHidden {
+                                    let item = ContextMenuActionItem(
+                                        text: l("ChatContextMenu.Unhide"),
+                                        icon: { theme in
+                                            generateTintedImage(image: UIImage(systemName: "eye"), color: theme.contextMenu.primaryColor)
+                                        },
+                                        action: { _, f in
+                                            Task {
+                                                await unhideChatUseCase(
+                                                    peerId: intPeerId
+                                                )
+                                            }
+                                            f(.default)
+                                        }
+                                    )
+                                    items.append(.action(item))
+                                } else {
+                                    let item = ContextMenuActionItem(
+                                        text: l("ChatContextMenu.Hide"),
+                                        icon: { theme in
+                                            generateTintedImage(image: UIImage(systemName: "eye.slash"), color: theme.contextMenu.primaryColor)
+                                        },
+                                        action: { _, f in
+                                            Task { [isMuted, chatListController] in
+                                                await hideChatUseCase(
+                                                    peerId: intPeerId,
+                                                    mute: {
+                                                        if !isMuted {
+                                                            let _ = context.engine.peers.togglePeerMuted(peerId: peerId, threadId: nil).startStandalone()
+                                                        }
+                                                    }
+                                                )
+                                                
+                                                let sawTooltip = await preferencesRepository.sawHiddenChatsTooltip()
+                                                if !sawTooltip {
+                                                    await preferencesRepository.set(
+                                                        sawHiddenChatsTooltip: true
+                                                    )
+                                                    
+                                                    await chatListController?.showTooltipOnAssistantButton(
+                                                        text: l("HiddenChatsTooltip")
+                                                    )
+                                                }
+                                            }
+                                            f(.default)
+                                        }
+                                    )
+                                    items.append(.action(item))
+                                }
+                            }
+                            //
                         }
                     } else {
                         if case .search = source {

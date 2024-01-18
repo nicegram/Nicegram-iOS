@@ -462,7 +462,7 @@ public extension TelegramEngine {
                         }
                     }
                     
-                    signals.append(self.account.network.request(Api.functions.messages.search(flags: flags, peer: inputPeer, q: "", fromId: nil, savedPeerId: inputSavedPeer, topMsgId: topMsgId, filter: filter, minDate: 0, maxDate: 0, offsetId: 0, addOffset: 0, limit: 1, maxId: 0, minId: 0, hash: 0))
+                    signals.append(self.account.network.request(Api.functions.messages.search(flags: flags, peer: inputPeer, q: "", fromId: nil, savedPeerId: inputSavedPeer, savedReaction: nil, topMsgId: topMsgId, filter: filter, minDate: 0, maxDate: 0, offsetId: 0, addOffset: 0, limit: 1, maxId: 0, minId: 0, hash: 0))
                     |> map { result -> (count: Int32?, topId: Int32?) in
                         switch result {
                         case let .messagesSlice(_, count, _, _, messages, _, _):
@@ -493,9 +493,9 @@ public extension TelegramEngine {
                                         maxId = max(maxId, message.id.id)
                                         return true
                                     })
-                                    transaction.replaceMessageTagSummary(peerId: peerId, threadId: threadId, tagMask: tags[i], namespace: Namespaces.Message.Cloud, count: Int32(localCount), maxId: maxId)
+                                    transaction.replaceMessageTagSummary(peerId: peerId, threadId: threadId, tagMask: tags[i], namespace: Namespaces.Message.Cloud, customTag: nil, count: Int32(localCount), maxId: maxId)
                                 } else {
-                                    transaction.replaceMessageTagSummary(peerId: peerId, threadId: threadId, tagMask: tags[i], namespace: Namespaces.Message.Cloud, count: count, maxId: maxId ?? 1)
+                                    transaction.replaceMessageTagSummary(peerId: peerId, threadId: threadId, tagMask: tags[i], namespace: Namespaces.Message.Cloud, customTag: nil, count: count, maxId: maxId ?? 1)
                                 }
                             }
                         }
@@ -696,6 +696,13 @@ public extension TelegramEngine {
             |> ignoreValues
         }
         
+        public func debugResetTagHoles() -> Signal<Never, NoError> {
+            return self.account.postbox.transaction { transaction -> Void in
+                transaction.resetCustomTagHoles()
+            }
+            |> ignoreValues
+        }
+        
         public func debugReindexUnreadCounters() -> Signal<Never, NoError> {
             return self.account.postbox.transaction { transaction -> Void in
                 transaction.reindexUnreadCounters()
@@ -705,6 +712,11 @@ public extension TelegramEngine {
         
         public func keepMessageCountersSyncrhonized(peerId: EnginePeer.Id, threadId: Int64) -> Signal<Never, NoError> {
             return managedSynchronizeMessageHistoryTagSummaries(postbox: self.account.postbox, network: self.account.network, stateManager: self.account.stateManager, peerId: peerId, threadId: threadId)
+            |> ignoreValues
+        }
+        
+        public func keepMessageCountersSyncrhonized(peerId: EnginePeer.Id) -> Signal<Never, NoError> {
+            return managedSynchronizeMessageHistoryTagSummaries(postbox: self.account.postbox, network: self.account.network, stateManager: self.account.stateManager, peerId: peerId, threadId: nil)
             |> ignoreValues
         }
         

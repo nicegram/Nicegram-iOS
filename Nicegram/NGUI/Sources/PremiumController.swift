@@ -379,7 +379,7 @@ public func premiumController(context: AccountContext) -> ViewController {
             .publisher()
             .map { $0 == .openAi }
             .toSignal()
-            .setNoError()
+            .skipError()
     } else {
         useOpenAiSignal = .single(false)
     }

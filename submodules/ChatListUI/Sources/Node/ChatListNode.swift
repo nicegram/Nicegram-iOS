@@ -1,11 +1,14 @@
 // MARK: Nicegram PinnedChats
 import Combine
+import FeatCard
+import FeatCardUI
 import FeatImagesHubUI
 import FeatPinnedChats
 import NGAiChatUI
-import NGCard
-import NGCardUI
 import NGUI
+//
+// MARK: Nicegram HiddenChats
+import FeatHiddenChats
 //
 import Foundation
 import UIKit
@@ -88,7 +91,7 @@ public final class ChatListNodeInteraction {
     //
     
     let peerSelected: (EnginePeer, EnginePeer?, Int64?, ChatListNodeEntryPromoInfo?) -> Void
-    let disabledPeerSelected: (EnginePeer, Int64?) -> Void
+    let disabledPeerSelected: (EnginePeer, Int64?, ChatListDisabledPeerReason) -> Void
     let togglePeerSelected: (EnginePeer, Int64?) -> Void
     let togglePeersSelection: ([PeerEntry], Bool) -> Void
     let additionalCategorySelected: (Int) -> Void
@@ -143,7 +146,7 @@ public final class ChatListNodeInteraction {
         clearHighlightAnimated: @escaping (Bool) -> Void = { _ in },
         //
         peerSelected: @escaping (EnginePeer, EnginePeer?, Int64?, ChatListNodeEntryPromoInfo?) -> Void,
-        disabledPeerSelected: @escaping (EnginePeer, Int64?) -> Void,
+        disabledPeerSelected: @escaping (EnginePeer, Int64?, ChatListDisabledPeerReason) -> Void,
         togglePeerSelected: @escaping (EnginePeer, Int64?) -> Void,
         togglePeersSelection: @escaping ([PeerEntry], Bool) -> Void,
         additionalCategorySelected: @escaping (Int) -> Void,
@@ -449,7 +452,8 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
                                         stats: storyState.stats,
                                         hasUnseenCloseFriends: storyState.hasUnseenCloseFriends
                                     )
-                                }
+                                },
+                                requiresPremiumForMessaging: peerEntry.requiresPremiumForMessaging
                             )),
                             editing: editing,
                             hasActiveRevealControls: hasActiveRevealControls,
@@ -474,6 +478,9 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
                             if filter.contains(.onlyWriteable) {
                                 if let peer = peer.peers[peer.peerId] {
                                     if !canSendMessagesToPeer(peer._asPeer()) {
+                                        enabled = false
+                                    }
+                                    if peerEntry.requiresPremiumForMessaging {
                                         enabled = false
                                     }
                                 } else {
@@ -603,7 +610,7 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
                             sortOrder: presentationData.nameSortOrder,
                             displayOrder: presentationData.nameDisplayOrder,
                             context: context,
-                            peerMode: .generalSearch,
+                            peerMode: .generalSearch(isSavedMessages: false),
                             peer: peerContent,
                             status: status,
                             enabled: enabled,
@@ -621,7 +628,7 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
                                 }
                             }, disabledAction: isForum && editing ? nil : { _ in
                                 if let chatPeer = chatPeer {
-                                    nodeInteraction.disabledPeerSelected(chatPeer, threadId)
+                                    nodeInteraction.disabledPeerSelected(chatPeer, threadId, .generic)
                                 }
                             },
                             animationCache: nodeInteraction.animationCache,
@@ -642,7 +649,7 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
                         sortOrder: presentationData.nameSortOrder,
                         displayOrder: presentationData.nameDisplayOrder,
                         context: context,
-                        peerMode: .generalSearch,
+                        peerMode: .generalSearch(isSavedMessages: false),
                         peer: peerContent,
                         status: status,
                         enabled: true,
@@ -704,7 +711,7 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
                     sortOrder: presentationData.nameSortOrder,
                     displayOrder: presentationData.nameDisplayOrder,
                     context: context,
-                    peerMode: .generalSearch,
+                    peerMode: .generalSearch(isSavedMessages: false),
                     peer: peerContent,
                     status: status,
                     enabled: true,
@@ -817,7 +824,8 @@ private func mappedUpdateEntries(context: AccountContext, nodeInteraction: ChatL
                                         stats: storyState.stats,
                                         hasUnseenCloseFriends: storyState.hasUnseenCloseFriends
                                     )
-                                }
+                                },
+                                requiresPremiumForMessaging: peerEntry.requiresPremiumForMessaging
                             )),
                             editing: editing,
                             hasActiveRevealControls: hasActiveRevealControls,
@@ -842,6 +850,9 @@ private func mappedUpdateEntries(context: AccountContext, nodeInteraction: ChatL
                             if filter.contains(.onlyWriteable) {
                                 if let peer = peer.peers[peer.peerId] {
                                     if !canSendMessagesToPeer(peer._asPeer()) {
+                                        enabled = false
+                                    }
+                                    if peerEntry.requiresPremiumForMessaging {
                                         enabled = false
                                     }
                                 } else {
@@ -925,7 +936,7 @@ private func mappedUpdateEntries(context: AccountContext, nodeInteraction: ChatL
                             sortOrder: presentationData.nameSortOrder,
                             displayOrder: presentationData.nameDisplayOrder,
                             context: context,
-                            peerMode: .generalSearch,
+                            peerMode: .generalSearch(isSavedMessages: false),
                             peer: peerContent,
                             status: status,
                             enabled: enabled,
@@ -943,7 +954,7 @@ private func mappedUpdateEntries(context: AccountContext, nodeInteraction: ChatL
                                 }
                             }, disabledAction: isForum && editing ? nil : { _ in
                                 if let chatPeer = chatPeer {
-                                    nodeInteraction.disabledPeerSelected(chatPeer, threadId)
+                                    nodeInteraction.disabledPeerSelected(chatPeer, threadId, .generic)
                                 }
                             },
                             animationCache: nodeInteraction.animationCache,
@@ -964,7 +975,7 @@ private func mappedUpdateEntries(context: AccountContext, nodeInteraction: ChatL
                             sortOrder: presentationData.nameSortOrder,
                             displayOrder: presentationData.nameDisplayOrder,
                             context: context,
-                            peerMode: .generalSearch,
+                            peerMode: .generalSearch(isSavedMessages: false),
                             peer: peerContent,
                             status: status,
                             enabled: true,
@@ -1026,7 +1037,7 @@ private func mappedUpdateEntries(context: AccountContext, nodeInteraction: ChatL
                     sortOrder: presentationData.nameSortOrder,
                     displayOrder: presentationData.nameDisplayOrder,
                     context: context,
-                    peerMode: .generalSearch,
+                    peerMode: .generalSearch(isSavedMessages: false),
                     peer: peerContent,
                     status: status,
                     enabled: true,
@@ -1162,11 +1173,8 @@ public final class ChatListNode: ListView {
         return _contentsReady.get()
     }
     
-    // MARK: Nicegram PinnedChats
-    private var nicegramItemsCancellable: Any?
-    
     public var peerSelected: ((EnginePeer, Int64?, Bool, Bool, ChatListNodeEntryPromoInfo?) -> Void)?
-    public var disabledPeerSelected: ((EnginePeer, Int64?) -> Void)?
+    public var disabledPeerSelected: ((EnginePeer, Int64?, ChatListDisabledPeerReason) -> Void)?
     public var additionalCategorySelected: ((Int) -> Void)?
     public var groupSelected: ((EngineChatList.Group) -> Void)?
     public var addContact: ((String) -> Void)?
@@ -1349,9 +1357,9 @@ public final class ChatListNode: ListView {
             if let strongSelf = self, let peerSelected = strongSelf.peerSelected {
                 peerSelected(peer, threadId, true, true, promoInfo)
             }
-        }, disabledPeerSelected: { [weak self] peer, threadId in
+        }, disabledPeerSelected: { [weak self] peer, threadId, reason in
             if let strongSelf = self, let disabledPeerSelected = strongSelf.disabledPeerSelected {
-                disabledPeerSelected(peer, threadId)
+                disabledPeerSelected(peer, threadId, reason)
             }
         }, togglePeerSelected: { [weak self] peer, _ in
             guard let strongSelf = self else {
@@ -2096,9 +2104,9 @@ public final class ChatListNode: ListView {
         }
         
         // MARK: Nicegram PinnedChats
-        let nicegramItemsPromise = ValuePromise<[NGPinnedChat]>([])
+        let nicegramItemsSignal: Signal<[NGPinnedChat], NoError>
         if #available(iOS 13.0, *) {
-            self.nicegramItemsCancellable = NGPinnedChats
+            nicegramItemsSignal = NGPinnedChats
                 .publisher(
                     push: { [weak self] controller in
                         guard let self else { return }
@@ -2110,9 +2118,22 @@ public final class ChatListNode: ListView {
                         )
                     }
                 )
-                .sink { items in
-                    nicegramItemsPromise.set(items)
-                }
+                .toSignal()
+                .skipError()
+        } else {
+            nicegramItemsSignal = .single([])
+        }
+        //
+        
+        // MARK: Nicegram HiddenChats
+        let hiddenChatsSignal: Signal<[HiddenChat], NoError>
+        if #available(iOS 13.0, *) {
+            hiddenChatsSignal = HiddenChatsContainer.shared.getChatsToHideUseCase()
+                .publisher()
+                .toSignal()
+                .skipError()
+        } else {
+            hiddenChatsSignal = .single([])
         }
         //
         
@@ -2127,13 +2148,17 @@ public final class ChatListNode: ListView {
             savedMessagesPeer,
             chatListViewUpdate,
             // MARK: Nicegram PinnedChats
-            nicegramItemsPromise.get(),
+            nicegramItemsSignal,
+            //,
+            // MARK: Nicegram HiddenChats
+            hiddenChatsSignal,
             //
             self.statePromise.get(),
             contacts
         )
         // MARK: Nicegram PinnedChats, nicegramItems added
-        |> mapToQueue { (hideArchivedFolderByDefault, displayArchiveIntro, storageInfo, suggestedChatListNotice, savedMessagesPeer, updateAndFilter, nicegramItems, state, contacts) -> Signal<ChatListNodeListViewTransition, NoError> in
+        // MARK: Nicegram HiddenChats, hiddenChats added
+        |> mapToQueue { (hideArchivedFolderByDefault, displayArchiveIntro, storageInfo, suggestedChatListNotice, savedMessagesPeer, updateAndFilter, nicegramItems, hiddenChats, state, contacts) -> Signal<ChatListNodeListViewTransition, NoError> in
             let (update, filter) = updateAndFilter
             
             let previousHideArchivedFolderByDefaultValue = previousHideArchivedFolderByDefault.swap(hideArchivedFolderByDefault)
@@ -2169,6 +2194,13 @@ public final class ChatListNode: ListView {
             let (rawEntries, isLoading) = chatListNodeEntriesForView(view: update.list, state: state, savedMessagesPeer: savedMessagesPeer, foundPeers: state.foundPeers, hideArchivedFolderByDefault: hideArchivedFolderByDefault, displayArchiveIntro: displayArchiveIntro, notice: notice, mode: mode, chatListLocation: location, contacts: contacts, accountPeerId: accountPeerId, isMainTab: innerIsMainTab, nicegramItems: nicegramItems)
             var isEmpty = true
             var entries = rawEntries.filter { entry in
+                // MARK: Nicegram HiddenChats
+                if case let .PeerEntry(peerEntry) = entry,
+                   hiddenChats.contains(where: { $0.id == peerEntry.peer.peerId.id._internalGetInt64Value()}) {
+                    return false
+                }
+                //
+                
                 switch entry {
                 case let .PeerEntry(peerEntry):
                     let peer = peerEntry.peer

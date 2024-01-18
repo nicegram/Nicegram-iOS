@@ -1,3 +1,6 @@
+// MARK: Nicegram PhoneEntryBanner
+import FeatPhoneEntryBanner
+//
 // MARK: Nicegram Auth
 import NGAuth
 //
@@ -191,6 +194,15 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
         } else {
             self.controllerNode.updateCountryCode()
         }
+        
+        // MARK: Nicegram PhoneEntryBanner
+        if #available(iOS 15.0, *) {
+            setupPhoneEntryBanner(
+                view: self.controllerNode.ngBannerNode.view,
+                controller: self
+            )
+        }
+        //
     }
     
     public func updateCountryCode() {

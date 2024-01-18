@@ -257,6 +257,18 @@ public enum PremiumSource: Equatable {
             } else {
                 return false
             }
+        case .presence:
+            if case .presence = rhs {
+                return true
+            } else {
+                return false
+            }
+        case .readTime:
+            if case .readTime = rhs {
+                return true
+            } else {
+                return false
+            }
         }
     }
     
@@ -297,6 +309,8 @@ public enum PremiumSource: Equatable {
     case nameColor
     case similarChannels
     case wallpapers
+    case presence
+    case readTime
     
     var identifier: String? {
         switch self {
@@ -376,6 +390,10 @@ public enum PremiumSource: Equatable {
             return "similar_channels"
         case .wallpapers:
             return "wallpapers"
+        case .presence:
+            return "presence"
+        case .readTime:
+            return "read_time"
         }
     }
 }

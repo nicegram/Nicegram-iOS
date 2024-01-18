@@ -1,6 +1,7 @@
 import Foundation
 import AccountContext
 import Display
+import FeatCardUI
 import FeatImagesHubUI
 import FeatPremiumUI
 import FeatRewardsUI
@@ -9,7 +10,6 @@ import NGAiChatUI
 import NGAnalytics
 import NGAssistantUI
 import NGAuth
-import NGCardUI
 import NGCore
 import class NGCoreUI.SharedLoadingView
 import NGModels

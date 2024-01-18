@@ -30,7 +30,7 @@ public extension Publisher {
 }
 
 public extension Signal {
-    func setNoError() -> Signal<T, NoError> {
+    func skipError() -> Signal<T, NoError> {
         Signal<T, NoError> { subscriber in
             self.start(
                 next: {

@@ -35,6 +35,28 @@ public protocol ContextControllerActionsStackItemNode: ASDisplayNode {
     func increaseHighlightedIndex()
 }
 
+public struct ContextControllerReactionItems {
+    public var context: AccountContext
+    public var reactionItems: [ReactionContextItem]
+    public var selectedReactionItems: Set<MessageReaction.Reaction>
+    public var reactionsTitle: String?
+    public var animationCache: AnimationCache
+    public var alwaysAllowPremiumReactions: Bool
+    public var allPresetReactionsAreAvailable: Bool
+    public var getEmojiContent: ((AnimationCache, MultiAnimationRenderer) -> Signal<EmojiPagerContentComponent, NoError>)?
+    
+    public init(context: AccountContext, reactionItems: [ReactionContextItem], selectedReactionItems: Set<MessageReaction.Reaction>, reactionsTitle: String?, animationCache: AnimationCache, alwaysAllowPremiumReactions: Bool, allPresetReactionsAreAvailable: Bool, getEmojiContent: ((AnimationCache, MultiAnimationRenderer) -> Signal<EmojiPagerContentComponent, NoError>)?) {
+        self.context = context
+        self.reactionItems = reactionItems
+        self.selectedReactionItems = selectedReactionItems
+        self.reactionsTitle = reactionsTitle
+        self.animationCache = animationCache
+        self.alwaysAllowPremiumReactions = alwaysAllowPremiumReactions
+        self.allPresetReactionsAreAvailable = allPresetReactionsAreAvailable
+        self.getEmojiContent = getEmojiContent
+    }
+}
+
 public protocol ContextControllerActionsStackItem: AnyObject {
     func node(
         getController: @escaping () -> ContextControllerProtocol?,
@@ -46,7 +68,7 @@ public protocol ContextControllerActionsStackItem: AnyObject {
     var id: AnyHashable? { get }
     var tip: ContextController.Tip? { get }
     var tipSignal: Signal<ContextController.Tip?, NoError>? { get }
-    var reactionItems: (context: AccountContext, reactionItems: [ReactionContextItem], selectedReactionItems: Set<MessageReaction.Reaction>, animationCache: AnimationCache, alwaysAllowPremiumReactions: Bool, getEmojiContent: ((AnimationCache, MultiAnimationRenderer) -> Signal<EmojiPagerContentComponent, NoError>)?)? { get }
+    var reactionItems: ContextControllerReactionItems? { get }
     var dismissed: (() -> Void)? { get }
 }
 
@@ -624,10 +646,10 @@ private final class ContextControllerActionsListCustomItemNode: ASDisplayNode, C
                 getController: self.getController,
                 actionSelected: { result in
                     switch result {
-                    case .dismissWithoutContent/* where ContextMenuActionResult.safeStreamRecordingDismissWithoutContent == .dismissWithoutContent*/:
+                    case .dismissWithoutContent:
                         self.requestDismiss(result)
-                        
-                    default: break
+                    default:
+                        break
                     }
                 }
             )
@@ -910,7 +932,7 @@ final class ContextControllerActionsListStackItem: ContextControllerActionsStack
     
     let id: AnyHashable?
     let items: [ContextMenuItem]
-    let reactionItems: (context: AccountContext, reactionItems: [ReactionContextItem], selectedReactionItems: Set<MessageReaction.Reaction>, animationCache: AnimationCache, alwaysAllowPremiumReactions: Bool, getEmojiContent: ((AnimationCache, MultiAnimationRenderer) -> Signal<EmojiPagerContentComponent, NoError>)?)?
+    let reactionItems: ContextControllerReactionItems?
     let tip: ContextController.Tip?
     let tipSignal: Signal<ContextController.Tip?, NoError>?
     let dismissed: (() -> Void)?
@@ -918,7 +940,7 @@ final class ContextControllerActionsListStackItem: ContextControllerActionsStack
     init(
         id: AnyHashable?,
         items: [ContextMenuItem],
-        reactionItems: (context: AccountContext, reactionItems: [ReactionContextItem], selectedReactionItems: Set<MessageReaction.Reaction>, animationCache: AnimationCache, alwaysAllowPremiumReactions: Bool, getEmojiContent: ((AnimationCache, MultiAnimationRenderer) -> Signal<EmojiPagerContentComponent, NoError>)?)?,
+        reactionItems: ContextControllerReactionItems?,
         tip: ContextController.Tip?,
         tipSignal: Signal<ContextController.Tip?, NoError>?,
         dismissed: (() -> Void)?
@@ -1008,7 +1030,7 @@ final class ContextControllerActionsCustomStackItem: ContextControllerActionsSta
     
     let id: AnyHashable?
     private let content: ContextControllerItemsContent
-    let reactionItems: (context: AccountContext, reactionItems: [ReactionContextItem], selectedReactionItems: Set<MessageReaction.Reaction>, animationCache: AnimationCache, alwaysAllowPremiumReactions: Bool, getEmojiContent: ((AnimationCache, MultiAnimationRenderer) -> Signal<EmojiPagerContentComponent, NoError>)?)?
+    let reactionItems: ContextControllerReactionItems?
     let tip: ContextController.Tip?
     let tipSignal: Signal<ContextController.Tip?, NoError>?
     let dismissed: (() -> Void)?
@@ -1016,7 +1038,7 @@ final class ContextControllerActionsCustomStackItem: ContextControllerActionsSta
     init(
         id: AnyHashable?,
         content: ContextControllerItemsContent,
-        reactionItems: (context: AccountContext, reactionItems: [ReactionContextItem], selectedReactionItems: Set<MessageReaction.Reaction>, animationCache: AnimationCache, alwaysAllowPremiumReactions: Bool, getEmojiContent: ((AnimationCache, MultiAnimationRenderer) -> Signal<EmojiPagerContentComponent, NoError>)?)?,
+        reactionItems: ContextControllerReactionItems?,
         tip: ContextController.Tip?,
         tipSignal: Signal<ContextController.Tip?, NoError>?,
         dismissed: (() -> Void)?
@@ -1045,9 +1067,18 @@ final class ContextControllerActionsCustomStackItem: ContextControllerActionsSta
 }
 
 func makeContextControllerActionsStackItem(items: ContextController.Items) -> [ContextControllerActionsStackItem] {
-    var reactionItems: (context: AccountContext, reactionItems: [ReactionContextItem], selectedReactionItems: Set<MessageReaction.Reaction>, animationCache: AnimationCache, alwaysAllowPremiumReactions: Bool, getEmojiContent: ((AnimationCache, MultiAnimationRenderer) -> Signal<EmojiPagerContentComponent, NoError>)?)?
+    var reactionItems: ContextControllerReactionItems?
     if let context = items.context, let animationCache = items.animationCache, !items.reactionItems.isEmpty {
-        reactionItems = (context, items.reactionItems, items.selectedReactionItems, animationCache, alwaysAllowPremiumReactions: items.alwaysAllowPremiumReactions, items.getEmojiContent)
+        reactionItems = ContextControllerReactionItems(
+            context: context,
+            reactionItems: items.reactionItems,
+            selectedReactionItems: items.selectedReactionItems,
+            reactionsTitle: items.reactionsTitle,
+            animationCache: animationCache,
+            alwaysAllowPremiumReactions: items.alwaysAllowPremiumReactions,
+            allPresetReactionsAreAvailable: items.allPresetReactionsAreAvailable,
+            getEmojiContent: items.getEmojiContent
+        )
     }
     switch items.content {
     case let .list(listItems):
@@ -1171,7 +1202,7 @@ final class ContextControllerActionsStackNode: ASDisplayNode {
         var tip: ContextController.Tip?
         let tipSignal: Signal<ContextController.Tip?, NoError>?
         var tipNode: InnerTextSelectionTipContainerNode?
-        let reactionItems: (context: AccountContext, reactionItems: [ReactionContextItem], selectedReactionItems: Set<MessageReaction.Reaction>, animationCache: AnimationCache, alwaysAllowPremiumReactions: Bool, getEmojiContent: ((AnimationCache, MultiAnimationRenderer) -> Signal<EmojiPagerContentComponent, NoError>)?)?
+        let reactionItems: ContextControllerReactionItems?
         let itemDismissed: (() -> Void)?
         var storedScrollingState: CGFloat?
         let positionLock: CGFloat?
@@ -1186,7 +1217,7 @@ final class ContextControllerActionsStackNode: ASDisplayNode {
             item: ContextControllerActionsStackItem,
             tip: ContextController.Tip?,
             tipSignal: Signal<ContextController.Tip?, NoError>?,
-            reactionItems: (context: AccountContext, reactionItems: [ReactionContextItem], selectedReactionItems: Set<MessageReaction.Reaction>, animationCache: AnimationCache, alwaysAllowPremiumReactions: Bool, getEmojiContent: ((AnimationCache, MultiAnimationRenderer) -> Signal<EmojiPagerContentComponent, NoError>)?)?,
+            reactionItems: ContextControllerReactionItems?,
             itemDismissed: (() -> Void)?,
             positionLock: CGFloat?
         ) {
@@ -1337,7 +1368,7 @@ final class ContextControllerActionsStackNode: ASDisplayNode {
     
     private var selectionPanGesture: UIPanGestureRecognizer?
     
-    var topReactionItems: (context: AccountContext, reactionItems: [ReactionContextItem], selectedReactionItems: Set<MessageReaction.Reaction>, animationCache: AnimationCache, alwaysAllowPremiumReactions: Bool, getEmojiContent: ((AnimationCache, MultiAnimationRenderer) -> Signal<EmojiPagerContentComponent, NoError>)?)? {
+    var topReactionItems: ContextControllerReactionItems? {
         return self.itemContainers.last?.reactionItems
     }
     
