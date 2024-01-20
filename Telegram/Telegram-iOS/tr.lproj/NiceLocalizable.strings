@@ -214,9 +214,6 @@
 "SpeechToText.UseOpenAi" = "OpenAI Konuşma'dan Metne";
 "SpeechToText.Toast" = "OpenAI Konuşma'dan Metne teknolojileri için daha hızlı ve daha iyi [Nicegram Premium'a abone olun]()!";
 
-/*Stealth Mode*/
-"StealthMode.Toggle" = "Gizli Mod";
-
 /*Confirm Call*/
 "ConfirmCall.Desc" = "Bir arama yapmak istediğinizden emin misiniz?";
 

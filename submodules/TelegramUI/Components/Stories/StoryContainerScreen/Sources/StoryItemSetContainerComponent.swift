@@ -1,7 +1,3 @@
-// MARK: Nicegram StealthMode
-import FeatPremiumUI
-import NGData
-//
 import Foundation
 import UIKit
 import Display
@@ -5616,13 +5612,6 @@ public final class StoryItemSetContainerComponent: Component {
         }
         
         private func presentStealthModeUpgradeScreen() {
-            // MARK: Nicegram StealthMode
-            if !isPremium() {
-                PremiumUITgHelper.routeToPremium()
-                return
-            }
-            //
-            
             self.sendMessageContext.presentStealthModeUpgrade(view: self, action: { [weak self] in
                 guard let self else {
                     return

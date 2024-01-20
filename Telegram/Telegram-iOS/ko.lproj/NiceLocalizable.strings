@@ -214,9 +214,6 @@
 "SpeechToText.UseOpenAi" = "OpenAI 음성에서 텍스트로";
 "SpeechToText.Toast" = "OpenAI 음성에서 텍스트로 기술을 더 빠르고 좋게 이용하려면 [Nicegram Premium에 가입하세요]()!";
 
-/*Stealth Mode*/
-"StealthMode.Toggle" = "스텔스 모드";
-
 /*Confirm Call*/
 "ConfirmCall.Desc" = "전화를 걸겠습니까?";
 

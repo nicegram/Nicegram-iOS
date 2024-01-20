@@ -7,10 +7,9 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     deps = [
-        "//Nicegram/NGStrings:NGStrings",
         "//submodules/AccountContext:AccountContext",
         "//submodules/TelegramUIPreferences:TelegramUIPreferences",
-        "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPremium",
+        "@swiftpkg_nicegram_assistant_ios//:Sources_NGCore",
     ],
     visibility = [
         "//visibility:public",

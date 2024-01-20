@@ -956,7 +956,8 @@ public final class ContactListNode: ASDisplayNode {
         var authorizeImpl: (() -> Void)?
         var openPrivacyPolicyImpl: (() -> Void)?
         
-        self.authorizationNode = PermissionContentNode(context: self.context, theme: self.presentationData.theme, strings: self.presentationData.strings, kind: PermissionKind.contacts.rawValue, icon: .image(UIImage(bundleImageName: "Settings/Permissions/Contacts")), title: self.presentationData.strings.Contacts_PermissionsTitle, text: self.presentationData.strings.Contacts_PermissionsText, buttonTitle: self.presentationData.strings.Contacts_PermissionsAllow, buttonAction: {
+        // MARK: Nicegram, change buttonTitle to "Next" (app review reject fix)
+        self.authorizationNode = PermissionContentNode(context: self.context, theme: self.presentationData.theme, strings: self.presentationData.strings, kind: PermissionKind.contacts.rawValue, icon: .image(UIImage(bundleImageName: "Settings/Permissions/Contacts")), title: self.presentationData.strings.Contacts_PermissionsTitle, text: self.presentationData.strings.Contacts_PermissionsText, buttonTitle: self.presentationData.strings.Common_Next, buttonAction: {
             authorizeImpl?()
         }, openPrivacyPolicy: {
             openPrivacyPolicyImpl?()

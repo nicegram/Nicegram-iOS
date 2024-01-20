@@ -214,9 +214,6 @@
 "SpeechToText.UseOpenAi" = "OpenAI Речь в текст";
 "SpeechToText.Toast" = "[Подпишитесь на Nicegram Premium]() для доступа к улучшенным технологиям OpenAI в функции Речь в текст!";
 
-/*Stealth Mode*/
-"StealthMode.Toggle" = "Режим инкогнито";
-
 /*Confirm Call*/
 "ConfirmCall.Desc" = "Вы уверены, что хотите совершить звонок?";
 

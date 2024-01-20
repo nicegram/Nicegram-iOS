@@ -81,7 +81,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     case logToConsole(PresentationTheme, Bool)
     case redactSensitiveData(PresentationTheme, Bool)
     case keepChatNavigationStack(PresentationTheme, Bool)
-    // MARK: Nicegram StealthMode, delete skipReadHistory
+    case skipReadHistory(PresentationTheme, Bool)
     case dustEffect(Bool)
     case callV2(Bool)
     case alternativeStoryMedia(Bool)
@@ -142,8 +142,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return DebugControllerSection.logging.rawValue
         case .webViewInspection, .resetWebViewCache:
             return DebugControllerSection.web.rawValue
-        // MARK: Nicegram StealthMode, delete skipReadHistory
-        case .keepChatNavigationStack, .dustEffect, .callV2, .alternativeStoryMedia, .crashOnSlowQueries, .crashOnMemoryPressure:
+        case .keepChatNavigationStack, .skipReadHistory, .dustEffect, .callV2, .alternativeStoryMedia, .crashOnSlowQueries, .crashOnMemoryPressure:
             return DebugControllerSection.experiments.rawValue
         case .clearTips, .resetNotifications, .crash, .fillLocalSavedMessageCache, .resetDatabase, .resetDatabaseAndCache, .resetHoles, .resetTagHoles, .reindexUnread, .resetCacheIndex, .reindexCache, .resetBiometricsData, .optimizeDatabase, .photoPreview, .knockoutWallpaper, .storiesExperiment, .storiesJpegExperiment, .playlistPlayback, .enableQuickReactionSwitch, .voiceConference, .experimentalCompatibility, .enableDebugDataDisplay, .acceleratedStickers, .inlineForums, .localTranscription, .enableReactionOverrides, .restorePurchases:
             return DebugControllerSection.experiments.rawValue
@@ -198,7 +197,8 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return 14
         case .keepChatNavigationStack:
             return 15
-        // MARK: Nicegram StealthMode, delete skipReadHistory
+        case .skipReadHistory:
+            return 16
         case .dustEffect:
             return 17
         case .callV2:
@@ -993,7 +993,14 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     return settings
                 }).start()
             })
-        // MARK: Nicegram StealthMode, delete skipReadHistory
+        case let .skipReadHistory(_, value):
+            return ItemListSwitchItem(presentationData: presentationData, title: "Skip read history", value: value, sectionId: self.section, style: .blocks, updated: { value in
+                let _ = updateExperimentalUISettingsInteractively(accountManager: arguments.sharedContext.accountManager, { settings in
+                    var settings = settings
+                    settings.skipReadHistory = value
+                    return settings
+                }).start()
+            })
         case let .dustEffect(value):
             return ItemListSwitchItem(presentationData: presentationData, title: "Dust Debug", value: value, sectionId: self.section, style: .blocks, updated: { value in
                 let _ = updateExperimentalUISettingsInteractively(accountManager: arguments.sharedContext.accountManager, { settings in
@@ -1502,7 +1509,9 @@ private func debugControllerEntries(sharedContext: SharedAccountContext, present
         entries.append(.resetWebViewCache(presentationData.theme))
         
         entries.append(.keepChatNavigationStack(presentationData.theme, experimentalSettings.keepChatNavigationStack))
-        // MARK: Nicegram StealthMode, delete skipReadHistory
+        #if DEBUG
+        entries.append(.skipReadHistory(presentationData.theme, experimentalSettings.skipReadHistory))
+        #endif
         entries.append(.dustEffect(experimentalSettings.dustEffect))
         entries.append(.callV2(experimentalSettings.callV2))
         entries.append(.alternativeStoryMedia(experimentalSettings.alternativeStoryMedia))

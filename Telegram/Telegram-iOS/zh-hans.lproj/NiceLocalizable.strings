@@ -214,9 +214,6 @@
 "SpeechToText.UseOpenAi" = "OpenAI 语音转文本";
 "SpeechToText.Toast" = "[订阅Nicegram Premium]() 更快更好的 OpenAI 语音转文本技术！";
 
-/*Stealth Mode*/
-"StealthMode.Toggle" = "隐身模式";
-
 /*Confirm Call*/
 "ConfirmCall.Desc" = "您确定要拨打电话吗？";
 

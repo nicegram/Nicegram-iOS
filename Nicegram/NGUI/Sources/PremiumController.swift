@@ -18,7 +18,6 @@ import ItemListUI
 import AccountContext
 import TelegramNotices
 import NGData
-import NGStealthMode
 import NGStrings
 
 private struct SelectionState: Equatable {
@@ -48,7 +47,6 @@ private enum premiumControllerSection: Int32 {
     case manageFilters
     case other
     case speechToText
-    case stealthMode
     case test
 }
 
@@ -85,8 +83,6 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
     case ignoretr(PresentationTheme, String)
     
     case useOpenAi(Bool)
-    
-    case stealthMode(Bool)
 
     var section: ItemListSectionId {
         switch self {
@@ -104,8 +100,6 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return premiumControllerSection.test.rawValue
         case .useOpenAi:
             return premiumControllerSection.speechToText.rawValue
-        case .stealthMode:
-            return premiumControllerSection.stealthMode.rawValue
         }
 
     }
@@ -138,8 +132,6 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return 12000
         case .useOpenAi:
             return 13000
-        case .stealthMode:
-            return 14000
         case .testButton:
             return 999999
         }
@@ -239,14 +231,7 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
-        case let .stealthMode(lhsValue):
-            if case let .stealthMode(rhsValue) = rhs, lhsValue == rhsValue {
-                return true
-            } else {
-                return false
-            }
         }
-
     }
 
     static func <(lhs: PremiumControllerEntry, rhs: PremiumControllerEntry) -> Bool {
@@ -309,10 +294,6 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
                     }
                 }
             })
-        case let .stealthMode(value):
-            return ItemListSwitchItem(presentationData: presentationData, title: NGStealthMode.Resources.toggleTitle(), value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
-                NGStealthMode.setStealthModeEnabled(value)
-            })
         }
     }
 }
@@ -330,8 +311,6 @@ private func premiumControllerEntries(presentationData: PresentationData, useOpe
     entries.append(.ignoretr(theme, l("Premium.IgnoreTranslate.Title", locale)))
     
     entries.append(.useOpenAi(useOpenAi))
-    
-    entries.append(.stealthMode(NGStealthMode.isStealthModeEnabled()))
 
     #if DEBUG
     entries.append(.testButton(theme, "TEST"))
