@@ -20,8 +20,18 @@ func titlePanelForChatPresentationInterfaceState(_ chatPresentationInterfaceStat
             return nil
         }
     }
-    if chatPresentationInterfaceState.search != nil {
-        return nil
+    if let search = chatPresentationInterfaceState.search, chatPresentationInterfaceState.hasSearchTags {
+        if chatPresentationInterfaceState.chatLocation.peerId == context.account.peerId, case .everything = search.domain {
+            if let currentPanel = currentPanel as? ChatSearchTitleAccessoryPanelNode {
+                return currentPanel
+            } else {
+                let panel = ChatSearchTitleAccessoryPanelNode(context: context)
+                panel.interfaceInteraction = interfaceInteraction
+                return panel
+            }
+        } else {
+            return nil
+        }
     }
     
     var inhibitTitlePanelDisplay = false

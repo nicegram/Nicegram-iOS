@@ -17,6 +17,7 @@ public enum ChatLoadingMessageSubject {
 public enum ChatFinishMediaRecordingAction {
     case dismiss
     case preview
+    case pause
     case send(viewOnce: Bool)
 }
 
@@ -115,6 +116,7 @@ public final class ChatPanelInterfaceInteraction {
     public let finishMediaRecording: (ChatFinishMediaRecordingAction) -> Void
     public let stopMediaRecording: () -> Void
     public let lockMediaRecording: () -> Void
+    public let resumeMediaRecording: () -> Void
     public let deleteRecordedMedia: () -> Void
     public let sendRecordedMedia: (Bool, Bool) -> Void
     public let displayRestrictedInfo: (ChatPanelRestrictionInfoSubject, ChatPanelRestrictionInfoDisplayType) -> Void
@@ -176,6 +178,8 @@ public final class ChatPanelInterfaceInteraction {
     public let addDoNotTranslateLanguage: (String) -> Void
     public let hideTranslationPanel: () -> Void
     public let openPremiumGift: () -> Void
+    public let openPremiumRequiredForMessaging: () -> Void
+    public let updateHistoryFilter: ((ChatPresentationInterfaceState.HistoryFilter?) -> ChatPresentationInterfaceState.HistoryFilter?) -> Void
     public let requestLayout: (ContainedViewLayoutTransition) -> Void
     public let chatController: () -> ViewController?
     public let statuses: ChatPanelInterfaceInteractionStatuses?
@@ -228,6 +232,7 @@ public final class ChatPanelInterfaceInteraction {
         finishMediaRecording: @escaping (ChatFinishMediaRecordingAction) -> Void,
         stopMediaRecording: @escaping () -> Void,
         lockMediaRecording: @escaping () -> Void,
+        resumeMediaRecording: @escaping () -> Void,
         deleteRecordedMedia: @escaping () -> Void,
         sendRecordedMedia: @escaping (Bool, Bool) -> Void,
         displayRestrictedInfo: @escaping (ChatPanelRestrictionInfoSubject, ChatPanelRestrictionInfoDisplayType) -> Void,
@@ -289,6 +294,8 @@ public final class ChatPanelInterfaceInteraction {
         addDoNotTranslateLanguage:  @escaping (String) -> Void,
         hideTranslationPanel:  @escaping () -> Void,
         openPremiumGift: @escaping () -> Void,
+        openPremiumRequiredForMessaging: @escaping () -> Void,
+        updateHistoryFilter: @escaping ((ChatPresentationInterfaceState.HistoryFilter?) -> ChatPresentationInterfaceState.HistoryFilter?) -> Void,
         requestLayout: @escaping (ContainedViewLayoutTransition) -> Void,
         chatController: @escaping () -> ViewController?,
         statuses: ChatPanelInterfaceInteractionStatuses?
@@ -340,6 +347,7 @@ public final class ChatPanelInterfaceInteraction {
         self.finishMediaRecording = finishMediaRecording
         self.stopMediaRecording = stopMediaRecording
         self.lockMediaRecording = lockMediaRecording
+        self.resumeMediaRecording = resumeMediaRecording
         self.deleteRecordedMedia = deleteRecordedMedia
         self.sendRecordedMedia = sendRecordedMedia
         self.displayRestrictedInfo = displayRestrictedInfo
@@ -401,6 +409,8 @@ public final class ChatPanelInterfaceInteraction {
         self.addDoNotTranslateLanguage = addDoNotTranslateLanguage
         self.hideTranslationPanel = hideTranslationPanel
         self.openPremiumGift = openPremiumGift
+        self.openPremiumRequiredForMessaging = openPremiumRequiredForMessaging
+        self.updateHistoryFilter = updateHistoryFilter
         self.requestLayout = requestLayout
 
         self.chatController = chatController
@@ -456,6 +466,7 @@ public final class ChatPanelInterfaceInteraction {
         }, finishMediaRecording: { _ in
         }, stopMediaRecording: {
         }, lockMediaRecording: {
+        }, resumeMediaRecording: {
         }, deleteRecordedMedia: {
         }, sendRecordedMedia: { _, _ in
         }, displayRestrictedInfo: { _, _ in
@@ -518,6 +529,8 @@ public final class ChatPanelInterfaceInteraction {
         }, addDoNotTranslateLanguage: { _ in
         }, hideTranslationPanel: {
         }, openPremiumGift: {
+        }, openPremiumRequiredForMessaging: {
+        }, updateHistoryFilter: { _ in
         }, requestLayout: { _ in
         }, chatController: {
             return nil

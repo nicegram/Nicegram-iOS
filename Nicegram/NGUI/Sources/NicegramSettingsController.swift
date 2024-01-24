@@ -28,7 +28,7 @@ import class NGCoreUI.SharedLoadingView
 import NGEnv
 import NGWebUtils
 import NGAiChatUI
-import NGCardUI
+import FeatCardUI
 import NGAppCache
 import NGCore
 import var NGCoreUI.strings

@@ -14,6 +14,10 @@ public class FirebaseRemoteConfigService {
         let settings = RemoteConfigSettings()
         settings.minimumFetchInterval = cacheDuration
         remoteConfig.configSettings = settings
+        
+        remoteConfig.setDefaults(
+            fromPlist: "FirebaseRemoteConfigDefaults"
+        )
     }
     
     //  MARK: - Public Functions

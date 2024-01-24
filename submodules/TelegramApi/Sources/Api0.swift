@@ -6,7 +6,6 @@ public enum Api {
     public enum channels {}
     public enum chatlists {}
     public enum contacts {}
-    public enum feed {}
     public enum help {}
     public enum messages {}
     public enum payments {}
@@ -27,7 +26,6 @@ public enum Api {
         public enum channels {}
         public enum chatlists {}
         public enum contacts {}
-        public enum feed {}
         public enum folders {}
         public enum help {}
         public enum langpack {}
@@ -254,7 +252,6 @@ fileprivate let parsers: [Int32 : (BufferReader) -> Any?] = {
     dict[1103040667] = { return Api.ExportedContactToken.parse_exportedContactToken($0) }
     dict[1571494644] = { return Api.ExportedMessageLink.parse_exportedMessageLink($0) }
     dict[1070138683] = { return Api.ExportedStoryLink.parse_exportedStoryLink($0) }
-    dict[1348066419] = { return Api.FeedPosition.parse_feedPosition($0) }
     dict[-207944868] = { return Api.FileHash.parse_fileHash($0) }
     dict[-11252123] = { return Api.Folder.parse_folder($0) }
     dict[-373643672] = { return Api.FolderPeer.parse_folderPeer($0) }
@@ -597,6 +594,7 @@ fileprivate let parsers: [Int32 : (BufferReader) -> Any?] = {
     dict[577659656] = { return Api.NotifyPeer.parse_notifyForumTopic($0) }
     dict[-1613493288] = { return Api.NotifyPeer.parse_notifyPeer($0) }
     dict[-1261946036] = { return Api.NotifyPeer.parse_notifyUsers($0) }
+    dict[1001931436] = { return Api.OutboxReadDate.parse_outboxReadDate($0) }
     dict[-1738178803] = { return Api.Page.parse_page($0) }
     dict[-837994576] = { return Api.PageBlock.parse_pageBlockAnchor($0) }
     dict[-2143067670] = { return Api.PageBlock.parse_pageBlockAudio($0) }
@@ -752,6 +750,7 @@ fileprivate let parsers: [Int32 : (BufferReader) -> Any?] = {
     dict[1009288385] = { return Api.RichText.parse_textUrl($0) }
     dict[289586518] = { return Api.SavedContact.parse_savedPhoneContact($0) }
     dict[-1115174036] = { return Api.SavedDialog.parse_savedDialog($0) }
+    dict[-881854424] = { return Api.SavedReactionTag.parse_savedReactionTag($0) }
     dict[-911191137] = { return Api.SearchResultsCalendarPeriod.parse_searchResultsCalendarPeriod($0) }
     dict[2137295719] = { return Api.SearchResultsPosition.parse_searchResultPosition($0) }
     dict[871426631] = { return Api.SecureCredentialsEncrypted.parse_secureCredentialsEncrypted($0) }
@@ -952,7 +951,6 @@ fileprivate let parsers: [Int32 : (BufferReader) -> Any?] = {
     dict[-1218471511] = { return Api.Update.parse_updateReadChannelOutbox($0) }
     dict[-78886548] = { return Api.Update.parse_updateReadFeaturedEmojiStickers($0) }
     dict[1461528386] = { return Api.Update.parse_updateReadFeaturedStickers($0) }
-    dict[1951948721] = { return Api.Update.parse_updateReadFeed($0) }
     dict[-1667805217] = { return Api.Update.parse_updateReadHistoryInbox($0) }
     dict[791617983] = { return Api.Update.parse_updateReadHistoryOutbox($0) }
     dict[-131960447] = { return Api.Update.parse_updateReadMessagesContents($0) }
@@ -962,6 +960,7 @@ fileprivate let parsers: [Int32 : (BufferReader) -> Any?] = {
     dict[-1706939360] = { return Api.Update.parse_updateRecentStickers($0) }
     dict[-1364222348] = { return Api.Update.parse_updateSavedDialogPinned($0) }
     dict[-1821035490] = { return Api.Update.parse_updateSavedGifs($0) }
+    dict[969307186] = { return Api.Update.parse_updateSavedReactionTags($0) }
     dict[1960361625] = { return Api.Update.parse_updateSavedRingtones($0) }
     dict[2103604867] = { return Api.Update.parse_updateSentStoryReaction($0) }
     dict[-337352679] = { return Api.Update.parse_updateServiceNotification($0) }
@@ -996,11 +995,11 @@ fileprivate let parsers: [Int32 : (BufferReader) -> Any?] = {
     dict[-2100168954] = { return Api.UserProfilePhoto.parse_userProfilePhoto($0) }
     dict[1326562017] = { return Api.UserProfilePhoto.parse_userProfilePhotoEmpty($0) }
     dict[164646985] = { return Api.UserStatus.parse_userStatusEmpty($0) }
-    dict[2011940674] = { return Api.UserStatus.parse_userStatusLastMonth($0) }
-    dict[129960444] = { return Api.UserStatus.parse_userStatusLastWeek($0) }
+    dict[1703516023] = { return Api.UserStatus.parse_userStatusLastMonth($0) }
+    dict[1410997530] = { return Api.UserStatus.parse_userStatusLastWeek($0) }
     dict[9203775] = { return Api.UserStatus.parse_userStatusOffline($0) }
     dict[-306628279] = { return Api.UserStatus.parse_userStatusOnline($0) }
-    dict[-496024847] = { return Api.UserStatus.parse_userStatusRecently($0) }
+    dict[2065268168] = { return Api.UserStatus.parse_userStatusRecently($0) }
     dict[-1274595769] = { return Api.Username.parse_username($0) }
     dict[-567037804] = { return Api.VideoSize.parse_videoSize($0) }
     dict[-128171716] = { return Api.VideoSize.parse_videoSizeEmojiMarkup($0) }
@@ -1092,8 +1091,6 @@ fileprivate let parsers: [Int32 : (BufferReader) -> Any?] = {
     dict[1891070632] = { return Api.contacts.TopPeers.parse_topPeers($0) }
     dict[-1255369827] = { return Api.contacts.TopPeers.parse_topPeersDisabled($0) }
     dict[-567906571] = { return Api.contacts.TopPeers.parse_topPeersNotModified($0) }
-    dict[-587770695] = { return Api.feed.FeedMessages.parse_feedMessages($0) }
-    dict[-619039485] = { return Api.feed.FeedMessages.parse_feedMessagesNotModified($0) }
     dict[-585598930] = { return Api.help.AppConfig.parse_appConfig($0) }
     dict[2094949405] = { return Api.help.AppConfig.parse_appConfigNotModified($0) }
     dict[-860107216] = { return Api.help.AppUpdate.parse_appUpdate($0) }
@@ -1180,6 +1177,8 @@ fileprivate let parsers: [Int32 : (BufferReader) -> Any?] = {
     dict[1153080793] = { return Api.messages.SavedDialogs.parse_savedDialogsSlice($0) }
     dict[-2069878259] = { return Api.messages.SavedGifs.parse_savedGifs($0) }
     dict[-402498398] = { return Api.messages.SavedGifs.parse_savedGifsNotModified($0) }
+    dict[844731658] = { return Api.messages.SavedReactionTags.parse_savedReactionTags($0) }
+    dict[-2003084817] = { return Api.messages.SavedReactionTags.parse_savedReactionTagsNotModified($0) }
     dict[-398136321] = { return Api.messages.SearchCounter.parse_searchCounter($0) }
     dict[343859772] = { return Api.messages.SearchResultsCalendar.parse_searchResultsCalendar($0) }
     dict[1404185519] = { return Api.messages.SearchResultsPositions.parse_searchResultsPositions($0) }
@@ -1469,8 +1468,6 @@ public extension Api {
                 _1.serialize(buffer, boxed)
             case let _1 as Api.ExportedStoryLink:
                 _1.serialize(buffer, boxed)
-            case let _1 as Api.FeedPosition:
-                _1.serialize(buffer, boxed)
             case let _1 as Api.FileHash:
                 _1.serialize(buffer, boxed)
             case let _1 as Api.Folder:
@@ -1657,6 +1654,8 @@ public extension Api {
                 _1.serialize(buffer, boxed)
             case let _1 as Api.NotifyPeer:
                 _1.serialize(buffer, boxed)
+            case let _1 as Api.OutboxReadDate:
+                _1.serialize(buffer, boxed)
             case let _1 as Api.Page:
                 _1.serialize(buffer, boxed)
             case let _1 as Api.PageBlock:
@@ -1760,6 +1759,8 @@ public extension Api {
             case let _1 as Api.SavedContact:
                 _1.serialize(buffer, boxed)
             case let _1 as Api.SavedDialog:
+                _1.serialize(buffer, boxed)
+            case let _1 as Api.SavedReactionTag:
                 _1.serialize(buffer, boxed)
             case let _1 as Api.SearchResultsCalendarPeriod:
                 _1.serialize(buffer, boxed)
@@ -1967,8 +1968,6 @@ public extension Api {
                 _1.serialize(buffer, boxed)
             case let _1 as Api.contacts.TopPeers:
                 _1.serialize(buffer, boxed)
-            case let _1 as Api.feed.FeedMessages:
-                _1.serialize(buffer, boxed)
             case let _1 as Api.help.AppConfig:
                 _1.serialize(buffer, boxed)
             case let _1 as Api.help.AppUpdate:
@@ -2082,6 +2081,8 @@ public extension Api {
             case let _1 as Api.messages.SavedDialogs:
                 _1.serialize(buffer, boxed)
             case let _1 as Api.messages.SavedGifs:
+                _1.serialize(buffer, boxed)
+            case let _1 as Api.messages.SavedReactionTags:
                 _1.serialize(buffer, boxed)
             case let _1 as Api.messages.SearchCounter:
                 _1.serialize(buffer, boxed)

@@ -179,6 +179,9 @@
 "NiceFeatures.QuickReplies.AddNew" = "Yeni Ekle";
 "NiceFeatures.QuickReplies.Placeholder" = "Metin Gir";
 
+/*Telegram Premium*/
+"TelegramPremium.Description" = "Maalesef, Nicegram uygulamasına giriş yapmışken Telegram Premium özelliklerini edinemiyorsunuz. Lütfen resmi Telegram uygulamasına gidin ve Telegram Premium'a abone olun. Nicegram'a geri döndüğünüzde, tüm Premium özellikler kullanıma hazır olacak.";
+
 /*Double Bottom*/
 "DoubleBottom.Title" = "Double bottom";
 "DoubleBottom.Description" = "Bu özelliği etkinleştirmek için birden fazla hesabınızın olması ve Parola Kilidini açmanız gerekir (Ayarlar → Gizlilik & Güvenlik  → Parola Kilidi)";
@@ -207,5 +210,14 @@
 "RoundedVideos.MoreButtonTooltip" = "Kare videoları tek dokunuşla daire olarak göndermek için dönüştürün.";
 "RoundedVideos.SendButtonTooltip" = "Videonuzu şık bir daire olarak göndermek için uzun basın.";
 
-/*Stealth Mode*/
-"StealthMode.Toggle" = "Gizli Mod";
+/*Speech to text*/
+"SpeechToText.UseOpenAi" = "OpenAI Konuşma'dan Metne";
+"SpeechToText.Toast" = "OpenAI Konuşma'dan Metne teknolojileri için daha hızlı ve daha iyi [Nicegram Premium'a abone olun]()!";
+
+/*Confirm Call*/
+"ConfirmCall.Desc" = "Bir arama yapmak istediğinizden emin misiniz?";
+
+/*Hidden Chats*/
+"ChatContextMenu.Hide" = "Gizle";
+"ChatContextMenu.Unhide" = "Göster";
+"HiddenChatsTooltip" = "Gizli gizli sohbetleri görmek için 'N' logosuna basılı tutun";

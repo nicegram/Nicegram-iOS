@@ -2142,6 +2142,7 @@ public enum ContextActionsHorizontalAlignment {
 }
 
 public protocol ContextExtractedContentSource: AnyObject {
+    var initialAppearanceOffset: CGPoint { get }
     var centerVertically: Bool { get }
     var keepInPlace: Bool { get }
     var ignoreContentTouches: Bool { get }
@@ -2155,6 +2156,10 @@ public protocol ContextExtractedContentSource: AnyObject {
 }
 
 public extension ContextExtractedContentSource {
+    var initialAppearanceOffset: CGPoint {
+        return .zero
+    }
+    
     var centerVertically: Bool {
         return false
     }
@@ -2249,8 +2254,10 @@ public final class ContextController: ViewController, StandalonePresentableContr
         public var context: AccountContext?
         public var reactionItems: [ReactionContextItem]
         public var selectedReactionItems: Set<MessageReaction.Reaction>
+        public var reactionsTitle: String?
         public var animationCache: AnimationCache?
         public var alwaysAllowPremiumReactions: Bool
+        public var allPresetReactionsAreAvailable: Bool
         public var getEmojiContent: ((AnimationCache, MultiAnimationRenderer) -> Signal<EmojiPagerContentComponent, NoError>)?
         public var disablePositionLock: Bool
         public var tip: Tip?
@@ -2263,8 +2270,10 @@ public final class ContextController: ViewController, StandalonePresentableContr
             context: AccountContext? = nil,
             reactionItems: [ReactionContextItem] = [],
             selectedReactionItems: Set<MessageReaction.Reaction> = Set(),
+            reactionsTitle: String? = nil,
             animationCache: AnimationCache? = nil,
             alwaysAllowPremiumReactions: Bool = false,
+            allPresetReactionsAreAvailable: Bool = false,
             getEmojiContent: ((AnimationCache, MultiAnimationRenderer) -> Signal<EmojiPagerContentComponent, NoError>)? = nil,
             disablePositionLock: Bool = false,
             tip: Tip? = nil,
@@ -2277,7 +2286,9 @@ public final class ContextController: ViewController, StandalonePresentableContr
             self.animationCache = animationCache
             self.reactionItems = reactionItems
             self.selectedReactionItems = selectedReactionItems
+            self.reactionsTitle = reactionsTitle
             self.alwaysAllowPremiumReactions = alwaysAllowPremiumReactions
+            self.allPresetReactionsAreAvailable = allPresetReactionsAreAvailable
             self.getEmojiContent = getEmojiContent
             self.disablePositionLock = disablePositionLock
             self.tip = tip
@@ -2291,7 +2302,9 @@ public final class ContextController: ViewController, StandalonePresentableContr
             self.context = nil
             self.reactionItems = []
             self.selectedReactionItems = Set()
+            self.reactionsTitle = nil
             self.alwaysAllowPremiumReactions = false
+            self.allPresetReactionsAreAvailable = false
             self.getEmojiContent = nil
             self.disablePositionLock = false
             self.tip = nil

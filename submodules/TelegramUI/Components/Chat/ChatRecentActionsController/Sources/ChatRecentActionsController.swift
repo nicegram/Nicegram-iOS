@@ -104,6 +104,7 @@ public final class ChatRecentActionsController: TelegramBaseController {
         }, finishMediaRecording: { _ in
         }, stopMediaRecording: {
         }, lockMediaRecording: {
+        }, resumeMediaRecording: {
         }, deleteRecordedMedia: {
         }, sendRecordedMedia: { _, _ in
         }, displayRestrictedInfo: { _, _ in
@@ -167,6 +168,8 @@ public final class ChatRecentActionsController: TelegramBaseController {
         }, addDoNotTranslateLanguage: { _ in
         }, hideTranslationPanel: {
         }, openPremiumGift: {
+        }, openPremiumRequiredForMessaging: {
+        }, updateHistoryFilter: { _ in
         }, requestLayout: { _ in
         }, chatController: {
             return nil

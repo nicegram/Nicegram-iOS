@@ -829,6 +829,7 @@ final class AttachmentPanel: ASDisplayNode, UIScrollViewDelegate {
         }, finishMediaRecording: { _ in
         }, stopMediaRecording: {
         }, lockMediaRecording: {
+        }, resumeMediaRecording: {  
         }, deleteRecordedMedia: {
         }, sendRecordedMedia: { _, _ in
         }, displayRestrictedInfo: { _, _ in
@@ -982,6 +983,8 @@ final class AttachmentPanel: ASDisplayNode, UIScrollViewDelegate {
         }, addDoNotTranslateLanguage: { _ in
         }, hideTranslationPanel: {
         }, openPremiumGift: {
+        }, openPremiumRequiredForMessaging: {
+        }, updateHistoryFilter: { _ in
         }, requestLayout: { _ in
         }, chatController: {
             return nil

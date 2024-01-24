@@ -110,8 +110,8 @@
 "Messages.Translate" = "Traduire";
 "Messages.UndoTranslate" = "Annuler la traduction";
 "Messages.TranslateError" = "Désolé, traduction indisponible.";
-"Messages.SpeechToText" = "Speech2Text";
-"Messages.UndoSpeechToText" = "Annuler Speech2Text";
+"Messages.SpeechToText" = "Parole en Texte";
+"Messages.UndoSpeechToText" = "Annuler Parole en Texte";
 "Messages.SelectAllFromUser" = "Sélectionner tout de cet utilisateur";
 "Messages.ToLanguage" = "Vers la langue";
 "Messages.ToLanguage.WithCode" = "Vers la langue : %@";
@@ -179,6 +179,9 @@
 "NiceFeatures.QuickReplies.AddNew" = "Ajouter nouveau";
 "NiceFeatures.QuickReplies.Placeholder" = "Saisissez du texte";
 
+/*Telegram Premium*/
+"TelegramPremium.Description" = "Malheureusement, vous ne pouvez pas obtenir les fonctionnalités Premium de Telegram lorsque vous êtes connecté à l'application Nicegram. Veuillez vous rendre sur l'application officielle Telegram et vous abonner à Telegram Premium. Lorsque vous reviendrez sur Nicegram, toutes les Fonctionnalités Premium seront disponibles à l'utilisation.";
+
 /*Double Bottom*/
 "DoubleBottom.Title" = "Double bottom";
 "DoubleBottom.Description" = "Pour activer cette fonctionnalité, vous devez avoir plus d'un compte et activer le verrouillage par code (allez dans Paramètres → Confidentialité et sécurité → Verrouillage par code)";
@@ -207,5 +210,14 @@
 "RoundedVideos.MoreButtonTooltip" = "Convertissez des vidéos carrées en cercles à envoyer en un seul clic.";
 "RoundedVideos.SendButtonTooltip" = "Appuyez longuement pour envoyer votre vidéo sous forme de cercle élégant.";
 
-/*Stealth Mode*/
-"StealthMode.Toggle" = "Mode Furtif";
+/*Speech to text*/
+"SpeechToText.UseOpenAi" = "OpenAI Parole en Texte";
+"SpeechToText.Toast" = "[S'abonner à Nicegram Premium]() pour des technologies OpenAI Parole en Texte plus rapides et meilleures !";
+
+/*Confirm Call*/
+"ConfirmCall.Desc" = "Êtes-vous sûr de vouloir passer un appel ?";
+
+/*Hidden Chats*/
+"ChatContextMenu.Hide" = "Masquer";
+"ChatContextMenu.Unhide" = "Révéler";
+"HiddenChatsTooltip" = "Appuyez et maintenez le logo 'N' pour révéler les chats secrets cachés";

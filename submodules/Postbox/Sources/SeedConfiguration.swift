@@ -49,7 +49,7 @@ func resolveChatListMessageTagSummaryResultCalculation(postbox: PostboxImpl, pee
     guard let calculation = calculation else {
         return nil
     }
-    let addSummary = postbox.messageHistoryTagsSummaryTable.get(MessageHistoryTagsSummaryKey(tag: calculation.addCount.tag, peerId: peerId, threadId: threadId, namespace: calculation.addCount.namespace))
+    let addSummary = postbox.messageHistoryTagsSummaryTable.get(MessageHistoryTagsSummaryKey(tag: calculation.addCount.tag, peerId: peerId, threadId: threadId, namespace: calculation.addCount.namespace, customTag: nil))
     let subtractSummary = postbox.pendingMessageActionsMetadataTable.getCount(.peerNamespaceAction(peerId, calculation.subtractCount.namespace, calculation.subtractCount.type))
     let count = (addSummary?.count ?? 0) - subtractSummary
     return count > 0
@@ -79,6 +79,7 @@ public final class SeedConfiguration {
     public let decodeDisplayPeerAsRegularChat: (CachedPeerData) -> Bool
     public let isPeerUpgradeMessage: (Message) -> Bool
     public let automaticThreadIndexInfo: (PeerId, Int64) -> StoredMessageHistoryThreadInfo?
+    public let customTagsFromAttributes: ([MessageAttribute]) -> [MemoryBuffer]
     
     public init(
         globalMessageIdsPeerIdNamespaces: Set<GlobalMessageIdsNamespace>,
@@ -107,7 +108,8 @@ public final class SeedConfiguration {
         decodeAutoremoveTimeout: @escaping (CachedPeerData) -> Int32?,
         decodeDisplayPeerAsRegularChat: @escaping (CachedPeerData) -> Bool,
         isPeerUpgradeMessage: @escaping (Message) -> Bool,
-        automaticThreadIndexInfo: @escaping (PeerId, Int64) -> StoredMessageHistoryThreadInfo?
+        automaticThreadIndexInfo: @escaping (PeerId, Int64) -> StoredMessageHistoryThreadInfo?,
+        customTagsFromAttributes: @escaping ([MessageAttribute]) -> [MemoryBuffer]
     ) {
         self.globalMessageIdsPeerIdNamespaces = globalMessageIdsPeerIdNamespaces
         self.initializeChatListWithHole = initializeChatListWithHole
@@ -132,5 +134,6 @@ public final class SeedConfiguration {
         self.decodeDisplayPeerAsRegularChat = decodeDisplayPeerAsRegularChat
         self.isPeerUpgradeMessage = isPeerUpgradeMessage
         self.automaticThreadIndexInfo = automaticThreadIndexInfo
+        self.customTagsFromAttributes = customTagsFromAttributes
     }
 }

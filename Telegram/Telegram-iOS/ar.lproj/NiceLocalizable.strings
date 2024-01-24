@@ -179,6 +179,9 @@
 "NiceFeatures.QuickReplies.AddNew" = "أضف رداً جديداً";
 "NiceFeatures.QuickReplies.Placeholder" = "أدخل النص";
 
+/*Telegram Premium*/
+"TelegramPremium.Description" = "للأسف، لا يمكنك الحصول على ميزات Telegram Premium أثناء تسجيل الدخول إلى تطبيق Nicegram. يرجى الذهاب إلى تطبيق Telegram الرسمي والاشتراك في Telegram Premium. عند العودة إلى Nicegram، ستكون جميع ميزات Premium متاحة للاستخدام.";
+
 /*Double Bottom*/
 "DoubleBottom.Title" = "Double bottom";
 "DoubleBottom.Description" = "لتمكين هذه الميزة، يجب أن يكون لديك أكثر من حساب وتشغيل قفل رمز المرور (انتقل إلى الإعدادات ← الخصوصية والأمان ← قفل رمز المرور)";
@@ -207,5 +210,14 @@
 "RoundedVideos.MoreButtonTooltip" = "حول الفيديوهات المربعة لترسل كدوائر بنقرة واحدة.";
 "RoundedVideos.SendButtonTooltip" = "اضغط مطولاً لإرسال فيديوك على شكل دائرة أنيقة.";
 
-/*Stealth Mode*/
-"StealthMode.Toggle" = "وضع التخفي";
+/*Speech to text*/
+"SpeechToText.UseOpenAi" = "تقنية التحويل من الكلام إلى النص من OpenAI";
+"SpeechToText.Toast" = "[اشترك في Nicegram Premium])() للحصول على تقنيات أسرع وأفضل لتحويل الكلام إلى نص من OpenAI!";
+
+/*Confirm Call*/
+"ConfirmCall.Desc" = "هل أنت متأكد من أنك تريد إجراء مكالمة؟";
+
+/*Hidden Chats*/
+"ChatContextMenu.Hide" = "إخفاء";
+"ChatContextMenu.Unhide" = "إظهار";
+"HiddenChatsTooltip" = "اضغط مع الاستمرار على شعار 'N' لكشف الدردشات السرية المخفية";

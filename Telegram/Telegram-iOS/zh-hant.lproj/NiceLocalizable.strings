@@ -179,6 +179,9 @@
 "NiceFeatures.QuickReplies.AddNew" = "新增";
 "NiceFeatures.QuickReplies.Placeholder" = "輸入文字";
 
+/*Telegram Premium*/
+"TelegramPremium.Description" = "遺憾的是，當您登錄到Nicegram應用程序時，您無法獲得Telegram Premium功能。請前往官方的Telegram應用程序並訂閱Telegram Premium。當您返回Nicegram時，所有Premium功能都將可供使用。";
+
 /*Double Bottom*/
 "DoubleBottom.Title" = "Double Bottom";
 "DoubleBottom.Description" = "要啟用此功能，您必須擁有一個以上的帳號並啟用密碼鎖 (前往設定→隱私與安全→密碼鎖)";
@@ -207,5 +210,14 @@
 "RoundedVideos.MoreButtonTooltip" = "一鍵將方形影片轉換為圓形發送。";
 "RoundedVideos.SendButtonTooltip" = "長按以將您的影片以時尚圓形發送。";
 
-/*Stealth Mode*/
-"StealthMode.Toggle" = "隱形模式";
+/*Speech to text*/
+"SpeechToText.UseOpenAi" = "OpenAI 語音轉文字";
+"SpeechToText.Toast" = "[訂閱 Nicegram Premium]() 以獲得更快更好的 OpenAI 語音轉文字技術！";
+
+/*Confirm Call*/
+"ConfirmCall.Desc" = "您確定要撥打電話嗎？";
+
+/*Hidden Chats*/
+"ChatContextMenu.Hide" = "隱藏";
+"ChatContextMenu.Unhide" = "取消隱藏";
+"HiddenChatsTooltip" = "長按 'N' 標誌以顯示隱藏的秘密聊天";

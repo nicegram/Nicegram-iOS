@@ -4524,6 +4524,35 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     }
     
     @available(iOS 13.0, *)
+    func showTooltipOnAssistantButton(
+        text: String
+    ) {
+        guard let view = findAssistantButton() else {
+            return
+        }
+        
+        let tooltipRect = view
+            .convert(
+                view.bounds,
+                to: self.view
+            )
+        
+        let tooltipScreen = TooltipScreen(
+            account: context.account,
+            sharedContext: context.sharedContext,
+            text: .markdown(text: text),
+            balancedTextLayout: true,
+            style: .default,
+            location: .point(tooltipRect, .top),
+            displayDuration: .infinite,
+            shouldDismissOnTouch: { _, _ in
+                .dismiss(consume: false)
+            }
+        )
+        self.present(tooltipScreen, in: .current)
+    }
+    
+    @available(iOS 13.0, *)
     private func showGemAnimation() {
         findAssistantButton()?.showGemAnimation()
     }

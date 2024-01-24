@@ -450,4 +450,7 @@ public extension PeerId {
         }
         return false
     }
+    var isSecretChat: Bool {
+        return self.namespace == Namespaces.Peer.SecretChat
+    }
 }

@@ -381,7 +381,16 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
                 //TODO:
             }
             
-            return self.scrollNode.hitTest(self.view.convert(point, to: self.scrollNode.view), with: event)
+            if let result = self.scrollNode.hitTest(self.view.convert(point, to: self.scrollNode.view), with: event) {
+                if let reactionContextNode = self.reactionContextNode, reactionContextNode.isExpanded {
+                    if result === self.actionsContainerNode.view {
+                        return self.dismissTapNode.view
+                    }
+                }
+                return result
+            }
+            
+            return nil
         } else {
             return nil
         }
@@ -640,7 +649,9 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
                     presentationData: presentationData,
                     items: reactionItems.reactionItems,
                     selectedItems: reactionItems.selectedReactionItems,
+                    title: reactionItems.reactionsTitle,
                     alwaysAllowPremiumReactions: reactionItems.alwaysAllowPremiumReactions,
+                    allPresetReactionsAreAvailable: reactionItems.allPresetReactionsAreAvailable,
                     getEmojiContent: reactionItems.getEmojiContent,
                     isExpandedUpdated: { [weak self] transition in
                         guard let strongSelf = self else {
@@ -1138,8 +1149,11 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
                 let contentHeight = contentNode.containingItem.view.bounds.size.height
                 if case let .extracted(extracted) = self.source, extracted.centerVertically {
                     if actionsSize.height.isZero {
+                        var initialContentRect = contentRect
+                        initialContentRect.origin.y += extracted.initialAppearanceOffset.y
+                        
                         let fixedContentY = floorToScreenPixels((layout.size.height - contentHeight) / 2.0)
-                        animationInContentYDistance = fixedContentY - contentRect.minY
+                        animationInContentYDistance = fixedContentY - initialContentRect.minY
                     } else if contentX + contentWidth > layout.size.width / 2.0, actionsSize.height > 0.0 {
                         let fixedContentX = layout.size.width - (contentX + contentWidth)
                         animationInContentXDistance = fixedContentX - contentX

@@ -179,6 +179,9 @@
 "NiceFeatures.QuickReplies.AddNew" = "Neue hinzufügen";
 "NiceFeatures.QuickReplies.Placeholder" = "Text eingeben";
 
+/*Telegram Premium*/
+"TelegramPremium.Description" = "Leider können Sie die Telegram Premium-Funktionen nicht erhalten, solange Sie in der Nicegram-App angemeldet sind. Bitte gehen Sie zur offiziellen Telegram-App und abonnieren Sie Telegram Premium. Wenn Sie zu Nicegram zurückkehren, stehen alle Premium-Funktionen zur Verfügung.";
+
 /*Double Bottom*/
 "DoubleBottom.Title" = "Double Bottom";
 "DoubleBottom.Description" = "Um diese Funktion zu aktivieren, sollten Sie mehr als ein Konto haben und die Passcode-Sperre einschalten (gehen Sie zu Einstellungen → Datenschutz & Sicherheit → Passcode-Sperre)";
@@ -207,5 +210,14 @@
 "RoundedVideos.MoreButtonTooltip" = "Quadratische Videos mit einem Tippen in Kreise umwandeln und senden.";
 "RoundedVideos.SendButtonTooltip" = "Lange drücken, um Ihr Video als stilvollen Kreis zu senden.";
 
-/*Stealth Mode*/
-"StealthMode.Toggle" = "Tarnmodus";
+/*Speech to text*/
+"SpeechToText.UseOpenAi" = "OpenAI Sprache zu Text";
+"SpeechToText.Toast" = "[Abonnieren Sie Nicegram Premium]() für schnellere und bessere OpenAI Sprache zu Text-Technologien!";
+
+/*Confirm Call*/
+"ConfirmCall.Desc" = "Sind Sie sicher, dass Sie einen Anruf tätigen möchten?";
+
+/*Hidden Chats*/
+"ChatContextMenu.Hide" = "Verbergen";
+"ChatContextMenu.Unhide" = "Einblenden";
+"HiddenChatsTooltip" = "Drücken und halten Sie das 'N'-Logo, um versteckte Geheimchats zu enthüllen";
