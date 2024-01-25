@@ -2104,20 +2104,11 @@ public final class ChatListNode: ListView {
         }
         
         // MARK: Nicegram PinnedChats
-        let nicegramItemsSignal: Signal<[NGPinnedChat], NoError>
+        let nicegramItemsSignal: Signal<[PinnedChatToDisplay], NoError>
         if #available(iOS 13.0, *) {
-            nicegramItemsSignal = NGPinnedChats
-                .publisher(
-                    push: { [weak self] controller in
-                        guard let self else { return }
-                        self.push?(
-                            NativeControllerWrapper(
-                                controller: controller,
-                                accountContext: self.context
-                            )
-                        )
-                    }
-                )
+            nicegramItemsSignal = PinnedChatsContainer.shared.getPinnedChatsToDisplayUseCase()
+                .publisher()
+                .map { $0.reversed() }
                 .toSignal()
                 .skipError()
         } else {
@@ -2180,11 +2171,9 @@ public final class ChatListNode: ListView {
             if case .forum(_) = location {
                 nicegramItems = []
             }
-            //
             
-            // MARK: Nicegram NGCard
-            if nicegramItems.contains(where: { $0.id == NGPinnedChat.cardBotId }) {
-                CardTgHelper.trackCardViewOnChatsList()
+            if #available(iOS 13.0, *) {
+                PinnedChatsUI.trackChatsView(nicegramItems.map(\.chat))
             }
             //
             

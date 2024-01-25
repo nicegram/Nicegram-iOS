@@ -217,6 +217,13 @@
 /*Confirm Call*/
 "ConfirmCall.Desc" = "Are you sure you want to make a call?";
 
+/* Deleted Messages */
+"ShowDeletedMessages" = "Show Deleted Messages";
+
+/* Edited Messages */
+"ShowOriginalText" = "Show Original Text";
+"UndoShowOriginalText" = "Undo Show Original Text";
+
 /*Hidden Chats*/
 "ChatContextMenu.Hide" = "Hide";
 "ChatContextMenu.Unhide" = "Unhide";

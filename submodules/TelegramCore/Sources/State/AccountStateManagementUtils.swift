@@ -3745,7 +3745,15 @@ func replayFinalState(
                         let _ = transaction.addMessages(messages, location: .Random)
                     }
                 }
-            case let .DeleteMessagesWithGlobalIds(ids):
+            // MARK: Nicegram DeletedMessages, change ids to allIds
+            case let .DeleteMessagesWithGlobalIds(allIds):
+                // MARK: Nicegram DeletedMessages
+                let ids = NGDeletedMessages.markMessagesAsDeleted(
+                    globalIds: allIds,
+                    transaction: transaction
+                )
+                //
+            
                 var resourceIds: [MediaResourceId] = []
                 transaction.deleteMessagesWithGlobalIds(ids, forEachMedia: { media in
                     addMessageMediaResourceIdsToRemove(media: media, resourceIds: &resourceIds)
@@ -3753,7 +3761,8 @@ func replayFinalState(
                 if !resourceIds.isEmpty {
                     let _ = mediaBox.removeCachedResources(Array(Set(resourceIds)), force: true).start()
                 }
-                deletedMessageIds.append(contentsOf: ids.map { .global($0) })
+                // MARK: Nicegram DeletedMessages, change ids to allIds
+                deletedMessageIds.append(contentsOf: allIds.map { .global($0) })
             case let .DeleteMessages(ids):
                 _internal_deleteMessages(transaction: transaction, mediaBox: mediaBox, ids: ids, manualAddMessageThreadStatsDifference: { id, add, remove in
                     addMessageThreadStatsDifference(threadKey: id, remove: remove, addedMessagePeer: nil, addedMessageId: nil, isOutgoing: false)
@@ -3821,7 +3830,8 @@ func replayFinalState(
                     if let message = locallyRenderedMessage(message: message, peers: peers) {
                         generatedEvent = reactionGeneratedEvent(previousMessage.reactionsAttribute, message.reactionsAttribute, message: message, transaction: transaction)
                     }
-                    return .update(message.withUpdatedLocalTags(updatedLocalTags).withUpdatedFlags(updatedFlags).withUpdatedAttributes(updatedAttributes))
+                    // MARK: Nicegram, add updatingNicegramAttributeOnEdit
+                    return .update(message.withUpdatedLocalTags(updatedLocalTags).withUpdatedFlags(updatedFlags).withUpdatedAttributes(updatedAttributes).updatingNicegramAttributeOnEdit(previousMessage: previousMessage))
                 })
                 if let generatedEvent = generatedEvent {
                     addedReactionEvents.append(generatedEvent)

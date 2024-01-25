@@ -2784,7 +2784,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
             
             if restrictionText == nil {
                 if isNGForceBlocked(chatPresentationInterfaceState.renderedPeer?.peer) {
-                    restrictionText = l("NGWeb.Blocked", chatPresentationInterfaceState.strings.baseLanguageCode)
+                    restrictionText = l("NGWeb.Blocked")
                 }
             }
             
@@ -2807,9 +2807,8 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                 self.restrictedNode?.setup(title: "", text: processedPeerRestrictionText(restrictionText))
                 // MARK: Nicegram Unblock
                 if showUnblockButton {
-                    let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
                     self.restrictedNode?.setupButton(
-                        title: l("NicegramSettings.Unblock.Header", presentationData.strings.baseLanguageCode),
+                        title: l("NicegramSettings.Unblock.Header"),
                         handler: {
                             UIApplication.shared.open(nicegramUnblockUrl)
                         }

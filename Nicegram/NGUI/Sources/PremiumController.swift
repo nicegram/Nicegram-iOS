@@ -304,11 +304,10 @@ private func premiumControllerEntries(presentationData: PresentationData, useOpe
 
     let theme = presentationData.theme
     let strings = presentationData.strings
-    let locale = presentationData.strings.baseLanguageCode
 
-    entries.append(.rememberFolderOnExit(theme, l("Premium.rememberFolderOnExit", locale), NGSettings.rememberFolderOnExit))
-    entries.append(.onetaptr(theme, l("Premium.OnetapTranslate", locale), NGSettings.oneTapTr))
-    entries.append(.ignoretr(theme, l("Premium.IgnoreTranslate.Title", locale)))
+    entries.append(.rememberFolderOnExit(theme, l("Premium.rememberFolderOnExit"), NGSettings.rememberFolderOnExit))
+    entries.append(.onetaptr(theme, l("Premium.OnetapTranslate"), NGSettings.oneTapTr))
+    entries.append(.ignoretr(theme, l("Premium.IgnoreTranslate.Title")))
     
     entries.append(.useOpenAi(useOpenAi))
 
@@ -486,7 +485,7 @@ public func premiumController(context: AccountContext) -> ViewController {
             //                }
             //            }
 
-            let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("Premium.Title", presentationData.strings.baseLanguageCode)), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
+            let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("Premium.Title")), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
             let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, ensureVisibleItemTag: nil, initialScrollToItem: scrollToItem)
 
             return (controllerState, (listState, arguments))

@@ -119,7 +119,6 @@ private enum DoubleBottomControllerEntry: ItemListNodeEntry {
 }
 
 public func doubleBottomListController(context: AccountContext, presentationData: PresentationData, accountsContexts: [(AccountContext, EnginePeer)]) -> ViewController {
-    let locale = presentationData.strings.baseLanguageCode
     var pushControllerImpl: ((ViewController) -> Void)?
     var getRootControllerImpl: (() -> UIViewController?)?
     
@@ -141,7 +140,7 @@ public func doubleBottomListController(context: AccountContext, presentationData
     let signal = combineLatest(context.sharedContext.presentationData, transactionStatus) |> map { presentationData, contextStatus  -> (ItemListControllerState, (ItemListNodeState, Any)) in
 
         let entries = doubleBottomListControllerEntries(presentationData: presentationData, contextStatus: contextStatus, accountsContexts: accountsContexts)
-        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("DoubleBottom.Title", locale)), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
+        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("DoubleBottom.Title")), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
         let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks)
         return (controllerState, (listState, arguments))
     }
@@ -160,10 +159,9 @@ public func doubleBottomListController(context: AccountContext, presentationData
 // MARK: Entries list
 
 private func doubleBottomListControllerEntries(presentationData: PresentationData, contextStatus: (Bool, Bool), accountsContexts: [(AccountContext, EnginePeer)]) -> [DoubleBottomControllerEntry] {
-    let locale = presentationData.strings.baseLanguageCode
     var entries: [DoubleBottomControllerEntry] = []
-    entries.append(.isOn(l("DoubleBottom.Title", locale), VarSystemNGSettings.isDoubleBottomOn, VarSystemNGSettings.isDoubleBottomOn || (contextStatus.0 && contextStatus.1)))
-    entries.append(.info(l("DoubleBottom.Description", locale)))
+    entries.append(.isOn(l("DoubleBottom.Title"), VarSystemNGSettings.isDoubleBottomOn, VarSystemNGSettings.isDoubleBottomOn || (contextStatus.0 && contextStatus.1)))
+    entries.append(.info(l("DoubleBottom.Description")))
     
     return entries
 }

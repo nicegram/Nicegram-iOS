@@ -117,16 +117,15 @@ private func ignoreTranslateControllerEntries(presentationData: PresentationData
     var entries: [Entry] = []
     let theme = presentationData.theme
     let _ = presentationData.strings
-    let locale = presentationData.strings.baseLanguageCode
     
     let ignoredTranslations = NGSettings.ignoreTranslate
-    entries.append(.useIgnoreLanguages(theme, l("Premium.OnetapTranslate.UseIgnoreLanguages", locale), NGSettings.useIgnoreLanguages))
-    entries.append(.useIgnoreLanguagesNote(theme, l("Premium.OnetapTranslate.UseIgnoreLanguages.Note", locale)))
+    entries.append(.useIgnoreLanguages(theme, l("Premium.OnetapTranslate.UseIgnoreLanguages"), NGSettings.useIgnoreLanguages))
+    entries.append(.useIgnoreLanguagesNote(theme, l("Premium.OnetapTranslate.UseIgnoreLanguages.Note")))
     if !NGSettings.useIgnoreLanguages {
         return entries
     }
     
-    entries.append(.header(theme, l("Premium.IgnoreTranslate.Header", locale)))
+    entries.append(.header(theme, l("Premium.IgnoreTranslate.Header")))
     
     let pre = Locale.preferredLanguages
     var preLangs: [String] = []
@@ -234,7 +233,7 @@ public func ignoreTranslateController(context: AccountContext) -> ViewController
             
             var scrollToItem: ListViewScrollToItem?
             
-            let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("Premium.IgnoreTranslate.Title", presentationData.strings.baseLanguageCode)), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
+            let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("Premium.IgnoreTranslate.Title")), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
             let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, ensureVisibleItemTag: nil, initialScrollToItem: scrollToItem, animateChanges: false)
             
             return (controllerState, (listState, arguments))

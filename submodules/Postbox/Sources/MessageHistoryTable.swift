@@ -3020,6 +3020,30 @@ final class MessageHistoryTable: Table {
     }
     //
     
+    // MARK: Nicegram DeletedMessages
+    func allMessageIds(whereAttributes predicate: ([MessageAttribute]) -> Bool) -> [MessageId] {
+        var result: [MessageId] = []
+        self.valueBox.range(
+            self.table,
+            start: self.key(MessageIndex.absoluteLowerBound()),
+            end: self.key(MessageIndex.absoluteUpperBound()),
+            values: { key, value in
+                let entry = self.readIntermediateEntry(key, value: value)
+                let message = entry.message
+                let attributes = MessageHistoryTable.renderMessageAttributes(message)
+                
+                if predicate(attributes) {
+                    result.append(message.id)
+                }
+                
+                return true
+            },
+            limit: 0
+        )
+        return result
+    }
+    //
+    
     func allIndicesWithGlobalTag(tag: GlobalMessageTags) -> [GlobalMessageHistoryTagsTableEntry] {
         return self.globalTagsTable.getAll()
     }

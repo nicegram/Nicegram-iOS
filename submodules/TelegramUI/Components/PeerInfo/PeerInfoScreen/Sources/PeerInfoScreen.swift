@@ -887,8 +887,6 @@ private func settingsItems(data: PeerInfoScreenData?, context: AccountContext, p
         }
     }
     
-    
-    let locale = presentationData.strings.baseLanguageCode
     var ngId = 0
 
     // MARK: Nicegram AiChat
@@ -899,13 +897,13 @@ private func settingsItems(data: PeerInfoScreenData?, context: AccountContext, p
     }
     //
     if !NGENV.premium_bundle.isEmpty {
-        items[.nicegram]!.append(PeerInfoScreenDisclosureItem(id: ngId, text: l("Premium.Title", locale), icon: PresentationResourcesSettings.premiumIcon, action: {
+        items[.nicegram]!.append(PeerInfoScreenDisclosureItem(id: ngId, text: l("Premium.Title"), icon: PresentationResourcesSettings.premiumIcon, action: {
                  interaction.openSettings(.nicegramPremium)
         }))
         ngId += 1
     }
     
-    items[.nicegram]!.append(PeerInfoScreenDisclosureItem(id: ngId, text: l("AppName", locale), icon: PresentationResourcesSettings.nicegramIcon, action: {
+    items[.nicegram]!.append(PeerInfoScreenDisclosureItem(id: ngId, text: l("AppName"), icon: PresentationResourcesSettings.nicegramIcon, action: {
         interaction.openSettings(.nicegram)
     }))
     
@@ -1167,7 +1165,6 @@ private func infoItems(data: PeerInfoScreenData?, context: AccountContext, prese
     var ngItemId = 0
     var idText = ""
     var isUser = false
-    let lang = presentationData.strings.baseLanguageCode
     
     // MARK: Nicegram TranslateBio
     let bioIcon = PeerInfoScreenLabeledValueIcon.nicegram(
@@ -1594,7 +1591,7 @@ private func infoItems(data: PeerInfoScreenData?, context: AccountContext, prese
     
     if isUser && NGSettings.showRegDate {
         var hasRegDate = false
-        var regDateText = l("NGLab.RegDate.Btn", lang)
+        var regDateText = l("NGLab.RegDate.Btn")
         let user = data.peer as! TelegramUser
         if let registrationDate = getCachedRegDate(user.id.id._internalGetInt64Value()) {
             let cachedRegdateString = makeNiceRegDateStr(registrationDate)
@@ -1603,7 +1600,7 @@ private func infoItems(data: PeerInfoScreenData?, context: AccountContext, prese
             hasRegDate = true
         }
         
-        items[.nicegram]!.append(PeerInfoScreenLabeledValueItem(id: ngItemId, label: l("NGLab.RegDate.MenuItem", lang), text: regDateText, textColor: hasRegDate ? .primary : .accent, action: { node in
+        items[.nicegram]!.append(PeerInfoScreenLabeledValueItem(id: ngItemId, label: l("NGLab.RegDate.MenuItem"), text: regDateText, textColor: hasRegDate ? .primary : .accent, action: { node in
             interaction.getPeerRegDate(user.id.id._internalGetInt64Value(), context.account.peerId.id._internalGetInt64Value())
         }, longTapAction: { sourceNode in
             if !hasRegDate {
@@ -6747,7 +6744,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
             default:
                 text = "NGLab.RegDate.FetchError"
             }
-            let errorController = textAlertController(context: self.context, title: nil, text: l(text, self.presentationData.strings.baseLanguageCode), actions: [
+            let errorController = textAlertController(context: self.context, title: nil, text: l(text), actions: [
                                                         TextAlertAction(type: .genericAction, title: self.presentationData.strings.Common_OK, action: {
                                                         })])
             self.controller?.present(errorController, in: .window(.root))
@@ -8025,7 +8022,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                     UIPasteboard.general.string = registeredString
                 }),
                 ContextMenuAction(content: .text(title: "ⓘ", accessibilityLabel: self.presentationData.strings.Conversation_ContextMenuStickerPackInfo), action: {
-                    controller.present(textAlertController(context: self.context, title: registeredString, text: l("NGLab.RegDate.Notice", self.presentationData.strings.baseLanguageCode), actions: [
+                    controller.present(textAlertController(context: self.context, title: registeredString, text: l("NGLab.RegDate.Notice"), actions: [
                         TextAlertAction(type: .genericAction, title: self.presentationData.strings.Common_OK, action: {})
                     ]), in: .window(.root))
                 })

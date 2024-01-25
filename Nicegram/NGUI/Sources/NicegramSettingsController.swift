@@ -11,6 +11,7 @@
 import AccountContext
 import Display
 import FeatImagesHubUI
+import FeatPinnedChats
 import Foundation
 import ItemListUI
 import NGData
@@ -27,8 +28,6 @@ import UIKit
 import class NGCoreUI.SharedLoadingView
 import NGEnv
 import NGWebUtils
-import NGAiChatUI
-import FeatCardUI
 import NGAppCache
 import NGCore
 import var NGCoreUI.strings
@@ -72,7 +71,7 @@ private enum NicegramSettingsControllerSection: Int32 {
     case Other
     case QuickReplies
     case ShareChannelsInfo
-    case PinnedBots
+    case PinnedChats
 }
 
 
@@ -82,6 +81,7 @@ private enum EasyToggleType {
     case showRegDate
     case hideReactions
     case hideStories
+    case showDeletedMessages
 }
 
 
@@ -94,16 +94,8 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     case showNicegramTab
     case showTabNames(String, Bool)
     
-    case pinnedBotsHeader
-    
-    @available(iOS 13.0, *)
-    case aiPin
-    
-    @available(iOS 13.0, *)
-    case pstPin
-    
-    @available(iOS 15.0, *)
-    case imagesHubPin
+    case pinnedChatsHeader
+    case pinnedChat(Int32, PinnedChat)
 
     case FoldersHeader(String)
     case foldersAtBottom(String, Bool)
@@ -154,8 +146,8 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return NicegramSettingsControllerSection.SecretMenu.rawValue
         case .shareChannelsInfoToggle, .shareChannelsInfoNote:
             return NicegramSettingsControllerSection.ShareChannelsInfo.rawValue
-        case .pinnedBotsHeader, .aiPin, .pstPin, .imagesHubPin:
-            return NicegramSettingsControllerSection.PinnedBots.rawValue
+        case .pinnedChatsHeader, .pinnedChat:
+            return NicegramSettingsControllerSection.PinnedChats.rawValue
         }
     }
 
@@ -196,14 +188,11 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
         case .foldersAtBottomNotice:
             return 1900
             
-        case .pinnedBotsHeader:
-            return 1950
-        case .aiPin:
-            return 1951
-        case .pstPin:
-            return 1952
-        case .imagesHubPin:
-            return 1953
+        case .pinnedChatsHeader:
+            return 1910
+            
+        case let .pinnedChat(index, _):
+            return 1911 + index
 
         case .RoundVideosHeader:
             return 2000
@@ -397,26 +386,16 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
-        case .pinnedBotsHeader:
-            if case .pinnedBotsHeader = rhs {
+        case .pinnedChatsHeader:
+            if case .pinnedChatsHeader = rhs {
                 return true
             } else {
                 return false
             }
-        case .aiPin:
-            if case .aiPin = rhs {
-                return true
-            } else {
-                return false
-            }
-        case .pstPin:
-            if case .pstPin = rhs {
-                return true
-            } else {
-                return false
-            }
-        case .imagesHubPin:
-            if case .imagesHubPin = rhs {
+        case let .pinnedChat(lhsIndex, lhsChat):
+            if case let .pinnedChat(rhsIndex, rhsChat) = rhs,
+               lhsIndex == rhsIndex,
+               lhsChat == rhsChat {
                 return true
             } else {
                 return false
@@ -434,7 +413,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     
     func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
         let arguments = arguments as! NicegramSettingsControllerArguments
-        let locale = presentationData.strings.baseLanguageCode
         switch self {
         case let .TabsHeader(text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: section)
@@ -467,11 +445,10 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
         case let .showTabNames(text, value):
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
                 ngLog("[showTabNames] invoked with \(value)", LOGTAG)
-                let locale = presentationData.strings.baseLanguageCode  
                 NGSettings.showTabNames = value
                 let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: arguments.context.sharedContext.currentPresentationData.with {
                     $0
-                }), title: nil, text: l("Common.RestartRequired", locale), actions: [/* TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow", locale), action: { preconditionFailure() }),*/ TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})])
+                }), title: nil, text: l("Common.RestartRequired"), actions: [/* TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow"), action: { preconditionFailure() }),*/ TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})])
                 arguments.presentController(controller, nil)
             })
             
@@ -532,6 +509,8 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                     VarSystemNGSettings.hideReactions = value
                 case .hideStories:
                     NGSettings.hideStories = value
+                case .showDeletedMessages:
+                    NGDeletedMessages.showDeletedMessages = value
                 }
             })
         case let .unblockHeader(text):
@@ -560,55 +539,29 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             })
         case let .shareChannelsInfoNote(text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: section)
-        case .pinnedBotsHeader:
+        case .pinnedChatsHeader:
             return ItemListSectionHeaderItem(
                 presentationData: presentationData,
                 text: NGCoreUI.strings.ngSettingsPinnedChats().localizedUppercase,
                 sectionId: section
             )
-        case .aiPin:
+        case let .pinnedChat(_, chat):
             if #available(iOS 13.0, *) {
                 return ItemListSwitchItem(
                     presentationData: presentationData,
-                    title: AiChatUITgHelper.showInChatsListToggle,
-                    value: AiChatUITgHelper.getShowAiInChatsList(),
+                    title: chat.name,
+                    value: chat.isPinned,
                     enabled: true,
                     sectionId: section,
                     style: .blocks,
                     updated: { value in
-                        AiChatUITgHelper.set(showAiInChatsList: value)
-                    }
-                )
-            } else {
-                fatalError()
-            }
-        case .pstPin:
-            if #available(iOS 13.0.0, *) {
-                return ItemListSwitchItem(
-                    presentationData: presentationData,
-                    title: CardUITgHelper.showInChatsListToggle,
-                    value: CardUITgHelper.getShowCardInChatsList(),
-                    enabled: true,
-                    sectionId: section,
-                    style: .blocks,
-                    updated: { value in
-                        CardUITgHelper.set(showCardInChatsList: value)
-                    }
-                )
-            } else {
-                fatalError()
-            }
-        case .imagesHubPin:
-            if #available(iOS 15.0, *) {
-                return ItemListSwitchItem(
-                    presentationData: presentationData,
-                    title: ImagesHubUITgHelper.showInChatsListToggle,
-                    value: ImagesHubUITgHelper.getShowImagesHubInChatsList(),
-                    enabled: true,
-                    sectionId: section,
-                    style: .blocks,
-                    updated: { value in
-                        ImagesHubUITgHelper.set(showImagesHubInChatsList: value)
+                        Task {
+                            let setChatPinnedUseCase = PinnedChatsContainer.shared.setChatPinnedUseCase()
+                            await setChatPinnedUseCase(
+                                id: chat.id,
+                                pinned: value
+                            )
+                        }
                     }
                 )
             } else {
@@ -620,24 +573,21 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
 // MARK: Entries list
 
-private func nicegramSettingsControllerEntries(presentationData: PresentationData, experimentalSettings: ExperimentalUISettings, showCalls: Bool, context: AccountContext) -> [NicegramSettingsControllerEntry] {
+private func nicegramSettingsControllerEntries(presentationData: PresentationData, experimentalSettings: ExperimentalUISettings, showCalls: Bool, pinnedChats: [PinnedChat], context: AccountContext) -> [NicegramSettingsControllerEntry] {
     var entries: [NicegramSettingsControllerEntry] = []
-
-    let locale = presentationData.strings.baseLanguageCode
     
     if canOpenSecretMenu(context: context) {
         entries.append(.secretMenu("Secret Menu"))
     }
     
     if !hideUnblock {
-        entries.append(.unblockHeader(l("NicegramSettings.Unblock.Header", locale).uppercased()))
-        entries.append(.unblock(l("NicegramSettings.Unblock.Button", locale), nicegramUnblockUrl))
+        entries.append(.unblockHeader(l("NicegramSettings.Unblock.Header").uppercased()))
+        entries.append(.unblock(l("NicegramSettings.Unblock.Button"), nicegramUnblockUrl))
     }
 
-    entries.append(.TabsHeader(l("NiceFeatures.Tabs.Header",
-                                 locale)))
+    entries.append(.TabsHeader(l("NiceFeatures.Tabs.Header")))
     entries.append(.showContactsTab(
-        l("NiceFeatures.Tabs.ShowContacts", locale),
+        l("NiceFeatures.Tabs.ShowContacts"),
         NGSettings.showContactsTab
     ))
     entries.append(.showCallsTab(
@@ -648,92 +598,82 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
         entries.append(.showNicegramTab)
     }
     entries.append(.showTabNames(
-        l("NiceFeatures.Tabs.ShowNames", locale),
+        l("NiceFeatures.Tabs.ShowNames"),
         NGSettings.showTabNames
     ))
 
-    entries.append(.FoldersHeader(l("NiceFeatures.Folders.Header",
-                                    locale)))
+    entries.append(.FoldersHeader(l("NiceFeatures.Folders.Header")))
     entries.append(.foldersAtBottom(
-        l("NiceFeatures.Folders.TgFolders", locale),
+        l("NiceFeatures.Folders.TgFolders"),
         experimentalSettings.foldersTabAtBottom
     ))
     entries.append(.foldersAtBottomNotice(
-        l("NiceFeatures.Folders.TgFolders.Notice", locale)
+        l("NiceFeatures.Folders.TgFolders.Notice")
     ))
     
-    var pinnedBots: [NicegramSettingsControllerEntry] = []
-    
-    if #available(iOS 13.0, *),
-       AiChatUITgHelper.canPinAiBot() {
-        pinnedBots.append(.aiPin)
+    let pinnedChatsEntries = pinnedChats.enumerated().map { index, chat in
+        NicegramSettingsControllerEntry.pinnedChat(Int32(index), chat)
     }
     
-    if #available(iOS 13.0, *),
-       CardUITgHelper.canPinCardBot() {
-        pinnedBots.append(.pstPin)
-    }
-    
-    if #available(iOS 15.0, *),
-       ImagesHubUITgHelper.canPinImageBot() {
-        pinnedBots.append(.imagesHubPin)
-    }
-    
-    if !pinnedBots.isEmpty {
-        entries.append(.pinnedBotsHeader)
-        pinnedBots.forEach { entries.append($0) }
+    if !pinnedChatsEntries.isEmpty {
+        entries.append(.pinnedChatsHeader)
+        pinnedChatsEntries.forEach {
+            entries.append($0)
+        }
     }
 
-    entries.append(.RoundVideosHeader(l("NiceFeatures.RoundVideos.Header",
-                                        locale)))
+    entries.append(.RoundVideosHeader(l("NiceFeatures.RoundVideos.Header")))
     entries.append(.startWithRearCam(
-        l("NiceFeatures.RoundVideos.UseRearCamera", locale),
+        l("NiceFeatures.RoundVideos.UseRearCamera"),
         NGSettings.useRearCamTelescopy
     ))
     entries.append(.shouldDownloadVideo(
-        l("NicegramSettings.RoundVideos.DownloadVideos", locale), 
+        l("NicegramSettings.RoundVideos.DownloadVideos"), 
         NGSettings.shouldDownloadVideo
     ))
 
     entries.append(.OtherHeader(
         presentationData.strings.ChatSettings_Other.uppercased()))
     entries.append(.hidePhoneInSettings(
-        l("NiceFeatures.HideNumber", locale),
+        l("NiceFeatures.HideNumber"),
         NGSettings.hidePhoneSettings
     ))
     entries.append(.hidePhoneInSettingsNotice(
-        l("NicegramSettings.Other.hidePhoneInSettingsNotice", locale)
+        l("NicegramSettings.Other.hidePhoneInSettingsNotice")
     ))
     
     if #available(iOS 10.0, *) {
-        entries.append(.quickReplies(l("NiceFeatures.QuickReplies", locale)))
+        entries.append(.quickReplies(l("NiceFeatures.QuickReplies")))
     }
 
     
-    entries.append(.Account(l("NiceFeatures.Account.Header", locale)))
+    entries.append(.Account(l("NiceFeatures.Account.Header")))
     if !context.account.isHidden || !VarSystemNGSettings.inDoubleBottom {
-        entries.append(.doubleBottom(l("DoubleBottom.Title", locale)))
+        entries.append(.doubleBottom(l("DoubleBottom.Title")))
     }
     
     var toggleIndex: Int32 = 1
     // MARK: Other Toggles (Easy)
-    entries.append(.easyToggle(toggleIndex, .sendWithEnter, l("SendWithKb", locale), NGSettings.sendWithEnter))
+    entries.append(.easyToggle(toggleIndex, .sendWithEnter, l("SendWithKb"), NGSettings.sendWithEnter))
     toggleIndex += 1
     
-    entries.append(.easyToggle(toggleIndex, .showProfileId, l("NicegramSettings.Other.showProfileId", locale), NGSettings.showProfileId))
+    entries.append(.easyToggle(toggleIndex, .showProfileId, l("NicegramSettings.Other.showProfileId"), NGSettings.showProfileId))
     toggleIndex += 1
     
-    entries.append(.easyToggle(toggleIndex, .showRegDate, l("NicegramSettings.Other.showRegDate", locale), NGSettings.showRegDate))
+    entries.append(.easyToggle(toggleIndex, .showRegDate, l("NicegramSettings.Other.showRegDate"), NGSettings.showRegDate))
     toggleIndex += 1
     
-    entries.append(.easyToggle(toggleIndex, .hideReactions, l("NicegramSettings.Other.hideReactions", locale), VarSystemNGSettings.hideReactions))
+    entries.append(.easyToggle(toggleIndex, .hideReactions, l("NicegramSettings.Other.hideReactions"), VarSystemNGSettings.hideReactions))
     toggleIndex += 1
     
-    entries.append(.easyToggle(toggleIndex, .hideStories, l("NicegramSettings.HideStories", locale), NGSettings.hideStories))
+    entries.append(.easyToggle(toggleIndex, .hideStories, l("NicegramSettings.HideStories"), NGSettings.hideStories))
     toggleIndex += 1
     
-    entries.append(.shareChannelsInfoToggle(l("NicegramSettings.ShareChannelsInfoToggle", locale), isShareChannelsInfoEnabled()))
-    entries.append(.shareChannelsInfoNote(l("NicegramSettings.ShareChannelsInfoToggle.Note", locale)))
+    entries.append(.easyToggle(toggleIndex, .showDeletedMessages, l("ShowDeletedMessages"), NGDeletedMessages.showDeletedMessages))
+    toggleIndex += 1
+    
+    entries.append(.shareChannelsInfoToggle(l("NicegramSettings.ShareChannelsInfoToggle"), isShareChannelsInfoEnabled()))
+    entries.append(.shareChannelsInfoNote(l("NicegramSettings.ShareChannelsInfoToggle.Note")))
     
     return entries
 }
@@ -771,8 +711,18 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
     let sharedDataSignal = context.sharedContext.accountManager.sharedData(keys: [
         ApplicationSpecificSharedDataKeys.experimentalUISettings,
     ])
+    
+    let pinnedChatsSignal: Signal<[PinnedChat], NoError>
+    if #available(iOS 13.0, *) {
+        pinnedChatsSignal = PinnedChatsContainer.shared.getPinnedChatsUseCase()
+            .publisher()
+            .toSignal()
+            .skipError()
+    } else {
+        pinnedChatsSignal = .single([])
+    }
 
-    let signal = combineLatest(context.sharedContext.presentationData, sharedDataSignal, showCallsTab) |> map { presentationData, sharedData, showCalls -> (ItemListControllerState, (ItemListNodeState, Any)) in
+    let signal = combineLatest(context.sharedContext.presentationData, sharedDataSignal, showCallsTab, pinnedChatsSignal) |> map { presentationData, sharedData, showCalls, pinnedChats -> (ItemListControllerState, (ItemListNodeState, Any)) in
 
         let experimentalSettings: ExperimentalUISettings = sharedData.entries[ApplicationSpecificSharedDataKeys.experimentalUISettings]?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
 
@@ -783,8 +733,8 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
             })
         }
 
-        let entries = nicegramSettingsControllerEntries(presentationData: presentationData, experimentalSettings: experimentalSettings, showCalls: showCalls, context: context)
-        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("AppName", presentationData.strings.baseLanguageCode)), leftNavigationButton: leftNavigationButton, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
+        let entries = nicegramSettingsControllerEntries(presentationData: presentationData, experimentalSettings: experimentalSettings, showCalls: showCalls, pinnedChats: pinnedChats, context: context)
+        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("AppName")), leftNavigationButton: leftNavigationButton, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
         let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks)
 
         return (controllerState, (listState, arguments))

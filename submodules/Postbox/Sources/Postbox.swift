@@ -176,6 +176,12 @@ public final class Transaction {
     }
     //
     
+    // MARK: Nicegram DeletedMessages
+    public func allMessageIds(whereAttributes predicate: ([MessageAttribute]) -> Bool) -> [MessageId] {
+        self.postbox?.allMessageIds(whereAttributes: predicate) ?? []
+    }
+    //
+    
     public func removeAllMessagesWithGlobalTag(tag: GlobalMessageTags) {
         assert(!self.disposed)
         self.postbox?.removeAllMessagesWithGlobalTag(tag: tag)
@@ -2214,6 +2220,12 @@ final class PostboxImpl {
             }
             return renderIntermediateMessage(intermediateMessage)
         }
+    }
+    //
+    
+    // MARK: Nicegram DeletedMessages
+    fileprivate func allMessageIds(whereAttributes predicate: ([MessageAttribute]) -> Bool) -> [MessageId] {
+        self.messageHistoryTable.allMessageIds(whereAttributes: predicate)
     }
     //
     

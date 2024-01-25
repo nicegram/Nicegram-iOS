@@ -263,9 +263,9 @@ final class PasscodeSetupControllerNode: ASDisplayNode {
 //
 //                        let locale = self.presentationData.strings.baseLanguageCode
 //
-//                        self.subtitleNode.attributedText = NSAttributedString(string: l("DoubleBottom.Passcode.Error", locale), font: Font.regular(16.0), textColor: self.presentationData.theme.list.itemPrimaryTextColor)
+//                        self.subtitleNode.attributedText = NSAttributedString(string: l("DoubleBottom.Passcode.Error"), font: Font.regular(16.0), textColor: self.presentationData.theme.list.itemPrimaryTextColor)
 //
-//                        UIAccessibility.post(notification: UIAccessibility.Notification.announcement, argument: l("DoubleBottom.Passcode.Error", locale))
+//                        UIAccessibility.post(notification: UIAccessibility.Notification.announcement, argument: l("DoubleBottom.Passcode.Error"))
                         
                         if let validLayout = self.validLayout {
                             self.containerLayoutUpdated(validLayout.0, navigationBarHeight: validLayout.1, transition: .immediate)

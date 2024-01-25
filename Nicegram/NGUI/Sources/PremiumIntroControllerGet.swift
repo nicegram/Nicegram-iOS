@@ -37,9 +37,9 @@ extension SKProduct {
 //
 //    let locale = presentationData.strings.baseLanguageCode
 //
-//    let title = l("IAP.Premium.Title", locale)
-//    let subtitle = l("IAP.Premium.Subtitle", locale)
-//    let text = l("IAP.Premium.Features", locale)
+//    let title = l("IAP.Premium.Title")
+//    let subtitle = l("IAP.Premium.Subtitle")
+//    let text = l("IAP.Premium.Features")
 //
 //    let buttonTitle = product.localizedPrice ?? "Free"
 //
@@ -57,14 +57,14 @@ extension SKProduct {
 public func getIAPErrorController(context: AccountContext, _ text: String, _ presentationData: PresentationData) -> AlertController {
     
     let errorController =
-        standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: l(text, presentationData.strings.baseLanguageCode), actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})])
+        standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: l(text), actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})])
     return errorController
 }
 
 
 public func getPremiumActivatedAlert(title: String, text: String, presentationData: PresentationData, action: @escaping () -> Void ) -> AlertController {
 
-    let Controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: title, text: l(text, presentationData.strings.baseLanguageCode), actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {action()})])
+    let Controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: title, text: l(text), actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {action()})])
     
     return Controller
     

@@ -229,7 +229,8 @@ private func requestEditMessageInternal(accountPeerId: PeerId, postbox: Postbox,
                                                 } else {
                                                     updatedFlags.remove(.Incoming)
                                                 }
-                                                return .update(message.withUpdatedLocalTags(updatedLocalTags).withUpdatedFlags(updatedFlags))
+                                                // MARK: Nicegram, add updatingNicegramAttributeOnEdit
+                                                return .update(message.withUpdatedLocalTags(updatedLocalTags).withUpdatedFlags(updatedFlags).updatingNicegramAttributeOnEdit(previousMessage: previousMessage))
                                             })
                                         }
                                     default:

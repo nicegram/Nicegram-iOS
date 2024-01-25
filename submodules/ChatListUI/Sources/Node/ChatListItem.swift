@@ -185,7 +185,7 @@ public enum ChatListItemContent {
 
 public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
     // MARK: Nicegram PinnedChats
-    let nicegramItem: NGPinnedChat?
+    let nicegramItem: PinnedChatToDisplay?
     //
     let presentationData: ChatListPresentationData
     let context: AccountContext
@@ -222,7 +222,7 @@ public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
     }
     
     // MARK: Nicegram PinnedChats, nicegramItem added
-    public init(nicegramItem: NGPinnedChat? = nil, presentationData: ChatListPresentationData, context: AccountContext, chatListLocation: ChatListControllerLocation, filterData: ChatListItemFilterData?, index: EngineChatList.Item.Index, content: ChatListItemContent, editing: Bool, hasActiveRevealControls: Bool, selected: Bool, header: ListViewItemHeader?, enableContextActions: Bool, hiddenOffset: Bool, interaction: ChatListNodeInteraction) {
+    public init(nicegramItem: PinnedChatToDisplay? = nil, presentationData: ChatListPresentationData, context: AccountContext, chatListLocation: ChatListControllerLocation, filterData: ChatListItemFilterData?, index: EngineChatList.Item.Index, content: ChatListItemContent, editing: Bool, hasActiveRevealControls: Bool, selected: Bool, header: ListViewItemHeader?, enableContextActions: Bool, hiddenOffset: Bool, interaction: ChatListNodeInteraction) {
         // MARK: Nicegram PinnedChats
         self.nicegramItem = nicegramItem
         //
@@ -295,7 +295,9 @@ public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
             if let nicegramItem {
                 if #available(iOS 13.0, *) {
                     Task { @MainActor in
-                        nicegramItem.select()
+                        let openPinnedChatUseCase = PinnedChatsContainer.shared.openPinnedChatUseCase()
+                        openPinnedChatUseCase(nicegramItem.chat)
+                        
                         interaction.clearHighlightAnimated(true)
                     }
                 }
@@ -1540,7 +1542,14 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
         
         // MARK: Nicegram PinnedChats
         if let nicegramItem = item.nicegramItem {
-            self.avatarNode.setPeer(context: item.context, theme: item.presentationData.theme, peer: nil, nicegramImage: nicegramItem.image?.roundedImage)
+            self.avatarNode.setPeer(
+                context: item.context,
+                theme: item.presentationData.theme,
+                peer: nil,
+                nicegramImage: prepareNicegramImageForAvatar(
+                    nicegramItem.image
+                )
+            )
         }
         //
         
@@ -1969,12 +1978,12 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
                     // MARK: Nicegram PinnedChats
                     if let nicegramItem = item.nicegramItem {
                         titleAttributedString = NSAttributedString(
-                            string: nicegramItem.title,
+                            string: nicegramItem.chat.title,
                             font: titleFont,
                             textColor: theme.titleColor
                         )
                         attributedText = NSAttributedString(
-                            string: nicegramItem.desc,
+                            string: nicegramItem.chat.desc,
                             font: textFont,
                             textColor: theme.messageTextColor
                         )
@@ -3948,11 +3957,17 @@ class ChatListItemNode: ItemListRevealOptionsItemNode {
         }
         
         // MARK: Nicegram PinnedChats
-        if let nicegramItem = item.nicegramItem {
+        if #available(iOS 13.0, *),
+           let nicegramItem = item.nicegramItem {
             switch option.key {
             case RevealOptionKey.unpin.rawValue:
                 self.setRevealOptionsOpened(false, animated: true)
-                nicegramItem.unpin()
+                
+                Task {
+                    PinnedChatsUI.unpin(
+                        nicegramItem.chat
+                    )
+                }
             default:
                 break
             }
@@ -4182,6 +4197,21 @@ private extension ChatListItem {
     var isNicegramItem: Bool {
         nicegramItem != nil
     }
+}
+
+private func prepareNicegramImageForAvatar(
+    _ image: UIImage?
+) -> UIImage? {
+    guard let image else {
+        return nil
+    }
+    
+    let side = min(image.size.width, image.size.height)
+    
+    return image.sd_resizedImage(
+        with: CGSize(width: side, height: side),
+        scaleMode: .aspectFill
+    )?.roundedImage
 }
 
 private extension UIImage {

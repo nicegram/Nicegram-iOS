@@ -142,17 +142,15 @@ private struct QuickRepliesControllerState: Equatable {
 }
 
 private func quickRepliesControllerEntries(presentationData: PresentationData, state: QuickRepliesControllerState) -> [QuickRepliesControllerEntry] {
-    let locale = presentationData.strings.baseLanguageCode
-    
     var entries: [QuickRepliesControllerEntry] = []
     
-    entries.append(.replyPresetsHeader(l("NiceFeatures.QuickReplies.Description", locale)))
+    entries.append(.replyPresetsHeader(l("NiceFeatures.QuickReplies.Description")))
     
-    entries.append(.addNewPreset(l("NiceFeatures.QuickReplies.AddNew", locale)))
+    entries.append(.addNewPreset(l("NiceFeatures.QuickReplies.AddNew")))
     
     let customPresets = state.items
     for (index, preset) in customPresets.enumerated() {
-        entries.append(.replyPreset(preset.id, l("NiceFeatures.QuickReplies.Placeholder", locale), preset.text, index))
+        entries.append(.replyPreset(preset.id, l("NiceFeatures.QuickReplies.Placeholder"), preset.text, index))
     }
     
     return entries
@@ -246,8 +244,6 @@ public func quickRepliesController(context: AccountContext) -> ViewController {
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get())
     |> deliverOnMainQueue
     |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
-        let locale = presentationData.strings.baseLanguageCode
-        
         let focusItemTag: ItemListItemTag?
         if let focusPresetId = state.focusPresetId {
             focusItemTag = QuickRepliesControllerEntryTag.preset(focusPresetId)
@@ -256,7 +252,7 @@ public func quickRepliesController(context: AccountContext) -> ViewController {
         }
         let ensureVisibleItemTag = focusItemTag
         
-        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("NiceFeatures.QuickReplies", locale)), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: false)
+        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("NiceFeatures.QuickReplies")), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: false)
         let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: quickRepliesControllerEntries(presentationData: presentationData, state: state), style: .blocks, focusItemTag: focusItemTag, ensureVisibleItemTag: ensureVisibleItemTag, animateChanges: true)
         
         return (controllerState, (listState, arguments))
