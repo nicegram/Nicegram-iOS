@@ -3467,10 +3467,8 @@ final class DoubleBottomFlow {
                 root.setViewControllers(Array(root.viewControllers.dropLast(3)), animated: false)
                 strongSelf.hideCurrentAccount()
 
-                let presentationData = strongSelf.context.context.sharedContext.currentPresentationData.with { $0 }
-                let locale = presentationData.strings.baseLanguageCode
-                let alert = UIAlertController(title: l("DoubleBottom.Enabled.Title", locale), message: l("DoubleBottom.Enabled.Description", locale), preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: l("DoubleBottom.Enabled.OK", locale), style: .default, handler: { _ in }))
+                let alert = UIAlertController(title: l("DoubleBottom.Enabled.Title"), message: l("DoubleBottom.Enabled.Description"), preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: l("DoubleBottom.Enabled.OK"), style: .default, handler: { _ in }))
                 strongSelf.context.mainWindow.presentNative(alert)
                 VarSystemNGSettings.isDoubleBottomOn = true
             }

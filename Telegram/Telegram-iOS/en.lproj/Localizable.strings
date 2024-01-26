@@ -10965,3 +10965,10 @@ Sorry for the inconvenience.";
 "PrivacyInfo.ShowReadTime.ButtonTitle" = "Show My Read Time";
 "PrivacyInfo.ShowReadTime.PremiumInfo" = "Subscription will let you see **%@'s** read time without showing yours.";
 "PrivacyInfo.ShowReadTime.AlwaysToast.Text" = "Set **Last Seen** privacy to 'Nobody' or 'My Contacts.'";
+
+"Chat.PrivateMessageSeenTimestamp.Date" = "read %@";
+"Chat.PrivateMessageSeenTimestamp.TodayAt" = "read today at %@";
+"Chat.PrivateMessageSeenTimestamp.YesterdayAt" = "read yesterday at %@";
+
+"Settings.Privacy.ReadTimePremiumActive" = "Subcribed to Telegram Premium";
+"Settings.Privacy.ReadTimePremiumActiveFooter" = "Because you are a Telegram Premium subscriber, you will see the last seen and read time of all users who are sharing it with you – even if you are hiding yours.";

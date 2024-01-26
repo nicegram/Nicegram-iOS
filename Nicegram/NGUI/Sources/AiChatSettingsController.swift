@@ -13,21 +13,18 @@ private enum AiChatSettingsControllerSection: Int32 {
 
 @available(iOS 13.0, *)
 private enum AiChatSettingsControllerEntry: ItemListNodeEntry {
-    case showInDialogs(Bool)
     case showInChat(Bool)
     case clearHistory
     
     var section: ItemListSectionId {
         switch self {
-        case .showInDialogs, .showInChat, .clearHistory:
+        case .showInChat, .clearHistory:
             return AiChatSettingsControllerSection.main.rawValue
         }
     }
     
     var stableId: Int32 {
         switch self {
-        case .showInDialogs:
-            return 0
         case .showInChat:
             return 1
         case .clearHistory:
@@ -41,10 +38,6 @@ private enum AiChatSettingsControllerEntry: ItemListNodeEntry {
     
     func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
         switch self {
-        case let .showInDialogs(value):
-            return ItemListSwitchItem(presentationData: presentationData, title: AiChatUITgHelper.settingsShowInDialogs, value: value, sectionId: self.section, style: .blocks) { value in
-                RepoUserTgHelper.resolvePreferencesRepository().displayAiBotInChatsList = value
-            }
         case let .showInChat(value):
             return ItemListSwitchItem(presentationData: presentationData, title: AiChatUITgHelper.settingsShowInChat, value: value, sectionId: self.section, style: .blocks) { value in
                 RepoUserTgHelper.resolvePreferencesRepository().displayAiBotInChat = value
@@ -63,7 +56,6 @@ private func controllerEntries() -> [AiChatSettingsControllerEntry] {
     
     var entries: [AiChatSettingsControllerEntry] = []
     
-    entries.append(.showInDialogs(preferencesRepository.displayAiBotInChatsList))
     entries.append(.showInChat(preferencesRepository.displayAiBotInChat))
     entries.append(.clearHistory)
     

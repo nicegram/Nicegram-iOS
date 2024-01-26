@@ -282,12 +282,11 @@ final class ChatSendMessageActionSheetControllerNode: ViewControllerTracingNode,
             contentNodes.append(ActionSheetItemNode(theme: self.presentationData.theme, title: self.presentationData.strings.Conversation_ContextMenuTranslate, icon: .translate, hasSeparator: false, action: {
                 translate?()
             }))
-            let locale = presentationData.strings.baseLanguageCode
             let title: String
             if let interlocutorLangCode = interlocutorLangCode {
-                title = l("Messages.ToLanguage.WithCode", locale, with: interlocutorLangCode.uppercased())
+                title = l("Messages.ToLanguage.WithCode", with: interlocutorLangCode.uppercased())
             } else {
-                title = l("Messages.ToLanguage", locale)
+                title = l("Messages.ToLanguage")
             }
             contentNodes.append(ActionSheetItemNode(theme: self.presentationData.theme, title: title, icon: .language, hasSeparator: false, action: {
                 chooseLanguage?()

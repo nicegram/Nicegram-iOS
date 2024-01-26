@@ -2865,6 +2865,12 @@ final class StorageUsageScreenComponent: Component {
                 return
             }
             
+            // MARK: Nicegram DeletedMessages
+            _ = NGDeletedMessages.actuallyDeleteMarkedMessages(
+                postbox: component.context.account.postbox
+            ).start()
+            //
+            
             if let _ = aggregatedData.peerId {
                 var mappedCategories: [StorageUsageStats.CategoryKey] = []
                 for category in aggregatedData.selectedCategories {

@@ -1085,7 +1085,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             }
             
             if isGroup, !isMyMessage, !isServiceMessage(message), authorIsUser {
-                actions.append(.action(ContextMenuActionItem(text: l("Messages.ReplyPrivately", chatPresentationInterfaceState.strings.baseLanguageCode), icon: { theme in
+                actions.append(.action(ContextMenuActionItem(text: l("Messages.ReplyPrivately"), icon: { theme in
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Reply"), color: theme.actionSheet.primaryTextColor)
                 }, action: { _, f in
                     interfaceInteraction.replyPrivately(message)
@@ -1452,6 +1452,11 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
         if isMigrated {
             canPin = false
         }
+        // MARK: Nicegram DeletedMessages
+        if message.nicegramAttribute.isDeleted {
+            canPin = false
+        }
+        //
         
         if canPin {
             var pinnedSelectedMessageId: MessageId?
@@ -1650,7 +1655,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                     interfaceInteraction.forwardMessages(selectAll || isImage ? messages : [message])
                     f(.dismissWithoutContent)
                 })))
-                actions.append(.action(ContextMenuActionItem(text: l("Chat.SaveToCloud", chatPresentationInterfaceState.strings.baseLanguageCode), icon: { theme in
+                actions.append(.action(ContextMenuActionItem(text: l("Chat.SaveToCloud"), icon: { theme in
                     return generateTintedImage(image: UIImage(bundleImageName: "SaveToCloud"), color: theme.actionSheet.primaryTextColor)
                 }, action: { _, f in
                     interfaceInteraction.cloudMessages(selectAll ? messages : [message])
@@ -1758,9 +1763,8 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                 })))
                 
                 // MARK: Nicegram DeleteAllSystemMessages
-                let locale = chatPresentationInterfaceState.strings.baseLanguageCode
                 if isServiceMessage(message) {
-                    actions.append(.action(ContextMenuActionItem(text: l("Messages.DeleteAllSystemMessages", locale), textColor: .destructive, icon: { theme in
+                    actions.append(.action(ContextMenuActionItem(text: l("Messages.DeleteAllSystemMessages"), textColor: .destructive, icon: { theme in
                         return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Delete"), color: theme.actionSheet.destructiveActionTextColor)
                     }, action: { controller, f in
                         _ = (context.engine.messages.allMessages(peerId: message.id.peerId, namespace: Namespaces.Message.Cloud)
@@ -1827,15 +1831,14 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             // MARK: NG Context Menu
             let isSecretChat = message.id.peerId.namespace == Namespaces.Peer.SecretChat
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-            let locale = presentationData.strings.baseLanguageCode
-            actions.append(.action(ContextMenuActionItem(text: l("AppName", locale) + "...", icon: { theme in
+            actions.append(.action(ContextMenuActionItem(text: l("AppName") + "...", icon: { theme in
                 return generateTintedImage(image: UIImage(bundleImageName: "NicegramN"), color: theme.actionSheet.primaryTextColor)
             }, action: { controller, f in
                 var ngContextItems: [ContextMenuItem] = []
                 
                 // Copyforward
                 if shouldShowInterfaceForForwardAsCopy(message: message) {
-                    ngContextItems.append(.action(ContextMenuActionItem(text: l("Chat.ForwardAsCopy", chatPresentationInterfaceState.strings.baseLanguageCode), icon: { theme in
+                    ngContextItems.append(.action(ContextMenuActionItem(text: l("Chat.ForwardAsCopy"), icon: { theme in
                         return generateTintedImage(image: UIImage(bundleImageName: "CopyForward"), color: theme.actionSheet.primaryTextColor)
                     }, action: { _, f in
                         //  MARK: Nicegram CopyProtectedContent
@@ -1853,44 +1856,24 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                 let textToTranslate = message.textToTranslate()
                 if !isSecretChat,
                    !textToTranslate.isEmpty {
-                    var title = l("Messages.Translate", locale)
-                    var mode = "translate"
-                    if message.text.contains(gTranslateSeparator) {
-                        title = l("Messages.UndoTranslate", locale)
-                        mode = "undo-translate"
+                    var title = l("Messages.Translate")
+                    if message.hasNicegramTranslation() {
+                        title = l("Messages.UndoTranslate")
                     }
                     ngContextItems.append(.action(ContextMenuActionItem(text: title, icon: { theme in
                         return generateTintedImage(image: UIImage(bundleImageName: "NGTranslateIcon"), color: theme.actionSheet.primaryTextColor)
                     }, action: { _, f in
-                        if mode == "undo-translate" {
-                            var newMessageText = message.text
-                            if let dotRange = newMessageText.range(of: "\n\n" + gTranslateSeparator) {
-                                newMessageText.removeSubrange(dotRange.lowerBound..<newMessageText.endIndex)
-                            }
-                            let _ = (context.account.postbox.transaction { transaction -> Void in
-                                transaction.updateMessage(message.id, update: { currentMessage in
-                                    var storeForwardInfo: StoreMessageForwardInfo?
-                                    if let forwardInfo = currentMessage.forwardInfo {
-                                        storeForwardInfo = StoreMessageForwardInfo(authorId: forwardInfo.author?.id, sourceId: forwardInfo.source?.id, sourceMessageId: forwardInfo.sourceMessageId, date: forwardInfo.date, authorSignature: forwardInfo.authorSignature, psaType: forwardInfo.psaType, flags: forwardInfo.flags)
-                                    }
-                                    
-                                    return .update(StoreMessage(id: currentMessage.id, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: newMessageText, attributes: currentMessage.attributes, media: currentMessage.media))
-                                })
-                            }).start()
+                        if message.hasNicegramTranslation() {
+                            message.removeNicegramTranslation(
+                                context: context
+                            )
                         } else {
                             let toLang = getPreferredTranslationTargetLanguage(presentationData)
                             let _ = (gtranslate(textToTranslate, toLang) |> deliverOnMainQueue).start(next: { translated in
-                                let newMessageText = message.text + "\n\n\(gTranslateSeparator)\n" + translated
-                                let _ = (context.account.postbox.transaction { transaction -> Void in
-                                    transaction.updateMessage(message.id, update: { currentMessage in
-                                        var storeForwardInfo: StoreMessageForwardInfo?
-                                        if let forwardInfo = currentMessage.forwardInfo {
-                                            storeForwardInfo = StoreMessageForwardInfo(authorId: forwardInfo.author?.id, sourceId: forwardInfo.source?.id, sourceMessageId: forwardInfo.sourceMessageId, date: forwardInfo.date, authorSignature: forwardInfo.authorSignature, psaType: forwardInfo.psaType, flags: forwardInfo.flags)
-                                        }
-
-                                        return .update(StoreMessage(id: currentMessage.id, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId:  currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: newMessageText, attributes: currentMessage.attributes, media: currentMessage.media))
-                                    })
-                                }).start()
+                                message.addNicegramTranslation(
+                                    translated,
+                                    context: context
+                                )
                             }, error: { _ in
                                 let c = getIAPErrorController(context: context, "Messages.TranslateError", presentationData)
                                 controllerInteraction.presentGlobalOverlayController(c, nil)
@@ -1943,6 +1926,52 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                     }
                 }
                 
+                // MARK: Nicegram EditedMessages
+                if !isSecretChat {
+                    let nicegramAttribute = message.nicegramAttribute
+                    let originalText = nicegramAttribute.originalText
+                    
+                    let image: UIImage? = if #available(iOS 13.0, *) {
+                        UIImage(systemName: "eye")
+                    } else {
+                        nil
+                    }
+                    
+                    if message.hasTextBlock(.ngOriginalText) {
+                        let action = ContextMenuActionItem(
+                            text: l("UndoShowOriginalText"),
+                            icon: { theme in
+                                generateTintedImage(image: image, color: theme.actionSheet.primaryTextColor)
+                            },
+                            action: { _, f in
+                                message.removeTextBlock(
+                                    block: .ngOriginalText,
+                                    context: context
+                                )
+                                f(.dismissWithoutContent)
+                            }
+                        )
+                        ngContextItems.append(.action(action))
+                    } else if let originalText, originalText != message.text {
+                        let action = ContextMenuActionItem(
+                            text: l("ShowOriginalText"),
+                            icon: { theme in
+                                generateTintedImage(image: image, color: theme.actionSheet.primaryTextColor)
+                            },
+                            action: { _, f in
+                                message.addTextBlock(
+                                    text: originalText,
+                                    block: .ngOriginalText,
+                                    context: context
+                                )
+                                f(.dismissWithoutContent)
+                            }
+                        )
+                        ngContextItems.append(.action(action))
+                    }
+                }
+                //
+                
                 // MARK: Nicegram MessageMetadata
                 if !isSecretChat, #available(iOS 15.0, *) {
                     let messageMetadataAction = ContextMenuActionItem(
@@ -1979,7 +2008,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                
             // MARK: Nicegram SelectAllMessagesWithAuthor
             if let authorId = message.author?.id {
-                actions.append(.action(ContextMenuActionItem(text: l("Messages.SelectAllFromUser", locale), icon: { theme in
+                actions.append(.action(ContextMenuActionItem(text: l("Messages.SelectAllFromUser"), icon: { theme in
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/SelectAll"), color: theme.actionSheet.primaryTextColor)
                 }, action: { _, f in
                     _ = (context.engine.messages.allMessages(peerId: message.id.peerId, namespace: Namespaces.Message.Cloud)
@@ -2012,10 +2041,10 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                 let title: String
                 let mode: String
                 if message.isSpeechToTextDone() {
-                    title = l("Messages.UndoSpeechToText", locale)
+                    title = l("Messages.UndoSpeechToText")
                     mode = "undo"
                 } else {
-                    title = l("Messages.SpeechToText", locale)
+                    title = l("Messages.SpeechToText")
                     mode = "do"
                 }
                 
@@ -3071,20 +3100,20 @@ private final class ChatReadReportContextItemNode: ASDisplayNode, ContextMenuCus
             } else if self.item.message.id.peerId.namespace == Namespaces.Peer.CloudUser, let timestamp = currentStats.readTimestamps.first?.value {
                 let dateText = humanReadableStringForTimestamp(strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, timestamp: timestamp, alwaysShowTime: true, allowYesterday: true, format: HumanReadableStringFormat(
                     dateFormatString: { value in
-                        return PresentationStrings.FormattedString(string: self.presentationData.strings.Chat_MessageSeenTimestamp_Date(value).string, ranges: [])
+                        return PresentationStrings.FormattedString(string: self.presentationData.strings.Chat_PrivateMessageSeenTimestamp_Date(value).string, ranges: [])
                     },
                     tomorrowFormatString: { value in
-                        return PresentationStrings.FormattedString(string: self.presentationData.strings.Chat_MessageSeenTimestamp_TodayAt(value).string, ranges: [])
+                        return PresentationStrings.FormattedString(string: self.presentationData.strings.Chat_PrivateMessageSeenTimestamp_TodayAt(value).string, ranges: [])
                     },
                     todayFormatString: { value in
-                        return PresentationStrings.FormattedString(string: self.presentationData.strings.Chat_MessageSeenTimestamp_TodayAt(value).string, ranges: [])
+                        return PresentationStrings.FormattedString(string: self.presentationData.strings.Chat_PrivateMessageSeenTimestamp_TodayAt(value).string, ranges: [])
                     },
                     yesterdayFormatString: { value in
-                        return PresentationStrings.FormattedString(string: self.presentationData.strings.Chat_MessageSeenTimestamp_YesterdayAt(value).string, ranges: [])
+                        return PresentationStrings.FormattedString(string: self.presentationData.strings.Chat_PrivateMessageSeenTimestamp_YesterdayAt(value).string, ranges: [])
                     }
                 )).string
                 
-                self.textNode.attributedText = NSAttributedString(string: self.presentationData.strings.Chat_ContextMenuReadDate_ReadFormat(dateText).string, font: Font.regular(floor(self.presentationData.listsFontSize.baseDisplaySize * 0.8)), textColor: self.presentationData.theme.contextMenu.primaryColor)
+                self.textNode.attributedText = NSAttributedString(string: dateText, font: Font.regular(floor(self.presentationData.listsFontSize.baseDisplaySize * 0.8)), textColor: self.presentationData.theme.contextMenu.primaryColor)
             } else {
                 if reactionCount != 0 {
                     let text: String

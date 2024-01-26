@@ -273,6 +273,11 @@ public func messageIsElligibleForLargeCustomEmoji(_ message: Message) -> Bool {
 }
 
 public func canAddMessageReactions(message: Message) -> Bool {
+    // MARK: Nicegram DeletedMessages
+    if message.nicegramAttribute.isDeleted {
+        return false
+    }
+    //
     if message.id.namespace != Namespaces.Message.Cloud {
         return false
     }

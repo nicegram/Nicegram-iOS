@@ -11,7 +11,7 @@ import AccountContext
 
 enum ChatListNodeEntryId: Hashable {
     // MARK: Nicegram PinnedChats
-    case ngPinnedChat(NGPinnedChat.ID)
+    case ngPinnedChat(PinnedChat.ID)
     //
     case Header
     case Hole(Int64)
@@ -98,7 +98,7 @@ public enum ChatListNotice: Equatable {
 enum ChatListNodeEntry: Comparable, Identifiable {
     struct PeerEntryData: Equatable {
         // MARK: Nicegram PinnedChats
-        var nicegramItem: NGPinnedChat?
+        var nicegramItem: PinnedChatToDisplay?
         //
         var index: EngineChatList.Item.Index
         var presentationData: ChatListPresentationData
@@ -127,7 +127,7 @@ enum ChatListNodeEntry: Comparable, Identifiable {
         
         init(
             // MARK: Nicegram PinnedChats
-            nicegramItem: NGPinnedChat? = nil,
+            nicegramItem: PinnedChatToDisplay? = nil,
             //
             index: EngineChatList.Item.Index,
             presentationData: ChatListPresentationData,
@@ -598,7 +598,7 @@ struct ChatListContactPeer {
 }
 
 // MARK: Nicegram PinnedChats, nicegramItems added
-func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, savedMessagesPeer: EnginePeer?, foundPeers: [(EnginePeer, EnginePeer?)], hideArchivedFolderByDefault: Bool, displayArchiveIntro: Bool, notice: ChatListNotice?, mode: ChatListNodeMode, chatListLocation: ChatListControllerLocation, contacts: [ChatListContactPeer], accountPeerId: EnginePeer.Id, isMainTab: Bool, nicegramItems: [NGPinnedChat]) -> (entries: [ChatListNodeEntry], loading: Bool) {
+func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, savedMessagesPeer: EnginePeer?, foundPeers: [(EnginePeer, EnginePeer?)], hideArchivedFolderByDefault: Bool, displayArchiveIntro: Bool, notice: ChatListNotice?, mode: ChatListNodeMode, chatListLocation: ChatListControllerLocation, contacts: [ChatListContactPeer], accountPeerId: EnginePeer.Id, isMainTab: Bool, nicegramItems: [PinnedChatToDisplay]) -> (entries: [ChatListNodeEntry], loading: Bool) {
     var groupItems = view.groupItems
     if isMainTab && state.archiveStoryState != nil && groupItems.isEmpty {
         groupItems.append(EngineChatList.GroupItem(

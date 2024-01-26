@@ -173,9 +173,8 @@ private struct PasscodeOptionsData: Equatable {
 private func autolockStringForTimeout(strings: PresentationStrings, timeout: Int32?) -> String {
     if let timeout = timeout {
         // MARK: Nicegram InstantLock
-        let locale = strings.baseLanguageCode
         if timeout == instantLockTimeout {
-            return l("NiceFeatures.InstantLock", locale)
+            return l("NiceFeatures.InstantLock")
         }
         //
         if timeout == 10 {

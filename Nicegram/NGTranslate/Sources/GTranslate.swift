@@ -27,11 +27,7 @@ public func setPreferredTranslationTargetLanguage(code: String) {
 }
 
 public func getTranslateUrl(_ message: String,_ toLang: String) -> String {
-    var sanitizedMessage = message.replaceCharactersFromSet(characterSet:CharacterSet.newlines, replacementString: "¦")
-    
-    if let dotRange = sanitizedMessage.range(of: "\n\n" + gTranslateSeparator) {
-        sanitizedMessage.removeSubrange(dotRange.lowerBound..<sanitizedMessage.endIndex)
-    }
+    let sanitizedMessage = message.replacingOccurrences(of: "\n", with: "<br>")
     
     var queryCharSet = NSCharacterSet.urlQueryAllowed
     queryCharSet.remove(charactersIn: "+&")
@@ -39,7 +35,9 @@ public func getTranslateUrl(_ message: String,_ toLang: String) -> String {
 }
 
 func prepareResultString(_ str: String) -> String {
-    return str.htmlDecoded.replacingOccurrences(of: " ¦", with: "\n").replacingOccurrences(of: "¦ ", with: "\n").replacingOccurrences(of: "¦", with: "\n")
+    str
+        .htmlDecoded
+        .replacingOccurrences(of: "<br>", with: "\n")
 }
 
 public func parseTranslateResponse(_ data: String) -> String {

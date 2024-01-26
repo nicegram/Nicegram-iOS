@@ -160,6 +160,9 @@ public final class TelegramAccountManagerTypes: AccountManagerTypes {
 }
 
 private var declaredEncodables: Void = {
+    // MARK: Nicegram
+    declareEncodable(NicegramMessageAttribute.self, f: { NicegramMessageAttribute(decoder: $0) })
+    //
     declareEncodable(UnauthorizedAccountState.self, f: { UnauthorizedAccountState(decoder: $0) })
     declareEncodable(AuthorizedAccountState.self, f: { AuthorizedAccountState(decoder: $0) })
     declareEncodable(TelegramUser.self, f: { TelegramUser(decoder: $0) })

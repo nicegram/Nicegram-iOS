@@ -1,8 +1,8 @@
 import Foundation
 import NGLocalization
 
-public func l(_ key: String, _ locale: String? = nil) -> String {
-    let code = locale ?? ng_getTgLangCode()
+public func l(_ key: String) -> String {
+    let code = ng_getTgLangCode()
     let table = "NiceLocalizable"
     
     let bundle = localizationBundle(code: code)
@@ -21,8 +21,8 @@ public func l(_ key: String, _ locale: String? = nil) -> String {
     ) ?? enString
 }
 
-public func l(_ key: String, _ locale: String? = nil, with args: CVarArg...) -> String {
-    return String(format: l(key, locale), args)
+public func l(_ key: String, with args: CVarArg...) -> String {
+    return String(format: l(key), args)
 }
 
 private func localizationBundle(
