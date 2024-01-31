@@ -216,7 +216,7 @@ private extension NGDeeplinkHandler {
     func handlePstAuth(url: URL) -> Bool {
         if #available(iOS 13.0, *) {
             Task { @MainActor in
-                CardUITgHelper.showSplashFromDeeplink()
+                await CardUITgHelper.routeToCardFromDeeplink()
             }
             return true
         }

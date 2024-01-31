@@ -677,12 +677,6 @@ open class ChatMessageItemView: ListViewItemNode, ChatMessageItemNodeProtocol {
     
     open func setupItem(_ item: ChatMessageItem, synchronousLoad: Bool) {
         self.item = item
-        
-        // MARK: Nicegram DeletedMessages
-        if item.message.nicegramAttribute.isDeleted {
-            self.alpha = 0.5
-        }
-        //
     }
     
     open func updateAccessibilityData(_ accessibilityData: ChatMessageAccessibilityData) {
