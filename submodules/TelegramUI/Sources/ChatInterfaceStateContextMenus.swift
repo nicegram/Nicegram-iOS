@@ -1452,11 +1452,6 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
         if isMigrated {
             canPin = false
         }
-        // MARK: Nicegram DeletedMessages
-        if message.nicegramAttribute.isDeleted {
-            canPin = false
-        }
-        //
         
         if canPin {
             var pinnedSelectedMessageId: MessageId?
@@ -1925,52 +1920,6 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                         }
                     }
                 }
-                
-                // MARK: Nicegram EditedMessages
-                if !isSecretChat {
-                    let nicegramAttribute = message.nicegramAttribute
-                    let originalText = nicegramAttribute.originalText
-                    
-                    let image: UIImage? = if #available(iOS 13.0, *) {
-                        UIImage(systemName: "eye")
-                    } else {
-                        nil
-                    }
-                    
-                    if message.hasTextBlock(.ngOriginalText) {
-                        let action = ContextMenuActionItem(
-                            text: l("UndoShowOriginalText"),
-                            icon: { theme in
-                                generateTintedImage(image: image, color: theme.actionSheet.primaryTextColor)
-                            },
-                            action: { _, f in
-                                message.removeTextBlock(
-                                    block: .ngOriginalText,
-                                    context: context
-                                )
-                                f(.dismissWithoutContent)
-                            }
-                        )
-                        ngContextItems.append(.action(action))
-                    } else if let originalText, originalText != message.text {
-                        let action = ContextMenuActionItem(
-                            text: l("ShowOriginalText"),
-                            icon: { theme in
-                                generateTintedImage(image: image, color: theme.actionSheet.primaryTextColor)
-                            },
-                            action: { _, f in
-                                message.addTextBlock(
-                                    text: originalText,
-                                    block: .ngOriginalText,
-                                    context: context
-                                )
-                                f(.dismissWithoutContent)
-                            }
-                        )
-                        ngContextItems.append(.action(action))
-                    }
-                }
-                //
                 
                 // MARK: Nicegram MessageMetadata
                 if !isSecretChat, #available(iOS 15.0, *) {

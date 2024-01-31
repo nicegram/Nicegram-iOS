@@ -29,15 +29,6 @@ extension ChatControllerImpl {
 
     // MARK: Nicegram (cloud + asCopy)
     func forwardMessages(messages: [Message], options: ChatInterfaceForwardOptionsState? = nil, resetCurrent: Bool, cloud: Bool = false, asCopy: Bool = false) {
-        // MARK: Nicegram DeletedMessages
-        var asCopy = asCopy
-        
-        let hasDeletedMessage = messages.contains(where: { $0.nicegramAttribute.isDeleted })
-        if hasDeletedMessage {
-            asCopy = true
-        }
-        //
-        
         let _ = self.presentVoiceMessageDiscardAlert(action: {
             
             // MARK: Nicegram

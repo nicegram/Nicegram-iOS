@@ -122,13 +122,6 @@ func chatHistoryEntriesForView(
         var message = entry.message
         var isRead = entry.isRead
         
-        // MARK: Nicegram DeletedMessages
-        if !NGDeletedMessages.showDeletedMessages,
-           message.nicegramAttribute.isDeleted {
-            continue
-        }
-        //
-        
         if pendingRemovedMessages.contains(message.id) {
             continue
         }

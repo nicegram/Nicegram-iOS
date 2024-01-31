@@ -81,7 +81,6 @@ private enum EasyToggleType {
     case showRegDate
     case hideReactions
     case hideStories
-    case showDeletedMessages
 }
 
 
@@ -509,8 +508,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                     VarSystemNGSettings.hideReactions = value
                 case .hideStories:
                     NGSettings.hideStories = value
-                case .showDeletedMessages:
-                    NGDeletedMessages.showDeletedMessages = value
                 }
             })
         case let .unblockHeader(text):
@@ -667,9 +664,6 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     toggleIndex += 1
     
     entries.append(.easyToggle(toggleIndex, .hideStories, l("NicegramSettings.HideStories"), NGSettings.hideStories))
-    toggleIndex += 1
-    
-    entries.append(.easyToggle(toggleIndex, .showDeletedMessages, l("ShowDeletedMessages"), NGDeletedMessages.showDeletedMessages))
     toggleIndex += 1
     
     entries.append(.shareChannelsInfoToggle(l("NicegramSettings.ShareChannelsInfoToggle"), isShareChannelsInfoEnabled()))

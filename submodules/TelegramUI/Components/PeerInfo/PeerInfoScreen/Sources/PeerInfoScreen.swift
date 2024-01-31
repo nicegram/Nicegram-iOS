@@ -9048,13 +9048,6 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
         case .watch:
             push(watchSettingsController(context: self.context))
         case .support:
-            // MARK: Nicegram GermanSupport
-            if self.presentationData.strings.baseLanguageCode.lowercased().contains("de"),
-               let url = URL(string: "https://t.me/EinleitungHilfeTelegram") {
-                CoreContainer.shared.urlOpener().open(url)
-                break
-            }
-            //
             let supportPeer = Promise<PeerId?>()
             supportPeer.set(context.engine.peers.supportPeerId())
             

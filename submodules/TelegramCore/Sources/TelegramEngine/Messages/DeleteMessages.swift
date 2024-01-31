@@ -23,13 +23,6 @@ func addMessageMediaResourceIdsToRemove(message: Message, resourceIds: inout [Me
 }
 
 public func _internal_deleteMessages(transaction: Transaction, mediaBox: MediaBox, ids: [MessageId], deleteMedia: Bool = true, manualAddMessageThreadStatsDifference: ((MessageThreadKey, Int, Int) -> Void)? = nil) {
-    // MARK: Nicegram DeletedMessages
-    let ids = NGDeletedMessages.markMessagesAsDeleted(
-        ids: ids,
-        transaction: transaction
-    )
-    //
-    
     var resourceIds: [MediaResourceId] = []
     if deleteMedia {
         for id in ids {
