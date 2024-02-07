@@ -860,7 +860,7 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "a4ccb0d40263a24aecc4c555bb6069e285ea9405",
+        "commit": "6e15969c39005fa75df34bb7bf0d77e433490d39",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
         "branch": "develop"
       }
