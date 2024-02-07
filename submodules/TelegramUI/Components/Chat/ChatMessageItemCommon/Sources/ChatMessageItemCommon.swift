@@ -1,3 +1,6 @@
+// MARK: Nicegram HideReactions
+import NGData
+//
 import Foundation
 import UIKit
 import Display
@@ -276,7 +279,18 @@ public func messageIsElligibleForLargeCustomEmoji(_ message: Message) -> Bool {
     return true
 }
 
-public func canAddMessageReactions(message: Message) -> Bool {
+// MARK: Nicegram HideReactions, account added
+public func canAddMessageReactions(message: Message, account: Account) -> Bool {
+    // MARK: Nicegram HideReactions
+    let isTags = message.areReactionsTags(
+        accountPeerId: account.peerId
+    )
+    if !isTags, VarSystemNGSettings.hideReactions {
+        return false
+    }
+    //
+    
+    
     if message.id.namespace != Namespaces.Message.Cloud {
         return false
     }

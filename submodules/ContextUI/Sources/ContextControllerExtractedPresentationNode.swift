@@ -637,8 +637,7 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
         var animateReactionsIn = false
         var contentTopInset: CGFloat = topInset
         var removedReactionContextNode: ReactionContextNode?
-        // MARK: Nicegram
-        if let reactionItems = self.actionsStackNode.topReactionItems, !reactionItems.reactionItems.isEmpty, !UserDefaults.standard.bool(forKey: "hideReactions") {
+        if let reactionItems = self.actionsStackNode.topReactionItems, !reactionItems.reactionItems.isEmpty {
             let reactionContextNode: ReactionContextNode
             if let current = self.reactionContextNode {
                 reactionContextNode = current

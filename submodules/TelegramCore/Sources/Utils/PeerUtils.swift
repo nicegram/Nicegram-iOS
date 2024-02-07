@@ -26,6 +26,21 @@ public extension Peer {
         let reason = restrictionReason(contentSettings: contentSettings)
         return reason?.contains("porn") ?? false
     }
+    
+    func unblockRequiresAnotherPhoneNumber() -> Bool {
+        let restrictionInfo: PeerAccessRestrictionInfo? = switch self {
+        case let user as TelegramUser:
+            user.restrictionInfo
+        case let channel as TelegramChannel:
+            channel.restrictionInfo
+        default:
+            nil
+        }
+        
+        let rules = restrictionInfo?.rules ?? []
+        
+        return rules.contains(where: { $0.platform == "all" } )
+    }
     //
     
     // MARK: Nicegram (extractReason)

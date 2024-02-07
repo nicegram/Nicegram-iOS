@@ -1332,7 +1332,8 @@ public class ChatMessageStickerItemNode: ChatMessageItemView {
                     case let .optionalAction(f):
                         f()
                     case let .openContextMenu(openContextMenu):
-                        if canAddMessageReactions(message: item.message) {
+                        // MARK: Nicegram HideReactions, account added
+                        if canAddMessageReactions(message: item.message, account: item.context.account) {
                             item.controllerInteraction.updateMessageReaction(openContextMenu.tapMessage, .default, false)
                         } else {
                             item.controllerInteraction.openMessageContextMenu(openContextMenu.tapMessage, openContextMenu.selectAll, self, openContextMenu.subFrame, nil, nil)

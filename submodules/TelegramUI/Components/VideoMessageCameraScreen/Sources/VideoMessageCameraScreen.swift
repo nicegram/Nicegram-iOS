@@ -624,13 +624,12 @@ public class VideoMessageCameraScreen: ViewController {
             self.previewContainerView = UIView()
             self.previewContainerView.clipsToBounds = true
                 
+            let isDualCameraEnabled = Camera.isDualCameraSupported
             // MARK: Nicegram (useRearCamTelescopy), change let to var
-            var isDualCameraEnabled = Camera.isDualCameraSupported
             var isFrontPosition = "".isEmpty
             
             // MARK: Nicegram (useRearCamTelescopy)
             if NGSettings.useRearCamTelescopy {
-                isDualCameraEnabled = false
                 isFrontPosition = false
             }
             //

@@ -109,8 +109,9 @@ extension ChatControllerImpl {
                 
                 actions.context = self.context
                 actions.animationCache = self.controllerInteraction?.presentationContext.animationCache
-                                                         
-                if canAddMessageReactions(message: topMessage), let allowedReactions = allowedReactions, !topReactions.isEmpty {
+                                        
+                // MARK: Nicegram HideReactions, account added
+                if canAddMessageReactions(message: topMessage, account: context.account), let allowedReactions = allowedReactions, !topReactions.isEmpty {
                     actions.reactionItems = topReactions.map(ReactionContextItem.reaction)
                     actions.selectedReactionItems = selectedReactions.reactions
                     if message.areReactionsTags(accountPeerId: self.context.account.peerId) {

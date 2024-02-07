@@ -1,3 +1,6 @@
+// MARK: Nicegram (useRearCamTelescopy)
+import NGData
+//
 import Foundation
 import AVFoundation
 import UIKit
@@ -308,6 +311,13 @@ final class CameraOutput: NSObject {
         }
         
         Logger.shared.log("CameraOutput", "startRecording")
+        
+        // MARK: Nicegram (useRearCamTelescopy)
+        if case .roundVideo = mode,
+           NGSettings.useRearCamTelescopy {
+            self.currentPosition = .back
+        }
+        //
         
         self.currentMode = mode
         self.lastSampleTimestamp = nil

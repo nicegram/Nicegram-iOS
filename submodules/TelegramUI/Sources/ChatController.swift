@@ -1424,7 +1424,8 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                     }
                     
                     if removedReaction == nil {
-                        if !canAddMessageReactions(message: message) {
+                        // MARK: Nicegram HideReactions, account added
+                        if !canAddMessageReactions(message: message, account: context.account) {
                             itemNode.openMessageContextMenu()
                             return
                         }

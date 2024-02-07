@@ -1077,15 +1077,17 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
             false
         }
         let isPrivate = (peer.addressName == nil)
-        let isRestricted = peer.hasPornRestriction(
+        
+        let isPornChat = peer.hasPornRestriction(
             contentSettings: self.context.currentContentSettings.with { $0 }
         )
         
         ngBannerModel.set(
             chatData: ChatData(
                 isChannel: isChannel,
+                isPornChat: isPornChat,
                 isPrivate: isPrivate,
-                isRestricted: isRestricted
+                unblockRequiresAnotherPhoneNumber: peer.unblockRequiresAnotherPhoneNumber()
             )
         )
     }
@@ -3041,8 +3043,10 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                 if (isAllowedChat(peer: peer, contentSettings: context.currentContentSettings.with { $0 })) {
                     restrictionText = nil
                 } else if restrictionText != nil {
-                    showUnblockButton = true
-                    AppCache.lastSeenBlockedChatId = peer?.id.id._internalGetInt64Value()
+                    if let peer, !peer.unblockRequiresAnotherPhoneNumber() {
+                        showUnblockButton = true
+                        AppCache.lastSeenBlockedChatId = peer.id.id._internalGetInt64Value()
+                    }
                 }
             }
             

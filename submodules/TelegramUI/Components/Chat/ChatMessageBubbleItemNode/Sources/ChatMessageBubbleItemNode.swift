@@ -4215,7 +4215,8 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     case let .optionalAction(f):
                         f()
                     case let .openContextMenu(openContextMenu):
-                        if canAddMessageReactions(message: openContextMenu.tapMessage) {
+                        // MARK: Nicegram HideReactions, account added
+                        if canAddMessageReactions(message: openContextMenu.tapMessage, account: item.context.account) {
                             item.controllerInteraction.updateMessageReaction(openContextMenu.tapMessage, .default, false)
                         } else {
                             item.controllerInteraction.openMessageContextMenu(openContextMenu.tapMessage, openContextMenu.selectAll, self, openContextMenu.subFrame, nil, nil)
@@ -4224,7 +4225,8 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 } else if case .tap = gesture {
                     item.controllerInteraction.clickThroughMessage()
                 } else if case .doubleTap = gesture {
-                    if canAddMessageReactions(message: item.message) {
+                    // MARK: Nicegram HideReactions, account added
+                    if canAddMessageReactions(message: item.message, account: item.context.account) {
                         item.controllerInteraction.updateMessageReaction(item.message, .default, false)
                     }
                 }
