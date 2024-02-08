@@ -124,6 +124,7 @@ enum ChatListNodeEntry: Comparable, Identifiable {
         var revealed: Bool
         var storyState: ChatListNodeState.StoryState?
         var requiresPremiumForMessaging: Bool
+        var displayAsTopicList: Bool
         
         init(
             // MARK: Nicegram PinnedChats
@@ -152,7 +153,8 @@ enum ChatListNodeEntry: Comparable, Identifiable {
             topForumTopicItems: [EngineChatList.ForumTopicData],
             revealed: Bool,
             storyState: ChatListNodeState.StoryState?,
-            requiresPremiumForMessaging: Bool
+            requiresPremiumForMessaging: Bool,
+            displayAsTopicList: Bool
         ) {
             // MARK: Nicegram PinnedChats
             self.nicegramItem = nicegramItem
@@ -181,6 +183,7 @@ enum ChatListNodeEntry: Comparable, Identifiable {
             self.revealed = revealed
             self.storyState = storyState
             self.requiresPremiumForMessaging = requiresPremiumForMessaging
+            self.displayAsTopicList = displayAsTopicList
         }
         
         static func ==(lhs: PeerEntryData, rhs: PeerEntryData) -> Bool {
@@ -294,6 +297,9 @@ enum ChatListNodeEntry: Comparable, Identifiable {
                 return false
             }
             if lhs.requiresPremiumForMessaging != rhs.requiresPremiumForMessaging {
+                return false
+            }
+            if lhs.displayAsTopicList != rhs.displayAsTopicList {
                 return false
             }
             return true
@@ -730,7 +736,8 @@ func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, 
                     hasUnseenCloseFriends: stats.hasUnseenCloseFriends
                 )
             },
-            requiresPremiumForMessaging: false
+            requiresPremiumForMessaging: false,
+            displayAsTopicList: entry.displayAsTopicList
         ))
         
         if let threadInfo, threadInfo.isHidden {
@@ -785,7 +792,8 @@ func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, 
                         topForumTopicItems: [],
                         revealed: false,
                         storyState: nil,
-                        requiresPremiumForMessaging: false
+                        requiresPremiumForMessaging: false,
+                        displayAsTopicList: false
                     )))
                     if foundPinningIndex != 0 {
                         foundPinningIndex -= 1
@@ -817,7 +825,8 @@ func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, 
                 topForumTopicItems: [],
                 revealed: false,
                 storyState: nil,
-                requiresPremiumForMessaging: false
+                requiresPremiumForMessaging: false,
+                displayAsTopicList: false
             )))
         } else {
             if !filteredAdditionalItemEntries.isEmpty {
@@ -869,7 +878,8 @@ func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, 
                         topForumTopicItems: item.item.topForumTopicItems,
                         revealed: state.hiddenItemShouldBeTemporaryRevealed || state.editing,
                         storyState: nil,
-                        requiresPremiumForMessaging: false
+                        requiresPremiumForMessaging: false,
+                        displayAsTopicList: false
                     )))
                     if pinningIndex != 0 {
                         pinningIndex -= 1
@@ -918,7 +928,8 @@ func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, 
                 topForumTopicItems: [],
                 revealed: false,
                 storyState: nil,
-                requiresPremiumForMessaging: false
+                requiresPremiumForMessaging: false,
+                displayAsTopicList: false
             )))
             
             if pinningIndex != 0 {

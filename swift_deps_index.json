@@ -128,6 +128,16 @@
       ]
     },
     {
+      "name": "FeatEsimSplash",
+      "c99name": "FeatEsimSplash",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatEsimSplash",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "nicegram-assistant"
+      ]
+    },
+    {
       "name": "FeatHiddenChats",
       "c99name": "FeatHiddenChats",
       "src_type": "swift",
@@ -850,7 +860,7 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "f1b83c87b7c0da94adad36a17d36b124e98b86c7",
+        "commit": "6e15969c39005fa75df34bb7bf0d77e433490d39",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
         "branch": "develop"
       }

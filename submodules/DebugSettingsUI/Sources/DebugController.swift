@@ -83,8 +83,6 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     case keepChatNavigationStack(PresentationTheme, Bool)
     case skipReadHistory(PresentationTheme, Bool)
     case dustEffect(Bool)
-    case callV2(Bool)
-    case alternativeStoryMedia(Bool)
     case crashOnSlowQueries(PresentationTheme, Bool)
     case crashOnMemoryPressure(PresentationTheme, Bool)
     case clearTips(PresentationTheme)
@@ -142,7 +140,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return DebugControllerSection.logging.rawValue
         case .webViewInspection, .resetWebViewCache:
             return DebugControllerSection.web.rawValue
-        case .keepChatNavigationStack, .skipReadHistory, .dustEffect, .callV2, .alternativeStoryMedia, .crashOnSlowQueries, .crashOnMemoryPressure:
+        case .keepChatNavigationStack, .skipReadHistory, .dustEffect, .crashOnSlowQueries, .crashOnMemoryPressure:
             return DebugControllerSection.experiments.rawValue
         case .clearTips, .resetNotifications, .crash, .fillLocalSavedMessageCache, .resetDatabase, .resetDatabaseAndCache, .resetHoles, .resetTagHoles, .reindexUnread, .resetCacheIndex, .reindexCache, .resetBiometricsData, .optimizeDatabase, .photoPreview, .knockoutWallpaper, .storiesExperiment, .storiesJpegExperiment, .playlistPlayback, .enableQuickReactionSwitch, .voiceConference, .experimentalCompatibility, .enableDebugDataDisplay, .acceleratedStickers, .inlineForums, .localTranscription, .enableReactionOverrides, .restorePurchases:
             return DebugControllerSection.experiments.rawValue
@@ -201,10 +199,6 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return 16
         case .dustEffect:
             return 17
-        case .callV2:
-            return 18
-        case .alternativeStoryMedia:
-            return 19
         case .crashOnSlowQueries:
             return 20
         case .crashOnMemoryPressure:
@@ -1009,22 +1003,6 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     return settings
                 }).start()
             })
-        case let .callV2(value):
-            return ItemListSwitchItem(presentationData: presentationData, title: "CallV2", value: value, sectionId: self.section, style: .blocks, updated: { value in
-                let _ = updateExperimentalUISettingsInteractively(accountManager: arguments.sharedContext.accountManager, { settings in
-                    var settings = settings
-                    settings.callV2 = value
-                    return settings
-                }).start()
-            })
-        case let .alternativeStoryMedia(value):
-            return ItemListSwitchItem(presentationData: presentationData, title: "Story Data Saver", value: value, sectionId: self.section, style: .blocks, updated: { value in
-                let _ = updateExperimentalUISettingsInteractively(accountManager: arguments.sharedContext.accountManager, { settings in
-                    var settings = settings
-                    settings.alternativeStoryMedia = value
-                    return settings
-                }).start()
-            })
         case let .crashOnSlowQueries(_, value):
             return ItemListSwitchItem(presentationData: presentationData, title: "Crash when slow", value: value, sectionId: self.section, style: .blocks, updated: { value in
                 let _ = updateExperimentalUISettingsInteractively(accountManager: arguments.sharedContext.accountManager, { settings in
@@ -1513,8 +1491,6 @@ private func debugControllerEntries(sharedContext: SharedAccountContext, present
         entries.append(.skipReadHistory(presentationData.theme, experimentalSettings.skipReadHistory))
         #endif
         entries.append(.dustEffect(experimentalSettings.dustEffect))
-        entries.append(.callV2(experimentalSettings.callV2))
-        entries.append(.alternativeStoryMedia(experimentalSettings.alternativeStoryMedia))
     }
     entries.append(.crashOnSlowQueries(presentationData.theme, experimentalSettings.crashOnLongQueries))
     entries.append(.crashOnMemoryPressure(presentationData.theme, experimentalSettings.crashOnMemoryPressure))

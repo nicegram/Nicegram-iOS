@@ -210,6 +210,7 @@ final class PeerInfoScreenData {
     let appConfiguration: AppConfiguration?
     let isPowerSavingEnabled: Bool?
     let accountIsPremium: Bool
+    let hasSavedMessageTags: Bool
     
     let _isContact: Bool
     var forceIsContact: Bool = false
@@ -245,7 +246,8 @@ final class PeerInfoScreenData {
         threadData: MessageHistoryThreadData?,
         appConfiguration: AppConfiguration?,
         isPowerSavingEnabled: Bool?,
-        accountIsPremium: Bool
+        accountIsPremium: Bool,
+        hasSavedMessageTags: Bool
     ) {
         self.peer = peer
         self.chatPeer = chatPeer
@@ -270,6 +272,7 @@ final class PeerInfoScreenData {
         self.appConfiguration = appConfiguration
         self.isPowerSavingEnabled = isPowerSavingEnabled
         self.accountIsPremium = accountIsPremium
+        self.hasSavedMessageTags = hasSavedMessageTags
     }
 }
 
@@ -301,10 +304,7 @@ public func hasAvailablePeerInfoMediaPanes(context: AccountContext, peerId: Peer
                          
     let hasSavedMessagesChats: Signal<Bool, NoError>
     if peerId == context.account.peerId {
-        hasSavedMessagesChats = context.engine.messages.savedMessagesPeerListHead()
-        |> map { headPeerId -> Bool in
-            return headPeerId != nil
-        }
+        hasSavedMessagesChats = context.engine.messages.savedMessagesHasPeersOtherThanSaved()
         |> distinctUntilChanged
     } else {
         hasSavedMessagesChats = .single(false)
@@ -668,7 +668,8 @@ func peerInfoScreenSettingsData(context: AccountContext, peerId: EnginePeer.Id, 
             threadData: nil,
             appConfiguration: appConfiguration,
             isPowerSavingEnabled: isPowerSavingEnabled,
-            accountIsPremium: peer?.isPremium ?? false
+            accountIsPremium: peer?.isPremium ?? false,
+            hasSavedMessageTags: false
         )
     }
 }
@@ -703,7 +704,8 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                 threadData: nil,
                 appConfiguration: nil,
                 isPowerSavingEnabled: nil,
-                accountIsPremium: false
+                accountIsPremium: false,
+                hasSavedMessageTags: false
             ))
         case let .user(userPeerId, secretChatId, kind):
             let groupsInCommon: GroupsInCommonContext?
@@ -845,14 +847,60 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                 }
                 |> distinctUntilChanged
                 
-                hasSavedMessagesChats = context.engine.messages.savedMessagesPeerListHead()
-                |> map { headPeerId -> Bool in
-                    return headPeerId != nil
+                if peerId == context.account.peerId {
+                    hasSavedMessagesChats = combineLatest(
+                        context.engine.messages.savedMessagesHasPeersOtherThanSaved(),
+                        context.engine.data.get(
+                            TelegramEngine.EngineData.Item.Peer.DisplaySavedChatsAsTopics()
+                        )
+                    )
+                    |> map { hasChats, displayAsTopics -> Bool in
+                        return hasChats || displayAsTopics
+                    }
+                    |> distinctUntilChanged
+                } else {
+                    hasSavedMessagesChats = context.engine.messages.savedMessagesPeerListHead()
+                    |> map { headPeerId -> Bool in
+                        return headPeerId != nil
+                    }
+                    |> distinctUntilChanged
                 }
-                |> distinctUntilChanged
             } else {
                 hasSavedMessages = .single(false)
                 hasSavedMessagesChats = .single(false)
+            }
+            
+            let hasSavedMessageTags: Signal<Bool, NoError>
+            if let peerId = chatLocation.peerId {
+                if case .peer = chatLocation {
+                    if peerId != context.account.peerId {
+                        hasSavedMessageTags = context.engine.data.subscribe(
+                            TelegramEngine.EngineData.Item.Messages.SavedMessageTagStats(peerId: context.account.peerId, threadId: peerId.toInt64())
+                        )
+                        |> map { tags -> Bool in
+                            return !tags.isEmpty
+                        }
+                        |> distinctUntilChanged
+                    } else {
+                        hasSavedMessageTags = context.engine.data.subscribe(
+                            TelegramEngine.EngineData.Item.Messages.SavedMessageTagStats(peerId: context.account.peerId, threadId: nil)
+                        )
+                        |> map { tags -> Bool in
+                            return !tags.isEmpty
+                        }
+                        |> distinctUntilChanged
+                    }
+                } else {
+                    hasSavedMessageTags = context.engine.data.subscribe(
+                        TelegramEngine.EngineData.Item.Messages.SavedMessageTagStats(peerId: context.account.peerId, threadId: peerId.toInt64())
+                    )
+                    |> map { tags -> Bool in
+                        return !tags.isEmpty
+                    }
+                    |> distinctUntilChanged
+                }
+            } else {
+                hasSavedMessageTags = .single(false)
             }
             
             return combineLatest(
@@ -865,9 +913,10 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                 accountIsPremium,
                 savedMessagesPeer,
                 hasSavedMessagesChats,
-                hasSavedMessages
+                hasSavedMessages,
+                hasSavedMessageTags
             )
-            |> map { peerView, availablePanes, globalNotificationSettings, encryptionKeyFingerprint, status, hasStories, accountIsPremium, savedMessagesPeer, hasSavedMessagesChats, hasSavedMessages -> PeerInfoScreenData in
+            |> map { peerView, availablePanes, globalNotificationSettings, encryptionKeyFingerprint, status, hasStories, accountIsPremium, savedMessagesPeer, hasSavedMessagesChats, hasSavedMessages, hasSavedMessageTags -> PeerInfoScreenData in
                 var availablePanes = availablePanes
                 
                 if let hasStories {
@@ -926,7 +975,8 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                     threadData: nil,
                     appConfiguration: nil,
                     isPowerSavingEnabled: nil,
-                    accountIsPremium: accountIsPremium
+                    accountIsPremium: accountIsPremium,
+                    hasSavedMessageTags: hasSavedMessageTags
                 )
             }
         case .channel:
@@ -987,6 +1037,19 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                 hasSavedMessagesChats = .single(false)
             }
             
+            let hasSavedMessageTags: Signal<Bool, NoError>
+            if let peerId = chatLocation.peerId {
+                hasSavedMessageTags = context.engine.data.subscribe(
+                    TelegramEngine.EngineData.Item.Messages.SavedMessageTagStats(peerId: context.account.peerId, threadId: peerId.toInt64())
+                )
+                |> map { tags -> Bool in
+                    return !tags.isEmpty
+                }
+                |> distinctUntilChanged
+            } else {
+                hasSavedMessageTags = .single(false)
+            }
+            
             return combineLatest(
                 context.account.viewTracker.peerView(peerId, updateData: true),
                 peerInfoAvailableMediaPanes(context: context, peerId: peerId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder),
@@ -1000,9 +1063,10 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                 accountIsPremium,
                 context.engine.peers.recommendedChannels(peerId: peerId),
                 hasSavedMessages,
-                hasSavedMessagesChats
+                hasSavedMessagesChats,
+                hasSavedMessageTags
             )
-            |> map { peerView, availablePanes, globalNotificationSettings, status, currentInvitationsContext, invitations, currentRequestsContext, requests, hasStories, accountIsPremium, recommendedChannels, hasSavedMessages, hasSavedMessagesChats -> PeerInfoScreenData in
+            |> map { peerView, availablePanes, globalNotificationSettings, status, currentInvitationsContext, invitations, currentRequestsContext, requests, hasStories, accountIsPremium, recommendedChannels, hasSavedMessages, hasSavedMessagesChats, hasSavedMessageTags -> PeerInfoScreenData in
                 var availablePanes = availablePanes
                 if let hasStories {
                     if hasStories {
@@ -1074,7 +1138,8 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                     threadData: nil,
                     appConfiguration: nil,
                     isPowerSavingEnabled: nil,
-                    accountIsPremium: accountIsPremium
+                    accountIsPremium: accountIsPremium,
+                    hasSavedMessageTags: hasSavedMessageTags
                 )
             }
         case let .group(groupId):
@@ -1221,6 +1286,19 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                 hasSavedMessagesChats = .single(false)
             }
             
+            let hasSavedMessageTags: Signal<Bool, NoError>
+            if let peerId = chatLocation.peerId {
+                hasSavedMessageTags = context.engine.data.subscribe(
+                    TelegramEngine.EngineData.Item.Messages.SavedMessageTagStats(peerId: context.account.peerId, threadId: peerId.toInt64())
+                )
+                |> map { tags -> Bool in
+                    return !tags.isEmpty
+                }
+                |> distinctUntilChanged
+            } else {
+                hasSavedMessageTags = .single(false)
+            }
+            
             return combineLatest(queue: .mainQueue(),
                 context.account.viewTracker.peerView(groupId, updateData: true),
                 peerInfoAvailableMediaPanes(context: context, peerId: groupId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder),
@@ -1235,9 +1313,10 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                 context.account.postbox.preferencesView(keys: [PreferencesKeys.appConfiguration]),
                 accountIsPremium,
                 hasSavedMessages,
-                hasSavedMessagesChats
+                hasSavedMessagesChats,
+                hasSavedMessageTags
             )
-            |> mapToSignal { peerView, availablePanes, globalNotificationSettings, status, membersData, currentInvitationsContext, invitations, currentRequestsContext, requests, threadData, preferencesView, accountIsPremium, hasSavedMessages, hasSavedMessagesChats -> Signal<PeerInfoScreenData, NoError> in
+            |> mapToSignal { peerView, availablePanes, globalNotificationSettings, status, membersData, currentInvitationsContext, invitations, currentRequestsContext, requests, threadData, preferencesView, accountIsPremium, hasSavedMessages, hasSavedMessagesChats, hasSavedMessageTags -> Signal<PeerInfoScreenData, NoError> in
                 var discussionPeer: Peer?
                 if case let .known(maybeLinkedDiscussionPeerId) = (peerView.cachedData as? CachedChannelData)?.linkedDiscussionPeerId, let linkedDiscussionPeerId = maybeLinkedDiscussionPeerId, let peer = peerView.peers[linkedDiscussionPeerId] {
                     discussionPeer = peer
@@ -1322,7 +1401,8 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                     threadData: threadData,
                     appConfiguration: appConfiguration,
                     isPowerSavingEnabled: nil,
-                    accountIsPremium: accountIsPremium
+                    accountIsPremium: accountIsPremium,
+                    hasSavedMessageTags: hasSavedMessageTags
                 ))
             }
         }

@@ -1,3 +1,6 @@
+// MARK: Nicegram (useRearCamTelescopy)
+import NGData
+//
 import Foundation
 import UIKit
 import Display
@@ -620,9 +623,16 @@ public class VideoMessageCameraScreen: ViewController {
             
             self.previewContainerView = UIView()
             self.previewContainerView.clipsToBounds = true
-                        
+                
             let isDualCameraEnabled = Camera.isDualCameraSupported
-            let isFrontPosition = "".isEmpty
+            // MARK: Nicegram (useRearCamTelescopy), change let to var
+            var isFrontPosition = "".isEmpty
+            
+            // MARK: Nicegram (useRearCamTelescopy)
+            if NGSettings.useRearCamTelescopy {
+                isFrontPosition = false
+            }
+            //
             
             self.mainPreviewView = CameraSimplePreviewView(frame: .zero, main: true, roundVideo: true)
             self.additionalPreviewView = CameraSimplePreviewView(frame: .zero, main: false, roundVideo: true)
@@ -695,7 +705,7 @@ public class VideoMessageCameraScreen: ViewController {
         func withReadyCamera(isFirstTime: Bool = false, _ f: @escaping () -> Void) {
             let previewReady: Signal<Bool, NoError>
             if #available(iOS 13.0, *) {
-                previewReady = self.cameraState.isDualCameraEnabled ? self.additionalPreviewView.isPreviewing : self.mainPreviewView.isPreviewing |> delay(0.2, queue: Queue.mainQueue())
+                previewReady = self.cameraState.isDualCameraEnabled ? self.additionalPreviewView.isPreviewing : self.mainPreviewView.isPreviewing |> delay(0.25, queue: Queue.mainQueue())
             } else {
                 previewReady = .single(true) |> delay(0.35, queue: Queue.mainQueue())
             }
@@ -740,7 +750,7 @@ public class VideoMessageCameraScreen: ViewController {
                     position: self.cameraState.position,
                     isDualEnabled: self.cameraState.isDualCameraEnabled,
                     audio: true,
-                    photo: true,
+                    photo: false,
                     metadata: false,
                     isRoundVideo: true
                 ),

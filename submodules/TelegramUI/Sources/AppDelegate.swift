@@ -1813,6 +1813,8 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }
         })
         
+        //self.addBackgroundDownloadTask()
+        
         return true
     }
     
@@ -1947,7 +1949,21 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         task.resume()
     }
     
+    private func addBackgroundDownloadTask() {
+        let baseAppBundleId = Bundle.main.bundleIdentifier!
+        let session = self.urlSession(identifier: "\(baseAppBundleId).backroundSession")
+
+        var request = URLRequest(url: URL(string: "https://example.com/\(UInt64.random(in: 0 ... UInt64.max))")!)
+        request.httpMethod = "GET"
+        
+        let task = session.downloadTask(with: request)
+        Logger.shared.log("App \(self.episodeId)", "adding download task \(String(describing: request.url))")
+        task.earliestBeginDate = Date(timeIntervalSinceNow: 30.0)
+        task.resume()
+    }
+    
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        Logger.shared.log("App \(self.episodeId)", "completed download task \(String(describing: task.originalRequest?.url)) error: \(String(describing: error))")
         if let response = task.response as? HTTPURLResponse {
             if let originalRequest = task.originalRequest {
                 if let requestResourceId = originalRequest.value(forHTTPHeaderField: "tresource") {

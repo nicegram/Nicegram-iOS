@@ -1,6 +1,8 @@
 import Foundation
 import Postbox
 
+public let anonymousSavedMessagesId: Int64 = 2666000
+
 public extension Peer {
     var debugDisplayTitle: String {
         switch self {
@@ -23,6 +25,21 @@ public extension Peer {
     func hasPornRestriction(contentSettings: ContentSettings) -> Bool {
         let reason = restrictionReason(contentSettings: contentSettings)
         return reason?.contains("porn") ?? false
+    }
+    
+    func unblockRequiresAnotherPhoneNumber() -> Bool {
+        let restrictionInfo: PeerAccessRestrictionInfo? = switch self {
+        case let user as TelegramUser:
+            user.restrictionInfo
+        case let channel as TelegramChannel:
+            channel.restrictionInfo
+        default:
+            nil
+        }
+        
+        let rules = restrictionInfo?.rules ?? []
+        
+        return rules.contains(where: { $0.platform == "all" } )
     }
     //
     
@@ -444,7 +461,7 @@ public extension PeerId {
     
     var isAnonymousSavedMessages: Bool {
         if self.namespace == Namespaces.Peer.CloudUser {
-            if self.id._internalGetInt64Value() == 2666000 {
+            if self.id._internalGetInt64Value() == anonymousSavedMessagesId {
                 return true
             }
         }

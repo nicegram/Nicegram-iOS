@@ -40,6 +40,10 @@ apple_resource_bundle(
     ],
 )
 
+NGDEPS = [
+    "//Nicegram/NGData:NGData",
+]
+
 swift_library(
     name = "Camera",
     module_name = "Camera",
@@ -52,7 +56,7 @@ swift_library(
     data = [
         ":CameraBundle",
     ],
-    deps = [
+    deps = NGDEPS + [
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
         "//submodules/AsyncDisplayKit:AsyncDisplayKit",
         "//submodules/Display:Display",
