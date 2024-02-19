@@ -8,7 +8,7 @@ swift_library(
     ]),
     deps = [
         "@FirebaseSDK//:FirebaseRemoteConfig",
-        "@swiftpkg_nicegram_assistant_ios//:Sources__NGRemoteConfig",
+        "@swiftpkg_nicegram_assistant_ios//:_NGRemoteConfig",
         "//Nicegram/NGEnv:NGEnv",
     ],
     visibility = ["//visibility:public"],

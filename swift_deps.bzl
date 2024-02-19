@@ -36,7 +36,7 @@ def swift_dependencies():
     # branch: develop
     swift_package(
         name = "swiftpkg_nicegram_assistant_ios",
-        commit = "6e15969c39005fa75df34bb7bf0d77e433490d39",
+        commit = "123eb001dcc9477f9087e40ff1b0e7f012182d45",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
     )
@@ -52,7 +52,7 @@ def swift_dependencies():
     # version: 5.15.5
     swift_package(
         name = "swiftpkg_sdwebimage",
-        commit = "59730af512c06fb569c119d737df4c1c499e001d",
+        commit = "b11493f76481dff17ac8f45274a6b698ba0d3af5",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/SDWebImage/SDWebImage.git",
     )
@@ -60,7 +60,7 @@ def swift_dependencies():
     # version: 5.6.0
     swift_package(
         name = "swiftpkg_snapkit",
-        commit = "e74fe2a978d1216c3602b129447c7301573cc2d8",
+        commit = "2842e6e84e82eb9a8dac0100ca90d9444b0307f4",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/SnapKit/SnapKit.git",
     )

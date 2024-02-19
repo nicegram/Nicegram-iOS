@@ -19,8 +19,9 @@ import TextFormat
 import SolidRoundedButtonComponent
 import BlurredBackgroundComponent
 import UndoUI
+import ConfettiEffect
 
-func requiredBoostSubjectLevel(subject: BoostSubject, context: AccountContext, configuration: PremiumConfiguration) -> Int32 {
+func requiredBoostSubjectLevel(subject: BoostSubject, group: Bool, context: AccountContext, configuration: PremiumConfiguration) -> Int32 {
     switch subject {
     case .stories:
         return 1
@@ -29,21 +30,31 @@ func requiredBoostSubjectLevel(subject: BoostSubject, context: AccountContext, c
     case let .nameColors(colors):
         if let value = context.peerNameColors.nameColorsChannelMinRequiredBoostLevel[colors.rawValue] {
             return value
-        } else {
-            return 1
         }
+        return 1
     case .nameIcon:
         return configuration.minChannelNameIconLevel
-    case .profileColors:
-        return configuration.minChannelProfileColorLevel
+    case let .profileColors(colors):
+        if group {
+            if let value = context.peerNameColors.profileColorsGroupMinRequiredBoostLevel[colors.rawValue] {
+                return value
+            }
+        } else {
+            return configuration.minChannelProfileColorLevel
+        }
+        return 1
     case .profileIcon:
-        return configuration.minChannelProfileIconLevel
+        return group ? configuration.minGroupProfileIconLevel : configuration.minChannelProfileIconLevel
     case .emojiStatus:
-        return configuration.minChannelEmojiStatusLevel
+        return group ? configuration.minGroupEmojiStatusLevel : configuration.minChannelEmojiStatusLevel
     case .wallpaper:
-        return configuration.minChannelWallpaperLevel
+        return group ? configuration.minGroupWallpaperLevel : configuration.minChannelWallpaperLevel
     case .customWallpaper:
-        return configuration.minChannelCustomWallpaperLevel
+        return group ? configuration.minGroupCustomWallpaperLevel : configuration.minChannelCustomWallpaperLevel
+    case .audioTranscription:
+        return configuration.minGroupAudioTranscriptionLevel
+    case .emojiPack:
+        return configuration.minGroupEmojiPackLevel
     }
 }
 
@@ -52,14 +63,16 @@ public enum BoostSubject: Equatable {
     case channelReactions(reactionCount: Int32)
     case nameColors(colors: PeerNameColor)
     case nameIcon
-    case profileColors
+    case profileColors(colors: PeerNameColor)
     case profileIcon
     case emojiStatus
     case wallpaper
     case customWallpaper
+    case audioTranscription
+    case emojiPack
     
-    public func requiredLevel(context: AccountContext, configuration: PremiumConfiguration) -> Int32 {
-        return requiredBoostSubjectLevel(subject: self, context: context, configuration: configuration)
+    public func requiredLevel(group: Bool, context: AccountContext, configuration: PremiumConfiguration) -> Int32 {
+        return requiredBoostSubjectLevel(subject: self, group: group, context: context, configuration: configuration)
     }
 }
 
@@ -232,8 +245,10 @@ private final class LevelSectionComponent: CombinedComponent {
         case emojiStatus
         case wallpaper(Int32)
         case customWallpaper
+        case audioTranscription
+        case emojiPack
         
-        func title(strings: PresentationStrings) -> String {
+        func title(strings: PresentationStrings, isGroup: Bool) -> String {
             switch self {
             case let .story(value):
                 return strings.ChannelBoost_Table_StoriesPerDay(value)
@@ -242,9 +257,9 @@ private final class LevelSectionComponent: CombinedComponent {
             case let .nameColor(value):
                 return strings.ChannelBoost_Table_NameColor(value)
             case let .profileColor(value):
-                return strings.ChannelBoost_Table_ProfileColor(value)
+                return isGroup ? strings.ChannelBoost_Table_Group_ProfileColor(value) : strings.ChannelBoost_Table_ProfileColor(value)
             case .profileIcon:
-                return strings.ChannelBoost_Table_ProfileLogo
+                return isGroup ? strings.ChannelBoost_Table_Group_ProfileLogo : strings.ChannelBoost_Table_ProfileLogo
             case let .linkColor(value):
                 return strings.ChannelBoost_Table_StyleForHeaders(value)
             case .linkIcon:
@@ -252,9 +267,13 @@ private final class LevelSectionComponent: CombinedComponent {
             case .emojiStatus:
                 return strings.ChannelBoost_Table_EmojiStatus
             case let .wallpaper(value):
-                return strings.ChannelBoost_Table_Wallpaper(value)
+                return isGroup ? strings.ChannelBoost_Table_Group_Wallpaper(value) : strings.ChannelBoost_Table_Wallpaper(value)
             case .customWallpaper:
-                return strings.ChannelBoost_Table_CustomWallpaper
+                return isGroup ? strings.ChannelBoost_Table_Group_CustomWallpaper : strings.ChannelBoost_Table_CustomWallpaper
+            case .audioTranscription:
+                return strings.GroupBoost_Table_Group_VoiceToText
+            case .emojiPack:
+                return strings.GroupBoost_Table_Group_EmojiPack
             }
         }
         
@@ -280,6 +299,10 @@ private final class LevelSectionComponent: CombinedComponent {
                 return "Premium/BoostPerk/Wallpaper"
             case .customWallpaper:
                 return "Premium/BoostPerk/CustomWallpaper"
+            case .audioTranscription:
+                return "Premium/BoostPerk/AudioTranscription"
+            case .emojiPack:
+                return "Premium/BoostPerk/EmojiPack"
             }
         }
     }
@@ -289,19 +312,22 @@ private final class LevelSectionComponent: CombinedComponent {
     let level: Int32
     let isFirst: Bool
     let perks: [Perk]
+    let isGroup: Bool
   
     init(
         theme: PresentationTheme,
         strings: PresentationStrings,
         level: Int32,
         isFirst: Bool,
-        perks: [Perk]
+        perks: [Perk],
+        isGroup: Bool
     ) {
         self.theme = theme
         self.strings = strings
         self.level = level
         self.isFirst = isFirst
         self.perks = perks
+        self.isGroup = isGroup
     }
     
     static func ==(lhs: LevelSectionComponent, rhs: LevelSectionComponent) -> Bool {
@@ -315,6 +341,9 @@ private final class LevelSectionComponent: CombinedComponent {
             return false
         }
         if lhs.perks != rhs.perks {
+            return false
+        }
+        if lhs.isGroup != rhs.isGroup {
             return false
         }
         return true
@@ -341,7 +370,7 @@ private final class LevelSectionComponent: CombinedComponent {
                         LevelPerkComponent(
                             theme: component.theme,
                             iconName: value.iconName,
-                            text: value.title(strings: component.strings)
+                            text: value.title(strings: component.strings, isGroup: component.isGroup)
                         )
                     )
                 )
@@ -355,13 +384,12 @@ private final class LevelSectionComponent: CombinedComponent {
             context.add(list
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: header.size.height + list.size.height / 2.0)))
             
-            let height = header.size.height + list.size.height
-            return CGSize(width: context.availableSize.width, height: height)
+            return CGSize(width: context.availableSize.width, height: header.size.height + list.size.height)
         }
     }
 }
 
-private final class LimitSheetContent: CombinedComponent {
+private final class SheetContent: CombinedComponent {
     typealias EnvironmentType = (Empty, ScrollChildEnvironment)
     
     let context: AccountContext
@@ -369,41 +397,59 @@ private final class LimitSheetContent: CombinedComponent {
     let strings: PresentationStrings
     let insets: UIEdgeInsets
         
-    let peer: EnginePeer
-    let subject: BoostSubject
-    let status: ChannelBoostStatus
-
+    let peerId: EnginePeer.Id
+    let isGroup: Bool
+    let mode: PremiumBoostLevelsScreen.Mode
+    let status: ChannelBoostStatus?
+    let boostState: InternalBoostState.DisplayData?
+    let initialized: Bool
+    
+    let boost: () -> Void
     let copyLink: (String) -> Void
     let dismiss: () -> Void
     let openStats: (() -> Void)?
     let openGift: (() -> Void)?
+    let openPeer: ((EnginePeer) -> Void)?
+    let updated: () -> Void
     
     init(context: AccountContext,
          theme: PresentationTheme,
          strings: PresentationStrings,
          insets: UIEdgeInsets,
-         peer: EnginePeer,
-         subject: BoostSubject,
-         status: ChannelBoostStatus,
+         peerId: EnginePeer.Id,
+         isGroup: Bool,
+         mode: PremiumBoostLevelsScreen.Mode,
+         status: ChannelBoostStatus?,
+         boostState: InternalBoostState.DisplayData?,
+         initialized: Bool,
+         boost: @escaping () -> Void,
          copyLink: @escaping (String) -> Void,
          dismiss: @escaping () -> Void,
          openStats: (() -> Void)?,
-         openGift: (() -> Void)?
+         openGift: (() -> Void)?,
+         openPeer: ((EnginePeer) -> Void)?,
+         updated: @escaping () -> Void
     ) {
         self.context = context
         self.theme = theme
         self.strings = strings
         self.insets = insets
-        self.peer = peer
-        self.subject = subject
+        self.peerId = peerId
+        self.isGroup = isGroup
+        self.mode = mode
         self.status = status
+        self.boostState = boostState
+        self.initialized = initialized
+        self.boost = boost
         self.copyLink = copyLink
         self.dismiss = dismiss
         self.openStats = openStats
         self.openGift = openGift
+        self.openPeer = openPeer
+        self.updated = updated
     }
     
-    static func ==(lhs: LimitSheetContent, rhs: LimitSheetContent) -> Bool {
+    static func ==(lhs: SheetContent, rhs: SheetContent) -> Bool {
         if lhs.context !== rhs.context {
             return false
         }
@@ -413,13 +459,22 @@ private final class LimitSheetContent: CombinedComponent {
         if lhs.insets != rhs.insets {
             return false
         }
-        if lhs.peer != rhs.peer {
+        if lhs.peerId != rhs.peerId {
             return false
         }
-        if lhs.subject != rhs.subject {
+        if lhs.isGroup != rhs.isGroup {
+            return false
+        }
+        if lhs.mode != rhs.mode {
             return false
         }
         if lhs.status != rhs.status {
+            return false
+        }
+        if lhs.boostState != rhs.boostState {
+            return false
+        }
+        if lhs.initialized != rhs.initialized {
             return false
         }
         return true
@@ -427,17 +482,62 @@ private final class LimitSheetContent: CombinedComponent {
     
     final class State: ComponentState {
         var cachedChevronImage: (UIImage, PresentationTheme)?
+        var cachedIconImage: UIImage?
+        
+        private(set) var peer: EnginePeer?
+        private(set) var memberPeer: EnginePeer?
+        
+        private var disposable: Disposable?
+        
+        init(context: AccountContext, peerId: EnginePeer.Id, userId: EnginePeer.Id?, updated: @escaping () -> Void) {
+            super.init()
+            
+            var peerIds: [EnginePeer.Id] = [peerId]
+            if let userId {
+                peerIds.append(userId)
+            }
+            
+            self.disposable = (context.engine.data.get(
+                EngineDataMap(peerIds.map(TelegramEngine.EngineData.Item.Peer.Peer.init(id:)))
+            ) |> deliverOnMainQueue).startStrict(next: { [weak self] peers in
+                guard let self else {
+                    return
+                }
+                if let maybePeer = peers[peerId] {
+                    self.peer = maybePeer
+                }
+                if let userId, let maybePeer = peers[userId] {
+                    self.memberPeer = maybePeer
+                }
+                updated()
+            })
+        }
+        
+        deinit {
+            self.disposable?.dispose()
+        }
     }
     
     func makeState() -> State {
-        return State()
+        var userId: EnginePeer.Id?
+        if case let .user(mode) = mode, case let .groupPeer(peerId, _) = mode {
+            userId = peerId
+        }
+        return State(context: self.context, peerId: self.peerId, userId: userId, updated: self.updated)
     }
     
     static var body: Body {
+        let iconBackground = Child(Image.self)
+        let icon = Child(BundleIconComponent.self)
+        //let icon = Child(LottieComponent.self)
+        
+        let peerShortcut = Child(Button.self)
         let text = Child(BalancedTextComponent.self)
+        let alternateText = Child(List<Empty>.self)
         let limit = Child(PremiumLimitDisplayComponent.self)
         let linkButton = Child(SolidRoundedButtonComponent.self)
-        let button = Child(SolidRoundedButtonComponent.self)
+        let boostButton = Child(SolidRoundedButtonComponent.self)
+        let copyButton = Child(SolidRoundedButtonComponent.self)
         
         let orLeftLine = Child(Rectangle.self)
         let orRightLine = Child(Rectangle.self)
@@ -458,71 +558,155 @@ private final class LimitSheetContent: CombinedComponent {
             let textSideInset: CGFloat = 32.0 // + environment.safeInsets.left
             
             let iconName = "Premium/Boost"
-            let badgeText = "\(component.status.boosts)"
+            let peerName = state.peer?.compactDisplayTitle ?? ""
             
-            var remaining: Int?
-            if let nextLevelBoosts = component.status.nextLevelBoosts {
-                remaining = nextLevelBoosts - component.status.boosts
-            }
+            let isGroup = component.isGroup
             
-            var textString = ""
-            let actionButtonText = strings.ChannelBoost_CopyLink
-            let buttonIconName = "Premium/CopyLink"
-            
-            if let remaining {
-                var needsSecondParagraph = true
-                let storiesString = strings.ChannelBoost_StoriesPerDay(Int32(component.status.level) + 1)
-                let valueString = strings.ChannelBoost_MoreBoosts(Int32(remaining))
-                switch component.subject {
-                case .stories:
-                    if component.status.level == 0 {
-                        textString = strings.ChannelBoost_EnableStoriesText(valueString).string
-                    } else {
-                        textString = strings.ChannelBoost_IncreaseLimitText(valueString, storiesString).string
-                    }
-                    needsSecondParagraph = false
-                case let .channelReactions(reactionCount):
-                    textString = strings.ChannelBoost_CustomReactionsText("\(reactionCount)", "\(reactionCount)").string
-                    needsSecondParagraph = false
-                case .nameColors:
-                    let colorLevel = component.subject.requiredLevel(context: context.component.context, configuration: premiumConfiguration)
-                    
-                    textString = strings.ChannelBoost_EnableNameColorLevelText("\(colorLevel)").string
-                case .nameIcon:
-                    textString = strings.ChannelBoost_EnableNameIconLevelText("\(premiumConfiguration.minChannelNameIconLevel)").string
-                case .profileColors:
-                    textString = strings.ChannelBoost_EnableProfileColorLevelText("\(premiumConfiguration.minChannelProfileColorLevel)").string
-                case .profileIcon:
-                    textString = strings.ChannelBoost_EnableProfileIconLevelText("\(premiumConfiguration.minChannelProfileIconLevel)").string
-                case .emojiStatus:
-                    textString = strings.ChannelBoost_EnableEmojiStatusLevelText("\(premiumConfiguration.minChannelEmojiStatusLevel)").string
-                case .wallpaper:
-                    textString = strings.ChannelBoost_EnableWallpaperLevelText("\(premiumConfiguration.minChannelWallpaperLevel)").string
-                case .customWallpaper:
-                    textString = strings.ChannelBoost_EnableCustomWallpaperLevelText("\(premiumConfiguration.minChannelCustomWallpaperLevel)").string
+            let level: Int
+            let boosts: Int
+            let remaining: Int?
+            let progress: CGFloat
+            let myBoostCount: Int
+            if let boostState = component.boostState {
+                level = Int(boostState.level)
+                boosts = Int(boostState.boosts)
+                if let nextLevelBoosts = boostState.nextLevelBoosts {
+                    remaining = max(0, Int(nextLevelBoosts - boostState.boosts))
+                    progress = max(0.0, min(1.0, CGFloat(boostState.boosts - boostState.currentLevelBoosts) / CGFloat(nextLevelBoosts - boostState.currentLevelBoosts)))
+                } else {
+                    remaining = nil
+                    progress = 1.0
                 }
-                
-                if needsSecondParagraph {
-                    textString += "\n\n\(strings.ChannelBoost_AskToBoost)"
+                myBoostCount = Int(boostState.myBoostCount)
+            } else if let status = component.status {
+                level = status.level
+                boosts = status.boosts
+                if let nextLevelBoosts = status.nextLevelBoosts {
+                    remaining = max(0, nextLevelBoosts - status.boosts)
+                    progress = max(0.0, min(1.0, CGFloat(status.boosts - status.currentLevelBoosts) / CGFloat(nextLevelBoosts - status.currentLevelBoosts)))
+                } else {
+                    remaining = nil
+                    progress = 1.0
                 }
+                myBoostCount = 0
             } else {
-                let storiesString = strings.ChannelBoost_StoriesPerDay(Int32(component.status.level))
-                textString = strings.ChannelBoost_MaxLevelReachedTextAuthor("\(component.status.level)", storiesString).string
+                level = 0
+                boosts = 0
+                remaining = nil
+                progress = 0.0
+                myBoostCount = 0
+            }
+                            
+            var textString = ""
+
+            var isCurrent = false
+            switch component.mode {
+            case let .owner(subject):
+                if let remaining {
+                    var needsSecondParagraph = true
+                    
+                    if let subject {
+                        let requiredLevel = subject.requiredLevel(group: isGroup, context: context.component.context, configuration: premiumConfiguration)
+                        
+                        let storiesString = strings.ChannelBoost_StoriesPerDay(Int32(level) + 1)
+                        let valueString = strings.ChannelBoost_MoreBoosts(Int32(remaining))
+                        switch subject {
+                        case .stories:
+                            if level == 0 {
+                                textString = isGroup ? strings.GroupBoost_EnableStoriesText(valueString).string : strings.ChannelBoost_EnableStoriesText(valueString).string
+                            } else {
+                                textString = isGroup ? strings.GroupBoost_IncreaseLimitText(valueString, storiesString).string : strings.ChannelBoost_IncreaseLimitText(valueString, storiesString).string
+                            }
+                            needsSecondParagraph = isGroup
+                        case let .channelReactions(reactionCount):
+                            textString = strings.ChannelBoost_CustomReactionsText("\(reactionCount)", "\(reactionCount)").string
+                            needsSecondParagraph = false
+                        case .nameColors:
+                            textString = strings.ChannelBoost_EnableNameColorLevelText("\(requiredLevel)").string
+                        case .nameIcon:
+                            textString = strings.ChannelBoost_EnableNameIconLevelText("\(requiredLevel)").string
+                        case .profileColors:
+                            textString = isGroup ? strings.GroupBoost_EnableProfileColorLevelText("\(requiredLevel)").string : strings.ChannelBoost_EnableProfileColorLevelText("\(requiredLevel)").string
+                        case .profileIcon:
+                            textString = isGroup ? strings.GroupBoost_EnableProfileIconLevelText("\(requiredLevel)").string : strings.ChannelBoost_EnableProfileIconLevelText("\(premiumConfiguration.minChannelProfileIconLevel)").string
+                        case .emojiStatus:
+                            textString = isGroup ? strings.GroupBoost_EnableEmojiStatusLevelText("\(requiredLevel)").string : strings.ChannelBoost_EnableEmojiStatusLevelText("\(requiredLevel)").string
+                        case .wallpaper:
+                            textString = isGroup ? strings.GroupBoost_EnableWallpaperLevelText("\(requiredLevel)").string : strings.ChannelBoost_EnableWallpaperLevelText("\(requiredLevel)").string
+                        case .customWallpaper:
+                            textString = isGroup ? strings.GroupBoost_EnableCustomWallpaperLevelText("\(requiredLevel)").string : strings.ChannelBoost_EnableCustomWallpaperLevelText("\(requiredLevel)").string
+                        case .audioTranscription:
+                            textString = ""
+                        case .emojiPack:
+                            textString = strings.GroupBoost_EnableEmojiPackLevelText("\(requiredLevel)").string
+                        }
+                    } else {
+                        let boostsString = strings.ChannelBoost_MoreBoostsNeeded_Boosts(Int32(remaining))
+                        if myBoostCount > 0 {
+                            if remaining == 0 {
+                                textString = isGroup ? strings.GroupBoost_MoreBoostsNeeded_Boosted_Level_Text("\(level + 1)").string : strings.ChannelBoost_MoreBoostsNeeded_Boosted_Level_Text("\(level + 1)").string
+                            } else {
+                                textString = strings.ChannelBoost_MoreBoostsNeeded_Boosted_Text(boostsString).string
+                            }
+                        } else {
+                            textString = strings.ChannelBoost_MoreBoostsNeeded_Text(peerName, boostsString).string
+                        }
+                    }
+                    
+                    if needsSecondParagraph {
+                        textString += " \(isGroup ? strings.GroupBoost_PremiumUsersCanBoost : strings.ChannelBoost_PremiumUsersCanBoost)"
+                    }
+                } else {
+                    textString = strings.ChannelBoost_MaxLevelReached_Text(peerName, "\(level)").string
+                }
+            case let .user(mode):
+                switch mode {
+                case let .groupPeer(_, peerBoostCount):
+                    let memberName = state.memberPeer?.compactDisplayTitle ?? ""
+                    let timesString = strings.GroupBoost_MemberBoosted_Times(Int32(peerBoostCount))
+                    let memberString = strings.GroupBoost_MemberBoosted(memberName, timesString).string
+                    if myBoostCount > 0 {
+                        if let remaining, remaining != 0 {
+                            let boostsString = strings.ChannelBoost_MoreBoostsNeeded_Boosts(Int32(remaining))
+                            textString = "\(memberString) \(strings.ChannelBoost_MoreBoostsNeeded_Boosted_Text(boostsString).string)"
+                        } else {
+                            textString = memberString
+                        }
+                    } else {
+                        textString = "\(memberString) \(strings.GroupBoost_MemberBoosted_BoostForBadge(peerName).string)"
+                    }
+                    isCurrent = true
+                case let .unrestrict(unrestrictCount):
+                    let timesString = strings.GroupBoost_BoostToUnrestrict_Times(Int32(unrestrictCount))
+                    textString = strings.GroupBoost_BoostToUnrestrict(timesString, peerName).string
+                    isCurrent = true
+                default:
+                    if let remaining {
+                        let boostsString = strings.ChannelBoost_MoreBoostsNeeded_Boosts(Int32(remaining))
+                        if myBoostCount > 0 {
+                            if remaining == 0 {
+                                textString = isGroup ? strings.GroupBoost_MoreBoostsNeeded_Boosted_Level_Text("\(level + 1)").string : strings.ChannelBoost_MoreBoostsNeeded_Boosted_Level_Text("\(level + 1)").string
+                            } else {
+                                textString = strings.ChannelBoost_MoreBoostsNeeded_Boosted_Text(boostsString).string
+                            }
+                        } else {
+                            textString = strings.ChannelBoost_MoreBoostsNeeded_Text(peerName, boostsString).string
+                        }
+                    } else {
+                        textString = strings.ChannelBoost_MaxLevelReached_Text(peerName, "\(level)").string
+                    }
+                    isCurrent = mode == .current
+                }
+            case .features:
+                textString = strings.GroupBoost_AdditionalFeaturesText
             }
             
-            let defaultTitle = strings.ChannelBoost_Level("\(component.status.level)").string
+            let defaultTitle = strings.ChannelBoost_Level("\(level)").string
             let defaultValue = ""
-            let premiumValue = strings.ChannelBoost_Level("\(component.status.level + 1)").string
+            let premiumValue = strings.ChannelBoost_Level("\(level + 1)").string
             let premiumTitle = ""
             
-            let progress: CGFloat
-            if let nextLevelBoosts = component.status.nextLevelBoosts {
-                progress = CGFloat(component.status.boosts - component.status.currentLevelBoosts) / CGFloat(nextLevelBoosts - component.status.currentLevelBoosts)
-            } else {
-                progress = 1.0
-            }
-
-            let contentSize: CGSize
+            var contentSize: CGSize = CGSize(width: context.availableSize.width, height: 44.0)
     
             let textFont = Font.regular(15.0)
             let boldTextFont = Font.semibold(15.0)
@@ -531,17 +715,6 @@ private final class LimitSheetContent: CombinedComponent {
             let markdownAttributes = MarkdownAttributes(body: MarkdownAttributeSet(font: textFont, textColor: textColor), bold: MarkdownAttributeSet(font: boldTextFont, textColor: textColor), link: MarkdownAttributeSet(font: textFont, textColor: linkColor), linkAttribute: { contents in
                 return (TelegramTextAttributes.URL, contents)
             })
-            
-            let textChild = text.update(
-                component: BalancedTextComponent(
-                    text: .markdown(text: textString, attributes: markdownAttributes),
-                    horizontalAlignment: .center,
-                    maximumNumberOfLines: 0,
-                    lineSpacing: 0.1
-                ),
-                availableSize: CGSize(width: context.availableSize.width - textSideInset * 2.0, height: context.availableSize.height),
-                transition: .immediate
-            )
             
             let gradientColors = [
                 UIColor(rgb: 0x0077ff),
@@ -553,172 +726,338 @@ private final class LimitSheetContent: CombinedComponent {
                 UIColor(rgb: 0x007afe),
                 UIColor(rgb: 0x5494ff)
             ]
-        
-            let limitTransition: Transition = .immediate
-
-            let button = button.update(
-                component: SolidRoundedButtonComponent(
-                    title: actionButtonText,
-                    theme: SolidRoundedButtonComponent.Theme(
-                        backgroundColor: .black,
-                        backgroundColors: buttonGradientColors,
-                        foregroundColor: .white
-                    ),
-                    font: .bold,
-                    fontSize: 17.0,
-                    height: 50.0,
-                    cornerRadius: 10.0,
-                    gloss: false,
-                    iconName: buttonIconName,
-                    animationName: nil,
-                    iconPosition: .left,
-                    action: {
-                        component.copyLink(component.status.url)
-                        component.dismiss()
-                    }
-                ),
-                availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: 50.0),
-                transition: context.transition
-            )
             
-            var buttonOffset: CGFloat = 0.0
-            var textOffset: CGFloat = 184.0
-            
-            let linkButton = linkButton.update(
-                component: SolidRoundedButtonComponent(
-                    title: component.status.url.replacingOccurrences(of: "https://", with: ""),
-                    theme: SolidRoundedButtonComponent.Theme(
-                        backgroundColor: theme.list.itemBlocksSeparatorColor.withAlphaComponent(0.3),
-                        backgroundColors: [],
-                        foregroundColor: theme.list.itemPrimaryTextColor
-                    ),
-                    font: .regular,
-                    fontSize: 17.0,
-                    height: 50.0,
-                    cornerRadius: 10.0,
-                    action: {
-                        component.copyLink(component.status.url)
-                        component.dismiss()
-                    }
-                ),
-                availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: 50.0),
-                transition: context.transition
-            )
-            buttonOffset += 66.0
-            
-            let linkFrame = CGRect(origin: CGPoint(x: sideInset, y: textOffset + textChild.size.height + 24.0), size: linkButton.size)
-            context.add(linkButton
-                .position(CGPoint(x: linkFrame.midX, y: linkFrame.midY))
-            )
-            
-            let textSize = textChild.size
-            textOffset += textSize.height / 2.0
-            
-            context.add(textChild
-                .position(CGPoint(x: context.availableSize.width / 2.0, y: textOffset))
-            )
-            
-            let limit = limit.update(
-                component: PremiumLimitDisplayComponent(
-                    inactiveColor: theme.list.itemBlocksSeparatorColor.withAlphaComponent(0.3),
-                    activeColors: gradientColors,
-                    inactiveTitle: defaultTitle,
-                    inactiveValue: defaultValue,
-                    inactiveTitleColor: theme.list.itemPrimaryTextColor,
-                    activeTitle: premiumTitle,
-                    activeValue: premiumValue,
-                    activeTitleColor: .white,
-                    badgeIconName: iconName,
-                    badgeText: badgeText,
-                    badgePosition: progress,
-                    badgeGraphPosition: progress,
-                    invertProgress: true,
-                    isPremiumDisabled: false
-                ),
-                availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: context.availableSize.height),
-                transition: limitTransition
-            )
-            context.add(limit
-                .position(CGPoint(x: context.availableSize.width / 2.0, y: limit.size.height / 2.0 + 44.0))
-            )
-            
-            let buttonFrame = CGRect(origin: CGPoint(x: sideInset, y: textOffset + ceil(textSize.height / 2.0) + buttonOffset + 24.0), size: button.size)
-            context.add(button
-                .position(CGPoint(x: buttonFrame.midX, y: buttonFrame.midY))
-            )
-            
-            var additionalContentHeight: CGFloat = 0.0
-          
-            if premiumConfiguration.giveawayGiftsPurchaseAvailable {
-                let orText = orText.update(
-                    component: MultilineTextComponent(text: .plain(NSAttributedString(string: strings.ChannelBoost_Or, font: Font.regular(15.0), textColor: textColor.withAlphaComponent(0.8), paragraphAlignment: .center))),
-                    availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: context.availableSize.height),
-                    transition: .immediate
-                )
-                context.add(orText
-                    .position(CGPoint(x: context.availableSize.width / 2.0, y: buttonFrame.maxY + 27.0))
-                )
+            if case let .user(mode) = component.mode, case .external = mode, let peer = state.peer {
+                contentSize.height += 10.0
                 
-                let orLeftLine = orLeftLine.update(
-                    component: Rectangle(color: theme.list.itemBlocksSeparatorColor.withAlphaComponent(0.3)),
-                    availableSize: CGSize(width: 90.0, height: 1.0 - UIScreenPixel),
-                    transition: .immediate
-                )
-                context.add(orLeftLine
-                    .position(CGPoint(x: context.availableSize.width / 2.0 - orText.size.width / 2.0 - 11.0 - 45.0, y: buttonFrame.maxY + 27.0))
-                )
-                
-                let orRightLine = orRightLine.update(
-                    component: Rectangle(color: theme.list.itemBlocksSeparatorColor.withAlphaComponent(0.3)),
-                    availableSize: CGSize(width: 90.0, height: 1.0 - UIScreenPixel),
-                    transition: .immediate
-                )
-                context.add(orRightLine
-                    .position(CGPoint(x: context.availableSize.width / 2.0 + orText.size.width / 2.0 + 11.0 + 45.0, y: buttonFrame.maxY + 27.0))
-                )
-                
-                if state.cachedChevronImage == nil || state.cachedChevronImage?.1 !== theme {
-                    state.cachedChevronImage = (generateTintedImage(image: UIImage(bundleImageName: "Settings/TextArrowRight"), color: linkColor)!, theme)
-                }
-                
-                
-                let giftString = strings.Premium_BoostByGiftDescription2
-                let giftAttributedString = parseMarkdownIntoAttributedString(giftString, attributes: markdownAttributes).mutableCopy() as! NSMutableAttributedString
-                
-                if let range = giftAttributedString.string.range(of: ">"), let chevronImage = state.cachedChevronImage?.0 {
-                    giftAttributedString.addAttribute(.attachment, value: chevronImage, range: NSRange(range, in: giftAttributedString.string))
-                }
-                let giftText = giftText.update(
-                    component: BalancedTextComponent(
-                        text: .plain(giftAttributedString),
-                        horizontalAlignment: .center,
-                        maximumNumberOfLines: 0,
-                        lineSpacing: 0.1,
-                        highlightColor: linkColor.withAlphaComponent(0.2),
-                        highlightAction: { _ in
-                            return nil
-                        },
-                        tapAction: { _, _ in
-                            component.openGift?()
+                let peerShortcut = peerShortcut.update(
+                    component: Button(
+                        content: AnyComponent(
+                            PeerShortcutComponent(
+                                context: component.context,
+                                theme: component.theme,
+                                peer: peer
+                                
+                            )
+                        ),
+                        action: {
+                            component.dismiss()
+                            Queue.mainQueue().after(0.35) {
+                                component.openPeer?(peer)
+                            }
                         }
+                    ),
+                    availableSize: CGSize(width: context.availableSize.width - 32.0, height: context.availableSize.height),
+                    transition: .immediate
+                )
+                context.add(peerShortcut
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + peerShortcut.size.height / 2.0))
+                )
+                contentSize.height += peerShortcut.size.height + 2.0
+            }
+            
+            if case .features = component.mode {
+                contentSize.height -= 14.0
+                
+                let iconSize = CGSize(width: 90.0, height: 90.0)
+                let gradientImage: UIImage
+                if let current = state.cachedIconImage {
+                    gradientImage = current
+                } else {
+                    gradientImage = generateFilledCircleImage(diameter: iconSize.width, color: theme.actionSheet.controlAccentColor)!
+                    context.state.cachedIconImage = gradientImage
+                }
+                
+                let iconBackground = iconBackground.update(
+                    component: Image(image: gradientImage),
+                    availableSize: iconSize,
+                    transition: .immediate
+                )
+                context.add(iconBackground
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + iconBackground.size.height / 2.0))
+                )
+                
+                let icon = icon.update(
+                    component: BundleIconComponent(
+                        name: "Premium/BoostLarge",
+                        tintColor: .white
+                    ),
+                    availableSize: CGSize(width: 90.0, height: 90.0),
+                    transition: .immediate
+                )
+//                let icon = icon.update(
+//                    component: LottieComponent(
+//                        content: LottieComponent.AppBundleContent(name: iconName),
+//                        playOnce: state.playOnce
+//                    ),
+//                    availableSize: CGSize(width: 70, height: 70),
+//                    transition: .immediate
+//                )
+                
+                context.add(icon
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + iconBackground.size.height / 2.0))
+                )
+                contentSize.height += iconSize.height
+                contentSize.height += 52.0
+            } else {
+                let limit = limit.update(
+                    component: PremiumLimitDisplayComponent(
+                        inactiveColor: theme.list.itemBlocksSeparatorColor.withAlphaComponent(0.3),
+                        activeColors: gradientColors,
+                        inactiveTitle: defaultTitle,
+                        inactiveValue: defaultValue,
+                        inactiveTitleColor: theme.list.itemPrimaryTextColor,
+                        activeTitle: premiumTitle,
+                        activeValue: premiumValue,
+                        activeTitleColor: .white,
+                        badgeIconName: iconName,
+                        badgeText: "\(boosts)",
+                        badgePosition: progress,
+                        badgeGraphPosition: progress,
+                        invertProgress: true,
+                        isPremiumDisabled: false
+                    ),
+                    availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: context.availableSize.height),
+                    transition: context.transition
+                )
+                context.add(limit
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + limit.size.height / 2.0))
+                )
+                
+                contentSize.height += limit.size.height + 23.0
+            }
+            
+            if myBoostCount > 0 {
+                let alternateTitle = isCurrent ? strings.ChannelBoost_YouBoostedChannelText(peerName).string : strings.ChannelBoost_YouBoostedOtherChannelText
+                
+                var alternateBadge: String?
+                if myBoostCount > 1 {
+                    alternateBadge = "X\(myBoostCount)"
+                }
+                
+                let alternateText = alternateText.update(
+                    component: List(
+                        [
+                            AnyComponentWithIdentity(
+                                id: "title",
+                                component: AnyComponent(
+                                    BoostedTitleContent(text: NSAttributedString(string: alternateTitle, font: Font.semibold(15.0), textColor: textColor), badge: alternateBadge)
+                                )
+                            ),
+                            AnyComponentWithIdentity(
+                                id: "text",
+                                component: AnyComponent(
+                                    BalancedTextComponent(
+                                        text: .markdown(text: textString, attributes: markdownAttributes),
+                                        horizontalAlignment: .center,
+                                        maximumNumberOfLines: 0,
+                                        lineSpacing: 0.1
+                                    )
+                                )
+                            )
+                        ],
+                        centerAlignment: true
                     ),
                     availableSize: CGSize(width: context.availableSize.width - textSideInset * 2.0, height: context.availableSize.height),
                     transition: .immediate
                 )
-                context.add(giftText
-                    .position(CGPoint(x: context.availableSize.width / 2.0, y: buttonFrame.maxY + 50.0 + giftText.size.height / 2.0))
+                context.add(alternateText
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + alternateText.size.height / 2.0))
+                    .appear(Transition.Appear({ _, view, transition in
+                        transition.animatePosition(view: view, from: CGPoint(x: 0.0, y: 64.0), to: .zero, additive: true)
+                        transition.animateAlpha(view: view, from: 0.0, to: 1.0)
+                    }))
+                        .disappear(Transition.Disappear({ view, transition, completion in
+                            view.superview?.sendSubviewToBack(view)
+                            transition.animatePosition(view: view, from: .zero, to: CGPoint(x: 0.0, y: -64.0), additive: true)
+                            transition.setAlpha(view: view, alpha: 0.0, completion: { _ in
+                                completion()
+                            })
+                        }))
+                )
+                contentSize.height += alternateText.size.height + 20.0
+            } else {
+                let text = text.update(
+                    component: BalancedTextComponent(
+                        text: .markdown(text: textString, attributes: markdownAttributes),
+                        horizontalAlignment: .center,
+                        maximumNumberOfLines: 0,
+                        lineSpacing: 0.2
+                    ),
+                    availableSize: CGSize(width: context.availableSize.width - textSideInset * 2.0, height: context.availableSize.height),
+                    transition: .immediate
+                )
+                context.add(text
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + text.size.height / 2.0))
+                    .appear(Transition.Appear({ _, view, transition in
+                        transition.animatePosition(view: view, from: CGPoint(x: 0.0, y: 64.0), to: .zero, additive: true)
+                        transition.animateAlpha(view: view, from: 0.0, to: 1.0)
+                    }))
+                        .disappear(Transition.Disappear({ view, transition, completion in
+                            view.superview?.sendSubviewToBack(view)
+                            transition.animatePosition(view: view, from: .zero, to: CGPoint(x: 0.0, y: -64.0), additive: true)
+                            transition.setAlpha(view: view, alpha: 0.0, completion: { _ in
+                                completion()
+                            })
+                        }))
+                )
+                contentSize.height += text.size.height + 20.0
+            }
+                        
+            if case .owner = component.mode, let status = component.status {
+                contentSize.height += 7.0
+                
+                let linkButton = linkButton.update(
+                    component: SolidRoundedButtonComponent(
+                        title: status.url.replacingOccurrences(of: "https://", with: ""),
+                        theme: SolidRoundedButtonComponent.Theme(
+                            backgroundColor: theme.list.itemBlocksSeparatorColor.withAlphaComponent(0.3),
+                            backgroundColors: [],
+                            foregroundColor: theme.list.itemPrimaryTextColor
+                        ),
+                        font: .regular,
+                        fontSize: 17.0,
+                        height: 50.0,
+                        cornerRadius: 10.0,
+                        action: {
+                            component.copyLink(status.url)
+                            component.dismiss()
+                        }
+                    ),
+                    availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: 50.0),
+                    transition: context.transition
+                )
+                context.add(linkButton
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + linkButton.size.height / 2.0))
+                )
+                contentSize.height += linkButton.size.height + 16.0
+                
+                let boostButton = boostButton.update(
+                    component: SolidRoundedButtonComponent(
+                        title: strings.ChannelBoost_Boost,
+                        theme: SolidRoundedButtonComponent.Theme(
+                            backgroundColor: .black,
+                            backgroundColors: buttonGradientColors,
+                            foregroundColor: .white
+                        ),
+                        font: .bold,
+                        fontSize: 17.0,
+                        height: 50.0,
+                        cornerRadius: 10.0,
+                        gloss: false,
+                        iconName: nil,
+                        animationName: nil,
+                        iconPosition: .left,
+                        action: {
+                            component.boost()
+                        }
+                    ),
+                    availableSize: CGSize(width: (context.availableSize.width - 8.0 - sideInset * 2.0) / 2.0, height: 50.0),
+                    transition: context.transition
                 )
                 
-                additionalContentHeight += giftText.size.height + 50.0
+                let copyButton = copyButton.update(
+                    component: SolidRoundedButtonComponent(
+                        title: strings.ChannelBoost_Copy,
+                        theme: SolidRoundedButtonComponent.Theme(
+                            backgroundColor: .black,
+                            backgroundColors: buttonGradientColors,
+                            foregroundColor: .white
+                        ),
+                        font: .bold,
+                        fontSize: 17.0,
+                        height: 50.0,
+                        cornerRadius: 10.0,
+                        gloss: false,
+                        iconName: nil,
+                        animationName: nil,
+                        iconPosition: .left,
+                        action: {
+                            component.copyLink(status.url)
+                            component.dismiss()
+                        }
+                    ),
+                    availableSize: CGSize(width: (context.availableSize.width - 8.0 - sideInset * 2.0) / 2.0, height: 50.0),
+                    transition: context.transition
+                )
+                
+                let boostButtonFrame = CGRect(origin: CGPoint(x: sideInset, y: contentSize.height), size: boostButton.size)
+                context.add(boostButton
+                    .position(boostButtonFrame.center)
+                )
+                let copyButtonFrame = CGRect(origin: CGPoint(x: context.availableSize.width - sideInset - copyButton.size.width, y: contentSize.height), size: copyButton.size)
+                context.add(copyButton
+                    .position(copyButtonFrame.center)
+                )
+                contentSize.height += boostButton.size.height
+                
+                if premiumConfiguration.giveawayGiftsPurchaseAvailable {
+                    let orText = orText.update(
+                        component: MultilineTextComponent(text: .plain(NSAttributedString(string: strings.ChannelBoost_Or, font: Font.regular(15.0), textColor: textColor.withAlphaComponent(0.8), paragraphAlignment: .center))),
+                        availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: context.availableSize.height),
+                        transition: .immediate
+                    )
+                    context.add(orText
+                        .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + 27.0))
+                    )
+                    
+                    let orLeftLine = orLeftLine.update(
+                        component: Rectangle(color: theme.list.itemBlocksSeparatorColor.withAlphaComponent(0.3)),
+                        availableSize: CGSize(width: 90.0, height: 1.0 - UIScreenPixel),
+                        transition: .immediate
+                    )
+                    context.add(orLeftLine
+                        .position(CGPoint(x: context.availableSize.width / 2.0 - orText.size.width / 2.0 - 11.0 - 45.0, y: contentSize.height + 27.0))
+                    )
+                    
+                    let orRightLine = orRightLine.update(
+                        component: Rectangle(color: theme.list.itemBlocksSeparatorColor.withAlphaComponent(0.3)),
+                        availableSize: CGSize(width: 90.0, height: 1.0 - UIScreenPixel),
+                        transition: .immediate
+                    )
+                    context.add(orRightLine
+                        .position(CGPoint(x: context.availableSize.width / 2.0 + orText.size.width / 2.0 + 11.0 + 45.0, y: contentSize.height + 27.0))
+                    )
+                    
+                    if state.cachedChevronImage == nil || state.cachedChevronImage?.1 !== theme {
+                        state.cachedChevronImage = (generateTintedImage(image: UIImage(bundleImageName: "Settings/TextArrowRight"), color: linkColor)!, theme)
+                    }
+                    
+                    let giftString = isGroup ? strings.Premium_Group_BoostByGiftDescription : strings.Premium_BoostByGiftDescription2
+                    let giftAttributedString = parseMarkdownIntoAttributedString(giftString, attributes: markdownAttributes).mutableCopy() as! NSMutableAttributedString
+                    
+                    if let range = giftAttributedString.string.range(of: ">"), let chevronImage = state.cachedChevronImage?.0 {
+                        giftAttributedString.addAttribute(.attachment, value: chevronImage, range: NSRange(range, in: giftAttributedString.string))
+                    }
+                    let giftText = giftText.update(
+                        component: BalancedTextComponent(
+                            text: .plain(giftAttributedString),
+                            horizontalAlignment: .center,
+                            maximumNumberOfLines: 0,
+                            lineSpacing: 0.1,
+                            highlightColor: linkColor.withAlphaComponent(0.2),
+                            highlightAction: { _ in
+                                return nil
+                            },
+                            tapAction: { _, _ in
+                                component.openGift?()
+                            }
+                        ),
+                        availableSize: CGSize(width: context.availableSize.width - textSideInset * 2.0, height: context.availableSize.height),
+                        transition: .immediate
+                    )
+                    context.add(giftText
+                        .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + 50.0 + giftText.size.height / 2.0))
+                    )
+                    contentSize.height += giftText.size.height + 50.0 + 23.0
+                }
             }
-        
             
             var nextLevels: ClosedRange<Int32>?
-            if component.status.level < 10 {
-                nextLevels = Int32(component.status.level) + 1 ... 10
+            if level < 10 {
+                nextLevels = Int32(level) + 1 ... 10
             }
-            
-            var levelsHeight: CGFloat = 0.0
+                        
             var levelItems: [AnyComponentWithIdentity<Empty>] = []
             
             var nameColorsAtLevel: [(Int32, Int32)] = []
@@ -735,29 +1074,67 @@ private final class LimitSheetContent: CombinedComponent {
             for (key, value) in nameColorsCountMap {
                 nameColorsAtLevel.append((key, value))
             }
+            
+            var profileColorsAtLevel: [(Int32, Int32)] = []
+            var profileColorsCountMap: [Int32: Int32] = [:]
+            for color in context.component.context.peerNameColors.profileDisplayOrder {
+                if let level = isGroup ? context.component.context.peerNameColors.profileColorsGroupMinRequiredBoostLevel[color] : context.component.context.peerNameColors.profileColorsChannelMinRequiredBoostLevel[color]  {
+                    if let current = profileColorsCountMap[level] {
+                        profileColorsCountMap[level] = current + 1
+                    } else {
+                        profileColorsCountMap[level] = 1
+                    }
+                }
+            }
+            for (key, value) in profileColorsCountMap {
+                profileColorsAtLevel.append((key, value))
+            }
+            
+            var isFeatures = false
+            if case .features = component.mode {
+                isFeatures = true
+            }
                         
             if let nextLevels {
                 for level in nextLevels {
                     var perks: [LevelSectionComponent.Perk] = []
+                    
                     perks.append(.story(level))
-                    perks.append(.reaction(level))
-                                 
+                    
+                    if !isGroup {
+                        perks.append(.reaction(level))
+                    }
+                    
                     var nameColorsCount: Int32 = 0
                     for (colorLevel, count) in nameColorsAtLevel {
                         if level >= colorLevel && colorLevel == 1 {
                             nameColorsCount = count
                         }
                     }
-                    if nameColorsCount > 0 {
+                    if !isGroup && nameColorsCount > 0 {
                         perks.append(.nameColor(nameColorsCount))
                     }
                     
-                    if level >= premiumConfiguration.minChannelProfileColorLevel {
-                        let delta = min(level - premiumConfiguration.minChannelProfileColorLevel + 1, 2)
-                        perks.append(.profileColor(8 * delta))
+                    var profileColorsCount: Int32 = 0
+                    for (colorLevel, count) in profileColorsAtLevel {
+                        if level >= colorLevel {
+                            profileColorsCount += count
+                        }
                     }
-                    if level >= premiumConfiguration.minChannelProfileIconLevel {
+                    if profileColorsCount > 0 {
+                        perks.append(.profileColor(profileColorsCount))
+                    }
+                
+                    if isGroup && level >= requiredBoostSubjectLevel(subject: .emojiPack, group: isGroup, context: component.context, configuration: premiumConfiguration) {
+                        perks.append(.emojiPack)
+                    }
+                
+                    if level >= requiredBoostSubjectLevel(subject: .profileIcon, group: isGroup, context: component.context, configuration: premiumConfiguration) {
                         perks.append(.profileIcon)
+                    }
+                    
+                    if isGroup && level >= requiredBoostSubjectLevel(subject: .audioTranscription, group: isGroup, context: component.context, configuration: premiumConfiguration) {
+                        perks.append(.audioTranscription)
                     }
                     
                     var linkColorsCount: Int32 = 0
@@ -766,20 +1143,20 @@ private final class LimitSheetContent: CombinedComponent {
                             linkColorsCount += count
                         }
                     }
-                    if linkColorsCount > 0 {
+                    if !isGroup && linkColorsCount > 0 {
                         perks.append(.linkColor(linkColorsCount))
                     }
                                         
-                    if level >= premiumConfiguration.minChannelNameIconLevel {
+                    if !isGroup && level >= requiredBoostSubjectLevel(subject: .nameIcon, group: isGroup, context: component.context, configuration: premiumConfiguration) {
                         perks.append(.linkIcon)
                     }
-                    if level >= premiumConfiguration.minChannelEmojiStatusLevel {
+                    if level >= requiredBoostSubjectLevel(subject: .emojiStatus, group: isGroup, context: component.context, configuration: premiumConfiguration) {
                         perks.append(.emojiStatus)
                     }
-                    if level >= premiumConfiguration.minChannelWallpaperLevel {
+                    if level >= requiredBoostSubjectLevel(subject: .wallpaper, group: isGroup, context: component.context, configuration: premiumConfiguration) {
                         perks.append(.wallpaper(8))
                     }
-                    if level >= premiumConfiguration.minChannelCustomWallpaperLevel {
+                    if level >= requiredBoostSubjectLevel(subject: .customWallpaper, group: isGroup, context: component.context, configuration: premiumConfiguration) {
                         perks.append(.customWallpaper)
                     }
                     
@@ -790,8 +1167,9 @@ private final class LimitSheetContent: CombinedComponent {
                                     theme: component.theme,
                                     strings: component.strings,
                                     level: level,
-                                    isFirst: levelItems.isEmpty,
-                                    perks: perks
+                                    isFirst: !isFeatures && levelItems.isEmpty,
+                                    perks: perks.reversed(),
+                                    isGroup: isGroup
                                 )
                             )
                         )
@@ -806,54 +1184,71 @@ private final class LimitSheetContent: CombinedComponent {
                     transition: context.transition
                 )
                 context.add(levels
-                    .position(CGPoint(x: context.availableSize.width / 2.0, y: buttonFrame.maxY + 23.0 + additionalContentHeight + levels.size.height / 2.0 ))
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + levels.size.height / 2.0 ))
                 )
-                levelsHeight = levels.size.height + 40.0
+                contentSize.height += levels.size.height + 80.0
+                contentSize.height += 60.0
             }
-            
-            let bottomInset: CGFloat = 0.0
-            contentSize = CGSize(width: context.availableSize.width, height: buttonFrame.maxY + additionalContentHeight + 5.0 + bottomInset + levelsHeight)
-            
+                        
             return contentSize
         }
     }
 }
 
 private final class BoostLevelsContainerComponent: CombinedComponent {
+    class ExternalState {
+        var isGroup: Bool = false
+        var contentHeight: CGFloat = 0.0
+    }
+    
     let context: AccountContext
     let theme: PresentationTheme
     let strings: PresentationStrings
-    
-    let peer: EnginePeer
-    let subject: BoostSubject
-    let status: ChannelBoostStatus
+    let externalState: ExternalState
+    let peerId: EnginePeer.Id
+    let mode: PremiumBoostLevelsScreen.Mode
+    let status: ChannelBoostStatus?
+    let boostState: InternalBoostState.DisplayData?
+    let boost: () -> Void
     let copyLink: (String) -> Void
     let dismiss: () -> Void
-    let openStats: () -> Void
-    let openGift: () -> Void
+    let openStats: (() -> Void)?
+    let openGift: (() -> Void)?
+    let openPeer: ((EnginePeer) -> Void)?
+    let updated: () -> Void
 
     init(
         context: AccountContext,
         theme: PresentationTheme,
         strings: PresentationStrings,
-        peer: EnginePeer,
-        subject: BoostSubject,
-        status: ChannelBoostStatus,
+        externalState: ExternalState,
+        peerId: EnginePeer.Id,
+        mode: PremiumBoostLevelsScreen.Mode,
+        status: ChannelBoostStatus?,
+        boostState: InternalBoostState.DisplayData?,
+        boost: @escaping () -> Void,
         copyLink: @escaping (String) -> Void,
         dismiss: @escaping () -> Void,
-        openStats: @escaping () -> Void,
-        openGift: @escaping () -> Void
+        openStats: (() -> Void)?,
+        openGift: (() -> Void)?,
+        openPeer: ((EnginePeer) -> Void)?,
+        updated: @escaping () -> Void
     ) {
         self.context = context
         self.theme = theme
         self.strings = strings
-        self.peer = peer
-        self.subject = subject
+        self.externalState = externalState
+        self.peerId = peerId
+        self.mode = mode
         self.status = status
+        self.boostState = boostState
+        self.boost = boost
         self.copyLink = copyLink
         self.dismiss = dismiss
         self.openStats = openStats
         self.openGift = openGift
+        self.openPeer = openPeer
+        self.updated = updated
     }
     
     static func ==(lhs: BoostLevelsContainerComponent, rhs: BoostLevelsContainerComponent) -> Bool {
@@ -863,13 +1258,16 @@ private final class BoostLevelsContainerComponent: CombinedComponent {
         if lhs.theme !== rhs.theme {
             return false
         }
-        if lhs.peer != rhs.peer {
+        if lhs.peerId != rhs.peerId {
             return false
         }
-        if lhs.subject != rhs.subject {
+        if lhs.mode != rhs.mode {
             return false
         }
         if lhs.status != rhs.status {
+            return false
+        }
+        if lhs.boostState != rhs.boostState {
             return false
         }
         return true
@@ -879,10 +1277,32 @@ private final class BoostLevelsContainerComponent: CombinedComponent {
         var topContentOffset: CGFloat = 0.0
         var cachedStatsImage: (UIImage, PresentationTheme)?
         var cachedCloseImage: (UIImage, PresentationTheme)?
+        
+        var initialized = false
+        
+        private var disposable: Disposable?
+        private(set) var peer: EnginePeer?
+        
+        init(context: AccountContext, peerId: EnginePeer.Id, updated: @escaping () -> Void) {
+            super.init()
+            
+            self.disposable = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+            |> deliverOnMainQueue).startStrict(next: { [weak self] peer in
+                guard let self else {
+                    return
+                }
+                self.peer = peer
+                updated()
+            })
+        }
+        
+        deinit {
+            self.disposable?.dispose()
+        }
     }
     
     func makeState() -> State {
-        return State()
+        return State(context: self.context, peerId: self.peerId, updated: self.updated)
     }
         
     static var body: Body {
@@ -894,6 +1314,8 @@ private final class BoostLevelsContainerComponent: CombinedComponent {
         let statsButton = Child(Button.self)
         let closeButton = Child(Button.self)
         
+        let externalScrollState = ScrollComponent<Empty>.ExternalState()
+        
         return { context in
             let state = context.state
             
@@ -904,48 +1326,72 @@ private final class BoostLevelsContainerComponent: CombinedComponent {
             
             let component = context.component
             
-            let scroll = scroll.update(
-                component: ScrollComponent<Empty>(
-                    content: AnyComponent(
-                        LimitSheetContent(
-                            context: component.context,
-                            theme: component.theme,
-                            strings: component.strings,
-                            insets: .zero,
-                            peer: component.peer,
-                            subject: component.subject,
-                            status: component.status,
-                            copyLink: component.copyLink,
-                            dismiss: component.dismiss,
-                            openStats: component.openStats,
-                            openGift: component.openGift
-                        )
+            var isGroup: Bool?
+            if let peer = state.peer {
+                if case let .channel(channel) = peer, case .group = channel.info {
+                    isGroup = true
+                } else {
+                    isGroup = false
+                }
+            }
+            
+            if let isGroup {
+                component.externalState.isGroup = isGroup
+                let updated = component.updated
+                let scroll = scroll.update(
+                    component: ScrollComponent<Empty>(
+                        content: AnyComponent(
+                            SheetContent(
+                                context: component.context,
+                                theme: component.theme,
+                                strings: component.strings,
+                                insets: .zero,
+                                peerId: component.peerId,
+                                isGroup: isGroup,
+                                mode: component.mode,
+                                status: component.status,
+                                boostState: component.boostState,
+                                initialized: state.initialized,
+                                boost: component.boost,
+                                copyLink: component.copyLink,
+                                dismiss: component.dismiss,
+                                openStats: component.openStats,
+                                openGift: component.openGift,
+                                openPeer: component.openPeer,
+                                updated: { [weak state] in
+                                    state?.initialized = true
+                                    updated()
+                                }
+                            )
+                        ),
+                        externalState: externalScrollState,
+                        contentInsets: UIEdgeInsets(top: topInset, left: 0.0, bottom: 0.0, right: 0.0),
+                        contentOffsetUpdated: { [weak state] topContentOffset, _ in
+                            state?.topContentOffset = topContentOffset
+                            Queue.mainQueue().justDispatch {
+                                state?.updated(transition: .immediate)
+                            }
+                        },
+                        contentOffsetWillCommit: { _ in }
                     ),
-                    contentInsets: UIEdgeInsets(top: topInset, left: 0.0, bottom: 34.0, right: 0.0),
-                    contentOffsetUpdated: { [weak state] topContentOffset, _ in
-                        state?.topContentOffset = topContentOffset
-                        Queue.mainQueue().justDispatch {
-                            state?.updated(transition: .immediate)
-                        }
-                    },
-                    contentOffsetWillCommit: { _ in }
-                ),
-                availableSize: context.availableSize,
-                transition: context.transition
-            )
-                        
-            let background = background.update(
-                component: Rectangle(color: theme.overallDarkAppearance ? theme.list.blocksBackgroundColor : theme.list.plainBackgroundColor),
-                availableSize: scroll.size,
-                transition: context.transition
-            )
-            context.add(background
-                .position(CGPoint(x: context.availableSize.width / 2.0, y: background.size.height / 2.0))
-            )
-     
-            context.add(scroll
-                .position(CGPoint(x: context.availableSize.width / 2.0, y: scroll.size.height / 2.0))
-            )
+                    availableSize: context.availableSize,
+                    transition: context.transition
+                )
+                component.externalState.contentHeight = externalScrollState.contentHeight
+                
+                let background = background.update(
+                    component: Rectangle(color: theme.overallDarkAppearance ? theme.list.blocksBackgroundColor : theme.list.plainBackgroundColor),
+                    availableSize: scroll.size,
+                    transition: context.transition
+                )
+                context.add(background
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: background.size.height / 2.0))
+                )
+                
+                context.add(scroll
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: scroll.size.height / 2.0))
+                )
+            }
             
             let topPanel = topPanel.update(
                 component: BlurredBackgroundComponent(
@@ -964,38 +1410,69 @@ private final class BoostLevelsContainerComponent: CombinedComponent {
             )
             
             let titleString: String
-            if let _ = component.status.nextLevelBoosts {
-                switch component.subject {
-                case .stories:
-                    if component.status.level == 0 {
-                        titleString = strings.ChannelBoost_EnableStories
-                    } else {
-                        titleString = strings.ChannelBoost_IncreaseLimit
-                    }
-                case .nameColors:
-                    titleString = strings.ChannelBoost_NameColor
-                case .nameIcon:
-                    titleString = strings.ChannelBoost_NameIcon
-                case .profileColors:
-                    titleString = strings.ChannelBoost_ProfileColor
-                case .profileIcon:
-                    titleString = strings.ChannelBoost_ProfileIcon
-                case .channelReactions:
-                    titleString = strings.ChannelBoost_CustomReactions
-                case .emojiStatus:
-                    titleString = strings.ChannelBoost_EmojiStatus
-                case .wallpaper:
-                    titleString = strings.ChannelBoost_Wallpaper
-                case .customWallpaper:
-                    titleString = strings.ChannelBoost_CustomWallpaper
-                }
-            } else {
-                titleString = strings.ChannelBoost_MaxLevelReached
-            }
+            var titleFont = Font.semibold(17.0)
             
+            switch component.mode {
+            case let .owner(subject):
+                if let status = component.status, let _ = status.nextLevelBoosts {
+                    if let subject {
+                        switch subject {
+                        case .stories:
+                            if status.level == 0 {
+                                titleString = strings.ChannelBoost_EnableStories
+                            } else {
+                                titleString = strings.ChannelBoost_IncreaseLimit
+                            }
+                        case .nameColors:
+                            titleString = strings.ChannelBoost_NameColor
+                        case .nameIcon:
+                            titleString = strings.ChannelBoost_NameIcon
+                        case .profileColors:
+                            titleString = strings.ChannelBoost_ProfileColor
+                        case .profileIcon:
+                            titleString = strings.ChannelBoost_ProfileIcon
+                        case .channelReactions:
+                            titleString = strings.ChannelBoost_CustomReactions
+                        case .emojiStatus:
+                            titleString = strings.ChannelBoost_EmojiStatus
+                        case .wallpaper:
+                            titleString = strings.ChannelBoost_Wallpaper
+                        case .customWallpaper:
+                            titleString = strings.ChannelBoost_CustomWallpaper
+                        case .audioTranscription:
+                            titleString = strings.GroupBoost_AudioTranscription
+                        case .emojiPack:
+                            titleString = strings.GroupBoost_EmojiPack
+                        }
+                    } else {
+                        titleString = isGroup == true ? strings.GroupBoost_Title_Current : strings.ChannelBoost_Title_Current
+                    }
+                } else {
+                    titleString = strings.ChannelBoost_MaxLevelReached
+                }
+            case let .user(mode):
+                var remaining: Int?
+                if let status = component.status, let nextLevelBoosts = status.nextLevelBoosts {
+                    remaining = nextLevelBoosts - status.boosts
+                }
+                
+                if let _ = remaining {
+                    if case .current = mode {
+                        titleString = isGroup == true ? strings.GroupBoost_Title_Current : strings.ChannelBoost_Title_Current
+                    } else {
+                        titleString = isGroup == true ? strings.GroupBoost_Title_Other : strings.ChannelBoost_Title_Other
+                    }
+                } else {
+                    titleString = strings.ChannelBoost_MaxLevelReached
+                }
+            case .features:
+                titleString = strings.GroupBoost_AdditionalFeatures
+                titleFont = Font.semibold(20.0)
+            }
+
             let title = title.update(
                 component: MultilineTextComponent(
-                    text: .plain(NSAttributedString(string: titleString, font: Font.semibold(17.0), textColor: theme.rootController.navigationBar.primaryTextColor)),
+                    text: .plain(NSAttributedString(string: titleString, font: titleFont, textColor: theme.rootController.navigationBar.primaryTextColor)),
                     horizontalAlignment: .center,
                     truncationType: .end,
                     maximumNumberOfLines: 1
@@ -1004,7 +1481,29 @@ private final class BoostLevelsContainerComponent: CombinedComponent {
                 transition: context.transition
             )
                   
-            let topPanelAlpha: CGFloat = min(30.0, state.topContentOffset) / 30.0
+            let topPanelAlpha: CGFloat
+            let titleOriginY: CGFloat
+            let titleScale: CGFloat
+            if case .features = component.mode {
+                if state.topContentOffset > 78.0 {
+                    topPanelAlpha = min(30.0, state.topContentOffset - 78.0) / 30.0
+                } else {
+                    topPanelAlpha = 0.0
+                }
+                
+                let titleTopOriginY = topPanel.size.height / 2.0
+                let titleBottomOriginY: CGFloat = 146.0
+                let titleOriginDelta = titleTopOriginY - titleBottomOriginY
+                
+                let fraction = min(1.0, state.topContentOffset / abs(titleOriginDelta))
+                titleOriginY = titleBottomOriginY + fraction * titleOriginDelta
+                titleScale = 1.0 - max(0.0, fraction * 0.2)
+            } else {
+                topPanelAlpha = min(30.0, state.topContentOffset) / 30.0
+                titleOriginY = topPanel.size.height / 2.0
+                titleScale = 1.0
+            }
+            
             context.add(topPanel
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: topPanel.size.height / 2.0))
                 .opacity(topPanelAlpha)
@@ -1014,30 +1513,33 @@ private final class BoostLevelsContainerComponent: CombinedComponent {
                 .opacity(topPanelAlpha)
             )
             context.add(title
-                .position(CGPoint(x: context.availableSize.width / 2.0, y: topPanel.size.height / 2.0))
+                .position(CGPoint(x: context.availableSize.width / 2.0, y: titleOriginY))
+                .scale(titleScale)
             )
             
-            let statsButton = statsButton.update(
-                component: Button(
-                    content: AnyComponent(
-                        BundleIconComponent(
-                            name: "Premium/Stats",
-                            tintColor: component.theme.list.itemAccentColor
-                        )
-                    ),
-                    action: {
-                        component.dismiss()
-                        Queue.mainQueue().after(0.35) {
-                            component.openStats()
+            if let openStats = component.openStats {
+                let statsButton = statsButton.update(
+                    component: Button(
+                        content: AnyComponent(
+                            BundleIconComponent(
+                                name: "Premium/Stats",
+                                tintColor: component.theme.list.itemAccentColor
+                            )
+                        ),
+                        action: {
+                            component.dismiss()
+                            Queue.mainQueue().after(0.35) {
+                                openStats()
+                            }
                         }
-                    }
-                ).minSize(CGSize(width: 44.0, height: 44.0)),
-                availableSize: context.availableSize,
-                transition: .immediate
-            )
-            context.add(statsButton
-                .position(CGPoint(x: 31.0, y: 28.0))
-            )
+                    ).minSize(CGSize(width: 44.0, height: 44.0)),
+                    availableSize: context.availableSize,
+                    transition: .immediate
+                )
+                context.add(statsButton
+                    .position(CGPoint(x: 31.0, y: 28.0))
+                )
+            }
             
             let closeImage: UIImage
             if let (image, theme) = state.cachedCloseImage, theme === component.theme {
@@ -1060,12 +1562,24 @@ private final class BoostLevelsContainerComponent: CombinedComponent {
                 .position(CGPoint(x: context.availableSize.width - closeButton.size.width, y: 28.0))
             )
             
-            return scroll.size
+            return context.availableSize
         }
     }
 }
 
 public class PremiumBoostLevelsScreen: ViewController {
+    public enum Mode: Equatable {
+        public enum UserMode: Equatable {
+            case external
+            case current
+            case groupPeer(EnginePeer.Id, Int)
+            case unrestrict(Int)
+        }
+        case user(mode: UserMode)
+        case owner(subject: BoostSubject?)
+        case features
+    }
+    
     final class Node: ViewControllerTracingNode, UIScrollViewDelegate, UIGestureRecognizerDelegate {
         private var presentationData: PresentationData
         private weak var controller: PremiumBoostLevelsScreen?
@@ -1075,21 +1589,24 @@ public class PremiumBoostLevelsScreen: ViewController {
         let containerView: UIView
         
         let contentView: ComponentHostView<Empty>
+        let footerContainerView: UIView
+        let footerView: ComponentHostView<Empty>
                 
+        private let containerExternalState = BoostLevelsContainerComponent.ExternalState()
+        
         private(set) var isExpanded = false
         private var panGestureRecognizer: UIPanGestureRecognizer?
-        private var panGestureArguments: (topInset: CGFloat, offset: CGFloat, scrollView: UIScrollView?, listNode: ListView?)?
+        private var panGestureArguments: (topInset: CGFloat, offset: CGFloat, scrollView: UIScrollView?)?
+        
+        private let hapticFeedback = HapticFeedback()
         
         private var currentIsVisible: Bool = false
         private var currentLayout: ContainerViewLayout?
-                
-        var isPremium: Bool?
-        var disposable: Disposable?
-                
+                        
         init(context: AccountContext, controller: PremiumBoostLevelsScreen) {
             self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
             if controller.forceDark {
-                self.presentationData = self.presentationData.withUpdated(theme: defaultDarkPresentationTheme)
+                self.presentationData = self.presentationData.withUpdated(theme: defaultDarkColorPresentationTheme)
             }
             self.presentationData = self.presentationData.withUpdated(theme: self.presentationData.theme.withModalBlocksBackground())
             
@@ -1103,6 +1620,9 @@ public class PremiumBoostLevelsScreen: ViewController {
             self.containerView = UIView()
             self.contentView = ComponentHostView()
             
+            self.footerContainerView = UIView()
+            self.footerView = ComponentHostView()
+            
             super.init()
                         
             self.containerView.clipsToBounds = true
@@ -1113,10 +1633,78 @@ public class PremiumBoostLevelsScreen: ViewController {
             self.view.addSubview(self.wrappingView)
             self.wrappingView.addSubview(self.containerView)
             self.containerView.addSubview(self.contentView)
-        }
-        
-        deinit {
-            self.disposable?.dispose()
+            
+            if case .user = controller.mode {
+                self.containerView.addSubview(self.footerContainerView)
+                self.footerContainerView.addSubview(self.footerView)
+            }
+            
+            if let status = controller.status, let myBoostStatus = controller.myBoostStatus {
+                var myBoostCount: Int32 = 0
+                var currentMyBoostCount: Int32 = 0
+                var availableBoosts: [MyBoostStatus.Boost] = []
+                var occupiedBoosts: [MyBoostStatus.Boost] = []
+                
+                for boost in myBoostStatus.boosts {
+                    if let boostPeer = boost.peer {
+                        if boostPeer.id == controller.peerId {
+                            myBoostCount += 1
+                        } else {
+                            occupiedBoosts.append(boost)
+                        }
+                    } else {
+                        availableBoosts.append(boost)
+                    }
+                }
+                
+                let boosts = max(Int32(status.boosts), myBoostCount)
+                let initialState = InternalBoostState(level: Int32(status.level), currentLevelBoosts: Int32(status.currentLevelBoosts), nextLevelBoosts: status.nextLevelBoosts.flatMap(Int32.init), boosts: boosts)
+                self.boostState = initialState.displayData(myBoostCount: myBoostCount, currentMyBoostCount: 0, replacedBoosts: controller.replacedBoosts?.0)
+                
+                self.updatedState.set(.single(InternalBoostState(level: Int32(status.level), currentLevelBoosts: Int32(status.currentLevelBoosts), nextLevelBoosts: status.nextLevelBoosts.flatMap(Int32.init), boosts: boosts + 1)))
+                
+                if let (replacedBoosts, sourcePeers) = controller.replacedBoosts {
+                    currentMyBoostCount += 1
+                    
+                    self.boostState = initialState.displayData(myBoostCount: myBoostCount, currentMyBoostCount: 1)
+                    Queue.mainQueue().justDispatch {
+                        self.updated(transition: .easeInOut(duration: 0.2))
+                    }
+                                        
+                    Queue.mainQueue().after(0.3) {
+                        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                        
+                        var groupCount: Int32 = 0
+                        var channelCount: Int32 = 0
+                        for peer in sourcePeers {
+                            if case let .channel(channel) = peer {
+                                switch channel.info {
+                                case .broadcast:
+                                    channelCount += 1
+                                case .group:
+                                    groupCount += 1
+                                }
+                            }
+                        }
+                        let otherText: String
+                        if channelCount > 0 && groupCount == 0 {
+                            otherText = presentationData.strings.ReassignBoost_OtherChannels(channelCount)
+                        } else if groupCount > 0 && channelCount == 0 {
+                            otherText = presentationData.strings.ReassignBoost_OtherGroups(groupCount)
+                        } else {
+                            otherText = presentationData.strings.ReassignBoost_OtherGroupsAndChannels(Int32(sourcePeers.count))
+                        }
+                        let text = presentationData.strings.ReassignBoost_Success(presentationData.strings.ReassignBoost_Boosts(replacedBoosts), otherText).string
+                        let undoController = UndoOverlayController(presentationData: presentationData, content:  .universal(animation: "BoostReplace", scale: 0.066, colors: [:], title: nil, text: text, customUndoText: nil, timeout: 4.0), elevatedLayout: false, position: .top, action: { _ in return true })
+                        controller.present(undoController, in: .current)
+                    }
+                }
+                
+                self.availableBoosts = availableBoosts
+                self.occupiedBoosts = occupiedBoosts
+                self.myBoostCount = myBoostCount
+                self.currentMyBoostCount = currentMyBoostCount
+            }
         }
         
         override func didLoad() {
@@ -1187,37 +1775,26 @@ public class PremiumBoostLevelsScreen: ViewController {
             
             self.controller?.updateModalStyleOverlayTransitionFactor(0.0, transition: positionTransition)
         }
+        
+        func requestLayout(transition: Transition) {
+            guard let layout = self.currentLayout else {
+                return
+            }
+            self.containerLayoutUpdated(layout: layout, forceUpdate: true, transition: transition)
+        }
                 
         private var dismissOffset: CGFloat?
-        func containerLayoutUpdated(layout: ContainerViewLayout, transition: Transition) {
+        func containerLayoutUpdated(layout: ContainerViewLayout, forceUpdate: Bool = false, transition: Transition) {
+            guard !self.isDismissing else {
+                return
+            }
             self.currentLayout = layout
             
             self.dim.frame = CGRect(origin: CGPoint(x: 0.0, y: -layout.size.height), size: CGSize(width: layout.size.width, height: layout.size.height * 3.0))
-                        
-            var effectiveExpanded = self.isExpanded
-            if case .regular = layout.metrics.widthClass {
-                effectiveExpanded = true
-            }
-            
+                                  
             let isLandscape = layout.orientation == .landscape
-            let edgeTopInset = isLandscape ? 0.0 : self.defaultTopInset
-            let topInset: CGFloat
-            if let (panInitialTopInset, panOffset, _, _) = self.panGestureArguments {
-                if effectiveExpanded {
-                    topInset = min(edgeTopInset, panInitialTopInset + max(0.0, panOffset))
-                } else {
-                    topInset = max(0.0, panInitialTopInset + min(0.0, panOffset))
-                }
-            } else if let dismissOffset = self.dismissOffset, !dismissOffset.isZero {
-                topInset = edgeTopInset * dismissOffset
-            } else {
-                topInset = effectiveExpanded ? 0.0 : edgeTopInset
-            }
-            transition.setFrame(view: self.wrappingView, frame: CGRect(origin: CGPoint(x: 0.0, y: topInset), size: layout.size), completion: nil)
             
-            let modalProgress = isLandscape ? 0.0 : (1.0 - topInset / self.defaultTopInset)
-            self.controller?.updateModalStyleOverlayTransitionFactor(modalProgress, transition: transition.containedViewLayoutTransition)
-            
+            var containerTopInset: CGFloat = 0.0
             let clipFrame: CGRect
             if layout.metrics.widthClass == .compact {
                 self.dim.backgroundColor = UIColor(rgb: 0x000000, alpha: 0.25)
@@ -1239,7 +1816,7 @@ public class PremiumBoostLevelsScreen: ViewController {
                     clipFrame = CGRect(origin: CGPoint(), size: layout.size)
                 } else {
                     let coveredByModalTransition: CGFloat = 0.0
-                    var containerTopInset: CGFloat = 10.0
+                    containerTopInset = 10.0
                     if let statusBarHeight = layout.statusBarHeight {
                         containerTopInset += statusBarHeight
                     }
@@ -1267,26 +1844,65 @@ public class PremiumBoostLevelsScreen: ViewController {
             
             transition.setFrame(view: self.containerView, frame: clipFrame)
             
-            self.updated(transition: transition)
+            var effectiveExpanded = self.isExpanded
+            if case .regular = layout.metrics.widthClass {
+                effectiveExpanded = true
+            }
+        
+            self.updated(transition: transition, forceUpdate: forceUpdate)
+                        
+            let contentHeight = self.containerExternalState.contentHeight
+            if contentHeight > 0.0 && contentHeight < 400.0, let view = self.footerView.componentView as? FooterComponent.View {
+                view.backgroundView.alpha = 0.0
+                view.separator.opacity = 0.0
+            }
+            let edgeTopInset = isLandscape ? 0.0 : self.defaultTopInset
+
+            let topInset: CGFloat
+            if let (panInitialTopInset, panOffset, _) = self.panGestureArguments {
+                if effectiveExpanded {
+                    topInset = min(edgeTopInset, panInitialTopInset + max(0.0, panOffset))
+                } else {
+                    topInset = max(0.0, panInitialTopInset + min(0.0, panOffset))
+                }
+            } else if let dismissOffset = self.dismissOffset, !dismissOffset.isZero {
+                topInset = edgeTopInset * dismissOffset
+            } else {
+                topInset = effectiveExpanded ? 0.0 : edgeTopInset
+            }
+            transition.setFrame(view: self.wrappingView, frame: CGRect(origin: CGPoint(x: 0.0, y: topInset), size: layout.size), completion: nil)
+            
+            let modalProgress = isLandscape ? 0.0 : (1.0 - topInset / self.defaultTopInset)
+            self.controller?.updateModalStyleOverlayTransitionFactor(modalProgress, transition: transition.containedViewLayoutTransition)
+            
+            let footerHeight = self.footerHeight
+            let convertedFooterFrame = self.view.convert(CGRect(origin: CGPoint(x: clipFrame.minX, y: clipFrame.maxY - footerHeight), size: CGSize(width: clipFrame.width, height: footerHeight)), to: self.containerView)
+            transition.setFrame(view: self.footerContainerView, frame: convertedFooterFrame)
         }
         
-        func updated(transition: Transition) {
+        private var boostState: InternalBoostState.DisplayData?
+        func updated(transition: Transition, forceUpdate: Bool = false) {
             guard let controller = self.controller else {
                 return
             }
-            let containerSize = self.containerView.bounds.size
-            
-
             let contentSize = self.contentView.update(
-                transition: .immediate,
+                transition: transition,
                 component: AnyComponent(
                     BoostLevelsContainerComponent(
                         context: controller.context,
                         theme: self.presentationData.theme,
                         strings: self.presentationData.strings,
-                        peer: controller.peer,
-                        subject: controller.subject,
+                        externalState: self.containerExternalState,
+                        peerId: controller.peerId,
+                        mode: controller.mode,
                         status: controller.status,
+                        boostState: self.boostState,
+                        boost: { [weak controller] in
+                            guard let controller else {
+                                return
+                            }
+                            controller.node.updateBoostState()
+                        },
                         copyLink: { [weak self, weak controller] link in
                             guard let self else {
                                 return
@@ -1301,13 +1917,47 @@ public class PremiumBoostLevelsScreen: ViewController {
                             controller?.dismiss(animated: true)
                         },
                         openStats: controller.openStats,
-                        openGift: controller.openGift
+                        openGift: controller.openGift,
+                        openPeer: controller.openPeer,
+                        updated: { [weak self] in
+                            self?.requestLayout(transition: .immediate)
+                        }
                     )
                 ),
                 environment: {},
-                containerSize: CGSize(width: containerSize.width, height: containerSize.height)
+                forceUpdate: forceUpdate,
+                containerSize: self.containerView.bounds.size
             )
             self.contentView.frame = CGRect(origin: .zero, size: contentSize)
+            
+            let footerHeight = self.footerHeight
+            
+            let actionTitle: String
+            if self.currentMyBoostCount > 0 {
+                actionTitle = self.presentationData.strings.ChannelBoost_BoostAgain
+            } else {
+                actionTitle = self.containerExternalState.isGroup ? self.presentationData.strings.GroupBoost_BoostGroup : self.presentationData.strings.ChannelBoost_BoostChannel
+            }
+            
+            let footerSize = self.footerView.update(
+                transition: .immediate,
+                component: AnyComponent(
+                    FooterComponent(
+                        context: controller.context,
+                        theme: self.presentationData.theme,
+                        title: actionTitle,
+                        action: { [weak self] in
+                            guard let self else {
+                                return
+                            }
+                            self.buttonPressed()
+                        }
+                    )
+                ),
+                environment: {},
+                containerSize: CGSize(width: self.containerView.bounds.width, height: footerHeight)
+            )
+            self.footerView.frame = CGRect(origin: .zero, size: footerSize)
         }
         
         private var didPlayAppearAnimation = false
@@ -1328,6 +1978,20 @@ public class PremiumBoostLevelsScreen: ViewController {
             }
         }
         
+        private var footerHeight: CGFloat {
+            if let mode = self.controller?.mode, case .owner = mode {
+                return 0.0
+            }
+            
+            guard let layout = self.currentLayout else {
+                return 58.0
+            }
+                        
+            var footerHeight: CGFloat = 8.0 + 50.0
+            footerHeight += layout.intrinsicInsets.bottom > 0.0 ? layout.intrinsicInsets.bottom + 5.0 : 8.0
+            return footerHeight
+        }
+        
         private var defaultTopInset: CGFloat {
             guard let layout = self.currentLayout else {
                 return 210.0
@@ -1337,17 +2001,27 @@ public class PremiumBoostLevelsScreen: ViewController {
                 let bottomInset: CGFloat = layout.intrinsicInsets.bottom > 0.0 ? layout.intrinsicInsets.bottom + 5.0 : bottomPanelPadding
                 let panelHeight: CGFloat = bottomPanelPadding + 50.0 + bottomInset + 28.0
                 
-                let additionalInset: CGFloat = 0.0
-                return layout.size.height - layout.size.width - 181.0 - panelHeight + additionalInset
+                var defaultTopInset = layout.size.height - layout.size.width - 128.0 - panelHeight
+                
+                let containerTopInset = 10.0 + (layout.statusBarHeight ?? 0.0)
+                let contentHeight = self.containerExternalState.contentHeight
+                let footerHeight = self.footerHeight
+                if contentHeight > 0.0 {
+                    let delta = (layout.size.height - defaultTopInset - containerTopInset) - contentHeight - footerHeight - 16.0
+                    if delta > 0.0 {
+                        defaultTopInset += delta
+                    }
+                }
+                return defaultTopInset
             } else {
                 return 210.0
             }
         }
         
-        private func findVerticalScrollView(view: UIView?) -> (UIScrollView, ListView?)? {
+        private func findVerticalScrollView(view: UIView?) -> UIScrollView? {
             if let view = view {
                 if let view = view as? UIScrollView, view.contentSize.height > view.contentSize.width {
-                    return (view, nil)
+                    return view
                 }
                 return findVerticalScrollView(view: view.superview)
             } else {
@@ -1368,12 +2042,13 @@ public class PremiumBoostLevelsScreen: ViewController {
                     let point = recognizer.location(in: self.view)
                     let currentHitView = self.hitTest(point, with: nil)
                     
-                    var scrollViewAndListNode = self.findVerticalScrollView(view: currentHitView)
-                    if scrollViewAndListNode?.0.frame.height == self.frame.width {
-                        scrollViewAndListNode = nil
+                    var scrollView = self.findVerticalScrollView(view: currentHitView)
+                    if scrollView?.frame.height == self.frame.width {
+                        scrollView = nil
                     }
-                    let scrollView = scrollViewAndListNode?.0
-                    let listNode = scrollViewAndListNode?.1
+                    if scrollView?.isDescendant(of: self.view) == false {
+                        scrollView = nil
+                    }
                                 
                     let topInset: CGFloat
                     if self.isExpanded {
@@ -1382,25 +2057,19 @@ public class PremiumBoostLevelsScreen: ViewController {
                         topInset = edgeTopInset
                     }
                 
-                    self.panGestureArguments = (topInset, 0.0, scrollView, listNode)
+                    self.panGestureArguments = (topInset, 0.0, scrollView)
                 case .changed:
-                    guard let (topInset, panOffset, scrollView, listNode) = self.panGestureArguments else {
+                    guard let (topInset, panOffset, scrollView) = self.panGestureArguments else {
                         return
                     }
-                    let visibleContentOffset = listNode?.visibleContentOffset()
                     let contentOffset = scrollView?.contentOffset.y ?? 0.0
-                
+                    
                     var translation = recognizer.translation(in: self.view).y
 
                     var currentOffset = topInset + translation
                 
                     let epsilon = 1.0
-                    if case let .known(value) = visibleContentOffset, value <= epsilon {
-                        if let scrollView = scrollView {
-                            scrollView.bounces = false
-                            scrollView.setContentOffset(CGPoint(x: 0.0, y: 0.0), animated: false)
-                        }
-                    } else if let scrollView = scrollView, contentOffset <= -scrollView.contentInset.top + epsilon {
+                    if let scrollView = scrollView, contentOffset <= -scrollView.contentInset.top + epsilon {
                         scrollView.bounces = false
                         scrollView.setContentOffset(CGPoint(x: 0.0, y: -scrollView.contentInset.top), animated: false)
                     } else if let scrollView = scrollView {
@@ -1417,7 +2086,7 @@ public class PremiumBoostLevelsScreen: ViewController {
                         translation = max(0.0, translation)
                     }
                     
-                    self.panGestureArguments = (topInset, translation, scrollView, listNode)
+                    self.panGestureArguments = (topInset, translation, scrollView)
                     
                     if !self.isExpanded {
                         if currentOffset > 0.0, let scrollView = scrollView {
@@ -1436,23 +2105,18 @@ public class PremiumBoostLevelsScreen: ViewController {
                 
                     self.containerLayoutUpdated(layout: layout, transition: .immediate)
                 case .ended:
-                    guard let (currentTopInset, panOffset, scrollView, listNode) = self.panGestureArguments else {
+                    guard let (currentTopInset, panOffset, scrollView) = self.panGestureArguments else {
                         return
                     }
                     self.panGestureArguments = nil
                 
-                    let visibleContentOffset = listNode?.visibleContentOffset()
                     let contentOffset = scrollView?.contentOffset.y ?? 0.0
                 
                     let translation = recognizer.translation(in: self.view).y
                     var velocity = recognizer.velocity(in: self.view)
                     
                     if self.isExpanded {
-                        if case let .known(value) = visibleContentOffset, value > 0.1 {
-                            velocity = CGPoint()
-                        } else if case .unknown = visibleContentOffset {
-                            velocity = CGPoint()
-                        } else if contentOffset > 0.1 {
+                        if contentOffset > 0.1 {
                             velocity = CGPoint()
                         }
                     }
@@ -1477,9 +2141,7 @@ public class PremiumBoostLevelsScreen: ViewController {
                     } else if self.isExpanded {
                         if velocity.y > 300.0 || offset > topInset / 2.0 {
                             self.isExpanded = false
-                            if let listNode = listNode {
-                                listNode.scroller.setContentOffset(CGPoint(), animated: false)
-                            } else if let scrollView = scrollView {
+                            if let scrollView = scrollView {
                                 scrollView.setContentOffset(CGPoint(x: 0.0, y: -scrollView.contentInset.top), animated: false)
                             }
                             
@@ -1494,21 +2156,13 @@ public class PremiumBoostLevelsScreen: ViewController {
                             self.containerLayoutUpdated(layout: layout, transition: Transition(.animated(duration: 0.3, curve: .easeInOut)))
                         }
                     } else if scrollView != nil, (velocity.y < -300.0 || offset < topInset / 2.0) {
-                        if velocity.y > -2200.0 && velocity.y < -300.0, let listNode = listNode {
-                            DispatchQueue.main.async {
-                                listNode.transaction(deleteIndices: [], insertIndicesAndItems: [], updateIndicesAndItems: [], options: [.Synchronous, .LowLatency], scrollToItem: ListViewScrollToItem(index: 0, position: .top(0.0), animated: true, curve: .Default(duration: nil), directionHint: .Up), updateSizeAndInsets: nil, stationaryItemRange: nil, updateOpaqueState: nil, completion: { _ in })
-                            }
-                        }
-                                                    
                         let initialVelocity: CGFloat = offset.isZero ? 0.0 : abs(velocity.y / offset)
                         let transition = ContainedViewLayoutTransition.animated(duration: 0.45, curve: .customSpring(damping: 124.0, initialVelocity: initialVelocity))
                         self.isExpanded = true
                        
                         self.containerLayoutUpdated(layout: layout, transition: Transition(transition))
                     } else {
-                        if let listNode = listNode {
-                            listNode.scroller.setContentOffset(CGPoint(), animated: false)
-                        } else if let scrollView = scrollView {
+                        if let scrollView = scrollView {
                             scrollView.setContentOffset(CGPoint(x: 0.0, y: -scrollView.contentInset.top), animated: false)
                         }
                         
@@ -1552,6 +2206,247 @@ public class PremiumBoostLevelsScreen: ViewController {
             }
             self.containerLayoutUpdated(layout: layout, transition: Transition(transition))
         }
+        
+        private var currentMyBoostCount: Int32 = 0
+        private var myBoostCount: Int32 = 0
+        private var availableBoosts: [MyBoostStatus.Boost] = []
+        private var occupiedBoosts: [MyBoostStatus.Boost] = []
+        private let updatedState = Promise<InternalBoostState?>()
+        
+        private func updateBoostState() {
+            guard let controller = self.controller else {
+                return
+            }
+            let context = controller.context
+            let peerId = controller.peerId
+            let mode = controller.mode
+            let status = controller.status
+            let isPremium = controller.context.isPremium
+            let premiumConfiguration = PremiumConfiguration.with(appConfiguration: context.currentAppConfiguration.with({ $0 }))
+            let canBoostAgain = premiumConfiguration.boostsPerGiftCount > 0
+            let presentationData = self.presentationData
+            let forceDark = controller.forceDark
+            let boostStatusUpdated = controller.boostStatusUpdated
+            
+            if let _ = status?.nextLevelBoosts {
+                if let availableBoost = self.availableBoosts.first {
+                    self.currentMyBoostCount += 1
+                    self.myBoostCount += 1
+                    
+                    let _ = (context.engine.peers.applyChannelBoost(peerId: peerId, slots: [availableBoost.slot])
+                    |> deliverOnMainQueue).startStandalone(next: { [weak self] myBoostStatus in
+                        self?.updatedState.set(context.engine.peers.getChannelBoostStatus(peerId: peerId)
+                        |> beforeNext { [weak self] boostStatus in
+                            if let self, let boostStatus, let myBoostStatus {
+                                Queue.mainQueue().async {
+                                    self.controller?.boostStatusUpdated(boostStatus, myBoostStatus)
+                                }
+                            }
+                        }
+                        |> map { status in
+                            if let status {
+                                return InternalBoostState(level: Int32(status.level), currentLevelBoosts: Int32(status.currentLevelBoosts), nextLevelBoosts: status.nextLevelBoosts.flatMap(Int32.init), boosts: Int32(status.boosts + 1))
+                            } else {
+                                return nil
+                            }
+                        })
+                    })
+                   
+                    let _ = (self.updatedState.get()
+                    |> take(1)
+                    |> deliverOnMainQueue).startStandalone(next: { [weak self] state in
+                        guard let self, let state else {
+                            return
+                        }
+                        self.boostState = state.displayData(myBoostCount: self.myBoostCount, currentMyBoostCount: self.currentMyBoostCount)
+                        self.updated(transition: .easeInOut(duration: 0.2))
+                        
+                        self.animateSuccess()
+                    })
+                    
+                    self.availableBoosts.removeFirst()
+                } else if !self.occupiedBoosts.isEmpty, let myBoostStatus = controller.myBoostStatus {
+                    if canBoostAgain {
+                        let navigationController = controller.navigationController
+                        let openPeer = controller.openPeer
+                        
+                        var dismissReplaceImpl: (() -> Void)?
+                        let replaceController = ReplaceBoostScreen(context: context, peerId: peerId, myBoostStatus: myBoostStatus, replaceBoosts: { slots in
+                            var sourcePeerIds = Set<EnginePeer.Id>()
+                            var sourcePeers: [EnginePeer] = []
+                            for boost in myBoostStatus.boosts {
+                                if slots.contains(boost.slot) {
+                                    if let peer = boost.peer {
+                                        if !sourcePeerIds.contains(peer.id) {
+                                            sourcePeerIds.insert(peer.id)
+                                            sourcePeers.append(peer)
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            let _ = context.engine.peers.applyChannelBoost(peerId: peerId, slots: slots).startStandalone(completed: {
+                                let _ = combineLatest(
+                                    queue: Queue.mainQueue(),
+                                    context.engine.peers.getChannelBoostStatus(peerId: peerId),
+                                    context.engine.peers.getMyBoostStatus()
+                                ).startStandalone(next: { boostStatus, myBoostStatus in
+                                    dismissReplaceImpl?()
+                                    
+                                    if let boostStatus, let myBoostStatus {
+                                        boostStatusUpdated(boostStatus, myBoostStatus)
+                                    }
+                                    
+                                    let levelsController = PremiumBoostLevelsScreen(
+                                        context: context,
+                                        peerId: peerId,
+                                        mode: mode,
+                                        status: boostStatus,
+                                        myBoostStatus: myBoostStatus,
+                                        replacedBoosts: (Int32(slots.count), sourcePeers),
+                                        openStats: nil, 
+                                        openGift: nil,
+                                        openPeer: openPeer,
+                                        forceDark: forceDark
+                                    )
+                                    levelsController.boostStatusUpdated = boostStatusUpdated
+                                    if let navigationController {
+                                        navigationController.pushViewController(levelsController, animated: true)
+                                    }
+                                })
+                            })
+                        })
+                        
+                        if let navigationController = controller.navigationController {
+                            controller.dismiss(animated: true)
+                            navigationController.pushViewController(replaceController, animated: true)
+                        }
+                        
+                        dismissReplaceImpl = { [weak replaceController] in
+                            replaceController?.dismiss(animated: true)
+                        }
+                    } else if let boost = self.occupiedBoosts.first, let occupiedPeer = boost.peer {
+                        if let cooldown = boost.cooldownUntil {
+                            let currentTime = Int32(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970)
+                            let timeout = cooldown - currentTime
+                            let valueText = timeIntervalString(strings: presentationData.strings, value: timeout, usage: .afterTime, preferLowerValue: false)
+                            let alertController = textAlertController(
+                                sharedContext: context.sharedContext,
+                                updatedPresentationData: nil,
+                                title: presentationData.strings.ChannelBoost_Error_BoostTooOftenTitle,
+                                text: self.containerExternalState.isGroup ? presentationData.strings.GroupBoost_Error_BoostTooOftenText(valueText).string : presentationData.strings.ChannelBoost_Error_BoostTooOftenText(valueText).string,
+                                actions: [
+                                    TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})
+                                ],
+                                parseMarkdown: true
+                            )
+                            controller.present(alertController, in: .window(.root))
+                        } else {
+                            let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+                            |> deliverOnMainQueue).start(next: { [weak controller] peer in
+                                guard let peer, let controller else {
+                                    return
+                                }
+                                let replaceController = replaceBoostConfirmationController(context: context, fromPeers: [occupiedPeer], toPeer: peer, commit: { [weak self] in
+                                    self?.currentMyBoostCount += 1
+                                    self?.myBoostCount += 1
+                                    let _ = (context.engine.peers.applyChannelBoost(peerId: peerId, slots: [boost.slot])
+                                    |> deliverOnMainQueue).startStandalone(completed: { [weak self] in
+                                        guard let self else {
+                                            return
+                                        }
+                                        let _ = (self.updatedState.get()
+                                        |> take(1)
+                                        |> deliverOnMainQueue).startStandalone(next: { [weak self] state in
+                                            guard let self, let state else {
+                                                return
+                                            }
+                                            self.boostState = state.displayData(myBoostCount: self.myBoostCount, currentMyBoostCount: self.currentMyBoostCount)
+                                            self.updated(transition: .easeInOut(duration: 0.2))
+                                            
+                                            self.animateSuccess()
+                                        })
+                                    })
+                                })
+                                controller.present(replaceController, in: .window(.root))
+                            })
+                        }
+                    } else {
+                        controller.dismiss(animated: true, completion: nil)
+                    }
+                } else {
+                    if isPremium {
+                        if !canBoostAgain {
+                            controller.dismiss(animated: true, completion: nil)
+                        } else {
+                            let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+                            |> deliverOnMainQueue).start(next: { [weak controller] peer in
+                                guard let peer, let controller else {
+                                    return
+                                }
+                                let alertController = textAlertController(
+                                    sharedContext: context.sharedContext,
+                                    updatedPresentationData: nil,
+                                    title: presentationData.strings.ChannelBoost_MoreBoosts_Title,
+                                    text: presentationData.strings.ChannelBoost_MoreBoosts_Text(peer.compactDisplayTitle, "\(premiumConfiguration.boostsPerGiftCount)").string,
+                                    actions: [
+                                        TextAlertAction(type: .defaultAction, title: presentationData.strings.ChannelBoost_MoreBoosts_Gift, action: { [weak controller] in
+                                            if let navigationController = controller?.navigationController {
+                                                controller?.dismiss(animated: true, completion: nil)
+                                                
+                                                Queue.mainQueue().after(0.4) {
+                                                    let giftController = context.sharedContext.makePremiumGiftController(context: context, source: .channelBoost, completion: nil)
+                                                    navigationController.pushViewController(giftController, animated: true)
+                                                }
+                                            }
+                                        }),
+                                        TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Close, action: {})
+                                    ],
+                                    actionLayout: .vertical,
+                                    parseMarkdown: true
+                                )
+                                controller.present(alertController, in: .window(.root))
+                            })
+                        }
+                    } else {
+                        let alertController = textAlertController(
+                            sharedContext: context.sharedContext,
+                            updatedPresentationData: nil,
+                            title: presentationData.strings.ChannelBoost_Error_PremiumNeededTitle,
+                            text: self.containerExternalState.isGroup ? presentationData.strings.GroupBoost_Error_PremiumNeededText :  presentationData.strings.ChannelBoost_Error_PremiumNeededText,
+                            actions: [
+                                TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {}),
+                                TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_Yes, action: { [weak controller] in
+                                    if let navigationController = controller?.navigationController {
+                                        controller?.dismiss(animated: true)
+                                        
+                                        let premiumController = context.sharedContext.makePremiumIntroController(context: context, source: .channelBoost(peerId), forceDark: forceDark, dismissed: nil)
+                                        navigationController.pushViewController(premiumController, animated: true)
+                                    }
+                                })
+                            ],
+                            parseMarkdown: true
+                        )
+                        controller.present(alertController, in: .window(.root))
+                    }
+                }
+            } else {
+                controller.dismiss(animated: true)
+            }
+        }
+        
+        func buttonPressed() {
+            self.updateBoostState()
+        }
+        
+        private func animateSuccess() {
+            self.hapticFeedback.impact()
+            self.view.addSubview(ConfettiView(frame: self.view.bounds))
+            
+            if self.isExpanded {
+                self.update(isExpanded: false, transition: .animated(duration: 0.4, curve: .spring))
+            }
+        }
     }
     
     var node: Node {
@@ -1559,32 +2454,42 @@ public class PremiumBoostLevelsScreen: ViewController {
     }
     
     private let context: AccountContext
-    private let peer: EnginePeer
-    private let subject: BoostSubject
-    private let status: ChannelBoostStatus
-    private let openStats: () -> Void
-    private let openGift: () -> Void
+    private let peerId: EnginePeer.Id
+    private let mode: Mode
+    private let status: ChannelBoostStatus?
+    private let myBoostStatus: MyBoostStatus?
+    private let replacedBoosts: (Int32, [EnginePeer])?
+    private let openStats: (() -> Void)?
+    private let openGift: (() -> Void)?
+    private let openPeer: ((EnginePeer) -> Void)?
     private let forceDark: Bool
     
     private var currentLayout: ContainerViewLayout?
         
+    public var boostStatusUpdated: (ChannelBoostStatus, MyBoostStatus) -> Void = { _, _ in }
     public var disposed: () -> Void = {}
     
     public init(
         context: AccountContext,
-        peer: EnginePeer,
-        subject: BoostSubject,
-        status: ChannelBoostStatus,
-        openStats: @escaping () -> Void,
-        openGift: @escaping () -> Void,
+        peerId: EnginePeer.Id,
+        mode: Mode,
+        status: ChannelBoostStatus?,
+        myBoostStatus: MyBoostStatus? = nil,
+        replacedBoosts: (Int32, [EnginePeer])? = nil,
+        openStats: (() -> Void)? = nil,
+        openGift: (() -> Void)? = nil,
+        openPeer: ((EnginePeer) -> Void)? = nil,
         forceDark: Bool = false
     ) {
         self.context = context
-        self.peer = peer
-        self.subject = subject
+        self.peerId = peerId
+        self.mode = mode
         self.status = status
+        self.myBoostStatus = myBoostStatus
+        self.replacedBoosts = replacedBoosts
         self.openStats = openStats
         self.openGift = openGift
+        self.openPeer = openPeer
         self.forceDark = forceDark
         
         super.init(navigationBarPresentationData: nil)
@@ -1593,11 +2498,6 @@ public class PremiumBoostLevelsScreen: ViewController {
         self.statusBar.statusBarStyle = .Ignore
         
         self.supportedOrientations = ViewControllerSupportedOrientations(regularSize: .all, compactSize: .portrait)
-        
-        
-//        UIPasteboard.general.string = link
-//        let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
-//        self.environment?.controller()?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(text: presentationData.strings.ChannelBoost_BoostLinkCopied), elevatedLayout: false, position: .bottom, animateInAsReplacement: false, action: { _ in return false }), in: .current)
     }
         
     required public init(coder aDecoder: NSCoder) {
@@ -1607,11 +2507,7 @@ public class PremiumBoostLevelsScreen: ViewController {
     deinit {
         self.disposed()
     }
-    
-    @objc private func cancelPressed() {
-        self.dismiss(animated: true, completion: nil)
-    }
-    
+
     override open func loadDisplayNode() {
         self.displayNode = Node(context: self.context, controller: self)
         self.displayNodeDidLoad()
@@ -1640,7 +2536,7 @@ public class PremiumBoostLevelsScreen: ViewController {
     
     override open func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
-        
+                
         self.node.updateIsVisible(isVisible: false)
     }
         
@@ -1649,5 +2545,162 @@ public class PremiumBoostLevelsScreen: ViewController {
         super.containerLayoutUpdated(layout, transition: transition)
                 
         self.node.containerLayoutUpdated(layout: layout, transition: Transition(transition))
+    }
+}
+
+private final class FooterComponent: Component {
+    let context: AccountContext
+    let theme: PresentationTheme
+    let title: String
+    let action: () -> Void
+
+    init(context: AccountContext, theme: PresentationTheme, title: String, action: @escaping () -> Void) {
+        self.context = context
+        self.theme = theme
+        self.title = title
+        self.action = action
+    }
+
+    static func ==(lhs: FooterComponent, rhs: FooterComponent) -> Bool {
+        if lhs.context !== rhs.context {
+            return false
+        }
+        if lhs.theme !== rhs.theme {
+            return false
+        }
+        if lhs.title != rhs.title {
+            return false
+        }
+        return true
+    }
+
+    final class View: UIView {
+        let backgroundView: BlurredBackgroundView
+        let separator = SimpleLayer()
+        
+        private let button = ComponentView<Empty>()
+        
+        private var component: FooterComponent?
+        private weak var state: EmptyComponentState?
+        
+        override init(frame: CGRect) {
+            self.backgroundView = BlurredBackgroundView(color: nil)
+            
+            super.init(frame: frame)
+            
+            self.backgroundView.clipsToBounds = true
+            
+            self.addSubview(self.backgroundView)
+            self.layer.addSublayer(self.separator)
+        }
+        
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
+        
+        func update(component: FooterComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: Transition) -> CGSize {
+            self.component = component
+            self.state = state
+            
+            let bounds = CGRect(origin: .zero, size: availableSize)
+            
+            self.backgroundView.updateColor(color: component.theme.rootController.tabBar.backgroundColor, transition: transition.containedViewLayoutTransition)
+            self.backgroundView.update(size: bounds.size, transition: transition.containedViewLayoutTransition)
+            transition.setFrame(view: self.backgroundView, frame: bounds)
+            
+            self.separator.backgroundColor = component.theme.rootController.tabBar.separatorColor.cgColor
+            transition.setFrame(layer: self.separator, frame: CGRect(origin: .zero, size: CGSize(width: availableSize.width, height: UIScreenPixel)))
+            
+            let gradientColors = [
+                UIColor(rgb: 0x0077ff),
+                UIColor(rgb: 0x6b93ff),
+                UIColor(rgb: 0x8878ff),
+                UIColor(rgb: 0xe46ace)
+            ]
+            
+            let buttonSize = self.button.update(
+                transition: .immediate,
+                component: AnyComponent(
+                    SolidRoundedButtonComponent(
+                        title: component.title,
+                        theme: SolidRoundedButtonComponent.Theme(
+                            backgroundColor: .black,
+                            backgroundColors: gradientColors,
+                            foregroundColor: .white
+                        ),
+                        font: .bold,
+                        fontSize: 17.0,
+                        height: 50.0,
+                        cornerRadius: 10.0,
+                        gloss: true,
+                        iconName: "Premium/BoostChannel",
+                        animationName: nil,
+                        iconPosition: .left,
+                        action: {
+                            component.action()
+                        }
+                    )
+                ),
+                environment: {},
+                containerSize: CGSize(width: availableSize.width - 32.0, height: availableSize.height)
+            )
+            
+            if let view = self.button.view {
+                if view.superview == nil {
+                    self.addSubview(view)
+                }
+                let buttonFrame = CGRect(origin: CGPoint(x: 16.0, y: 8.0), size: buttonSize)
+                view.frame = buttonFrame
+            }
+                        
+            return availableSize
+        }
+    }
+
+    func makeView() -> View {
+        return View(frame: CGRect())
+    }
+
+    func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: Transition) -> CGSize {
+        return view.update(component: self, availableSize: availableSize, state: state, environment: environment, transition: transition)
+    }
+}
+
+private struct InternalBoostState: Equatable {
+    let level: Int32
+    let currentLevelBoosts: Int32
+    let nextLevelBoosts: Int32?
+    let boosts: Int32
+    
+    struct DisplayData: Equatable {
+        let level: Int32
+        let boosts: Int32
+        let currentLevelBoosts: Int32
+        let nextLevelBoosts: Int32?
+        let myBoostCount: Int32
+    }
+    
+    func displayData(myBoostCount: Int32, currentMyBoostCount: Int32, replacedBoosts: Int32? = nil) -> DisplayData {
+        var currentLevel = self.level
+        var nextLevelBoosts = self.nextLevelBoosts
+        var currentLevelBoosts = self.currentLevelBoosts
+        var boosts = self.boosts
+        if let replacedBoosts {
+            boosts = max(currentLevelBoosts, boosts - replacedBoosts)
+        }
+        
+        if currentMyBoostCount > 0 && self.boosts == currentLevelBoosts {
+            currentLevel = max(0, currentLevel - 1)
+            nextLevelBoosts = currentLevelBoosts
+            currentLevelBoosts = max(0, currentLevelBoosts - 1)
+        }
+        
+        return DisplayData(
+            level: currentLevel,
+            boosts: boosts,
+            currentLevelBoosts: currentLevelBoosts,
+            nextLevelBoosts: nextLevelBoosts,
+            myBoostCount: myBoostCount
+        )
     }
 }

@@ -8,7 +8,7 @@ swift_library(
     ]),
     deps = [
         "//submodules/lottie-ios:Lottie",
-        "@swiftpkg_nicegram_assistant_ios//:Sources_NGCoreUI",
+        "@swiftpkg_nicegram_assistant_ios//:NGCoreUI",
     ],
     visibility = ["//visibility:public"],
 

@@ -587,7 +587,7 @@ func openResolvedUrlImpl(
             }
         case let .premiumMultiGift(reference):
             dismissInput()
-            let controller = context.sharedContext.makePremiumGiftController(context: context, source: .deeplink(reference))
+            let controller = context.sharedContext.makePremiumGiftController(context: context, source: .deeplink(reference), completion: nil)
             if let navigationController = navigationController {
                 navigationController.pushViewController(controller, animated: true)
             }
@@ -866,15 +866,6 @@ func openResolvedUrlImpl(
                 }
             })
         case let .boost(peerId, status, myBoostStatus):
-            var isCurrent = false
-            if case let .chat(chatPeerId, _, _) = urlContext, chatPeerId == peerId {
-                isCurrent = true
-            }
-            var forceDark = false
-            if let updatedPresentationData, updatedPresentationData.initial.theme.overallDarkAppearance {
-                forceDark = true
-            }
-        
             var dismissedImpl: (() -> Void)?
             if let storyProgressPauseContext = contentContext as? StoryProgressPauseContext {
                 let updateExternalController = storyProgressPauseContext.update
@@ -883,32 +874,46 @@ func openResolvedUrlImpl(
                 }
             }
         
-            PremiumBoostScreen(
-                context: context,
-                contentContext: contentContext,
-                peerId: peerId,
-                isCurrent: isCurrent,
-                status: status,
-                myBoostStatus: myBoostStatus,
-                forceDark: forceDark,
-                openPeer: { peer in
-                    openPeer(peer, .chat(textInputState: nil, subject: nil, peekData: nil))
-                },
-                presentController: { [weak navigationController] c in
-                    (navigationController?.viewControllers.last as? ViewController)?.present(c, in: .window(.root))
-                },
-                pushController: { [weak navigationController] c in
-                    navigationController?.pushViewController(c)
-                    
-                    if c is PremiumLimitScreen {
-                        if let storyProgressPauseContext = contentContext as? StoryProgressPauseContext {
-                            storyProgressPauseContext.update(c)
-                        }
-                    }
-                }, dismissed: {
+            if let peerId, let status {
+                var isCurrent = false
+                if case let .chat(chatPeerId, _, _) = urlContext, chatPeerId == peerId {
+                    isCurrent = true
+                }
+                var forceDark = false
+                if let updatedPresentationData, updatedPresentationData.initial.theme.overallDarkAppearance {
+                    forceDark = true
+                }
+                let controller = PremiumBoostLevelsScreen(
+                    context: context,
+                    peerId: peerId,
+                    mode: .user(mode: isCurrent ? .current : .external),
+                    status: status,
+                    myBoostStatus: myBoostStatus,
+                    openPeer:  { peer in
+                        openPeer(peer, .chat(textInputState: nil, subject: nil, peekData: nil))
+                    },
+                    forceDark: forceDark
+                )
+                controller.disposed = {
                     dismissedImpl?()
                 }
-            )
+                navigationController?.pushViewController(controller)
+                
+                if let storyProgressPauseContext = contentContext as? StoryProgressPauseContext {
+                    storyProgressPauseContext.update(controller)
+                }
+            } else {
+                let controller = textAlertController(context: context, updatedPresentationData: updatedPresentationData, title: nil, text: presentationData.strings.Chat_ErrorCantBoost, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})])
+                present(controller, nil)
+                
+                controller.dismissed = { _ in
+                    dismissedImpl?()
+                }
+                
+                if let storyProgressPauseContext = contentContext as? StoryProgressPauseContext {
+                    storyProgressPauseContext.update(controller)
+                }
+            }
         case let .premiumGiftCode(slug):
             var forceDark = false
             if let updatedPresentationData, updatedPresentationData.initial.theme.overallDarkAppearance {

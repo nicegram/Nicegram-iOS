@@ -280,13 +280,16 @@ public final class AvatarNode: ASDisplayNode {
         private struct Params: Equatable {
             let peerId: EnginePeer.Id?
             let resourceId: String?
+            let clipStyle: AvatarNodeClipStyle
             
             init(
                 peerId: EnginePeer.Id?,
-                resourceId: String?
+                resourceId: String?,
+                clipStyle: AvatarNodeClipStyle
             ) {
                 self.peerId = peerId
                 self.resourceId = resourceId
+                self.clipStyle = clipStyle
             }
         }
         
@@ -317,6 +320,15 @@ public final class AvatarNode: ASDisplayNode {
         
         private var params: Params?
         private var loadDisposable: Disposable?
+        
+        var clipStyle: AvatarNodeClipStyle {
+            if let params = self.params {
+                return params.clipStyle
+            } else if case let .peerAvatar(_, _, _, _, clipStyle) = self.state {
+                return clipStyle
+            }
+            return .none
+        }
         
         public var badgeView: AvatarBadgeView? {
             didSet {
@@ -519,6 +531,7 @@ public final class AvatarNode: ASDisplayNode {
             } else if peer?.restrictionText(platform: "ios", contentSettings: contentSettings) == nil {
                 representation = peer?.smallProfileImage
             }
+            
             let updatedState: AvatarNodeState = .peerAvatar(peer?.id ?? EnginePeer.Id(0), peer?.nameColor, peer?.displayLetters ?? [], representation, clipStyle)
             if updatedState != self.state || overrideImage != self.overrideImage || theme !== self.theme {
                 self.state = updatedState
@@ -602,7 +615,8 @@ public final class AvatarNode: ASDisplayNode {
             let smallProfileImage = peer?.smallProfileImage
             let params = Params(
                 peerId: peer?.id,
-                resourceId: smallProfileImage?.resource.id.stringRepresentation
+                resourceId: smallProfileImage?.resource.id.stringRepresentation,
+                clipStyle: clipStyle
             )
             if self.params == params {
                 return
@@ -695,6 +709,7 @@ public final class AvatarNode: ASDisplayNode {
             else if peer?.restrictionText(platform: "ios", contentSettings: genericContext.currentContentSettings.with { $0 }) == nil || isAllowedChat(peer: peer?._asPeer(), contentSettings: genericContext.currentContentSettings.with { $0 }) {
                 representation = peer?.smallProfileImage
             }
+            
             let updatedState: AvatarNodeState = .peerAvatar(peer?.id ?? EnginePeer.Id(0), peer?.nameColor, peer?.displayLetters ?? [], representation, clipStyle)
             if updatedState != self.state || overrideImage != self.overrideImage || theme !== self.theme {
                 self.state = updatedState
@@ -1237,15 +1252,18 @@ public final class AvatarNode: ASDisplayNode {
         public var colors: Colors
         public var lineWidth: CGFloat
         public var inactiveLineWidth: CGFloat
+        public var forceRoundedRect: Bool
         
         public init(
             colors: Colors,
             lineWidth: CGFloat,
-            inactiveLineWidth: CGFloat
+            inactiveLineWidth: CGFloat,
+            forceRoundedRect: Bool =  false
         ) {
             self.colors = colors
             self.lineWidth = lineWidth
             self.inactiveLineWidth = inactiveLineWidth
+            self.forceRoundedRect = forceRoundedRect
         }
     }
     
@@ -1261,7 +1279,7 @@ public final class AvatarNode: ASDisplayNode {
         }
         
         let size = self.bounds.size
-        
+                
         if let storyStats = self.storyStats {
             let activeLineWidth = storyPresentationParams.lineWidth
             let inactiveLineWidth = storyPresentationParams.inactiveLineWidth
@@ -1299,7 +1317,8 @@ public final class AvatarNode: ASDisplayNode {
                         totalCount: storyStats.totalCount,
                         unseenCount: storyStats.unseenCount
                     ),
-                    progress: mappedProgress
+                    progress: mappedProgress,
+                    isRoundedRect: self.contentNode.clipStyle == .roundedRect || storyPresentationParams.forceRoundedRect
                 )),
                 environment: {},
                 containerSize: indicatorSize

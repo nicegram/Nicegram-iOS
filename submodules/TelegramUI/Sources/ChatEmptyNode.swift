@@ -898,6 +898,7 @@ final class ChatEmptyNodeTopicChatContent: ASDisplayNode, ChatEmptyNodeContent, 
 }
 
 final class ChatEmptyNodePremiumRequiredChatContent: ASDisplayNode, ChatEmptyNodeContent {
+    private let isPremiumDisabled: Bool
     private let interaction: ChatPanelInterfaceInteraction?
     
     private let iconBackground: SimpleLayer
@@ -910,7 +911,10 @@ final class ChatEmptyNodePremiumRequiredChatContent: ASDisplayNode, ChatEmptyNod
     private var currentTheme: PresentationTheme?
     private var currentStrings: PresentationStrings?
             
-    init(interaction: ChatPanelInterfaceInteraction?) {
+    init(context: AccountContext, interaction: ChatPanelInterfaceInteraction?) {
+        let premiumConfiguration = PremiumConfiguration.with(appConfiguration: context.currentAppConfiguration.with { $0 })
+        self.isPremiumDisabled = premiumConfiguration.isPremiumDisabled
+        
         self.interaction = interaction
         
         self.iconBackground = SimpleLayer()
@@ -927,23 +931,25 @@ final class ChatEmptyNodePremiumRequiredChatContent: ASDisplayNode, ChatEmptyNod
         self.layer.addSublayer(self.iconBackground)
         self.view.addSubview(self.icon)
         
-        self.view.addSubview(self.button)
-        
-        self.button.addSubnode(self.buttonStarsNode)
-        
-        self.button.highligthedChanged = { [weak self] highlighted in
-            guard let self else {
-                return
+        if !self.isPremiumDisabled {
+            self.view.addSubview(self.button)
+            
+            self.button.addSubnode(self.buttonStarsNode)
+            
+            self.button.highligthedChanged = { [weak self] highlighted in
+                guard let self else {
+                    return
+                }
+                if highlighted {
+                    self.button.layer.removeAnimation(forKey: "opacity")
+                    self.button.alpha = 0.6
+                } else {
+                    self.button.alpha = 1.0
+                    self.button.layer.animateAlpha(from: 0.4, to: 1.0, duration: 0.2)
+                }
             }
-            if highlighted {
-                self.button.layer.removeAnimation(forKey: "opacity")
-                self.button.alpha = 0.6
-            } else {
-                self.button.alpha = 1.0
-                self.button.layer.animateAlpha(from: 0.4, to: 1.0, duration: 0.2)
-            }
+            self.button.addTarget(self, action: #selector(self.buttonPressed), for: .touchUpInside)
         }
-        self.button.addTarget(self, action: #selector(self.buttonPressed), for: .touchUpInside)
     }
     
     @objc private func buttonPressed() {
@@ -954,13 +960,6 @@ final class ChatEmptyNodePremiumRequiredChatContent: ASDisplayNode, ChatEmptyNod
     
     func updateLayout(interfaceState: ChatPresentationInterfaceState, subject: ChatEmptyNode.Subject, size: CGSize, transition: ContainedViewLayoutTransition) -> CGSize {
         let serviceColor = serviceMessageColorComponents(theme: interfaceState.theme, wallpaper: interfaceState.chatWallpaper)
-        /*if self.currentTheme !== interfaceState.theme || self.currentStrings !== interfaceState.strings {
-            self.currentTheme = interfaceState.theme
-            self.currentStrings = interfaceState.strings
-            
-            self.titleNode.attributedText = NSAttributedString(string: interfaceState.strings.Chat_EmptyTopicPlaceholder_Title, font: titleFont, textColor: serviceColor.primaryText)
-            self.textNode.attributedText = NSAttributedString(string: interfaceState.strings.Chat_EmptyTopicPlaceholder_Text, font: messageFont, textColor: serviceColor.primaryText)
-        }*/
         
         let maxWidth = min(200.0, size.width)
         
@@ -978,7 +977,12 @@ final class ChatEmptyNodePremiumRequiredChatContent: ASDisplayNode, ChatEmptyNod
             peerTitle = " "
         }
         
-        let text = interfaceState.strings.Chat_EmptyStateMessagingRestrictedToPremium_Text(peerTitle).string
+        let text: String
+        if self.isPremiumDisabled {
+            text = interfaceState.strings.Chat_EmptyStateMessagingRestrictedToPremiumDisabled_Text(peerTitle).string
+        } else {
+            text = interfaceState.strings.Chat_EmptyStateMessagingRestrictedToPremium_Text(peerTitle).string
+        }
         let textSize = self.text.update(
             transition: .immediate,
             component: AnyComponent(BalancedTextComponent(
@@ -1010,7 +1014,10 @@ final class ChatEmptyNodePremiumRequiredChatContent: ASDisplayNode, ChatEmptyNod
         var contentsWidth: CGFloat = 0.0
         contentsWidth = max(contentsWidth, iconBackgroundSize + sideInset * 2.0)
         contentsWidth = max(contentsWidth, textSize.width + sideInset * 2.0)
-        contentsWidth = max(contentsWidth, buttonSize.width + sideInset * 2.0)
+        
+        if !self.isPremiumDisabled {
+            contentsWidth = max(contentsWidth, buttonSize.width + sideInset * 2.0)
+        }
         
         var contentsHeight: CGFloat = 0.0
         contentsHeight += topInset
@@ -1036,22 +1043,28 @@ final class ChatEmptyNodePremiumRequiredChatContent: ASDisplayNode, ChatEmptyNod
             textView.frame = textFrame
         }
         contentsHeight += textSize.height
-        contentsHeight += textButtonSpacing
         
-        let buttonFrame = CGRect(origin: CGPoint(x: floor((contentsWidth - buttonSize.width) * 0.5), y: contentsHeight), size: buttonSize)
-        transition.updateFrame(view: self.button, frame: buttonFrame)
-        transition.updateCornerRadius(layer: self.button.layer, cornerRadius: buttonFrame.height * 0.5)
-        if let buttonTitleView = self.buttonTitle.view {
-            if buttonTitleView.superview == nil {
-                buttonTitleView.isUserInteractionEnabled = false
-                self.button.addSubview(buttonTitleView)
+        if self.isPremiumDisabled {
+            contentsHeight += bottomInset
+        } else {
+            contentsHeight += textButtonSpacing
+            
+            let buttonFrame = CGRect(origin: CGPoint(x: floor((contentsWidth - buttonSize.width) * 0.5), y: contentsHeight), size: buttonSize)
+            transition.updateFrame(view: self.button, frame: buttonFrame)
+            transition.updateCornerRadius(layer: self.button.layer, cornerRadius: buttonFrame.height * 0.5)
+            if let buttonTitleView = self.buttonTitle.view {
+                if buttonTitleView.superview == nil {
+                    buttonTitleView.isUserInteractionEnabled = false
+                    self.button.addSubview(buttonTitleView)
+                }
+                transition.updateFrame(view: buttonTitleView, frame: CGRect(origin: CGPoint(x: floor((buttonSize.width - buttonTitleSize.width) * 0.5), y: floor((buttonSize.height - buttonTitleSize.height) * 0.5)), size: buttonTitleSize))
             }
-            transition.updateFrame(view: buttonTitleView, frame: CGRect(origin: CGPoint(x: floor((buttonSize.width - buttonTitleSize.width) * 0.5), y: floor((buttonSize.height - buttonTitleSize.height) * 0.5)), size: buttonTitleSize))
+            self.button.backgroundColor = interfaceState.theme.overallDarkAppearance ? UIColor(rgb: 0xffffff, alpha: 0.12) : UIColor(rgb: 0x000000, alpha: 0.12)
+            self.buttonStarsNode.frame = CGRect(origin: CGPoint(), size: buttonSize)
+            contentsHeight += buttonSize.height
+            contentsHeight += bottomInset
         }
-        self.button.backgroundColor = interfaceState.theme.overallDarkAppearance ? UIColor(rgb: 0xffffff, alpha: 0.12) : UIColor(rgb: 0x000000, alpha: 0.12)
-        self.buttonStarsNode.frame = CGRect(origin: CGPoint(), size: buttonSize)
-        contentsHeight += buttonSize.height
-        contentsHeight += bottomInset
+            
         
         return CGSize(width: contentsWidth, height: contentsHeight)
     }
@@ -1109,25 +1122,25 @@ final class ChatEmptyNode: ASDisplayNode {
     }
     
     func animateFromLoadingNode(_ loadingNode: ChatLoadingNode) {
-        guard let (_, node) = content else {
+        guard let (_, node) = self.content else {
             return
         }
         
-        let duration: Double = 0.2
-        node.layer.animateAlpha(from: 0.0, to: 1.0, duration: duration)
-        node.layer.animateScale(from: 0.0, to: 1.0, duration: duration, timingFunction: CAMediaTimingFunctionName.easeInEaseOut.rawValue)
+        let duration: Double = 0.3
+        node.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.25)
+        node.layer.animateScale(from: 0.01, to: 1.0, duration: duration, timingFunction: kCAMediaTimingFunctionSpring)
         
         let targetCornerRadius = self.backgroundNode.backgroundCornerRadius
         let targetFrame = self.backgroundNode.frame
         let initialFrame = loadingNode.convert(loadingNode.progressFrame, to: self)
         
-        let transition = ContainedViewLayoutTransition.animated(duration: duration, curve: .easeInOut)
-        self.backgroundNode.layer.animateFrame(from: initialFrame, to: targetFrame, duration: duration)
+        let transition = ContainedViewLayoutTransition.animated(duration: duration, curve: .spring)
+        self.backgroundNode.layer.animateFrame(from: initialFrame, to: targetFrame, duration: duration, timingFunction: kCAMediaTimingFunctionSpring)
         self.backgroundNode.update(size: initialFrame.size, cornerRadius: initialFrame.size.width / 2.0, transition: .immediate)
         self.backgroundNode.update(size: targetFrame.size, cornerRadius: targetCornerRadius, transition: transition)
         
         if let backgroundContent = self.backgroundContent {
-            backgroundContent.layer.animateFrame(from: initialFrame, to: targetFrame, duration: duration)
+            backgroundContent.layer.animateFrame(from: initialFrame, to: targetFrame, duration: duration, timingFunction: kCAMediaTimingFunctionSpring)
             backgroundContent.cornerRadius = initialFrame.size.width / 2.0
             transition.updateCornerRadius(layer: backgroundContent.layer, cornerRadius: targetCornerRadius)
         }
@@ -1218,7 +1231,7 @@ final class ChatEmptyNode: ASDisplayNode {
             case .topic:
                 node = ChatEmptyNodeTopicChatContent(context: self.context)
             case .premiumRequired:
-                node = ChatEmptyNodePremiumRequiredChatContent(interaction: self.interaction)
+                node = ChatEmptyNodePremiumRequiredChatContent(context: self.context, interaction: self.interaction)
             }
             self.content = (contentType, node)
             self.addSubnode(node)

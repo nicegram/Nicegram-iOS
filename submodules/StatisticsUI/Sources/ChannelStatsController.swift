@@ -163,7 +163,7 @@ private enum StatsEntry: ItemListNodeEntry {
     case boostLevel(PresentationTheme, Int32, Int32, CGFloat)
     
     case boostOverviewTitle(PresentationTheme, String)
-    case boostOverview(PresentationTheme, ChannelBoostStatus)
+    case boostOverview(PresentationTheme, ChannelBoostStatus, Bool)
     
     case boostPrepaidTitle(PresentationTheme, String)
     case boostPrepaid(Int32, PresentationTheme, String, String, PrepaidGiveaway)
@@ -505,8 +505,8 @@ private enum StatsEntry: ItemListNodeEntry {
                 } else {
                     return false
                 }
-            case let .boostOverview(lhsTheme, lhsStats):
-                if case let .boostOverview(rhsTheme, rhsStats) = rhs, lhsTheme === rhsTheme, lhsStats == rhsStats {
+            case let .boostOverview(lhsTheme, lhsStats, lhsIsGroup):
+                if case let .boostOverview(rhsTheme, rhsStats, rhsIsGroup) = rhs, lhsTheme === rhsTheme, lhsStats == rhsStats, lhsIsGroup == rhsIsGroup {
                     return true
                 } else {
                     return false
@@ -631,7 +631,7 @@ private enum StatsEntry: ItemListNodeEntry {
                  let .giftsInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .markdown(text), sectionId: self.section)
             case let .overview(_, stats):
-                return StatsOverviewItem(presentationData: presentationData, stats: stats, sectionId: self.section, style: .blocks)
+                return StatsOverviewItem(presentationData: presentationData, isGroup: false, stats: stats, sectionId: self.section, style: .blocks)
             case let .growthGraph(_, _, _, graph, type),
                  let .followersGraph(_, _, _, graph, type),
                  let .notificationsGraph(_, _, _, graph, type),
@@ -730,8 +730,8 @@ private enum StatsEntry: ItemListNodeEntry {
                 let inactiveText = presentationData.strings.ChannelBoost_Level("\(level)").string
                 let activeText = presentationData.strings.ChannelBoost_Level("\(level + 1)").string
                 return BoostLevelHeaderItem(theme: presentationData.theme, count: count, position: position, activeText: activeText, inactiveText: inactiveText, sectionId: self.section)
-            case let .boostOverview(_, stats):
-                return StatsOverviewItem(presentationData: presentationData, stats: stats, sectionId: self.section, style: .blocks)
+            case let .boostOverview(_, stats, isGroup):
+                return StatsOverviewItem(presentationData: presentationData, isGroup: isGroup, stats: stats, sectionId: self.section, style: .blocks)
             case let .boostLink(_, link):
                 let invite: ExportedInvitation = .link(link: link, title: nil, isPermanent: false, requestApproval: false, isRevoked: false, adminId: PeerId(0), date: 0, startDate: nil, expireDate: nil, usageLimit: nil, count: nil, requestedCount: nil)
                 return ItemListPermanentInviteLinkItem(context: arguments.context, presentationData: presentationData, invite: invite, count: 0, peers: [], displayButton: true, displayImporters: false, buttonColor: nil, sectionId: self.section, style: .blocks, copyAction: {
@@ -823,7 +823,7 @@ private struct ChannelStatsControllerState: Equatable {
 }
 
 
-private func channelStatsControllerEntries(state: ChannelStatsControllerState, peer: EnginePeer?, data: ChannelStats?, messages: [Message]?, stories: PeerStoryListContext.State?, interactions: [ChannelStatsPostInteractions.PostId: ChannelStatsPostInteractions]?, boostData: ChannelBoostStatus?, boostersState: ChannelBoostersContext.State?, giftsState: ChannelBoostersContext.State?, presentationData: PresentationData, giveawayAvailable: Bool) -> [StatsEntry] {
+private func channelStatsControllerEntries(state: ChannelStatsControllerState, peer: EnginePeer?, data: ChannelStats?, messages: [Message]?, stories: PeerStoryListContext.State?, interactions: [ChannelStatsPostInteractions.PostId: ChannelStatsPostInteractions]?, boostData: ChannelBoostStatus?, boostersState: ChannelBoostersContext.State?, giftsState: ChannelBoostersContext.State?, presentationData: PresentationData, giveawayAvailable: Bool, isGroup: Bool, boostsOnly: Bool) -> [StatsEntry] {
     var entries: [StatsEntry] = []
     
     switch state.section {
@@ -895,7 +895,6 @@ private func channelStatsControllerEntries(state: ChannelStatsControllerState, p
                 entries.append(.storyReactionsByEmotionGraph(presentationData.theme, presentationData.strings, presentationData.dateTimeFormat, data.storyReactionsByEmotionGraph, .bars))
             }
             
-            
             if let peer, let interactions {
                 var posts: [StatsPostItem] = []
                 if let messages {
@@ -935,16 +934,18 @@ private func channelStatsControllerEntries(state: ChannelStatsControllerState, p
         }
     case .boosts:
         if let boostData {
-            let progress: CGFloat
-            if let nextLevelBoosts = boostData.nextLevelBoosts {
-                progress = CGFloat(boostData.boosts - boostData.currentLevelBoosts) / CGFloat(nextLevelBoosts - boostData.currentLevelBoosts)
-            } else {
-                progress = 1.0
+            if !boostsOnly {
+                let progress: CGFloat
+                if let nextLevelBoosts = boostData.nextLevelBoosts {
+                    progress = CGFloat(boostData.boosts - boostData.currentLevelBoosts) / CGFloat(nextLevelBoosts - boostData.currentLevelBoosts)
+                } else {
+                    progress = 1.0
+                }
+                entries.append(.boostLevel(presentationData.theme, Int32(boostData.boosts), Int32(boostData.level), progress))
             }
-            entries.append(.boostLevel(presentationData.theme, Int32(boostData.boosts), Int32(boostData.level), progress))
             
             entries.append(.boostOverviewTitle(presentationData.theme, presentationData.strings.Stats_Boosts_OverviewHeader))
-            entries.append(.boostOverview(presentationData.theme, boostData))
+            entries.append(.boostOverview(presentationData.theme, boostData, isGroup))
             
             if !boostData.prepaidGiveaways.isEmpty {
                 entries.append(.boostPrepaidTitle(presentationData.theme, presentationData.strings.Stats_Boosts_PrepaidGiveawaysTitle))
@@ -962,10 +963,10 @@ private func channelStatsControllerEntries(state: ChannelStatsControllerState, p
             if let boostersState, boostersState.count > 0 {
                 boostersTitle = presentationData.strings.Stats_Boosts_Boosts(boostersState.count)
                 boostersPlaceholder = nil
-                boostersFooter = presentationData.strings.Stats_Boosts_BoostersInfo
+                boostersFooter = isGroup ? presentationData.strings.Stats_Boosts_Group_BoostersInfo : presentationData.strings.Stats_Boosts_BoostersInfo
             } else {
                 boostersTitle = presentationData.strings.Stats_Boosts_BoostsNone
-                boostersPlaceholder = presentationData.strings.Stats_Boosts_NoBoostersYet
+                boostersPlaceholder = isGroup ? presentationData.strings.Stats_Boosts_Group_NoBoostersYet : presentationData.strings.Stats_Boosts_NoBoostersYet
                 boostersFooter = nil
             }
             entries.append(.boostersTitle(presentationData.theme, boostersTitle))
@@ -1033,11 +1034,11 @@ private func channelStatsControllerEntries(state: ChannelStatsControllerState, p
             
             entries.append(.boostLinkTitle(presentationData.theme, presentationData.strings.Stats_Boosts_LinkHeader))
             entries.append(.boostLink(presentationData.theme, boostData.url))
-            entries.append(.boostLinkInfo(presentationData.theme, presentationData.strings.Stats_Boosts_LinkInfo))
+            entries.append(.boostLinkInfo(presentationData.theme, isGroup ? presentationData.strings.Stats_Boosts_Group_LinkInfo : presentationData.strings.Stats_Boosts_LinkInfo))
             
             if giveawayAvailable {
                 entries.append(.gifts(presentationData.theme, presentationData.strings.Stats_Boosts_GetBoosts))
-                entries.append(.giftsInfo(presentationData.theme, presentationData.strings.Stats_Boosts_GetBoostsInfo))
+                entries.append(.giftsInfo(presentationData.theme, isGroup ? presentationData.strings.Stats_Boosts_Group_GetBoostsInfo : presentationData.strings.Stats_Boosts_GetBoostsInfo))
             }
         }
     }
@@ -1045,7 +1046,7 @@ private func channelStatsControllerEntries(state: ChannelStatsControllerState, p
     return entries
 }
 
-public func channelStatsController(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, peerId: PeerId, section: ChannelStatsSection = .stats, boostStatus: ChannelBoostStatus? = nil) -> ViewController {
+public func channelStatsController(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, peerId: PeerId, section: ChannelStatsSection = .stats, boostStatus: ChannelBoostStatus? = nil, boostStatusUpdated: ((ChannelBoostStatus) -> Void)? = nil) -> ViewController {
     let statePromise = ValuePromise(ChannelStatsControllerState(section: section, boostersExpanded: false, moreBoostersDisplayed: 0, giftsSelected: false), ignoreRepeated: true)
     let stateValue = Atomic(value: ChannelStatsControllerState(section: section, boostersExpanded: false, moreBoostersDisplayed: 0, giftsSelected: false))
     let updateState: ((ChannelStatsControllerState) -> ChannelStatsControllerState) -> Void = { f in
@@ -1086,20 +1087,27 @@ public func channelStatsController(context: AccountContext, updatedPresentationD
     })
     dataPromise.set(.single(nil) |> then(dataSignal))
     
-    let boostData: Signal<ChannelBoostStatus?, NoError>
-    if let boostStatus {
-        boostData = .single(boostStatus)
-    } else {
-        boostData = .single(nil) |> then(context.engine.peers.getChannelBoostStatus(peerId: peerId))
-    }
+    let boostDataPromise = Promise<ChannelBoostStatus?>()
+    boostDataPromise.set(.single(boostStatus) |> then(context.engine.peers.getChannelBoostStatus(peerId: peerId)))
+    
+    actionsDisposable.add((boostDataPromise.get()
+    |> deliverOnMainQueue).start(next: { boostStatus in
+        if let boostStatus, let boostStatusUpdated {
+            boostStatusUpdated(boostStatus)
+        }
+    }))
+
     let boostsContext = ChannelBoostersContext(account: context.account, peerId: peerId, gift: false)
     let giftsContext = ChannelBoostersContext(account: context.account, peerId: peerId, gift: true)
     
     var dismissAllTooltipsImpl: (() -> Void)?
     var presentImpl: ((ViewController) -> Void)?
     var pushImpl: ((ViewController) -> Void)?
+    var dismissImpl: (() -> Void)?
     var navigateToChatImpl: ((EnginePeer) -> Void)?
     var navigateToMessageImpl: ((EngineMessage.Id) -> Void)?
+    var openBoostImpl: ((Bool) -> Void)?
+    var updateStatusBarImpl: ((StatusBarStyle) -> Void)?
     
     let arguments = ChannelStatsControllerArguments(context: context, loadDetailedGraph: { graph, x -> Signal<StatsGraph?, NoError> in
         return statsContext.loadDetailedGraph(graph, x: x)
@@ -1249,13 +1257,18 @@ public func channelStatsController(context: AccountContext, updatedPresentationD
         dataPromise.get(),
         messagesPromise.get(),
         storiesPromise.get(),
-        boostData,
+        boostDataPromise.get(),
         boostsContext.state,
         giftsContext.state,
         longLoadingSignal
     )
     |> deliverOnMainQueue
     |> map { presentationData, state, peer, data, messageView, stories, boostData, boostersState, giftsState, longLoading -> (ItemListControllerState, (ItemListNodeState, Any)) in
+        var isGroup = false
+        if let peer, case let .channel(channel) = peer, case .group = channel.info {
+            isGroup = true
+        }
+        
         let previous = previousData.swap(data)
         var emptyStateItem: ItemListControllerEmptyStateItem?
         switch state.section {
@@ -1294,8 +1307,31 @@ public func channelStatsController(context: AccountContext, updatedPresentationD
             return map
         }
                 
-        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .sectionControl([presentationData.strings.Stats_Statistics, presentationData.strings.Stats_Boosts], state.section == .boosts ? 1 : 0), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: true)
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: channelStatsControllerEntries(state: state, peer: peer, data: data, messages: messages, stories: stories, interactions: interactions, boostData: boostData, boostersState: boostersState, giftsState: giftsState, presentationData: presentationData, giveawayAvailable: premiumConfiguration.giveawayGiftsPurchaseAvailable), style: .blocks, emptyStateItem: emptyStateItem, crossfadeState: previous == nil, animateChanges: false)
+        var title: ItemListControllerTitle
+        var headerItem: BoostHeaderItem?
+        var leftNavigationButton: ItemListNavigationButton?
+        var boostsOnly = false
+        if isGroup, section == .boosts {
+            title = .text("")
+            headerItem = BoostHeaderItem(context: context, theme: presentationData.theme, strings: presentationData.strings, status: boostData, title: presentationData.strings.GroupBoost_Title, text: presentationData.strings.GroupBoost_Info, openBoost: {
+                openBoostImpl?(false)
+            }, createGiveaway: {
+                arguments.openGifts()
+            }, openFeatures: {
+                openBoostImpl?(true)
+            }, back: {
+                dismissImpl?()
+            }, updateStatusBar: { style in
+                updateStatusBarImpl?(style)
+            })
+            leftNavigationButton = ItemListNavigationButton(content: .none, style: .regular, enabled: false, action: {})
+            boostsOnly = true
+        } else {
+            title = .sectionControl([presentationData.strings.Stats_Statistics, presentationData.strings.Stats_Boosts], state.section == .boosts ? 1 : 0)
+        }
+        
+        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: title, leftNavigationButton: leftNavigationButton, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: true)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: channelStatsControllerEntries(state: state, peer: peer, data: data, messages: messages, stories: stories, interactions: interactions, boostData: boostData, boostersState: boostersState, giftsState: giftsState, presentationData: presentationData, giveawayAvailable: premiumConfiguration.giveawayGiftsPurchaseAvailable, isGroup: isGroup, boostsOnly: boostsOnly), style: .blocks, emptyStateItem: emptyStateItem, headerItem: headerItem, crossfadeState: previous == nil, animateChanges: false)
         
         return (controllerState, (listState, arguments))
     }
@@ -1436,6 +1472,9 @@ public func channelStatsController(context: AccountContext, updatedPresentationD
     pushImpl = { [weak controller] c in
         controller?.push(c)
     }
+    dismissImpl = { [weak controller] in
+        controller?.dismiss()
+    }
     navigateToChatImpl = { [weak controller] peer in
         if let navigationController = controller?.navigationController as? NavigationController {
             context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: context, chatLocation: .peer(peer), keepStack: .always, purposefulAction: {}, peekData: nil, forceOpenChat: true))
@@ -1453,6 +1492,48 @@ public func channelStatsController(context: AccountContext, updatedPresentationD
                 context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: context, chatLocation: .peer(peer), subject: .message(id: .id(messageId), highlight: ChatControllerSubject.MessageHighlight(quote: nil), timecode: nil), keepStack: .always, useExisting: false, purposefulAction: {}, peekData: nil))
             }
         })
+    }
+    openBoostImpl = { [weak controller] features in
+        if features {
+            let boostController = PremiumBoostLevelsScreen(
+                context: context,
+                peerId: peerId,
+                mode: .features,
+                status: nil,
+                myBoostStatus: nil
+            )
+            controller?.push(boostController)
+        } else {
+            let _ = combineLatest(
+                queue: Queue.mainQueue(),
+                context.engine.peers.getChannelBoostStatus(peerId: peerId),
+                context.engine.peers.getMyBoostStatus()
+            ).startStandalone(next: { [weak controller] boostStatus, myBoostStatus in
+                guard let boostStatus, let myBoostStatus else {
+                    return
+                }
+                boostDataPromise.set(.single(boostStatus))
+                
+                let boostController = PremiumBoostLevelsScreen(
+                    context: context,
+                    peerId: peerId,
+                    mode: .owner(subject: nil),
+                    status: boostStatus,
+                    myBoostStatus: myBoostStatus,
+                    openGift: { [weak controller] in
+                        let giveawayController = createGiveawayController(context: context, peerId: peerId, subject: .generic)
+                        controller?.push(giveawayController)
+                    }
+                )
+                boostController.boostStatusUpdated = { boostStatus, _ in
+                    boostDataPromise.set(.single(boostStatus))
+                }
+                controller?.push(boostController)
+            })
+        }
+    }
+    updateStatusBarImpl = { [weak controller] style in
+        controller?.setStatusBarStyle(style, animated: true)
     }
     return controller
 }

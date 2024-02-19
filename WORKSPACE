@@ -11,12 +11,15 @@ http_archive(
 
 http_archive(
     name = "bazel_features",
-    sha256 = "9fcb3d7cbe908772462aaa52f02b857a225910d30daa3c252f670e3af6d8036d",
-    strip_prefix = "bazel_features-1.0.0",
-    url = "https://github.com/bazel-contrib/bazel_features/releases/download/v1.0.0/bazel_features-v1.0.0.tar.gz",
+    sha256 = "0f23d75c7623d6dba1fd30513a94860447de87c8824570521fcc966eda3151c2",
+    strip_prefix = "bazel_features-1.4.1",
+    url = "https://github.com/bazel-contrib/bazel_features/releases/download/v1.4.1/bazel_features-v1.4.1.tar.gz",
 )
-load("@bazel_features//:deps.bzl", "bazel_features_deps")
-bazel_features_deps()
+
+local_repository(
+    name = "rules_xcodeproj",
+    path = "build-system/bazel-rules/rules_xcodeproj",
+)
 
 local_repository(
     name = "build_bazel_rules_apple",
@@ -33,10 +36,29 @@ local_repository(
     path = "build-system/bazel-rules/apple_support",
 )
 
-local_repository(
-    name = "rules_xcodeproj",
-    path = "build-system/bazel-rules/rules_xcodeproj",
+http_file(
+    name = "cmake_tar_gz",
+    urls = ["https://github.com/Kitware/CMake/releases/download/v3.23.1/cmake-3.23.1-macos-universal.tar.gz"],
+    sha256 = "f794ed92ccb4e9b6619a77328f313497d7decf8fb7e047ba35a348b838e0e1e2",
 )
+
+http_archive(
+    name = "appcenter_sdk",
+    urls = ["https://github.com/microsoft/appcenter-sdk-apple/releases/download/4.1.1/AppCenter-SDK-Apple-4.1.1.zip"],
+    sha256 = "032907801dc7784744a1ca8fd40d3eecc34a2e27a93a4b3993f617cca204a9f3",
+    build_file = "@//third-party/AppCenter:AppCenter.BUILD",
+)
+
+load(
+    "@rules_xcodeproj//xcodeproj:repositories.bzl",
+    "xcodeproj_rules_dependencies",
+)
+
+xcodeproj_rules_dependencies()
+
+load("@bazel_features//:deps.bzl", "bazel_features_deps")
+
+bazel_features_deps()
 
 load(
     "@build_bazel_rules_apple//apple:repositories.bzl",
@@ -53,38 +75,24 @@ load(
 swift_rules_dependencies()
 
 load(
+    "@build_bazel_rules_swift//swift:extras.bzl",
+    "swift_rules_extra_dependencies",
+)
+
+swift_rules_extra_dependencies()
+
+load(
     "@build_bazel_apple_support//lib:repositories.bzl",
     "apple_support_dependencies",
 )
 
 apple_support_dependencies()
 
-load(
-    "@rules_xcodeproj//xcodeproj:repositories.bzl",
-    "xcodeproj_rules_dependencies",
-)
-
-xcodeproj_rules_dependencies()
-
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 
 bazel_skylib_workspace()
 
-http_file(
-    name = "cmake_tar_gz",
-    urls = ["https://github.com/Kitware/CMake/releases/download/v3.23.1/cmake-3.23.1-macos-universal.tar.gz"],
-    sha256 = "f794ed92ccb4e9b6619a77328f313497d7decf8fb7e047ba35a348b838e0e1e2",
-)
-
-http_archive(
-    name = "appcenter_sdk",
-    urls = ["https://github.com/microsoft/appcenter-sdk-apple/releases/download/4.1.1/AppCenter-SDK-Apple-4.1.1.zip"],
-    sha256 = "032907801dc7784744a1ca8fd40d3eecc34a2e27a93a4b3993f617cca204a9f3",
-    build_file = "@//third-party/AppCenter:AppCenter.BUILD",
-)
-
 load("@build_bazel_rules_apple//apple:apple.bzl", "provisioning_profile_repository")
-
 provisioning_profile_repository(
     name = "local_provisioning_profiles",
 )
@@ -107,9 +115,9 @@ http_archive(
 
 http_archive(
     name = "rules_swift_package_manager",
-    sha256 = "9ef780cb621ec2d7e2c494dd0d2c9994089195e82417634ed3fa000313beb151",
+    sha256 = "eef16c8a5f9fa6102049f762823e773601a44398baf2a5de7ef7cbebcb888870",
     urls = [
-        "https://github.com/cgrindel/rules_swift_package_manager/releases/download/v0.23.0/rules_swift_package_manager.v0.23.0.tar.gz",
+        "https://github.com/cgrindel/rules_swift_package_manager/releases/download/v0.28.0/rules_swift_package_manager.v0.28.0.tar.gz",
     ],
 )
 
@@ -134,7 +142,7 @@ swift_bazel_go_dependencies()
 
 go_rules_dependencies()
 
-go_register_toolchains(version = "1.19.1")
+go_register_toolchains(version = "1.21.1")
 
 gazelle_dependencies()
 

@@ -162,10 +162,6 @@ public struct ChatMessageItemLayoutConstants {
 }
 
 public func canViewMessageReactionList(message: Message, isInline: Bool) -> Bool {
-    if isInline {
-        return false
-    }
-    
     var found = false
     var canViewList = false
     for attribute in message.attributes {
@@ -245,7 +241,7 @@ public extension ChatReplyThreadMessage {
     }
 }
 
-public func messageIsElligibleForLargeEmoji(_ message: Message) -> Bool {
+public func messageIsEligibleForLargeEmoji(_ message: Message) -> Bool {
     if !message.text.isEmpty && message.text.containsOnlyEmoji {
         if !(message.textEntitiesAttribute?.entities.isEmpty ?? true) {
             return false
@@ -256,7 +252,7 @@ public func messageIsElligibleForLargeEmoji(_ message: Message) -> Bool {
     }
 }
 
-public func messageIsElligibleForLargeCustomEmoji(_ message: Message) -> Bool {
+public func messageIsEligibleForLargeCustomEmoji(_ message: Message) -> Bool {
     let text = message.text.replacingOccurrences(of: "\n", with: "").replacingOccurrences(of: " ", with: "")
     guard !text.isEmpty && text.containsOnlyEmoji else {
         return false

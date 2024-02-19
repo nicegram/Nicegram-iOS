@@ -87,7 +87,9 @@ public class PeerNameColors: Equatable {
             profileStoryColors: [:],
             profileStoryDarkColors: [:],
             profileDisplayOrder: [],
-            nameColorsChannelMinRequiredBoostLevel: [:]
+            nameColorsChannelMinRequiredBoostLevel: [:],
+            profileColorsChannelMinRequiredBoostLevel: [:],
+            profileColorsGroupMinRequiredBoostLevel: [:]
         )
     }
     
@@ -104,6 +106,8 @@ public class PeerNameColors: Equatable {
     public let profileDisplayOrder: [Int32]
     
     public let nameColorsChannelMinRequiredBoostLevel: [Int32: Int32]
+    public let profileColorsChannelMinRequiredBoostLevel: [Int32: Int32]
+    public let profileColorsGroupMinRequiredBoostLevel: [Int32: Int32]
     
     public func get(_ color: PeerNameColor, dark: Bool = false) -> Colors {
         if dark, let colors = self.darkColors[color.rawValue] {
@@ -155,7 +159,9 @@ public class PeerNameColors: Equatable {
         profileStoryColors: [Int32: Colors],
         profileStoryDarkColors: [Int32: Colors],
         profileDisplayOrder: [Int32],
-        nameColorsChannelMinRequiredBoostLevel: [Int32: Int32]
+        nameColorsChannelMinRequiredBoostLevel: [Int32: Int32],
+        profileColorsChannelMinRequiredBoostLevel: [Int32: Int32],
+        profileColorsGroupMinRequiredBoostLevel: [Int32: Int32]
     ) {
         self.colors = colors
         self.darkColors = darkColors
@@ -168,6 +174,8 @@ public class PeerNameColors: Equatable {
         self.profileStoryDarkColors = profileStoryDarkColors
         self.profileDisplayOrder = profileDisplayOrder
         self.nameColorsChannelMinRequiredBoostLevel = nameColorsChannelMinRequiredBoostLevel
+        self.profileColorsChannelMinRequiredBoostLevel = profileColorsChannelMinRequiredBoostLevel
+        self.profileColorsGroupMinRequiredBoostLevel = profileColorsGroupMinRequiredBoostLevel
     }
     
     public static func with(availableReplyColors: EngineAvailableColorOptions, availableProfileColors: EngineAvailableColorOptions) -> PeerNameColors {
@@ -183,13 +191,14 @@ public class PeerNameColors: Equatable {
         var profileDisplayOrder: [Int32] = []
         
         var nameColorsChannelMinRequiredBoostLevel: [Int32: Int32] = [:]
+        var profileColorsChannelMinRequiredBoostLevel: [Int32: Int32] = [:]
+        var profileColorsGroupMinRequiredBoostLevel: [Int32: Int32] = [:]
         
         if !availableReplyColors.options.isEmpty {
             for option in availableReplyColors.options {
                 if let requiredChannelMinBoostLevel = option.value.requiredChannelMinBoostLevel {
                     nameColorsChannelMinRequiredBoostLevel[option.key] = requiredChannelMinBoostLevel
                 }
-                
                 if let parsedLight = PeerNameColors.Colors(colors: option.value.light.background) {
                     colors[option.key] = parsedLight
                 }
@@ -212,6 +221,12 @@ public class PeerNameColors: Equatable {
             
         if !availableProfileColors.options.isEmpty {
             for option in availableProfileColors.options {
+                if let requiredChannelMinBoostLevel = option.value.requiredChannelMinBoostLevel {
+                    profileColorsChannelMinRequiredBoostLevel[option.key] = requiredChannelMinBoostLevel
+                }
+                if let requiredGroupMinBoostLevel = option.value.requiredGroupMinBoostLevel {
+                    profileColorsGroupMinRequiredBoostLevel[option.key] = requiredGroupMinBoostLevel
+                }
                 if let parsedLight = PeerNameColors.Colors(colors: option.value.light.background) {
                     profileColors[option.key] = parsedLight
                 }
@@ -249,7 +264,9 @@ public class PeerNameColors: Equatable {
             profileStoryColors: profileStoryColors,
             profileStoryDarkColors: profileStoryDarkColors,
             profileDisplayOrder: profileDisplayOrder,
-            nameColorsChannelMinRequiredBoostLevel: nameColorsChannelMinRequiredBoostLevel
+            nameColorsChannelMinRequiredBoostLevel: nameColorsChannelMinRequiredBoostLevel,
+            profileColorsChannelMinRequiredBoostLevel: profileColorsChannelMinRequiredBoostLevel,
+            profileColorsGroupMinRequiredBoostLevel: profileColorsGroupMinRequiredBoostLevel
         )
     }
     

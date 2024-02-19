@@ -432,7 +432,11 @@ private enum CreateGiveawayEntry: ItemListNodeEntry {
         case let .channelsHeader(_, text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .channel(_, _, peer, boosts, isRevealed):
-            return ItemListPeerItem(presentationData: presentationData, dateTimeFormat: PresentationDateTimeFormat(), nameDisplayOrder: presentationData.nameDisplayOrder, context: arguments.context, peer: peer, presence: nil, text: boosts.flatMap { .text(presentationData.strings.BoostGift_ChannelsBoosts($0), .secondary) } ?? .none, label: .none, editing: ItemListPeerItemEditing(editable: boosts == nil, editing: false, revealed: isRevealed), switchValue: nil, enabled: true, selectable: peer.id != arguments.context.account.peerId, sectionId: self.section, action: {
+            var isGroup = false
+            if case let .channel(channel) = peer, case .group = channel.info {
+                isGroup = true
+            }
+            return ItemListPeerItem(presentationData: presentationData, dateTimeFormat: PresentationDateTimeFormat(), nameDisplayOrder: presentationData.nameDisplayOrder, context: arguments.context, peer: peer, presence: nil, text: boosts.flatMap { .text(isGroup ? presentationData.strings.BoostGift_GroupBoosts($0) : presentationData.strings.BoostGift_ChannelsBoosts($0), .secondary) } ?? .none, label: .none, editing: ItemListPeerItemEditing(editable: boosts == nil, editing: false, revealed: isRevealed), switchValue: nil, enabled: true, selectable: peer.id != arguments.context.account.peerId, sectionId: self.section, action: {
             }, setPeerIdWithRevealedOptions: { lhs, rhs in
                 arguments.setItemIdWithRevealedOptions(lhs, rhs)
             }, removePeer: { id in
@@ -634,6 +638,11 @@ private func createGiveawayControllerEntries(
     minDate: Int32,
     maxDate: Int32
 ) -> [CreateGiveawayEntry] {
+    var isGroup = false
+    if let peer = peers[peerId], case let .channel(channel) = peer, case .group = channel.info {
+        isGroup = true
+    }
+        
     var entries: [CreateGiveawayEntry] = []
         
     switch subject {
@@ -719,7 +728,7 @@ private func createGiveawayControllerEntries(
             entries.append(.subscriptionsInfo(presentationData.theme, presentationData.strings.BoostGift_QuantityInfo))
         }
         
-        entries.append(.channelsHeader(presentationData.theme, presentationData.strings.BoostGift_ChannelsTitle.uppercased()))
+        entries.append(.channelsHeader(presentationData.theme, isGroup ? presentationData.strings.BoostGift_GroupsAndChannelsTitle.uppercased() : presentationData.strings.BoostGift_ChannelsAndGroupsTitle.uppercased()))
         var index: Int32 = 0
         let channels = [peerId] + state.channels
         for channelId in channels {
@@ -728,8 +737,8 @@ private func createGiveawayControllerEntries(
             }
             index += 1
         }
-        entries.append(.channelAdd(presentationData.theme, presentationData.strings.BoostGift_AddChannel))
-        entries.append(.channelsInfo(presentationData.theme, presentationData.strings.BoostGift_ChannelsInfo))
+        entries.append(.channelAdd(presentationData.theme, isGroup ? presentationData.strings.BoostGift_AddGroupOrChannel : presentationData.strings.BoostGift_AddChannelOrGroup))
+        entries.append(.channelsInfo(presentationData.theme, isGroup ? presentationData.strings.BoostGift_GroupsAndChannelsInfo : presentationData.strings.BoostGift_ChannelsAndGroupsInfo))
         
         entries.append(.usersHeader(presentationData.theme, presentationData.strings.BoostGift_UsersTitle.uppercased()))
         
@@ -752,9 +761,9 @@ private func createGiveawayControllerEntries(
             countriesText = presentationData.strings.BoostGift_FromAllCountries
         }
         
-        entries.append(.usersAll(presentationData.theme, presentationData.strings.BoostGift_AllSubscribers, countriesText, !state.onlyNewEligible))
-        entries.append(.usersNew(presentationData.theme, presentationData.strings.BoostGift_OnlyNewSubscribers, countriesText, state.onlyNewEligible))
-        entries.append(.usersInfo(presentationData.theme, presentationData.strings.BoostGift_LimitSubscribersInfo))
+        entries.append(.usersAll(presentationData.theme, isGroup ? presentationData.strings.BoostGift_Group_AllMembers : presentationData.strings.BoostGift_AllSubscribers, countriesText, !state.onlyNewEligible))
+        entries.append(.usersNew(presentationData.theme, isGroup ? presentationData.strings.BoostGift_Group_OnlyNewMembers : presentationData.strings.BoostGift_OnlyNewSubscribers, countriesText, state.onlyNewEligible))
+        entries.append(.usersInfo(presentationData.theme, isGroup ? presentationData.strings.BoostGift_Group_LimitMembersInfo : presentationData.strings.BoostGift_LimitSubscribersInfo))
         
         if case .generic = subject {
             appendDurationEntries()
@@ -782,7 +791,12 @@ private func createGiveawayControllerEntries(
         
         entries.append(.timeHeader(presentationData.theme, presentationData.strings.BoostGift_DateTitle.uppercased()))
         entries.append(.timeCustomPicker(presentationData.theme, presentationData.dateTimeFormat, state.time, minDate, maxDate, state.pickingExpiryDate, state.pickingExpiryTime))
-        entries.append(.timeInfo(presentationData.theme, presentationData.strings.BoostGift_DateInfo(presentationData.strings.BoostGift_DateInfoSubscribers(Int32(state.subscriptions))).string))
+        
+        if isGroup {
+            entries.append(.timeInfo(presentationData.theme, presentationData.strings.BoostGift_Group_DateInfo(presentationData.strings.BoostGift_Group_DateInfoMembers(Int32(state.subscriptions))).string))
+        } else {
+            entries.append(.timeInfo(presentationData.theme, presentationData.strings.BoostGift_DateInfo(presentationData.strings.BoostGift_DateInfoSubscribers(Int32(state.subscriptions))).string))
+        }
     case .gift:
         appendDurationEntries()
     }
@@ -818,7 +832,7 @@ public enum CreateGiveawaySubject {
     case prepaid(PrepaidGiveaway)
 }
 
-public func createGiveawayController(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, peerId: EnginePeer.Id, subject: CreateGiveawaySubject,  completion: (() -> Void)? = nil) -> ViewController {
+public func createGiveawayController(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, peerId: EnginePeer.Id, subject: CreateGiveawaySubject, completion: (() -> Void)? = nil) -> ViewController {
     let actionsDisposable = DisposableSet()
     
     let initialSubscriptions: Int32
@@ -850,6 +864,8 @@ public func createGiveawayController(context: AccountContext, updatedPresentatio
     let updateState: ((CreateGiveawayControllerState) -> CreateGiveawayControllerState) -> Void = { f in
         statePromise.set(stateValue.modify { f($0) })
     }
+    
+    let isGroupValue = Atomic<Bool>(value: false)
     
     let productsValue = Atomic<[PremiumGiftProduct]?>(value: nil)
 
@@ -948,8 +964,14 @@ public func createGiveawayController(context: AccountContext, updatedPresentatio
         presentationData = presentationData.withUpdated(theme: updatedTheme)
         
         let (state, peersMap) = stateAndPeersMap
+        
+        var isGroup = false
+        if let peer = peersMap[peerId], case let .channel(channel) = peer, case .group = channel.info {
+            isGroup = true
+        }
+        let _ = isGroupValue.swap(isGroup)
                 
-        let headerItem = CreateGiveawayHeaderItem(theme: presentationData.theme, strings: presentationData.strings, title: presentationData.strings.BoostGift_Title, text: presentationData.strings.BoostGift_Description, cancel: {
+        let headerItem = CreateGiveawayHeaderItem(theme: presentationData.theme, strings: presentationData.strings, title: presentationData.strings.BoostGift_Title, text: isGroup ? presentationData.strings.BoostGift_Group_Description : presentationData.strings.BoostGift_Description, cancel: {
             dismissImpl?()
         })
         
@@ -1029,6 +1051,8 @@ public func createGiveawayController(context: AccountContext, updatedPresentatio
     }
     
     buyActionImpl = { [weak controller] in
+        let isGroup = isGroupValue.with { $0 }
+        
         let state = stateValue.with { $0 }
 
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
@@ -1109,10 +1133,10 @@ public func createGiveawayController(context: AccountContext, updatedPresentatio
                                 switch state.mode {
                                 case .giveaway:
                                     title = presentationData.strings.BoostGift_GiveawayCreated_Title
-                                    text = presentationData.strings.BoostGift_GiveawayCreated_Text
+                                    text = isGroup ? presentationData.strings.BoostGift_Group_GiveawayCreated_Text : presentationData.strings.BoostGift_GiveawayCreated_Text
                                 case .gift:
                                     title = presentationData.strings.BoostGift_PremiumGifted_Title
-                                    text = presentationData.strings.BoostGift_PremiumGifted_Text
+                                    text = isGroup ? presentationData.strings.BoostGift_Group_PremiumGifted_Text : presentationData.strings.BoostGift_PremiumGifted_Text
                                 }
                                 
                                 let tooltipController = UndoOverlayController(presentationData: presentationData, content: .premiumPaywall(title: title, text: text, customUndoText: nil, timeout: nil, linkAction: { [weak navigationController] _ in
@@ -1186,7 +1210,7 @@ public func createGiveawayController(context: AccountContext, updatedPresentatio
                     navigationController.setViewControllers(controllers, animated: true)
                     
                     let title = presentationData.strings.BoostGift_GiveawayCreated_Title
-                    let text = presentationData.strings.BoostGift_GiveawayCreated_Text
+                    let text = isGroup ? presentationData.strings.BoostGift_Group_GiveawayCreated_Text : presentationData.strings.BoostGift_GiveawayCreated_Text
                     
                     let tooltipController = UndoOverlayController(presentationData: presentationData, content: .premiumPaywall(title: title, text: text, customUndoText: nil, timeout: nil, linkAction: { [weak navigationController] _ in
                         let statsController = context.sharedContext.makeChannelStatsController(context: context, updatedPresentationData: updatedPresentationData, peerId: peerId, boosts: true, boostStatus: nil)
@@ -1202,11 +1226,11 @@ public func createGiveawayController(context: AccountContext, updatedPresentatio
     }
     
     openPeersSelectionImpl = {
+        let isGroup = isGroupValue.with { $0 }
         let state = stateValue.with { $0 }
-        
         let stateContext = ShareWithPeersScreen.StateContext(
             context: context,
-            subject: .members(peerId: peerId, searchQuery: nil),
+            subject: .members(isGroup: isGroup, peerId: peerId, searchQuery: nil),
             initialPeerIds: Set(state.peers)
         )
         let _ = (stateContext.ready |> filter { $0 } |> take(1) |> deliverOnMainQueue).startStandalone(next: { _ in
@@ -1239,11 +1263,11 @@ public func createGiveawayController(context: AccountContext, updatedPresentatio
     }
     
     openChannelsSelectionImpl = {
+        let isGroup = isGroupValue.with { $0 }
         let state = stateValue.with { $0 }
-        
         let stateContext = ShareWithPeersScreen.StateContext(
             context: context,
-            subject: .channels(exclude: Set([peerId]), searchQuery: nil),
+            subject: .channels(isGroup: isGroup, exclude: Set([peerId]), searchQuery: nil),
             initialPeerIds: Set(state.channels.filter { $0 != peerId })
         )
         let _ = (stateContext.ready |> filter { $0 } |> take(1) |> deliverOnMainQueue).startStandalone(next: { _ in

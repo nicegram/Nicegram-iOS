@@ -116,6 +116,8 @@ import AttachmentUI
 import BoostLevelIconComponent
 import PeerInfoChatPaneNode
 import PeerInfoChatListPaneNode
+import GroupStickerPackSetupController
+import PeerNameColorItem
 
 public enum PeerInfoAvatarEditingMode {
     case generic
@@ -430,6 +432,8 @@ final class PeerInfoSelectionPanelNode: ASDisplayNode {
         }, hideTranslationPanel: {
         }, openPremiumGift: {
         }, openPremiumRequiredForMessaging: {
+        }, openBoostToUnrestrict: {
+        }, updateVideoTrimRange: { _, _, _, _ in
         }, updateHistoryFilter: { _ in
         }, updateDisplayHistoryFilterAsList: { _ in
         }, requestLayout: { _ in
@@ -528,6 +532,7 @@ private enum PeerInfoSettingsSection {
     case rememberPassword
     case emojiStatus
     case powerSaving
+    case businessSetup
 }
 
 private enum PeerInfoReportType {
@@ -569,7 +574,7 @@ private final class PeerInfoInteraction {
     let editingToggleMessageSignatures: (Bool) -> Void
     let openParticipantsSection: (PeerInfoParticipantsSection) -> Void
     let openRecentActions: () -> Void
-    let openStats: () -> Void
+    let openStats: (Bool) -> Void
     let editingOpenPreHistorySetup: () -> Void
     let editingOpenAutoremoveMesages: () -> Void
     let openPermissions: () -> Void
@@ -628,7 +633,7 @@ private final class PeerInfoInteraction {
         editingToggleMessageSignatures: @escaping (Bool) -> Void,
         openParticipantsSection: @escaping (PeerInfoParticipantsSection) -> Void,
         openRecentActions: @escaping () -> Void,
-        openStats: @escaping () -> Void,
+        openStats: @escaping (Bool) -> Void,
         editingOpenPreHistorySetup: @escaping () -> Void,
         editingOpenAutoremoveMesages: @escaping () -> Void,
         openPermissions: @escaping () -> Void,
@@ -1000,25 +1005,11 @@ private func settingsItems(data: PeerInfoScreenData?, context: AccountContext, p
         
         // MARK: Nicegram, comment this item (hide "Gift Premium")
         /*
-        items[.payment]!.append(PeerInfoScreenDisclosureItem(id: 101, label: .text(""), additionalBadgeLabel: presentationData.strings.Settings_New, text: presentationData.strings.Settings_PremiumGift, icon: PresentationResourcesSettings.premiumGift, action: {
+        items[.payment]!.append(PeerInfoScreenDisclosureItem(id: 102, label: .text(""), additionalBadgeLabel: presentationData.strings.Settings_New, text: presentationData.strings.Settings_PremiumGift, icon: PresentationResourcesSettings.premiumGift, action: {
             interaction.openSettings(.premiumGift)
         }))
         */
     }
-    
-    /*items[.payment]!.append(PeerInfoScreenDisclosureItem(id: 100, label: .text(""), text: "Payment Method", icon: PresentationResourcesSettings.language, action: {
-        interaction.openPaymentMethod()
-    }))*/
-    
-    /*let stickersLabel: String
-    if let settings = data.globalSettings {
-        stickersLabel = settings.unreadTrendingStickerPacks > 0 ? "\(settings.unreadTrendingStickerPacks)" : ""
-    } else {
-        stickersLabel = ""
-    }
-    items[.advanced]!.append(PeerInfoScreenDisclosureItem(id: 5, label: .badge(stickersLabel, presentationData.theme.list.itemAccentColor), text: presentationData.strings.ChatSettings_StickersAndReactions, icon: PresentationResourcesSettings.stickers, action: {
-        interaction.openSettings(.stickers)
-    }))*/
     
     if let settings = data.globalSettings {
         if settings.hasPassport {
@@ -1738,18 +1729,16 @@ private func editingItems(data: PeerInfoScreenData?, state: PeerInfoState, chatL
             case .broadcast:
                 let ItemUsername = 1
                 let ItemPeerColor = 2
-                let ItemInviteLinks = 4
-                let ItemDiscussionGroup = 5
-                let ItemSignMessages = 6
-                let ItemSignMessagesHelp = 7
-                let ItemDeleteChannel = 8
-                let ItemReactions = 9
-                let ItemAdmins = 10
-                let ItemMembers = 11
-                let ItemMemberRequests = 12
-                let ItemStats = 13
-                let ItemBanned = 14
-                let ItemRecentActions = 15
+                let ItemInviteLinks = 3
+                let ItemDiscussionGroup = 4
+                let ItemDeleteChannel = 5
+                let ItemReactions = 6
+                let ItemAdmins = 7
+                let ItemMembers = 8
+                let ItemMemberRequests = 9
+                let ItemStats = 10
+                let ItemBanned = 11
+                let ItemRecentActions = 12
                 
                 let isCreator = channel.flags.contains(.isCreator)
                 
@@ -1858,20 +1847,6 @@ private func editingItems(data: PeerInfoScreenData?, state: PeerInfoState, chatL
                     }))
                 }
                 
-                if isCreator || (channel.adminRights != nil && channel.hasPermission(.sendSomething)) {
-                    let messagesShouldHaveSignatures: Bool
-                    switch channel.info {
-                    case let .broadcast(info):
-                        messagesShouldHaveSignatures = info.flags.contains(.messagesShouldHaveSignatures)
-                    default:
-                        messagesShouldHaveSignatures = false
-                    }
-                    items[.peerSettings]!.append(PeerInfoScreenSwitchItem(id: ItemSignMessages, text: presentationData.strings.Channel_SignMessages, value: messagesShouldHaveSignatures, icon: UIImage(bundleImageName: "Chat/Info/GroupSignIcon"), toggled: { value in
-                        interaction.editingToggleMessageSignatures(value)
-                    }))
-                    items[.peerSettings]!.append(PeerInfoScreenCommentItem(id: ItemSignMessagesHelp, text: presentationData.strings.Channel_SignMessages_Help))
-                }
-                
                 var canEditMembers = false
                 if channel.hasPermission(.banMembers) && (channel.adminRights != nil || channel.flags.contains(.isCreator)) {
                     canEditMembers = true
@@ -1901,9 +1876,9 @@ private func editingItems(data: PeerInfoScreenData?, state: PeerInfoState, chatL
                     }
                 }
                 
-                if let cachedData = data.cachedData as? CachedChannelData, cachedData.flags.contains(.canViewStats) {
+                if let cachedData = data.cachedData as? CachedChannelData, isCreator || cachedData.flags.contains(.canViewStats) {
                     items[.peerAdditionalSettings]!.append(PeerInfoScreenDisclosureItem(id: ItemStats, label: .none, text: presentationData.strings.Channel_Info_Stats, icon: UIImage(bundleImageName: "Chat/Info/StatsIcon"), action: {
-                        interaction.openStats()
+                        interaction.openStats(false)
                     }))
                 }
                 
@@ -1947,6 +1922,7 @@ private func editingItems(data: PeerInfoScreenData?, state: PeerInfoState, chatL
                 let ItemReactions = 116
                 let ItemTopics = 117
                 let ItemTopicsText = 118
+                let ItemAppearance = 119
                 
                 let isCreator = channel.flags.contains(.isCreator)
                 let isPublic = channel.addressName != nil
@@ -2059,6 +2035,43 @@ private func editingItems(data: PeerInfoScreenData?, state: PeerInfoState, chatL
                         }
                     }
                     
+                    if isCreator || channel.adminRights?.rights.contains(.canChangeInfo) == true {
+                        var colors: [PeerNameColors.Colors] = []
+                        if let nameColor = channel.nameColor.flatMap({ context.peerNameColors.get($0, dark: presentationData.theme.overallDarkAppearance) }) {
+                            colors.append(nameColor)
+                        }
+                        if let profileColor = channel.profileColor.flatMap({ context.peerNameColors.getProfile($0, dark: presentationData.theme.overallDarkAppearance, subject: .palette) }) {
+                            colors.append(profileColor)
+                        }
+                        let colorImage = generateSettingsMenuPeerColorsLabelIcon(colors: colors)
+                        
+                        var boostIcon: UIImage?
+                        if let approximateBoostLevel = channel.approximateBoostLevel, approximateBoostLevel < 1 {
+                            boostIcon = generateDisclosureActionBoostLevelBadgeImage(text: presentationData.strings.Channel_Info_BoostLevelPlusBadge("1").string)
+                        } else {
+                            let labelText = NSAttributedString(string: presentationData.strings.Settings_New, font: Font.medium(11.0), textColor: presentationData.theme.list.itemCheckColors.foregroundColor)
+                            let labelBounds = labelText.boundingRect(with: CGSize(width: 100.0, height: 100.0), options: [.usesLineFragmentOrigin], context: nil)
+                            let labelSize = CGSize(width: ceil(labelBounds.width), height: ceil(labelBounds.height))
+                            let badgeSize = CGSize(width: labelSize.width + 8.0, height: labelSize.height + 2.0 + 1.0)
+                            boostIcon = generateImage(badgeSize, rotatedContext: { size, context in
+                                context.clear(CGRect(origin: CGPoint(), size: size))
+                                
+                                let rect = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: size.width, height: size.height - UIScreenPixel * 2.0))
+                                
+                                context.addPath(UIBezierPath(roundedRect: rect, cornerRadius: 5.0).cgPath)
+                                context.setFillColor(presentationData.theme.list.itemCheckColors.fillColor.cgColor)
+                                context.fillPath()
+                                
+                                UIGraphicsPushContext(context)
+                                labelText.draw(at: CGPoint(x: 4.0, y: 1.0 + UIScreenPixel))
+                                UIGraphicsPopContext()
+                            })
+                        }
+                        items[.peerDataSettings]!.append(PeerInfoScreenDisclosureItem(id: ItemAppearance, label: .image(colorImage, colorImage.size), additionalBadgeIcon: boostIcon, text: presentationData.strings.Channel_Info_AppearanceItem, icon: UIImage(bundleImageName: "Chat/Info/NameColorIcon"), action: {
+                            interaction.editingOpenNameColorSetup()
+                        }))
+                    }
+                    
                     if (isCreator || (channel.adminRights != nil && channel.hasPermission(.banMembers))) && cachedData.peerGeoLocation == nil, !isPublic, case .known(nil) = cachedData.linkedDiscussionPeerId, !channel.flags.contains(.isForum) {
                         items[.peerPublicSettings]!.append(PeerInfoScreenDisclosureItem(id: ItemPreHistory, label: .text(cachedData.flags.contains(.preHistoryEnabled) ? presentationData.strings.GroupInfo_GroupHistoryVisible : presentationData.strings.GroupInfo_GroupHistoryHidden), text: presentationData.strings.GroupInfo_GroupHistoryShort, icon: UIImage(bundleImageName: "Chat/Info/GroupDiscussionIcon"), action: {
                             interaction.editingOpenPreHistorySetup()
@@ -2147,7 +2160,7 @@ private func editingItems(data: PeerInfoScreenData?, state: PeerInfoState, chatL
                                 interaction.openParticipantsSection(.memberRequests)
                             }))
                         }
-
+                        
                         items[.peerSettings]!.append(PeerInfoScreenDisclosureItem(id: ItemRemovedUsers, label: .text(cachedData.participantsSummary.kickedCount.flatMap { $0 > 0 ? "\(presentationStringsFormattedNumber($0, presentationData.dateTimeFormat.groupingSeparator))" : "" } ?? ""), text: presentationData.strings.GroupInfo_Permissions_Removed, icon: UIImage(bundleImageName: "Chat/Info/GroupRemovedIcon"), action: {
                             interaction.openParticipantsSection(.banned)
                         }))
@@ -2571,8 +2584,8 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
             openRecentActions: { [weak self] in
                 self?.openRecentActions()
             },
-            openStats: { [weak self] in
-                self?.openStats()
+            openStats: { [weak self] boosts in
+                self?.openStats(boosts: boosts)
             },
             editingOpenPreHistorySetup: { [weak self] in
                 self?.editingOpenPreHistorySetup()
@@ -2856,7 +2869,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                 strongSelf.controller?.window?.presentInGlobalOverlay(controller)
             })
         }, openMessageReactionContextMenu: { _, _, _, _ in
-        }, updateMessageReaction: { _, _, _ in
+        }, updateMessageReaction: { _, _, _, _ in
         }, activateMessagePinch: { _ in
         }, openMessageContextActions: { [weak self] message, node, rect, gesture in
             guard let strongSelf = self else {
@@ -3196,6 +3209,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
         }, displayGiveawayParticipationStatus: { _ in
         }, openPremiumStatusInfo: { _, _, _, _ in
         }, openRecommendedChannelContextMenu: { _, _, _ in
+        }, openGroupBoostInfo: { _, _ in
         }, requestMessageUpdate: { _, _ in
         }, cancelInteractiveKeyboardGestures: {
         }, dismissTextInput: {
@@ -4084,7 +4098,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                        
             var previousTimestamp: Double?
             self.headerNode.displayPremiumIntro = { [weak self] sourceView, peerStatus, emojiStatusFileAndPack, white in
-                guard let strongSelf = self else {
+                guard let strongSelf = self, let peer = strongSelf.data?.peer else {
                     return
                 }
                 let currentTimestamp = CACurrentMediaTime()
@@ -4104,7 +4118,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                     |> take(1)
                     |> mapToSignal { emojiStatusFileAndPack -> Signal<PremiumSource, NoError> in
                         if let (file, pack) = emojiStatusFileAndPack {
-                            return .single(.emojiStatus(strongSelf.peerId, peerStatus.fileId, file, pack))
+                            return .single(.emojiStatus(peer.id, peerStatus.fileId, file, pack))
                         } else {
                             return .complete()
                         }
@@ -4278,11 +4292,14 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
             
             self.boostStatusDisposable = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
             |> mapToSignal { peer -> Signal<ChannelBoostStatus?, NoError> in
-                if case let .channel(channel) = peer, (channel.flags.contains(.isCreator) || channel.adminRights != nil) {
-                    return context.engine.peers.getChannelBoostStatus(peerId: peerId)
-                } else {
-                    return .single(nil)
+                if case let .channel(channel) = peer {
+                    if case .broadcast = channel.info, (channel.flags.contains(.isCreator) || channel.adminRights != nil) {
+                        return context.engine.peers.getChannelBoostStatus(peerId: peerId)
+                    } else if case .group = channel.info {
+                        return context.engine.peers.getChannelBoostStatus(peerId: peerId)
+                    }
                 }
+                return .single(nil)
             }
             |> deliverOnMainQueue).start(next: { [weak self] boostStatus in
                 guard let self else {
@@ -5901,7 +5918,17 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                     }
                 } else if let channel = peer as? TelegramChannel {
                     if let cachedData = strongSelf.data?.cachedData as? CachedChannelData {
-                        if case .broadcast = channel.info, channel.hasPermission(.editStories) {
+                        if case .group = channel.info {
+                            items.append(.action(ContextMenuActionItem(text: presentationData.strings.PeerInfo_Group_Boost, badge: ContextMenuActionBadge(value: presentationData.strings.Settings_New, color: .accent, style: .label), icon: { theme in
+                                generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Boost"), color: theme.contextMenu.primaryColor)
+                            }, action: { [weak self] _, f in
+                                f(.dismissWithoutContent)
+                                
+                                self?.openBoost()
+                            })))
+                        }
+                        
+                        if channel.hasPermission(.editStories) {
                             items.append(.action(ContextMenuActionItem(text: presentationData.strings.PeerInfo_Channel_ArchivedStories, icon: { theme in
                                 generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Archive"), color: theme.contextMenu.primaryColor)
                             }, action: { [weak self] _, f in
@@ -7166,6 +7193,39 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
             statsController = channelStatsController(context: self.context, updatedPresentationData: self.controller?.updatedPresentationData, peerId: peer.id, section: boosts ? .boosts : .stats, boostStatus: boostStatus)
         }
         controller.push(statsController)
+    }
+    
+    private func openBoost() {
+        guard let peer = self.data?.peer, let channel = peer as? TelegramChannel, let controller = self.controller else {
+            return
+        }
+        
+        if channel.flags.contains(.isCreator) || (channel.adminRights?.rights.contains(.canInviteUsers) == true) {
+            let boostsController = channelStatsController(context: self.context, updatedPresentationData: controller.updatedPresentationData, peerId: self.peerId, section: .boosts, boostStatus: self.boostStatus, boostStatusUpdated: { [weak self] boostStatus in
+                if let self {
+                    self.boostStatus = boostStatus
+                }
+            })
+            controller.push(boostsController)
+        } else {
+            let _ = combineLatest(
+                queue: Queue.mainQueue(),
+                context.engine.peers.getChannelBoostStatus(peerId: self.peerId),
+                context.engine.peers.getMyBoostStatus()
+            ).startStandalone(next: { [weak self] boostStatus, myBoostStatus in
+                guard let self, let controller = self.controller, let boostStatus, let myBoostStatus else {
+                    return
+                }
+                let boostController = PremiumBoostLevelsScreen(
+                    context: self.context,
+                    peerId: controller.peerId,
+                    mode: .user(mode: .current),
+                    status: boostStatus,
+                    myBoostStatus: myBoostStatus
+                )
+                controller.push(boostController)
+            })
+        }
     }
     
     private func openVoiceChatOptions(defaultJoinAsPeerId: PeerId?, gesture: ContextGesture? = nil, contextController: ContextControllerProtocol? = nil) {
@@ -8876,39 +8936,25 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
             case .channelBoostRequired:
                 self.postingAvailabilityDisposable?.dispose()
                 
-                let premiumConfiguration = PremiumConfiguration.with(appConfiguration: self.context.currentAppConfiguration.with { $0 })
-                
                 self.postingAvailabilityDisposable = combineLatest(
                     queue: Queue.mainQueue(),
                     self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: self.peerId)),
-                    self.context.engine.peers.getChannelBoostStatus(peerId: self.peerId)
-                ).startStrict(next: { [weak self] peer, status in
-                    guard let self, let peer, let status else {
+                    self.context.engine.peers.getChannelBoostStatus(peerId: self.peerId),
+                    self.context.engine.peers.getMyBoostStatus()
+                ).startStrict(next: { [weak self] peer, boostStatus, myBoostStatus in
+                    guard let self, let peer, let boostStatus, let myBoostStatus else {
                         return
                     }
                     
-                    let link = status.url
                     if let navigationController = self.controller?.navigationController as? NavigationController {
                         if let previousController = navigationController.viewControllers.last as? ShareWithPeersScreen {
                             previousController.dismiss()
                         }
-                        let controller = PremiumLimitScreen(context: self.context, subject: .storiesChannelBoost(peer: peer, boostSubject: .stories, isCurrent: true, level: Int32(status.level), currentLevelBoosts: Int32(status.currentLevelBoosts), nextLevelBoosts: status.nextLevelBoosts.flatMap(Int32.init), link: link, myBoostCount: 0, canBoostAgain: false), count: Int32(status.boosts), action: { [weak self] in
-                            UIPasteboard.general.string = link
-                            
+                        let controller = self.context.sharedContext.makePremiumBoostLevelsController(context: self.context, peerId: peer.id, boostStatus: boostStatus, myBoostStatus: myBoostStatus, forceDark: false, openStats: { [weak self] in
                             if let self {
-                                self.controller?.present(UndoOverlayController(presentationData: self.presentationData, content: .linkCopied(text: self.presentationData.strings.ChannelBoost_BoostLinkCopied), elevatedLayout: false, position: .bottom, animateInAsReplacement: false, action: { _ in return false }), in: .current)
+                                self.openStats(boosts: true, boostStatus: boostStatus)
                             }
-                            return true
-                        }, openStats: { [weak self] in
-                            if let self {
-                                self.openStats(boosts: true, boostStatus: status)
-                            }
-                        }, openGift: premiumConfiguration.giveawayGiftsPurchaseAvailable ? { [weak self] in
-                            if let self {
-                                let controller = createGiveawayController(context: self.context, peerId: self.peerId, subject: .generic)
-                                self.controller?.push(controller)
-                            }
-                        } : nil)
+                        })
                         navigationController.pushViewController(controller)
                     }
                     
@@ -9053,7 +9099,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
             let controller = self.context.sharedContext.makePremiumIntroController(context: self.context, source: .settings, forceDark: false, dismissed: nil)
             self.controller?.push(controller)
         case .premiumGift:
-            let controller = self.context.sharedContext.makePremiumGiftController(context: self.context, source: .settings)
+            let controller = self.context.sharedContext.makePremiumGiftController(context: self.context, source: .settings, completion: nil)
             self.controller?.push(controller)
         case .stickers:
             if let settings = self.data?.globalSettings {
@@ -9182,6 +9228,8 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
             self.headerNode.invokeDisplayPremiumIntro()
         case .powerSaving:
             push(energySavingSettingsScreen(context: self.context))
+        case .businessSetup:
+            push(self.context.sharedContext.makeBusinessSetupScreen(context: self.context))
         }
     }
     
@@ -10615,7 +10663,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                 } else if peerInfoCanEdit(peer: self.data?.peer, chatLocation: self.chatLocation, threadData: self.data?.threadData, cachedData: self.data?.cachedData, isContact: self.data?.isContact) {
                     rightNavigationButtons.append(PeerInfoHeaderNavigationButtonSpec(key: .edit, isForExpandedView: false))
                 }
-                if let data = self.data, data.accountIsPremium, let channel = data.peer as? TelegramChannel, case .broadcast = channel.info, channel.hasPermission(.postStories) {
+                if let data = self.data, !data.isPremiumRequiredForStoryPosting || data.accountIsPremium, let channel = data.peer as? TelegramChannel,  channel.hasPermission(.postStories) {
                     rightNavigationButtons.insert(PeerInfoHeaderNavigationButtonSpec(key: .postStory, isForExpandedView: false), at: 0)
                 }
                 

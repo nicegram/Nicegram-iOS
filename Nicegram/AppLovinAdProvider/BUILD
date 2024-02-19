@@ -8,7 +8,7 @@ swift_library(
     ]),
     deps = [
         "@AppLovin//:AppLovin",
-        "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChat",
+        "@swiftpkg_nicegram_assistant_ios//:NGAiChat",
     ],
     visibility = ["//visibility:public"],
 

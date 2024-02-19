@@ -13,6 +13,7 @@ import Markdown
 import Display
 
 func chatHistoryEntriesForView(
+    context: AccountContext,
     location: ChatLocation,
     view: MessageHistoryView,
     includeUnreadEntry: Bool,
@@ -186,11 +187,11 @@ func chatHistoryEntriesForView(
         }
         
         if presentationData.largeEmoji, message.media.isEmpty {
-            if messageIsElligibleForLargeCustomEmoji(message) {
+            if messageIsEligibleForLargeCustomEmoji(message) {
                 contentTypeHint = .animatedEmoji
             } else if stickersEnabled && message.text.count == 1, let _ = associatedData.animatedEmojiStickers[message.text.basicEmoji.0], (message.textEntitiesAttribute?.entities.isEmpty ?? true) {
                 contentTypeHint = .animatedEmoji
-            } else if messageIsElligibleForLargeEmoji(message) {
+            } else if messageIsEligibleForLargeEmoji(message) {
                 contentTypeHint = .animatedEmoji
             }
         }
@@ -322,11 +323,11 @@ func chatHistoryEntriesForView(
                     
                     var contentTypeHint: ChatMessageEntryContentType = .generic
                     if presentationData.largeEmoji, topMessage.media.isEmpty {
-                        if messageIsElligibleForLargeCustomEmoji(topMessage) {
+                        if messageIsEligibleForLargeCustomEmoji(topMessage) {
                             contentTypeHint = .animatedEmoji
                         } else if stickersEnabled && topMessage.text.count == 1, let _ = associatedData.animatedEmojiStickers[topMessage.text.basicEmoji.0] {
                             contentTypeHint = .animatedEmoji
-                        } else if messageIsElligibleForLargeEmoji(topMessage) {
+                        } else if messageIsEligibleForLargeEmoji(topMessage) {
                             contentTypeHint = .animatedEmoji
                         }
                     }
@@ -466,8 +467,8 @@ func chatHistoryEntriesForView(
                 string,
                 attributes: MarkdownAttributes(
                     body: MarkdownAttributeSet(font: Font.regular(15.0), textColor: .black),
-                    bold: MarkdownAttributeSet(font: Font.regular(15.0), textColor: .white),
-                    link: MarkdownAttributeSet(font: Font.regular(15.0), textColor: .black),
+                    bold: MarkdownAttributeSet(font: Font.regular(15.0), textColor: .black),
+                    link: MarkdownAttributeSet(font: Font.regular(15.0), textColor: .white),
                     linkAttribute: { url in
                         return ("URL", url)
                     }
@@ -477,6 +478,11 @@ func chatHistoryEntriesForView(
             formattedString.enumerateAttribute(.foregroundColor, in: NSRange(location: 0, length: formattedString.length), options: [], using: { value, range, _ in
                 if let value = value as? UIColor, value == .white {
                     entities.append(MessageTextEntity(range: range.lowerBound ..< range.upperBound, type: .Bold))
+                }
+            })
+            formattedString.enumerateAttribute(NSAttributedString.Key(rawValue: "URL"), in: NSRange(location: 0, length: formattedString.length), options: [], using: { value, range, _ in
+                if value != nil {
+                    entities.append(MessageTextEntity(range: range.lowerBound ..< range.upperBound, type: .TextMention(peerId: context.account.peerId)))
                 }
             })
             

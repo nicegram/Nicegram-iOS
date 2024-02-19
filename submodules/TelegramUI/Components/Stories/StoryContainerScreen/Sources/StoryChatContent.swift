@@ -114,6 +114,11 @@ public final class StoryContentContextImpl: StoryContentContext {
                                         forwardInfoStories.updateValue(nil, forKey: storyId)
                                     }
                                 }
+                                if let peerId = itemValue.authorId {
+                                    if let peer = transaction.getPeer(peerId) {
+                                        peers[peer.id] = peer
+                                    }
+                                }
                                 for entity in itemValue.entities {
                                     if case let .CustomEmoji(_, fileId) = entity.type {
                                         let mediaId = MediaId(namespace: Namespaces.Media.CloudFile, id: fileId)
@@ -211,7 +216,9 @@ public final class StoryContentContextImpl: StoryContentContext {
                             presence: peerPresence.flatMap { EnginePeer.Presence($0) },
                             canViewStats: false,
                             isPremiumRequiredForMessaging: isPremiumRequiredForMessaging,
-                            preferHighQualityStories: preferHighQualityStories
+                            preferHighQualityStories: preferHighQualityStories,
+                            boostsToUnrestrict: nil,
+                            appliedBoosts: nil
                         )
                     } else if let cachedChannelData = cachedPeerDataView.cachedPeerData as? CachedChannelData {
                         additionalPeerData = StoryContentContextState.AdditionalPeerData(
@@ -220,7 +227,9 @@ public final class StoryContentContextImpl: StoryContentContext {
                             presence: peerPresence.flatMap { EnginePeer.Presence($0) },
                             canViewStats: cachedChannelData.flags.contains(.canViewStats),
                             isPremiumRequiredForMessaging: isPremiumRequiredForMessaging,
-                            preferHighQualityStories: preferHighQualityStories
+                            preferHighQualityStories: preferHighQualityStories,
+                            boostsToUnrestrict: cachedChannelData.boostsToUnrestrict,
+                            appliedBoosts: cachedChannelData.appliedBoosts
                         )
                     } else {
                         additionalPeerData = StoryContentContextState.AdditionalPeerData(
@@ -229,18 +238,21 @@ public final class StoryContentContextImpl: StoryContentContext {
                             presence: peerPresence.flatMap { EnginePeer.Presence($0) },
                             canViewStats: false,
                             isPremiumRequiredForMessaging: isPremiumRequiredForMessaging,
-                            preferHighQualityStories: preferHighQualityStories
+                            preferHighQualityStories: preferHighQualityStories,
+                            boostsToUnrestrict: nil,
+                            appliedBoosts: nil
                         )
                     }
-                }
-                else {
+                } else {
                     additionalPeerData = StoryContentContextState.AdditionalPeerData(
                         isMuted: true,
                         areVoiceMessagesAvailable: true,
                         presence: peerPresence.flatMap { EnginePeer.Presence($0) },
                         canViewStats: false,
                         isPremiumRequiredForMessaging: isPremiumRequiredForMessaging,
-                        preferHighQualityStories: preferHighQualityStories
+                        preferHighQualityStories: preferHighQualityStories,
+                        boostsToUnrestrict: nil,
+                        appliedBoosts: nil
                     )
                 }
                 let state = stateView.value?.get(Stories.PeerState.self)
@@ -296,7 +308,8 @@ public final class StoryContentContextImpl: StoryContentContext {
                         isEdited: item.isEdited,
                         isMy: item.isMy,
                         myReaction: item.myReaction,
-                        forwardInfo: forwardInfo
+                        forwardInfo: forwardInfo,
+                        author: item.authorId.flatMap { peers[$0].flatMap(EnginePeer.init) }
                     )
                 }
                 var totalCount = peerStoryItemsView.items.count
@@ -332,7 +345,8 @@ public final class StoryContentContextImpl: StoryContentContext {
                                 isEdited: false,
                                 isMy: true,
                                 myReaction: nil,
-                                forwardInfo: pendingForwardsInfo[item.randomId]
+                                forwardInfo: pendingForwardsInfo[item.randomId],
+                                author: nil
                             ))
                             totalCount += 1
                         }
@@ -1158,7 +1172,9 @@ public final class SingleStoryContentContextImpl: StoryContentContext {
                 TelegramEngine.EngineData.Item.Peer.CanViewStats(id: storyId.peerId),
                 TelegramEngine.EngineData.Item.Peer.NotificationSettings(id: storyId.peerId),
                 TelegramEngine.EngineData.Item.NotificationSettings.Global(),
-                TelegramEngine.EngineData.Item.Peer.IsPremiumRequiredForMessaging(id: storyId.peerId)
+                TelegramEngine.EngineData.Item.Peer.IsPremiumRequiredForMessaging(id: storyId.peerId),
+                TelegramEngine.EngineData.Item.Peer.BoostsToUnrestrict(id: storyId.peerId),
+                TelegramEngine.EngineData.Item.Peer.AppliedBoosts(id: storyId.peerId)
             ),
             item |> mapToSignal { item -> Signal<(Stories.StoredItem?, [PeerId: Peer], [MediaId: TelegramMediaFile], [StoryId: EngineStoryItem?]), NoError> in
                 return context.account.postbox.transaction { transaction -> (Stories.StoredItem?, [PeerId: Peer], [MediaId: TelegramMediaFile], [StoryId: EngineStoryItem?]) in
@@ -1185,6 +1201,11 @@ public final class SingleStoryContentContextImpl: StoryContentContext {
                                 stories[storyId] = story
                             } else {
                                 stories.updateValue(nil, forKey: storyId)
+                            }
+                        }
+                        if let peerId = item.authorId {
+                            if let peer = transaction.getPeer(peerId) {
+                                peers[peer.id] = peer
                             }
                         }
                         for entity in item.entities {
@@ -1224,7 +1245,7 @@ public final class SingleStoryContentContextImpl: StoryContentContext {
                 return
             }
             
-            let (peer, presence, areVoiceMessagesAvailable, canViewStats, notificationSettings, globalNotificationSettings, isPremiumRequiredForMessaging) = data
+            let (peer, presence, areVoiceMessagesAvailable, canViewStats, notificationSettings, globalNotificationSettings, isPremiumRequiredForMessaging, boostsToUnrestrict, appliedBoosts) = data
             let (item, peers, allEntityFiles, forwardInfoStories) = itemAndPeers
             
             guard let peer else {
@@ -1239,7 +1260,9 @@ public final class SingleStoryContentContextImpl: StoryContentContext {
                 presence: presence,
                 canViewStats: canViewStats,
                 isPremiumRequiredForMessaging: isPremiumRequiredForMessaging,
-                preferHighQualityStories: preferHighQualityStories
+                preferHighQualityStories: preferHighQualityStories,
+                boostsToUnrestrict: boostsToUnrestrict,
+                appliedBoosts: appliedBoosts
             )
             
             for (storyId, story) in forwardInfoStories {
@@ -1312,7 +1335,8 @@ public final class SingleStoryContentContextImpl: StoryContentContext {
                     isEdited: itemValue.isEdited,
                     isMy: itemValue.isMy,
                     myReaction: itemValue.myReaction,
-                    forwardInfo: forwardInfo
+                    forwardInfo: forwardInfo,
+                    author: itemValue.authorId.flatMap { peers[$0].flatMap(EnginePeer.init) }
                 )
                 
                 let mainItem = StoryContentItem(
@@ -1434,7 +1458,9 @@ public final class PeerStoryListContentContextImpl: StoryContentContext {
                 TelegramEngine.EngineData.Item.Peer.CanViewStats(id: peerId),
                 TelegramEngine.EngineData.Item.Peer.NotificationSettings(id: peerId),
                 TelegramEngine.EngineData.Item.NotificationSettings.Global(),
-                TelegramEngine.EngineData.Item.Peer.IsPremiumRequiredForMessaging(id: peerId)
+                TelegramEngine.EngineData.Item.Peer.IsPremiumRequiredForMessaging(id: peerId),
+                TelegramEngine.EngineData.Item.Peer.BoostsToUnrestrict(id: peerId),
+                TelegramEngine.EngineData.Item.Peer.AppliedBoosts(id: peerId)
             ),
             listContext.state,
             self.focusedIdUpdated.get(),
@@ -1445,7 +1471,7 @@ public final class PeerStoryListContentContextImpl: StoryContentContext {
                 return
             }
             
-            let (peer, presence, areVoiceMessagesAvailable, canViewStats, notificationSettings, globalNotificationSettings, isPremiumRequiredForMessaging) = data
+            let (peer, presence, areVoiceMessagesAvailable, canViewStats, notificationSettings, globalNotificationSettings, isPremiumRequiredForMessaging, boostsToUnrestrict, appliedBoosts) = data
             
             guard let peer else {
                 return
@@ -1459,7 +1485,9 @@ public final class PeerStoryListContentContextImpl: StoryContentContext {
                 presence: presence,
                 canViewStats: canViewStats,
                 isPremiumRequiredForMessaging: isPremiumRequiredForMessaging,
-                preferHighQualityStories: preferHighQualityStories
+                preferHighQualityStories: preferHighQualityStories,
+                boostsToUnrestrict: boostsToUnrestrict,
+                appliedBoosts: appliedBoosts
             )
             
             self.listState = state
@@ -1746,6 +1774,14 @@ public func preloadStoryMedia(context: AccountContext, info: StoryPreloadInfo) -
                 }
                 break
             }
+        }
+        
+        if let representation = file.previewRepresentations.first {
+            signals.append(fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .peer(info.peer.id), userContentType: .story, reference: .media(media: .story(peer: info.peer, id: info.storyId, media: selectedMedia._asMedia()), resource: representation.resource), range: nil)
+            |> ignoreValues
+            |> `catch` { _ -> Signal<Never, NoError> in
+                return .complete()
+            })
         }
         
         signals.append(fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .peer(info.peer.id), userContentType: .story, reference: .media(media: .story(peer: info.peer, id: info.storyId, media: selectedMedia._asMedia()), resource: file.resource), range: fetchRange)
@@ -2183,7 +2219,8 @@ private func getCachedStory(storyId: StoryId, transaction: Transaction) -> Engin
             isEdited: item.isEdited,
             isMy: item.isMy,
             myReaction: item.myReaction,
-            forwardInfo: item.forwardInfo.flatMap { EngineStoryItem.ForwardInfo($0, transaction: transaction) }
+            forwardInfo: item.forwardInfo.flatMap { EngineStoryItem.ForwardInfo($0, transaction: transaction) },
+            author: item.authorId.flatMap { transaction.getPeer($0).flatMap(EnginePeer.init) }
         )
     } else {
         return nil
@@ -2367,7 +2404,9 @@ public final class RepostStoriesContentContextImpl: StoryContentContext {
                             presence: peerPresence.flatMap { EnginePeer.Presence($0) },
                             canViewStats: false,
                             isPremiumRequiredForMessaging: isPremiumRequiredForMessaging,
-                            preferHighQualityStories: preferHighQualityStories
+                            preferHighQualityStories: preferHighQualityStories,
+                            boostsToUnrestrict: nil,
+                            appliedBoosts: nil
                         )
                     } else if let cachedChannelData = cachedPeerDataView.cachedPeerData as? CachedChannelData {
                         additionalPeerData = StoryContentContextState.AdditionalPeerData(
@@ -2376,7 +2415,9 @@ public final class RepostStoriesContentContextImpl: StoryContentContext {
                             presence: peerPresence.flatMap { EnginePeer.Presence($0) },
                             canViewStats: cachedChannelData.flags.contains(.canViewStats),
                             isPremiumRequiredForMessaging: isPremiumRequiredForMessaging,
-                            preferHighQualityStories: preferHighQualityStories
+                            preferHighQualityStories: preferHighQualityStories,
+                            boostsToUnrestrict: cachedChannelData.boostsToUnrestrict,
+                            appliedBoosts: cachedChannelData.appliedBoosts
                         )
                     } else {
                         additionalPeerData = StoryContentContextState.AdditionalPeerData(
@@ -2385,7 +2426,9 @@ public final class RepostStoriesContentContextImpl: StoryContentContext {
                             presence: peerPresence.flatMap { EnginePeer.Presence($0) },
                             canViewStats: false,
                             isPremiumRequiredForMessaging: isPremiumRequiredForMessaging,
-                            preferHighQualityStories: preferHighQualityStories
+                            preferHighQualityStories: preferHighQualityStories,
+                            boostsToUnrestrict: nil,
+                            appliedBoosts: nil
                         )
                     }
                 }
@@ -2396,7 +2439,9 @@ public final class RepostStoriesContentContextImpl: StoryContentContext {
                         presence: peerPresence.flatMap { EnginePeer.Presence($0) },
                         canViewStats: false,
                         isPremiumRequiredForMessaging: isPremiumRequiredForMessaging,
-                        preferHighQualityStories: preferHighQualityStories
+                        preferHighQualityStories: preferHighQualityStories,
+                        boostsToUnrestrict: nil,
+                        appliedBoosts: nil
                     )
                 }
                 

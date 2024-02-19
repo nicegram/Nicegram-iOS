@@ -10,10 +10,13 @@ import ItemListUI
 import PresentationDataUtils
 import ActivityIndicator
 import StickerResources
+import AnimatedStickerNode
+import TelegramAnimatedStickerNode
+import ShimmerEffect
 import AppBundle
 
 enum GroupStickerPackCurrentItemContent: Equatable {
-    case notFound
+    case notFound(isEmoji: Bool)
     case searching
     case found(packInfo: StickerPackCollectionInfo, topItem: StickerPackItem?, subtitle: String)
 }
@@ -25,14 +28,16 @@ final class GroupStickerPackCurrentItem: ListViewItem, ItemListItem {
     let content: GroupStickerPackCurrentItemContent
     let sectionId: ItemListSectionId
     let action: (() -> Void)?
+    let remove: (() -> Void)?
     
-    init(theme: PresentationTheme, strings: PresentationStrings, account: Account, content: GroupStickerPackCurrentItemContent, sectionId: ItemListSectionId, action: (() -> Void)?) {
+    init(theme: PresentationTheme, strings: PresentationStrings, account: Account, content: GroupStickerPackCurrentItemContent, sectionId: ItemListSectionId, action: (() -> Void)?, remove: (() -> Void)?) {
         self.theme = theme
         self.strings = strings
         self.account = account
         self.content = content
         self.sectionId = sectionId
         self.action = action
+        self.remove = remove
     }
     
     func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, previousItem: ListViewItem?, nextItem: ListViewItem?, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void) {
@@ -89,12 +94,19 @@ class GroupStickerPackCurrentItemNode: ItemListRevealOptionsItemNode {
     private let topStripeNode: ASDisplayNode
     private let bottomStripeNode: ASDisplayNode
     private let highlightedBackgroundNode: ASDisplayNode
+    private let maskNode: ASImageNode
     
     fileprivate let imageNode: TransformImageNode
+    private var animationNode: AnimatedStickerNode?
+    private var placeholderNode: StickerShimmerEffectNode?
+    
     private let notFoundNode: ASImageNode
     private let titleNode: TextNode
     private let statusNode: TextNode
     private let activityIndicator: ActivityIndicator
+    
+    private let removeButton: HighlightTrackingButtonNode
+    private let removeButtonIcon: ASImageNode
     
     private var item: GroupStickerPackCurrentItem?
     
@@ -121,8 +133,14 @@ class GroupStickerPackCurrentItemNode: ItemListRevealOptionsItemNode {
         self.bottomStripeNode = ASDisplayNode()
         self.bottomStripeNode.isLayerBacked = true
         
+        self.maskNode = ASImageNode()
+        self.maskNode.isUserInteractionEnabled = false
+        
         self.imageNode = TransformImageNode()
         self.imageNode.isLayerBacked = !smartInvertColorsEnabled()
+        
+        self.placeholderNode = StickerShimmerEffectNode()
+        self.placeholderNode?.isUserInteractionEnabled = false
         
         self.notFoundNode = ASImageNode()
         self.notFoundNode.isLayerBacked = true
@@ -146,17 +164,83 @@ class GroupStickerPackCurrentItemNode: ItemListRevealOptionsItemNode {
         self.highlightedBackgroundNode = ASDisplayNode()
         self.highlightedBackgroundNode.isLayerBacked = true
         
+        self.removeButton = HighlightTrackingButtonNode(pointerStyle: nil)
+        self.removeButtonIcon = ASImageNode()
+        self.removeButtonIcon.displaysAsynchronously = false
+        
         super.init(layerBacked: false, dynamicBounce: false, rotated: false, seeThrough: false)
+        
+        if let placeholderNode = self.placeholderNode {
+            self.addSubnode(placeholderNode)
+        }
         
         self.addSubnode(self.imageNode)
         self.addSubnode(self.titleNode)
         self.addSubnode(self.statusNode)
         self.addSubnode(self.notFoundNode)
         self.addSubnode(self.activityIndicator)
+        
+        self.addSubnode(self.removeButtonIcon)
+        self.addSubnode(self.removeButton)
+        
+        var firstTime = true
+        self.imageNode.imageUpdated = { [weak self] image in
+            guard let strongSelf = self else {
+                return
+            }
+            if image != nil {
+                strongSelf.removePlaceholder(animated: !firstTime)
+                if firstTime {
+                    strongSelf.imageNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
+                }
+            }
+            firstTime = false
+        }
+        
+        self.removeButton.addTarget(self, action: #selector(self.removeButtonPressed), forControlEvents: .touchUpInside)
+        self.removeButton.highligthedChanged = { [weak self] highlighted in
+            if let self {
+                if highlighted {
+                    self.removeButtonIcon.layer.removeAnimation(forKey: "opacity")
+                    self.removeButtonIcon.alpha = 0.4
+                } else {
+                    self.removeButtonIcon.alpha = 1.0
+                    self.removeButtonIcon.layer.animateAlpha(from: 0.4, to: 1.0, duration: 0.2)
+                }
+            }
+        }
     }
     
     deinit {
         self.fetchDisposable.dispose()
+    }
+    
+    @objc private func removeButtonPressed() {
+        self.item?.remove?()
+    }
+    
+    private func removePlaceholder(animated: Bool) {
+        if let placeholderNode = self.placeholderNode {
+            self.placeholderNode = nil
+            if !animated {
+                placeholderNode.removeFromSupernode()
+            } else {
+                placeholderNode.allowsGroupOpacity = true
+                placeholderNode.alpha = 0.0
+                placeholderNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, completion: { [weak placeholderNode] _ in
+                    placeholderNode?.removeFromSupernode()
+                    placeholderNode?.allowsGroupOpacity = false
+                })
+            }
+        }
+    }
+    
+    private var absoluteLocation: (CGRect, CGSize)?
+    override func updateAbsoluteRect(_ rect: CGRect, within containerSize: CGSize) {
+        self.absoluteLocation = (rect, containerSize)
+        if let placeholderNode = placeholderNode {
+            placeholderNode.updateAbsoluteRect(CGRect(origin: CGPoint(x: rect.minX + placeholderNode.frame.minX, y: rect.minY + placeholderNode.frame.minY), size: placeholderNode.frame.size), within: containerSize)
+        }
     }
     
     func asyncLayout() -> (_ item: GroupStickerPackCurrentItem, _ params: ListViewItemLayoutParams, _ neighbors: ItemListNeighbors) -> (ListViewItemNodeLayout, (Bool) -> Void) {
@@ -187,9 +271,9 @@ class GroupStickerPackCurrentItemNode: ItemListRevealOptionsItemNode {
             }
             
             switch item.content {
-                case .notFound:
-                    titleAttributedString = NSAttributedString(string: item.strings.Channel_Stickers_NotFound, font: titleFont, textColor: item.theme.list.itemDestructiveColor)
-                    statusAttributedString = NSAttributedString(string: item.strings.Channel_Stickers_NotFoundHelp, font: statusFont, textColor: item.theme.list.itemSecondaryTextColor)
+                case let .notFound(isEmoji):
+                    titleAttributedString = NSAttributedString(string: isEmoji ? item.strings.Group_Emoji_NotFound : item.strings.Channel_Stickers_NotFound, font: titleFont, textColor: item.theme.list.itemDestructiveColor)
+                    statusAttributedString = NSAttributedString(string: isEmoji ? item.strings.Group_Emoji_NotFoundHelp : item.strings.Channel_Stickers_NotFoundHelp, font: statusFont, textColor: item.theme.list.itemSecondaryTextColor)
                 case .searching:
                     titleAttributedString = NSAttributedString(string: item.strings.Channel_Stickers_Searching, font: titleFont, textColor: item.theme.list.itemPrimaryTextColor)
                     statusAttributedString = NSAttributedString(string: "", font: statusFont, textColor: item.theme.list.itemSecondaryTextColor)
@@ -260,8 +344,18 @@ class GroupStickerPackCurrentItemNode: ItemListRevealOptionsItemNode {
                     
                     if case .searching = item.content {
                         strongSelf.activityIndicator.isHidden = false
+                        strongSelf.imageNode.isHidden = true
                     } else {
                         strongSelf.activityIndicator.isHidden = true
+                    }
+                    
+                    if case .found = item.content {
+                        strongSelf.removeButtonIcon.isHidden = false
+                        strongSelf.removeButton.isHidden = false
+                        strongSelf.imageNode.isHidden = false
+                    } else {
+                        strongSelf.removeButtonIcon.isHidden = true
+                        strongSelf.removeButton.isHidden = true
                     }
                     
                     let revealOffset = strongSelf.revealOffset
@@ -282,11 +376,19 @@ class GroupStickerPackCurrentItemNode: ItemListRevealOptionsItemNode {
                     if strongSelf.bottomStripeNode.supernode == nil {
                         strongSelf.insertSubnode(strongSelf.bottomStripeNode, at: 2)
                     }
+                    if strongSelf.maskNode.supernode == nil {
+                        strongSelf.addSubnode(strongSelf.maskNode)
+                    }
+                    
+                    let hasCorners = itemListHasRoundedBlockLayout(params)
+                    var hasTopCorners = false
+                    var hasBottomCorners = false
                     switch neighbors.top {
                         case .sameSection(false):
                             strongSelf.topStripeNode.isHidden = true
                         default:
-                            strongSelf.topStripeNode.isHidden = false
+                            hasTopCorners = true
+                            strongSelf.topStripeNode.isHidden = hasCorners
                     }
                     let bottomStripeInset: CGFloat
                     let bottomStripeOffset: CGFloat
@@ -294,11 +396,19 @@ class GroupStickerPackCurrentItemNode: ItemListRevealOptionsItemNode {
                         case .sameSection(false):
                             bottomStripeInset = leftInset + editingOffset
                             bottomStripeOffset = -separatorHeight
+                            strongSelf.bottomStripeNode.isHidden = false
                         default:
                             bottomStripeInset = 0.0
                             bottomStripeOffset = 0.0
+                            hasBottomCorners = true
+                            strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
+                    
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                    strongSelf.removeButtonIcon.image = PresentationResourcesItemList.itemListRemoveIconImage(item.theme)
+                    
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
+                    strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                     transition.updateFrame(node: strongSelf.topStripeNode, frame: CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight)))
                     transition.updateFrame(node: strongSelf.bottomStripeNode, frame: CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight)))
                     
@@ -312,7 +422,6 @@ class GroupStickerPackCurrentItemNode: ItemListRevealOptionsItemNode {
                     transition.updateFrame(node: strongSelf.statusNode, frame: CGRect(origin: CGPoint(x: leftInset, y: 32.0), size: statusLayout.size))
                     
                     let boundingSize = CGSize(width: 34.0, height: 34.0)
-                    transition.updateFrame(node: strongSelf.imageNode, frame: CGRect(origin: CGPoint(x: params.leftInset + revealOffset + editingOffset + 15.0 + floor((boundingSize.width - imageSize.width) / 2.0), y: 11.0 + floor((boundingSize.height - imageSize.height) / 2.0)), size: imageSize))
                     let indicatorSize = CGSize(width: 22.0, height: 22.0)
                     transition.updateFrame(node: strongSelf.activityIndicator, frame: CGRect(origin: CGPoint(x: params.leftInset + 15.0 + floor((boundingSize.width - indicatorSize.width) / 2.0), y: 11.0 + floor((boundingSize.height - indicatorSize.height) / 2.0)), size: indicatorSize))
                     
@@ -325,6 +434,13 @@ class GroupStickerPackCurrentItemNode: ItemListRevealOptionsItemNode {
                     
                     if let updatedImageSignal = updatedImageSignal {
                         strongSelf.imageNode.setSignal(updatedImageSignal)
+                    }
+                    let imageFrame = CGRect(origin: CGPoint(x: params.leftInset + revealOffset + editingOffset + 15.0 + floor((boundingSize.width - imageSize.width) / 2.0), y: 11.0 + floor((boundingSize.height - imageSize.height) / 2.0)), size: imageSize)
+                    transition.updateFrame(node: strongSelf.imageNode, frame: imageFrame)
+                    
+                    strongSelf.removeButton.frame = CGRect(origin: CGPoint(x: layoutSize.width - params.rightInset - layoutSize.height, y: 0.0), size: CGSize(width: layoutSize.height, height: layoutSize.height))
+                    if let icon = strongSelf.removeButtonIcon.image {
+                        strongSelf.removeButtonIcon.frame = CGRect(origin: CGPoint(x: layoutSize.width - params.rightInset - icon.size.width - 18.0, y: floor((layoutSize.height - icon.size.height) / 2.0)), size: icon.size)
                     }
                     
                     strongSelf.highlightedBackgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -UIScreenPixel), size: CGSize(width: params.width, height: contentSize.height + UIScreenPixel + UIScreenPixel))

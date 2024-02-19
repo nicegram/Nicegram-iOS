@@ -596,7 +596,12 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                         false
                     )
                     actionButtonMinWidthAndFinalizeLayout = (buttonWidth, continueLayout)
-                    actualWidth = max(actualWidth, buttonWidth)
+                    
+                    var buttonInset: CGFloat = 0.0
+                    if let buttonIconImage {
+                        buttonInset += buttonIconImage.size.width + 2.0
+                    }
+                    actualWidth = max(actualWidth, buttonWidth + buttonInset * 2.0)
                 } else {
                     actionButtonMinWidthAndFinalizeLayout = nil
                 }
@@ -1055,73 +1060,6 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                                 title.textNode.bounds = CGRect(origin: CGPoint(), size: titleFrame.size)
                                 animation.animator.updatePosition(layer: title.textNode.layer, position: titleFrame.origin, completion: nil)
                             }
-                            
-                            if message.adAttribute != nil {
-                                let closeButtonImage: UIImage
-                                if let current = self.closeButtonImage {
-                                    closeButtonImage = current
-                                } else {
-                                    closeButtonImage = generateImage(CGSize(width: 12.0, height: 12.0), rotatedContext: { size, context in
-                                        context.clear(CGRect(origin: .zero, size: size))
-                                        
-                                        let color = UIColor.white
-                                        context.setAlpha(color.alpha)
-                                        context.setBlendMode(.copy)
-                                        
-                                        context.setStrokeColor(UIColor.white.cgColor)
-                                        context.setLineWidth(1.0 + UIScreenPixel)
-                                        context.setLineCap(.round)
-                                        
-                                        let bounds = CGRect(origin: .zero, size: size).insetBy(dx: 1.0 + UIScreenPixel, dy: 1.0 + UIScreenPixel)
-                                        
-                                        context.move(to: CGPoint(x: bounds.minX, y: bounds.minY))
-                                        context.addLine(to: CGPoint(x: bounds.maxX, y: bounds.maxY))
-                                        context.strokePath()
-                                        
-                                        context.move(to: CGPoint(x: bounds.maxX, y: bounds.minY))
-                                        context.addLine(to: CGPoint(x: bounds.minX, y: bounds.maxY))
-                                        context.strokePath()
-                                    })!.withRenderingMode(.alwaysTemplate)
-                                    self.closeButtonImage = closeButtonImage
-                                }
-                                
-                                let closeButton: ComponentView<Empty>
-                                if let current = self.closeButton {
-                                    closeButton = current
-                                } else {
-                                    closeButton = ComponentView()
-                                    self.closeButton = closeButton
-                                }
-                                let closeButtonSize = closeButton.update(
-                                    transition: .immediate,
-                                    component: AnyComponent(PlainButtonComponent(
-                                        content: AnyComponent(Image(image: closeButtonImage, tintColor: mainColor)),
-                                        effectAlignment: .center,
-                                        action: { [weak controllerInteraction] in
-                                            guard let controllerInteraction else {
-                                                return
-                                            }
-                                            controllerInteraction.openNoAdsDemo()
-                                        }
-                                    )),
-                                    environment: {},
-                                    containerSize: CGSize(width: 12.0, height: 12.0)
-                                )
-                                
-                                let closeButtonFrame = CGRect(origin: CGPoint(x: backgroundFrame.maxX - 8.0 - closeButtonSize.width, y: backgroundInsets.top + 8.0), size: closeButtonSize)
-                                
-                                if let closeButtonView = closeButton.view {
-                                    if closeButtonView.superview == nil {
-                                        self.transformContainer.view.addSubview(closeButtonView)
-                                    }
-                                    animation.animator.updateFrame(layer: closeButtonView.layer, frame: closeButtonFrame, completion: nil)
-                                }
-                            } else {
-                                if let closeButton = self.closeButton {
-                                    self.closeButton = nil
-                                    closeButton.view?.removeFromSuperview()
-                                }
-                            }
                         } else {
                             if let title = self.title {
                                 self.title = nil
@@ -1230,11 +1168,11 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                                     }
                                     self.openMedia?(mode)
                                 }
-                                contentMedia.updateMessageReaction = { [weak controllerInteraction] message, value, force in
+                                contentMedia.updateMessageReaction = { [weak controllerInteraction] message, value, force, sourceView in
                                     guard let controllerInteraction else {
                                         return
                                     }
-                                    controllerInteraction.updateMessageReaction(message, value, force)
+                                    controllerInteraction.updateMessageReaction(message, value, force, sourceView)
                                 }
                                 contentMedia.visibility = self.visibility != .none
                                 
@@ -1352,11 +1290,11 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                                 self.statusNode = statusNode
                                 self.addSubnode(statusNode)
                                 
-                                statusNode.reactionSelected = { [weak self] _, value in
+                                statusNode.reactionSelected = { [weak self] _, value, sourceView in
                                     guard let self, let message = self.message else {
                                         return
                                     }
-                                    controllerInteraction.updateMessageReaction(message, .reaction(value), false)
+                                    controllerInteraction.updateMessageReaction(message, .reaction(value), false, sourceView)
                                 }
                                 
                                 statusNode.openReactionPreview = { [weak self] gesture, sourceNode, value in

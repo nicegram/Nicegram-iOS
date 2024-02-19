@@ -900,17 +900,22 @@ public func universalServiceMessageString(presentationData: (PresentationTheme, 
                 }
                 attributedString = addAttributesToStringWithRanges(resultTitleString._tuple, body: bodyAttributes, argumentAttributes: peerMentionsAttributes(primaryTextColor: primaryTextColor, peerIds: attributePeerIds))
             case let .setChatWallpaper(_, forBoth):
+                var isGroup = false
+                let messagePeer = message.peers[message.id.peerId]
+                if let channel = messagePeer as? TelegramChannel, case .group = channel.info {
+                    isGroup = true
+                }
                 if message.author?.id == accountPeerId {
                     if forBoth {
                         let peerName = message.peers[message.id.peerId].flatMap(EnginePeer.init)?.compactDisplayTitle ?? ""
                         let resultTitleString = strings.Notification_YouChangedWallpaperBoth(peerName)
                         attributedString = addAttributesToStringWithRanges(resultTitleString._tuple, body: bodyAttributes, argumentAttributes: [0: boldAttributes])
                     } else {
-                        attributedString = NSAttributedString(string: strings.Notification_YouChangedWallpaper, font: titleFont, textColor: primaryTextColor)
+                        attributedString = NSAttributedString(string: isGroup ? strings.Notification_YouChangedGroupWallpaper : strings.Notification_YouChangedWallpaper, font: titleFont, textColor: primaryTextColor)
                     }
                 } else {
                     if message.id.peerId.isGroupOrChannel {
-                        attributedString = NSAttributedString(string: strings.Notification_ChannelChangedWallpaper, font: titleFont, textColor: primaryTextColor)
+                        attributedString = NSAttributedString(string: isGroup ? strings.Notification_GroupChangedWallpaper : strings.Notification_ChannelChangedWallpaper, font: titleFont, textColor: primaryTextColor)
                     } else {
                         let resultTitleString = strings.Notification_ChangedWallpaper(compactAuthorName)
                         attributedString = addAttributesToStringWithRanges(resultTitleString._tuple, body: bodyAttributes, argumentAttributes: [0: boldAttributes])
@@ -937,7 +942,12 @@ public func universalServiceMessageString(presentationData: (PresentationTheme, 
                     attributedString = NSAttributedString(string: strings.Notification_GiftLink, font: titleFont, textColor: primaryTextColor)
                 }
             case .giveawayLaunched:
-                let resultTitleString = strings.Notification_GiveawayStarted(compactAuthorName)
+                var isGroup = false
+                let messagePeer = message.peers[message.id.peerId]
+                if let channel = messagePeer as? TelegramChannel, case .group = channel.info {
+                    isGroup = true
+                }
+                let resultTitleString = isGroup ? strings.Notification_GiveawayStartedGroup(compactAuthorName) : strings.Notification_GiveawayStarted(compactAuthorName)
                 attributedString = addAttributesToStringWithRanges(resultTitleString._tuple, body: bodyAttributes, argumentAttributes: [0: boldAttributes])
             case .joinedChannel:
                 attributedString = NSAttributedString(string: strings.Notification_ChannelJoinedByYou, font: titleBoldFont, textColor: primaryTextColor)
@@ -953,6 +963,25 @@ public func universalServiceMessageString(presentationData: (PresentationTheme, 
                     attributedString = combinedString
                 } else {
                     attributedString = parseMarkdownIntoAttributedString(strings.Notification_GiveawayResults(winners), attributes: MarkdownAttributes(body: bodyAttributes, bold: boldAttributes, link: bodyAttributes, linkAttribute: { _ in return nil }))
+                }
+            case let .boostsApplied(boosts):
+                if message.author?.id == accountPeerId {
+                    if boosts == 1 {
+                        attributedString = NSAttributedString(string: strings.Notification_Boost_SingleYou, font: titleFont, textColor: primaryTextColor)
+                    } else {
+                        let boostsString = strings.Notification_Boost_Times(boosts)
+                        attributedString = NSAttributedString(string: strings.Notification_Boost_MultipleYou(boostsString).string, font: titleFont, textColor: primaryTextColor)
+                    }
+                } else {
+                    let peerName = message.author?.compactDisplayTitle ?? ""
+                    if boosts == 1 {
+                        let resultTitleString = strings.Notification_Boost_Single(peerName)
+                        attributedString = addAttributesToStringWithRanges(resultTitleString._tuple, body: bodyAttributes, argumentAttributes: [0: boldAttributes])
+                    } else {
+                        let boostsString = strings.Notification_Boost_Times(boosts)
+                        let resultTitleString = strings.Notification_Boost_Multiple(peerName, boostsString)
+                        attributedString = addAttributesToStringWithRanges(resultTitleString._tuple, body: bodyAttributes, argumentAttributes: [0: boldAttributes])
+                    }
                 }
             case .unknown:
                 attributedString = nil

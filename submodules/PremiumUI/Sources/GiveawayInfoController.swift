@@ -35,15 +35,6 @@ public func presentGiveawayInfoController(
         let giveaway = message.media.first(where: { $0 is TelegramMediaGiveaway }) as? TelegramMediaGiveaway
         let giveawayResults = message.media.first(where: { $0 is TelegramMediaGiveawayResults }) as? TelegramMediaGiveawayResults
         
-        var channelPeerId: EnginePeer.Id?
-        if let giveaway {
-            if let peerId = giveaway.channelPeerIds.first {
-                channelPeerId = peerId
-            }
-        } else if let _ = giveawayResults {
-            channelPeerId = message.author?.id
-        }
-        
         var quantity: Int32 = 0
         if let giveaway {
             quantity = giveaway.quantity
@@ -79,18 +70,41 @@ public func presentGiveawayInfoController(
             onlyNewSubscribers = true
         }
         
+        let author = message.forwardInfo?.author ?? message.author?._asPeer()
+        var isGroup = false
+        if let channel = author as? TelegramChannel, case .group = channel.info {
+            isGroup = true
+        }
+        
+        var groupsAndChannels = false
         var channelsCount: Int32 = 1
         if let giveaway {
             channelsCount = Int32(giveaway.channelPeerIds.count)
+            
+            var channelCount = 0
+            var groupCount = 0
+            for peerId in giveaway.channelPeerIds {
+                if let peer = message.peers[peerId] as? TelegramChannel {
+                    switch peer.info {
+                    case .broadcast:
+                        channelCount += 1
+                    case .group:
+                        groupCount += 1
+                    }
+                }
+            }
+            if groupCount > 0 && channelCount > 0 {
+                groupsAndChannels = true
+            }
         } else if let giveawayResults {
             channelsCount = 1 + giveawayResults.additionalChannelsCount
         }
         
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        
+                
         var peerName = ""
-        if let peerId = channelPeerId, let peer = message.peers[peerId] {
-            peerName = EnginePeer(peer).compactDisplayTitle
+        if let channel = author as? TelegramChannel {
+            peerName = EnginePeer(channel).compactDisplayTitle
         }
         
         let timeZone = TimeZone.current
@@ -122,23 +136,56 @@ public func presentGiveawayInfoController(
             
             let intro: String
             if case .almostOver = status {
-                intro = presentationData.strings.Chat_Giveaway_Info_EndedIntro(peerName, presentationData.strings.Chat_Giveaway_Info_Subscriptions(quantity), presentationData.strings.Chat_Giveaway_Info_Months(months)).string
+                if isGroup {
+                    intro = presentationData.strings.Chat_Giveaway_Info_Group_EndedIntro(peerName, presentationData.strings.Chat_Giveaway_Info_Subscriptions(quantity), presentationData.strings.Chat_Giveaway_Info_Months(months)).string
+                } else {
+                    intro = presentationData.strings.Chat_Giveaway_Info_EndedIntro(peerName, presentationData.strings.Chat_Giveaway_Info_Subscriptions(quantity), presentationData.strings.Chat_Giveaway_Info_Months(months)).string
+                }
             } else {
-                intro = presentationData.strings.Chat_Giveaway_Info_OngoingIntro(peerName, presentationData.strings.Chat_Giveaway_Info_Subscriptions(quantity), presentationData.strings.Chat_Giveaway_Info_Months(months)).string
+                if isGroup {
+                    intro = presentationData.strings.Chat_Giveaway_Info_Group_OngoingIntro(peerName, presentationData.strings.Chat_Giveaway_Info_Subscriptions(quantity), presentationData.strings.Chat_Giveaway_Info_Months(months)).string
+                } else {
+                    intro = presentationData.strings.Chat_Giveaway_Info_OngoingIntro(peerName, presentationData.strings.Chat_Giveaway_Info_Subscriptions(quantity), presentationData.strings.Chat_Giveaway_Info_Months(months)).string
+                }
+            }
+            
+            var otherText: String = ""
+            if channelsCount > 1 {
+                if isGroup {
+                    if groupsAndChannels {
+                        if channelsCount == 2 {
+                            otherText = presentationData.strings.Chat_Giveaway_Info_OtherChannels(Int32(channelsCount - 1))
+                        } else {
+                            otherText = presentationData.strings.Chat_Giveaway_Info_OtherGroupsAndChannels(Int32(channelsCount - 1))
+                        }
+                    } else {
+                        otherText = presentationData.strings.Chat_Giveaway_Info_OtherGroups(Int32(channelsCount - 1))
+                    }
+                } else {
+                    if groupsAndChannels {
+                        if channelsCount == 2 {
+                            otherText = presentationData.strings.Chat_Giveaway_Info_OtherGroups(Int32(channelsCount - 1))
+                        } else {
+                            otherText = presentationData.strings.Chat_Giveaway_Info_OtherChannelsAndGroups(Int32(channelsCount - 1))
+                        }
+                    } else {
+                        otherText = presentationData.strings.Chat_Giveaway_Info_OtherChannels(Int32(channelsCount - 1))
+                    }
+                }
             }
             
             let ending: String
             if onlyNewSubscribers {
                 let randomUsers = presentationData.strings.Chat_Giveaway_Info_RandomUsers(quantity)
                 if channelsCount > 1 {
-                    ending = presentationData.strings.Chat_Giveaway_Info_OngoingNewMany(untilDate, randomUsers, peerName, presentationData.strings.Chat_Giveaway_Info_OtherChannels(Int32(channelsCount - 1)), startDate).string
+                    ending = presentationData.strings.Chat_Giveaway_Info_OngoingNewMany(untilDate, randomUsers, peerName, otherText, startDate).string
                 } else {
                     ending = presentationData.strings.Chat_Giveaway_Info_OngoingNew(untilDate, randomUsers, peerName, startDate).string
                 }
             } else {
-                let randomSubscribers = presentationData.strings.Chat_Giveaway_Info_RandomSubscribers(quantity)
+                let randomSubscribers = isGroup ? presentationData.strings.Chat_Giveaway_Info_Group_RandomMembers(quantity) : presentationData.strings.Chat_Giveaway_Info_RandomSubscribers(quantity)
                 if channelsCount > 1 {
-                    ending = presentationData.strings.Chat_Giveaway_Info_OngoingMany(untilDate, randomSubscribers, peerName, presentationData.strings.Chat_Giveaway_Info_OtherChannels(Int32(channelsCount - 1))).string
+                    ending = presentationData.strings.Chat_Giveaway_Info_OngoingMany(untilDate, randomSubscribers, peerName, otherText).string
                 } else {
                     ending = presentationData.strings.Chat_Giveaway_Info_Ongoing(untilDate, randomSubscribers, peerName).string
                 }
@@ -148,7 +195,7 @@ public func presentGiveawayInfoController(
             switch status {
             case .notQualified:
                 if channelsCount > 1 {
-                    participation = presentationData.strings.Chat_Giveaway_Info_NotQualifiedMany(peerName, presentationData.strings.Chat_Giveaway_Info_OtherChannels(Int32(channelsCount - 1)), untilDate).string
+                    participation = presentationData.strings.Chat_Giveaway_Info_NotQualifiedMany(peerName, otherText, untilDate).string
                 } else {
                     participation = presentationData.strings.Chat_Giveaway_Info_NotQualified(peerName, untilDate).string
                 }
@@ -159,16 +206,20 @@ public func presentGiveawayInfoController(
                     participation = presentationData.strings.Chat_Giveaway_Info_NotAllowedJoinedEarly(joinDate).string
                 case let .channelAdmin(adminId):
                     var channelName = peerName
+                    var isGroup = false
                     if let maybePeer = peerMap[adminId], let peer = maybePeer {
                         channelName = peer.compactDisplayTitle
+                        if case let .channel(channel) = peer, case .group = channel.info {
+                            isGroup = true
+                        }
                     }
-                    participation = presentationData.strings.Chat_Giveaway_Info_NotAllowedAdmin(channelName).string
+                    participation = isGroup ? presentationData.strings.Chat_Giveaway_Info_NotAllowedAdminGroup(channelName).string : presentationData.strings.Chat_Giveaway_Info_NotAllowedAdmin(channelName).string
                 case .disallowedCountry:
                     participation = presentationData.strings.Chat_Giveaway_Info_NotAllowedCountry
                 }
             case .participating:
                 if channelsCount > 1 {
-                    participation = presentationData.strings.Chat_Giveaway_Info_ParticipatingMany(peerName, presentationData.strings.Chat_Giveaway_Info_OtherChannels(Int32(channelsCount - 1))).string
+                    participation = presentationData.strings.Chat_Giveaway_Info_ParticipatingMany(peerName, otherText).string
                 } else {
                     participation = presentationData.strings.Chat_Giveaway_Info_Participating(peerName).string
                 }
@@ -190,7 +241,12 @@ public func presentGiveawayInfoController(
             let finishDate = stringForDate(timestamp: finish, timeZone: timeZone, strings: presentationData.strings)
             title = presentationData.strings.Chat_Giveaway_Info_EndedTitle
             
-            let intro = presentationData.strings.Chat_Giveaway_Info_EndedIntro(peerName, presentationData.strings.Chat_Giveaway_Info_Subscriptions(quantity), presentationData.strings.Chat_Giveaway_Info_Months(months)).string
+            let intro: String
+            if isGroup {
+                intro = presentationData.strings.Chat_Giveaway_Info_Group_EndedIntro(peerName, presentationData.strings.Chat_Giveaway_Info_Subscriptions(quantity), presentationData.strings.Chat_Giveaway_Info_Months(months)).string
+            } else {
+                intro = presentationData.strings.Chat_Giveaway_Info_EndedIntro(peerName, presentationData.strings.Chat_Giveaway_Info_Subscriptions(quantity), presentationData.strings.Chat_Giveaway_Info_Months(months)).string
+            }
             
             var ending: String
             if onlyNewSubscribers {
@@ -201,7 +257,7 @@ public func presentGiveawayInfoController(
                     ending = presentationData.strings.Chat_Giveaway_Info_EndedNew(finishDate, randomUsers, peerName, startDate).string
                 }
             } else {
-                let randomSubscribers = presentationData.strings.Chat_Giveaway_Info_RandomSubscribers(quantity)
+                let randomSubscribers = isGroup ? presentationData.strings.Chat_Giveaway_Info_Group_RandomMembers(quantity) : presentationData.strings.Chat_Giveaway_Info_RandomSubscribers(quantity)
                 if channelsCount > 1 {
                     ending = presentationData.strings.Chat_Giveaway_Info_EndedMany(finishDate, randomSubscribers, peerName).string
                 } else {

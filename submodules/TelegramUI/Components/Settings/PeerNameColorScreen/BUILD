@@ -47,6 +47,10 @@ swift_library(
         "//submodules/TelegramUI/Components/Settings/WallpaperGalleryScreen",
         "//submodules/TelegramUI/Components/Settings/WallpaperGridScreen",
         "//submodules/TelegramUI/Components/Settings/BoostLevelIconComponent",
+        "//submodules/Markdown",
+        "//submodules/TelegramUI/Components/GroupStickerPackSetupController",
+        "//submodules/TelegramUI/Components/Chat/ChatMessageItemImpl",
+        "//submodules/TelegramUI/Components/Settings/PeerNameColorItem",
     ],
     visibility = [
         "//visibility:public",

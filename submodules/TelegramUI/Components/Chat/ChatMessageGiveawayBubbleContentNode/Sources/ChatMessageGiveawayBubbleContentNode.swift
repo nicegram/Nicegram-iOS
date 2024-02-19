@@ -130,11 +130,11 @@ public class ChatMessageGiveawayBubbleContentNode: ChatMessageBubbleContentNode,
         
         self.buttonNode.addTarget(self, action: #selector(self.buttonPressed), forControlEvents: .touchUpInside)
         
-        self.dateAndStatusNode.reactionSelected = { [weak self] _, value in
+        self.dateAndStatusNode.reactionSelected = { [weak self] _, value, sourceView in
             guard let strongSelf = self, let item = strongSelf.item else {
                 return
             }
-            item.controllerInteraction.updateMessageReaction(item.message, .reaction(value), false)
+            item.controllerInteraction.updateMessageReaction(item.topMessage, .reaction(value), false, sourceView)
         }
         
         self.dateAndStatusNode.openReactionPreview = { [weak self] gesture, sourceView, value in
@@ -362,18 +362,24 @@ public class ChatMessageGiveawayBubbleContentNode: ChatMessageBubbleContentNode,
             let participantsText: String
             let countriesText: String
             
+            let author = item.message.forwardInfo?.author ?? item.message.author
+            var isGroup = false
+            if let channel = author as? TelegramChannel, case .group = channel.info {
+                isGroup = true
+            }
+            
             if let giveaway {
                 if giveaway.flags.contains(.onlyNewSubscribers) {
                     if giveaway.channelPeerIds.count > 1 {
-                        participantsText = item.presentationData.strings.Chat_Giveaway_Message_ParticipantsNewMany
+                        participantsText = isGroup ? item.presentationData.strings.Chat_Giveaway_Message_Group_ParticipantsNewMany : item.presentationData.strings.Chat_Giveaway_Message_ParticipantsNewMany
                     } else {
-                        participantsText = item.presentationData.strings.Chat_Giveaway_Message_ParticipantsNew
+                        participantsText = isGroup ? item.presentationData.strings.Chat_Giveaway_Message_Group_ParticipantsNew : item.presentationData.strings.Chat_Giveaway_Message_ParticipantsNew
                     }
                 } else {
                     if giveaway.channelPeerIds.count > 1 {
-                        participantsText = item.presentationData.strings.Chat_Giveaway_Message_ParticipantsMany
+                        participantsText = isGroup ? item.presentationData.strings.Chat_Giveaway_Message_Group_ParticipantsMany : item.presentationData.strings.Chat_Giveaway_Message_ParticipantsMany
                     } else {
-                        participantsText = item.presentationData.strings.Chat_Giveaway_Message_Participants
+                        participantsText = isGroup ? item.presentationData.strings.Chat_Giveaway_Message_Group_Participants : item.presentationData.strings.Chat_Giveaway_Message_Participants
                     }
                 }
                 if !giveaway.countries.isEmpty {
@@ -427,7 +433,8 @@ public class ChatMessageGiveawayBubbleContentNode: ChatMessageBubbleContentNode,
             } else if let giveawayResults {
                 dateTextString = NSAttributedString(string: giveawayResults.winnersCount > 1 ? item.presentationData.strings.Chat_Giveaway_Message_WinnersInfo_Many : item.presentationData.strings.Chat_Giveaway_Message_WinnersInfo_One, font: textFont, textColor: textColor)
             }
-            let contentProperties = ChatMessageBubbleContentProperties(hidesSimpleAuthorHeader: true, headerSpacing: 0.0, hidesBackground: .never, forceFullCorners: false, forceAlignment: .none, hidesHeaders: true)
+            let hideHeaders = item.message.forwardInfo == nil
+            let contentProperties = ChatMessageBubbleContentProperties(hidesSimpleAuthorHeader: hideHeaders, headerSpacing: 0.0, hidesBackground: .never, forceFullCorners: false, forceAlignment: .none, hidesHeaders: hideHeaders)
             
             return (contentProperties, nil, CGFloat.greatestFiniteMagnitude, { constrainedSize, position in
                 let sideInsets = layoutConstants.text.bubbleInsets.right * 2.0
@@ -520,11 +527,11 @@ public class ChatMessageGiveawayBubbleContentNode: ChatMessageBubbleContentNode,
                         reactions: dateReactionsAndPeers.reactions,
                         reactionPeers: dateReactionsAndPeers.peers,
                         displayAllReactionPeers: item.message.id.peerId.namespace == Namespaces.Peer.CloudUser,
-                        areReactionsTags: item.message.areReactionsTags(accountPeerId: item.context.account.peerId),
+                        areReactionsTags: item.topMessage.areReactionsTags(accountPeerId: item.context.account.peerId),
                         replyCount: dateReplies,
                         isPinned: item.message.tags.contains(.pinned) && !item.associatedData.isInPinnedListMode && isReplyThread,
                         hasAutoremove: item.message.isSelfExpiring,
-                        canViewReactionList: canViewMessageReactionList(message: item.message, isInline: item.associatedData.isInline),
+                        canViewReactionList: canViewMessageReactionList(message: item.topMessage, isInline: item.associatedData.isInline),
                         animationCache: item.controllerInteraction.presentationContext.animationCache,
                         animationRenderer: item.controllerInteraction.presentationContext.animationRenderer
                     ))
