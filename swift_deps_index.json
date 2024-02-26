@@ -7,7 +7,7 @@
       "name": "Factory",
       "c99name": "Factory",
       "src_type": "swift",
-      "label": "@swiftpkg_factory//:Sources_Factory",
+      "label": "@swiftpkg_factory//:Factory.rspm",
       "package_identity": "factory",
       "product_memberships": [
         "Factory"
@@ -17,8 +17,8 @@
       "name": "FloatingPanel",
       "c99name": "FloatingPanel",
       "src_type": "swift",
-      "label": "@swiftpkg_floatingpanel//:Sources_FloatingPanel",
-      "modulemap_label": "@swiftpkg_floatingpanel//:Sources_FloatingPanel_modulemap",
+      "label": "@swiftpkg_floatingpanel//:FloatingPanel.rspm",
+      "modulemap_label": "@swiftpkg_floatingpanel//:FloatingPanel.rspm_modulemap",
       "package_identity": "floatingpanel",
       "product_memberships": [
         "FloatingPanel"
@@ -28,8 +28,8 @@
       "name": "GRDB",
       "c99name": "GRDB",
       "src_type": "swift",
-      "label": "@swiftpkg_grdb.swift//:GRDB_GRDB",
-      "modulemap_label": "@swiftpkg_grdb.swift//:GRDB_GRDB_modulemap",
+      "label": "@swiftpkg_grdb.swift//:GRDB.rspm",
+      "modulemap_label": "@swiftpkg_grdb.swift//:GRDB.rspm_modulemap",
       "package_identity": "grdb.swift",
       "product_memberships": [
         "GRDB",
@@ -40,7 +40,7 @@
       "name": "LNExtensionExecutor",
       "c99name": "LNExtensionExecutor",
       "src_type": "objc",
-      "label": "@swiftpkg_lnextensionexecutor//:Sources_LNExtensionExecutor",
+      "label": "@swiftpkg_lnextensionexecutor//:LNExtensionExecutor.rspm",
       "package_identity": "lnextensionexecutor",
       "product_memberships": [
         "LNExtensionExecutor",
@@ -48,391 +48,588 @@
       ]
     },
     {
-      "name": "Tapjoy",
-      "c99name": "Tapjoy",
-      "src_type": "binary",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Frameworks_Tapjoy.xcframework_Tapjoy",
-      "package_identity": "nicegram-assistant-ios",
-      "product_memberships": [
-        "nicegram-assistant"
-      ]
-    },
-    {
       "name": "CoreSwiftUI",
       "c99name": "CoreSwiftUI",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_CoreSwiftUI",
+      "label": "@swiftpkg_nicegram_assistant_ios//:CoreSwiftUI.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatChatBanner",
+        "FeatImagesHubUI",
+        "FeatPhoneEntryBanner",
+        "FeatPremiumUI",
+        "NGAssistantUI",
+        "NGEntryPoint"
       ]
     },
     {
       "name": "FeatAmbassadors",
       "c99name": "FeatAmbassadors",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatAmbassadors",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatAmbassadors.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "NGAssistantUI"
       ]
     },
     {
       "name": "FeatBilling",
       "c99name": "FeatBilling",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatBilling",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatBilling.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatCardUI",
+        "FeatImagesHubUI",
+        "FeatPremiumUI",
+        "FeatSpeechToText",
+        "NGAiChatUI",
+        "NGAssistantUI",
+        "NGAuth",
+        "NGEntryPoint"
       ]
     },
     {
       "name": "FeatCard",
       "c99name": "FeatCard",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatCard",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatCard.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatCardUI",
+        "FeatImagesHubUI",
+        "FeatPremiumUI",
+        "NGAiChatUI",
+        "NGAssistantUI",
+        "NGAuth",
+        "NGEntryPoint"
       ]
     },
     {
       "name": "FeatCardUI",
       "c99name": "FeatCardUI",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatCardUI",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatCardUI.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatCardUI",
+        "NGAssistantUI"
       ]
     },
     {
       "name": "FeatChatBanner",
       "c99name": "FeatChatBanner",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatChatBanner",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatChatBanner.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatChatBanner"
       ]
     },
     {
       "name": "FeatChatListBanner",
       "c99name": "FeatChatListBanner",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatChatListBanner",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatChatListBanner.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "NGAssistantUI"
       ]
     },
     {
       "name": "FeatEsimSplash",
       "c99name": "FeatEsimSplash",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatEsimSplash",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatEsimSplash.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatChatBanner"
       ]
     },
     {
       "name": "FeatHiddenChats",
       "c99name": "FeatHiddenChats",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatHiddenChats",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatHiddenChats.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatHiddenChats",
+        "NGAssistantUI"
       ]
     },
     {
       "name": "FeatImagesHub",
       "c99name": "FeatImagesHub",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatImagesHub",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatImagesHub.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatImagesHubUI",
+        "NGAssistantUI"
       ]
     },
     {
       "name": "FeatImagesHubUI",
       "c99name": "FeatImagesHubUI",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatImagesHubUI",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatImagesHubUI.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatImagesHubUI",
+        "NGAssistantUI"
       ]
     },
     {
       "name": "FeatPersistentStorage",
       "c99name": "FeatPersistentStorage",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPersistentStorage",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatPersistentStorage.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatCardUI",
+        "FeatImagesHubUI",
+        "FeatPremiumUI",
+        "NGAiChat",
+        "NGAiChatUI",
+        "NGAssistantUI",
+        "NGAuth",
+        "NGEntryPoint"
       ]
     },
     {
       "name": "FeatPhoneEntryBanner",
       "c99name": "FeatPhoneEntryBanner",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPhoneEntryBanner",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatPhoneEntryBanner.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatPhoneEntryBanner"
       ]
     },
     {
       "name": "FeatPinnedChats",
       "c99name": "FeatPinnedChats",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPinnedChats",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatPinnedChats.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatPinnedChats"
       ]
     },
     {
       "name": "FeatPremium",
       "c99name": "FeatPremium",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPremium",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatPremium.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatCardUI",
+        "FeatChatBanner",
+        "FeatImagesHubUI",
+        "FeatPinnedChats",
+        "FeatPremium",
+        "FeatPremiumUI",
+        "FeatSpeechToText",
+        "FeatTasks",
+        "NGAiChat",
+        "NGAiChatUI",
+        "NGAnalytics",
+        "NGAssistantUI",
+        "NGAuth",
+        "NGEntryPoint",
+        "NGRepoUser",
+        "NGSpecialOffer"
       ]
     },
     {
       "name": "FeatPremiumUI",
       "c99name": "FeatPremiumUI",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPremiumUI",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatPremiumUI.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatImagesHubUI",
+        "FeatPremiumUI",
+        "NGAssistantUI",
+        "NGEntryPoint"
       ]
     },
     {
       "name": "FeatRewards",
       "c99name": "FeatRewards",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatRewards",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatRewards.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatCardUI",
+        "FeatImagesHubUI",
+        "FeatPremiumUI",
+        "FeatTasks",
+        "NGAiChatUI",
+        "NGAssistantUI",
+        "NGAuth",
+        "NGEntryPoint"
       ]
     },
     {
       "name": "FeatRewardsUI",
       "c99name": "FeatRewardsUI",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatRewardsUI",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatRewardsUI.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "NGAssistantUI"
       ]
     },
     {
       "name": "FeatSpeechToText",
       "c99name": "FeatSpeechToText",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatSpeechToText",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatSpeechToText.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatSpeechToText"
       ]
     },
     {
       "name": "FeatTasks",
       "c99name": "FeatTasks",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatTasks",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatTasks.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatTasks",
+        "NGEntryPoint"
       ]
     },
     {
       "name": "FeatTasksUI",
       "c99name": "FeatTasksUI",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_FeatTasksUI",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatTasksUI.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "NGEntryPoint"
       ]
     },
     {
       "name": "NGAiChat",
       "c99name": "NGAiChat",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChat",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGAiChat.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatCardUI",
+        "FeatImagesHubUI",
+        "FeatPremiumUI",
+        "NGAiChat",
+        "NGAiChatUI",
+        "NGAssistantUI",
+        "NGAuth",
+        "NGEntryPoint"
       ]
     },
     {
       "name": "NGAiChatUI",
       "c99name": "NGAiChatUI",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChatUI",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGAiChatUI.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatImagesHubUI",
+        "NGAiChatUI",
+        "NGAssistantUI"
       ]
     },
     {
       "name": "NGAnalytics",
       "c99name": "NGAnalytics",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGAnalytics",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGAnalytics.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatCardUI",
+        "FeatChatBanner",
+        "FeatImagesHubUI",
+        "FeatPinnedChats",
+        "FeatPremiumUI",
+        "FeatTasks",
+        "NGAiChat",
+        "NGAiChatUI",
+        "NGAnalytics",
+        "NGAssistantUI",
+        "NGAuth",
+        "NGEntryPoint",
+        "NGSpecialOffer"
       ]
     },
     {
       "name": "NGApi",
       "c99name": "NGApi",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGApi",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGApi.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatCardUI",
+        "FeatChatBanner",
+        "FeatImagesHubUI",
+        "FeatPinnedChats",
+        "FeatPremiumUI",
+        "FeatSpeechToText",
+        "FeatTasks",
+        "NGAiChat",
+        "NGAiChatUI",
+        "NGAnalytics",
+        "NGApi",
+        "NGAssistantUI",
+        "NGAuth",
+        "NGEntryPoint",
+        "NGRepoUser",
+        "NGSpecialOffer"
       ]
     },
     {
       "name": "NGAssistant",
       "c99name": "NGAssistant",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGAssistant",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGAssistant.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatImagesHubUI",
+        "NGAiChatUI",
+        "NGAssistantUI",
+        "NGEntryPoint"
       ]
     },
     {
       "name": "NGAssistantUI",
       "c99name": "NGAssistantUI",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGAssistantUI",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGAssistantUI.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "NGAssistantUI"
       ]
     },
     {
       "name": "NGAuth",
       "c99name": "NGAuth",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGAuth",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGAuth.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatCardUI",
+        "FeatImagesHubUI",
+        "FeatPremiumUI",
+        "NGAiChatUI",
+        "NGAssistantUI",
+        "NGAuth",
+        "NGEntryPoint"
       ]
     },
     {
       "name": "NGCore",
       "c99name": "NGCore",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGCore",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGCore.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatCardUI",
+        "FeatChatBanner",
+        "FeatHiddenChats",
+        "FeatImagesHubUI",
+        "FeatPhoneEntryBanner",
+        "FeatPinnedChats",
+        "FeatPremium",
+        "FeatPremiumUI",
+        "FeatSpeechToText",
+        "FeatTasks",
+        "NGAiChat",
+        "NGAiChatUI",
+        "NGAnalytics",
+        "NGApi",
+        "NGAssistantUI",
+        "NGAuth",
+        "NGCore",
+        "NGCoreUI",
+        "NGEntryPoint",
+        "_NGRemoteConfig",
+        "NGRepoTg",
+        "NGRepoUser",
+        "NGSpecialOffer"
       ]
     },
     {
       "name": "NGCoreUI",
       "c99name": "NGCoreUI",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGCoreUI",
-      "modulemap_label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGCoreUI_modulemap",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGCoreUI.rspm",
+      "modulemap_label": "@swiftpkg_nicegram_assistant_ios//:NGCoreUI.rspm_modulemap",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatCardUI",
+        "FeatChatBanner",
+        "FeatImagesHubUI",
+        "FeatPhoneEntryBanner",
+        "FeatPinnedChats",
+        "FeatPremiumUI",
+        "NGAiChatUI",
+        "NGAssistantUI",
+        "NGCoreUI",
+        "NGEntryPoint",
+        "NGSpecialOffer"
       ]
     },
     {
       "name": "NGEntryPoint",
       "c99name": "NGEntryPoint",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGEntryPoint",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGEntryPoint.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "NGEntryPoint"
       ]
     },
     {
       "name": "NGGrumUI",
       "c99name": "NGGrumUI",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGGrumUI",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGGrumUI.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "NGAssistantUI"
       ]
     },
     {
       "name": "NGLocalization",
       "c99name": "NGLocalization",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGLocalization",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGLocalization.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatCardUI",
+        "FeatChatBanner",
+        "FeatHiddenChats",
+        "FeatImagesHubUI",
+        "FeatPhoneEntryBanner",
+        "FeatPinnedChats",
+        "FeatPremium",
+        "FeatPremiumUI",
+        "FeatSpeechToText",
+        "FeatTasks",
+        "NGAiChat",
+        "NGAiChatUI",
+        "NGAnalytics",
+        "NGApi",
+        "NGAssistantUI",
+        "NGAuth",
+        "NGCore",
+        "NGCoreUI",
+        "NGEntryPoint",
+        "NGLocalization",
+        "_NGRemoteConfig",
+        "NGRepoTg",
+        "NGRepoUser",
+        "NGSpecialOffer"
       ]
     },
     {
       "name": "NGRepoTg",
       "c99name": "NGRepoTg",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGRepoTg",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGRepoTg.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatCardUI",
+        "FeatImagesHubUI",
+        "FeatPremiumUI",
+        "NGAiChatUI",
+        "NGAssistantUI",
+        "NGAuth",
+        "NGEntryPoint",
+        "NGRepoTg"
       ]
     },
     {
       "name": "NGRepoUser",
       "c99name": "NGRepoUser",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGRepoUser",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGRepoUser.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatCardUI",
+        "FeatChatBanner",
+        "FeatImagesHubUI",
+        "FeatPinnedChats",
+        "FeatPremiumUI",
+        "FeatSpeechToText",
+        "FeatTasks",
+        "NGAiChat",
+        "NGAiChatUI",
+        "NGAnalytics",
+        "NGAssistantUI",
+        "NGAuth",
+        "NGEntryPoint",
+        "NGRepoUser",
+        "NGSpecialOffer"
       ]
     },
     {
       "name": "NGSpecialOffer",
       "c99name": "NGSpecialOffer",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources_NGSpecialOffer",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGSpecialOffer.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "NGAssistantUI",
+        "NGSpecialOffer"
+      ]
+    },
+    {
+      "name": "Tapjoy",
+      "c99name": "Tapjoy",
+      "src_type": "binary",
+      "label": "@swiftpkg_nicegram_assistant_ios//:Tapjoy.rspm",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "FeatCardUI",
+        "FeatImagesHubUI",
+        "FeatPremiumUI",
+        "FeatTasks",
+        "NGAiChatUI",
+        "NGAssistantUI",
+        "NGAuth",
+        "NGEntryPoint"
       ]
     },
     {
       "name": "_NGRemoteConfig",
       "c99name": "_NGRemoteConfig",
       "src_type": "swift",
-      "label": "@swiftpkg_nicegram_assistant_ios//:Sources__NGRemoteConfig",
+      "label": "@swiftpkg_nicegram_assistant_ios//:_NGRemoteConfig.rspm",
       "package_identity": "nicegram-assistant-ios",
       "product_memberships": [
-        "nicegram-assistant"
+        "FeatCardUI",
+        "FeatChatBanner",
+        "FeatImagesHubUI",
+        "FeatPinnedChats",
+        "FeatPremiumUI",
+        "FeatSpeechToText",
+        "FeatTasks",
+        "NGAiChat",
+        "NGAiChatUI",
+        "NGAssistantUI",
+        "NGAuth",
+        "NGEntryPoint",
+        "_NGRemoteConfig",
+        "NGSpecialOffer"
       ]
     },
     {
       "name": "RswiftGenerateInternalResources",
       "c99name": "RswiftGenerateInternalResources",
       "src_type": "unknown",
-      "label": "@swiftpkg_r.swift//:Plugins_RswiftGenerateInternalResources",
+      "label": "@swiftpkg_r.swift//:RswiftGenerateInternalResources.rspm",
       "package_identity": "r.swift",
       "product_memberships": [
         "RswiftGenerateInternalResources"
@@ -442,7 +639,7 @@
       "name": "RswiftGeneratePublicResources",
       "c99name": "RswiftGeneratePublicResources",
       "src_type": "unknown",
-      "label": "@swiftpkg_r.swift//:Plugins_RswiftGeneratePublicResources",
+      "label": "@swiftpkg_r.swift//:RswiftGeneratePublicResources.rspm",
       "package_identity": "r.swift",
       "product_memberships": [
         "RswiftGeneratePublicResources"
@@ -452,27 +649,17 @@
       "name": "RswiftGenerateResourcesCommand",
       "c99name": "RswiftGenerateResourcesCommand",
       "src_type": "unknown",
-      "label": "@swiftpkg_r.swift//:Plugins_RswiftGenerateResourcesCommand",
+      "label": "@swiftpkg_r.swift//:RswiftGenerateResourcesCommand.rspm",
       "package_identity": "r.swift",
       "product_memberships": [
         "RswiftGenerateResourcesCommand"
       ]
     },
     {
-      "name": "RswiftModifyXcodePackages",
-      "c99name": "RswiftModifyXcodePackages",
-      "src_type": "unknown",
-      "label": "@swiftpkg_r.swift//:Plugins_RswiftModifyXcodePackages",
-      "package_identity": "r.swift",
-      "product_memberships": [
-        "RswiftModifyXcodePackages"
-      ]
-    },
-    {
       "name": "RswiftGenerators",
       "c99name": "RswiftGenerators",
       "src_type": "swift",
-      "label": "@swiftpkg_r.swift//:Sources_RswiftGenerators",
+      "label": "@swiftpkg_r.swift//:RswiftGenerators.rspm",
       "package_identity": "r.swift",
       "product_memberships": [
         "rswift",
@@ -483,11 +670,21 @@
       ]
     },
     {
+      "name": "RswiftModifyXcodePackages",
+      "c99name": "RswiftModifyXcodePackages",
+      "src_type": "unknown",
+      "label": "@swiftpkg_r.swift//:RswiftModifyXcodePackages.rspm",
+      "package_identity": "r.swift",
+      "product_memberships": [
+        "RswiftModifyXcodePackages"
+      ]
+    },
+    {
       "name": "RswiftParsers",
       "c99name": "RswiftParsers",
       "src_type": "swift",
-      "label": "@swiftpkg_r.swift//:Sources_RswiftParsers",
-      "modulemap_label": "@swiftpkg_r.swift//:Sources_RswiftParsers_modulemap",
+      "label": "@swiftpkg_r.swift//:RswiftParsers.rspm",
+      "modulemap_label": "@swiftpkg_r.swift//:RswiftParsers.rspm_modulemap",
       "package_identity": "r.swift",
       "product_memberships": [
         "rswift",
@@ -501,7 +698,7 @@
       "name": "RswiftResources",
       "c99name": "RswiftResources",
       "src_type": "swift",
-      "label": "@swiftpkg_r.swift//:Sources_RswiftResources",
+      "label": "@swiftpkg_r.swift//:RswiftResources.rspm",
       "package_identity": "r.swift",
       "product_memberships": [
         "rswift",
@@ -516,7 +713,7 @@
       "name": "rswift",
       "c99name": "rswift",
       "src_type": "swift",
-      "label": "@swiftpkg_r.swift//:Sources_rswift",
+      "label": "@swiftpkg_r.swift//:rswift.rspm",
       "package_identity": "r.swift",
       "product_memberships": [
         "rswift",
@@ -527,20 +724,10 @@
       ]
     },
     {
-      "name": "SDWebImageMapKit",
-      "c99name": "SDWebImageMapKit",
-      "src_type": "objc",
-      "label": "@swiftpkg_sdwebimage//:SDWebImageMapKit_SDWebImageMapKit",
-      "package_identity": "sdwebimage",
-      "product_memberships": [
-        "SDWebImageMapKit"
-      ]
-    },
-    {
       "name": "SDWebImage",
       "c99name": "SDWebImage",
       "src_type": "objc",
-      "label": "@swiftpkg_sdwebimage//:SDWebImage_SDWebImage",
+      "label": "@swiftpkg_sdwebimage//:SDWebImage.rspm",
       "package_identity": "sdwebimage",
       "product_memberships": [
         "SDWebImage",
@@ -548,10 +735,20 @@
       ]
     },
     {
+      "name": "SDWebImageMapKit",
+      "c99name": "SDWebImageMapKit",
+      "src_type": "objc",
+      "label": "@swiftpkg_sdwebimage//:SDWebImageMapKit.rspm",
+      "package_identity": "sdwebimage",
+      "product_memberships": [
+        "SDWebImageMapKit"
+      ]
+    },
+    {
       "name": "SnapKit",
       "c99name": "SnapKit",
       "src_type": "swift",
-      "label": "@swiftpkg_snapkit//:Sources_SnapKit",
+      "label": "@swiftpkg_snapkit//:SnapKit.rspm",
       "package_identity": "snapkit",
       "product_memberships": [
         "SnapKit",
@@ -562,27 +759,17 @@
       "name": "SubscriptionAnalytics",
       "c99name": "SubscriptionAnalytics",
       "src_type": "swift",
-      "label": "@swiftpkg_subscriptionanalytics_ios//:SubscriptionAnalytics_Classes_SubscriptionAnalytics",
+      "label": "@swiftpkg_subscriptionanalytics_ios//:SubscriptionAnalytics.rspm",
       "package_identity": "subscriptionanalytics-ios",
       "product_memberships": [
         "SubscriptionAnalytics"
       ]
     },
     {
-      "name": "GenerateManual",
-      "c99name": "GenerateManual",
-      "src_type": "unknown",
-      "label": "@swiftpkg_swift_argument_parser//:Plugins_GenerateManual",
-      "package_identity": "swift-argument-parser",
-      "product_memberships": [
-        "GenerateManual"
-      ]
-    },
-    {
       "name": "ArgumentParser",
       "c99name": "ArgumentParser",
       "src_type": "swift",
-      "label": "@swiftpkg_swift_argument_parser//:Sources_ArgumentParser",
+      "label": "@swiftpkg_swift_argument_parser//:ArgumentParser.rspm",
       "package_identity": "swift-argument-parser",
       "product_memberships": [
         "ArgumentParser",
@@ -593,7 +780,7 @@
       "name": "ArgumentParserToolInfo",
       "c99name": "ArgumentParserToolInfo",
       "src_type": "swift",
-      "label": "@swiftpkg_swift_argument_parser//:Sources_ArgumentParserToolInfo",
+      "label": "@swiftpkg_swift_argument_parser//:ArgumentParserToolInfo.rspm",
       "package_identity": "swift-argument-parser",
       "product_memberships": [
         "ArgumentParser",
@@ -601,10 +788,20 @@
       ]
     },
     {
+      "name": "GenerateManual",
+      "c99name": "GenerateManual",
+      "src_type": "unknown",
+      "label": "@swiftpkg_swift_argument_parser//:GenerateManual.rspm",
+      "package_identity": "swift-argument-parser",
+      "product_memberships": [
+        "GenerateManual"
+      ]
+    },
+    {
       "name": "generate-manual",
       "c99name": "generate_manual",
       "src_type": "swift",
-      "label": "@swiftpkg_swift_argument_parser//:Tools_generate-manual",
+      "label": "@swiftpkg_swift_argument_parser//:generate-manual.rspm",
       "package_identity": "swift-argument-parser",
       "product_memberships": [
         "GenerateManual"
@@ -614,7 +811,7 @@
       "name": "SwiftyStoreKit",
       "c99name": "SwiftyStoreKit",
       "src_type": "swift",
-      "label": "@swiftpkg_swiftystorekit//:Sources_SwiftyStoreKit",
+      "label": "@swiftpkg_swiftystorekit//:SwiftyStoreKit.rspm",
       "package_identity": "swiftystorekit",
       "product_memberships": [
         "SwiftyStoreKit"
@@ -624,7 +821,7 @@
       "name": "XcodeEdit",
       "c99name": "XcodeEdit",
       "src_type": "swift",
-      "label": "@swiftpkg_xcodeedit//:Sources_XcodeEdit",
+      "label": "@swiftpkg_xcodeedit//:XcodeEdit.rspm",
       "package_identity": "xcodeedit",
       "product_memberships": [
         "XcodeEdit"
@@ -636,187 +833,271 @@
       "identity": "factory",
       "name": "Factory",
       "type": "library",
-      "target_labels": [
-        "@swiftpkg_factory//:Sources_Factory"
-      ]
+      "label": "@swiftpkg_factory//:Factory"
     },
     {
       "identity": "floatingpanel",
       "name": "FloatingPanel",
       "type": "library",
-      "target_labels": [
-        "@swiftpkg_floatingpanel//:Sources_FloatingPanel"
-      ]
+      "label": "@swiftpkg_floatingpanel//:FloatingPanel"
     },
     {
       "identity": "grdb.swift",
       "name": "GRDB",
       "type": "library",
-      "target_labels": [
-        "@swiftpkg_grdb.swift//:GRDB_GRDB"
-      ]
+      "label": "@swiftpkg_grdb.swift//:GRDB"
     },
     {
       "identity": "grdb.swift",
       "name": "GRDB-dynamic",
       "type": "library",
-      "target_labels": [
-        "@swiftpkg_grdb.swift//:GRDB_GRDB"
-      ]
+      "label": "@swiftpkg_grdb.swift//:GRDB-dynamic"
     },
     {
       "identity": "lnextensionexecutor",
       "name": "LNExtensionExecutor",
       "type": "library",
-      "target_labels": [
-        "@swiftpkg_lnextensionexecutor//:Sources_LNExtensionExecutor"
-      ]
+      "label": "@swiftpkg_lnextensionexecutor//:LNExtensionExecutor"
     },
     {
       "identity": "lnextensionexecutor",
       "name": "LNExtensionExecutor-Static",
       "type": "library",
-      "target_labels": [
-        "@swiftpkg_lnextensionexecutor//:Sources_LNExtensionExecutor"
-      ]
+      "label": "@swiftpkg_lnextensionexecutor//:LNExtensionExecutor-Static"
     },
     {
       "identity": "nicegram-assistant-ios",
-      "name": "nicegram-assistant",
+      "name": "FeatCardUI",
       "type": "library",
-      "target_labels": [
-        "@swiftpkg_nicegram_assistant_ios//:Sources_FeatCardUI",
-        "@swiftpkg_nicegram_assistant_ios//:Sources_FeatChatBanner",
-        "@swiftpkg_nicegram_assistant_ios//:Sources_FeatHiddenChats",
-        "@swiftpkg_nicegram_assistant_ios//:Sources_FeatImagesHubUI",
-        "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPhoneEntryBanner",
-        "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPinnedChats",
-        "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPremiumUI",
-        "@swiftpkg_nicegram_assistant_ios//:Sources_FeatSpeechToText",
-        "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChatUI",
-        "@swiftpkg_nicegram_assistant_ios//:Sources_NGAssistantUI",
-        "@swiftpkg_nicegram_assistant_ios//:Sources_NGEntryPoint"
-      ]
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatCardUI"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
+      "name": "FeatChatBanner",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatChatBanner"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
+      "name": "FeatHiddenChats",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatHiddenChats"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
+      "name": "FeatImagesHubUI",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatImagesHubUI"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
+      "name": "FeatPhoneEntryBanner",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatPhoneEntryBanner"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
+      "name": "FeatPinnedChats",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatPinnedChats"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
+      "name": "FeatPremium",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatPremium"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
+      "name": "FeatPremiumUI",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatPremiumUI"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
+      "name": "FeatSpeechToText",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatSpeechToText"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
+      "name": "FeatTasks",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatTasks"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
+      "name": "NGAiChat",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGAiChat"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
+      "name": "NGAiChatUI",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGAiChatUI"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
+      "name": "NGAnalytics",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGAnalytics"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
+      "name": "NGApi",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGApi"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
+      "name": "NGAssistantUI",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGAssistantUI"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
+      "name": "NGAuth",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGAuth"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
+      "name": "NGCore",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGCore"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
+      "name": "NGCoreUI",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGCoreUI"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
+      "name": "NGEntryPoint",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGEntryPoint"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
+      "name": "NGLocalization",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGLocalization"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
+      "name": "NGRepoTg",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGRepoTg"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
+      "name": "NGRepoUser",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGRepoUser"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
+      "name": "NGSpecialOffer",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:NGSpecialOffer"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
+      "name": "_NGRemoteConfig",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:_NGRemoteConfig"
     },
     {
       "identity": "r.swift",
       "name": "RswiftGenerateInternalResources",
       "type": "plugin",
-      "target_labels": [
-        "@swiftpkg_r.swift//:Plugins_RswiftGenerateInternalResources"
-      ]
+      "label": "@swiftpkg_r.swift//:RswiftGenerateInternalResources"
     },
     {
       "identity": "r.swift",
       "name": "RswiftGeneratePublicResources",
       "type": "plugin",
-      "target_labels": [
-        "@swiftpkg_r.swift//:Plugins_RswiftGeneratePublicResources"
-      ]
+      "label": "@swiftpkg_r.swift//:RswiftGeneratePublicResources"
     },
     {
       "identity": "r.swift",
       "name": "RswiftGenerateResourcesCommand",
       "type": "plugin",
-      "target_labels": [
-        "@swiftpkg_r.swift//:Plugins_RswiftGenerateResourcesCommand"
-      ]
+      "label": "@swiftpkg_r.swift//:RswiftGenerateResourcesCommand"
     },
     {
       "identity": "r.swift",
       "name": "RswiftLibrary",
       "type": "library",
-      "target_labels": [
-        "@swiftpkg_r.swift//:Sources_RswiftResources"
-      ]
+      "label": "@swiftpkg_r.swift//:RswiftLibrary"
     },
     {
       "identity": "r.swift",
       "name": "RswiftModifyXcodePackages",
       "type": "plugin",
-      "target_labels": [
-        "@swiftpkg_r.swift//:Plugins_RswiftModifyXcodePackages"
-      ]
+      "label": "@swiftpkg_r.swift//:RswiftModifyXcodePackages"
     },
     {
       "identity": "r.swift",
       "name": "rswift",
       "type": "executable",
-      "target_labels": [
-        "@swiftpkg_r.swift//:Sources_rswift"
-      ]
+      "label": "@swiftpkg_r.swift//:rswift"
     },
     {
       "identity": "sdwebimage",
       "name": "SDWebImage",
       "type": "library",
-      "target_labels": [
-        "@swiftpkg_sdwebimage//:SDWebImage_SDWebImage"
-      ]
+      "label": "@swiftpkg_sdwebimage//:SDWebImage"
     },
     {
       "identity": "sdwebimage",
       "name": "SDWebImageMapKit",
       "type": "library",
-      "target_labels": [
-        "@swiftpkg_sdwebimage//:SDWebImageMapKit_SDWebImageMapKit"
-      ]
+      "label": "@swiftpkg_sdwebimage//:SDWebImageMapKit"
     },
     {
       "identity": "snapkit",
       "name": "SnapKit",
       "type": "library",
-      "target_labels": [
-        "@swiftpkg_snapkit//:Sources_SnapKit"
-      ]
+      "label": "@swiftpkg_snapkit//:SnapKit"
     },
     {
       "identity": "snapkit",
       "name": "SnapKit-Dynamic",
       "type": "library",
-      "target_labels": [
-        "@swiftpkg_snapkit//:Sources_SnapKit"
-      ]
+      "label": "@swiftpkg_snapkit//:SnapKit-Dynamic"
     },
     {
       "identity": "subscriptionanalytics-ios",
       "name": "SubscriptionAnalytics",
       "type": "library",
-      "target_labels": [
-        "@swiftpkg_subscriptionanalytics_ios//:SubscriptionAnalytics_Classes_SubscriptionAnalytics"
-      ]
+      "label": "@swiftpkg_subscriptionanalytics_ios//:SubscriptionAnalytics"
     },
     {
       "identity": "swift-argument-parser",
       "name": "ArgumentParser",
       "type": "library",
-      "target_labels": [
-        "@swiftpkg_swift_argument_parser//:Sources_ArgumentParser"
-      ]
+      "label": "@swiftpkg_swift_argument_parser//:ArgumentParser"
     },
     {
       "identity": "swift-argument-parser",
       "name": "GenerateManual",
       "type": "plugin",
-      "target_labels": [
-        "@swiftpkg_swift_argument_parser//:Plugins_GenerateManual"
-      ]
+      "label": "@swiftpkg_swift_argument_parser//:GenerateManual"
     },
     {
       "identity": "swiftystorekit",
       "name": "SwiftyStoreKit",
       "type": "library",
-      "target_labels": [
-        "@swiftpkg_swiftystorekit//:Sources_SwiftyStoreKit"
-      ]
+      "label": "@swiftpkg_swiftystorekit//:SwiftyStoreKit"
     },
     {
       "identity": "xcodeedit",
       "name": "XcodeEdit",
       "type": "library",
-      "target_labels": [
-        "@swiftpkg_xcodeedit//:Sources_XcodeEdit"
-      ]
+      "label": "@swiftpkg_xcodeedit//:XcodeEdit"
     }
   ],
   "packages": [
@@ -860,7 +1141,7 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "6e15969c39005fa75df34bb7bf0d77e433490d39",
+        "commit": "123eb001dcc9477f9087e40ff1b0e7f012182d45",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
         "branch": "develop"
       }
@@ -878,18 +1159,18 @@
       "name": "swiftpkg_sdwebimage",
       "identity": "sdwebimage",
       "remote": {
-        "commit": "59730af512c06fb569c119d737df4c1c499e001d",
+        "commit": "b11493f76481dff17ac8f45274a6b698ba0d3af5",
         "remote": "https://github.com/SDWebImage/SDWebImage.git",
-        "version": "5.18.10"
+        "version": "5.18.11"
       }
     },
     {
       "name": "swiftpkg_snapkit",
       "identity": "snapkit",
       "remote": {
-        "commit": "e74fe2a978d1216c3602b129447c7301573cc2d8",
+        "commit": "2842e6e84e82eb9a8dac0100ca90d9444b0307f4",
         "remote": "https://github.com/SnapKit/SnapKit.git",
-        "version": "5.7.0"
+        "version": "5.7.1"
       }
     },
     {

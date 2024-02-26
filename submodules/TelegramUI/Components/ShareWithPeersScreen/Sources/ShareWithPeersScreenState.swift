@@ -48,8 +48,8 @@ public extension ShareWithPeersScreen {
             case chats(blocked: Bool)
             case contacts(base: EngineStoryPrivacy.Base)
             case contactsSearch(query: String, onlyContacts: Bool)
-            case members(peerId: EnginePeer.Id, searchQuery: String?)
-            case channels(exclude: Set<EnginePeer.Id>, searchQuery: String?)
+            case members(isGroup: Bool, peerId: EnginePeer.Id, searchQuery: String?)
+            case channels(isGroup: Bool, exclude: Set<EnginePeer.Id>, searchQuery: String?)
         }
         
         var stateValue: State?
@@ -515,7 +515,7 @@ public extension ShareWithPeersScreen {
                     
                     self.readySubject.set(true)
                 })
-            case let .members(peerId, searchQuery):
+            case let .members(_, peerId, searchQuery):
                 let membersState = Promise<ChannelMemberListState>()
                 let contactsState = Promise<ChannelMemberListState>()
 
@@ -590,7 +590,7 @@ public extension ShareWithPeersScreen {
                 self.stateDisposable = combinedDisposable
                 
                 self.listControl = disposableAndLoadMoreControl.1
-            case let .channels(excludePeerIds, searchQuery):
+            case let .channels(_, excludePeerIds, searchQuery):
                 self.stateDisposable = (combineLatest(
                     context.engine.messages.chatList(group: .root, count: 500) |> take(1),
                     searchQuery.flatMap { context.engine.contacts.searchLocalPeers(query: $0) } ?? .single([]),
@@ -640,7 +640,7 @@ public extension ShareWithPeersScreen {
                     }
                     
                     for item in searchResults {
-                        if let peer = item.peer, case let .channel(channel) = peer, case .broadcast = channel.info {
+                        if let peer = item.peer, case .channel = peer {
                             selectedPeers.append(peer)
                             existingIds.insert(peer.id)
                         }
@@ -672,7 +672,7 @@ public extension ShareWithPeersScreen {
                             if self.initialPeerIds.contains(peer.id) {
                                 return false
                             }
-                            if case let .channel(channel) = peer, case .broadcast = channel.info {
+                            if case .channel = peer {
                                 return true
                             }
                             return false

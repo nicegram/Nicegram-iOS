@@ -100,6 +100,7 @@ private enum ChatListSearchEntry: Comparable, Identifiable {
                         hasUnseenMentions: false,
                         hasUnseenReactions: false,
                         draftState: nil,
+                        mediaDraftContentType: nil,
                         inputActivities: nil,
                         promoInfo: nil,
                         ignoreUnreadBadge: true,
@@ -110,7 +111,8 @@ private enum ChatListSearchEntry: Comparable, Identifiable {
                         autoremoveTimeout: nil,
                         storyState: nil,
                         requiresPremiumForMessaging: false,
-                        displayAsTopicList: false
+                        displayAsTopicList: false,
+                        tags: []
                     )),
                     editing: false,
                     hasActiveRevealControls: false,

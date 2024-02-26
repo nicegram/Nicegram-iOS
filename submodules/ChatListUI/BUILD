@@ -8,13 +8,13 @@ NGDEPS = [
     "//Nicegram/NGTranslate:NGTranslate",
     # Nicegram downloading feature
     "//submodules/SaveToCameraRoll:SaveToCameraRoll",
-    "@swiftpkg_nicegram_assistant_ios//:Sources_FeatHiddenChats",
-    "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPinnedChats",
-    "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChat",
-    "@swiftpkg_nicegram_assistant_ios//:Sources_NGAssistantUI",
-    "@swiftpkg_nicegram_assistant_ios//:Sources_NGRepoTg",
-    "@swiftpkg_nicegram_assistant_ios//:Sources_NGRepoUser",
-    "@swiftpkg_nicegram_assistant_ios//:Sources_NGSpecialOffer",
+    "@swiftpkg_nicegram_assistant_ios//:FeatHiddenChats",
+    "@swiftpkg_nicegram_assistant_ios//:FeatPinnedChats",
+    "@swiftpkg_nicegram_assistant_ios//:NGAiChat",
+    "@swiftpkg_nicegram_assistant_ios//:NGAssistantUI",
+    "@swiftpkg_nicegram_assistant_ios//:NGRepoTg",
+    "@swiftpkg_nicegram_assistant_ios//:NGRepoUser",
+    "@swiftpkg_nicegram_assistant_ios//:NGSpecialOffer",
 ]
 
 swift_library(
@@ -117,6 +117,7 @@ swift_library(
         "//submodules/TelegramUI/Components/PeerInfo/PeerInfoStoryGridScreen",
         "//submodules/TelegramUI/Components/Settings/ArchiveInfoScreen",
         "//submodules/TelegramUI/Components/Settings/NewSessionInfoScreen",
+        "//submodules/TelegramUI/Components/Settings/PeerNameColorItem",
     ],
     visibility = [
         "//visibility:public",

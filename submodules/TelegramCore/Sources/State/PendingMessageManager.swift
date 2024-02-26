@@ -58,6 +58,7 @@ public enum PendingMessageFailureReason {
     case tooMuchScheduled
     case voiceMessagesForbidden
     case sendingTooFast
+    case nonPremiumMessagesForbidden
 }
 
 func sendMessageReasonForError(_ error: String) -> PendingMessageFailureReason? {
@@ -75,6 +76,8 @@ func sendMessageReasonForError(_ error: String) -> PendingMessageFailureReason? 
         return .tooMuchScheduled
     } else if error.hasPrefix("VOICE_MESSAGES_FORBIDDEN") {
         return .voiceMessagesForbidden
+    } else if error.hasPrefix("PRIVACY_PREMIUM_REQUIRED") {
+        return .nonPremiumMessagesForbidden
     } else {
         return nil
     }
@@ -984,9 +987,9 @@ public final class PendingMessageManager {
                         
                         replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: topMsgId, replyToPeerId: replyToPeerId, quoteText: quoteText, quoteEntities: quoteEntities, quoteOffset: quoteOffset)
                     } else if let replyToStoryId = replyToStoryId {
-                        if let inputUser = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputUser) {
+                        if let inputPeer = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputPeer) {
                             flags |= 1 << 0
-                            replyTo = .inputReplyToStory(userId: inputUser, storyId: replyToStoryId.id)
+                            replyTo = .inputReplyToStory(peer: inputPeer, storyId: replyToStoryId.id)
                         }
                     }
                     
@@ -1276,9 +1279,9 @@ public final class PendingMessageManager {
                             
                             replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: message.threadId.flatMap(Int32.init(clamping:)), replyToPeerId: replyToPeerId, quoteText: quoteText, quoteEntities: quoteEntities, quoteOffset: quoteOffset)
                         } else if let replyToStoryId = replyToStoryId {
-                            if let inputUser = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputUser) {
+                            if let inputPeer = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputPeer) {
                                 flags |= 1 << 0
-                                replyTo = .inputReplyToStory(userId: inputUser, storyId: replyToStoryId.id)
+                                replyTo = .inputReplyToStory(peer: inputPeer, storyId: replyToStoryId.id)
                             }
                         }
                     
@@ -1341,9 +1344,9 @@ public final class PendingMessageManager {
                             
                             replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: message.threadId.flatMap(Int32.init(clamping:)), replyToPeerId: replyToPeerId, quoteText: quoteText, quoteEntities: quoteEntities, quoteOffset: quoteOffset)
                         } else if let replyToStoryId = replyToStoryId {
-                            if let inputUser = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputUser) {
+                            if let inputPeer = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputPeer) {
                                 flags |= 1 << 0
-                                replyTo = .inputReplyToStory(userId: inputUser, storyId: replyToStoryId.id)
+                                replyTo = .inputReplyToStory(peer: inputPeer, storyId: replyToStoryId.id)
                             }
                         }
                     
@@ -1420,9 +1423,9 @@ public final class PendingMessageManager {
                             
                             replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: message.threadId.flatMap(Int32.init(clamping:)), replyToPeerId: replyToPeerId, quoteText: quoteText, quoteEntities: quoteEntities, quoteOffset: quoteOffset)
                         } else if let replyToStoryId = replyToStoryId {
-                            if let inputUser = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputUser) {
+                            if let inputPeer = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputPeer) {
                                 flags |= 1 << 0
-                                replyTo = .inputReplyToStory(userId: inputUser, storyId: replyToStoryId.id)
+                                replyTo = .inputReplyToStory(peer: inputPeer, storyId: replyToStoryId.id)
                             }
                         }
                     
@@ -1435,9 +1438,9 @@ public final class PendingMessageManager {
                             let replyFlags: Int32 = 0
                             replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: nil, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil)
                         } else if let replyToStoryId = replyToStoryId {
-                            if let inputUser = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputUser) {
+                            if let inputPeer = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputPeer) {
                                 flags |= 1 << 0
-                                replyTo = .inputReplyToStory(userId: inputUser, storyId: replyToStoryId.id)
+                                replyTo = .inputReplyToStory(peer: inputPeer, storyId: replyToStoryId.id)
                             } else {
                                 let replyFlags: Int32 = 0
                                 replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: 0, topMsgId: nil, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil)

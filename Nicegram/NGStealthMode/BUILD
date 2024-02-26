@@ -9,7 +9,7 @@ swift_library(
     deps = [
         "//submodules/AccountContext:AccountContext",
         "//submodules/TelegramUIPreferences:TelegramUIPreferences",
-        "@swiftpkg_nicegram_assistant_ios//:Sources_NGCore",
+        "@swiftpkg_nicegram_assistant_ios//:NGCore",
     ],
     visibility = [
         "//visibility:public",

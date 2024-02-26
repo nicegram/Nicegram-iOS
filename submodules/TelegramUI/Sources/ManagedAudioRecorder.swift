@@ -8,6 +8,7 @@ import UniversalMediaPlayer
 import AccountContext
 import OpusBinding
 import ChatPresentationInterfaceState
+import AudioWaveform
 
 private let kOutputBus: UInt32 = 0
 private let kInputBus: UInt32 = 1
@@ -401,7 +402,7 @@ final class ManagedAudioRecorderContext {
     
         if self.audioSessionDisposable == nil {
             let queue = self.queue
-            self.audioSessionDisposable = self.mediaManager.audioSession.push(audioSessionType: .record(speaker: self.beginWithTone, withOthers: false), activate: { [weak self] state in
+            self.audioSessionDisposable = self.mediaManager.audioSession.push(audioSessionType: .record(speaker: self.beginWithTone, video: false, withOthers: false), activate: { [weak self] state in
                 queue.async {
                     if let strongSelf = self, !strongSelf.paused {
                         strongSelf.hasAudioSession = true

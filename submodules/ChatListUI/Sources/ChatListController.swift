@@ -1417,6 +1417,18 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                             let contextController = ContextController(presentationData: strongSelf.presentationData, source: .controller(ContextControllerContentSourceImpl(controller: chatListController, sourceNode: node, navigationController: strongSelf.navigationController as? NavigationController)), items: chatContextMenuItems(context: strongSelf.context, peerId: peer.peerId, promoInfo: promoInfo, source: .chatList(filter: strongSelf.chatListDisplayNode.mainContainerNode.currentItemNode.chatListFilter), chatListController: strongSelf, joined: joined) |> map { ContextController.Items(content: .list($0)) }, gesture: gesture)
                             strongSelf.presentInGlobalOverlay(contextController)
                         }
+                    } else if let peer = peer.peer, peer.id == strongSelf.context.account.peerId, peerData.displayAsTopicList {
+                        if let peerInfoController = strongSelf.context.sharedContext.makePeerInfoController(context: strongSelf.context, updatedPresentationData: nil, peer: peer._asPeer(), mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
+                            let source: ContextContentSource
+                            if let location = location {
+                                source = .location(ChatListContextLocationContentSource(controller: strongSelf, location: location))
+                            } else {
+                                source = .controller(ContextControllerContentSourceImpl(controller: peerInfoController, sourceNode: node, navigationController: strongSelf.navigationController as? NavigationController))
+                            }
+                            
+                            let contextController = ContextController(presentationData: strongSelf.presentationData, source: source, items: chatContextMenuItems(context: strongSelf.context, peerId: peer.id, promoInfo: promoInfo, source: .chatList(filter: strongSelf.chatListDisplayNode.mainContainerNode.currentItemNode.chatListFilter), chatListController: strongSelf, joined: joined) |> map { ContextController.Items(content: .list($0)) }, gesture: gesture)
+                            strongSelf.presentInGlobalOverlay(contextController)
+                        }
                     } else {
                         let source: ContextContentSource
                         if let location = location {
@@ -2482,7 +2494,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 }
                 if hasEmptyMark {
                     if let componentView = self.chatListHeaderView() {
-                        if let rightButtonView = componentView.rightButtonView {
+                        if let rightButtonView = componentView.rightButtonViews["compose"] {
                             let absoluteFrame = rightButtonView.convert(rightButtonView.bounds, to: self.view)
                             let text: String = self.presentationData.strings.ChatList_EmptyListTooltip
                             
@@ -2975,9 +2987,19 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                                 self.push(PeerInfoStoryGridScreen(context: self.context, peerId: self.context.account.peerId, scope: .archive))
                             })
                         })))
-                    } else if case .channel = peer {
-                        items.append(.action(ContextMenuActionItem(text: self.presentationData.strings.ChatList_ContextOpenChannel, icon: { theme in
-                            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Channels"), color: theme.contextMenu.primaryColor)
+                    } else if case let .channel(channel) = peer {
+                        let openTitle: String
+                        let openIcon: String
+                        switch channel.info {
+                        case .broadcast:
+                            openTitle = self.presentationData.strings.ChatList_ContextOpenChannel
+                            openIcon = "Chat/Context Menu/Channels"
+                        case .group:
+                            openTitle = self.presentationData.strings.ChatList_ContextOpenGroup
+                            openIcon = "Chat/Context Menu/Groups"
+                        }
+                        items.append(.action(ContextMenuActionItem(text: openTitle, icon: { theme in
+                            return generateTintedImage(image: UIImage(bundleImageName: openIcon), color: theme.contextMenu.primaryColor)
                         }, action: { [weak self] c, _ in
                             c.dismiss(completion: {
                                 guard let self else {

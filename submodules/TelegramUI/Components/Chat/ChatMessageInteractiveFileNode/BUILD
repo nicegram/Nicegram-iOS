@@ -5,7 +5,7 @@ NGDEPS = [
     "//Nicegram/NGTelegramIntegration:NGTelegramIntegration",
     "//Nicegram/NGTranslate:NGTranslate",
     "//Nicegram/NGUI:NGUI",
-    "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPremiumUI",
+    "@swiftpkg_nicegram_assistant_ios//:FeatPremiumUI",
 ]
 
 swift_library(
@@ -50,6 +50,7 @@ swift_library(
         "//submodules/TelegramUI/Components/Chat/ChatHistoryEntry",
         "//submodules/TelegramUI/Components/Chat/ChatMessageItemCommon",
         "//submodules/AnimatedCountLabelNode",
+        "//submodules/AudioWaveform",
     ],
     visibility = [
         "//visibility:public",

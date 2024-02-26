@@ -481,7 +481,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
             
             var emojiFile: TelegramMediaFile?
             var emojiString: String?
-            if messageIsElligibleForLargeCustomEmoji(item.message) || messageIsElligibleForLargeEmoji(item.message) {
+            if messageIsEligibleForLargeCustomEmoji(item.message) || messageIsEligibleForLargeEmoji(item.message) {
                 emojiString = item.message.text
             }
             
@@ -1683,11 +1683,11 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                         }
                         if reactionButtonsNode !== strongSelf.reactionButtonsNode {
                             strongSelf.reactionButtonsNode = reactionButtonsNode
-                            reactionButtonsNode.reactionSelected = { value in
+                            reactionButtonsNode.reactionSelected = { value, sourceView in
                                 guard let strongSelf = weakSelf.value, let item = strongSelf.item else {
                                     return
                                 }
-                                item.controllerInteraction.updateMessageReaction(item.message, .reaction(value), false)
+                                item.controllerInteraction.updateMessageReaction(item.message, .reaction(value), false, sourceView)
                             }
                             reactionButtonsNode.openReactionPreview = { gesture, sourceView, value in
                                 guard let strongSelf = weakSelf.value, let item = strongSelf.item else {
@@ -1781,7 +1781,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                     case let .openContextMenu(openContextMenu):
                         // MARK: Nicegram HideReactions, account added
                         if canAddMessageReactions(message: item.message, account: item.context.account) {
-                            item.controllerInteraction.updateMessageReaction(item.message, .default, false)
+                            item.controllerInteraction.updateMessageReaction(item.message, .default, false, nil)
                         } else {
                             item.controllerInteraction.openMessageContextMenu(openContextMenu.tapMessage, openContextMenu.selectAll, self, openContextMenu.subFrame, nil, nil)
                         }
@@ -1791,7 +1791,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                 } else if case .doubleTap = gesture {
                     // MARK: Nicegram HideReactions, account added
                     if canAddMessageReactions(message: item.message, account: item.context.account) {
-                        item.controllerInteraction.updateMessageReaction(item.message, .default, false)
+                        item.controllerInteraction.updateMessageReaction(item.message, .default, false, nil)
                     }
                 }
             }

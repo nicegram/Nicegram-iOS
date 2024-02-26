@@ -394,7 +394,7 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
         }
         return true
     }
-    
+        
     public var useExternalSearchContainer: Bool = false
         
     private var gifContext: GifContext? {
@@ -647,7 +647,7 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
                             }
                         }
                         
-                        if file.isPremiumEmoji && !hasPremium {
+                        if file.isPremiumEmoji && !hasPremium && groupId != AnyHashable("peerSpecific") {
                             var animateInAsReplacement = false
                             if let currentUndoOverlayController = strongSelf.currentUndoOverlayController {
                                 currentUndoOverlayController.dismissWithCommitActionAndReplacementAnimation()
@@ -893,9 +893,16 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
                             let remotePacksSignal: Signal<(sets: FoundStickerSets, isFinalResult: Bool), NoError>
                             if hasPremium {
                                 remoteSignal = context.engine.stickers.searchEmoji(emojiString: Array(allEmoticons.keys))
-                                remotePacksSignal = .single((FoundStickerSets(), false)) |> then(context.engine.stickers.searchEmojiSetsRemotely(query: query) |> map {
-                                    ($0, true)
-                                })
+                                remotePacksSignal = context.engine.stickers.searchEmojiSets(query: query)
+                                |> mapToSignal { localResult in
+                                    return .single((localResult, false))
+                                    |> then(
+                                        context.engine.stickers.searchEmojiSetsRemotely(query: query)
+                                        |> map { remoteResult in
+                                            return (localResult.merge(with: remoteResult), true)
+                                        }
+                                    )
+                                }
                             } else {
                                 remoteSignal = .single(([], true))
                                 remotePacksSignal = .single((FoundStickerSets(), true))
@@ -960,6 +967,7 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
                                     groupId: "search",
                                     title: nil,
                                     subtitle: nil,
+                                    badge: nil,
                                     actionButtonTitle: nil,
                                     isFeatured: false,
                                     isPremiumLocked: false,
@@ -1008,6 +1016,7 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
                                             groupId: AnyHashable(info.id),
                                             title: info.title,
                                             subtitle: nil,
+                                            badge: nil,
                                             actionButtonTitle: nil,
                                             isFeatured: false,
                                             isPremiumLocked: false,
@@ -1066,6 +1075,7 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
                             groupId: "search",
                             title: nil,
                             subtitle: nil,
+                            badge: nil,
                             actionButtonTitle: nil,
                             isFeatured: false,
                             isPremiumLocked: false,
@@ -1096,6 +1106,7 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
                                     groupId: "search",
                                     title: nil,
                                     subtitle: nil,
+                                    badge: nil,
                                     actionButtonTitle: nil,
                                     isFeatured: false,
                                     isPremiumLocked: false,
@@ -1366,6 +1377,7 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
                             groupId: "search",
                             title: nil,
                             subtitle: nil,
+                            badge: nil,
                             actionButtonTitle: nil,
                             isFeatured: false,
                             isPremiumLocked: false,
@@ -1396,6 +1408,7 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
                                     groupId: "search",
                                     title: nil,
                                     subtitle: nil,
+                                    badge: nil,
                                     actionButtonTitle: nil,
                                     isFeatured: false,
                                     isPremiumLocked: false,
@@ -1693,11 +1706,15 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
         var stickersEnabled = true
         var emojiEnabled = true
         if let peer = interfaceState.renderedPeer?.peer as? TelegramChannel {
-            if peer.hasBannedPermission(.banSendStickers) != nil {
-                stickersEnabled = false
-            }
-            if peer.hasBannedPermission(.banSendText) != nil {
-                emojiEnabled = false
+            if let boostsToUnrestrict = interfaceState.boostsToUnrestrict, boostsToUnrestrict > 0 {
+                
+            } else {
+                if peer.hasBannedPermission(.banSendStickers) != nil {
+                    stickersEnabled = false
+                }
+                if peer.hasBannedPermission(.banSendText) != nil {
+                    emojiEnabled = false
+                }
             }
         } else if let peer = interfaceState.renderedPeer?.peer as? TelegramGroup {
             if peer.hasBannedPermission(.banSendStickers) {
@@ -2126,6 +2143,12 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
             let contextController = ContextController(presentationData: presentationData, source: .controller(ContextControllerContentSourceImpl(controller: gallery, sourceView: sourceView, sourceRect: sourceRect)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
             strongSelf.interaction?.presentGlobalOverlayController(contextController, nil)
         })
+    }
+    
+    public func scrollToGroupEmoji() {
+        if let pagerView = self.entityKeyboardView.componentView as? EntityKeyboardComponent.View {
+            pagerView.scrollToItemGroup(contentId: "emoji", groupId: "peerSpecific", subgroupId: nil)
+        }
     }
 }
 

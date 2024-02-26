@@ -144,7 +144,7 @@ private final class CameraContext {
                 transform = CGAffineTransformTranslate(transform, 0.0, -size.height)
                 ciImage = ciImage.transformed(by: transform)
             }
-            ciImage = ciImage.clampedToExtent().applyingGaussianBlur(sigma: Camera.isDualCameraSupported ? 100.0 : 40.0).cropped(to: CGRect(origin: .zero, size: size))
+            ciImage = ciImage.clampedToExtent().applyingGaussianBlur(sigma: Camera.isDualCameraSupported(forRoundVideo: true) ? 100.0 : 40.0).cropped(to: CGRect(origin: .zero, size: size))
             if let cgImage = self.ciContext.createCGImage(ciImage, from: ciImage.extent) {
                 let uiImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: .right)
                 if front {
@@ -555,7 +555,7 @@ private final class CameraContext {
         }
     }
     
-    public func startRecording() -> Signal<CameraRecordingData, NoError> {
+    public func startRecording() -> Signal<CameraRecordingData, CameraRecordingError> {
         guard let mainDeviceContext = self.mainDeviceContext else {
             return .complete()
         }
@@ -726,9 +726,9 @@ public final class Camera {
         self.metrics = Camera.Metrics(model: DeviceModel.current)
         
         let session = CameraSession()
-        session.session.usesApplicationAudioSession = true
         session.session.automaticallyConfiguresApplicationAudioSession = false
         session.session.automaticallyConfiguresCaptureDeviceForWideColor = false
+        session.session.usesApplicationAudioSession = true
         if let previewView {
             previewView.setSession(session.session, autoConnect: !session.hasMultiCam)
         }
@@ -829,7 +829,7 @@ public final class Camera {
         }
     }
     
-    public func startRecording() -> Signal<CameraRecordingData, NoError> {
+    public func startRecording() -> Signal<CameraRecordingData, CameraRecordingError> {
         return Signal { subscriber in
             let disposable = MetaDisposable()
             self.queue.async {
@@ -1056,8 +1056,11 @@ public final class Camera {
         }
     }
     
-    public static var isDualCameraSupported: Bool {
+    public static func isDualCameraSupported(forRoundVideo: Bool = false) -> Bool {
         if #available(iOS 13.0, *), AVCaptureMultiCamSession.isMultiCamSupported && !DeviceModel.current.isIpad {
+            if forRoundVideo && DeviceModel.current == .iPhoneXR {
+                return false
+            }
             return true
         } else {
             return false
@@ -1078,4 +1081,8 @@ public final class CameraHolder {
 public struct CameraRecordingData {
     public let duration: Double
     public let filePath: String
+}
+
+public enum CameraRecordingError {
+    case audioInitializationError
 }

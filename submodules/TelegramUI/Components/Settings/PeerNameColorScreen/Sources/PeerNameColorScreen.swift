@@ -13,6 +13,7 @@ import AccountContext
 import UndoUI
 import EntityKeyboard
 import PremiumUI
+import PeerNameColorItem
 
 private final class PeerNameColorScreenArguments {
     let context: AccountContext
@@ -201,6 +202,7 @@ private enum PeerNameColorScreenEntry: ItemListNodeEntry {
                 theme: presentationData.theme,
                 componentTheme: presentationData.theme,
                 strings: presentationData.strings,
+                topInset: 0.0,
                 sectionId: self.section,
                 peer: peer,
                 files: files,
@@ -314,7 +316,7 @@ private func peerNameColorScreenEntries(
             photo: peer.profileImageRepresentations,
             nameColor: nameColor,
             backgroundEmojiId: backgroundEmojiId,
-            reply: (peer.compactDisplayTitle, replyText),
+            reply: (peer.compactDisplayTitle, replyText, nameColor),
             linkPreview: (presentationData.strings.NameColor_ChatPreview_LinkSite, presentationData.strings.NameColor_ChatPreview_LinkTitle, presentationData.strings.NameColor_ChatPreview_LinkText),
             text: messageText
         )

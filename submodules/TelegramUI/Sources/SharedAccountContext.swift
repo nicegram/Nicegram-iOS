@@ -52,6 +52,8 @@ import PeerInfoScreen
 import ChatQrCodeScreen
 import UndoUI
 import ChatMessageNotificationItem
+import BusinessSetupScreen
+import ChatbotSetupScreen
 
 import NGCore
 import NGData
@@ -1814,7 +1816,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
 
         controllerInteraction = ChatControllerInteraction(openMessage: { _, _ in
             return false }, openPeer: { _, _, _, _ in }, openPeerMention: { _, _ in }, openMessageContextMenu: { _, _, _, _, _, _ in }, openMessageReactionContextMenu: { _, _, _, _ in
-            }, updateMessageReaction: { _, _, _ in }, activateMessagePinch: { _ in
+            }, updateMessageReaction: { _, _, _, _ in }, activateMessagePinch: { _ in
             }, openMessageContextActions: { _, _, _, _ in }, navigateToMessage: { _, _, _ in }, navigateToMessageStandalone: { _ in
             }, navigateToThreadMessage: { _, _, _ in
             }, tapMessage: { message in
@@ -1882,6 +1884,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         }, displayGiveawayParticipationStatus: { _ in
         }, openPremiumStatusInfo: { _, _, _, _ in
         }, openRecommendedChannelContextMenu: { _, _, _ in
+        }, openGroupBoostInfo: { _, _ in
         }, requestMessageUpdate: { _, _ in
         }, cancelInteractiveKeyboardGestures: {
         }, dismissTextInput: {
@@ -2010,6 +2013,14 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return archiveSettingsController(context: context)
     }
     
+    public func makeBusinessSetupScreen(context: AccountContext) -> ViewController {
+        return BusinessSetupScreen(context: context)
+    }
+    
+    public func makeChatbotSetupScreen(context: AccountContext) -> ViewController {
+        return ChatbotSetupScreen(context: context)
+    }
+    
     public func makePremiumIntroController(context: AccountContext, source: PremiumIntroSource, forceDark: Bool, dismissed: (() -> Void)?) -> ViewController {
         var modal = true
         let mappedSource: PremiumSource
@@ -2132,6 +2143,10 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             mappedSubject = .wallpapers
         case .messageTags:
             mappedSubject = .messageTags
+        case .lastSeen:
+            mappedSubject = .lastSeen
+        case .messagePrivacy:
+            mappedSubject = .messagePrivacy
         }
         return PremiumDemoScreen(context: context, subject: mappedSubject, action: action)
     }
@@ -2167,7 +2182,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return PremiumLimitScreen(context: context, subject: mappedSubject, count: count, forceDark: forceDark, cancel: cancel, action: action)
     }
     
-    public func makePremiumGiftController(context: AccountContext, source: PremiumGiftSource) -> ViewController {
+    public func makePremiumGiftController(context: AccountContext, source: PremiumGiftSource, completion: (() -> Void)?) -> ViewController {
         let options = Promise<[PremiumGiftCodeOption]>()
         options.set(context.engine.payments.premiumGiftCodeOptions(peerId: nil))
                 
@@ -2219,6 +2234,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                 pushImpl?(c)
             }, completion: {
                 filterImpl?()
+                completion?()
             })
             pushImpl = { [weak giftController] c in
                 giftController?.push(c)
@@ -2226,7 +2242,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             filterImpl = { [weak giftController] in
                 if let navigationController = giftController?.navigationController as? NavigationController {
                     var controllers = navigationController.viewControllers
-                    controllers = controllers.filter { !($0 is ContactMultiselectionController) }
+                    controllers = controllers.filter { !($0 is ContactMultiselectionController) && !($0 is PremiumGiftScreen) }
                     navigationController.setViewControllers(controllers, animated: true)
                 }
             }
@@ -2328,6 +2344,44 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             parentController.push(controller)
         }
         
+        return controller
+    }
+    
+    public func makePremiumBoostLevelsController(context: AccountContext, peerId: EnginePeer.Id, boostStatus: ChannelBoostStatus, myBoostStatus: MyBoostStatus, forceDark: Bool, openStats: (() -> Void)?) -> ViewController {
+        let premiumConfiguration = PremiumConfiguration.with(appConfiguration: context.currentAppConfiguration.with { $0 })
+        
+        var pushImpl: ((ViewController) -> Void)?
+        var dismissImpl: (() -> Void)?
+        let controller = PremiumBoostLevelsScreen(
+            context: context,
+            peerId: peerId,
+            mode: .owner(subject: .stories),
+            status: boostStatus,
+            myBoostStatus: myBoostStatus,
+            openStats: openStats,
+            openGift: premiumConfiguration.giveawayGiftsPurchaseAvailable ? {
+                var updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?
+                if forceDark {
+                    let presentationData = context.sharedContext.currentPresentationData.with { $0 }.withUpdated(theme: defaultDarkColorPresentationTheme)
+                    updatedPresentationData = (presentationData, .single(presentationData))
+                }
+                let controller = createGiveawayController(context: context, updatedPresentationData: updatedPresentationData, peerId: peerId, subject: .generic)
+                pushImpl?(controller)
+                
+                Queue.mainQueue().after(0.4) {
+                    dismissImpl?()
+                }
+            } : nil,
+            forceDark: forceDark
+        )
+        pushImpl = { [weak controller] c in
+            controller?.push(c)
+        }
+        dismissImpl = { [weak controller] in
+            if let controller, let navigationController = controller.navigationController as? NavigationController {
+                navigationController.setViewControllers(navigationController.viewControllers.filter { !($0 is PremiumBoostLevelsScreen) }, animated: false)
+            }
+        }
         return controller
     }
     

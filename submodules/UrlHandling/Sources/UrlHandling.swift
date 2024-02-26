@@ -707,7 +707,6 @@ private func resolveInternalUrl(context: AccountContext, url: ParsedInternalUrl)
                                     |> `catch` { _ in
                                         return .single(.result([]))
                                     }
-                                    |> take(1)
                                     |> mapToSignal { result -> Signal<ResolveInternalUrlResult, NoError> in
                                         switch result {
                                         case .progress:
@@ -773,19 +772,26 @@ private func resolveInternalUrl(context: AccountContext, url: ParsedInternalUrl)
                                 }
                                 |> then(.single(.result(.story(peerId: peer.id, id: id)))))
                             case .boost:
-                                return .single(.progress) |> then(combineLatest(
-                                    context.engine.peers.getChannelBoostStatus(peerId: peer.id),
-                                    context.engine.peers.getMyBoostStatus()
+                                return .single(.progress) 
+                                |> then(
+                                    combineLatest(
+                                        context.engine.peers.getChannelBoostStatus(peerId: peer.id),
+                                        context.engine.peers.getMyBoostStatus()
+                                    )
+                                    |> map { boostStatus, myBoostStatus -> ResolveInternalUrlResult in
+                                        return .result(.boost(peerId: peer.id, status: boostStatus, myBoostStatus: myBoostStatus))
+                                    }
                                 )
-                                |> map { boostStatus, myBoostStatus -> ResolveInternalUrlResult in
-                                    return .result(.boost(peerId: peer.id, status: boostStatus, myBoostStatus: myBoostStatus))
-                                })
                         }
                     } else {
                         return .single(.result(.peer(peer._asPeer(), .chat(textInputState: nil, subject: nil, peekData: nil))))
                     }
                 } else {
-                    return .single(.result(.peer(nil, .info(nil))))
+                    if case .boost = parameter {
+                        return .single(.result(.boost(peerId: nil, status: nil, myBoostStatus: nil)))
+                    } else {
+                        return .single(.result(.peer(nil, .info(nil))))
+                    }
                 }
             }
         case let .peerId(peerId):

@@ -10222,6 +10222,10 @@ Sorry for the inconvenience.";
 "ReassignBoost.Boosts_any" = "%@ boosts are reassigned";
 "ReassignBoost.OtherChannels_1" = "%@ other channel";
 "ReassignBoost.OtherChannels_any" = "%@ other channels";
+"ReassignBoost.OtherGroups_1" = "%@ other group";
+"ReassignBoost.OtherGroups_any" = "%@ other groups";
+"ReassignBoost.OtherGroupsAndChannels_1" = "%@ other group and channel";
+"ReassignBoost.OtherGroupsAndChannels_any" = "%@ other groups and channels";
 
 "ChannelBoost.MoreBoosts.Title" = "More Boosts Needed";
 "ChannelBoost.MoreBoosts.Text" = "To boost **%1$@** again, gift **Telegram Premium** to a friend and get **%2$@** additional boosts.";
@@ -10467,12 +10471,6 @@ Sorry for the inconvenience.";
 "Conversation.PinnedGiveaway.Finished" = "%1$@ on %2$@";
 "Conversation.PinnedGiveaway.Finished.Winners_1" = "%@ winner was selected";
 "Conversation.PinnedGiveaway.Finished.Winners_any" = "%@ winners were selected";
-
-"BoostGift.StartConfirmation.Title" = "Start Giveaway";
-"BoostGift.StartConfirmation.Text" = "Are you sure you want to start giveaway now?";
-"BoostGift.StartConfirmation.Start" = "Start";
-
-"Channel.Info.Stats" = "Statistics and Boosts";
 
 "BoostGift.StartConfirmation.Title" = "Start Giveaway";
 "BoostGift.StartConfirmation.Text" = "Are you sure you want to start giveaway now?";
@@ -10939,6 +10937,7 @@ Sorry for the inconvenience.";
 "Chat.ReactionContextMenu.RemoveTag" = "Remove Tag";
 
 "Chat.EmptyStateMessagingRestrictedToPremium.Text" = "Subscribe to **Premium**\nto message **%@**.";
+"Chat.EmptyStateMessagingRestrictedToPremiumDisabled.Text" = "Subscribe to **Premium**\nto message **%@**.";
 "Chat.EmptyStateMessagingRestrictedToPremium.Action" = "Get Premium";
 
 "Chat.ContextMenuReadDate.ReadAvailablePrefix" = "read";
@@ -10980,11 +10979,73 @@ Sorry for the inconvenience.";
 "ChatList.DeleteSavedPeerMyNotesConfirmation" = "Are you sure you want to delete all messages from %@?";
 "ChatList.DeleteSavedPeerMyNotesConfirmationTitle" = "My Notes";
 
+"ChannelBoost.Title.Other" = "Help Upgrade This Channel";
+"ChannelBoost.Title.Current" = "Boost Channel";
+
+"ChannelBoost.MoreBoostsNeeded.Text" = "**%1$@** needs %2$@ to unlock new features.";
+"ChannelBoost.MoreBoostsNeeded.Boosts_1" = "**%@** more boost";
+"ChannelBoost.MoreBoostsNeeded.Boosts_any" = "**%@** more boosts";
+"ChannelBoost.MaxLevelReached.Text" = "**%1$@** reached **Level %2$@**.";
+
+"ChannelBoost.MoreBoostsNeeded.Boosted.Text" = "%@ needed to unlock new features.";
+"ChannelBoost.MoreBoostsNeeded.Boosted.Level.Text" = "This channel reached **Level %@** and unlocked new features.";
+"GroupBoost.MoreBoostsNeeded.Boosted.Level.Text" = "This group reached **Level %@** and unlocked new features.";
+
+"ContactList.Context.Delete" = "Delete Contact";
+"ContactList.Context.Select" = "Select";
+
+"ContactList.DeleteConfirmationSingle" = "Delete Contact";
+"ContactList.DeleteConfirmation_1" = "Delete %@ Contact";
+"ContactList.DeleteConfirmation_any" = "Delete %@ Contacts";
+
+"ContactList.DeletedContacts_1" = "Deleted %@ Contact";
+"ContactList.DeletedContacts_any" = "Deleted %@ Contacts";
+
 "Conversation.ForwardOptions.SenderNamesRemoved" = "Sender names removed";
 
 "Login.Announce.Info" = "Notify people on Telegram who know my phone number that I signed up.";
 "Login.Announce.Notify" = "Notify";
 "Login.Announce.DontNotify" = "Do Not Notify";
+
+"ChatList.ContextOpenGroup" = "Open Group";
+
+"GroupBoost.Title.Other" = "Help Upgrade This Group";
+"GroupBoost.Title.Current" = "Boost Group";
+
+"GroupBoost.EnableStoriesText" = "Your group needs %1$@ to enable posting stories.";
+"GroupBoost.IncreaseLimitText" = "Your group needs %1$@ to post %2$@.";
+
+"BoostGift.Group.Description" = "Get more boosts for your group by gifting\nPremium to your members.";
+
+"BoostGift.Group.AllMembers" = "All members";
+"BoostGift.Group.OnlyNewMembers" = "Only new members";
+
+"BoostGift.Group.LimitMembersInfo" = "Choose if you want to limit the giveaway only to those who joined the group after the giveaway started.";
+"BoostGift.Group.DateInfo" = "Choose when %1$@ of your group will be randomly selected to receive Telegram Premium.";
+"BoostGift.Group.DateInfoMembers_1" = "%@ member";
+"BoostGift.Group.DateInfoMembers_any" = "%@ members";
+
+"BoostGift.Group.GiveawayCreated.Text" = "Check your group's [Boosts]() to see how this giveaway boosted your group.";
+"BoostGift.Group.PremiumGifted.Text" = "Check your groups's [Boosts]() to see how gifts boosted your group.";
+
+"BoostGift.Group.Members.Title" = "Gift Premium";
+"BoostGift.Group.Members.Subtitle" = "select up to %@ members";
+"BoostGift.Group.Members.SectionTitle" = "MEMBERS";
+"BoostGift.Group.Members.Joined" = "joined %@";
+"BoostGift.Group.Members.Search" = "Search Members";
+"BoostGift.Group.Members.MaximumReached" = "You can select maximum %@ members.";
+"BoostGift.Group.Members.Save" = "Save Recipients";
+
+"ChannelBoost.Table.Group.ProfileColor_1" = "%@ Color for Group Cover";
+"ChannelBoost.Table.Group.ProfileColor_any" = "%@ Colors for Group Cover";
+"ChannelBoost.Table.Group.ProfileLogo" = "Custom Logo for Group Cover";
+"ChannelBoost.Table.Group.Wallpaper_1" = "%@ Group Background";
+"ChannelBoost.Table.Group.Wallpaper_any" = "%@ Group Backgrounds";
+"ChannelBoost.Table.Group.CustomWallpaper" = "Custom Group Background";
+
+"Premium.Group.BoostByGiftDescription" = "Boost your group by gifting your members Telegram Premium. [Get boosts >]()";
+
+"Conversation.BoostGroup" = "BOOST";
 
 "Premium.Stories.Quality.Title" = "Higher Quality";
 "Premium.Stories.Quality.Text" = "View video stories in double the resolution.";
@@ -10993,7 +11054,7 @@ Sorry for the inconvenience.";
 "Premium.MessageTagsInfo" = "Organize your Saved Messages with tags for quicker access.";
 "Premium.MessageTags.Proceed" = "About Telegram Premium";
 
-"Chat.SavedMessagesTabInfoText" = "Messages you send to **Saved Messages**";
+"Chat.SavedMessagesTabInfoText" = "Messages you send to [Saved Messages]()";
 
 "VoiceOver.MessageSelectionButtonTag" = "Tag";
 
@@ -11041,3 +11102,216 @@ Sorry for the inconvenience.";
 "Chat.BottomSearchPanel.DisplayModeFormat" = "Show as %@";
 "Chat.BottomSearchPanel.DisplayModeChat" = "Chat";
 "Chat.BottomSearchPanel.DisplayModeList" = "List";
+
+"Conversation.SendMessageErrorNonPremiumForbidden" = "Only Premium users can message %@";
+
+"Notification.GiveawayStartedGroup" = "%1$@ just started a giveaway of Telegram Premium subscriptions for its members.";
+
+"Chat.Giveaway.Info.Group.RandomMembers_1" = "**%@** random member";
+"Chat.Giveaway.Info.Group.RandomMembers_any" = "**%@** random members";
+
+"Chat.Giveaway.Info.Group.OngoingIntro" = "The giveaway is sponsored by the admins of **%1$@**, who acquired %2$@ for %3$@ for its members.";
+"Chat.Giveaway.Info.Group.EndedIntro" = "The giveaway was sponsored by the admins of **%1$@**, who acquired %2$@ for %3$@ for its members.";
+
+"Premium.LastSeen" = "Last Seen Times";
+"Premium.LastSeenInfo" = "View the last seen and read times of others even if you hide yours.";
+"Premium.LastSeen.Proceed" = "About Telegram Premium";
+
+"Premium.MessagePrivacy" = "Message Privacy";
+"Premium.MessagePrivacyInfo" = "Restrict people you don't know from sending you messages.";
+"Premium.MessagePrivacy.Proceed" = "About Telegram Premium";
+
+"BoostGift.GroupsAndChannelsTitle" = "INCLUDED GROUPS AND CHANNELS";
+"BoostGift.GroupsAndChannelsInfo" = "Choose additional groups or channels users need to join to take part in the giveaway.";
+"BoostGift.AddGroupOrChannel" = "Add Group or Channel";
+
+"BoostGift.ChannelsAndGroupsTitle" = "INCLUDED CHANNELS AND GROUPS";
+"BoostGift.ChannelsAndGroupsInfo" = "Choose additional channels or groups users need to join to take part in the giveaway.";
+"BoostGift.AddChannelOrGroup" = "Add Channel or Group";
+
+"BoostGift.GroupBoosts_1" = "this group will receive %@ boost";
+"BoostGift.GroupBoosts_any" = "this group will receive %@ boosts";
+
+"Stats.Boosts.PremiumMembers" = "Premium Members";
+
+"GroupInfo.Permissions.DontRestrictBoosters" = "Do Not Restrict Boosters";
+"GroupInfo.Permissions.DontRestrictBoostersInfo" = "Choose how many boosts a user must give to the group to bypass restrictions on sending messages.";
+"GroupInfo.Permissions.DontRestrictBoostersEnableInfo" = "Turn this on to always allow users who boosted your group to send messages and media.";
+
+"Notification.Boost.Times_1" = "%@ time";
+"Notification.Boost.Times_any" = "%@ times";
+
+"Notification.Boost.Single" = "%1$@ boosted the group";
+"Notification.Boost.Multiple" = "%1$@ boosted the group %2$@";
+
+"Notification.Boost.SingleYou" = "You boosted the group";
+"Notification.Boost.MultipleYou" = "You boosted the group %1$@";
+
+"Contacts.SelectedContacts_1" = "%@ Selected";
+"Contacts.SelectedContacts_any" = "%@ Selected";
+
+"Emoji.GroupEmoji" = "GROUP EMOJI";
+
+"Channel.Appearance.BoostInfo" = "Subscribers of your channel can **boost** it so that it levels up and unlocks these features.";
+"Group.Appearance.BoostInfo" = "Members of your group can **boost** it so that it levels up and unlocks these features.";
+
+"Group.Appearance.ProfileFooter" = "Choose a color and a logo for the group's profile.";
+
+"Group.Appearance.GroupEmoji" = "Group Emoji Pack";
+"Group.Appearance.GroupEmojiFooter" = "Choose an emoji pack that will be available to all members within the group.";
+
+"Group.Appearance.Status" = "Group Emoji Status";
+"Group.Appearance.StatusFooter" = "Choose a status that will be shown next to the group's name.";
+
+"Group.Appearance.Wallpaper" = "Group Wallpaper";
+"Group.Appearance.WallpaperFooter" = "Set a wallpaper that will be visible for everyone in your group.";
+
+"Group.Appearance.ChooseFromGallery" = "Choose From Gallery";
+
+"PeerInfo.Group.Boost" = "Boost Group";
+
+"BoostGift.Groups.PrivateGroup.Title" = "Group is Private";
+"BoostGift.Groups.PrivateGroup.Text" = "Are you sure you want to add a private group? Users won't be able to join it without an invite link.";
+
+"BoostGift.ChannelsOrGroups.Title" = "Add Channels or Groups";
+"BoostGift.ChannelsOrGroups.Subtitle" = "select up to %@ channels or groups";
+"BoostGift.ChannelsOrGroups.SectionTitle" = "CHANNELS AND GROUPS";
+"BoostGift.ChannelsOrGroups.Search" = "Search Channels and Groups";
+"BoostGift.ChannelsOrGroups.MaximumReached" = "You can select maximum %@ channels and groups.";
+"BoostGift.ChannelsOrGroups.Save" = "Save Channels and Groups";
+
+"BoostGift.GroupsOrChannels.Title" = "Add Groups or Channels";
+"BoostGift.GroupsOrChannels.Subtitle" = "select up to %@ groups or channels";
+"BoostGift.GroupsOrChannels.SectionTitle" = "GROUPS AND CHANNELS";
+"BoostGift.GroupsOrChannels.Search" = "Search Groups and Channels";
+"BoostGift.GroupsOrChannels.MaximumReached" = "You can select maximum %@ groups and channels.";
+"BoostGift.GroupsOrChannels.Save" = "Save Groups and Channels";
+
+"Group.Emoji.Title" = "Group Emoji Pack";
+"Group.Emoji.Info" = "All members will be able to use these emoji in the group, even if they don't have Telegram Premium.";
+"Group.Emoji.YourEmoji" = "CHOOSE EMOJI PACK";
+"Group.Emoji.Placeholder" = "emojiset";
+
+"Group.Emoji.NotFound" = "Emoji pack not found";
+"Group.Emoji.NotFoundHelp" = "Try again or choose from the list below";
+
+
+"GroupBoost.ProfileColor" = "Set Cover Color";
+"GroupBoost.EnableProfileColorLevelText" = "Your group needs **Level %1$@** to change group cover color.";
+
+"GroupBoost.ProfileIcon" = "Set Cover Icon";
+"GroupBoost.EnableProfileIconLevelText" = "Your group needs **Level %1$@** to change group cover icon.";
+
+"GroupBoost.EmojiStatus" = "Use Emoji Statuses";
+"GroupBoost.EnableEmojiStatusLevelText" = "Your group needs **Level %1$@** to use emoji statuses.";
+
+"GroupBoost.Wallpaper" = "Set Group Wallpaper";
+"GroupBoost.EnableWallpaperLevelText" = "Your group needs **Level %1$@** to set group wallpaper.";
+
+"GroupBoost.CustomWallpaper" = "Set Custom Group Wallpaper";
+"GroupBoost.EnableCustomWallpaperLevelText" = "Your group needs **Level %1$@** to set custom group wallpaper.";
+
+"GroupBoost.EmojiPack" = "Set Group Emoji Pack";
+"GroupBoost.EnableEmojiPackLevelText" = "Your group needs **Level %1$@** to set emoji pack.";
+
+"GroupBoost.AudioTranscription" = "Audio Transcription";
+
+"GroupBoost.AdditionalFeatures" = "Additional Features";
+"GroupBoost.AdditionalFeaturesText" = "By gaining **boosts**, your group reaches higher levels and unlocks more features.";
+
+"Stats.Boosts.Group.NoBoostersYet" = "No users currently boost your group";
+"Stats.Boosts.Group.BoostersInfo" = "Your group is currently boosted by these members.";
+
+"Group.Appearance.PreviewAuthor" = "Jessica";
+
+"GroupBoost.Title" = "Boost Group";
+"GroupBoost.Info" = "Members of your group can **boost** it so that it **levels up** and gets **exclusive features**.";
+
+"Chat.GroupEmojiTooltip" = "All members of this group can\nuse the # **%@** pack";
+
+"ChannelBoost.PremiumUsersCanBoost" = "**Premium** users can boost your channel with this link:";
+"GroupBoost.PremiumUsersCanBoost" = "**Premium** users can boost your group with this link:";
+
+"Stats.Boosts.Group.LinkInfo" = "Share this link with your members to get more boosts.";
+
+"Stats.Boosts.Group.GetBoostsInfo" = "Get more boosts for your group by gifting Premium to your members.";
+
+"Message.GiveawayStartedGroup" = "Group started a giveaway";
+
+"GroupBoost.Error.BoostTooOftenText" = "You can change the group you boost only once a day. Next time you can boost is in **%@**.";
+"GroupBoost.Error.PremiumNeededText" = "Only **Telegram Premium** subscribers can boost groups. Do you want to subscribe to **Telegram Premium**?";
+
+"Notification.GroupChangedWallpaper" = "Group set a new wallpaper";
+"Notification.YouChangedGroupWallpaper" = "You set a new wallpaper for this group";
+
+"WallpaperPreview.GroupHeader" = "All members will see this wallpaper";
+
+"GroupBoost.BoostGroup" = "Boost Group";
+
+"Chat.Giveaway.Info.NotAllowedAdminGroup" = "You are not eligible to participate in this giveaway, because you are an admin of participating group (**%@**).";
+
+"Chat.Giveaway.Message.Group.Participants" = "All members of this group:";
+"Chat.Giveaway.Message.Group.ParticipantsNew" = "All users who join this group after this date:";
+
+"Chat.Giveaway.Message.Group.ParticipantsMany" = "All members of the groups below:";
+"Chat.Giveaway.Message.Group.ParticipantsNewMany" = "All users who join the groups below after this date:";
+
+"Story.Privacy.KeepOnGroupPage" = "Post to Group Page";
+"Story.Privacy.KeepOnGroupPageInfo" = "Keep this story on group page even after it expires in %@.";
+"Story.Privacy.TooltipStoryArchivedGroup" = "Users will see this story on the group page even after it expires.";
+
+"BoostGift.Members.Subtitle" = "select up to %@ members";
+"BoostGift.Members.SectionTitle" = "MEMBERS";
+"BoostGift.Members.Search" = "Search Members";
+"BoostGift.Members.MaximumReached" = "You can select maximum %@ members.";
+
+"Chat.ErrorCantBoost" = "Sorry, you can't boost this group or channel.";
+
+"ChannelBoost.Boost" = "Boost";
+"ChannelBoost.Copy" = "Copy";
+
+"Chat.Giveaway.Info.OtherGroups_1" = "**%@** other listed group";
+"Chat.Giveaway.Info.OtherGroups_any" = "**%@** other listed groups";
+
+"Chat.Giveaway.Info.OtherGroupsAndChannels_1" = "**%@** other listed group and channel";
+"Chat.Giveaway.Info.OtherGroupsAndChannels_any" = "**%@** other listed groups and channels";
+
+"Chat.Giveaway.Info.OtherChannelsAndGroups_1" = "**%@** other listed channel and group";
+"Chat.Giveaway.Info.OtherChannelsAndGroups_any" = "**%@** other listed channels and groups";
+
+"GroupBoost.MemberBoosted.Times_1" = "**%@** time";
+"GroupBoost.MemberBoosted.Times_any" = "**%@** times";
+
+"GroupBoost.MemberBoosted" = "**%1$@** boosted the group %2$@.";
+"GroupBoost.MemberBoosted.BoostForBadge" = "Boost **%1$@** to help it unlock new features and get a booster **badge** for your messages.";
+
+"GroupBoost.BoostToUnrestrict.Times_1" = "**%@** time";
+"GroupBoost.BoostToUnrestrict.Times_any" = "**%@** times";
+
+"GroupBoost.BoostToUnrestrict" = "Boost the group %1$@ to remove messaging restrictions. Your boosts will help **%2$@** to unlock new features.";
+
+"Story.InputPlaceholderReplyInGroup" = "Comment Story...";
+
+"Story.SendReactionAsGroupMessage" = "Send reaction as a message";
+
+"StoryList.TooltipStoriesSavedToGroup_1" = "Story saved to groups's profile";
+"StoryList.TooltipStoriesSavedToGroup_any" = "%d stories saved to groups's profile.";
+"Story.ToastRemovedFromGroupText" = "Story removed from the group page";
+"Story.ToastSavedToGroupTitle" = "Story saved to the group page";
+"Story.ToastSavedToGroupText" = "Posted stories can be viewed by others on the group page until an admin removes them.";
+
+"Channel.AdminLog.MessageChangedGroupEmojiPack" = "%@ changed group emoji pack";
+"Channel.AdminLog.MessageRemovedGroupEmojiPack" = "%@ removed group emoji pack";
+
+"Attachment.BoostToUnlock" = "Boost to Unlock";
+
+"Story.GroupCommentingRestrictedPlaceholder" = "Comments restricted. Boost the group to unlock.";
+"Story.GroupCommentingRestrictedPlaceholderAction" = "Learn More...";
+
+"GroupBoost.Table.Group.VoiceToText" = "Voice-to-Text Conversion";
+"GroupBoost.Table.Group.EmojiPack" = "Custom Emojipack";
+
+"ChannelBoost.Header.Boost" = "boost";
+"ChannelBoost.Header.Giveaway" = "giveaway";
+"ChannelBoost.Header.Features" = "features";
+

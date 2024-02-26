@@ -7,8 +7,8 @@ NGDEPS = [
     "//Nicegram/NGStrings:NGStrings",
     "//Nicegram/NGUI:NGUI",
     "//Nicegram/NGWebUtils:NGWebUtils",
-    "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPremiumUI",
-    "@swiftpkg_nicegram_assistant_ios//:Sources_NGAiChatUI",
+    "@swiftpkg_nicegram_assistant_ios//:FeatPremiumUI",
+    "@swiftpkg_nicegram_assistant_ios//:NGAiChatUI",
 ]
 
 swift_library(
@@ -149,6 +149,7 @@ swift_library(
         "//submodules/AttachmentUI",
         "//submodules/TelegramUI/Components/Settings/BoostLevelIconComponent",
         "//submodules/Components/MultilineTextComponent",
+        "//submodules/TelegramUI/Components/Settings/PeerNameColorItem",
     ],
     visibility = [
         "//visibility:public",

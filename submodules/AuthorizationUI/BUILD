@@ -1,8 +1,8 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
 NGDEPS = [
-    "@swiftpkg_nicegram_assistant_ios//:Sources_FeatPhoneEntryBanner",
-    "@swiftpkg_nicegram_assistant_ios//:Sources_NGAuth",
+    "@swiftpkg_nicegram_assistant_ios//:FeatPhoneEntryBanner",
+    "@swiftpkg_nicegram_assistant_ios//:NGAuth",
 ]
 
 swift_library(

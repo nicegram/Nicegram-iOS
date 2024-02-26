@@ -574,11 +574,11 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                         reactions: dateReactionsAndPeers.reactions,
                         reactionPeers: dateReactionsAndPeers.peers,
                         displayAllReactionPeers: item.message.id.peerId.namespace == Namespaces.Peer.CloudUser,
-                        areReactionsTags: item.message.areReactionsTags(accountPeerId: item.context.account.peerId),
+                        areReactionsTags: item.topMessage.areReactionsTags(accountPeerId: item.context.account.peerId),
                         replyCount: dateReplies,
                         isPinned: item.message.tags.contains(.pinned) && (!item.associatedData.isInPinnedListMode || isReplyThread),
                         hasAutoremove: item.message.isSelfExpiring,
-                        canViewReactionList: canViewMessageReactionList(message: item.message, isInline: item.associatedData.isInline),
+                        canViewReactionList: canViewMessageReactionList(message: item.topMessage, isInline: item.associatedData.isInline),
                         animationCache: item.controllerInteraction.presentationContext.animationCache,
                         animationRenderer: item.controllerInteraction.presentationContext.animationRenderer
                     ))
@@ -715,11 +715,11 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                                     
                                     strongSelf.addSubnode(statusNode)
                                     
-                                    statusNode.reactionSelected = { [weak strongSelf] _, value in
+                                    statusNode.reactionSelected = { [weak strongSelf] _, value, sourceView in
                                         guard let strongSelf, let item = strongSelf.item else {
                                             return
                                         }
-                                        item.controllerInteraction.updateMessageReaction(item.message, .reaction(value), false)
+                                        item.controllerInteraction.updateMessageReaction(item.topMessage, .reaction(value), false, sourceView)
                                     }
                                     statusNode.openReactionPreview = { [weak strongSelf] gesture, sourceNode, value in
                                         guard let strongSelf, let item = strongSelf.item else {
@@ -1309,6 +1309,9 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                     enableQuote = false
                 }
                 if item.message.containsSecretMedia {
+                    enableQuote = false
+                }
+                if item.associatedData.translateToLanguage != nil {
                     enableQuote = false
                 }
                 

@@ -76,6 +76,10 @@ public struct ChannelBoostStatus: Equatable {
         }
         return true
     }
+    
+    public func withUpdated(boosts: Int) -> ChannelBoostStatus {
+        return ChannelBoostStatus(level: self.level, boosts: boosts, giftBoosts: self.giftBoosts, currentLevelBoosts: self.currentLevelBoosts, nextLevelBoosts: self.nextLevelBoosts, premiumAudience: self.premiumAudience, url: self.url, prepaidGiveaways: self.prepaidGiveaways, boostedByMe: self.boostedByMe)
+    }
 }
 
 func _internal_getChannelBoostStatus(account: Account, peerId: PeerId) -> Signal<ChannelBoostStatus?, NoError> {
@@ -125,7 +129,20 @@ func _internal_applyChannelBoost(account: Account, peerId: PeerId, slots: [Int32
         |> mapToSignal { result -> Signal<MyBoostStatus?, NoError> in
             if let result = result {
                 return account.postbox.transaction { transaction -> MyBoostStatus? in
-                    return MyBoostStatus(apiMyBoostStatus: result, accountPeerId: account.peerId, transaction: transaction)
+                    let myStatus = MyBoostStatus(apiMyBoostStatus: result, accountPeerId: account.peerId, transaction: transaction)
+                    let peerIds = myStatus.boosts.reduce(Set<PeerId>(), { current, value in
+                        var current = current
+                        if let peerId = value.peer?.id {
+                            current.insert(peerId)
+                        }
+                        return current
+                    })
+                    transaction.updatePeerCachedData(peerIds: peerIds, update: { peerId, cachedData in
+                        let cachedData = cachedData as? CachedChannelData ?? CachedChannelData()
+                        let count = myStatus.boosts.filter { $0.peer?.id == peerId }.count
+                        return cachedData.withUpdatedAppliedBoosts(count != 0 ? Int32(count) : nil)
+                    })
+                    return myStatus
                 }
             } else {
                 return .single(nil)

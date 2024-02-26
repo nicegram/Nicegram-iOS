@@ -245,7 +245,7 @@ final class ChatRecordingPreviewInputPanelNode: ChatInputPanelNode {
         }
         if self.presentationInterfaceState != interfaceState {
             var updateWaveform = false
-            if self.presentationInterfaceState?.recordedMediaPreview != interfaceState.recordedMediaPreview {
+            if self.presentationInterfaceState?.interfaceState.mediaDraftState != interfaceState.interfaceState.mediaDraftState {
                 updateWaveform = true
             }
             if self.presentationInterfaceState?.strings !== interfaceState.strings {
@@ -256,7 +256,7 @@ final class ChatRecordingPreviewInputPanelNode: ChatInputPanelNode {
             
             self.presentationInterfaceState = interfaceState
                     
-            if let recordedMediaPreview = interfaceState.recordedMediaPreview, let context = self.context {
+            if let recordedMediaPreview = interfaceState.interfaceState.mediaDraftState, let context = self.context {
                 switch recordedMediaPreview {
                 case let .audio(audio):
                     self.waveformButton.isHidden = false
@@ -328,8 +328,10 @@ final class ChatRecordingPreviewInputPanelNode: ChatInputPanelNode {
                                     )
                                 ],
                                 positionUpdated: { _, _ in },
-                                trackTrimUpdated: { _, start, end, updatedEnd, apply in
-                                    video.control.updateTrimRange(start, end, updatedEnd, apply)
+                                trackTrimUpdated: { [weak self] _, start, end, updatedEnd, apply in
+                                    if let self {
+                                        self.interfaceInteraction?.updateVideoTrimRange(start, end, updatedEnd, apply)
+                                    }
                                 },
                                 trackOffsetUpdated: { _, _, _ in },
                                 trackLongPressed: { _, _ in }

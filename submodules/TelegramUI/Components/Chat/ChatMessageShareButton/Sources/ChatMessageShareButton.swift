@@ -69,6 +69,9 @@ public class ChatMessageShareButton: HighlightableButtonNode {
             // MARK: Nicegram  (if translateButton)
             if translateButton {
                 updatedIconImage = PresentationResourcesChat.chatTranslateButtonIcon(presentationData.theme.theme, wallpaper: presentationData.theme.wallpaper)
+            } else if message.adAttribute != nil {
+                updatedIconImage = PresentationResourcesChat.chatFreeCloseButtonIcon(presentationData.theme.theme, wallpaper: presentationData.theme.wallpaper)
+                updatedIconOffset = CGPoint(x: UIScreenPixel, y: UIScreenPixel)
             } else if case .pinnedMessages = subject {
                 updatedIconImage = PresentationResourcesChat.chatFreeNavigateButtonIcon(presentationData.theme.theme, wallpaper: presentationData.theme.wallpaper)
                 updatedIconOffset = CGPoint(x: UIScreenPixel, y: 1.0)
