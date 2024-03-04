@@ -162,8 +162,6 @@
 "NicegramSettings.Other.hideReactions" = "隐藏反应";
 "NicegramSettings.RoundVideos.DownloadVideos" = "将视频下载到图库";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "忽略语言";
-"NicegramSettings.ShareChannelsInfoToggle" = "分享频道信息";
-"NicegramSettings.ShareChannelsInfoToggle.Note" = "通过自动提交频道信息和链接至我们的数据库，向最全面的 Telegram 频道和群组百科贡献力量。我们不会关联您的 Telegram 个人资料和频道，不会分享您的个人数据。";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "应用会检测您设备上每条消息使用的语言。这一功能需要很高的性能，可能会影响电池寿命。";
 "Premium.rememberFolderOnExit" = "退出时记住当前分组";
 "NicegramSettings.HideStories" = "隐藏故事";
@@ -221,3 +219,9 @@
 "ChatContextMenu.Hide" = "隐藏";
 "ChatContextMenu.Unhide" = "取消隐藏";
 "HiddenChatsTooltip" = "长按 'N' 标志以显示隐藏的秘密聊天";
+
+/*Data Sharing*/
+"NicegramSettings.ShareBotsToggle" = "分享机器人信息";
+"NicegramSettings.ShareChannelsToggle" = "分享频道信息";
+"NicegramSettings.ShareStickersToggle" = "分享贴纸信息";
+"NicegramSettings.ShareData.Note" = "通过自动提交频道信息和链接到我们的数据库，为最全面的Telegram频道和群组维基百科做出贡献。我们不会连接您的Telegram个人资料和频道，也不会分享您的个人数据。";

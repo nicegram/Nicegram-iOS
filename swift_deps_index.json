@@ -56,6 +56,7 @@
       "product_memberships": [
         "FeatChatBanner",
         "FeatImagesHubUI",
+        "FeatNicegramHub",
         "FeatPhoneEntryBanner",
         "FeatPremiumUI",
         "NGAssistantUI",
@@ -81,6 +82,7 @@
       "product_memberships": [
         "FeatCardUI",
         "FeatImagesHubUI",
+        "FeatNicegramHub",
         "FeatPremiumUI",
         "FeatSpeechToText",
         "NGAiChatUI",
@@ -98,6 +100,7 @@
       "product_memberships": [
         "FeatCardUI",
         "FeatImagesHubUI",
+        "FeatNicegramHub",
         "FeatPremiumUI",
         "NGAiChatUI",
         "NGAssistantUI",
@@ -180,6 +183,17 @@
       ]
     },
     {
+      "name": "FeatNicegramHub",
+      "c99name": "FeatNicegramHub",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatNicegramHub.rspm",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "FeatNicegramHub",
+        "NGAssistantUI"
+      ]
+    },
+    {
       "name": "FeatPersistentStorage",
       "c99name": "FeatPersistentStorage",
       "src_type": "swift",
@@ -188,6 +202,7 @@
       "product_memberships": [
         "FeatCardUI",
         "FeatImagesHubUI",
+        "FeatNicegramHub",
         "FeatPremiumUI",
         "NGAiChat",
         "NGAiChatUI",
@@ -226,6 +241,7 @@
         "FeatCardUI",
         "FeatChatBanner",
         "FeatImagesHubUI",
+        "FeatNicegramHub",
         "FeatPinnedChats",
         "FeatPremium",
         "FeatPremiumUI",
@@ -263,6 +279,7 @@
       "product_memberships": [
         "FeatCardUI",
         "FeatImagesHubUI",
+        "FeatNicegramHub",
         "FeatPremiumUI",
         "FeatTasks",
         "NGAiChatUI",
@@ -321,6 +338,7 @@
       "product_memberships": [
         "FeatCardUI",
         "FeatImagesHubUI",
+        "FeatNicegramHub",
         "FeatPremiumUI",
         "NGAiChat",
         "NGAiChatUI",
@@ -351,6 +369,7 @@
         "FeatCardUI",
         "FeatChatBanner",
         "FeatImagesHubUI",
+        "FeatNicegramHub",
         "FeatPinnedChats",
         "FeatPremiumUI",
         "FeatTasks",
@@ -373,6 +392,7 @@
         "FeatCardUI",
         "FeatChatBanner",
         "FeatImagesHubUI",
+        "FeatNicegramHub",
         "FeatPinnedChats",
         "FeatPremiumUI",
         "FeatSpeechToText",
@@ -420,6 +440,7 @@
       "product_memberships": [
         "FeatCardUI",
         "FeatImagesHubUI",
+        "FeatNicegramHub",
         "FeatPremiumUI",
         "NGAiChatUI",
         "NGAssistantUI",
@@ -438,6 +459,7 @@
         "FeatChatBanner",
         "FeatHiddenChats",
         "FeatImagesHubUI",
+        "FeatNicegramHub",
         "FeatPhoneEntryBanner",
         "FeatPinnedChats",
         "FeatPremium",
@@ -470,6 +492,7 @@
         "FeatCardUI",
         "FeatChatBanner",
         "FeatImagesHubUI",
+        "FeatNicegramHub",
         "FeatPhoneEntryBanner",
         "FeatPinnedChats",
         "FeatPremiumUI",
@@ -511,6 +534,7 @@
         "FeatChatBanner",
         "FeatHiddenChats",
         "FeatImagesHubUI",
+        "FeatNicegramHub",
         "FeatPhoneEntryBanner",
         "FeatPinnedChats",
         "FeatPremium",
@@ -542,6 +566,7 @@
       "product_memberships": [
         "FeatCardUI",
         "FeatImagesHubUI",
+        "FeatNicegramHub",
         "FeatPremiumUI",
         "NGAiChatUI",
         "NGAssistantUI",
@@ -560,6 +585,7 @@
         "FeatCardUI",
         "FeatChatBanner",
         "FeatImagesHubUI",
+        "FeatNicegramHub",
         "FeatPinnedChats",
         "FeatPremiumUI",
         "FeatSpeechToText",
@@ -594,6 +620,7 @@
       "product_memberships": [
         "FeatCardUI",
         "FeatImagesHubUI",
+        "FeatNicegramHub",
         "FeatPremiumUI",
         "FeatTasks",
         "NGAiChatUI",
@@ -612,6 +639,7 @@
         "FeatCardUI",
         "FeatChatBanner",
         "FeatImagesHubUI",
+        "FeatNicegramHub",
         "FeatPinnedChats",
         "FeatPremiumUI",
         "FeatSpeechToText",
@@ -891,6 +919,12 @@
     },
     {
       "identity": "nicegram-assistant-ios",
+      "name": "FeatNicegramHub",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatNicegramHub"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
       "name": "FeatPhoneEntryBanner",
       "type": "library",
       "label": "@swiftpkg_nicegram_assistant_ios//:FeatPhoneEntryBanner"
@@ -1114,9 +1148,9 @@
       "name": "swiftpkg_floatingpanel",
       "identity": "floatingpanel",
       "remote": {
-        "commit": "5b33d3d5ff1f50f4a2d64158ccfe8c07b5a3e649",
+        "commit": "8f2be39bf49b4d5e22bbf7bdde69d5b76d0ecd2a",
         "remote": "https://github.com/scenee/FloatingPanel",
-        "version": "2.8.1"
+        "version": "2.8.2"
       }
     },
     {
@@ -1141,9 +1175,9 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "123eb001dcc9477f9087e40ff1b0e7f012182d45",
+        "commit": "971eb7a7df8fa7193e79000e0efe183d084c6182",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
-        "branch": "develop"
+        "branch": "nicegram-hub"
       }
     },
     {
@@ -1159,9 +1193,9 @@
       "name": "swiftpkg_sdwebimage",
       "identity": "sdwebimage",
       "remote": {
-        "commit": "b11493f76481dff17ac8f45274a6b698ba0d3af5",
+        "commit": "73b9397cfbd902f606572964055464903b1d84c6",
         "remote": "https://github.com/SDWebImage/SDWebImage.git",
-        "version": "5.18.11"
+        "version": "5.19.0"
       }
     },
     {

@@ -11789,9 +11789,11 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
         //
         
         // MARK: Nicegram NGStats
-        if !self.didAppear {
-            if let peerId = self.chatLocation.peerId {
-                shareChannelInfo(peerId: peerId, context: self.context)
+        if #available(iOS 13.0, *) {
+            if !self.didAppear {
+                if let peerId = self.chatLocation.peerId {
+                    sharePeerData(peerId: peerId, context: self.context)
+                }
             }
         }
         //
