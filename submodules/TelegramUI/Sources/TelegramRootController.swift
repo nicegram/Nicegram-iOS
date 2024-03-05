@@ -42,6 +42,8 @@ import ImageCompression
 import TextFormat
 import MediaEditor
 import PeerInfoScreen
+import PeerInfoStoryGridScreen
+import ShareWithPeersScreen
 
 private class DetailsChatPlaceholderNode: ASDisplayNode, NavigationDetailsPlaceholderNode {
     private var presentationData: PresentationData
@@ -508,6 +510,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                 
                 let controller = MediaEditorScreen(
                     context: context,
+                    mode: .storyEditor,
                     subject: subject,
                     customTarget: customTarget,
                     transitionIn: transitionIn,
@@ -663,6 +666,19 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                     viewControllers.removeSubrange(range)
                     self.setViewControllers(viewControllers, animated: false)
                 }
+            } else if self.viewControllers.contains(where: { $0 is PeerInfoStoryGridScreen }) {
+                var viewControllers: [UIViewController] = []
+                for i in (0 ..< self.viewControllers.count) {
+                    let controller = self.viewControllers[i]
+                    if i == 0 {
+                        viewControllers.append(controller)
+                    } else if controller is MediaEditorScreen {
+                        viewControllers.append(controller)
+                    } else if controller is ShareWithPeersScreen {
+                        viewControllers.append(controller)
+                    }
+                }
+                self.setViewControllers(viewControllers, animated: false)
             }
         }
         

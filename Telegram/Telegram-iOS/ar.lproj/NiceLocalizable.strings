@@ -162,8 +162,6 @@
 "NicegramSettings.Other.hideReactions" = "إخفاء ردود الفعل";
 "NicegramSettings.RoundVideos.DownloadVideos" = "نزّل الفيديوهات إلى المعرض";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "تجاهل اللغات";
-"NicegramSettings.ShareChannelsInfoToggle" = "شارك معلومات القناة";
-"NicegramSettings.ShareChannelsInfoToggle.Note" = "ساهم في موسوعة ويكيبيديا الأكثر شمولاً لقنوات ومجموعات تيليجرام عن طريق إرسال معلومات القناة تلقائياً والارتباط بقاعدة البيانات الخاصة بنا. نحن لا نربط ملفك الشخصي وقناتك على تيليجرام ولا نشارك بياناتك الشخصية.";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "التطبيق يحدد لغات كل رسالة في جهازك. ويتطلب اداء عالي من الجهاز و بالتالي إستهلاك البطارية.";
 "Premium.rememberFolderOnExit" = "تذكر المجلد الحالي عند الخروج";
 "NicegramSettings.HideStories" = "إخفاء الستوري";
@@ -221,3 +219,9 @@
 "ChatContextMenu.Hide" = "إخفاء";
 "ChatContextMenu.Unhide" = "إظهار";
 "HiddenChatsTooltip" = "اضغط مع الاستمرار على شعار 'N' لكشف الدردشات السرية المخفية";
+
+/*Data Sharing*/
+"NicegramSettings.ShareBotsToggle" = "مشاركة معلومات البوتات";
+"NicegramSettings.ShareChannelsToggle" = "مشاركة معلومات القناة";
+"NicegramSettings.ShareStickersToggle" = "مشاركة معلومات الملصقات";
+"NicegramSettings.ShareData.Note" = "ساهم في أكثر ويكيبيديا شمولية لقنوات ومجموعات تليغرام من خلال إرسال معلومات القناة والرابط تلقائيًا إلى قاعدة بياناتنا. نحن لا نربط ملفك الشخصي في تليغرام والقناة ولا نشارك بياناتك الشخصية.";

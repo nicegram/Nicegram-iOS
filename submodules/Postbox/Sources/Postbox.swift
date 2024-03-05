@@ -3019,8 +3019,10 @@ final class PostboxImpl {
     
     let isInTransaction: Atomic<Bool>
     
-    private func internalTransaction<T>(_ f: (Transaction) -> T) -> (result: T, updatedTransactionStateVersion: Int64?, updatedMasterClientId: Int64?) {
+    private func internalTransaction<T>(_ f: (Transaction) -> T, file: String = #file, line: Int = #line) -> (result: T, updatedTransactionStateVersion: Int64?, updatedMasterClientId: Int64?) {
         let _ = self.isInTransaction.swap(true)
+        
+        let startTime = CFAbsoluteTimeGetCurrent()
         
         self.valueBox.begin()
         let transaction = Transaction(queue: self.queue, postbox: self)
@@ -3029,6 +3031,12 @@ final class PostboxImpl {
         let (updatedTransactionState, updatedMasterClientId) = self.beforeCommit(currentTransaction: transaction)
         transaction.disposed = true
         self.valueBox.commit()
+        
+        let endTime = CFAbsoluteTimeGetCurrent()
+        let transactionDuration = endTime - startTime
+        if transactionDuration > 0.1 {
+            postboxLog("Postbox transaction took \(transactionDuration * 1000.0) ms, from: \(file), on:\(line)")
+        }
         
         let _ = self.isInTransaction.swap(false)
         
@@ -3069,13 +3077,14 @@ final class PostboxImpl {
         }
     }
     
-    public func transaction<T>(userInteractive: Bool = false, ignoreDisabled: Bool = false, _ f: @escaping(Transaction) -> T) -> Signal<T, NoError> {
+
+    public func transaction<T>(userInteractive: Bool = false, ignoreDisabled: Bool = false, _ f: @escaping(Transaction) -> T, file: String = #file, line: Int = #line) -> Signal<T, NoError> {
         return Signal { subscriber in
             let f: () -> Void = {
                 self.beginInternalTransaction(ignoreDisabled: ignoreDisabled, {
                     let (result, updatedTransactionState, updatedMasterClientId) = self.internalTransaction({ transaction in
                         return f(transaction)
-                    })
+                    }, file: file, line: line)
                     
                     if updatedTransactionState != nil || updatedMasterClientId != nil {
                         //self.pipeNotifier.notify()
@@ -3104,7 +3113,7 @@ final class PostboxImpl {
         switch chatLocation {
         case let .peer(peerId, threadId):
             return .single((.peer(peerId: peerId, threadId: threadId), false))
-        case .thread(_, _, let data), .feed(_, let data):
+        case .thread(_, _, let data):
             return Signal { subscriber in
                 var isHoleFill = false
                 return (data
@@ -3114,6 +3123,9 @@ final class PostboxImpl {
                     return (.external(value), wasHoleFill)
                 }).start(next: subscriber.putNext, error: subscriber.putError, completed: subscriber.putCompletion)
             }
+        case .customChatContents:
+            assert(false)
+            return .never()
         }
     }
     
@@ -3358,13 +3370,7 @@ final class PostboxImpl {
             readStates = transientReadStates
         }
         
-        let mutableView = MutableMessageHistoryView(postbox: self, orderStatistics: orderStatistics, clipHoles: clipHoles, peerIds: peerIds, ignoreMessagesInTimestampRange: ignoreMessagesInTimestampRange, anchor: anchor, combinedReadStates: readStates, transientReadStates: transientReadStates, tag: tag, appendMessagesFromTheSameGroup: appendMessagesFromTheSameGroup, namespaces: namespaces, count: count, topTaggedMessages: topTaggedMessages, additionalDatas: additionalDataEntries, getMessageCountInRange: { lowerBound, upperBound in
-            if case let .tag(tagMask) = tag {
-                return Int32(self.messageHistoryTable.getMessageCountInRange(peerId: lowerBound.id.peerId, namespace: lowerBound.id.namespace, tag: tagMask, lowerBound: lowerBound, upperBound: upperBound))
-            } else {
-                return 0
-            }
-        })
+        let mutableView = MutableMessageHistoryView(postbox: self, orderStatistics: orderStatistics, clipHoles: clipHoles, trackHoles: true, peerIds: peerIds, ignoreMessagesInTimestampRange: ignoreMessagesInTimestampRange, anchor: anchor, combinedReadStates: readStates, transientReadStates: transientReadStates, tag: tag, appendMessagesFromTheSameGroup: appendMessagesFromTheSameGroup, namespaces: namespaces, count: count, topTaggedMessages: topTaggedMessages, additionalDatas: additionalDataEntries)
         
         let initialUpdateType: ViewUpdateType = .Initial
         
@@ -4421,12 +4427,12 @@ public class Postbox {
         }
     }
 
-    public func transaction<T>(userInteractive: Bool = false, ignoreDisabled: Bool = false, _ f: @escaping(Transaction) -> T) -> Signal<T, NoError> {
+    public func transaction<T>(userInteractive: Bool = false, ignoreDisabled: Bool = false, _ f: @escaping(Transaction) -> T, file: String = #file, line: Int = #line) -> Signal<T, NoError> {
         return Signal<T, NoError> { subscriber in
             let disposable = MetaDisposable()
 
             self.impl.with { impl in
-                disposable.set(impl.transaction(userInteractive: userInteractive, ignoreDisabled: ignoreDisabled, f).start(next: subscriber.putNext, error: subscriber.putError, completed: subscriber.putCompletion))
+                disposable.set(impl.transaction(userInteractive: userInteractive, ignoreDisabled: ignoreDisabled, f, file: file, line: line).start(next: subscriber.putNext, error: subscriber.putError, completed: subscriber.putCompletion))
             }
 
             return disposable

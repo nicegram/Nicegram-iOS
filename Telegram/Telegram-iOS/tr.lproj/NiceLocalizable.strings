@@ -162,8 +162,6 @@
 "NicegramSettings.Other.hideReactions" = "Tepkileri Gizle";
 "NicegramSettings.RoundVideos.DownloadVideos" = "Videoları galeriye indir";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "Dilleri görmezden gel";
-"NicegramSettings.ShareChannelsInfoToggle" = "Kanal bilgilerini paylaş";
-"NicegramSettings.ShareChannelsInfoToggle.Note" = "Kanal bilgilerini ve bağlantısını veri tabanımıza göndererek en kapsamlı Telegram kanalı wikipedia'sına katkıda bulunun. Telegram profilinizi ve kanalınızı bağlamayız ve kişisel verilerinizi paylaşmayız.";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Uygulama, cihazınızdaki her mesajın dilini algılar. Bu, pil ömrünüzü etkileyebilecek yüksek öncelikli bir görevdir.";
 "Premium.rememberFolderOnExit" = "Çıkışta şu anki klasörü hatırla";
 "NicegramSettings.HideStories" = "Hikayeleri Gizle";
@@ -221,3 +219,9 @@
 "ChatContextMenu.Hide" = "Gizle";
 "ChatContextMenu.Unhide" = "Göster";
 "HiddenChatsTooltip" = "Gizli gizli sohbetleri görmek için 'N' logosuna basılı tutun";
+
+/*Data Sharing*/
+"NicegramSettings.ShareBotsToggle" = "Bot bilgilerini paylaş";
+"NicegramSettings.ShareChannelsToggle" = "Kanal bilgilerini paylaş";
+"NicegramSettings.ShareStickersToggle" = "Sticker bilgilerini paylaş";
+"NicegramSettings.ShareData.Note" = "Kanal bilgileri ve bağlantısını otomatik olarak göndererek Telegram kanalları ve gruplarının en kapsamlı vikipedisine katkıda bulunun. Telegram profilinizle ve kanalınızla bağlantı kurmuyoruz ve kişisel verilerinizi paylaşmıyoruz.";

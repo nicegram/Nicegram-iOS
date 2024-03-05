@@ -1,6 +1,7 @@
 import Foundation
 import AccountContext
 import Display
+import FeatAvatarGeneratorUI
 import FeatCardUI
 import FeatImagesHubUI
 import FeatPremiumUI
@@ -63,6 +64,25 @@ class NGDeeplinkHandler {
             } else {
                 return false
             }
+        case "avatarGenerator":
+            if #available(iOS 15.0, *) {
+                Task { @MainActor in
+                    guard let topController = UIApplication.topViewController else {
+                        return
+                    }
+                    AvatarGeneratorUIHelper().navigateToGenerationFlow(
+                        from: topController
+                    )
+                }
+            }
+            return true
+        case "avatarMyGenerations":
+            if #available(iOS 15.0, *) {
+                Task { @MainActor in
+                    AvatarGeneratorUIHelper().navigateToGenerator()
+                }
+            }
+            return true    
         case "generateImage":
             return handleGenerateImage(url: url)
         case "nicegramPremium":
@@ -100,7 +120,8 @@ class NGDeeplinkHandler {
             }
             return true
         default:
-            return false
+            showUpdateAppAlert()
+            return true
         }
     }
 }
@@ -221,6 +242,34 @@ private extension NGDeeplinkHandler {
             return true
         }
         return false
+    }
+    
+    func showUpdateAppAlert() {
+        let alert = UIAlertController(
+            title: "Update the app",
+            message: "Please update the app to use the newest features!",
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(
+            UIAlertAction(
+                title: "Close",
+                style: .cancel
+            )
+        )
+        
+        alert.addAction(
+            UIAlertAction(
+                title: "Update",
+                style: .default,
+                handler: { _ in
+                    let urlOpener = CoreContainer.shared.urlOpener()
+                    urlOpener.open(.appStoreAppUrl)
+                }
+            )
+        )
+        
+        UIApplication.topViewController?.present(alert, animated: true)
     }
 }
 

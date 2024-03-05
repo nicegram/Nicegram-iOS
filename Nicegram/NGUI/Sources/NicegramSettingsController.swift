@@ -11,6 +11,7 @@
 import AccountContext
 import Display
 import FeatImagesHubUI
+import FeatNicegramHub
 import FeatPinnedChats
 import Foundation
 import ItemListUI
@@ -70,7 +71,7 @@ private enum NicegramSettingsControllerSection: Int32 {
     case Account
     case Other
     case QuickReplies
-    case ShareChannelsInfo
+    case ShareData
     case PinnedChats
 }
 
@@ -120,8 +121,10 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     
     case secretMenu(String)
     
-    case shareChannelsInfoToggle(String, Bool)
-    case shareChannelsInfoNote(String)
+    case shareBotsData(String, Bool)
+    case shareChannelsData(String, Bool)
+    case shareStickersData(String, Bool)
+    case shareDataNote(String)
 
     // MARK: Section
 
@@ -143,8 +146,8 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return NicegramSettingsControllerSection.Account.rawValue
         case .secretMenu:
             return NicegramSettingsControllerSection.SecretMenu.rawValue
-        case .shareChannelsInfoToggle, .shareChannelsInfoNote:
-            return NicegramSettingsControllerSection.ShareChannelsInfo.rawValue
+        case .shareBotsData, .shareChannelsData, .shareStickersData, .shareDataNote:
+            return NicegramSettingsControllerSection.ShareData.rawValue
         case .pinnedChatsHeader, .pinnedChat:
             return NicegramSettingsControllerSection.PinnedChats.rawValue
         }
@@ -223,10 +226,14 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
         case let .easyToggle(index, _, _, _):
             return 5000 + Int32(index)
             
-        case .shareChannelsInfoToggle:
+        case .shareBotsData:
             return 6000
-        case .shareChannelsInfoNote:
+        case .shareChannelsData:
             return 6001
+        case .shareStickersData:
+            return 6002
+        case .shareDataNote:
+            return 6010
         }
     }
 
@@ -373,14 +380,26 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
-        case let .shareChannelsInfoToggle(lhsText, lhsValue):
-            if case let .shareChannelsInfoToggle(rhsText, rhsValue) = rhs, lhsText == rhsText, lhsValue == rhsValue {
+        case let .shareBotsData(lhsText, lhsValue):
+            if case let .shareBotsData(rhsText, rhsValue) = rhs, lhsText == rhsText, lhsValue == rhsValue {
                 return true
             } else {
                 return false
             }
-        case let .shareChannelsInfoNote(lhsText):
-            if case let .shareChannelsInfoNote(rhsText) = rhs, lhsText == rhsText {
+        case let .shareChannelsData(lhsText, lhsValue):
+            if case let .shareChannelsData(rhsText, rhsValue) = rhs, lhsText == rhsText, lhsValue == rhsValue {
+                return true
+            } else {
+                return false
+            }
+        case let .shareStickersData(lhsText, lhsValue):
+            if case let .shareStickersData(rhsText, rhsValue) = rhs, lhsText == rhsText, lhsValue == rhsValue {
+                return true
+            } else {
+                return false
+            }
+        case let .shareDataNote(lhsText):
+            if case let .shareDataNote(rhsText) = rhs, lhsText == rhsText {
                 return true
             } else {
                 return false
@@ -530,11 +549,43 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return ItemListActionItem(presentationData: presentationData, title: text, kind: .neutral, alignment: .natural, sectionId: section, style: .blocks) {
                 arguments.pushController(secretMenuController(context: arguments.context))
             }
-        case let .shareChannelsInfoToggle(text, value):
+        case let .shareBotsData(text, value):
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
-                setShareChannelsInfo(enabled: value)
+                if #available(iOS 13.0, *) {
+                    Task {
+                        let updateSharingSettingsUseCase = NicegramHubContainer.shared.updateSharingSettingsUseCase()
+                        
+                        await updateSharingSettingsUseCase {
+                            $0.with(\.shareBotsData, value)
+                        }
+                    }
+                }
             })
-        case let .shareChannelsInfoNote(text):
+        case let .shareChannelsData(text, value):
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
+                if #available(iOS 13.0, *) {
+                    Task {
+                        let updateSharingSettingsUseCase = NicegramHubContainer.shared.updateSharingSettingsUseCase()
+                        
+                        await updateSharingSettingsUseCase {
+                            $0.with(\.shareChannelsData, value)
+                        }
+                    }
+                }
+            })
+        case let .shareStickersData(text, value):
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
+                if #available(iOS 13.0, *) {
+                    Task {
+                        let updateSharingSettingsUseCase = NicegramHubContainer.shared.updateSharingSettingsUseCase()
+                        
+                        await updateSharingSettingsUseCase {
+                            $0.with(\.shareStickersData, value)
+                        }
+                    }
+                }
+            })
+        case let .shareDataNote(text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: section)
         case .pinnedChatsHeader:
             return ItemListSectionHeaderItem(
@@ -570,7 +621,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
 // MARK: Entries list
 
-private func nicegramSettingsControllerEntries(presentationData: PresentationData, experimentalSettings: ExperimentalUISettings, showCalls: Bool, pinnedChats: [PinnedChat], context: AccountContext) -> [NicegramSettingsControllerEntry] {
+private func nicegramSettingsControllerEntries(presentationData: PresentationData, experimentalSettings: ExperimentalUISettings, showCalls: Bool, pinnedChats: [PinnedChat], sharingSettings: SharingSettings?, context: AccountContext) -> [NicegramSettingsControllerEntry] {
     var entries: [NicegramSettingsControllerEntry] = []
     
     if canOpenSecretMenu(context: context) {
@@ -666,8 +717,29 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     entries.append(.easyToggle(toggleIndex, .hideStories, l("NicegramSettings.HideStories"), NGSettings.hideStories))
     toggleIndex += 1
     
-    entries.append(.shareChannelsInfoToggle(l("NicegramSettings.ShareChannelsInfoToggle"), isShareChannelsInfoEnabled()))
-    entries.append(.shareChannelsInfoNote(l("NicegramSettings.ShareChannelsInfoToggle.Note")))
+    if let sharingSettings {
+        entries.append(
+            .shareBotsData(
+                l("NicegramSettings.ShareBotsToggle"),
+                sharingSettings.shareBotsData
+            )
+        )
+        entries.append(
+            .shareChannelsData(
+                l("NicegramSettings.ShareChannelsToggle"),
+                sharingSettings.shareChannelsData
+            )
+        )
+        entries.append(
+            .shareStickersData(
+                l("NicegramSettings.ShareStickersToggle"),
+                sharingSettings.shareStickersData
+            )
+        )
+        entries.append(
+            .shareDataNote(l("NicegramSettings.ShareData.Note"))
+        )
+    }
     
     return entries
 }
@@ -715,8 +787,19 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
     } else {
         pinnedChatsSignal = .single([])
     }
+    
+    let sharingSettingsSignal: Signal<SharingSettings?, NoError>
+    if #available(iOS 13.0, *) {
+        sharingSettingsSignal = NicegramHubContainer.shared.getSharingSettingsUseCase()
+            .publisher()
+            .map { Optional($0) }
+            .toSignal()
+            .skipError()
+    } else {
+        sharingSettingsSignal = .single(nil)
+    }
 
-    let signal = combineLatest(context.sharedContext.presentationData, sharedDataSignal, showCallsTab, pinnedChatsSignal) |> map { presentationData, sharedData, showCalls, pinnedChats -> (ItemListControllerState, (ItemListNodeState, Any)) in
+    let signal = combineLatest(context.sharedContext.presentationData, sharedDataSignal, showCallsTab, pinnedChatsSignal, sharingSettingsSignal) |> map { presentationData, sharedData, showCalls, pinnedChats, sharingSettings -> (ItemListControllerState, (ItemListNodeState, Any)) in
 
         let experimentalSettings: ExperimentalUISettings = sharedData.entries[ApplicationSpecificSharedDataKeys.experimentalUISettings]?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
 
@@ -727,7 +810,7 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
             })
         }
 
-        let entries = nicegramSettingsControllerEntries(presentationData: presentationData, experimentalSettings: experimentalSettings, showCalls: showCalls, pinnedChats: pinnedChats, context: context)
+        let entries = nicegramSettingsControllerEntries(presentationData: presentationData, experimentalSettings: experimentalSettings, showCalls: showCalls, pinnedChats: pinnedChats, sharingSettings: sharingSettings, context: context)
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("AppName")), leftNavigationButton: leftNavigationButton, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
         let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks)
 

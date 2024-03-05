@@ -162,8 +162,6 @@
 "NicegramSettings.Other.hideReactions" = "Приховати реакції";
 "NicegramSettings.RoundVideos.DownloadVideos" = "Завантажити відео у Галерею";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "Ігнорувати мови";
-"NicegramSettings.ShareChannelsInfoToggle" = "Поділитися інформацією про канал";
-"NicegramSettings.ShareChannelsInfoToggle.Note" = "Приєднуйтесь до найбільш всеосяжної Вікіпедії каналів і груп Telegram, автоматично надсилаючи інформацію про канал і посилання на нашу базу даних. Ми не зв'язуємо ваш профіль у Telegram і канал і не поширюємо ваші персональні дані.";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Додаток виявляє мову кожного повідомлення на вашому пристрої. Це високопродуктивне завдання, яке може вплинути на життя батареї.";
 "Premium.rememberFolderOnExit" = "Запам’ятати поточну теку при виході";
 
