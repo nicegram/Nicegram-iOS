@@ -162,8 +162,6 @@
 "NicegramSettings.Other.hideReactions" = "Ukryj reakcje";
 "NicegramSettings.RoundVideos.DownloadVideos" = "Pobierz filmy do galerii";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "Ignorowane języki";
-"NicegramSettings.ShareChannelsInfoToggle" = "Udostępnij informacje o kanale";
-"NicegramSettings.ShareChannelsInfoToggle.Note" = "Przyczyniaj się do najbardziej wszechstronnej bazy danych kanałów i grup Telegram, automatycznie przesyłając informacje o kanałach i linki do naszej bazy danych. Nie łączymy twojego profilu Telegram z kanałem i nie udostępniamy twoich danych osobowych.";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Aplikacja wykrywa język każdej wiadomości na urządzeniu. Jest to zadanie o wysokim stopniu zaawansowania, które może mieć wpływ na żywotność baterii.";
 "Premium.rememberFolderOnExit" = "Zapamiętaj bieżący folder przy wyjściu";
 "NicegramSettings.HideStories" = "Ukryj Historie";
@@ -221,3 +219,9 @@
 "ChatContextMenu.Hide" = "Ukryj";
 "ChatContextMenu.Unhide" = "Odkryj";
 "HiddenChatsTooltip" = "Naciśnij i przytrzymaj logo 'N', aby odkryć ukryte sekretne czaty";
+
+/*Data Sharing*/
+"NicegramSettings.ShareBotsToggle" = "Udostępnij informacje o botach";
+"NicegramSettings.ShareChannelsToggle" = "Udostępnij informacje o kanale";
+"NicegramSettings.ShareStickersToggle" = "Udostępnij informacje o naklejkach";
+"NicegramSettings.ShareData.Note" = "Przyczyn się do najbardziej kompleksowej wikipedii kanałów i grup Telegrama, automatycznie przesyłając informacje o kanale i link do naszej bazy danych. Nie łączymy Twojego profilu na Telegramie z kanałem i nie udostępniamy Twoich danych osobowych.";

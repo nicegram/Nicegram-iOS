@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/scenee/FloatingPanel",
       "state" : {
-        "revision" : "5b33d3d5ff1f50f4a2d64158ccfe8c07b5a3e649",
-        "version" : "2.8.1"
+        "revision" : "8f2be39bf49b4d5e22bbf7bdde69d5b76d0ecd2a",
+        "version" : "2.8.2"
       }
     },
     {
@@ -37,12 +37,21 @@
       }
     },
     {
+      "identity" : "navigation-stack-backport",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/denis15yo/navigation-stack-backport.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "66716ce9c31198931c2275a0b69de2fdaa687e74"
+      }
+    },
+    {
       "identity" : "nicegram-assistant-ios",
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "123eb001dcc9477f9087e40ff1b0e7f012182d45"
+        "revision" : "040920facf9aede1781cc9966f373f53a8a9e360"
       }
     },
     {
@@ -59,8 +68,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SDWebImage/SDWebImage.git",
       "state" : {
-        "revision" : "b11493f76481dff17ac8f45274a6b698ba0d3af5",
-        "version" : "5.18.11"
+        "revision" : "73b9397cfbd902f606572964055464903b1d84c6",
+        "version" : "5.19.0"
       }
     },
     {

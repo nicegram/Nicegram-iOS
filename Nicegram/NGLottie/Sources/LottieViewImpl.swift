@@ -40,6 +40,19 @@ extension LottieViewImpl: LottieViewProtocol {
         )
     }
     
+    public func setImageProvider(_ imageProvider: ImageProvider?) {
+        if let imageProvider {
+            animationView.imageProvider = AnonymousImageProvider(
+                provider: imageProvider
+            )
+        } else {
+            animationView.imageProvider = BundleImageProvider(
+                bundle: .main,
+                searchPath: nil
+            )
+        }
+    }
+    
     public func setLoopMode(_ loopMode: LoopMode) {
         let mode: LottieLoopMode
         switch loopMode {
@@ -60,5 +73,19 @@ extension LottieViewImpl: LottieViewProtocol {
     
     public func stop() {
         animationView.stop()
+    }
+}
+
+private class AnonymousImageProvider {
+    let provider: LottieViewProtocol.ImageProvider
+    
+    init(provider: LottieViewProtocol.ImageProvider) {
+        self.provider = provider
+    }
+}
+
+extension AnonymousImageProvider: AnimationImageProvider {
+    func imageForAsset(asset: ImageAsset) -> CGImage? {
+        provider.image(asset.id)
     }
 }

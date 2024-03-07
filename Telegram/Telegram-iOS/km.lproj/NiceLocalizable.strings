@@ -44,7 +44,7 @@
 "Common.Later" = "ពេលក្រោយ";
 "Common.RestartRequired" = "តម្រូវ​ឲ្យ​ចាប់ផ្ដើម​ឡើង​វិញ!";
 "NiceFeatures.Tabs.ShowNames" = "បង្ហាញឈ្មោះថេប";
-"Chat.ForwardAsCopy" = "បញ្ជូនបន្តជាចម្លង";
+"Chat.ForwardAsCopy" = "បញ្ជូនបន្តជាច្បាប់ចម្លង";
 
 /*Folder*/
 "Folder.DefaultName" = "ថត";
@@ -87,3 +87,13 @@
 "IAP.Premium.Title" = "ព្រីមៀរ";
 "IAP.Premium.Subtitle" = "លក្ខណៈពិសេសប្លែក ដែលអ្នកមិនអាចបដិសេធ!";
 "IAP.Premium.Features" = "អ្នកបកប្រែសាររហ័ស\n\nចងចាំថតដែលបានជ្រើសនៅពេលចេញ";
+
+/*Registration Date*/
+"NiceFeatures.RegDate.OlderThan" = "ចាស់ជាង";
+"NiceFeatures.RegDate.Approximately" = "ប្រហែល";
+"NiceFeatures.RegDate.NewerThan" = "ថ្មោងថ្មីជាង";
+"NicegramOnboarding.1.Title" = "អតិថូបករណ៍ №1 សម្រាប់កម្មវិធីសារតេឡេក្រាម";
+"NicegramOnboarding.1.Desc" = "អ្នកប្រើប្រាស់ Nicegram ច្រើនជាង 2 លាននាក់ និងអាចអាក់សេសអតិថូបករណ៍តេឡេក្រាមដ៏មានឥទ្ធិពល និងសុវត្ថិភាពបំផុតសម្រាប់អាជីវកម្ម។";
+"NicegramOnboarding.2.Title" = "បទពិសោធន៍ផ្ញើសារកម្រិតខ្ពស់";
+"NicegramOnboarding.3.Title" = "ប្រូហ្វាលអត្ថជនបន្ថែម";
+"NicegramOnboarding.4.Title" = "ផ្នែកបន្ថែមអាជីវកម្មតែមួយគត់";

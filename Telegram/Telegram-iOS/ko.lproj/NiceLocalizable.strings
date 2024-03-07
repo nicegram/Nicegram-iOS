@@ -162,8 +162,6 @@
 "NicegramSettings.Other.hideReactions" = "반응 숨기기";
 "NicegramSettings.RoundVideos.DownloadVideos" = "사진앨범으로 동영상 다운로드";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "언어 무시하기";
-"NicegramSettings.ShareChannelsInfoToggle" = "채널 정보 공유";
-"NicegramSettings.ShareChannelsInfoToggle.Note" = "저희 데이터 베이스에 자동으로 채널 정보와 링크를 제출함으로써 텔레그램(Telegram) 채널 및 그룹의 가장 포괄적인 위키피디아에 기여하세요. 저희는 귀하의 텔레그램 프로필과 채널을 연결하지 않으며 귀하의 개인 정보도 공유하지 않습니다.";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "앱은 기기에서 각 메시지의 언어를 감지합니다. 배터리 수명에 영향을 줄 수 있는 고성능 작업입니다.";
 "Premium.rememberFolderOnExit" = "종료시 현재 폴더 기억하기";
 "NicegramSettings.HideStories" = "스토리 숨기기";
@@ -221,3 +219,9 @@
 "ChatContextMenu.Hide" = "숨기기";
 "ChatContextMenu.Unhide" = "숨김 해제";
 "HiddenChatsTooltip" = "숨겨진 비밀 채팅을 보려면 'N' 로고를 누르고 있으세요";
+
+/*Data Sharing*/
+"NicegramSettings.ShareBotsToggle" = "봇 정보 공유하기";
+"NicegramSettings.ShareChannelsToggle" = "채널 정보 공유하기";
+"NicegramSettings.ShareStickersToggle" = "스티커 정보 공유하기";
+"NicegramSettings.ShareData.Note" = "자동으로 채널 정보와 링크를 제출함으로써 Telegram 채널과 그룹들의 가장 포괄적인 위키백과에 기여하세요. 우리는 여러분의 Telegram 프로필과 채널을 연결하거나 개인 데이터를 공유하지 않습니다.";

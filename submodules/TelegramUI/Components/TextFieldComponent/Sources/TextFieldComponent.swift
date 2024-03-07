@@ -96,6 +96,8 @@ public final class TextFieldComponent: Component {
     public let customInputView: UIView?
     public let resetText: NSAttributedString?
     public let isOneLineWhenUnfocused: Bool
+    public let characterLimit: Int?
+    public let allowEmptyLines: Bool
     public let formatMenuAvailability: FormatMenuAvailability
     public let lockedFormatAction: () -> Void
     public let present: (ViewController) -> Void
@@ -112,6 +114,8 @@ public final class TextFieldComponent: Component {
         customInputView: UIView?,
         resetText: NSAttributedString?,
         isOneLineWhenUnfocused: Bool,
+        characterLimit: Int? = nil,
+        allowEmptyLines: Bool = true,
         formatMenuAvailability: FormatMenuAvailability,
         lockedFormatAction: @escaping () -> Void,
         present: @escaping (ViewController) -> Void,
@@ -127,6 +131,8 @@ public final class TextFieldComponent: Component {
         self.customInputView = customInputView
         self.resetText = resetText
         self.isOneLineWhenUnfocused = isOneLineWhenUnfocused
+        self.characterLimit = characterLimit
+        self.allowEmptyLines = allowEmptyLines
         self.formatMenuAvailability = formatMenuAvailability
         self.lockedFormatAction = lockedFormatAction
         self.present = present
@@ -161,6 +167,12 @@ public final class TextFieldComponent: Component {
         if lhs.isOneLineWhenUnfocused != rhs.isOneLineWhenUnfocused {
             return false
         }
+        if lhs.characterLimit != rhs.characterLimit {
+            return false
+        }
+        if lhs.allowEmptyLines != rhs.allowEmptyLines {
+            return false
+        }
         if lhs.formatMenuAvailability != rhs.formatMenuAvailability {
             return false
         }
@@ -193,7 +205,7 @@ public final class TextFieldComponent: Component {
                 
         private let ellipsisView = ComponentView<Empty>()
         
-        private var inputState: InputState {
+        public var inputState: InputState {
             let selectionRange: Range<Int> = self.textView.selectedRange.location ..< (self.textView.selectedRange.location + self.textView.selectedRange.length)
             return InputState(inputText: stateAttributedStringForText(self.textView.attributedText ?? NSAttributedString()), selectionRange: selectionRange)
         }
@@ -537,6 +549,24 @@ public final class TextFieldComponent: Component {
         }
         
         public func chatInputTextNode(shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+            guard let component = self.component else {
+                return true
+            }
+            if let characterLimit = component.characterLimit {
+                let string = self.inputState.inputText.string as NSString
+                let updatedString = string.replacingCharacters(in: range, with: text)
+                if (updatedString as NSString).length > characterLimit {
+                    return false
+                }
+            }
+            if !component.allowEmptyLines {
+                let string = self.inputState.inputText.string as NSString
+                let updatedString = string.replacingCharacters(in: range, with: text)
+                if updatedString.range(of: "\n\n") != nil {
+                    return false
+                }
+            }
+            
             return true
         }
         

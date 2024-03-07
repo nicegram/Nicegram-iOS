@@ -338,6 +338,8 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
     
     private var derivedLayoutState: ChatControllerNodeDerivedLayoutState?
     
+    private var loadMoreSearchResultsDisposable: Disposable?
+    
     private var isLoadingValue: Bool = false
     private var isLoadingEarlier: Bool = false
     private func updateIsLoading(isLoading: Bool, earlier: Bool, animated: Bool) {
@@ -659,6 +661,12 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                 }
                 source = .custom(messages: messages, messageId: MessageId(peerId: PeerId(0), namespace: 0, id: 0), quote: nil, loadMore: nil)
             }
+        } else if case .customChatContents = chatLocation {
+            if case let .customChatContents(customChatContents) = subject {
+                source = .customView(historyView: customChatContents.historyView)
+            } else {
+                source = .custom(messages: .single(([], 0, false)), messageId: nil, quote: nil, loadMore: nil)
+            }
         } else {
             source = .default
         }
@@ -973,6 +981,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
         self.displayVideoUnmuteTipDisposable?.dispose()
         self.inputMediaNodeDataDisposable?.dispose()
         self.inlineSearchResultsReadyDisposable?.dispose()
+        self.loadMoreSearchResultsDisposable?.dispose()
     }
     
     override func didLoad() {
@@ -1765,6 +1774,8 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
             isSelectionEnabled = false
         } else if self.chatPresentationInterfaceState.inputTextPanelState.mediaRecordingState != nil {
             isSelectionEnabled = false
+        } else if case .customChatContents = self.chatLocation {
+            isSelectionEnabled = false
         }
         self.historyNode.isSelectionGestureEnabled = isSelectionEnabled
                 
@@ -2012,7 +2023,7 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
             overlayNavigationBar.updateLayout(size: barFrame.size, transition: transition)
         }
         
-        var listInsets = UIEdgeInsets(top: containerInsets.bottom + contentBottomInset, left: containerInsets.right, bottom: containerInsets.top, right: containerInsets.left)
+        var listInsets = UIEdgeInsets(top: containerInsets.bottom + contentBottomInset, left: containerInsets.right, bottom: containerInsets.top + 6.0, right: containerInsets.left)
         let listScrollIndicatorInsets = UIEdgeInsets(top: containerInsets.bottom + inputPanelsHeight, left: containerInsets.right, bottom: containerInsets.top, right: containerInsets.left)
         
         var childContentInsets: UIEdgeInsets = containerInsets
@@ -2852,6 +2863,51 @@ class ChatControllerNode: ASDisplayNode, UIScrollViewDelegate {
                             }
                         }
                         return foundLocalPeers
+                    },
+                    loadMoreSearchResults: { [weak self] in
+                        guard let self, let controller = self.controller else {
+                            return
+                        }
+                        guard let currentSearchState = controller.searchState, let currentResultsState = controller.presentationInterfaceState.search?.resultsState else {
+                            return
+                        }
+                        
+                        self.loadMoreSearchResultsDisposable?.dispose()
+                        self.loadMoreSearchResultsDisposable = (self.context.engine.messages.searchMessages(location: currentSearchState.location, query: currentSearchState.query, state: currentResultsState.state)
+                        |> deliverOnMainQueue).startStrict(next: { [weak self] results, updatedState in
+                            guard let self, let controller = self.controller else {
+                                return
+                            }
+                            
+                            controller.searchResult.set(.single((results, updatedState, currentSearchState.location)))
+                            
+                            var navigateIndex: MessageIndex?
+                            controller.updateChatPresentationInterfaceState(animated: true, interactive: true, { current in
+                                if let data = current.search {
+                                    let messageIndices = results.messages.map({ $0.index }).sorted()
+                                    var currentIndex = messageIndices.last
+                                    if let previousResultId = data.resultsState?.currentId {
+                                        for index in messageIndices {
+                                            if index.id >= previousResultId {
+                                                currentIndex = index
+                                                break
+                                            }
+                                        }
+                                    }
+                                    navigateIndex = currentIndex
+                                    return current.updatedSearch(data.withUpdatedResultsState(ChatSearchResultsState(messageIndices: messageIndices, currentId: currentIndex?.id, state: updatedState, totalCount: results.totalCount, completed: results.completed)))
+                                } else {
+                                    return current
+                                }
+                            })
+                            if let navigateIndex = navigateIndex {
+                                switch controller.chatLocation {
+                                case .peer, .replyThread, .customChatContents:
+                                    controller.navigateToMessage(from: nil, to: .index(navigateIndex), forceInCurrentChat: true)
+                                }
+                            }
+                            controller.updateItemNodesSearchTextHighlightStates()
+                        })
                     }
                 )),
                 environment: {},

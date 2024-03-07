@@ -124,6 +124,40 @@
 "NGLab.RegDate.Title" = "Registration Date";
 "NGLab.RegDate.Notice" = "This is an approximate date";
 "NGLab.RegDate.MenuItem" = "registered";
+"NGLab.RegDate.FetchError" = ".";
+"NGLab.BadDeviceToken" = "";
+
+/*Backup Settings*/
+"NiceFeatures.BackupIcloud" = "";
+"NiceFeatures.BackupSettings" = "Backup Settings & Folders";
+"NiceFeatures.BackupSettings.Notice" = ".";
+"NiceFeatures.BackupSettings.Done" = "";
+"NiceFeatures.BackupSettings.Error" = "";
+
+"NiceFeatures.RestoreSettings.Confirm" = "";
+"NiceFeatures.RestoreSettings.Done" = "";
+"NiceFeatures.RestoreSettings.Error" = "";
+
+/*Preview Mode*/
+"Gmod.Restricted" = ".";
+"Gmod.Unavailable" = "";
+"Gmod.Disable.Notice" = "";
+"Gmod" = "";
+"Gmod.Enable" = "?";
+"Gmod.Disable" = "?";
+"Gmod.Notice" = "";
+
+"SendWithKb" = "";
+"NiceFeatures.ShowGmodIcon" = "";
+"Gmod.OpenChatQ" = "?";
+"Gmod.OpenChatNotice" = "";
+"Gmod.OpenChatBtn" = "";
+"Gmod.DisableBtn" = "";
+
+"NicegramSettings.Other.hidePhoneInSettingsNotice" = ".";
+"NicegramSettings.Other.showProfileId" = "";
+"NicegramSettings.Other.showRegDate" = "";
+"NicegramSettings.Unblock.Header" = "";
 "DoubleBottom.Description" = "To enable this feature, you should have more than one account and switch on Passcode Lock (go to Settings → Privacy & Security → Passcode Lock)";
 "DoubleBottom.Enabled.Title" = "Double Bottom is enabled";
 "DoubleBottom.Enabled.Description" = "Please remember the passcode you’ve just set and restart the app for Double Bottom to work well";
