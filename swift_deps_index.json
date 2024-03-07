@@ -230,7 +230,8 @@
       "product_memberships": [
         "FeatAvatarGeneratorUI",
         "FeatNicegramHub",
-        "NGAssistantUI"
+        "NGAssistantUI",
+        "NGEntryPoint"
       ]
     },
     {
@@ -1257,7 +1258,7 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "040920facf9aede1781cc9966f373f53a8a9e360",
+        "commit": "c582a66c9d2fb787d788a89ff084841cda6e3945",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
         "branch": "develop"
       }
