@@ -44,7 +44,7 @@ def swift_dependencies():
     # branch: avatar-generator
     swift_package(
         name = "swiftpkg_nicegram_assistant_ios",
-        commit = "3644c25aebc28298950af37488abb358d96141fa",
+        commit = "f57141d85b92b71be514d7fa11dbb0559f147e42",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
     )
