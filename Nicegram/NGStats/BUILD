@@ -7,10 +7,8 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     deps = [
-        "@swiftpkg_nicegram_assistant_ios//:NGApi",
+        "@swiftpkg_nicegram_assistant_ios//:FeatNicegramHub",
         "//submodules/AccountContext:AccountContext",
-        "//Nicegram/NGData:NGData",
-        "//Nicegram/NGRemoteConfig:NGRemoteConfig",
         "//Nicegram/NGUtils:NGUtils",
     ],
     visibility = [

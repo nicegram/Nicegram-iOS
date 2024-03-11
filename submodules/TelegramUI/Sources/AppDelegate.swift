@@ -1,5 +1,6 @@
 // MARK: Nicegram imports
 import AppLovinAdProvider
+import FeatNicegramHub
 import FeatTasks
 import NGAiChat
 import NGAnalytics
@@ -14,6 +15,7 @@ import NGOnboarding
 import NGRemoteConfig
 import NGRepoTg
 import NGRepoUser
+import NGStats
 import NGStealthMode
 import NGStrings
 import SubscriptionAnalytics
@@ -1210,34 +1212,36 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         })
         
         // MARK: Nicegram
-        if #available(iOS 13.0, *) {
-            let _ = self.context.get().start(next: { context in
-                if let context = context {
-                    TasksContainer.shared.channelSubscriptionChecker.register {
-                        ChannelSubscriptionCheckerImpl(context: context.context)
-                    }
-                }
-            })
-        }
-        
         let _ = self.context.get().start(next: { context in
             if let context = context {
+                let accountContext = context.context
+                
                 CoreContainer.shared.urlOpener.register {
-                    UrlOpenerImpl(accountContext: context.context)
+                    UrlOpenerImpl(accountContext: accountContext)
                 }
-            }
-        })
-        
-        if #available(iOS 13.0, *) {
-            let _ = self.context.get().start(next: { context in
-                if let context = context {
-                    let accountContext = context.context
+                
+                if #available(iOS 13.0, *) {
+                    NicegramHubContainer.shared.stickersDataProvider.register {
+                        StickersDataProviderImpl(context: accountContext)
+                    }
+                    
                     RepoTgHelper.setTelegramId(
                         accountContext.account.peerId.id._internalGetInt64Value()
                     )
+                    
+                    TasksContainer.shared.channelSubscriptionChecker.register {
+                        ChannelSubscriptionCheckerImpl(context: accountContext)
+                    }
                 }
-            })
-        }
+                
+                if #available(iOS 13.0, *) {
+                    Task {
+                        let shareStickersUseCase = NicegramHubContainer.shared.shareStickersUseCase()
+                        await shareStickersUseCase()
+                    }
+                }
+            }
+        })
         
         let _ = self.sharedContextPromise.get().start(next: { sharedContext in
             NGStealthMode.initialize(

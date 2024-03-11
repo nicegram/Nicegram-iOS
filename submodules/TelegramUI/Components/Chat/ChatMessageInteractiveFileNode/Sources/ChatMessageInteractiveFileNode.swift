@@ -883,7 +883,9 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                 var updatedAudioTranscriptionState: AudioTranscriptionButtonComponent.TranscriptionState?
                 
                 var displayTranscribe = false
-                if arguments.message.id.peerId.namespace != Namespaces.Peer.SecretChat && !isViewOnceMessage && !arguments.presentationData.isPreview {
+                if Namespaces.Message.allNonRegular.contains(arguments.message.id.namespace) {
+                    displayTranscribe = false
+                } else if arguments.message.id.peerId.namespace != Namespaces.Peer.SecretChat && !isViewOnceMessage && !arguments.presentationData.isPreview {
                     let premiumConfiguration = PremiumConfiguration.with(appConfiguration: arguments.context.currentAppConfiguration.with { $0 })
                     if arguments.associatedData.isPremium {
                         displayTranscribe = true
@@ -1469,10 +1471,16 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                                         strongSelf.view.addSubview(audioTranscriptionButton)
                                         added = true
                                     }
+                                    let buttonTheme: AudioTranscriptionButtonComponent.Theme
+                                    if let customTintColor = arguments.customTintColor {
+                                        buttonTheme = .custom(customTintColor.withMultipliedAlpha(0.1), customTintColor)
+                                    } else {
+                                        buttonTheme = .bubble(arguments.incoming ? arguments.presentationData.theme.theme.chat.message.incoming : arguments.presentationData.theme.theme.chat.message.outgoing)
+                                    }
                                     let audioTranscriptionButtonSize = audioTranscriptionButton.update(
                                         transition: animation.isAnimated ? .easeInOut(duration: 0.3) : .immediate,
                                         component: AnyComponent(AudioTranscriptionButtonComponent(
-                                            theme: .bubble(arguments.incoming ? arguments.presentationData.theme.theme.chat.message.incoming : arguments.presentationData.theme.theme.chat.message.outgoing),
+                                            theme: buttonTheme,
                                             transcriptionState: effectiveAudioTranscriptionState,
                                             pressed: {
                                                 guard let strongSelf = self else {

@@ -162,8 +162,6 @@
 "NicegramSettings.Other.hideReactions" = "隱藏心情回應";
 "NicegramSettings.RoundVideos.DownloadVideos" = "將影片下載至圖片庫";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "忽略語言";
-"NicegramSettings.ShareChannelsInfoToggle" = "分享頻道資訊";
-"NicegramSettings.ShareChannelsInfoToggle.Note" = "將頻道資訊與連結自動提交給我們的資料庫，來為最全面的 Telegram 頻道與群組維基百科做出貢獻。我們不會連接您的 Telegram 個人檔案與頻道，也不會分享您的個人資料。";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "App 會檢測您設備上每則訊息的語言。這是一項高耗電的功能，會影響您的電池壽命。";
 "Premium.rememberFolderOnExit" = "記下應用程式關閉時所在的資料夾";
 "NicegramSettings.HideStories" = "隱藏故事";
@@ -221,3 +219,9 @@
 "ChatContextMenu.Hide" = "隱藏";
 "ChatContextMenu.Unhide" = "取消隱藏";
 "HiddenChatsTooltip" = "長按 'N' 標誌以顯示隱藏的秘密聊天";
+
+/*Data Sharing*/
+"NicegramSettings.ShareBotsToggle" = "分享機器人資訊";
+"NicegramSettings.ShareChannelsToggle" = "分享頻道資訊";
+"NicegramSettings.ShareStickersToggle" = "分享貼圖資訊";
+"NicegramSettings.ShareData.Note" = "通過自動提交頻道資訊和連結到我們的數據庫，貢獻給最全面的Telegram頻道和群組維基百科。我們不會連接您的Telegram個人檔案和頻道，也不會分享您的個人資料。";

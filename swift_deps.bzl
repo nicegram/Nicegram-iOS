@@ -12,7 +12,7 @@ def swift_dependencies():
     # version: 2.6.1
     swift_package(
         name = "swiftpkg_floatingpanel",
-        commit = "5b33d3d5ff1f50f4a2d64158ccfe8c07b5a3e649",
+        commit = "8f2be39bf49b4d5e22bbf7bdde69d5b76d0ecd2a",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/scenee/FloatingPanel",
     )
@@ -33,10 +33,18 @@ def swift_dependencies():
         remote = "https://github.com/LeoNatan/LNExtensionExecutor",
     )
 
-    # branch: develop
+    # branch: main
+    swift_package(
+        name = "swiftpkg_navigation_stack_backport",
+        commit = "66716ce9c31198931c2275a0b69de2fdaa687e74",
+        dependencies_index = "@//:swift_deps_index.json",
+        remote = "https://github.com/denis15yo/navigation-stack-backport.git",
+    )
+
+    # branch: avatar-generator
     swift_package(
         name = "swiftpkg_nicegram_assistant_ios",
-        commit = "123eb001dcc9477f9087e40ff1b0e7f012182d45",
+        commit = "9d2bc90674d3fa38fdd2e6f8f069c67d296d2bde",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
     )
@@ -52,7 +60,7 @@ def swift_dependencies():
     # version: 5.15.5
     swift_package(
         name = "swiftpkg_sdwebimage",
-        commit = "b11493f76481dff17ac8f45274a6b698ba0d3af5",
+        commit = "73b9397cfbd902f606572964055464903b1d84c6",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/SDWebImage/SDWebImage.git",
     )

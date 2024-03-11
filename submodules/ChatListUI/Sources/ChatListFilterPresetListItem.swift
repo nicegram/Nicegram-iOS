@@ -19,6 +19,7 @@ final class ChatListFilterPresetListItem: ListViewItem, ItemListItem {
     let preset: ChatListFilter
     let title: String
     let label: String
+    let tagColor: UIColor?
     let editing: ChatListFilterPresetListItemEditing
     let canBeReordered: Bool
     let canBeDeleted: Bool
@@ -34,6 +35,7 @@ final class ChatListFilterPresetListItem: ListViewItem, ItemListItem {
         preset: ChatListFilter,
         title: String,
         label: String,
+        tagColor: UIColor?,
         editing: ChatListFilterPresetListItemEditing,
         canBeReordered: Bool,
         canBeDeleted: Bool,
@@ -48,6 +50,7 @@ final class ChatListFilterPresetListItem: ListViewItem, ItemListItem {
         self.preset = preset
         self.title = title
         self.label = label
+        self.tagColor = tagColor
         self.editing = editing
         self.canBeReordered = canBeReordered
         self.canBeDeleted = canBeDeleted
@@ -109,7 +112,7 @@ final class ChatListFilterPresetListItem: ListViewItem, ItemListItem {
 
 private let titleFont = Font.regular(17.0)
 
-private final class ChatListFilterPresetListItemNode: ItemListRevealOptionsItemNode {
+final class ChatListFilterPresetListItemNode: ItemListRevealOptionsItemNode {
     private let backgroundNode: ASDisplayNode
     private let topStripeNode: ASDisplayNode
     private let bottomStripeNode: ASDisplayNode
@@ -125,6 +128,7 @@ private final class ChatListFilterPresetListItemNode: ItemListRevealOptionsItemN
     private let labelNode: TextNode
     private let arrowNode: ASImageNode
     private let sharedIconNode: ASImageNode
+    private var tagIconView: UIImageView?
     
     private let activateArea: AccessibilityAreaNode
     
@@ -173,7 +177,7 @@ private final class ChatListFilterPresetListItemNode: ItemListRevealOptionsItemN
         self.sharedIconNode.displayWithoutProcessing = true
         self.sharedIconNode.displaysAsynchronously = false
         self.sharedIconNode.isLayerBacked = true
-        
+
         self.activateArea = AccessibilityAreaNode()
         
         self.highlightedBackgroundNode = ASDisplayNode()
@@ -214,6 +218,7 @@ private final class ChatListFilterPresetListItemNode: ItemListRevealOptionsItemN
                 } else {
                     updateArrowImage = PresentationResourcesItemList.disclosureArrowImage(item.presentationData.theme)
                 }
+                
                 updatedSharedIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat List/SharedFolderListIcon"), color: item.presentationData.theme.list.disclosureArrowColor)
             }
             
@@ -406,13 +411,48 @@ private final class ChatListFilterPresetListItemNode: ItemListRevealOptionsItemN
                     strongSelf.arrowNode.isHidden = item.isAllChats
                     
                     if let sharedIconImage = strongSelf.sharedIconNode.image {
-                        strongSelf.sharedIconNode.frame = CGRect(origin: CGPoint(x: strongSelf.arrowNode.frame.minX + 2.0 - sharedIconImage.size.width, y: floorToScreenPixels((layout.contentSize.height - sharedIconImage.size.height) / 2.0) + 1.0), size: sharedIconImage.size)
+                        var sharedIconFrame = CGRect(origin: CGPoint(x: strongSelf.arrowNode.frame.minX + 2.0 - sharedIconImage.size.width, y: floorToScreenPixels((layout.contentSize.height - sharedIconImage.size.height) / 2.0) + 1.0), size: sharedIconImage.size)
+                        if item.tagColor != nil {
+                            sharedIconFrame.origin.x -= 34.0
+                        }
+                        if strongSelf.sharedIconNode.bounds.isEmpty {
+                            strongSelf.sharedIconNode.frame = sharedIconFrame
+                        } else {
+                            transition.updateFrame(node: strongSelf.sharedIconNode, frame: sharedIconFrame)
+                        }
                     }
                     var isShared = false
                     if case let .filter(_, _, _, data) = item.preset, data.isShared {
                         isShared = true
                     }
                     strongSelf.sharedIconNode.isHidden = !isShared
+                    
+                    if let tagColor = item.tagColor {
+                        let tagIconView: UIImageView
+                        var tagIconTransition = transition
+                        if let current = strongSelf.tagIconView {
+                            tagIconView = current
+                        } else {
+                            tagIconTransition = .immediate
+                            tagIconView = UIImageView(image: generateStretchableFilledCircleImage(diameter: 24.0, color: .white)?.withRenderingMode(.alwaysTemplate))
+                            strongSelf.tagIconView = tagIconView
+                            strongSelf.containerNode.view.addSubview(tagIconView)
+                        }
+                        tagIconView.tintColor = tagColor
+                        
+                        let tagIconFrame = CGRect(origin: CGPoint(x: strongSelf.arrowNode.frame.minX - 2.0 - 24.0, y: floorToScreenPixels((layout.contentSize.height - 24.0) / 2.0)), size: CGSize(width: 24.0, height: 24.0))
+                        
+                        tagIconTransition.updateAlpha(layer: tagIconView.layer, alpha: reorderControlSizeAndApply != nil ? 0.0 : 1.0)
+                        tagIconTransition.updateFrame(view: tagIconView, frame: tagIconFrame)
+                    } else {
+                        if let tagIconView = strongSelf.tagIconView {
+                            strongSelf.tagIconView = nil
+                            transition.updateAlpha(layer: tagIconView.layer, alpha: 0.0, completion: { [weak tagIconView] _ in
+                                tagIconView?.removeFromSuperview()
+                            })
+                            transition.updateTransformScale(layer: tagIconView.layer, scale: 0.001)
+                        }
+                    }
                     
                     strongSelf.activateArea.frame = CGRect(origin: CGPoint(x: leftInset + revealOffset + editingOffset, y: 0.0), size: CGSize(width: params.width - params.rightInset - 56.0 - (leftInset + revealOffset + editingOffset), height: layout.contentSize.height))
                     
@@ -424,6 +464,13 @@ private final class ChatListFilterPresetListItemNode: ItemListRevealOptionsItemN
                     strongSelf.setRevealOptionsOpened(item.editing.revealed, animated: animated)
                 }
             })
+        }
+    }
+    
+    func animateTagColorIn(delay: Double) {
+        if let tagIconView = self.tagIconView {
+            tagIconView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.12, delay: delay)
+            tagIconView.layer.animateSpring(from: 0.001 as NSNumber, to: 1.0 as NSNumber, keyPath: "transform.scale", duration: 0.4, delay: delay)
         }
     }
     
@@ -507,7 +554,16 @@ private final class ChatListFilterPresetListItemNode: ItemListRevealOptionsItemN
         
         var sharedIconFrame = self.sharedIconNode.frame
         sharedIconFrame.origin.x = arrowFrame.minX + 2.0 - sharedIconFrame.width
+        if self.item?.tagColor != nil {
+            sharedIconFrame.origin.x -= 34.0
+        }
         transition.updateFrame(node: self.sharedIconNode, frame: sharedIconFrame)
+        
+        if let tagIconView = self.tagIconView {
+            var tagIconFrame = tagIconView.frame
+            tagIconFrame.origin.x = arrowFrame.minX - 2.0 - tagIconFrame.width
+            transition.updateFrame(view: tagIconView, frame: tagIconFrame)
+        }
     }
     
     override func revealOptionsInteractivelyOpened() {
