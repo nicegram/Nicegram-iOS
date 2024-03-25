@@ -1540,10 +1540,11 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         if AppCache.wasOnboardingShown {
             onNicegramOnboardingComplete()
         } else {
-            AppCache.wasOnboardingShown = true
             if let rootController = window.rootViewController {
                 let controller = onboardingController(
                     onComplete: { [weak rootController] in
+                        AppCache.wasOnboardingShown = true
+                        
                         rootController?.dismiss(animated: true)
                         onNicegramOnboardingComplete()
                     }

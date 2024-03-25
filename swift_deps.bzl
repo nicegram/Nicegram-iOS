@@ -4,7 +4,7 @@ def swift_dependencies():
     # version: 2.1.3
     swift_package(
         name = "swiftpkg_factory",
-        commit = "8ca11a7bd1ede031e8e6d7a912bb116e2e43961b",
+        commit = "587995f7d5cc667951d635fbf6b4252324ba0439",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/hmlongco/Factory",
     )
@@ -44,7 +44,7 @@ def swift_dependencies():
     # branch: avatar-generator
     swift_package(
         name = "swiftpkg_nicegram_assistant_ios",
-        commit = "9d2bc90674d3fa38fdd2e6f8f069c67d296d2bde",
+        commit = "82fdd662ad67b20b2d93408f9dc853c3f8a1fb1e",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
     )
@@ -84,7 +84,7 @@ def swift_dependencies():
     # version: 1.2.3
     swift_package(
         name = "swiftpkg_swift_argument_parser",
-        commit = "c8ed701b513cf5177118a175d85fbbbcd707ab41",
+        commit = "46989693916f56d1186bd59ac15124caef896560",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/apple/swift-argument-parser",
     )
