@@ -202,7 +202,8 @@ final class PermissionControllerNode: ASDisplayNode {
                                     if status == .denied {
                                         buttonTitle = self.presentationData.strings.Permissions_PeopleNearbyAllowInSettings_v0
                                     } else {
-                                        buttonTitle = self.presentationData.strings.Permissions_PeopleNearbyAllow_v0
+                                        // MARK: Nicegram, change buttonTitle to "Next" (app review reject fix)
+                                        buttonTitle = self.presentationData.strings.Common_Next
                                     }
                                     hasPrivacyPolicy = false
                             }
