@@ -620,9 +620,13 @@ public final class ChatInlineSearchResultsListComponent: Component {
                         },
                         openPremiumIntro: {
                         },
-                        openPremiumGift: {
+                        openPremiumGift: { _ in
                         },
+                        openPremiumManagement: {
+                        }, 
                         openActiveSessions: {
+                        },
+                        openBirthdaySetup: {
                         },
                         performActiveSessionAction: { _, _ in
                         },

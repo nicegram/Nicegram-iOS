@@ -14,6 +14,7 @@ import ContextUI
 import RadialStatusNode
 import UndoUI
 import StickerPackPreviewUI
+import StickerPackEditTitleController
 
 private struct StickerPackPreviewGridEntry: Comparable, Equatable, Identifiable {
     let index: Int
@@ -47,7 +48,7 @@ private struct StickerPackPreviewGridTransaction {
     }
 }
 
-final class ImportStickerPackControllerNode: ViewControllerTracingNode, UIScrollViewDelegate {
+final class ImportStickerPackControllerNode: ViewControllerTracingNode, ASScrollViewDelegate {
     private let context: AccountContext
     private var presentationData: PresentationData
     private var stickerPack: ImportStickerPack?
@@ -193,7 +194,7 @@ final class ImportStickerPackControllerNode: ViewControllerTracingNode, UIScroll
         self.dimNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.dimTapGesture(_:))))
         self.addSubnode(self.dimNode)
         
-        self.wrappingScrollNode.view.delegate = self
+        self.wrappingScrollNode.view.delegate = self.wrappedScrollViewDelegate
         self.addSubnode(self.wrappingScrollNode)
         
         self.wrappingScrollNode.addSubnode(self.cancelButtonNode)
@@ -624,9 +625,9 @@ final class ImportStickerPackControllerNode: ViewControllerTracingNode, UIScroll
                 if let localResource = item.stickerItem.resource {
                     self.context.account.postbox.mediaBox.copyResourceData(from: localResource._asResource().id, to: resource._asResource().id)
                 }
-                stickers.append(ImportSticker(resource: resource._asResource(), emojis: item.stickerItem.emojis, dimensions: dimensions, mimeType: item.stickerItem.mimeType, keywords: item.stickerItem.keywords))
+                stickers.append(ImportSticker(resource: .standalone(resource: resource._asResource()), emojis: item.stickerItem.emojis, dimensions: dimensions, duration: nil, mimeType: item.stickerItem.mimeType, keywords: item.stickerItem.keywords))
             } else if let resource = item.stickerItem.resource {
-                stickers.append(ImportSticker(resource: resource._asResource(), emojis: item.stickerItem.emojis, dimensions: dimensions, mimeType: item.stickerItem.mimeType, keywords: item.stickerItem.keywords))
+                stickers.append(ImportSticker(resource: .standalone(resource: resource._asResource()), emojis: item.stickerItem.emojis, dimensions: dimensions, duration: nil, mimeType: item.stickerItem.mimeType, keywords: item.stickerItem.keywords))
             }
         }
         var thumbnailSticker: ImportSticker?
@@ -637,7 +638,7 @@ final class ImportStickerPackControllerNode: ViewControllerTracingNode, UIScroll
             }
             let resource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max))
             self.context.account.postbox.mediaBox.storeResourceData(resource.id, data: thumbnail.data)
-            thumbnailSticker = ImportSticker(resource: resource, emojis: [], dimensions: dimensions, mimeType: thumbnail.mimeType, keywords: thumbnail.keywords)
+            thumbnailSticker = ImportSticker(resource: .standalone(resource: resource), emojis: [], dimensions: dimensions, duration: nil, mimeType: thumbnail.mimeType, keywords: thumbnail.keywords)
         }
         
         let firstStickerItem = thumbnailSticker ?? stickers.first
@@ -718,7 +719,7 @@ final class ImportStickerPackControllerNode: ViewControllerTracingNode, UIScroll
     
     @objc private func createActionButtonPressed() {
         var proceedImpl: ((String, String?) -> Void)?
-        let titleController = importStickerPackTitleController(context: self.context, title: self.presentationData.strings.ImportStickerPack_ChooseName, text: self.presentationData.strings.ImportStickerPack_ChooseNameDescription, placeholder: self.presentationData.strings.ImportStickerPack_NamePlaceholder, value: nil, maxLength: 128, apply: { [weak self] title in
+        let titleController = stickerPackEditTitleController(context: self.context, title: self.presentationData.strings.ImportStickerPack_ChooseName, text: self.presentationData.strings.ImportStickerPack_ChooseNameDescription, placeholder: self.presentationData.strings.ImportStickerPack_NamePlaceholder, value: nil, maxLength: 64, apply: { [weak self] title in
             if let strongSelf = self, let title = title {
                 strongSelf.shortNameSuggestionDisposable.set((strongSelf.context.engine.stickers.getStickerSetShortNameSuggestion(title: title)
                 |> deliverOnMainQueue).start(next: { suggestedShortName in
@@ -734,7 +735,7 @@ final class ImportStickerPackControllerNode: ViewControllerTracingNode, UIScroll
             guard let strongSelf = self else {
                 return
             }
-            let controller = importStickerPackShortNameController(context: strongSelf.context, title: strongSelf.presentationData.strings.ImportStickerPack_ChooseLink, text: strongSelf.presentationData.strings.ImportStickerPack_ChooseLinkDescription, placeholder: "", value: suggestedShortName, maxLength: 60, existingAlertController: titleController, apply: { [weak self] shortName in
+            let controller = importStickerPackShortNameController(context: strongSelf.context, title: strongSelf.presentationData.strings.ImportStickerPack_ChooseLink, text: strongSelf.presentationData.strings.ImportStickerPack_ChooseLinkDescription, placeholder: "", value: suggestedShortName, maxLength: 64, existingAlertController: titleController, apply: { [weak self] shortName in
                 if let shortName = shortName {
                     self?.createStickerSet(title: title, shortName: shortName)
                 }

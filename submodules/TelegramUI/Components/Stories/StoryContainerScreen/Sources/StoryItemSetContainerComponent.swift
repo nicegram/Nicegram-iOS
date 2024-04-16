@@ -905,7 +905,7 @@ public final class StoryItemSetContainerComponent: Component {
                 if hasFirstResponder(self) {
                     view.deactivateInput()
                 } else {
-                    self.state?.updated(transition: .spring(duration: 0.4).withUserData(TextFieldComponent.AnimationHint(kind: .textFocusChanged)))
+                    self.state?.updated(transition: .spring(duration: 0.4).withUserData(TextFieldComponent.AnimationHint(view: nil, kind: .textFocusChanged)))
                 }
             }
         }
@@ -1537,7 +1537,9 @@ public final class StoryItemSetContainerComponent: Component {
                                 }
                                 
                                 if isBufferingUpdated && !self.isUpdatingComponent {
-                                    self.state?.updated(transition: .immediate)
+                                    if !self.isUpdatingComponent {
+                                        self.state?.updated(transition: .immediate)
+                                    }
                                 }
                                 
                                 if progress >= 1.0 && canSwitch && !visibleItem.requestedNext {
@@ -2690,7 +2692,7 @@ public final class StoryItemSetContainerComponent: Component {
                 self.bottomContentGradientLayer.colors = colors
                 self.bottomContentGradientLayer.type = .axial
                 
-                self.contentDimView.backgroundColor = UIColor(white: 0.0, alpha: 0.3)
+                self.contentDimView.backgroundColor = UIColor(white: 0.0, alpha: 0.8)
             }
             
             let wasPanning = self.component?.isPanning ?? false
@@ -5428,7 +5430,7 @@ public final class StoryItemSetContainerComponent: Component {
                 initialPrivacy: initialPrivacy,
                 initialMediaAreas: initialMediaAreas,
                 initialVideoPosition: videoPlaybackPosition,
-                transitionIn: nil,
+                transitionIn: .noAnimation,
                 transitionOut: { finished, isNew in
                     if repost && finished {
                         if let transitionOut = externalState.transitionOut?(externalState.storyTarget, externalState.isPeerArchived), let destinationView = transitionOut.destinationView {
@@ -5583,6 +5585,8 @@ public final class StoryItemSetContainerComponent: Component {
                                         }
                                     }))
                                 }
+                            default:
+                                break
                             }
                         } else if updatedText != nil {
                             let _ = (context.engine.messages.editStory(peerId: peerId, id: id, media: nil, mediaAreas: nil, text: updatedText, entities: updatedEntities, privacy: nil)
@@ -5623,6 +5627,7 @@ public final class StoryItemSetContainerComponent: Component {
                 self?.updateIsProgressPaused()
                 self?.state?.updated(transition: .easeInOut(duration: 0.2))
             }
+            controller.navigationPresentation = .flatModal
             self.component?.controller()?.push(controller)
             updateProgressImpl = { [weak controller, weak self] progress in
                 controller?.updateEditProgress(progress, cancel: { [weak self] in

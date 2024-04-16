@@ -56,6 +56,14 @@ import ChatbotSetupScreen
 import BusinessLocationSetupScreen
 import BusinessHoursSetupScreen
 import AutomaticBusinessMessageSetupScreen
+import CollectibleItemInfoScreen
+import StickerPickerScreen
+import MediaEditor
+import MediaEditorScreen
+import BusinessIntroSetupScreen
+import TelegramNotices
+import BotSettingsScreen
+import CameraScreen
 
 import NGCore
 import NGData
@@ -75,6 +83,7 @@ private struct AccountAttributes: Equatable {
     let sortIndex: Int32
     let isTestingEnvironment: Bool
     let backupData: AccountBackupData?
+    let isSupportUser: Bool
 }
 
 private enum AddedAccountResult {
@@ -531,14 +540,17 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                 })
                 var backupData: AccountBackupData?
                 var sortIndex: Int32 = 0
+                var isSupportUser = false
                 for attribute in record.attributes {
                     if case let .sortOrder(sortOrder) = attribute {
                         sortIndex = sortOrder.order
                     } else if case let .backupData(backupDataValue) = attribute {
                         backupData = backupDataValue.data
+                    } else if case .supportUserInfo = attribute {
+                        isSupportUser = true
                     }
                 }
-                result[record.id] = AccountAttributes(sortIndex: sortIndex, isTestingEnvironment: isTestingEnvironment, backupData: backupData)
+                result[record.id] = AccountAttributes(sortIndex: sortIndex, isTestingEnvironment: isTestingEnvironment, backupData: backupData, isSupportUser: isSupportUser)
             }
             let authRecord: (AccountRecordId, Bool)? = view.currentAuthAccount.flatMap({ authAccount in
                 let isTestingEnvironment = authAccount.attributes.contains(where: { attribute in
@@ -572,7 +584,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             var addedAuthSignal: Signal<UnauthorizedAccount?, NoError> = .single(nil)
             for (id, attributes) in records {
                 if self.activeAccountsValue?.accounts.firstIndex(where: { $0.0 == id}) == nil {
-                    addedSignals.append(accountWithId(accountManager: accountManager, networkArguments: networkArguments, id: id, encryptionParameters: encryptionParameters, supplementary: !applicationBindings.isMainApp, rootPath: rootPath, beginWithTestingEnvironment: attributes.isTestingEnvironment, backupData: attributes.backupData, auxiliaryMethods: makeTelegramAccountAuxiliaryMethods(uploadInBackground: appDelegate?.uploadInBackround))
+                    addedSignals.append(accountWithId(accountManager: accountManager, networkArguments: networkArguments, id: id, encryptionParameters: encryptionParameters, supplementary: !applicationBindings.isMainApp, isSupportUser: attributes.isSupportUser, rootPath: rootPath, beginWithTestingEnvironment: attributes.isTestingEnvironment, backupData: attributes.backupData, auxiliaryMethods: makeTelegramAccountAuxiliaryMethods(uploadInBackground: appDelegate?.uploadInBackround))
                     |> mapToSignal { result -> Signal<AddedAccountResult, NoError> in
                         switch result {
                             case let .authorized(account):
@@ -596,7 +608,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                 }
             }
             if let authRecord = authRecord, authRecord.0 != self.activeAccountsValue?.currentAuth?.id {
-                addedAuthSignal = accountWithId(accountManager: accountManager, networkArguments: networkArguments, id: authRecord.0, encryptionParameters: encryptionParameters, supplementary: !applicationBindings.isMainApp, rootPath: rootPath, beginWithTestingEnvironment: authRecord.1, backupData: nil, auxiliaryMethods: makeTelegramAccountAuxiliaryMethods(uploadInBackground: appDelegate?.uploadInBackround))
+                addedAuthSignal = accountWithId(accountManager: accountManager, networkArguments: networkArguments, id: authRecord.0, encryptionParameters: encryptionParameters, supplementary: !applicationBindings.isMainApp, isSupportUser: false, rootPath: rootPath, beginWithTestingEnvironment: authRecord.1, backupData: nil, auxiliaryMethods: makeTelegramAccountAuxiliaryMethods(uploadInBackground: appDelegate?.uploadInBackround))
                 |> mapToSignal { result -> Signal<UnauthorizedAccount?, NoError> in
                     switch result {
                         case let .unauthorized(account):
@@ -1883,6 +1895,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         }, openRequestedPeerSelection: { _, _, _, _ in
         }, saveMediaToFiles: { _ in
         }, openNoAdsDemo: {
+        }, openAdsInfo: {
         }, displayGiveawayParticipationStatus: { _ in
         }, openPremiumStatusInfo: { _, _, _, _ in
         }, openRecommendedChannelContextMenu: { _, _, _ in
@@ -1972,6 +1985,14 @@ public final class SharedAccountContextImpl: SharedAccountContext {
     public func makePrivacyAndSecurityController(context: AccountContext) -> ViewController {
         return SettingsUI.makePrivacyAndSecurityController(context: context)
     }
+
+    public func makeBioPrivacyController(context: AccountContext, settings: Promise<AccountPrivacySettings?>, present: @escaping (ViewController) -> Void) {
+        SettingsUI.makeBioPrivacyController(context: context, settings: settings, present: present)
+    }
+    
+    public func makeBirthdayPrivacyController(context: AccountContext, settings: Promise<AccountPrivacySettings?>, openedFromBirthdayScreen: Bool, present: @escaping (ViewController) -> Void) {
+        SettingsUI.makeBirthdayPrivacyController(context: context, settings: settings, openedFromBirthdayScreen: openedFromBirthdayScreen, present: present)
+    }
     
     public func makeSetupTwoFactorAuthController(context: AccountContext) -> ViewController {
         return SettingsUI.makeSetupTwoFactorAuthController(context: context)
@@ -2054,6 +2075,38 @@ public final class SharedAccountContextImpl: SharedAccountContext {
     
     public func makeQuickReplySetupScreenInitialData(context: AccountContext) -> Signal<QuickReplySetupScreenInitialData, NoError> {
         return QuickReplySetupScreen.initialData(context: context)
+    }
+    
+    public func makeBusinessIntroSetupScreen(context: AccountContext, initialData: BusinessIntroSetupScreenInitialData) -> ViewController {
+        return BusinessIntroSetupScreen(context: context, initialData: initialData as! BusinessIntroSetupScreen.InitialData)
+    }
+    
+    public func makeBusinessIntroSetupScreenInitialData(context: AccountContext) -> Signal<BusinessIntroSetupScreenInitialData, NoError> {
+        return BusinessIntroSetupScreen.initialData(context: context)
+    }
+    
+    public func makeBusinessLinksSetupScreen(context: AccountContext, initialData: BusinessLinksSetupScreenInitialData) -> ViewController {
+        return BusinessLinksSetupScreen(context: context, initialData: initialData as! BusinessLinksSetupScreen.InitialData)
+    }
+    
+    public func makeBusinessLinksSetupScreenInitialData(context: AccountContext) -> Signal<BusinessLinksSetupScreenInitialData, NoError> {
+        return BusinessLinksSetupScreen.makeInitialData(context: context)
+    }
+    
+    public func makeCollectibleItemInfoScreen(context: AccountContext, initialData: CollectibleItemInfoScreenInitialData) -> ViewController {
+        return CollectibleItemInfoScreen(context: context, initialData: initialData as! CollectibleItemInfoScreen.InitialData)
+    }
+    
+    public func makeCollectibleItemInfoScreenInitialData(context: AccountContext, peerId: EnginePeer.Id, subject: CollectibleItemInfoScreenSubject) -> Signal<CollectibleItemInfoScreenInitialData?, NoError> {
+        return CollectibleItemInfoScreen.initialData(context: context, peerId: peerId, subject: subject)
+    }
+    
+    public func makeBotSettingsScreen(context: AccountContext, peerId: EnginePeer.Id?) -> ViewController {
+        if let peerId {
+            return botSettingsScreen(context: context, peerId: peerId)
+        } else {
+            return botListSettingsScreen(context: context)
+        }
     }
     
     public func makePremiumIntroController(context: AccountContext, source: PremiumIntroSource, forceDark: Bool, dismissed: (() -> Void)?) -> ViewController {
@@ -2231,7 +2284,20 @@ public final class SharedAccountContextImpl: SharedAccountContext {
 
         let limit: Int32 = 10
         var reachedLimitImpl: ((Int32) -> Void)?
-        let controller = context.sharedContext.makeContactMultiselectionController(ContactMultiselectionControllerParams(context: context, mode: .premiumGifting, options: [], isPeerEnabled: { peer in
+        
+        let mode: ContactMultiselectionControllerMode
+        var currentBirthdays: [EnginePeer.Id: TelegramBirthday]?
+        if case let .chatList(birthdays) = source, let birthdays, !birthdays.isEmpty {
+            mode = .premiumGifting(birthdays: birthdays, selectToday: true)
+            currentBirthdays = birthdays
+        } else if case let .settings(birthdays) = source, let birthdays, !birthdays.isEmpty {
+            mode = .premiumGifting(birthdays: birthdays, selectToday: false)
+            currentBirthdays = birthdays
+        } else {
+            mode = .premiumGifting(birthdays: nil, selectToday: false)
+        }
+        
+        let controller = context.sharedContext.makeContactMultiselectionController(ContactMultiselectionControllerParams(context: context, mode: mode, options: [], isPeerEnabled: { peer in
             if case let .user(user) = peer, user.botInfo == nil && !peer.isService && !user.flags.contains(.isSupport) {
                 return true
             } else {
@@ -2276,6 +2342,10 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             }, completion: {
                 filterImpl?()
                 completion?()
+                
+                if case .chatList = source, let _ = currentBirthdays {
+                    let _ = context.engine.notices.dismissServerProvidedSuggestion(suggestion: .todayBirthdays).startStandalone()
+                }
             })
             pushImpl = { [weak giftController] c in
                 giftController?.push(c)
@@ -2340,7 +2410,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                     let presence = current.presence
                     var disabledFor: [PeerId: SelectivePrivacyPeer] = [:]
                     switch presence {
-                    case let .enableEveryone(disabledForValue), let .enableContacts(_, disabledForValue):
+                    case let .enableEveryone(disabledForValue), let .enableContacts(_, disabledForValue, _):
                         disabledFor = disabledForValue
                     default:
                         break
@@ -2388,7 +2458,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return controller
     }
     
-    public func makePremiumBoostLevelsController(context: AccountContext, peerId: EnginePeer.Id, boostStatus: ChannelBoostStatus, myBoostStatus: MyBoostStatus, forceDark: Bool, openStats: (() -> Void)?) -> ViewController {
+    public func makePremiumBoostLevelsController(context: AccountContext, peerId: EnginePeer.Id, subject: BoostSubject, boostStatus: ChannelBoostStatus, myBoostStatus: MyBoostStatus, forceDark: Bool, openStats: (() -> Void)?) -> ViewController {
         let premiumConfiguration = PremiumConfiguration.with(appConfiguration: context.currentAppConfiguration.with { $0 })
         
         var pushImpl: ((ViewController) -> Void)?
@@ -2396,7 +2466,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         let controller = PremiumBoostLevelsScreen(
             context: context,
             peerId: peerId,
-            mode: .owner(subject: .stories),
+            mode: .owner(subject: subject),
             status: boostStatus,
             myBoostStatus: myBoostStatus,
             openStats: openStats,
@@ -2426,8 +2496,73 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return controller
     }
     
-    public func makeStickerPackScreen(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, mainStickerPack: StickerPackReference, stickerPacks: [StickerPackReference], loadedStickerPacks: [LoadedStickerPack], parentNavigationController: NavigationController?, sendSticker: ((FileMediaReference, UIView, CGRect) -> Bool)?) -> ViewController {
-        return StickerPackScreen(context: context, updatedPresentationData: updatedPresentationData, mainStickerPack: mainStickerPack, stickerPacks: stickerPacks, loadedStickerPacks: loadedStickerPacks, parentNavigationController: parentNavigationController, sendSticker: sendSticker)
+    public func makeStickerPackScreen(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, mainStickerPack: StickerPackReference, stickerPacks: [StickerPackReference], loadedStickerPacks: [LoadedStickerPack], isEditing: Bool, expandIfNeeded: Bool, parentNavigationController: NavigationController?, sendSticker: ((FileMediaReference, UIView, CGRect) -> Bool)?) -> ViewController {
+        return StickerPackScreen(context: context, updatedPresentationData: updatedPresentationData, mainStickerPack: mainStickerPack, stickerPacks: stickerPacks, loadedStickerPacks: loadedStickerPacks, isEditing: isEditing, expandIfNeeded: expandIfNeeded, parentNavigationController: parentNavigationController, sendSticker: sendSticker)
+    }
+    
+    public func makeStickerEditorScreen(context: AccountContext, source: Any?, transitionArguments: (UIView, CGRect, UIImage?)?, completion: @escaping (TelegramMediaFile, [String], @escaping () -> Void) -> Void, cancelled: @escaping () -> Void) -> ViewController {
+        let subject: Signal<MediaEditorScreen.Subject?, NoError>
+        let mode: MediaEditorScreen.Mode.StickerEditorMode
+        var fromCamera = false
+        if let (file, emoji) = source as? (TelegramMediaFile, [String]) {
+            subject = .single(.sticker(file, emoji))
+            mode = .editing
+        } else if let asset = source as? PHAsset {
+            subject = .single(.asset(asset))
+            mode = .addingToPack
+        } else if let image = source as? UIImage {
+            subject = .single(.image(image, PixelDimensions(image.size), nil, .bottomRight))
+            mode = .addingToPack
+        } else if let source = source as? Signal<CameraScreen.Result, NoError> {
+            subject = source
+            |> map { value -> MediaEditorScreen.Subject? in
+                switch value {
+                case .pendingImage:
+                    return nil
+                case let .image(image):
+                    return .image(image.image, PixelDimensions(image.image.size), nil, .topLeft)
+                default:
+                    return nil
+                }
+            }
+            fromCamera = true
+            mode = .addingToPack
+        } else {
+            subject = .single(.empty(PixelDimensions(width: 1080, height: 1920)))
+            mode = .addingToPack
+        }
+        let editorController = MediaEditorScreen(
+            context: context,
+            mode: .stickerEditor(mode: mode),
+            subject: subject,
+            transitionIn: fromCamera ? .camera : transitionArguments.flatMap { .gallery(
+                MediaEditorScreen.TransitionIn.GalleryTransitionIn(
+                    sourceView: $0.0,
+                    sourceRect: $0.1,
+                    sourceImage: $0.2
+                )
+            ) },
+            transitionOut: { finished, isNew in
+                if !finished, let transitionArguments {
+                    return MediaEditorScreen.TransitionOut(
+                        destinationView: transitionArguments.0,
+                        destinationRect: transitionArguments.0.bounds,
+                        destinationCornerRadius: 0.0
+                    )
+                }
+                return nil
+            }, completion: { result, commit in
+                if case let .sticker(file, emoji) = result.media {
+                    completion(file, emoji, {
+                        commit({})
+                    })
+                }
+            } as (MediaEditorScreen.Result, @escaping (@escaping () -> Void) -> Void) -> Void
+        )
+        editorController.cancelled = { _ in
+            cancelled()
+        }
+        return editorController
     }
     
     public func makeMediaPickerScreen(context: AccountContext, hasSearch: Bool, completion: @escaping (Any) -> Void) -> ViewController {
@@ -2436,6 +2571,21 @@ public final class SharedAccountContextImpl: SharedAccountContext {
     
     public func makeStoryMediaPickerScreen(context: AccountContext, getSourceRect: @escaping () -> CGRect, completion: @escaping (Any, UIView, CGRect, UIImage?, @escaping (Bool?) -> (UIView, CGRect)?, @escaping () -> Void) -> Void, dismissed: @escaping () -> Void, groupsPresented: @escaping () -> Void) -> ViewController {
         return storyMediaPickerController(context: context, getSourceRect: getSourceRect, completion: completion, dismissed: dismissed, groupsPresented: groupsPresented)
+    }
+    
+    public func makeStickerMediaPickerScreen(context: AccountContext, getSourceRect: @escaping () -> CGRect?, completion: @escaping (Any?, UIView?, CGRect, UIImage?, Bool, @escaping (Bool?) -> (UIView, CGRect)?, @escaping () -> Void) -> Void, dismissed: @escaping () -> Void) -> ViewController {
+        return stickerMediaPickerController(context: context, getSourceRect: getSourceRect, completion: completion, dismissed: dismissed)
+    }
+    
+    public func makeStickerPickerScreen(context: AccountContext, inputData: Promise<StickerPickerInput>, completion: @escaping (FileMediaReference) -> Void) -> ViewController {
+        let controller = StickerPickerScreen(context: context, inputData: inputData.get(), expanded: true, hasGifs: false, hasInteractiveStickers: false)
+        controller.completion = { content in
+            if let content, case let .file(file, _) = content {
+                completion(file)
+            }
+            return true
+        }
+        return controller
     }
         
     public func makeProxySettingsController(sharedContext: SharedAccountContext, account: UnauthorizedAccount) -> ViewController {

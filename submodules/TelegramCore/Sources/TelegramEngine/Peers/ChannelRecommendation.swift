@@ -8,11 +8,13 @@ final class CachedRecommendedChannels: Codable {
     public let peerIds: [EnginePeer.Id]
     public let count: Int32
     public let isHidden: Bool
+    public let timestamp: Int32?
     
-    public init(peerIds: [EnginePeer.Id], count: Int32, isHidden: Bool) {
+    public init(peerIds: [EnginePeer.Id], count: Int32, isHidden: Bool, timestamp: Int32?) {
         self.peerIds = peerIds
         self.count = count
         self.isHidden = isHidden
+        self.timestamp = timestamp
     }
     
     public init(from decoder: Decoder) throws {
@@ -21,6 +23,7 @@ final class CachedRecommendedChannels: Codable {
         self.peerIds = try container.decode([Int64].self, forKey: "l").map(EnginePeer.Id.init)
         self.count = try container.decodeIfPresent(Int32.self, forKey: "c") ?? 0
         self.isHidden = try container.decode(Bool.self, forKey: "h")
+        self.timestamp = try container.decodeIfPresent(Int32.self, forKey: "ts")
     }
     
     public func encode(to encoder: Encoder) throws {
@@ -29,31 +32,65 @@ final class CachedRecommendedChannels: Codable {
         try container.encode(self.peerIds.map { $0.toInt64() }, forKey: "l")
         try container.encode(self.count, forKey: "c")
         try container.encode(self.isHidden, forKey: "h")
+        try container.encodeIfPresent(self.timestamp, forKey: "ts")
     }
 }
 
-private func entryId(peerId: EnginePeer.Id) -> ItemCacheEntryId {
+private func entryId(peerId: EnginePeer.Id?) -> ItemCacheEntryId {
     let cacheKey = ValueBoxKey(length: 8)
-    cacheKey.setInt64(0, value: peerId.toInt64())
+    if let peerId {
+        cacheKey.setInt64(0, value: peerId.toInt64())
+    } else {
+        cacheKey.setInt64(0, value: 0)
+    }
     return ItemCacheEntryId(collectionId: Namespaces.CachedItemCollection.recommendedChannels, key: cacheKey)
 }
 
-func _internal_requestRecommendedChannels(account: Account, peerId: EnginePeer.Id, forceUpdate: Bool) -> Signal<Never, NoError> {
-    return account.postbox.transaction { transaction -> Peer? in
-        guard let channel = transaction.getPeer(peerId) as? TelegramChannel, case .broadcast = channel.info else {
-            return nil
-        }
-        if let entry = transaction.retrieveItemCacheEntry(id: entryId(peerId: peerId))?.get(CachedRecommendedChannels.self), !entry.peerIds.isEmpty && !forceUpdate {
-            return nil
+func _internal_requestRecommendedChannels(account: Account, peerId: EnginePeer.Id?, forceUpdate: Bool) -> Signal<Never, NoError> {
+    return account.postbox.transaction { transaction -> (Peer?, Bool) in
+        if let peerId {
+            guard let channel = transaction.getPeer(peerId) as? TelegramChannel, case .broadcast = channel.info else {
+                return (nil, false)
+            }
+            if let entry = transaction.retrieveItemCacheEntry(id: entryId(peerId: peerId))?.get(CachedRecommendedChannels.self), !entry.peerIds.isEmpty && !forceUpdate {
+                return (nil, false)
+            } else {
+                return (channel, true)
+            }
         } else {
-            return channel
+            if let entry = transaction.retrieveItemCacheEntry(id: entryId(peerId: nil))?.get(CachedRecommendedChannels.self), !entry.peerIds.isEmpty && !forceUpdate {
+                var shouldUpdate = false
+                if let timestamp = entry.timestamp {
+                    if timestamp + 60 * 60 < Int32(Date().timeIntervalSince1970) {
+                        shouldUpdate = true
+                    }
+                } else {
+                    shouldUpdate = true
+                }
+                return (nil, shouldUpdate)
+            } else {
+                return (nil, true)
+            }
         }
     }
-    |> mapToSignal { channel in
-        guard let inputChannel = channel.flatMap(apiInputChannel) else {
+    |> mapToSignal { channel, shouldUpdate in
+        if !shouldUpdate {
             return .complete()
         }
-        return account.network.request(Api.functions.channels.getChannelRecommendations(channel: inputChannel))
+        var inputChannel: Api.InputChannel?
+        if peerId != nil {
+            if let inputChannelValue = channel.flatMap(apiInputChannel) {
+                inputChannel = inputChannelValue
+            } else {
+                return .complete()
+            }
+        }
+        
+        var flags: Int32 = 0
+        if inputChannel != nil {
+            flags |= (1 << 0)
+        }
+        return account.network.request(Api.functions.channels.getChannelRecommendations(flags: flags, channel: inputChannel))
         |> retryRequest
         |> mapToSignal { result -> Signal<Never, NoError> in
             return account.postbox.transaction { transaction -> [EnginePeer] in
@@ -87,7 +124,7 @@ func _internal_requestRecommendedChannels(account: Account, peerId: EnginePeer.I
                         }
                     }
                 }
-                if let entry = CodableEntry(CachedRecommendedChannels(peerIds: peers.map(\.id), count: count, isHidden: false)) {
+                if let entry = CodableEntry(CachedRecommendedChannels(peerIds: peers.map(\.id), count: count, isHidden: false, timestamp: Int32(Date().timeIntervalSince1970))) {
                     transaction.putItemCacheEntry(id: entryId(peerId: peerId), entry: entry)
                 }
                 return peers
@@ -99,16 +136,38 @@ func _internal_requestRecommendedChannels(account: Account, peerId: EnginePeer.I
 
 public struct RecommendedChannels: Equatable {
     public struct Channel: Equatable {
-        public let peer: EnginePeer
-        public let subscribers: Int32
+        public var peer: EnginePeer
+        public var subscribers: Int32
+        
+        public init(peer: EnginePeer, subscribers: Int32) {
+            self.peer = peer
+            self.subscribers = subscribers
+        }
     }
     
-    public let channels: [Channel]
-    public let count: Int32
-    public let isHidden: Bool
+    public var channels: [Channel]
+    public var count: Int32
+    public var isHidden: Bool
+    
+    public init(channels: [Channel], count: Int32, isHidden: Bool) {
+        self.channels = channels
+        self.count = count
+        self.isHidden = isHidden
+    }
 }
 
-func _internal_recommendedChannels(account: Account, peerId: EnginePeer.Id) -> Signal<RecommendedChannels?, NoError> {
+func _internal_recommendedChannelPeerIds(account: Account, peerId: EnginePeer.Id?) -> Signal<[EnginePeer.Id]?, NoError> {
+    let key = PostboxViewKey.cachedItem(entryId(peerId: peerId))
+    return account.postbox.combinedView(keys: [key])
+    |> mapToSignal { views -> Signal<[EnginePeer.Id]?, NoError> in
+        guard let cachedChannels = (views.views[key] as? CachedItemView)?.value?.get(CachedRecommendedChannels.self), !cachedChannels.peerIds.isEmpty else {
+            return .single(nil)
+        }
+        return .single(cachedChannels.peerIds)
+    }
+}
+
+func _internal_recommendedChannels(account: Account, peerId: EnginePeer.Id?) -> Signal<RecommendedChannels?, NoError> {
     let key = PostboxViewKey.cachedItem(entryId(peerId: peerId))
     return account.postbox.combinedView(keys: [key])
     |> mapToSignal { views -> Signal<RecommendedChannels?, NoError> in
@@ -136,7 +195,7 @@ func _internal_recommendedChannels(account: Account, peerId: EnginePeer.Id) -> S
 func _internal_toggleRecommendedChannelsHidden(account: Account, peerId: EnginePeer.Id, hidden: Bool) -> Signal<Never, NoError> {
     return account.postbox.transaction { transaction in
         if let cachedChannels = transaction.retrieveItemCacheEntry(id: entryId(peerId: peerId))?.get(CachedRecommendedChannels.self) {
-            if let entry = CodableEntry(CachedRecommendedChannels(peerIds: cachedChannels.peerIds, count: cachedChannels.count, isHidden: hidden)) {
+            if let entry = CodableEntry(CachedRecommendedChannels(peerIds: cachedChannels.peerIds, count: cachedChannels.count, isHidden: hidden, timestamp: cachedChannels.timestamp)) {
                 transaction.putItemCacheEntry(id: entryId(peerId: peerId), entry: entry)
             }
         }

@@ -31,6 +31,7 @@ import PremiumGiftAttachmentScreen
 import TelegramCallsUI
 import AutomaticBusinessMessageSetupScreen
 import MediaEditorScreen
+import CameraScreen
 
 extension ChatControllerImpl {
     enum AttachMenuSubject {
@@ -197,7 +198,15 @@ extension ChatControllerImpl {
         
         let premiumConfiguration = PremiumConfiguration.with(appConfiguration: self.context.currentAppConfiguration.with { $0 })
         let premiumGiftOptions: [CachedPremiumGiftOption]
-        if let peer = self.presentationInterfaceState.renderedPeer?.peer, !premiumConfiguration.isPremiumDisabled, premiumConfiguration.showPremiumGiftInAttachMenu, let user = peer as? TelegramUser, !user.isPremium && !user.isDeleted && user.botInfo == nil && !user.flags.contains(.isSupport) {
+        
+        var showPremiumGift = false
+        if !premiumConfiguration.isPremiumDisabled {
+            if premiumConfiguration.showPremiumGiftInAttachMenu || self.presentationInterfaceState.hasBirthdayToday {
+                showPremiumGift = true
+            }
+        }
+        
+        if let peer = self.presentationInterfaceState.renderedPeer?.peer, showPremiumGift, let user = peer as? TelegramUser, !user.isPremium && !user.isDeleted && user.botInfo == nil && !user.flags.contains(.isSupport) {
             premiumGiftOptions = self.presentationInterfaceState.premiumGiftOptions
         } else {
             premiumGiftOptions = []
@@ -565,7 +574,7 @@ extension ChatControllerImpl {
                             completion(controller, controller.mediaPickerContext)
                             strongSelf.controllerNavigationDisposable.set(nil)
                             
-                            let _ = ApplicationSpecificNotice.incrementDismissedPremiumGiftSuggestion(accountManager: context.sharedContext.accountManager, peerId: peer.id).startStandalone()
+                            let _ = ApplicationSpecificNotice.incrementDismissedPremiumGiftSuggestion(accountManager: context.sharedContext.accountManager, peerId: peer.id, timestamp: Int32(Date().timeIntervalSince1970)).startStandalone()
                         }
                     }
                 case let .app(bot):
@@ -1152,7 +1161,9 @@ extension ChatControllerImpl {
         }
         let mediaPickerContext = controller.mediaPickerContext
         controller.openCamera = { [weak self] cameraView in
-            self?.openCamera(cameraView: cameraView)
+            if let cameraView = cameraView as? TGAttachmentCameraView {
+                self?.openCamera(cameraView: cameraView)
+            }
         }
         controller.presentWebSearch = { [weak self, weak controller] mediaGroups, activateOnDisplay in
             self?.presentWebSearch(editingMessage: false, attachment: true, activateOnDisplay: activateOnDisplay, present: { [weak controller] c, a in
@@ -1715,66 +1726,87 @@ extension ChatControllerImpl {
     }
     
     func openStickerEditor() {
-        let mainController = AttachmentController(context: self.context, updatedPresentationData: self.updatedPresentationData, chatLocation: nil, buttons: [.standalone], initialButton: .standalone, fromMenu: false, hasTextInput: false, makeEntityInputView: {
-            return nil
-        })
-//        controller.forceSourceRect = true
-//        controller.getSourceRect = getSourceRect
-        mainController.requestController = { [weak self, weak mainController] _, present in
-            guard let self else {
-                return
-            }
-            let mediaPickerController = MediaPickerScreen(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: nil, threadTitle: nil, chatLocation: nil, subject: .assets(nil, .createSticker))
-            mediaPickerController.customSelection = { [weak self, weak mainController] controller, result in
+        self.chatDisplayNode.dismissInput()
+        
+        var dismissImpl: (() -> Void)?
+        let mainController = self.context.sharedContext.makeStickerMediaPickerScreen(
+            context: self.context,
+            getSourceRect: { return nil },
+            completion: { [weak self] result, transitionView, transitionRect, transitionImage, fromCamera, transitionOut, cancelled in
                 guard let self else {
                     return
                 }
-                if let result = result as? PHAsset {
-                    controller.updateHiddenMediaId(result.localIdentifier)
-                    if let transitionView = controller.transitionView(for: result.localIdentifier, snapshot: false) {
-                        let editorController = MediaEditorScreen(
-                            context: self.context,
-                            mode: .stickerEditor,
-                            subject: .single(.asset(result)),
-                            transitionIn: .gallery(
-                                MediaEditorScreen.TransitionIn.GalleryTransitionIn(
-                                    sourceView: transitionView,
-                                    sourceRect: transitionView.bounds,
-                                    sourceImage: controller.transitionImage(for: result.localIdentifier)
-                                )
-                            ),
-                            transitionOut: { finished, isNew in
-                                if !finished {
-                                    return MediaEditorScreen.TransitionOut(
-                                        destinationView: transitionView,
-                                        destinationRect: transitionView.bounds,
-                                        destinationCornerRadius: 0.0
-                                    )
-                                }
-                                return nil
-                            }, completion: { [weak self, weak mainController] result, commit in
-                                mainController?.dismiss()
-                                
-                                Queue.mainQueue().after(0.1) {
-                                    commit({})
-                                    if let mediaResult = result.media, case let .image(image, _) = mediaResult {
-                                        self?.enqueueStickerImage(image, isMemoji: false)
-                                    }
-                                }
-                            } as (MediaEditorScreen.Result, @escaping (@escaping () -> Void) -> Void) -> Void
-                        )
-                        editorController.dismissed = { [weak controller] in
-                            controller?.updateHiddenMediaId(nil)
+                let subject: Signal<MediaEditorScreen.Subject?, NoError>
+                if let asset = result as? PHAsset {
+                    subject = .single(.asset(asset))
+                } else if let image = result as? UIImage {
+                    subject = .single(.image(image, PixelDimensions(image.size), nil, .bottomRight))
+                } else if let result = result as? Signal<CameraScreen.Result, NoError> {
+                    subject = result
+                    |> map { value -> MediaEditorScreen.Subject? in
+                        switch value {
+                        case .pendingImage:
+                            return nil
+                        case let .image(image):
+                            return .image(image.image, PixelDimensions(image.image.size), nil, .topLeft)
+                        default:
+                            return nil
                         }
-                        self.push(editorController)
-                                                
-//                        completion(result, transitionView, transitionView.bounds, controller.transitionImage(for: result.localIdentifier), transitionOut, { [weak controller] in
-//                            controller?.updateHiddenMediaId(nil)
-//                        })
                     }
+                } else {
+                    subject = .single(.empty(PixelDimensions(width: 1080, height: 1920)))
                 }
+                
+                let editorController = MediaEditorScreen(
+                    context: self.context,
+                    mode: .stickerEditor(mode: .generic),
+                    subject: subject,
+                    transitionIn: fromCamera ? .camera : transitionView.flatMap({ .gallery(
+                        MediaEditorScreen.TransitionIn.GalleryTransitionIn(
+                            sourceView: $0,
+                            sourceRect: transitionRect,
+                            sourceImage: transitionImage
+                        )
+                    ) }),
+                    transitionOut: { finished, isNew in
+                        if !finished, let transitionView {
+                            return MediaEditorScreen.TransitionOut(
+                                destinationView: transitionView,
+                                destinationRect: transitionView.bounds,
+                                destinationCornerRadius: 0.0
+                            )
+                        }
+                        return nil
+                    }, completion: { [weak self] result, commit in
+                        dismissImpl?()
+                        self?.chatDisplayNode.dismissInput()
+                        
+                        Queue.mainQueue().after(0.1) {
+                            commit({})
+                            if case let .sticker(file, _) = result.media {
+                                self?.enqueueStickerFile(file)
+                            }
+                        }
+                    } as (MediaEditorScreen.Result, @escaping (@escaping () -> Void) -> Void) -> Void
+                )
+                editorController.cancelled = { _ in
+                    cancelled()
+                }
+                editorController.sendSticker = { [weak self] file, sourceView, sourceRect in
+                    return self?.interfaceInteraction?.sendSticker(file, true, sourceView, sourceRect, nil, []) ?? false
+                }
+                self.push(editorController)
+            },
+            dismissed: {}
+        )
+        dismissImpl = { [weak mainController] in
+            if let mainController, let navigationController = mainController.navigationController {
+                var viewControllers = navigationController.viewControllers
+                viewControllers = viewControllers.filter { c in
+                    return !(c is CameraScreen) && c !== mainController
+                }
+                navigationController.setViewControllers(viewControllers, animated: false)
             }
-            present(mediaPickerController, mediaPickerController.mediaPickerContext)
         }
         mainController.navigationPresentation = .flatModal
         mainController.supportedOrientations = ViewControllerSupportedOrientations(regularSize: .all, compactSize: .portrait)

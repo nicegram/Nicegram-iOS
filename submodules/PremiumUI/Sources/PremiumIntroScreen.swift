@@ -36,6 +36,8 @@ import ListActionItemComponent
 import EmojiStatusSelectionComponent
 import EmojiStatusComponent
 import EntityKeyboard
+import EmojiActionIconComponent
+import ScrollComponent
 
 public enum PremiumSource: Equatable {
     public static func == (lhs: PremiumSource, rhs: PremiumSource) -> Bool {
@@ -460,6 +462,8 @@ public enum PremiumPerk: CaseIterable {
     case businessQuickReplies
     case businessAwayMessage
     case businessChatBots
+    case businessIntro
+    case businessLinks
     
     public static var allCases: [PremiumPerk] {
         return [
@@ -492,13 +496,12 @@ public enum PremiumPerk: CaseIterable {
         return [
             .businessLocation,
             .businessHours,
-            .businessGreetingMessage,
             .businessQuickReplies,
+            .businessGreetingMessage,
+            .businessLinks,
             .businessAwayMessage,
-            .businessChatBots,
-//            .emojiStatus,
-//            .folderTags,
-//            .stories,
+            .businessIntro,
+            .businessChatBots
         ]
     }
     
@@ -571,6 +574,10 @@ public enum PremiumPerk: CaseIterable {
             return "away_message"
         case .businessChatBots:
             return "business_bots"
+        case .businessIntro:
+            return "business_intro"
+        case .businessLinks:
+            return "business_links"
         }
     }
     
@@ -632,7 +639,11 @@ public enum PremiumPerk: CaseIterable {
         case .businessAwayMessage:
             return strings.Business_AwayMessages
         case .businessChatBots:
-            return strings.Business_Chatbots
+            return strings.Business_ChatbotsItem
+        case .businessIntro:
+            return strings.Business_Intro
+        case .businessLinks:
+            return strings.Business_Links
         }
     }
     
@@ -695,6 +706,10 @@ public enum PremiumPerk: CaseIterable {
             return strings.Business_AwayMessagesInfo
         case .businessChatBots:
             return strings.Business_ChatbotsInfo
+        case .businessIntro:
+            return strings.Business_IntroInfo
+        case .businessLinks:
+            return strings.Business_LinksInfo
         }
     }
     
@@ -757,6 +772,10 @@ public enum PremiumPerk: CaseIterable {
             return "Premium/BusinessPerk/Away"
         case .businessChatBots:
             return "Premium/BusinessPerk/Chatbots"
+        case .businessIntro:
+            return "Premium/BusinessPerk/Intro"
+        case .businessLinks:
+            return "Premium/BusinessPerk/Links"
         }
     }
 }
@@ -786,15 +805,14 @@ struct PremiumIntroConfiguration {
             .premiumStickers,
             .business
         ], businessPerks: [
+            .businessLocation,
+            .businessHours,
+            .businessQuickReplies,
             .businessGreetingMessage,
             .businessAwayMessage,
-            .businessQuickReplies,
-            .businessChatBots,
-            .businessHours,
-            .businessLocation
-//            .emojiStatus,
-//            .folderTags,
-//            .stories
+            .businessLinks,
+            .businessIntro,
+            .businessChatBots
         ])
     }
     
@@ -825,21 +843,6 @@ struct PremiumIntroConfiguration {
             if perks.count < 4 {
                 perks = PremiumIntroConfiguration.defaultValue.perks
             }
-            #if DEBUG
-            if !perks.contains(.lastSeen) {
-                perks.append(.lastSeen)
-            }
-            if !perks.contains(.messagePrivacy) {
-                perks.append(.messagePrivacy)
-            }
-            if !perks.contains(.messageTags) {
-                perks.append(.messageTags)
-            }
-            if !perks.contains(.business) {
-                perks.append(.business)
-            }
-            #endif
-            
             
             var businessPerks: [PremiumPerk] = []
             if let values = data["business_promo_order"] as? [String] {
@@ -1464,6 +1467,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
         
         var isPremium: Bool?
         var peer: EnginePeer?
+        var adsEnabled = false
         
         private var disposable: Disposable?
         private(set) var configuration = PremiumIntroConfiguration.defaultValue
@@ -1471,6 +1475,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
         private var stickersDisposable: Disposable?
         private var newPerksDisposable: Disposable?
         private var preloadDisposableSet =  DisposableSet()
+        private var adsEnabledDisposable: Disposable?
         
         var price: String? {
             return self.products?.first(where: { $0.id == self.selectedProductId })?.price
@@ -1491,6 +1496,8 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                 return false
             }
         }
+        
+        var cachedChevronImage: (UIImage, PresentationTheme)?
         
         init(
             context: AccountContext,
@@ -1557,39 +1564,38 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                 }
             })
             
-            
             self.newPerksDisposable = combineLatest(queue: Queue.mainQueue(),
-                ApplicationSpecificNotice.dismissedPremiumAppIconsBadge(accountManager: context.sharedContext.accountManager),
-                ApplicationSpecificNotice.dismissedPremiumWallpapersBadge(accountManager: context.sharedContext.accountManager),
-                ApplicationSpecificNotice.dismissedPremiumColorsBadge(accountManager: context.sharedContext.accountManager),
-                ApplicationSpecificNotice.dismissedMessageTagsBadge(accountManager: context.sharedContext.accountManager),
-                ApplicationSpecificNotice.dismissedLastSeenBadge(accountManager: context.sharedContext.accountManager),
-                ApplicationSpecificNotice.dismissedMessagePrivacyBadge(accountManager: context.sharedContext.accountManager),
-                ApplicationSpecificNotice.dismissedBusinessBadge(accountManager: context.sharedContext.accountManager)
-            ).startStrict(next: { [weak self] dismissedPremiumAppIconsBadge, dismissedPremiumWallpapersBadge, dismissedPremiumColorsBadge, dismissedMessageTagsBadge, dismissedLastSeenBadge, dismissedMessagePrivacyBadge, dismissedBusinessBadge in
+                ApplicationSpecificNotice.dismissedBusinessBadge(accountManager: context.sharedContext.accountManager),
+                ApplicationSpecificNotice.dismissedBusinessLinksBadge(accountManager: context.sharedContext.accountManager),
+                ApplicationSpecificNotice.dismissedBusinessIntroBadge(accountManager: context.sharedContext.accountManager),
+                ApplicationSpecificNotice.dismissedBusinessChatbotsBadge(accountManager: context.sharedContext.accountManager)
+            ).startStrict(next: { [weak self] dismissedBusinessBadge, dismissedBusinessLinksBadge, dismissedBusinessIntroBadge, dismissedBusinessChatbotsBadge in
                 guard let self else {
                     return
                 }
                 var newPerks: [String] = []
-                if !dismissedPremiumWallpapersBadge {
-                    newPerks.append(PremiumPerk.wallpapers.identifier)
-                }
-                if !dismissedPremiumColorsBadge {
-                    newPerks.append(PremiumPerk.colors.identifier)
-                }
-                if !dismissedMessageTagsBadge {
-                    newPerks.append(PremiumPerk.messageTags.identifier)
-                }
-                if !dismissedLastSeenBadge {
-                    newPerks.append(PremiumPerk.lastSeen.identifier)
-                }
-                if !dismissedMessagePrivacyBadge {
-                    newPerks.append(PremiumPerk.messagePrivacy.identifier)
-                }
                 if !dismissedBusinessBadge {
                     newPerks.append(PremiumPerk.business.identifier)
                 }
+                if !dismissedBusinessLinksBadge {
+                    newPerks.append(PremiumPerk.businessLinks.identifier)
+                }
+                if !dismissedBusinessIntroBadge {
+                    newPerks.append(PremiumPerk.businessIntro.identifier)
+                }
+                if !dismissedBusinessChatbotsBadge {
+                    newPerks.append(PremiumPerk.businessChatBots.identifier)
+                }
                 self.newPerks = newPerks
+                self.updated()
+            })
+            
+            self.adsEnabledDisposable = (context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.AdsEnabled(id: context.account.peerId))
+            |> deliverOnMainQueue).start(next: { [weak self] adsEnabled in
+                guard let self else {
+                    return
+                }
+                self.adsEnabled = adsEnabled
                 self.updated()
             })
         }
@@ -1599,6 +1605,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
             self.preloadDisposableSet.dispose()
             self.stickersDisposable?.dispose()
             self.newPerksDisposable?.dispose()
+            self.adsEnabledDisposable?.dispose()
         }
         
         private var updatedPeerStatus: PeerEmojiStatus?
@@ -1664,6 +1671,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
         let optionsSection = Child(SectionGroupComponent.self)
         let businessSection = Child(ListSectionComponent.self)
         let moreBusinessSection = Child(ListSectionComponent.self)
+        let adsSettingsSection = Child(ListSectionComponent.self)
         let perksSection = Child(ListSectionComponent.self)
         let infoBackground = Child(RoundedRectangle.self)
         let infoTitle = Child(MultilineTextComponent.self)
@@ -2048,19 +2056,14 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                                 demoSubject = .stories
                             case .colors:
                                 demoSubject = .colors
-                                let _ = ApplicationSpecificNotice.setDismissedPremiumColorsBadge(accountManager: accountContext.sharedContext.accountManager).startStandalone()
                             case .wallpapers:
                                 demoSubject = .wallpapers
-                                let _ = ApplicationSpecificNotice.setDismissedPremiumWallpapersBadge(accountManager: accountContext.sharedContext.accountManager).startStandalone()
                             case .messageTags:
                                 demoSubject = .messageTags
-                                let _ = ApplicationSpecificNotice.setDismissedMessageTagsBadge(accountManager: accountContext.sharedContext.accountManager).startStandalone()
                             case .lastSeen:
                                 demoSubject = .lastSeen
-                                let _ = ApplicationSpecificNotice.setDismissedLastSeenBadge(accountManager: accountContext.sharedContext.accountManager).startStandalone()
                             case .messagePrivacy:
                                 demoSubject = .messagePrivacy
-                                let _ = ApplicationSpecificNotice.setDismissedMessagePrivacyBadge(accountManager: accountContext.sharedContext.accountManager).startStandalone()
                             case .business:
                                 demoSubject = .business
                                 let _ = ApplicationSpecificNotice.setDismissedBusinessBadge(accountManager: accountContext.sharedContext.accountManager).startStandalone()
@@ -2138,23 +2141,38 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                     UIColor(rgb: 0xdb374b),
                     UIColor(rgb: 0xbc4395),
                     UIColor(rgb: 0x9b4fed),
-                    UIColor(rgb: 0x8958ff)
+                    UIColor(rgb: 0x8958ff),
+                    UIColor(rgb: 0x676bff),
+                    UIColor(rgb: 0x007aff)
                 ]
                 
                 var i = 0
                 var perksItems: [AnyComponentWithIdentity<Empty>] = []
                 for perk in state.configuration.businessPerks  {
+                    let isNew = state.newPerks.contains(perk.identifier)
+                    let titleComponent = AnyComponent(MultilineTextComponent(
+                        text: .plain(NSAttributedString(
+                            string: perk.title(strings: strings),
+                            font: Font.regular(presentationData.listsFontSize.baseDisplaySize),
+                            textColor: environment.theme.list.itemPrimaryTextColor
+                        )),
+                        maximumNumberOfLines: 0
+                    ))
+                    
+                    let titleCombinedComponent: AnyComponent<Empty>
+                    if isNew {
+                        titleCombinedComponent = AnyComponent(HStack([
+                            AnyComponentWithIdentity(id: AnyHashable(0), component: titleComponent),
+                            AnyComponentWithIdentity(id: AnyHashable(1), component: AnyComponent(BadgeComponent(color: gradientColors[i], text: strings.Premium_New)))
+                        ], spacing: 5.0))
+                    } else {
+                        titleCombinedComponent = AnyComponent(HStack([AnyComponentWithIdentity(id: AnyHashable(0), component: titleComponent)], spacing: 0.0))
+                    }
+                    
                     perksItems.append(AnyComponentWithIdentity(id: perksItems.count, component: AnyComponent(ListActionItemComponent(
                         theme: environment.theme,
                         title: AnyComponent(VStack([
-                            AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
-                                text: .plain(NSAttributedString(
-                                    string: perk.title(strings: strings),
-                                    font: Font.regular(presentationData.listsFontSize.baseDisplaySize),
-                                    textColor: environment.theme.list.itemPrimaryTextColor
-                                )),
-                                maximumNumberOfLines: 0
-                            ))),
+                            AnyComponentWithIdentity(id: AnyHashable(0), component: titleCombinedComponent),
                             AnyComponentWithIdentity(id: AnyHashable(1), component: AnyComponent(MultilineTextComponent(
                                 text: .plain(NSAttributedString(
                                     string: perk.subtitle(strings: strings),
@@ -2166,7 +2184,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                             )))
                         ], alignment: .left, spacing: 2.0)),
                         leftIcon: AnyComponentWithIdentity(id: 0, component: AnyComponent(PerkIconComponent(
-                            backgroundColor: gradientColors[i],
+                            backgroundColor: gradientColors[min(i, gradientColors.count - 1)],
                             foregroundColor: .white,
                             iconName: perk.iconName
                         ))),
@@ -2230,6 +2248,27 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                                         }
                                         push(accountContext.sharedContext.makeChatbotSetupScreen(context: accountContext, initialData: initialData))
                                     })
+                                    let _ = ApplicationSpecificNotice.setDismissedBusinessChatbotsBadge(accountManager: accountContext.sharedContext.accountManager).startStandalone()
+                                case .businessIntro:
+                                    let _ = (accountContext.sharedContext.makeBusinessIntroSetupScreenInitialData(context: accountContext)
+                                    |> take(1)
+                                    |> deliverOnMainQueue).start(next: { [weak accountContext] initialData in
+                                        guard let accountContext else {
+                                            return
+                                        }
+                                        push(accountContext.sharedContext.makeBusinessIntroSetupScreen(context: accountContext, initialData: initialData))
+                                    })
+                                    let _ = ApplicationSpecificNotice.setDismissedBusinessIntroBadge(accountManager: accountContext.sharedContext.accountManager).startStandalone()
+                                case .businessLinks:
+                                    let _ = (accountContext.sharedContext.makeBusinessLinksSetupScreenInitialData(context: accountContext)
+                                    |> take(1)
+                                    |> deliverOnMainQueue).start(next: { [weak accountContext] initialData in
+                                        guard let accountContext else {
+                                            return
+                                        }
+                                        push(accountContext.sharedContext.makeBusinessLinksSetupScreen(context: accountContext, initialData: initialData))
+                                    })
+                                    let _ = ApplicationSpecificNotice.setDismissedBusinessLinksBadge(accountManager: accountContext.sharedContext.accountManager).startStandalone()
                                 default:
                                     fatalError()
                                 }
@@ -2248,6 +2287,13 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                                     demoSubject = .businessAwayMessage
                                 case .businessChatBots:
                                     demoSubject = .businessChatBots
+                                    let _ = ApplicationSpecificNotice.setDismissedBusinessChatbotsBadge(accountManager: accountContext.sharedContext.accountManager).startStandalone()
+                                case .businessIntro:
+                                    demoSubject = .businessIntro
+                                    let _ = ApplicationSpecificNotice.setDismissedBusinessIntroBadge(accountManager: accountContext.sharedContext.accountManager).startStandalone()
+                                case .businessLinks:
+                                    demoSubject = .businessLinks
+                                    let _ = ApplicationSpecificNotice.setDismissedBusinessLinksBadge(accountManager: accountContext.sharedContext.accountManager).startStandalone()
                                 default:
                                     fatalError()
                                 }
@@ -2437,6 +2483,94 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                 size.height += 23.0
             }
             
+            let termsFont = Font.regular(13.0)
+            let boldTermsFont = Font.semibold(13.0)
+            let italicTermsFont = Font.italic(13.0)
+            let boldItalicTermsFont = Font.semiboldItalic(13.0)
+            let monospaceTermsFont = Font.monospace(13.0)
+            let termsTextColor = environment.theme.list.freeTextColor
+            let termsMarkdownAttributes = MarkdownAttributes(body: MarkdownAttributeSet(font: termsFont, textColor: termsTextColor), bold: MarkdownAttributeSet(font: termsFont, textColor: termsTextColor), link: MarkdownAttributeSet(font: termsFont, textColor: environment.theme.list.itemAccentColor), linkAttribute: { contents in
+                return (TelegramTextAttributes.URL, contents)
+            })
+            
+            let layoutAdsSettings = {
+                size.height += 8.0
+                
+                var adsSettingsItems: [AnyComponentWithIdentity<Empty>] = []
+                adsSettingsItems.append(AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
+                    theme: environment.theme,
+                    title: AnyComponent(VStack([
+                        AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
+                            text: .plain(NSAttributedString(
+                                string: environment.strings.Business_DontHideAds,
+                                font: Font.regular(presentationData.listsFontSize.baseDisplaySize),
+                                textColor: environment.theme.list.itemPrimaryTextColor
+                            )),
+                            maximumNumberOfLines: 1
+                        ))),
+                    ], alignment: .left, spacing: 2.0)),
+                    accessory: .toggle(ListActionItemComponent.Toggle(style: .regular, isOn: state.adsEnabled, action: { [weak state] value in
+                        let _ = accountContext.engine.accountData.updateAdMessagesEnabled(enabled: value).startStandalone()
+                        state?.updated(transition: .immediate)
+                    })),
+                    action: nil
+                ))))
+                
+                let adsInfoString = NSMutableAttributedString(attributedString: parseMarkdownIntoAttributedString(environment.strings.Business_AdsInfo, attributes: termsMarkdownAttributes, textAlignment: .natural
+                ))
+                if state.cachedChevronImage == nil || state.cachedChevronImage?.1 !== theme {
+                    state.cachedChevronImage = (generateTintedImage(image: UIImage(bundleImageName: "Contact List/SubtitleArrow"), color: environment.theme.list.itemAccentColor)!, theme)
+                }
+                if let range = adsInfoString.string.range(of: ">"), let chevronImage = state.cachedChevronImage?.0 {
+                    adsInfoString.addAttribute(.attachment, value: chevronImage, range: NSRange(range, in: adsInfoString.string))
+                }
+                let controller = environment.controller
+                let adsInfoTapActionImpl: ([NSAttributedString.Key: Any]) -> Void = { _ in
+                    if let controller = controller() as? PremiumIntroScreen {
+                        controller.context.sharedContext.openExternalUrl(context: controller.context, urlContext: .generic, url: environment.strings.Business_AdsInfo_URL, forceExternal: true, presentationData: controller.context.sharedContext.currentPresentationData.with({$0}), navigationController: nil, dismissInput: {})
+                    }
+                }
+                let adsSettingsSection = adsSettingsSection.update(
+                    component: ListSectionComponent(
+                        theme: environment.theme,
+                        header: AnyComponent(MultilineTextComponent(
+                            text: .plain(NSAttributedString(
+                                string: strings.Business_AdsTitle.uppercased(),
+                                font: Font.regular(presentationData.listsFontSize.itemListBaseHeaderFontSize),
+                                textColor: environment.theme.list.freeTextColor
+                            )),
+                            maximumNumberOfLines: 0
+                        )),
+                        footer: AnyComponent(MultilineTextComponent(
+                            text: .plain(adsInfoString),
+                            maximumNumberOfLines: 0,
+                            highlightColor: environment.theme.list.itemAccentColor.withAlphaComponent(0.2),
+                            highlightAction: { attributes in
+                                if let _ = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.URL)] {
+                                    return NSAttributedString.Key(rawValue: TelegramTextAttributes.URL)
+                                } else {
+                                    return nil
+                                }
+                            },
+                            tapAction: { attributes, _ in
+                                adsInfoTapActionImpl(attributes)
+                            }
+                        )),
+                        items: adsSettingsItems
+                    ),
+                    environment: {},
+                    availableSize: CGSize(width: availableWidth - sideInsets, height: .greatestFiniteMagnitude),
+                    transition: context.transition
+                )
+                context.add(adsSettingsSection
+                    .position(CGPoint(x: availableWidth / 2.0, y: size.height + adsSettingsSection.size.height / 2.0))
+                    .clipsToBounds(true)
+                    .cornerRadius(10.0)
+                )
+                size.height += adsSettingsSection.size.height
+                size.height += 23.0
+            }
+            
             let copyLink = context.component.copyLink
             if case .emojiStatus = context.component.source {
                 layoutPerks()
@@ -2472,6 +2606,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                     layoutBusinessPerks()
                     if context.component.isPremium == true {
                         layoutMoreBusinessPerks()
+                        layoutAdsSettings()
                     }
                 } else {
                     layoutPerks()
@@ -2529,17 +2664,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                     )
                     size.height += infoBackground.size.height
                     size.height += 6.0
-                    
-                    let termsFont = Font.regular(13.0)
-                    let boldTermsFont = Font.semibold(13.0)
-                    let italicTermsFont = Font.italic(13.0)
-                    let boldItalicTermsFont = Font.semiboldItalic(13.0)
-                    let monospaceTermsFont = Font.monospace(13.0)
-                    let termsTextColor = environment.theme.list.freeTextColor
-                    let termsMarkdownAttributes = MarkdownAttributes(body: MarkdownAttributeSet(font: termsFont, textColor: termsTextColor), bold: MarkdownAttributeSet(font: termsFont, textColor: termsTextColor), link: MarkdownAttributeSet(font: termsFont, textColor: environment.theme.list.itemAccentColor), linkAttribute: { contents in
-                        return (TelegramTextAttributes.URL, contents)
-                    })
-                               
+                                                   
                     var isGiftView = false
                     if case let .gift(fromId, _, _, _) = context.component.source {
                         if fromId == context.component.context.account.peerId {
@@ -2567,7 +2692,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                             if url.hasPrefix("https://apps.apple.com/account/subscriptions") {
                                 controller.context.sharedContext.applicationBindings.openSubscriptions()
                             } else if url.hasPrefix("https://") || url.hasPrefix("tg://") {
-                                controller.context.sharedContext.openExternalUrl(context: controller.context, urlContext: .generic, url: url, forceExternal: !url.hasPrefix("tg://"), presentationData: controller.context.sharedContext.currentPresentationData.with({$0}), navigationController: nil, dismissInput: {})
+                                controller.context.sharedContext.openExternalUrl(context: controller.context, urlContext: .generic, url: url, forceExternal: !url.hasPrefix("tg://") && !url.contains("?start="), presentationData: controller.context.sharedContext.currentPresentationData.with({$0}), navigationController: nil, dismissInput: {})
                             } else {
                                 let context = controller.context
                                 let signal: Signal<ResolvedUrl, NoError>?
@@ -3270,7 +3395,7 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
                         if let emojiFile = state?.emojiFile, let controller = environment?.controller() as? PremiumIntroScreen, let navigationController = controller.navigationController as? NavigationController {
                             for attribute in emojiFile.attributes {
                                 if case let .CustomEmoji(_, _, _, packReference) = attribute, let packReference = packReference {
-                                    let controller = accountContext.sharedContext.makeStickerPackScreen(context: accountContext, updatedPresentationData: nil, mainStickerPack: packReference, stickerPacks: [packReference], loadedStickerPacks: loadedEmojiPack.flatMap { [$0] } ?? [], parentNavigationController: navigationController, sendSticker: { _, _, _ in
+                                    let controller = accountContext.sharedContext.makeStickerPackScreen(context: accountContext, updatedPresentationData: nil, mainStickerPack: packReference, stickerPacks: [packReference], loadedStickerPacks: loadedEmojiPack.flatMap { [$0] } ?? [], isEditing: false, expandIfNeeded: false, parentNavigationController: navigationController, sendSticker: { _, _, _ in
                                         return false
                                     })
                                     presentController(controller)
@@ -3651,6 +3776,7 @@ public final class PremiumIntroScreen: ViewControllerComponentContainer {
         
         if case .business = mode {
             context.account.viewTracker.keepQuickRepliesApproximatelyUpdated()
+            context.account.viewTracker.keepBusinessLinksApproximatelyUpdated()
         }
     }
     
@@ -3722,89 +3848,6 @@ public final class PremiumIntroScreen: ViewControllerComponentContainer {
                 }
             }
         }
-    }
-}
-
-
-
-
-private final class EmojiActionIconComponent: Component {
-    let context: AccountContext
-    let color: UIColor
-    let fileId: Int64?
-    let file: TelegramMediaFile?
-    
-    init(
-        context: AccountContext,
-        color: UIColor,
-        fileId: Int64?,
-        file: TelegramMediaFile?
-    ) {
-        self.context = context
-        self.color = color
-        self.fileId = fileId
-        self.file = file
-    }
-    
-    static func ==(lhs: EmojiActionIconComponent, rhs: EmojiActionIconComponent) -> Bool {
-        if lhs.context !== rhs.context {
-            return false
-        }
-        if lhs.color != rhs.color {
-            return false
-        }
-        if lhs.fileId != rhs.fileId {
-            return false
-        }
-        if lhs.file != rhs.file {
-            return false
-        }
-        return true
-    }
-    
-    final class View: UIView {
-        private let icon = ComponentView<Empty>()
-        
-        func update(component: EmojiActionIconComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: Transition) -> CGSize {
-            let size = CGSize(width: 24.0, height: 24.0)
-            
-            let _ = self.icon.update(
-                transition: .immediate,
-                component: AnyComponent(EmojiStatusComponent(
-                    context: component.context,
-                    animationCache: component.context.animationCache,
-                    animationRenderer: component.context.animationRenderer,
-                    content: component.fileId.flatMap { .animation(
-                        content: .customEmoji(fileId: $0),
-                        size: CGSize(width: size.width * 2.0, height: size.height * 2.0),
-                        placeholderColor: .lightGray,
-                        themeColor: component.color,
-                        loopMode: .forever
-                    ) } ?? .premium(color: component.color),
-                    isVisibleForAnimations: false,
-                    action: nil
-                )),
-                environment: {},
-                containerSize: size
-            )
-            let iconFrame = CGRect(origin: CGPoint(), size: size)
-            if let iconView = self.icon.view {
-                if iconView.superview == nil {
-                    self.addSubview(iconView)
-                }
-                iconView.frame = iconFrame
-            }
-            
-            return size
-        }
-    }
-    
-    func makeView() -> View {
-        return View(frame: CGRect())
-    }
-    
-    func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: Transition) -> CGSize {
-        return view.update(component: self, availableSize: availableSize, state: state, environment: environment, transition: transition)
     }
 }
 

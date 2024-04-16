@@ -1335,6 +1335,10 @@ public extension TelegramEngine {
             return _internal_updateStoriesArePinned(account: self.account, peerId: peerId, ids: ids, isPinned: isPinned)
         }
         
+        public func updatePinnedToTopStories(peerId: EnginePeer.Id, ids: [Int32]) -> Signal<Never, NoError> {
+            return _internal_updatePinnedToTopStories(account: self.account, peerId: peerId, ids: ids)
+        }
+        
         public func storyViewList(peerId: EnginePeer.Id, id: Int32, views: EngineStoryItem.Views, listMode: EngineStoryViewListContext.ListMode, sortMode: EngineStoryViewListContext.SortMode, searchQuery: String? = nil, parentSource: EngineStoryViewListContext? = nil) -> EngineStoryViewListContext {
             return EngineStoryViewListContext(account: self.account, peerId: peerId, storyId: id, views: views, listMode: listMode, sortMode: sortMode, searchQuery: searchQuery, parentSource: parentSource)
         }
@@ -1415,6 +1419,52 @@ public extension TelegramEngine {
             let _ = self.account.postbox.transaction({ transaction in
                 transaction.reindexSavedMessagesCustomTagsWithTagsIfNeeded(peerId: self.account.peerId, threadId: threadId, tag: tag)
             }).startStandalone()
+        }
+        
+        public func reportAdMessage(peerId: EnginePeer.Id, opaqueId: Data, option: Data?) -> Signal<ReportAdMessageResult, ReportAdMessageError> {
+            return _internal_reportAdMessage(account: self.account, peerId: peerId, opaqueId: opaqueId, option: option)
+        }
+        
+        public func getAllLocalChannels(count: Int) -> Signal<[EnginePeer.Id], NoError> {
+            return self.account.postbox.transaction { transaction -> [EnginePeer.Id] in
+                var result: [EnginePeer.Id] = []
+                
+                var peerIds = Set<PeerId>()
+                for id in transaction.chatListGetAllPeerIds(groupId: .root) {
+                    if peerIds.contains(id) {
+                        continue
+                    }
+                    peerIds.insert(id)
+                    result.append(id)
+                }
+                for id in transaction.chatListGetAllPeerIds(groupId: Namespaces.PeerGroup.archive) {
+                    if peerIds.contains(id) {
+                        continue
+                    }
+                    peerIds.insert(id)
+                    result.append(id)
+                }
+                
+                var filteredResult: [PeerId] = []
+                for id in result {
+                    if id.namespace != Namespaces.Peer.CloudChannel {
+                        continue
+                    }
+                    guard let peer = transaction.getPeer(id) else {
+                        continue
+                    }
+                    guard let channel = peer as? TelegramChannel, case .broadcast = channel.info else {
+                        continue
+                    }
+                    filteredResult.append(id)
+                    
+                    if filteredResult.count >= count {
+                        break
+                    }
+                }
+                
+                return filteredResult
+            }
         }
     }
 }

@@ -159,9 +159,7 @@ public func navigateToChatControllerImpl(_ params: NavigateToChatControllerParam
                         controller.presentThemeSelection()
                     }
                     if let botStart = params.botStart {
-                        controller.updateChatPresentationInterfaceState(interactive: false, { state -> ChatPresentationInterfaceState in
-                            return state.updatedBotStartPayload(botStart.payload)
-                        })
+                        controller.startBot(botStart.payload)
                     }
                     if let attachBotStart = params.attachBotStart {
                         controller.presentAttachmentBot(botId: attachBotStart.botId, payload: attachBotStart.payload, justInstalled: attachBotStart.justInstalled)
@@ -194,7 +192,7 @@ public func navigateToChatControllerImpl(_ params: NavigateToChatControllerParam
                     }
                 }
             } else {
-                controller = ChatControllerImpl(context: params.context, chatLocation: params.chatLocation.asChatLocation, chatLocationContextHolder: params.chatLocationContextHolder, subject: params.subject, botStart: params.botStart, attachBotStart: params.attachBotStart, botAppStart: params.botAppStart, peekData: params.peekData, peerNearbyData: params.peerNearbyData, chatListFilter: params.chatListFilter, chatNavigationStack: params.chatNavigationStack)
+                controller = ChatControllerImpl(context: params.context, chatLocation: params.chatLocation.asChatLocation, chatLocationContextHolder: params.chatLocationContextHolder, subject: params.subject, botStart: params.botStart, attachBotStart: params.attachBotStart, botAppStart: params.botAppStart, peekData: params.peekData, peerNearbyData: params.peerNearbyData, chatListFilter: params.chatListFilter, chatNavigationStack: params.chatNavigationStack, customChatNavigationStack: params.customChatNavigationStack)
                 
                 if let botAppStart = params.botAppStart, case let .peer(peer) = params.chatLocation {
                     Queue.mainQueue().after(0.1) {
@@ -202,6 +200,15 @@ public func navigateToChatControllerImpl(_ params: NavigateToChatControllerParam
                     }
                 }
             }
+            
+            if controller.chatLocation.peerId == params.chatLocation.asChatLocation.peerId && controller.chatLocation.threadId == params.chatLocation.asChatLocation.threadId && (controller.subject != .scheduledMessages || controller.subject == params.subject) {
+                if let updateTextInputState = params.updateTextInputState {
+                    Queue.mainQueue().after(0.1) {
+                        controller.updateTextInputState(updateTextInputState)
+                    }
+                }
+            }
+            
             controller.purposefulAction = params.purposefulAction
             if let search = params.activateMessageSearch {
                 controller.activateSearch(domain: search.0, query: search.1)

@@ -201,9 +201,13 @@ final class QuickReplySetupScreenComponent: Component {
                     },
                     openPremiumIntro: {
                     },
-                    openPremiumGift: {
+                    openPremiumGift: { _ in
+                    },
+                    openPremiumManagement: {
                     },
                     openActiveSessions: {
+                    },
+                    openBirthdaySetup: {
                     },
                     performActiveSessionAction: { _, _ in
                     },
@@ -269,7 +273,9 @@ final class QuickReplySetupScreenComponent: Component {
                             commandPrefix: "/\(item.shortcut)",
                             searchQuery: nil,
                             messageCount: item.totalCount,
-                            hideSeparator: false
+                            hideSeparator: false,
+                            hideDate: true,
+                            hidePeerStatus: true
                         )
                     )),
                     editing: isEditing,

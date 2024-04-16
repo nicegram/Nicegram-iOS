@@ -59,15 +59,18 @@ protocol RenderTarget: AnyObject {
 
 final class MediaEditorRenderer {
     enum Input {
-        case texture(MTLTexture, CMTime)
+        case texture(MTLTexture, CMTime, Bool)
         case videoBuffer(VideoPixelBuffer)
+        case ciImage(CIImage, CMTime)
         
         var timestamp: CMTime {
             switch self {
-            case let .texture(_, timestamp):
+            case let .texture(_, timestamp, _):
                 return timestamp
             case let .videoBuffer(videoBuffer):
                 return videoBuffer.timestamp
+            case let .ciImage(_, timestamp):
+                return timestamp
             }
         }
     }
@@ -80,6 +83,7 @@ final class MediaEditorRenderer {
     
     private var renderPasses: [RenderPass] = []
     
+    private let ciInputPass = CIInputPass()
     private let mainVideoInputPass = VideoInputPass()
     private let additionalVideoInputPass = VideoInputPass()
     let videoFinishPass = VideoFinishPass()
@@ -150,6 +154,7 @@ final class MediaEditorRenderer {
         
         self.commandQueue = device.makeCommandQueue()
         self.commandQueue?.label = "Media Editor Command Queue"
+        self.ciInputPass.setup(device: device, library: library)
         self.mainVideoInputPass.setup(device: device, library: library)
         self.additionalVideoInputPass.setup(device: device, library: library)
         self.videoFinishPass.setup(device: device, library: library)
@@ -183,13 +188,24 @@ final class MediaEditorRenderer {
     private func combinedTextureFromCurrentInputs(device: MTLDevice, commandBuffer: MTLCommandBuffer, textureCache: CVMetalTextureCache) -> MTLTexture? {
         var mainTexture: MTLTexture?
         var additionalTexture: MTLTexture?
+        var hasTransparency = false
         
-        func textureFromInput(_ input: MediaEditorRenderer.Input, videoInputPass: VideoInputPass) -> MTLTexture? {
+        func textureFromInput(_ input: MediaEditorRenderer.Input, videoInputPass: VideoInputPass) -> (MTLTexture, Bool)? {
             switch input {
-            case let .texture(texture, _):
-                return texture
+            case let .texture(texture, _, hasTransparency):
+                return (texture, hasTransparency)
             case let .videoBuffer(videoBuffer):
-                return videoInputPass.processPixelBuffer(videoBuffer, textureCache: textureCache, device: device, commandBuffer: commandBuffer)
+                if let texture = videoInputPass.processPixelBuffer(videoBuffer, textureCache: textureCache, device: device, commandBuffer: commandBuffer) {
+                    return (texture, false)
+                } else {
+                    return nil
+                }
+            case let .ciImage(image, _):
+                if let texture = self.ciInputPass.processCIImage(image, device: device, commandBuffer: commandBuffer) {
+                    return (texture, true)
+                } else {
+                    return nil
+                }
             }
         }
         
@@ -197,13 +213,16 @@ final class MediaEditorRenderer {
             return nil
         }
         
-        mainTexture = textureFromInput(mainInput, videoInputPass: self.mainVideoInputPass)
-        if let additionalInput = self.currentAdditionalInput {
-            additionalTexture = textureFromInput(additionalInput, videoInputPass: self.additionalVideoInputPass)
+        if let (texture, transparency) = textureFromInput(mainInput, videoInputPass: self.mainVideoInputPass) {
+            mainTexture = texture
+            hasTransparency = transparency
+        }
+        if let additionalInput = self.currentAdditionalInput, let (texture, _) = textureFromInput(additionalInput, videoInputPass: self.additionalVideoInputPass) {
+            additionalTexture = texture
         }
         
         if let mainTexture {
-            return self.videoFinishPass.process(input: mainTexture, inputMask: self.currentMainInputMask, secondInput: additionalTexture, timestamp: mainInput.timestamp, device: device, commandBuffer: commandBuffer)
+            return self.videoFinishPass.process(input: mainTexture, inputMask: self.currentMainInputMask, hasTransparency: hasTransparency, secondInput: additionalTexture, timestamp: mainInput.timestamp, device: device, commandBuffer: commandBuffer)
         } else {
             return nil
         }

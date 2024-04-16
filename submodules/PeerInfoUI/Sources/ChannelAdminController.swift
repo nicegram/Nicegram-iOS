@@ -1244,8 +1244,8 @@ public func channelAdminController(context: AccountContext, updatedPresentationD
                             return current.withUpdatedUpdating(false)
                         }
                         
-                        if let adminPeer {
-                            let inviteScreen = SendInviteLinkScreen(context: context, peer: channelPeer, link: exportedInvitation?.link, peers: [adminPeer])
+                        if let adminPeer, case let .restricted(forbiddenPeer) = error {
+                            let inviteScreen = SendInviteLinkScreen(context: context, peer: channelPeer, link: exportedInvitation?.link, peers: [forbiddenPeer ?? TelegramForbiddenInvitePeer(peer: adminPeer, canInviteWithPremium: false, premiumRequiredToContact: false)])
                             pushControllerImpl?(inviteScreen)
                             
                             dismissImpl?()
@@ -1433,9 +1433,9 @@ public func channelAdminController(context: AccountContext, updatedPresentationD
                             return current.withUpdatedUpdating(true)
                         }
                         updateRightsDisposable.set((context.peerChannelMemberCategoriesContextsManager.updateMemberAdminRights(engine: context.engine, peerId: peerId, memberId: adminId, adminRights: TelegramChatAdminRights(rights: updateFlags), rank: updateRank) |> deliverOnMainQueue).start(error: { error in
-                            if case let .addMemberError(addMemberError) = error, let admin = adminPeer {
+                            if case let .addMemberError(addMemberError) = error, case let .restricted(forbiddenPeer) = addMemberError, let admin = adminPeer {
                                 if let channelPeer {
-                                    let inviteScreen = SendInviteLinkScreen(context: context, peer: channelPeer, link: exportedInvitation?.link, peers: [admin])
+                                    let inviteScreen = SendInviteLinkScreen(context: context, peer: channelPeer, link: exportedInvitation?.link, peers: [forbiddenPeer ?? TelegramForbiddenInvitePeer(peer: admin, canInviteWithPremium: false, premiumRequiredToContact: false)])
                                     pushControllerImpl?(inviteScreen)
                                     
                                     dismissImpl?()
@@ -1510,8 +1510,19 @@ public func channelAdminController(context: AccountContext, updatedPresentationD
                         }
                         updateRightsDisposable.set((context.engine.peers.addGroupAdmin(peerId: peerId, adminId: adminId)
                         |> deliverOnMainQueue).start(error: { error in
-                            if case let .addMemberError(error) = error, case .privacy = error, let admin = adminPeer {
-                                presentControllerImpl?(textAlertController(context: context, updatedPresentationData: updatedPresentationData, title: nil, text: presentationData.strings.Privacy_GroupsAndChannels_InviteToGroupError(admin.compactDisplayTitle, admin.compactDisplayTitle).string, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), nil)
+                            if case let .addMemberError(error) = error, case let .privacy(privacy) = error, let admin = adminPeer {
+                                if let failedPeer = privacy?.forbiddenPeers.first {
+                                    let _ = (context.engine.data.get(
+                                        TelegramEngine.EngineData.Item.Peer.ExportedInvitation(id: group.id)
+                                    )
+                                    |> deliverOnMainQueue).startStandalone(next: { exportedInvitation in
+                                        let _ = exportedInvitation
+                                        let inviteScreen = SendInviteLinkScreen(context: context, peer: .legacyGroup(group), link: exportedInvitation?.link, peers: [failedPeer])
+                                        pushControllerImpl?(inviteScreen)
+                                    })
+                                } else {
+                                    presentControllerImpl?(textAlertController(context: context, updatedPresentationData: updatedPresentationData, title: nil, text: presentationData.strings.Privacy_GroupsAndChannels_InviteToGroupError(admin.compactDisplayTitle, admin.compactDisplayTitle).string, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), nil)
+                                }
                             } else if case .adminsTooMuch = error {
                                 presentControllerImpl?(textAlertController(context: context, updatedPresentationData: updatedPresentationData, title: nil, text: presentationData.strings.Group_ErrorAdminsTooMuch, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), nil)
                             }

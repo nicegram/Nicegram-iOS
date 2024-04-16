@@ -50,6 +50,7 @@ final class ChatListSearchPaneWrapper {
 public enum ChatListSearchPaneKey {
     case chats
     case topics
+    case channels
     case media
     case downloads
     case links
@@ -65,6 +66,8 @@ extension ChatListSearchPaneKey {
             return .chats
         case .topics:
             return .topics
+        case .channels:
+            return .channels
         case .media:
             return .media
         case .downloads:
@@ -88,6 +91,7 @@ func defaultAvailableSearchPanes(isForum: Bool, hasDownloads: Bool) -> [ChatList
     } else {
         result.append(.chats)
     }
+    result.append(.channels)
     result.append(contentsOf: [.media, .downloads, .links, .files, .music, .voice])
         
     if !hasDownloads {
@@ -142,7 +146,7 @@ private final class ChatListSearchPendingPane {
     }
 }
 
-final class ChatListSearchPaneContainerNode: ASDisplayNode, UIGestureRecognizerDelegate {
+final class ChatListSearchPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegate {
     private let context: AccountContext
     private let animationCache: AnimationCache
     private let animationRenderer: MultiAnimationRenderer
@@ -234,7 +238,7 @@ final class ChatListSearchPaneContainerNode: ASDisplayNode, UIGestureRecognizerD
             }
             return [.left, .right]
         })
-        panRecognizer.delegate = self
+        panRecognizer.delegate = self.wrappedGestureRecognizerDelegate
         panRecognizer.delaysTouchesBegan = false
         panRecognizer.cancelsTouchesInView = true
         self.view.addGestureRecognizer(panRecognizer)

@@ -20,6 +20,7 @@ import ConfettiEffect
 import TextFormat
 import UniversalMediaPlayer
 import InstantPageCache
+import ScrollComponent
 
 extension PremiumGiftSource {
     var identifier: String? {
@@ -274,7 +275,7 @@ private final class PremiumGiftScreenContentComponent: CombinedComponent {
             if let current = context.state.cachedBoostIcon {
                 boostIcon = current
             } else {
-                boostIcon = generateImage(CGSize(width: 14.0, height: 20.0), rotatedContext: { size, context in
+                boostIcon = generateImage(CGSize(width: 14.0, height: 20.0), contextGenerator: { size, context in
                     context.clear(CGRect(origin: .zero, size: size))
                     if let cgImage = UIImage(bundleImageName: "Premium/BoostChannel")?.cgImage {
                         context.draw(cgImage, in: CGRect(origin: .zero, size: size), byTiling: false)
@@ -604,7 +605,7 @@ private final class PremiumGiftScreenContentComponent: CombinedComponent {
                     if url.hasPrefix("https://apps.apple.com/account/subscriptions") {
                         controller.context.sharedContext.applicationBindings.openSubscriptions()
                     } else if url.hasPrefix("https://") || url.hasPrefix("tg://") {
-                        controller.context.sharedContext.openExternalUrl(context: controller.context, urlContext: .generic, url: url, forceExternal: !url.hasPrefix("tg://"), presentationData: controller.context.sharedContext.currentPresentationData.with({$0}), navigationController: nil, dismissInput: {})
+                        controller.context.sharedContext.openExternalUrl(context: controller.context, urlContext: .generic, url: url, forceExternal: !url.hasPrefix("tg://") && !url.contains("?start="), presentationData: controller.context.sharedContext.currentPresentationData.with({$0}), navigationController: nil, dismissInput: {})
                     } else {
                         let context = controller.context
                         let signal: Signal<ResolvedUrl, NoError>?

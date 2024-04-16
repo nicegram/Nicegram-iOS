@@ -496,7 +496,7 @@ private class MessageBackgroundNode: ASDisplayNode {
     }
 }
 
-final class MediaPickerSelectedListNode: ASDisplayNode, UIScrollViewDelegate, UIGestureRecognizerDelegate {
+final class MediaPickerSelectedListNode: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDelegate {
     private let context: AccountContext
     private let persistentItems: Bool
     
@@ -539,7 +539,7 @@ final class MediaPickerSelectedListNode: ASDisplayNode, UIScrollViewDelegate, UI
             self.scrollNode.view.contentInsetAdjustmentBehavior = .never
         }
         
-        self.scrollNode.view.delegate = self
+        self.scrollNode.view.delegate = self.wrappedScrollViewDelegate
         self.scrollNode.view.panGestureRecognizer.cancelsTouchesInView = true
         self.scrollNode.view.showsVerticalScrollIndicator = false
         
@@ -1163,7 +1163,6 @@ private class ReorderingGestureRecognizer: UIGestureRecognizer {
         }
     }
     
-    private var currentItemNode: ASDisplayNode?
     override public func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
         super.touchesBegan(touches, with: event)
         

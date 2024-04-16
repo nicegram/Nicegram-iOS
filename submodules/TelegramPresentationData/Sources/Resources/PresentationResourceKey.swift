@@ -283,6 +283,7 @@ public enum PresentationResourceKey: Int32 {
     case chatTranslateButtonIcon
     //
     case chatFreeCloseButtonIcon
+    case chatFreeMoreButtonIcon
     
     case chatKeyboardActionButtonMessageIcon
     case chatKeyboardActionButtonLinkIcon
@@ -314,6 +315,11 @@ public enum PresentationResourceKey: Int32 {
     case avatarPremiumLockBadge
     case shareAvatarPremiumLockBadgeBackground
     case shareAvatarPremiumLockBadge
+    
+    case sharedLinkIcon
+    
+    case hideIconImage
+    case peerStatusLockedImage
 }
 
 public enum ChatExpiredStoryIndicatorType: Hashable {

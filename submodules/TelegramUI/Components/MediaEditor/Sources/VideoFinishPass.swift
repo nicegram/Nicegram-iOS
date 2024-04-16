@@ -149,7 +149,7 @@ struct VideoEncodeParameters {
     var roundness: simd_float1
     var alpha: simd_float1
     var isOpaque: simd_float1
-    var empty: simd_float1
+    var empty: simd_float1 = 0.0
 }
 
 final class VideoFinishPass: RenderPass {
@@ -204,6 +204,7 @@ final class VideoFinishPass: RenderPass {
         texture: MTLTexture,
         textureRotation: TextureRotation,
         maskTexture: MTLTexture?,
+        hasTransparency: Bool,
         position: VideoPosition,
         roundness: Float,
         alpha: Float,
@@ -238,22 +239,9 @@ final class VideoFinishPass: RenderPass {
             dimensions: simd_float2(Float(size.width), Float(size.height)),
             roundness: roundness,
             alpha: alpha,
-            isOpaque: maskTexture == nil ? 1.0 : 0.0,
-            empty: 0
+            isOpaque: maskTexture == nil ? 1.0 : 0.0
         )
         encoder.setFragmentBytes(&parameters, length: MemoryLayout<VideoEncodeParameters>.size, index: 0)
-//        var resolution = simd_uint2(UInt32(size.width), UInt32(size.height))
-//        encoder.setFragmentBytes(&resolution, length: MemoryLayout<simd_uint2>.size * 2, index: 0)
-//        
-//        var roundness = roundness
-//        encoder.setFragmentBytes(&roundness, length: MemoryLayout<simd_float1>.size, index: 1)
-//        
-//        var alpha = alpha
-//        encoder.setFragmentBytes(&alpha, length: MemoryLayout<simd_float1>.size, index: 2)
-//        
-//        var isOpaque = maskTexture == nil ? 1.0 : 0.0
-//        encoder.setFragmentBytes(&isOpaque, length: MemoryLayout<simd_float1>.size, index: 3)
-        
         encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
     }
     
@@ -265,7 +253,7 @@ final class VideoFinishPass: RenderPass {
             y: canvasSize.height / 2.0 + values.cropOffset.y
         )
         
-        self.isStory = values.isStory
+        self.isStory = values.isStory || values.isSticker
         self.isSticker = values.gradientColors?.first?.alpha == 0.0
         self.mainPosition = VideoFinishPass.VideoPosition(position: position, size: self.mainPosition.size, scale: values.cropScale, rotation: values.cropRotation, baseScale: self.mainPosition.baseScale)
             
@@ -506,6 +494,7 @@ final class VideoFinishPass: RenderPass {
     func process(
         input: MTLTexture,
         inputMask: MTLTexture?,
+        hasTransparency: Bool,
         secondInput: MTLTexture?,
         timestamp: CMTime,
         device: MTLDevice,
@@ -586,6 +575,7 @@ final class VideoFinishPass: RenderPass {
                 texture: transitionVideoState.texture,
                 textureRotation: transitionVideoState.textureRotation,
                 maskTexture: nil,
+                hasTransparency: false,
                 position: transitionVideoState.position,
                 roundness: transitionVideoState.roundness,
                 alpha: transitionVideoState.alpha,
@@ -600,6 +590,7 @@ final class VideoFinishPass: RenderPass {
             texture: mainVideoState.texture,
             textureRotation: mainVideoState.textureRotation,
             maskTexture: inputMask,
+            hasTransparency: hasTransparency,
             position: mainVideoState.position,
             roundness: mainVideoState.roundness,
             alpha: mainVideoState.alpha,
@@ -614,6 +605,7 @@ final class VideoFinishPass: RenderPass {
                 texture: additionalVideoState.texture,
                 textureRotation: additionalVideoState.textureRotation,
                 maskTexture: nil,
+                hasTransparency: false,
                 position: additionalVideoState.position,
                 roundness: additionalVideoState.roundness,
                 alpha: additionalVideoState.alpha,
@@ -645,9 +637,7 @@ final class VideoFinishPass: RenderPass {
             length: MemoryLayout<VertexData>.stride * vertices.count,
             options: [])
         encoder.setVertexBuffer(buffer, offset: 0, index: 0)
-    
         encoder.setFragmentBytes(&self.gradientColors, length: MemoryLayout<GradientColors>.size, index: 0)
-        
         encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
     }
     

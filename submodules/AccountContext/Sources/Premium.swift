@@ -44,8 +44,8 @@ public enum PremiumIntroSource {
 public enum PremiumGiftSource: Equatable {
     case profile
     case attachMenu
-    case settings
-    case chatList
+    case settings([EnginePeer.Id: TelegramBirthday]?)
+    case chatList([EnginePeer.Id: TelegramBirthday]?)
     case channelBoost
     case deeplink(String?)
 }
@@ -101,10 +101,26 @@ public enum PremiumPrivacySubject {
     case readTime
 }
 
+public enum BoostSubject: Equatable {
+    case stories
+    case channelReactions(reactionCount: Int32)
+    case nameColors(colors: PeerNameColor)
+    case nameIcon
+    case profileColors(colors: PeerNameColor)
+    case profileIcon
+    case emojiStatus
+    case wallpaper
+    case customWallpaper
+    case audioTranscription
+    case emojiPack
+    case noAds
+}
+
 public struct PremiumConfiguration {
     public static var defaultValue: PremiumConfiguration {
         return PremiumConfiguration(
             isPremiumDisabled: false,
+            subscriptionManagementUrl: "",
             showPremiumGiftInAttachMenu: false,
             showPremiumGiftInTextField: false,
             giveawayGiftsPurchaseAvailable: false,
@@ -118,6 +134,7 @@ public struct PremiumConfiguration {
             minChannelEmojiStatusLevel: 8,
             minChannelWallpaperLevel: 9,
             minChannelCustomWallpaperLevel: 10,
+            minChannelRestrictAdsLevel: 50,
             minGroupProfileIconLevel: 7,
             minGroupEmojiStatusLevel: 8,
             minGroupWallpaperLevel: 9,
@@ -128,6 +145,7 @@ public struct PremiumConfiguration {
     }
     
     public let isPremiumDisabled: Bool
+    public let subscriptionManagementUrl: String
     public let showPremiumGiftInAttachMenu: Bool
     public let showPremiumGiftInTextField: Bool
     public let giveawayGiftsPurchaseAvailable: Bool
@@ -141,7 +159,7 @@ public struct PremiumConfiguration {
     public let minChannelEmojiStatusLevel: Int32
     public let minChannelWallpaperLevel: Int32
     public let minChannelCustomWallpaperLevel: Int32
-    
+    public let minChannelRestrictAdsLevel: Int32
     public let minGroupProfileIconLevel: Int32
     public let minGroupEmojiStatusLevel: Int32
     public let minGroupWallpaperLevel: Int32
@@ -151,6 +169,7 @@ public struct PremiumConfiguration {
     
     fileprivate init(
         isPremiumDisabled: Bool,
+        subscriptionManagementUrl: String,
         showPremiumGiftInAttachMenu: Bool,
         showPremiumGiftInTextField: Bool,
         giveawayGiftsPurchaseAvailable: Bool,
@@ -164,6 +183,7 @@ public struct PremiumConfiguration {
         minChannelEmojiStatusLevel: Int32,
         minChannelWallpaperLevel: Int32,
         minChannelCustomWallpaperLevel: Int32,
+        minChannelRestrictAdsLevel: Int32,
         minGroupProfileIconLevel: Int32,
         minGroupEmojiStatusLevel: Int32,
         minGroupWallpaperLevel: Int32,
@@ -172,6 +192,7 @@ public struct PremiumConfiguration {
         minGroupAudioTranscriptionLevel: Int32
     ) {
         self.isPremiumDisabled = isPremiumDisabled
+        self.subscriptionManagementUrl = subscriptionManagementUrl
         self.showPremiumGiftInAttachMenu = showPremiumGiftInAttachMenu
         self.showPremiumGiftInTextField = showPremiumGiftInTextField
         self.giveawayGiftsPurchaseAvailable = giveawayGiftsPurchaseAvailable
@@ -185,6 +206,7 @@ public struct PremiumConfiguration {
         self.minChannelEmojiStatusLevel = minChannelEmojiStatusLevel
         self.minChannelWallpaperLevel = minChannelWallpaperLevel
         self.minChannelCustomWallpaperLevel = minChannelCustomWallpaperLevel
+        self.minChannelRestrictAdsLevel = minChannelRestrictAdsLevel
         self.minGroupProfileIconLevel = minGroupProfileIconLevel
         self.minGroupEmojiStatusLevel = minGroupEmojiStatusLevel
         self.minGroupWallpaperLevel = minGroupWallpaperLevel
@@ -201,6 +223,7 @@ public struct PremiumConfiguration {
             }
             return PremiumConfiguration(
                 isPremiumDisabled: data["premium_purchase_blocked"] as? Bool ?? defaultValue.isPremiumDisabled,
+                subscriptionManagementUrl: data["premium_manage_subscription_url"] as? String ?? "",
                 showPremiumGiftInAttachMenu: data["premium_gift_attach_menu_icon"] as? Bool ?? defaultValue.showPremiumGiftInAttachMenu,
                 showPremiumGiftInTextField: data["premium_gift_text_field_icon"] as? Bool ?? defaultValue.showPremiumGiftInTextField,
                 giveawayGiftsPurchaseAvailable: data["giveaway_gifts_purchase_available"] as? Bool ?? defaultValue.giveawayGiftsPurchaseAvailable,
@@ -214,6 +237,7 @@ public struct PremiumConfiguration {
                 minChannelEmojiStatusLevel: get(data["channel_emoji_status_level_min"]) ?? defaultValue.minChannelEmojiStatusLevel,
                 minChannelWallpaperLevel: get(data["channel_wallpaper_level_min"]) ?? defaultValue.minChannelWallpaperLevel,
                 minChannelCustomWallpaperLevel: get(data["channel_custom_wallpaper_level_min"]) ?? defaultValue.minChannelCustomWallpaperLevel,
+                minChannelRestrictAdsLevel: get(data["channel_restrict_sponsored_level_min"]) ?? defaultValue.minChannelRestrictAdsLevel,
                 minGroupProfileIconLevel: get(data["group_profile_bg_icon_level_min"]) ?? defaultValue.minGroupProfileIconLevel,
                 minGroupEmojiStatusLevel: get(data["group_emoji_status_level_min"]) ?? defaultValue.minGroupEmojiStatusLevel,
                 minGroupWallpaperLevel: get(data["group_wallpaper_level_min"]) ?? defaultValue.minGroupWallpaperLevel,

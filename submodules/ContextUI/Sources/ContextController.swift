@@ -48,8 +48,6 @@ public enum ContextMenuActionItemTextColor {
 public enum ContextMenuActionResult {
     case `default`
     case dismissWithoutContent
-    /// Temporary
-    static var safeStreamRecordingDismissWithoutContent: ContextMenuActionResult { .dismissWithoutContent }
     
     case custom(ContainedViewLayoutTransition)
 }
@@ -116,9 +114,11 @@ public final class ContextMenuActionItem {
     
     public struct IconAnimation: Equatable {
         public var name: String
+        public var loop: Bool
         
-        public init(name: String) {
+        public init(name: String, loop: Bool = false) {
             self.name = name
+            self.loop = loop
         }
     }
 
@@ -247,7 +247,7 @@ func convertFrame(_ frame: CGRect, from fromView: UIView, to toView: UIView) -> 
     return targetWindowFrame
 }
 
-final class ContextControllerNode: ViewControllerTracingNode, UIScrollViewDelegate {
+final class ContextControllerNode: ViewControllerTracingNode, ASScrollViewDelegate {
     private weak var controller: ContextController?
     private var presentationData: PresentationData
     
@@ -408,7 +408,7 @@ final class ContextControllerNode: ViewControllerTracingNode, UIScrollViewDelega
             self?.updateLayout()
         }
         
-        self.scrollNode.view.delegate = self
+        self.scrollNode.view.delegate = self.wrappedScrollViewDelegate
         
         if blurBackground {
             self.view.addSubview(self.effectView)
@@ -2150,6 +2150,7 @@ public protocol ContextExtractedContentSource: AnyObject {
     var initialAppearanceOffset: CGPoint { get }
     var centerVertically: Bool { get }
     var keepInPlace: Bool { get }
+    var adjustContentForSideInset: Bool { get }
     var ignoreContentTouches: Bool { get }
     var blurBackground: Bool { get }
     var shouldBeDismissed: Signal<Bool, NoError> { get }
@@ -2166,6 +2167,10 @@ public extension ContextExtractedContentSource {
     }
     
     var centerVertically: Bool {
+        return false
+    }
+    
+    var adjustContentForSideInset: Bool {
         return false
     }
     
