@@ -21,6 +21,8 @@ import AnimatedTextComponent
 import TextFormat
 import AudioToolbox
 import PremiumLockButtonSubtitleComponent
+import ListSectionComponent
+import ListItemSliderSelectorComponent
 
 final class PeerAllowedReactionsScreenComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -57,6 +59,7 @@ final class PeerAllowedReactionsScreenComponent: Component {
         private var reactionsTitleText: ComponentView<Empty>?
         private var reactionsInfoText: ComponentView<Empty>?
         private var reactionInput: ComponentView<Empty>?
+        private var reactionCountSection: ComponentView<Empty>?
         private let actionButton = ComponentView<Empty>()
         
         private var reactionSelectionControl: ComponentView<Empty>?
@@ -73,7 +76,8 @@ final class PeerAllowedReactionsScreenComponent: Component {
         private var isEnabled: Bool = false
         private var availableReactions: AvailableReactions?
         private var enabledReactions: [EmojiComponentReactionItem]?
-        private var appliedAllowedReactions: PeerAllowedReactions?
+        private var allowedReactionCount: Int = 11
+        private var appliedReactionSettings: PeerReactionSettings?
         
         private var emojiContent: EmojiPagerContentComponent?
         private var emojiContentDisposable: Disposable?
@@ -148,7 +152,9 @@ final class PeerAllowedReactionsScreenComponent: Component {
                 allowedReactions = .empty
             }
             
-            if self.appliedAllowedReactions != allowedReactions {
+            let reactionSettings = PeerReactionSettings(allowedReactions: allowedReactions, maxReactionCount: self.allowedReactionCount >= 11 ? nil : Int32(self.allowedReactionCount))
+            
+            if self.appliedReactionSettings != reactionSettings {
                 if case .empty = allowedReactions {
                     self.applySettings(standalone: true)
                 } else {
@@ -237,7 +243,9 @@ final class PeerAllowedReactionsScreenComponent: Component {
             } else {
                 allowedReactions = .empty
             }
-            let applyDisposable = (component.context.engine.peers.updatePeerAllowedReactions(peerId: component.peerId, allowedReactions: allowedReactions)
+            let reactionSettings = PeerReactionSettings(allowedReactions: allowedReactions, maxReactionCount: self.allowedReactionCount == 11 ? nil : Int32(self.allowedReactionCount))
+            
+            let applyDisposable = (component.context.engine.peers.updatePeerReactionSettings(peerId: component.peerId, reactionSettings: reactionSettings)
             |> deliverOnMainQueue).start(error: { [weak self] error in
                 guard let self, let component = self.component else {
                     return
@@ -258,7 +266,7 @@ final class PeerAllowedReactionsScreenComponent: Component {
                 guard let self else {
                     return
                 }
-                self.appliedAllowedReactions = allowedReactions
+                self.appliedReactionSettings = reactionSettings
                 if !standalone {
                     self.environment?.controller()?.dismiss()
                 }
@@ -326,7 +334,6 @@ final class PeerAllowedReactionsScreenComponent: Component {
                 self.isUpdating = false
             }
             
-            
             let environment = environment[EnvironmentType.self].value
             let themeUpdated = self.environment?.theme !== environment.theme
             self.environment = environment
@@ -347,7 +354,13 @@ final class PeerAllowedReactionsScreenComponent: Component {
                 self.enabledReactions = enabledReactions
                 self.availableReactions = component.initialContent.availableReactions
                 self.isEnabled = component.initialContent.isEnabled
-                self.appliedAllowedReactions = component.initialContent.allowedReactions
+                self.appliedReactionSettings = component.initialContent.reactionSettings.flatMap { reactionSettings in
+                    return PeerReactionSettings(
+                        allowedReactions: reactionSettings.allowedReactions,
+                        maxReactionCount: reactionSettings.maxReactionCount == 11 ? nil : reactionSettings.maxReactionCount
+                    )
+                }
+                self.allowedReactionCount = (component.initialContent.reactionSettings?.maxReactionCount).flatMap(Int.init) ?? 11
             }
             var caretPosition = self.caretPosition ?? enabledReactions.count
             caretPosition = max(0, min(enabledReactions.count, caretPosition))
@@ -472,6 +485,8 @@ final class PeerAllowedReactionsScreenComponent: Component {
                         addGroupAction: { _, _, _ in
                         },
                         clearGroup: { _ in
+                        },
+                        editAction: { _ in
                         },
                         pushController: { c in
                         },
@@ -773,6 +788,81 @@ final class PeerAllowedReactionsScreenComponent: Component {
                 }
                 contentHeight += reactionsInfoTextSize.height
                 contentHeight += 6.0
+                
+                contentHeight += 32.0
+                
+                let reactionCountSection: ComponentView<Empty>
+                if let current = self.reactionCountSection {
+                    reactionCountSection = current
+                } else {
+                    reactionCountSection = ComponentView()
+                    self.reactionCountSection = reactionCountSection
+                }
+                
+                let reactionCountValueList = (1 ... 11).map { i -> String in
+                    return "\(i)"
+                }
+                let sliderTitle: String = environment.strings.PeerInfo_AllowedReactions_MaxCountValue(Int32(self.allowedReactionCount))
+                let reactionCountSectionSize = reactionCountSection.update(
+                    transition: transition,
+                    component: AnyComponent(ListSectionComponent(
+                        theme: environment.theme,
+                        header: AnyComponent(MultilineTextComponent(
+                            text: .plain(NSAttributedString(
+                                string: environment.strings.PeerInfo_AllowedReactions_MaxCountSectionTitle,
+                                font: Font.regular(13.0),
+                                textColor: environment.theme.list.freeTextColor
+                            )),
+                            maximumNumberOfLines: 0
+                        )),
+                        footer: AnyComponent(MultilineTextComponent(
+                            text: .plain(NSAttributedString(
+                                string: environment.strings.PeerInfo_AllowedReactions_MaxCountSectionFooter,
+                                font: Font.regular(13.0),
+                                textColor: environment.theme.list.freeTextColor
+                            )),
+                            maximumNumberOfLines: 0
+                        )),
+                        items: [
+                            AnyComponentWithIdentity(id: 0, component: AnyComponent(ListItemSliderSelectorComponent(
+                                theme: environment.theme,
+                                values: reactionCountValueList.map { item in
+                                    return item
+                                },
+                                markPositions: false,
+                                selectedIndex: max(0, min(reactionCountValueList.count - 1, self.allowedReactionCount - 1)),
+                                title: sliderTitle,
+                                selectedIndexUpdated: { [weak self] index in
+                                    guard let self else {
+                                        return
+                                    }
+                                    let index = max(1, min(reactionCountValueList.count, index + 1))
+                                    self.allowedReactionCount = index
+                                    self.state?.updated(transition: .immediate)
+                                }
+                            )))
+                        ],
+                        displaySeparators: false
+                    )),
+                    environment: {},
+                    containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 10000.0)
+                )
+                let reactionCountSectionFrame = CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: reactionCountSectionSize)
+                if let reactionCountSectionView = reactionCountSection.view {
+                    if reactionCountSectionView.superview == nil {
+                        self.scrollView.addSubview(reactionCountSectionView)
+                    }
+                    if animateIn {
+                        reactionCountSectionView.frame = reactionCountSectionFrame
+                        if !transition.animation.isImmediate {
+                            reactionCountSectionView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
+                        }
+                    } else {
+                        transition.setFrame(view: reactionCountSectionView, frame: reactionCountSectionFrame)
+                    }
+                }
+                contentHeight += reactionCountSectionSize.height
+                contentHeight += 12.0
             } else {
                 if let reactionsTitleText = self.reactionsTitleText {
                     self.reactionsTitleText = nil
@@ -809,6 +899,19 @@ final class PeerAllowedReactionsScreenComponent: Component {
                             })
                         } else {
                             reactionsInfoTextView.removeFromSuperview()
+                        }
+                    }
+                }
+                
+                if let reactionCountSection = self.reactionCountSection {
+                    self.reactionCountSection = nil
+                    if let reactionCountSectionView = reactionCountSection.view {
+                        if !transition.animation.isImmediate {
+                            reactionCountSectionView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false, completion: { [weak reactionCountSectionView] _ in
+                                reactionCountSectionView?.removeFromSuperview()
+                            })
+                        } else {
+                            reactionCountSectionView.removeFromSuperview()
                         }
                     }
                 }
@@ -882,6 +985,7 @@ final class PeerAllowedReactionsScreenComponent: Component {
                         bottomInset: environment.safeInsets.bottom,
                         deviceMetrics: environment.deviceMetrics,
                         emojiContent: emojiContent.withSelectedItems(Set(enabledReactions.map(\.file.fileId))),
+                        stickerContent: nil,
                         backgroundIconColor: nil,
                         backgroundColor: environment.theme.list.itemBlocksBackgroundColor,
                         separatorColor: environment.theme.list.itemBlocksSeparatorColor,
@@ -907,7 +1011,7 @@ final class PeerAllowedReactionsScreenComponent: Component {
                         }
                     )),
                     environment: {},
-                    containerSize: CGSize(width: availableSize.width, height: min(340.0, max(50.0, availableSize.height - 200.0)))
+                    containerSize: CGSize(width: availableSize.width, height: availableSize.height)
                 )
                 let reactionSelectionControlFrame = CGRect(origin: CGPoint(x: 0.0, y: availableSize.height - reactionSelectionControlSize.height), size: reactionSelectionControlSize)
                 if let reactionSelectionControlView = reactionSelectionControl.view {
@@ -1005,18 +1109,18 @@ public class PeerAllowedReactionsScreen: ViewControllerComponentContainer {
         public let isEnabled: Bool
         public let enabledReactions: [EmojiComponentReactionItem]
         public let availableReactions: AvailableReactions?
-        public let allowedReactions: PeerAllowedReactions?
+        public let reactionSettings: PeerReactionSettings?
         
         init(
             isEnabled: Bool,
             enabledReactions: [EmojiComponentReactionItem],
             availableReactions: AvailableReactions?,
-            allowedReactions: PeerAllowedReactions?
+            reactionSettings: PeerReactionSettings?
         ) {
             self.isEnabled = isEnabled
             self.enabledReactions = enabledReactions
             self.availableReactions = availableReactions
-            self.allowedReactions = allowedReactions
+            self.reactionSettings = reactionSettings
         }
         
         public static func ==(lhs: Content, rhs: Content) -> Bool {
@@ -1032,7 +1136,7 @@ public class PeerAllowedReactionsScreen: ViewControllerComponentContainer {
             if lhs.availableReactions != rhs.availableReactions {
                 return false
             }
-            if lhs.allowedReactions != rhs.allowedReactions {
+            if lhs.reactionSettings != rhs.reactionSettings {
                 return false
             }
             return true
@@ -1101,9 +1205,9 @@ public class PeerAllowedReactionsScreen: ViewControllerComponentContainer {
             var reactions: [MessageReaction.Reaction] = []
             var isEnabled = false
             
-            let allowedReactions = cachedData.allowedReactions.knownValue
-            if let allowedReactions {
-                switch allowedReactions {
+            let reactionSettings = cachedData.reactionSettings.knownValue
+            if let reactionSettings {
+                switch reactionSettings.allowedReactions {
                 case .all:
                     isEnabled = true
                     if let availableReactions {
@@ -1145,7 +1249,7 @@ public class PeerAllowedReactionsScreen: ViewControllerComponentContainer {
                     }
                 }
                 
-                return Content(isEnabled: isEnabled, enabledReactions: result, availableReactions: availableReactions, allowedReactions: allowedReactions)
+                return Content(isEnabled: isEnabled, enabledReactions: result, availableReactions: availableReactions, reactionSettings: reactionSettings)
             }
         }
         |> distinctUntilChanged

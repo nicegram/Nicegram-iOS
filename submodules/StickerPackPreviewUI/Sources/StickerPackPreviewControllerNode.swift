@@ -28,7 +28,7 @@ private struct StickerPackPreviewGridEntry: Comparable, Identifiable {
     }
     
     func item(context: AccountContext, interaction: StickerPackPreviewInteraction, theme: PresentationTheme) -> StickerPackPreviewGridItem {
-        return StickerPackPreviewGridItem(context: context, stickerItem: self.stickerItem, interaction: interaction, theme: theme, isPremium: false, isLocked: false, isEmpty: false)
+        return StickerPackPreviewGridItem(context: context, stickerItem: self.stickerItem, interaction: interaction, theme: theme, isPremium: false, isLocked: false, isEmpty: false, isEditable: false, isEditing: false)
     }
 }
 
@@ -46,7 +46,7 @@ private struct StickerPackPreviewGridTransaction {
     }
 }
 
-final class StickerPackPreviewControllerNode: ViewControllerTracingNode, UIScrollViewDelegate {
+final class StickerPackPreviewControllerNode: ViewControllerTracingNode, ASScrollViewDelegate {
     private let context: AccountContext
     private let openShare: (() -> Void)?
     private var presentationData: PresentationData
@@ -144,7 +144,7 @@ final class StickerPackPreviewControllerNode: ViewControllerTracingNode, UIScrol
         
         super.init()
         
-        self.interaction = StickerPackPreviewInteraction(playAnimatedStickers: false, addStickerPack: { _, _ in }, removeStickerPack: { _ in }, emojiSelected: { _, _ in }, emojiLongPressed: { _, _, _, _ in })
+        self.interaction = StickerPackPreviewInteraction(playAnimatedStickers: false, addStickerPack: { _, _ in }, removeStickerPack: { _ in }, emojiSelected: { _, _ in }, emojiLongPressed: { _, _, _, _ in }, addPressed: {})
         
         self.backgroundColor = nil
         self.isOpaque = false
@@ -152,7 +152,7 @@ final class StickerPackPreviewControllerNode: ViewControllerTracingNode, UIScrol
         self.dimNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.dimTapGesture(_:))))
         self.addSubnode(self.dimNode)
         
-        self.wrappingScrollNode.view.delegate = self
+        self.wrappingScrollNode.view.delegate = self.wrappedScrollViewDelegate
         self.addSubnode(self.wrappingScrollNode)
         
         self.wrappingScrollNode.addSubnode(self.cancelButtonNode)

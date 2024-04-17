@@ -21,10 +21,12 @@ public final class TabSelectorComponent: Component {
     public struct CustomLayout: Equatable {
         public var font: UIFont
         public var spacing: CGFloat
+        public var lineSelection: Bool
         
-        public init(font: UIFont, spacing: CGFloat) {
+        public init(font: UIFont, spacing: CGFloat, lineSelection: Bool = false) {
             self.font = font
             self.spacing = spacing
+            self.lineSelection = lineSelection
         }
     }
     
@@ -46,19 +48,22 @@ public final class TabSelectorComponent: Component {
     public let items: [Item]
     public let selectedId: AnyHashable?
     public let setSelectedId: (AnyHashable) -> Void
+    public let transitionFraction: CGFloat?
     
     public init(
         colors: Colors,
         customLayout: CustomLayout? = nil,
         items: [Item],
         selectedId: AnyHashable?,
-        setSelectedId: @escaping (AnyHashable) -> Void
+        setSelectedId: @escaping (AnyHashable) -> Void,
+        transitionFraction: CGFloat? = nil
     ) {
         self.colors = colors
         self.customLayout = customLayout
         self.items = items
         self.selectedId = selectedId
         self.setSelectedId = setSelectedId
+        self.transitionFraction = transitionFraction
     }
     
     public static func ==(lhs: TabSelectorComponent, rhs: TabSelectorComponent) -> Bool {
@@ -72,6 +77,9 @@ public final class TabSelectorComponent: Component {
             return false
         }
         if lhs.selectedId != rhs.selectedId {
+            return false
+        }
+        if lhs.transitionFraction != rhs.transitionFraction {
             return false
         }
         return true
@@ -107,6 +115,8 @@ public final class TabSelectorComponent: Component {
         }
         
         func update(component: TabSelectorComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: Transition) -> CGSize {
+            let selectionColorUpdated = component.colors.selection != self.component?.colors.selection
+           
             self.component = component
             self.state = state
             
@@ -115,20 +125,38 @@ public final class TabSelectorComponent: Component {
             let spacing: CGFloat = component.customLayout?.spacing ?? 2.0
             
             let itemFont: UIFont
+            var isLineSelection = false
             if let customLayout = component.customLayout {
                 itemFont = customLayout.font
+                isLineSelection = customLayout.lineSelection
             } else {
                 itemFont = Font.semibold(14.0)
             }
             
-            if self.selectionView.image == nil {
-                self.selectionView.image = generateStretchableFilledCircleImage(diameter: baseHeight, color: component.colors.selection)
+            if selectionColorUpdated {
+                if isLineSelection {
+                    self.selectionView.image = generateImage(CGSize(width: 5.0, height: 3.0), rotatedContext: { size, context in
+                        context.clear(CGRect(origin: CGPoint(), size: size))
+                        context.setFillColor(component.colors.selection.cgColor)
+                        context.fillEllipse(in: CGRect(origin: CGPoint(), size: CGSize(width: 4.0, height: 4.0)))
+                        context.fillEllipse(in: CGRect(origin: CGPoint(x: size.width - 4.0, y: 0.0), size: CGSize(width: 4.0, height: 4.0)))
+                        context.fill(CGRect(x: 2.0, y: 0.0, width: size.width - 4.0, height: 4.0))
+                        context.fill(CGRect(x: 0.0, y: 2.0, width: size.width, height: 2.0))
+                    })?.resizableImage(withCapInsets: UIEdgeInsets(top: 3.0, left: 3.0, bottom: 0.0, right: 3.0), resizingMode: .stretch)
+                } else {
+                    self.selectionView.image = generateStretchableFilledCircleImage(diameter: baseHeight, color: component.colors.selection)
+                }
             }
             
             var contentWidth: CGFloat = 0.0
+            var previousBackgroundRect: CGRect?
             var selectedBackgroundRect: CGRect?
+            var nextBackgroundRect: CGRect?
+            
+            let selectedIndex = component.items.firstIndex(where: { $0.id == component.selectedId })
             
             var validIds: [AnyHashable] = []
+            var index = 0
             for item in component.items {
                 var itemTransition = transition
                 let itemView: VisibleItem
@@ -143,10 +171,31 @@ public final class TabSelectorComponent: Component {
                 let itemId = item.id
                 validIds.append(itemId)
                 
+                var selectionFraction: CGFloat = 0.0
+                if let transitionFraction = component.transitionFraction, let selectedIndex {
+                    if item.id == component.selectedId {
+                        selectionFraction = 1.0 - abs(transitionFraction)
+                    } else {
+                        if index == selectedIndex - 1 && transitionFraction < 0.0 {
+                            selectionFraction = abs(transitionFraction)
+                        } else if index == selectedIndex + 1 && transitionFraction > 0.0 {
+                            selectionFraction = abs(transitionFraction)
+                        }
+                    }
+                } else {
+                    selectionFraction = item.id == component.selectedId ? 1.0 : 0.0
+                }
+                
                 let itemSize = itemView.title.update(
                     transition: .immediate,
                     component: AnyComponent(PlainButtonComponent(
-                        content: AnyComponent(Text(text: item.title, font: itemFont, color: component.colors.foreground)),
+                        content: AnyComponent(ItemComponent(
+                            text: item.title,
+                            font: itemFont,
+                            color: component.colors.foreground,
+                            selectedColor: component.colors.selection,
+                            selectionFraction: isLineSelection ? selectionFraction : 0.0
+                        )),
                         effectAlignment: .center,
                         minSize: nil,
                         action: { [weak self] in
@@ -154,7 +203,8 @@ public final class TabSelectorComponent: Component {
                                 return
                             }
                             component.setSelectedId(itemId)
-                        }
+                        },
+                        animateScale: !isLineSelection
                     )),
                     environment: {},
                     containerSize: CGSize(width: 200.0, height: 100.0)
@@ -170,6 +220,11 @@ public final class TabSelectorComponent: Component {
                 if item.id == component.selectedId {
                     selectedBackgroundRect = itemBackgroundRect
                 }
+                if selectedBackgroundRect == nil {
+                    previousBackgroundRect = itemBackgroundRect
+                } else if nextBackgroundRect == nil, itemBackgroundRect != selectedBackgroundRect {
+                    nextBackgroundRect = itemBackgroundRect
+                }
                 
                 if let itemTitleView = itemView.title.view {
                     if itemTitleView.superview == nil {
@@ -178,8 +233,9 @@ public final class TabSelectorComponent: Component {
                     }
                     itemTransition.setPosition(view: itemTitleView, position: itemTitleFrame.origin)
                     itemTransition.setBounds(view: itemTitleView, bounds: CGRect(origin: CGPoint(), size: itemTitleFrame.size))
-                    itemTransition.setAlpha(view: itemTitleView, alpha: item.id == component.selectedId ? 1.0 : 0.4)
+                    itemTransition.setAlpha(view: itemTitleView, alpha: item.id == component.selectedId || isLineSelection ? 1.0 : 0.4)
                 }
+                index += 1
             }
             
             var removeIds: [AnyHashable] = []
@@ -195,7 +251,28 @@ public final class TabSelectorComponent: Component {
             
             if let selectedBackgroundRect {
                 self.selectionView.alpha = 1.0
-                transition.setFrame(view: self.selectionView, frame: selectedBackgroundRect)
+                                
+                if isLineSelection {
+                    var effectiveBackgroundRect = selectedBackgroundRect
+                    if let transitionFraction = component.transitionFraction {
+                        if transitionFraction < 0.0 {
+                            if let previousBackgroundRect {
+                                effectiveBackgroundRect = effectiveBackgroundRect.interpolate(with: previousBackgroundRect, fraction: abs(transitionFraction))
+                            }
+                        } else if transitionFraction > 0.0 {
+                            if let nextBackgroundRect {
+                                effectiveBackgroundRect = effectiveBackgroundRect.interpolate(with: nextBackgroundRect, fraction: abs(transitionFraction))
+                            }
+                        }
+                    }
+                    
+                    var mappedSelectionFrame = effectiveBackgroundRect.insetBy(dx: 12.0, dy: 0.0)
+                    mappedSelectionFrame.origin.y = mappedSelectionFrame.maxY + 6.0
+                    mappedSelectionFrame.size.height = 3.0
+                    transition.setFrame(view: self.selectionView, frame: mappedSelectionFrame)
+                } else {
+                    transition.setFrame(view: self.selectionView, frame: selectedBackgroundRect)
+                }
             } else {
                 self.selectionView.alpha = 0.0
             }
@@ -210,5 +287,96 @@ public final class TabSelectorComponent: Component {
     
     public func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: Transition) -> CGSize {
         return view.update(component: self, availableSize: availableSize, state: state, environment: environment, transition: transition)
+    }
+}
+
+extension CGRect {
+    func interpolate(with other: CGRect, fraction: CGFloat) -> CGRect {
+         return CGRect(
+            x: self.origin.x * (1.0 - fraction) + (other.origin.x) * fraction,
+            y: self.origin.y * (1.0 - fraction) + (other.origin.y) * fraction,
+            width: self.size.width * (1.0 - fraction) + (other.size.width) * fraction,
+            height: self.size.height * (1.0 - fraction) + (other.size.height) * fraction
+         )
+     }
+}
+
+private final class ItemComponent: CombinedComponent {
+    let text: String
+    let font: UIFont
+    let color: UIColor
+    let selectedColor: UIColor
+    let selectionFraction: CGFloat
+    
+    init(
+        text: String,
+        font: UIFont,
+        color: UIColor,
+        selectedColor: UIColor,
+        selectionFraction: CGFloat
+    ) {
+        self.text = text
+        self.font = font
+        self.color = color
+        self.selectedColor = selectedColor
+        self.selectionFraction = selectionFraction
+    }
+
+    static func ==(lhs: ItemComponent, rhs: ItemComponent) -> Bool {
+        if lhs.text != rhs.text {
+            return false
+        }
+        if lhs.font != rhs.font {
+            return false
+        }
+        if lhs.color != rhs.color {
+            return false
+        }
+        if lhs.selectedColor != rhs.selectedColor {
+            return false
+        }
+        if lhs.selectionFraction != rhs.selectionFraction {
+            return false
+        }
+        return true
+    }
+    
+    static var body: Body {
+        let title = Child(Text.self)
+        let selectedTitle = Child(Text.self)
+        
+        return { context in
+            let component = context.component
+           
+            let title = title.update(
+                component: Text(
+                    text: component.text,
+                    font: component.font,
+                    color: component.color
+                ),
+                availableSize: context.availableSize,
+                transition: .immediate
+            )
+            context.add(title
+                .position(CGPoint(x: title.size.width / 2.0, y: title.size.height / 2.0))
+                .opacity(1.0 - component.selectionFraction)
+            )
+            
+            let selectedTitle = selectedTitle.update(
+                component: Text(
+                    text: component.text,
+                    font: component.font,
+                    color: component.selectedColor
+                ),
+                availableSize: context.availableSize,
+                transition: .immediate
+            )
+            context.add(selectedTitle
+                .position(CGPoint(x: selectedTitle.size.width / 2.0, y: selectedTitle.size.height / 2.0))
+                .opacity(component.selectionFraction)
+            )
+                        
+            return title.size
+        }
     }
 }

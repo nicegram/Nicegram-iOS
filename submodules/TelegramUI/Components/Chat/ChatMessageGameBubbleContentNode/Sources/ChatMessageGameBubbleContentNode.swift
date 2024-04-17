@@ -67,20 +67,20 @@ public final class ChatMessageGameBubbleContentNode: ChatMessageBubbleContentNod
             
             var title: String?
             var text: String?
-            var mediaAndFlags: (Media, ChatMessageAttachedContentNodeMediaFlags)?
+            var mediaAndFlags: ([Media], ChatMessageAttachedContentNodeMediaFlags)?
             
             if let game = game {
                 title = game.title
                 text = game.description
                 
                 if let file = game.file {
-                    mediaAndFlags = (file, [.preferMediaBeforeText])
+                    mediaAndFlags = ([file], [.preferMediaBeforeText])
                 } else if let image = game.image {
-                    mediaAndFlags = (image, [.preferMediaBeforeText])
+                    mediaAndFlags = ([image], [.preferMediaBeforeText])
                 }
             }
             
-            let (initialWidth, continueLayout) = contentNodeLayout(item.presentationData, item.controllerInteraction.automaticMediaDownloadSettings, item.associatedData, item.attributes, item.context, item.controllerInteraction, item.message, item.read, .peer(id: item.message.id.peerId), title, nil, item.message.text.isEmpty ? text : item.message.text, item.message.text.isEmpty ? nil : messageEntities, mediaAndFlags, nil, nil, nil, true, layoutConstants, preparePosition, constrainedSize, item.controllerInteraction.presentationContext.animationCache, item.controllerInteraction.presentationContext.animationRenderer)
+            let (initialWidth, continueLayout) = contentNodeLayout(item.presentationData, item.controllerInteraction.automaticMediaDownloadSettings, item.associatedData, item.attributes, item.context, item.controllerInteraction, item.message, item.read, .peer(id: item.message.id.peerId), title, nil, nil, item.message.text.isEmpty ? text : item.message.text, item.message.text.isEmpty ? nil : messageEntities, mediaAndFlags, nil, nil, nil, true, layoutConstants, preparePosition, constrainedSize, item.controllerInteraction.presentationContext.animationCache, item.controllerInteraction.presentationContext.animationRenderer)
             
             let contentProperties = ChatMessageBubbleContentProperties(hidesSimpleAuthorHeader: false, headerSpacing: 8.0, hidesBackground: .never, forceFullCorners: false, forceAlignment: .none)
             

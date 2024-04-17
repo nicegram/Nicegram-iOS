@@ -24,7 +24,7 @@
       "location" : "https://github.com/denis15yo/GRDB.swift.git",
       "state" : {
         "branch" : "master",
-        "revision" : "58d3673030f8a640d7278f45bf2dc21b078ecae8"
+        "revision" : "afc958017ee4feefd3c61c8e2cddf81d079d2e39"
       }
     },
     {
@@ -51,7 +51,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "82fdd662ad67b20b2d93408f9dc853c3f8a1fb1e"
+        "revision" : "667bceccb7102dff96ba018b22c5fa1a6d30c9c6"
       }
     },
     {
@@ -68,8 +68,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SDWebImage/SDWebImage.git",
       "state" : {
-        "revision" : "73b9397cfbd902f606572964055464903b1d84c6",
-        "version" : "5.19.0"
+        "revision" : "f6afa0132961d593f07970d84e2d8b588c29ea04",
+        "version" : "5.19.1"
       }
     },
     {

@@ -110,7 +110,7 @@ public class DrawingReactionEntityView: DrawingStickerEntityView {
     
     private weak var reactionContextNode: ReactionContextNode?
     fileprivate func presentReactionSelection() {
-        guard let containerView = self.containerView, let superview = containerView.superview?.superview?.superview?.superview, self.reactionContextNode == nil else {
+        guard let containerView = self.containerView, let superview = containerView.superview?.superview?.superview?.superview?.superview?.superview, self.reactionContextNode == nil else {
             return
         }
         
@@ -177,7 +177,7 @@ public class DrawingReactionEntityView: DrawingStickerEntityView {
         reactionContextNode.forceTailToRight = true
         reactionContextNode.forceDark = true
         self.reactionContextNode = reactionContextNode
-        
+                
         reactionContextNode.reactionSelected = { [weak self] updateReaction, _ in
             guard let self else {
                 return
@@ -189,7 +189,7 @@ public class DrawingReactionEntityView: DrawingStickerEntityView {
                 }
                 
                 if case let .file(_, type) = self.stickerEntity.content, case let .reaction(_, style) = type {
-                    self.stickerEntity.content = .file(animation, .reaction(updateReaction.reaction, style))
+                    self.stickerEntity.content = .file(.standalone(media: animation), .reaction(updateReaction.reaction, style))
                 }
                 
                 var nodeToTransitionOut: ASDisplayNode?

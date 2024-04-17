@@ -518,7 +518,7 @@ public func channelMembersController(context: AccountContext, updatedPresentatio
         )
         |> deliverOnMainQueue).start(next: { chatPeer, exportedInvitation, members in
             let disabledIds = members?.compactMap({$0.peer.id}) ?? []
-            let contactsController = context.sharedContext.makeContactMultiselectionController(ContactMultiselectionControllerParams(context: context, updatedPresentationData: updatedPresentationData, mode: .peerSelection(searchChatList: false, searchGroups: false, searchChannels: false), options: [], filters: [.excludeSelf, .disable(disabledIds)], onlyWriteable: true))
+            let contactsController = context.sharedContext.makeContactMultiselectionController(ContactMultiselectionControllerParams(context: context, updatedPresentationData: updatedPresentationData, mode: .peerSelection(searchChatList: false, searchGroups: false, searchChannels: false), options: [], filters: [.excludeSelf, .disable(disabledIds)], onlyWriteable: true, isGroupInvitation: true))
             
             addMembersDisposable.set((
                 contactsController.result
@@ -549,25 +549,25 @@ public func channelMembersController(context: AccountContext, updatedPresentatio
                     contactsController?.dismiss()
                 } else {
                     if let chatPeer {
-                        let _ = (context.engine.data.get(
-                            EngineDataList(failedPeerIds.compactMap { item -> EnginePeer.Id? in
-                                return item.0
-                            }.map(TelegramEngine.EngineData.Item.Peer.Peer.init(id:)))
-                        )
-                        |> deliverOnMainQueue).start(next: { peerItems in
-                            let peers = peerItems.compactMap { $0 }
-                            if !peers.isEmpty, let contactsController, let navigationController = contactsController.navigationController as? NavigationController {
-                                var viewControllers = navigationController.viewControllers
-                                if let index = viewControllers.firstIndex(where: { $0 === contactsController }) {
-                                    let inviteScreen = SendInviteLinkScreen(context: context, peer: chatPeer, link: exportedInvitation?.link, peers: peers)
-                                    viewControllers.remove(at: index)
-                                    viewControllers.append(inviteScreen)
-                                    navigationController.setViewControllers(viewControllers, animated: true)
-                                }
+                        let failedPeers = failedPeerIds.compactMap { _, error -> TelegramForbiddenInvitePeer? in
+                            if case let .restricted(peer) = error {
+                                return peer
                             } else {
-                                contactsController?.dismiss()
+                                return nil
                             }
-                        })
+                        }
+                       
+                        if !failedPeers.isEmpty, let contactsController, let navigationController = contactsController.navigationController as? NavigationController {
+                            var viewControllers = navigationController.viewControllers
+                            if let index = viewControllers.firstIndex(where: { $0 === contactsController }) {
+                                let inviteScreen = SendInviteLinkScreen(context: context, peer: chatPeer, link: exportedInvitation?.link, peers: failedPeers)
+                                viewControllers.remove(at: index)
+                                viewControllers.append(inviteScreen)
+                                navigationController.setViewControllers(viewControllers, animated: true)
+                            }
+                        } else {
+                            contactsController?.dismiss()
+                        }
                         
                         return
                     }

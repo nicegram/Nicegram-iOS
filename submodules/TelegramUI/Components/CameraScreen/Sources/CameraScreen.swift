@@ -323,6 +323,8 @@ private final class CameraScreenComponent: CombinedComponent {
             }
             
             self.volumeButtonsListener = VolumeButtonsListener(
+                sharedContext: self.context.sharedContext,
+                isCameraSpecific: true,
                 shouldBeActive: self.volumeButtonsListenerShouldBeActive.get(),
                 upPressed: { [weak self] in
                     if let self {
@@ -749,6 +751,13 @@ private final class CameraScreenComponent: CombinedComponent {
             state.cameraState = component.cameraState
             state.volumeButtonsListenerActive = component.hasAppeared && component.isVisible
             
+            let isSticker: Bool
+            if let controller = controller() as? CameraScreen, case .sticker = controller.mode {
+                isSticker = true
+            } else {
+                isSticker = false
+            }
+            
             let isTablet: Bool
             if case .regular = environment.metrics.widthClass {
                 isTablet = true
@@ -877,6 +886,7 @@ private final class CameraScreenComponent: CombinedComponent {
             let captureControls = captureControls.update(
                 component: CaptureControlsComponent(
                     isTablet: isTablet,
+                    isSticker: isSticker,
                     hasAppeared: component.hasAppeared && hasAllRequiredAccess,
                     hasAccess: hasAllRequiredAccess,
                     tintColor: controlsTintColor,
@@ -1061,7 +1071,7 @@ private final class CameraScreenComponent: CombinedComponent {
                         .disappear(.default(scale: true))
                     )
                     
-                    if !isTablet && Camera.isDualCameraSupported(forRoundVideo: false) {
+                    if !isSticker && !isTablet && Camera.isDualCameraSupported(forRoundVideo: false) {
                         let dualButton = dualButton.update(
                             component: CameraButton(
                                 content: AnyComponentWithIdentity(
@@ -1199,7 +1209,7 @@ private final class CameraScreenComponent: CombinedComponent {
                 }
             }
             
-            if case .none = component.cameraState.recording, !state.isTransitioning && hasAllRequiredAccess {
+            if !isSticker, case .none = component.cameraState.recording, !state.isTransitioning && hasAllRequiredAccess {
                 let availableModeControlSize: CGSize
                 if isTablet {
                     availableModeControlSize = CGSize(width: panelWidth, height: 120.0)
@@ -1312,6 +1322,11 @@ private class BlurView: UIVisualEffectView {
 }
 
 public class CameraScreen: ViewController {
+    public enum Mode {
+        case story
+        case sticker
+    }
+    
     public enum PIPPosition: Int32 {
         case topLeft
         case topRight
@@ -1388,7 +1403,7 @@ public class CameraScreen: ViewController {
         }
     }
 
-    fileprivate final class Node: ViewControllerTracingNode, UIGestureRecognizerDelegate {
+    fileprivate final class Node: ViewControllerTracingNode, ASGestureRecognizerDelegate {
         private weak var controller: CameraScreen?
         private let context: AccountContext
         fileprivate var camera: Camera?
@@ -1402,6 +1417,7 @@ public class CameraScreen: ViewController {
         
         private let mainPreviewContainerView: UIView
         fileprivate var mainPreviewView: CameraSimplePreviewView
+        private let mainPreviewAnimationWrapperView: UIView
         
         private let additionalPreviewContainerView: UIView
         fileprivate var additionalPreviewView: CameraSimplePreviewView
@@ -1441,7 +1457,7 @@ public class CameraScreen: ViewController {
         private var validLayout: ContainerViewLayout?
         
         fileprivate var didAppear: () -> Void = {}
-        
+                
         private let completion = ActionSlot<Signal<CameraScreen.Result, NoError>>()
         
         var cameraState: CameraState {
@@ -1535,6 +1551,10 @@ public class CameraScreen: ViewController {
             self.mainPreviewContainerView.clipsToBounds = true
             self.mainPreviewView = CameraSimplePreviewView(frame: .zero, main: true)
             
+            self.mainPreviewAnimationWrapperView = UIView()
+            self.mainPreviewAnimationWrapperView.clipsToBounds = true
+            self.mainPreviewAnimationWrapperView.isUserInteractionEnabled = false
+            
             self.additionalPreviewContainerView = UIView()
             self.additionalPreviewContainerView.clipsToBounds = true
             self.additionalPreviewView = CameraSimplePreviewView(frame: .zero, main: false)
@@ -1589,6 +1609,7 @@ public class CameraScreen: ViewController {
             self.view.addSubview(self.transitionCornersView)
             
             self.mainPreviewContainerView.addSubview(self.mainPreviewView)
+            self.mainPreviewContainerView.addSubview(self.mainPreviewAnimationWrapperView)
             self.additionalPreviewContainerView.addSubview(self.additionalPreviewView)
                         
             self.completion.connect { [weak self] result in
@@ -1699,7 +1720,7 @@ public class CameraScreen: ViewController {
             self.previewContainerView.addGestureRecognizer(pinchGestureRecognizer)
             
             let panGestureRecognizer = UIPanGestureRecognizer(target: self, action: #selector(self.handlePan(_:)))
-            panGestureRecognizer.delegate = self
+            panGestureRecognizer.delegate = self.wrappedGestureRecognizerDelegate
             panGestureRecognizer.maximumNumberOfTouches = 1
             self.panGestureRecognizer = panGestureRecognizer
             self.previewContainerView.addGestureRecognizer(panGestureRecognizer)
@@ -1712,7 +1733,7 @@ public class CameraScreen: ViewController {
             self.previewContainerView.addGestureRecognizer(doubleGestureRecognizer)
             
             let pipPanGestureRecognizer = UIPanGestureRecognizer(target: self, action: #selector(self.handlePipPan(_:)))
-            pipPanGestureRecognizer.delegate = self
+            pipPanGestureRecognizer.delegate = self.wrappedGestureRecognizerDelegate
             self.previewContainerView.addGestureRecognizer(pipPanGestureRecognizer)
             self.pipPanGestureRecognizer = pipPanGestureRecognizer
         }
@@ -1733,22 +1754,31 @@ public class CameraScreen: ViewController {
         
         fileprivate var captureStartTimestamp: Double?
         private func setupCamera() {
-            guard self.camera == nil else {
+            guard self.camera == nil, let controller = self.controller else {
                 return
             }
             
-            let camera = Camera(
-                configuration: Camera.Configuration(
-                    preset: .hd1920x1080,
-                    position: self.cameraState.position,
-                    isDualEnabled: self.cameraState.isDualCameraEnabled,
-                    audio: true,
-                    photo: true,
-                    metadata: false
-                ),
-                previewView: self.mainPreviewView,
-                secondaryPreviewView: self.additionalPreviewView
-            )
+            var isNew = false
+            let camera: Camera
+            if let cameraHolder = controller.holder {
+                camera = cameraHolder.camera
+                self.mainPreviewView = cameraHolder.previewView
+                self.mainPreviewAnimationWrapperView.addSubview(self.mainPreviewView)
+            } else {
+                camera = Camera(
+                    configuration: Camera.Configuration(
+                        preset: .hd1920x1080,
+                        position: self.cameraState.position,
+                        isDualEnabled: self.cameraState.isDualCameraEnabled,
+                        audio: true,
+                        photo: true,
+                        metadata: false
+                    ),
+                    previewView: self.mainPreviewView,
+                    secondaryPreviewView: self.additionalPreviewView
+                )
+                isNew = true
+            }
             
             self.cameraStateDisposable = combineLatest(
                 queue: Queue.mainQueue(),
@@ -1839,12 +1869,14 @@ public class CameraScreen: ViewController {
             })
             
             camera.focus(at: CGPoint(x: 0.5, y: 0.5), autoFocus: true)
-            camera.startCapture()
+            if isNew {
+                camera.startCapture()
+            }
             self.captureStartTimestamp = CACurrentMediaTime()
             
             self.camera = camera
             
-            if self.hasAppeared {
+            if isNew && self.hasAppeared {
                 self.maybePresentTooltips()
             }
         }
@@ -1898,24 +1930,59 @@ public class CameraScreen: ViewController {
             case .changed:
                 if case .none = self.cameraState.recording {
                     if case .compact = layout.metrics.widthClass {
-                        if (translation.x < -10.0 || self.isDismissing) && self.hasAppeared {
-                            self.isDismissing = true
-                            let transitionFraction = 1.0 - max(0.0, translation.x * -1.0) / self.frame.width
-                            controller.updateTransitionProgress(transitionFraction, transition: .immediate)
-                        } else if translation.y < -10.0 && abs(translation.y) > abs(translation.x) {
-                            controller.presentGallery(fromGesture: true)
-                            gestureRecognizer.isEnabled = false
-                            gestureRecognizer.isEnabled = true
+                        switch controller.mode {
+                        case .story:
+                            if (translation.x < -10.0 || self.isDismissing) && self.hasAppeared {
+                                self.isDismissing = true
+                                let transitionFraction = 1.0 - max(0.0, translation.x * -1.0) / self.frame.width
+                                controller.updateTransitionProgress(transitionFraction, transition: .immediate)
+                            } else if translation.y < -10.0 && abs(translation.y) > abs(translation.x) {
+                                controller.presentGallery(fromGesture: true)
+                                gestureRecognizer.isEnabled = false
+                                gestureRecognizer.isEnabled = true
+                            }
+                        case .sticker:
+                            if (abs(translation.y) > 10.0 || self.isDismissing) && self.hasAppeared {
+                                self.containerView.layer.sublayerTransform = CATransform3DMakeTranslation(0.0, translation.y, 0.0)
+                                if !self.isDismissing {
+                                    controller.statusBar.updateStatusBarStyle(.Ignore, animated: true)
+                                    self.isDismissing = true
+                                    ContainedViewLayoutTransition.animated(duration: 0.25, curve: .easeInOut).updateAlpha(layer: self.backgroundView.layer, alpha: 0.0)
+                                }
+                            }
                         }
                     }
                 }
             case .ended, .cancelled:
                 if self.isDismissing {
-                    let velocity = gestureRecognizer.velocity(in: self.view)
-                    let transitionFraction = 1.0 - max(0.0, translation.x * -1.0) / self.frame.width
-                    controller.completeWithTransitionProgress(transitionFraction, velocity: abs(velocity.x), dismissing: true)
-                    
-                    self.isDismissing = false
+                    switch controller.mode {
+                    case .story:
+                        let velocity = gestureRecognizer.velocity(in: self.view)
+                        let transitionFraction = 1.0 - max(0.0, translation.x * -1.0) / self.frame.width
+                        controller.completeWithTransitionProgress(transitionFraction, velocity: abs(velocity.x), dismissing: true)
+                        
+                        self.isDismissing = false
+                    case .sticker:
+                        let velocity = gestureRecognizer.velocity(in: self.view)
+                        let transitionFraction = translation.y / self.frame.height
+                        if abs(transitionFraction) > 0.3 || abs(velocity.y) > 1000.0 {
+                            self.containerView.layer.sublayerTransform = CATransform3DIdentity
+                            self.mainPreviewAnimationWrapperView.center = self.previewContainerView.center.offsetBy(dx: 0.0, dy: translation.y)
+                            
+                            if let view = self.componentHost.view {
+                                view.center = view.center.offsetBy(dx: 0.0, dy: translation.y)
+                            }
+                            
+                            controller.requestDismiss(animated: true, interactive: true)
+                        } else {
+                            ContainedViewLayoutTransition.animated(duration: 0.25, curve: .easeInOut).updateAlpha(layer: self.backgroundView.layer, alpha: 1.0)
+                            controller.statusBar.updateStatusBarStyle(.White, animated: true)
+                            
+                            ContainedViewLayoutTransition.animated(duration: 0.3, curve: .spring).updateSublayerTransformOffset(layer: self.containerView.layer, offset: .zero)
+                        }
+                        
+                        self.isDismissing = false
+                    }
                 }
             default:
                 break
@@ -2023,45 +2090,84 @@ public class CameraScreen: ViewController {
             )
         }
         
+        var animatedIn = false
         func animateIn() {
+            guard let controller = self.controller else {
+                return
+            }
             self.transitionDimView.alpha = 0.0
             self.backgroundView.alpha = 0.0
             UIView.animate(withDuration: 0.4, animations: {
                 self.backgroundView.alpha = 1.0
             })
             
-            if let layout = self.validLayout, layout.metrics.isTablet {
-                self.controller?.statusBar.updateStatusBarStyle(.Hide, animated: true)
+            if let layout = self.validLayout {
+                if layout.metrics.isTablet {
+                    controller.statusBar.updateStatusBarStyle(.Hide, animated: true)
+                } else {
+                    controller.statusBar.updateStatusBarStyle(.White, animated: true)
+                }
             }
             
             if let transitionIn = self.controller?.transitionIn, let sourceView = transitionIn.sourceView {
                 let sourceLocalFrame = sourceView.convert(transitionIn.sourceRect, to: self.view)
-
-                let sourceScale = sourceLocalFrame.width / self.previewContainerView.frame.width
-                self.previewContainerView.layer.animatePosition(from: sourceLocalFrame.center, to: self.previewContainerView.center, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, completion: { _ in
-                    self.requestUpdateLayout(hasAppeared: true, transition: .immediate)
-                })
-                self.previewContainerView.layer.animateScale(from: sourceScale, to: 1.0, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring)
-                
-                let minSide = min(self.previewContainerView.bounds.width, self.previewContainerView.bounds.height)
-                self.previewContainerView.layer.animateBounds(from: CGRect(origin: CGPoint(x: (self.previewContainerView.bounds.width - minSide) / 2.0, y: (self.previewContainerView.bounds.height - minSide) / 2.0), size: CGSize(width: minSide, height: minSide)), to: self.previewContainerView.bounds, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring)
-                self.previewContainerView.layer.animate(
-                    from: minSide / 2.0 as NSNumber,
-                    to: self.previewContainerView.layer.cornerRadius as NSNumber,
-                    keyPath: "cornerRadius",
-                    timingFunction: kCAMediaTimingFunctionSpring,
-                    duration: 0.3
-                )
+                if case .story = controller.mode {
+                    let sourceScale = sourceLocalFrame.width / self.previewContainerView.frame.width
+                    
+                    self.previewContainerView.layer.animatePosition(from: sourceLocalFrame.center, to: self.previewContainerView.center, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, completion: { _ in
+                        self.requestUpdateLayout(hasAppeared: true, transition: .immediate)
+                    })
+                    self.previewContainerView.layer.animateScale(from: sourceScale, to: 1.0, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring)
+                    
+                    let minSide = min(self.previewContainerView.bounds.width, self.previewContainerView.bounds.height)
+                    self.previewContainerView.layer.animateBounds(from: CGRect(origin: CGPoint(x: (self.previewContainerView.bounds.width - minSide) / 2.0, y: (self.previewContainerView.bounds.height - minSide) / 2.0), size: CGSize(width: minSide, height: minSide)), to: self.previewContainerView.bounds, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring)
+                    self.previewContainerView.layer.animate(
+                        from: minSide / 2.0 as NSNumber,
+                        to: self.previewContainerView.layer.cornerRadius as NSNumber,
+                        keyPath: "cornerRadius",
+                        timingFunction: kCAMediaTimingFunctionSpring,
+                        duration: 0.3
+                    )
+                } else {
+                    self.mainPreviewAnimationWrapperView.bounds = self.mainPreviewView.bounds
+                    self.mainPreviewAnimationWrapperView.center = CGPoint(x: self.previewContainerView.frame.width / 2.0, y: self.previewContainerView.frame.height / 2.0)
+                    
+                    self.mainPreviewView.layer.position = CGPoint(x: self.previewContainerView.frame.width / 2.0, y: self.previewContainerView.frame.height / 2.0)
+                    
+                    let sourceInnerFrame = sourceView.convert(transitionIn.sourceRect, to: self.previewContainerView)
+                    let sourceCenter = sourceInnerFrame.center
+                    self.mainPreviewAnimationWrapperView.layer.animatePosition(from: sourceCenter, to: self.mainPreviewAnimationWrapperView.center, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, completion: { _ in
+                        self.requestUpdateLayout(hasAppeared: true, transition: .immediate)
+                    })
+                    
+                    var sourceBounds = self.mainPreviewView.bounds
+                    if let holder = controller.holder {
+                        sourceBounds = CGRect(origin: .zero, size: holder.parentView.frame.size.aspectFitted(sourceBounds.size))
+                    }
+                    self.mainPreviewAnimationWrapperView.layer.animateBounds(from: sourceBounds, to: self.mainPreviewView.bounds, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring)
+                    
+                    let sourceScale = sourceInnerFrame.height / self.previewContainerView.frame.height
+                    self.mainPreviewView.transform = CGAffineTransform.identity
+                    self.mainPreviewAnimationWrapperView.layer.animateScale(from: sourceScale, to: 1.0, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, completion: { _ in
+                        self.mainPreviewContainerView.addSubview(self.mainPreviewView)
+                        Queue.mainQueue().justDispatch {
+                            self.animatedIn = true
+                        }
+                    })
+                }
                 
                 if let view = self.componentHost.view {
                     view.layer.animatePosition(from: sourceLocalFrame.center, to: view.center, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring)
                     view.layer.animateScale(from: 0.1, to: 1.0, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring)
+                    view.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
                 }
             }
         }
 
         func animateOut(completion: @escaping () -> Void) {
-            self.camera?.stopCapture(invalidate: true)
+            guard let controller = self.controller else {
+                return
+            }
                                     
             UIView.animate(withDuration: 0.25, animations: {
                 self.backgroundView.alpha = 0.0
@@ -2069,34 +2175,60 @@ public class CameraScreen: ViewController {
             
             if let transitionOut = self.controller?.transitionOut(false), let destinationView = transitionOut.destinationView {
                 let destinationLocalFrame = destinationView.convert(transitionOut.destinationRect, to: self.view)
-                
                 let targetScale = destinationLocalFrame.width / self.previewContainerView.frame.width
-                self.previewContainerView.layer.animatePosition(from: self.previewContainerView.center, to: destinationLocalFrame.center, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false, completion: { _ in
-                    completion()
-                })
-                self.previewContainerView.layer.animateScale(from: 1.0, to: targetScale, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false)
                 
-                let minSide = min(self.previewContainerView.bounds.width, self.previewContainerView.bounds.height)
-                self.previewContainerView.layer.animateBounds(from: self.previewContainerView.bounds, to: CGRect(origin: CGPoint(x: (self.previewContainerView.bounds.width - minSide) / 2.0, y: (self.previewContainerView.bounds.height - minSide) / 2.0), size: CGSize(width: minSide, height: minSide)), duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false)
-                self.previewContainerView.layer.animate(
-                    from: self.previewContainerView.layer.cornerRadius as NSNumber,
-                    to: minSide / 2.0 as NSNumber,
-                    keyPath: "cornerRadius",
-                    timingFunction: kCAMediaTimingFunctionSpring,
-                    duration: 0.3,
-                    removeOnCompletion: false
-                )
+                if case .story = controller.mode {
+                    self.previewContainerView.layer.animatePosition(from: self.previewContainerView.center, to: destinationLocalFrame.center, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false, completion: { _ in
+                        completion()
+                    })
+                    self.previewContainerView.layer.animateScale(from: 1.0, to: targetScale, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false)
+                    
+                    let minSide = min(self.previewContainerView.bounds.width, self.previewContainerView.bounds.height)
+                    self.previewContainerView.layer.animateBounds(from: self.previewContainerView.bounds, to: CGRect(origin: CGPoint(x: (self.previewContainerView.bounds.width - minSide) / 2.0, y: (self.previewContainerView.bounds.height - minSide) / 2.0), size: CGSize(width: minSide, height: minSide)), duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false)
+                    self.previewContainerView.layer.animate(
+                        from: self.previewContainerView.layer.cornerRadius as NSNumber,
+                        to: minSide / 2.0 as NSNumber,
+                        keyPath: "cornerRadius",
+                        timingFunction: kCAMediaTimingFunctionSpring,
+                        duration: 0.3,
+                        removeOnCompletion: false
+                    )
+                } else {
+                    self.mainPreviewAnimationWrapperView.addSubview(self.mainPreviewView)
+                    self.animatedIn = false
+                    
+                    let destinationInnerFrame = destinationView.convert(transitionOut.destinationRect, to: self.previewContainerView)
+                    let initialCenter = self.mainPreviewView.layer.position
+                   
+                    self.mainPreviewAnimationWrapperView.center = destinationInnerFrame.center
+                    self.mainPreviewAnimationWrapperView.layer.animatePosition(from: initialCenter, to: self.mainPreviewAnimationWrapperView.center, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false, completion: { _ in
+                        completion()
+                    })
+                    
+                    var targetBounds = self.mainPreviewView.bounds
+                    if let holder = controller.holder {
+                        targetBounds = CGRect(origin: .zero, size: holder.parentView.frame.size.aspectFitted(targetBounds.size))
+                    }
+                    self.mainPreviewView.center = self.mainPreviewView.center.offsetBy(dx: (targetBounds.width - self.mainPreviewView.bounds.width) / 2.0, dy: 0.0)
+                    self.mainPreviewAnimationWrapperView.layer.animateBounds(from: self.mainPreviewView.bounds, to: targetBounds, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false)
+                    
+                    let targetScale = destinationInnerFrame.height / self.previewContainerView.frame.height
+                    self.mainPreviewAnimationWrapperView.layer.animateScale(from: 1.0, to: targetScale, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false)
+                }
                 
                 if let view = self.componentHost.view {
                     view.layer.animatePosition(from: view.center, to: destinationLocalFrame.center, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring)
                     view.layer.animateScale(from: 1.0, to: targetScale, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false)
+                    view.layer.animateScale(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false)
                 }
             } else {
                 completion()
             }
 
             self.componentHost.view?.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.15, removeOnCompletion: false)
-            self.previewContainerView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.35, removeOnCompletion: false)
+            if case .story = controller.mode {
+                self.previewContainerView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.35, removeOnCompletion: false)
+            }
         }
         
         func animateOutToEditor() {
@@ -2342,7 +2474,7 @@ public class CameraScreen: ViewController {
 
         fileprivate var hasAppeared = false
         func containerLayoutUpdated(layout: ContainerViewLayout, forceUpdate: Bool = false, hasAppeared: Bool = false, transition: Transition) {
-            guard let _ = self.controller else {
+            guard let controller = self.controller else {
                 return
             }
             let isFirstTime = self.validLayout == nil
@@ -2570,13 +2702,24 @@ public class CameraScreen: ViewController {
             let additionalPreviewInnerFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((circleSide - additionalPreviewInnerSize.width) / 2.0), y: floorToScreenPixels((circleSide - additionalPreviewInnerSize.height) / 2.0)), size: additionalPreviewInnerSize)
             
             if mainPreviewView.superview != self.mainPreviewContainerView {
-                self.mainPreviewContainerView.insertSubview(mainPreviewView, at: 0)
+                if case .sticker = controller.mode, !self.animatedIn {
+                    
+                } else {
+                    self.mainPreviewContainerView.insertSubview(mainPreviewView, at: 0)
+                }
             }
             if additionalPreviewView.superview != self.additionalPreviewContainerView {
                 self.additionalPreviewContainerView.insertSubview(additionalPreviewView, at: 0)
             }
             
-            mainPreviewView.frame = mainPreviewInnerFrame
+            if case .sticker = controller.mode {
+                if self.animatedIn {
+                    mainPreviewView.frame = mainPreviewInnerFrame
+                }
+            } else {
+                mainPreviewView.frame = mainPreviewInnerFrame
+            }
+            
             additionalPreviewView.frame = additionalPreviewInnerFrame
                               
             self.previewFrameLeftDimView.isHidden = !isTablet
@@ -2602,14 +2745,14 @@ public class CameraScreen: ViewController {
             transition.setPosition(view: self.transitionCornersView, position: CGPoint(x: layout.size.width + screenCornerRadius / 2.0, y: layout.size.height / 2.0))
             transition.setBounds(view: self.transitionCornersView, bounds: CGRect(origin: .zero, size: CGSize(width: screenCornerRadius, height: layout.size.height)))
             
-            if isTablet && isFirstTime {
+            if (controller.mode == .sticker || isTablet) && isFirstTime {
                 self.animateIn()
             }
             
             if self.cameraState.flashMode == .on && (self.cameraState.recording != .none || self.cameraState.mode == .video) {
-                self.controller?.statusBarStyle = .Black
+                controller.statusBarStyle = .Black
             } else {
-                self.controller?.statusBarStyle = .White
+                controller.statusBarStyle = .White
             }
         }
     }
@@ -2619,6 +2762,7 @@ public class CameraScreen: ViewController {
     }
 
     private let context: AccountContext
+    fileprivate let mode: Mode
     fileprivate let holder: CameraHolder?
     fileprivate let transitionIn: TransitionIn?
     fileprivate let transitionOut: (Bool) -> TransitionOut?
@@ -2643,6 +2787,7 @@ public class CameraScreen: ViewController {
     }
     fileprivate let completion: (Signal<CameraScreen.Result, NoError>, ResultTransition?, @escaping () -> Void) -> Void
     public var transitionedIn: () -> Void = {}
+    public var transitionedOut: () -> Void = {}
     
     private var audioSessionDisposable: Disposable?
     
@@ -2661,6 +2806,8 @@ public class CameraScreen: ViewController {
         return self.node.cameraState
     }
     
+    public var isEmbedded = false
+    
     fileprivate func updateCameraState(_ f: (CameraState) -> CameraState, transition: Transition) {
         self.node.cameraState = f(self.node.cameraState)
         self.node.requestUpdateLayout(hasAppeared: self.node.hasAppeared, transition: transition)
@@ -2668,12 +2815,14 @@ public class CameraScreen: ViewController {
     
     public init(
         context: AccountContext,
+        mode: Mode,
         holder: CameraHolder? = nil,
         transitionIn: TransitionIn?,
         transitionOut: @escaping (Bool) -> TransitionOut?,
         completion: @escaping (Signal<CameraScreen.Result, NoError>, ResultTransition?, @escaping () -> Void) -> Void
     ) {
         self.context = context
+        self.mode = mode
         self.holder = holder
         self.transitionIn = transitionIn
         self.transitionOut = transitionOut
@@ -2688,7 +2837,9 @@ public class CameraScreen: ViewController {
         
         self.requestAudioSession()
         
-        self.postingAvailabilityPromise.set(self.context.engine.messages.checkStoriesUploadAvailability(target: .myStories))
+        if case .story = mode {
+            self.postingAvailabilityPromise.set(self.context.engine.messages.checkStoriesUploadAvailability(target: .myStories))
+        }
     }
 
     required public init(coder: NSCoder) {
@@ -2905,22 +3056,29 @@ public class CameraScreen: ViewController {
             self.hapticFeedback.impact(.light)
         }
         
-        self.node.camera?.stopCapture(invalidate: true)
+        if case .story = self.mode {
+            self.node.camera?.stopCapture(invalidate: true)
+        }
+        
         self.isDismissed = true
         if animated {
             self.ignoreStatusBar = true
-            if let layout = self.validLayout, layout.metrics.isTablet {
+            if let layout = self.validLayout, layout.metrics.isTablet || self.mode == .sticker {
                 self.node.animateOut(completion: {
                     self.dismiss(animated: false)
+                    self.transitionedOut()
                 })
             } else {
                 if !interactive {
-                    if let navigationController = self.navigationController as? NavigationController {
-                        navigationController.updateRootContainerTransitionOffset(self.node.frame.width, transition: .immediate)
+                    if case .story = self.mode {
+                        if let navigationController = self.navigationController as? NavigationController {
+                            navigationController.updateRootContainerTransitionOffset(self.node.frame.width, transition: .immediate)
+                        }
                     }
                 }
                 self.updateTransitionProgress(0.0, transition: .animated(duration: 0.4, curve: .spring), completion: { [weak self] in
                     self?.dismiss(animated: false)
+                    self?.transitionedOut()
                 })
             }
         } else {
@@ -2968,9 +3126,11 @@ public class CameraScreen: ViewController {
             return true
         })
                 
-        if let navigationController = self.navigationController as? NavigationController {
-            let offsetX = floorToScreenPixels(transitionFraction * self.node.frame.width)
-            navigationController.updateRootContainerTransitionOffset(offsetX, transition: transition)
+        if case .story = self.mode {
+            if let navigationController = self.navigationController as? NavigationController {
+                let offsetX = floorToScreenPixels(transitionFraction * self.node.frame.width)
+                navigationController.updateRootContainerTransitionOffset(offsetX, transition: transition)
+            }
         }
     }
     
@@ -3011,7 +3171,9 @@ public class CameraScreen: ViewController {
                 self.ignoreStatusBar = false
                 self.updateTransitionProgress(1.0, transition: .animated(duration: 0.4, curve: .spring), completion: { [weak self] in
                     if let self, let navigationController = self.navigationController as? NavigationController {
-                        navigationController.updateRootContainerTransitionOffset(0.0, transition: .immediate)
+                        if case .story = self.mode {
+                            navigationController.updateRootContainerTransitionOffset(0.0, transition: .immediate)
+                        }
                     }
                 })
             }
@@ -3021,7 +3183,9 @@ public class CameraScreen: ViewController {
                 self.updateStatusBarAppearance()
                 self.updateTransitionProgress(1.0, transition: .animated(duration: 0.4, curve: .spring), completion: { [weak self] in
                     if let self, let navigationController = self.navigationController as? NavigationController {
-                        navigationController.updateRootContainerTransitionOffset(0.0, transition: .immediate)
+                        if case .story = self.mode {
+                            navigationController.updateRootContainerTransitionOffset(0.0, transition: .immediate)
+                        }
                         self.node.requestUpdateLayout(hasAppeared: true, transition: .immediate)
                         self.transitionedIn()
                     }

@@ -924,6 +924,11 @@ public final class PeerInfoNavigationSourceTag {
 
 public protocol PeerInfoScreen: ViewController {
     var peerId: PeerId { get }
+    var privacySettings: Promise<AccountPrivacySettings?> { get }
+    
+    func openBirthdaySetup()
+    func toggleStorySelection(ids: [Int32], isSelected: Bool)
+    func cancelItemSelection()
 }
 
 public extension Peer {
@@ -1003,6 +1008,7 @@ public protocol ChatController: ViewController {
     var isSelectingMessagesUpdated: ((Bool) -> Void)? { get set }
     func cancelSelectingMessages()
     func activateSearch(domain: ChatSearchDomain, query: String)
+    func activateInput(type: ChatControllerActivateInput)
     func beginClearHistory(type: InteractiveHistoryClearingType)
     
     func performScrollToTop() -> Bool
@@ -1099,6 +1105,7 @@ public enum ChatQuickReplyShortcutType {
 
 public enum ChatCustomContentsKind: Equatable {
     case quickReplyMessageInput(shortcut: String, shortcutType: ChatQuickReplyShortcutType)
+    case businessLinkSetup(link: TelegramBusinessChatLinks.Link)
 }
 
 public protocol ChatCustomContentsProtocol: AnyObject {
@@ -1111,6 +1118,7 @@ public protocol ChatCustomContentsProtocol: AnyObject {
     func editMessage(id: EngineMessage.Id, text: String, media: RequestEditMessageMedia, entities: TextEntitiesMessageAttribute?, webpagePreviewAttribute: WebpagePreviewMessageAttribute?, disableUrlPreview: Bool)
     
     func quickReplyUpdateShortcut(value: String)
+    func businessLinkUpdate(message: String, entities: [MessageTextEntity], title: String?)
 }
 
 public enum ChatHistoryListDisplayHeaders {

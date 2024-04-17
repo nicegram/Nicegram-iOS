@@ -7,6 +7,9 @@ import TelegramCore
 import TelegramPresentationData
 import ItemListUI
 import PresentationDataUtils
+import EmojiTextAttachmentView
+import TextFormat
+import AccountContext
 
 protocol Stats {
     
@@ -32,21 +35,29 @@ extension StoryStats: Stats {
     
 }
 
+extension RevenueStats: Stats {
+    
+}
+
 class StatsOverviewItem: ListViewItem, ItemListItem {
+    let context: AccountContext
     let presentationData: ItemListPresentationData
     let isGroup: Bool
     let stats: Stats
     let storyViews: EngineStoryItem.Views?
     let publicShares: Int32?
+    let animatedEmoji: TelegramMediaFile?
     let sectionId: ItemListSectionId
     let style: ItemListStyle
     
-    init(presentationData: ItemListPresentationData, isGroup: Bool, stats: Stats, storyViews: EngineStoryItem.Views? = nil, publicShares: Int32? = nil, sectionId: ItemListSectionId, style: ItemListStyle) {
+    init(context: AccountContext, presentationData: ItemListPresentationData, isGroup: Bool, stats: Stats, storyViews: EngineStoryItem.Views? = nil, publicShares: Int32? = nil, animatedEmoji: TelegramMediaFile? = nil, sectionId: ItemListSectionId, style: ItemListStyle) {
+        self.context = context
         self.presentationData = presentationData
         self.isGroup = isGroup
         self.stats = stats
         self.storyViews = storyViews
         self.publicShares = publicShares
+        self.animatedEmoji = animatedEmoji
         self.sectionId = sectionId
         self.style = style
     }
@@ -97,15 +108,16 @@ private final class ValueItemNode: ASDisplayNode {
     private let valueNode: TextNode
     private let titleNode: TextNode
     private let deltaNode: TextNode
+    private var iconNode: ASImageNode?
     
-    var currentBackgroundColor: UIColor?
+    var currentTheme: PresentationTheme?
     var pressed: (() -> Void)?
       
     override init() {
         self.valueNode = TextNode()
         self.titleNode = TextNode()
         self.deltaNode = TextNode()
-      
+        
         super.init()
         
         self.isUserInteractionEnabled = false
@@ -115,13 +127,13 @@ private final class ValueItemNode: ASDisplayNode {
         self.addSubnode(self.deltaNode)
     }
             
-    static func asyncLayout(_ current: ValueItemNode?) -> (_ width: CGFloat, _ presentationData: ItemListPresentationData, _ value: String, _ title: String, _ delta: (String, DeltaColor)?) -> (CGSize, () -> ValueItemNode) {
+    static func asyncLayout(_ current: ValueItemNode?) -> (_ context: AccountContext, _ width: CGFloat, _ presentationData: ItemListPresentationData, _ value: String, _ title: String, _ delta: (String, DeltaColor)?, _ isTon: Bool) -> (CGSize, () -> ValueItemNode) {
         
         let maybeMakeValueLayout = (current?.valueNode).flatMap(TextNode.asyncLayout)
         let maybeMakeTitleLayout = (current?.titleNode).flatMap(TextNode.asyncLayout)
         let maybeMakeDeltaLayout = (current?.deltaNode).flatMap(TextNode.asyncLayout)
         
-        return { width, presentationData, value, title, delta in
+        return { context, width, presentationData, value, title, delta, isTon in
             let targetNode: ValueItemNode
             if let current = current {
                 targetNode = current
@@ -150,7 +162,9 @@ private final class ValueItemNode: ASDisplayNode {
                 makeDeltaLayout = TextNode.asyncLayout(targetNode.deltaNode)
             }
                         
-            let valueFont = Font.semibold(presentationData.fontSize.itemListBaseFontSize)
+            let fontSize = presentationData.fontSize.itemListBaseFontSize
+            let valueFont = Font.semibold(fontSize)
+            let smallValueFont = Font.semibold(fontSize / 17.0 * 13.0)
             let titleFont = Font.regular(presentationData.fontSize.itemListBaseHeaderFontSize)
             let deltaFont = Font.regular(presentationData.fontSize.itemListBaseHeaderFontSize)
         
@@ -172,7 +186,15 @@ private final class ValueItemNode: ASDisplayNode {
             }
             
             let constrainedSize = CGSize(width: width, height: CGFloat.greatestFiniteMagnitude)
-            let (valueLayout, valueApply) = makeValueLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: value, font: valueFont, textColor: valueColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: constrainedSize, alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
+            
+            let valueString: NSAttributedString
+            if isTon {
+                valueString = amountAttributedString(value, integralFont: valueFont, fractionalFont: smallValueFont, color: valueColor)
+            } else {
+                valueString = NSAttributedString(string: value, font: valueFont, textColor: valueColor)
+            }
+            
+            let (valueLayout, valueApply) = makeValueLayout(TextNodeLayoutArguments(attributedString: valueString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: constrainedSize, alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
             let (titleLayout, titleApply) = makeTitleLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: title, font: titleFont, textColor: titleColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: constrainedSize, alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
@@ -181,13 +203,46 @@ private final class ValueItemNode: ASDisplayNode {
             let horizontalSpacing: CGFloat = 4.0
             let size = CGSize(width: valueLayout.size.width + horizontalSpacing + deltaLayout.size.width, height: valueLayout.size.height + titleLayout.size.height)
             return (size, {
+                var themeUpdated = false
+                if targetNode.currentTheme !== presentationData.theme {
+                    themeUpdated = true
+                }
+                targetNode.currentTheme = presentationData.theme
+                
                 let _ = valueApply()
                 let _ = titleApply()
                 let _ = deltaApply()
                 
-                let valueFrame = CGRect(origin: .zero, size: valueLayout.size)
+                var valueOffset: CGFloat = 0.0
+                if isTon {
+                    let iconNode: ASImageNode
+                    if let current = targetNode.iconNode {
+                        iconNode = current
+                    } else {
+                        iconNode = ASImageNode()
+                        iconNode.displaysAsynchronously = false
+                        targetNode.iconNode = iconNode
+                        targetNode.addSubnode(iconNode)
+                    }
+                    
+                    if themeUpdated {
+                        iconNode.image = generateTintedImage(image: UIImage(bundleImageName: "Ads/TonMedium"), color: presentationData.theme.list.itemAccentColor)
+                    }
+                    
+                    if let icon = iconNode.image {
+                        let iconFrame = CGRect(origin: CGPoint(x: 0.0, y: floorToScreenPixels((valueLayout.size.height - icon.size.height) / 2.0) - 1.0), size: icon.size)
+                        iconNode.frame = iconFrame
+                    }
+                    
+                    valueOffset += 17.0
+                } else if let iconNode = targetNode.iconNode {
+                    iconNode.removeFromSupernode()
+                    targetNode.iconNode = nil
+                }
+               
+                let valueFrame = CGRect(origin: CGPoint(x: valueOffset, y: 0.0), size: valueLayout.size)
                 let titleFrame = CGRect(origin: CGPoint(x: 0.0, y: valueFrame.maxY), size: titleLayout.size)
-                let deltaFrame = CGRect(origin: CGPoint(x: valueFrame.maxX + horizontalSpacing, y: valueFrame.maxY - deltaLayout.size.height - 2.0), size: deltaLayout.size)
+                let deltaFrame = CGRect(origin: CGPoint(x: valueFrame.maxX + horizontalSpacing, y: valueFrame.maxY - deltaLayout.size.height - 2.0 - UIScreenPixel), size: deltaLayout.size)
                 
                 targetNode.valueNode.frame = valueFrame
                 targetNode.titleNode.frame = titleFrame
@@ -296,7 +351,7 @@ class StatsOverviewItemNode: ListViewItemNode {
                     insets = itemListNeighborsGroupedInsets(neighbors, params)
             }
             
-            let twoColumnLayout = "".isEmpty
+            var twoColumnLayout = true
             
             var topLeftItemLayoutAndApply: (CGSize, () -> ValueItemNode)?
             var topRightItemLayoutAndApply: (CGSize, () -> ValueItemNode)?
@@ -321,79 +376,97 @@ class StatsOverviewItemNode: ListViewItemNode {
             
             if let stats = item.stats as? MessageStats {
                 topLeftItemLayoutAndApply = makeTopLeftItemLayout(
+                    item.context,
                     params.width,
                     item.presentationData,
                     compactNumericCountString(stats.views),
                     item.presentationData.strings.Stats_Message_Views,
-                    nil
+                    nil,
+                    false
                 )
                 
                 topRightItemLayoutAndApply = makeTopRightItemLayout(
+                    item.context,
                     params.width,
                     item.presentationData,
                     item.publicShares.flatMap { compactNumericCountString(Int($0)) } ?? "–",
                     item.presentationData.strings.Stats_Message_PublicShares,
-                    nil
+                    nil,
+                    false
                 )
                 
                 middle1LeftItemLayoutAndApply = makeMiddle1LeftItemLayout(
+                    item.context,
                     params.width,
                     item.presentationData,
                     compactNumericCountString(stats.reactions),
                     item.presentationData.strings.Stats_Message_Reactions,
-                    nil
+                    nil,
+                    false
                 )
                 
                 middle1RightItemLayoutAndApply = makeMiddle1RightItemLayout(
+                    item.context,
                     params.width,
                     item.presentationData,
                     item.publicShares.flatMap { "≈\( compactNumericCountString(max(0, stats.forwards - Int($0))))" } ?? "–",
                     item.presentationData.strings.Stats_Message_PrivateShares,
-                    nil
+                    nil,
+                    false
                 )
                 
                 height += topRightItemLayoutAndApply!.0.height * 2.0 + verticalSpacing
             } else if let _ = item.stats as? StoryStats, let views = item.storyViews {
                 topLeftItemLayoutAndApply = makeTopLeftItemLayout(
+                    item.context,
                     params.width,
                     item.presentationData,
                     compactNumericCountString(views.seenCount),
                     item.presentationData.strings.Stats_Message_Views,
-                    nil
+                    nil,
+                    false
                 )
                 
                 topRightItemLayoutAndApply = makeTopRightItemLayout(
+                    item.context,
                     params.width,
                     item.presentationData,
                     item.publicShares.flatMap { compactNumericCountString(Int($0)) } ?? "–",
                     item.presentationData.strings.Stats_Message_PublicShares,
-                    nil
+                    nil,
+                    false
                 )
                 
                 middle1LeftItemLayoutAndApply = makeMiddle1LeftItemLayout(
+                    item.context,
                     params.width,
                     item.presentationData,
                     compactNumericCountString(views.reactedCount),
                     item.presentationData.strings.Stats_Message_Reactions,
-                    nil
+                    nil,
+                    false
                 )
                 
                 middle1RightItemLayoutAndApply = makeMiddle1RightItemLayout(
+                    item.context,
                     params.width,
                     item.presentationData,
                     item.publicShares.flatMap { "≈\( compactNumericCountString(max(0, views.forwardCount - Int($0))))" } ?? "–",
                     item.presentationData.strings.Stats_Message_PrivateShares,
-                    nil
+                    nil,
+                    false
                 )
                 
                 height += topRightItemLayoutAndApply!.0.height * 2.0 + verticalSpacing
             } else if let stats = item.stats as? ChannelBoostStatus {
                 topLeftItemLayoutAndApply = makeTopLeftItemLayout(
+                    item.context,
                     params.width,
                     item.presentationData,
                     "\(stats.level)",
                     item.presentationData.strings.Stats_Boosts_Level,
-                    nil
+                    nil,
+                    false
                 )
                 
                 var premiumSubscribers: Double = 0.0
@@ -402,19 +475,23 @@ class StatsOverviewItemNode: ListViewItemNode {
                 }
                 
                 topRightItemLayoutAndApply = makeTopRightItemLayout(
+                    item.context,
                     params.width,
                     item.presentationData,
                     "≈\(Int(stats.premiumAudience?.value ?? 0))",
                     item.isGroup ? item.presentationData.strings.Stats_Boosts_PremiumMembers : item.presentationData.strings.Stats_Boosts_PremiumSubscribers,
-                    (String(format: "%.02f%%", premiumSubscribers * 100.0), .generic)
+                    (String(format: "%.02f%%", premiumSubscribers * 100.0), .generic),
+                    false
                 )
                 
                 middle1LeftItemLayoutAndApply = makeMiddle1LeftItemLayout(
+                    item.context,
                     params.width,
                     item.presentationData,
                     "\(stats.boosts)",
                     item.presentationData.strings.Stats_Boosts_ExistingBoosts,
-                    nil
+                    nil,
+                    false
                 )
                 
                 let boostsLeft: Int32
@@ -424,11 +501,13 @@ class StatsOverviewItemNode: ListViewItemNode {
                     boostsLeft = 0
                 }
                 middle1RightItemLayoutAndApply = makeMiddle1RightItemLayout(
+                    item.context,
                     params.width,
                     item.presentationData,
                     "\(boostsLeft)",
                     item.presentationData.strings.Stats_Boosts_BoostsToLevelUp,
-                    nil
+                    nil,
+                    false
                 )
                 
                 if twoColumnLayout {
@@ -447,11 +526,13 @@ class StatsOverviewItemNode: ListViewItemNode {
                 
                 let followersDelta = deltaText(stats.followers)
                 topLeftItemLayoutAndApply = makeTopLeftItemLayout(
+                    item.context,
                     params.width,
                     item.presentationData,
                     compactNumericCountString(Int(stats.followers.current)),
                     item.presentationData.strings.Stats_Followers,
-                    (followersDelta.text, followersDelta.positive ? .positive : .negative)
+                    (followersDelta.text, followersDelta.positive ? .positive : .negative),
+                    false
                 )
                 
                 var enabledNotifications: Double = 0.0
@@ -459,11 +540,13 @@ class StatsOverviewItemNode: ListViewItemNode {
                     enabledNotifications = stats.enabledNotifications.value / stats.enabledNotifications.total
                 }
                 topRightItemLayoutAndApply = makeTopRightItemLayout(
+                    item.context,
                     params.width,
                     item.presentationData,
                     String(format: "%.02f%%", enabledNotifications * 100.0),
                     item.presentationData.strings.Stats_EnabledNotifications,
-                    nil
+                    nil,
+                    false
                 )
                 
                 let hasMessages = stats.viewsPerPost.current > 0 || viewsPerPostDelta.hasValue
@@ -516,56 +599,68 @@ class StatsOverviewItemNode: ListViewItemNode {
                 
                 if let (value, title, delta) = items[0] {
                     middle1LeftItemLayoutAndApply = makeMiddle1LeftItemLayout(
+                        item.context,
                         params.width,
                         item.presentationData,
                         value,
                         title,
-                        delta
+                        delta,
+                        false
                     )
                 }
                 if let (value, title, delta) = items[1] {
                     middle1RightItemLayoutAndApply = makeMiddle1RightItemLayout(
+                        item.context,
                         params.width,
                         item.presentationData,
                         value,
                         title,
-                        delta
+                        delta,
+                        false
                     )
                 }
                 if let (value, title, delta) = items[2] {
                     middle2LeftItemLayoutAndApply = makeMiddle2LeftItemLayout(
+                        item.context,
                         params.width,
                         item.presentationData,
                         value,
                         title,
-                        delta
+                        delta,
+                        false
                     )
                 }
                 if let (value, title, delta) = items[3] {
                     middle2RightItemLayoutAndApply = makeMiddle2RightItemLayout(
+                        item.context,
                         params.width,
                         item.presentationData,
                         value,
                         title,
-                        delta
+                        delta,
+                        false
                     )
                 }
                 if let (value, title, delta) = items[4] {
                     bottomLeftItemLayoutAndApply = makeBottomLeftItemLayout(
+                        item.context,
                         params.width,
                         item.presentationData,
                         value,
                         title,
-                        delta
+                        delta,
+                        false
                     )
                 }
                 if let (value, title, delta) = items[5] {
                     bottomRightItemLayoutAndApply = makeBottomRightItemLayout(
+                        item.context,
                         params.width,
                         item.presentationData,
                         value,
                         title,
-                        delta
+                        delta,
+                        false
                     )
                 }
 
@@ -583,37 +678,45 @@ class StatsOverviewItemNode: ListViewItemNode {
 
                 let membersDelta = deltaText(stats.members)
                 topLeftItemLayoutAndApply = makeTopLeftItemLayout(
+                    item.context,
                     params.width,
                     item.presentationData,
                     compactNumericCountString(Int(stats.members.current)),
                     item.presentationData.strings.Stats_GroupMembers,
-                    (membersDelta.text, membersDelta.positive ? .positive : .negative)
+                    (membersDelta.text, membersDelta.positive ? .positive : .negative),
+                    false
                 )
                 
                 let messagesDelta = deltaText(stats.messages)
                 topRightItemLayoutAndApply = makeTopRightItemLayout(
+                    item.context,
                     params.width,
                     item.presentationData,
                     compactNumericCountString(Int(stats.messages.current)),
                     item.presentationData.strings.Stats_GroupMessages,
-                    (messagesDelta.text, messagesDelta.positive ? .positive : .negative)
+                    (messagesDelta.text, messagesDelta.positive ? .positive : .negative),
+                    false
                 )
                 
                 if displayBottomRow {
                     middle1LeftItemLayoutAndApply = makeMiddle1LeftItemLayout(
+                        item.context,
                         params.width,
                         item.presentationData,
                         compactNumericCountString(Int(stats.viewers.current)),
                         item.presentationData.strings.Stats_GroupViewers,
-                        (viewersDelta.text, viewersDelta.positive ? .positive : .negative)
+                        (viewersDelta.text, viewersDelta.positive ? .positive : .negative),
+                        false
                     )
                     
                     middle1RightItemLayoutAndApply = makeMiddle1RightItemLayout(
+                        item.context,
                         params.width,
                         item.presentationData,
                         compactNumericCountString(Int(stats.posters.current)),
                         item.presentationData.strings.Stats_GroupPosters,
-                        (postersDelta.text, postersDelta.positive ? .positive : .negative)
+                        (postersDelta.text, postersDelta.positive ? .positive : .negative),
+                        false
                     )
                 }
                 
@@ -622,6 +725,40 @@ class StatsOverviewItemNode: ListViewItemNode {
                 } else {
                     height += topLeftItemLayoutAndApply!.0.height * 4.0 + verticalSpacing * 3.0
                 }
+            } else if let stats = item.stats as? RevenueStats {
+                twoColumnLayout = false
+                
+                topLeftItemLayoutAndApply = makeTopLeftItemLayout(
+                    item.context,
+                    params.width,
+                    item.presentationData,
+                    formatBalanceText(stats.availableBalance, decimalSeparator: item.presentationData.dateTimeFormat.decimalSeparator),
+                    item.presentationData.strings.Monetization_Overview_Available,
+                    (stats.availableBalance == 0 ? "" : "≈\(formatUsdValue(stats.availableBalance, rate: stats.usdRate))", .generic),
+                    true
+                )
+                
+                topRightItemLayoutAndApply = makeTopRightItemLayout(
+                    item.context,
+                    params.width,
+                    item.presentationData,
+                    formatBalanceText(stats.currentBalance, decimalSeparator: item.presentationData.dateTimeFormat.decimalSeparator),
+                    item.presentationData.strings.Monetization_Overview_Current,
+                    (stats.currentBalance == 0 ? "" : "≈\(formatUsdValue(stats.currentBalance, rate: stats.usdRate))", .generic),
+                    true
+                )
+                
+                middle1LeftItemLayoutAndApply = makeMiddle1LeftItemLayout(
+                    item.context,
+                    params.width,
+                    item.presentationData,
+                    formatBalanceText(stats.overallRevenue, decimalSeparator: item.presentationData.dateTimeFormat.decimalSeparator),
+                    item.presentationData.strings.Monetization_Overview_Total,
+                    (stats.overallRevenue == 0 ? "" : "≈\(formatUsdValue(stats.overallRevenue, rate: stats.usdRate))", .generic),
+                    true
+                )
+                
+                height += topLeftItemLayoutAndApply!.0.height * 3.0 + verticalSpacing * 2.0
             }
         
             let contentSize = CGSize(width: params.width, height: height)

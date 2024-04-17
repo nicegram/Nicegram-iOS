@@ -67,6 +67,7 @@ import StoryContainerScreen
 import FullScreenEffectView
 import PeerInfoStoryGridScreen
 import ArchiveInfoScreen
+import BirthdayPickerScreen
 
 private final class ContextControllerContentSourceImpl: ContextControllerContentSource {
     let controller: ViewController
@@ -899,7 +900,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         var selectedItems = Set<MediaId>()
         var topStatusTitle = self.presentationData.strings.PeerStatusSetup_NoTimerTitle
         var currentSelection: Int64?
-        if let peerStatus = self.findTitleView()?.title.peerStatus, case let .emoji(emojiStatus) = peerStatus {
+        if let emojiStatus = self.chatListHeaderView()?.emojiStatus() {
             selectedItems.insert(MediaId(namespace: Namespaces.Media.CloudFile, id: emojiStatus.fileId))
             currentSelection = emojiStatus.fileId
             
@@ -1221,6 +1222,25 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                     strongSelf.chatListDisplayNode.mainContainerNode.currentItemNode.setCurrentRemovingItemId(nil)
                 })
             }
+        }
+        
+        self.chatListDisplayNode.mainContainerNode.openBirthdaySetup = { [weak self] in
+            guard let self else {
+                return
+            }
+            self.openBirthdaySetup()
+        }
+        self.chatListDisplayNode.mainContainerNode.openPremiumManagement = { [weak self] in
+            guard let self else {
+                return
+            }
+            let context = self.context
+            let premiumConfiguration = PremiumConfiguration.with(appConfiguration: context.currentAppConfiguration.with { $0 })
+            let url = premiumConfiguration.subscriptionManagementUrl
+            guard !url.isEmpty else {
+                return
+            }
+            context.sharedContext.openExternalUrl(context: context, urlContext: .generic, url: url, forceExternal: !url.hasPrefix("tg://") && !url.contains("?start="), presentationData: context.sharedContext.currentPresentationData.with({$0}), navigationController: self.navigationController as? NavigationController, dismissInput: {})
         }
         
         self.chatListDisplayNode.requestOpenMessageFromSearch = { [weak self] peer, threadId, messageId, deactivateOnAction in
@@ -2398,7 +2418,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 }
             }))
             
-            self.suggestAutoarchiveDisposable.set((getServerProvidedSuggestions(account: self.context.account)
+            self.suggestAutoarchiveDisposable.set((self.context.engine.notices.getServerProvidedSuggestions()
             |> deliverOnMainQueue).startStrict(next: { [weak self] values in
                 guard let strongSelf = self else {
                     return
@@ -2415,13 +2435,13 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                         guard let strongSelf = self else {
                             return
                         }
-                        strongSelf.dismissAutoarchiveDisposable.set(dismissServerProvidedSuggestion(account: strongSelf.context.account, suggestion: .autoarchivePopular).startStrict())
+                        strongSelf.dismissAutoarchiveDisposable.set(strongSelf.context.engine.notices.dismissServerProvidedSuggestion(suggestion: .autoarchivePopular).startStrict())
                     }),
                     TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.ChatList_AutoarchiveSuggestion_OpenSettings, action: {
                         guard let strongSelf = self else {
                             return
                         }
-                        strongSelf.dismissAutoarchiveDisposable.set(dismissServerProvidedSuggestion(account: strongSelf.context.account, suggestion: .autoarchivePopular).startStrict())
+                        strongSelf.dismissAutoarchiveDisposable.set(strongSelf.context.engine.notices.dismissServerProvidedSuggestion(suggestion: .autoarchivePopular).startStrict())
                         strongSelf.push(strongSelf.context.sharedContext.makePrivacyAndSecurityController(context: strongSelf.context))
                     })
                 ], actionLayout: .vertical, parseMarkdown: true), in: .window(.root))
@@ -5924,6 +5944,39 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         Queue.mainQueue().after(0.3) {
             self.view.addSubview(ConfettiView(frame: self.view.bounds))
         }
+    }
+    
+    func openBirthdaySetup() {
+        let context = self.context
+        let _ = context.engine.notices.dismissServerProvidedSuggestion(suggestion: .setupBirthday).startStandalone()
+                
+        let settingsPromise: Promise<AccountPrivacySettings?>
+        if let rootController = self.context.sharedContext.mainWindow?.viewController as? TelegramRootControllerInterface, let current = rootController.getPrivacySettings() {
+            settingsPromise = current
+        } else {
+            settingsPromise = Promise()
+            settingsPromise.set(.single(nil) |> then(context.engine.privacy.requestAccountPrivacySettings() |> map(Optional.init)))
+        }
+        let controller = BirthdayPickerScreen(context: context, settings: settingsPromise.get(), openSettings: { [weak self] in
+            guard let self else {
+                return
+            }
+            self.context.sharedContext.makeBirthdayPrivacyController(context: self.context, settings: settingsPromise, openedFromBirthdayScreen: true, present: { [weak self] c in
+                self?.push(c)
+            })
+        }, completion: { [weak self] value in
+            guard let self else {
+                return
+            }
+            
+            let _ = context.engine.accountData.updateBirthday(birthday: value).startStandalone()
+            
+            let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
+            self.present(UndoOverlayController(presentationData: presentationData, content: .actionSucceeded(title: nil, text: self.presentationData.strings.Birthday_Added, cancel: nil, destructive: false), elevatedLayout: false, action: { _ in
+                return true
+            }), in: .current)
+        })
+        self.push(controller)
     }
     
     private var storyCameraTransitionInCoordinator: StoryCameraTransitionInCoordinator?

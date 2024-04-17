@@ -20,7 +20,7 @@ def swift_dependencies():
     # branch: master
     swift_package(
         name = "swiftpkg_grdb.swift",
-        commit = "58d3673030f8a640d7278f45bf2dc21b078ecae8",
+        commit = "afc958017ee4feefd3c61c8e2cddf81d079d2e39",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/denis15yo/GRDB.swift.git",
     )
@@ -44,7 +44,7 @@ def swift_dependencies():
     # branch: avatar-generator
     swift_package(
         name = "swiftpkg_nicegram_assistant_ios",
-        commit = "82fdd662ad67b20b2d93408f9dc853c3f8a1fb1e",
+        commit = "667bceccb7102dff96ba018b22c5fa1a6d30c9c6",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
     )
@@ -60,7 +60,7 @@ def swift_dependencies():
     # version: 5.15.5
     swift_package(
         name = "swiftpkg_sdwebimage",
-        commit = "73b9397cfbd902f606572964055464903b1d84c6",
+        commit = "f6afa0132961d593f07970d84e2d8b588c29ea04",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/SDWebImage/SDWebImage.git",
     )

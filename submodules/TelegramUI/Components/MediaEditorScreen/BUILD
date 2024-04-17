@@ -52,6 +52,12 @@ swift_library(
         "//submodules/TelegramUI/Components/MediaScrubberComponent",
         "//submodules/Components/BlurredBackgroundComponent",
         "//submodules/TelegramUI/Components/DustEffect",
+        "//submodules/WebPBinding",
+        "//submodules/StickerResources",
+        "//submodules/StickerPeekUI",
+        "//submodules/TelegramUI/Components/Stickers/StickerPackEditTitleController",
+        "//submodules/TelegramUI/Components/StickerPickerScreen",
+        "//submodules/UIKitRuntimeUtils",
     ],
     visibility = [
         "//visibility:public",

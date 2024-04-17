@@ -1679,6 +1679,30 @@ func _internal_updateStoriesArePinned(account: Account, peerId: PeerId, ids: [In
     }
 }
 
+func _internal_updatePinnedToTopStories(account: Account, peerId: PeerId, ids: [Int32]) -> Signal<Never, NoError> {
+    return account.postbox.transaction { transaction -> Api.InputPeer? in
+        guard let inputPeer = transaction.getPeer(peerId).flatMap(apiInputPeer) else {
+            return nil
+        }
+        
+        DispatchQueue.main.async {
+            account.stateManager.injectStoryUpdates(updates: [.updatePinnedToTopList(peerId: peerId, ids: ids)])
+        }
+        
+        return inputPeer
+    }
+    |> mapToSignal { inputPeer -> Signal<Never, NoError> in
+        guard let inputPeer else {
+            return .complete()
+        }
+        return account.network.request(Api.functions.stories.togglePinnedToTop(peer: inputPeer, id: ids))
+        |> `catch` { _ -> Signal<Api.Bool, NoError> in
+            return .single(.boolFalse)
+        }
+        |> ignoreValues
+    }
+}
+
 extension Api.StoryItem {
     var id: Int32 {
         switch self {
@@ -1760,6 +1784,8 @@ extension Stories.StoredItem {
                             base = .contacts
                         case .privacyValueAllowCloseFriends:
                             base = .closeFriends
+                        case .privacyValueAllowPremium:
+                            base = .everyone
                         case .privacyValueDisallowAll:
                             base = .nobody
                         case let .privacyValueAllowUsers(users):
@@ -1890,7 +1916,7 @@ func _internal_getStoryById(accountPeerId: PeerId, postbox: Postbox, network: Ne
             }
             return postbox.transaction { transaction -> EngineStoryItem? in
                 switch result {
-                case let .stories(_, stories, chats, users):
+                case let .stories(_, _, stories, _, chats, users):
                     updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: AccumulatedPeers(transaction: transaction, chats: chats, users: users))
                     
                     if let storyItem = stories.first.flatMap({ Stories.StoredItem(apiStoryItem: $0, peerId: peerId, transaction: transaction) }) {
@@ -1957,7 +1983,7 @@ func _internal_getStoriesById(accountPeerId: PeerId, postbox: Postbox, network: 
         }
         return postbox.transaction { transaction -> [Stories.StoredItem] in
             switch result {
-            case let .stories(_, stories, chats, users):
+            case let .stories(_, _, stories, _, chats, users):
                 updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: AccumulatedPeers(transaction: transaction, chats: chats, users: users))
                 
                 return stories.compactMap { apiStoryItem -> Stories.StoredItem? in
@@ -1988,7 +2014,7 @@ func _internal_getStoriesById(accountPeerId: PeerId, postbox: Postbox, source: F
             }
             return postbox.transaction { transaction -> [Stories.StoredItem]? in
                 switch result {
-                case let .stories(_, stories, chats, users):
+                case let .stories(_, _, stories, _, chats, users):
                     updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: AccumulatedPeers(transaction: transaction, chats: chats, users: users))
                     
                     return stories.compactMap { apiStoryItem -> Stories.StoredItem? in

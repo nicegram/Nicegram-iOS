@@ -122,6 +122,9 @@ swift_library(
         "//submodules/TelegramUI/Components/ListActionItemComponent",
         "//submodules/TelegramUI/Components/EmojiStatusSelectionComponent",
         "//submodules/TelegramUI/Components/EntityKeyboard",
+        "//submodules/TelegramUI/Components/PremiumPeerShortcutComponent",
+        "//submodules/TelegramUI/Components/EmojiActionIconComponent",
+        "//submodules/TelegramUI/Components/ScrollComponent",
     ],
     visibility = [
         "//visibility:public",

@@ -274,7 +274,8 @@ final class StoryItemSetContainerSendMessage {
                 threadData: nil,
                 isGeneralThreadClosed: nil,
                 replyMessage: nil,
-                accountPeerColor: nil
+                accountPeerColor: nil,
+                businessIntro: nil
             )
             
             let heightAndOverflow = inputMediaNode.updateLayout(width: availableSize.width, leftInset: 0.0, rightInset: 0.0, bottomInset: bottomInset, standardInputHeight: deviceMetrics.standardInputHeight(inLandscape: false), inputHeight: inputHeight < 100.0 ? inputHeight - bottomContainerInset : inputHeight, maximumHeight: availableSize.height, inputPanelHeight: 0.0, transition: .immediate, interfaceState: presentationInterfaceState, layoutMetrics: metrics, deviceMetrics: deviceMetrics, isVisible: true, isExpanded: false)
@@ -1890,7 +1891,9 @@ final class StoryItemSetContainerSendMessage {
             guard let self, let view else {
                 return
             }
-            self.openCamera(view: view, peer: peer, replyToMessageId: replyToMessageId, replyToStoryId: replyToStoryId, cameraView: cameraView)
+            if let cameraView = cameraView as? TGAttachmentCameraView {
+                self.openCamera(view: view, peer: peer, replyToMessageId: replyToMessageId, replyToStoryId: replyToStoryId, cameraView: cameraView)
+            }
         }
         controller.presentWebSearch = { [weak self, weak view, weak controller] mediaGroups, activateOnDisplay in
             guard let self, let view, let controller else {
