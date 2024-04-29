@@ -2016,11 +2016,11 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                                 lineSpacing: 0.18
                             )))
                         ], alignment: .left, spacing: 2.0)),
-                        leftIcon: AnyComponentWithIdentity(id: 0, component: AnyComponent(PerkIconComponent(
+                        leftIcon: .custom(AnyComponentWithIdentity(id: 0, component: AnyComponent(PerkIconComponent(
                             backgroundColor: gradientColors[i],
                             foregroundColor: .white,
                             iconName: perk.iconName
-                        ))),
+                        )))),
                         action: { [weak state] _ in
                             var demoSubject: PremiumDemoScreen.Subject
                             switch perk {
@@ -2183,11 +2183,11 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                                 lineSpacing: 0.18
                             )))
                         ], alignment: .left, spacing: 2.0)),
-                        leftIcon: AnyComponentWithIdentity(id: 0, component: AnyComponent(PerkIconComponent(
+                        leftIcon: .custom(AnyComponentWithIdentity(id: 0, component: AnyComponent(PerkIconComponent(
                             backgroundColor: gradientColors[min(i, gradientColors.count - 1)],
                             foregroundColor: .white,
                             iconName: perk.iconName
-                        ))),
+                        )))),
                         action: { [weak state] _ in
                             let isPremium = state?.isPremium == true
                             if isPremium {
@@ -2367,11 +2367,11 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                             lineSpacing: 0.18
                         )))
                     ], alignment: .left, spacing: 2.0)),
-                    leftIcon: AnyComponentWithIdentity(id: 0, component: AnyComponent(PerkIconComponent(
+                    leftIcon: .custom(AnyComponentWithIdentity(id: 0, component: AnyComponent(PerkIconComponent(
                         backgroundColor: UIColor(rgb: 0x676bff),
                         foregroundColor: .white,
                         iconName: "Premium/BusinessPerk/Status"
-                    ))),
+                    )))),
                     icon: ListActionItemComponent.Icon(component: AnyComponentWithIdentity(id: 0, component: AnyComponent(EmojiActionIconComponent(
                         context: context.component.context,
                         color: accentColor,
@@ -2408,11 +2408,11 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                             lineSpacing: 0.18
                         )))
                     ], alignment: .left, spacing: 2.0)),
-                    leftIcon: AnyComponentWithIdentity(id: 0, component: AnyComponent(PerkIconComponent(
+                    leftIcon: .custom(AnyComponentWithIdentity(id: 0, component: AnyComponent(PerkIconComponent(
                         backgroundColor: UIColor(rgb: 0x4492ff),
                         foregroundColor: .white,
                         iconName: "Premium/BusinessPerk/Tag"
-                    ))),
+                    )))),
                     action: { _ in
                         push(accountContext.sharedContext.makeFilterSettingsController(context: accountContext, modal: false, scrollToTags: true, dismissed: nil))
                     }
@@ -2439,11 +2439,11 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                             lineSpacing: 0.18
                         )))
                     ], alignment: .left, spacing: 2.0)),
-                    leftIcon: AnyComponentWithIdentity(id: 0, component: AnyComponent(PerkIconComponent(
+                    leftIcon: .custom(AnyComponentWithIdentity(id: 0, component: AnyComponent(PerkIconComponent(
                         backgroundColor: UIColor(rgb: 0x41a6a5),
                         foregroundColor: .white,
                         iconName: "Premium/Perk/Stories"
-                    ))),
+                    )))),
                     action: {  _ in
                         push(accountContext.sharedContext.makeMyStoriesController(context: accountContext, isArchive: false))
                     }

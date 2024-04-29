@@ -757,15 +757,11 @@ final class StoryItemSetContainerSendMessage {
         let size = image.size.aspectFitted(CGSize(width: 512.0, height: 512.0))
         
         func scaleImage(_ image: UIImage, size: CGSize, boundiingSize: CGSize) -> UIImage? {
-            if #available(iOSApplicationExtension 10.0, iOS 10.0, *) {
-                let format = UIGraphicsImageRendererFormat()
-                format.scale = 1.0
-                let renderer = UIGraphicsImageRenderer(size: size, format: format)
-                return renderer.image { _ in
-                    image.draw(in: CGRect(origin: .zero, size: size))
-                }
-            } else {
-                return TGScaleImageToPixelSize(image, size)
+            let format = UIGraphicsImageRendererFormat()
+            format.scale = 1.0
+            let renderer = UIGraphicsImageRenderer(size: size, format: format)
+            return renderer.image { _ in
+                image.draw(in: CGRect(origin: .zero, size: size))
             }
         }
 
@@ -3190,7 +3186,8 @@ final class StoryItemSetContainerSendMessage {
             
             let sheet = StoryStealthModeSheetScreen(
                 context: component.context,
-                mode: .control(cooldownUntilTimestamp: config.stealthModeState.actualizedNow().cooldownUntilTimestamp),
+                mode: .control(external: false, cooldownUntilTimestamp: config.stealthModeState.actualizedNow().cooldownUntilTimestamp),
+                forceDark: true,
                 backwardDuration: pastPeriod,
                 forwardDuration: futurePeriod,
                 buttonAction: { [weak self, weak view] in
@@ -3265,6 +3262,7 @@ final class StoryItemSetContainerSendMessage {
             let sheet = StoryStealthModeSheetScreen(
                 context: component.context,
                 mode: .upgrade,
+                forceDark: true,
                 backwardDuration: pastPeriod,
                 forwardDuration: futurePeriod,
                 buttonAction: {

@@ -64,6 +64,7 @@ import BusinessIntroSetupScreen
 import TelegramNotices
 import BotSettingsScreen
 import CameraScreen
+import BirthdayPickerScreen
 
 import NGCore
 import NGData
@@ -2188,13 +2189,17 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             mappedSource = .messageTags
         case .folderTags:
             mappedSource = .folderTags
+        case .animatedEmoji:
+            mappedSource = .animatedEmoji
         }
         let controller = PremiumIntroScreen(context: context, source: mappedSource, modal: modal, forceDark: forceDark)
         controller.wasDismissed = dismissed
         return controller
     }
     
-    public func makePremiumDemoController(context: AccountContext, subject: PremiumDemoSubject, action: @escaping () -> Void) -> ViewController {
+    public func makePremiumDemoController(context: AccountContext, subject: PremiumDemoSubject, forceDark: Bool, action: @escaping () -> Void, dismissed: (() -> Void)?) -> ViewController {
+        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+        var buttonText: String = presentationData.strings.Common_OK
         let mappedSubject: PremiumDemoScreen.Subject
         switch subject {
         case .doubleLimits:
@@ -2227,6 +2232,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             mappedSubject = .translation
         case .stories:
             mappedSubject = .stories
+            buttonText = presentationData.strings.Story_PremiumUpgradeStoriesButton
         case .colors:
             mappedSubject = .colors
         case .wallpapers:
@@ -2239,10 +2245,24 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             mappedSubject = .messagePrivacy
         case .folderTags:
             mappedSubject = .folderTags
+        case .business:
+            mappedSubject = .business
+            buttonText = presentationData.strings.Chat_EmptyStateIntroFooterPremiumActionButton
         default:
             mappedSubject = .doubleLimits
         }
-        return PremiumDemoScreen(context: context, subject: mappedSubject, action: action)
+        
+        switch mappedSubject {
+        case .stories, .business, .doubleLimits:
+            let controller = PremiumLimitsListScreen(context: context, subject: mappedSubject, source: .other, order: [mappedSubject.perk], buttonText: buttonText, isPremium: false, forceDark: forceDark)
+            controller.action = action
+            if let dismissed {
+                controller.disposed = dismissed
+            }
+            return controller
+        default:
+            return PremiumDemoScreen(context: context, subject: mappedSubject, action: action)
+        }
     }
     
     public func makePremiumLimitController(context: AccountContext, subject: PremiumLimitSubject, count: Int32, forceDark: Bool, cancel: @escaping () -> Void, action: @escaping () -> Bool) -> ViewController {
@@ -2284,7 +2304,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
 
         let limit: Int32 = 10
         var reachedLimitImpl: ((Int32) -> Void)?
-        
+        var presentBirthdayPickerImpl: (() -> Void)?
         let mode: ContactMultiselectionControllerMode
         var currentBirthdays: [EnginePeer.Id: TelegramBirthday]?
         if case let .chatList(birthdays) = source, let birthdays, !birthdays.isEmpty {
@@ -2297,15 +2317,55 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             mode = .premiumGifting(birthdays: nil, selectToday: false)
         }
         
-        let controller = context.sharedContext.makeContactMultiselectionController(ContactMultiselectionControllerParams(context: context, mode: mode, options: [], isPeerEnabled: { peer in
-            if case let .user(user) = peer, user.botInfo == nil && !peer.isService && !user.flags.contains(.isSupport) {
-                return true
-            } else {
-                return false
+        let contactOptions: Signal<[ContactListAdditionalOption], NoError>
+        if currentBirthdays != nil || "".isEmpty {
+            contactOptions = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Birthday(id: context.account.peerId))
+            |> map { birthday in
+                if birthday == nil {
+                    return [ContactListAdditionalOption(
+                        title: presentationData.strings.Premium_Gift_ContactSelection_AddBirthday,
+                        icon: .generic(UIImage(bundleImageName: "Contact List/AddBirthdayIcon")!),
+                        action: {
+                            presentBirthdayPickerImpl?()
+                        },
+                        clearHighlightAutomatically: true
+                    )]
+                } else {
+                    return []
+                }
             }
-        }, limit: limit, reachedLimit: { limit in
-            reachedLimitImpl?(limit)
-        }))
+            |> deliverOnMainQueue
+        } else {
+            contactOptions = .single([])
+        }
+        
+        var openProfileImpl: ((EnginePeer) -> Void)?
+        var sendMessageImpl: ((EnginePeer) -> Void)?
+        
+        let controller = context.sharedContext.makeContactMultiselectionController(
+            ContactMultiselectionControllerParams(
+                context: context,
+                mode: mode,
+                options: contactOptions,
+                isPeerEnabled: { peer in
+                    if case let .user(user) = peer, user.botInfo == nil && !peer.isService && !user.flags.contains(.isSupport) {
+                        return true
+                    } else {
+                        return false
+                    }
+                }, 
+                limit: limit,
+                reachedLimit: { limit in
+                    reachedLimitImpl?(limit)
+                },
+                openProfile: { peer in
+                    openProfileImpl?(peer)
+                },
+                sendMessage: { peer in
+                    sendMessageImpl?(peer)
+                }
+            )
+        )
         
         reachedLimitImpl = { [weak controller] limit in
             guard let controller else {
@@ -2359,6 +2419,63 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             }
             controller.push(giftController)
         })
+        
+        sendMessageImpl = { [weak self, weak controller] peer in
+            guard let self, let controller, let navigationController = controller.navigationController as? NavigationController else {
+                return
+            }
+            self.navigateToChatController(
+                NavigateToChatControllerParams(
+                    navigationController: navigationController,
+                    context: context,
+                    chatLocation: .peer(peer)
+                )
+            )
+        }
+        
+        openProfileImpl = { [weak self, weak controller] peer in
+            guard let self, let controller else {
+                return
+            }
+            if let infoController = self.makePeerInfoController(
+                context: context,
+                updatedPresentationData: nil,
+                peer: peer._asPeer(),
+                mode: .generic,
+                avatarInitiallyExpanded: true,
+                fromChat: false,
+                requestsContext: nil
+            ) {
+                controller.replace(with: infoController)
+            }
+        }
+        
+        presentBirthdayPickerImpl = { [weak controller] in
+            guard let controller else {
+                return
+            }
+            let _ = context.engine.notices.dismissServerProvidedSuggestion(suggestion: .setupBirthday).startStandalone()
+                    
+            let settingsPromise: Promise<AccountPrivacySettings?>
+            if let rootController = context.sharedContext.mainWindow?.viewController as? TelegramRootControllerInterface, let current = rootController.getPrivacySettings() {
+                settingsPromise = current
+            } else {
+                settingsPromise = Promise()
+                settingsPromise.set(.single(nil) |> then(context.engine.privacy.requestAccountPrivacySettings() |> map(Optional.init)))
+            }
+            let birthdayController = BirthdayPickerScreen(context: context, settings: settingsPromise.get(), openSettings: {
+                context.sharedContext.makeBirthdayPrivacyController(context: context, settings: settingsPromise, openedFromBirthdayScreen: true, present: { [weak controller] c in
+                    controller?.push(c)
+                })
+            }, completion: { [weak controller] value in
+                let _ = context.engine.accountData.updateBirthday(birthday: value).startStandalone()
+                
+                controller?.present(UndoOverlayController(presentationData: presentationData, content: .actionSucceeded(title: nil, text: presentationData.strings.Birthday_Added, cancel: nil, destructive: false), elevatedLayout: false, action: { _ in
+                    return true
+                }), in: .current)
+            })
+            controller.push(birthdayController)
+        }
         
         return controller
     }
@@ -2589,7 +2706,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
     }
         
     public func makeProxySettingsController(sharedContext: SharedAccountContext, account: UnauthorizedAccount) -> ViewController {
-        return proxySettingsController(accountManager: sharedContext.accountManager, postbox: account.postbox, network: account.network, mode: .modal, presentationData: sharedContext.currentPresentationData.with { $0 }, updatedPresentationData: sharedContext.presentationData)
+        return proxySettingsController(accountManager: sharedContext.accountManager, sharedContext: sharedContext, postbox: account.postbox, network: account.network, mode: .modal, presentationData: sharedContext.currentPresentationData.with { $0 }, updatedPresentationData: sharedContext.presentationData)
     }
     
     public func makeInstalledStickerPacksController(context: AccountContext, mode: InstalledStickerPacksControllerMode, forceTheme: PresentationTheme?) -> ViewController {

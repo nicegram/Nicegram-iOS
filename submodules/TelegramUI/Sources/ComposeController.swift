@@ -116,7 +116,7 @@ public class ComposeControllerImpl: ViewController, ComposeController {
             self?.activateSearch()
         }
         
-        self.contactsNode.contactListNode.openPeer = { [weak self] peer, _ in
+        self.contactsNode.contactListNode.openPeer = { [weak self] peer, _, _, _ in
             if case let .peer(peer, _, _) = peer {
                 self?.openPeer(peerId: peer.id)
             }
@@ -124,7 +124,7 @@ public class ComposeControllerImpl: ViewController, ComposeController {
 
         self.contactsNode.openCreateNewGroup = { [weak self] in
             if let strongSelf = self {
-                let controller = strongSelf.context.sharedContext.makeContactMultiselectionController(ContactMultiselectionControllerParams(context: strongSelf.context, mode: .groupCreation, options: [], onlyWriteable: true))
+                let controller = strongSelf.context.sharedContext.makeContactMultiselectionController(ContactMultiselectionControllerParams(context: strongSelf.context, mode: .groupCreation, onlyWriteable: true))
                 (strongSelf.navigationController as? NavigationController)?.pushViewController(controller, completion: { [weak self] in
                     if let strongSelf = self {
                         strongSelf.contactsNode.contactListNode.listNode.clearHighlightAnimated(true)
