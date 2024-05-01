@@ -165,7 +165,7 @@ private func extractNicegramDeeplink(from link: String) -> String? {
 func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, url: String, forceExternal: Bool, presentationData: PresentationData, navigationController: NavigationController?, dismissInput: @escaping () -> Void) {
     // MARK: Nicegram
     if let nicegramDeeplink = extractNicegramDeeplink(from: url) {
-        openExternalUrlImpl(context: context, urlContext: urlContext, url: nicegramDeeplink, forceExternal: forceExternal, presentationData: presentationData, navigationController: navigationController, dismissInput: dismissInput)
+        openExternalUrlImpl(context: context, urlContext: urlContext, url: nicegramDeeplink, forceExternal: false, presentationData: presentationData, navigationController: navigationController, dismissInput: dismissInput)
         return
     }
     
