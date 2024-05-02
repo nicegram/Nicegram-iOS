@@ -95,7 +95,7 @@ final class AuthorizationSequencePasswordEntryController: ViewController {
         super.viewDidAppear(animated)
         
         if let navigationController = self.navigationController as? NavigationController, let layout = self.validLayout {
-            addTemporaryKeyboardSnapshotView(navigationController: navigationController, parentView: self.view, layout: layout)
+            addTemporaryKeyboardSnapshotView(navigationController: navigationController, layout: layout)
         }
         
         self.controllerNode.activateInput()
@@ -139,6 +139,10 @@ final class AuthorizationSequencePasswordEntryController: ViewController {
         
         if !hadLayout {
             self.updateNavigationItems()
+            
+            if let navigationController = self.navigationController as? NavigationController {
+                addTemporaryKeyboardSnapshotView(navigationController: navigationController, layout: layout, local: true)
+            }
         }
         
         self.controllerNode.containerLayoutUpdated(layout, navigationBarHeight: self.navigationLayout(layout: layout).navigationFrame.maxY, transition: transition)

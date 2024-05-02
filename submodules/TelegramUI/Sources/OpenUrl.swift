@@ -25,8 +25,8 @@ public struct ParsedSecureIdUrl {
     public let opaqueNonce: Data
 }
 
-public func parseProxyUrl(_ url: URL) -> ProxyServerSettings? {
-    guard let proxy = parseProxyUrl(url.absoluteString) else {
+public func parseProxyUrl(sharedContext: SharedAccountContext, url: URL) -> ProxyServerSettings? {
+    guard let proxy = parseProxyUrl(sharedContext: sharedContext, url: url.absoluteString) else {
         return nil
     }
     if let secret = proxy.secret, let _ = MTProxySecret.parseData(secret) {
@@ -107,14 +107,14 @@ public func parseSecureIdUrl(_ url: URL) -> ParsedSecureIdUrl? {
     return nil
 }
 
-public func parseConfirmationCodeUrl(_ url: URL) -> Int? {
+public func parseConfirmationCodeUrl(sharedContext: SharedAccountContext, url: URL) -> Int? {
     if url.pathComponents.count == 3 && url.pathComponents[1].lowercased() == "login" {
         if let code = Int(url.pathComponents[2]) {
             return code
         }
     }
     if url.scheme == "tg" {
-        if let host = url.host, let query = url.query, let parsedUrl = parseInternalUrl(query: host + "?" + query) {
+        if let host = url.host, let query = url.query, let parsedUrl = parseInternalUrl(sharedContext: sharedContext, query: host + "?" + query) {
             switch parsedUrl {
                 case let .confirmationCode(code):
                     return code
@@ -165,7 +165,7 @@ private func extractNicegramDeeplink(from link: String) -> String? {
 func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, url: String, forceExternal: Bool, presentationData: PresentationData, navigationController: NavigationController?, dismissInput: @escaping () -> Void) {
     // MARK: Nicegram
     if let nicegramDeeplink = extractNicegramDeeplink(from: url) {
-        openExternalUrlImpl(context: context, urlContext: urlContext, url: nicegramDeeplink, forceExternal: forceExternal, presentationData: presentationData, navigationController: navigationController, dismissInput: dismissInput)
+        openExternalUrlImpl(context: context, urlContext: urlContext, url: nicegramDeeplink, forceExternal: false, presentationData: presentationData, navigationController: navigationController, dismissInput: dismissInput)
         return
     }
     
@@ -206,7 +206,7 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
         return
     }
     
-    guard let parsedUrl = parsedUrlValue else {
+    guard var parsedUrl = parsedUrlValue else {
         return
     }
     
@@ -285,6 +285,20 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
         let handleInternalUrl: (String) -> Void = { url in
             let _ = (context.sharedContext.resolveUrl(context: context, peerId: nil, url: url, skipUrlAuth: true)
             |> deliverOnMainQueue).startStandalone(next: handleResolvedUrl)
+        }
+        
+        if context.sharedContext.immediateExperimentalUISettings.browserExperiment {
+            if let scheme = parsedUrl.scheme, (scheme == "tg" || scheme == context.sharedContext.applicationBindings.appSpecificScheme) {
+                if parsedUrl.host == "ipfs" {
+                    if let value = URL(string: "ipfs:/" + parsedUrl.path) {
+                        parsedUrl = value
+                    }
+                }
+            } else if let scheme = parsedUrl.scheme, scheme == "https", parsedUrl.host == "t.me", parsedUrl.path.hasPrefix("/ipfs/") {
+                if let value = URL(string: "ipfs://" + String(parsedUrl.path[parsedUrl.path.index(parsedUrl.path.startIndex, offsetBy: "/ipfs/".count)...])) {
+                    parsedUrl = value
+                }
+            }
         }
         
         if let scheme = parsedUrl.scheme, (scheme == "tg" || scheme == context.sharedContext.applicationBindings.appSpecificScheme) {

@@ -206,7 +206,11 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
     
     public var requestAttachmentMenuExpansion: () -> Void = { }
     public var updateNavigationStack: (@escaping ([AttachmentContainable]) -> ([AttachmentContainable], AttachmentMediaPickerContext?)) -> Void = { _ in }
+    public var parentController: () -> ViewController? = {
+        return nil
+    }
     public var updateTabBarAlpha: (CGFloat, ContainedViewLayoutTransition) -> Void  = { _, _ in }
+    public var updateTabBarVisibility: (Bool, ContainedViewLayoutTransition) -> Void = { _, _ in }
     public var cancelPanGesture: () -> Void = { }
     public var isContainerPanning: () -> Bool = { return false }
     public var isContainerExpanded: () -> Bool = { return false }
@@ -1596,11 +1600,14 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
             if case let .noAccess(cameraAccess) = self.state {
                 var hasCamera = cameraAccess == .authorized
                 var story = false
-                if let subject = self.controller?.subject, case .assets(_, .story) = subject {
-                    hasCamera = false
-                    story = true
-                    
-                    self.controller?.navigationItem.rightBarButtonItem = nil
+                if let subject = self.controller?.subject {
+                    if case .assets(_, .story) = subject {
+                        hasCamera = false
+                        story = true
+                        self.controller?.navigationItem.rightBarButtonItem = nil
+                    } else if case .assets(_, .createSticker) = subject {
+                        hasCamera = false
+                    }
                 }
                 
                 var placeholderTransition = transition

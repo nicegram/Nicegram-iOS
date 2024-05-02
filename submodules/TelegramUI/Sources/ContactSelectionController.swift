@@ -78,7 +78,11 @@ class ContactSelectionControllerImpl: ViewController, ContactSelectionController
     
     var requestAttachmentMenuExpansion: () -> Void = {}
     var updateNavigationStack: (@escaping ([AttachmentContainable]) -> ([AttachmentContainable], AttachmentMediaPickerContext?)) -> Void = { _ in }
+    public var parentController: () -> ViewController? = {
+        return nil
+    }
     var updateTabBarAlpha: (CGFloat, ContainedViewLayoutTransition) -> Void = { _, _ in }
+    var updateTabBarVisibility: (Bool, ContainedViewLayoutTransition) -> Void = { _, _ in }
     var cancelPanGesture: () -> Void = { }
     var isContainerPanning: () -> Bool = { return false }
     var isContainerExpanded: () -> Bool = { return false }
@@ -197,7 +201,7 @@ class ContactSelectionControllerImpl: ViewController, ContactSelectionController
             self?.activateSearch()
         }
         
-        self.contactsNode.contactListNode.openPeer = { [weak self] peer, action in
+        self.contactsNode.contactListNode.openPeer = { [weak self] peer, action, _, _ in
             self?.openPeer(peer: peer, action: action)
         }
                 

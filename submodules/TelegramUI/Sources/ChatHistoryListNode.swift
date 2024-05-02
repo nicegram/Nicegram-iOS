@@ -41,6 +41,7 @@ import ChatMessageBubbleItemNode
 import ChatMessageTransitionNode
 import ChatControllerInteraction
 import DustEffect
+import UrlHandling
 
 // MARK: Nicegram AiChat
 private extension ListViewUpdateSizeAndInsets {
@@ -689,19 +690,19 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
     var isSelectionGestureEnabled = true
 
     private var overscrollView: ComponentHostView<Empty>?
-    var nextChannelToRead: (peer: EnginePeer, unreadCount: Int, location: TelegramEngine.NextUnreadChannelLocation)?
+    var nextChannelToRead: (peer: EnginePeer, threadData: (id: Int64, data: MessageHistoryThreadData)?, unreadCount: Int, location: TelegramEngine.NextUnreadChannelLocation)?
     var offerNextChannelToRead: Bool = false
     var nextChannelToReadDisplayName: Bool = false
     private var currentOverscrollExpandProgress: CGFloat = 0.0
     private var freezeOverscrollControl: Bool = false
     private var freezeOverscrollControlProgress: Bool = false
     private var feedback: HapticFeedback?
-    var openNextChannelToRead: ((EnginePeer, TelegramEngine.NextUnreadChannelLocation) -> Void)?
+    var openNextChannelToRead: ((EnginePeer, (id: Int64, data: MessageHistoryThreadData)?, TelegramEngine.NextUnreadChannelLocation) -> Void)?
     private var contentInsetAnimator: DisplayLinkAnimator?
 
     let adMessagesContext: AdMessagesHistoryContext?
     private var adMessagesDisposable: Disposable?
-    private var preloadAdPeerId: PeerId?
+    private var preloadAdPeerName: String?
     private let preloadAdPeerDisposable = MetaDisposable()
     private var didSetupRecommendedChannelsPreload = false
     private let preloadRecommendedChannelsDisposable = MetaDisposable()
@@ -1048,7 +1049,7 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
             if strongSelf.offerNextChannelToRead, strongSelf.currentOverscrollExpandProgress >= 0.99 {
                 if let nextChannelToRead = strongSelf.nextChannelToRead {
                     strongSelf.freezeOverscrollControl = true
-                    strongSelf.openNextChannelToRead?(nextChannelToRead.peer, nextChannelToRead.location)
+                    strongSelf.openNextChannelToRead?(nextChannelToRead.peer, nextChannelToRead.threadData, nextChannelToRead.location)
                 } else {
                     strongSelf.freezeOverscrollControlProgress = true
                     strongSelf.scroller.contentInset = UIEdgeInsets(top: 94.0 + 12.0, left: 0.0, bottom: 0.0, right: 0.0)
@@ -1147,16 +1148,23 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                 
                 self.allAdMessages = (messages.first, [], 0)
             } else {
-                var adPeerId: PeerId?
-                adPeerId = messages.first?.author?.id
+                var adPeerName: String?
+                if let adAttribute = messages.first?.adAttribute, let parsedUrl = parseAdUrl(sharedContext: self.context.sharedContext, url: adAttribute.url), case let .peer(reference, _) = parsedUrl, case let .name(peerName) = reference {
+                    adPeerName = peerName
+                }
                 
-                if self.preloadAdPeerId != adPeerId {
-                    self.preloadAdPeerId = adPeerId
-                    if let adPeerId = adPeerId {
+                if self.preloadAdPeerName != adPeerName {
+                    self.preloadAdPeerName = adPeerName
+                    if let adPeerName {
+                        let context = self.context
                         let combinedDisposable = DisposableSet()
                         self.preloadAdPeerDisposable.set(combinedDisposable)
-                        combinedDisposable.add(self.context.account.viewTracker.polledChannel(peerId: adPeerId).startStrict())
-                        combinedDisposable.add(self.context.account.addAdditionalPreloadHistoryPeerId(peerId: adPeerId))
+                        combinedDisposable.add(context.engine.peers.resolvePeerByName(name: adPeerName).startStrict(next: { result in
+                            if case let .result(maybePeer) = result, let peer = maybePeer {
+                                combinedDisposable.add(context.account.viewTracker.polledChannel(peerId: peer.id).startStrict())
+                                combinedDisposable.add(context.account.addAdditionalPreloadHistoryPeerId(peerId: peer.id))
+                            }
+                        }))
                     } else {
                         self.preloadAdPeerDisposable.set(nil)
                     }
@@ -2267,8 +2275,11 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                 switch nextChannelToRead.location {
                 case .same:
                     if let controllerNode = self.controllerInteraction.chatControllerNode() as? ChatControllerNode, let chatController = controllerNode.interfaceInteraction?.chatController() as? ChatControllerImpl, chatController.customChatNavigationStack != nil {
-                        swipeText = ("Pull up to go to the next channel", [])
-                        releaseText = ("Release to go to the next channel", [])
+                        swipeText = (self.currentPresentationData.strings.Chat_NextSuggestedChannelSwipeProgress, [])
+                        releaseText = (self.currentPresentationData.strings.Chat_NextSuggestedChannelSwipeAction, [])
+                    } else if nextChannelToRead.threadData != nil {
+                        swipeText = (self.currentPresentationData.strings.Chat_NextUnreadTopicSwipeProgress, [])
+                        releaseText = (self.currentPresentationData.strings.Chat_NextUnreadTopicSwipeAction, [])
                     } else {
                         swipeText = (self.currentPresentationData.strings.Chat_NextChannelSameLocationSwipeProgress, [])
                         releaseText = (self.currentPresentationData.strings.Chat_NextChannelSameLocationSwipeAction, [])
@@ -2312,6 +2323,13 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                     backgroundColor: selectDateFillStaticColor(theme: self.currentPresentationData.theme.theme, wallpaper: self.currentPresentationData.theme.wallpaper),
                     foregroundColor: bubbleVariableColor(variableColor: self.currentPresentationData.theme.theme.chat.serviceMessage.dateTextColor, wallpaper: self.currentPresentationData.theme.wallpaper),
                     peer: self.nextChannelToRead?.peer,
+                    threadData: (self.nextChannelToRead?.threadData).flatMap { threadData in
+                        return ChatOverscrollThreadData(
+                            id: threadData.id,
+                            data: threadData.data
+                        )
+                    },
+                    isForumThread: self.chatLocation.threadId != nil,
                     unreadCount: self.nextChannelToRead?.unreadCount ?? 0,
                     location: self.nextChannelToRead?.location ?? .same,
                     context: self.context,
@@ -2485,6 +2503,9 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                     for i in (wideIndexRange.0 ... wideIndexRange.1) {
                         switch historyView.filteredEntries[i] {
                         case let .MessageEntry(message, _, _, _, _, _):
+                            guard message.adAttribute == nil && message.id.namespace == Namespaces.Message.Cloud else {
+                                continue
+                            }
                             if !message.text.isEmpty && message.author?.id != self.context.account.peerId {
                                 if let translation = message.attributes.first(where: { $0 is TranslationMessageAttribute }) as? TranslationMessageAttribute, translation.toLang == translateToLanguage {
                                 } else {
@@ -2493,6 +2514,9 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                             }
                         case let .MessageGroupEntry(_, messages, _):
                             for (message, _, _, _, _) in messages {
+                                guard message.adAttribute == nil && message.id.namespace == Namespaces.Message.Cloud else {
+                                    continue
+                                }
                                 if !message.text.isEmpty && message.author?.id != self.context.account.peerId {
                                     if let translation = message.attributes.first(where: { $0 is TranslationMessageAttribute }) as? TranslationMessageAttribute, translation.toLang == translateToLanguage {
                                     } else {
@@ -2579,7 +2603,7 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                                 contentRequiredValidation = true
                             } else if message.flags.contains(.Incoming), let media = media as? TelegramMediaMap, let liveBroadcastingTimeout = media.liveBroadcastingTimeout {
                                 let timestamp = Int32(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970)
-                                if message.timestamp + liveBroadcastingTimeout > timestamp {
+                                if liveBroadcastingTimeout == liveLocationIndefinitePeriod || message.timestamp + liveBroadcastingTimeout > timestamp {
                                     messageIdsWithLiveLocation.append(message.id)
                                 }
                             } else if let telegramFile = media as? TelegramMediaFile {

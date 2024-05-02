@@ -20,6 +20,7 @@ import ComponentFlow
 import AnimationCache
 import MultiAnimationRenderer
 import EmojiStatusComponent
+import MoreButtonNode
 
 public final class ContactItemHighlighting {
     public var chatLocation: ChatLocation?
@@ -88,13 +89,14 @@ public enum ContactsPeerItemActionIcon {
     case add
     case voiceCall
     case videoCall
+    case more
 }
 
 public struct ContactsPeerItemAction {
     public let icon: ContactsPeerItemActionIcon
-    public let action: ((ContactsPeerItemPeer) -> Void)?
+    public let action: ((ContactsPeerItemPeer, ASDisplayNode, ContextGesture?) -> Void)?
     
-    public init(icon: ContactsPeerItemActionIcon, action: @escaping (ContactsPeerItemPeer) -> Void) {
+    public init(icon: ContactsPeerItemActionIcon, action: @escaping (ContactsPeerItemPeer, ASDisplayNode, ContextGesture?) -> Void) {
         self.icon = icon
         self.action = action
     }
@@ -163,6 +165,7 @@ public class ContactsPeerItem: ItemListItem, ListViewItemWithHeader {
     public let peer: ContactsPeerItemPeer
     let status: ContactsPeerItemStatus
     let badge: ContactsPeerItemBadge?
+    let rightLabelText: String?
     let requiresPremiumForMessaging: Bool
     let enabled: Bool
     let selection: ContactsPeerItemSelection
@@ -200,6 +203,7 @@ public class ContactsPeerItem: ItemListItem, ListViewItemWithHeader {
         peer: ContactsPeerItemPeer,
         status: ContactsPeerItemStatus,
         badge: ContactsPeerItemBadge? = nil,
+        rightLabelText: String? = nil,
         requiresPremiumForMessaging: Bool = false,
         enabled: Bool,
         selection: ContactsPeerItemSelection,
@@ -231,6 +235,7 @@ public class ContactsPeerItem: ItemListItem, ListViewItemWithHeader {
         self.peer = peer
         self.status = status
         self.badge = badge
+        self.rightLabelText = rightLabelText
         self.requiresPremiumForMessaging = requiresPremiumForMessaging
         self.enabled = enabled
         self.selection = selection
@@ -417,7 +422,9 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
     private var badgeTextNode: TextNode?
     private var selectionNode: CheckNode?
     private var actionButtonNodes: [HighlightableButtonNode]?
+    private var moreButtonNode: MoreButtonNode?
     private var arrowButtonNode: HighlightableButtonNode?
+    private var rightLabelTextNode: TextNode?
     
     private var avatarTapRecognizer: UITapGestureRecognizer?
     
@@ -576,12 +583,30 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                 transition.updateFrame(node: strongSelf.extractedBackgroundImageNode, frame: rect)
             }
             
+            if let rightLabelTextNode = strongSelf.rightLabelTextNode {
+                transition.updateTransform(node: rightLabelTextNode, transform: CGAffineTransformMakeTranslation(isExtracted ? -24.0 : 0.0, 0.0))
+            }
+            
             transition.updateSublayerTransformOffset(layer: strongSelf.offsetContainerNode.layer, offset: CGPoint(x: isExtracted ? 12.0 : 0.0, y: 0.0))
             transition.updateAlpha(node: strongSelf.extractedBackgroundImageNode, alpha: isExtracted ? 1.0 : 0.0, completion: { _ in
                 if !isExtracted {
                     self?.extractedBackgroundImageNode.image = nil
                 }
             })
+        }
+    }
+    
+    override public func didLoad() {
+        super.didLoad()
+        
+        self.updateEnableGestures()
+    }
+    
+    private func updateEnableGestures() {
+        if let item = self.layoutParams?.0, !item.options.isEmpty {
+            self.view.disablesInteractiveTransitionGestureRecognizer = false
+        } else {
+            self.view.disablesInteractiveTransitionGestureRecognizer = false
         }
     }
     
@@ -662,6 +687,7 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
         let currentSelectionNode = self.selectionNode
         
         let makeBadgeTextLayout = TextNode.asyncLayout(self.badgeTextNode)
+        let makeRightLabelTextLayout = TextNode.asyncLayout(self.rightLabelTextNode)
         
         let currentItem = self.layoutParams?.0
         
@@ -709,6 +735,13 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                 }
             }
             
+            var rightLabelTextLayoutAndApply: (TextNodeLayout, () -> TextNode)?
+            if let rightLabelText = item.rightLabelText {
+                let rightLabelTextLayoutAndApplyValue = makeRightLabelTextLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: rightLabelText, font: statusFont, textColor: item.presentationData.theme.list.itemSecondaryTextColor), maximumNumberOfLines: 0, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - rightInset - 20.0, height: 100.0)))
+                rightLabelTextLayoutAndApply = rightLabelTextLayoutAndApplyValue
+                rightInset -= 6.0 + rightLabelTextLayoutAndApplyValue.0.size.width
+            }
+            
             let premiumConfiguration = PremiumConfiguration.with(appConfiguration: item.context.currentAppConfiguration.with { $0 })
             
             var credibilityIcon: EmojiStatusComponent.Content?
@@ -744,10 +777,11 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
             
             var actionButtons: [ActionButton]?
             struct ActionButton {
+                let type: ContactsPeerItemActionIcon
                 let image: UIImage?
-                let action: ((ContactsPeerItemPeer) -> Void)?
+                let action: ((ContactsPeerItemPeer, ASDisplayNode, ContextGesture?) -> Void)?
                 
-                init(theme: PresentationTheme, icon: ContactsPeerItemActionIcon, action: ((ContactsPeerItemPeer) -> Void)?) {
+                init(theme: PresentationTheme, icon: ContactsPeerItemActionIcon, action: ((ContactsPeerItemPeer, ASDisplayNode, ContextGesture?) -> Void)?) {
                     let image: UIImage?
                     switch icon {
                         case .none:
@@ -758,7 +792,10 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                             image = PresentationResourcesItemList.voiceCallIcon(theme)
                         case .videoCall:
                             image = PresentationResourcesItemList.videoCallIcon(theme)
+                        case .more:
+                            image = PresentationResourcesItemList.videoCallIcon(theme)
                     }
+                    self.type = icon
                     self.image = image
                     self.action = action
                 }
@@ -1110,7 +1147,7 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                                 transition = .immediate
                             }
                             
-                            let revealOffset = strongSelf.revealOffset
+                            let revealOffset: CGFloat = 0.0
                             
                             if let _ = updatedTheme {
                                 switch item.style {
@@ -1357,7 +1394,23 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                                 verifiedIconView.removeFromSuperview()
                             }
                             
-                            if let actionButtons = actionButtons {
+                            if let actionButtons, actionButtons.count == 1, let actionButton = actionButtons.first, case .more = actionButton.type {
+                                let moreButtonNode: MoreButtonNode
+                                if let current = strongSelf.moreButtonNode {
+                                    moreButtonNode = current
+                                } else {
+                                    moreButtonNode = MoreButtonNode(theme: item.presentationData.theme)
+                                    moreButtonNode.iconNode.enqueueState(.more, animated: false)
+                                    moreButtonNode.hitTestSlop = UIEdgeInsets(top: -8.0, left: -8.0, bottom: -8.0, right: -8.0)
+                                    strongSelf.offsetContainerNode.addSubnode(moreButtonNode)
+                                    strongSelf.moreButtonNode = moreButtonNode
+                                }
+                                moreButtonNode.action = { sourceNode, gesture in
+                                    actionButton.action?(item.peer, sourceNode, gesture)
+                                }
+                                let moreButtonSize = moreButtonNode.measure(CGSize(width: 100.0, height: nodeLayout.contentSize.height))
+                                moreButtonNode.frame = CGRect(origin: CGPoint(x: revealOffset + params.width - params.rightInset - 18.0 - moreButtonSize.width, y:floor((nodeLayout.contentSize.height - moreButtonSize.height) / 2.0)), size: moreButtonSize)
+                            } else if let actionButtons = actionButtons {
                                 if strongSelf.actionButtonNodes == nil {
                                     var actionButtonNodes: [HighlightableButtonNode] = []
                                     for action in actionButtons {
@@ -1456,6 +1509,28 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                                 }
                             }
                             
+                            if let (rightLabelTextLayout, rightLabelTextApply) = rightLabelTextLayoutAndApply {
+                                let rightLabelTextNode = rightLabelTextApply()
+                                var rightLabelTextTransition = transition
+                                if rightLabelTextNode !== strongSelf.rightLabelTextNode {
+                                    strongSelf.rightLabelTextNode?.removeFromSupernode()
+                                    strongSelf.rightLabelTextNode = rightLabelTextNode
+                                    strongSelf.offsetContainerNode.addSubnode(rightLabelTextNode)
+                                    rightLabelTextTransition = .immediate
+                                }
+                                
+                                var rightLabelTextFrame = CGRect(x: revealOffset + params.width - params.rightInset - 8.0 - rightLabelTextLayout.size.width, y: floor((nodeLayout.contentSize.height - rightLabelTextLayout.size.height) / 2.0), width: rightLabelTextLayout.size.width, height: rightLabelTextLayout.size.height)
+                                if let arrowButtonImage = arrowButtonImage {
+                                    rightLabelTextFrame.origin.x -= arrowButtonImage.size.width + 6.0
+                                }
+                                
+                                rightLabelTextNode.bounds = CGRect(origin: CGPoint(), size: rightLabelTextFrame.size)
+                                rightLabelTextTransition.updatePosition(node: rightLabelTextNode, position: rightLabelTextFrame.center)
+                            } else if let rightLabelTextNode = strongSelf.rightLabelTextNode {
+                                strongSelf.rightLabelTextNode = nil
+                                rightLabelTextNode.removeFromSupernode()
+                            }
+                            
                             if let updatedSelectionNode = updatedSelectionNode {
                                 let hadSelectionNode = strongSelf.selectionNode != nil
                                 if strongSelf.selectionNode !== updatedSelectionNode {
@@ -1510,6 +1585,8 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                                 strongSelf.setRevealOptions((left: [], right: peerRevealOptions))
                                 strongSelf.setRevealOptionsOpened(item.editing.revealed, animated: animated)
                             }
+                            
+                            strongSelf.updateEnableGestures()
                         }
                     })
                 } else {
@@ -1524,63 +1601,15 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
         guard let actionButtonNodes = self.actionButtonNodes, let index = actionButtonNodes.firstIndex(of: sender), let item = self.item, index < item.additionalActions.count else {
             return
         }
-        item.additionalActions[index].action?(item.peer)
+        item.additionalActions[index].action?(item.peer, sender, nil)
     }
     
     override public func updateRevealOffset(offset: CGFloat, transition: ContainedViewLayoutTransition) {
         super.updateRevealOffset(offset: offset, transition: transition)
         
-        if let item = self.item, let params = self.layoutParams?.1 {
-            var leftInset: CGFloat = 65.0 + params.leftInset
-            
-            switch item.selection {
-                case .none:
-                    break
-                case .selectable:
-                    leftInset += 28.0
-            }
-            
-            var avatarFrame = self.avatarNode.frame
-            avatarFrame.origin.x = offset + leftInset - 50.0
-            transition.updateFrame(node: self.avatarNode, frame: avatarFrame)
-            
-            var titleFrame = self.titleNode.frame
-            titleFrame.origin.x = leftInset + offset
-            transition.updateFrame(node: self.titleNode, frame: titleFrame)
-            
-            var statusFrame = self.statusNode.frame
-            let previousStatusFrame = statusFrame
-            statusFrame.origin.x = leftInset + offset
-            if let statusIconImage = self.statusIconNode?.image {
-                statusFrame.origin.x += statusIconImage.size.width + 1.0
-            }
-            self.statusNode.frame = statusFrame
-            transition.animatePositionAdditive(node: self.statusNode, offset: CGPoint(x: previousStatusFrame.minX - statusFrame.minX, y: 0))
-            
-            var nextIconX = titleFrame.maxX
-            if let credibilityIconView = self.credibilityIconView {
-                var iconFrame = credibilityIconView.frame
-                iconFrame.origin.x = nextIconX + 4.0
-                nextIconX += 4.0 + iconFrame.width
-                transition.updateFrame(view: credibilityIconView, frame: iconFrame)
-            }
-            if let verifiedIconView = self.verifiedIconView {
-                var iconFrame = verifiedIconView.frame
-                iconFrame.origin.x = nextIconX + 4.0
-                nextIconX += 4.0 + iconFrame.width
-                transition.updateFrame(view: verifiedIconView, frame: iconFrame)
-            }
-            
-            if let badgeBackgroundNode = self.badgeBackgroundNode, let badgeTextNode = self.badgeTextNode {
-                var badgeBackgroundFrame = badgeBackgroundNode.frame
-                badgeBackgroundFrame.origin.x = offset + params.width - params.rightInset - badgeBackgroundFrame.width - 6.0
-                var badgeTextFrame = badgeTextNode.frame
-                badgeTextFrame.origin.x = badgeBackgroundFrame.midX - badgeTextFrame.width / 2.0
-                    
-                transition.updateFrame(node: badgeBackgroundNode, frame: badgeBackgroundFrame)
-                transition.updateFrame(node: badgeTextNode, frame: badgeTextFrame)
-            }
-        }
+        var offsetContainerBounds = self.offsetContainerNode.bounds
+        offsetContainerBounds.origin.x = -offset
+        transition.updateBounds(node: self.offsetContainerNode, bounds: offsetContainerBounds)
     }
     
     override public func revealOptionsInteractivelyOpened() {
@@ -1640,7 +1669,7 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
         accessoryItemNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -29.0), size: CGSize(width: bounds.size.width, height: 29.0))
     }
     
-    override public func animateInsertion(_ currentTimestamp: Double, duration: Double, short: Bool) {
+    override public func animateInsertion(_ currentTimestamp: Double, duration: Double, options: ListViewItemAnimationOptions) {
         self.layer.animateAlpha(from: 0.0, to: 1.0, duration: duration * 0.5)
     }
     

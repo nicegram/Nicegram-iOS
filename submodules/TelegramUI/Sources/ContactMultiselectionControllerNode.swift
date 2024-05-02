@@ -13,6 +13,7 @@ import AnimationCache
 import MultiAnimationRenderer
 import EditableTokenListNode
 import SolidRoundedButtonNode
+import ContextUI
 
 private struct SearchResultEntry: Identifiable {
     let index: Int
@@ -58,6 +59,7 @@ final class ContactMultiselectionControllerNode: ASDisplayNode {
     var requestDeactivateSearch: (() -> Void)?
     var requestOpenPeerFromSearch: ((ContactListPeerId) -> Void)?
     var openPeer: ((ContactListPeer) -> Void)?
+    var openPeerMore: ((ContactListPeer, ASDisplayNode?, ContextGesture?) -> Void)?
     var openDisabledPeer: ((EnginePeer, ChatListDisabledPeerReason) -> Void)?
     var removeSelectedPeer: ((ContactListPeerId) -> Void)?
     var removeSelectedCategory: ((Int) -> Void)?
@@ -80,7 +82,7 @@ final class ContactMultiselectionControllerNode: ASDisplayNode {
     private let onlyWriteable: Bool
     private let isGroupInvitation: Bool
     
-    init(navigationBar: NavigationBar?, context: AccountContext, presentationData: PresentationData, mode: ContactMultiselectionControllerMode, isPeerEnabled: ((EnginePeer) -> Bool)?, attemptDisabledItemSelection: ((EnginePeer, ChatListDisabledPeerReason) -> Void)?, options: [ContactListAdditionalOption], filters: [ContactListFilter], onlyWriteable: Bool, isGroupInvitation: Bool, limit: Int32?, reachedSelectionLimit: ((Int32) -> Void)?, present: @escaping (ViewController, Any?) -> Void) {
+    init(navigationBar: NavigationBar?, context: AccountContext, presentationData: PresentationData, mode: ContactMultiselectionControllerMode, isPeerEnabled: ((EnginePeer) -> Bool)?, attemptDisabledItemSelection: ((EnginePeer, ChatListDisabledPeerReason) -> Void)?, options: Signal<[ContactListAdditionalOption], NoError>, filters: [ContactListFilter], onlyWriteable: Bool, isGroupInvitation: Bool, limit: Int32?, reachedSelectionLimit: ((Int32) -> Void)?, present: @escaping (ViewController, Any?) -> Void) {
         self.navigationBar = navigationBar
         
         self.context = context
@@ -233,7 +235,13 @@ final class ContactMultiselectionControllerNode: ASDisplayNode {
             } else {
                 displayTopPeers = .none
             }
-            let contactListNode = ContactListNode(context: context, presentation: .single(.natural(options: options, includeChatList: includeChatList, topPeers: displayTopPeers)), filters: filters, onlyWriteable: onlyWriteable, isGroupInvitation: isGroupInvitation, selectionState: ContactListNodeGroupSelectionState())
+            
+            let presentation: Signal<ContactListPresentation, NoError> = options
+            |> map { options in
+                return .natural(options: options, includeChatList: includeChatList, topPeers: displayTopPeers)
+            }
+            
+            let contactListNode = ContactListNode(context: context, presentation: presentation, filters: filters, onlyWriteable: onlyWriteable, isGroupInvitation: isGroupInvitation, selectionState: ContactListNodeGroupSelectionState())
             self.contentNode = .contacts(contactListNode)
             
             if !selectedPeers.isEmpty {
@@ -262,8 +270,12 @@ final class ContactMultiselectionControllerNode: ASDisplayNode {
         
         switch self.contentNode {
         case let .contacts(contactsNode):
-            contactsNode.openPeer = { [weak self] peer, _ in
-                self?.openPeer?(peer)
+            contactsNode.openPeer = { [weak self] peer, action, sourceNode, gesture in
+                if case .more = action {
+                    self?.openPeerMore?(peer, sourceNode, gesture)
+                } else {
+                    self?.openPeer?(peer)
+                }
             }
             contactsNode.openDisabledPeer = { [weak self] peer, reason in
                 guard let self else {
@@ -362,7 +374,7 @@ final class ContactMultiselectionControllerNode: ASDisplayNode {
                                 globalSearch: globalSearch,
                                 displaySavedMessages: displaySavedMessages
                             ))), filters: filters, onlyWriteable: strongSelf.onlyWriteable, isGroupInvitation: strongSelf.isGroupInvitation, isPeerEnabled: strongSelf.isPeerEnabled, selectionState: selectionState, isSearch: true)
-                        searchResultsNode.openPeer = { peer, _ in
+                        searchResultsNode.openPeer = { peer, _, _, _ in
                             self?.tokenListNode.setText("")
                             self?.openPeer?(peer)
                         }
