@@ -1,32 +1,6 @@
-load("@rules_swift_package_manager//swiftpkg:defs.bzl", "local_swift_package", "swift_package")
+load("@rules_swift_package_manager//swiftpkg:defs.bzl", "swift_package")
 
 def swift_dependencies():
-    local_swift_package(
-        name = "swiftpkg_core_swift",
-        dependencies_index = "@//:swift_deps_index.json",
-        path = "../core-swift",
-    )
-    local_swift_package(
-        name = "swiftpkg_nicegram_assistant_ios",
-        dependencies_index = "@//:swift_deps_index.json",
-        path = "../nicegram-assistant-ios",
-    )
-    local_swift_package(
-        name = "swiftpkg_nicegram_wallet_ios",
-        dependencies_index = "@//:swift_deps_index.json",
-        path = "../nicegram-wallet-ios",
-    )
-    local_swift_package(
-        name = "swiftpkg_ton_swift",
-        dependencies_index = "@//:swift_deps_index.json",
-        path = "../ton-swift",
-    )
-    local_swift_package(
-        name = "swiftpkg_walletconnectswiftv2",
-        dependencies_index = "@//:swift_deps_index.json",
-        path = "../WalletConnectSwiftV2",
-    )
-
     # version: 0.6.7
     swift_package(
         name = "swiftpkg_anycodable",
@@ -49,6 +23,14 @@ def swift_dependencies():
         commit = "0ed110f7555c34ff468e72e1686e59721f2b0da6",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/attaswift/BigInt",
+    )
+
+    # branch: release/1.0.0
+    swift_package(
+        name = "swiftpkg_core_swift",
+        commit = "20b7275f60ad80634f056905d7f18292294cd510",
+        dependencies_index = "@//:swift_deps_index.json",
+        remote = "https://github.com/denis15yo/core-swift.git",
     )
 
     # version: 1.8.2
@@ -121,6 +103,22 @@ def swift_dependencies():
         commit = "66716ce9c31198931c2275a0b69de2fdaa687e74",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/denis15yo/navigation-stack-backport.git",
+    )
+
+    # branch: develop
+    swift_package(
+        name = "swiftpkg_nicegram_assistant_ios",
+        commit = "4bcb07d287c31234e337475b87efe2d3553bfa3a",
+        dependencies_index = "@//:swift_deps_index.json",
+        remote = "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
+    )
+
+    # branch: develop
+    swift_package(
+        name = "swiftpkg_nicegram_wallet_ios",
+        commit = "241a210ee1b5cb9cb95d9245a4ed384973ee2ef2",
+        dependencies_index = "@//:swift_deps_index.json",
+        remote = "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
     )
 
     # version: 14.3.1
@@ -275,6 +273,14 @@ def swift_dependencies():
         remote = "https://github.com/tonkeeper/ton-api-swift",
     )
 
+    # branch: main
+    swift_package(
+        name = "swiftpkg_ton_swift",
+        commit = "e4c3def222afc125f7ee83c1569004e31f0cd05c",
+        dependencies_index = "@//:swift_deps_index.json",
+        remote = "https://github.com/denis15yo/ton-swift.git",
+    )
+
     # version: 8.0.1
     swift_package(
         name = "swiftpkg_torus_utils_swift",
@@ -297,6 +303,14 @@ def swift_dependencies():
         commit = "94116a24445c2052edbc7203baf68296c68ce8f4",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/trustwallet/wallet-core.git",
+    )
+
+    # branch: develop
+    swift_package(
+        name = "swiftpkg_walletconnectswiftv2",
+        commit = "1eacd732e321c9511859d7e73303d61d82af4d46",
+        dependencies_index = "@//:swift_deps_index.json",
+        remote = "https://github.com/denis15yo/WalletConnectSwiftV2.git",
     )
 
     # version: 2.9.0
