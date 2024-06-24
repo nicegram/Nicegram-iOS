@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
@@ -47,6 +47,7 @@ swift_library(
         "//submodules/rlottie:RLottieBinding",
         "//submodules/lottie-ios:Lottie",
         "//submodules/TelegramUI/Components/Utils/GenerateStickerPlaceholderImage",
+        "//submodules/TelegramUIPreferences",
     ],
     visibility = [
         "//visibility:public",

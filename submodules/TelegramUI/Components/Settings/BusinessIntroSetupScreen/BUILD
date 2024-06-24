@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/AsyncDisplayKit",
@@ -41,6 +41,7 @@ swift_library(
         "//submodules/TelegramUI/Components/PeerAllowedReactionsScreen",
         "//submodules/TelegramUI/Components/EmojiActionIconComponent",
         "//submodules/TelegramUI/Components/TextFieldComponent",
+        "//submodules/TelegramUI/Components/CameraScreen",
     ],
     visibility = [
         "//visibility:public",

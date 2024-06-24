@@ -67,6 +67,9 @@ public struct NGSettings {
     @NGStorage(key: "showNicegramTab", defaultValue: true)
     public static var showNicegramTab: Bool
     
+    @NGStorage(key: "showNicegramButtonInChat", defaultValue: true)
+    public static var showNicegramButtonInChat: Bool
+    
     @NGStorage(key: "sendWithEnter", defaultValue: false)
     public static var sendWithEnter: Bool
     

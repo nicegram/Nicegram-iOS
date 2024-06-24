@@ -271,6 +271,18 @@ private final class PeerInfoScreenLabeledValueItemNode: PeerInfoScreenItemNode {
             }
         }
         
+        self.containerNode.shouldBegin = { [weak self] point in
+            guard let self else {
+                return false
+            }
+            
+            if self.linkItemAtPoint(point) != nil {
+                return false
+            }
+            
+            return true
+        }
+        
         self.containerNode.activated = { [weak self] gesture, _ in
             guard let strongSelf = self, let item = strongSelf.item, let contextAction = item.contextAction else {
                 gesture.cancel()

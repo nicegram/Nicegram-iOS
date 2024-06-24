@@ -4,6 +4,133 @@
   ],
   "modules": [
     {
+      "name": "AnyCodable",
+      "c99name": "AnyCodable",
+      "src_type": "swift",
+      "label": "@swiftpkg_anycodable//:AnyCodable.rspm",
+      "package_identity": "anycodable",
+      "product_memberships": [
+        "AnyCodable"
+      ]
+    },
+    {
+      "name": "BigDecimal",
+      "c99name": "BigDecimal",
+      "src_type": "swift",
+      "label": "@swiftpkg_bigdecimal//:BigDecimal.rspm",
+      "package_identity": "bigdecimal",
+      "product_memberships": [
+        "BigDecimal"
+      ]
+    },
+    {
+      "name": "BigInt",
+      "c99name": "BigInt",
+      "src_type": "swift",
+      "label": "@swiftpkg_bigint//:BigInt.rspm",
+      "package_identity": "bigint",
+      "product_memberships": [
+        "BigInt"
+      ]
+    },
+    {
+      "name": "TonConnectAPI",
+      "c99name": "TonConnectAPI",
+      "src_type": "swift",
+      "label": "@swiftpkg_core_swift//:TonConnectAPI.rspm",
+      "package_identity": "core-swift",
+      "product_memberships": [
+        "TonKeeperWalletCore",
+        "WalletCoreKeeper"
+      ]
+    },
+    {
+      "name": "TonKeeperWalletCore",
+      "c99name": "TonKeeperWalletCore",
+      "src_type": "swift",
+      "label": "@swiftpkg_core_swift//:TonKeeperWalletCore.rspm",
+      "package_identity": "core-swift",
+      "product_memberships": [
+        "TonKeeperWalletCore"
+      ]
+    },
+    {
+      "name": "WalletCoreCore",
+      "c99name": "WalletCoreCore",
+      "src_type": "swift",
+      "label": "@swiftpkg_core_swift//:WalletCoreCore.rspm",
+      "package_identity": "core-swift",
+      "product_memberships": [
+        "TonKeeperWalletCore",
+        "WalletCoreCore",
+        "WalletCoreKeeper"
+      ]
+    },
+    {
+      "name": "WalletCoreKeeper",
+      "c99name": "WalletCoreKeeper",
+      "src_type": "swift",
+      "label": "@swiftpkg_core_swift//:WalletCoreKeeper.rspm",
+      "package_identity": "core-swift",
+      "product_memberships": [
+        "TonKeeperWalletCore",
+        "WalletCoreKeeper"
+      ]
+    },
+    {
+      "name": "CryptoSwift",
+      "c99name": "CryptoSwift",
+      "src_type": "swift",
+      "label": "@swiftpkg_cryptoswift//:CryptoSwift.rspm",
+      "package_identity": "cryptoswift",
+      "product_memberships": [
+        "CryptoSwift"
+      ]
+    },
+    {
+      "name": "curveSecp256k1",
+      "c99name": "curveSecp256k1",
+      "src_type": "swift",
+      "label": "@swiftpkg_curvelib.swift//:curveSecp256k1.rspm",
+      "package_identity": "curvelib.swift",
+      "product_memberships": [
+        "curveSecp256k1",
+        "encryption_aes_cbc_sha512"
+      ]
+    },
+    {
+      "name": "curve_secp256k1",
+      "c99name": "curve_secp256k1",
+      "src_type": "binary",
+      "label": "@swiftpkg_curvelib.swift//:curve_secp256k1.rspm",
+      "package_identity": "curvelib.swift",
+      "product_memberships": [
+        "curveSecp256k1",
+        "encryption_aes_cbc_sha512"
+      ]
+    },
+    {
+      "name": "curvelib",
+      "c99name": "curvelib",
+      "src_type": "clang",
+      "label": "@swiftpkg_curvelib.swift//:curvelib.rspm",
+      "package_identity": "curvelib.swift",
+      "product_memberships": [
+        "curveSecp256k1",
+        "encryption_aes_cbc_sha512"
+      ]
+    },
+    {
+      "name": "encryption_aes_cbc_sha512",
+      "c99name": "encryption_aes_cbc_sha512",
+      "src_type": "swift",
+      "label": "@swiftpkg_curvelib.swift//:encryption_aes_cbc_sha512.rspm",
+      "package_identity": "curvelib.swift",
+      "product_memberships": [
+        "encryption_aes_cbc_sha512"
+      ]
+    },
+    {
       "name": "Factory",
       "c99name": "Factory",
       "src_type": "swift",
@@ -11,6 +138,38 @@
       "package_identity": "factory",
       "product_memberships": [
         "Factory"
+      ]
+    },
+    {
+      "name": "CommonSources",
+      "c99name": "CommonSources",
+      "src_type": "swift",
+      "label": "@swiftpkg_fetch_node_details_swift//:CommonSources.rspm",
+      "package_identity": "fetch-node-details-swift",
+      "product_memberships": [
+        "FetchNodeDetails",
+        "FndBase"
+      ]
+    },
+    {
+      "name": "FetchNodeDetails",
+      "c99name": "FetchNodeDetails",
+      "src_type": "swift",
+      "label": "@swiftpkg_fetch_node_details_swift//:FetchNodeDetails.rspm",
+      "package_identity": "fetch-node-details-swift",
+      "product_memberships": [
+        "FetchNodeDetails"
+      ]
+    },
+    {
+      "name": "FndBase",
+      "c99name": "FndBase",
+      "src_type": "swift",
+      "label": "@swiftpkg_fetch_node_details_swift//:FndBase.rspm",
+      "package_identity": "fetch-node-details-swift",
+      "product_memberships": [
+        "FetchNodeDetails",
+        "FndBase"
       ]
     },
     {
@@ -34,6 +193,16 @@
       "product_memberships": [
         "GRDB",
         "GRDB-dynamic"
+      ]
+    },
+    {
+      "name": "KeychainSwift",
+      "c99name": "KeychainSwift",
+      "src_type": "swift",
+      "label": "@swiftpkg_keychain_swift//:KeychainSwift.rspm",
+      "package_identity": "keychain-swift",
+      "product_memberships": [
+        "KeychainSwift"
       ]
     },
     {
@@ -68,6 +237,7 @@
         "FeatChatBanner",
         "FeatImagesHubUI",
         "FeatNicegramHub",
+        "FeatOnboarding",
         "FeatPhoneEntryBanner",
         "FeatPremiumUI",
         "NGAssistantUI",
@@ -116,8 +286,10 @@
         "FeatCardUI",
         "FeatImagesHubUI",
         "FeatNicegramHub",
+        "FeatOnboarding",
         "FeatPremiumUI",
         "FeatSpeechToText",
+        "FeatTgChatButton",
         "NGAiChatUI",
         "NGAssistantUI",
         "NGAuth",
@@ -135,7 +307,9 @@
         "FeatCardUI",
         "FeatImagesHubUI",
         "FeatNicegramHub",
+        "FeatOnboarding",
         "FeatPremiumUI",
+        "FeatTgChatButton",
         "NGAiChatUI",
         "NGAssistantUI",
         "NGAuth",
@@ -235,6 +409,16 @@
       ]
     },
     {
+      "name": "FeatOnboarding",
+      "c99name": "FeatOnboarding",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatOnboarding.rspm",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "FeatOnboarding"
+      ]
+    },
+    {
       "name": "FeatPersistentStorage",
       "c99name": "FeatPersistentStorage",
       "src_type": "swift",
@@ -245,7 +429,9 @@
         "FeatCardUI",
         "FeatImagesHubUI",
         "FeatNicegramHub",
+        "FeatOnboarding",
         "FeatPremiumUI",
+        "FeatTgChatButton",
         "NGAiChat",
         "NGAiChatUI",
         "NGAssistantUI",
@@ -285,11 +471,13 @@
         "FeatChatBanner",
         "FeatImagesHubUI",
         "FeatNicegramHub",
+        "FeatOnboarding",
         "FeatPinnedChats",
         "FeatPremium",
         "FeatPremiumUI",
         "FeatSpeechToText",
         "FeatTasks",
+        "FeatTgChatButton",
         "NGAiChat",
         "NGAiChatUI",
         "NGAnalytics",
@@ -309,6 +497,7 @@
       "product_memberships": [
         "FeatAvatarGeneratorUI",
         "FeatImagesHubUI",
+        "FeatOnboarding",
         "FeatPremiumUI",
         "NGAssistantUI",
         "NGEntryPoint"
@@ -325,8 +514,10 @@
         "FeatCardUI",
         "FeatImagesHubUI",
         "FeatNicegramHub",
+        "FeatOnboarding",
         "FeatPremiumUI",
         "FeatTasks",
+        "FeatTgChatButton",
         "NGAiChatUI",
         "NGAssistantUI",
         "NGAuth",
@@ -376,6 +567,31 @@
       ]
     },
     {
+      "name": "FeatTgChatButton",
+      "c99name": "FeatTgChatButton",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatTgChatButton.rspm",
+      "modulemap_label": "@swiftpkg_nicegram_assistant_ios//:FeatTgChatButton.rspm_modulemap",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "FeatTgChatButton"
+      ]
+    },
+    {
+      "name": "FeatWallet",
+      "c99name": "FeatWallet",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatWallet.rspm",
+      "package_identity": "nicegram-assistant-ios",
+      "product_memberships": [
+        "FeatAvatarGeneratorUI",
+        "FeatImagesHubUI",
+        "FeatTgChatButton",
+        "NGAiChatUI",
+        "NGAssistantUI"
+      ]
+    },
+    {
       "name": "NGAiChat",
       "c99name": "NGAiChat",
       "src_type": "swift",
@@ -386,7 +602,9 @@
         "FeatCardUI",
         "FeatImagesHubUI",
         "FeatNicegramHub",
+        "FeatOnboarding",
         "FeatPremiumUI",
+        "FeatTgChatButton",
         "NGAiChat",
         "NGAiChatUI",
         "NGAssistantUI",
@@ -403,6 +621,7 @@
       "product_memberships": [
         "FeatAvatarGeneratorUI",
         "FeatImagesHubUI",
+        "FeatTgChatButton",
         "NGAiChatUI",
         "NGAssistantUI"
       ]
@@ -419,9 +638,11 @@
         "FeatChatBanner",
         "FeatImagesHubUI",
         "FeatNicegramHub",
+        "FeatOnboarding",
         "FeatPinnedChats",
         "FeatPremiumUI",
         "FeatTasks",
+        "FeatTgChatButton",
         "NGAiChat",
         "NGAiChatUI",
         "NGAnalytics",
@@ -443,10 +664,12 @@
         "FeatChatBanner",
         "FeatImagesHubUI",
         "FeatNicegramHub",
+        "FeatOnboarding",
         "FeatPinnedChats",
         "FeatPremiumUI",
         "FeatSpeechToText",
         "FeatTasks",
+        "FeatTgChatButton",
         "NGAiChat",
         "NGAiChatUI",
         "NGAnalytics",
@@ -467,6 +690,7 @@
       "product_memberships": [
         "FeatAvatarGeneratorUI",
         "FeatImagesHubUI",
+        "FeatTgChatButton",
         "NGAiChatUI",
         "NGAssistantUI",
         "NGEntryPoint"
@@ -494,7 +718,9 @@
         "FeatCardUI",
         "FeatImagesHubUI",
         "FeatNicegramHub",
+        "FeatOnboarding",
         "FeatPremiumUI",
+        "FeatTgChatButton",
         "NGAiChatUI",
         "NGAssistantUI",
         "NGAuth",
@@ -514,12 +740,14 @@
         "FeatHiddenChats",
         "FeatImagesHubUI",
         "FeatNicegramHub",
+        "FeatOnboarding",
         "FeatPhoneEntryBanner",
         "FeatPinnedChats",
         "FeatPremium",
         "FeatPremiumUI",
         "FeatSpeechToText",
         "FeatTasks",
+        "FeatTgChatButton",
         "NGAiChat",
         "NGAiChatUI",
         "NGAnalytics",
@@ -548,9 +776,11 @@
         "FeatChatBanner",
         "FeatImagesHubUI",
         "FeatNicegramHub",
+        "FeatOnboarding",
         "FeatPhoneEntryBanner",
         "FeatPinnedChats",
         "FeatPremiumUI",
+        "FeatTgChatButton",
         "NGAiChatUI",
         "NGAssistantUI",
         "NGCoreUI",
@@ -592,12 +822,14 @@
         "FeatHiddenChats",
         "FeatImagesHubUI",
         "FeatNicegramHub",
+        "FeatOnboarding",
         "FeatPhoneEntryBanner",
         "FeatPinnedChats",
         "FeatPremium",
         "FeatPremiumUI",
         "FeatSpeechToText",
         "FeatTasks",
+        "FeatTgChatButton",
         "NGAiChat",
         "NGAiChatUI",
         "NGAnalytics",
@@ -625,7 +857,9 @@
         "FeatCardUI",
         "FeatImagesHubUI",
         "FeatNicegramHub",
+        "FeatOnboarding",
         "FeatPremiumUI",
+        "FeatTgChatButton",
         "NGAiChatUI",
         "NGAssistantUI",
         "NGAuth",
@@ -645,10 +879,12 @@
         "FeatChatBanner",
         "FeatImagesHubUI",
         "FeatNicegramHub",
+        "FeatOnboarding",
         "FeatPinnedChats",
         "FeatPremiumUI",
         "FeatSpeechToText",
         "FeatTasks",
+        "FeatTgChatButton",
         "NGAiChat",
         "NGAiChatUI",
         "NGAnalytics",
@@ -682,8 +918,10 @@
         "FeatCardUI",
         "FeatImagesHubUI",
         "FeatNicegramHub",
+        "FeatOnboarding",
         "FeatPremiumUI",
         "FeatTasks",
+        "FeatTgChatButton",
         "NGAiChatUI",
         "NGAssistantUI",
         "NGAuth",
@@ -702,10 +940,12 @@
         "FeatChatBanner",
         "FeatImagesHubUI",
         "FeatNicegramHub",
+        "FeatOnboarding",
         "FeatPinnedChats",
         "FeatPremiumUI",
         "FeatSpeechToText",
         "FeatTasks",
+        "FeatTgChatButton",
         "NGAiChat",
         "NGAiChatUI",
         "NGAssistantUI",
@@ -713,6 +953,30 @@
         "NGEntryPoint",
         "_NGRemoteConfig",
         "NGSpecialOffer"
+      ]
+    },
+    {
+      "name": "NicegramWallet",
+      "c99name": "NicegramWallet",
+      "src_type": "swift",
+      "label": "@swiftpkg_nicegram_wallet_ios//:NicegramWallet.rspm",
+      "modulemap_label": "@swiftpkg_nicegram_wallet_ios//:NicegramWallet.rspm_modulemap",
+      "package_identity": "nicegram-wallet-ios",
+      "product_memberships": [
+        "NicegramWallet"
+      ]
+    },
+    {
+      "name": "QRCode",
+      "c99name": "QRCode",
+      "src_type": "swift",
+      "label": "@swiftpkg_qrcode//:QRCode.rspm",
+      "modulemap_label": "@swiftpkg_qrcode//:QRCode.rspm_modulemap",
+      "package_identity": "qrcode",
+      "product_memberships": [
+        "QRCode",
+        "QRCodeStatic",
+        "QRCodeDynamic"
       ]
     },
     {
@@ -835,6 +1099,26 @@
       ]
     },
     {
+      "name": "SessionManager",
+      "c99name": "SessionManager",
+      "src_type": "swift",
+      "label": "@swiftpkg_session_manager_swift//:SessionManager.rspm",
+      "package_identity": "session-manager-swift",
+      "product_memberships": [
+        "SessionManager"
+      ]
+    },
+    {
+      "name": "SingleFactorAuth",
+      "c99name": "SingleFactorAuth",
+      "src_type": "swift",
+      "label": "@swiftpkg_single_factor_auth_swift//:SingleFactorAuth.rspm",
+      "package_identity": "single-factor-auth-swift",
+      "product_memberships": [
+        "SingleFactorAuth"
+      ]
+    },
+    {
       "name": "SnapKit",
       "c99name": "SnapKit",
       "src_type": "swift",
@@ -843,6 +1127,16 @@
       "product_memberships": [
         "SnapKit",
         "SnapKit-Dynamic"
+      ]
+    },
+    {
+      "name": "Starscream",
+      "c99name": "Starscream",
+      "src_type": "swift",
+      "label": "@swiftpkg_starscream//:Starscream.rspm",
+      "package_identity": "starscream",
+      "product_memberships": [
+        "Starscream"
       ]
     },
     {
@@ -898,6 +1192,204 @@
       ]
     },
     {
+      "name": "BitCollections",
+      "c99name": "BitCollections",
+      "src_type": "swift",
+      "label": "@swiftpkg_swift_collections//:BitCollections.rspm",
+      "package_identity": "swift-collections",
+      "product_memberships": [
+        "BitCollections",
+        "Collections"
+      ]
+    },
+    {
+      "name": "Collections",
+      "c99name": "Collections",
+      "src_type": "swift",
+      "label": "@swiftpkg_swift_collections//:Collections.rspm",
+      "package_identity": "swift-collections",
+      "product_memberships": [
+        "Collections"
+      ]
+    },
+    {
+      "name": "DequeModule",
+      "c99name": "DequeModule",
+      "src_type": "swift",
+      "label": "@swiftpkg_swift_collections//:DequeModule.rspm",
+      "package_identity": "swift-collections",
+      "product_memberships": [
+        "DequeModule",
+        "Collections"
+      ]
+    },
+    {
+      "name": "HashTreeCollections",
+      "c99name": "HashTreeCollections",
+      "src_type": "swift",
+      "label": "@swiftpkg_swift_collections//:HashTreeCollections.rspm",
+      "package_identity": "swift-collections",
+      "product_memberships": [
+        "HashTreeCollections",
+        "Collections"
+      ]
+    },
+    {
+      "name": "HeapModule",
+      "c99name": "HeapModule",
+      "src_type": "swift",
+      "label": "@swiftpkg_swift_collections//:HeapModule.rspm",
+      "package_identity": "swift-collections",
+      "product_memberships": [
+        "HeapModule",
+        "Collections"
+      ]
+    },
+    {
+      "name": "InternalCollectionsUtilities",
+      "c99name": "InternalCollectionsUtilities",
+      "src_type": "swift",
+      "label": "@swiftpkg_swift_collections//:InternalCollectionsUtilities.rspm",
+      "package_identity": "swift-collections",
+      "product_memberships": [
+        "BitCollections",
+        "DequeModule",
+        "HashTreeCollections",
+        "HeapModule",
+        "OrderedCollections",
+        "_RopeModule",
+        "Collections"
+      ]
+    },
+    {
+      "name": "OrderedCollections",
+      "c99name": "OrderedCollections",
+      "src_type": "swift",
+      "label": "@swiftpkg_swift_collections//:OrderedCollections.rspm",
+      "package_identity": "swift-collections",
+      "product_memberships": [
+        "OrderedCollections",
+        "Collections"
+      ]
+    },
+    {
+      "name": "_RopeModule",
+      "c99name": "_RopeModule",
+      "src_type": "swift",
+      "label": "@swiftpkg_swift_collections//:_RopeModule.rspm",
+      "package_identity": "swift-collections",
+      "product_memberships": [
+        "_RopeModule",
+        "Collections"
+      ]
+    },
+    {
+      "name": "HTTPTypes",
+      "c99name": "HTTPTypes",
+      "src_type": "swift",
+      "label": "@swiftpkg_swift_http_types//:HTTPTypes.rspm",
+      "package_identity": "swift-http-types",
+      "product_memberships": [
+        "HTTPTypes",
+        "HTTPTypesFoundation"
+      ]
+    },
+    {
+      "name": "HTTPTypesFoundation",
+      "c99name": "HTTPTypesFoundation",
+      "src_type": "swift",
+      "label": "@swiftpkg_swift_http_types//:HTTPTypesFoundation.rspm",
+      "package_identity": "swift-http-types",
+      "product_memberships": [
+        "HTTPTypesFoundation"
+      ]
+    },
+    {
+      "name": "ComplexModule",
+      "c99name": "ComplexModule",
+      "src_type": "swift",
+      "label": "@swiftpkg_swift_numerics//:ComplexModule.rspm",
+      "package_identity": "swift-numerics",
+      "product_memberships": [
+        "ComplexModule",
+        "Numerics"
+      ]
+    },
+    {
+      "name": "Numerics",
+      "c99name": "Numerics",
+      "src_type": "swift",
+      "label": "@swiftpkg_swift_numerics//:Numerics.rspm",
+      "package_identity": "swift-numerics",
+      "product_memberships": [
+        "Numerics"
+      ]
+    },
+    {
+      "name": "RealModule",
+      "c99name": "RealModule",
+      "src_type": "swift",
+      "label": "@swiftpkg_swift_numerics//:RealModule.rspm",
+      "package_identity": "swift-numerics",
+      "product_memberships": [
+        "ComplexModule",
+        "Numerics",
+        "RealModule"
+      ]
+    },
+    {
+      "name": "_NumericsShims",
+      "c99name": "_NumericsShims",
+      "src_type": "clang",
+      "label": "@swiftpkg_swift_numerics//:_NumericsShims.rspm",
+      "package_identity": "swift-numerics",
+      "product_memberships": [
+        "ComplexModule",
+        "Numerics",
+        "RealModule"
+      ]
+    },
+    {
+      "name": "OpenAPIRuntime",
+      "c99name": "OpenAPIRuntime",
+      "src_type": "swift",
+      "label": "@swiftpkg_swift_openapi_runtime//:OpenAPIRuntime.rspm",
+      "package_identity": "swift-openapi-runtime",
+      "product_memberships": [
+        "OpenAPIRuntime"
+      ]
+    },
+    {
+      "name": "OpenAPIURLSession",
+      "c99name": "OpenAPIURLSession",
+      "src_type": "swift",
+      "label": "@swiftpkg_swift_openapi_urlsession//:OpenAPIURLSession.rspm",
+      "package_identity": "swift-openapi-urlsession",
+      "product_memberships": [
+        "OpenAPIURLSession"
+      ]
+    },
+    {
+      "name": "QRCodeGenerator",
+      "c99name": "QRCodeGenerator",
+      "src_type": "swift",
+      "label": "@swiftpkg_swift_qrcode_generator//:QRCodeGenerator.rspm",
+      "package_identity": "swift-qrcode-generator",
+      "product_memberships": [
+        "QRCodeGenerator"
+      ]
+    },
+    {
+      "name": "SwiftImageReadWrite",
+      "c99name": "SwiftImageReadWrite",
+      "src_type": "swift",
+      "label": "@swiftpkg_swiftimagereadwrite//:SwiftImageReadWrite.rspm",
+      "package_identity": "swiftimagereadwrite",
+      "product_memberships": [
+        "SwiftImageReadWrite"
+      ]
+    },
+    {
       "name": "SwiftyStoreKit",
       "c99name": "SwiftyStoreKit",
       "src_type": "swift",
@@ -905,6 +1397,437 @@
       "package_identity": "swiftystorekit",
       "product_memberships": [
         "SwiftyStoreKit"
+      ]
+    },
+    {
+      "name": "lib",
+      "c99name": "lib",
+      "src_type": "clang",
+      "label": "@swiftpkg_tkey_ios//:lib.rspm",
+      "package_identity": "tkey-ios",
+      "product_memberships": [
+        "tkey-swift"
+      ]
+    },
+    {
+      "name": "libtkey",
+      "c99name": "libtkey",
+      "src_type": "binary",
+      "label": "@swiftpkg_tkey_ios//:libtkey.rspm",
+      "package_identity": "tkey-ios",
+      "product_memberships": [
+        "tkey-swift"
+      ]
+    },
+    {
+      "name": "tkey-swift",
+      "c99name": "tkey_swift",
+      "src_type": "swift",
+      "label": "@swiftpkg_tkey_ios//:tkey-swift.rspm",
+      "package_identity": "tkey-ios",
+      "product_memberships": [
+        "tkey-swift"
+      ]
+    },
+    {
+      "name": "EventSource",
+      "c99name": "EventSource",
+      "src_type": "swift",
+      "label": "@swiftpkg_ton_api_swift//:EventSource.rspm",
+      "package_identity": "ton-api-swift",
+      "product_memberships": [
+        "EventSource"
+      ]
+    },
+    {
+      "name": "StreamURLSessionTransport",
+      "c99name": "StreamURLSessionTransport",
+      "src_type": "swift",
+      "label": "@swiftpkg_ton_api_swift//:StreamURLSessionTransport.rspm",
+      "package_identity": "ton-api-swift",
+      "product_memberships": [
+        "StreamURLSessionTransport"
+      ]
+    },
+    {
+      "name": "TonAPI",
+      "c99name": "TonAPI",
+      "src_type": "swift",
+      "label": "@swiftpkg_ton_api_swift//:TonAPI.rspm",
+      "package_identity": "ton-api-swift",
+      "product_memberships": [
+        "TonAPI"
+      ]
+    },
+    {
+      "name": "TonStreamingAPI",
+      "c99name": "TonStreamingAPI",
+      "src_type": "swift",
+      "label": "@swiftpkg_ton_api_swift//:TonStreamingAPI.rspm",
+      "package_identity": "ton-api-swift",
+      "product_memberships": [
+        "TonStreamingAPI"
+      ]
+    },
+    {
+      "name": "TonSwift",
+      "c99name": "TonSwift",
+      "src_type": "swift",
+      "label": "@swiftpkg_ton_swift//:TonSwift.rspm",
+      "package_identity": "ton-swift",
+      "product_memberships": [
+        "TonSwift"
+      ]
+    },
+    {
+      "name": "TorusUtils",
+      "c99name": "TorusUtils",
+      "src_type": "swift",
+      "label": "@swiftpkg_torus_utils_swift//:TorusUtils.rspm",
+      "package_identity": "torus-utils-swift",
+      "product_memberships": [
+        "TorusUtils"
+      ]
+    },
+    {
+      "name": "CTweetNacl",
+      "c99name": "CTweetNacl",
+      "src_type": "clang",
+      "label": "@swiftpkg_tweetnacl_swiftwrap//:CTweetNacl.rspm",
+      "package_identity": "tweetnacl-swiftwrap",
+      "product_memberships": [
+        "TweetNacl"
+      ]
+    },
+    {
+      "name": "TweetNacl",
+      "c99name": "TweetNacl",
+      "src_type": "swift",
+      "label": "@swiftpkg_tweetnacl_swiftwrap//:TweetNacl.rspm",
+      "package_identity": "tweetnacl-swiftwrap",
+      "product_memberships": [
+        "TweetNacl"
+      ]
+    },
+    {
+      "name": "SwiftProtobuf",
+      "c99name": "SwiftProtobuf",
+      "src_type": "binary",
+      "label": "@swiftpkg_wallet_core//:SwiftProtobuf.rspm",
+      "package_identity": "wallet-core",
+      "product_memberships": [
+        "SwiftProtobuf"
+      ]
+    },
+    {
+      "name": "WalletCore",
+      "c99name": "WalletCore",
+      "src_type": "binary",
+      "label": "@swiftpkg_wallet_core//:WalletCore.rspm",
+      "package_identity": "wallet-core",
+      "product_memberships": [
+        "WalletCore"
+      ]
+    },
+    {
+      "name": "Auth",
+      "c99name": "Auth",
+      "src_type": "swift",
+      "label": "@swiftpkg_walletconnectswiftv2//:Auth.rspm",
+      "package_identity": "walletconnectswiftv2",
+      "product_memberships": [
+        "WalletConnectAuth"
+      ]
+    },
+    {
+      "name": "Commons",
+      "c99name": "Commons",
+      "src_type": "swift",
+      "label": "@swiftpkg_walletconnectswiftv2//:Commons.rspm",
+      "package_identity": "walletconnectswiftv2",
+      "product_memberships": [
+        "WalletConnect",
+        "WalletConnectAuth",
+        "Web3Wallet",
+        "WalletConnectPairing",
+        "WalletConnectNotify",
+        "WalletConnectPush",
+        "WalletConnectNetworking",
+        "WalletConnectVerify",
+        "WalletConnectModal",
+        "WalletConnectIdentity"
+      ]
+    },
+    {
+      "name": "Database",
+      "c99name": "Database",
+      "src_type": "swift",
+      "label": "@swiftpkg_walletconnectswiftv2//:Database.rspm",
+      "package_identity": "walletconnectswiftv2",
+      "product_memberships": [
+        "WalletConnectNotify"
+      ]
+    },
+    {
+      "name": "HTTPClient",
+      "c99name": "HTTPClient",
+      "src_type": "swift",
+      "label": "@swiftpkg_walletconnectswiftv2//:HTTPClient.rspm",
+      "package_identity": "walletconnectswiftv2",
+      "product_memberships": [
+        "WalletConnect",
+        "WalletConnectAuth",
+        "Web3Wallet",
+        "WalletConnectPairing",
+        "WalletConnectNotify",
+        "WalletConnectPush",
+        "WalletConnectNetworking",
+        "WalletConnectVerify",
+        "WalletConnectModal",
+        "WalletConnectIdentity"
+      ]
+    },
+    {
+      "name": "JSONRPC",
+      "c99name": "JSONRPC",
+      "src_type": "swift",
+      "label": "@swiftpkg_walletconnectswiftv2//:JSONRPC.rspm",
+      "package_identity": "walletconnectswiftv2",
+      "product_memberships": [
+        "WalletConnect",
+        "WalletConnectAuth",
+        "Web3Wallet",
+        "WalletConnectPairing",
+        "WalletConnectNotify",
+        "WalletConnectPush",
+        "WalletConnectNetworking",
+        "WalletConnectVerify",
+        "WalletConnectModal",
+        "WalletConnectIdentity"
+      ]
+    },
+    {
+      "name": "WalletConnectIdentity",
+      "c99name": "WalletConnectIdentity",
+      "src_type": "swift",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnectIdentity.rspm",
+      "package_identity": "walletconnectswiftv2",
+      "product_memberships": [
+        "WalletConnectNotify",
+        "WalletConnectIdentity"
+      ]
+    },
+    {
+      "name": "WalletConnectJWT",
+      "c99name": "WalletConnectJWT",
+      "src_type": "swift",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnectJWT.rspm",
+      "package_identity": "walletconnectswiftv2",
+      "product_memberships": [
+        "WalletConnect",
+        "WalletConnectAuth",
+        "Web3Wallet",
+        "WalletConnectPairing",
+        "WalletConnectNotify",
+        "WalletConnectPush",
+        "WalletConnectNetworking",
+        "WalletConnectVerify",
+        "WalletConnectModal",
+        "WalletConnectIdentity"
+      ]
+    },
+    {
+      "name": "WalletConnectKMS",
+      "c99name": "WalletConnectKMS",
+      "src_type": "swift",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnectKMS.rspm",
+      "package_identity": "walletconnectswiftv2",
+      "product_memberships": [
+        "WalletConnect",
+        "WalletConnectAuth",
+        "Web3Wallet",
+        "WalletConnectPairing",
+        "WalletConnectNotify",
+        "WalletConnectPush",
+        "WalletConnectNetworking",
+        "WalletConnectVerify",
+        "WalletConnectModal",
+        "WalletConnectIdentity"
+      ]
+    },
+    {
+      "name": "WalletConnectModal",
+      "c99name": "WalletConnectModal",
+      "src_type": "swift",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnectModal.rspm",
+      "package_identity": "walletconnectswiftv2",
+      "product_memberships": [
+        "WalletConnectModal"
+      ]
+    },
+    {
+      "name": "WalletConnectNetworking",
+      "c99name": "WalletConnectNetworking",
+      "src_type": "swift",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnectNetworking.rspm",
+      "package_identity": "walletconnectswiftv2",
+      "product_memberships": [
+        "WalletConnect",
+        "WalletConnectAuth",
+        "Web3Wallet",
+        "WalletConnectPairing",
+        "WalletConnectNotify",
+        "WalletConnectPush",
+        "WalletConnectNetworking",
+        "WalletConnectVerify",
+        "WalletConnectModal",
+        "WalletConnectIdentity"
+      ]
+    },
+    {
+      "name": "WalletConnectNotify",
+      "c99name": "WalletConnectNotify",
+      "src_type": "swift",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnectNotify.rspm",
+      "package_identity": "walletconnectswiftv2",
+      "product_memberships": [
+        "WalletConnectNotify"
+      ]
+    },
+    {
+      "name": "WalletConnectPairing",
+      "c99name": "WalletConnectPairing",
+      "src_type": "swift",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnectPairing.rspm",
+      "package_identity": "walletconnectswiftv2",
+      "product_memberships": [
+        "WalletConnect",
+        "WalletConnectAuth",
+        "Web3Wallet",
+        "WalletConnectPairing",
+        "WalletConnectNotify",
+        "WalletConnectModal"
+      ]
+    },
+    {
+      "name": "WalletConnectPush",
+      "c99name": "WalletConnectPush",
+      "src_type": "swift",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnectPush.rspm",
+      "package_identity": "walletconnectswiftv2",
+      "product_memberships": [
+        "Web3Wallet",
+        "WalletConnectNotify",
+        "WalletConnectPush"
+      ]
+    },
+    {
+      "name": "WalletConnectRelay",
+      "c99name": "WalletConnectRelay",
+      "src_type": "swift",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnectRelay.rspm",
+      "modulemap_label": "@swiftpkg_walletconnectswiftv2//:WalletConnectRelay.rspm_modulemap",
+      "package_identity": "walletconnectswiftv2",
+      "product_memberships": [
+        "WalletConnect",
+        "WalletConnectAuth",
+        "Web3Wallet",
+        "WalletConnectPairing",
+        "WalletConnectNotify",
+        "WalletConnectPush",
+        "WalletConnectNetworking",
+        "WalletConnectVerify",
+        "WalletConnectModal",
+        "WalletConnectIdentity"
+      ]
+    },
+    {
+      "name": "WalletConnectRouter",
+      "c99name": "WalletConnectRouter",
+      "src_type": "swift",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnectRouter.rspm",
+      "package_identity": "walletconnectswiftv2",
+      "product_memberships": [
+        "WalletConnectRouter"
+      ]
+    },
+    {
+      "name": "WalletConnectRouterLegacy",
+      "c99name": "WalletConnectRouterLegacy",
+      "src_type": "objc",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnectRouterLegacy.rspm",
+      "package_identity": "walletconnectswiftv2",
+      "product_memberships": [
+        "WalletConnectRouter"
+      ]
+    },
+    {
+      "name": "WalletConnectSign",
+      "c99name": "WalletConnectSign",
+      "src_type": "swift",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnectSign.rspm",
+      "package_identity": "walletconnectswiftv2",
+      "product_memberships": [
+        "WalletConnect",
+        "Web3Wallet",
+        "WalletConnectModal"
+      ]
+    },
+    {
+      "name": "WalletConnectSigner",
+      "c99name": "WalletConnectSigner",
+      "src_type": "swift",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnectSigner.rspm",
+      "package_identity": "walletconnectswiftv2",
+      "product_memberships": [
+        "WalletConnect",
+        "WalletConnectAuth",
+        "Web3Wallet",
+        "WalletConnectNotify",
+        "WalletConnectModal"
+      ]
+    },
+    {
+      "name": "WalletConnectUtils",
+      "c99name": "WalletConnectUtils",
+      "src_type": "swift",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnectUtils.rspm",
+      "package_identity": "walletconnectswiftv2",
+      "product_memberships": [
+        "WalletConnect",
+        "WalletConnectAuth",
+        "Web3Wallet",
+        "WalletConnectPairing",
+        "WalletConnectNotify",
+        "WalletConnectPush",
+        "WalletConnectNetworking",
+        "WalletConnectVerify",
+        "WalletConnectModal",
+        "WalletConnectIdentity"
+      ]
+    },
+    {
+      "name": "WalletConnectVerify",
+      "c99name": "WalletConnectVerify",
+      "src_type": "swift",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnectVerify.rspm",
+      "package_identity": "walletconnectswiftv2",
+      "product_memberships": [
+        "WalletConnect",
+        "WalletConnectAuth",
+        "Web3Wallet",
+        "WalletConnectVerify",
+        "WalletConnectModal"
+      ]
+    },
+    {
+      "name": "Web3Wallet",
+      "c99name": "Web3Wallet",
+      "src_type": "swift",
+      "label": "@swiftpkg_walletconnectswiftv2//:Web3Wallet.rspm",
+      "package_identity": "walletconnectswiftv2",
+      "product_memberships": [
+        "Web3Wallet"
       ]
     },
     {
@@ -920,10 +1843,76 @@
   ],
   "products": [
     {
+      "identity": "anycodable",
+      "name": "AnyCodable",
+      "type": "library",
+      "label": "@swiftpkg_anycodable//:AnyCodable"
+    },
+    {
+      "identity": "bigdecimal",
+      "name": "BigDecimal",
+      "type": "library",
+      "label": "@swiftpkg_bigdecimal//:BigDecimal"
+    },
+    {
+      "identity": "bigint",
+      "name": "BigInt",
+      "type": "library",
+      "label": "@swiftpkg_bigint//:BigInt"
+    },
+    {
+      "identity": "core-swift",
+      "name": "TonKeeperWalletCore",
+      "type": "library",
+      "label": "@swiftpkg_core_swift//:TonKeeperWalletCore"
+    },
+    {
+      "identity": "core-swift",
+      "name": "WalletCoreCore",
+      "type": "library",
+      "label": "@swiftpkg_core_swift//:WalletCoreCore"
+    },
+    {
+      "identity": "core-swift",
+      "name": "WalletCoreKeeper",
+      "type": "library",
+      "label": "@swiftpkg_core_swift//:WalletCoreKeeper"
+    },
+    {
+      "identity": "cryptoswift",
+      "name": "CryptoSwift",
+      "type": "library",
+      "label": "@swiftpkg_cryptoswift//:CryptoSwift"
+    },
+    {
+      "identity": "curvelib.swift",
+      "name": "curveSecp256k1",
+      "type": "library",
+      "label": "@swiftpkg_curvelib.swift//:curveSecp256k1"
+    },
+    {
+      "identity": "curvelib.swift",
+      "name": "encryption_aes_cbc_sha512",
+      "type": "library",
+      "label": "@swiftpkg_curvelib.swift//:encryption_aes_cbc_sha512"
+    },
+    {
       "identity": "factory",
       "name": "Factory",
       "type": "library",
       "label": "@swiftpkg_factory//:Factory"
+    },
+    {
+      "identity": "fetch-node-details-swift",
+      "name": "FetchNodeDetails",
+      "type": "library",
+      "label": "@swiftpkg_fetch_node_details_swift//:FetchNodeDetails"
+    },
+    {
+      "identity": "fetch-node-details-swift",
+      "name": "FndBase",
+      "type": "library",
+      "label": "@swiftpkg_fetch_node_details_swift//:FndBase"
     },
     {
       "identity": "floatingpanel",
@@ -942,6 +1931,12 @@
       "name": "GRDB-dynamic",
       "type": "library",
       "label": "@swiftpkg_grdb.swift//:GRDB-dynamic"
+    },
+    {
+      "identity": "keychain-swift",
+      "name": "KeychainSwift",
+      "type": "library",
+      "label": "@swiftpkg_keychain_swift//:KeychainSwift"
     },
     {
       "identity": "lnextensionexecutor",
@@ -999,6 +1994,12 @@
     },
     {
       "identity": "nicegram-assistant-ios",
+      "name": "FeatOnboarding",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatOnboarding"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
       "name": "FeatPhoneEntryBanner",
       "type": "library",
       "label": "@swiftpkg_nicegram_assistant_ios//:FeatPhoneEntryBanner"
@@ -1032,6 +2033,12 @@
       "name": "FeatTasks",
       "type": "library",
       "label": "@swiftpkg_nicegram_assistant_ios//:FeatTasks"
+    },
+    {
+      "identity": "nicegram-assistant-ios",
+      "name": "FeatTgChatButton",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_assistant_ios//:FeatTgChatButton"
     },
     {
       "identity": "nicegram-assistant-ios",
@@ -1118,6 +2125,30 @@
       "label": "@swiftpkg_nicegram_assistant_ios//:_NGRemoteConfig"
     },
     {
+      "identity": "nicegram-wallet-ios",
+      "name": "NicegramWallet",
+      "type": "library",
+      "label": "@swiftpkg_nicegram_wallet_ios//:NicegramWallet"
+    },
+    {
+      "identity": "qrcode",
+      "name": "QRCode",
+      "type": "library",
+      "label": "@swiftpkg_qrcode//:QRCode"
+    },
+    {
+      "identity": "qrcode",
+      "name": "QRCodeDynamic",
+      "type": "library",
+      "label": "@swiftpkg_qrcode//:QRCodeDynamic"
+    },
+    {
+      "identity": "qrcode",
+      "name": "QRCodeStatic",
+      "type": "library",
+      "label": "@swiftpkg_qrcode//:QRCodeStatic"
+    },
+    {
       "identity": "r.swift",
       "name": "RswiftGenerateInternalResources",
       "type": "plugin",
@@ -1166,6 +2197,18 @@
       "label": "@swiftpkg_sdwebimage//:SDWebImageMapKit"
     },
     {
+      "identity": "session-manager-swift",
+      "name": "SessionManager",
+      "type": "library",
+      "label": "@swiftpkg_session_manager_swift//:SessionManager"
+    },
+    {
+      "identity": "single-factor-auth-swift",
+      "name": "SingleFactorAuth",
+      "type": "library",
+      "label": "@swiftpkg_single_factor_auth_swift//:SingleFactorAuth"
+    },
+    {
       "identity": "snapkit",
       "name": "SnapKit",
       "type": "library",
@@ -1176,6 +2219,12 @@
       "name": "SnapKit-Dynamic",
       "type": "library",
       "label": "@swiftpkg_snapkit//:SnapKit-Dynamic"
+    },
+    {
+      "identity": "starscream",
+      "name": "Starscream",
+      "type": "library",
+      "label": "@swiftpkg_starscream//:Starscream"
     },
     {
       "identity": "subscriptionanalytics-ios",
@@ -1196,10 +2245,232 @@
       "label": "@swiftpkg_swift_argument_parser//:GenerateManual"
     },
     {
+      "identity": "swift-collections",
+      "name": "BitCollections",
+      "type": "library",
+      "label": "@swiftpkg_swift_collections//:BitCollections"
+    },
+    {
+      "identity": "swift-collections",
+      "name": "Collections",
+      "type": "library",
+      "label": "@swiftpkg_swift_collections//:Collections"
+    },
+    {
+      "identity": "swift-collections",
+      "name": "DequeModule",
+      "type": "library",
+      "label": "@swiftpkg_swift_collections//:DequeModule"
+    },
+    {
+      "identity": "swift-collections",
+      "name": "HashTreeCollections",
+      "type": "library",
+      "label": "@swiftpkg_swift_collections//:HashTreeCollections"
+    },
+    {
+      "identity": "swift-collections",
+      "name": "HeapModule",
+      "type": "library",
+      "label": "@swiftpkg_swift_collections//:HeapModule"
+    },
+    {
+      "identity": "swift-collections",
+      "name": "OrderedCollections",
+      "type": "library",
+      "label": "@swiftpkg_swift_collections//:OrderedCollections"
+    },
+    {
+      "identity": "swift-collections",
+      "name": "_RopeModule",
+      "type": "library",
+      "label": "@swiftpkg_swift_collections//:_RopeModule"
+    },
+    {
+      "identity": "swift-http-types",
+      "name": "HTTPTypes",
+      "type": "library",
+      "label": "@swiftpkg_swift_http_types//:HTTPTypes"
+    },
+    {
+      "identity": "swift-http-types",
+      "name": "HTTPTypesFoundation",
+      "type": "library",
+      "label": "@swiftpkg_swift_http_types//:HTTPTypesFoundation"
+    },
+    {
+      "identity": "swift-numerics",
+      "name": "ComplexModule",
+      "type": "library",
+      "label": "@swiftpkg_swift_numerics//:ComplexModule"
+    },
+    {
+      "identity": "swift-numerics",
+      "name": "Numerics",
+      "type": "library",
+      "label": "@swiftpkg_swift_numerics//:Numerics"
+    },
+    {
+      "identity": "swift-numerics",
+      "name": "RealModule",
+      "type": "library",
+      "label": "@swiftpkg_swift_numerics//:RealModule"
+    },
+    {
+      "identity": "swift-openapi-runtime",
+      "name": "OpenAPIRuntime",
+      "type": "library",
+      "label": "@swiftpkg_swift_openapi_runtime//:OpenAPIRuntime"
+    },
+    {
+      "identity": "swift-openapi-urlsession",
+      "name": "OpenAPIURLSession",
+      "type": "library",
+      "label": "@swiftpkg_swift_openapi_urlsession//:OpenAPIURLSession"
+    },
+    {
+      "identity": "swift-qrcode-generator",
+      "name": "QRCodeGenerator",
+      "type": "library",
+      "label": "@swiftpkg_swift_qrcode_generator//:QRCodeGenerator"
+    },
+    {
+      "identity": "swiftimagereadwrite",
+      "name": "SwiftImageReadWrite",
+      "type": "library",
+      "label": "@swiftpkg_swiftimagereadwrite//:SwiftImageReadWrite"
+    },
+    {
       "identity": "swiftystorekit",
       "name": "SwiftyStoreKit",
       "type": "library",
       "label": "@swiftpkg_swiftystorekit//:SwiftyStoreKit"
+    },
+    {
+      "identity": "tkey-ios",
+      "name": "tkey-swift",
+      "type": "library",
+      "label": "@swiftpkg_tkey_ios//:tkey-swift"
+    },
+    {
+      "identity": "ton-api-swift",
+      "name": "EventSource",
+      "type": "library",
+      "label": "@swiftpkg_ton_api_swift//:EventSource"
+    },
+    {
+      "identity": "ton-api-swift",
+      "name": "StreamURLSessionTransport",
+      "type": "library",
+      "label": "@swiftpkg_ton_api_swift//:StreamURLSessionTransport"
+    },
+    {
+      "identity": "ton-api-swift",
+      "name": "TonAPI",
+      "type": "library",
+      "label": "@swiftpkg_ton_api_swift//:TonAPI"
+    },
+    {
+      "identity": "ton-api-swift",
+      "name": "TonStreamingAPI",
+      "type": "library",
+      "label": "@swiftpkg_ton_api_swift//:TonStreamingAPI"
+    },
+    {
+      "identity": "ton-swift",
+      "name": "TonSwift",
+      "type": "library",
+      "label": "@swiftpkg_ton_swift//:TonSwift"
+    },
+    {
+      "identity": "torus-utils-swift",
+      "name": "TorusUtils",
+      "type": "library",
+      "label": "@swiftpkg_torus_utils_swift//:TorusUtils"
+    },
+    {
+      "identity": "tweetnacl-swiftwrap",
+      "name": "TweetNacl",
+      "type": "library",
+      "label": "@swiftpkg_tweetnacl_swiftwrap//:TweetNacl"
+    },
+    {
+      "identity": "wallet-core",
+      "name": "SwiftProtobuf",
+      "type": "library",
+      "label": "@swiftpkg_wallet_core//:SwiftProtobuf"
+    },
+    {
+      "identity": "wallet-core",
+      "name": "WalletCore",
+      "type": "library",
+      "label": "@swiftpkg_wallet_core//:WalletCore"
+    },
+    {
+      "identity": "walletconnectswiftv2",
+      "name": "WalletConnect",
+      "type": "library",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnect"
+    },
+    {
+      "identity": "walletconnectswiftv2",
+      "name": "WalletConnectAuth",
+      "type": "library",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnectAuth"
+    },
+    {
+      "identity": "walletconnectswiftv2",
+      "name": "WalletConnectIdentity",
+      "type": "library",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnectIdentity"
+    },
+    {
+      "identity": "walletconnectswiftv2",
+      "name": "WalletConnectModal",
+      "type": "library",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnectModal"
+    },
+    {
+      "identity": "walletconnectswiftv2",
+      "name": "WalletConnectNetworking",
+      "type": "library",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnectNetworking"
+    },
+    {
+      "identity": "walletconnectswiftv2",
+      "name": "WalletConnectNotify",
+      "type": "library",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnectNotify"
+    },
+    {
+      "identity": "walletconnectswiftv2",
+      "name": "WalletConnectPairing",
+      "type": "library",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnectPairing"
+    },
+    {
+      "identity": "walletconnectswiftv2",
+      "name": "WalletConnectPush",
+      "type": "library",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnectPush"
+    },
+    {
+      "identity": "walletconnectswiftv2",
+      "name": "WalletConnectRouter",
+      "type": "library",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnectRouter"
+    },
+    {
+      "identity": "walletconnectswiftv2",
+      "name": "WalletConnectVerify",
+      "type": "library",
+      "label": "@swiftpkg_walletconnectswiftv2//:WalletConnectVerify"
+    },
+    {
+      "identity": "walletconnectswiftv2",
+      "name": "Web3Wallet",
+      "type": "library",
+      "label": "@swiftpkg_walletconnectswiftv2//:Web3Wallet"
     },
     {
       "identity": "xcodeedit",
@@ -1210,21 +2481,84 @@
   ],
   "packages": [
     {
+      "name": "swiftpkg_anycodable",
+      "identity": "anycodable",
+      "remote": {
+        "commit": "862808b2070cd908cb04f9aafe7de83d35f81b05",
+        "remote": "https://github.com/Flight-School/AnyCodable",
+        "version": "0.6.7"
+      }
+    },
+    {
+      "name": "swiftpkg_bigdecimal",
+      "identity": "bigdecimal",
+      "remote": {
+        "commit": "04d17040e4615fbfda3a882b9881f6841f4bf557",
+        "remote": "https://github.com/Zollerboy1/BigDecimal.git",
+        "version": "1.0.2"
+      }
+    },
+    {
+      "name": "swiftpkg_bigint",
+      "identity": "bigint",
+      "remote": {
+        "commit": "0ed110f7555c34ff468e72e1686e59721f2b0da6",
+        "remote": "https://github.com/attaswift/BigInt",
+        "version": "5.3.0"
+      }
+    },
+    {
+      "name": "swiftpkg_core_swift",
+      "identity": "core-swift",
+      "remote": {
+        "commit": "20b7275f60ad80634f056905d7f18292294cd510",
+        "remote": "https://github.com/denis15yo/core-swift.git",
+        "branch": "release/1.0.0"
+      }
+    },
+    {
+      "name": "swiftpkg_cryptoswift",
+      "identity": "cryptoswift",
+      "remote": {
+        "commit": "c9c3df6ab812de32bae61fc0cd1bf6d45170ebf0",
+        "remote": "https://github.com/krzyzanowskim/CryptoSwift.git",
+        "version": "1.8.2"
+      }
+    },
+    {
+      "name": "swiftpkg_curvelib.swift",
+      "identity": "curvelib.swift",
+      "remote": {
+        "commit": "7dad3bf1793de263f83406c08c18c9316abf082f",
+        "remote": "https://github.com/tkey/curvelib.swift",
+        "version": "0.1.2"
+      }
+    },
+    {
       "name": "swiftpkg_factory",
       "identity": "factory",
       "remote": {
         "commit": "587995f7d5cc667951d635fbf6b4252324ba0439",
-        "remote": "https://github.com/hmlongco/Factory",
+        "remote": "https://github.com/hmlongco/Factory.git",
         "version": "2.3.2"
+      }
+    },
+    {
+      "name": "swiftpkg_fetch_node_details_swift",
+      "identity": "fetch-node-details-swift",
+      "remote": {
+        "commit": "bf2f0759da5c5c80765773b08c2756045edf608f",
+        "remote": "https://github.com/torusresearch/fetch-node-details-swift.git",
+        "version": "5.2.0"
       }
     },
     {
       "name": "swiftpkg_floatingpanel",
       "identity": "floatingpanel",
       "remote": {
-        "commit": "8f2be39bf49b4d5e22bbf7bdde69d5b76d0ecd2a",
+        "commit": "22d46c526084724a718b8c39ab77f12452712cc7",
         "remote": "https://github.com/scenee/FloatingPanel",
-        "version": "2.8.2"
+        "version": "2.8.3"
       }
     },
     {
@@ -1234,6 +2568,15 @@
         "commit": "afc958017ee4feefd3c61c8e2cddf81d079d2e39",
         "remote": "https://github.com/denis15yo/GRDB.swift.git",
         "branch": "master"
+      }
+    },
+    {
+      "name": "swiftpkg_keychain_swift",
+      "identity": "keychain-swift",
+      "remote": {
+        "commit": "d108a1fa6189e661f91560548ef48651ed8d93b9",
+        "remote": "https://github.com/evgenyneu/keychain-swift.git",
+        "version": "20.0.0"
       }
     },
     {
@@ -1258,9 +2601,27 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "667bceccb7102dff96ba018b22c5fa1a6d30c9c6",
+        "commit": "4bcb07d287c31234e337475b87efe2d3553bfa3a",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
         "branch": "develop"
+      }
+    },
+    {
+      "name": "swiftpkg_nicegram_wallet_ios",
+      "identity": "nicegram-wallet-ios",
+      "remote": {
+        "commit": "241a210ee1b5cb9cb95d9245a4ed384973ee2ef2",
+        "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
+        "branch": "develop"
+      }
+    },
+    {
+      "name": "swiftpkg_qrcode",
+      "identity": "qrcode",
+      "remote": {
+        "commit": "263f280d2c8144adfb0b6676109846cfc8dd552b",
+        "remote": "https://github.com/WalletConnect/QRCode",
+        "version": "14.3.1"
       }
     },
     {
@@ -1276,9 +2637,27 @@
       "name": "swiftpkg_sdwebimage",
       "identity": "sdwebimage",
       "remote": {
-        "commit": "f6afa0132961d593f07970d84e2d8b588c29ea04",
+        "commit": "b8523c1642f3c142b06dd98443ea7c48343a4dfd",
         "remote": "https://github.com/SDWebImage/SDWebImage.git",
-        "version": "5.19.1"
+        "version": "5.19.3"
+      }
+    },
+    {
+      "name": "swiftpkg_session_manager_swift",
+      "identity": "session-manager-swift",
+      "remote": {
+        "commit": "c89d9205a1ce38cd6c6374b906a9039d9cc03f05",
+        "remote": "https://github.com/Web3Auth/session-manager-swift.git",
+        "version": "3.1.1"
+      }
+    },
+    {
+      "name": "swiftpkg_single_factor_auth_swift",
+      "identity": "single-factor-auth-swift",
+      "remote": {
+        "commit": "8baa2b8cf55b0a38cb98c412bea1c6597adb78ba",
+        "remote": "https://github.com/Web3Auth/single-factor-auth-swift.git",
+        "version": "4.0.0"
       }
     },
     {
@@ -1288,6 +2667,15 @@
         "commit": "2842e6e84e82eb9a8dac0100ca90d9444b0307f4",
         "remote": "https://github.com/SnapKit/SnapKit.git",
         "version": "5.7.1"
+      }
+    },
+    {
+      "name": "swiftpkg_starscream",
+      "identity": "starscream",
+      "remote": {
+        "commit": "c6bfd1af48efcc9a9ad203665db12375ba6b145a",
+        "remote": "https://github.com/daltoniam/Starscream.git",
+        "version": "4.0.8"
       }
     },
     {
@@ -1303,9 +2691,72 @@
       "name": "swiftpkg_swift_argument_parser",
       "identity": "swift-argument-parser",
       "remote": {
-        "commit": "46989693916f56d1186bd59ac15124caef896560",
+        "commit": "0fbc8848e389af3bb55c182bc19ca9d5dc2f255b",
         "remote": "https://github.com/apple/swift-argument-parser",
-        "version": "1.3.1"
+        "version": "1.4.0"
+      }
+    },
+    {
+      "name": "swiftpkg_swift_collections",
+      "identity": "swift-collections",
+      "remote": {
+        "commit": "ee97538f5b81ae89698fd95938896dec5217b148",
+        "remote": "https://github.com/apple/swift-collections",
+        "version": "1.1.1"
+      }
+    },
+    {
+      "name": "swiftpkg_swift_http_types",
+      "identity": "swift-http-types",
+      "remote": {
+        "commit": "1ddbea1ee34354a6a2532c60f98501c35ae8edfa",
+        "remote": "https://github.com/apple/swift-http-types",
+        "version": "1.2.0"
+      }
+    },
+    {
+      "name": "swiftpkg_swift_numerics",
+      "identity": "swift-numerics",
+      "remote": {
+        "commit": "0a5bc04095a675662cf24757cc0640aa2204253b",
+        "remote": "https://github.com/apple/swift-numerics.git",
+        "version": "1.0.2"
+      }
+    },
+    {
+      "name": "swiftpkg_swift_openapi_runtime",
+      "identity": "swift-openapi-runtime",
+      "remote": {
+        "commit": "a51b3bd6f2151e9a6f792ca6937a7242c4758768",
+        "remote": "https://github.com/apple/swift-openapi-runtime",
+        "version": "0.3.6"
+      }
+    },
+    {
+      "name": "swiftpkg_swift_openapi_urlsession",
+      "identity": "swift-openapi-urlsession",
+      "remote": {
+        "commit": "9229842c63e9fc3bbd32c661d8274b4d9d8715f1",
+        "remote": "https://github.com/apple/swift-openapi-urlsession.git",
+        "version": "0.3.1"
+      }
+    },
+    {
+      "name": "swiftpkg_swift_qrcode_generator",
+      "identity": "swift-qrcode-generator",
+      "remote": {
+        "commit": "5ca09b6a2ad190f94aa3d6ddef45b187f8c0343b",
+        "remote": "https://github.com/dagronf/swift-qrcode-generator",
+        "version": "1.0.3"
+      }
+    },
+    {
+      "name": "swiftpkg_swiftimagereadwrite",
+      "identity": "swiftimagereadwrite",
+      "remote": {
+        "commit": "5596407d1cf61b953b8e658fa8636a471df3c509",
+        "remote": "https://github.com/dagronf/SwiftImageReadWrite",
+        "version": "1.1.6"
       }
     },
     {
@@ -1315,6 +2766,69 @@
         "commit": "9ce911639680113dac9b554d6243e406a9758ebe",
         "remote": "https://github.com/bizz84/SwiftyStoreKit.git",
         "version": "0.16.4"
+      }
+    },
+    {
+      "name": "swiftpkg_tkey_ios",
+      "identity": "tkey-ios",
+      "remote": {
+        "commit": "c107450f0675351a9a1eaaefe60bcfa285ff1f9e",
+        "remote": "https://github.com/tkey/tkey-ios.git",
+        "version": "0.2.1"
+      }
+    },
+    {
+      "name": "swiftpkg_ton_api_swift",
+      "identity": "ton-api-swift",
+      "remote": {
+        "commit": "1988939fe0ce6db6bc587cfe7c9d15dc3bca1d69",
+        "remote": "https://github.com/tonkeeper/ton-api-swift",
+        "version": "0.1.5"
+      }
+    },
+    {
+      "name": "swiftpkg_ton_swift",
+      "identity": "ton-swift",
+      "remote": {
+        "commit": "e4c3def222afc125f7ee83c1569004e31f0cd05c",
+        "remote": "https://github.com/denis15yo/ton-swift.git",
+        "branch": "main"
+      }
+    },
+    {
+      "name": "swiftpkg_torus_utils_swift",
+      "identity": "torus-utils-swift",
+      "remote": {
+        "commit": "4c17ef5166c162455d0a37115c033eeff8cb282d",
+        "remote": "https://github.com/torusresearch/torus-utils-swift.git",
+        "version": "8.0.1"
+      }
+    },
+    {
+      "name": "swiftpkg_tweetnacl_swiftwrap",
+      "identity": "tweetnacl-swiftwrap",
+      "remote": {
+        "commit": "f8fd111642bf2336b11ef9ea828510693106e954",
+        "remote": "https://github.com/bitmark-inc/tweetnacl-swiftwrap",
+        "version": "1.1.0"
+      }
+    },
+    {
+      "name": "swiftpkg_wallet_core",
+      "identity": "wallet-core",
+      "remote": {
+        "commit": "94116a24445c2052edbc7203baf68296c68ce8f4",
+        "remote": "https://github.com/trustwallet/wallet-core.git",
+        "version": "4.0.46"
+      }
+    },
+    {
+      "name": "swiftpkg_walletconnectswiftv2",
+      "identity": "walletconnectswiftv2",
+      "remote": {
+        "commit": "1eacd732e321c9511859d7e73303d61d82af4d46",
+        "remote": "https://github.com/denis15yo/WalletConnectSwiftV2.git",
+        "branch": "develop"
       }
     },
     {

@@ -615,7 +615,7 @@ def build(bazel, arguments):
         os.makedirs(artifacts_path, exist_ok=True)
         os.makedirs(artifacts_path + '/DSYMs', exist_ok=True)
 
-        built_ipa_path_prefix = 'bazel-out/ios_arm64-opt-ios-arm64-min12.0-applebin_ios-ST-*'
+        built_ipa_path_prefix = 'bazel-out/ios_arm64-opt-ios-arm64-min14.0-applebin_ios-ST-*'
         ipa_paths = glob.glob('{}/bin/Telegram/Telegram.ipa'.format(built_ipa_path_prefix))
         if len(ipa_paths) == 0:
             print('Could not find the IPA at bazel-out/applebin_ios-ios_arm*-opt-ST-*/bin/Telegram/Telegram.ipa')

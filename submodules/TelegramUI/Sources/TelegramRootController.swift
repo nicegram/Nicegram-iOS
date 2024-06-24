@@ -295,6 +295,20 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                     )
                 }
             }
+            
+            tabBarController.willSelect = { [weak self] index in
+                guard let self, let rootTabController else {
+                    return
+                }
+                
+                let assistantIndex = rootTabController.controllers.firstIndex {
+                    $0 === assistantController
+                }
+                
+                if index == assistantIndex {
+                    AssistantUITgHelper.assistantSource = .tabBar
+                }
+            }
         }
         //
         

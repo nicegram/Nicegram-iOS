@@ -147,6 +147,7 @@
 "Gmod.Disable" = "Disable Preview Mode?";
 "Gmod.Notice" = "Your online status will be hidden from everyone by Telegram privacy settings.\nApp will show a warning if you're entering a private chat.\nYour online status may be revealed if you send or type ANY message.";
 
+"ShowNicegramButtonInChat" = "Show Nicegram Button in Chat";
 "SendWithKb" = "Send with «Enter» button";
 "NiceFeatures.ShowGmodIcon" = "Show Preview Mode icon";
 "Gmod.OpenChatQ" = "Open chat?";
@@ -187,21 +188,6 @@
 "DoubleBottom.Enabled.Description" = "Please remember the passcode you’ve just set and restart the app for Double Bottom to work well";
 "DoubleBottom.Enabled.OK" = "OK";
 "DoubleBottom.Passcode.Error" = "Please set another passcode different from that you use for Passcode Lock";
-
-/*Onboarding*/
-"NicegramOnboarding.Continue" = "Continue";
-"NicegramOnboarding.1.Title" = "№1 Client for Telegram Messenger";
-"NicegramOnboarding.1.Desc" = "Join over 2 million Nicegram users and get access to the most powerful and secure Telegram client for business.";
-"NicegramOnboarding.2.Title" = "Advanced Messaging Experience";
-"NicegramOnboarding.2.Desc" = "Speed up your communication with unique features like a Built-in Translator, Speech 2 Text, Forwarding messages without specifying the author and Quick saving to favorites.";
-"NicegramOnboarding.3.Title" = "Extended User Profile";
-"NicegramOnboarding.3.Desc" = "Create as many Telegram accounts as you need completely free of charge, as well as view an advanced user profile with ID, registration date and clickable links.";
-"NicegramOnboarding.4.Title" = "Unique Business Extensions";
-"NicegramOnboarding.4.Desc" = "Take advantage of the innovations from the Nicegram team and get an eSIM with internet access in 133 countries. You can also register new Telegram accounts to the phone number of the eSIM data plan.";
-"NicegramOnboarding.5.Title" = "The Most Secure Messenger";
-"NicegramOnboarding.5.Desc" = "Secure Messenger with Strong Encryption, Group Audio and Video Calls, Public Channels, Groups and Bots, Unlimited Cloud Storage for Chats, Media and Documents sharing.";
-"NicegramOnboarding.6.Title" = "Meet Lily";
-"NicegramOnboarding.6.Desc" = "Your Personal AI Chatbot Assistant for Simplifying Your Life!";
 
 /*Rounded Videos*/
 "RoundedVideos.ButtonTitle" = "Send as Rounded Video";

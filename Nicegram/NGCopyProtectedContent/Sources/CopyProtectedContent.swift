@@ -34,7 +34,9 @@ public func shouldSubscribeToCopyContent(message: Message) -> Bool {
 }
 
 public func routeToNicegramPremiumForCopyContent() {
-    PremiumUITgHelper.routeToPremium()
+    PremiumUITgHelper.routeToPremium(
+        source: .copyProtectedContent
+    )
 }
 
 //  MARK: - Bypass setting (Secret Menu)

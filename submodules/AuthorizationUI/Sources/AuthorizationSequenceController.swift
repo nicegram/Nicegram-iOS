@@ -1,3 +1,6 @@
+// MARK: Nicegram Analytics
+import NGAnalytics
+//
 import Foundation
 import UIKit
 import AsyncDisplayKit
@@ -1181,6 +1184,30 @@ public final class AuthorizationSequenceController: NavigationController, ASAuth
     }
     
     private func updateState(state: InnerState) {
+        // MARK: Nicegram Analytics
+        let analyticsManager = AnalyticsContainer.shared.analyticsManager()
+        
+        if otherAccountPhoneNumbers.1.isEmpty {
+            switch state {
+            case .authorized:
+                analyticsManager.trackEvent("nicegram_tgauth_success")
+            case let .state(state):
+                switch state {
+                case .phoneEntry, .empty:
+                    analyticsManager.trackEvent("nicegram_tgauth_enter_phone")
+                case .confirmationCodeEntry:
+                    analyticsManager.trackEvent("nicegram_tgauth_enter_code")
+                default:
+                    break
+                }
+            }
+        }
+        
+        if case .authorized = state {
+            analyticsManager.trackEvent("telegram_profile_added")
+        }
+        //
+        
         switch state {
         case .authorized:
             self.authorizationCompleted()

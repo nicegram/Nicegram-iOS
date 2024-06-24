@@ -2009,7 +2009,7 @@ final class StorageUsageScreenComponent: Component {
                                 text: presentationData.strings.StorageManagement_PeerShowDetails,
                                 icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Info"), color: theme.contextMenu.primaryColor) },
                                 action: { [weak self] c, _ in
-                                    c.dismiss(completion: { [weak self] in
+                                    c?.dismiss(completion: { [weak self] in
                                         guard let self else {
                                             return
                                         }
@@ -2027,7 +2027,7 @@ final class StorageUsageScreenComponent: Component {
                                     }
                                 },
                                 action: { [weak self] c, _ in
-                                    c.dismiss(completion: { [weak self] in
+                                    c?.dismiss(completion: { [weak self] in
                                         guard let self, let component = self.component, let controller = self.controller?() else {
                                             return
                                         }
@@ -2050,7 +2050,7 @@ final class StorageUsageScreenComponent: Component {
                                 text: presentationData.strings.StorageManagement_ContextSelect,
                                 icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Select"), color: theme.contextMenu.primaryColor) },
                                 action: { [weak self] c, _ in
-                                    c.dismiss(completion: {
+                                    c?.dismiss(completion: {
                                     })
                                     
                                     guard let self, let aggregatedData = self.aggregatedData else {
@@ -2545,7 +2545,7 @@ final class StorageUsageScreenComponent: Component {
                     text: openTitle,
                     icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Expand"), color: theme.contextMenu.primaryColor) },
                     action: { [weak self] c, _ in
-                        c.dismiss(completion: { [weak self] in
+                        c?.dismiss(completion: { [weak self] in
                             guard let self else {
                                 return
                             }
@@ -2555,7 +2555,7 @@ final class StorageUsageScreenComponent: Component {
                 ))
                 
                 items.append(.action(ContextMenuActionItem(text: strings.SharedMedia_ViewInChat, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/GoToMessage"), color: theme.contextMenu.primaryColor) }, action: { [weak self] c, f in
-                    c.dismiss(completion: { [weak self] in
+                    c?.dismiss(completion: { [weak self] in
                         guard let self, let component = self.component, let controller = self.controller?(), let navigationController = controller.navigationController as? NavigationController else {
                             return
                         }
@@ -2581,7 +2581,7 @@ final class StorageUsageScreenComponent: Component {
                 items.append(.action(ContextMenuActionItem(text: strings.Conversation_ContextMenuSelect, icon: { theme in
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Select"), color: theme.actionSheet.primaryTextColor)
                 }, action: { [weak self] c, _ in
-                    c.dismiss(completion: {
+                    c?.dismiss(completion: {
                     })
                     
                     guard let self, let aggregatedData = self.aggregatedData else {
@@ -2642,7 +2642,7 @@ final class StorageUsageScreenComponent: Component {
                     text: openTitle,
                     icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Expand"), color: theme.contextMenu.primaryColor) },
                     action: { [weak self] c, _ in
-                        c.dismiss(completion: { [weak self] in
+                        c?.dismiss(completion: { [weak self] in
                             guard let self else {
                                 return
                             }
@@ -2658,7 +2658,7 @@ final class StorageUsageScreenComponent: Component {
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/GoToMessage"), color: theme.contextMenu.primaryColor)
                 },
                 action: { [weak self] c, _ in
-                    c.dismiss(completion: { [weak self] in
+                    c?.dismiss(completion: { [weak self] in
                         guard let self, let component = self.component, let controller = self.controller?(), let navigationController = controller.navigationController as? NavigationController else {
                             return
                         }
@@ -2685,7 +2685,7 @@ final class StorageUsageScreenComponent: Component {
                 text: aggregatedData.selectionState.selectedMessages.contains(messageId) ? presentationData.strings.StorageManagement_ContextDeselect : presentationData.strings.StorageManagement_ContextSelect,
                 icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Select"), color: theme.contextMenu.primaryColor) },
                 action: { [weak self] c, _ in
-                    c.dismiss(completion: {
+                    c?.dismiss(completion: {
                     })
                     
                     guard let self, let aggregatedData = self.aggregatedData else {

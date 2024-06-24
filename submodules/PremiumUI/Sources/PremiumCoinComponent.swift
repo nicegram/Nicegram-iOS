@@ -7,6 +7,7 @@ import SceneKit
 import GZip
 import AppBundle
 import LegacyComponents
+import PremiumStarComponent
 
 private let sceneVersion: Int = 3
 
@@ -231,6 +232,9 @@ class PremiumCoinComponent: Component {
             self.sceneView.delegate = self
             
             let _ = self.sceneView.snapshot()
+//            self.didSetReady = true
+//            self._ready.set(.single(true))
+//            self.onReady()
         }
         
         private var didSetReady = false

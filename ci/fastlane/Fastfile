@@ -229,8 +229,7 @@ lane :generate_project do |options|
     team_id: TEAM_ID,
     git_url: SIGN_URL,
     git_branch: TEAM_ID,
-    api_key: generate_app_store_connect_api_key(),
-    skip_provisioning_profiles: true
+    api_key: generate_app_store_connect_api_key()
   )
 
   configuration_path = resolve_telegram_configuration()
@@ -285,7 +284,7 @@ end
 
 lane :update_spm_pkgs do |options|
   bazel_path = sh("cd #{SOURCE_PATH} && echo $(python3 #{SOURCE_PATH}/build-system/Make/LocateBazel.py)")
-  sh("#{bazel_path} bazel run //:swift_update_pkgs")
+  sh('#{bazel_path} bazel run //:swift_update_pkgs')
 end
 
 lane :nicegram_match do |options|

@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/AsyncDisplayKit",
@@ -37,6 +37,7 @@ swift_library(
         "//submodules/TelegramUI/Components/Chat/MessageQuoteComponent",
         "//submodules/TelegramUI/Components/TextLoadingEffect",
         "//submodules/TelegramUI/Components/ChatControllerInteraction",
+        "//submodules/TelegramUI/Components/InteractiveTextComponent",
     ],
     visibility = [
         "//visibility:public",

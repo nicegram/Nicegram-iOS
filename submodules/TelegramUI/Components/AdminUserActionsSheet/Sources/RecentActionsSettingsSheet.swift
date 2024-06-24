@@ -87,7 +87,7 @@ private enum SettingsActionType: Hashable, CaseIterable {
     var eventFlags: AdminLogEventsFlags {
         switch self {
         case .groupInfo:
-            return [.info, .settings]
+            return [.info, .settings, .forums]
         case .inviteLinks:
             return [.invites]
         case .videoChats:
@@ -759,6 +759,7 @@ private final class RecentActionsSettingsSheetComponent: Component {
                     context: component.context,
                     theme: environment.theme,
                     strings: environment.strings,
+                    baseFontSize: presentationData.listsFontSize.baseDisplaySize,
                     sideInset: 0.0,
                     title: peer.displayTitle(strings: environment.strings, displayOrder: .firstLast),
                     peer: peer,

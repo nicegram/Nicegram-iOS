@@ -77,6 +77,7 @@ private enum NicegramSettingsControllerSection: Int32 {
 
 
 private enum EasyToggleType {
+    case showNicegramButtonInChat
     case sendWithEnter
     case showProfileId
     case showRegDate
@@ -517,6 +518,8 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
                 ngLog("[easyToggle] \(index) \(toggleType) invoked with \(value)", LOGTAG)
                 switch (toggleType) {
+                case .showNicegramButtonInChat:
+                    NGSettings.showNicegramButtonInChat = value
                 case .sendWithEnter:
                     NGSettings.sendWithEnter = value
                 case .showProfileId:
@@ -702,6 +705,9 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     
     var toggleIndex: Int32 = 1
     // MARK: Other Toggles (Easy)
+    entries.append(.easyToggle(toggleIndex, .showNicegramButtonInChat, l("ShowNicegramButtonInChat"), NGSettings.showNicegramButtonInChat))
+    toggleIndex += 1
+    
     entries.append(.easyToggle(toggleIndex, .sendWithEnter, l("SendWithKb"), NGSettings.sendWithEnter))
     toggleIndex += 1
     
