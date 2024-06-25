@@ -378,7 +378,9 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                 guard arguments.associatedData.isPremium || isNicegramPremium else {
                     // MARK: Nicegram Speech2Text, routeToNicegramPremium
                     if isNicegram() {
-                        PremiumUITgHelper.routeToPremium()
+                        PremiumUITgHelper.routeToPremium(
+                            source: .speechToText
+                        )
                         return
                     }
                     //
@@ -463,7 +465,9 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                                 case .success(let text):
                                     message.updateAudioTranscriptionAttribute(text: text, error: nil, context: context)
                                 case .needsPremium:
-                                    PremiumUITgHelper.routeToPremium()
+                                    PremiumUITgHelper.routeToPremium(
+                                        source: .speechToText
+                                    )
                                 case .error(let error):
                                     message.updateAudioTranscriptionAttribute(text: "", error: error, context: context)
                                     
@@ -576,7 +580,9 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                                 blurred: true,
                                 action: { action in
                                     if case .info = action {
-                                        PremiumUITgHelper.routeToPremium()
+                                        PremiumUITgHelper.routeToPremium(
+                                            source: .speechToText
+                                        )
                                     }
                                     
                                     return true
@@ -1085,6 +1091,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                         reactionPeers: dateReactionsAndPeers.peers,
                         displayAllReactionPeers: arguments.message.id.peerId.namespace == Namespaces.Peer.CloudUser,
                         areReactionsTags: arguments.message.areReactionsTags(accountPeerId: arguments.context.account.peerId),
+                        messageEffect: arguments.message.messageEffect(availableMessageEffects: arguments.associatedData.availableMessageEffects),
                         replyCount: dateReplies,
                         isPinned: arguments.isPinned && !arguments.associatedData.isInPinnedListMode,
                         hasAutoremove: arguments.message.isSelfExpiring,

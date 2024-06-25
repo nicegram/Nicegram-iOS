@@ -7,7 +7,7 @@ swift_library(
 		"Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
@@ -46,6 +46,10 @@ swift_library(
         "//submodules/TelegramUI/Components/MediaEditor",
         "//submodules/RadialStatusNode",
         "//submodules/Camera",
+        "//submodules/TelegramUI/Components/MediaEditor/ImageObjectSeparation",
+        "//submodules/ChatSendMessageActionUI",
+        "//submodules/ComponentFlow",
+        "//submodules/Components/ComponentDisplayAdapters",
     ],
     visibility = [
         "//visibility:public",

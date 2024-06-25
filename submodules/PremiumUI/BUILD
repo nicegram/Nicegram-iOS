@@ -61,7 +61,7 @@ swift_library(
 		"Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     data = [
         ":PremiumUIBundle",
@@ -125,6 +125,7 @@ swift_library(
         "//submodules/TelegramUI/Components/PremiumPeerShortcutComponent",
         "//submodules/TelegramUI/Components/EmojiActionIconComponent",
         "//submodules/TelegramUI/Components/ScrollComponent",
+        "//submodules/TelegramUI/Components/Premium/PremiumStarComponent",
     ],
     visibility = [
         "//visibility:public",

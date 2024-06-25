@@ -1,3 +1,6 @@
+// MARK: Nicegram Deeplink
+import NicegramWallet
+//
 import Foundation
 import Display
 import SafariServices
@@ -176,6 +179,11 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
     if nicegramHandler.handle(url: url) {
         return
     }
+    
+    let walletDeeplinksManager = NicegramWallet.DeeplinksModule.shared.deeplinksManager()
+    if walletDeeplinksManager.handle(url) {
+        return
+    }
     //
     
     if forceExternal || url.lowercased().hasPrefix("tel:") || url.lowercased().hasPrefix("calshow:") {
@@ -265,8 +273,10 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
                         default:
                             break
                     }
-                }, sendFile: nil,
+                }, 
+                sendFile: nil,
                 sendSticker: nil,
+                sendEmoji: nil,
                 requestMessageActionUrlAuth: nil,
                 joinVoiceChat: { peerId, invite, call in
                     

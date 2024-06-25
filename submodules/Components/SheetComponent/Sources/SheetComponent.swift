@@ -62,21 +62,27 @@ public final class SheetComponent<ChildEnvironmentType: Equatable>: Component {
     public let content: AnyComponent<ChildEnvironmentType>
     public let backgroundColor: BackgroundColor
     public let followContentSizeChanges: Bool
+    public let clipsContent: Bool
     public let externalState: ExternalState?
     public let animateOut: ActionSlot<Action<()>>
+    public let onPan: () -> Void
     
     public init(
         content: AnyComponent<ChildEnvironmentType>,
         backgroundColor: BackgroundColor,
         followContentSizeChanges: Bool = false,
+        clipsContent: Bool = false,
         externalState: ExternalState? = nil,
-        animateOut: ActionSlot<Action<()>>
+        animateOut: ActionSlot<Action<()>>,
+        onPan: @escaping () -> Void = {}
     ) {
         self.content = content
         self.backgroundColor = backgroundColor
         self.followContentSizeChanges = followContentSizeChanges
+        self.clipsContent = clipsContent
         self.externalState = externalState
         self.animateOut = animateOut
+        self.onPan = onPan
     }
     
     public static func ==(lhs: SheetComponent, rhs: SheetComponent) -> Bool {
@@ -124,6 +130,8 @@ public final class SheetComponent<ChildEnvironmentType: Equatable>: Component {
             }
             return false
         }
+        
+        private var component: SheetComponent<ChildEnvironmentType>?
         
         private let dimView: UIView
         private let scrollView: ScrollView
@@ -194,6 +202,10 @@ public final class SheetComponent<ChildEnvironmentType: Equatable>: Component {
         
         public func dismissAnimated() {
             self.dismiss?(true)
+        }
+        
+        public func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+            self.component?.onPan()
         }
         
         private var scrollingOut = false
@@ -299,6 +311,7 @@ public final class SheetComponent<ChildEnvironmentType: Equatable>: Component {
                 }
             }
             
+            self.component = component
             self.currentHasInputHeight = sheetEnvironment.hasInputHeight
             
             switch component.backgroundColor {
@@ -349,6 +362,7 @@ public final class SheetComponent<ChildEnvironmentType: Equatable>: Component {
                 if contentView.superview == nil {
                     self.scrollView.addSubview(contentView)
                 }
+                contentView.clipsToBounds = component.clipsContent
                 if sheetEnvironment.isCentered {
                     let y: CGFloat = floorToScreenPixels((availableSize.height - contentSize.height) / 2.0)
                     transition.setFrame(view: contentView, frame: CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - contentSize.width) / 2.0), y: -y), size: contentSize), completion: nil)

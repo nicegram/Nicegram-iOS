@@ -213,7 +213,7 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                                     return filters
                                 }
                                 |> deliverOnMainQueue).startStandalone(completed: {
-                                    c.dismiss(completion: {
+                                    c?.dismiss(completion: {
                                         chatListController?.present(UndoOverlayController(presentationData: presentationData, content: .chatRemovedFromFolder(chatTitle: peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder), folderTitle: title), elevatedLayout: false, animateInAsReplacement: true, action: { _ in
                                             return false
                                         }), in: .current)
@@ -279,7 +279,7 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                                             }
                                             return generateTintedImage(image: UIImage(bundleImageName: imageName), color: theme.contextMenu.primaryColor)
                                         }, action: { c, f in
-                                            c.dismiss(completion: {
+                                            c?.dismiss(completion: {
                                                 let isPremium = limitsData.0?.isPremium ?? false
                                                 let (_, limits, premiumLimits) = limitsData
                                                 
@@ -334,10 +334,10 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                                 updatedItems.append(.action(ContextMenuActionItem(text: strings.ChatList_Context_Back, icon: { theme in
                                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Back"), color: theme.contextMenu.primaryColor)
                                 }, iconPosition: .left, action: { c, _ in
-                                    c.setItems(chatContextMenuItems(context: context, peerId: peerId, promoInfo: promoInfo, source: source, chatListController: chatListController, joined: joined) |> map { ContextController.Items(content: .list($0)) }, minHeight: nil, animated: true)
+                                    c?.setItems(chatContextMenuItems(context: context, peerId: peerId, promoInfo: promoInfo, source: source, chatListController: chatListController, joined: joined) |> map { ContextController.Items(content: .list($0)) }, minHeight: nil, animated: true)
                                 })))
 
-                                c.setItems(.single(ContextController.Items(content: .list(updatedItems))), minHeight: nil, animated: true)
+                                c?.setItems(.single(ContextController.Items(content: .list(updatedItems))), minHeight: nil, animated: true)
                             })))
                         }
                     }
@@ -695,7 +695,7 @@ func chatForumTopicMenuItems(context: AccountContext, peerId: PeerId, threadId: 
                     /*subItems.append(.action(ContextMenuActionItem(text: presentationData.strings.Common_Back, icon: { theme in
                         return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Back"), color: theme.contextMenu.primaryColor)
                     }, action: { c, _ in
-                        c.popItems()
+                        c?.popItems()
                     })))
                     subItems.append(.separator)*/
                     
@@ -728,8 +728,7 @@ func chatForumTopicMenuItems(context: AccountContext, peerId: PeerId, threadId: 
                         }
                     })))
                     
-                    //c.pushItems(items: .single(ContextController.Items(content: .list(subItems))))
-                    c.setItems(.single(ContextController.Items(content: .list(subItems))), minHeight: nil, animated: true)
+                    c?.setItems(.single(ContextController.Items(content: .list(subItems))), minHeight: nil, animated: true)
                 })))
                 
                 items.append(.separator)
@@ -884,7 +883,7 @@ func chatForumTopicMenuItems(context: AccountContext, peerId: PeerId, threadId: 
                 ], title: nil, text: presentationData.strings.PeerInfo_TooltipMutedForever, customUndoText: nil, timeout: nil), elevatedLayout: false, animateInAsReplacement: true, action: { _ in return false }), in: .current)
                 })))
                 
-                c.setItems(.single(ContextController.Items(content: .list(items))), minHeight: nil, animated: true)
+                c?.setItems(.single(ContextController.Items(content: .list(items))), minHeight: nil, animated: true)
             }
         })))
         

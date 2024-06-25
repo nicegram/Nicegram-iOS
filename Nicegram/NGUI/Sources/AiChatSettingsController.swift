@@ -2,7 +2,6 @@ import AccountContext
 import Display
 import ItemListUI
 import NGAiChatUI
-import NGRepoUser
 import SwiftSignalKit
 
 private final class AiChatSettingsControllerArguments {}
@@ -13,22 +12,19 @@ private enum AiChatSettingsControllerSection: Int32 {
 
 @available(iOS 13.0, *)
 private enum AiChatSettingsControllerEntry: ItemListNodeEntry {
-    case showInChat(Bool)
     case clearHistory
     
     var section: ItemListSectionId {
         switch self {
-        case .showInChat, .clearHistory:
+        case .clearHistory:
             return AiChatSettingsControllerSection.main.rawValue
         }
     }
     
     var stableId: Int32 {
         switch self {
-        case .showInChat:
-            return 1
         case .clearHistory:
-            return 2
+            return 1
         }
     }
     
@@ -38,10 +34,6 @@ private enum AiChatSettingsControllerEntry: ItemListNodeEntry {
     
     func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
         switch self {
-        case let .showInChat(value):
-            return ItemListSwitchItem(presentationData: presentationData, title: AiChatUITgHelper.settingsShowInChat, value: value, sectionId: self.section, style: .blocks) { value in
-                RepoUserTgHelper.resolvePreferencesRepository().displayAiBotInChat = value
-            }
         case .clearHistory:
             return ItemListActionItem(presentationData: presentationData, title: AiChatUITgHelper.settingsClearHistory, kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 Task { await AiChatUITgHelper.presentConfirmClearHistory() }
@@ -52,11 +44,8 @@ private enum AiChatSettingsControllerEntry: ItemListNodeEntry {
 
 @available(iOS 13.0, *)
 private func controllerEntries() -> [AiChatSettingsControllerEntry] {
-    let preferencesRepository = RepoUserTgHelper.resolvePreferencesRepository()
-    
     var entries: [AiChatSettingsControllerEntry] = []
     
-    entries.append(.showInChat(preferencesRepository.displayAiBotInChat))
     entries.append(.clearHistory)
     
     return entries

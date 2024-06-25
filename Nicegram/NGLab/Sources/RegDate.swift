@@ -11,9 +11,6 @@ import SwiftSignalKit
 import NGEnv
 import NGDeviceCheck
 
-fileprivate let regDateUrlString = NGENV.reg_date_url
-fileprivate let regDateKey = NGENV.reg_date_key
-
 public enum RegDateError {
     case generic
     case badDeviceToken
@@ -47,15 +44,12 @@ struct RegDate: Codable {
 public func requestRegDate(jsonData: Data) -> Signal<String, RegDateError> {
     return Signal { subscriber in
         let completed = Atomic<Bool>(value: false)
-        var request = URLRequest(url: URL(string: regDateUrlString)!)
-        
+
+        var request = URLRequest(url: URL(string: "\(NGENV.ng_api_url)/v7/regdate")!)
+
         request.httpMethod = "POST"
-        request.setValue(regDateKey, forHTTPHeaderField: "x-api-key")
-//        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
-//        request.setValue(deviceToken, forHTTPHeaderField: "Device-Token")
-//        request.setValue("\(requestByUserId)", forHTTPHeaderField: "User-Id")
-//        request.setValue("Bearer \(ngLabData[1])", forHTTPHeaderField: "Authorization")
-        
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
         // insert json data to the request
         request.httpBody = jsonData as Data
         request.timeoutInterval = 10
@@ -68,18 +62,6 @@ public func requestRegDate(jsonData: Data) -> Signal<String, RegDateError> {
                             let decoder = JSONDecoder()
                             let gitData = try decoder.decode(RegDate.self, from: data)
                             subscriber.putNext(gitData.data.date)
-//                            let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String : Any]
-//                            if let result = String(data: data, encoding: .utf8) {
-//                                if let timeInterval = TimeInterval(result) {
-//                                    let date = Date(timeIntervalSince1970: timeInterval)
-//                                    subscriber.putNext(date)
-//                                    subscriber.putCompletion()
-//                                } else {
-//                                    subscriber.putError(.generic)
-//                                }
-//                            } else {
-//                                subscriber.putError(.generic)
-//                            }
                         } catch {
                             subscriber.putError(.generic)
                         }

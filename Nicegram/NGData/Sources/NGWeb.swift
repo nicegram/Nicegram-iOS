@@ -94,7 +94,7 @@ extension String {
 public func requestApi(_ path: String, pathParams: [String] = [], completion: @escaping (_ apiResult: [String: Any]?) -> Void) {
     let startTime = CFAbsoluteTimeGetCurrent()
     ngLog("DECLARING REQUEST \(path)")
-    var urlString = NGENV.ng_api_url + path + "/"
+    var urlString = "\(NGENV.ng_api_url)/\(path)/"
     for param in pathParams {
         urlString = urlString + String(param) + "/"
     }
@@ -118,7 +118,7 @@ public func requestApi(_ path: String, pathParams: [String] = [], completion: @e
 }
 
 public func getNGSettings(_ userId: Int64, completion: @escaping (_ sync: Bool, _ rreasons: [String], _ allowed: [Int64], _ restricted: [Int64], _ premiumStatus: Bool, _ betaPremiumStatus: Bool) -> Void) {
-    requestApi("settings", pathParams: [String(userId)], completion: { (apiResponse) -> Void in
+    requestApi("v7/unblock-feature/settings", pathParams: [String(userId)], completion: { (apiResponse) -> Void in
         var syncChats = VARNGAPISETTINGS.SYNC_CHATS
         var restricitionReasons = VARNGAPISETTINGS.RESTRICTION_REASONS
         var allowedChats = VARNGAPISETTINGS.ALLOWED

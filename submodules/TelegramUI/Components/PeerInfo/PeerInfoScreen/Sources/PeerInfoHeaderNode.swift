@@ -2247,6 +2247,12 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             return result
         }
         
+        if self.isSettings {
+            if self.subtitleNodeRawContainer.bounds.contains(self.view.convert(point, to: self.subtitleNodeRawContainer.view)) {
+                return self.subtitleNodeRawContainer.view
+            }
+        }
+        
         if let result = self.buttonsContainerNode.view.hitTest(self.view.convert(point, to: self.buttonsContainerNode.view), with: event) {
             return result
         }

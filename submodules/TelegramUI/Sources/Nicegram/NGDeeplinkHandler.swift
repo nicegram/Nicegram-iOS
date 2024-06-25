@@ -4,6 +4,7 @@ import Display
 import FeatAvatarGeneratorUI
 import FeatCardUI
 import FeatImagesHubUI
+import FeatOnboarding
 import FeatPremiumUI
 import FeatRewardsUI
 import FeatTasks
@@ -14,7 +15,6 @@ import NGAuth
 import NGCore
 import class NGCoreUI.SharedLoadingView
 import NGModels
-import NGOnboarding
 import NGRemoteConfig
 import NGSpecialOffer
 import NGUI
@@ -173,7 +173,9 @@ private extension NGDeeplinkHandler {
     }
     
     func handleNicegramPremium(url: URL) -> Bool {
-        PremiumUITgHelper.routeToPremium()
+        PremiumUITgHelper.routeToPremium(
+            source: .deeplink
+        )
         return true
     }
     
@@ -191,6 +193,10 @@ private extension NGDeeplinkHandler {
     }
     
     func handleOnboarding(url: URL) -> Bool {
+        guard #available(iOS 15.0, *) else {
+            return false
+        }
+        
         var dismissImpl: (() -> Void)?
         
         let c = onboardingController() {

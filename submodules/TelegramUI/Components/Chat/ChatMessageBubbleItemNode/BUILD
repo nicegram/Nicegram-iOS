@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/AsyncDisplayKit",
@@ -80,7 +80,12 @@ swift_library(
         "//submodules/TelegramUI/Components/Chat/ChatMessageGiftBubbleContentNode",
         "//submodules/TelegramUI/Components/Chat/ChatMessageGiveawayBubbleContentNode",
         "//submodules/TelegramUI/Components/Chat/ChatMessageJoinedChannelBubbleContentNode",
+        "//submodules/TelegramUI/Components/Chat/ChatMessageFactCheckBubbleContentNode",
         "//submodules/UIKitRuntimeUtils",
+        "//submodules/TelegramUI/Components/Chat/ChatMessageTransitionNode",
+        "//submodules/AnimatedStickerNode",
+        "//submodules/TelegramAnimatedStickerNode",
+        "//submodules/TelegramUI/Components/LottieMetal",
     ],
     visibility = [
         "//visibility:public",

@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/SSignalKit/SwiftSignalKit",
@@ -27,6 +27,8 @@ swift_library(
         "//submodules/ContactsPeerItem",
         "//submodules/ItemListUI",
         "//submodules/ChatListSearchItemHeader",
+        "//submodules/TelegramUI/Components/LottieComponent",
+        "//submodules/Components/MultilineTextComponent",
     ],
     visibility = [
         "//visibility:public",

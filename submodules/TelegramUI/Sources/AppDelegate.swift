@@ -1,6 +1,7 @@
 // MARK: Nicegram imports
 import AppLovinAdProvider
 import FeatNicegramHub
+import FeatOnboarding
 import FeatTasks
 import NGAiChat
 import NGAnalytics
@@ -11,13 +12,13 @@ import NGEntryPoint
 import NGEnv
 import NGLogging
 import NGLottie
-import NGOnboarding
 import NGRemoteConfig
 import NGRepoTg
 import NGRepoUser
 import NGStats
 import NGStealthMode
 import NGStrings
+import NicegramWallet
 import SubscriptionAnalytics
 
 import UIKit
@@ -322,6 +323,15 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     }
     private let firebaseSecretStream = Promise<[String: String]>([:])
     
+    private var firebaseRequestVerificationSecrets: [String: String] = [:] {
+        didSet {
+            if self.firebaseRequestVerificationSecrets != oldValue {
+                self.firebaseRequestVerificationSecretStream.set(.single(self.firebaseRequestVerificationSecrets))
+            }
+        }
+    }
+    private let firebaseRequestVerificationSecretStream = Promise<[String: String]>([:])
+    
     private var urlSessions: [URLSession] = []
     private func urlSession(identifier: String) -> URLSession {
         if let existingSession = self.urlSessions.first(where: { $0.configuration.identifier == identifier }) {
@@ -358,7 +368,8 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     
     private var alertActions: (primary: (() -> Void)?, other: (() -> Void)?)?
     
-    private let deviceToken = Promise<Data?>(nil)
+    private let voipDeviceToken = Promise<Data?>(nil)
+    private let regularDeviceToken = Promise<Data?>(nil)
         
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         precondition(!testIsLaunched)
@@ -366,7 +377,10 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         AppCache.appLaunchCount += 1
         
         let _ = voipTokenPromise.get().start(next: { token in
-            self.deviceToken.set(.single(token))
+            self.voipDeviceToken.set(.single(token))
+        })
+        let _ = notificationTokenPromise.get().start(next: { token in
+            self.regularDeviceToken.set(.single(token))
         })
 
         if #available(iOS 12.0, *) {
@@ -396,8 +410,8 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         
         NGEntryPoint.onAppLaunch(
             env: Env(
-                apiBaseUrl: URL(string: NGENV.esim_api_url)!,
-                apiKey: NGENV.esim_api_key,
+                apiBaseUrl: URL(string: NGENV.ng_api_url)!,
+                apiKey: NGENV.ng_api_key,
                 isAppStoreBuild: buildConfig.isAppStoreBuild,
                 premiumProductId: NGENV.premium_bundle,
                 privacyUrl: URL(string: NGENV.privacy_url)!,
@@ -426,8 +440,80 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             },
             remoteConfig: {
                 RemoteConfigServiceImpl.shared
-            }
+            },
+            walletData: .init(
+                env: {
+                    .init(
+                        appUrlScheme: buildConfig.appSpecificUrlScheme,
+                        enableLogging: false,
+                        keychainGroupIdentifier: NGENV.wallet.keychainGroupIdentifier,
+                        nicegramApiBaseUrl: URL(string: NGENV.ng_api_url)!
+                            .appendingPathComponent("v7/"),
+                        walletConnectProjectId: NGENV.wallet.walletConnectProjectId,
+                        web3AuthBackupQuestion: NGENV.wallet.web3AuthBackupQuestion,
+                        web3AuthClientId: NGENV.wallet.web3AuthClientId,
+                        web3AuthVerifier: NGENV.wallet.web3AuthVerifier
+                    )
+                },
+                contactImageProvider: {
+                    AnonymousContactImageProvider { contact in
+                        guard let contextValue = self.contextValue else {
+                            return nil
+                        }
+                        return await ContactImageProviderImpl.image(
+                            context: contextValue.context,
+                            contact: contact
+                        )
+                    }
+                },
+                contactMessageSender: {
+                    AnonymousContactMessageSender { text, contactId in
+                        guard let contextValue = self.contextValue else {
+                            return
+                        }
+                        ContactMessageSenderImpl.send(
+                            context: contextValue.context,
+                            text: text,
+                            contactId: contactId
+                        )
+                    }
+                },
+                contactsRetriever: {
+                    AnonymousContactsRetriever {
+                        guard let contextValue = self.contextValue else {
+                            return []
+                        }
+                        return await ContactsRetrieverImpl.getContacts(
+                            context: contextValue.context
+                        )
+                    }
+                },
+                walletVerificationInterceptor: {
+                    AnonymousWalletVerificationInterceptor(
+                        shouldVerifyOnApplicationResignActive: {
+                            guard let contextValue = self.contextValue else {
+                                return false
+                            }
+                            return await WalletVerificationInterceptorImpl.shouldVerifyOnApplicationResignActive(
+                                context: contextValue.context
+                            )
+                        }
+                    )
+                }
+            )
         )
+        
+        // MARK: Nicegram Unblock
+        let _ = (self.context.get()
+        |> take(1)
+        |> deliverOnMainQueue).start(next: { context in
+            if let context = context {
+                Queue().async {
+                    self.fetchNGUserSettings(context.context.account.peerId.id._internalGetInt64Value())
+                }
+            }
+        })
+        //
         
         let launchStartTime = CFAbsoluteTimeGetCurrent()
         
@@ -582,15 +668,22 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         
         let networkArguments = NetworkInitializationArguments(apiId: apiId, apiHash: apiHash, languagesCategory: languagesCategory, appVersion: appVersion, voipMaxLayer: PresentationCallManagerImpl.voipMaxLayer, voipVersions: PresentationCallManagerImpl.voipVersions(includeExperimental: true, includeReference: false).map { version, supportsVideo -> CallSessionManagerImplementationVersion in
             CallSessionManagerImplementationVersion(version: version, supportsVideo: supportsVideo)
-        }, appData: self.deviceToken.get()
+        }, appData: self.regularDeviceToken.get()
         |> map { token in
-            let data = buildConfig.bundleData(withAppToken: token, signatureDict: signatureDict)
+            let tokenEnvironment: String
+            #if DEBUG
+            tokenEnvironment = "sandbox"
+            #else
+            tokenEnvironment = "production"
+            #endif
+            
+            let data = buildConfig.bundleData(withAppToken: token, tokenType: "apns", tokenEnvironment: tokenEnvironment, signatureDict: signatureDict)
             if let data = data, let _ = String(data: data, encoding: .utf8) {
             } else {
                 Logger.shared.log("data", "can't deserialize")
             }
             return data
-        }, autolockDeadine: autolockDeadine, encryptionProvider: OpenSSLEncryptionProvider(), deviceModelName: nil, useBetaFeatures: !buildConfig.isAppStoreBuild, isICloudEnabled: buildConfig.isICloudEnabled)
+        }, externalRequestVerificationStream: self.firebaseRequestVerificationSecretStream.get(), autolockDeadine: autolockDeadine, encryptionProvider: OpenSSLEncryptionProvider(), deviceModelName: nil, useBetaFeatures: !buildConfig.isAppStoreBuild, isICloudEnabled: buildConfig.isICloudEnabled)
         
         guard let appGroupUrl = maybeAppGroupUrl else {
             self.mainWindow?.presentNative(UIAlertController(title: nil, message: "Error 2", preferredStyle: .alert))
@@ -1540,7 +1633,8 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         if AppCache.wasOnboardingShown {
             onNicegramOnboardingComplete()
         } else {
-            if let rootController = window.rootViewController {
+            if #available(iOS 15.0, *),
+               let rootController = window.rootViewController {
                 let controller = onboardingController(
                     onComplete: { [weak rootController] in
                         AppCache.wasOnboardingShown = true
@@ -2137,16 +2231,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         	self.fetchGlobalNGSettings()
 		    //self.fetchPremium()
         }
-        
-        let _ = (self.context.get()
-        |> take(1)
-        |> deliverOnMainQueue).start(next: { context in
-            if let context = context {
-                Queue().async {
-                	self.fetchNGUserSettings(context.context.account.peerId.id._internalGetInt64Value())
-                }
-            }
-        })
         //
         
         SharedDisplayLinkDriver.shared.updateForegroundState(self.isActiveValue)
@@ -2203,6 +2287,15 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 firebaseSecrets[receipt] = secret
                 self.firebaseSecrets = firebaseSecrets
             }
+            
+            completionHandler(.newData)
+            return
+        }
+        
+        if let nonce = redactedPayload["verify_nonce"] as? String, let secret = redactedPayload["verify_secret"] as? String {
+            var firebaseRequestVerificationSecrets = self.firebaseRequestVerificationSecrets
+            firebaseRequestVerificationSecrets[nonce] = secret
+            self.firebaseRequestVerificationSecrets = firebaseRequestVerificationSecrets
             
             completionHandler(.newData)
             return

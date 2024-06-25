@@ -7,7 +7,7 @@ swift_library(
         "Source/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     visibility = [
         "//visibility:public",

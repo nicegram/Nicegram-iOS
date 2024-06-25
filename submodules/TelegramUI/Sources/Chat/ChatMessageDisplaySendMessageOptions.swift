@@ -1,4 +1,4 @@
-// MARK: Nicegram
+// MARK: Nicegram TranslateEnteredMessage
 import NGTranslate
 import NGUI
 //
@@ -13,6 +13,16 @@ import TelegramCore
 import TelegramNotices
 import ChatSendMessageActionUI
 import AccountContext
+import TopMessageReactions
+import ReactionSelectionNode
+import ChatControllerInteraction
+import ChatSendAudioMessageContextPreview
+
+extension ChatSendMessageEffect {
+    convenience init(_ effect: ChatSendMessageActionSheetController.SendParameters.Effect) {
+        self.init(id: effect.id)
+    }
+}
 
 func chatMessageDisplaySendMessageOptions(selfController: ChatControllerImpl, node: ASDisplayNode, gesture: ContextGesture) {
     guard let peerId = selfController.chatLocation.peerId, let textInputView = selfController.chatDisplayNode.textInputView(), let layout = selfController.validLayout else {
@@ -32,30 +42,46 @@ func chatMessageDisplaySendMessageOptions(selfController: ChatControllerImpl, no
         hasEntityKeyboard = true
     }
     
-    let _ = (selfController.context.account.viewTracker.peerView(peerId)
-    |> take(1)
-    |> deliverOnMainQueue).startStandalone(next: { [weak selfController] peerView in
+    let effectItems: Signal<[ReactionItem]?, NoError>
+    if peerId != selfController.context.account.peerId && peerId.namespace == Namespaces.Peer.CloudUser {
+        effectItems = effectMessageReactions(context: selfController.context)
+        |> map(Optional.init)
+    } else {
+        effectItems = .single(nil)
+    }
+    
+    let availableMessageEffects = selfController.context.availableMessageEffects |> take(1)
+    let hasPremium = selfController.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: selfController.context.account.peerId))
+    |> map { peer -> Bool in
+        guard case let .user(user) = peer else {
+            return false
+        }
+        return user.isPremium
+    }
+    
+    let editMessages: Signal<[EngineMessage], NoError>
+    if let editMessage = selfController.presentationInterfaceState.interfaceState.editMessage {
+        editMessages = selfController.context.engine.data.get(
+            TelegramEngine.EngineData.Item.Messages.MessageGroup(id: editMessage.messageId)
+        )
+    } else {
+        editMessages = .single([])
+    }
+    
+    let _ = (combineLatest(
+        selfController.context.account.viewTracker.peerView(peerId) |> take(1),
+        effectItems,
+        availableMessageEffects,
+        hasPremium,
+        editMessages
+    )
+    |> deliverOnMainQueue).startStandalone(next: { [weak selfController] peerView, effectItems, availableMessageEffects, hasPremium, editMessages in
         guard let selfController, let peer = peerViewMainPeer(peerView) else {
             return
         }
-        var sendWhenOnlineAvailable = false
-        if let presence = peerView.peerPresences[peer.id] as? TelegramUserPresence, case let .present(until) = presence.status {
-            let currentTime = Int32(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970)
-            if currentTime > until {
-                sendWhenOnlineAvailable = true
-            }
-        }
-        if peer.id.namespace == Namespaces.Peer.CloudUser && peer.id.id._internalGetInt64Value() == 777000 {
-            sendWhenOnlineAvailable = false
-        }
-        
-        if sendWhenOnlineAvailable {
-            let _ = ApplicationSpecificNotice.incrementSendWhenOnlineTip(accountManager: selfController.context.sharedContext.accountManager, count: 4).startStandalone()
-        }
         
         // MARK: Nicegram TranslateEnteredMessage
-        let peerId = selfController.presentationInterfaceState.chatLocation.peerId
-        let isSecretChat = (peerId?.namespace == Namespaces.Peer.SecretChat)
+        let isSecretChat = (peerId.namespace == Namespaces.Peer.SecretChat)
         
         let inputText = selfController.presentationInterfaceState.interfaceState.effectiveInputState.inputText.string
         let isInputTextEmpty = inputText
@@ -63,80 +89,244 @@ func chatMessageDisplaySendMessageOptions(selfController: ChatControllerImpl, no
             .isEmpty
         
         let canTranslate = !isSecretChat && !isInputTextEmpty
+        
+        let nicegramData = ChatSendMessageContextNicegramData(
+            canTranslate: canTranslate,
+            translate: { [weak selfController] in
+                guard let selfController else { return }
+                let chatId = selfController.chatLocation.peerId
+                let textToTranslate = selfController.presentationInterfaceState.interfaceState.effectiveInputState.inputText.string
+                let _ = (translateEnteredText(text: textToTranslate, chatId: chatId, context: selfController.context)
+                 |> deliverOnMainQueue).start(
+                    next: { translated in
+                        selfController.updateChatPresentationInterfaceState(interactive: true, { state in
+                            let newTextInputState = ChatTextInputState(inputText: NSAttributedString(string: translated))
+                            return state.updatedInterfaceState { interfaceState in
+                                return interfaceState.withUpdatedEffectiveInputState(newTextInputState)
+                            }
+                        })
+                    }, error: { error in
+                        let errorDescription: String
+                        switch error {
+                        case .toLanguageNotFound:
+                            errorDescription = "Messages.TranslateError.ToLanguageNotFound"
+                        case .translate:
+                            errorDescription = "Messages.TranslateError"
+                        }
+                        let c = getIAPErrorController(context: selfController.context, errorDescription, selfController.presentationData)
+                        selfController.controllerInteraction?.presentGlobalOverlayController(c, nil)
+                    })
+            },
+            chooseLanguage: {  [weak selfController] in
+                guard let selfController else { return }
+                let chatId = selfController.chatLocation.peerId
+                let _ = (getLanguageCode(forChatWith: chatId, context: selfController.context)
+                         |> deliverOnMainQueue).start(next: { code in
+                    let c = languageListController(context: selfController.context, selectedLanguageCode: code, selectLanguage: { code in
+                        setLanguageCode(code, forChatWith: chatId)
+                    })
+                    c.navigationPresentation = .modal
+                    selfController.push(c)
+                })
+            }
+        )
         //
         
-        let controller = ChatSendMessageActionSheetController(context: selfController.context, updatedPresentationData: selfController.updatedPresentationData, peerId: selfController.presentationInterfaceState.chatLocation.peerId, forwardMessageIds: selfController.presentationInterfaceState.interfaceState.forwardMessageIds, hasEntityKeyboard: hasEntityKeyboard, gesture: gesture, sourceSendButton: node, textInputView: textInputView, canSendWhenOnline: sendWhenOnlineAvailable, completion: { [weak selfController] in
-            guard let selfController else {
+        if let editMessage = selfController.presentationInterfaceState.interfaceState.editMessage {
+            if editMessages.isEmpty {
                 return
             }
-            selfController.supportedOrientations = previousSupportedOrientations
-        }, sendMessage: { [weak selfController] mode in
-            guard let selfController else {
-                return
+            
+            var mediaPreview: ChatSendMessageContextScreenMediaPreview?
+            if editMessages.contains(where: { message in
+                return message.media.contains(where: { media in
+                    if media is TelegramMediaImage {
+                        return true
+                    } else if let file = media as? TelegramMediaFile, file.isVideo {
+                        return true
+                    }
+                    return false
+                })
+            }) {
+                mediaPreview = ChatSendGroupMediaMessageContextPreview(
+                    context: selfController.context,
+                    presentationData: selfController.presentationData,
+                    wallpaperBackgroundNode: selfController.chatDisplayNode.backgroundNode,
+                    messages: editMessages
+                )
             }
-            switch mode {
-            case .generic:
-                selfController.controllerInteraction?.sendCurrentMessage(false)
-            case .silently:
-                selfController.controllerInteraction?.sendCurrentMessage(true)
-            case .whenOnline:
-                selfController.chatDisplayNode.sendCurrentMessage(scheduleTime: scheduleWhenOnlineTimestamp) { [weak selfController] in
+            
+            let mediaCaptionIsAbove: Bool
+            if let value = editMessage.mediaCaptionIsAbove {
+                mediaCaptionIsAbove = value
+            } else {
+                mediaCaptionIsAbove = editMessages.contains(where: {
+                    $0.attributes.contains(where: {
+                        $0 is InvertMediaMessageAttribute
+                    })
+                })
+            }
+            
+            let controller = makeChatSendMessageActionSheetController(
+                // MARK: Nicegram TranslateEnteredMessage
+                nicegramData: nicegramData,
+                //
+                context: selfController.context,
+                updatedPresentationData: selfController.updatedPresentationData,
+                peerId: selfController.presentationInterfaceState.chatLocation.peerId,
+                params: .editMessage(SendMessageActionSheetControllerParams.EditMessage(
+                    messages: editMessages,
+                    mediaPreview: mediaPreview,
+                    mediaCaptionIsAbove: (mediaCaptionIsAbove, { [weak selfController] updatedMediaCaptionIsAbove in
+                        guard let selfController else {
+                            return
+                        }
+                        selfController.updateChatPresentationInterfaceState(animated: false, interactive: false, { state in
+                            return state.updatedInterfaceState { interfaceState in
+                                guard var editMessage = interfaceState.editMessage else {
+                                    return interfaceState
+                                }
+                                editMessage.mediaCaptionIsAbove = updatedMediaCaptionIsAbove
+                                return interfaceState.withUpdatedEditMessage(editMessage)
+                            }
+                        })
+                    })
+                )),
+                hasEntityKeyboard: hasEntityKeyboard,
+                gesture: gesture,
+                sourceSendButton: node,
+                textInputView: textInputView,
+                emojiViewProvider: selfController.chatDisplayNode.textInputPanelNode?.emojiViewProvider,
+                wallpaperBackgroundNode: selfController.chatDisplayNode.backgroundNode,
+                completion: { [weak selfController] in
                     guard let selfController else {
                         return
                     }
-                    selfController.updateChatPresentationInterfaceState(animated: true, interactive: false, saveInterfaceState: selfController.presentationInterfaceState.subject != .scheduledMessages, {
-                        $0.updatedInterfaceState { $0.withUpdatedReplyMessageSubject(nil).withUpdatedForwardMessageIds(nil).withUpdatedForwardOptionsState(nil).withUpdatedComposeInputState(ChatTextInputState(inputText: NSAttributedString(string: ""))) }
-                    })
-                    selfController.openScheduledMessages()
-                }
-            }
-        }, /* MARK: Nicegram TranslateEnteredMessage (canTranslate, translate, chooseLanguage) */ canTranslate: canTranslate, translate: { [weak selfController] in
-            guard let selfController else { return }
-            let chatId = selfController.chatLocation.peerId
-            let textToTranslate = selfController.presentationInterfaceState.interfaceState.effectiveInputState.inputText.string
-            let _ = (translateEnteredText(text: textToTranslate, chatId: chatId, context: selfController.context)
-            |> deliverOnMainQueue).start(
-                next: { translated in
-                    selfController.updateChatPresentationInterfaceState(interactive: true, { state in
-                    let newTextInputState = ChatTextInputState(inputText: NSAttributedString(string: translated))
-                    return state.updatedInterfaceState { interfaceState in
-                        return interfaceState.withUpdatedEffectiveInputState(newTextInputState)
+                    selfController.supportedOrientations = previousSupportedOrientations
+                },
+                sendMessage: { [weak selfController] mode, parameters in
+                    guard let selfController else {
+                        return
                     }
-                })
-            }, error: { error in
-                let errorDescription: String
-                switch error {
-                case .toLanguageNotFound:
-                    errorDescription = "Messages.TranslateError.ToLanguageNotFound"
-                case .translate:
-                    errorDescription = "Messages.TranslateError"
-                }
-                let c = getIAPErrorController(context: selfController.context, errorDescription, selfController.presentationData)
-                selfController.controllerInteraction?.presentGlobalOverlayController(c, nil)
-            })
-        }, chooseLanguage: { [weak selfController] in
-            guard let selfController else { return }
-            let chatId = selfController.chatLocation.peerId
-            let _ = (getLanguageCode(forChatWith: chatId, context: selfController.context)
-            |> deliverOnMainQueue).start(next: { code in
-                let c = languageListController(context: selfController.context, selectedLanguageCode: code, selectLanguage: { code in
-                    setLanguageCode(code, forChatWith: chatId)
-                })
-                c.navigationPresentation = .modal
-                selfController.push(c)
-            })
-        }, schedule: { [weak selfController] in
-            guard let selfController else {
-                return
+                    selfController.interfaceInteraction?.editMessage()
+                },
+                schedule: { _ in
+                }, openPremiumPaywall: { [weak selfController] c in
+                    guard let selfController else {
+                        return
+                    }
+                    selfController.push(c)
+                },
+                reactionItems: nil,
+                availableMessageEffects: nil,
+                isPremium: hasPremium
+            )
+            selfController.sendMessageActionsController = controller
+            if layout.isNonExclusive {
+                selfController.present(controller, in: .window(.root))
+            } else {
+                selfController.presentInGlobalOverlay(controller, with: nil)
             }
-            selfController.controllerInteraction?.scheduleCurrentMessage()
-        })
-        controller.emojiViewProvider = selfController.chatDisplayNode.textInputPanelNode?.emojiViewProvider
-        selfController.sendMessageActionsController = controller
-        if layout.isNonExclusive {
-            selfController.present(controller, in: .window(.root))
         } else {
-            selfController.presentInGlobalOverlay(controller, with: nil)
+            var sendWhenOnlineAvailable = false
+            if let presence = peerView.peerPresences[peer.id] as? TelegramUserPresence, case let .present(until) = presence.status {
+                let currentTime = Int32(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970)
+                if currentTime > until {
+                    sendWhenOnlineAvailable = true
+                }
+            }
+            if peer.id.namespace == Namespaces.Peer.CloudUser && peer.id.id._internalGetInt64Value() == 777000 {
+                sendWhenOnlineAvailable = false
+            }
+            
+            if sendWhenOnlineAvailable {
+                let _ = ApplicationSpecificNotice.incrementSendWhenOnlineTip(accountManager: selfController.context.sharedContext.accountManager, count: 4).startStandalone()
+            }
+            
+            var mediaPreview: ChatSendMessageContextScreenMediaPreview?
+            if let videoRecorderValue = selfController.videoRecorderValue {
+                mediaPreview = videoRecorderValue.makeSendMessageContextPreview()
+            }
+            if let mediaDraftState = selfController.presentationInterfaceState.interfaceState.mediaDraftState {
+                if case let .audio(audio) = mediaDraftState {
+                    mediaPreview = ChatSendAudioMessageContextPreview(
+                        context: selfController.context,
+                        presentationData: selfController.presentationData,
+                        wallpaperBackgroundNode: selfController.chatDisplayNode.backgroundNode,
+                        waveform: audio.waveform
+                    )
+                }
+            }
+            
+            let controller = makeChatSendMessageActionSheetController(
+                // MARK: Nicegram TranslateEnteredMessage
+                nicegramData: nicegramData,
+                //
+                context: selfController.context,
+                updatedPresentationData: selfController.updatedPresentationData,
+                peerId: selfController.presentationInterfaceState.chatLocation.peerId,
+                params: .sendMessage(SendMessageActionSheetControllerParams.SendMessage(
+                    isScheduledMessages: false,
+                    mediaPreview: mediaPreview,
+                    mediaCaptionIsAbove: nil,
+                    attachment: false,
+                    canSendWhenOnline: sendWhenOnlineAvailable,
+                    forwardMessageIds: selfController.presentationInterfaceState.interfaceState.forwardMessageIds ?? []
+                )),
+                hasEntityKeyboard: hasEntityKeyboard,
+                gesture: gesture,
+                sourceSendButton: node,
+                textInputView: textInputView,
+                emojiViewProvider: selfController.chatDisplayNode.textInputPanelNode?.emojiViewProvider,
+                wallpaperBackgroundNode: selfController.chatDisplayNode.backgroundNode,
+                completion: { [weak selfController] in
+                    guard let selfController else {
+                        return
+                    }
+                    selfController.supportedOrientations = previousSupportedOrientations
+                },
+                sendMessage: { [weak selfController] mode, parameters in
+                    guard let selfController else {
+                        return
+                    }
+                    switch mode {
+                    case .generic:
+                        selfController.controllerInteraction?.sendCurrentMessage(false, parameters?.effect.flatMap(ChatSendMessageEffect.init))
+                    case .silently:
+                        selfController.controllerInteraction?.sendCurrentMessage(true, parameters?.effect.flatMap(ChatSendMessageEffect.init))
+                    case .whenOnline:
+                        selfController.chatDisplayNode.sendCurrentMessage(scheduleTime: scheduleWhenOnlineTimestamp, messageEffect: parameters?.effect.flatMap(ChatSendMessageEffect.init)) { [weak selfController] in
+                            guard let selfController else {
+                                return
+                            }
+                            selfController.updateChatPresentationInterfaceState(animated: true, interactive: false, saveInterfaceState: selfController.presentationInterfaceState.subject != .scheduledMessages, {
+                                $0.updatedInterfaceState { $0.withUpdatedReplyMessageSubject(nil).withUpdatedForwardMessageIds(nil).withUpdatedForwardOptionsState(nil).withUpdatedComposeInputState(ChatTextInputState(inputText: NSAttributedString(string: ""))) }
+                            })
+                            selfController.openScheduledMessages()
+                        }
+                    }
+                },
+                schedule: { [weak selfController] params in
+                    guard let selfController else {
+                        return
+                    }
+                    selfController.controllerInteraction?.scheduleCurrentMessage(params)
+                }, openPremiumPaywall: { [weak selfController] c in
+                    guard let selfController else {
+                        return
+                    }
+                    selfController.push(c)
+                },
+                reactionItems: (!textInputView.text.isEmpty || mediaPreview != nil) ? effectItems : nil,
+                availableMessageEffects: availableMessageEffects,
+                isPremium: hasPremium
+            )
+            selfController.sendMessageActionsController = controller
+            if layout.isNonExclusive {
+                selfController.present(controller, in: .window(.root))
+            } else {
+                selfController.presentInGlobalOverlay(controller, with: nil)
+            }
         }
     })
 }

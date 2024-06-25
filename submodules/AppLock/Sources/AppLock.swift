@@ -289,14 +289,18 @@ public final class AppLockContextImpl: AppLockContext {
                                 }
                             }
                         }
-                        passcodeController.presentedOverCoveringView = true
+                        // MARK: Nicegram, presentedOverCoveringView = false
+                        // for correct behavior of telegram passcode with nicegram screens (assistant, wallet, etc.)
+                        passcodeController.presentedOverCoveringView = false
                         passcodeController.isOpaqueWhenInOverlay = true
                         strongSelf.passcodeController = passcodeController
                         if let rootViewController = strongSelf.rootController {
                             if let _ = rootViewController.presentedViewController as? UIActivityViewController {
                             } else if let _ = rootViewController.presentedViewController as? PKPaymentAuthorizationViewController {
                             } else {
-                                rootViewController.dismiss(animated: false, completion: nil)
+                                // MARK: Nicegram, comment rootViewController.dismiss
+                                // for correct behavior of telegram passcode with nicegram screens (assistant, wallet, etc.)
+                                // rootViewController.dismiss(animated: false, completion: nil)
                             }
                         }
                         // MARK: Nicegram DB Changes
@@ -333,10 +337,9 @@ public final class AppLockContextImpl: AppLockContext {
                         if let _ = rootViewController.presentedViewController as? UIActivityViewController {
                         } else if let _ = rootViewController.presentedViewController as? PKPaymentAuthorizationViewController {
                         } else {
-                            // MARK: Nicegram, change dismiss to alpha=0
-                            // (assistant hides when app enters background)
-                            rootViewController.presentedViewController?.view.alpha = 0
-//                            rootViewController.dismiss(animated: false, completion: nil)
+                            // MARK: Nicegram, comment rootViewController.dismiss
+                            // for correct behavior of telegram passcode with nicegram screens (assistant, wallet, etc.)
+                            // rootViewController.dismiss(animated: false, completion: nil)
                         }
                     }
                 }

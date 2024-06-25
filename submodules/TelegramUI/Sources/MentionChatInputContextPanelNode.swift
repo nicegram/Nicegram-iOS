@@ -172,7 +172,9 @@ final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
                                 // MARK: Nicegram changes
                                 guard let peer = peer else {
                                     guard isPremium() else {
-                                        PremiumUITgHelper.routeToPremium()
+                                        PremiumUITgHelper.routeToPremium(
+                                            source: .mentionAll
+                                        )
                                         return (textInputState, inputMode)
                                     }
                                     let addressNames = NSMutableAttributedString()

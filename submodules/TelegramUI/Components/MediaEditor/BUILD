@@ -47,7 +47,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     data = [
         ":MediaEditorBundle",
@@ -72,6 +72,8 @@ swift_library(
         "//submodules/ImageTransparency",
         "//submodules/FFMpegBinding",
         "//submodules/TelegramUI/Components/AnimationCache/ImageDCT",
+        "//submodules/FileMediaResourceStatus",
+        "//submodules/TelegramUI/Components/MediaEditor/ImageObjectSeparation",
     ],
     visibility = [
         "//visibility:public",

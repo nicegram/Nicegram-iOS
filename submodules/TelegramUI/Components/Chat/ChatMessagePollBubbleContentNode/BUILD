@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/AsyncDisplayKit",
@@ -27,6 +27,7 @@ swift_library(
         "//submodules/TelegramUI/Components/Chat/PollBubbleTimerNode",
         "//submodules/TelegramUI/Components/Chat/MergedAvatarsNode",
         "//submodules/TelegramUI/Components/TextNodeWithEntities",
+        "//submodules/TelegramUI/Components/Chat/ShimmeringLinkNode",
     ],
     visibility = [
         "//visibility:public",

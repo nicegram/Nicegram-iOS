@@ -141,6 +141,10 @@ open class TabBarControllerImpl: ViewController, TabBarController {
     
     public var cameraItemAndAction: (item: UITabBarItem, action: () -> Void)?
     
+    // MARK: Nicegram
+    public var willSelect: ((Int) -> Void)?
+    //
+    
     // MARK: Nicegram (showTabNames)
     public init(navigationBarPresentationData: NavigationBarPresentationData, theme: TabBarControllerTheme, showTabNames: Bool) {
         self.navigationBarPresentationData = navigationBarPresentationData
@@ -303,6 +307,9 @@ open class TabBarControllerImpl: ViewController, TabBarController {
                                 }
                             }
                         } else {
+                            // MARK: Nicegram
+                            strongSelf.willSelect?(index)
+                            //
                             strongSelf.selectedIndex = index
                         }
                     }
