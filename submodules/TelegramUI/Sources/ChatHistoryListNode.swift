@@ -4094,7 +4094,7 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
         var insets = updateSizeAndInsets.insets
         var additionalBotInset: CGFloat = 0
         if #available(iOS 15.0, *), NGSettings.showNicegramButtonInChat {
-            additionalBotInset = max(additionalBotInset, 60)
+            additionalBotInset = max(additionalBotInset, 44)
         }
         if showNgBanner {
             additionalBotInset = max(additionalBotInset, ChatBannerTgHelper.bannerHeight)

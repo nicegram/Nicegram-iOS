@@ -2316,7 +2316,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             frame: CGRect(
                 origin: .zero,
                 size: CGSize(
-                    width: layout.size.width,
+                    width: apparentNavigateButtonsFrame.maxX,
                     height: apparentNavigateButtonsFrame.maxY
                 )
             )

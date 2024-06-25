@@ -503,6 +503,18 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             )
         )
         
+        // MARK: Nicegram Unblock
+        let _ = (self.context.get()
+        |> take(1)
+        |> deliverOnMainQueue).start(next: { context in
+            if let context = context {
+                Queue().async {
+                    self.fetchNGUserSettings(context.context.account.peerId.id._internalGetInt64Value())
+                }
+            }
+        })
+        //
+        
         let launchStartTime = CFAbsoluteTimeGetCurrent()
         
         let statusBarHost = ApplicationStatusBarHost()
@@ -2219,16 +2231,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         	self.fetchGlobalNGSettings()
 		    //self.fetchPremium()
         }
-        
-        let _ = (self.context.get()
-        |> take(1)
-        |> deliverOnMainQueue).start(next: { context in
-            if let context = context {
-                Queue().async {
-                	self.fetchNGUserSettings(context.context.account.peerId.id._internalGetInt64Value())
-                }
-            }
-        })
         //
         
         SharedDisplayLinkDriver.shared.updateForegroundState(self.isActiveValue)
