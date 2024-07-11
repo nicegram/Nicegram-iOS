@@ -304,7 +304,7 @@ private func canViewReadStats(message: Message, participantCount: Int?, isMessag
 
 func canReplyInChat(_ chatPresentationInterfaceState: ChatPresentationInterfaceState, accountPeerId: PeerId) -> Bool {
     if case let .customChatContents(contents) = chatPresentationInterfaceState.subject, case .hashTagSearch = contents.kind {
-        return false
+        return true
     }
     if case .customChatContents = chatPresentationInterfaceState.chatLocation {
         return true
@@ -325,7 +325,7 @@ func canReplyInChat(_ chatPresentationInterfaceState: ChatPresentationInterfaceS
     }
     switch chatPresentationInterfaceState.mode {
     case .inline:
-        return false
+        return true
     case .standard(.embedded):
         return false
     default:
@@ -927,15 +927,17 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             messageActions.editTags = Set()
         }
         
-        return (MessageContextMenuData(
+        let data = MessageContextMenuData(
             starStatus: stickerSaveStatus,
-            canReply: canReply && !isEmbeddedMode,
+            canReply: canReply,
             canPin: canPin && !isEmbeddedMode,
             canEdit: canEdit && !isEmbeddedMode,
             canSelect: canSelect && !isEmbeddedMode,
             resourceStatus: resourceStatus,
             messageActions: messageActions
-        ), updatingMessageMedia, infoSummaryData, appConfig, isMessageRead, messageViewsPrivacyTips, availableReactions, translationSettings, loggingSettings, notificationSoundList, accountPeer)
+        )
+        
+        return (data, updatingMessageMedia, infoSummaryData, appConfig, isMessageRead, messageViewsPrivacyTips, availableReactions, translationSettings, loggingSettings, notificationSoundList, accountPeer)
     }
     
     return dataSignal
@@ -1790,7 +1792,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             clearCacheAsDelete = true
         }
         
-        if let channel = message.peers[message.id.peerId] as? TelegramChannel, case .broadcast = channel.info, canEditFactCheck(appConfig: appConfig) {
+        if message.id.namespace == Namespaces.Message.Cloud, let channel = message.peers[message.id.peerId] as? TelegramChannel, case .broadcast = channel.info, canEditFactCheck(appConfig: appConfig) {
             var canAddFactCheck = true
             if message.media.contains(where: { $0 is TelegramMediaAction || $0 is TelegramMediaGiveaway }) {
                 canAddFactCheck = false
@@ -2500,6 +2502,7 @@ func chatAvailableMessageActionsImpl(engine: TelegramEngine, accountPeerId: Peer
         var disableDelete = false
         var isCopyProtected = false
         var isShareProtected = false
+        var isExternalShareProtected = false
         
         var setTag = false
         var commonTags: Set<MessageReaction.Reaction>?
@@ -2556,6 +2559,8 @@ func chatAvailableMessageActionsImpl(engine: TelegramEngine, accountPeerId: Peer
                 for media in message.media {
                     if let invoice = media as? TelegramMediaInvoice, let _ = invoice.extendedMedia {
                         isShareProtected = true
+                    } else if let _ = media as? TelegramMediaPaidContent {
+                        isExternalShareProtected = true
                     } else if let file = media as? TelegramMediaFile, file.isSticker {
                         for case let .Sticker(_, packReference, _) in file.attributes {
                             if let _ = packReference {
@@ -2758,7 +2763,7 @@ func chatAvailableMessageActionsImpl(engine: TelegramEngine, accountPeerId: Peer
                 }
             }
             
-            if !isShareProtected {
+            if !isShareProtected && !isExternalShareProtected {
                 optionsMap[id]!.insert(.externalShare)
             }
         }

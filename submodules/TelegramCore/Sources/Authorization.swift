@@ -289,7 +289,7 @@ public func sendAuthorizationCode(accountManager: AccountManager<TelegramAccount
                             parsedNextType = AuthorizationCodeNextType(apiType: nextType)
                         }
                         
-                        if case let .sentCodeTypeFirebaseSms(_, _, _, receipt, pushTimeout, _) = type {
+                        if case let .sentCodeTypeFirebaseSms(_, _, _, _, receipt, pushTimeout, _) = type {
                             return firebaseSecretStream
                             |> map { mapping -> String? in
                                 guard let receipt = receipt else {
@@ -380,7 +380,7 @@ public func sendAuthorizationCode(accountManager: AccountManager<TelegramAccount
                             
                             let user = TelegramUser(user: user)
                             var isSupportUser = false
-                            if let phone = user.phone, phone.hasPrefix("42") {
+                            if let phone = user.phone, phone.hasPrefix("42"), phone.count <= 5 {
                                 isSupportUser = true
                             }
                             let state = AuthorizedAccountState(isTestingEnvironment: account.testingEnvironment, masterDatacenterId: account.masterDatacenterId, peerId: user.id, state: nil, invalidatedChannels: [])
@@ -447,7 +447,7 @@ private func internalResendAuthorizationCode(accountManager: AccountManager<Tele
                     parsedNextType = AuthorizationCodeNextType(apiType: nextType)
                 }
                 
-                if case let .sentCodeTypeFirebaseSms(_, _, _, receipt, pushTimeout, _) = type {
+                if case let .sentCodeTypeFirebaseSms(_, _, _, _, receipt, pushTimeout, _) = type {
                     return firebaseSecretStream
                     |> map { mapping -> String? in
                         guard let receipt = receipt else {
@@ -589,7 +589,7 @@ public func resendAuthorizationCode(accountManager: AccountManager<TelegramAccou
                                         parsedNextType = AuthorizationCodeNextType(apiType: nextType)
                                     }
                                     
-                                    if case let .sentCodeTypeFirebaseSms(_, _, _, receipt, pushTimeout, _) = newType {
+                                    if case let .sentCodeTypeFirebaseSms(_, _, _, _, receipt, pushTimeout, _) = newType {
                                         return firebaseSecretStream
                                         |> map { mapping -> String? in
                                             guard let receipt = receipt else {

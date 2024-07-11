@@ -21,7 +21,7 @@ class NicegramButtonComponent: Component {
         return AssistantButton()
     }
     
-    func update(view: AssistantButton, availableSize: CGSize, state: EmptyComponentState, environment: Environment<NavigationButtonComponentEnvironment>, transition: Transition) -> CGSize {
+    func update(view: AssistantButton, availableSize: CGSize, state: EmptyComponentState, environment: Environment<NavigationButtonComponentEnvironment>, transition: ComponentTransition) -> CGSize {
         view.pressed = pressed
         
         return view.systemLayoutSizeFitting(availableSize)

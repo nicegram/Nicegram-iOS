@@ -1786,7 +1786,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
                 self.menuButtonIconNode.enqueueState(.close, animated: false)
             } else if case .webView = interfaceState.botMenuButton, let previousShowWebView = previousState?.showWebView, previousShowWebView != interfaceState.showWebView {
                 if interfaceState.showWebView {
-                    self.menuButtonIconNode.enqueueState(.close, animated: true)
+//                    self.menuButtonIconNode.enqueueState(.close, animated: true)
                 } else {
                     self.menuButtonIconNode.enqueueState(.app, animated: true)
                 }
@@ -2533,7 +2533,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
         }
         
         if let presentationInterfaceState = self.presentationInterfaceState {
-            self.actionButtons.updateLayout(size: CGSize(width: 44.0, height: minimalHeight), isMediaInputExpanded: isMediaInputExpanded, transition: transition, interfaceState: presentationInterfaceState)
+            self.actionButtons.updateLayout(size: CGSize(width: 44.0, height: minimalHeight), isMediaInputExpanded: isMediaInputExpanded, currentMessageEffectId: presentationInterfaceState.interfaceState.sendMessageEffect, transition: transition, interfaceState: presentationInterfaceState)
         }
         
         let slowModeButtonFrame = CGRect(origin: CGPoint(x: hideOffset.x + width - rightInset - 5.0 - slowModeButtonSize.width + composeButtonsOffset, y: hideOffset.y + panelHeight - minimalHeight + 6.0), size: slowModeButtonSize)
@@ -2605,7 +2605,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
             //transition.updateFrame(node: textInputNode, frame: textFieldFrame)
             textInputNode.frame = textFieldFrame
             textInputNode.updateLayout(size: textFieldFrame.size)
-            self.updateInputField(textInputFrame: textFieldFrame, transition: Transition(transition))
+            self.updateInputField(textInputFrame: textFieldFrame, transition: ComponentTransition(transition))
             if shouldUpdateLayout {
                 textInputNode.layout()
             }
@@ -3243,7 +3243,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
     
     private var dismissedEmojiSuggestionPosition: EmojiSuggestionPosition?
     
-    private func updateInputField(textInputFrame: CGRect, transition: Transition) {
+    private func updateInputField(textInputFrame: CGRect, transition: ComponentTransition) {
         guard let textInputNode = self.textInputNode, let context = self.context else {
             return
         }
@@ -4593,7 +4593,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
             }
         } else if case let .webView(title, url) = presentationInterfaceState.botMenuButton {
             let willShow = !(self.presentationInterfaceState?.showWebView ?? false)
-            if willShow {
+            if willShow || "".isEmpty {
                 self.interfaceInteraction?.openWebView(title, url, false, .menu)
             } else {
                 self.interfaceInteraction?.updateShowWebView { _ in

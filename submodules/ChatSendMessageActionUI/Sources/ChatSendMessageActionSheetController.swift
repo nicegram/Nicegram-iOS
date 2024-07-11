@@ -16,6 +16,7 @@ public enum SendMessageActionSheetControllerParams {
         public let isScheduledMessages: Bool
         public let mediaPreview: ChatSendMessageContextScreenMediaPreview?
         public let mediaCaptionIsAbove: (Bool, (Bool) -> Void)?
+        public let messageEffect: (ChatSendMessageActionSheetControllerSendParameters.Effect?, (ChatSendMessageActionSheetControllerSendParameters.Effect?) -> Void)?
         public let attachment: Bool
         public let canSendWhenOnline: Bool
         public let forwardMessageIds: [EngineMessage.Id]
@@ -24,6 +25,7 @@ public enum SendMessageActionSheetControllerParams {
             isScheduledMessages: Bool,
             mediaPreview: ChatSendMessageContextScreenMediaPreview?,
             mediaCaptionIsAbove: (Bool, (Bool) -> Void)?,
+            messageEffect: (ChatSendMessageActionSheetControllerSendParameters.Effect?, (ChatSendMessageActionSheetControllerSendParameters.Effect?) -> Void)?,
             attachment: Bool,
             canSendWhenOnline: Bool,
             forwardMessageIds: [EngineMessage.Id]
@@ -31,6 +33,7 @@ public enum SendMessageActionSheetControllerParams {
             self.isScheduledMessages = isScheduledMessages
             self.mediaPreview = mediaPreview
             self.mediaCaptionIsAbove = mediaCaptionIsAbove
+            self.messageEffect = messageEffect
             self.attachment = attachment
             self.canSendWhenOnline = canSendWhenOnline
             self.forwardMessageIds = forwardMessageIds
@@ -57,6 +60,7 @@ public func makeChatSendMessageActionSheetController(
     // MARK: Nicegram TranslateEnteredMessage
     nicegramData: ChatSendMessageContextNicegramData = .empty,
     //
+    initialData: ChatSendMessageContextScreen.InitialData,
     context: AccountContext,
     updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil,
     peerId: EnginePeer.Id?,
@@ -79,6 +83,7 @@ public func makeChatSendMessageActionSheetController(
         // MARK: Nicegram TranslateEnteredMessage
         nicegramData: nicegramData,
         //
+        initialData: initialData,
         context: context,
         updatedPresentationData: updatedPresentationData,
         peerId: peerId,

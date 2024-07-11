@@ -235,9 +235,12 @@ private extension NGDeeplinkHandler {
     
     @available(iOS 13.0, *)
     func handleSpecialOffer(url: URL) -> Bool {
-        return SpecialOfferTgHelper.showSpecialOfferFromDeeplink(
-            id: url.queryItems["id"]
-        )
+        Task { @MainActor in
+            SpecialOfferTgHelper.showSpecialOfferFromDeeplink(
+                id: url.queryItems["id"]
+            )
+        }
+        return true
     }
     
     func handlePstAuth(url: URL) -> Bool {

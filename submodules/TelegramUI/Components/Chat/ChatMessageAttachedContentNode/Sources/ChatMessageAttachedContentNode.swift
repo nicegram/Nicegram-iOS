@@ -213,8 +213,12 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
             let badgeFont = Font.regular(floor(presentationData.fontSize.baseDisplaySize * 11.0 / 17.0))
             
             var incoming = message.effectivelyIncoming(context.account.peerId)
-            if let subject = associatedData.subject, case let .messageOptions(_, _, info) = subject, case .forward = info {
-                incoming = false
+            if let subject = associatedData.subject, case let .messageOptions(_, _, info) = subject {
+                if case .forward = info {
+                    incoming = false
+                } else if case let .link(link) = info, link.isCentered {
+                    incoming = true
+                }
             }
             
             var isReplyThread = false
@@ -394,6 +398,8 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                 } else {
                     let contentMode: InteractiveMediaNodeContentMode = contentMediaAspectFilled ? .aspectFill : .aspectFit
                     
+                    let automaticDownload = shouldDownloadMediaAutomatically(settings: automaticDownloadSettings, peerType: associatedData.automaticDownloadPeerType, networkType: associatedData.automaticDownloadNetworkType, authorPeerId: message.author?.id, contactsPeerIds: associatedData.contactsPeerIds, media: contentMediaValue)
+                    
                     let (_, initialImageWidth, refineLayout) = makeContentMedia(
                         context,
                         presentationData,
@@ -402,7 +408,8 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                         attributes,
                         contentMediaValue,
                         nil,
-                        .full,
+                        nil,
+                        automaticDownload ? .full : .none,
                         associatedData.automaticDownloadPeerType,
                         associatedData.automaticDownloadPeerId,
                         .constrained(CGSize(width: constrainedSize.width - insets.left - insets.right, height: constrainedSize.height)),
@@ -702,6 +709,8 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                 
                 var statusLayoutAndContinue: (CGFloat, (CGFloat) -> (CGSize, (ListViewItemUpdateAnimation) -> ChatMessageDateAndStatusNode))?
                 if case .customChatContents = associatedData.subject {
+                } else if !presentationData.chatBubbleCorners.hasTails {
+                } else if case let .messageOptions(_, _, info) = associatedData.subject, case let .link(link) = info, link.isCentered {
                 } else if case let .linear(_, bottom) = position {
                     switch bottom {
                     case .None, .Neighbour(_, .footer, _):
@@ -728,7 +737,7 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                                 replyCount: dateReplies,
                                 isPinned: message.tags.contains(.pinned) && !associatedData.isInPinnedListMode && !isReplyThread,
                                 hasAutoremove: message.isSelfExpiring,
-                                canViewReactionList: canViewMessageReactionList(message: message, isInline: associatedData.isInline),
+                                canViewReactionList: canViewMessageReactionList(message: message),
                                 animationCache: controllerInteraction.presentationContext.animationCache,
                                 animationRenderer: controllerInteraction.presentationContext.animationRenderer
                             ))

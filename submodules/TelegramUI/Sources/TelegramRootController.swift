@@ -107,6 +107,15 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     
     private var applicationInFocusDisposable: Disposable?
     private var storyUploadEventsDisposable: Disposable?
+    
+    override public var minimizedContainer: MinimizedContainer? {
+        didSet {
+            self.minimizedContainer?.navigationController = self
+            self.minimizedContainerUpdated(self.minimizedContainer)
+        }
+    }
+    
+    public var minimizedContainerUpdated: (MinimizedContainer?) -> Void = { _ in }
         
     public init(context: AccountContext) {
         self.context = context
@@ -855,6 +864,11 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     }
 }
 
-extension MediaEditorScreen.Result: MediaEditorScreenResult {
-    
+//Xcode 16
+#if canImport(ContactProvider)
+extension MediaEditorScreen.Result: @retroactive MediaEditorScreenResult {
 }
+#else
+extension MediaEditorScreen.Result: MediaEditorScreenResult {
+}
+#endif

@@ -246,6 +246,12 @@ public enum PremiumSource: Equatable {
             } else {
                 return false
             }
+        case .storiesLinks:
+            if case .storiesLinks = rhs {
+                return true
+            } else {
+                return false
+            }
         case let .channelBoost(peerId):
             if case .channelBoost(peerId) = rhs {
                 return true
@@ -294,6 +300,12 @@ public enum PremiumSource: Equatable {
             } else {
                 return false
             }
+        case .messageEffects:
+            if case .messageEffects = rhs {
+                return true
+            } else {
+                return false
+            }
         }
     }
     
@@ -330,6 +342,7 @@ public enum PremiumSource: Equatable {
     case storiesFormatting
     case storiesExpirationDurations
     case storiesSuggestedReactions
+    case storiesLinks
     case storiesHigherQuality
     case channelBoost(EnginePeer.Id)
     case nameColor
@@ -339,6 +352,7 @@ public enum PremiumSource: Equatable {
     case readTime
     case messageTags
     case folderTags
+    case messageEffects
     
     var identifier: String? {
         switch self {
@@ -410,6 +424,8 @@ public enum PremiumSource: Equatable {
             return "stories__expiration_durations"
         case .storiesSuggestedReactions:
             return "stories__suggested_reactions"
+        case .storiesLinks:
+            return "stories__links"
         case .storiesHigherQuality:
             return "stories__quality"
         case let .channelBoost(peerId):
@@ -428,6 +444,8 @@ public enum PremiumSource: Equatable {
             return "saved_tags"
         case .folderTags:
             return "folder_tags"
+        case .messageEffects:
+            return "effects"
         }
     }
 }
@@ -455,6 +473,7 @@ public enum PremiumPerk: CaseIterable {
     case messagePrivacy
     case business
     case folderTags
+    case messageEffects
     
     case businessLocation
     case businessHours
@@ -488,7 +507,8 @@ public enum PremiumPerk: CaseIterable {
             .lastSeen,
             .messagePrivacy,
             .folderTags,
-            .business
+            .business,
+            .messageEffects
         ]
     }
     
@@ -560,6 +580,8 @@ public enum PremiumPerk: CaseIterable {
             return "message_privacy"
         case .folderTags:
             return "folder_tags"
+        case .messageEffects:
+            return "effects"
         case .business:
             return "business"
         case .businessLocation:
@@ -627,7 +649,8 @@ public enum PremiumPerk: CaseIterable {
             return strings.Premium_FolderTags
         case .business:
             return strings.Premium_Business
-            
+        case .messageEffects:
+            return strings.Premium_MessageEffects
         case .businessLocation:
             return strings.Business_Location
         case .businessHours:
@@ -693,7 +716,8 @@ public enum PremiumPerk: CaseIterable {
             return strings.Premium_FolderTagsInfo
         case .business:
             return strings.Premium_BusinessInfo
-            
+        case .messageEffects:
+            return strings.Premium_MessageEffectsInfo
         case .businessLocation:
             return strings.Business_LocationInfo
         case .businessHours:
@@ -759,6 +783,8 @@ public enum PremiumPerk: CaseIterable {
             return "Premium/Perk/MessageTags"
         case .business:
             return "Premium/Perk/Business"
+        case .messageEffects:
+            return "Premium/Perk/MessageEffects"
             
         case .businessLocation:
             return "Premium/BusinessPerk/Location"
@@ -792,6 +818,7 @@ struct PremiumIntroConfiguration {
             .translation,
             .animatedEmoji,
             .emojiStatus,
+            .messageEffects,
             .messageTags,
             .colors,
             .wallpapers,
@@ -1050,7 +1077,7 @@ final class SectionGroupComponent: Component {
             }
         }
         
-        func update(component: SectionGroupComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: Transition) -> CGSize {
+        func update(component: SectionGroupComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
             let sideInset: CGFloat = 16.0
             
             self.backgroundColor = component.backgroundColor
@@ -1157,7 +1184,7 @@ final class SectionGroupComponent: Component {
         return View(frame: CGRect())
     }
     
-    public func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: Transition) -> CGSize {
+    public func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
         return view.update(component: self, availableSize: availableSize, state: state, environment: environment, transition: transition)
     }
 }
@@ -1830,18 +1857,19 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                 UIColor(rgb: 0xef6922),
                 UIColor(rgb: 0xe95a2c),
                 UIColor(rgb: 0xe74e33),
-                UIColor(rgb: 0xe74e33), //replace
+                UIColor(rgb: 0xe74e33),
                 UIColor(rgb: 0xe54937),
                 UIColor(rgb: 0xe3433c),
                 UIColor(rgb: 0xdb374b),
                 UIColor(rgb: 0xcb3e6d),
                 UIColor(rgb: 0xbc4395),
                 UIColor(rgb: 0xab4ac4),
+                UIColor(rgb: 0xab4ac4),
                 UIColor(rgb: 0xa34cd7),
                 UIColor(rgb: 0x9b4fed),
                 UIColor(rgb: 0x8958ff),
                 UIColor(rgb: 0x676bff),
-                UIColor(rgb: 0x676bff), //replace
+                UIColor(rgb: 0x676bff),
                 UIColor(rgb: 0x6172ff),
                 UIColor(rgb: 0x5b79ff),
                 UIColor(rgb: 0x4492ff),
@@ -2066,6 +2094,8 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                                 demoSubject = .lastSeen
                             case .messagePrivacy:
                                 demoSubject = .messagePrivacy
+                            case .messageEffects:
+                                demoSubject = .messageEffects
                             case .business:
                                 demoSubject = .business
                                 let _ = ApplicationSpecificNotice.setDismissedBusinessBadge(accountManager: accountContext.sharedContext.accountManager).startStandalone()
@@ -3621,7 +3651,7 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
                 context.add(bottomPanel
                     .position(CGPoint(x: context.availableSize.width / 2.0, y: context.availableSize.height - bottomPanel.size.height / 2.0))
                     .opacity(bottomPanelAlpha)
-                    .disappear(Transition.Disappear { view, transition, completion in
+                    .disappear(ComponentTransition.Disappear { view, transition, completion in
                         if case .none = transition.animation {
                             completion()
                             return
@@ -3634,7 +3664,7 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
                 context.add(bottomSeparator
                     .position(CGPoint(x: context.availableSize.width / 2.0, y: context.availableSize.height - bottomPanel.size.height))
                     .opacity(bottomPanelAlpha)
-                    .disappear(Transition.Disappear { view, transition, completion in
+                    .disappear(ComponentTransition.Disappear { view, transition, completion in
                         if case .none = transition.animation {
                             completion()
                             return
@@ -3646,7 +3676,7 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
                 )
                 context.add(button
                     .position(CGPoint(x: context.availableSize.width / 2.0, y: context.availableSize.height - bottomPanel.size.height + bottomPanelPadding + button.size.height / 2.0))
-                    .disappear(Transition.Disappear { view, transition, completion in
+                    .disappear(ComponentTransition.Disappear { view, transition, completion in
                         if case .none = transition.animation {
                             completion()
                             return

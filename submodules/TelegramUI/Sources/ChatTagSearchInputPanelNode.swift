@@ -122,7 +122,7 @@ final class ChatTagSearchInputPanelNode: ChatInputPanelNode {
             return currentLayout.height
         }
 
-        let height = self.update(params: params, transition: Transition(transition))
+        let height = self.update(params: params, transition: ComponentTransition(transition))
         self.currentLayout = Layout(params: params, height: height)
 
         return height
@@ -133,7 +133,7 @@ final class ChatTagSearchInputPanelNode: ChatInputPanelNode {
         self.tagMessageCount = (tag, count, nil)
     }
     
-    private func update(transition: Transition) {
+    private func update(transition: ComponentTransition) {
         if self.isUpdating {
             return
         }
@@ -142,7 +142,7 @@ final class ChatTagSearchInputPanelNode: ChatInputPanelNode {
         }
     }
 
-    private func update(params: Params, transition: Transition) -> CGFloat {
+    private func update(params: Params, transition: ComponentTransition) -> CGFloat {
         self.isUpdating = true
         defer {
             self.isUpdating = false
@@ -455,10 +455,20 @@ final class ChatTagSearchInputPanelNode: ChatInputPanelNode {
             
             let resultsTextSize = resultsText.update(
                 transition: resultsTextTransition,
-                component: AnyComponent(AnimatedTextComponent(
-                    font: Font.regular(15.0),
-                    color: params.interfaceState.theme.rootController.navigationBar.secondaryTextColor,
-                    items: resultsTextString
+                component: AnyComponent(PlainButtonComponent(
+                    content: AnyComponent(AnimatedTextComponent(
+                        font: Font.regular(15.0),
+                        color: (params.interfaceState.displayHistoryFilterAsList && canChangeListMode) ? params.interfaceState.theme.rootController.navigationBar.accentTextColor : params.interfaceState.theme.rootController.navigationBar.secondaryTextColor,
+                        items: resultsTextString
+                    )),
+                    effectAlignment: .center,
+                    action: { [weak self] in
+                        guard let self, let params = self.currentLayout?.params else {
+                            return
+                        }
+                        self.interfaceInteraction?.updateDisplayHistoryFilterAsList(!params.interfaceState.displayHistoryFilterAsList)
+                    },
+                    isEnabled: params.interfaceState.displayHistoryFilterAsList && canChangeListMode
                 )),
                 environment: {},
                 containerSize: CGSize(width: 200.0, height: 100.0)

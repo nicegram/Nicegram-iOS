@@ -29,6 +29,8 @@ final class StarsTransactionsPanelEnvironment: Equatable {
     let containerInsets: UIEdgeInsets
     let isScrollable: Bool
     let isCurrent: Bool
+    let externalScrollBounds: CGRect?
+    let externalBottomOffset: CGFloat?
     
     init(
         theme: PresentationTheme,
@@ -36,7 +38,9 @@ final class StarsTransactionsPanelEnvironment: Equatable {
         dateTimeFormat: PresentationDateTimeFormat,
         containerInsets: UIEdgeInsets,
         isScrollable: Bool,
-        isCurrent: Bool
+        isCurrent: Bool,
+        externalScrollBounds: CGRect? = nil,
+        externalBottomOffset: CGFloat? = nil
     ) {
         self.theme = theme
         self.strings = strings
@@ -44,6 +48,8 @@ final class StarsTransactionsPanelEnvironment: Equatable {
         self.containerInsets = containerInsets
         self.isScrollable = isScrollable
         self.isCurrent = isCurrent
+        self.externalScrollBounds = externalScrollBounds
+        self.externalBottomOffset = externalBottomOffset
     }
 
     static func ==(lhs: StarsTransactionsPanelEnvironment, rhs: StarsTransactionsPanelEnvironment) -> Bool {
@@ -63,6 +69,12 @@ final class StarsTransactionsPanelEnvironment: Equatable {
             return false
         }
         if lhs.isCurrent != rhs.isCurrent {
+            return false
+        }
+        if lhs.externalScrollBounds != rhs.externalScrollBounds {
+            return false
+        }
+        if lhs.externalBottomOffset != rhs.externalBottomOffset {
             return false
         }
         return true
@@ -249,7 +261,7 @@ private final class StarsTransactionsHeaderComponent: Component {
             }
         }
         
-        func update(component: StarsTransactionsHeaderComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: Transition) -> CGSize {
+        func update(component: StarsTransactionsHeaderComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
             let themeUpdated = self.component?.theme !== component.theme
             
             self.component = component
@@ -348,7 +360,7 @@ private final class StarsTransactionsHeaderComponent: Component {
         return View(frame: CGRect())
     }
     
-    func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: Transition) -> CGSize {
+    func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
         return view.update(component: self, availableSize: availableSize, state: state, environment: environment, transition: transition)
     }
 }
@@ -377,7 +389,7 @@ final class StarsTransactionsPanelContainerComponent: Component {
     let dateTimeFormat: PresentationDateTimeFormat
     let insets: UIEdgeInsets
     let items: [Item]
-    let currentPanelUpdated: (AnyHashable, Transition) -> Void
+    let currentPanelUpdated: (AnyHashable, ComponentTransition) -> Void
     
     init(
         theme: PresentationTheme,
@@ -385,7 +397,7 @@ final class StarsTransactionsPanelContainerComponent: Component {
         dateTimeFormat: PresentationDateTimeFormat,
         insets: UIEdgeInsets,
         items: [Item],
-        currentPanelUpdated: @escaping (AnyHashable, Transition) -> Void
+        currentPanelUpdated: @escaping (AnyHashable, ComponentTransition) -> Void
     ) {
         self.theme = theme
         self.strings = strings
@@ -561,7 +573,7 @@ final class StarsTransactionsPanelContainerComponent: Component {
                 }
                 self.transitionFraction = 0.0
                 
-                let transition = Transition(animation: .curve(duration: 0.35, curve: .spring))
+                let transition = ComponentTransition(animation: .curve(duration: 0.35, curve: .spring))
                 if let currentId = self.currentId {
                     self.state?.updated(transition: transition)
                     component.currentPanelUpdated(currentId, transition)
@@ -576,12 +588,12 @@ final class StarsTransactionsPanelContainerComponent: Component {
             }
         }
         
-        func updateNavigationMergeFactor(value: CGFloat, transition: Transition) {
+        func updateNavigationMergeFactor(value: CGFloat, transition: ComponentTransition) {
             transition.setAlpha(view: self.topPanelMergedBackgroundView, alpha: value)
             transition.setAlpha(view: self.topPanelBackgroundView, alpha: 1.0 - value)
         }
         
-        func update(component: StarsTransactionsPanelContainerComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<StarsTransactionsPanelContainerEnvironment>, transition: Transition) -> CGSize {
+        func update(component: StarsTransactionsPanelContainerComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<StarsTransactionsPanelContainerEnvironment>, transition: ComponentTransition) -> CGSize {
             let environment = environment[StarsTransactionsPanelContainerEnvironment.self].value
             
             let themeUpdated = self.component?.theme !== component.theme
@@ -649,7 +661,7 @@ final class StarsTransactionsPanelContainerComponent: Component {
                         }
                         if component.items.contains(where: { $0.id == id }) {
                             self.currentId = id
-                            let transition = Transition(animation: .curve(duration: 0.35, curve: .spring))
+                            let transition = ComponentTransition(animation: .curve(duration: 0.35, curve: .spring))
                             self.state?.updated(transition: transition)
                             component.currentPanelUpdated(id, transition)
                         }
@@ -799,7 +811,7 @@ final class StarsTransactionsPanelContainerComponent: Component {
         return View(frame: CGRect())
     }
     
-    func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<StarsTransactionsPanelContainerEnvironment>, transition: Transition) -> CGSize {
+    func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<StarsTransactionsPanelContainerEnvironment>, transition: ComponentTransition) -> CGSize {
         return view.update(component: self, availableSize: availableSize, state: state, environment: environment, transition: transition)
     }
 }

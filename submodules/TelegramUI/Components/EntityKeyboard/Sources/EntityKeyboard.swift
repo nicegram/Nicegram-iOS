@@ -23,13 +23,13 @@ public final class EntityKeyboardChildEnvironment: Equatable {
     public let theme: PresentationTheme
     public let strings: PresentationStrings
     public let isContentInFocus: Bool
-    public let getContentActiveItemUpdated: (AnyHashable) -> ActionSlot<(AnyHashable, AnyHashable?, Transition)>?
+    public let getContentActiveItemUpdated: (AnyHashable) -> ActionSlot<(AnyHashable, AnyHashable?, ComponentTransition)>?
     
     public init(
         theme: PresentationTheme,
         strings: PresentationStrings,
         isContentInFocus: Bool,
-        getContentActiveItemUpdated: @escaping (AnyHashable) -> ActionSlot<(AnyHashable, AnyHashable?, Transition)>?
+        getContentActiveItemUpdated: @escaping (AnyHashable) -> ActionSlot<(AnyHashable, AnyHashable?, ComponentTransition)>?
     ) {
         self.theme = theme
         self.strings = strings
@@ -119,10 +119,10 @@ public final class EntityKeyboardComponent: Component {
     public let externalTopPanelContainer: PagerExternalTopPanelContainer?
     public let externalBottomPanelContainer: PagerExternalTopPanelContainer?
     public let displayTopPanelBackground: DisplayTopPanelBackground
-    public let topPanelExtensionUpdated: (CGFloat, Transition) -> Void
-    public let topPanelScrollingOffset: (CGFloat, Transition) -> Void
-    public let hideInputUpdated: (Bool, Bool, Transition) -> Void
-    public let hideTopPanelUpdated: (Bool, Transition) -> Void
+    public let topPanelExtensionUpdated: (CGFloat, ComponentTransition) -> Void
+    public let topPanelScrollingOffset: (CGFloat, ComponentTransition) -> Void
+    public let hideInputUpdated: (Bool, Bool, ComponentTransition) -> Void
+    public let hideTopPanelUpdated: (Bool, ComponentTransition) -> Void
     public let switchToTextInput: () -> Void
     public let switchToGifSubject: (GifPagerContentComponent.Subject) -> Void
     public let reorderItems: (ReorderCategory, [EntityKeyboardTopPanelComponent.Item]) -> Void
@@ -157,10 +157,10 @@ public final class EntityKeyboardComponent: Component {
         externalTopPanelContainer: PagerExternalTopPanelContainer?,
         externalBottomPanelContainer: PagerExternalTopPanelContainer?,
         displayTopPanelBackground: DisplayTopPanelBackground,
-        topPanelExtensionUpdated: @escaping (CGFloat, Transition) -> Void,
-        topPanelScrollingOffset: @escaping (CGFloat, Transition) -> Void,
-        hideInputUpdated: @escaping (Bool, Bool, Transition) -> Void,
-        hideTopPanelUpdated: @escaping (Bool, Transition) -> Void,
+        topPanelExtensionUpdated: @escaping (CGFloat, ComponentTransition) -> Void,
+        topPanelScrollingOffset: @escaping (CGFloat, ComponentTransition) -> Void,
+        hideInputUpdated: @escaping (Bool, Bool, ComponentTransition) -> Void,
+        hideTopPanelUpdated: @escaping (Bool, ComponentTransition) -> Void,
         switchToTextInput: @escaping () -> Void,
         switchToGifSubject: @escaping (GifPagerContentComponent.Subject) -> Void,
         reorderItems: @escaping (ReorderCategory, [EntityKeyboardTopPanelComponent.Item]) -> Void,
@@ -324,7 +324,7 @@ public final class EntityKeyboardComponent: Component {
             fatalError("init(coder:) has not been implemented")
         }
         
-        func update(component: EntityKeyboardComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: Transition) -> CGSize {
+        func update(component: EntityKeyboardComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
             self.state = state
             
             var contents: [AnyComponentWithIdentity<(EntityKeyboardChildEnvironment, PagerComponentChildEnvironment)>] = []
@@ -333,9 +333,9 @@ public final class EntityKeyboardComponent: Component {
             var contentAccessoryLeftButtons: [AnyComponentWithIdentity<Empty>] = []
             var contentAccessoryRightButtons: [AnyComponentWithIdentity<Empty>] = []
             
-            let gifsContentItemIdUpdated = ActionSlot<(AnyHashable, AnyHashable?, Transition)>()
-            let stickersContentItemIdUpdated = ActionSlot<(AnyHashable, AnyHashable?, Transition)>()
-            let masksContentItemIdUpdated = ActionSlot<(AnyHashable, AnyHashable?, Transition)>()
+            let gifsContentItemIdUpdated = ActionSlot<(AnyHashable, AnyHashable?, ComponentTransition)>()
+            let stickersContentItemIdUpdated = ActionSlot<(AnyHashable, AnyHashable?, ComponentTransition)>()
+            let masksContentItemIdUpdated = ActionSlot<(AnyHashable, AnyHashable?, ComponentTransition)>()
             
             if transition.userData(MarkInputCollapsed.self) != nil {
                 self.searchComponent = nil
@@ -583,7 +583,7 @@ public final class EntityKeyboardComponent: Component {
             
             let deleteBackwards = component.emojiContent?.inputInteractionHolder.inputInteraction?.deleteBackwards
             
-            let emojiContentItemIdUpdated = ActionSlot<(AnyHashable, AnyHashable?, Transition)>()
+            let emojiContentItemIdUpdated = ActionSlot<(AnyHashable, AnyHashable?, ComponentTransition)>()
             if let emojiContent = component.emojiContent {
                 contents.append(AnyComponentWithIdentity(id: "emoji", component: AnyComponent(emojiContent)))
                 var topEmojiItems: [EntityKeyboardTopPanelComponent.Item] = []
@@ -871,7 +871,7 @@ public final class EntityKeyboardComponent: Component {
             return availableSize
         }
         
-        private func topPanelExtensionUpdated(height: CGFloat, transition: Transition) {
+        private func topPanelExtensionUpdated(height: CGFloat, transition: ComponentTransition) {
             guard let component = self.component else {
                 return
             }
@@ -883,7 +883,7 @@ public final class EntityKeyboardComponent: Component {
             }
         }
         
-        private func topPanelScrollingOffset(offset: CGFloat, transition: Transition) {
+        private func topPanelScrollingOffset(offset: CGFloat, transition: ComponentTransition) {
             guard let component = self.component else {
                 return
             }
@@ -895,7 +895,7 @@ public final class EntityKeyboardComponent: Component {
             }
         }
         
-        private func isTopPanelExpandedUpdated(isExpanded: Bool, transition: Transition) {
+        private func isTopPanelExpandedUpdated(isExpanded: Bool, transition: ComponentTransition) {
             if self.isTopPanelExpanded != isExpanded {
                 self.isTopPanelExpanded = isExpanded
             }
@@ -907,7 +907,7 @@ public final class EntityKeyboardComponent: Component {
             component.hideInputUpdated(self.isTopPanelExpanded, false, transition)
         }
         
-        private func isTopPanelHiddenUpdated(isTopPanelHidden: Bool, transition: Transition) {
+        private func isTopPanelHiddenUpdated(isTopPanelHidden: Bool, transition: ComponentTransition) {
             if self.isTopPanelHidden != isTopPanelHidden {
                 self.isTopPanelHidden = isTopPanelHidden
             }
@@ -958,7 +958,7 @@ public final class EntityKeyboardComponent: Component {
                     )
                 }
                 
-                component.hideInputUpdated(true, true, Transition(animation: .curve(duration: 0.3, curve: .spring)))
+                component.hideInputUpdated(true, true, ComponentTransition(animation: .curve(duration: 0.3, curve: .spring)))
             }
         }
         
@@ -983,7 +983,7 @@ public final class EntityKeyboardComponent: Component {
                     }
                 )
             }
-            component.hideInputUpdated(true, true, Transition(animation: .curve(duration: 0.3, curve: .spring)))
+            component.hideInputUpdated(true, true, ComponentTransition(animation: .curve(duration: 0.3, curve: .spring)))
         }
         
         private func closeSearch() {
@@ -994,8 +994,8 @@ public final class EntityKeyboardComponent: Component {
                 return
             }
             self.searchComponent = nil
-            //self.state?.updated(transition: Transition(animation: .curve(duration: 0.4, curve: .spring)))
-            component.hideInputUpdated(false, false, Transition(animation: .curve(duration: 0.4, curve: .spring)))
+            //self.state?.updated(transition: ComponentTransition(animation: .curve(duration: 0.4, curve: .spring)))
+            component.hideInputUpdated(false, false, ComponentTransition(animation: .curve(duration: 0.4, curve: .spring)))
         }
         
         public func scrollToItemGroup(contentId: String, groupId: AnyHashable, subgroupId: Int32?, animated: Bool = true) {
@@ -1023,7 +1023,7 @@ public final class EntityKeyboardComponent: Component {
         return View(frame: CGRect())
     }
     
-    public func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: Transition) -> CGSize {
+    public func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
         return view.update(component: self, availableSize: availableSize, state: state, environment: environment, transition: transition)
     }
 }

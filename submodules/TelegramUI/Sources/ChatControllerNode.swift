@@ -597,6 +597,13 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                     var peers = SimpleDictionary<PeerId, Peer>()
                     peers[accountPeer.id] = accountPeer
                     
+                    let author: Peer
+                    if link.isCentered {
+                        author = TelegramUser(id: EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: EnginePeer.Id.Id._internalFromInt64Value(0)), accessHash: nil, firstName: "FirstName", lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: .blue, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil)
+                    } else {
+                        author = accountPeer
+                    }
+                    
                     var associatedMessages = SimpleDictionary<MessageId, Message>()
                     
                     var media: [Media] = []
@@ -637,7 +644,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                         localTags: [],
                         customTags: [],
                         forwardInfo: nil,
-                        author: accountPeer,
+                        author: author,
                         text: options.messageText,
                         attributes: attributes,
                         media: media,
@@ -1893,13 +1900,19 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             transition.updateFrame(node: backgroundEffectNode, frame: CGRect(origin: CGPoint(), size: layout.size))
         }
         
-        let wallpaperBounds = CGRect(x: 0.0, y: 0.0, width: layout.size.width - wrappingInsets.left - wrappingInsets.right, height: layout.size.height)
+        var wallpaperBounds = CGRect(x: 0.0, y: 0.0, width: layout.size.width - wrappingInsets.left - wrappingInsets.right, height: layout.size.height)
         
         transition.updateFrame(node: self.backgroundNode, frame: wallpaperBounds)
         
         var displayMode: WallpaperDisplayMode = .aspectFill
         if case .regular = layout.metrics.widthClass, layout.size.height == layout.deviceMetrics.screenSize.width {
             displayMode = .aspectFit
+        } else if case .compact = layout.metrics.widthClass {
+            if layout.size.width < layout.size.height && layout.size.height < layout.deviceMetrics.screenSize.height {
+                wallpaperBounds.size.height = layout.deviceMetrics.screenSize.height
+            } else if layout.size.width > layout.size.height && layout.size.height < layout.deviceMetrics.screenSize.width {
+                wallpaperBounds.size.height = layout.deviceMetrics.screenSize.width
+            }
         }
         self.backgroundNode.updateLayout(size: wallpaperBounds.size, displayMode: displayMode, transition: transition)
 
@@ -2731,7 +2744,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             let peerId = self.chatPresentationInterfaceState.chatLocation.peerId
             
             let inlineSearchResults: ComponentView<Empty>
-            var inlineSearchResultsTransition = Transition(transition)
+            var inlineSearchResultsTransition = ComponentTransition(transition)
             if let current = self.inlineSearchResults {
                 inlineSearchResults = current
             } else {
@@ -2922,6 +2935,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                         return chatHistoryViewForLocation(
                             input,
                             ignoreMessagesInTimestampRange: nil,
+                            ignoreMessageIds: Set(),
                             context: context,
                             chatLocation: chatLocation,
                             chatLocationContextHolder: Atomic(value: nil),
@@ -4396,7 +4410,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                             
                             strongSelf.ignoreUpdateHeight = true
                             textInputPanelNode.text = ""
-                            strongSelf.requestUpdateChatInterfaceState(.immediate, true, { $0.withUpdatedReplyMessageSubject(nil).withUpdatedForwardMessageIds(nil).withUpdatedForwardOptionsState(nil).withUpdatedComposeDisableUrlPreviews([]) })
+                            strongSelf.requestUpdateChatInterfaceState(.immediate, true, { $0.withUpdatedReplyMessageSubject(nil).withUpdatedSendMessageEffect(nil).withUpdatedForwardMessageIds(nil).withUpdatedForwardOptionsState(nil).withUpdatedComposeDisableUrlPreviews([]) })
                             strongSelf.ignoreUpdateHeight = false
                         }
                     }, usedCorrelationId)

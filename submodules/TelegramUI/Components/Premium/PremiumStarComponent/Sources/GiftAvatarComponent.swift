@@ -307,7 +307,7 @@ public final class GiftAvatarComponent: Component {
             }
         }
         
-        func update(component: GiftAvatarComponent, availableSize: CGSize, transition: Transition) -> CGSize {
+        func update(component: GiftAvatarComponent, availableSize: CGSize, transition: ComponentTransition) -> CGSize {
             self.component = component
             
             self.setup()
@@ -381,6 +381,10 @@ public final class GiftAvatarComponent: Component {
                         )
                         iconView.image = UIImage(bundleImageName: "Premium/Stars/Google")
                     case .fragment:
+                        iconBackgroundView.image = generateFilledCircleImage(diameter: size.width, color: UIColor(rgb: 0x1b1f24))
+                        iconView.image = UIImage(bundleImageName: "Premium/Stars/Fragment")
+                        iconOffset = 5.0
+                    case .ads:
                         iconBackgroundView.image = generateFilledCircleImage(diameter: size.width, color: UIColor(rgb: 0x1b1f24))
                         iconView.image = UIImage(bundleImageName: "Premium/Stars/Fragment")
                         iconOffset = 5.0
@@ -492,7 +496,7 @@ public final class GiftAvatarComponent: Component {
         return View(frame: CGRect())
     }
     
-    public func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: Transition) -> CGSize {
+    public func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
         return view.update(component: self, availableSize: availableSize, transition: transition)
     }
 }

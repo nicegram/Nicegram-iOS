@@ -482,7 +482,12 @@ swift_library(
         "//submodules/TelegramUI/Components/Stars/StarsTransactionsScreen",
         "//submodules/TelegramUI/Components/Stars/StarsPurchaseScreen",
         "//submodules/TelegramUI/Components/Stars/StarsTransferScreen",
+        "//submodules/TelegramUI/Components/Stars/StarsTransactionScreen",
+        "//submodules/TelegramUI/Components/Stars/StarsWithdrawalScreen",
         "//submodules/TelegramUI/Components/Chat/FactCheckAlertController",
+        "//submodules/TelegramUI/Components/PeerManagement/OwnershipTransferController",
+        "//submodules/TelegramUI/Components/PeerManagement/OldChannelsController",
+        "//submodules/TelegramUI/Components/Chat/ChatSendStarsScreen",
     ] + select({
         "@build_bazel_rules_apple//apple:ios_arm64": appcenter_targets,
         "//build-system:ios_sim_arm64": [],

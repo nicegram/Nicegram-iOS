@@ -820,7 +820,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
         self.currentMessage = message
         
         var displayInfo = displayInfo
-        if Namespaces.Message.allNonRegular.contains(message.id.namespace) {
+        if Namespaces.Message.allNonRegular.contains(message.id.namespace) || message.timestamp == 0 {
             displayInfo = false
         }
         
@@ -906,7 +906,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
             canEdit = false
         }
         
-        if message.isCopyProtected() || peerIsCopyProtected {
+        if message.isCopyProtected() || peerIsCopyProtected || message.paidContent != nil {
             canShare = false
             canEdit = false
         }
@@ -938,7 +938,9 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
         var messageText = NSAttributedString(string: "")
         var hasCaption = false
         for media in message.media {
-            if media is TelegramMediaImage {
+            if media is TelegramMediaPaidContent {
+                hasCaption = true
+            } else if media is TelegramMediaImage {
                 hasCaption = true
             } else if let file = media as? TelegramMediaFile {
                 hasCaption = file.mimeType.hasPrefix("image/")
@@ -1636,7 +1638,10 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                         
                         var hasExternalShare = true
                         for media in currentMessage.media {
-                            if let invoice = media as? TelegramMediaInvoice, let _ = invoice.extendedMedia {
+                            if let _ = media as? TelegramMediaPaidContent {
+                                hasExternalShare = false
+                                break
+                            } else if let invoice = media as? TelegramMediaInvoice, let _ = invoice.extendedMedia {
                                 hasExternalShare = false
                                 break
                             }

@@ -397,42 +397,6 @@ public extension Api {
     }
 }
 public extension Api {
-    enum SimpleWebViewResult: TypeConstructorDescription {
-        case simpleWebViewResultUrl(url: String)
-    
-    public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
-    switch self {
-                case .simpleWebViewResultUrl(let url):
-                    if boxed {
-                        buffer.appendInt32(-2010155333)
-                    }
-                    serializeString(url, buffer: buffer, boxed: false)
-                    break
-    }
-    }
-    
-    public func descriptionFields() -> (String, [(String, Any)]) {
-        switch self {
-                case .simpleWebViewResultUrl(let url):
-                return ("simpleWebViewResultUrl", [("url", url as Any)])
-    }
-    }
-    
-        public static func parse_simpleWebViewResultUrl(_ reader: BufferReader) -> SimpleWebViewResult? {
-            var _1: String?
-            _1 = parseString(reader)
-            let _c1 = _1 != nil
-            if _c1 {
-                return Api.SimpleWebViewResult.simpleWebViewResultUrl(url: _1!)
-            }
-            else {
-                return nil
-            }
-        }
-    
-    }
-}
-public extension Api {
     enum SmsJob: TypeConstructorDescription {
         case smsJob(jobId: String, phoneNumber: String, text: String)
     
@@ -603,6 +567,58 @@ public extension Api {
     }
 }
 public extension Api {
+    enum StarsRevenueStatus: TypeConstructorDescription {
+        case starsRevenueStatus(flags: Int32, currentBalance: Int64, availableBalance: Int64, overallRevenue: Int64, nextWithdrawalAt: Int32?)
+    
+    public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
+    switch self {
+                case .starsRevenueStatus(let flags, let currentBalance, let availableBalance, let overallRevenue, let nextWithdrawalAt):
+                    if boxed {
+                        buffer.appendInt32(2033461574)
+                    }
+                    serializeInt32(flags, buffer: buffer, boxed: false)
+                    serializeInt64(currentBalance, buffer: buffer, boxed: false)
+                    serializeInt64(availableBalance, buffer: buffer, boxed: false)
+                    serializeInt64(overallRevenue, buffer: buffer, boxed: false)
+                    if Int(flags) & Int(1 << 1) != 0 {serializeInt32(nextWithdrawalAt!, buffer: buffer, boxed: false)}
+                    break
+    }
+    }
+    
+    public func descriptionFields() -> (String, [(String, Any)]) {
+        switch self {
+                case .starsRevenueStatus(let flags, let currentBalance, let availableBalance, let overallRevenue, let nextWithdrawalAt):
+                return ("starsRevenueStatus", [("flags", flags as Any), ("currentBalance", currentBalance as Any), ("availableBalance", availableBalance as Any), ("overallRevenue", overallRevenue as Any), ("nextWithdrawalAt", nextWithdrawalAt as Any)])
+    }
+    }
+    
+        public static func parse_starsRevenueStatus(_ reader: BufferReader) -> StarsRevenueStatus? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: Int64?
+            _2 = reader.readInt64()
+            var _3: Int64?
+            _3 = reader.readInt64()
+            var _4: Int64?
+            _4 = reader.readInt64()
+            var _5: Int32?
+            if Int(_1!) & Int(1 << 1) != 0 {_5 = reader.readInt32() }
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            let _c4 = _4 != nil
+            let _c5 = (Int(_1!) & Int(1 << 1) == 0) || _5 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 {
+                return Api.StarsRevenueStatus.starsRevenueStatus(flags: _1!, currentBalance: _2!, availableBalance: _3!, overallRevenue: _4!, nextWithdrawalAt: _5)
+            }
+            else {
+                return nil
+            }
+        }
+    
+    }
+}
+public extension Api {
     enum StarsTopupOption: TypeConstructorDescription {
         case starsTopupOption(flags: Int32, stars: Int64, storeProduct: String?, currency: String, amount: Int64)
     
@@ -656,13 +672,13 @@ public extension Api {
 }
 public extension Api {
     enum StarsTransaction: TypeConstructorDescription {
-        case starsTransaction(flags: Int32, id: String, stars: Int64, date: Int32, peer: Api.StarsTransactionPeer, title: String?, description: String?, photo: Api.WebDocument?)
+        case starsTransaction(flags: Int32, id: String, stars: Int64, date: Int32, peer: Api.StarsTransactionPeer, title: String?, description: String?, photo: Api.WebDocument?, transactionDate: Int32?, transactionUrl: String?, botPayload: Buffer?, msgId: Int32?, extendedMedia: [Api.MessageMedia]?)
     
     public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
     switch self {
-                case .starsTransaction(let flags, let id, let stars, let date, let peer, let title, let description, let photo):
+                case .starsTransaction(let flags, let id, let stars, let date, let peer, let title, let description, let photo, let transactionDate, let transactionUrl, let botPayload, let msgId, let extendedMedia):
                     if boxed {
-                        buffer.appendInt32(-865044046)
+                        buffer.appendInt32(766853519)
                     }
                     serializeInt32(flags, buffer: buffer, boxed: false)
                     serializeString(id, buffer: buffer, boxed: false)
@@ -672,14 +688,23 @@ public extension Api {
                     if Int(flags) & Int(1 << 0) != 0 {serializeString(title!, buffer: buffer, boxed: false)}
                     if Int(flags) & Int(1 << 1) != 0 {serializeString(description!, buffer: buffer, boxed: false)}
                     if Int(flags) & Int(1 << 2) != 0 {photo!.serialize(buffer, true)}
+                    if Int(flags) & Int(1 << 5) != 0 {serializeInt32(transactionDate!, buffer: buffer, boxed: false)}
+                    if Int(flags) & Int(1 << 5) != 0 {serializeString(transactionUrl!, buffer: buffer, boxed: false)}
+                    if Int(flags) & Int(1 << 7) != 0 {serializeBytes(botPayload!, buffer: buffer, boxed: false)}
+                    if Int(flags) & Int(1 << 8) != 0 {serializeInt32(msgId!, buffer: buffer, boxed: false)}
+                    if Int(flags) & Int(1 << 9) != 0 {buffer.appendInt32(481674261)
+                    buffer.appendInt32(Int32(extendedMedia!.count))
+                    for item in extendedMedia! {
+                        item.serialize(buffer, true)
+                    }}
                     break
     }
     }
     
     public func descriptionFields() -> (String, [(String, Any)]) {
         switch self {
-                case .starsTransaction(let flags, let id, let stars, let date, let peer, let title, let description, let photo):
-                return ("starsTransaction", [("flags", flags as Any), ("id", id as Any), ("stars", stars as Any), ("date", date as Any), ("peer", peer as Any), ("title", title as Any), ("description", description as Any), ("photo", photo as Any)])
+                case .starsTransaction(let flags, let id, let stars, let date, let peer, let title, let description, let photo, let transactionDate, let transactionUrl, let botPayload, let msgId, let extendedMedia):
+                return ("starsTransaction", [("flags", flags as Any), ("id", id as Any), ("stars", stars as Any), ("date", date as Any), ("peer", peer as Any), ("title", title as Any), ("description", description as Any), ("photo", photo as Any), ("transactionDate", transactionDate as Any), ("transactionUrl", transactionUrl as Any), ("botPayload", botPayload as Any), ("msgId", msgId as Any), ("extendedMedia", extendedMedia as Any)])
     }
     }
     
@@ -704,6 +729,18 @@ public extension Api {
             if Int(_1!) & Int(1 << 2) != 0 {if let signature = reader.readInt32() {
                 _8 = Api.parse(reader, signature: signature) as? Api.WebDocument
             } }
+            var _9: Int32?
+            if Int(_1!) & Int(1 << 5) != 0 {_9 = reader.readInt32() }
+            var _10: String?
+            if Int(_1!) & Int(1 << 5) != 0 {_10 = parseString(reader) }
+            var _11: Buffer?
+            if Int(_1!) & Int(1 << 7) != 0 {_11 = parseBytes(reader) }
+            var _12: Int32?
+            if Int(_1!) & Int(1 << 8) != 0 {_12 = reader.readInt32() }
+            var _13: [Api.MessageMedia]?
+            if Int(_1!) & Int(1 << 9) != 0 {if let _ = reader.readInt32() {
+                _13 = Api.parseVector(reader, elementSignature: 0, elementType: Api.MessageMedia.self)
+            } }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
@@ -712,8 +749,13 @@ public extension Api {
             let _c6 = (Int(_1!) & Int(1 << 0) == 0) || _6 != nil
             let _c7 = (Int(_1!) & Int(1 << 1) == 0) || _7 != nil
             let _c8 = (Int(_1!) & Int(1 << 2) == 0) || _8 != nil
-            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 {
-                return Api.StarsTransaction.starsTransaction(flags: _1!, id: _2!, stars: _3!, date: _4!, peer: _5!, title: _6, description: _7, photo: _8)
+            let _c9 = (Int(_1!) & Int(1 << 5) == 0) || _9 != nil
+            let _c10 = (Int(_1!) & Int(1 << 5) == 0) || _10 != nil
+            let _c11 = (Int(_1!) & Int(1 << 7) == 0) || _11 != nil
+            let _c12 = (Int(_1!) & Int(1 << 8) == 0) || _12 != nil
+            let _c13 = (Int(_1!) & Int(1 << 9) == 0) || _13 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 && _c11 && _c12 && _c13 {
+                return Api.StarsTransaction.starsTransaction(flags: _1!, id: _2!, stars: _3!, date: _4!, peer: _5!, title: _6, description: _7, photo: _8, transactionDate: _9, transactionUrl: _10, botPayload: _11, msgId: _12, extendedMedia: _13)
             }
             else {
                 return nil
@@ -725,6 +767,7 @@ public extension Api {
 public extension Api {
     enum StarsTransactionPeer: TypeConstructorDescription {
         case starsTransactionPeer(peer: Api.Peer)
+        case starsTransactionPeerAds
         case starsTransactionPeerAppStore
         case starsTransactionPeerFragment
         case starsTransactionPeerPlayMarket
@@ -738,6 +781,12 @@ public extension Api {
                         buffer.appendInt32(-670195363)
                     }
                     peer.serialize(buffer, true)
+                    break
+                case .starsTransactionPeerAds:
+                    if boxed {
+                        buffer.appendInt32(1617438738)
+                    }
+                    
                     break
                 case .starsTransactionPeerAppStore:
                     if boxed {
@@ -776,6 +825,8 @@ public extension Api {
         switch self {
                 case .starsTransactionPeer(let peer):
                 return ("starsTransactionPeer", [("peer", peer as Any)])
+                case .starsTransactionPeerAds:
+                return ("starsTransactionPeerAds", [])
                 case .starsTransactionPeerAppStore:
                 return ("starsTransactionPeerAppStore", [])
                 case .starsTransactionPeerFragment:
@@ -801,6 +852,9 @@ public extension Api {
             else {
                 return nil
             }
+        }
+        public static func parse_starsTransactionPeerAds(_ reader: BufferReader) -> StarsTransactionPeer? {
+            return Api.StarsTransactionPeer.starsTransactionPeerAds
         }
         public static func parse_starsTransactionPeerAppStore(_ reader: BufferReader) -> StarsTransactionPeer? {
             return Api.StarsTransactionPeer.starsTransactionPeerAppStore
