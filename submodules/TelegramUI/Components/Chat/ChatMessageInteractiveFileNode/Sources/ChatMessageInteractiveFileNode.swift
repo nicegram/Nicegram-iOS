@@ -1095,7 +1095,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                         replyCount: dateReplies,
                         isPinned: arguments.isPinned && !arguments.associatedData.isInPinnedListMode,
                         hasAutoremove: arguments.message.isSelfExpiring,
-                        canViewReactionList: canViewMessageReactionList(message: arguments.topMessage, isInline: arguments.associatedData.isInline),
+                        canViewReactionList: canViewMessageReactionList(message: arguments.topMessage),
                         animationCache: arguments.controllerInteraction.presentationContext.animationCache,
                         animationRenderer: arguments.controllerInteraction.presentationContext.animationRenderer
                     ))
@@ -1410,7 +1410,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                                 }
                                 
                                 let waveformView: ComponentHostView<Empty>
-                                let waveformTransition: Transition
+                                let waveformTransition: ComponentTransition
                                 if let current = strongSelf.waveformView {
                                     waveformView = current
                                     switch animation.transition {

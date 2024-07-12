@@ -192,6 +192,7 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
     private let bannedSendPhotos: (Int32, Bool)?
     private let bannedSendVideos: (Int32, Bool)?
     private let canBoostToUnrestrict: Bool
+    private let paidMediaAllowed: Bool
     private let subject: Subject
     private let saveEditedPhotos: Bool
     
@@ -1754,6 +1755,7 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
         bannedSendPhotos: (Int32, Bool)? = nil,
         bannedSendVideos: (Int32, Bool)? = nil,
         canBoostToUnrestrict: Bool = false,
+        paidMediaAllowed: Bool = false,
         subject: Subject,
         editingContext: TGMediaEditingContext? = nil,
         selectionContext: TGMediaSelectionContext? = nil,
@@ -1773,6 +1775,7 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
         self.bannedSendPhotos = bannedSendPhotos
         self.bannedSendVideos = bannedSendVideos
         self.canBoostToUnrestrict = canBoostToUnrestrict
+        self.paidMediaAllowed = paidMediaAllowed
         self.subject = subject
         self.saveEditedPhotos = saveEditedPhotos
         self.mainButtonState = mainButtonState
@@ -1841,6 +1844,21 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
                     }
                 }
             }
+            
+            if let selectionContext = self.interaction?.selectionState, let editingContext = self.interaction?.editingState {
+                var price: Int64?
+                for case let item as TGMediaEditableItem in selectionContext.selectedItems() {
+                    if price == nil, let itemPrice = editingContext.price(for: item) as? Int64 {
+                        price = itemPrice
+                        break
+                    }
+                }
+                
+                if let price, let item = item as? TGMediaEditableItem {
+                    editingContext.setPrice(NSNumber(value: price), for: item)
+                }
+            }
+            
             
             return true
         }
@@ -2017,7 +2035,6 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
         
         self.updateSelectionState(count: Int32(selectionContext.count()))
         
-
         if case let .assets(_, mode) = self.subject, case .createSticker = mode {
             let _ = cutoutAvailability(context: context).startStandalone()
         }
@@ -2493,9 +2510,13 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
                 }
             
                 var hasSpoilers = false
+                var price: Int64?
                 var hasGeneric = false
                 if let selectionContext = self.interaction?.selectionState, let editingContext = self.interaction?.editingState {
                     for case let item as TGMediaEditableItem in selectionContext.selectedItems() {
+                        if price == nil, let itemPrice = editingContext.price(for: item) as? Int64 {
+                            price = itemPrice
+                        }
                         if editingContext.spoiler(for: item) {
                             hasSpoilers = true
                         } else {
@@ -2515,8 +2536,11 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
                 )
                 |> deliverOnMainQueue
                 |> map { [weak self] grouped, isCaptionAboveMediaAvailable -> ContextController.Items in
+                    guard let self else {
+                        return ContextController.Items(content: .list([]))
+                    }
                     var items: [ContextMenuItem] = []
-                    if !hasSpoilers {
+                    if !hasSpoilers && price == nil {
                         items.append(.action(ContextMenuActionItem(text: selectionCount > 1 ? strings.Attachment_SendAsFiles : strings.Attachment_SendAsFile, icon: { theme in
                             return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/File"), color: theme.contextMenu.primaryColor)
                         }, action: { [weak self] _, f in
@@ -2529,9 +2553,9 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
                     // MARK: Nicegram RoundedVideos
                     if canSendAsRoundedVideo(
                         currentItem: nil,
-                        editingContext: self?.interaction?.editingState,
-                        selectionContext: self?.interaction?.selectionState
-                    ) {
+                        editingContext: self.interaction?.editingState,
+                        selectionContext: self.interaction?.selectionState
+                    ), price == nil {
                         items.append(.action(ContextMenuActionItem(text: NGRoundedVideos.Resources.buttonTitle(), icon: { theme in
                             return generateTintedImage(image: NGRoundedVideos.Resources.buttonIcon(), color: theme.contextMenu.primaryColor)
                         }, action: { [weak self] _, f in
@@ -2544,39 +2568,29 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
                     }
                     //
                     
-                    if selectionCount > 1 {
-                        if !items.isEmpty {
-                            items.append(.separator)
-                        }
-                        items.append(.action(ContextMenuActionItem(text: strings.Attachment_Grouped, icon: { theme in
-                            if !grouped {
-                                return nil
-                            }
-                            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor)
+                    if selectionCount > 1, price == nil {
+                        items.append(.action(ContextMenuActionItem(text: strings.Attachment_SendWithoutGrouping, icon: { theme in
+                            return generateTintedImage(image: UIImage(bundleImageName: "Media Grid/GroupingOff"), color: theme.contextMenu.primaryColor)
                         }, action: { [weak self] _, f in
                             f(.default)
                             
-                            self?.groupedValue = true
-                        })))
-                        items.append(.action(ContextMenuActionItem(text: strings.Attachment_Ungrouped, icon: { theme in
-                            if grouped {
-                                return nil
-                            }
-                            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor)
-                        }, action: {  [weak self] _, f in
-                            f(.default)
-                            
                             self?.groupedValue = false
+                            self?.controllerNode.send(asFile: false, silently: false, scheduleTime: nil, animated: true, parameters: nil, completion: {})
                         })))
                     }
-                    if isSpoilerAvailable || (selectionCount > 0 && isCaptionAboveMediaAvailable) {
+                    
+                    var isPaidAvailable = false
+                    if self.paidMediaAllowed, selectionCount <= 10 {
+                        isPaidAvailable = true
+                    }
+                    if isSpoilerAvailable || isPaidAvailable || (selectionCount > 0 && isCaptionAboveMediaAvailable) {
                         if !items.isEmpty {
                             items.append(.separator)
                         }
                         
                         if isCaptionAboveMediaAvailable {
                             var mediaCaptionIsAbove = false
-                            if let interaction = self?.interaction {
+                            if let interaction = self.interaction {
                                 mediaCaptionIsAbove = interaction.captionIsAboveMedia
                             }
                             
@@ -2593,7 +2607,7 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
                                 }
                             })))
                         }
-                        if isSpoilerAvailable {
+                        if isSpoilerAvailable && price == nil {
                             items.append(.action(ContextMenuActionItem(text: hasGeneric ? strings.Attachment_EnableSpoiler : strings.Attachment_DisableSpoiler, icon: { _ in return nil }, iconAnimation: ContextMenuActionItem.IconAnimation(
                                 name: "anim_spoiler",
                                 loop: true
@@ -2608,6 +2622,38 @@ public final class MediaPickerScreen: ViewController, AttachmentContainable {
                                         editingContext.setSpoiler(hasGeneric, for: item)
                                     }
                                 }
+                            })))
+                        }
+                        if isPaidAvailable {
+                            let title: String
+                            let titleLayout: ContextMenuActionItemTextLayout
+                            if let price {
+                                title = strings.Attachment_Paid_EditPrice
+                                titleLayout = .secondLineWithValue(strings.Attachment_Paid_EditPrice_Stars(Int32(price)))
+                            } else {
+                                title = strings.Attachment_Paid_Create
+                                titleLayout = .singleLine
+                            }
+                            items.append(.action(ContextMenuActionItem(text: title, textLayout: titleLayout, icon: { theme in
+                                return generateTintedImage(image: UIImage(bundleImageName: "Media Grid/Paid"), color: theme.contextMenu.primaryColor)
+                            }, action: { [weak self]  _, f in
+                                f(.default)
+                                guard let  self else {
+                                    return
+                                }
+                                
+                                let controller = self.context.sharedContext.makeStarsAmountScreen(context: self.context, initialValue: price, completion: { [weak self] amount in
+                                    guard let strongSelf = self else {
+                                        return
+                                    }
+                                    if let selectionContext = strongSelf.interaction?.selectionState, let editingContext = strongSelf.interaction?.editingState {
+                                        selectionContext.selectionLimit = 10
+                                        for case let item as TGMediaEditableItem in selectionContext.selectedItems() {
+                                            editingContext.setPrice(NSNumber(value: amount), for: item)
+                                        }
+                                    }
+                                })
+                                self.parentController()?.push(controller)
                             })))
                         }
                     }

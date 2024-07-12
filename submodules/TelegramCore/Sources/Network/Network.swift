@@ -630,7 +630,10 @@ func initializedNetwork(accountId: AccountRecordId, arguments: NetworkInitializa
             mtProto.delegate = connectionStatusDelegate
             mtProto.add(requestService)
             
-            let useExperimentalFeatures = networkSettings?.useExperimentalDownload ?? false
+            var useExperimentalFeatures = networkSettings?.useExperimentalDownload ?? true
+            if let data = appConfiguration.data, let _ = data["ios_killswitch_disable_downloadv2"] {
+                useExperimentalFeatures = false
+            }
             
             let network = Network(queue: queue, datacenterId: datacenterId, context: context, mtProto: mtProto, requestService: requestService, connectionStatusDelegate: connectionStatusDelegate, _connectionStatus: connectionStatus, basePath: basePath, appDataDisposable: appDataDisposable, encryptionProvider: arguments.encryptionProvider, useRequestTimeoutTimers: useRequestTimeoutTimers, useBetaFeatures: arguments.useBetaFeatures, useExperimentalFeatures: useExperimentalFeatures)
             
@@ -926,7 +929,11 @@ public final class Network: NSObject, MTRequestMessageServiceDelegate {
                     datacenterId = id
                     isCdn = true
                 }
-                return strongSelf.makeWorker(datacenterId: datacenterId, isCdn: isCdn, isMedia: isMedia, tag: tag, continueInBackground: continueInBackground)
+                if datacenterId != 0 {
+                    return strongSelf.makeWorker(datacenterId: datacenterId, isCdn: isCdn, isMedia: isMedia, tag: tag, continueInBackground: continueInBackground)
+                } else {
+                    return nil
+                }
             }
             return nil
         })

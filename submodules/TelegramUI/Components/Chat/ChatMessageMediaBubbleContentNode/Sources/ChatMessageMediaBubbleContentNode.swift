@@ -15,6 +15,7 @@ import ChatMessageBubbleContentNode
 import ChatMessageItemCommon
 import ChatMessageInteractiveMediaNode
 import ChatControllerInteraction
+import InvisibleInkDustNode
 
 public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
     override public var supportsMosaic: Bool {
@@ -26,6 +27,7 @@ public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
     private var highlightedState: Bool = false
     
     private var media: Media?
+    private var mediaIndex: Int?
     private var automaticPlayback: Bool?
     
     override public var visibility: ListViewItemNodeVisibility {
@@ -54,7 +56,8 @@ public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
                 case .automaticPlayback:
                     openChatMessageMode = .automaticPlayback
             }
-            let _ = item.controllerInteraction.openMessage(item.message, OpenMessageParams(mode: openChatMessageMode))
+            
+            let _ = item.controllerInteraction.openMessage(item.message, OpenMessageParams(mode: openChatMessageMode, mediaIndex: self.mediaIndex, progress: self.itemNode?.makeProgress()))
         }
         
         self.interactiveImageNode.activateAgeRestrictedMedia = { [weak self] in
@@ -96,6 +99,8 @@ public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
         
         return { item, layoutConstants, preparePosition, selection, constrainedSize, _ in
             var selectedMedia: Media?
+            var selectedMediaIndex: Int?
+            var extendedMedia: TelegramExtendedMedia?
             var automaticDownload: InteractiveMediaNodeAutodownloadMode = .none
             var automaticPlayback: Bool = false
             var contentMode: InteractiveMediaNodeContentMode = .aspectFit
@@ -168,38 +173,48 @@ public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
                         contentMode = .aspectFill
                     } else if let invoice = media as? TelegramMediaInvoice {
                         selectedMedia = invoice
+                        extendedMedia = invoice.extendedMedia
+                    } 
+                    else if let paidContent = media as? TelegramMediaPaidContent {
+                        selectedMedia = paidContent
+                        if case let .mosaic(_, _, index) = preparePosition, let index {
+                            extendedMedia = paidContent.extendedMedia[index]
+                            selectedMediaIndex = index
+                        } else {
+                            extendedMedia = paidContent.extendedMedia.first
+                        }
+                    }
+                }
+            }
                         
-                        if let extendedMedia = invoice.extendedMedia, case let .full(media) = extendedMedia {
-                            if let telegramImage = media as? TelegramMediaImage {
-                                if shouldDownloadMediaAutomatically(settings: item.controllerInteraction.automaticMediaDownloadSettings, peerType: item.associatedData.automaticDownloadPeerType, networkType: item.associatedData.automaticDownloadNetworkType, authorPeerId: item.message.author?.id, contactsPeerIds: item.associatedData.contactsPeerIds, media: telegramImage) {
-                                    automaticDownload = .full
-                                }
-                            } else if let telegramFile = media as? TelegramMediaFile {
-                                if shouldDownloadMediaAutomatically(settings: item.controllerInteraction.automaticMediaDownloadSettings, peerType: item.associatedData.automaticDownloadPeerType, networkType: item.associatedData.automaticDownloadNetworkType, authorPeerId: item.message.author?.id, contactsPeerIds: item.associatedData.contactsPeerIds, media: telegramFile) {
-                                    automaticDownload = .full
-                                } else if shouldPredownloadMedia(settings: item.controllerInteraction.automaticMediaDownloadSettings, peerType: item.associatedData.automaticDownloadPeerType, networkType: item.associatedData.automaticDownloadNetworkType, media: telegramFile) {
-                                    automaticDownload = .prefetch
-                                }
-                                
-                                if !item.message.containsSecretMedia {
-                                    if telegramFile.isAnimated && item.context.sharedContext.energyUsageSettings.autoplayGif {
-                                        if case .full = automaticDownload {
-                                            automaticPlayback = true
-                                        } else {
-                                            automaticPlayback = item.context.account.postbox.mediaBox.completedResourcePath(telegramFile.resource) != nil
-                                        }
-                                    } else if (telegramFile.isVideo && !telegramFile.isAnimated) && item.context.sharedContext.energyUsageSettings.autoplayVideo {
-                                        if case .full = automaticDownload {
-                                            automaticPlayback = true
-                                        } else {
-                                            automaticPlayback = item.context.account.postbox.mediaBox.completedResourcePath(telegramFile.resource) != nil
-                                        }
-                                    }
-                                }
-                                contentMode = .aspectFill
+            if let extendedMedia, case let .full(media) = extendedMedia {
+                if let telegramImage = media as? TelegramMediaImage {
+                    if shouldDownloadMediaAutomatically(settings: item.controllerInteraction.automaticMediaDownloadSettings, peerType: item.associatedData.automaticDownloadPeerType, networkType: item.associatedData.automaticDownloadNetworkType, authorPeerId: item.message.author?.id, contactsPeerIds: item.associatedData.contactsPeerIds, media: telegramImage) {
+                        automaticDownload = .full
+                    }
+                } else if let telegramFile = media as? TelegramMediaFile {
+                    if shouldDownloadMediaAutomatically(settings: item.controllerInteraction.automaticMediaDownloadSettings, peerType: item.associatedData.automaticDownloadPeerType, networkType: item.associatedData.automaticDownloadNetworkType, authorPeerId: item.message.author?.id, contactsPeerIds: item.associatedData.contactsPeerIds, media: telegramFile) {
+                        automaticDownload = .full
+                    } else if shouldPredownloadMedia(settings: item.controllerInteraction.automaticMediaDownloadSettings, peerType: item.associatedData.automaticDownloadPeerType, networkType: item.associatedData.automaticDownloadNetworkType, media: telegramFile) {
+                        automaticDownload = .prefetch
+                    }
+                    
+                    if !item.message.containsSecretMedia {
+                        if telegramFile.isAnimated && item.context.sharedContext.energyUsageSettings.autoplayGif {
+                            if case .full = automaticDownload {
+                                automaticPlayback = true
+                            } else {
+                                automaticPlayback = item.context.account.postbox.mediaBox.completedResourcePath(telegramFile.resource) != nil
+                            }
+                        } else if (telegramFile.isVideo && !telegramFile.isAnimated) && item.context.sharedContext.energyUsageSettings.autoplayVideo {
+                            if case .full = automaticDownload {
+                                automaticPlayback = true
+                            } else {
+                                automaticPlayback = item.context.account.postbox.mediaBox.completedResourcePath(telegramFile.resource) != nil
                             }
                         }
                     }
+                    contentMode = .aspectFill
                 }
             }
             
@@ -341,7 +356,7 @@ public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
                 )
             }
             
-            let (unboundSize, initialWidth, refineLayout) = interactiveImageLayout(item.context, item.presentationData, item.presentationData.dateTimeFormat, item.message, item.associatedData, item.attributes, selectedMedia!, dateAndStatus, automaticDownload, item.associatedData.automaticDownloadPeerType, item.associatedData.automaticDownloadPeerId, sizeCalculation, layoutConstants, contentMode, item.controllerInteraction.presentationContext)
+            let (unboundSize, initialWidth, refineLayout) = interactiveImageLayout(item.context, item.presentationData, item.presentationData.dateTimeFormat, item.message, item.associatedData, item.attributes, selectedMedia!, selectedMediaIndex, dateAndStatus, automaticDownload, item.associatedData.automaticDownloadPeerType, item.associatedData.automaticDownloadPeerId, sizeCalculation, layoutConstants, contentMode, item.controllerInteraction.presentationContext)
             
             let forceFullCorners = false
             let contentProperties = ChatMessageBubbleContentProperties(hidesSimpleAuthorHeader: true, headerSpacing: 7.0, hidesBackground: .emptyWallpaper, forceFullCorners: forceFullCorners, forceAlignment: .none)
@@ -377,6 +392,7 @@ public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
                         if let strongSelf = self {
                             strongSelf.item = item
                             strongSelf.media = selectedMedia
+                            strongSelf.mediaIndex = selectedMediaIndex
                             strongSelf.automaticPlayback = automaticPlayback
                             
                             let imageFrame = CGRect(origin: CGPoint(x: bubbleInsets.left, y: bubbleInsets.top), size: imageSize)
@@ -432,6 +448,9 @@ public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
             if let invoice = currentMedia as? TelegramMediaInvoice, let extendedMedia = invoice.extendedMedia, case let .full(fullMedia) = extendedMedia {
                 currentMedia = fullMedia
             }
+            if let paidContent = currentMedia as? TelegramMediaPaidContent, case let .full(fullMedia) = paidContent.extendedMedia[self.mediaIndex ?? 0] {
+                currentMedia = fullMedia
+            }
             if currentMedia.isSemanticallyEqual(to: media) {
                 return self.interactiveImageNode.transitionNode(adjustRect: adjustRect)
             }
@@ -446,7 +465,9 @@ public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
         if let invoice = currentMedia as? TelegramMediaInvoice, let extendedMedia = invoice.extendedMedia, case let .full(fullMedia) = extendedMedia {
             currentMedia = fullMedia
         }
-        
+        if let paidContent = currentMedia as? TelegramMediaPaidContent, case let .full(fullMedia) = paidContent.extendedMedia[self.mediaIndex ?? 0] {
+            currentMedia = fullMedia
+        }
         if let currentMedia = currentMedia, let media = media {
             for item in media {
                 if item.isSemanticallyEqual(to: currentMedia) {

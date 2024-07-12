@@ -61,7 +61,7 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
     let forceDark: Bool
     let products: [StarsProduct]?
     let expanded: Bool
-    let stateUpdated: (Transition) -> Void
+    let stateUpdated: (ComponentTransition) -> Void
     let buy: (StarsProduct) -> Void
     
     init(
@@ -76,7 +76,7 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
         forceDark: Bool,
         products: [StarsProduct]?,
         expanded: Bool,
-        stateUpdated: @escaping (Transition) -> Void,
+        stateUpdated: @escaping (ComponentTransition) -> Void,
         buy: @escaping (StarsProduct) -> Void
     ) {
         self.context = context
@@ -229,7 +229,7 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
             
             let textString: String
             if let _ = context.component.requiredStars {
-                textString = strings.Stars_Purchase_StarsNeededInfo(state.peer?.compactDisplayTitle ?? "").string
+                textString = state.peer == nil ? strings.Stars_Purchase_StarsNeededUnlockInfo : strings.Stars_Purchase_StarsNeededInfo(state.peer?.compactDisplayTitle ?? "").string
             } else {
                 textString = strings.Stars_Purchase_GetStarsInfo
             }
@@ -310,11 +310,11 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
                     minimumCount = requiredStars - balance
                 }
                 for product in products {
-                    if let minimumCount, minimumCount > product.option.count {
+                    if let minimumCount, minimumCount > product.option.count && !(items.isEmpty && product.id == products.last?.id) {
                         continue
                     }
                     
-                    if let _ =  minimumCount, items.isEmpty {
+                    if let _ = minimumCount, items.isEmpty {
                         
                     } else if !context.component.expanded && !initialValues.contains(product.option.count) {
                         continue
@@ -369,7 +369,7 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
                                 },
                                 highlighting: .disabled,
                                 updateIsHighlighted: { view, isHighlighted in
-                                    let transition: Transition = .easeInOut(duration: 0.25)
+                                    let transition: ComponentTransition = .easeInOut(duration: 0.25)
                                     if let superview = view.superview {
                                         transition.setScale(view: superview, scale: isHighlighted ? 0.9 : 1.0)
                                     }
@@ -381,7 +381,7 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
                 }
             }
             
-            if !context.component.expanded {
+            if !context.component.expanded && items.count > 1 {
                 let titleComponent = AnyComponent(MultilineTextComponent(
                     text: .plain(NSAttributedString(
                         string: strings.Stars_Purchase_ShowMore,

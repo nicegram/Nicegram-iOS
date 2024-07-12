@@ -2511,7 +2511,7 @@
       "name": "swiftpkg_core_swift",
       "identity": "core-swift",
       "remote": {
-        "commit": "20b7275f60ad80634f056905d7f18292294cd510",
+        "commit": "87eb31396b7ef8962686b1c8de561950efc2673f",
         "remote": "https://github.com/denis15yo/core-swift.git",
         "branch": "release/1.0.0"
       }
@@ -2556,9 +2556,9 @@
       "name": "swiftpkg_floatingpanel",
       "identity": "floatingpanel",
       "remote": {
-        "commit": "22d46c526084724a718b8c39ab77f12452712cc7",
+        "commit": "29185a47bd9f062c060e097641b863ef07f60ba7",
         "remote": "https://github.com/scenee/FloatingPanel",
-        "version": "2.8.3"
+        "version": "2.8.4"
       }
     },
     {
@@ -2601,7 +2601,7 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "0985fd5dfae1676121c54c31fe2817059d5bf784",
+        "commit": "1b98221095de9a80b44e93ce9bfc699c720d5c00",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
         "branch": "develop"
       }
@@ -2610,7 +2610,7 @@
       "name": "swiftpkg_nicegram_wallet_ios",
       "identity": "nicegram-wallet-ios",
       "remote": {
-        "commit": "241a210ee1b5cb9cb95d9245a4ed384973ee2ef2",
+        "commit": "3573f8ef65b8667b5bc927bfa558ffb39f2bd579",
         "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
         "branch": "develop"
       }
@@ -2637,9 +2637,9 @@
       "name": "swiftpkg_sdwebimage",
       "identity": "sdwebimage",
       "remote": {
-        "commit": "b8523c1642f3c142b06dd98443ea7c48343a4dfd",
+        "commit": "be0bcd7823ce56629948491f2eaeaa19979514f7",
         "remote": "https://github.com/SDWebImage/SDWebImage.git",
-        "version": "5.19.3"
+        "version": "5.19.4"
       }
     },
     {
@@ -2700,9 +2700,9 @@
       "name": "swiftpkg_swift_collections",
       "identity": "swift-collections",
       "remote": {
-        "commit": "ee97538f5b81ae89698fd95938896dec5217b148",
+        "commit": "3d2dc41a01f9e49d84f0a3925fb858bed64f702d",
         "remote": "https://github.com/apple/swift-collections",
-        "version": "1.1.1"
+        "version": "1.1.2"
       }
     },
     {
@@ -2817,9 +2817,9 @@
       "name": "swiftpkg_wallet_core",
       "identity": "wallet-core",
       "remote": {
-        "commit": "94116a24445c2052edbc7203baf68296c68ce8f4",
+        "commit": "352e0833678151ae124e1e70d325fc056d76d150",
         "remote": "https://github.com/trustwallet/wallet-core.git",
-        "version": "4.0.46"
+        "version": "4.0.49"
       }
     },
     {

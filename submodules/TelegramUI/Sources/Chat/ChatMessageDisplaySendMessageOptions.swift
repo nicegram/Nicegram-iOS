@@ -68,14 +68,22 @@ func chatMessageDisplaySendMessageOptions(selfController: ChatControllerImpl, no
         editMessages = .single([])
     }
     
+    var currentMessageEffect: ChatSendMessageActionSheetControllerSendParameters.Effect?
+    if selfController.presentationInterfaceState.interfaceState.editMessage == nil {
+        if let sendMessageEffect = selfController.presentationInterfaceState.interfaceState.sendMessageEffect {
+            currentMessageEffect = ChatSendMessageActionSheetControllerSendParameters.Effect(id: sendMessageEffect)
+        }
+    }
+    
     let _ = (combineLatest(
         selfController.context.account.viewTracker.peerView(peerId) |> take(1),
         effectItems,
         availableMessageEffects,
         hasPremium,
-        editMessages
+        editMessages,
+        ChatSendMessageContextScreen.initialData(context: selfController.context, currentMessageEffectId: currentMessageEffect?.id)
     )
-    |> deliverOnMainQueue).startStandalone(next: { [weak selfController] peerView, effectItems, availableMessageEffects, hasPremium, editMessages in
+    |> deliverOnMainQueue).startStandalone(next: { [weak selfController] peerView, effectItems, availableMessageEffects, hasPremium, editMessages, initialData in
         guard let selfController, let peer = peerViewMainPeer(peerView) else {
             return
         }
@@ -144,6 +152,8 @@ func chatMessageDisplaySendMessageOptions(selfController: ChatControllerImpl, no
                         return true
                     } else if let file = media as? TelegramMediaFile, file.isVideo {
                         return true
+                    } else if media is TelegramMediaPaidContent {
+                        return true
                     }
                     return false
                 })
@@ -171,6 +181,7 @@ func chatMessageDisplaySendMessageOptions(selfController: ChatControllerImpl, no
                 // MARK: Nicegram TranslateEnteredMessage
                 nicegramData: nicegramData,
                 //
+                initialData: initialData,
                 context: selfController.context,
                 updatedPresentationData: selfController.updatedPresentationData,
                 peerId: selfController.presentationInterfaceState.chatLocation.peerId,
@@ -262,6 +273,7 @@ func chatMessageDisplaySendMessageOptions(selfController: ChatControllerImpl, no
                 // MARK: Nicegram TranslateEnteredMessage
                 nicegramData: nicegramData,
                 //
+                initialData: initialData,
                 context: selfController.context,
                 updatedPresentationData: selfController.updatedPresentationData,
                 peerId: selfController.presentationInterfaceState.chatLocation.peerId,
@@ -269,6 +281,16 @@ func chatMessageDisplaySendMessageOptions(selfController: ChatControllerImpl, no
                     isScheduledMessages: false,
                     mediaPreview: mediaPreview,
                     mediaCaptionIsAbove: nil,
+                    messageEffect: (currentMessageEffect, { [weak selfController] updatedEffect in
+                        guard let selfController else {
+                            return
+                        }
+                        selfController.updateChatPresentationInterfaceState(transition: .immediate, interactive: true, { presentationInterfaceState in
+                            return presentationInterfaceState.updatedInterfaceState { interfaceState in
+                                return interfaceState.withUpdatedSendMessageEffect(updatedEffect?.id)
+                            }
+                        })
+                    }),
                     attachment: false,
                     canSendWhenOnline: sendWhenOnlineAvailable,
                     forwardMessageIds: selfController.presentationInterfaceState.interfaceState.forwardMessageIds ?? []
@@ -300,7 +322,7 @@ func chatMessageDisplaySendMessageOptions(selfController: ChatControllerImpl, no
                                 return
                             }
                             selfController.updateChatPresentationInterfaceState(animated: true, interactive: false, saveInterfaceState: selfController.presentationInterfaceState.subject != .scheduledMessages, {
-                                $0.updatedInterfaceState { $0.withUpdatedReplyMessageSubject(nil).withUpdatedForwardMessageIds(nil).withUpdatedForwardOptionsState(nil).withUpdatedComposeInputState(ChatTextInputState(inputText: NSAttributedString(string: ""))) }
+                                $0.updatedInterfaceState { $0.withUpdatedReplyMessageSubject(nil).withUpdatedSendMessageEffect(nil).withUpdatedForwardMessageIds(nil).withUpdatedForwardOptionsState(nil).withUpdatedComposeInputState(ChatTextInputState(inputText: NSAttributedString(string: ""))) }
                             })
                             selfController.openScheduledMessages()
                         }

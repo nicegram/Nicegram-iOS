@@ -230,7 +230,7 @@ final class ChatRecentActionsControllerNode: ViewControllerTracingNode {
                         break
                     }
                 }
-                let gallerySource = GalleryControllerItemSource.standaloneMessage(message)
+                let gallerySource = GalleryControllerItemSource.standaloneMessage(message, nil)
                 return context.sharedContext.openChatMessage(OpenChatMessageParams(context: context, chatLocation: nil, chatFilterTag: nil, chatLocationContextHolder: nil, message: message, standalone: true, reverseMessageGalleryOrder: false, navigationController: navigationController, dismissInput: {
                     //self?.chatDisplayNode.dismissInput()
                 }, present: { c, a in
@@ -363,7 +363,7 @@ final class ChatRecentActionsControllerNode: ViewControllerTracingNode {
             return self?.getNavigationController()
         }, chatControllerNode: { [weak self] in
             return self
-        }, presentGlobalOverlayController: { _, _ in }, callPeer: { _, _ in }, longTap: { [weak self] action, message in
+        }, presentGlobalOverlayController: { _, _ in }, callPeer: { _, _ in }, longTap: { [weak self] action, params in
             if let strongSelf = self {
                 switch action {
                     case let .url(url):
@@ -428,6 +428,9 @@ final class ChatRecentActionsControllerNode: ViewControllerTracingNode {
                             })
                         ])])
                         strongSelf.presentController(actionSheet, .window(.root), nil)
+                    case let .phone(number):
+                        let _ = number
+                        break
                     case let .peerMention(peerId, mention):
                         let actionSheet = ActionSheetController(presentationData: strongSelf.presentationData)
                         var items: [ActionSheetItem] = []
@@ -525,7 +528,7 @@ final class ChatRecentActionsControllerNode: ViewControllerTracingNode {
                             ])])
                         strongSelf.presentController(actionSheet, .window(.root), nil)
                     case let .timecode(timecode, text):
-                        guard let message = message else {
+                        guard let message = params?.message else {
                             return
                         }
                         let actionSheet = ActionSheetController(presentationData: strongSelf.presentationData)
@@ -554,7 +557,7 @@ final class ChatRecentActionsControllerNode: ViewControllerTracingNode {
                         break
                 }
             }
-        }, openCheckoutOrReceipt: { _ in
+        }, openCheckoutOrReceipt: { _, _ in
         }, openSearch: {
         }, setupReply: { _ in
         }, canSetupReply: { _ in
@@ -614,7 +617,6 @@ final class ChatRecentActionsControllerNode: ViewControllerTracingNode {
         }, openRecommendedChannelContextMenu: { _, _, _ in
         }, openGroupBoostInfo: { _, _ in
         }, openStickerEditor: {
-        }, openPhoneContextMenu: { _ in
         }, openAgeRestrictedMessageMedia: { _, _ in
         }, playMessageEffect: { _ in
         }, editMessageFactCheck: { _ in

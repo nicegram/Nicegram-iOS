@@ -3233,7 +3233,7 @@ final class MessageHistoryTable: Table {
         return (messagesByMediaId, mediaRefs, count == 0 ? nil : lastIndex)
     }
     
-    func fetch(peerId: PeerId, namespace: MessageId.Namespace, tag: MessageTags?, customTag: MemoryBuffer?, threadId: Int64?, from fromIndex: MessageIndex, includeFrom: Bool, to toIndex: MessageIndex, ignoreMessagesInTimestampRange: ClosedRange<Int32>?, limit: Int) -> [IntermediateMessage] {
+    func fetch(peerId: PeerId, namespace: MessageId.Namespace, tag: MessageTags?, customTag: MemoryBuffer?, threadId: Int64?, from fromIndex: MessageIndex, includeFrom: Bool, to toIndex: MessageIndex, ignoreMessagesInTimestampRange: ClosedRange<Int32>?, ignoreMessageIds: Set<MessageId>, limit: Int) -> [IntermediateMessage] {
         precondition(fromIndex.id.peerId == toIndex.id.peerId)
         precondition(fromIndex.id.namespace == toIndex.id.namespace)
         
@@ -3251,6 +3251,9 @@ final class MessageHistoryTable: Table {
                         if ignoreMessagesInTimestampRange.contains(index.timestamp) {
                             continue
                         }
+                    }
+                    if !ignoreMessageIds.isEmpty && ignoreMessageIds.contains(index.id) {
+                        continue
                     }
                     if fromIndex < toIndex {
                         if index < fromIndex || index > toIndex {
@@ -3279,6 +3282,9 @@ final class MessageHistoryTable: Table {
                         if ignoreMessagesInTimestampRange.contains(index.timestamp) {
                             continue
                         }
+                    }
+                    if !ignoreMessageIds.isEmpty && ignoreMessageIds.contains(index.id) {
+                        continue
                     }
                     if fromIndex < toIndex {
                         if index < fromIndex || index > toIndex {
@@ -3309,6 +3315,9 @@ final class MessageHistoryTable: Table {
                         if ignoreMessagesInTimestampRange.contains(index.timestamp) {
                             continue
                         }
+                    }
+                    if !ignoreMessageIds.isEmpty && ignoreMessageIds.contains(index.id) {
+                        continue
                     }
                     if fromIndex < toIndex {
                         if index < fromIndex || index > toIndex {
@@ -3348,6 +3357,9 @@ final class MessageHistoryTable: Table {
                             if ignoreMessagesInTimestampRange.contains(index.timestamp) {
                                 continue
                             }
+                        }
+                        if !ignoreMessageIds.isEmpty && ignoreMessageIds.contains(index.id) {
+                            continue
                         }
                         if let tag = tag {
                             if self.tagsTable.entryExists(tag: tag, index: index) {
@@ -3391,6 +3403,9 @@ final class MessageHistoryTable: Table {
                         continue
                     }
                 }
+                if !ignoreMessageIds.isEmpty && ignoreMessageIds.contains(index.id) {
+                    continue
+                }
                 if fromIndex < toIndex {
                     if index < fromIndex || index > toIndex {
                         continue
@@ -3406,7 +3421,7 @@ final class MessageHistoryTable: Table {
                     assertionFailure()
                 }
             }
-        } else if ignoreMessagesInTimestampRange != nil {
+        } else if ignoreMessagesInTimestampRange != nil || !ignoreMessageIds.isEmpty {
             var indices: [MessageIndex] = []
             var startIndex = fromIndex
             var localIncludeFrom = includeFrom
@@ -3440,6 +3455,9 @@ final class MessageHistoryTable: Table {
                         if ignoreMessagesInTimestampRange.contains(index.timestamp) {
                             continue
                         }
+                    }
+                    if !ignoreMessageIds.isEmpty && ignoreMessageIds.contains(index.id) {
+                        continue
                     }
                     indices.append(index)
                     if indices.count >= limit {

@@ -172,16 +172,16 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
         return
     }
     
+    let walletDeeplinksManager = NicegramWallet.DeeplinksModule.shared.deeplinksManager()
+    if walletDeeplinksManager.handle(url) {
+        return
+    }
+    
     let nicegramHandler = NGDeeplinkHandler(
         tgAccountContext: context,
         navigationController: navigationController
     )
     if nicegramHandler.handle(url: url) {
-        return
-    }
-    
-    let walletDeeplinksManager = NicegramWallet.DeeplinksModule.shared.deeplinksManager()
-    if walletDeeplinksManager.handle(url) {
         return
     }
     //

@@ -68,6 +68,8 @@ import BirthdayPickerScreen
 import StarsTransactionsScreen
 import StarsPurchaseScreen
 import StarsTransferScreen
+import StarsTransactionScreen
+import StarsWithdrawalScreen
 
 import NGCore
 import NGData
@@ -550,7 +552,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                         sortIndex = sortOrder.order
                     } else if case let .backupData(backupDataValue) = attribute {
                         backupData = backupDataValue.data
-                    } else if case .supportUserInfo = attribute {
+                    } else if case .supportUserInfo = attribute, !"".isEmpty {
                         isSupportUser = true
                     }
                 }
@@ -1742,8 +1744,8 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return peersNearbyController(context: context)
     }
     
-    public func makeChatController(context: AccountContext, chatLocation: ChatLocation, subject: ChatControllerSubject?, botStart: ChatControllerInitialBotStart?, mode: ChatControllerPresentationMode) -> ChatController {
-        return ChatControllerImpl(context: context, chatLocation: chatLocation, subject: subject, botStart: botStart, mode: mode)
+    public func makeChatController(context: AccountContext, chatLocation: ChatLocation, subject: ChatControllerSubject?, botStart: ChatControllerInitialBotStart?, mode: ChatControllerPresentationMode, params: ChatControllerParams?) -> ChatController {
+        return ChatControllerImpl(context: context, chatLocation: chatLocation, subject: subject, botStart: botStart, mode: mode, params: params)
     }
     
     public func makeChatHistoryListNode(
@@ -1851,7 +1853,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             return nil
         }, chatControllerNode: {
             return nil
-        }, presentGlobalOverlayController: { _, _ in }, callPeer: { _, _ in }, longTap: { _, _ in }, openCheckoutOrReceipt: { _ in }, openSearch: { }, setupReply: { _ in
+        }, presentGlobalOverlayController: { _, _ in }, callPeer: { _, _ in }, longTap: { _, _ in }, openCheckoutOrReceipt: { _, _ in }, openSearch: { }, setupReply: { _ in
         }, canSetupReply: { _ in
             return .none
         }, canSendMessages: {
@@ -1906,7 +1908,6 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         }, openRecommendedChannelContextMenu: { _, _, _ in
         }, openGroupBoostInfo: { _, _ in
         }, openStickerEditor: {
-        }, openPhoneContextMenu: { _ in
         }, openAgeRestrictedMessageMedia: { _, _ in
         }, playMessageEffect: { _ in
         }, editMessageFactCheck: { _ in
@@ -2039,8 +2040,8 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return HashtagSearchController(context: context, peer: peer, query: query, all: all)
     }
     
-    public func makeStorySearchController(context: AccountContext, query: String) -> ViewController {
-        return StorySearchGridScreen(context: context, searchQuery: query)
+    public func makeStorySearchController(context: AccountContext, scope: StorySearchControllerScope, listContext: SearchStoryListContext?) -> ViewController {
+        return StorySearchGridScreen(context: context, scope: scope, listContext: listContext)
     }
     
     public func makeMyStoriesController(context: AccountContext, isArchive: Bool) -> ViewController {
@@ -2186,6 +2187,8 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             mappedSource = .storiesSuggestedReactions
         case .storiesHigherQuality:
             mappedSource = .storiesHigherQuality
+        case .storiesLinks:
+            mappedSource = .storiesLinks
         case let .channelBoost(peerId):
             mappedSource = .channelBoost(peerId)
         case .nameColor:
@@ -2202,6 +2205,8 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             mappedSource = .messageTags
         case .folderTags:
             mappedSource = .folderTags
+        case .messageEffects:
+            mappedSource = .messageEffects
         case .animatedEmoji:
             mappedSource = .animatedEmoji
         }
@@ -2258,6 +2263,8 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             mappedSubject = .messagePrivacy
         case .folderTags:
             mappedSubject = .folderTags
+        case .messageEffects:
+            mappedSubject = .messageEffects
         case .business:
             mappedSubject = .business
             buttonText = presentationData.strings.Chat_EmptyStateIntroFooterPremiumActionButton
@@ -2758,16 +2765,28 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return StarsPurchaseScreen(context: context, starsContext: starsContext, options: options, peerId: peerId, requiredStars: requiredStars, modal: true, completion: completion)
     }
     
-    public func makeStarsTransferScreen(context: AccountContext, starsContext: StarsContext, invoice: TelegramMediaInvoice, source: BotPaymentInvoiceSource, inputData: Signal<(StarsContext.State, BotPaymentForm, EnginePeer?)?, NoError>, completion: @escaping (Bool) -> Void) -> ViewController {
-        return StarsTransferScreen(context: context, starsContext: starsContext, invoice: invoice, source: source, inputData: inputData, completion: completion)
+    public func makeStarsTransferScreen(context: AccountContext, starsContext: StarsContext, invoice: TelegramMediaInvoice, source: BotPaymentInvoiceSource, extendedMedia: [TelegramExtendedMedia], inputData: Signal<(StarsContext.State, BotPaymentForm, EnginePeer?)?, NoError>, completion: @escaping (Bool) -> Void) -> ViewController {
+        return StarsTransferScreen(context: context, starsContext: starsContext, invoice: invoice, source: source, extendedMedia: extendedMedia, inputData: inputData, completion: completion)
     }
     
-    public func makeStarsTransactionScreen(context: AccountContext, transaction: StarsContext.State.Transaction) -> ViewController {
-        return StarsTransactionScreen(context: context, subject: .transaction(transaction), action: {})
+    public func makeStarsTransactionScreen(context: AccountContext, transaction: StarsContext.State.Transaction, peer: EnginePeer) -> ViewController {
+        return StarsTransactionScreen(context: context, subject: .transaction(transaction, peer), action: {})
     }
     
     public func makeStarsReceiptScreen(context: AccountContext, receipt: BotPaymentReceipt) -> ViewController {
         return StarsTransactionScreen(context: context, subject: .receipt(receipt), action: {})
+    }
+    
+    public func makeStarsStatisticsScreen(context: AccountContext, peerId: EnginePeer.Id, revenueContext: StarsRevenueStatsContext) -> ViewController {
+        return StarsStatisticsScreen(context: context, peerId: peerId, revenueContext: revenueContext)
+    }
+    
+    public func makeStarsAmountScreen(context: AccountContext, initialValue: Int64?, completion: @escaping (Int64) -> Void) -> ViewController {
+        return StarsWithdrawScreen(context: context, mode: .paidMedia(initialValue), completion: completion)
+    }
+    
+    public func makeStarsWithdrawalScreen(context: AccountContext, stats: StarsRevenueStats, completion: @escaping (Int64) -> Void) -> ViewController {
+        return StarsWithdrawScreen(context: context, mode: .withdraw(stats), completion: completion)
     }
 }
 

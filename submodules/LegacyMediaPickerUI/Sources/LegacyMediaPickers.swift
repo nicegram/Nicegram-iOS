@@ -137,13 +137,15 @@ private final class LegacyAssetItemWrapper: NSObject {
     let item: LegacyAssetItem
     let timer: Int?
     let spoiler: Bool?
+    let price: Int64?
     let groupedId: Int64?
     let uniqueId: String?
     
-    init(item: LegacyAssetItem, timer: Int?, spoiler: Bool?, groupedId: Int64?, uniqueId: String?) {
+    init(item: LegacyAssetItem, timer: Int?, spoiler: Bool?, price: Int64?, groupedId: Int64?, uniqueId: String?) {
         self.item = item
         self.timer = timer
         self.spoiler = spoiler
+        self.price = price
         self.groupedId = groupedId
         self.uniqueId = uniqueId
         
@@ -162,6 +164,9 @@ public func legacyAssetPickerItemGenerator() -> ((Any?, NSAttributedString?, Str
                 return nil
             }
         } ?? []
+        
+        let price = dict["price"] as? Int64
+        
         if (dict["type"] as! NSString) == "editedPhoto" || (dict["type"] as! NSString) == "capturedPhoto" {
             let image = dict["image"] as! UIImage
             let thumbnail = dict["previewImage"] as? UIImage
@@ -171,10 +176,10 @@ public func legacyAssetPickerItemGenerator() -> ((Any?, NSAttributedString?, Str
                 let url: String? = (dict["url"] as? String) ?? (dict["url"] as? URL)?.path
                 if let url = url {
                     let dimensions = image.size
-                    result["item" as NSString] = LegacyAssetItemWrapper(item: .video(data: .tempFile(path: url, dimensions: dimensions, duration: 4.0), thumbnail: thumbnail, adjustments: dict["adjustments"] as? TGVideoEditAdjustments, caption: caption, asFile: false, asAnimation: true, stickers: stickers), timer: (dict["timer"] as? NSNumber)?.intValue, spoiler: (dict["spoiler"] as? NSNumber)?.boolValue, groupedId: (dict["groupedId"] as? NSNumber)?.int64Value, uniqueId: uniqueId)
+                    result["item" as NSString] = LegacyAssetItemWrapper(item: .video(data: .tempFile(path: url, dimensions: dimensions, duration: 4.0), thumbnail: thumbnail, adjustments: dict["adjustments"] as? TGVideoEditAdjustments, caption: caption, asFile: false, asAnimation: true, stickers: stickers), timer: (dict["timer"] as? NSNumber)?.intValue, spoiler: (dict["spoiler"] as? NSNumber)?.boolValue, price: price, groupedId: (dict["groupedId"] as? NSNumber)?.int64Value, uniqueId: uniqueId)
                 }
             } else {
-                result["item" as NSString] = LegacyAssetItemWrapper(item: .image(data: .image(image), thumbnail: thumbnail, caption: caption, stickers: stickers), timer: (dict["timer"] as? NSNumber)?.intValue,  spoiler: (dict["spoiler"] as? NSNumber)?.boolValue, groupedId: (dict["groupedId"] as? NSNumber)?.int64Value, uniqueId: uniqueId)
+                result["item" as NSString] = LegacyAssetItemWrapper(item: .image(data: .image(image), thumbnail: thumbnail, caption: caption, stickers: stickers), timer: (dict["timer"] as? NSNumber)?.intValue,  spoiler: (dict["spoiler"] as? NSNumber)?.boolValue, price: price, groupedId: (dict["groupedId"] as? NSNumber)?.int64Value, uniqueId: uniqueId)
             }
             return result
         } else if (dict["type"] as! NSString) == "cloudPhoto" {
@@ -195,9 +200,9 @@ public func legacyAssetPickerItemGenerator() -> ((Any?, NSAttributedString?, Str
                     name = customName
                 }
                 
-                result["item" as NSString] = LegacyAssetItemWrapper(item: .file(data: .asset(asset.backingAsset), thumbnail: thumbnail, mimeType: mimeType, name: name, caption: caption), timer: nil, spoiler: nil, groupedId: (dict["groupedId"] as? NSNumber)?.int64Value, uniqueId: uniqueId)
+                result["item" as NSString] = LegacyAssetItemWrapper(item: .file(data: .asset(asset.backingAsset), thumbnail: thumbnail, mimeType: mimeType, name: name, caption: caption), timer: nil, spoiler: nil, price: price, groupedId: (dict["groupedId"] as? NSNumber)?.int64Value, uniqueId: uniqueId)
             } else {
-                result["item" as NSString] = LegacyAssetItemWrapper(item: .image(data: .asset(asset.backingAsset), thumbnail: thumbnail, caption: caption, stickers: []), timer: (dict["timer"] as? NSNumber)?.intValue, spoiler: (dict["spoiler"] as? NSNumber)?.boolValue, groupedId: (dict["groupedId"] as? NSNumber)?.int64Value, uniqueId: uniqueId)
+                result["item" as NSString] = LegacyAssetItemWrapper(item: .image(data: .asset(asset.backingAsset), thumbnail: thumbnail, caption: caption, stickers: []), timer: (dict["timer"] as? NSNumber)?.intValue, spoiler: (dict["spoiler"] as? NSNumber)?.boolValue, price: price, groupedId: (dict["groupedId"] as? NSNumber)?.int64Value, uniqueId: uniqueId)
             }
             return result
         } else if (dict["type"] as! NSString) == "file" {
@@ -218,12 +223,12 @@ public func legacyAssetPickerItemGenerator() -> ((Any?, NSAttributedString?, Str
                     let dimensions = (dict["dimensions"]! as AnyObject).cgSizeValue!
                     let duration = (dict["duration"]! as AnyObject).doubleValue!
                     
-                    result["item" as NSString] = LegacyAssetItemWrapper(item: .video(data: .tempFile(path: tempFileUrl.path, dimensions: dimensions, duration: duration), thumbnail: thumbnail, adjustments: nil, caption: caption, asFile: false, asAnimation: true, stickers: []), timer: (dict["timer"] as? NSNumber)?.intValue, spoiler: (dict["spoiler"] as? NSNumber)?.boolValue, groupedId: (dict["groupedId"] as? NSNumber)?.int64Value, uniqueId: uniqueId)
+                    result["item" as NSString] = LegacyAssetItemWrapper(item: .video(data: .tempFile(path: tempFileUrl.path, dimensions: dimensions, duration: duration), thumbnail: thumbnail, adjustments: nil, caption: caption, asFile: false, asAnimation: true, stickers: []), timer: (dict["timer"] as? NSNumber)?.intValue, spoiler: (dict["spoiler"] as? NSNumber)?.boolValue, price: price, groupedId: (dict["groupedId"] as? NSNumber)?.int64Value, uniqueId: uniqueId)
                     return result
                 }
                 
                 var result: [AnyHashable: Any] = [:]
-                result["item" as NSString] = LegacyAssetItemWrapper(item: .file(data: .tempFile(tempFileUrl.path), thumbnail: thumbnail, mimeType: mimeType, name: name, caption: caption), timer: (dict["timer"] as? NSNumber)?.intValue, spoiler: (dict["spoiler"] as? NSNumber)?.boolValue,  groupedId: (dict["groupedId"] as? NSNumber)?.int64Value, uniqueId: uniqueId)
+                result["item" as NSString] = LegacyAssetItemWrapper(item: .file(data: .tempFile(tempFileUrl.path), thumbnail: thumbnail, mimeType: mimeType, name: name, caption: caption), timer: (dict["timer"] as? NSNumber)?.intValue, spoiler: (dict["spoiler"] as? NSNumber)?.boolValue, price: price,  groupedId: (dict["groupedId"] as? NSNumber)?.int64Value, uniqueId: uniqueId)
                 return result
             }
         } else if (dict["type"] as! NSString) == "video" {
@@ -235,13 +240,13 @@ public func legacyAssetPickerItemGenerator() -> ((Any?, NSAttributedString?, Str
             
             if let asset = dict["asset"] as? TGMediaAsset {
                 var result: [AnyHashable: Any] = [:]
-                result["item" as NSString] = LegacyAssetItemWrapper(item: .video(data: .asset(asset), thumbnail: thumbnail, adjustments: dict["adjustments"] as? TGVideoEditAdjustments, caption: caption, asFile: asFile, asAnimation: false, stickers: stickers), timer: (dict["timer"] as? NSNumber)?.intValue, spoiler: (dict["spoiler"] as? NSNumber)?.boolValue, groupedId: (dict["groupedId"] as? NSNumber)?.int64Value, uniqueId: uniqueId)
+                result["item" as NSString] = LegacyAssetItemWrapper(item: .video(data: .asset(asset), thumbnail: thumbnail, adjustments: dict["adjustments"] as? TGVideoEditAdjustments, caption: caption, asFile: asFile, asAnimation: false, stickers: stickers), timer: (dict["timer"] as? NSNumber)?.intValue, spoiler: (dict["spoiler"] as? NSNumber)?.boolValue, price: price, groupedId: (dict["groupedId"] as? NSNumber)?.int64Value, uniqueId: uniqueId)
                 return result
             } else if let url = (dict["url"] as? String) ?? (dict["url"] as? URL)?.absoluteString {
                 let dimensions = (dict["dimensions"]! as AnyObject).cgSizeValue!
                 let duration = (dict["duration"]! as AnyObject).doubleValue!
                 var result: [AnyHashable: Any] = [:]
-                result["item" as NSString] = LegacyAssetItemWrapper(item: .video(data: .tempFile(path: url, dimensions: dimensions, duration: duration), thumbnail: thumbnail, adjustments: dict["adjustments"] as? TGVideoEditAdjustments, caption: caption, asFile: asFile, asAnimation: false, stickers: stickers), timer: (dict["timer"] as? NSNumber)?.intValue, spoiler: (dict["spoiler"] as? NSNumber)?.boolValue, groupedId: (dict["groupedId"] as? NSNumber)?.int64Value, uniqueId: uniqueId)
+                result["item" as NSString] = LegacyAssetItemWrapper(item: .video(data: .tempFile(path: url, dimensions: dimensions, duration: duration), thumbnail: thumbnail, adjustments: dict["adjustments"] as? TGVideoEditAdjustments, caption: caption, asFile: asFile, asAnimation: false, stickers: stickers), timer: (dict["timer"] as? NSNumber)?.intValue, spoiler: (dict["spoiler"] as? NSNumber)?.boolValue, price: price, groupedId: (dict["groupedId"] as? NSNumber)?.int64Value, uniqueId: uniqueId)
                 return result
             }
         } else if (dict["type"] as! NSString) == "cameraVideo" {
@@ -257,7 +262,7 @@ public func legacyAssetPickerItemGenerator() -> ((Any?, NSAttributedString?, Str
                 let dimensions = previewImage.pixelSize()
                 let duration = (dict["duration"]! as AnyObject).doubleValue!
                 var result: [AnyHashable: Any] = [:]
-                result["item" as NSString] = LegacyAssetItemWrapper(item: .video(data: .tempFile(path: url, dimensions: dimensions, duration: duration), thumbnail: thumbnail, adjustments: dict["adjustments"] as? TGVideoEditAdjustments, caption: caption, asFile: asFile, asAnimation: false, stickers: stickers), timer: (dict["timer"] as? NSNumber)?.intValue, spoiler: (dict["spoiler"] as? NSNumber)?.boolValue, groupedId: (dict["groupedId"] as? NSNumber)?.int64Value, uniqueId: uniqueId)
+                result["item" as NSString] = LegacyAssetItemWrapper(item: .video(data: .tempFile(path: url, dimensions: dimensions, duration: duration), thumbnail: thumbnail, adjustments: dict["adjustments"] as? TGVideoEditAdjustments, caption: caption, asFile: asFile, asAnimation: false, stickers: stickers), timer: (dict["timer"] as? NSNumber)?.intValue, spoiler: (dict["spoiler"] as? NSNumber)?.boolValue, price: price, groupedId: (dict["groupedId"] as? NSNumber)?.int64Value, uniqueId: uniqueId)
                 return result
             }
         }
@@ -433,6 +438,7 @@ private func ngMapLegacyAssetPickerValues(
                         item: .video(data: data, thumbnail: thumbnail, adjustments: chunkAdjustments, caption: chunkCaption, asFile: asFile, asAnimation: asAnimation, stickers: stickers),
                         timer: itemWrapper.timer,
                         spoiler: itemWrapper.spoiler,
+                        price: itemWrapper.price,
                         groupedId: nil,
                         uniqueId: chunkUniqueId
                     )
@@ -458,6 +464,15 @@ public func legacyAssetPickerEnqueueMessages(context: AccountContext, account: A
     return Signal { subscriber in
         let disposable = SSignal.combineSignals(signals).start(next: { anyValues in
             var messages: [LegacyAssetPickerEnqueueMessage] = []
+                    
+            struct EnqueuePaidMessage {
+                var price: Int64
+                var text: String
+                var entities: [MessageTextEntity]
+                var media: [Media]
+            }
+            
+            var paidMessage: EnqueuePaidMessage?
             
             // MARK: Nicegram RoundedVideos
             let anyValues = ngMapLegacyAssetPickerValues(
@@ -545,7 +560,26 @@ public func legacyAssetPickerEnqueueMessages(context: AccountContext, account: A
                                                     }
                                                 }
                                             }
-                                            messages.append(LegacyAssetPickerEnqueueMessage(message: .message(text: text.string, attributes: attributes, inlineStickers: [:], mediaReference: .standalone(media: media), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: item.groupedId, correlationId: nil, bubbleUpEmojiOrStickersets: bubbleUpEmojiOrStickersets), uniqueId: item.uniqueId, isFile: false))
+                                            
+                                            if let price = item.price {
+                                                if var current = paidMessage {
+                                                    if current.text.isEmpty && !text.string.isEmpty {
+                                                        current.text = text.string
+                                                        current.entities = entities
+                                                    }
+                                                    current.media.append(media)
+                                                    paidMessage = current
+                                                } else {
+                                                    paidMessage = EnqueuePaidMessage(
+                                                        price: price,
+                                                        text: text.string,
+                                                        entities: entities,
+                                                        media: [media]
+                                                    )
+                                                }
+                                            } else {
+                                                messages.append(LegacyAssetPickerEnqueueMessage(message: .message(text: text.string, attributes: attributes, inlineStickers: [:], mediaReference: .standalone(media: media), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: item.groupedId, correlationId: nil, bubbleUpEmojiOrStickersets: bubbleUpEmojiOrStickersets), uniqueId: item.uniqueId, isFile: false))
+                                            }
                                         }
                                     }
                                 case let .asset(asset):
@@ -619,7 +653,25 @@ public func legacyAssetPickerEnqueueMessages(context: AccountContext, account: A
                                                         }
                                                     }
                                                     
-                                                    messages.append(LegacyAssetPickerEnqueueMessage(message: .message(text: text.string, attributes: attributes, inlineStickers: [:], mediaReference: .standalone(media: media), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: item.groupedId, correlationId: nil, bubbleUpEmojiOrStickersets: bubbleUpEmojiOrStickersets), uniqueId: item.uniqueId, isFile: false))
+                                                    if let price = item.price {
+                                                        if var current = paidMessage {
+                                                            if current.text.isEmpty && !text.string.isEmpty {
+                                                                current.text = text.string
+                                                                current.entities = entities
+                                                            }
+                                                            current.media.append(media)
+                                                            paidMessage = current
+                                                        } else {
+                                                            paidMessage = EnqueuePaidMessage(
+                                                                price: price,
+                                                                text: text.string,
+                                                                entities: entities,
+                                                                media: [media]
+                                                            )
+                                                        }
+                                                    } else {
+                                                        messages.append(LegacyAssetPickerEnqueueMessage(message: .message(text: text.string, attributes: attributes, inlineStickers: [:], mediaReference: .standalone(media: media), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: item.groupedId, correlationId: nil, bubbleUpEmojiOrStickersets: bubbleUpEmojiOrStickersets), uniqueId: item.uniqueId, isFile: false))
+                                                    }
                                                 }
                                             }
                                         }
@@ -669,7 +721,25 @@ public func legacyAssetPickerEnqueueMessages(context: AccountContext, account: A
                                             }
                                         }
                                         
-                                        messages.append(LegacyAssetPickerEnqueueMessage(message: .message(text: text.string, attributes: attributes, inlineStickers: [:], mediaReference: .standalone(media: media), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: item.groupedId, correlationId: nil, bubbleUpEmojiOrStickersets: bubbleUpEmojiOrStickersets), uniqueId: item.uniqueId, isFile: false))
+                                        if let price = item.price {
+                                            if var current = paidMessage {
+                                                if current.text.isEmpty && !text.string.isEmpty {
+                                                    current.text = text.string
+                                                    current.entities = entities
+                                                }
+                                                current.media.append(media)
+                                                paidMessage = current
+                                            } else {
+                                                paidMessage = EnqueuePaidMessage(
+                                                    price: price,
+                                                    text: text.string,
+                                                    entities: entities,
+                                                    media: [media]
+                                                )
+                                            }
+                                        } else {
+                                            messages.append(LegacyAssetPickerEnqueueMessage(message: .message(text: text.string, attributes: attributes, inlineStickers: [:], mediaReference: .standalone(media: media), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: item.groupedId, correlationId: nil, bubbleUpEmojiOrStickersets: bubbleUpEmojiOrStickersets), uniqueId: item.uniqueId, isFile: false))
+                                        }
                                     }
                                 case .tempFile:
                                     break
@@ -721,7 +791,25 @@ public func legacyAssetPickerEnqueueMessages(context: AccountContext, account: A
                                         }
                                     }
                                     
-                                    messages.append(LegacyAssetPickerEnqueueMessage(message: .message(text: text.string, attributes: attributes, inlineStickers: [:], mediaReference: .standalone(media: media), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: item.groupedId, correlationId: nil, bubbleUpEmojiOrStickersets: bubbleUpEmojiOrStickersets), uniqueId: item.uniqueId, isFile: true))
+                                    if let price = item.price {
+                                        if var current = paidMessage {
+                                            if current.text.isEmpty && !text.string.isEmpty {
+                                                current.text = text.string
+                                                current.entities = entities
+                                            }
+                                            current.media.append(media)
+                                            paidMessage = current
+                                        } else {
+                                            paidMessage = EnqueuePaidMessage(
+                                                price: price,
+                                                text: text.string,
+                                                entities: entities,
+                                                media: [media]
+                                            )
+                                        }
+                                    } else {
+                                        messages.append(LegacyAssetPickerEnqueueMessage(message: .message(text: text.string, attributes: attributes, inlineStickers: [:], mediaReference: .standalone(media: media), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: item.groupedId, correlationId: nil, bubbleUpEmojiOrStickersets: bubbleUpEmojiOrStickersets), uniqueId: item.uniqueId, isFile: true))
+                                    }
                                 case let .asset(asset):
                                     var randomId: Int64 = 0
                                     arc4random_buf(&randomId, 8)
@@ -756,7 +844,25 @@ public func legacyAssetPickerEnqueueMessages(context: AccountContext, account: A
                                         }
                                     }
                                     
-                                    messages.append(LegacyAssetPickerEnqueueMessage(message: .message(text: text.string, attributes: attributes, inlineStickers: [:], mediaReference: .standalone(media: media), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: item.groupedId, correlationId: nil, bubbleUpEmojiOrStickersets: bubbleUpEmojiOrStickersets), uniqueId: item.uniqueId, isFile: true))
+                                    if let price = item.price {
+                                        if var current = paidMessage {
+                                            if current.text.isEmpty && !text.string.isEmpty {
+                                                current.text = text.string
+                                                current.entities = entities
+                                            }
+                                            current.media.append(media)
+                                            paidMessage = current
+                                        } else {
+                                            paidMessage = EnqueuePaidMessage(
+                                                price: price,
+                                                text: text.string,
+                                                entities: entities,
+                                                media: [media]
+                                            )
+                                        }
+                                    } else {
+                                        messages.append(LegacyAssetPickerEnqueueMessage(message: .message(text: text.string, attributes: attributes, inlineStickers: [:], mediaReference: .standalone(media: media), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: item.groupedId, correlationId: nil, bubbleUpEmojiOrStickersets: bubbleUpEmojiOrStickersets), uniqueId: item.uniqueId, isFile: true))
+                                    }
                                 default:
                                     break
                             }
@@ -959,24 +1065,71 @@ public func legacyAssetPickerEnqueueMessages(context: AccountContext, account: A
                             }
                             //
                             
-                            // MARK: Nicegram RoundedVideos, change (text, localGroupingKey)
-                            messages.append(LegacyAssetPickerEnqueueMessage(message: .message(text: messageText, attributes: attributes, inlineStickers: [:], mediaReference: .standalone(media: media), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: localGroupingKey, correlationId: nil, bubbleUpEmojiOrStickersets: bubbleUpEmojiOrStickersets), uniqueId: item.uniqueId, isFile: asFile))
-                        
-                            // MARK: Nicegram RoundedVideos
-                            if sendAsRoundedVideo {
-                                let videoMessageText = text
-                                    .string
-                                    .trimmingCharacters(in: .whitespacesAndNewlines)
-                                
-                                if !videoMessageText.isEmpty {
-                                    var uniqueId = item.uniqueId
-                                    uniqueId?.append("-text")
-                                    messages.append(LegacyAssetPickerEnqueueMessage(message: .message(text: videoMessageText, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: localGroupingKey, correlationId: nil, bubbleUpEmojiOrStickersets: []), uniqueId: uniqueId, isFile: false))
+                            if let price = item.price {
+                                if var current = paidMessage {
+                                    if current.text.isEmpty && !text.string.isEmpty {
+                                        current.text = text.string
+                                        current.entities = entities
+                                    }
+                                    current.media.append(media)
+                                    paidMessage = current
+                                } else {
+                                    paidMessage = EnqueuePaidMessage(
+                                        price: price,
+                                        text: text.string,
+                                        entities: entities,
+                                        media: [media]
+                                    )
                                 }
+                            } else {
+                                // MARK: Nicegram RoundedVideos, change (text, localGroupingKey)
+                                messages.append(LegacyAssetPickerEnqueueMessage(message: .message(text: messageText, attributes: attributes, inlineStickers: [:], mediaReference: .standalone(media: media), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: localGroupingKey, correlationId: nil, bubbleUpEmojiOrStickersets: bubbleUpEmojiOrStickersets), uniqueId: item.uniqueId, isFile: asFile))
+                                
+                                // MARK: Nicegram RoundedVideos
+                                if sendAsRoundedVideo {
+                                    let videoMessageText = text
+                                        .string
+                                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                                    
+                                    if !videoMessageText.isEmpty {
+                                        var uniqueId = item.uniqueId
+                                        uniqueId?.append("-text")
+                                        messages.append(LegacyAssetPickerEnqueueMessage(message: .message(text: videoMessageText, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: localGroupingKey, correlationId: nil, bubbleUpEmojiOrStickersets: []), uniqueId: uniqueId, isFile: false))
+                                    }
+                                }
+                                //
                             }
-                            //
                     }
                 }
+            }
+            
+            if let paidMessage {
+                var attributes: [MessageAttribute] = []
+                if !paidMessage.entities.isEmpty {
+                    attributes.append(TextEntitiesMessageAttribute(entities: paidMessage.entities))
+                }
+                messages.append(
+                    LegacyAssetPickerEnqueueMessage(
+                        message: .message(
+                            text: paidMessage.text,
+                            attributes: attributes,
+                            inlineStickers: [:],
+                            mediaReference: .standalone(
+                                media: TelegramMediaPaidContent(
+                                    amount: paidMessage.price,
+                                    extendedMedia: paidMessage.media.map { .full(media: $0) }
+                                )),
+                            threadId: nil,
+                            replyToMessageId: nil,
+                            replyToStoryId: nil,
+                            localGroupingKey: nil,
+                            correlationId: nil,
+                            bubbleUpEmojiOrStickersets: []
+                        ),
+                        uniqueId: nil,
+                        isFile: false
+                    )
+                )
             }
             
             subscriber.putNext(messages)

@@ -79,7 +79,7 @@ private final class IconComponent: Component {
             self.disposable?.dispose()
         }
         
-        func update(component: IconComponent, availableSize: CGSize, transition: Transition) -> CGSize {
+        func update(component: IconComponent, availableSize: CGSize, transition: ComponentTransition) -> CGSize {
             if self.component?.name != component.name || self.component?.fileReference?.media.fileId != component.fileReference?.media.fileId || self.component?.tintColor != component.tintColor {
                 if let fileReference = component.fileReference {
                     let previousName = self.component?.name ?? ""
@@ -117,7 +117,7 @@ private final class IconComponent: Component {
         return View(frame: CGRect())
     }
     
-    public func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: Transition) -> CGSize {
+    public func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
         return view.update(component: self, availableSize: availableSize, transition: transition)
     }
 }
@@ -701,7 +701,7 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate {
     private let backgroundNode: NavigationBackgroundNode
     private let scrollNode: ASScrollNode
     private let separatorNode: ASDisplayNode
-    private var buttonViews: [Int: ComponentHostView<Empty>] = [:]
+    private var buttonViews: [AnyHashable: ComponentHostView<Empty>] = [:]
     
     private var textInputPanelNode: AttachmentTextInputPanelNode?
     private var progressNode: LoadingProgressNode?
@@ -994,14 +994,16 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate {
                 
                 let _ = (combineLatest(
                     isReady,
-                    captionIsAboveMedia |> take(1)
+                    captionIsAboveMedia |> take(1),
+                    ChatSendMessageContextScreen.initialData(context: strongSelf.context, currentMessageEffectId: nil)
                 )
-                |> deliverOnMainQueue).start(next: { [weak strongSelf] _, captionIsAboveMedia in
+                |> deliverOnMainQueue).start(next: { [weak strongSelf] _, captionIsAboveMedia, initialData in
                     guard let strongSelf else {
                         return
                     }
                     
                     let controller = makeChatSendMessageActionSheetController(
+                        initialData: initialData,
                         context: strongSelf.context,
                         updatedPresentationData: strongSelf.updatedPresentationData,
                         peerId: strongSelf.presentationInterfaceState.chatLocation.peerId,
@@ -1014,6 +1016,7 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate {
                                 }
                                 mediaPickerContext.setCaptionIsAboveMedia(value)
                             }),
+                            messageEffect: nil,
                             attachment: true,
                             canSendWhenOnline: sendWhenOnlineAvailable,
                             forwardMessageIds: strongSelf.presentationInterfaceState.interfaceState.forwardMessageIds ?? []
@@ -1163,13 +1166,12 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate {
         self.updateViews(transition: .init(animation: .curve(duration: 0.2, curve: .spring)))
     }
     
-    func updateViews(transition: Transition) {
+    func updateViews(transition: ComponentTransition) {
         guard let layout = self.validLayout else {
             return
         }
         
         let visibleRect = self.scrollNode.bounds.insetBy(dx: -180.0, dy: 0.0)
-        var validButtons = Set<Int>()
         
         var distanceBetweenNodes = layout.size.width / CGFloat(self.buttons.count)
         let internalWidth = distanceBetweenNodes * CGFloat(self.buttons.count - 1)
@@ -1182,26 +1184,29 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate {
             leftNodeOriginX = layout.safeInsets.left + sideInset + buttonWidth / 2.0
         }
         
+        var validIds = Set<AnyHashable>()
+        
         for i in 0 ..< self.buttons.count {
             let originX = floor(leftNodeOriginX + CGFloat(i) * distanceBetweenNodes - buttonWidth / 2.0)
             let buttonFrame = CGRect(origin: CGPoint(x: originX, y: 0.0), size: CGSize(width: buttonWidth, height: buttonSize.height))
             if !visibleRect.intersects(buttonFrame) {
                 continue
             }
-            validButtons.insert(i)
+            
+            let type = self.buttons[i]
+            let _ = validIds.insert(type.key)
             
             var buttonTransition = transition
             let buttonView: ComponentHostView<Empty>
-            if let current = self.buttonViews[i] {
+            if let current = self.buttonViews[type.key] {
                 buttonView = current
             } else {
                 buttonTransition = .immediate
                 buttonView = ComponentHostView<Empty>()
-                self.buttonViews[i] = buttonView
+                self.buttonViews[type.key] = buttonView
                 self.scrollNode.view.addSubview(buttonView)
             }
             
-            let type = self.buttons[i]
             if case let .app(bot) = type {
                 for (name, file) in bot.icons {
                     if [.default, .iOSAnimated, .iOSSettingsStatic, .placeholder].contains(name) {
@@ -1284,6 +1289,16 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate {
             buttonView.isAccessibilityElement = true
             buttonView.accessibilityLabel = accessibilityTitle
             buttonView.accessibilityTraits = [.button]
+        }
+        var removeIds: [AnyHashable] = []
+        for (id, itemView) in self.buttonViews {
+            if !validIds.contains(id) {
+                removeIds.append(id)
+                itemView.removeFromSuperview()
+            }
+        }
+        for id in removeIds {
+            self.buttonViews.removeValue(forKey: id)
         }
     }
     

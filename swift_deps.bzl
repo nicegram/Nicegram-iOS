@@ -28,7 +28,7 @@ def swift_dependencies():
     # branch: release/1.0.0
     swift_package(
         name = "swiftpkg_core_swift",
-        commit = "20b7275f60ad80634f056905d7f18292294cd510",
+        commit = "87eb31396b7ef8962686b1c8de561950efc2673f",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/denis15yo/core-swift.git",
     )
@@ -68,7 +68,7 @@ def swift_dependencies():
     # version: 2.6.1
     swift_package(
         name = "swiftpkg_floatingpanel",
-        commit = "22d46c526084724a718b8c39ab77f12452712cc7",
+        commit = "29185a47bd9f062c060e097641b863ef07f60ba7",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/scenee/FloatingPanel",
     )
@@ -108,7 +108,7 @@ def swift_dependencies():
     # branch: develop
     swift_package(
         name = "swiftpkg_nicegram_assistant_ios",
-        commit = "0985fd5dfae1676121c54c31fe2817059d5bf784",
+        commit = "1b98221095de9a80b44e93ce9bfc699c720d5c00",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
     )
@@ -116,7 +116,7 @@ def swift_dependencies():
     # branch: develop
     swift_package(
         name = "swiftpkg_nicegram_wallet_ios",
-        commit = "241a210ee1b5cb9cb95d9245a4ed384973ee2ef2",
+        commit = "3573f8ef65b8667b5bc927bfa558ffb39f2bd579",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
     )
@@ -140,7 +140,7 @@ def swift_dependencies():
     # version: 5.15.5
     swift_package(
         name = "swiftpkg_sdwebimage",
-        commit = "b8523c1642f3c142b06dd98443ea7c48343a4dfd",
+        commit = "be0bcd7823ce56629948491f2eaeaa19979514f7",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/SDWebImage/SDWebImage.git",
     )
@@ -196,7 +196,7 @@ def swift_dependencies():
     # version: 1.1.0
     swift_package(
         name = "swiftpkg_swift_collections",
-        commit = "ee97538f5b81ae89698fd95938896dec5217b148",
+        commit = "3d2dc41a01f9e49d84f0a3925fb858bed64f702d",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/apple/swift-collections",
     )
@@ -300,7 +300,7 @@ def swift_dependencies():
     # version: 4.0.36
     swift_package(
         name = "swiftpkg_wallet_core",
-        commit = "94116a24445c2052edbc7203baf68296c68ce8f4",
+        commit = "352e0833678151ae124e1e70d325fc056d76d150",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/trustwallet/wallet-core.git",
     )

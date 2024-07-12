@@ -34,6 +34,7 @@ public final class ChatMessageItemAssociatedData: Equatable {
     public let automaticDownloadPeerType: MediaAutoDownloadPeerType
     public let automaticDownloadPeerId: EnginePeer.Id?
     public let automaticDownloadNetworkType: MediaAutoDownloadNetworkType
+    public let preferredStoryHighQuality: Bool
     public let isRecentActions: Bool
     public let subject: ChatControllerSubject?
     public let contactsPeerIds: Set<EnginePeer.Id>
@@ -66,6 +67,7 @@ public final class ChatMessageItemAssociatedData: Equatable {
         automaticDownloadPeerType: MediaAutoDownloadPeerType,
         automaticDownloadPeerId: EnginePeer.Id?,
         automaticDownloadNetworkType: MediaAutoDownloadNetworkType,
+        preferredStoryHighQuality: Bool = false,
         isRecentActions: Bool = false,
         subject: ChatControllerSubject? = nil,
         contactsPeerIds: Set<EnginePeer.Id> = Set(),
@@ -97,6 +99,7 @@ public final class ChatMessageItemAssociatedData: Equatable {
         self.automaticDownloadPeerType = automaticDownloadPeerType
         self.automaticDownloadPeerId = automaticDownloadPeerId
         self.automaticDownloadNetworkType = automaticDownloadNetworkType
+        self.preferredStoryHighQuality = preferredStoryHighQuality
         self.isRecentActions = isRecentActions
         self.subject = subject
         self.contactsPeerIds = contactsPeerIds
@@ -134,6 +137,9 @@ public final class ChatMessageItemAssociatedData: Equatable {
             return false
         }
         if lhs.automaticDownloadNetworkType != rhs.automaticDownloadNetworkType {
+            return false
+        }
+        if lhs.preferredStoryHighQuality != rhs.preferredStoryHighQuality {
             return false
         }
         if lhs.isRecentActions != rhs.isRecentActions {
@@ -227,6 +233,7 @@ public extension ChatMessageItemAssociatedData {
 
 public enum ChatControllerInteractionLongTapAction {
     case url(String)
+    case phone(String)
     case mention(String)
     case peerMention(EnginePeer.Id, String)
     case command(String)
@@ -288,11 +295,13 @@ public struct ChatControllerInitialBotAppStart {
     public let botApp: BotApp
     public let payload: String?
     public let justInstalled: Bool
+    public let compact: Bool
     
-    public init(botApp: BotApp, payload: String?, justInstalled: Bool) {
+    public init(botApp: BotApp, payload: String?, justInstalled: Bool, compact: Bool) {
         self.botApp = botApp
         self.payload = payload
         self.justInstalled = justInstalled
+        self.compact = compact
     }
 }
 
@@ -730,9 +739,11 @@ public enum ChatControllerSubject: Equatable {
         
         public struct Link: Equatable {
             public var options: Signal<LinkOptions, NoError>
+            public var isCentered: Bool
             
-            public init(options: Signal<LinkOptions, NoError>) {
+            public init(options: Signal<LinkOptions, NoError>, isCentered: Bool) {
                 self.options = options
+                self.isCentered = isCentered
             }
             
             public static func ==(lhs: Link, rhs: Link) -> Bool {
@@ -1071,6 +1082,7 @@ public enum FileMediaResourceMediaStatus: Equatable {
 }
 
 public protocol ChatMessageItemNodeProtocol: ListViewItemNode {
+    func makeProgress() -> Promise<Bool>?
     func targetReactionView(value: MessageReaction.Reaction) -> UIView?
     func targetForStoryTransition(id: StoryId) -> UIView?
     func contentFrame() -> CGRect

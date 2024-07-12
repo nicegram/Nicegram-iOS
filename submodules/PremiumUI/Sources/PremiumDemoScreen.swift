@@ -69,7 +69,7 @@ public final class PremiumGradientBackgroundComponent: Component {
         }
         
         
-        func update(component: PremiumGradientBackgroundComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: Transition) -> CGSize {
+        func update(component: PremiumGradientBackgroundComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
             self.clipLayer.frame = CGRect(origin: .zero, size: CGSize(width: availableSize.width, height: availableSize.height + 10.0))
             self.gradientLayer.frame = CGRect(origin: .zero, size: availableSize)
             
@@ -149,7 +149,7 @@ public final class PremiumGradientBackgroundComponent: Component {
         return View(frame: CGRect())
     }
     
-    public func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: Transition) -> CGSize {
+    public func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
         return view.update(component: self, availableSize: availableSize, state: state, environment: environment, transition: transition)
     }
 }
@@ -371,7 +371,7 @@ final class DemoPagerComponent: Component {
             self.ignoreContentOffsetChange = false
         }
         
-        func update(component: DemoPagerComponent, availableSize: CGSize, transition: Transition) -> CGSize {
+        func update(component: DemoPagerComponent, availableSize: CGSize, transition: ComponentTransition) -> CGSize {
             var validIds: [AnyHashable] = []
             
             component.nextAction?.connect { [weak self] in
@@ -473,7 +473,7 @@ final class DemoPagerComponent: Component {
         return View(frame: CGRect())
     }
     
-    func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: Transition) -> CGSize {
+    func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
         return view.update(component: self, availableSize: availableSize, transition: transition)
     }
 }
@@ -666,7 +666,7 @@ private final class DemoSheetContent: CombinedComponent {
                 strongSelf.isPremium = isPremium
                 strongSelf.promoConfiguration = promoConfiguration
                 if !reactions.isEmpty && !stickers.isEmpty {
-                    strongSelf.updated(transition: Transition(.immediate).withUserData(DemoAnimateInTransition()))
+                    strongSelf.updated(transition: ComponentTransition(.immediate).withUserData(DemoAnimateInTransition()))
                 }
             })
         }
@@ -1078,6 +1078,26 @@ private final class DemoSheetContent: CombinedComponent {
                     )
                 )
                 
+                availableItems[.messageEffects] = DemoPagerComponent.Item(
+                    AnyComponentWithIdentity(
+                        id: PremiumDemoScreen.Subject.messageEffects,
+                        component: AnyComponent(
+                            PageComponent(
+                                content: AnyComponent(PhoneDemoComponent(
+                                    context: component.context,
+                                    position: .top,
+                                    model: .island,
+                                    videoFile: configuration.videos["effects"],
+                                    decoration: .swirlStars
+                                )),
+                                title: strings.Premium_MessageEffects,
+                                text: strings.Premium_MessageEffectsInfo,
+                                textColor: textColor
+                            )
+                        )
+                    )
+                )
+                
                 let index: Int = 0
                 var items: [DemoPagerComponent.Item] = []
                 if let item = availableItems.first(where: { $0.value.content.id == component.subject as AnyHashable }) {
@@ -1172,6 +1192,8 @@ private final class DemoSheetContent: CombinedComponent {
                 text = strings.Premium_MessagePrivacyInfo
             case .folderTags:
                 text = strings.Premium_FolderTagsStandaloneInfo
+            case .messageEffects:
+                text = strings.Premium_MessageEffectsInfo
             default:
                 text = ""
             }
@@ -1441,6 +1463,7 @@ public class PremiumDemoScreen: ViewControllerComponentContainer {
         case messagePrivacy
         case business
         case folderTags
+        case messageEffects
         
         case businessLocation
         case businessHours
@@ -1497,6 +1520,8 @@ public class PremiumDemoScreen: ViewControllerComponentContainer {
                 return .business
             case .folderTags:
                 return .folderTags
+            case .messageEffects:
+                return .messageEffects
             case .businessLocation:
                 return .businessLocation
             case .businessHours:

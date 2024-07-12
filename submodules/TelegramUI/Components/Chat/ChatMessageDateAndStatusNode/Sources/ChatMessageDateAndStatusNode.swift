@@ -356,6 +356,10 @@ public class ChatMessageDateAndStatusNode: ASDisplayNode {
                     selectedBackground: themeColors.reactionActiveBackground.argb,
                     deselectedForeground: themeColors.reactionInactiveForeground.argb,
                     selectedForeground: themeColors.reactionActiveForeground.argb,
+                    deselectedStarsBackground: themeColors.reactionStarsInactiveBackground.argb,
+                    selectedStarsBackground: themeColors.reactionStarsActiveBackground.argb,
+                    deselectedStarsForeground: themeColors.reactionStarsInactiveForeground.argb,
+                    selectedStarsForeground: themeColors.reactionStarsActiveForeground.argb,
                     extractedBackground: arguments.presentationData.theme.theme.contextMenu.backgroundColor.argb,
                     extractedForeground: arguments.presentationData.theme.theme.contextMenu.primaryColor.argb,
                     extractedSelectedForeground: arguments.presentationData.theme.theme.overallDarkAppearance ? themeColors.reactionActiveForeground.argb : arguments.presentationData.theme.theme.list.itemCheckColors.foregroundColor.argb,
@@ -370,6 +374,10 @@ public class ChatMessageDateAndStatusNode: ASDisplayNode {
                     selectedBackground: themeColors.reactionActiveBackground.argb,
                     deselectedForeground: themeColors.reactionInactiveForeground.argb,
                     selectedForeground: themeColors.reactionActiveForeground.argb,
+                    deselectedStarsBackground: themeColors.reactionStarsInactiveBackground.argb,
+                    selectedStarsBackground: themeColors.reactionStarsActiveBackground.argb,
+                    deselectedStarsForeground: themeColors.reactionStarsInactiveForeground.argb,
+                    selectedStarsForeground: themeColors.reactionStarsActiveForeground.argb,
                     extractedBackground: arguments.presentationData.theme.theme.contextMenu.backgroundColor.argb,
                     extractedForeground: arguments.presentationData.theme.theme.contextMenu.primaryColor.argb,
                     extractedSelectedForeground: arguments.presentationData.theme.theme.overallDarkAppearance ? themeColors.reactionActiveForeground.argb : arguments.presentationData.theme.theme.list.itemCheckColors.foregroundColor.argb,
@@ -897,7 +905,7 @@ public class ChatMessageDateAndStatusNode: ASDisplayNode {
                             let canViewReactionList = arguments.canViewReactionList
                             item.node.view.activateAfterCompletion = !canViewReactionList
                             item.node.view.activated = { [weak itemNode] gesture, _ in
-                                guard let strongSelf = self, canViewReactionList else {
+                                guard let strongSelf = self else {
                                     return
                                 }
                                 guard let itemNode = itemNode else {
