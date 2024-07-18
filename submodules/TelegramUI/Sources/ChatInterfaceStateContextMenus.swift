@@ -34,7 +34,6 @@ import FeatPremiumUI
 import struct NGAiChat.AiChatTgHelper
 import struct NGAiChat.AiContextMenuNotificationPayload
 import NGAiChatUI
-import NGCopyProtectedContent
 import NGStrings
 import NGTranslate
 import NGUI
@@ -1265,17 +1264,10 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
         if !messageText.isEmpty || (resourceAvailable && isImage) || diceEmoji != nil {
             if !isExpired {
                 if !isPoll {
-                    //  MARK: Nicegram CopyProtectedContent, '!isCopyProtected' changed to 'shouldShowInterfaceForCopyContent(message: message)'
-                    if shouldShowInterfaceForCopyContent(message: message)  {
+                    if !isCopyProtected {
                         actions.append(.action(ContextMenuActionItem(text: chatPresentationInterfaceState.strings.Conversation_ContextMenuCopy, icon: { theme in
                             return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Copy"), color: theme.actionSheet.primaryTextColor)
                         }, action: { _, f in
-                            //  MARK: Nicegram CopyProtectedContent
-                            if shouldSubscribeToCopyContent(message: message) {
-                                routeToNicegramPremiumForCopyContent()
-                                return
-                            }
-                            //
                             if let diceEmoji = diceEmoji {
                                 UIPasteboard.general.string = diceEmoji
                             } else {
@@ -1378,9 +1370,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             }
         }
         
-        //  MARK: Nicegram CopyProtectedContent, '!message.isCopyProtected()' changed to 'shouldShowInterfaceForCopyContent(message: message)'
-        if resourceAvailable, !message.containsSecretMedia,
-           shouldShowInterfaceForCopyContent(message: message) {
+        if resourceAvailable, !message.containsSecretMedia && !isCopyProtected {
             var mediaReference: AnyMediaReference?
             var isVideo = false
             for media in message.media {
@@ -1397,12 +1387,6 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                 actions.append(.action(ContextMenuActionItem(text: isVideo ? chatPresentationInterfaceState.strings.Gallery_SaveVideo : chatPresentationInterfaceState.strings.Gallery_SaveImage, icon: { theme in
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Save"), color: theme.actionSheet.primaryTextColor)
                 }, action: { _, f in
-                    //  MARK: Nicegram CopyProtectedContent
-                    if shouldSubscribeToCopyContent(message: message) {
-                        routeToNicegramPremiumForCopyContent()
-                        return
-                    }
-                    //
                     let _ = (saveToCameraRoll(context: context, postbox: context.account.postbox, userLocation: .peer(message.id.peerId), mediaReference: mediaReference)
                     |> deliverOnMainQueue).startStandalone(completed: {
                         Queue.mainQueue().after(0.2) {
@@ -1978,16 +1962,10 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                 var ngContextItems: [ContextMenuItem] = []
                 
                 // Copyforward
-                if shouldShowInterfaceForForwardAsCopy(message: message) {
+                if !message.isCopyProtected() {
                     ngContextItems.append(.action(ContextMenuActionItem(text: l("Chat.ForwardAsCopy"), icon: { theme in
                         return generateTintedImage(image: UIImage(bundleImageName: "CopyForward"), color: theme.actionSheet.primaryTextColor)
                     }, action: { _, f in
-                        //  MARK: Nicegram CopyProtectedContent
-                        if shouldSubscribeToCopyContent(message: message) {
-                            routeToNicegramPremiumForCopyContent()
-                            return
-                        }
-                        //
                         interfaceInteraction.copyForwardMessages(selectAll ? messages : [message])
                         f(.dismissWithoutContent)
                     })))

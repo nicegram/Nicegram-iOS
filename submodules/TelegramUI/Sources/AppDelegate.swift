@@ -16,7 +16,6 @@ import NGRemoteConfig
 import NGRepoTg
 import NGRepoUser
 import NGStats
-import NGStealthMode
 import NGStrings
 import NicegramWallet
 import SubscriptionAnalytics
@@ -1335,12 +1334,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     }
                 }
             }
-        })
-        
-        let _ = self.sharedContextPromise.get().start(next: { sharedContext in
-            NGStealthMode.initialize(
-                sharedContext: sharedContext.sharedContext
-            )
         })
         
         let presentationDataSignal = self.sharedContextPromise.get()

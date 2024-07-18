@@ -35,7 +35,6 @@ import var NGCoreUI.strings
 import NGDoubleBottom
 import NGQuickReplies
 import NGRemoteConfig
-import NGSecretMenu
 import NGStats
 
 fileprivate let LOGTAG = extractNameFromPath(#file)
@@ -63,7 +62,6 @@ private final class NicegramSettingsControllerArguments {
 // MARK: Sections
 
 private enum NicegramSettingsControllerSection: Int32 {
-    case SecretMenu
     case Unblock
     case Tabs
     case Folders
@@ -120,8 +118,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     
     case quickReplies(String)
     
-    case secretMenu(String)
-    
     case shareBotsData(String, Bool)
     case shareChannelsData(String, Bool)
     case shareStickersData(String, Bool)
@@ -145,8 +141,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return NicegramSettingsControllerSection.Unblock.rawValue
         case .Account, .doubleBottom:
             return NicegramSettingsControllerSection.Account.rawValue
-        case .secretMenu:
-            return NicegramSettingsControllerSection.SecretMenu.rawValue
         case .shareBotsData, .shareChannelsData, .shareStickersData, .shareDataNote:
             return NicegramSettingsControllerSection.ShareData.rawValue
         case .pinnedChatsHeader, .pinnedChat:
@@ -158,9 +152,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
     var stableId: Int32 {
         switch self {
-        case .secretMenu:
-            return 700
-            
         case .unblockHeader:
             return 800
             
@@ -375,12 +366,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
-        case let .secretMenu(lhsText):
-            if case let .secretMenu(rhsText) = rhs, lhsText == rhsText {
-                return true
-            } else {
-                return false
-            }
         case let .shareBotsData(lhsText, lhsValue):
             if case let .shareBotsData(rhsText, rhsValue) = rhs, lhsText == rhsText, lhsValue == rhsValue {
                 return true
@@ -550,10 +535,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return ItemListActionItem(presentationData: presentationData, title: text, kind: .neutral, alignment: .natural, sectionId: section, style: .blocks) {
                 arguments.pushController(quickRepliesController(context: arguments.context))
             }
-        case let .secretMenu(text):
-            return ItemListActionItem(presentationData: presentationData, title: text, kind: .neutral, alignment: .natural, sectionId: section, style: .blocks) {
-                arguments.pushController(secretMenuController(context: arguments.context))
-            }
         case let .shareBotsData(text, value):
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
                 if #available(iOS 13.0, *) {
@@ -628,10 +609,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
 private func nicegramSettingsControllerEntries(presentationData: PresentationData, experimentalSettings: ExperimentalUISettings, showCalls: Bool, pinnedChats: [PinnedChat], sharingSettings: SharingSettings?, context: AccountContext) -> [NicegramSettingsControllerEntry] {
     var entries: [NicegramSettingsControllerEntry] = []
-    
-    if canOpenSecretMenu(context: context) {
-        entries.append(.secretMenu("Secret Menu"))
-    }
     
     if !hideUnblock {
         entries.append(.unblockHeader(l("NicegramSettings.Unblock.Header").uppercased()))
