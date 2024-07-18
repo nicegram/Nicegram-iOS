@@ -50,8 +50,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tkey/curvelib.swift",
       "state" : {
-        "revision" : "7dad3bf1793de263f83406c08c18c9316abf082f",
-        "version" : "0.1.2"
+        "revision" : "9f88bd5e56d1df443a908f7a7e81ae4f4d9170ea",
+        "version" : "1.0.1"
       }
     },
     {
@@ -68,8 +68,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/torusresearch/fetch-node-details-swift.git",
       "state" : {
-        "revision" : "bf2f0759da5c5c80765773b08c2756045edf608f",
-        "version" : "5.2.0"
+        "revision" : "4bd96c33ba8d02d9e27190c5c7cedf09cfdfd656",
+        "version" : "6.0.3"
       }
     },
     {
@@ -104,8 +104,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/LeoNatan/LNExtensionExecutor",
       "state" : {
-        "revision" : "16b741f659e344f4569c9f9d32ef2298ef0233ff",
-        "version" : "1.2.0"
+        "revision" : "c0226dcd7d653d4c22dd16ccd72619c86b610c2d",
+        "version" : "1.3.0"
       }
     },
     {
@@ -123,7 +123,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "1b98221095de9a80b44e93ce9bfc699c720d5c00"
+        "revision" : "19ee0cf8a32ad681c18d90c4c8ec6ab90863a9c4"
       }
     },
     {
@@ -132,7 +132,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "3573f8ef65b8667b5bc927bfa558ffb39f2bd579"
+        "revision" : "b5efa233dd0568620c3f2fd2e1a4466d97bbdf55"
       }
     },
     {
@@ -167,8 +167,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Web3Auth/session-manager-swift.git",
       "state" : {
-        "revision" : "c89d9205a1ce38cd6c6374b906a9039d9cc03f05",
-        "version" : "3.1.1"
+        "revision" : "20cc7bff065d7fe53164d17e7714a3f17d4cea2a",
+        "version" : "4.0.2"
       }
     },
     {
@@ -176,8 +176,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Web3Auth/single-factor-auth-swift.git",
       "state" : {
-        "revision" : "8baa2b8cf55b0a38cb98c412bea1c6597adb78ba",
-        "version" : "4.0.0"
+        "revision" : "73c5066d369c7d2aa1057c56a89b7f1dcdda3270",
+        "version" : "5.0.0"
       }
     },
     {
@@ -230,8 +230,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-http-types",
       "state" : {
-        "revision" : "1ddbea1ee34354a6a2532c60f98501c35ae8edfa",
-        "version" : "1.2.0"
+        "revision" : "ae67c8178eb46944fd85e4dc6dd970e1f3ed6ccd",
+        "version" : "1.3.0"
       }
     },
     {
@@ -320,8 +320,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/torusresearch/torus-utils-swift.git",
       "state" : {
-        "revision" : "4c17ef5166c162455d0a37115c033eeff8cb282d",
-        "version" : "8.0.1"
+        "revision" : "608c28404c506983bfec7bbd957632fc0544db8c",
+        "version" : "8.1.2"
       }
     },
     {
@@ -338,8 +338,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "352e0833678151ae124e1e70d325fc056d76d150",
-        "version" : "4.0.49"
+        "revision" : "221584f3ea91da1ba236d06834db9ce5d24a9f40",
+        "version" : "4.1.0"
       }
     },
     {

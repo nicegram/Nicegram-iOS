@@ -44,7 +44,7 @@ def swift_dependencies():
     # version: 0.1.2
     swift_package(
         name = "swiftpkg_curvelib.swift",
-        commit = "7dad3bf1793de263f83406c08c18c9316abf082f",
+        commit = "9f88bd5e56d1df443a908f7a7e81ae4f4d9170ea",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/tkey/curvelib.swift",
     )
@@ -60,7 +60,7 @@ def swift_dependencies():
     # version: 5.2.0
     swift_package(
         name = "swiftpkg_fetch_node_details_swift",
-        commit = "bf2f0759da5c5c80765773b08c2756045edf608f",
+        commit = "4bd96c33ba8d02d9e27190c5c7cedf09cfdfd656",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/torusresearch/fetch-node-details-swift.git",
     )
@@ -92,7 +92,7 @@ def swift_dependencies():
     # version: 1.2.0
     swift_package(
         name = "swiftpkg_lnextensionexecutor",
-        commit = "16b741f659e344f4569c9f9d32ef2298ef0233ff",
+        commit = "c0226dcd7d653d4c22dd16ccd72619c86b610c2d",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/LeoNatan/LNExtensionExecutor",
     )
@@ -108,7 +108,7 @@ def swift_dependencies():
     # branch: develop
     swift_package(
         name = "swiftpkg_nicegram_assistant_ios",
-        commit = "1b98221095de9a80b44e93ce9bfc699c720d5c00",
+        commit = "19ee0cf8a32ad681c18d90c4c8ec6ab90863a9c4",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
     )
@@ -116,7 +116,7 @@ def swift_dependencies():
     # branch: develop
     swift_package(
         name = "swiftpkg_nicegram_wallet_ios",
-        commit = "3573f8ef65b8667b5bc927bfa558ffb39f2bd579",
+        commit = "b5efa233dd0568620c3f2fd2e1a4466d97bbdf55",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
     )
@@ -148,7 +148,7 @@ def swift_dependencies():
     # version: 3.1.1
     swift_package(
         name = "swiftpkg_session_manager_swift",
-        commit = "c89d9205a1ce38cd6c6374b906a9039d9cc03f05",
+        commit = "20cc7bff065d7fe53164d17e7714a3f17d4cea2a",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/Web3Auth/session-manager-swift.git",
     )
@@ -156,7 +156,7 @@ def swift_dependencies():
     # version: 4.0.0
     swift_package(
         name = "swiftpkg_single_factor_auth_swift",
-        commit = "8baa2b8cf55b0a38cb98c412bea1c6597adb78ba",
+        commit = "73c5066d369c7d2aa1057c56a89b7f1dcdda3270",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/Web3Auth/single-factor-auth-swift.git",
     )
@@ -204,7 +204,7 @@ def swift_dependencies():
     # version: 1.0.3
     swift_package(
         name = "swiftpkg_swift_http_types",
-        commit = "1ddbea1ee34354a6a2532c60f98501c35ae8edfa",
+        commit = "ae67c8178eb46944fd85e4dc6dd970e1f3ed6ccd",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/apple/swift-http-types",
     )
@@ -284,7 +284,7 @@ def swift_dependencies():
     # version: 8.0.1
     swift_package(
         name = "swiftpkg_torus_utils_swift",
-        commit = "4c17ef5166c162455d0a37115c033eeff8cb282d",
+        commit = "608c28404c506983bfec7bbd957632fc0544db8c",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/torusresearch/torus-utils-swift.git",
     )
@@ -300,7 +300,7 @@ def swift_dependencies():
     # version: 4.0.36
     swift_package(
         name = "swiftpkg_wallet_core",
-        commit = "352e0833678151ae124e1e70d325fc056d76d150",
+        commit = "221584f3ea91da1ba236d06834db9ce5d24a9f40",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/trustwallet/wallet-core.git",
     )
