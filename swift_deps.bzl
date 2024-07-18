@@ -116,7 +116,7 @@ def swift_dependencies():
     # branch: develop
     swift_package(
         name = "swiftpkg_nicegram_wallet_ios",
-        commit = "b5efa233dd0568620c3f2fd2e1a4466d97bbdf55",
+        commit = "f368a40d3b4a63c8a7ceb925e882104c6d8489ee",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
     )
