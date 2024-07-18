@@ -1932,6 +1932,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                         for command in commands {
                             items.append(.action(ContextMenuActionItem(text: command.title, icon: { _ in nil }, action: { _, f in
                                 let payload = AiContextMenuNotificationPayload(
+                                    peerId: chatPresentationInterfaceState.chatLocation.peerId?.id._internalGetInt64Value(),
                                     command: command,
                                     text: message.text
                                 )
@@ -2046,7 +2047,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                 }
                 
                 // MARK: Nicegram MessageMetadata
-                if !isSecretChat, #available(iOS 15.0, *) {
+                if !isCopyProtected, !isSecretChat, #available(iOS 15.0, *) {
                     let messageMetadataAction = ContextMenuActionItem(
                         text: "Metadata",
                         icon: { theme in

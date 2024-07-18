@@ -236,6 +236,9 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     // MARK: Nicegram AiChat
     private lazy var tgChatAiViewModel = {
         TgChatAiViewModel(
+            peerId: { [weak self] in
+                self?.chatLocation.peerId?.id._internalGetInt64Value()
+            },
             useAnswer: { [weak self] text, image in
                 self?.setInput(text: text, image: image)
             }
