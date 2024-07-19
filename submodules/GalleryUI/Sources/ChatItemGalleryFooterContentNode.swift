@@ -1,6 +1,3 @@
-//  MARK: Nicegram CopyProtectedContent
-import NGCopyProtectedContent
-//
 import Foundation
 import UIKit
 import AsyncDisplayKit
@@ -911,10 +908,6 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
             canEdit = false
         }
         
-        //  MARK: Nicegram CopyProtectedContent
-        canShare = shouldShowInterfaceForCopyContent(message: message)
-        //
-        
         if message.containsSecretMedia {
             canDelete = false
         }
@@ -1500,13 +1493,6 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
         self.interacting?(true)
         
         if let currentMessage = self.currentMessage {
-            //  MARK: Nicegram CopyProtectedContent
-            if shouldSubscribeToCopyContent(message: currentMessage) {
-                self.interacting?(false)
-                routeToNicegramPremiumForCopyContent()
-                return
-            }
-            //
             let _ = (self.context.engine.data.get(TelegramEngine.EngineData.Item.Messages.MessageGroup(id: currentMessage.id))
             |> deliverOnMainQueue).start(next: { [weak self] messages in
                 if let strongSelf = self, !messages.isEmpty {

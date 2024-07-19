@@ -94,8 +94,7 @@
       "label": "@swiftpkg_curvelib.swift//:curveSecp256k1.rspm",
       "package_identity": "curvelib.swift",
       "product_memberships": [
-        "curveSecp256k1",
-        "encryption_aes_cbc_sha512"
+        "curveSecp256k1"
       ]
     },
     {
@@ -105,8 +104,7 @@
       "label": "@swiftpkg_curvelib.swift//:curve_secp256k1.rspm",
       "package_identity": "curvelib.swift",
       "product_memberships": [
-        "curveSecp256k1",
-        "encryption_aes_cbc_sha512"
+        "curveSecp256k1"
       ]
     },
     {
@@ -116,18 +114,7 @@
       "label": "@swiftpkg_curvelib.swift//:curvelib.rspm",
       "package_identity": "curvelib.swift",
       "product_memberships": [
-        "curveSecp256k1",
-        "encryption_aes_cbc_sha512"
-      ]
-    },
-    {
-      "name": "encryption_aes_cbc_sha512",
-      "c99name": "encryption_aes_cbc_sha512",
-      "src_type": "swift",
-      "label": "@swiftpkg_curvelib.swift//:encryption_aes_cbc_sha512.rspm",
-      "package_identity": "curvelib.swift",
-      "product_memberships": [
-        "encryption_aes_cbc_sha512"
+        "curveSecp256k1"
       ]
     },
     {
@@ -141,17 +128,6 @@
       ]
     },
     {
-      "name": "CommonSources",
-      "c99name": "CommonSources",
-      "src_type": "swift",
-      "label": "@swiftpkg_fetch_node_details_swift//:CommonSources.rspm",
-      "package_identity": "fetch-node-details-swift",
-      "product_memberships": [
-        "FetchNodeDetails",
-        "FndBase"
-      ]
-    },
-    {
       "name": "FetchNodeDetails",
       "c99name": "FetchNodeDetails",
       "src_type": "swift",
@@ -159,17 +135,6 @@
       "package_identity": "fetch-node-details-swift",
       "product_memberships": [
         "FetchNodeDetails"
-      ]
-    },
-    {
-      "name": "FndBase",
-      "c99name": "FndBase",
-      "src_type": "swift",
-      "label": "@swiftpkg_fetch_node_details_swift//:FndBase.rspm",
-      "package_identity": "fetch-node-details-swift",
-      "product_memberships": [
-        "FetchNodeDetails",
-        "FndBase"
       ]
     },
     {
@@ -1891,12 +1856,6 @@
       "label": "@swiftpkg_curvelib.swift//:curveSecp256k1"
     },
     {
-      "identity": "curvelib.swift",
-      "name": "encryption_aes_cbc_sha512",
-      "type": "library",
-      "label": "@swiftpkg_curvelib.swift//:encryption_aes_cbc_sha512"
-    },
-    {
       "identity": "factory",
       "name": "Factory",
       "type": "library",
@@ -1907,12 +1866,6 @@
       "name": "FetchNodeDetails",
       "type": "library",
       "label": "@swiftpkg_fetch_node_details_swift//:FetchNodeDetails"
-    },
-    {
-      "identity": "fetch-node-details-swift",
-      "name": "FndBase",
-      "type": "library",
-      "label": "@swiftpkg_fetch_node_details_swift//:FndBase"
     },
     {
       "identity": "floatingpanel",
@@ -2529,9 +2482,9 @@
       "name": "swiftpkg_curvelib.swift",
       "identity": "curvelib.swift",
       "remote": {
-        "commit": "7dad3bf1793de263f83406c08c18c9316abf082f",
+        "commit": "9f88bd5e56d1df443a908f7a7e81ae4f4d9170ea",
         "remote": "https://github.com/tkey/curvelib.swift",
-        "version": "0.1.2"
+        "version": "1.0.1"
       }
     },
     {
@@ -2547,9 +2500,9 @@
       "name": "swiftpkg_fetch_node_details_swift",
       "identity": "fetch-node-details-swift",
       "remote": {
-        "commit": "bf2f0759da5c5c80765773b08c2756045edf608f",
+        "commit": "4bd96c33ba8d02d9e27190c5c7cedf09cfdfd656",
         "remote": "https://github.com/torusresearch/fetch-node-details-swift.git",
-        "version": "5.2.0"
+        "version": "6.0.3"
       }
     },
     {
@@ -2583,9 +2536,9 @@
       "name": "swiftpkg_lnextensionexecutor",
       "identity": "lnextensionexecutor",
       "remote": {
-        "commit": "16b741f659e344f4569c9f9d32ef2298ef0233ff",
+        "commit": "c0226dcd7d653d4c22dd16ccd72619c86b610c2d",
         "remote": "https://github.com/LeoNatan/LNExtensionExecutor",
-        "version": "1.2.0"
+        "version": "1.3.0"
       }
     },
     {
@@ -2601,7 +2554,7 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "1b98221095de9a80b44e93ce9bfc699c720d5c00",
+        "commit": "0b41c7a22018d39102136525a16bc60b782c253e",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
         "branch": "develop"
       }
@@ -2610,7 +2563,7 @@
       "name": "swiftpkg_nicegram_wallet_ios",
       "identity": "nicegram-wallet-ios",
       "remote": {
-        "commit": "3573f8ef65b8667b5bc927bfa558ffb39f2bd579",
+        "commit": "41fce993fc915ca828d200c6ec140a672f775829",
         "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
         "branch": "develop"
       }
@@ -2646,18 +2599,18 @@
       "name": "swiftpkg_session_manager_swift",
       "identity": "session-manager-swift",
       "remote": {
-        "commit": "c89d9205a1ce38cd6c6374b906a9039d9cc03f05",
+        "commit": "20cc7bff065d7fe53164d17e7714a3f17d4cea2a",
         "remote": "https://github.com/Web3Auth/session-manager-swift.git",
-        "version": "3.1.1"
+        "version": "4.0.2"
       }
     },
     {
       "name": "swiftpkg_single_factor_auth_swift",
       "identity": "single-factor-auth-swift",
       "remote": {
-        "commit": "8baa2b8cf55b0a38cb98c412bea1c6597adb78ba",
+        "commit": "73c5066d369c7d2aa1057c56a89b7f1dcdda3270",
         "remote": "https://github.com/Web3Auth/single-factor-auth-swift.git",
-        "version": "4.0.0"
+        "version": "5.0.0"
       }
     },
     {
@@ -2691,9 +2644,9 @@
       "name": "swiftpkg_swift_argument_parser",
       "identity": "swift-argument-parser",
       "remote": {
-        "commit": "0fbc8848e389af3bb55c182bc19ca9d5dc2f255b",
+        "commit": "41982a3656a71c768319979febd796c6fd111d5c",
         "remote": "https://github.com/apple/swift-argument-parser",
-        "version": "1.4.0"
+        "version": "1.5.0"
       }
     },
     {
@@ -2709,9 +2662,9 @@
       "name": "swiftpkg_swift_http_types",
       "identity": "swift-http-types",
       "remote": {
-        "commit": "1ddbea1ee34354a6a2532c60f98501c35ae8edfa",
+        "commit": "ae67c8178eb46944fd85e4dc6dd970e1f3ed6ccd",
         "remote": "https://github.com/apple/swift-http-types",
-        "version": "1.2.0"
+        "version": "1.3.0"
       }
     },
     {
@@ -2799,9 +2752,9 @@
       "name": "swiftpkg_torus_utils_swift",
       "identity": "torus-utils-swift",
       "remote": {
-        "commit": "4c17ef5166c162455d0a37115c033eeff8cb282d",
+        "commit": "608c28404c506983bfec7bbd957632fc0544db8c",
         "remote": "https://github.com/torusresearch/torus-utils-swift.git",
-        "version": "8.0.1"
+        "version": "8.1.2"
       }
     },
     {
@@ -2817,9 +2770,9 @@
       "name": "swiftpkg_wallet_core",
       "identity": "wallet-core",
       "remote": {
-        "commit": "352e0833678151ae124e1e70d325fc056d76d150",
+        "commit": "221584f3ea91da1ba236d06834db9ce5d24a9f40",
         "remote": "https://github.com/trustwallet/wallet-core.git",
-        "version": "4.0.49"
+        "version": "4.1.0"
       }
     },
     {
