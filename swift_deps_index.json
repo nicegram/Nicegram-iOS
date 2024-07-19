@@ -2563,7 +2563,7 @@
       "name": "swiftpkg_nicegram_wallet_ios",
       "identity": "nicegram-wallet-ios",
       "remote": {
-        "commit": "315559616123174a3a125f7829f55b166462e711",
+        "commit": "41fce993fc915ca828d200c6ec140a672f775829",
         "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
         "branch": "develop"
       }
@@ -2644,9 +2644,9 @@
       "name": "swiftpkg_swift_argument_parser",
       "identity": "swift-argument-parser",
       "remote": {
-        "commit": "0fbc8848e389af3bb55c182bc19ca9d5dc2f255b",
+        "commit": "41982a3656a71c768319979febd796c6fd111d5c",
         "remote": "https://github.com/apple/swift-argument-parser",
-        "version": "1.4.0"
+        "version": "1.5.0"
       }
     },
     {

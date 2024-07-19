@@ -116,7 +116,7 @@ def swift_dependencies():
     # branch: develop
     swift_package(
         name = "swiftpkg_nicegram_wallet_ios",
-        commit = "315559616123174a3a125f7829f55b166462e711",
+        commit = "41fce993fc915ca828d200c6ec140a672f775829",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
     )
@@ -188,7 +188,7 @@ def swift_dependencies():
     # version: 1.2.3
     swift_package(
         name = "swiftpkg_swift_argument_parser",
-        commit = "0fbc8848e389af3bb55c182bc19ca9d5dc2f255b",
+        commit = "41982a3656a71c768319979febd796c6fd111d5c",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/apple/swift-argument-parser",
     )
