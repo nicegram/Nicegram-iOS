@@ -74,3 +74,4 @@ ci/fastlane-env.sh
 ci/working_dir
 .build
 Telegram/Telegram-iOS/FirebaseRemoteConfigDefaults.plist
+*telegram-bazel-cache*

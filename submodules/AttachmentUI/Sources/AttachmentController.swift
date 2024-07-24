@@ -429,7 +429,8 @@ public class AttachmentController: ViewController {
                 if let isPanGestureEnabled = currentController.isPanGestureEnabled {
                     return isPanGestureEnabled()
                 } else {
-                    return true
+// MARK: Nicegram disabled pan gesture close swipe on inapp application content
+                    return isPanGestureEnabled
                 }
             }
             
@@ -853,6 +854,9 @@ public class AttachmentController: ViewController {
             self.currentControllers.last?.scrollToTop?()
         }
         
+// MARK: Nicegram disabled pan gesture close swipe on inapp application content
+        var isPanGestureEnabled = true
+
         override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
             if let controller = self.controller, controller.isInteractionDisabled() {
                 return self.view
@@ -861,10 +865,14 @@ public class AttachmentController: ViewController {
                 if result == self.wrapperNode.view {
                     return self.dim.view
                 }
+// MARK: Nicegram disabled pan gesture close swipe on inapp application content
+                isPanGestureEnabled = (result?.frame.width ?? 0) == container.frame.width && 
+                    controller?.initialButton == .standalone ? false : true
+
                 return result
             }
         }
-        
+
         private var isUpdatingContainer = false
         private var switchingController = false
         
