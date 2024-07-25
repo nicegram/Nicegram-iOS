@@ -108,7 +108,7 @@ def swift_dependencies():
     # branch: develop
     swift_package(
         name = "swiftpkg_nicegram_assistant_ios",
-        commit = "4016ec32db19b435f70a6b617c1544fd5407c880",
+        commit = "8155ab0e7c03fb428199f1b9f6f73995641fd0cb",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
     )
@@ -268,7 +268,7 @@ def swift_dependencies():
     # version: 0.1.5
     swift_package(
         name = "swiftpkg_ton_api_swift",
-        commit = "1988939fe0ce6db6bc587cfe7c9d15dc3bca1d69",
+        commit = "c1d5a7912480d1794097f4fb8241c3176f394384",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/tonkeeper/ton-api-swift",
     )
