@@ -3,6 +3,16 @@
     {
       "filename" : "NicegramN.pdf",
       "idiom" : "universal"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "dark"
+        }
+      ],
+      "filename" : "NicegramN_dark.pdf",
+      "idiom" : "universal"
     }
   ],
   "info" : {

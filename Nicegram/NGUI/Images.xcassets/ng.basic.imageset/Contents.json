@@ -3,6 +3,16 @@
     {
       "filename" : "ng.basic.pdf",
       "idiom" : "universal"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "dark"
+        }
+      ],
+      "filename" : "ng.basic.dark.pdf",
+      "idiom" : "universal"
     }
   ],
   "info" : {
