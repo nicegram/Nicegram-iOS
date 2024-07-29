@@ -91,15 +91,22 @@ extension String {
     }
 }
 
-public func requestApi(_ path: String, pathParams: [String] = [], completion: @escaping (_ apiResult: [String: Any]?) -> Void) {
+private func requestApi(
+    _ path: String,
+    data: Data? = nil,
+    completion: @escaping (_ apiResult: [String: Any]?) -> Void
+) {
     let startTime = CFAbsoluteTimeGetCurrent()
     ngLog("DECLARING REQUEST \(path)")
-    var urlString = "\(NGENV.ng_api_url)/\(path)/"
-    for param in pathParams {
-        urlString = urlString + String(param) + "/"
-    }
+    let urlString = "\(NGENV.ng_api_url)/\(path)/"
+
     let url = URL(string: urlString)!
-    let task = URLSession.shared.dataTask(with: url) { (data, response, error) in
+    var request = URLRequest(url: url)
+    request.httpMethod = "POST"
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.httpBody = data
+    
+    let task = URLSession.shared.dataTask(with: request) { (data, response, error) in
         let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
         ngLog("PROCESSED REQUEST \(path) IN \(timeElapsed) s.", LOGTAG)
         if let error = error {
@@ -117,8 +124,22 @@ public func requestApi(_ path: String, pathParams: [String] = [], completion: @e
     task.resume()
 }
 
-public func getNGSettings(_ userId: Int64, completion: @escaping (_ sync: Bool, _ rreasons: [String], _ allowed: [Int64], _ restricted: [Int64], _ premiumStatus: Bool, _ betaPremiumStatus: Bool) -> Void) {
-    requestApi("v7/unblock-feature/settings", pathParams: [String(userId)], completion: { (apiResponse) -> Void in
+public func getNGSettings(
+    _ userId: Int64,
+    completion: @escaping (_ sync: Bool, 
+                           _ rreasons: [String],
+                           _ allowed: [Int64],
+                           _ restricted: [Int64],
+                           _ premiumStatus: Bool,
+                           _ betaPremiumStatus: Bool) -> Void
+) {
+    let json = ["telegramId": userId] as [String : Any]
+    let jsonData = try? JSONSerialization.data(withJSONObject: json)
+
+    requestApi(
+        "v7/unblock-feature/get-settings",
+        data: jsonData,
+        completion: { (apiResponse) -> Void in
         var syncChats = VARNGAPISETTINGS.SYNC_CHATS
         var restricitionReasons = VARNGAPISETTINGS.RESTRICTION_REASONS
         var allowedChats = VARNGAPISETTINGS.ALLOWED

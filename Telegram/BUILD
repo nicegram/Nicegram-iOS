@@ -357,7 +357,9 @@ alternate_icon_folders = [
     "CommunityWatercolor",
     "Premium",
     "PremiumBlack",
-    "PremiumTurbo"
+    "PremiumTurbo",
+    "NewBlack",
+    "NewWhite"
 ]
 
 [

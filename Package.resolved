@@ -123,7 +123,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "0b41c7a22018d39102136525a16bc60b782c253e"
+        "revision" : "acaeaaa49fe52b575e01070830855c0d3e52cd79"
       }
     },
     {
@@ -132,7 +132,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "41fce993fc915ca828d200c6ec140a672f775829"
+        "revision" : "337fc03e47f19daadd3bf2712f21ee8940d696bc"
       }
     },
     {
@@ -158,8 +158,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SDWebImage/SDWebImage.git",
       "state" : {
-        "revision" : "be0bcd7823ce56629948491f2eaeaa19979514f7",
-        "version" : "5.19.4"
+        "revision" : "86e9185ef41c4238a93ad8efe61ddeb701e80bbf",
+        "version" : "5.19.5"
       }
     },
     {
@@ -302,8 +302,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/ton-api-swift",
       "state" : {
-        "revision" : "1988939fe0ce6db6bc587cfe7c9d15dc3bca1d69",
-        "version" : "0.1.5"
+        "revision" : "c1d5a7912480d1794097f4fb8241c3176f394384",
+        "version" : "0.1.6"
       }
     },
     {

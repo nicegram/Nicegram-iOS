@@ -108,7 +108,7 @@ def swift_dependencies():
     # branch: develop
     swift_package(
         name = "swiftpkg_nicegram_assistant_ios",
-        commit = "0b41c7a22018d39102136525a16bc60b782c253e",
+        commit = "acaeaaa49fe52b575e01070830855c0d3e52cd79",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
     )
@@ -116,7 +116,7 @@ def swift_dependencies():
     # branch: develop
     swift_package(
         name = "swiftpkg_nicegram_wallet_ios",
-        commit = "41fce993fc915ca828d200c6ec140a672f775829",
+        commit = "337fc03e47f19daadd3bf2712f21ee8940d696bc",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
     )
@@ -140,7 +140,7 @@ def swift_dependencies():
     # version: 5.15.5
     swift_package(
         name = "swiftpkg_sdwebimage",
-        commit = "be0bcd7823ce56629948491f2eaeaa19979514f7",
+        commit = "86e9185ef41c4238a93ad8efe61ddeb701e80bbf",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/SDWebImage/SDWebImage.git",
     )
@@ -268,7 +268,7 @@ def swift_dependencies():
     # version: 0.1.5
     swift_package(
         name = "swiftpkg_ton_api_swift",
-        commit = "1988939fe0ce6db6bc587cfe7c9d15dc3bca1d69",
+        commit = "c1d5a7912480d1794097f4fb8241c3176f394384",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/tonkeeper/ton-api-swift",
     )
