@@ -108,7 +108,7 @@ def swift_dependencies():
     # branch: develop
     swift_package(
         name = "swiftpkg_nicegram_assistant_ios",
-        commit = "acaeaaa49fe52b575e01070830855c0d3e52cd79",
+        commit = "9d03d3f44da0db9ea8634712d1b581e3ead3767c",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
     )
@@ -116,7 +116,7 @@ def swift_dependencies():
     # branch: develop
     swift_package(
         name = "swiftpkg_nicegram_wallet_ios",
-        commit = "337fc03e47f19daadd3bf2712f21ee8940d696bc",
+        commit = "1aa63b95fdace6fdd2ec51bd115c7cf309a72607",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
     )
@@ -156,7 +156,7 @@ def swift_dependencies():
     # version: 4.0.0
     swift_package(
         name = "swiftpkg_single_factor_auth_swift",
-        commit = "73c5066d369c7d2aa1057c56a89b7f1dcdda3270",
+        commit = "4caaaa858950b25ea420dbba79de6b4c58801db4",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/Web3Auth/single-factor-auth-swift.git",
     )
@@ -300,7 +300,7 @@ def swift_dependencies():
     # version: 4.0.36
     swift_package(
         name = "swiftpkg_wallet_core",
-        commit = "221584f3ea91da1ba236d06834db9ce5d24a9f40",
+        commit = "f14ae4c31e652b293bd5d892b128afc0fa6102c5",
         dependencies_index = "@//:swift_deps_index.json",
         remote = "https://github.com/trustwallet/wallet-core.git",
     )

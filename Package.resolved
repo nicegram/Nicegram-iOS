@@ -122,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "acaeaaa49fe52b575e01070830855c0d3e52cd79"
+        "branch" : "next-wallet-release",
+        "revision" : "9d03d3f44da0db9ea8634712d1b581e3ead3767c"
       }
     },
     {
@@ -131,8 +131,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "337fc03e47f19daadd3bf2712f21ee8940d696bc"
+        "branch" : "next-wallet-release",
+        "revision" : "1aa63b95fdace6fdd2ec51bd115c7cf309a72607"
       }
     },
     {
@@ -176,8 +176,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Web3Auth/single-factor-auth-swift.git",
       "state" : {
-        "revision" : "73c5066d369c7d2aa1057c56a89b7f1dcdda3270",
-        "version" : "5.0.0"
+        "revision" : "4caaaa858950b25ea420dbba79de6b4c58801db4",
+        "version" : "6.0.0"
       }
     },
     {
@@ -338,8 +338,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "221584f3ea91da1ba236d06834db9ce5d24a9f40",
-        "version" : "4.1.0"
+        "revision" : "f14ae4c31e652b293bd5d892b128afc0fa6102c5",
+        "version" : "4.1.1"
       }
     },
     {

@@ -2,7 +2,7 @@
 import FeatPhoneEntryBanner
 //
 // MARK: Nicegram Auth
-import NGAuth
+import FeatAuth
 //
 import Foundation
 import UIKit

@@ -2,7 +2,6 @@ import Foundation
 import AccountContext
 import Display
 import FeatAvatarGeneratorUI
-import FeatCardUI
 import FeatImagesHubUI
 import FeatOnboarding
 import FeatPremiumUI
@@ -11,7 +10,7 @@ import FeatTasks
 import NGAiChatUI
 import NGAnalytics
 import NGAssistantUI
-import NGAuth
+import FeatAuth
 import NGCore
 import class NGCoreUI.SharedLoadingView
 import NGModels
@@ -59,11 +58,7 @@ class NGDeeplinkHandler {
         case "assistant":
             return handleAssistant(url: url)
         case "assistant-auth":
-            if #available(iOS 13.0, *) {
-                return handleLoginWithTelegram(url: url)
-            } else {
-                return false
-            }
+            return handleLoginToAssistant(url: url)
         case "avatarGenerator":
             if #available(iOS 15.0, *) {
                 Task { @MainActor in
@@ -102,8 +97,6 @@ class NGDeeplinkHandler {
             } else {
                 return false
             }
-        case "pstAuth":
-            return handlePstAuth(url: url)
         case "refferaldraw":
             if #available(iOS 15.0, *) {
                 Task { @MainActor in
@@ -213,22 +206,15 @@ private extension NGDeeplinkHandler {
         return true
     }
     
-    @available(iOS 13.0, *)
-    func handleLoginWithTelegram(url: URL) -> Bool {
+    func handleLoginToAssistant(url: URL) -> Bool {
+        guard #available(iOS 15.0, *) else {
+            return false
+        }
+        
         Task { @MainActor in
-            let initTgLoginUseCase = AuthTgHelper.resolveInitTgLoginUseCase()
-            
-            SharedLoadingView.start()
-            
-            let result = await initTgLoginUseCase(source: .general)
-            
-            SharedLoadingView.stop()
-            switch result {
-            case .success(let url):
-                CoreContainer.shared.urlOpener().open(url)
-            case .failure(_):
-                break
-            }
+            LoginViewPresenter().present(
+                feature: LoginFeature(source: .general)
+            )
         }
         return true
     }
@@ -241,16 +227,6 @@ private extension NGDeeplinkHandler {
             )
         }
         return true
-    }
-    
-    func handlePstAuth(url: URL) -> Bool {
-        if #available(iOS 13.0, *) {
-            Task { @MainActor in
-                await CardUITgHelper.routeToCardFromDeeplink()
-            }
-            return true
-        }
-        return false
     }
     
     func showUpdateAppAlert() {
