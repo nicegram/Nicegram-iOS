@@ -26,17 +26,11 @@ private func addRoundedRectPath(context: CGContext, rect: CGRect, radius: CGFloa
     context.restoreGState()
 }
 
-private func renderIcon(name: String, scaleFactor: CGFloat = 1.0, backgroundColors: [UIColor]? = nil, isNicegramIcon: Bool = false) -> UIImage? {
+// MARK: Nicegram, customSize added
+private func renderIcon(name: String, scaleFactor: CGFloat = 1.0, backgroundColors: [UIColor]? = nil, customSize: CGSize? = nil) -> UIImage? {
     return generateImage(CGSize(width: 29.0, height: 29.0), contextGenerator: { size, context in
         let bounds = CGRect(origin: CGPoint(), size: size)
         context.clear(bounds)
-        
-        if isNicegramIcon {
-            if let image = UIImage(bundleImageName: name)?.cgImage {
-                context.draw(image, in: bounds)
-                return
-            }
-        }
         
         if let backgroundColors {
             addRoundedRectPath(context: context, rect: CGRect(origin: CGPoint(), size: size), radius: 7.0)
@@ -51,7 +45,7 @@ private func renderIcon(name: String, scaleFactor: CGFloat = 1.0, backgroundColo
             context.drawLinearGradient(gradient, start: CGPoint(x: size.width, y: size.height), end: CGPoint(x: 0.0, y: 0.0), options: CGGradientDrawingOptions())
             
             context.resetClip()
-            if let image = generateTintedImage(image: UIImage(bundleImageName: name), color: .white), let cgImage = image.cgImage {
+            if let image = generateTintedImage(image: UIImage(bundleImageName: name), color: .white, customSize: customSize), let cgImage = image.cgImage {
                 let imageSize = CGSize(width: image.size.width * scaleFactor, height: image.size.height * scaleFactor)
                 context.draw(cgImage, in: CGRect(origin: CGPoint(x: (bounds.width - imageSize.width) * 0.5, y: (bounds.height - imageSize.height) * 0.5), size: imageSize))
             }
@@ -71,9 +65,9 @@ private func renderIcon(name: String, scaleFactor: CGFloat = 1.0, backgroundColo
 
 public struct PresentationResourcesSettings {
     // MARK: Nicegram
-    public static let aiChatIcon = renderIcon(name: "ng.aichat.avatar", isNicegramIcon: true)
-    public static let nicegramIcon = renderIcon(name: "NicegramSettings", isNicegramIcon: true)
-    public static let premiumIcon = renderIcon(name: "PremiumSettings", isNicegramIcon: true)
+    public static let aiChatIcon = renderIcon(name: "ng.aichat.avatar")
+    public static let nicegramIcon = renderIcon(name: "logo-nicegram", backgroundColors: [.black], customSize: CGSize(width: 28, height: 28))
+    public static let premiumIcon = nicegramIcon
     //
     
     public static let editProfile = renderIcon(name: "Settings/Menu/EditProfile")

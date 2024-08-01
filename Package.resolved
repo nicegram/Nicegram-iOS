@@ -33,7 +33,7 @@
       "location" : "https://github.com/denis15yo/core-swift.git",
       "state" : {
         "branch" : "release/1.0.0",
-        "revision" : "87eb31396b7ef8962686b1c8de561950efc2673f"
+        "revision" : "f03e7c89c56aaafdb3b22a8ab5ebfefb3fb018a6"
       }
     },
     {
@@ -123,7 +123,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "next-wallet-release",
-        "revision" : "9d03d3f44da0db9ea8634712d1b581e3ead3767c"
+        "revision" : "13f3f6502da66e2ea2096a33e769b07e2c33ee78"
       }
     },
     {
@@ -132,7 +132,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "next-wallet-release",
-        "revision" : "1aa63b95fdace6fdd2ec51bd115c7cf309a72607"
+        "revision" : "5312910dfeb2a8601c98ebece3657aaa099ad9f8"
       }
     },
     {

@@ -1955,11 +1955,12 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             //
             
             // MARK: NG Context Menu
+            let nicegramIcon: (PresentationTheme) -> UIImage? = { theme in
+                return generateTintedImage(image: UIImage(bundleImageName: "logo-nicegram"), color: theme.actionSheet.primaryTextColor, customSize: CGSize(width: 24, height: 24))
+            }
             let isSecretChat = message.id.peerId.namespace == Namespaces.Peer.SecretChat
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-            actions.append(.action(ContextMenuActionItem(text: l("AppName") + "...", icon: { theme in
-                return generateTintedImage(image: UIImage(bundleImageName: "NicegramN"), color: theme.actionSheet.primaryTextColor)
-            }, action: { controller, f in
+            actions.append(.action(ContextMenuActionItem(text: l("AppName") + "...", icon: nicegramIcon, action: { controller, f in
                 var ngContextItems: [ContextMenuItem] = []
                 
                 // Copyforward
@@ -2123,9 +2124,9 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                 }
                 
                 let action = ContextMenuActionItem(
-                    text: title) { theme in
-                        return generateTintedImage(image: UIImage(bundleImageName: "NicegramN"), color: theme.actionSheet.primaryTextColor)
-                    } action: { controller, f in
+                    text: title,
+                    icon: nicegramIcon,
+                    action: { controller, f in
                         if mode == "do" {
                             if #available(iOS 13.0, *) {
                                 Task { @MainActor in
@@ -2160,6 +2161,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                         
                         f(.default)
                     }
+                )
                 
                 actions.append(.action(action))
             }

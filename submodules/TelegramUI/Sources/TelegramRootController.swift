@@ -270,7 +270,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                 adjustSafeArea: true
             )
             assistantController.tabBarItem = UITabBarItem(
-                title: NGCoreUI.strings.assistantTabTitle(),
+                title: "Nicegram",
                 image: NGCoreUI.images.logoNicegram()?.sd_resizedImage(
                     with: CGSize(width: 30, height: 30),
                     scaleMode: .aspectFit
