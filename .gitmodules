@@ -24,7 +24,7 @@
 	url = https://github.com/webmproject/libvpx.git
 [submodule "third-party/webrtc/webrtc"]
 	path = third-party/webrtc/webrtc
-	url = https://github.com/ali-fareed/webrtc.git
+	url = https://github.com/denis15yo/webrtc.git
 [submodule "third-party/libx264/x264"]
 	path = third-party/libx264/x264
 	url = https://github.com/mirror/x264.git

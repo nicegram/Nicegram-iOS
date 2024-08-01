@@ -274,7 +274,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                 image: NGCoreUI.images.logoNicegram()?.sd_resizedImage(
                     with: CGSize(width: 30, height: 30),
                     scaleMode: .aspectFit
-                )?.withRenderingMode(.alwaysOriginal),
+                )?.withRenderingMode(.alwaysTemplate),
                 tag: 0
             )
             
