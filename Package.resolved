@@ -123,7 +123,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "next-wallet-release",
-        "revision" : "048f9c66771b76a84e0a8aef3d28f3898ba0818e"
+        "revision" : "033d4882165ee343a5db09c93cbca462f27f5732"
       }
     },
     {
@@ -132,7 +132,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "next-wallet-release",
-        "revision" : "5312910dfeb2a8601c98ebece3657aaa099ad9f8"
+        "revision" : "2d647862a3111bfc0f6c0f9e966fdc8ff1a21d34"
       }
     },
     {

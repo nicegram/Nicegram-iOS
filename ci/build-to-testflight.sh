@@ -4,4 +4,4 @@ then
   exit 1
 fi
 
-. ./push-to-github-repo.sh beta $1
+. ./push-to-github-repo.sh beta "$1"
