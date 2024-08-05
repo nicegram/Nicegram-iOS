@@ -2505,18 +2505,18 @@
       "name": "swiftpkg_nicegram_assistant_ios",
       "identity": "nicegram-assistant-ios",
       "remote": {
-        "commit": "033d4882165ee343a5db09c93cbca462f27f5732",
+        "commit": "5d87d3d32fd3c9dc111330f1aad1deeb62704cdc",
         "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
-        "branch": "next-wallet-release"
+        "branch": "develop"
       }
     },
     {
       "name": "swiftpkg_nicegram_wallet_ios",
       "identity": "nicegram-wallet-ios",
       "remote": {
-        "commit": "2d647862a3111bfc0f6c0f9e966fdc8ff1a21d34",
+        "commit": "c3aaf480743c36cb12b746dd930968c4ca2bb09d",
         "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
-        "branch": "next-wallet-release"
+        "branch": "develop"
       }
     },
     {
