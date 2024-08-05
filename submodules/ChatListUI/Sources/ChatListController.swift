@@ -10,7 +10,7 @@ import NGAppCache
 import NGAssistant
 import NGAssistantUI
 import NGCore
-import NGAuth
+import FeatAuth
 import NGModels
 import NGRemoteConfig
 import NGRepoTg

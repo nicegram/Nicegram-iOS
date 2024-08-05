@@ -1,7 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "ng.basic.pdf",
+      "filename" : "logo-nicegram.pdf",
       "idiom" : "universal"
     },
     {
@@ -11,12 +11,16 @@
           "value" : "dark"
         }
       ],
-      "filename" : "ng.basic.dark.pdf",
+      "filename" : "logo-nicegram-dark.pdf",
       "idiom" : "universal"
     }
   ],
   "info" : {
     "author" : "xcode",
     "version" : 1
+  },
+  "properties" : {
+    "preserves-vector-representation" : true,
+    "template-rendering-intent" : "original"
   }
 }

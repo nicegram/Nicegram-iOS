@@ -1,7 +1,5 @@
 // MARK: Nicegram PinnedChats
 import Combine
-import FeatCard
-import FeatCardUI
 import FeatImagesHubUI
 import FeatPinnedChats
 import NGAiChatUI
