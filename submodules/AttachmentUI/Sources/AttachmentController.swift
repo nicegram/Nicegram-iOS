@@ -111,7 +111,7 @@ public enum AttachmentButtonType: Equatable {
     }
 }
 
-public protocol AttachmentContainable: ViewController {
+public protocol AttachmentContainable: ViewController, MinimizableController {
     var requestAttachmentMenuExpansion: () -> Void { get set }
     var updateNavigationStack: (@escaping ([AttachmentContainable]) -> ([AttachmentContainable], AttachmentMediaPickerContext?)) -> Void { get set }
     var parentController: () -> ViewController? { get set }
@@ -121,6 +121,7 @@ public protocol AttachmentContainable: ViewController {
     var isContainerPanning: () -> Bool { get set }
     var isContainerExpanded: () -> Bool { get set }
     var isPanGestureEnabled: (() -> Bool)? { get }
+    var isInnerPanGestureEnabled: (() -> Bool)? { get }
     var mediaPickerContext: AttachmentMediaPickerContext? { get }
     var getCurrentSendMessageContextMediaPreview: (() -> ChatSendMessageContextScreenMediaPreview?)? { get }
     
@@ -160,7 +161,27 @@ public extension AttachmentContainable {
         completion()
     }
     
+    var minimizedBounds: CGRect? {
+        return nil
+    }
+    
+    var minimizedTopEdgeOffset: CGFloat? {
+        return nil
+    }
+    
+    var minimizedIcon: UIImage? {
+        return nil
+    }
+    
+    var minimizedProgress: Float? {
+        return nil
+    }
+    
     var isPanGestureEnabled: (() -> Bool)? {
+        return nil
+    }
+    
+    var isInnerPanGestureEnabled: (() -> Bool)? {
         return nil
     }
     
@@ -188,6 +209,10 @@ public protocol AttachmentMediaPickerContext {
     var captionIsAboveMedia: Signal<Bool, NoError> { get }
     func setCaptionIsAboveMedia(_ captionIsAboveMedia: Bool) -> Void
     
+    var canMakePaidContent: Bool { get }
+    var price: Int64? { get }
+    func setPrice(_ price: Int64) -> Void
+    
     var loadingProgress: Signal<CGFloat?, NoError> { get }
     var mainButtonState: Signal<AttachmentMainButtonState?, NoError> { get }
     
@@ -196,6 +221,58 @@ public protocol AttachmentMediaPickerContext {
     func setCaption(_ caption: NSAttributedString)
     func send(mode: AttachmentMediaPickerSendMode, attachmentMode: AttachmentMediaPickerAttachmentMode, parameters: ChatSendMessageActionSheetController.SendParameters?)
     func schedule(parameters: ChatSendMessageActionSheetController.SendParameters?)
+}
+
+public extension AttachmentMediaPickerContext {
+    var selectionCount: Signal<Int, NoError> {
+        return .single(0)
+    }
+    
+    var caption: Signal<NSAttributedString?, NoError> {
+        return .single(nil)
+    }
+    
+    var captionIsAboveMedia: Signal<Bool, NoError> {
+        return .single(false)
+    }
+    
+    var hasCaption: Bool {
+        return false
+    }
+    
+    func setCaptionIsAboveMedia(_ captionIsAboveMedia: Bool) -> Void {
+    }
+
+    var canMakePaidContent: Bool {
+        return false
+    }
+
+    var price: Int64? {
+        return nil
+    }
+    
+    func setPrice(_ price: Int64) -> Void {
+    }
+    
+    var loadingProgress: Signal<CGFloat?, NoError> {
+        return .single(nil)
+    }
+    
+    var mainButtonState: Signal<AttachmentMainButtonState?, NoError> {
+        return .single(nil)
+    }
+            
+    func setCaption(_ caption: NSAttributedString) {
+    }
+    
+    func send(mode: AttachmentMediaPickerSendMode, attachmentMode: AttachmentMediaPickerAttachmentMode, parameters: ChatSendMessageActionSheetController.SendParameters?) {
+    }
+    
+    func schedule(parameters: ChatSendMessageActionSheetController.SendParameters?) {
+    }
+    
+    func mainButtonAction() {
+    }
 }
 
 private func generateShadowImage() -> UIImage? {
@@ -231,7 +308,7 @@ private func generateMaskImage() -> UIImage? {
     })?.stretchableImage(withLeftCapWidth: 195, topCapHeight: 110)
 }
 
-public class AttachmentController: ViewController {
+public class AttachmentController: ViewController, MinimizableController {
     private let context: AccountContext
     private let updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?
     private let chatLocation: ChatLocation?
@@ -259,6 +336,12 @@ public class AttachmentController: ViewController {
     private let _ready = Promise<Bool>()
     override public var ready: Promise<Bool> {
         return self._ready
+    }
+    
+    public private(set) var minimizedTopEdgeOffset: CGFloat?
+    public private(set) var minimizedBounds: CGRect?
+    public var minimizedIcon: UIImage? {
+        return self.mainController.minimizedIcon
     }
         
     private final class Node: ASDisplayNode {
@@ -429,8 +512,18 @@ public class AttachmentController: ViewController {
                 if let isPanGestureEnabled = currentController.isPanGestureEnabled {
                     return isPanGestureEnabled()
                 } else {
-// MARK: Nicegram disabled pan gesture close swipe on inapp application content
-                    return isPanGestureEnabled
+                    return true
+                }
+            }
+            
+            self.container.isInnerPanGestureEnabled = { [weak self] in
+                guard let self, let currentController = self.currentControllers.last else {
+                    return true
+                }
+                if let isInnerPanGestureEnabled = currentController.isInnerPanGestureEnabled {
+                    return isInnerPanGestureEnabled()
+                } else {
+                    return true
                 }
             }
             
@@ -583,11 +676,7 @@ public class AttachmentController: ViewController {
                 return
             }
             navigationController.minimizeViewController(controller, damping: damping, velocity: initialVelocity, beforeMaximize: { navigationController, completion in
-                if let controller = controller.mainController as? AttachmentContainable {
-                    controller.beforeMaximize(navigationController: navigationController, completion: completion)
-                } else {
-                    completion()
-                }
+                controller.mainController.beforeMaximize(navigationController: navigationController, completion: completion)
             }, setupContainer: { [weak self] current in
                 let minimizedContainer: MinimizedContainerImpl?
                 if let current = current as? MinimizedContainerImpl {
@@ -624,7 +713,7 @@ public class AttachmentController: ViewController {
             }
             if case .ended = recognizer.state {
                 if let lastController = self.currentControllers.last {
-                    if let controller = self.controller, controller.shouldMinimizeOnSwipe?(self.currentType) == true {
+                    if let controller = self.controller, let layout = self.validLayout, !layout.metrics.isTablet, controller.shouldMinimizeOnSwipe?(self.currentType) == true {
                         self.minimize()
                         return
                     }
@@ -854,9 +943,6 @@ public class AttachmentController: ViewController {
             self.currentControllers.last?.scrollToTop?()
         }
         
-// MARK: Nicegram disabled pan gesture close swipe on inapp application content
-        var isPanGestureEnabled = true
-
         override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
             if let controller = self.controller, controller.isInteractionDisabled() {
                 return self.view
@@ -865,14 +951,10 @@ public class AttachmentController: ViewController {
                 if result == self.wrapperNode.view {
                     return self.dim.view
                 }
-// MARK: Nicegram disabled pan gesture close swipe on inapp application content
-                isPanGestureEnabled = (result?.frame.width ?? 0) == container.frame.width && 
-                    controller?.initialButton == .standalone ? false : true
-
                 return result
             }
         }
-
+        
         private var isUpdatingContainer = false
         private var switchingController = false
         
@@ -1101,6 +1183,8 @@ public class AttachmentController: ViewController {
         self.blocksBackgroundWhenInOverlay = true
         self.acceptsFocusWhenInOverlay = true
         
+        self.navigationItem.backBarButtonItem = UIBarButtonItem(title: self.context.sharedContext.currentPresentationData.with { $0 }.strings.Common_Back, style: .plain, target: nil, action: nil)
+        
         self.scrollToTop = { [weak self] in
             if let strongSelf = self {
                 strongSelf.node.scrollToTop()
@@ -1186,10 +1270,18 @@ public class AttachmentController: ViewController {
         return false
     }
     
-    public override var isMinimized: Bool {
+    public var isMinimized: Bool = false {
         didSet {
             self.mainController.isMinimized = self.isMinimized
         }
+    }
+    
+    public var isMinimizable: Bool {
+        return self.mainController.isMinimizable
+    }
+    
+    public func shouldDismissImmediately() -> Bool {
+        return self.mainController.shouldDismissImmediately()
     }
     
     private var validLayout: ContainerViewLayout?
@@ -1207,7 +1299,7 @@ public class AttachmentController: ViewController {
         self.node.containerLayoutUpdated(layout, transition: transition)
     }
     
-    public var mainController: ViewController {
+    public var mainController: AttachmentContainable {
         return self.node.currentControllers.first!
     }
     
@@ -1272,5 +1364,14 @@ public class AttachmentController: ViewController {
             }
         })
         return disposableSet
+    }
+    
+    public func makeContentSnapshotView() -> UIView? {
+        let snapshotView = self.view.snapshotView(afterScreenUpdates: false)
+        if let contentSnapshotView = self.mainController.makeContentSnapshotView() {
+            contentSnapshotView.frame = contentSnapshotView.frame.offsetBy(dx: 0.0, dy: 64.0 + 56.0)
+            snapshotView?.addSubview(contentSnapshotView)
+        }
+        return snapshotView
     }
 }

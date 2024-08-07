@@ -98,6 +98,7 @@ final class ChatSendMessageContextScreenComponent: Component {
     let completion: () -> Void
     let sendMessage: (ChatSendMessageActionSheetController.SendMode, ChatSendMessageActionSheetController.SendParameters?) -> Void
     let schedule: (ChatSendMessageActionSheetController.SendParameters?) -> Void
+    let editPrice: (Int64) -> Void
     let openPremiumPaywall: (ViewController) -> Void
     let reactionItems: [ReactionItem]?
     let availableMessageEffects: AvailableMessageEffects?
@@ -121,6 +122,7 @@ final class ChatSendMessageContextScreenComponent: Component {
         completion: @escaping () -> Void,
         sendMessage: @escaping (ChatSendMessageActionSheetController.SendMode, ChatSendMessageActionSheetController.SendParameters?) -> Void,
         schedule: @escaping (ChatSendMessageActionSheetController.SendParameters?) -> Void,
+        editPrice: @escaping (Int64) -> Void,
         openPremiumPaywall: @escaping (ViewController) -> Void,
         reactionItems: [ReactionItem]?,
         availableMessageEffects: AvailableMessageEffects?,
@@ -144,6 +146,7 @@ final class ChatSendMessageContextScreenComponent: Component {
         self.completion = completion
         self.sendMessage = sendMessage
         self.schedule = schedule
+        self.editPrice = editPrice
         self.openPremiumPaywall = openPremiumPaywall
         self.reactionItems = reactionItems
         self.availableMessageEffects = availableMessageEffects
@@ -475,6 +478,8 @@ final class ChatSendMessageContextScreenComponent: Component {
             var reminders = false
             var isSecret = false
             var canSchedule = false
+            var canMakePaidContent = false
+            var currentPrice: Int64?
             switch component.params {
             case let .sendMessage(sendMessage):
                 if let peerId = component.peerId {
@@ -485,6 +490,8 @@ final class ChatSendMessageContextScreenComponent: Component {
                 if sendMessage.isScheduledMessages {
                     canSchedule = false
                 }
+                canMakePaidContent = sendMessage.canMakePaidContent
+                currentPrice = sendMessage.currentPrice
             case .editMessage:
                 break
             }
@@ -601,6 +608,38 @@ final class ChatSendMessageContextScreenComponent: Component {
                             
                             component.schedule(sendParameters)
                             self.environment?.controller()?.dismiss()
+                        }
+                    )))
+                }
+                if canMakePaidContent {
+                    let title: String
+                    let titleLayout: ContextMenuActionItemTextLayout
+                    if let currentPrice {
+                        title = environment.strings.Attachment_Paid_EditPrice
+                        titleLayout = .secondLineWithValue(environment.strings.Attachment_Paid_EditPrice_Stars(Int32(currentPrice)))
+                    } else {
+                        title = environment.strings.Attachment_Paid_Create
+                        titleLayout = .twoLinesMax
+                    }
+                    items.append(.action(ContextMenuActionItem(
+                        id: AnyHashable("paid"),
+                        text: title,
+                        textLayout: titleLayout,
+                        icon: { theme in
+                            return generateTintedImage(image: UIImage(bundleImageName: "Media Grid/Paid"), color: theme.contextMenu.primaryColor)
+                        }, action: { [weak self] _, _ in
+                            guard let self, let component = self.component, case let .sendMessage(params) = component.params else {
+                                return
+                            }
+                            
+                            let editPrice = component.editPrice
+                            let controller = component.context.sharedContext.makeStarsAmountScreen(context: component.context, initialValue: params.currentPrice, completion: { amount in
+                                editPrice(amount)
+                            })
+                            self.environment?.controller()?.dismiss()
+                            Queue.mainQueue().after(0.45) {
+                                component.openPremiumPaywall(controller)
+                            }
                         }
                     )))
                 }
@@ -1471,6 +1510,7 @@ public class ChatSendMessageContextScreen: ViewControllerComponentContainer, Cha
         completion: @escaping () -> Void,
         sendMessage: @escaping (ChatSendMessageActionSheetController.SendMode, ChatSendMessageActionSheetController.SendParameters?) -> Void,
         schedule: @escaping (ChatSendMessageActionSheetController.SendParameters?) -> Void,
+        editPrice: @escaping (Int64) -> Void,
         openPremiumPaywall: @escaping (ViewController) -> Void,
         reactionItems: [ReactionItem]?,
         availableMessageEffects: AvailableMessageEffects?,
@@ -1498,6 +1538,7 @@ public class ChatSendMessageContextScreen: ViewControllerComponentContainer, Cha
                 completion: completion,
                 sendMessage: sendMessage,
                 schedule: schedule,
+                editPrice: editPrice,
                 openPremiumPaywall: openPremiumPaywall,
                 reactionItems: reactionItems,
                 availableMessageEffects: availableMessageEffects,

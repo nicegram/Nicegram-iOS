@@ -24,6 +24,7 @@ import WebsiteType
 import GalleryData
 import StoryContainerScreen
 import WallpaperGalleryScreen
+import BrowserUI
 
 func openChatMessageImpl(_ params: OpenChatMessageParams) -> Bool {
     var story: TelegramMediaStory?
@@ -230,7 +231,18 @@ func openChatMessageImpl(_ params: OpenChatMessageParams) -> Bool {
                     params.present(controller, nil)
                 } else if let rootController = params.navigationController?.view.window?.rootViewController {
                     let proceed = {
-                        presentDocumentPreviewController(rootController: rootController, theme: presentationData.theme, strings: presentationData.strings, postbox: params.context.account.postbox, file: file, canShare: !params.message.isCopyProtected())
+                        if params.context.sharedContext.immediateExperimentalUISettings.browserExperiment && BrowserScreen.supportedDocumentMimeTypes.contains(file.mimeType) {
+                            let subject: BrowserScreen.Subject
+                            if file.mimeType == "application/pdf" {
+                                subject = .pdfDocument(file: file)
+                            } else {
+                                subject = .document(file: file)
+                            }
+                            let controller = BrowserScreen(context: params.context, subject: subject)
+                            params.navigationController?.pushViewController(controller)
+                        } else {
+                            presentDocumentPreviewController(rootController: rootController, theme: presentationData.theme, strings: presentationData.strings, postbox: params.context.account.postbox, file: file, canShare: !params.message.isCopyProtected())
+                        }
                     }
                     if file.mimeType.contains("image/svg") {
                         let presentationData = params.context.sharedContext.currentPresentationData.with { $0 }
@@ -369,13 +381,16 @@ func openChatMessageImpl(_ params: OpenChatMessageParams) -> Bool {
     return false
 }
 
-func openChatInstantPageImpl(context: AccountContext, message: Message, sourcePeerType: MediaAutoDownloadPeerType?, navigationController: NavigationController) {
-    if let (webpage, anchor) = instantPageAndAnchor(message: message) {
-        let sourceLocation = InstantPageSourceLocation(userLocation: .peer(message.id.peerId), peerType: sourcePeerType ?? .channel)
-        
-        let pageController = InstantPageController(context: context, webPage: webpage, sourceLocation: sourceLocation, anchor: anchor)
-        navigationController.pushViewController(pageController)
+func makeInstantPageControllerImpl(context: AccountContext, message: Message, sourcePeerType: MediaAutoDownloadPeerType?) -> ViewController? {
+    guard let (webpage, anchor) = instantPageAndAnchor(message: message) else {
+        return nil
     }
+    let sourceLocation = InstantPageSourceLocation(userLocation: .peer(message.id.peerId), peerType: sourcePeerType ?? .channel)
+    return makeInstantPageControllerImpl(context: context, webPage: webpage, anchor: anchor, sourceLocation: sourceLocation)
+}
+
+func makeInstantPageControllerImpl(context: AccountContext, webPage: TelegramMediaWebpage, anchor: String?, sourceLocation: InstantPageSourceLocation) -> ViewController {
+    return BrowserScreen(context: context, subject: .instantPage(webPage: webPage, anchor: anchor, sourceLocation: sourceLocation))
 }
 
 func openChatWallpaperImpl(context: AccountContext, message: Message, present: @escaping (ViewController, Any?) -> Void) {

@@ -456,6 +456,7 @@ plist_fragment(
             <key>CFBundleURLSchemes</key>
             <array>
                 <string>tg</string>
+                <string>tonsite</string>
                 <string>ng</string>
                 <string>ngcn</string>
                 <string>ncg</string>

@@ -1,6 +1,57 @@
-###############################################################################
-# Bazel now uses Bzlmod by default to manage external dependencies.
-# Please consider migrating your external dependencies from WORKSPACE to MODULE.bazel.
-#
-# For more details, please check https://github.com/bazelbuild/bazel/issues/18958
-###############################################################################
+bazel_dep(
+    name = "rules_swift_package_manager",
+    version = "0.36.0",
+)
+
+bazel_dep(
+    name = "apple_support",
+    version = "0.0.0",
+)
+local_path_override(
+    module_name = "apple_support",
+    path = "build-system/bazel-rules/apple_support",
+)
+
+bazel_dep(
+    name = "rules_swift",
+    version = "0.0.0",
+    repo_name = "build_bazel_rules_swift",
+)
+local_path_override(
+    module_name = "rules_swift",
+    path = "build-system/bazel-rules/rules_swift",
+)
+
+bazel_dep(
+    name = "rules_apple",
+    version = "0.0.0",
+    repo_name = "build_bazel_rules_apple",
+)
+local_path_override(
+    module_name = "rules_apple",
+    path = "build-system/bazel-rules/rules_apple",
+)
+
+bazel_dep(
+    name = "rules_xcodeproj",
+    version = "0.0.0",
+    dev_dependency = True,
+)
+local_path_override(
+    module_name = "rules_xcodeproj",
+    path = "build-system/bazel-rules/rules_xcodeproj",
+)
+
+swift_deps = use_extension(
+    "@rules_swift_package_manager//:extensions.bzl",
+    "swift_deps",
+)
+swift_deps.from_package(
+    resolved = "//:Package.resolved",
+    swift = "//:Package.swift",
+)
+use_repo(
+    swift_deps,
+    "swiftpkg_nicegram_assistant_ios",
+    "swiftpkg_nicegram_wallet_ios",
+)

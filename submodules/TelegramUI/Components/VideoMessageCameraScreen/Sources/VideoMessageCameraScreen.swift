@@ -32,6 +32,7 @@ import LegacyMediaPickerUI
 import TelegramAudio
 import ChatSendMessageActionUI
 import ChatControllerInteraction
+import LottieComponent
 
 struct CameraState: Equatable {
     enum Recording: Equatable {
@@ -39,27 +40,63 @@ struct CameraState: Equatable {
         case holding
         case handsFree
     }
+    enum FlashTint: Equatable {
+        case white
+        case yellow
+        case blue
+        
+        var color: UIColor {
+            switch self {
+            case .white:
+                return .white
+            case .yellow:
+                return UIColor(rgb: 0xffed8c)
+            case .blue:
+                return UIColor(rgb: 0x8cdfff)
+            }
+        }
+    }
     
     let position: Camera.Position
+    let flashMode: Camera.FlashMode
+    let flashModeDidChange: Bool
+    let flashTint: FlashTint
+    let flashTintSize: CGFloat
     let recording: Recording
     let duration: Double
     let isDualCameraEnabled: Bool
     let isViewOnceEnabled: Bool
     
     func updatedPosition(_ position: Camera.Position) -> CameraState {
-        return CameraState(position: position, recording: self.recording, duration: self.duration, isDualCameraEnabled: self.isDualCameraEnabled, isViewOnceEnabled: self.isViewOnceEnabled)
+        return CameraState(position: position, flashMode: self.flashMode, flashModeDidChange: self.flashModeDidChange, flashTint: self.flashTint, flashTintSize: self.flashTintSize, recording: self.recording, duration: self.duration, isDualCameraEnabled: self.isDualCameraEnabled, isViewOnceEnabled: self.isViewOnceEnabled)
+    }
+    
+    func updatedFlashMode(_ flashMode: Camera.FlashMode) -> CameraState {
+        return CameraState(position: self.position, flashMode: flashMode, flashModeDidChange: self.flashMode != flashMode, flashTint: self.flashTint, flashTintSize: self.flashTintSize, recording: self.recording, duration: self.duration, isDualCameraEnabled: self.isDualCameraEnabled, isViewOnceEnabled: self.isViewOnceEnabled)
+    }
+    
+    func updatedFlashTint(_ flashTint: FlashTint) -> CameraState {
+        return CameraState(position: self.position, flashMode: self.flashMode, flashModeDidChange: self.flashModeDidChange, flashTint: flashTint, flashTintSize: self.flashTintSize, recording: self.recording, duration: self.duration, isDualCameraEnabled: self.isDualCameraEnabled, isViewOnceEnabled: self.isViewOnceEnabled)
+    }
+    
+    func updatedFlashTintSize(_ flashTintSize: CGFloat) -> CameraState {
+        return CameraState(position: self.position, flashMode: self.flashMode, flashModeDidChange: self.flashModeDidChange, flashTint: self.flashTint, flashTintSize: flashTintSize, recording: self.recording, duration: self.duration, isDualCameraEnabled: self.isDualCameraEnabled, isViewOnceEnabled: self.isViewOnceEnabled)
     }
 
     func updatedRecording(_ recording: Recording) -> CameraState {
-        return CameraState(position: self.position, recording: recording, duration: self.duration, isDualCameraEnabled: self.isDualCameraEnabled, isViewOnceEnabled: self.isViewOnceEnabled)
+        var flashModeDidChange = self.flashModeDidChange
+        if case .none = self.recording {
+            flashModeDidChange = false
+        }
+        return CameraState(position: self.position, flashMode: self.flashMode, flashModeDidChange: flashModeDidChange, flashTint: self.flashTint, flashTintSize: self.flashTintSize, recording: recording, duration: self.duration, isDualCameraEnabled: self.isDualCameraEnabled, isViewOnceEnabled: self.isViewOnceEnabled)
     }
     
     func updatedDuration(_ duration: Double) -> CameraState {
-        return CameraState(position: self.position, recording: self.recording, duration: duration, isDualCameraEnabled: self.isDualCameraEnabled, isViewOnceEnabled: self.isViewOnceEnabled)
+        return CameraState(position: self.position, flashMode: self.flashMode, flashModeDidChange: self.flashModeDidChange, flashTint: self.flashTint, flashTintSize: self.flashTintSize, recording: self.recording, duration: duration, isDualCameraEnabled: self.isDualCameraEnabled, isViewOnceEnabled: self.isViewOnceEnabled)
     }
     
     func updatedIsViewOnceEnabled(_ isViewOnceEnabled: Bool) -> CameraState {
-        return CameraState(position: self.position, recording: self.recording, duration: self.duration, isDualCameraEnabled: self.isDualCameraEnabled, isViewOnceEnabled: isViewOnceEnabled)
+        return CameraState(position: self.position, flashMode: self.flashMode, flashModeDidChange: self.flashModeDidChange, flashTint: self.flashTint, flashTintSize: self.flashTintSize, recording: self.recording, duration: self.duration, isDualCameraEnabled: self.isDualCameraEnabled, isViewOnceEnabled: isViewOnceEnabled)
     }
 }
 
@@ -91,6 +128,7 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
     let push: (ViewController) -> Void
     let startRecording: ActionSlot<Void>
     let stopRecording: ActionSlot<Void>
+    let cancelRecording: ActionSlot<Void>
     let completion: ActionSlot<VideoMessageCameraScreen.CaptureResult>
     
     init(
@@ -105,6 +143,7 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
         push: @escaping (ViewController) -> Void,
         startRecording: ActionSlot<Void>,
         stopRecording: ActionSlot<Void>,
+        cancelRecording: ActionSlot<Void>,
         completion: ActionSlot<VideoMessageCameraScreen.CaptureResult>
     ) {
         self.context = context
@@ -118,6 +157,7 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
         self.push = push
         self.startRecording = startRecording
         self.stopRecording = stopRecording
+        self.cancelRecording = cancelRecording
         self.completion = completion
     }
     
@@ -146,7 +186,9 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
     final class State: ComponentState {
         enum ImageKey: Hashable {
             case flip
+            case flash
             case buttonBackground
+            case flashImage
         }
         private var cachedImages: [ImageKey: UIImage] = [:]
         func image(_ key: ImageKey, theme: PresentationTheme) -> UIImage {
@@ -157,9 +199,23 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
                 switch key {
                 case .flip:
                     image = UIImage(bundleImageName: "Camera/VideoMessageFlip")!.withRenderingMode(.alwaysTemplate)
+                case .flash:
+                    image = UIImage(bundleImageName: "Camera/VideoMessageFlash")!.withRenderingMode(.alwaysTemplate)
                 case .buttonBackground:
                     let innerSize = CGSize(width: 40.0, height: 40.0)
                     image = generateFilledCircleImage(diameter: innerSize.width, color: theme.rootController.navigationBar.opaqueBackgroundColor, strokeColor: theme.chat.inputPanel.panelSeparatorColor, strokeWidth: 0.5, backgroundColor: nil)!
+                case .flashImage:
+                    image = generateImage(CGSize(width: 393.0, height: 852.0), rotatedContext: { size, context in
+                        context.clear(CGRect(origin: .zero, size: size))
+                        
+                        var locations: [CGFloat] = [0.0, 0.2, 0.6, 1.0]
+                        let colors: [CGColor] = [UIColor(rgb: 0xffffff, alpha: 0.25).cgColor, UIColor(rgb: 0xffffff, alpha: 0.25).cgColor, UIColor(rgb: 0xffffff, alpha: 1.0).cgColor, UIColor(rgb: 0xffffff, alpha: 1.0).cgColor]
+                        let colorSpace = CGColorSpaceCreateDeviceRGB()
+                        let gradient = CGGradient(colorsSpace: colorSpace, colors: colors as CFArray, locations: &locations)!
+                        
+                        let center = CGPoint(x: size.width / 2.0, y: size.height / 2.0 - 10.0)
+                        context.drawRadialGradient(gradient, startCenter: center, startRadius: 0.0, endCenter: center, endRadius: size.width, options: .drawsAfterEndLocation)
+                    })!.withRenderingMode(.alwaysTemplate)
                 }
                 cachedImages[key] = image
                 return image
@@ -170,6 +226,7 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
         private let present: (ViewController) -> Void
         private let startRecording: ActionSlot<Void>
         private let stopRecording: ActionSlot<Void>
+        private let cancelRecording: ActionSlot<Void>
         private let completion: ActionSlot<VideoMessageCameraScreen.CaptureResult>
         private let getController: () -> VideoMessageCameraScreen?
         
@@ -178,6 +235,8 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
         var cameraState: CameraState?
         
         var didDisplayViewOnce = false
+        
+        var displayingFlashTint = false
                     
         private let hapticFeedback = HapticFeedback()
         
@@ -186,6 +245,7 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
             present: @escaping (ViewController) -> Void,
             startRecording: ActionSlot<Void>,
             stopRecording: ActionSlot<Void>,
+            cancelRecording: ActionSlot<Void>,
             completion: ActionSlot<VideoMessageCameraScreen.CaptureResult>,
             getController: @escaping () -> VideoMessageCameraScreen? = {
                 return nil
@@ -195,6 +255,7 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
             self.present = present
             self.startRecording = startRecording
             self.stopRecording = stopRecording
+            self.cancelRecording = cancelRecording
             self.completion = completion
             self.getController = getController
             
@@ -211,6 +272,10 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
             })
             self.stopRecording.connect({ [weak self] _ in
                 self?.stopVideoRecording()
+            })
+            
+            self.cancelRecording.connect({ [weak self] _ in
+                self?.cancelVideoRecording()
             })
         }
         
@@ -236,9 +301,100 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
             }
             self.lastFlipTimestamp = currentTimestamp
             
+            let isFrontCamera = controller.cameraState.position == .back
             camera.togglePosition()
-                        
+                                    
             self.hapticFeedback.impact(.veryLight)
+            
+            self.updateScreenBrightness(isFrontCamera: isFrontCamera)
+            
+            if isFrontCamera {
+                camera.setTorchActive(false)
+            } else {
+                camera.setTorchActive(controller.cameraState.flashMode == .on)
+            }
+        }
+        
+        func toggleFlashMode() {
+            guard let controller = self.getController(), let camera = controller.camera else {
+                return
+            }
+            var isFlashOn = false
+            switch controller.cameraState.flashMode {
+            case .off:
+                isFlashOn = true
+                camera.setFlashMode(.on)
+            case .on:
+                camera.setFlashMode(.off)
+            default:
+                camera.setFlashMode(.off)
+            }
+            self.hapticFeedback.impact(.light)
+            
+            self.updateScreenBrightness(isFlashOn: isFlashOn)
+            
+            if controller.cameraState.position == .back {
+                if isFlashOn {
+                    camera.setTorchActive(true)
+                } else {
+                    camera.setTorchActive(false)
+                }
+            }
+        }
+        
+        private var initialBrightness: CGFloat?
+        private var brightnessArguments: (Double, Double, CGFloat, CGFloat)?
+        private var brightnessAnimator: ConstantDisplayLinkAnimator?
+        
+        func updateScreenBrightness(isFrontCamera: Bool? = nil, isFlashOn: Bool? = nil) {
+            guard let controller = self.getController() else {
+                return
+            }
+            let isFrontCamera = isFrontCamera ?? (controller.cameraState.position == .front)
+            let isFlashOn = isFlashOn ?? (controller.cameraState.flashMode == .on)
+            
+            if isFrontCamera && isFlashOn {
+                if self.initialBrightness == nil {
+                    self.initialBrightness = UIScreen.main.brightness
+                    self.brightnessArguments = (CACurrentMediaTime(), 0.2, UIScreen.main.brightness, 1.0)
+                    self.animateBrightnessChange()
+                }
+            } else {
+                if let initialBrightness = self.initialBrightness {
+                    self.initialBrightness = nil
+                    self.brightnessArguments = (CACurrentMediaTime(), 0.2, UIScreen.main.brightness, initialBrightness)
+                    self.animateBrightnessChange()
+                }
+            }
+        }
+        
+        private func animateBrightnessChange() {
+            if self.brightnessAnimator == nil {
+                self.brightnessAnimator = ConstantDisplayLinkAnimator(update: { [weak self] in
+                    self?.animateBrightnessChange()
+                })
+                self.brightnessAnimator?.isPaused = true
+            }
+            
+            if let (startTime, duration, initial, target) = self.brightnessArguments {
+                self.brightnessAnimator?.isPaused = false
+                
+                let t = CGFloat(max(0.0, min(1.0, (CACurrentMediaTime() - startTime) / duration)))
+                let value = initial + (target - initial) * t
+                
+                UIScreen.main.brightness = value
+                
+                if t >= 1.0 {
+                    self.brightnessArguments = nil
+                    self.brightnessAnimator?.isPaused = true
+                    self.brightnessAnimator?.invalidate()
+                    self.brightnessAnimator = nil
+                }
+            } else {
+                self.brightnessAnimator?.isPaused = true
+                self.brightnessAnimator?.invalidate()
+                self.brightnessAnimator = nil
+            }
         }
         
         func startVideoRecording(pressing: Bool) {
@@ -259,11 +415,11 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
             let isFirstRecording = initialDuration.isZero
             controller.node.resumeCameraCapture()
             
-            controller.updatePreviewState({ _ in return nil}, transition: .spring(duration: 0.4))
-            
             controller.node.dismissAllTooltips()
             controller.updateCameraState({ $0.updatedRecording(pressing ? .holding : .handsFree).updatedDuration(initialDuration) }, transition: .spring(duration: 0.4))
         
+            controller.updatePreviewState({ _ in return nil }, transition: .spring(duration: 0.4))
+            
             controller.node.withReadyCamera(isFirstTime: !controller.node.cameraIsActive) {
                 Queue.mainQueue().after(0.15) {
                     self.resultDisposable.set((camera.startRecording()
@@ -288,6 +444,10 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
             
             if initialDuration > 0.0 {
                 controller.onResume()
+            }
+            
+            if controller.cameraState.position == .front && controller.cameraState.flashMode == .on {
+                self.updateScreenBrightness()
             }
         }
         
@@ -315,6 +475,12 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
                     controller.updateCameraState({ $0.updatedRecording(.none) }, transition: .spring(duration: 0.4))
                 }
             }))
+            
+            if let initialBrightness = self.initialBrightness {
+                self.initialBrightness = nil
+                self.brightnessArguments = (CACurrentMediaTime(), 0.2, UIScreen.main.brightness, initialBrightness)
+                self.animateBrightnessChange()
+            }
         }
         
         func lockVideoRecording() {
@@ -322,6 +488,14 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
                 return
             }
             controller.updateCameraState({ $0.updatedRecording(.handsFree) }, transition: .spring(duration: 0.4))
+        }
+        
+        func cancelVideoRecording() {
+            if let initialBrightness = self.initialBrightness {
+                self.initialBrightness = nil
+                self.brightnessArguments = (CACurrentMediaTime(), 0.2, UIScreen.main.brightness, initialBrightness)
+                self.animateBrightnessChange()
+            }
         }
         
         func updateZoom(fraction: CGFloat) {
@@ -333,16 +507,20 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
     }
     
     func makeState() -> State {
-        return State(context: self.context, present: self.present, startRecording: self.startRecording, stopRecording: self.stopRecording, completion: self.completion, getController: self.getController)
+        return State(context: self.context, present: self.present, startRecording: self.startRecording, stopRecording: self.stopRecording, cancelRecording: self.cancelRecording, completion: self.completion, getController: self.getController)
     }
     
     static var body: Body {
+        let frontFlash = Child(Image.self)
         let flipButton = Child(CameraButton.self)
+        let flashButton = Child(CameraButton.self)
         
         let viewOnceButton = Child(PlainButtonComponent.self)
         let recordMoreButton = Child(PlainButtonComponent.self)
         
         let muteIcon = Child(ZStack<Empty>.self)
+        
+        let flashAction = ActionSlot<Void>()
                         
         return { context in
             let environment = context.environment[ViewControllerComponentContainer.Environment.self].value
@@ -384,6 +562,25 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
             }
             
             if !component.isPreviewing {
+                if case .on = component.cameraState.flashMode, case .front = component.cameraState.position {
+                    let frontFlash = frontFlash.update(
+                        component: Image(image: state.image(.flashImage, theme: environment.theme), tintColor: component.cameraState.flashTint.color),
+                        availableSize: availableSize,
+                        transition: .easeInOut(duration: 0.2)
+                    )
+                    context.add(frontFlash
+                        .position(CGPoint(x: context.availableSize.width / 2.0, y: context.availableSize.height / 2.0))
+                        .scale(1.5 - component.cameraState.flashTintSize * 0.5)
+                        .appear(.default(alpha: true))
+                        .disappear(ComponentTransition.Disappear({ view, transition, completion in
+                            view.superview?.sendSubviewToBack(view)
+                            transition.setAlpha(view: view, alpha: 0.0, completion: { _ in
+                                completion()
+                            })
+                        }))
+                    )
+                }
+                
                 let flipButton = flipButton.update(
                     component: CameraButton(
                         content: AnyComponentWithIdentity(
@@ -412,6 +609,69 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
                     .appear(.default(scale: true, alpha: true))
                     .disappear(.default(scale: true, alpha: true))
                 )
+                
+                let flashContentComponent: AnyComponentWithIdentity<Empty>
+                if "".isEmpty {
+                    let flashIconName: String
+                    switch component.cameraState.flashMode {
+                    case .off:
+                        flashIconName = "roundFlash_off"
+                    case .on:
+                        flashIconName = "roundFlash_on"
+                    default:
+                        flashIconName = "roundFlash_off"
+                    }
+                    
+                    flashContentComponent = AnyComponentWithIdentity(
+                        id: "animatedIcon",
+                        component: AnyComponent(
+                            LottieComponent(
+                                content: LottieComponent.AppBundleContent(name: flashIconName),
+                                color: environment.theme.list.itemAccentColor,
+                                startingPosition: !component.cameraState.flashModeDidChange ? .end : .begin,
+                                size: CGSize(width: 40.0, height: 40.0),
+                                loop: false,
+                                playOnce: flashAction
+                            )
+                        )
+                    )
+                } else {
+                    flashContentComponent = AnyComponentWithIdentity(
+                        id: "staticIcon",
+                        component: AnyComponent(
+                            Image(
+                                image: state.image(.flash, theme: environment.theme),
+                                tintColor: environment.theme.list.itemAccentColor,
+                                size: CGSize(width: 30.0, height: 30.0)
+                            )
+                        )
+                    )
+                }
+                
+                if !environment.metrics.isTablet {
+                    let flashButton = flashButton.update(
+                        component: CameraButton(
+                            content: flashContentComponent,
+                            minSize: CGSize(width: 44.0, height: 44.0),
+                            isExclusive: false,
+                            action: { [weak state] in
+                                if let state {
+                                    state.toggleFlashMode()
+                                    Queue.mainQueue().justDispatch {
+                                        flashAction.invoke(Void())
+                                    }
+                                }
+                            }
+                        ),
+                        availableSize: availableSize,
+                        transition: context.transition
+                    )
+                    context.add(flashButton
+                        .position(CGPoint(x: flipButton.size.width + 8.0 + flashButton.size.width / 2.0 + 11.0, y: availableSize.height - flashButton.size.height / 2.0 - 8.0))
+                        .appear(.default(scale: true, alpha: true))
+                        .disappear(.default(scale: true, alpha: true))
+                    )
+                }
             }
             
             if showViewOnce {
@@ -590,6 +850,7 @@ public class VideoMessageCameraScreen: ViewController {
         
         fileprivate let startRecording = ActionSlot<Void>()
         fileprivate let stopRecording = ActionSlot<Void>()
+        fileprivate let cancelRecording = ActionSlot<Void>()
         private let completion = ActionSlot<VideoMessageCameraScreen.CaptureResult>()
                 
         var cameraState: CameraState {
@@ -665,6 +926,10 @@ public class VideoMessageCameraScreen: ViewController {
             
             self.cameraState = CameraState(
                 position: isFrontPosition ? .front : .back,
+                flashMode: .off,
+                flashModeDidChange: false,
+                flashTint: .white,
+                flashTintSize: 1.0,
                 recording: .none,
                 duration: 0.0,
                 isDualCameraEnabled: isDualCameraEnabled,
@@ -770,12 +1035,15 @@ public class VideoMessageCameraScreen: ViewController {
                 secondaryPreviewView: self.additionalPreviewView
             )
             
-            self.cameraStateDisposable = (camera.position
-            |> deliverOnMainQueue).start(next: { [weak self] position in
+            self.cameraStateDisposable = combineLatest(
+                queue: Queue.mainQueue(),
+                camera.flashMode,
+                camera.position
+            ).start(next: { [weak self] flashMode, position in
                 guard let self else {
                     return
                 }
-                self.cameraState = self.cameraState.updatedPosition(position)
+                self.cameraState = self.cameraState.updatedPosition(position).updatedFlashMode(flashMode)
                 
                 if !self.cameraState.isDualCameraEnabled {
                     self.animatePositionChange()
@@ -1131,7 +1399,7 @@ public class VideoMessageCameraScreen: ViewController {
             }
 
             var backgroundFrame = CGRect(origin: .zero, size: CGSize(width: layout.size.width, height: controller.inputPanelFrame.0.minY))
-            if backgroundFrame.maxY < layout.size.height - 100.0 && (layout.inputHeight ?? 0.0).isZero && !controller.inputPanelFrame.1 {
+            if backgroundFrame.maxY < layout.size.height - 100.0 && (layout.inputHeight ?? 0.0).isZero && !controller.inputPanelFrame.1 && layout.additionalInsets.bottom.isZero {
                 backgroundFrame = CGRect(origin: .zero, size: CGSize(width: layout.size.width, height: layout.size.height - layout.intrinsicInsets.bottom - controller.inputPanelFrame.0.height))
             }
                         
@@ -1221,6 +1489,7 @@ public class VideoMessageCameraScreen: ViewController {
                         },
                         startRecording: self.startRecording,
                         stopRecording: self.stopRecording,
+                        cancelRecording: self.cancelRecording,
                         completion: self.completion
                     )
                 ),
@@ -1582,7 +1851,7 @@ public class VideoMessageCameraScreen: ViewController {
                 guard let self else {
                     return
                 }
-                let values = MediaEditorValues(peerId: self.context.account.peerId, originalDimensions: dimensions, cropOffset: .zero, cropRect: CGRect(origin: .zero, size: dimensions.cgSize), cropScale: 1.0, cropRotation: 0.0, cropMirroring: false, cropOrientation: nil, gradientColors: nil, videoTrimRange: self.node.previewState?.trimRange, videoIsMuted: false, videoIsFullHd: false, videoIsMirrored: false, videoVolume: nil, additionalVideoPath: nil, additionalVideoIsDual: false, additionalVideoPosition: nil, additionalVideoScale: nil, additionalVideoRotation: nil, additionalVideoPositionChanges: [], additionalVideoTrimRange: nil, additionalVideoOffset: nil, additionalVideoVolume: nil, nightTheme: false, drawing: nil, maskDrawing: nil, entities: [], toolValues: [:], audioTrack: nil, audioTrackTrimRange: nil, audioTrackOffset: nil, audioTrackVolume: nil, audioTrackSamples: nil, qualityPreset: .videoMessage)
+                let values = MediaEditorValues(peerId: self.context.account.peerId, originalDimensions: dimensions, cropOffset: .zero, cropRect: CGRect(origin: .zero, size: dimensions.cgSize), cropScale: 1.0, cropRotation: 0.0, cropMirroring: false, cropOrientation: nil, gradientColors: nil, videoTrimRange: self.node.previewState?.trimRange, videoIsMuted: false, videoIsFullHd: false, videoIsMirrored: false, videoVolume: nil, additionalVideoPath: nil, additionalVideoIsDual: false, additionalVideoPosition: nil, additionalVideoScale: nil, additionalVideoRotation: nil, additionalVideoPositionChanges: [], additionalVideoTrimRange: nil, additionalVideoOffset: nil, additionalVideoVolume: nil, nightTheme: false, drawing: nil, maskDrawing: nil, entities: [], toolValues: [:], audioTrack: nil, audioTrackTrimRange: nil, audioTrackOffset: nil, audioTrackVolume: nil, audioTrackSamples: nil, coverImageTimestamp: nil, qualityPreset: .videoMessage)
                 
                 var resourceAdjustments: VideoMediaResourceAdjustments? = nil
                 if let valuesData = try? JSONEncoder().encode(values) {
@@ -1622,7 +1891,7 @@ public class VideoMessageCameraScreen: ViewController {
                     context.account.postbox.mediaBox.storeCachedResourceRepresentation(resource, representation: CachedVideoFirstFrameRepresentation(), data: data)
                 }
 
-                let media = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: Int64.random(in: Int64.min ... Int64.max)), partialReference: nil, resource: resource, previewRepresentations: previewRepresentations, videoThumbnails: [], immediateThumbnailData: nil, mimeType: "video/mp4", size: nil, attributes: [.FileName(fileName: "video.mp4"), .Video(duration: finalDuration, size: video.dimensions, flags: [.instantRoundVideo], preloadSize: nil)])
+                let media = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: Int64.random(in: Int64.min ... Int64.max)), partialReference: nil, resource: resource, previewRepresentations: previewRepresentations, videoThumbnails: [], immediateThumbnailData: nil, mimeType: "video/mp4", size: nil, attributes: [.FileName(fileName: "video.mp4"), .Video(duration: finalDuration, size: video.dimensions, flags: [.instantRoundVideo], preloadSize: nil, coverTime: nil)])
                 
                 var attributes: [MessageAttribute] = []
                 if self.cameraState.isViewOnceEnabled {
@@ -1683,6 +1952,8 @@ public class VideoMessageCameraScreen: ViewController {
     }
     
     public func discardVideo() {
+        self.node.cancelRecording.invoke(Void())
+        
         self.requestDismiss(animated: true)
     }
     

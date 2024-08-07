@@ -9587,6 +9587,7 @@ Sorry for the inconvenience.";
 "Story.ContextPrivacy.LabelEveryone" = "Everyone";
 "Story.Context.Privacy" = "Who Can See";
 "Story.Context.Edit" = "Edit Story";
+"Story.Context.EditCover" = "Edit Cover";
 "Story.Context.SaveToProfile" = "Save to Profile";
 "Story.Context.RemoveFromProfile" = "Remove from Profile";
 "Story.ToastRemovedFromProfileText" = "Story removed from your profile";
@@ -12456,6 +12457,7 @@ Sorry for the inconvenience.";
 "Monetization.StarsProceeds.Available" = "Available Balance";
 "Monetization.StarsProceeds.Current" = "Total Balance";
 "Monetization.StarsProceeds.Total" = "Lifetime Proceeds";
+"Monetization.StarsProceeds.Info" = "Funds from your total balance can be used for ads or withdrawn as rewards 21 days after they are earned.";
 
 "Premium.MessageEffects" = "Message Effects";
 "Premium.MessageEffectsInfo" = "Add over 500 animated effects to private messages.";
@@ -12473,8 +12475,200 @@ Sorry for the inconvenience.";
 "WebApp.MinimizedTitle.Others_1" = "%@ Other";
 "WebApp.MinimizedTitle.Others_any" = "%@ Others";
 
+"WebApp.Minimized.CloseAllTitle" = "Are you sure you want to close all open tabs?";
+"WebApp.Minimized.CloseAll_1" = "Close All %@ Tab";
+"WebApp.Minimized.CloseAll_any" = "Close All %@ Tabs";
+
 "Stars.SendStars.Title" = "Send Stars";
 "Stars.SendStars.AmountTitle" = "ENTER AMOUNT";
 "Stars.SendStars.AmountPlaceholder" = "Stars Amount";
 "Stars.SendStars.AmountInfo" = "Send %@ or more to highlight your profile in the TOP 3 supporters of this message.";
 "Stars.SendStars.SendStars" = "Confirm and Send";
+
+"ChatList.DeleteForMe" = "Delete for me";
+"ChatList.DeleteForAllWhenPossible" = "Delete from both sides where possible";
+"ChatList.DeleteForAll" = "Delete from both sides";
+
+"WebApp.Miniapp" = "miniapp";
+"WebApp.Share" = "Share";
+
+"Stars.Purchase.GiftStars" = "Gift Stars";
+"Stars.Purchase.GiftInfo" = "With Stars, **%1$@** will be able to unlock content and services on Telegram. [See Examples >]()";
+
+"Stars.Purchase.SubscriptionInfo" = "Buy Stars to subscribe for **%@**.";
+"Stars.Purchase.SubscriptionRenewInfo" = "Buy Stars to keep your subscription for **%@**.";
+
+"InviteLink.Create.Subscription" = "Require Monthly Fee";
+"InviteLink.Create.Subscription.Placeholder" = "Stars amount per month";
+"InviteLink.Create.Subscription.PerMonth" = "%@ / month";
+"InviteLink.Create.Subscription.Info" = "Charge a subscription fee from people joining your channel via this link. [Learn More >]()";
+"InviteLink.Create.Subscription.EditInfo" = "If you need to change the subscription fee, create a new invite link with a different price.";
+
+"InviteLink.Create.RequestApprovalUnavailableInfo" = "You can't enable admin approval for links that require a monthly fee.";
+
+"InviteLink.Subscription.Fee" = "Subscription Fee";
+"InviteLink.Subscription.Info" = "You get approximately %@ monthly";
+
+"Notification.StarsGift.Sent" = "%1$@ sent you a gift for %2$@";
+"Notification.StarsGift.SentYou" = "You sent a gift for %@";
+
+"Notification.StarsGift.Title_1" = "%@ Star";
+"Notification.StarsGift.Title_any" = "%@ Stars";
+"Notification.StarsGift.Subtitle" = "Use Stars to unlock content and services on Telegram.";
+"Notification.StarsGift.SubtitleYou" = "With Stars, %@ will be able to unlock content and services on Telegram.";
+
+"Bot.Settings" = "Bot Settings";
+
+"Browser.ErrorTitle" = "An Error Occurred";
+
+"Browser.ContextMenu.Open" = "Open";
+"Browser.ContextMenu.OpenInNewTab" = "Open in New Tab";
+"Browser.ContextMenu.AddToReadingList" = "Add to Reading List";
+"Browser.ContextMenu.CopyLink" = "Copy Link";
+"Browser.ContextMenu.Share" = "Share";
+
+"WebBrowser.Telegram" = "Telegram";
+
+"Monetization.Proceeds.Ton.Info" = "TON from your total balance can be used for ads or withdrawn as rewards 3 days after they are earned.";
+"Monetization.Proceeds.Stars.Info" = "Stars from your total balance can be used for ads or withdrawn as rewards 21 days after they are earned.";
+"Monetization.Proceeds.TonAndStars.Info" = "Stars and TON from your total balance can be used for ads or withdrawn as rewards 21 and 3 days respectively after they are earned.";
+
+"Stars.Transaction.FragmentUnknown_URL" = "https://fragment.com/stars";
+"Conversation.StatusBotSubscribers_1" = "1 user";
+"Conversation.StatusBotSubscribers_any" = "%d users";
+
+"Story.Editor.Add" = "Add";
+
+"WebBrowser.LinkForwardTooltip.Chat.One" = "Link forwarded to **%@**";
+"WebBrowser.LinkForwardTooltip.TwoChats.One" = "Link forwarded to **%@** and **%@**";
+"WebBrowser.LinkForwardTooltip.ManyChats.One" = "Link forwarded to **%@** and %@ others";
+"WebBrowser.LinkForwardTooltip.SavedMessages.One" = "Link forwarded to **Saved Messages**";
+
+"Stars.Intro.StarsSent_1" = "%@ Star sent.";
+"Stars.Intro.StarsSent_any" = "%@ Stars sent.";
+"Stars.Intro.StarsSent.ViewChat" = "View Chat";
+
+"Stars.Gift.Received.Title" = "Received Gift";
+"Stars.Gift.Received.Text" = "Use Stars to unlock content and services on Telegram. [See Examples >]()";
+
+"Stars.Gift.Sent.Title" = "Sent Gift";
+"Stars.Gift.Sent.Text" = "With Stars, %@ will be able to unlock content and services on Telegram. [See Examples >]()";
+
+"WebBrowser.Reload" = "Reload";
+"WebBrowser.Share" = "Share";
+"WebBrowser.AddBookmark" = "Add Bookmark";
+
+"WebBrowser.LinkAddedToBookmarks" = "Link added to [Bookmarks]() and **Saved Messages**.";
+
+"WebBrowser.AddressBar.RecentlyVisited" = "RECENTLY VISITED";
+"WebBrowser.AddressBar.RecentlyVisited.Clear" = "Clear";
+
+"WebBrowser.AddressBar.Bookmarks" = "BOOKMARKS";
+"WebBrowser.AddressBar.ShowMore" = "Show More";
+
+"WebBrowser.OpenLinksIn.Title" = "OPEN LINKS IN";
+"WebBrowser.AutoLogin" = "Auto-Login via Telegram";
+"WebBrowser.AutoLogin.Info" = "Use your Telegram account to automatically log in to websites opened in the in-app browser.";
+
+"WebBrowser.ClearCookies" = "Clear Cookies";
+"WebBrowser.ClearCookies.Info" = "Delete all cookies in the Telegram in-app browser. This action will sign you out of most websites.";
+"WebBrowser.ClearCookies.Succeed" = "Cookies cleared.";
+
+"WebBrowser.Exceptions.Title" = "NEVER OPEN IN THE IN-APP BROWSER";
+"WebBrowser.Exceptions.AddException" = "Add Website";
+"WebBrowser.Exceptions.Clear" = "Clear List";
+"WebBrowser.Exceptions.Info" = "These websites will be always opened in your default browser.";
+
+"WebBrowser.Exceptions.Create.Title" = "Add Website";
+"WebBrowser.Exceptions.Create.Text" = "Enter a domain that you don't want to be opened in the in-app browser.";
+"WebBrowser.Exceptions.Create.Placeholder" = "Enter URL";
+
+"WebBrowser.Exceptions.ClearConfirmation.Text" = "Are you sure you want to clear this list?";
+"WebBrowser.Exceptions.ClearConfirmation.Clear" = "Clear";
+
+"WebBrowser.ClearCookies.ClearConfirmation.Text" = "Are you sure you want to clear cookies?";
+"WebBrowser.ClearCookies.ClearConfirmation.Clear" = "Clear";
+
+"WebBrowser.ClearCache" = "Clear Cache";
+"WebBrowser.ClearCache.ClearConfirmation.Text" = "Are you sure you want to clear cookies?";
+"WebBrowser.ClearCache.ClearConfirmation.Clear" = "Clear";
+"WebBrowser.ClearCache.Succeed" = "Cookies cleared.";
+
+
+"WebBrowser.Done" = "Done";
+
+"AccessDenied.LocationWeather" = "Telegram needs access to your location so that you can add the weather widget to your stories.\n\nPlease go to Settings > Privacy > Location Services and set Telegram to ON.";
+
+"Story.Editor.TooltipWeatherLimitText" = "You can't add more than one weather sticker to a story.";
+
+"WebBrowser.AddressPlaceholder" = "Enter URL";
+
+"WebBrowser.Bookmarks.Title" = "Bookmarks";
+"WebBrowser.Bookmarks.BookmarkCurrent" = "Bookmark Current Page";
+
+"Story.Privacy.ChooseCover" = "Choose Story Cover";
+"Story.Privacy.ChooseCoverInfo" = "Choose a frame from the story to show in your Profile.";
+"Story.Privacy.ChooseCoverChannelInfo" = "Choose a frame from the story to show in channel profile.";
+"Story.Privacy.ChooseCoverGroupInfo" = "Choose a frame from the story to show in group profile.";
+
+"ChatList.Search.FilterApps" = "Apps";
+"ChatList.Search.SectionPopularApps" = "POPULAR APPS";
+"ChatList.Search.SectionRecentApps" = "APPS YOU USE";
+"ChatList.Search.Apps.Empty.Text" = "No Apps Found";
+
+"VoiceChat.MicrophoneModes" = "Microphone Modes";
+
+"MiniAppList.Title" = "Examples";
+"MiniAppList.ListSectionHeader" = "APPS THAT ACCEPT STARS";
+
+"PeerInfo.PaneBotPreviews" = "Preview";
+"PeerInfo.OpenAppButton" = "Open App";
+"PeerInfo.AppFooterAdmin" = "By publishing this mini app, you agree to the [Telegram Terms of Service for Developers](https://telegram.org/privacy).";
+"PeerInfo.AppFooter" = "By launching this mini app, you agree to the [Terms of Service for Mini Apps](https://telegram.org/privacy).";
+"BotPreviews.MenuAddPreview" = "Add Preview";
+"BotPreviews.MenuReorder" = "Reorder";
+"BotPreviews.MenuDeleteLanguage" = "Delete %@";
+"BotPreviews.SubtitleLoading" = "loading";
+"BotPreviews.SubtitleEmpty" = "no preview added";
+"BotPreviews.SubtitleCount_1" = "1 preview";
+"BotPreviews.SubtitleCount_any" = "%d previews";
+"BotPreviews.SheetDeleteTitle_1" = "Delete 1 Preview?";
+"BotPreviews.SheetDeleteTitle_any" = "Delete %d Previews?";
+"BotPreviews.LanguageTab.Main" = "Main";
+"BotPreviews.LanguageTab.Add" = "+ Add Language";
+"BotPreviews.Empty.Title" = "No Preview";
+"BotPreviews.Empty.Text_1" = "Upload up to 1 screenshot and video demos for your mini app.";
+"BotPreviews.Empty.Text_any" = "Upload up to %d screenshots and video demos for your mini app.";
+"BotPreviews.Empty.Add" = "Add Preview";
+"BotPreviews.Empty.AddTranslation" = "Create a Translation";
+"BotPreviews.Empty.DeleteTranslation" = "Delete this Translation";
+"BotPreviews.Empty.Separator" = "or";
+"BotPreviews.AlertTooManyPreviews_1" = "You can add at most 1 preview.";
+"BotPreviews.AlertTooManyPreviews_any" = "You can add at most 1 previews.";
+"BotPreviews.DeleteTranslationAlert.Title" = "Delete Translation";
+"BotPreviews.DeleteTranslationAlert.Text" = "Are you sure you want to delete this translation?";
+"BotPreviews.TranslationFooter.Text" = "This preview will be displayed for all users who have %@ set as their language.";
+"BotPreviews.DefaultFooter.Text" = "This preview will be shown by default. You can also add translations into specific languages.";
+"BotPreviews.SelectLanguage.Title" = "Add a Translation";
+"BotPreview.ViewContextDelete" = "Delete Preview";
+
+"WebBrowser.Download.Confirmation" = "Do you want to download \"%@\"?";
+"WebBrowser.Download.Download" = "Download";
+
+"Story.Cover" = "Story Cover";
+"Story.SaveCover" = "Save Cover";
+
+"WebBrowser.CopyLink" = "Copy Link";
+"WebBrowser.DeleteBookmark" = "Delete Bookmark";
+"WebBrowser.RemoveRecent" = "Remove from Recent";
+
+"Stars.Intro.Transaction.Gift.Title" = "Received Gift";
+"Stars.Intro.Transaction.Gift.UnknownUser" = "Unknown User";
+
+"WebApp.PrivacyPolicy" = "Privacy Policy";
+
+"Conversation.OpenProfile" = "OPEN PROFILE";
+
+"Stars.Intro.GiftStars" = "Gift Stars to Friends";
+
+"MediaPicker.CreateSticker" = "Create a sticker from a photo";

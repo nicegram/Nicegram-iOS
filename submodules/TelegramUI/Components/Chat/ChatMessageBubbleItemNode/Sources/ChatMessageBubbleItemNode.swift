@@ -226,6 +226,8 @@ private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> ([
                     result.append((message, ChatMessageCallBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
                 } else if case .giftPremium = action.action {
                     result.append((message, ChatMessageGiftBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
+                } else if case .giftStars = action.action {
+                    result.append((message, ChatMessageGiftBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
                 } else if case .suggestedProfilePhoto = action.action {
                     result.append((message, ChatMessageProfilePhotoSuggestionContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
                 } else if case .setChatWallpaper = action.action {
@@ -1526,11 +1528,11 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     if let sourceAuthorInfo, let originalAuthorId = sourceAuthorInfo.originalAuthor, let peer = item.message.peers[originalAuthorId] {
                         effectiveAuthor = peer
                     } else if let sourceAuthorInfo, let originalAuthorName = sourceAuthorInfo.originalAuthorName {
-                        effectiveAuthor = TelegramUser(id: PeerId(namespace: Namespaces.Peer.Empty, id: PeerId.Id._internalFromInt64Value(Int64(originalAuthorName.persistentHashValue % 32))), accessHash: nil, firstName: originalAuthorName, lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil)
+                        effectiveAuthor = TelegramUser(id: PeerId(namespace: Namespaces.Peer.Empty, id: PeerId.Id._internalFromInt64Value(Int64(originalAuthorName.persistentHashValue % 32))), accessHash: nil, firstName: originalAuthorName, lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil)
                     } else {
                         ignoreForward = true
                         if effectiveAuthor == nil, let authorSignature = forwardInfo.authorSignature {
-                            effectiveAuthor = TelegramUser(id: PeerId(namespace: Namespaces.Peer.Empty, id: PeerId.Id._internalFromInt64Value(Int64(authorSignature.persistentHashValue % 32))), accessHash: nil, firstName: authorSignature, lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil)
+                            effectiveAuthor = TelegramUser(id: PeerId(namespace: Namespaces.Peer.Empty, id: PeerId.Id._internalFromInt64Value(Int64(authorSignature.persistentHashValue % 32))), accessHash: nil, firstName: authorSignature, lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil)
                         }
                     }
                 }
@@ -1547,7 +1549,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 displayAuthorInfo = !mergedTop.merged && incoming
             } else if let forwardInfo = item.content.firstMessage.forwardInfo, forwardInfo.flags.contains(.isImported), let authorSignature = forwardInfo.authorSignature {
                 ignoreForward = true
-                effectiveAuthor = TelegramUser(id: PeerId(namespace: Namespaces.Peer.Empty, id: PeerId.Id._internalFromInt64Value(Int64(authorSignature.persistentHashValue % 32))), accessHash: nil, firstName: authorSignature, lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil)
+                effectiveAuthor = TelegramUser(id: PeerId(namespace: Namespaces.Peer.Empty, id: PeerId.Id._internalFromInt64Value(Int64(authorSignature.persistentHashValue % 32))), accessHash: nil, firstName: authorSignature, lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil)
                 displayAuthorInfo = !mergedTop.merged && incoming
             } else if let _ = item.content.firstMessage.adAttribute, let author = item.content.firstMessage.author {
                 ignoreForward = true
@@ -4763,7 +4765,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                         }
                     }
                 } else if case .tap = gesture {
-                    item.controllerInteraction.clickThroughMessage()
+                    item.controllerInteraction.clickThroughMessage(self.view, location)
                 } else if case .doubleTap = gesture {
                     // MARK: Nicegram HideReactions, account added
                     if canAddMessageReactions(message: item.message, account: item.context.account) {
@@ -4938,25 +4940,31 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 // NG_TODO: Fix code/pre copy
                 if let forwardInfoNode = self.forwardInfoNode, forwardInfoNode.frame.contains(location) {
                     if let item = self.item, let forwardInfo = item.message.forwardInfo {
-                        let performAction: () -> Void = {
+                        let performAction: () -> Void = { [weak forwardInfoNode] in
                             if let sourceMessageId = forwardInfo.sourceMessageId {
                                 if let channel = forwardInfo.author as? TelegramChannel, channel.addressName == nil {
                                     if case let .broadcast(info) = channel.info, info.flags.contains(.hasDiscussionGroup) {
                                     } else if case .member = channel.participationStatus {
                                     } else if !item.message.id.peerId.isReplies {
-                                        item.controllerInteraction.displayMessageTooltip(item.message.id, item.presentationData.strings.Conversation_PrivateChannelTooltip, false, forwardInfoNode, nil)
+                                        if let forwardInfoNode {
+                                            item.controllerInteraction.displayMessageTooltip(item.message.id, item.presentationData.strings.Conversation_PrivateChannelTooltip, false, forwardInfoNode, nil)
+                                        }
                                         return
                                     }
                                 }
-                                item.controllerInteraction.navigateToMessage(item.message.id, sourceMessageId, NavigateToMessageParams(timestamp: nil, quote: nil))
+                                if let forwardInfoNode {
+                                    item.controllerInteraction.navigateToMessage(item.message.id, sourceMessageId, NavigateToMessageParams(timestamp: nil, quote: nil, progress: forwardInfoNode.makeActivate()?()))
+                                }
                             } else if let peer = forwardInfo.source ?? forwardInfo.author {
                                 item.controllerInteraction.openPeer(EnginePeer(peer), peer is TelegramUser ? .info(nil) : .chat(textInputState: nil, subject: nil, peekData: nil), nil, .default)
                             } else if let _ = forwardInfo.authorSignature {
-                                var subRect: CGRect?
-                                if let textNode = forwardInfoNode.nameNode {
-                                    subRect = textNode.frame
+                                if let forwardInfoNode {
+                                    var subRect: CGRect?
+                                    if let textNode = forwardInfoNode.nameNode {
+                                        subRect = textNode.frame
+                                    }
+                                    item.controllerInteraction.displayMessageTooltip(item.message.id, item.presentationData.strings.Conversation_ForwardAuthorHiddenTooltip, false, forwardInfoNode, subRect)
                                 }
-                                item.controllerInteraction.displayMessageTooltip(item.message.id, item.presentationData.strings.Conversation_ForwardAuthorHiddenTooltip, false, forwardInfoNode, subRect)
                             }
                         }
                         

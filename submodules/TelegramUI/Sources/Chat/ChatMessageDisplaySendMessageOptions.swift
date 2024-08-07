@@ -222,6 +222,8 @@ func chatMessageDisplaySendMessageOptions(selfController: ChatControllerImpl, no
                     selfController.interfaceInteraction?.editMessage()
                 },
                 schedule: { _ in
+                },
+                editPrice: { _ in
                 }, openPremiumPaywall: { [weak selfController] c in
                     guard let selfController else {
                         return
@@ -293,7 +295,9 @@ func chatMessageDisplaySendMessageOptions(selfController: ChatControllerImpl, no
                     }),
                     attachment: false,
                     canSendWhenOnline: sendWhenOnlineAvailable,
-                    forwardMessageIds: selfController.presentationInterfaceState.interfaceState.forwardMessageIds ?? []
+                    forwardMessageIds: selfController.presentationInterfaceState.interfaceState.forwardMessageIds ?? [],
+                    canMakePaidContent: false,
+                    currentPrice: nil
                 )),
                 hasEntityKeyboard: hasEntityKeyboard,
                 gesture: gesture,
@@ -333,6 +337,7 @@ func chatMessageDisplaySendMessageOptions(selfController: ChatControllerImpl, no
                         return
                     }
                     selfController.controllerInteraction?.scheduleCurrentMessage(params)
+                }, editPrice: { _ in
                 }, openPremiumPaywall: { [weak selfController] c in
                     guard let selfController else {
                         return

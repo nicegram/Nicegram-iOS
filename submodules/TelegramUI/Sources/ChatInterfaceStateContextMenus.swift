@@ -418,7 +418,7 @@ func messageMediaEditingOptions(message: Message) -> MessageMediaEditingOptions 
                         return []
                     case .Animated:
                         break
-                    case let .Video(_, _, flags, _):
+                    case let .Video(_, _, flags, _, _):
                         if flags.contains(.instantRoundVideo) {
                             return []
                         } else {
@@ -1757,13 +1757,17 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
         var clearCacheAsDelete = false
         if let channel = message.peers[message.id.peerId] as? TelegramChannel, case .broadcast = channel.info, !isMigrated {
             var views: Int = 0
+            var forwards: Int = 0
             for attribute in message.attributes {
                 if let attribute = attribute as? ViewCountMessageAttribute {
                     views = attribute.count
                 }
+                if let attribute = attribute as? ForwardCountMessageAttribute {
+                    forwards = attribute.count
+                }
             }
             
-            if infoSummaryData.canViewStats, views >= 100 {
+            if infoSummaryData.canViewStats, forwards >= 1 || views >= 100 {
                 actions.append(.action(ContextMenuActionItem(text: chatPresentationInterfaceState.strings.Conversation_ContextViewStats, icon: { theme in
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Statistics"), color: theme.actionSheet.primaryTextColor)
                 }, action: { c, _ in
@@ -1832,7 +1836,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                     guard let peer = messages[0].peers[messages[0].id.peerId] else {
                         return
                     }
-                    context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: context, chatLocation: .peer(EnginePeer(peer)), subject: .message(id: .id(messages[0].id), highlight: ChatControllerSubject.MessageHighlight(quote: nil), timecode: nil), useExisting: true))
+                    context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: context, chatLocation: .peer(EnginePeer(peer)), subject: .message(id: .id(messages[0].id), highlight: ChatControllerSubject.MessageHighlight(quote: nil), timecode: nil, setupReply: false), useExisting: true))
                 })
             })))
         }
@@ -3470,11 +3474,11 @@ private final class ChatReadReportContextItemNode: ASDisplayNode, ContextMenuCus
             }
 
             let avatarsSize = self.avatarsNode.update(context: self.item.context, content: avatarsContent, itemSize: CGSize(width: 24.0, height: 24.0), customSpacing: 10.0, animated: false, synchronousLoad: true)
-            self.avatarsNode.frame = CGRect(origin: CGPoint(x: size.width - sideInset - 12.0 - avatarsSize.width, y: floor((size.height - avatarsSize.height) / 2.0)), size: avatarsSize)
+            self.avatarsNode.frame = CGRect(origin: CGPoint(x: floorToScreenPixels(size.width - sideInset - 2.0 - avatarsSize.width), y: floor((size.height - avatarsSize.height) / 2.0)), size: avatarsSize)
             transition.updateAlpha(node: self.avatarsNode, alpha: self.currentStats == nil ? 0.0 : 1.0)
 
             let placeholderAvatarsSize = self.placeholderAvatarsNode.update(context: self.item.context, content: placeholderAvatarsContent, itemSize: CGSize(width: 24.0, height: 24.0), customSpacing: 10.0, animated: false, synchronousLoad: true)
-            self.placeholderAvatarsNode.frame = CGRect(origin: CGPoint(x: size.width - sideInset - 8.0 - placeholderAvatarsSize.width, y: floor((size.height - placeholderAvatarsSize.height) / 2.0)), size: placeholderAvatarsSize)
+            self.placeholderAvatarsNode.frame = CGRect(origin: CGPoint(x: size.width - sideInset - 2.0 - placeholderAvatarsSize.width, y: floor((size.height - placeholderAvatarsSize.height) / 2.0)), size: placeholderAvatarsSize)
             transition.updateAlpha(node: self.placeholderAvatarsNode, alpha: self.currentStats == nil ? 1.0 : 0.0)
 
             transition.updateFrame(node: self.backgroundNode, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: size.width, height: size.height)))

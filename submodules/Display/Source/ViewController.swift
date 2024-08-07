@@ -65,6 +65,7 @@ public enum ViewControllerNavigationPresentation {
     case flatModal
     case standaloneModal
     case modalInLargeLayout
+    case modalInCompactLayout
 }
 
 public enum TabBarItemContextActionType {
@@ -229,11 +230,7 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
     }
     
     private var navigationBarOrigin: CGFloat = 0.0
-    
-    public var minimizedTopEdgeOffset: CGFloat?
-    public var minimizedBounds: CGRect?
-    open var isMinimized: Bool = false
-    
+        
     open var interactiveNavivationGestureEdgeWidth: InteractiveTransitionGestureRecognizerEdgeWidth? {
         return nil
     }
