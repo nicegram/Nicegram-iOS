@@ -122,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/update-rules-spm",
-        "revision" : "7cee5ec8abf898ae3fb8430ee6c64918a5dd64a2"
+        "branch" : "develop",
+        "revision" : "01706e0c1a58bb531549d2c83eb3ac3382710673"
       }
     },
     {
@@ -131,8 +131,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "feat/update-rules-spm",
-        "revision" : "3336b2c4fc532161f26a2d97466f82ffa178a959"
+        "branch" : "develop",
+        "revision" : "98f6e67254017add10b2f460aea75d42dbe8eb34"
       }
     },
     {
@@ -151,6 +151,15 @@
       "state" : {
         "branch" : "main",
         "revision" : "4a0f8c97f1baa27d165dc801982c55bbf51126e5"
+      }
+    },
+    {
+      "identity" : "rive-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/rive-app/rive-ios.git",
+      "state" : {
+        "revision" : "52ab8860c3b2264cc44757cb8fc24689f5e1b564",
+        "version" : "5.11.3"
       }
     },
     {
@@ -338,8 +347,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "a21d447de3ec9c37465d5dd9d8c570550a1f476f",
-        "version" : "4.1.2"
+        "revision" : "a05c01a44251254749801ebeb0fc4f9623c44f10",
+        "version" : "4.1.4"
       }
     },
     {

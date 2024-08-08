@@ -165,23 +165,32 @@ private func extractNicegramDeeplink(from link: String) -> String? {
 }
 //
 
-func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, url: String, forceExternal: Bool, presentationData: PresentationData, navigationController: NavigationController?, dismissInput: @escaping () -> Void) {
+// MARK: Nicegram, skipNicegramProcessing added
+func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, url: String, forceExternal: Bool, presentationData: PresentationData, navigationController: NavigationController?, skipNicegramProcessing: Bool = false, dismissInput: @escaping () -> Void) {
     // MARK: Nicegram
-    if let nicegramDeeplink = extractNicegramDeeplink(from: url) {
-        openExternalUrlImpl(context: context, urlContext: urlContext, url: nicegramDeeplink, forceExternal: false, presentationData: presentationData, navigationController: navigationController, dismissInput: dismissInput)
-        return
-    }
-    
-    let walletDeeplinksManager = NicegramWallet.DeeplinksModule.shared.deeplinksManager()
-    if walletDeeplinksManager.handle(url) {
-        return
-    }
-    
-    let nicegramHandler = NGDeeplinkHandler(
-        tgAccountContext: context,
-        navigationController: navigationController
-    )
-    if nicegramHandler.handle(url: url) {
+    if !skipNicegramProcessing {
+        if let nicegramDeeplink = extractNicegramDeeplink(from: url) {
+            openExternalUrlImpl(context: context, urlContext: urlContext, url: nicegramDeeplink, forceExternal: false, presentationData: presentationData, navigationController: navigationController, dismissInput: dismissInput)
+            return
+        }
+        
+        Task { @MainActor in
+            let walletDeeplinksManager = NicegramWallet.DeeplinksModule.shared.deeplinksManager()
+            if await walletDeeplinksManager.handle(url) {
+                return
+            }
+            
+            let nicegramHandler = NGDeeplinkHandler(
+                tgAccountContext: context,
+                navigationController: navigationController
+            )
+            if nicegramHandler.handle(url: url) {
+                return
+            }
+            
+            openExternalUrlImpl(context: context, urlContext: urlContext, url: url, forceExternal: forceExternal, presentationData: presentationData, navigationController: navigationController, skipNicegramProcessing: true, dismissInput: dismissInput)
+        }
+        
         return
     }
     //
