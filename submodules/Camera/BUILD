@@ -62,6 +62,7 @@ swift_library(
         "//submodules/Display:Display",
         "//submodules/ImageBlur:ImageBlur",
         "//submodules/TelegramCore:TelegramCore",
+        "//submodules/Utils/DeviceModel",
     ],
     visibility = [
         "//visibility:public",

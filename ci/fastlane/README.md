@@ -45,22 +45,6 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 
 
-### update_nice_localization
-
-```sh
-[bundle exec] fastlane update_nice_localization
-```
-
-
-
-### upload_nice_localization
-
-```sh
-[bundle exec] fastlane upload_nice_localization
-```
-
-
-
 ### resolve_telegram_configuration
 
 ```sh
@@ -97,14 +81,6 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 ```sh
 [bundle exec] fastlane update_remote_config_defaults
-```
-
-
-
-### update_spm_pkgs
-
-```sh
-[bundle exec] fastlane update_spm_pkgs
 ```
 
 

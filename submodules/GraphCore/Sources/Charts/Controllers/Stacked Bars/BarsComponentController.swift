@@ -155,7 +155,7 @@ class BarsComponentController: GeneralChartComponentController {
         if secondary {
             var updatedLabels: [LinesChartLabel] = []
             for label in labels {
-                let convertedValue = (Double(label.text) ?? 0.0) * self.conversionRate
+                let convertedValue = (self.verticalLimitsNumberFormatter.number(from: label.text) as? Double ?? 0.0) * self.conversionRate
                 let text: String
                 if convertedValue > 1.0 {
                     text = String(format: "%0.1f", convertedValue)

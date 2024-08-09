@@ -20,14 +20,14 @@ public final class InstantPageImageItem: InstantPageItem {
     
     let webPage: TelegramMediaWebpage
     
-    let media: InstantPageMedia
+    public let media: InstantPageMedia
     let attributes: [InstantPageImageAttribute]
     
     public var medias: [InstantPageMedia] {
         return [self.media]
     }
     
-    let interactive: Bool
+    public let interactive: Bool
     let roundCorners: Bool
     let fit: Bool
     

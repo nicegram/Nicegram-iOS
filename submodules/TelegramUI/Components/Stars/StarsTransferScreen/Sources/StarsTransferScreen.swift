@@ -18,6 +18,7 @@ import UndoUI
 import AccountContext
 import PresentationDataUtils
 import StarsImageComponent
+import ConfettiEffect
 
 private final class SheetContent: CombinedComponent {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -256,9 +257,7 @@ private final class SheetContent: CombinedComponent {
             let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
             let theme = presentationData.theme
             let strings = presentationData.strings
-            
-//            let sideInset: CGFloat = 16.0 + environment.safeInsets.left
-            
+                        
             var contentSize = CGSize(width: context.availableSize.width, height: 18.0)
                         
             let background = background.update(
@@ -443,11 +442,11 @@ private final class SheetContent: CombinedComponent {
             )
            
             if state.cachedStarImage == nil || state.cachedStarImage?.1 !== theme {
-                state.cachedStarImage = (generateTintedImage(image: UIImage(bundleImageName: "Item List/PremiumIcon"), color: .white)!, theme)
+                state.cachedStarImage = (generateTintedImage(image: UIImage(bundleImageName: "Item List/PremiumIcon"), color: theme.list.itemCheckColors.foregroundColor)!, theme)
             }
             
             let amountString = presentationStringsFormattedNumber(Int32(amount), presentationData.dateTimeFormat.groupingSeparator)
-            let buttonAttributedString = NSMutableAttributedString(string: "\(strings.Stars_Transfer_Pay)   #  \(amountString)", font: Font.semibold(17.0), textColor: .white, paragraphAlignment: .center)
+            let buttonAttributedString = NSMutableAttributedString(string: "\(strings.Stars_Transfer_Pay)   #  \(amountString)", font: Font.semibold(17.0), textColor: theme.list.itemCheckColors.foregroundColor, paragraphAlignment: .center)
             if let range = buttonAttributedString.string.range(of: "#"), let starImage = state.cachedStarImage?.0 {
                 buttonAttributedString.addAttribute(.attachment, value: starImage, range: NSRange(range, in: buttonAttributedString.string))
                 buttonAttributedString.addAttribute(.foregroundColor, value: UIColor(rgb: 0xffffff), range: NSRange(range, in: buttonAttributedString.string))
@@ -479,12 +478,19 @@ private final class SheetContent: CombinedComponent {
                         state?.buy(requestTopUp: { [weak controller] completion in
                             let premiumConfiguration = PremiumConfiguration.with(appConfiguration: accountContext.currentAppConfiguration.with { $0 })
                             if !premiumConfiguration.isPremiumDisabled {
+                                let purpose: StarsPurchasePurpose
+                                if isMedia {
+                                    purpose = .unlockMedia(requiredStars: invoice.totalAmount)
+                                } else if let peerId = state?.botPeer?.id {
+                                    purpose = .transfer(peerId: peerId, requiredStars: invoice.totalAmount)
+                                } else {
+                                    purpose = .generic(requiredStars: nil)
+                                }
                                 let purchaseController = accountContext.sharedContext.makeStarsPurchaseScreen(
                                     context: accountContext,
                                     starsContext: starsContext,
                                     options: state?.options ?? [],
-                                    peerId: isMedia ? nil : state?.botPeer?.id,
-                                    requiredStars: invoice.totalAmount,
+                                    purpose: purpose,
                                     completion: { [weak starsContext] stars in
                                         starsContext?.add(balance: stars)
                                         Queue.mainQueue().after(0.1) {
@@ -512,12 +518,21 @@ private final class SheetContent: CombinedComponent {
                                         if let lastController = navigationController.viewControllers.last as? ViewController {
                                             let resultController = UndoOverlayController(
                                                 presentationData: presentationData,
-                                                content: .image(
-                                                    image: UIImage(bundleImageName: "Premium/Stars/StarLarge")!,
+//                                                content: .image(
+//                                                    image: UIImage(bundleImageName: "Premium/Stars/StarLarge")!,
+//                                                    title: presentationData.strings.Stars_Transfer_PurchasedTitle,
+//                                                    text: text,
+//                                                    round: false,
+//                                                    undoText: nil
+//                                                ),
+                                                content: .universal(
+                                                    animation: "StarsSend",
+                                                    scale: 0.066,
+                                                    colors: [:],
                                                     title: presentationData.strings.Stars_Transfer_PurchasedTitle,
                                                     text: text,
-                                                    round: false,
-                                                    undoText: nil
+                                                    customUndoText: nil,
+                                                    timeout: nil
                                                 ),
                                                 elevatedLayout: lastController is ChatController,
                                                 action: { _ in return true}
@@ -658,6 +673,7 @@ private final class StarsTransferSheetComponent: CombinedComponent {
 
 public final class StarsTransferScreen: ViewControllerComponentContainer {
     private let context: AccountContext
+    private let extendedMedia: [TelegramExtendedMedia]
     private let completion: (Bool) -> Void
         
     public init(
@@ -670,6 +686,7 @@ public final class StarsTransferScreen: ViewControllerComponentContainer {
         completion: @escaping (Bool) -> Void
     ) {
         self.context = context
+        self.extendedMedia =  extendedMedia
         self.completion = completion
                 
         super.init(
@@ -707,6 +724,10 @@ public final class StarsTransferScreen: ViewControllerComponentContainer {
         }
         self.didComplete = true
         self.completion(paid)
+        
+        if !self.extendedMedia.isEmpty && paid {
+            self.navigationController?.view.addSubview(ConfettiView(frame: self.view.bounds, customImage: UIImage(bundleImageName: "Peer Info/PremiumIcon")))
+        }
     }
     
     public func dismissAnimated() {

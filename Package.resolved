@@ -41,8 +41,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/krzyzanowskim/CryptoSwift.git",
       "state" : {
-        "revision" : "c9c3df6ab812de32bae61fc0cd1bf6d45170ebf0",
-        "version" : "1.8.2"
+        "revision" : "678d442c6f7828def400a70ae15968aef67ef52d",
+        "version" : "1.8.3"
       }
     },
     {
@@ -77,8 +77,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/scenee/FloatingPanel",
       "state" : {
-        "revision" : "29185a47bd9f062c060e097641b863ef07f60ba7",
-        "version" : "2.8.4"
+        "revision" : "71f419a3cd212afc7615e2179c2fec1df1aa74da",
+        "version" : "2.8.5"
       }
     },
     {
@@ -122,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "next-wallet-release",
-        "revision" : "033d4882165ee343a5db09c93cbca462f27f5732"
+        "branch" : "develop",
+        "revision" : "80900ff4ea20225cea77bd53d6990f9cb4ae8591"
       }
     },
     {
@@ -131,14 +131,14 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "next-wallet-release",
-        "revision" : "2d647862a3111bfc0f6c0f9e966fdc8ff1a21d34"
+        "branch" : "develop",
+        "revision" : "98f6e67254017add10b2f460aea75d42dbe8eb34"
       }
     },
     {
       "identity" : "qrcode",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/WalletConnect/QRCode",
+      "location" : "https://github.com/WalletConnect/QRCode.git",
       "state" : {
         "revision" : "263f280d2c8144adfb0b6676109846cfc8dd552b",
         "version" : "14.3.1"
@@ -154,12 +154,21 @@
       }
     },
     {
+      "identity" : "rive-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/rive-app/rive-ios.git",
+      "state" : {
+        "revision" : "52ab8860c3b2264cc44757cb8fc24689f5e1b564",
+        "version" : "5.11.3"
+      }
+    },
+    {
       "identity" : "sdwebimage",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SDWebImage/SDWebImage.git",
       "state" : {
-        "revision" : "86e9185ef41c4238a93ad8efe61ddeb701e80bbf",
-        "version" : "5.19.5"
+        "revision" : "5191b801aca999b704eb93f118f91468b4570571",
+        "version" : "5.19.6"
       }
     },
     {
@@ -338,17 +347,17 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "f14ae4c31e652b293bd5d892b128afc0fa6102c5",
-        "version" : "4.1.1"
+        "revision" : "a05c01a44251254749801ebeb0fc4f9623c44f10",
+        "version" : "4.1.4"
       }
     },
     {
       "identity" : "walletconnectswiftv2",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/denis15yo/WalletConnectSwiftV2.git",
+      "location" : "https://github.com/WalletConnect/WalletConnectSwiftV2.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "1eacd732e321c9511859d7e73303d61d82af4d46"
+        "revision" : "6b48ddc4bcde620310c5ee55388c022a19da5a25",
+        "version" : "1.19.5"
       }
     },
     {

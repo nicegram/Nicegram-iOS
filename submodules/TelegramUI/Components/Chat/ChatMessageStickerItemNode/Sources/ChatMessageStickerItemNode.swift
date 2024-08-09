@@ -1406,7 +1406,7 @@ public class ChatMessageStickerItemNode: ChatMessageItemView {
                         }
                     }
                 } else if case .tap = gesture {
-                    self.item?.controllerInteraction.clickThroughMessage()
+                    self.item?.controllerInteraction.clickThroughMessage(self.view, location)
                 }
             }
         default:

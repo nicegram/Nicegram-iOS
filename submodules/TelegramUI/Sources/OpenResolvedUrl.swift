@@ -34,6 +34,7 @@ import StoryContainerScreen
 import WallpaperGalleryScreen
 import TelegramStringFormatting
 import TextFormat
+import BrowserUI
 
 private func defaultNavigationForPeerId(_ peerId: PeerId?, navigation: ChatControllerInteractionNavigateToPeer) -> ChatControllerInteractionNavigateToPeer {
     if case .default = navigation {
@@ -207,7 +208,7 @@ func openResolvedUrlImpl(
             dismissInput()
             navigationController?.pushViewController(controller)
         case let .channelMessage(peer, messageId, timecode):
-            openPeer(EnginePeer(peer), .chat(textInputState: nil, subject: .message(id: .id(messageId), highlight: ChatControllerSubject.MessageHighlight(quote: nil), timecode: timecode), peekData: nil))
+            openPeer(EnginePeer(peer), .chat(textInputState: nil, subject: .message(id: .id(messageId), highlight: ChatControllerSubject.MessageHighlight(quote: nil), timecode: timecode, setupReply: false), peekData: nil))
         case let .replyThreadMessage(replyThreadMessage, messageId):
             if let navigationController = navigationController, let effectiveMessageId = replyThreadMessage.effectiveMessageId {
                 let _ = ChatControllerImpl.openMessageReplies(context: context, navigationController: navigationController, present: { c, a in
@@ -247,8 +248,10 @@ func openResolvedUrlImpl(
                 }
             })
                 present(controller, nil)
-        case let .instantView(webpage, anchor):
-            navigationController?.pushViewController(InstantPageController(context: context, webPage: webpage, sourceLocation: InstantPageSourceLocation(userLocation: .other, peerType: .channel), anchor: anchor))
+        case let .instantView(webPage, anchor):
+            let sourceLocation = InstantPageSourceLocation(userLocation: .other, peerType: .channel)
+            let browserController = context.sharedContext.makeInstantPageController(context: context, webPage: webPage, anchor: anchor, sourceLocation: sourceLocation)
+            navigationController?.pushViewController(browserController)
         case let .join(link):
             dismissInput()
         
@@ -652,6 +655,14 @@ func openResolvedUrlImpl(
             let controller = context.sharedContext.makePremiumGiftController(context: context, source: .deeplink(reference), completion: nil)
             if let navigationController = navigationController {
                 navigationController.pushViewController(controller, animated: true)
+            }
+        case let .starsTopup(amount):
+            dismissInput()
+            if let starsContext = context.starsContext {
+                let controller = context.sharedContext.makeStarsPurchaseScreen(context: context, starsContext: starsContext, options: [], purpose: .generic(requiredStars: amount), completion: { _ in })
+                if let navigationController = navigationController {
+                    navigationController.pushViewController(controller, animated: true)
+                }
             }
         case let .joinVoiceChat(peerId, invite):
             let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
@@ -1076,7 +1087,7 @@ func openResolvedUrlImpl(
                                     guard let peer else {
                                         return
                                     }
-                                    openPeer(peer, .chat(textInputState: nil, subject: .message(id: .id(messageId), highlight: ChatControllerSubject.MessageHighlight(quote: nil), timecode: nil), peekData: nil))
+                                    openPeer(peer, .chat(textInputState: nil, subject: .message(id: .id(messageId), highlight: ChatControllerSubject.MessageHighlight(quote: nil), timecode: nil, setupReply: false), peekData: nil))
                                     if case let .chat(peerId, _, _) = urlContext, peerId == messageId.peerId {
                                         dismissImpl?()
                                     }

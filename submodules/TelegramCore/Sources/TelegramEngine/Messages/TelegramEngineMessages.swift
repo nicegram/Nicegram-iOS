@@ -76,6 +76,10 @@ public extension TelegramEngine {
             return _internal_searchMessages(account: self.account, location: location, query: query, state: state, centerId: centerId, limit: limit)
         }
         
+        public func getSearchMessageCount(location: SearchMessagesLocation, query: String) -> Signal<Int?, NoError> {
+            return _internal_getSearchMessageCount(account: self.account, location: location, query: query)
+        }
+        
         public func searchHashtagPosts(hashtag: String, state: SearchMessagesState?, limit: Int32 = 100) -> Signal<(SearchMessagesResult, SearchMessagesState), NoError> {
             return _internal_searchHashtagPosts(account: self.account, hashtag: hashtag, state: state, limit: limit)
         }
@@ -582,6 +586,10 @@ public extension TelegramEngine {
         
         public func requestSimpleWebView(botId: PeerId, url: String?, source: RequestSimpleWebViewSource, themeParams: [String: Any]?) -> Signal<RequestWebViewResult, RequestWebViewError> {
             return _internal_requestSimpleWebView(postbox: self.account.postbox, network: self.account.network, botId: botId, url: url, source: source, themeParams: themeParams)
+        }
+        
+        public func requestMainWebView(botId: PeerId, source: RequestSimpleWebViewSource, themeParams: [String: Any]?) -> Signal<RequestWebViewResult, RequestWebViewError> {
+            return _internal_requestMainWebView(postbox: self.account.postbox, network: self.account.network, botId: botId, source: source, themeParams: themeParams)
         }
         
         public func requestAppWebView(peerId: PeerId, appReference: BotAppReference, payload: String?, themeParams: [String: Any]?, compact: Bool, allowWrite: Bool) -> Signal<RequestWebViewResult, RequestWebViewError> {
@@ -1377,6 +1385,14 @@ public extension TelegramEngine {
         
         public func getStory(peerId: EnginePeer.Id, id: Int32) -> Signal<EngineStoryItem?, NoError> {
             return _internal_getStoryById(accountPeerId: self.account.peerId, postbox: self.account.postbox, network: self.account.network, peerId: peerId, id: id)
+        }
+        
+        public func deleteBotPreviews(peerId: EnginePeer.Id, language: String?, media: [Media]) -> Signal<Never, NoError> {
+            return _internal_deleteBotPreviews(account: self.account, peerId: peerId, language: language, media: media)
+        }
+        
+        public func deleteBotPreviewsLanguage(peerId: EnginePeer.Id, language: String, media: [Media]) -> Signal<Never, NoError> {
+            return _internal_deleteBotPreviewsLanguage(account: self.account, peerId: peerId, language: language, media: media)
         }
         
         public func synchronouslyIsMessageDeletedInteractively(ids: [EngineMessage.Id]) -> [EngineMessage.Id] {

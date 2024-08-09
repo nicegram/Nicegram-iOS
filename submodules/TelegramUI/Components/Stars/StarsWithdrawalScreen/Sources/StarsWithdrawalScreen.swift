@@ -66,6 +66,8 @@ private final class SheetContent: CombinedComponent {
             let component = context.component
             let state = context.state
             
+            let controller = environment.controller
+            
             let theme = environment.theme.withModalBlocksBackground()
             let strings = environment.strings
             let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
@@ -229,7 +231,9 @@ private final class SheetContent: CombinedComponent {
                         }
                     },
                     tapAction: { attributes, _ in
-                        component.context.sharedContext.openExternalUrl(context: component.context, urlContext: .generic, url: strings.Stars_PaidContent_AmountInfo_URL, forceExternal: true, presentationData: presentationData, navigationController: nil, dismissInput: {})
+                        if let controller = controller() as? StarsWithdrawScreen, let navigationController = controller.navigationController as? NavigationController {
+                            component.context.sharedContext.openExternalUrl(context: component.context, urlContext: .generic, url: strings.Stars_PaidContent_AmountInfo_URL, forceExternal: false, presentationData: presentationData, navigationController: navigationController, dismissInput: {})
+                        }
                     }
                 ))
             case let .reaction(starsToTop):
@@ -297,17 +301,16 @@ private final class SheetContent: CombinedComponent {
             }
             
             if state.cachedStarImage == nil || state.cachedStarImage?.1 !== theme {
-                state.cachedStarImage = (generateTintedImage(image: UIImage(bundleImageName: "Item List/PremiumIcon"), color: .white)!, theme)
+                state.cachedStarImage = (generateTintedImage(image: UIImage(bundleImageName: "Item List/PremiumIcon"), color: theme.list.itemCheckColors.foregroundColor)!, theme)
             }
             
-            let buttonAttributedString = NSMutableAttributedString(string: buttonString, font: Font.semibold(17.0), textColor: .white, paragraphAlignment: .center)
+            let buttonAttributedString = NSMutableAttributedString(string: buttonString, font: Font.semibold(17.0), textColor: theme.list.itemCheckColors.foregroundColor, paragraphAlignment: .center)
             if let range = buttonAttributedString.string.range(of: "#"), let starImage = state.cachedStarImage?.0 {
                 buttonAttributedString.addAttribute(.attachment, value: starImage, range: NSRange(range, in: buttonAttributedString.string))
                 buttonAttributedString.addAttribute(.foregroundColor, value: UIColor(rgb: 0xffffff), range: NSRange(range, in: buttonAttributedString.string))
                 buttonAttributedString.addAttribute(.baselineOffset, value: 1.0, range: NSRange(range, in: buttonAttributedString.string))
             }
             
-            let controller = environment.controller
             let button = button.update(
                 component: ButtonComponent(
                     background: ButtonComponent.Background(

@@ -11,6 +11,8 @@ import PhotoResources
 import AvatarNode
 import AccountContext
 import InvisibleInkDustNode
+import AnimatedStickerNode
+import TelegramAnimatedStickerNode
 
 final class StarsParticlesView: UIView {
     private struct Particle {
@@ -248,9 +250,10 @@ public final class StarsImageComponent: Component {
     public enum Subject: Equatable {
         case none
         case photo(TelegramMediaWebFile)
-        case media([Media])
+        case media([AnyMediaReference])
         case extendedMedia([TelegramExtendedMedia])
         case transactionPeer(StarsContext.State.Transaction.Peer)
+        case gift(Int64)
         
         public static func == (lhs: StarsImageComponent.Subject, rhs: StarsImageComponent.Subject) -> Bool {
             switch lhs {
@@ -267,7 +270,7 @@ public final class StarsImageComponent: Component {
                     return false
                 }
             case let .media(lhsMedia):
-                if case let .media(rhsMedia) = rhs, areMediaArraysEqual(lhsMedia, rhsMedia) {
+                if case let .media(rhsMedia) = rhs, areMediaArraysEqual(lhsMedia.map { $0.media }, rhsMedia.map { $0.media }) {
                     return true
                 } else {
                     return false
@@ -280,6 +283,12 @@ public final class StarsImageComponent: Component {
                 }
             case let .transactionPeer(lhsPeer):
                 if case let .transactionPeer(rhsPeer) = rhs, lhsPeer == rhsPeer {
+                    return true
+                } else {
+                    return false
+                }
+            case let .gift(lhsCount):
+                if case let .gift(rhsCount) = rhs, lhsCount == rhsCount {
                     return true
                 } else {
                     return false
@@ -347,6 +356,8 @@ public final class StarsImageComponent: Component {
         private var dustNode: MediaDustNode?
         private var button: UIControl?
         
+        private var animationNode: AnimatedStickerNode?
+        
         private var lockView: UIImageView?
         private var countView = ComponentView<Empty>()
         
@@ -388,7 +399,7 @@ public final class StarsImageComponent: Component {
             guard let component = self.component, let containerNode = self.containerNode else {
                 return nil
             }
-            if case let .media(media) = component.subject, media.first?.id == transitionMedia.id {
+            if case let .media(media) = component.subject, media.first?.media.id == transitionMedia.id {
                 return (containerNode, containerNode.bounds, { [weak containerNode] in
                     return (containerNode?.view.snapshotContentTree(unhide: true), nil)
                 })
@@ -477,25 +488,25 @@ public final class StarsImageComponent: Component {
                     containerNode.view.addSubview(imageNode.view)
                     self.imageNode = imageNode
                 }
-                if let image = media.first as? TelegramMediaImage {
-                    if let imageDimensions = largestImageRepresentation(image.representations)?.dimensions {
+                if let imageReference = media.first?.concrete(TelegramMediaImage.self) {
+                    if let imageDimensions = largestImageRepresentation(imageReference.media.representations)?.dimensions {
                         dimensions = imageDimensions.cgSize.aspectFilled(imageSize)
                     }
                     if isFirstTime {
-                        imageNode.setSignal(chatMessagePhotoThumbnail(account: component.context.account, userLocation: .other, photoReference: .standalone(media: image), onlyFullSize: false, blurred: false))
+                        imageNode.setSignal(chatMessagePhotoThumbnail(account: component.context.account, userLocation: .other, photoReference: imageReference, onlyFullSize: false, blurred: false))
                     }
-                } else if let file = media.first as? TelegramMediaFile {
-                    if let videoDimensions = file.dimensions {
+                } else if let fileReference = media.first?.concrete(TelegramMediaFile.self) {
+                    if let videoDimensions = fileReference.media.dimensions {
                         dimensions = videoDimensions.cgSize.aspectFilled(imageSize)
                     }
                     if isFirstTime {
-                        imageNode.setSignal(mediaGridMessageVideo(postbox: component.context.account.postbox, userLocation: .other, videoReference: .standalone(media: file), useLargeThumbnail: true, autoFetchFullSizeThumbnail: true))
+                        imageNode.setSignal(mediaGridMessageVideo(postbox: component.context.account.postbox, userLocation: .other, videoReference: fileReference, useLargeThumbnail: true, autoFetchFullSizeThumbnail: true))
                     }
                 }
                 imageNode.frame = imageFrame
                 imageNode.asyncLayout()(TransformImageArguments(corners: ImageCorners(radius: 16.0), imageSize: dimensions, boundingSize: imageSize, intrinsicInsets: UIEdgeInsets(), emptyColor: component.theme.list.mediaPlaceholderColor))()
                 
-                if let firstMedia = media.first, self.hiddenMedia.contains(where: { $0.id == firstMedia.id }) {
+                if let firstMedia = media.first?.media, self.hiddenMedia.contains(where: { $0.id == firstMedia.id }) {
                     containerNode.isHidden = true
                 } else {
                     containerNode.isHidden = false
@@ -520,19 +531,19 @@ public final class StarsImageComponent: Component {
                         self.imageFrameNode = imageFrameNode
                     }
                     
-                    if let image = media[1] as? TelegramMediaImage {
-                        if let imageDimensions = largestImageRepresentation(image.representations)?.dimensions {
+                    if let imageReference = media[1].concrete(TelegramMediaImage.self) {
+                        if let imageDimensions = largestImageRepresentation(imageReference.media.representations)?.dimensions {
                             secondDimensions = imageDimensions.cgSize.aspectFilled(imageSize)
                         }
                         if isFirstTime {
-                            secondImageNode.setSignal(chatMessagePhotoThumbnail(account: component.context.account, userLocation: .other, photoReference: .standalone(media: image), onlyFullSize: false, blurred: false))
+                            secondImageNode.setSignal(chatMessagePhotoThumbnail(account: component.context.account, userLocation: .other, photoReference: imageReference, onlyFullSize: false, blurred: false))
                         }
-                    } else if let file = media[1] as? TelegramMediaFile {
-                        if let videoDimensions = file.dimensions {
+                    } else if let fileReference = media[1].concrete(TelegramMediaFile.self) {
+                        if let videoDimensions = fileReference.media.dimensions {
                             secondDimensions = videoDimensions.cgSize.aspectFilled(imageSize)
                         }
                         if isFirstTime {
-                            secondImageNode.setSignal(mediaGridMessageVideo(postbox: component.context.account.postbox, userLocation: .other, videoReference: .standalone(media: file), useLargeThumbnail: true, autoFetchFullSizeThumbnail: true))
+                            secondImageNode.setSignal(mediaGridMessageVideo(postbox: component.context.account.postbox, userLocation: .other, videoReference: fileReference, useLargeThumbnail: true, autoFetchFullSizeThumbnail: true))
                         }
                     }
                     
@@ -776,6 +787,31 @@ public final class StarsImageComponent: Component {
                     iconBackgroundView.frame = imageFrame
                     iconView.frame = imageFrame.insetBy(dx: iconInset, dy: iconInset).offsetBy(dx: 0.0, dy: iconOffset)
                 }
+            case let .gift(count):
+                let animationNode: AnimatedStickerNode
+                if let current = self.animationNode {
+                    animationNode = current
+                } else {
+                    let stickerName: String
+                    if count <= 1000 {
+                        stickerName = "Gift3"
+                    } else if count < 2500 {
+                        stickerName = "Gift6"
+                    } else {
+                        stickerName = "Gift12"
+                    }
+                    animationNode = DefaultAnimatedStickerNodeImpl()
+                    animationNode.autoplay = true
+                    animationNode.setup(source: AnimatedStickerNodeLocalFileSource(name: stickerName), width: 384, height: 384, playbackMode: .still(.end), mode: .direct(cachePathPrefix: nil))
+                    animationNode.visibility = true
+                    containerNode.view.addSubview(animationNode.view)
+                    self.animationNode = animationNode
+                    
+                    animationNode.playOnce()
+                }
+                let animationFrame = imageFrame.insetBy(dx: -imageFrame.width * 0.19, dy: -imageFrame.height * 0.19).offsetBy(dx: 0.0, dy: -14.0)
+                animationNode.frame = animationFrame
+                animationNode.updateLayout(size: animationFrame.size)
             }
             
             if let _ = component.action {

@@ -117,38 +117,6 @@ lane :build do |options|
   delete_keychain_if_exists(name: KEYCHAIN_NAME)
 end
 
-lane :update_nice_localization do |options|
-  translations_path = options[:translations]
-  project_path = options[:project]
-
-  FileUtils.rm_rf(Dir.glob("#{project_path}/Telegram/Telegram-iOS/*/NiceLocalizable.strings"))
-  FileUtils.rm_rf(Dir.glob("#{project_path}/Telegram/Telegram-iOS/*/NicegramLocalizable.strings"))
-  FileUtils.cp_r("#{translations_path}/master/Telegram-iOS", "#{project_path}/Telegram")
-  FileUtils.remove_dir(translations_path)
-end
-
-lane :upload_nice_localization do |options|
-  destination_path = options[:dest]
-  project_path = options[:project]
-
-  folder_path = "#{destination_path}/NiceLocalizable"
-  FileUtils.rm_rf(folder_path)
-  FileUtils.mkdir(folder_path)
-
-  index = 1
-  Dir.glob("#{project_path}/Telegram/Telegram-iOS/*/NiceLocalizable.strings") do |filename|
-    FileUtils.cp(filename, "#{folder_path}/#{index}.strings")
-    index += 1
-  end
-
-  zip(
-    path: folder_path,
-    output_path: "#{destination_path}/NiceLocalizable.zip"
-  )
-
-  FileUtils.rm_rf(folder_path)
-end
-
 lane :resolve_telegram_configuration do |options|
   is_appstore_build = options[:is_appstore_build] || true
 
@@ -180,8 +148,6 @@ lane :build_bazel do |options|
   configuration_path = options[:configuration_path]
   git_codesigning_repository = options[:git_codesigning_repository]
   git_codesigning_type = options[:git_codesigning_type]
-
-  update_spm_pkgs()
 
   artifacts_path = "#{BUILD_WORKING_DIR}/artifacts"
   FileUtils.rm_rf(artifacts_path)
@@ -234,8 +200,6 @@ lane :generate_project do |options|
 
   configuration_path = resolve_telegram_configuration()
 
-  update_spm_pkgs()
-
   sh "cd #{SOURCE_PATH} && python3 build-system/Make/Make.py \
   --cacheDir=#{BAZEL_LOCAL_CACHE} \
   generateProject \
@@ -280,11 +244,6 @@ lane :update_remote_config_defaults do |options|
   "
 
   File.delete(credentials_file_path)
-end
-
-lane :update_spm_pkgs do |options|
-  bazel_path = sh("cd #{SOURCE_PATH} && echo $(python3 #{SOURCE_PATH}/build-system/Make/LocateBazel.py)")
-  sh('#{bazel_path} bazel run //:swift_update_pkgs')
 end
 
 lane :nicegram_match do |options|

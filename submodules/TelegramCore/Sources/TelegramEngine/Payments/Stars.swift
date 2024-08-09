@@ -4,24 +4,27 @@ import MtProtoKit
 import SwiftSignalKit
 import TelegramApi
 
-public struct StarsTopUpOption: Codable, Equatable {
+public struct StarsTopUpOption: Equatable, Codable {
     enum CodingKeys: String, CodingKey {
         case count
         case storeProductId
         case currency
         case amount
+        case isExtended
     }
     
     public let count: Int64
     public let storeProductId: String?
     public let currency: String
     public let amount: Int64
+    public let isExtended: Bool
     
-    public init(count: Int64, storeProductId: String?, currency: String, amount: Int64) {
+    public init(count: Int64, storeProductId: String?, currency: String, amount: Int64, isExtended: Bool) {
         self.count = count
         self.storeProductId = storeProductId
         self.currency = currency
         self.amount = amount
+        self.isExtended = isExtended
     }
     
     public init(from decoder: Decoder) throws {
@@ -30,7 +33,7 @@ public struct StarsTopUpOption: Codable, Equatable {
         self.storeProductId = try container.decodeIfPresent(String.self, forKey: .storeProductId)
         self.currency = try container.decode(String.self, forKey: .currency)
         self.amount = try container.decode(Int64.self, forKey: .amount)
-
+        self.isExtended = try container.decodeIfPresent(Bool.self, forKey: .isExtended) ?? false
     }
     
     public func encode(to encoder: Encoder) throws {
@@ -39,14 +42,15 @@ public struct StarsTopUpOption: Codable, Equatable {
         try container.encodeIfPresent(self.storeProductId, forKey: .storeProductId)
         try container.encode(self.currency, forKey: .currency)
         try container.encode(self.amount, forKey: .amount)
+        try container.encode(self.isExtended, forKey: .isExtended)
     }
 }
 
 extension StarsTopUpOption {
     init(apiStarsTopupOption: Api.StarsTopupOption) {
         switch apiStarsTopupOption {
-        case let .starsTopupOption(_, stars, storeProduct, currency, amount):
-            self.init(count: stars, storeProductId: storeProduct, currency: currency, amount: amount)
+        case let .starsTopupOption(flags, stars, storeProduct, currency, amount):
+            self.init(count: stars, storeProductId: storeProduct, currency: currency, amount: amount, isExtended: (flags & (1 << 1)) != 0)
         }
     }
 }
@@ -62,6 +66,81 @@ func _internal_starsTopUpOptions(account: Account) -> Signal<[StarsTopUpOption],
             return .single(results.map { StarsTopUpOption(apiStarsTopupOption: $0) })
         } else {
             return .single([])
+        }
+    }
+}
+
+public struct StarsGiftOption: Equatable, Codable {
+    enum CodingKeys: String, CodingKey {
+        case count
+        case currency
+        case amount
+        case storeProductId
+        case isExtended
+    }
+    
+    public let count: Int64
+    public let currency: String
+    public let amount: Int64
+    public let storeProductId: String?
+    public let isExtended: Bool
+    
+    public init(count: Int64, storeProductId: String?, currency: String, amount: Int64, isExtended: Bool) {
+        self.count = count
+        self.currency = currency
+        self.amount = amount
+        self.storeProductId = storeProductId
+        self.isExtended = isExtended
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.count = try container.decode(Int64.self, forKey: .count)
+        self.storeProductId = try container.decodeIfPresent(String.self, forKey: .storeProductId)
+        self.currency = try container.decode(String.self, forKey: .currency)
+        self.amount = try container.decode(Int64.self, forKey: .amount)
+        self.isExtended = try container.decodeIfPresent(Bool.self, forKey: .isExtended) ?? false
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(self.count, forKey: .count)
+        try container.encodeIfPresent(self.storeProductId, forKey: .storeProductId)
+        try container.encode(self.currency, forKey: .currency)
+        try container.encode(self.amount, forKey: .amount)
+        try container.encode(self.isExtended, forKey: .isExtended)
+    }
+}
+
+extension StarsGiftOption {
+    init(apiStarsGiftOption: Api.StarsGiftOption) {
+        switch apiStarsGiftOption {
+        case let .starsGiftOption(flags, stars, storeProduct, currency, amount):
+            self.init(count: stars, storeProductId: storeProduct, currency: currency, amount: amount, isExtended: (flags & (1 << 1)) != 0)
+        }
+    }
+}
+
+func _internal_starsGiftOptions(account: Account, peerId: EnginePeer.Id?) -> Signal<[StarsGiftOption], NoError> {
+    return account.postbox.transaction { transaction -> Api.InputUser? in
+        return peerId.flatMap { transaction.getPeer($0).flatMap(apiInputUser) }
+    }
+    |> mapToSignal { inputUser in
+        var flags: Int32 = 0
+        if let _ = inputUser {
+            flags |= (1 << 0)
+        }
+        return account.network.request(Api.functions.payments.getStarsGiftOptions(flags: flags, userId: inputUser))
+        |> map(Optional.init)
+        |> `catch` { _ -> Signal<[Api.StarsGiftOption]?, NoError> in
+            return .single(nil)
+        }
+        |> mapToSignal { results -> Signal<[StarsGiftOption], NoError> in
+            if let results = results {
+                return .single(results.map { StarsGiftOption(apiStarsGiftOption: $0) })
+            } else {
+                return .single([])
+            }
         }
     }
 }
@@ -278,6 +357,9 @@ private extension StarsContext.State.Transaction {
             if (apiFlags & (1 << 6)) != 0 {
                 flags.insert(.isFailed)
             }
+            if (apiFlags & (1 << 10)) != 0 {
+                flags.insert(.isGift)
+            }
             
             let media = extendedMedia.flatMap({ $0.compactMap { textMediaAndExpirationTimerFromApiMedia($0, PeerId(0)).media } }) ?? []
             self.init(flags: flags, id: id, count: stars, date: date, peer: parsedPeer, title: title, description: description, photo: photo.flatMap(TelegramMediaWebFile.init), transactionDate: transactionDate, transactionUrl: transactionUrl, paidMessageId: paidMessageId, media: media)
@@ -299,6 +381,7 @@ public final class StarsContext {
                 public static let isLocal = Flags(rawValue: 1 << 1)
                 public static let isPending = Flags(rawValue: 1 << 2)
                 public static let isFailed = Flags(rawValue: 1 << 3)
+                public static let isGift = Flags(rawValue: 1 << 4)
             }
             
             public enum Peer: Equatable {
@@ -734,9 +817,7 @@ func _internal_sendStarsPaymentForm(account: Account, formId: Int64, source: Bot
                                                     receiptMessageId = id
                                                 }
                                             }
-                                        case .giftCode:
-                                            receiptMessageId = nil
-                                        case .stars:
+                                        case .giftCode, .stars, .starsGift:
                                             receiptMessageId = nil
                                         }
                                     }
@@ -760,6 +841,62 @@ func _internal_sendStarsPaymentForm(account: Account, formId: Int64, source: Bot
                 return .fail(.alreadyPaid)
             }
             return .fail(.generic)
+        }
+    }
+}
+
+public struct StarsTransactionReference: PostboxCoding, Hashable, Equatable {
+    public let peerId: EnginePeer.Id
+    public let id: String
+    public let isRefund: Bool
+    
+    public init(peerId: EnginePeer.Id,  id: String, isRefund: Bool) {
+        self.peerId = peerId
+        self.id = id
+        self.isRefund = isRefund
+    }
+    
+    public init(decoder: PostboxDecoder) {
+        self.peerId = EnginePeer.Id(decoder.decodeInt64ForKey("peerId", orElse: 0))
+        self.id = decoder.decodeStringForKey("id", orElse: "")
+        self.isRefund = decoder.decodeBoolForKey("refund", orElse: false)
+    }
+    
+    public func encode(_ encoder: PostboxEncoder) {
+        encoder.encodeInt64(self.peerId.toInt64(), forKey: "peerId")
+        encoder.encodeString(self.id, forKey: "id")
+        encoder.encodeBool(self.isRefund, forKey: "refund")
+    }
+}
+
+func _internal_getStarsTransaction(accountPeerId: PeerId, postbox: Postbox, network: Network, transactionReference: StarsTransactionReference) -> Signal<StarsContext.State.Transaction?, NoError> {
+    return postbox.transaction { transaction -> Api.InputPeer? in
+        return transaction.getPeer(transactionReference.peerId).flatMap(apiInputPeer)
+    }
+    |> mapToSignal { inputPeer -> Signal<StarsContext.State.Transaction?, NoError> in
+        guard let inputPeer else {
+            return .single(nil)
+        }
+        return network.request(
+            Api.functions.payments.getStarsTransactionsByID(
+                peer: inputPeer,
+                id: [.inputStarsTransaction(flags: transactionReference.isRefund ? (1 << 0) : 0, id: transactionReference.id)]
+            )
+        )
+        |> map(Optional.init)
+        |> `catch` { _ -> Signal<Api.payments.StarsStatus?, NoError> in
+            return .single(nil)
+        }
+        |> mapToSignal { result -> Signal<StarsContext.State.Transaction?, NoError> in
+            return postbox.transaction { transaction -> StarsContext.State.Transaction? in
+                guard let result, case let .starsStatus(_, _, transactions, _, chats, users) = result, let matchingTransaction = transactions.first else {
+                    return nil
+                }
+                let peers = AccumulatedPeers(chats: chats, users: users)
+                updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: peers)
+                
+                return StarsContext.State.Transaction(apiTransaction: matchingTransaction, peerId: transactionReference.peerId, transaction: transaction)
+            }
         }
     }
 }
