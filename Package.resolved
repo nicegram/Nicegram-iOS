@@ -123,7 +123,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "80900ff4ea20225cea77bd53d6990f9cb4ae8591"
+        "revision" : "e47489635ad1e96913dd1da01d9b1164494c722d"
       }
     },
     {
@@ -311,8 +311,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/ton-api-swift",
       "state" : {
-        "revision" : "c1d5a7912480d1794097f4fb8241c3176f394384",
-        "version" : "0.1.6"
+        "revision" : "d57d457cbaea081467ae65648e92fc6094ea342b",
+        "version" : "0.1.7"
       }
     },
     {
@@ -356,8 +356,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/WalletConnect/WalletConnectSwiftV2.git",
       "state" : {
-        "revision" : "6b48ddc4bcde620310c5ee55388c022a19da5a25",
-        "version" : "1.19.5"
+        "revision" : "1427dcb1514e5d6f167ee7a41478ea1d6a6d8cc5",
+        "version" : "1.19.6"
       }
     },
     {
