@@ -330,7 +330,7 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
         // MARK: Nicegram Wallet
         nicegramWalletJsInjector.inject(
             in: self.webView,
-            browserId: uuid.uuidString,
+            injectTonJs: false,
             currentChain: { nil }
         )
         //
