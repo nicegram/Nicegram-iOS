@@ -1,3 +1,6 @@
+// MARK: Nicegram Wallet
+import NicegramWallet
+//
 import Foundation
 import UIKit
 import Display
@@ -203,6 +206,10 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
     
     private var tempFile: TempBoxFile?
     
+    // MARK: Nicegram Wallet
+    private let nicegramWalletJsInjector = WalletJsInjector()
+    //
+    
     init(context: AccountContext, presentationData: PresentationData, url: String, preferredConfiguration: WKWebViewConfiguration? = nil) {
         self.context = context
         self.uuid = UUID()
@@ -319,6 +326,14 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
         handleScriptMessageImpl = { [weak self] message in
             self?.handleScriptMessage(message)
         }
+        
+        // MARK: Nicegram Wallet
+        nicegramWalletJsInjector.inject(
+            in: self.webView,
+            injectTonJs: false,
+            currentChain: { nil }
+        )
+        //
     }
     
     required init?(coder: NSCoder) {
@@ -712,6 +727,13 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
 //            })
 //        } else {
             if let url = navigationAction.request.url?.absoluteString {
+                // MARK: Nicegram Wallet
+                if nicegramWalletJsInjector.handle(url: url) {
+                    decisionHandler(.cancel, preferences)
+                    return
+                }
+                //
+                
                 if (navigationAction.targetFrame == nil || navigationAction.targetFrame?.isMainFrame == true) && (isTelegramMeLink(url) || isTelegraPhLink(url)) && !url.contains("/auth/push?") && !self._state.url.contains("/auth/push?") {
                     decisionHandler(.cancel, preferences)
                     self.minimize()
@@ -788,6 +810,12 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
         if navigationAction.targetFrame == nil {
             if let url = navigationAction.request.url?.absoluteString {
+                // MARK: Nicegram Wallet
+                if nicegramWalletJsInjector.handle(url: url) {
+                    return nil
+                }
+                //
+                
                 if isTelegramMeLink(url) || isTelegraPhLink(url) {
                     self.minimize()
                     self.openAppUrl(url)

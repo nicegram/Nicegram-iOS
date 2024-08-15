@@ -113,8 +113,7 @@ class NGDeeplinkHandler {
             }
             return true
         default:
-            showUpdateAppAlert()
-            return true
+            return false
         }
     }
 }
@@ -227,34 +226,6 @@ private extension NGDeeplinkHandler {
             )
         }
         return true
-    }
-    
-    func showUpdateAppAlert() {
-        let alert = UIAlertController(
-            title: "Update the app",
-            message: "Please update the app to use the newest features!",
-            preferredStyle: .alert
-        )
-        
-        alert.addAction(
-            UIAlertAction(
-                title: "Close",
-                style: .cancel
-            )
-        )
-        
-        alert.addAction(
-            UIAlertAction(
-                title: "Update",
-                style: .default,
-                handler: { _ in
-                    let urlOpener = CoreContainer.shared.urlOpener()
-                    urlOpener.open(.appStoreAppUrl)
-                }
-            )
-        )
-        
-        UIApplication.topViewController?.present(alert, animated: true)
     }
 }
 
