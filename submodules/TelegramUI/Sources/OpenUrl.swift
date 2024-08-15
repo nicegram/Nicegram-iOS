@@ -1,4 +1,5 @@
 // MARK: Nicegram Deeplink
+import NGCore
 import NicegramWallet
 //
 import Foundation
@@ -1073,6 +1074,9 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
             
             if let convertedUrl = convertedUrl {
                 handleInternalUrl(convertedUrl)
+            // MARK: Nicegram Deeplink, added 'else' block
+            } else {
+                showUpdateAppAlert()
             }
             return
         }
@@ -1180,3 +1184,33 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
         continueHandling()
     }
 }
+
+// MARK: Nicegram Deeplink
+private func showUpdateAppAlert() {
+    let alert = UIAlertController(
+        title: "Update the app",
+        message: "Please update the app to use the newest features!",
+        preferredStyle: .alert
+    )
+    
+    alert.addAction(
+        UIAlertAction(
+            title: "Close",
+            style: .cancel
+        )
+    )
+    
+    alert.addAction(
+        UIAlertAction(
+            title: "Update",
+            style: .default,
+            handler: { _ in
+                let urlOpener = CoreContainer.shared.urlOpener()
+                urlOpener.open(.appStoreAppUrl)
+            }
+        )
+    )
+    
+    UIApplication.topViewController?.present(alert, animated: true)
+}
+//

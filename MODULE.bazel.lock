@@ -2956,8 +2956,8 @@
       "general": {
         "bzlTransitiveDigest": "YjE3dFjYQ4sj5gn2Iz1cWVK14/ZJ5cmnAUUGjDbACAA=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "6fa0a5ab5dee4c2acbe04fd63786a2cf6202d00f845eaf6d1e08e18de54371e6",
-          "@@//Package.swift": "dcdee2ad7bd423078b3d64ca8f64819ec28115d20bff39b44c32996b0c9bbd9c"
+          "@@//Package.resolved": "06bfbab719e4a9a5c518560ccd38f94fac37034aa6d6b4ca345c59df1237d28a",
+          "@@//Package.swift": "5ec7a4bc98efbe05c2f49eace2c89b1ef5b01d545d1474b5a2e2a2ad98c32a2e"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -3003,7 +3003,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_ton_api_swift",
-              "commit": "c1d5a7912480d1794097f4fb8241c3176f394384",
+              "commit": "d57d457cbaea081467ae65648e92fc6094ea342b",
               "remote": "https://github.com/tonkeeper/ton-api-swift",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3183,7 +3183,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_walletconnectswiftv2",
-              "commit": "6b48ddc4bcde620310c5ee55388c022a19da5a25",
+              "commit": "1427dcb1514e5d6f167ee7a41478ea1d6a6d8cc5",
               "remote": "https://github.com/WalletConnect/WalletConnectSwiftV2.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3413,11 +3413,21 @@
             }
           },
           "swiftpkg_nicegram_assistant_ios": {
-            "bzlFile": "@@rules_swift_package_manager~//swiftpkg/internal:local_swift_package.bzl",
-            "ruleClassName": "local_swift_package",
+            "bzlFile": "@@rules_swift_package_manager~//swiftpkg/internal:swift_package.bzl",
+            "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "path": "/Users/denisshilovich/work/nicegram-assistant-ios"
+              "commit": "1b82457f99a129e8c97d8314b405e1e0e411a8a6",
+              "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
+              "init_submodules": false,
+              "recursive_init_submodules": true,
+              "patch_args": [
+                "-p0"
+              ],
+              "patch_cmds": [],
+              "patch_cmds_win": [],
+              "patch_tool": "",
+              "patches": []
             }
           },
           "swiftpkg_fetch_node_details_swift": {
@@ -3655,11 +3665,21 @@
             }
           },
           "swiftpkg_nicegram_wallet_ios": {
-            "bzlFile": "@@rules_swift_package_manager~//swiftpkg/internal:local_swift_package.bzl",
-            "ruleClassName": "local_swift_package",
+            "bzlFile": "@@rules_swift_package_manager~//swiftpkg/internal:swift_package.bzl",
+            "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_wallet_ios",
-              "path": "/Users/denisshilovich/work/nicegram-wallet-ios"
+              "commit": "794177222256849249416a30fa8e3dc7560507c8",
+              "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
+              "init_submodules": false,
+              "recursive_init_submodules": true,
+              "patch_args": [
+                "-p0"
+              ],
+              "patch_cmds": [],
+              "patch_cmds_win": [],
+              "patch_tool": "",
+              "patches": []
             }
           },
           "swiftpkg_rive_ios": {
