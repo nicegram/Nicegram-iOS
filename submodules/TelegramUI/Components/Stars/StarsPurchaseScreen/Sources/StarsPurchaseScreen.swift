@@ -208,9 +208,24 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
             
             let textString: String
             switch context.component.purpose {
-            case let .generic(requiredStars):
-                let _ = requiredStars
+            case .generic:
                 textString = strings.Stars_Purchase_GetStarsInfo
+            case let .topUp(_, purpose):
+                var text = strings.Stars_Purchase_GenericPurchasePurpose
+                if let purpose, !purpose.isEmpty {
+                    switch purpose {
+                    case "subs":
+                        text = strings.Stars_Purchase_PurchasePurpose_subs
+                    default:
+                        let key = "Stars.Purchase.PurchasePurpose.\(purpose)"
+                        if let string = strings.primaryComponent.dict[key] {
+                            text = string
+                        } else if let string = strings.secondaryComponent?.dict[key] {
+                            text = string
+                        }
+                    }
+                }
+                textString = text
             case .gift:
                 textString = strings.Stars_Purchase_GiftInfo(component.peers.first?.value.compactDisplayTitle ?? "").string
             case .transfer:
@@ -452,7 +467,7 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
                         }
                     },
                     tapAction: { attributes, _ in
-                        component.context.sharedContext.openExternalUrl(context: component.context, urlContext: .generic, url: strings.Stars_Purchase_Terms_URL, forceExternal: true, presentationData: presentationData, navigationController: nil, dismissInput: {})
+                        component.context.sharedContext.openExternalUrl(context: component.context, urlContext: .generic, url: strings.Stars_Purchase_Terms_URL, forceExternal: false, presentationData: presentationData, navigationController: nil, dismissInput: {})
                     }
                 ),
                 environment: {},
@@ -816,12 +831,10 @@ private final class StarsPurchaseScreenComponent: CombinedComponent {
             
             let titleText: String
             switch context.component.purpose {
-            case let .generic(requiredStars):
-                if let requiredStars {
-                    titleText = strings.Stars_Purchase_StarsNeeded(Int32(requiredStars))
-                } else {
-                    titleText = strings.Stars_Purchase_GetStars
-                }
+            case .generic:
+                titleText = strings.Stars_Purchase_GetStars
+            case let .topUp(requiredStars, _):
+                titleText = strings.Stars_Purchase_StarsNeeded(Int32(requiredStars))
             case .gift:
                 titleText = strings.Stars_Purchase_GiftStars
             case let .transfer(_, requiredStars), let .subscription(_, requiredStars, _), let .unlockMedia(requiredStars):
@@ -1156,7 +1169,7 @@ func generateStarsIcon(count: Int) -> UIImage {
         
         let mainImage = UIImage(bundleImageName: "Premium/Stars/StarLarge")
         if let cgImage = mainImage?.cgImage, let partCGImage = partImage.cgImage {
-            context.draw(cgImage, in: CGRect(origin: CGPoint(x: originX, y: 0.0), size: imageSize), byTiling: false)
+            context.draw(cgImage, in: CGRect(origin: CGPoint(x: originX, y: 0.0), size: imageSize).insetBy(dx: -1.5, dy: -1.5), byTiling: false)
             originX += spacing + UIScreenPixel
             
             for _ in 0 ..< count - 1 {
@@ -1226,7 +1239,7 @@ private extension StarsPurchasePurpose {
     
     var requiredStars: Int64? {
         switch self {
-        case let .generic(requiredStars):
+        case let .topUp(requiredStars, _):
             return requiredStars
         case let .transfer(_, requiredStars):
             return requiredStars

@@ -33,7 +33,7 @@
       "location" : "https://github.com/denis15yo/core-swift.git",
       "state" : {
         "branch" : "release/1.0.0",
-        "revision" : "f03e7c89c56aaafdb3b22a8ab5ebfefb3fb018a6"
+        "revision" : "8fe212b4616cce8f534cc4708c8d6b2b548a5035"
       }
     },
     {
@@ -122,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "1b82457f99a129e8c97d8314b405e1e0e411a8a6"
+        "branch" : "feat/update-assistant-ui",
+        "revision" : "741126d3991a3973a79cc7ecb81d84ece4649159"
       }
     },
     {
@@ -131,8 +131,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "3a10f5bd47e6251a6bf4d8c80db11867cfc803d9"
+        "branch" : "feat/update-assistant-ui",
+        "revision" : "d726273283da0db83939374137006f808bfd4d4c"
       }
     },
     {
@@ -286,6 +286,15 @@
       "state" : {
         "revision" : "5596407d1cf61b953b8e658fa8636a471df3c509",
         "version" : "1.1.6"
+      }
+    },
+    {
+      "identity" : "swiftui-flow",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/denis15yo/SwiftUI-Flow.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "9d122ace53e143dc3e1bf61c01a024535b0c7ab7"
       }
     },
     {

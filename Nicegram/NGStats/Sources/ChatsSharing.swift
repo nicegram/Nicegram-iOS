@@ -269,7 +269,7 @@ private func extractGeoLocation(
 private func extractInviteLinks(_ links: ExportedInvitations?) -> [InviteLink]? {
     links?.list?.compactMap { link in
         switch link {
-        case let .link(link, title, isPermanent, requestApproval, isRevoked, adminId, date, startDate, expireDate, usageLimit, count, requestedCount):
+        case let .link(link, title, isPermanent, requestApproval, isRevoked, adminId, date, startDate, expireDate, usageLimit, count, requestedCount, _):
             InviteLink(link: link, title: title, isPermanent: isPermanent, requestApproval: requestApproval, isRevoked: isRevoked, adminId: adminId.id._internalGetInt64Value(), date: date, startDate: startDate, expireDate: expireDate, usageLimit: usageLimit, count: count, requestedCount: requestedCount)
         case .publicJoinRequest:
             nil
