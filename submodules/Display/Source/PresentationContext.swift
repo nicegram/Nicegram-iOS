@@ -18,7 +18,7 @@ public enum PresentationContextType {
 
 public final class PresentationContext {
     private var _view: UIView?
-    public var view: UIView? {
+    var view: UIView? {
         get {
             return self._view
         } set(value) {
@@ -52,12 +52,7 @@ public final class PresentationContext {
         return self.view != nil && self.layout != nil
     }
     
-    public private(set) var controllers: [(ContainableController, PresentationSurfaceLevel)] = [] {
-        didSet {
-            self.controllersUpdated(self.controllers)
-        }
-    }
-    public var controllersUpdated: ([(ContainableController, PresentationSurfaceLevel)]) -> Void = { _ in }
+    private(set) var controllers: [(ContainableController, PresentationSurfaceLevel)] = []
     
     private var presentationDisposables = DisposableSet()
     
@@ -126,9 +121,6 @@ public final class PresentationContext {
     
     private func layoutForController(containerLayout: ContainerViewLayout, controller: ContainableController) -> (ContainerViewLayout, CGRect) {
         return (containerLayout, CGRect(origin: CGPoint(), size: containerLayout.size))
-    }
-    
-    public init() {
     }
     
     public func present(_ controller: ContainableController, on level: PresentationSurfaceLevel, blockInteraction: Bool = false, completion: @escaping () -> Void) {

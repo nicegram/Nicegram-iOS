@@ -371,7 +371,7 @@ func _internal_fetchAndUpdateCachedPeerData(accountPeerId: PeerId, peerId rawPee
                                             var subscriberCount: Int32?
                                             for chat in chats {
                                                 if chat.peerId == channelPeerId {
-                                                    if case let .channel(_, _, _, _, _, _, _, _, _, _, _, _, participantsCount, _, _, _, _, _, _, _) = chat {
+                                                    if case let .channel(_, _, _, _, _, _, _, _, _, _, _, _, participantsCount, _, _, _, _, _, _) = chat {
                                                         subscriberCount = participantsCount
                                                     }
                                                 }
@@ -439,7 +439,7 @@ func _internal_fetchAndUpdateCachedPeerData(accountPeerId: PeerId, peerId rawPee
                                 var botInfos: [CachedPeerBotInfo] = []
                                 for botInfo in chatFullBotInfo ?? [] {
                                     switch botInfo {
-                                    case let .botInfo(_, userId, _, _, _, _, _, _):
+                                    case let .botInfo(_, userId, _, _, _, _, _):
                                         if let userId = userId {
                                             let peerId = PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId))
                                             let parsedBotInfo = BotInfo(apiBotInfo: botInfo)
@@ -450,6 +450,7 @@ func _internal_fetchAndUpdateCachedPeerData(accountPeerId: PeerId, peerId rawPee
                                 let participants = CachedGroupParticipants(apiParticipants: chatFullParticipants)
                                 
                                 let autoremoveTimeout: CachedPeerAutoremoveTimeout = .known(CachedPeerAutoremoveTimeout.Value(chatTtlPeriod))
+
                                 
                                 var invitedBy: PeerId?
                                 if let participants = participants {
@@ -512,8 +513,7 @@ func _internal_fetchAndUpdateCachedPeerData(accountPeerId: PeerId, peerId rawPee
                                     } else {
                                         mappedAllowedReactions = .empty
                                     }
-                                    
-                                    let mappedReactionSettings = PeerReactionSettings(allowedReactions: mappedAllowedReactions, maxReactionCount: reactionsLimit, starsAllowed: nil)
+                                    let mappedReactionSettings = PeerReactionSettings(allowedReactions: mappedAllowedReactions, maxReactionCount: reactionsLimit)
                                     
                                     return previous.withUpdatedParticipants(participants)
                                         .withUpdatedExportedInvitation(exportedInvitation)
@@ -560,10 +560,10 @@ func _internal_fetchAndUpdateCachedPeerData(accountPeerId: PeerId, peerId rawPee
                             switch result {
                                 case let .chatFull(fullChat, chats, users):
                                     switch fullChat {
-                                    case let .channelFull(_, _, _, _, _, _, _, _, _, _, _, _, _, notifySettings, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
-                                        transaction.updateCurrentPeerNotificationSettings([peerId: TelegramPeerNotificationSettings(apiSettings: notifySettings)])
-                                    case .chatFull:
-                                        break
+                                        case let .channelFull(_, _, _, _, _, _, _, _, _, _, _, _, _, notifySettings, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
+                                            transaction.updateCurrentPeerNotificationSettings([peerId: TelegramPeerNotificationSettings(apiSettings: notifySettings)])
+                                        case .chatFull:
+                                            break
                                     }
                                     
                                     switch fullChat {
@@ -629,7 +629,7 @@ func _internal_fetchAndUpdateCachedPeerData(accountPeerId: PeerId, peerId rawPee
                                             var botInfos: [CachedPeerBotInfo] = []
                                             for botInfo in apiBotInfos {
                                                 switch botInfo {
-                                                case let .botInfo(_, userId, _, _, _, _, _, _):
+                                                case let .botInfo(_, userId, _, _, _, _, _):
                                                     if let userId = userId {
                                                         let peerId = PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId))
                                                         let parsedBotInfo = BotInfo(apiBotInfo: botInfo)
@@ -695,7 +695,7 @@ func _internal_fetchAndUpdateCachedPeerData(accountPeerId: PeerId, peerId rawPee
                                                 switch participantResult {
                                                 case let .channelParticipant(participant, _, _):
                                                     switch participant {
-                                                    case let .channelParticipantSelf(flags, _, inviterId, invitedDate, _):
+                                                    case let .channelParticipantSelf(flags, _, inviterId, invitedDate):
                                                         invitedBy = PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(inviterId))
                                                         if (flags & (1 << 0)) != 0 {
                                                             invitedOn = invitedDate
@@ -758,8 +758,7 @@ func _internal_fetchAndUpdateCachedPeerData(accountPeerId: PeerId, peerId rawPee
                                                 } else {
                                                     mappedAllowedReactions = .empty
                                                 }
-                                                let starsAllowed: Bool = (flags2 & (1 << 16)) != 0
-                                                let mappedReactionSettings = PeerReactionSettings(allowedReactions: mappedAllowedReactions, maxReactionCount: reactionsLimit, starsAllowed: starsAllowed)
+                                                let mappedReactionSettings = PeerReactionSettings(allowedReactions: mappedAllowedReactions, maxReactionCount: reactionsLimit)
                                                 
                                                 let membersHidden = (flags2 & (1 << 2)) != 0
                                                 let forumViewAsMessages = (flags2 & (1 << 6)) != 0

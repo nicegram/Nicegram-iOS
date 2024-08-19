@@ -793,10 +793,6 @@ public extension EmojiPagerContentComponent {
                                 }
                             case let .custom(file):
                                 topReactionItems.append(EmojiComponentReactionItem(reaction: .custom(file.fileId.id), file: file))
-                            case .stars:
-                                if let reaction = availableReactions?.reactions.first(where: { $0.value == .stars }) {
-                                    topReactionItems.append(EmojiComponentReactionItem(reaction: .stars, file: reaction.selectAnimation))
-                                }
                             }
                         }
                     }
@@ -966,22 +962,6 @@ public extension EmojiPagerContentComponent {
                                 } else {
                                     icon = .none
                                 }
-                            case .stars:
-                                if existingIds.contains(.stars) {
-                                    continue
-                                }
-                                existingIds.insert(.stars)
-                                if let availableReactions = availableReactions, let availableReaction = availableReactions.reactions.first(where: { $0.value == .stars }) {
-                                    if let centerAnimation = availableReaction.centerAnimation {
-                                        animationFile = centerAnimation
-                                    } else {
-                                        continue
-                                    }
-                                } else {
-                                    continue
-                                }
-                                
-                                icon = .none
                             }
                             
                             var tintMode: Item.TintMode = .none
@@ -1034,12 +1014,6 @@ public extension EmojiPagerContentComponent {
                                 }
                             case let .custom(file):
                                 topReactionItems.append(EmojiComponentReactionItem(reaction: .custom(file.fileId.id), file: file))
-                            case .stars:
-                                if let reaction = availableReactions?.reactions.first(where: { $0.value == .stars }) {
-                                    topReactionItems.append(EmojiComponentReactionItem(reaction: .stars, file: reaction.selectAnimation))
-                                } else {
-                                    continue
-                                }
                             }
                         }
                     }

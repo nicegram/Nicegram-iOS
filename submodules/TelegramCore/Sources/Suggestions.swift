@@ -16,7 +16,6 @@ public enum ServerProvidedSuggestion: String {
     case setupBirthday = "BIRTHDAY_SETUP"
     case todayBirthdays = "BIRTHDAY_CONTACTS_TODAY"
     case gracePremium = "PREMIUM_GRACE"
-    case starsSubscriptionLowBalance = "STARS_SUBSCRIPTION_LOW_BALANCE"
 }
 
 private var dismissedSuggestionsPromise = ValuePromise<[AccountRecordId: Set<ServerProvidedSuggestion>]>([:])

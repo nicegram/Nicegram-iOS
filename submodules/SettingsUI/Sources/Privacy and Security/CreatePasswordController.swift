@@ -18,14 +18,12 @@ private enum CreatePasswordField {
 }
 
 private final class CreatePasswordControllerArguments {
-    let context: AccountContext
     let updateFieldText: (CreatePasswordField, String) -> Void
     let selectNextInputItem: (CreatePasswordEntryTag) -> Void
     let save: () -> Void
     let cancelEmailConfirmation: () -> Void
     
-    init(context: AccountContext, updateFieldText: @escaping (CreatePasswordField, String) -> Void, selectNextInputItem: @escaping (CreatePasswordEntryTag) -> Void, save: @escaping () -> Void, cancelEmailConfirmation: @escaping () -> Void) {
-        self.context = context
+    init(updateFieldText: @escaping (CreatePasswordField, String) -> Void, selectNextInputItem: @escaping (CreatePasswordEntryTag) -> Void, save: @escaping () -> Void, cancelEmailConfirmation: @escaping () -> Void) {
         self.updateFieldText = updateFieldText
         self.selectNextInputItem = selectNextInputItem
         self.save = save
@@ -323,7 +321,7 @@ func createPasswordController(context: AccountContext, createPasswordContext: Cr
         }
     }
     
-    let arguments = CreatePasswordControllerArguments(context: context, updateFieldText: { field, updatedText in
+    let arguments = CreatePasswordControllerArguments(updateFieldText: { field, updatedText in
         updateState { state in
             var state = state
             switch field {

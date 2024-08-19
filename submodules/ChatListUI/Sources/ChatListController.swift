@@ -2,12 +2,13 @@ import Foundation
 import UIKit
 import Postbox
 // MARK: Nicegram Imports
-import FeatAssistant
 import NGAiChat
 import NGAiChatUI
 import NGAnalytics
 import NGData
 import NGAppCache
+import NGAssistant
+import NGAssistantUI
 import NGCore
 import FeatAuth
 import NGModels
@@ -351,7 +352,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                             component: AnyComponent(NicegramButtonComponent(
                                 pressed: {
                                     Task {
-                                        AssistantTgHelper.presentAssistantModally(
+                                        AssistantUITgHelper.presentAssistantModally(
                                             source: .navigationBarIcon
                                         )
                                     }
@@ -1232,14 +1233,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             }
             self.openBirthdaySetup()
         }
-        
-        self.chatListDisplayNode.mainContainerNode.openStarsTopup = { [weak self] amount in
-            guard let self else {
-                return
-            }
-            self.openStarsTopup(amount: amount)
-        }
-        
         self.chatListDisplayNode.mainContainerNode.openPremiumManagement = { [weak self] in
             guard let self else {
                 return
@@ -6147,14 +6140,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 return true
             }), in: .current)
         })
-        self.push(controller)
-    }
-    
-    func openStarsTopup(amount: Int64?) {
-        guard let starsContext = self.context.starsContext else {
-            return
-        }
-        let controller = self.context.sharedContext.makeStarsPurchaseScreen(context: self.context, starsContext: starsContext, options: [], purpose: amount.flatMap({ .topUp(requiredStars: $0, purpose: "subs") }) ?? .generic, completion: { _ in })
         self.push(controller)
     }
     

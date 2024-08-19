@@ -22,8 +22,6 @@ public extension ReactionSettings {
             } else {
                 return ReactionSettings.default.quickReaction
             }
-        case .stars:
-            return self.quickReaction
         }
     }
 }

@@ -62,7 +62,6 @@ public final class ChatMessageItemAssociatedData: Equatable {
     public let deviceContactsNumbers: Set<String>
     public let isStandalone: Bool
     public let isInline: Bool
-    public let showSensitiveContent: Bool
     
     public init(
         automaticDownloadPeerType: MediaAutoDownloadPeerType,
@@ -95,8 +94,7 @@ public final class ChatMessageItemAssociatedData: Equatable {
         chatThemes: [TelegramTheme] = [],
         deviceContactsNumbers: Set<String> = Set(),
         isStandalone: Bool = false,
-        isInline: Bool = false,
-        showSensitiveContent: Bool = false
+        isInline: Bool = false
     ) {
         self.automaticDownloadPeerType = automaticDownloadPeerType
         self.automaticDownloadPeerId = automaticDownloadPeerId
@@ -129,7 +127,6 @@ public final class ChatMessageItemAssociatedData: Equatable {
         self.deviceContactsNumbers = deviceContactsNumbers
         self.isStandalone = isStandalone
         self.isInline = isInline
-        self.showSensitiveContent = showSensitiveContent
     }
     
     public static func == (lhs: ChatMessageItemAssociatedData, rhs: ChatMessageItemAssociatedData) -> Bool {
@@ -218,9 +215,6 @@ public final class ChatMessageItemAssociatedData: Equatable {
             return false
         }
         if lhs.isInline != rhs.isInline {
-            return false
-        }
-        if lhs.showSensitiveContent != rhs.showSensitiveContent {
             return false
         }
         return true
@@ -1062,8 +1056,6 @@ public protocol ChatController: ViewController {
     func updateIsScrollingLockedAtTop(isScrollingLockedAtTop: Bool)
     
     func playShakeAnimation()
-    
-    func removeAd(opaqueId: Data)
 }
 
 public protocol ChatMessagePreviewItemNode: AnyObject {

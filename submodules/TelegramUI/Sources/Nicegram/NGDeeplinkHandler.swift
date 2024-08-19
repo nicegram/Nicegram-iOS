@@ -1,4 +1,3 @@
-import FeatAssistant
 import Foundation
 import AccountContext
 import Display
@@ -10,6 +9,7 @@ import FeatRewardsUI
 import FeatTasks
 import NGAiChatUI
 import NGAnalytics
+import NGAssistantUI
 import FeatAuth
 import NGCore
 import class NGCoreUI.SharedLoadingView
@@ -100,7 +100,7 @@ class NGDeeplinkHandler {
         case "refferaldraw":
             if #available(iOS 15.0, *) {
                 Task { @MainActor in
-                    AssistantTgHelper.showReferralDrawFromDeeplink()
+                    AssistantUITgHelper.showReferralDrawFromDeeplink()
                 }
                 return true
             } else {
@@ -174,7 +174,7 @@ private extension NGDeeplinkHandler {
     func handleAssistant(url: URL) -> Bool {
         if #available(iOS 15.0, *) {
             Task { @MainActor in
-                AssistantTgHelper.routeToAssistant(
+                AssistantUITgHelper.routeToAssistant(
                     source: .deeplink
                 )
             }

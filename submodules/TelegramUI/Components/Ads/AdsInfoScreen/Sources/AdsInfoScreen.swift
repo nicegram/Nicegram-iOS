@@ -488,8 +488,7 @@ public final class AdsInfoScreen: ViewControllerComponentContainer {
     private let context: AccountContext
         
     public init(
-        context: AccountContext,
-        forceDark: Bool = false
+        context: AccountContext
     ) {
         self.context = context
                 
@@ -504,7 +503,7 @@ public final class AdsInfoScreen: ViewControllerComponentContainer {
             ),
             navigationBarAppearance: .none,
             statusBarStyle: .ignore,
-            theme: forceDark ? .dark : .default
+            theme: .default
         )
         
         self.navigationPresentation = .modal

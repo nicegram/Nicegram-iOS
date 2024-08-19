@@ -15,12 +15,10 @@ import AuthorizationUtils
 import PhoneNumberFormat
 
 private final class ChangePhoneNumberCodeControllerArguments {
-    let context: AccountContext
     let updateEntryText: (String) -> Void
     let next: () -> Void
     
-    init(context: AccountContext, updateEntryText: @escaping (String) -> Void, next: @escaping () -> Void) {
-        self.context = context
+    init(updateEntryText: @escaping (String) -> Void, next: @escaping () -> Void) {
         self.updateEntryText = updateEntryText
         self.next = next
     }
@@ -292,7 +290,7 @@ func changePhoneNumberCodeController(context: AccountContext, phoneNumber: Strin
         }
     }
     
-    let arguments = ChangePhoneNumberCodeControllerArguments(context: context, updateEntryText: { updatedText in
+    let arguments = ChangePhoneNumberCodeControllerArguments(updateEntryText: { updatedText in
         var initiateCheck = false
         updateState { state in
             if state.codeText.count < 5 && updatedText.count == 5 {

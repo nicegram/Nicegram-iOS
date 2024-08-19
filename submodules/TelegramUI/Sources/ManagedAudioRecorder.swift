@@ -387,8 +387,6 @@ final class ManagedAudioRecorderContext {
             return
         }
         
-        let _ = AudioUnitSetProperty(audioUnit, kAUVoiceIOProperty_MuteOutput, kAudioUnitScope_Global, 0, &zero, 4)
-        
         guard AudioUnitInitialize(audioUnit) == noErr else {
             AudioComponentInstanceDispose(audioUnit)
             return

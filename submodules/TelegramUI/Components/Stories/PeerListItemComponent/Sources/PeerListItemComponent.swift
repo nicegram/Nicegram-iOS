@@ -987,9 +987,6 @@ public final class PeerListItemComponent: Component {
                                 self.file = file
                                 self.updateReactionLayer()
                             })
-                        case .stars:
-                            self.file = reaction.file
-                            self.updateReactionLayer()
                         }
                     } else {
                         self.file = nil

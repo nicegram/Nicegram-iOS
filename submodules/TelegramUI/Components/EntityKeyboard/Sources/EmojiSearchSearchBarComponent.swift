@@ -267,8 +267,6 @@ final class EmojiSearchSearchBarComponent: Component {
         private var highlightedItem: AnyHashable?
         private var selectedItem: AnyHashable?
         
-        private var disableInteraction: Bool = false
-        
         private lazy var hapticFeedback: HapticFeedback = {
             return HapticFeedback()
         }()
@@ -423,16 +421,10 @@ final class EmojiSearchSearchBarComponent: Component {
         }
         
         override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-            if self.disableInteraction {
-                for (_, itemView) in self.visibleItemViews {
-                    if let itemComponentView = itemView.view.view {
-                        if itemComponentView.bounds.contains(self.convert(point, to: itemComponentView)) {
-                            return self
-                        }
-                    }
-                }
+            guard let component = self.component else {
                 return nil
             }
+            let _ = component
             
             return super.hitTest(point, with: event)
         }
@@ -722,17 +714,10 @@ final class EmojiSearchSearchBarComponent: Component {
             
             switch component.textInputState {
             case let .active(hasText):
-                if hasText {
-                    self.disableInteraction = false
-                    self.isUserInteractionEnabled = false
-                } else {
-                    self.disableInteraction = true
-                    self.isUserInteractionEnabled = true
-                }
+                self.isUserInteractionEnabled = false
                 self.textView.view?.isHidden = hasText
                 self.tintTextView.view?.isHidden = hasText
             case .inactive:
-                self.disableInteraction = false
                 self.isUserInteractionEnabled = true
                 self.textView.view?.isHidden = false
                 self.tintTextView.view?.isHidden = false

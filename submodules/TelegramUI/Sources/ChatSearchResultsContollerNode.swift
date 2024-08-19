@@ -290,7 +290,6 @@ class ChatSearchResultsControllerNode: ViewControllerTracingNode, ASScrollViewDe
         }, openChatFolderUpdates: {
         }, hideChatFolderUpdates: {
         }, openStories: { _, _ in
-        }, openStarsTopup: { _ in
         }, dismissNotice: { _ in
         }, editPeer: { _ in
         })

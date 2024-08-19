@@ -210,15 +210,10 @@ final class ChatRecentActionsControllerNode: ViewControllerTracingNode {
                                         ])])
                                         strongSelf.presentController(actionSheet, .window(.root), nil)
                                     } else {
-                                        let controller = InviteLinkViewController(
-                                            context: strongSelf.context,
-                                            updatedPresentationData: strongSelf.controller?.updatedPresentationData,
-                                            peerId: peer.id,
-                                            invite: invite,
-                                            invitationsContext: nil,
-                                            revokedInvitationsContext: nil,
-                                            importersContext: nil
-                                        )
+                                        let controller = inviteLinkEditController(context: strongSelf.context, updatedPresentationData: strongSelf.controller?.updatedPresentationData, peerId: peer.id, invite: invite, completion: { [weak self] _ in
+                                            self?.eventLogContext.reload()
+                                        })
+                                        controller.navigationPresentation = .modal
                                         strongSelf.pushController(controller)
                                     }
                                     return true
@@ -238,7 +233,7 @@ final class ChatRecentActionsControllerNode: ViewControllerTracingNode {
                 let gallerySource = GalleryControllerItemSource.standaloneMessage(message, nil)
                 return context.sharedContext.openChatMessage(OpenChatMessageParams(context: context, chatLocation: nil, chatFilterTag: nil, chatLocationContextHolder: nil, message: message, standalone: true, reverseMessageGalleryOrder: false, navigationController: navigationController, dismissInput: {
                     //self?.chatDisplayNode.dismissInput()
-                }, present: { c, a, _ in
+                }, present: { c, a in
                     self?.presentController(c, .window(.root), a)
                 }, transitionNode: { messageId, media, adjustRect in
                     var selectedNode: (ASDisplayNode, CGRect, () -> (UIView?, UIView?))?
@@ -633,7 +628,6 @@ final class ChatRecentActionsControllerNode: ViewControllerTracingNode {
         }, scrollToMessageId: { _ in
         }, navigateToStory: { _, _ in
         }, attemptedNavigationToPrivateQuote: { _ in
-        }, forceUpdateWarpContents: {
         }, automaticMediaDownloadSettings: self.automaticMediaDownloadSettings,
         pollActionState: ChatInterfacePollActionState(), stickerSettings: ChatInterfaceStickerSettings(), presentationContext: ChatPresentationContext(context: context, backgroundNode: self.backgroundNode))
         self.controllerInteraction = controllerInteraction

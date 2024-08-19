@@ -976,23 +976,18 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
                     handleResolvedUrl(.premiumMultiGift(reference: reference))
                 } else if parsedUrl.host == "stars_topup" {
                     var amount: Int64?
-                    var purpose: String?
                     if let components = URLComponents(string: "/?" + query) {
                         if let queryItems = components.queryItems {
                             for queryItem in queryItems {
                                 if let value = queryItem.value {
-                                    if queryItem.name == "balance" {
+                                    if queryItem.name == "amount" {
                                         amount = Int64(value)
-                                    } else if queryItem.name == "purpose" {
-                                        purpose = value
                                     }
                                 }
                             }
                         }
                     }
-                    if let amount {
-                        handleResolvedUrl(.starsTopup(amount: amount, purpose: purpose))
-                    }
+                    handleResolvedUrl(.starsTopup(amount: amount))
                 } else if parsedUrl.host == "addlist" {
                     if let components = URLComponents(string: "/?" + query) {
                         var slug: String?

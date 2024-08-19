@@ -1264,13 +1264,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         return CGSize(width: layout.size.width, height: height)
     }
     
-    func forceUpdateWarpContents() {
-        guard let (layout, _) = self.validLayout else {
-            return
-        }
-        self.wrappingNode.update(size: layout.size, cornerRadius: layout.deviceMetrics.screenCornerRadius, transition: .immediate)
-    }
-    
     func containerLayoutUpdated(_ layout: ContainerViewLayout, navigationBarHeight: CGFloat, transition protoTransition: ContainedViewLayoutTransition, listViewTransaction: (ListViewUpdateSizeAndInsets, CGFloat, Bool, @escaping () -> Void) -> Void, updateExtraNavigationBarBackgroundHeight: (CGFloat, CGFloat, ContainedViewLayoutTransition) -> Void) {
         let transition: ContainedViewLayoutTransition
         if let _ = self.scheduledAnimateInAsOverlayFromNode {
@@ -2246,7 +2239,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             childrenLayout.intrinsicInsets = UIEdgeInsets(top: listInsets.top, left: listInsets.left, bottom: listInsets.bottom, right: listInsets.right)
         }
         self.controller?.presentationContext.containerLayoutUpdated(childrenLayout, transition: transition)
-        self.controller?.galleryPresentationContext.containerLayoutUpdated(layout, transition: transition)
         
         listViewTransaction(ListViewUpdateSizeAndInsets(size: contentBounds.size, insets: listInsets, scrollIndicatorInsets: listScrollIndicatorInsets, duration: duration, curve: curve, ensureTopInsetForOverlayHighlightedItems: ensureTopInsetForOverlayHighlightedItems), additionalScrollDistance, scrollToTop, { [weak self] in
             if let strongSelf = self {

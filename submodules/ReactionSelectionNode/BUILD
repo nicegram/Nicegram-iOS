@@ -38,7 +38,6 @@ swift_library(
         "//submodules/TelegramUI/Components/Utils/GenerateStickerPlaceholderImage",
         "//submodules/Components/BalancedTextComponent",
         "//submodules/Markdown",
-        "//submodules/TelegramUI/Components/Premium/PremiumStarComponent",
     ],
     visibility = [
         "//visibility:public",

@@ -122,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/update-assistant-ui",
-        "revision" : "741126d3991a3973a79cc7ecb81d84ece4649159"
+        "branch" : "develop",
+        "revision" : "1b82457f99a129e8c97d8314b405e1e0e411a8a6"
       }
     },
     {
@@ -131,8 +131,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "feat/update-assistant-ui",
-        "revision" : "d726273283da0db83939374137006f808bfd4d4c"
+        "branch" : "develop",
+        "revision" : "64428c3992ef989f6e9fc943d111c21cc895f4d5"
       }
     },
     {
@@ -289,15 +289,6 @@
       }
     },
     {
-      "identity" : "swiftui-flow",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/denis15yo/SwiftUI-Flow.git",
-      "state" : {
-        "branch" : "main",
-        "revision" : "9d122ace53e143dc3e1bf61c01a024535b0c7ab7"
-      }
-    },
-    {
       "identity" : "swiftystorekit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/bizz84/SwiftyStoreKit.git",
@@ -356,8 +347,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "a05c01a44251254749801ebeb0fc4f9623c44f10",
-        "version" : "4.1.4"
+        "revision" : "160a6e6275d25c0edb91823ae62c605d3d66c013",
+        "version" : "4.1.5"
       }
     },
     {

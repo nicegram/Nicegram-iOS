@@ -754,7 +754,7 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                                 }
                             }
                             strongSelf.textAccessibilityOverlayNode.frame = textFrame
-                            //TODO:release
+                            //TODO:localize
                             //strongSelf.textAccessibilityOverlayNode.cachedLayout = textLayout
                     
                             strongSelf.updateIsTranslating(isTranslating)

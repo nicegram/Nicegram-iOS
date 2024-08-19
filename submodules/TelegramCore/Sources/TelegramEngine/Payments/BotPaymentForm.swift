@@ -11,7 +11,6 @@ public enum BotPaymentInvoiceSource {
     case giftCode(users: [PeerId], currency: String, amount: Int64, option: PremiumGiftCodeOption)
     case stars(option: StarsTopUpOption)
     case starsGift(peerId: EnginePeer.Id, count: Int64, currency: String, amount: Int64)
-    case starsChatSubscription(hash: String)
 }
 
 public struct BotPaymentInvoiceFields: OptionSet {
@@ -315,8 +314,6 @@ func _internal_parseInputInvoice(transaction: Transaction, source: BotPaymentInv
             return nil
         }
         return .inputInvoiceStars(purpose: .inputStorePaymentStarsGift(userId: inputUser, stars: count, currency: currency, amount: amount))
-    case let .starsChatSubscription(hash):
-        return .inputInvoiceChatInviteSubscription(hash: hash)
     }
 }
 
@@ -541,7 +538,7 @@ public enum SendBotPaymentFormError {
 }
 
 public enum SendBotPaymentResult {
-    case done(receiptMessageId: MessageId?, subscriptionPeerId: PeerId?)
+    case done(receiptMessageId: MessageId?)
     case externalVerificationRequired(url: String)
 }
 
@@ -585,17 +582,6 @@ func _internal_sendBotPaymentForm(account: Account, formId: Int64, source: BotPa
                 case let .paymentResult(updates):
                     account.stateManager.addUpdates(updates)
                     var receiptMessageId: MessageId?
-                
-                    switch source {
-                    case .starsChatSubscription:
-                        let chats = updates.chats.compactMap { parseTelegramGroupOrChannel(chat: $0) }
-                        if let first = chats.first {
-                            return .done(receiptMessageId: nil, subscriptionPeerId: first.id)
-                        }
-                    default:
-                        break
-                    }
-                
                     for apiMessage in updates.messages {
                         if let message = StoreMessage(apiMessage: apiMessage, accountPeerId: account.peerId, peerIsForum: false) {
                             for media in message.media {
@@ -626,7 +612,7 @@ func _internal_sendBotPaymentForm(account: Account, formId: Int64, source: BotPa
                                                     receiptMessageId = id
                                                 }
                                             }
-                                        case .giftCode, .stars, .starsGift, .starsChatSubscription:
+                                        case .giftCode, .stars, .starsGift:
                                             receiptMessageId = nil
                                         }
                                     }
@@ -634,7 +620,7 @@ func _internal_sendBotPaymentForm(account: Account, formId: Int64, source: BotPa
                             }
                         }
                     }
-                    return .done(receiptMessageId: receiptMessageId, subscriptionPeerId: nil)
+                    return .done(receiptMessageId: receiptMessageId)
                 case let .paymentVerificationNeeded(url):
                     return .externalVerificationRequired(url: url)
             }

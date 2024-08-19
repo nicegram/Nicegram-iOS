@@ -1,6 +1,6 @@
 import ChatListHeaderComponent
 import ComponentFlow
-import FeatAssistant
+import NGAssistantUI
 import UIKit
 
 @available(iOS 13.0, *)

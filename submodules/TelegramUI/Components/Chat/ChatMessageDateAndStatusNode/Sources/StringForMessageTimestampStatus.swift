@@ -126,22 +126,16 @@ public func stringForMessageTimestampStatus(accountPeerId: PeerId, message: Mess
     var authorTitle: String?
     if let author = message.author as? TelegramUser {
         if let peer = message.peers[message.id.peerId] as? TelegramChannel, case .broadcast = peer.info {
-            if let channel = message.peers[message.id.peerId] as? TelegramChannel, case let .broadcast(info) = channel.info, message.author?.id != channel.id, info.flags.contains(.messagesShouldHaveProfiles) {
-            } else {
-                authorTitle = EnginePeer(author).displayTitle(strings: strings, displayOrder: nameDisplayOrder)
-            }
+            authorTitle = EnginePeer(author).displayTitle(strings: strings, displayOrder: nameDisplayOrder)
         } else if let forwardInfo = message.forwardInfo, forwardInfo.sourceMessageId?.peerId.namespace == Namespaces.Peer.CloudChannel {
             authorTitle = forwardInfo.authorSignature
         }
     } else {
         if let peer = message.peers[message.id.peerId] as? TelegramChannel, case .broadcast = peer.info {
-            if let channel = message.peers[message.id.peerId] as? TelegramChannel, case let .broadcast(info) = channel.info, message.author?.id != channel.id, info.flags.contains(.messagesShouldHaveProfiles) {
-            } else {
-                for attribute in message.attributes {
-                    if let attribute = attribute as? AuthorSignatureMessageAttribute {
-                        authorTitle = attribute.signature
-                        break
-                    }
+            for attribute in message.attributes {
+                if let attribute = attribute as? AuthorSignatureMessageAttribute {
+                    authorTitle = attribute.signature
+                    break
                 }
             }
         }

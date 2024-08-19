@@ -69,7 +69,7 @@ public final class AdInfoScreen: ViewController {
             self.controller = controller
             self.context = context
 
-            self.presentationData = controller.presentationData
+            self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
 
             self.titleNode = ImmediateTextNode()
             self.titleNode.maximumNumberOfLines = 1
@@ -211,16 +211,11 @@ public final class AdInfoScreen: ViewController {
     }
 
     private let context: AccountContext
-    fileprivate var presentationData: PresentationData
+    private var presentationData: PresentationData
 
-    public init(context: AccountContext, forceDark: Bool = false) {
+    public init(context: AccountContext) {
         self.context = context
-        
-        var presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        if forceDark {
-            presentationData = presentationData.withUpdated(theme: defaultDarkColorPresentationTheme)
-        }
-        self.presentationData = presentationData
+        self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
 
         super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData))
 

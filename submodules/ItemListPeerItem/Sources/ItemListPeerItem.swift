@@ -251,7 +251,6 @@ public enum ItemListPeerItemLabel {
     case text(String, ItemListPeerItemLabelFont)
     case disclosure(String)
     case badge(String)
-    case attributedText(NSAttributedString)
 }
 
 public struct ItemListPeerItemSwitch {
@@ -729,7 +728,7 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
     private var avatarButton: HighlightTrackingButton?
     
     private let titleNode: TextNode
-    private let labelNode: TextNodeWithEntities
+    private let labelNode: TextNode
     private let labelBadgeNode: ASImageNode
     private var labelArrowNode: ASImageNode?
     private let statusNode: TextNode
@@ -830,7 +829,10 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
         self.statusNode.contentMode = .left
         self.statusNode.contentsScale = UIScreen.main.scale
         
-        self.labelNode = TextNodeWithEntities()
+        self.labelNode = TextNode()
+        self.labelNode.isUserInteractionEnabled = false
+        self.labelNode.contentMode = .left
+        self.labelNode.contentsScale = UIScreen.main.scale
         
         self.labelBadgeNode = ASImageNode()
         self.labelBadgeNode.displayWithoutProcessing = true
@@ -848,7 +850,7 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
         self.containerNode.addSubnode(self.avatarNode)
         self.containerNode.addSubnode(self.titleNode)
         self.containerNode.addSubnode(self.statusNode)
-        self.containerNode.addSubnode(self.labelNode.textNode)
+        self.containerNode.addSubnode(self.labelNode)
         
         self.peerPresenceManager = PeerPresenceStatusManager(update: { [weak self] in
             if let strongSelf = self, let layoutParams = strongSelf.layoutParams {
@@ -883,7 +885,7 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
     public func asyncLayout() -> (_ item: ItemListPeerItem, _ params: ListViewItemLayoutParams, _ neighbors: ItemListNeighbors, _ headerAtTop: Bool) -> (ListViewItemNodeLayout, (Bool, Bool) -> Void) {
         let makeTitleLayout = TextNode.asyncLayout(self.titleNode)
         let makeStatusLayout = TextNode.asyncLayout(self.statusNode)
-        let makeLabelLayout = TextNodeWithEntities.asyncLayout(self.labelNode)
+        let makeLabelLayout = TextNode.asyncLayout(self.labelNode)
         let editableControlLayout = ItemListEditableControlNode.asyncLayout(self.editableControlNode)
         let reorderControlLayout = ItemListEditableReorderControlNode.asyncLayout(self.reorderControlNode)
         
@@ -1154,49 +1156,42 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
                 editingOffset = 0.0
             }
             
-            var labelMaximumNumberOfLines = 1
             var labelInset: CGFloat = 0.0
-            var labelAlignment: NSTextAlignment = .natural
             var updatedLabelArrowNode: ASImageNode?
             switch item.label {
-            case .none:
-                break
-            case let .attributedText(text):
-                labelAttributedString = text
-                labelInset += 15.0
-                labelMaximumNumberOfLines = 2
-                labelAlignment = .right
-            case let .text(text, font):
-                let selectedFont: UIFont
-                switch font {
-                case .standard:
-                    selectedFont = labelFont
-                case let .custom(value):
-                    selectedFont = value
-                }
-                labelAttributedString = NSAttributedString(string: text, font: selectedFont, textColor: item.presentationData.theme.list.itemSecondaryTextColor)
-                labelInset += 15.0
-            case let .disclosure(text):
-                if let currentLabelArrowNode = currentLabelArrowNode {
-                    updatedLabelArrowNode = currentLabelArrowNode
-                } else {
-                    let arrowNode = ASImageNode()
-                    arrowNode.isLayerBacked = true
-                    arrowNode.displayWithoutProcessing = true
-                    arrowNode.displaysAsynchronously = false
-                    arrowNode.image = PresentationResourcesItemList.disclosureArrowImage(item.presentationData.theme)
-                    updatedLabelArrowNode = arrowNode
-                }
-                labelInset += 40.0
-                labelAttributedString = NSAttributedString(string: text, font: labelDisclosureFont, textColor: item.presentationData.theme.list.itemSecondaryTextColor)
-            case let .badge(text):
-                labelAttributedString = NSAttributedString(string: text, font: badgeFont, textColor: item.presentationData.theme.list.itemCheckColors.foregroundColor)
-                labelInset += 15.0
+                case .none:
+                    break
+                case let .text(text, font):
+                    let selectedFont: UIFont
+                    switch font {
+                    case .standard:
+                        selectedFont = labelFont
+                    case let .custom(value):
+                        selectedFont = value
+                    }
+                    labelAttributedString = NSAttributedString(string: text, font: selectedFont, textColor: item.presentationData.theme.list.itemSecondaryTextColor)
+                    labelInset += 15.0
+                case let .disclosure(text):
+                    if let currentLabelArrowNode = currentLabelArrowNode {
+                        updatedLabelArrowNode = currentLabelArrowNode
+                    } else {
+                        let arrowNode = ASImageNode()
+                        arrowNode.isLayerBacked = true
+                        arrowNode.displayWithoutProcessing = true
+                        arrowNode.displaysAsynchronously = false
+                        arrowNode.image = PresentationResourcesItemList.disclosureArrowImage(item.presentationData.theme)
+                        updatedLabelArrowNode = arrowNode
+                    }
+                    labelInset += 40.0
+                    labelAttributedString = NSAttributedString(string: text, font: labelDisclosureFont, textColor: item.presentationData.theme.list.itemSecondaryTextColor)
+                case let .badge(text):
+                    labelAttributedString = NSAttributedString(string: text, font: badgeFont, textColor: item.presentationData.theme.list.itemCheckColors.foregroundColor)
+                    labelInset += 15.0
             }
             
             labelInset += reorderInset
             
-            let (labelLayout, labelApply) = makeLabelLayout(TextNodeLayoutArguments(attributedString: labelAttributedString, backgroundColor: nil, maximumNumberOfLines: labelMaximumNumberOfLines, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - 16.0 - editingOffset - rightInset, height: CGFloat.greatestFiniteMagnitude), alignment: labelAlignment, lineSpacing: 0.0, cutout: nil, insets: UIEdgeInsets()))
+            let (labelLayout, labelApply) = makeLabelLayout(TextNodeLayoutArguments(attributedString: labelAttributedString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - 16.0 - editingOffset - rightInset, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
             let constrainedTitleSize = CGSize(width: params.width - leftInset - 12.0 - editingOffset - rightInset - labelLayout.size.width - labelInset - titleIconsWidth, height: CGFloat.greatestFiniteMagnitude)
             let (titleLayout, titleApply) = makeTitleLayout(TextNodeLayoutArguments(attributedString: titleAttributedString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: constrainedTitleSize, alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
@@ -1356,12 +1351,9 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
                     
                     let _ = titleApply()
                     let _ = statusApply()
-                    if case let .account(context) = item.context {
-                        let _ = labelApply(TextNodeWithEntities.Arguments(context: context, cache: item.context.animationCache, renderer: item.context.animationRenderer, placeholderColor: item.presentationData.theme.list.mediaPlaceholderColor, attemptSynchronous: false))
-                    } else {
-                        let _ = labelApply(nil)
-                    }
-                    strongSelf.labelNode.textNode.isHidden = labelAttributedString == nil
+                    let _ = labelApply()
+                    
+                    strongSelf.labelNode.isHidden = labelAttributedString == nil
                     
                     if strongSelf.backgroundNode.supernode == nil {
                         strongSelf.insertSubnode(strongSelf.backgroundNode, at: 0)
@@ -1504,15 +1496,15 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
                     let labelFrame: CGRect
                     if case .badge = item.label {
                         labelFrame = CGRect(origin: CGPoint(x: revealOffset + params.width - rightLabelInset - badgeWidth + (badgeWidth - labelLayout.size.width) / 2.0, y: floor((contentSize.height - labelLayout.size.height) / 2.0) + 1.0), size: labelLayout.size)
-                        strongSelf.labelNode.textNode.frame = labelFrame
+                        strongSelf.labelNode.frame = labelFrame
                     } else {
                         labelFrame = CGRect(origin: CGPoint(x: revealOffset + params.width - labelLayout.size.width - rightLabelInset, y: floor((contentSize.height - labelLayout.size.height) / 2.0) + 1.0), size: labelLayout.size)
-                        transition.updateFrame(node: strongSelf.labelNode.textNode, frame: labelFrame)
+                        transition.updateFrame(node: strongSelf.labelNode, frame: labelFrame)
                     }
                     
                     if let updateBadgeImage = updatedLabelBadgeImage {
                         if strongSelf.labelBadgeNode.supernode == nil {
-                            strongSelf.containerNode.insertSubnode(strongSelf.labelBadgeNode, belowSubnode: strongSelf.labelNode.textNode)
+                            strongSelf.containerNode.insertSubnode(strongSelf.labelBadgeNode, belowSubnode: strongSelf.labelNode)
                         }
                         strongSelf.labelBadgeNode.image = updateBadgeImage
                     }
@@ -1861,16 +1853,16 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
         }
         
         let badgeDiameter: CGFloat = 20.0
-        let labelSize = self.labelNode.textNode.frame.size
+        let labelSize = self.labelNode.frame.size
         
         let badgeWidth = max(badgeDiameter, labelSize.width + 10.0)
         let labelFrame: CGRect
         if case .badge = item.label {
-            labelFrame = CGRect(origin: CGPoint(x: offset + params.width - rightLabelInset - badgeWidth + (badgeWidth - labelSize.width) / 2.0, y: self.labelNode.textNode.frame.minY), size: labelSize)
+            labelFrame = CGRect(origin: CGPoint(x: offset + params.width - rightLabelInset - badgeWidth + (badgeWidth - labelSize.width) / 2.0, y: self.labelNode.frame.minY), size: labelSize)
         } else {
-            labelFrame = CGRect(origin: CGPoint(x: offset + params.width - self.labelNode.textNode.bounds.size.width - rightLabelInset, y: self.labelNode.textNode.frame.minY), size: self.labelNode.textNode.bounds.size)
+            labelFrame = CGRect(origin: CGPoint(x: offset + params.width - self.labelNode.bounds.size.width - rightLabelInset, y: self.labelNode.frame.minY), size: self.labelNode.bounds.size)
         }
-        transition.updateFrame(node: self.labelNode.textNode, frame: labelFrame)
+        transition.updateFrame(node: self.labelNode, frame: labelFrame)
         
         transition.updateFrame(node: self.labelBadgeNode, frame: CGRect(origin: CGPoint(x: offset + params.width - rightLabelInset - badgeWidth, y: self.labelBadgeNode.frame.minY), size: CGSize(width: badgeWidth, height: badgeDiameter)))
         
