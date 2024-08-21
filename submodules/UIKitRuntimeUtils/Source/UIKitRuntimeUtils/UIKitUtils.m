@@ -1,7 +1,5 @@
 #import "UIKitUtils.h"
 
-#import <ObjCRuntimeUtils/RuntimeUtils.h>
-
 #import <objc/runtime.h>
 
 #if TARGET_IPHONE_SIMULATOR
@@ -238,7 +236,6 @@ NSObject * _Nullable makeMonochromeFilter() {
     return [(id<GraphicsFilterProtocol>)NSClassFromString(@"CAFilter") filterWithName:@"colorMonochrome"];
 }
 
-static const void *layerDisableScreenshotsKey = &layerDisableScreenshotsKey;
 
 void setLayerDisableScreenshots(CALayer * _Nonnull layer, bool disableScreenshots) {
     static UITextField *textField = nil;
@@ -267,17 +264,6 @@ void setLayerDisableScreenshots(CALayer * _Nonnull layer, bool disableScreenshot
         textField.secureTextEntry = false;
     }
     [secureView setValue:previousLayer forKey:@"layer"];
-    
-    [layer setAssociatedObject:@(disableScreenshots) forKey:layerDisableScreenshotsKey associationPolicy:NSObjectAssociationPolicyRetain];
-}
-
-bool getLayerDisableScreenshots(CALayer * _Nonnull layer) {
-    id result = [layer associatedObjectForKey:layerDisableScreenshotsKey];
-    if ([result respondsToSelector:@selector(boolValue)]) {
-        return [(NSNumber *)result boolValue];
-    } else {
-        return false;
-    }
 }
 
 void setLayerContentsMaskMode(CALayer * _Nonnull layer, bool maskMode) {

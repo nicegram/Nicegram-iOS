@@ -159,15 +159,6 @@ public final class MessageReactionButtonsNode: ASDisplayNode {
                     }
                 case let .custom(fileId):
                     animationFileId = fileId
-                case .stars:
-                    if let availableReactions = availableReactions {
-                        for availableReaction in availableReactions.reactions {
-                            if availableReaction.value == reaction.value {
-                                centerAnimation = availableReaction.centerAnimation
-                                break
-                            }
-                        }
-                    }
                 }
                 
                 var peers: [EnginePeer] = []
@@ -539,7 +530,7 @@ public final class ChatMessageReactionsFooterContentNode: ChatMessageBubbleConte
             }
             
             return (contentProperties, nil, CGFloat.greatestFiniteMagnitude, { constrainedSize, position in
-                let reactionsAttribute = mergedMessageReactions(attributes: item.message.attributes, isTags: item.message.areReactionsTags(accountPeerId: item.context.account.peerId)) ?? ReactionsMessageAttribute(canViewList: false, isTags: false, reactions: [], recentPeers: [], topPeers: [])
+                let reactionsAttribute = mergedMessageReactions(attributes: item.message.attributes, isTags: item.message.areReactionsTags(accountPeerId: item.context.account.peerId)) ?? ReactionsMessageAttribute(canViewList: false, isTags: false, reactions: [], recentPeers: [])
                 let buttonsUpdate = buttonsNode.prepareUpdate(
                     context: item.context,
                     presentationData: item.presentationData,

@@ -59,7 +59,6 @@ swift_library(
         "//submodules/QrCodeUI:QrCodeUI",
         "//submodules/PromptUI",
         "//submodules/TelegramUI/Components/ItemListDatePickerItem:ItemListDatePickerItem",
-        "//submodules/TelegramUI/Components/TextNodeWithEntities",
     ],
     visibility = [
         "//visibility:public",

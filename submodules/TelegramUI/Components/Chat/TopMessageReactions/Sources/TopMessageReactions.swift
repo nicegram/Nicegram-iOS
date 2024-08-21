@@ -10,13 +10,13 @@ public enum AllowedReactions {
     case all
 }
 
-public func peerMessageAllowedReactions(context: AccountContext, message: Message) -> Signal<(allowedReactions: AllowedReactions?, areStarsEnabled: Bool), NoError> {
+public func peerMessageAllowedReactions(context: AccountContext, message: Message) -> Signal<AllowedReactions?, NoError> {
     if message.id.peerId == context.account.peerId {
-        return .single((.all, false))
+        return .single(.all)
     }
     
     if message.containsSecretMedia {
-        return .single((AllowedReactions.set(Set()), false))
+        return .single(AllowedReactions.set(Set()))
     }
     
     return combineLatest(
@@ -26,7 +26,7 @@ public func peerMessageAllowedReactions(context: AccountContext, message: Messag
         ),
         context.engine.stickers.availableReactions() |> take(1)
     )
-    |> map { data, availableReactions -> (allowedReactions: AllowedReactions?, areStarsEnabled: Bool) in
+    |> map { data, availableReactions -> AllowedReactions? in
         let (peer, reactionSettings) = data
         
         let maxReactionCount: Int
@@ -35,41 +35,35 @@ public func peerMessageAllowedReactions(context: AccountContext, message: Messag
         } else {
             maxReactionCount = 11
         }
-        
-        var areStarsEnabled: Bool = false
-        if let value = reactionSettings.knownValue?.starsAllowed {
-            areStarsEnabled = value
-        }
-        
         if let effectiveReactions = message.effectiveReactions(isTags: message.areReactionsTags(accountPeerId: context.account.peerId)), effectiveReactions.count >= maxReactionCount {
-            return (.set(Set(effectiveReactions.map(\.value))), areStarsEnabled)
+            return .set(Set(effectiveReactions.map(\.value)))
         }
         
         switch reactionSettings {
         case .unknown:
             if case let .channel(channel) = peer, case .broadcast = channel.info {
                 if let availableReactions = availableReactions {
-                    return (.set(Set(availableReactions.reactions.map(\.value))), areStarsEnabled)
+                    return .set(Set(availableReactions.reactions.map(\.value)))
                 } else {
-                    return (.set(Set()), areStarsEnabled)
+                    return .set(Set())
                 }
             }
-            return (.all, areStarsEnabled)
+            return .all
         case let .known(value):
             switch value.allowedReactions {
             case .all:
                 if case let .channel(channel) = peer, case .broadcast = channel.info {
                     if let availableReactions = availableReactions {
-                        return (.set(Set(availableReactions.reactions.map(\.value))), areStarsEnabled)
+                        return .set(Set(availableReactions.reactions.map(\.value)))
                     } else {
-                        return (.set(Set()), areStarsEnabled)
+                        return .set(Set())
                     }
                 }
-                return (.all, areStarsEnabled)
+                return .all
             case let .limited(reactions):
-                return (.set(Set(reactions)), areStarsEnabled)
+                return .set(Set(reactions))
             case .empty:
-                return (.set(Set()), areStarsEnabled)
+                return .set(Set())
             }
         }
     }
@@ -166,8 +160,6 @@ public func tagMessageReactions(context: AccountContext, subPeerId: EnginePeer.I
                     largeApplicationAnimation: nil,
                     isCustom: true
                 ))
-            case .stars:
-                continue
             }
         }
         
@@ -220,33 +212,6 @@ public func tagMessageReactions(context: AccountContext, subPeerId: EnginePeer.I
                         largeApplicationAnimation: nil,
                         isCustom: true
                     ))
-                case .stars:
-                    if let reaction = availableReactions?.reactions.first(where: { $0.value == .stars }) {
-                        guard let centerAnimation = reaction.centerAnimation else {
-                            continue
-                        }
-                        guard let aroundAnimation = reaction.aroundAnimation else {
-                            continue
-                        }
-                        
-                        if existingIds.contains(reaction.value) {
-                            continue
-                        }
-                        existingIds.insert(reaction.value)
-                        
-                        result.append(ReactionItem(
-                            reaction: ReactionItem.Reaction(rawValue: reaction.value),
-                            appearAnimation: reaction.appearAnimation,
-                            stillAnimation: reaction.selectAnimation,
-                            listAnimation: centerAnimation,
-                            largeListAnimation: reaction.activateAnimation,
-                            applicationAnimation: aroundAnimation,
-                            largeApplicationAnimation: reaction.effectAnimation,
-                            isCustom: false
-                        ))
-                    } else {
-                        continue
-                    }
                 }
             }
         }
@@ -285,28 +250,41 @@ public func topMessageReactions(context: AccountContext, message: Message, subPe
         }
     }
     
-    let allowedReactionsWithFiles: Signal<(reactions: AllowedReactions, files: [Int64: TelegramMediaFile], areStarsEnabled: Bool)?, NoError> = peerMessageAllowedReactions(context: context, message: message)
-    |> mapToSignal { allowedReactions, areStarsEnabled -> Signal<(reactions: AllowedReactions, files: [Int64: TelegramMediaFile], areStarsEnabled: Bool)?, NoError> in
+    let allowedReactionsWithFiles: Signal<(reactions: AllowedReactions, files: [Int64: TelegramMediaFile])?, NoError> = peerMessageAllowedReactions(context: context, message: message)
+    |> mapToSignal { allowedReactions -> Signal<(reactions: AllowedReactions, files: [Int64: TelegramMediaFile])?, NoError> in
         guard let allowedReactions = allowedReactions else {
             return .single(nil)
         }
         
         if case let .set(reactions) = allowedReactions {
+            #if DEBUG
+            var reactions = reactions
+            if context.sharedContext.applicationBindings.appBuildType == .internal {
+                reactions.insert(.custom(MessageReaction.starsReactionId))
+            }
+            #endif
+            
             return context.engine.stickers.resolveInlineStickers(fileIds: reactions.compactMap { item -> Int64? in
                 switch item {
                 case .builtin:
                     return nil
                 case let .custom(fileId):
                     return fileId
-                case .stars:
-                    return nil
                 }
             })
-            |> map { files -> (reactions: AllowedReactions, files: [Int64: TelegramMediaFile], areStarsEnabled: Bool) in
-                return (.set(reactions), files, areStarsEnabled)
+            |> map { files -> (reactions: AllowedReactions, files: [Int64: TelegramMediaFile]) in
+                return (.set(reactions), files)
             }
         } else {
-            return .single((allowedReactions, [:], areStarsEnabled))
+            #if DEBUG
+            if context.sharedContext.applicationBindings.appBuildType == .internal {
+                return context.engine.stickers.resolveInlineStickers(fileIds: [MessageReaction.starsReactionId])
+                |> map { files -> (reactions: AllowedReactions, files: [Int64: TelegramMediaFile]) in
+                    return (allowedReactions, files)
+                }
+            }
+            #endif
+            return .single((allowedReactions, [:]))
         }
     }
 
@@ -323,6 +301,25 @@ public func topMessageReactions(context: AccountContext, message: Message, subPe
         
         var result: [ReactionItem] = []
         var existingIds = Set<MessageReaction.Reaction>()
+        
+        #if DEBUG
+        if context.sharedContext.applicationBindings.appBuildType == .internal {
+            if let file = allowedReactionsAndFiles.files[MessageReaction.starsReactionId] {
+                existingIds.insert(.custom(MessageReaction.starsReactionId))
+                
+                result.append(ReactionItem(
+                    reaction: ReactionItem.Reaction(rawValue: .custom(file.fileId.id)),
+                    appearAnimation: file,
+                    stillAnimation: file,
+                    listAnimation: file,
+                    largeListAnimation: file,
+                    applicationAnimation: nil,
+                    largeApplicationAnimation: nil,
+                    isCustom: true
+                ))
+            }
+        }
+        #endif
         
         for topReaction in topReactions {
             switch topReaction.content {
@@ -387,8 +384,6 @@ public func topMessageReactions(context: AccountContext, message: Message, subPe
                     largeApplicationAnimation: nil,
                     isCustom: true
                 ))
-            case .stars:
-                break
             }
         }
         
@@ -452,28 +447,6 @@ public func topMessageReactions(context: AccountContext, message: Message, subPe
                             isCustom: true
                         ))
                     }
-                case .stars:
-                    break
-                }
-            }
-        }
-        
-        if allowedReactionsAndFiles.areStarsEnabled {
-            result.removeAll(where: { $0.reaction.rawValue == .stars })
-            if let reaction = availableReactions.reactions.first(where: { $0.value == .stars }) {
-                if let centerAnimation = reaction.centerAnimation, let aroundAnimation = reaction.aroundAnimation {
-                    existingIds.insert(reaction.value)
-                    
-                    result.insert(ReactionItem(
-                        reaction: ReactionItem.Reaction(rawValue: reaction.value),
-                        appearAnimation: reaction.appearAnimation,
-                        stillAnimation: reaction.selectAnimation,
-                        listAnimation: centerAnimation,
-                        largeListAnimation: reaction.activateAnimation,
-                        applicationAnimation: aroundAnimation,
-                        largeApplicationAnimation: reaction.effectAnimation,
-                        isCustom: false
-                    ), at: 0)
                 }
             }
         }

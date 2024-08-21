@@ -154,10 +154,9 @@ public final class RecentEmojiItem: Codable, Equatable {
 }
 
 public struct RecentReactionItemId {
-    public enum Id: Hashable {
+    public enum Id : Hashable {
         case custom(MediaId)
         case builtin(String)
-        case stars
     }
     
     public let rawValue: MemoryBuffer
@@ -185,8 +184,6 @@ public struct RecentReactionItemId {
             assert(rawValue.length >= 1 + 2 + Int(length))
             
             self.id = .builtin(String(data: Data(bytes: rawValue.memory.advanced(by: 1 + 2), count: Int(length)), encoding: .utf8) ?? ".")
-        } else if type == 2 {
-            self.id = .stars
         } else {
             assert(false)
             self.id = .builtin(".")
@@ -219,23 +216,12 @@ public struct RecentReactionItemId {
             let _ = memcpy(self.rawValue.memory.advanced(by: 1 + 2), bytes.baseAddress!.assumingMemoryBound(to: UInt8.self), bytes.count)
         }
     }
-    
-    public init(_ id: Id) {
-        precondition(id == .stars)
-        self.id = id
-        
-        self.rawValue = MemoryBuffer(memory: malloc(1)!, capacity: 1, length: 1, freeWhenDone: true)
-        
-        var type: UInt8 = 2
-        memcpy(self.rawValue.memory.advanced(by: 0), &type, 1)
-    }
 }
 
 public final class RecentReactionItem: Codable, Equatable {
     public enum Content: Equatable {
         case custom(TelegramMediaFile)
         case builtin(String)
-        case stars
     }
     
     public let content: Content
@@ -246,8 +232,6 @@ public final class RecentReactionItem: Codable, Equatable {
             return RecentReactionItemId(value)
         case let .custom(file):
             return RecentReactionItemId(file.fileId)
-        case .stars:
-            return RecentReactionItemId(.stars)
         }
     }
     
@@ -260,8 +244,6 @@ public final class RecentReactionItem: Codable, Equatable {
 
         if let mediaData = try container.decodeIfPresent(AdaptedPostboxDecoder.RawObjectData.self, forKey: "m") {
             self.content = .custom(TelegramMediaFile(decoder: PostboxDecoder(buffer: MemoryBuffer(data: mediaData.data))))
-        } else if let _ = try container.decodeIfPresent(Int64.self, forKey: "star") {
-            self.content = .stars
         } else {
             self.content = .builtin(try container.decode(String.self, forKey: "s"))
         }
@@ -275,8 +257,6 @@ public final class RecentReactionItem: Codable, Equatable {
             try container.encode(PostboxEncoder().encodeObjectToRawData(file), forKey: "m")
         case let .builtin(string):
             try container.encode(string, forKey: "s")
-        case .stars:
-            try container.encode(0 as Int64, forKey: "star")
         }
     }
     

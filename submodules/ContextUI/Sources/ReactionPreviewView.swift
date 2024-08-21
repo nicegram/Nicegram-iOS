@@ -36,7 +36,7 @@ final class ReactionPreviewView: UIView {
                     size: size,
                     placeholderColor: .clear,
                     themeColor: .white,
-                    loopMode: .forever
+                    loopMode: .count(0)
                 ),
                 isVisibleForAnimations: true,
                 action: nil

@@ -1859,8 +1859,6 @@ public func preloadStoryMedia(context: AccountContext, info: StoryPreloadInfo) -
             if !customReactions.contains(fileId) {
                 customReactions.append(fileId)
             }
-        case .stars:
-            break
         }
     }
     if !builtinReactions.isEmpty {
@@ -2092,8 +2090,6 @@ public func waitUntilStoryMediaPreloaded(context: AccountContext, peerId: Engine
                     if !customReactions.contains(fileId) {
                         customReactions.append(fileId)
                     }
-                case .stars:
-                    break
                 }
             }
         }

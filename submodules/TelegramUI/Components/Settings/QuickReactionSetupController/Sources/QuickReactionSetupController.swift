@@ -307,13 +307,6 @@ public func quickReactionSetupController(
                 }
             case let .custom(fileId):
                 currentSelectedFileId = MediaId(namespace: Namespaces.Media.CloudFile, id: fileId)
-            case .stars:
-                if let availableReactions = availableReactions {
-                    if let reaction = availableReactions.reactions.first(where: { $0.value == settings.quickReaction }) {
-                        currentSelectedFileId = reaction.selectAnimation.fileId
-                        break
-                    }
-                }
             }
             
             var selectedItems = Set<MediaId>()

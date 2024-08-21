@@ -14,7 +14,6 @@ swift_library(
         "//submodules/AsyncDisplayKit",
         "//submodules/ComponentFlow",
         "//submodules/TelegramUI/Components/SpaceWarpView/STCMeshView",
-        "//submodules/UIKitRuntimeUtils",
     ],
     visibility = [
         "//visibility:public",

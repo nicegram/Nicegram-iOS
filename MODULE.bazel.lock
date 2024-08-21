@@ -2956,8 +2956,8 @@
       "general": {
         "bzlTransitiveDigest": "YjE3dFjYQ4sj5gn2Iz1cWVK14/ZJ5cmnAUUGjDbACAA=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "d81120287c19acb5e544c11ee5393145dcc4c12c81b62bcc19d5576dab06a370",
-          "@@//Package.swift": "300a72a2cbc0256b09d99520341bf9a81b4d296bdd151b64665889820664a83d"
+          "@@//Package.resolved": "06bfbab719e4a9a5c518560ccd38f94fac37034aa6d6b4ca345c59df1237d28a",
+          "@@//Package.swift": "5ec7a4bc98efbe05c2f49eace2c89b1ef5b01d545d1474b5a2e2a2ad98c32a2e"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -3041,24 +3041,6 @@
               "bazel_package_name": "swiftpkg_tweetnacl_swiftwrap",
               "commit": "f8fd111642bf2336b11ef9ea828510693106e954",
               "remote": "https://github.com/bitmark-inc/tweetnacl-swiftwrap",
-              "init_submodules": false,
-              "recursive_init_submodules": true,
-              "patch_args": [
-                "-p0"
-              ],
-              "patch_cmds": [],
-              "patch_cmds_win": [],
-              "patch_tool": "",
-              "patches": []
-            }
-          },
-          "swiftpkg_swiftui_flow": {
-            "bzlFile": "@@rules_swift_package_manager~//swiftpkg/internal:swift_package.bzl",
-            "ruleClassName": "swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_swiftui_flow",
-              "commit": "9d122ace53e143dc3e1bf61c01a024535b0c7ab7",
-              "remote": "https://github.com/denis15yo/SwiftUI-Flow.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -3183,7 +3165,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_core_swift",
-              "commit": "8fe212b4616cce8f534cc4708c8d6b2b548a5035",
+              "commit": "f03e7c89c56aaafdb3b22a8ab5ebfefb3fb018a6",
               "remote": "https://github.com/denis15yo/core-swift.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3435,7 +3417,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "741126d3991a3973a79cc7ecb81d84ece4649159",
+              "commit": "1b82457f99a129e8c97d8314b405e1e0e411a8a6",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3687,7 +3669,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_wallet_ios",
-              "commit": "d726273283da0db83939374137006f808bfd4d4c",
+              "commit": "794177222256849249416a30fa8e3dc7560507c8",
               "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
               "init_submodules": false,
               "recursive_init_submodules": true,

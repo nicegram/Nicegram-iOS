@@ -148,13 +148,14 @@ static void MTNetworkAvailabilityContextRelease(const void *info)
          isWWAN = (flags & kSCNetworkReachabilityFlagsIsWWAN);
 #endif
          NSString *currentReachabilityState = [[NSString alloc] initWithFormat:@"%s_%s_%s", isWWAN ? "M" : "L", canConnectWithoutUserInteraction ? "+U" : "-U", isNetworkReachable ? "+" : "-"];
+
          if (![currentReachabilityState isEqualToString:_lastReachabilityState])
          {
              _lastReachabilityState = currentReachabilityState;
              if (MTLogEnabled()) {
                  MTLog(@"[MTNetworkAvailability#%p state: %@]", self, _lastReachabilityState);
              }
-             
+                          
              if (notify)
              {
                  id<MTNetworkAvailabilityDelegate> delegate = _delegate;

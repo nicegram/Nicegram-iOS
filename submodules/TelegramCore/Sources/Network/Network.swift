@@ -1199,6 +1199,11 @@ public final class Network: NSObject, MTRequestMessageServiceDelegate {
             return state.markNotifyTimestamp()
         }
     }
+    
+    public func restartMtProto() {
+        self.mtProto.pause()
+        self.mtProto.resume()
+    }
 }
 
 public func retryRequest<T>(signal: Signal<T, MTRpcError>) -> Signal<T, NoError> {

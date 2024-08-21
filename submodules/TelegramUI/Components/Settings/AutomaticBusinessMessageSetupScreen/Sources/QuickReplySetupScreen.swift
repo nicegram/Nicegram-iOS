@@ -217,8 +217,6 @@ final class QuickReplySetupScreenComponent: Component {
                     },
                     openStories: { _, _ in
                     },
-                    openStarsTopup: { _ in
-                    },
                     dismissNotice: { _ in
                     },
                     editPeer: { [weak listNode] _ in

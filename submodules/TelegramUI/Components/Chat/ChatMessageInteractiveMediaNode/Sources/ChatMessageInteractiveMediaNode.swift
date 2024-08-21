@@ -217,7 +217,7 @@ private class ExtendedMediaOverlayNode: ASDisplayNode {
     private let context: AccountContext
     
     private let blurredImageNode: TransformImageNode
-    fileprivate let dustNode: MediaDustNode
+    private let dustNode: MediaDustNode
     fileprivate let buttonNode: HighlightTrackingButtonNode
     private let highlightedBackgroundNode: ASDisplayNode
     private let iconNode: ASImageNode
@@ -306,7 +306,6 @@ private class ExtendedMediaOverlayNode: ASDisplayNode {
     func reveal(animated: Bool = false) {
         self.isRevealed = true
         if animated {
-            self.dustNode.revealOnTap = true
             self.dustNode.tap(at: CGPoint(x: self.dustNode.bounds.width / 2.0, y: self.dustNode.bounds.height / 2.0))
         } else {
             self.blurredImageNode.removeFromSupernode()
@@ -453,7 +452,6 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
     private var automaticDownload: InteractiveMediaNodeAutodownloadMode?
     public var automaticPlayback: Bool?
     private var preferredStoryHighQuality: Bool = false
-    private var showSensitiveContent: Bool = false
     
     private let statusDisposable = MetaDisposable()
     private let fetchControls = Atomic<FetchControls?>(value: nil)
@@ -1577,7 +1575,6 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                             strongSelf.automaticPlayback = automaticPlayback
                             strongSelf.automaticDownload = automaticDownload
                             strongSelf.preferredStoryHighQuality = associatedData.preferredStoryHighQuality
-                            strongSelf.showSensitiveContent = associatedData.showSensitiveContent
                                                         
                             if let previousArguments = strongSelf.currentImageArguments {
                                 if previousArguments.imageSize == arguments.imageSize {
@@ -2407,25 +2404,20 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
             displaySpoiler = true
         } else if isSecretMedia {
             displaySpoiler = true
-        } else if message.isSensitiveContent(platform: "ios") {
-            if !self.showSensitiveContent {
-                displaySpoiler = true
-                icon = .eye
-            }
+        } else if message.isAgeRestricted() {
+            displaySpoiler = true
+            icon = .eye
         }
         
-        if displaySpoiler, let context = self.context {
-            let extendedMediaOverlayNode: ExtendedMediaOverlayNode
-            if let current = self.extendedMediaOverlayNode {
-                extendedMediaOverlayNode = current
-            } else {
+        if displaySpoiler {
+            if self.extendedMediaOverlayNode == nil, let context = self.context {
                 let enableAnimations = context.sharedContext.energyUsageSettings.fullTranslucency && !isPreview
-                extendedMediaOverlayNode = ExtendedMediaOverlayNode(context: context, hasImageOverlay: !isSecretMedia, icon: icon,  enableAnimations: enableAnimations)
+                let extendedMediaOverlayNode = ExtendedMediaOverlayNode(context: context, hasImageOverlay: !isSecretMedia, icon: icon,  enableAnimations: enableAnimations)
                 extendedMediaOverlayNode.tapped = { [weak self] in
                     guard let self else {
                         return
                     }
-                    if message.isSensitiveContent(platform: "ios") {
+                    if message.isAgeRestricted() {
                         self.activateAgeRestrictedMedia?()
                     } else {
                         self.internallyVisible = true
@@ -2436,7 +2428,7 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                 self.extendedMediaOverlayNode = extendedMediaOverlayNode
                 self.pinchContainerNode.contentNode.insertSubnode(extendedMediaOverlayNode, aboveSubnode: self.imageNode)
             }
-            extendedMediaOverlayNode.frame = self.imageNode.frame
+            self.extendedMediaOverlayNode?.frame = self.imageNode.frame
             
             var tappable = false
             if !isSecretMedia {
@@ -2447,12 +2439,13 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                     break
                 }
             }
-            extendedMediaOverlayNode.isUserInteractionEnabled = tappable
+            
+            self.extendedMediaOverlayNode?.isUserInteractionEnabled = tappable
             
             var viewText: String = ""
-            if case .eye = icon {
-                viewText = strings.Chat_SensitiveContent
-                extendedMediaOverlayNode.dustNode.revealOnTap = false
+            if message.isAgeRestricted() {
+                //TODO:localize
+                viewText = "18+ Content"
             } else {
                 outer: for attribute in message.attributes {
                     if let attribute = attribute as? ReplyMarkupMessageAttribute {
@@ -2467,9 +2460,8 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                         break
                     }
                 }
-                extendedMediaOverlayNode.dustNode.revealOnTap = true
             }
-            extendedMediaOverlayNode.update(size: self.imageNode.frame.size, text: viewText, imageSignal: self.currentBlurredImageSignal, imageFrame: self.imageNode.view.convert(self.imageNode.bounds, to: extendedMediaOverlayNode.view), corners: self.currentImageArguments?.corners)
+            self.extendedMediaOverlayNode?.update(size: self.imageNode.frame.size, text: viewText, imageSignal: self.currentBlurredImageSignal, imageFrame: self.imageNode.view.convert(self.imageNode.bounds, to: self.extendedMediaOverlayNode?.view), corners: self.currentImageArguments?.corners)
         } else if let extendedMediaOverlayNode = self.extendedMediaOverlayNode {
             self.extendedMediaOverlayNode = nil
             extendedMediaOverlayNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, removeOnCompletion: false, completion: { [weak extendedMediaOverlayNode] _ in
@@ -2677,12 +2669,12 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
     }
     
     public func ignoreTapActionAtPoint(_ point: CGPoint) -> Bool {
-        if let extendedMediaOverlayNode = self.extendedMediaOverlayNode {
-            let convertedPoint = self.view.convert(point, to: extendedMediaOverlayNode.view)
-            if extendedMediaOverlayNode.buttonNode.frame.contains(convertedPoint) {
-                return true
-            }
-        }
+//        if let extendedMediaOverlayNode = self.extendedMediaOverlayNode {
+//            let convertedPoint = self.view.convert(point, to: extendedMediaOverlayNode.view)
+//            if extendedMediaOverlayNode.buttonNode.frame.contains(convertedPoint) {
+//                return true
+//            }
+//        }
         return false
     }
 }

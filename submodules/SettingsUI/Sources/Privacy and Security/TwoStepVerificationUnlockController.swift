@@ -16,7 +16,6 @@ import PasswordSetupUI
 import Markdown
 
 private final class TwoStepVerificationUnlockSettingsControllerArguments {
-    let context: AccountContext
     let updatePasswordText: (String) -> Void
     let checkPassword: () -> Void
     let openForgotPassword: () -> Void
@@ -29,8 +28,7 @@ private final class TwoStepVerificationUnlockSettingsControllerArguments {
     let declinePasswordReset: () -> Void
     let resetPassword: () -> Void
     
-    init(context: AccountContext, updatePasswordText: @escaping (String) -> Void, checkPassword: @escaping () -> Void, openForgotPassword: @escaping () -> Void, openSetupPassword: @escaping () -> Void, openDisablePassword: @escaping () -> Void, openSetupEmail: @escaping () -> Void, openResetPendingEmail: @escaping () -> Void, updateEmailCode: @escaping (String) -> Void, openConfirmEmail: @escaping () -> Void, declinePasswordReset: @escaping () -> Void, resetPassword: @escaping () -> Void) {
-        self.context = context
+    init(updatePasswordText: @escaping (String) -> Void, checkPassword: @escaping () -> Void, openForgotPassword: @escaping () -> Void, openSetupPassword: @escaping () -> Void, openDisablePassword: @escaping () -> Void, openSetupEmail: @escaping () -> Void, openResetPendingEmail: @escaping () -> Void, updateEmailCode: @escaping (String) -> Void, openConfirmEmail: @escaping () -> Void, declinePasswordReset: @escaping () -> Void, resetPassword: @escaping () -> Void) {
         self.updatePasswordText = updatePasswordText
         self.checkPassword = checkPassword
         self.openForgotPassword = openForgotPassword
@@ -425,7 +423,7 @@ public func twoStepVerificationUnlockSettingsController(context: AccountContext,
         })
     }
     
-    let arguments = TwoStepVerificationUnlockSettingsControllerArguments(context: context, updatePasswordText: { updatedText in
+    let arguments = TwoStepVerificationUnlockSettingsControllerArguments(updatePasswordText: { updatedText in
         updateState { state in
             var state = state
             state.passwordText = updatedText

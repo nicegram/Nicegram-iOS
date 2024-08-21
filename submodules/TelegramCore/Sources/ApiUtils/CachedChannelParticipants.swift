@@ -72,13 +72,13 @@ public struct ChannelParticipantBannedInfo: PostboxCoding, Equatable {
 
 public enum ChannelParticipant: PostboxCoding, Equatable {
     case creator(id: PeerId, adminInfo: ChannelParticipantAdminInfo?, rank: String?)
-    case member(id: PeerId, invitedAt: Int32, adminInfo: ChannelParticipantAdminInfo?, banInfo: ChannelParticipantBannedInfo?, rank: String?, subscriptionUntilDate: Int32?)
+    case member(id: PeerId, invitedAt: Int32, adminInfo: ChannelParticipantAdminInfo?, banInfo: ChannelParticipantBannedInfo?, rank: String?)
     
     public var peerId: PeerId {
         switch self {
             case let .creator(id, _, _):
                 return id
-            case let .member(id, _, _, _, _, _):
+            case let .member(id, _, _, _, _):
                 return id
         }
     }
@@ -87,15 +87,15 @@ public enum ChannelParticipant: PostboxCoding, Equatable {
         switch self {
             case let .creator(_, _, rank):
                 return rank
-            case let .member(_, _, _, _, rank, _):
+            case let .member(_, _, _, _, rank):
                 return rank
         }
     }
     
     public static func ==(lhs: ChannelParticipant, rhs: ChannelParticipant) -> Bool {
         switch lhs {
-            case let .member(lhsId, lhsInvitedAt, lhsAdminInfo, lhsBanInfo, lhsRank, lhsSubscriptionUntilDate):
-                if case let .member(rhsId, rhsInvitedAt, rhsAdminInfo, rhsBanInfo, rhsRank, rhsSubscriptionUntilDate) = rhs {
+            case let .member(lhsId, lhsInvitedAt, lhsAdminInfo, lhsBanInfo, lhsRank):
+                if case let .member(rhsId, rhsInvitedAt, rhsAdminInfo, rhsBanInfo, rhsRank) = rhs {
                     if lhsId != rhsId {
                         return false
                     }
@@ -109,9 +109,6 @@ public enum ChannelParticipant: PostboxCoding, Equatable {
                         return false
                     }
                     if lhsRank != rhsRank {
-                        return false
-                    }
-                    if lhsSubscriptionUntilDate != rhsSubscriptionUntilDate {
                         return false
                     }
                     return true
@@ -130,17 +127,17 @@ public enum ChannelParticipant: PostboxCoding, Equatable {
     public init(decoder: PostboxDecoder) {
         switch decoder.decodeInt32ForKey("r", orElse: 0) {
             case ChannelParticipantValue.member.rawValue:
-                self = .member(id: PeerId(decoder.decodeInt64ForKey("i", orElse: 0)), invitedAt: decoder.decodeInt32ForKey("t", orElse: 0), adminInfo: decoder.decodeObjectForKey("ai", decoder: { ChannelParticipantAdminInfo(decoder: $0) }) as? ChannelParticipantAdminInfo, banInfo: decoder.decodeObjectForKey("bi", decoder: { ChannelParticipantBannedInfo(decoder: $0) }) as? ChannelParticipantBannedInfo, rank: decoder.decodeOptionalStringForKey("rank"), subscriptionUntilDate: decoder.decodeOptionalInt32ForKey("subscriptionUntilDate"))
+                self = .member(id: PeerId(decoder.decodeInt64ForKey("i", orElse: 0)), invitedAt: decoder.decodeInt32ForKey("t", orElse: 0), adminInfo: decoder.decodeObjectForKey("ai", decoder: { ChannelParticipantAdminInfo(decoder: $0) }) as? ChannelParticipantAdminInfo, banInfo: decoder.decodeObjectForKey("bi", decoder: { ChannelParticipantBannedInfo(decoder: $0) }) as? ChannelParticipantBannedInfo, rank: decoder.decodeOptionalStringForKey("rank"))
             case ChannelParticipantValue.creator.rawValue:
                 self = .creator(id: PeerId(decoder.decodeInt64ForKey("i", orElse: 0)), adminInfo: decoder.decodeObjectForKey("ai", decoder: { ChannelParticipantAdminInfo(decoder: $0) }) as? ChannelParticipantAdminInfo, rank: decoder.decodeOptionalStringForKey("rank"))
             default:
-                self = .member(id: PeerId(decoder.decodeInt64ForKey("i", orElse: 0)), invitedAt: decoder.decodeInt32ForKey("t", orElse: 0), adminInfo: nil, banInfo: nil, rank: nil, subscriptionUntilDate: nil)
+                self = .member(id: PeerId(decoder.decodeInt64ForKey("i", orElse: 0)), invitedAt: decoder.decodeInt32ForKey("t", orElse: 0), adminInfo: nil, banInfo: nil, rank: nil)
         }
     }
     
     public func encode(_ encoder: PostboxEncoder) {
         switch self {
-            case let .member(id, invitedAt, adminInfo, banInfo, rank, subscriptionUntilDate):
+            case let .member(id, invitedAt, adminInfo, banInfo, rank):
                 encoder.encodeInt32(ChannelParticipantValue.member.rawValue, forKey: "r")
                 encoder.encodeInt64(id.toInt64(), forKey: "i")
                 encoder.encodeInt32(invitedAt, forKey: "t")
@@ -158,11 +155,6 @@ public enum ChannelParticipant: PostboxCoding, Equatable {
                     encoder.encodeString(rank, forKey: "rank")
                 } else {
                     encoder.encodeNil(forKey: "rank")
-                }
-                if let subscriptionUntilDate = subscriptionUntilDate {
-                    encoder.encodeInt32(subscriptionUntilDate, forKey: "subscriptionUntilDate")
-                } else {
-                    encoder.encodeNil(forKey: "subscriptionUntilDate")
                 }
             case let .creator(id, adminInfo, rank):
                 encoder.encodeInt32(ChannelParticipantValue.creator.rawValue, forKey: "r")
@@ -205,20 +197,20 @@ public final class CachedChannelParticipants: PostboxCoding, Equatable {
 extension ChannelParticipant {
     init(apiParticipant: Api.ChannelParticipant) {
         switch apiParticipant {
-            case let .channelParticipant(_, userId, date, subscriptionUntilDate):
-                self = .member(id: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), invitedAt: date, adminInfo: nil, banInfo: nil, rank: nil, subscriptionUntilDate: subscriptionUntilDate)
+            case let .channelParticipant(userId, date):
+                self = .member(id: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), invitedAt: date, adminInfo: nil, banInfo: nil, rank: nil)
             case let .channelParticipantCreator(_, userId, adminRights, rank):
                 self = .creator(id: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), adminInfo: ChannelParticipantAdminInfo(rights: TelegramChatAdminRights(apiAdminRights: adminRights) ?? TelegramChatAdminRights(rights: []), promotedBy: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), canBeEditedByAccountPeer: true), rank: rank)
             case let .channelParticipantBanned(flags, userId, restrictedBy, date, bannedRights):
                 let hasLeft = (flags & (1 << 0)) != 0
                 let banInfo = ChannelParticipantBannedInfo(rights: TelegramChatBannedRights(apiBannedRights: bannedRights), restrictedBy: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(restrictedBy)), timestamp: date, isMember: !hasLeft)
-                self = .member(id: userId.peerId, invitedAt: date, adminInfo: nil, banInfo: banInfo, rank: nil, subscriptionUntilDate: nil)
+                self = .member(id: userId.peerId, invitedAt: date, adminInfo: nil, banInfo: banInfo, rank: nil)
             case let .channelParticipantAdmin(flags, userId, _, promotedBy, date, adminRights, rank: rank):
-                self = .member(id: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), invitedAt: date, adminInfo: ChannelParticipantAdminInfo(rights: TelegramChatAdminRights(apiAdminRights: adminRights) ?? TelegramChatAdminRights(rights: []), promotedBy: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(promotedBy)), canBeEditedByAccountPeer: (flags & (1 << 0)) != 0), banInfo: nil, rank: rank, subscriptionUntilDate: nil)
-            case let .channelParticipantSelf(_, userId, _, date, subscriptionUntilDate):
-                self = .member(id: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), invitedAt: date, adminInfo: nil, banInfo: nil, rank: nil, subscriptionUntilDate: subscriptionUntilDate)
+                self = .member(id: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), invitedAt: date, adminInfo: ChannelParticipantAdminInfo(rights: TelegramChatAdminRights(apiAdminRights: adminRights) ?? TelegramChatAdminRights(rights: []), promotedBy: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(promotedBy)), canBeEditedByAccountPeer: (flags & (1 << 0)) != 0), banInfo: nil, rank: rank)
+            case let .channelParticipantSelf(_, userId, _, date):
+                self = .member(id: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), invitedAt: date, adminInfo: nil, banInfo: nil, rank: nil)
             case let .channelParticipantLeft(userId):
-                self = .member(id: userId.peerId, invitedAt: 0, adminInfo: nil, banInfo: nil, rank: nil, subscriptionUntilDate: nil)
+                self = .member(id: userId.peerId, invitedAt: 0, adminInfo: nil, banInfo: nil, rank: nil)
         }
     }
 }

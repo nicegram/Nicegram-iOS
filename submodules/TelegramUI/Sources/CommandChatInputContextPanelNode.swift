@@ -172,8 +172,6 @@ private struct CommandChatInputContextPanelEntry: Comparable, Identifiable {
                     },
                     openStories: { _, _ in
                     },
-                    openStarsTopup: { _ in
-                    },
                     dismissNotice: { _ in
                     },
                     editPeer: { _ in

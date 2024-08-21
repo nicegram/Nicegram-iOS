@@ -256,13 +256,7 @@ public func chatMessageGalleryControllerData(context: AccountContext, chatLocati
                 }
             }
             
-            if let adAttribute = message.adAttribute, adAttribute.hasContentMedia {
-                let gallery = GalleryController(context: context, source: .standaloneMessage(message, mediaIndex), invertItemOrder: reverseMessageGalleryOrder, streamSingleVideo: stream, fromPlayingVideo: autoplayingVideo, landscape: landscape, timecode: nil, playbackRate: 1.0, synchronousLoad: synchronousLoad, replaceRootController: { [weak navigationController] controller, ready in
-                    navigationController?.replaceTopController(controller, animated: false, ready: ready)
-                }, baseNavigationController: navigationController, actionInteraction: actionInteraction)
-                gallery.temporaryDoNotWaitForReady = autoplayingVideo
-                return .gallery(.single(gallery))
-            } else if message.containsSecretMedia {
+            if message.containsSecretMedia {
                 let gallery = SecretMediaPreviewController(context: context, messageId: message.id)
                 return .secretGallery(gallery)
             } else {

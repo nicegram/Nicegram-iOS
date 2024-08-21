@@ -490,7 +490,6 @@ public enum GalleryControllerInteractionTapAction {
     case botCommand(String)
     case hashtag(String?, String)
     case timecode(Double, String)
-    case ad(MessageId)
 }
 
 public enum GalleryControllerItemNodeAction {
@@ -969,8 +968,6 @@ public class GalleryController: ViewController, StandalonePresentableController,
                         strongSelf.actionInteraction?.openHashtag(peerName, hashtag)
                     case let .timecode(timecode, _):
                         strongSelf.galleryNode.pager.centralItemNode()?.processAction(.timecode(timecode))
-                    case let .ad(messageId):
-                        strongSelf.actionInteraction?.openAd(messageId)
                 }
             }
         }
@@ -1226,8 +1223,6 @@ public class GalleryController: ViewController, StandalonePresentableController,
                             ])
                         ])
                         strongSelf.present(actionSheet, in: .window(.root))
-                    case .ad:
-                        break
                 }
             }
         }

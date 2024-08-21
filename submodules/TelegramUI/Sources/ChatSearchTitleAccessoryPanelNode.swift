@@ -484,8 +484,6 @@ final class ChatSearchTitleAccessoryPanelNode: ChatTitleAccessoryPanelNode, Chat
                     break
                 case let .custom(fileId):
                     customFileIds.append(fileId)
-                case .stars:
-                    break
                 }
             }
             
@@ -512,7 +510,7 @@ final class ChatSearchTitleAccessoryPanelNode: ChatTitleAccessoryPanelNode, Chat
                 let title = savedMessageTags?.tags.first(where: { $0.reaction == reaction })?.title
                 
                 switch reaction {
-                case .builtin, .stars:
+                case .builtin:
                     if let availableReactions {
                         inner: for availableReaction in availableReactions.reactions {
                             if availableReaction.value == reaction {
@@ -765,7 +763,7 @@ final class ChatSearchTitleAccessoryPanelNode: ChatTitleAccessoryPanelNode, Chat
         
         let reactionFile: Signal<TelegramMediaFile?, NoError>
         switch reaction {
-        case .builtin, .stars:
+        case .builtin:
             reactionFile = self.context.engine.stickers.availableReactions()
             |> take(1)
             |> map { availableReactions -> TelegramMediaFile? in
