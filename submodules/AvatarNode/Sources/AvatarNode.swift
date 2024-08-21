@@ -97,8 +97,12 @@ private func calculateColors(context: AccountContext?, explicitColorIndex: Int?,
             colors = AvatarNode.repostColors
         } else if case .repliesIcon = icon {
             colors = AvatarNode.savedMessagesColors
-        } else if case .anonymousSavedMessagesIcon = icon {
-            colors = AvatarNode.savedMessagesColors
+        } else if case let .anonymousSavedMessagesIcon(isColored) = icon {
+            if isColored {
+                colors = AvatarNode.savedMessagesColors
+            } else {
+                colors = AvatarNode.grayscaleColors
+            }
         } else if case .myNotesIcon = icon {
             colors = AvatarNode.savedMessagesColors
         } else if case .editAvatarIcon = icon, let theme {
@@ -181,7 +185,7 @@ private enum AvatarNodeIcon: Equatable {
     case none
     case savedMessagesIcon
     case repliesIcon
-    case anonymousSavedMessagesIcon
+    case anonymousSavedMessagesIcon(isColored: Bool)
     case myNotesIcon
     case archivedChatsIcon(hiddenByDefault: Bool)
     case editAvatarIcon
@@ -195,7 +199,7 @@ public enum AvatarNodeImageOverride: Equatable {
     case image(TelegramMediaImageRepresentation)
     case savedMessagesIcon
     case repliesIcon
-    case anonymousSavedMessagesIcon
+    case anonymousSavedMessagesIcon(isColored: Bool)
     case myNotesIcon
     case archivedChatsIcon(hiddenByDefault: Bool)
     case editAvatarIcon(forceNone: Bool)
@@ -509,9 +513,9 @@ public final class AvatarNode: ASDisplayNode {
                 case .repliesIcon:
                     representation = nil
                     icon = .repliesIcon
-                case .anonymousSavedMessagesIcon:
+                case let .anonymousSavedMessagesIcon(isColored):
                     representation = nil
-                    icon = .anonymousSavedMessagesIcon
+                    icon = .anonymousSavedMessagesIcon(isColored: isColored)
                 case .myNotesIcon:
                     representation = nil
                     icon = .myNotesIcon
@@ -685,9 +689,9 @@ public final class AvatarNode: ASDisplayNode {
                 case .repliesIcon:
                     representation = nil
                     icon = .repliesIcon
-                case .anonymousSavedMessagesIcon:
+                case let .anonymousSavedMessagesIcon(isColored):
                     representation = nil
-                    icon = .anonymousSavedMessagesIcon
+                    icon = .anonymousSavedMessagesIcon(isColored: isColored)
                 case .myNotesIcon:
                     representation = nil
                     icon = .myNotesIcon

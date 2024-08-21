@@ -33,7 +33,7 @@
       "location" : "https://github.com/denis15yo/core-swift.git",
       "state" : {
         "branch" : "release/1.0.0",
-        "revision" : "8fe212b4616cce8f534cc4708c8d6b2b548a5035"
+        "revision" : "78f8920a260775686dd0e04f5045677447bb7a6c"
       }
     },
     {
@@ -122,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "1b82457f99a129e8c97d8314b405e1e0e411a8a6"
+        "branch" : "qa/new_assistant+tg_merge+wallet_settings",
+        "revision" : "26b2fc47d855c3a7fb160f7503353decd1fa73db"
       }
     },
     {
@@ -131,8 +131,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "64428c3992ef989f6e9fc943d111c21cc895f4d5"
+        "branch" : "qa/new_assistant+tg_merge+wallet_settings",
+        "revision" : "340fa3761117161d994e2a435d719f1b0d1d5474"
       }
     },
     {
@@ -289,6 +289,15 @@
       }
     },
     {
+      "identity" : "swiftui-flow",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/denis15yo/SwiftUI-Flow.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "9d122ace53e143dc3e1bf61c01a024535b0c7ab7"
+      }
+    },
+    {
       "identity" : "swiftystorekit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/bizz84/SwiftyStoreKit.git",
@@ -321,7 +330,7 @@
       "location" : "https://github.com/denis15yo/ton-swift.git",
       "state" : {
         "branch" : "main",
-        "revision" : "e4c3def222afc125f7ee83c1569004e31f0cd05c"
+        "revision" : "e08680928f8fd83319c47f1f48301a52ba502b8b"
       }
     },
     {

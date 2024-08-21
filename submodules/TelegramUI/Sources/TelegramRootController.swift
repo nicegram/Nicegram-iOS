@@ -1,6 +1,6 @@
 // MARK: Nicegram Assistant
 import CoreSwiftUI
-import NGAssistantUI
+import FeatAssistant
 import let NGCoreUI.images
 import var NGCoreUI.strings
 import NGUI
@@ -181,7 +181,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                     }
                     return !window.hasOverlayController()
                 }
-                await AssistantUITgHelper.showAlertsFromHomeIfNeeded(
+                await AssistantTgHelper.showAlertsFromHomeIfNeeded(
                     canPresent: canPresent,
                     showAssitantTooltip: { [weak self] in
                         self?.showNicegramTooltip(
@@ -265,7 +265,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         // MARK: Nicegram Assistant
         if #available(iOS 15.0, *) {
             let assistantController = NativeControllerWrapper(
-                controller: AssistantUITgHelper.assistantTab(),
+                controller: AssistantTgHelper.assistantTab(),
                 accountContext: self.context,
                 adjustSafeArea: true
             )
@@ -284,7 +284,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                 controllers.append(assistantController)
             }
             
-            AssistantUITgHelper.routeToAssistantImpl = { [weak self] source in
+            AssistantTgHelper.routeToAssistantImpl = { [weak self] source in
                 guard let self, let rootTabController else {
                     return
                 }
@@ -294,12 +294,12 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                 }
                 
                 if let assistantIndex {
-                    AssistantUITgHelper.assistantSource = source
+                    AssistantTgHelper.assistantSource = source
                     
                     popToRoot(animated: true)
                     rootTabController.selectedIndex = assistantIndex
                 } else {
-                    AssistantUITgHelper.presentAssistantModally(
+                    AssistantTgHelper.presentAssistantModally(
                         source: source
                     )
                 }
@@ -315,7 +315,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                 }
                 
                 if index == assistantIndex {
-                    AssistantUITgHelper.assistantSource = .tabBar
+                    AssistantTgHelper.assistantSource = .tabBar
                 }
             }
         }
