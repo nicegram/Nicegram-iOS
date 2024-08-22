@@ -2,13 +2,12 @@ import Foundation
 import UIKit
 import Postbox
 // MARK: Nicegram Imports
+import FeatAssistant
 import NGAiChat
 import NGAiChatUI
 import NGAnalytics
 import NGData
 import NGAppCache
-import NGAssistant
-import NGAssistantUI
 import NGCore
 import FeatAuth
 import NGModels
@@ -352,7 +351,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                             component: AnyComponent(NicegramButtonComponent(
                                 pressed: {
                                     Task {
-                                        AssistantUITgHelper.presentAssistantModally(
+                                        AssistantTgHelper.presentAssistantModally(
                                             source: .navigationBarIcon
                                         )
                                     }
@@ -1233,6 +1232,14 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             }
             self.openBirthdaySetup()
         }
+        
+        self.chatListDisplayNode.mainContainerNode.openStarsTopup = { [weak self] amount in
+            guard let self else {
+                return
+            }
+            self.openStarsTopup(amount: amount)
+        }
+        
         self.chatListDisplayNode.mainContainerNode.openPremiumManagement = { [weak self] in
             guard let self else {
                 return
@@ -6143,6 +6150,14 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         self.push(controller)
     }
     
+    func openStarsTopup(amount: Int64?) {
+        guard let starsContext = self.context.starsContext else {
+            return
+        }
+        let controller = self.context.sharedContext.makeStarsPurchaseScreen(context: self.context, starsContext: starsContext, options: [], purpose: amount.flatMap({ .topUp(requiredStars: $0, purpose: "subs") }) ?? .generic, completion: { _ in })
+        self.push(controller)
+    }
+    
     private var storyCameraTransitionInCoordinator: StoryCameraTransitionInCoordinator?
     var hasStoryCameraTransition: Bool {
         return self.storyCameraTransitionInCoordinator != nil
@@ -6711,9 +6726,6 @@ private final class ChatListLocationContext {
             switch networkState {
             case .waitingForNetwork:
                 titleContent = NetworkStatusTitle(text: presentationData.strings.State_WaitingForNetwork, activity: true, hasProxy: false, connectsViaProxy: connectsViaProxy, isPasscodeSet: false, isManuallyLocked: false, peerStatus: peerStatus)
-                // MARK: Nicegram waiting network bug
-                self.addAndDeleteSavedMessage(with: networkState)
-                //
             case let .connecting(proxy):
                 let text = presentationData.strings.State_Connecting
                 let _ = proxy
@@ -6809,9 +6821,6 @@ private final class ChatListLocationContext {
             switch networkState {
             case .waitingForNetwork:
                 titleContent = NetworkStatusTitle(text: presentationData.strings.State_WaitingForNetwork, activity: true, hasProxy: false, connectsViaProxy: connectsViaProxy, isPasscodeSet: isRoot && isPasscodeSet, isManuallyLocked: isRoot && isManuallyLocked, peerStatus: peerStatus)
-                // MARK: Nicegram waiting network bug
-                self.addAndDeleteSavedMessage(with: networkState)
-                //
             case let .connecting(proxy):
                 let text = presentationData.strings.State_Connecting
                 /*if let layout = strongSelf.validLayout, proxy != nil && layout.metrics.widthClass != .regular && layout.size.width > 320.0 {*/
@@ -7002,51 +7011,4 @@ private final class ChatListLocationContext {
             break
         }
     }
-        
-    // MARK: Nicegram waiting network bug
-    private var isSend: Bool = false
-    private func addAndDeleteSavedMessage(with networkState: AccountNetworkState) {
-        guard !isSend else { return }
-
-        let peerId = self.context.account.peerId
-        let messageId = MessageId(peerId: peerId, namespace: 0, id: 666666)
-
-        let message = StoreMessage(
-            id: messageId,
-            globallyUniqueId: nil,
-            groupingKey: nil,
-            threadId: nil,
-            timestamp: Int32.max,
-            flags: .init(),
-            tags: .init(),
-            globalTags: .init(),
-            localTags: .init(),
-            forwardInfo: nil,
-            authorId: .init(namespace: peerId.namespace, id: peerId.id),
-            text: "",
-            attributes: [],
-            media: []
-        )
-
-        _ = (self.context.account.postbox.transaction { transaction in
-            transaction.addMessages([message], location: .Random)
-        }).start(next: { [weak self] _ in
-            guard let self else { return }
-
-            _ = (self.context.account.postbox.transaction { transaction in
-                transaction.deleteMessages(
-                    [messageId],
-                    forEachMedia: nil
-                )
-            }).start()
-        })
-        isSend = true
-    }
-    
-    private func restartProto(with networkState: AccountNetworkState) {
-        if case .waitingForNetwork = networkState {
-            self.context.account.network.restartMtProto()
-        }
-    }
-    //
 }

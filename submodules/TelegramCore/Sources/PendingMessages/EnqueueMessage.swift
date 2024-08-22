@@ -720,7 +720,7 @@ func enqueueMessages(transaction: Transaction, account: Account, peerId: PeerId,
                         }
                     }
                 
-                    let authorId: PeerId?
+                    var authorId: PeerId?
                     if let sendAsPeer = sendAsPeer {
                         authorId = sendAsPeer.id
                     } else if let peer = peer as? TelegramChannel {
@@ -748,8 +748,16 @@ func enqueueMessages(transaction: Transaction, account: Account, peerId: PeerId,
                                 if messageNamespace != Namespaces.Message.ScheduledLocal && messageNamespace != Namespaces.Message.QuickReplyLocal {
                                     attributes.append(ViewCountMessageAttribute(count: 1))
                                 }
+                                if info.flags.contains(.messagesShouldHaveProfiles) {
+                                    if sendAsPeer == nil {
+                                        authorId = account.peerId
+                                    }
+                                }
                                 if info.flags.contains(.messagesShouldHaveSignatures) {
-                                    attributes.append(AuthorSignatureMessageAttribute(signature: accountPeer.debugDisplayTitle))
+                                    if let sendAsPeer, sendAsPeer.id == peerId {
+                                    } else {
+                                        attributes.append(AuthorSignatureMessageAttribute(signature: accountPeer.debugDisplayTitle))
+                                    }
                                 }
                             case .group:
                                 break

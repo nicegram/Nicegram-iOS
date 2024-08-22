@@ -615,7 +615,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                 return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Info"), color: theme.actionSheet.primaryTextColor)
             }, iconSource: nil, action: { _, f in
                 f(.dismissWithoutContent)
-                controllerInteraction.navigationController()?.pushViewController(AdInfoScreen(context: context))
+                controllerInteraction.navigationController()?.pushViewController(AdInfoScreen(context: context, forceDark: true))
             })))
             
             let premiumConfiguration = PremiumConfiguration.with(appConfiguration: context.currentAppConfiguration.with { $0 })
@@ -1804,26 +1804,6 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                 })))
             }
         }
-//        if message.id.peerId.isGroupOrChannel {
-//            //TODO:localize
-//            if message.isAgeRestricted() {
-//                actions.append(.action(ContextMenuActionItem(text: "Unmark as 18+", icon: { theme in
-//                    return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/AgeUnmark"), color: theme.actionSheet.primaryTextColor)
-//                }, action: { c, _ in
-//                    c?.dismiss(completion: {
-//                        controllerInteraction.openMessageStats(messages[0].id)
-//                    })
-//                })))
-//            } else {
-//                actions.append(.action(ContextMenuActionItem(text: "Mark as 18+", icon: { theme in
-//                    return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/AgeMark"), color: theme.actionSheet.primaryTextColor)
-//                }, action: { c, _ in
-//                    c?.dismiss(completion: {
-//                        controllerInteraction.openMessageStats(messages[0].id)
-//                    })
-//                })))
-//            }
-//        }
         
         if isReplyThreadHead {
             actions.append(.action(ContextMenuActionItem(text: chatPresentationInterfaceState.strings.Conversation_ViewInChannel, icon: { theme in
@@ -2036,7 +2016,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                                 if peer is TelegramChannel {
                                     participantSignal = context.engine.peers.fetchChannelParticipant(peerId: peer.id, participantId: user.id)
                                 } else if peer is TelegramGroup {
-                                    participantSignal = .single(.member(id: user.id, invitedAt: 0, adminInfo: nil, banInfo: nil, rank: nil))
+                                    participantSignal = .single(.member(id: user.id, invitedAt: 0, adminInfo: nil, banInfo: nil, rank: nil, subscriptionUntilDate: nil))
                                 } else {
                                     participantSignal = .single(nil)
                                 }
