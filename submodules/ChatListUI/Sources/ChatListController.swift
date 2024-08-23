@@ -6726,9 +6726,6 @@ private final class ChatListLocationContext {
             switch networkState {
             case .waitingForNetwork:
                 titleContent = NetworkStatusTitle(text: presentationData.strings.State_WaitingForNetwork, activity: true, hasProxy: false, connectsViaProxy: connectsViaProxy, isPasscodeSet: false, isManuallyLocked: false, peerStatus: peerStatus)
-                // MARK: Nicegram waiting network bug
-                self.addAndDeleteSavedMessage(with: networkState)
-                //
             case let .connecting(proxy):
                 let text = presentationData.strings.State_Connecting
                 let _ = proxy
@@ -6824,9 +6821,6 @@ private final class ChatListLocationContext {
             switch networkState {
             case .waitingForNetwork:
                 titleContent = NetworkStatusTitle(text: presentationData.strings.State_WaitingForNetwork, activity: true, hasProxy: false, connectsViaProxy: connectsViaProxy, isPasscodeSet: isRoot && isPasscodeSet, isManuallyLocked: isRoot && isManuallyLocked, peerStatus: peerStatus)
-                // MARK: Nicegram waiting network bug
-                self.addAndDeleteSavedMessage(with: networkState)
-                //
             case let .connecting(proxy):
                 let text = presentationData.strings.State_Connecting
                 /*if let layout = strongSelf.validLayout, proxy != nil && layout.metrics.widthClass != .regular && layout.size.width > 320.0 {*/
@@ -7017,41 +7011,4 @@ private final class ChatListLocationContext {
             break
         }
     }
-    
-    // MARK: Nicegram waiting network bug
-        private func addAndDeleteSavedMessage(with networkState: AccountNetworkState) {
-            let peerId = self.context.account.peerId
-            let messageId = MessageId(peerId: peerId, namespace: 0, id: 666666)
-
-            let message = StoreMessage(
-                id: messageId,
-                globallyUniqueId: nil,
-                groupingKey: nil,
-                threadId: nil,
-                timestamp: 1,
-                flags: .init(),
-                tags: .init(),
-                globalTags: .init(),
-                localTags: .init(),
-                forwardInfo: nil,
-                authorId: .init(namespace: peerId.namespace, id: peerId.id),
-                text: ":)",
-                attributes: [],
-                media: []
-            )
-
-            _ = (self.context.account.postbox.transaction { transaction in
-                transaction.addMessages([message], location: .Random)
-            }).start(next: { [weak self] _ in
-                guard let self else { return }
-
-                _ = (self.context.account.postbox.transaction { transaction in
-                    transaction.deleteMessages(
-                        [messageId],
-                        forEachMedia: nil
-                    )
-                }).start()
-            })
-        }
-        //
 }

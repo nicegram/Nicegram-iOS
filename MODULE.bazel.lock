@@ -2956,8 +2956,8 @@
       "general": {
         "bzlTransitiveDigest": "YjE3dFjYQ4sj5gn2Iz1cWVK14/ZJ5cmnAUUGjDbACAA=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "295f327e863bd03ac281255a18015d139684ed712fc77c857adb5c17f8ca1ef1",
-          "@@//Package.swift": "5ec7a4bc98efbe05c2f49eace2c89b1ef5b01d545d1474b5a2e2a2ad98c32a2e"
+          "@@//Package.resolved": "d81120287c19acb5e544c11ee5393145dcc4c12c81b62bcc19d5576dab06a370",
+          "@@//Package.swift": "300a72a2cbc0256b09d99520341bf9a81b4d296bdd151b64665889820664a83d"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -3147,7 +3147,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_ton_swift",
-              "commit": "e08680928f8fd83319c47f1f48301a52ba502b8b",
+              "commit": "e4c3def222afc125f7ee83c1569004e31f0cd05c",
               "remote": "https://github.com/denis15yo/ton-swift.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3183,7 +3183,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_core_swift",
-              "commit": "78f8920a260775686dd0e04f5045677447bb7a6c",
+              "commit": "8fe212b4616cce8f534cc4708c8d6b2b548a5035",
               "remote": "https://github.com/denis15yo/core-swift.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3435,7 +3435,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "4084fba4c1a5035011223809d5755bf08a9f2fc2",
+              "commit": "741126d3991a3973a79cc7ecb81d84ece4649159",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3633,7 +3633,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_wallet_core",
-              "commit": "160a6e6275d25c0edb91823ae62c605d3d66c013",
+              "commit": "a05c01a44251254749801ebeb0fc4f9623c44f10",
               "remote": "https://github.com/trustwallet/wallet-core.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3687,7 +3687,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_wallet_ios",
-              "commit": "435678b5aa662b6482f1b56ba904d64526e4b9c6",
+              "commit": "d726273283da0db83939374137006f808bfd4d4c",
               "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
