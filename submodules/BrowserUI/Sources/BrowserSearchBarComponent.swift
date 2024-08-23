@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 import Display
+import SwiftSignalKit
 import ComponentFlow
 import TelegramPresentationData
 import AccountContext
@@ -60,9 +61,8 @@ final class SearchBarContentComponent: Component {
             }
         }
         
-        private let activated: (Bool) -> Void = { _ in }
-        private let deactivated: (Bool) -> Void = { _ in }
-        private let updateQuery: (String?) -> Void = { _ in }
+        private let queryPromise = ValuePromise<String>()
+        private var queryDisposable: Disposable?
         
         private let backgroundLayer: SimpleLayer
         
@@ -83,10 +83,6 @@ final class SearchBarContentComponent: Component {
         
         private var params: Params?
         private var component: SearchBarContentComponent?
-        
-        public var wantsDisplayBelowKeyboard: Bool {
-            return self.textField != nil
-        }
         
         init() {
             self.backgroundLayer = SimpleLayer()
@@ -145,6 +141,23 @@ final class SearchBarContentComponent: Component {
                 }
             }
             self.clearIconButton.addTarget(self, action: #selector(self.clearPressed), for: .touchUpInside)
+            
+            let throttledSearchQuery = self.queryPromise.get()
+            |> mapToSignal { query -> Signal<String, NoError> in
+                if !query.isEmpty {
+                    return (.complete() |> delay(0.6, queue: Queue.mainQueue()))
+                    |> then(.single(query))
+                } else {
+                    return .single(query)
+                }
+            }
+            
+            self.queryDisposable = (throttledSearchQuery
+            |> deliverOnMainQueue).start(next: { [weak self] query in
+                if let self {
+                    self.component?.performAction.invoke(.updateSearchQuery(query))
+                }
+            })
         }
         
         required public init?(coder: NSCoder) {
@@ -160,9 +173,10 @@ final class SearchBarContentComponent: Component {
         private func activateTextInput() {
             if self.textField == nil, let textFrame = self.textFrame {
                 let backgroundFrame = self.backgroundLayer.frame
-                let textFieldFrame = CGRect(origin: CGPoint(x: textFrame.minX, y: backgroundFrame.minY), size: CGSize(width: backgroundFrame.maxX - textFrame.minX, height: backgroundFrame.height))
+                let textFieldFrame = CGRect(origin: CGPoint(x: textFrame.minX, y: backgroundFrame.minY), size: CGSize(width: backgroundFrame.maxX - textFrame.minX - 32.0, height: backgroundFrame.height))
                 
                 let textField = SearchTextField(frame: textFieldFrame)
+                textField.clipsToBounds = true
                 textField.autocorrectionType = .no
                 textField.returnKeyType = .search
                 self.textField = textField
@@ -174,23 +188,17 @@ final class SearchBarContentComponent: Component {
             guard !(self.textField?.isFirstResponder ?? false) else {
                 return
             }
-                    
-            self.activated(true)
-            
+                                
             self.textField?.becomeFirstResponder()
         }
         
         @objc private func cancelPressed() {
-            self.updateQuery(nil)
-            
             self.clearIconView.isHidden = true
             self.clearIconButton.isHidden = true
                 
             let textField = self.textField
             self.textField = nil
-            
-            self.deactivated(textField?.isFirstResponder ?? false)
-            
+                        
             self.component?.performAction.invoke(.updateSearchActive(false))
             
             if let textField {
@@ -200,11 +208,11 @@ final class SearchBarContentComponent: Component {
         }
         
         @objc private func clearPressed() {
-            self.updateQuery(nil)
-            self.textField?.text = ""
-            
-            self.clearIconView.isHidden = true
-            self.clearIconButton.isHidden = true
+            guard let textField = self.textField else {
+                return
+            }
+            textField.text = ""
+            self.textFieldChanged(textField)
         }
         
         func deactivate() {
@@ -232,10 +240,8 @@ final class SearchBarContentComponent: Component {
             self.clearIconView.isHidden = text.isEmpty
             self.clearIconButton.isHidden = text.isEmpty
             self.placeholderContent.view?.isHidden = !text.isEmpty
-            
-            self.updateQuery(text)
-            
-            self.component?.performAction.invoke(.updateSearchQuery(text))
+                        
+            self.queryPromise.set(text)
             
             if let params = self.params {
                 self.update(theme: params.theme, strings: params.strings, size: params.size, transition: .immediate)

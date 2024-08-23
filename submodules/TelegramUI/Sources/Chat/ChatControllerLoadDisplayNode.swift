@@ -294,6 +294,24 @@ extension ChatControllerImpl {
                         if !hasAnonymousPeer {
                             allPeers?.insert(SendAsPeer(peer: channel, subscribers: 0, isPremiumRequired: false), at: 0)
                         }
+                    } else if let channel = peerViewMainPeer(peerView) as? TelegramChannel, case let .broadcast(info) = channel.info, info.flags.contains(.messagesShouldHaveProfiles) {
+                        allPeers = peers
+                        
+                        var hasAnonymousPeer = false
+                        var hasSelfPeer = false
+                        for peer in peers {
+                            if peer.peer.id == channel.id {
+                                hasAnonymousPeer = true
+                            } else if peer.peer.id == strongSelf.context.account.peerId {
+                                hasSelfPeer = true
+                            }
+                        }
+                        if !hasSelfPeer {
+                            allPeers?.insert(currentAccountPeer, at: 0)
+                        }
+                        if !hasAnonymousPeer {
+                            allPeers?.insert(SendAsPeer(peer: channel, subscribers: 0, isPremiumRequired: false), at: 0)
+                        }
                     } else {
                         allPeers = peers.filter { $0.peer.id != peerViewMainPeer(peerView)?.id }
                         allPeers?.insert(currentAccountPeer, at: 0)
@@ -1627,7 +1645,7 @@ extension ChatControllerImpl {
                                             var reactionItem: ReactionItem?
                                             
                                             switch updatedReaction {
-                                            case .builtin:
+                                            case .builtin, .stars:
                                                 for reaction in availableReactions.reactions {
                                                     guard let centerAnimation = reaction.centerAnimation else {
                                                         continue
@@ -4062,6 +4080,8 @@ extension ChatControllerImpl {
             let defaultMyPeerId: PeerId
             if let channel = strongSelf.presentationInterfaceState.renderedPeer?.chatMainPeer as? TelegramChannel, case .group = channel.info, channel.hasPermission(.canBeAnonymous) {
                 defaultMyPeerId = channel.id
+            } else if let channel = strongSelf.presentationInterfaceState.renderedPeer?.chatMainPeer as? TelegramChannel, case let .broadcast(info) = channel.info, info.flags.contains(.messagesShouldHaveProfiles) {
+                defaultMyPeerId = channel.id
             } else {
                 defaultMyPeerId = strongSelf.context.account.peerId
             }
@@ -4073,7 +4093,7 @@ extension ChatControllerImpl {
                 if let strongSelf = self {
                     HapticFeedback().impact()
                     
-                    strongSelf.present(UndoOverlayController(presentationData: strongSelf.presentationData, content: .invitedToVoiceChat(context: strongSelf.context, peer: peer, text: strongSelf.presentationData.strings.Conversation_SendMesageAsPremiumInfo, action: strongSelf.presentationData.strings.EmojiInput_PremiumEmojiToast_Action, duration: 3), elevatedLayout: false, action: { [weak self] action in
+                    strongSelf.present(UndoOverlayController(presentationData: strongSelf.presentationData, content: .invitedToVoiceChat(context: strongSelf.context, peer: peer, title: nil, text: strongSelf.presentationData.strings.Conversation_SendMesageAsPremiumInfo, action: strongSelf.presentationData.strings.EmojiInput_PremiumEmojiToast_Action, duration: 3), elevatedLayout: false, action: { [weak self] action in
                         guard let strongSelf = self else {
                             return true
                         }

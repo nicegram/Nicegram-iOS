@@ -21,6 +21,9 @@ public extension RestrictedContentMessageAttribute {
     // MARK: Nicegram (extractReason)
     func platformText(platform: String, contentSettings: ContentSettings, extractReason: Bool = false) -> String? {
         for rule in self.rules {
+            if rule.reason == "sensitive" {
+                continue
+            }
             if rule.platform == "all" || rule.platform == "ios" || contentSettings.addContentRestrictionReasons.contains(rule.platform) {
                 if !contentSettings.ignoreContentRestrictionReasons.contains(rule.reason) {
                     // MARK: Nicegram
