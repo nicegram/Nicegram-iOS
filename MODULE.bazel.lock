@@ -2956,8 +2956,8 @@
       "general": {
         "bzlTransitiveDigest": "YjE3dFjYQ4sj5gn2Iz1cWVK14/ZJ5cmnAUUGjDbACAA=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "d81120287c19acb5e544c11ee5393145dcc4c12c81b62bcc19d5576dab06a370",
-          "@@//Package.swift": "300a72a2cbc0256b09d99520341bf9a81b4d296bdd151b64665889820664a83d"
+          "@@//Package.resolved": "d2b2acc4890fb410a9471221a6b4674f7554aec0ee83a5de2ef16cc60cb76d98",
+          "@@//Package.swift": "5ec7a4bc98efbe05c2f49eace2c89b1ef5b01d545d1474b5a2e2a2ad98c32a2e"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -3147,7 +3147,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_ton_swift",
-              "commit": "e4c3def222afc125f7ee83c1569004e31f0cd05c",
+              "commit": "e08680928f8fd83319c47f1f48301a52ba502b8b",
               "remote": "https://github.com/denis15yo/ton-swift.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3183,7 +3183,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_core_swift",
-              "commit": "8fe212b4616cce8f534cc4708c8d6b2b548a5035",
+              "commit": "78f8920a260775686dd0e04f5045677447bb7a6c",
               "remote": "https://github.com/denis15yo/core-swift.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3201,7 +3201,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_walletconnectswiftv2",
-              "commit": "1427dcb1514e5d6f167ee7a41478ea1d6a6d8cc5",
+              "commit": "b6e9e37ab5981444f3898653c34fd39284534aad",
               "remote": "https://github.com/WalletConnect/WalletConnectSwiftV2.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3291,7 +3291,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_sdwebimage",
-              "commit": "5191b801aca999b704eb93f118f91468b4570571",
+              "commit": "8a1be70a625683bc04d6903e2935bf23f3c6d609",
               "remote": "https://github.com/SDWebImage/SDWebImage.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3345,7 +3345,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_swift_collections",
-              "commit": "3d2dc41a01f9e49d84f0a3925fb858bed64f702d",
+              "commit": "9bf03ff58ce34478e66aaee630e491823326fd06",
               "remote": "https://github.com/apple/swift-collections",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3435,7 +3435,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "741126d3991a3973a79cc7ecb81d84ece4649159",
+              "commit": "83589d06f52ae132c194a048f2f8261e51f9e732",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3633,7 +3633,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_wallet_core",
-              "commit": "a05c01a44251254749801ebeb0fc4f9623c44f10",
+              "commit": "160a6e6275d25c0edb91823ae62c605d3d66c013",
               "remote": "https://github.com/trustwallet/wallet-core.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3687,7 +3687,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_wallet_ios",
-              "commit": "d726273283da0db83939374137006f808bfd4d4c",
+              "commit": "43faf7aad4025ea1bfe511ebfa8973657b5048af",
               "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
               "init_submodules": false,
               "recursive_init_submodules": true,

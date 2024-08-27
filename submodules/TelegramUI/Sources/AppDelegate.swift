@@ -445,7 +445,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 env: {
                     .init(
                         appUrlScheme: buildConfig.appSpecificUrlScheme,
-                        enableLogging: true,
+                        enableLogging: false,
                         keychainGroupIdentifier: NGENV.wallet.keychainGroupIdentifier,
                         nicegramApiBaseUrl: URL(string: NGENV.ng_api_url)!
                             .appendingPathComponent("v7/"),
