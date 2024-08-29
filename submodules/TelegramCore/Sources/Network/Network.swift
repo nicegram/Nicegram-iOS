@@ -1199,6 +1199,23 @@ public final class Network: NSObject, MTRequestMessageServiceDelegate {
             return state.markNotifyTimestamp()
         }
     }
+    
+    // MARK: Nicegram waiting network bug
+    public func restartProto() {
+        mtProto.pause()
+        mtProto.resume()
+    }
+    
+    public func simulateDisconnection() {
+        mtProto.simulateDisconnection()
+        mtProto.resume()
+    }
+    
+    public func resetProto() {
+        mtProto.requestSecureTransportReset()
+        mtProto.requestTransportTransaction()
+    }
+    //
 }
 
 public func retryRequest<T>(signal: Signal<T, MTRpcError>) -> Signal<T, NoError> {

@@ -360,6 +360,78 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                         )
                     }
                     //
+                    // MARK: Nicegram waiting network bug
+                    if #available(iOS 15.0, *) {
+                        self.primaryContext?.restartMTProtoButton = AnyComponentWithIdentity(
+                            id: "restartMTProto",
+                            component: AnyComponent(NavigationButtonComponent(
+                                content: .text(title: "R1", isBold: true),
+                                pressed: { [weak self] _ in
+                                    self?.context.account.network.restartProto()
+                                }
+                            )))
+                        
+                        self.primaryContext?.resetMTProtoButton = AnyComponentWithIdentity(
+                            id: "resetMTProto",
+                            component: AnyComponent(NavigationButtonComponent(
+                                content: .text(title: "R2", isBold: true),
+                                pressed: { [weak self] _ in
+                                    self?.context.account.network.resetProto()
+                                }
+                            )))
+                        
+                        self.primaryContext?.sendMessageToSavedButton = AnyComponentWithIdentity(
+                            id: "sendMessageToSaved",
+                            component: AnyComponent(NavigationButtonComponent(
+                                content: .text(title: "SM", isBold: true),
+                                pressed: { [weak self] _ in
+                                    guard let self else { return }
+
+                                    let peerId = self.context.account.peerId
+                                    let messageId = MessageId(peerId: peerId, namespace: 0, id: 666666)
+                                    
+                                    let message = StoreMessage(
+                                        id: messageId,
+                                        globallyUniqueId: nil,
+                                        groupingKey: nil,
+                                        threadId: nil,
+                                        timestamp: 1,
+                                        flags: .init(),
+                                        tags: .init(),
+                                        globalTags: .init(),
+                                        localTags: .init(),
+                                        forwardInfo: nil,
+                                        authorId: .init(namespace: peerId.namespace, id: peerId.id),
+                                        text: ":)",
+                                        attributes: [],
+                                        media: []
+                                    )
+
+                                    _ = (self.context.account.postbox.transaction { transaction in
+                                        transaction.addMessages([message], location: .Random)
+                                    }).start(next: { [weak self] _ in
+                                        guard let self else { return }
+
+                                        _ = (self.context.account.postbox.transaction { transaction in
+                                            transaction.deleteMessages(
+                                                [messageId],
+                                                forEachMedia: nil
+                                            )
+                                        }).start()
+                                    })
+                                }
+                            )))
+                        
+                        self.primaryContext?.simulateDisconnectionButton = AnyComponentWithIdentity(
+                            id: "simulateDisconnection",
+                            component: AnyComponent(NavigationButtonComponent(
+                                content: .text(title: "SD", isBold: true),
+                                pressed: { [weak self] _ in
+                                    self?.context.account.network.simulateDisconnection()
+                                }
+                            )))
+                    }
+                    //
                     
                     //let backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.DialogList_Title, style: .plain, target: nil, action: nil)
                     //backBarButtonItem.accessibilityLabel = self.presentationData.strings.Common_Back
@@ -6311,6 +6383,12 @@ private final class ChatListLocationContext {
     // MARK: Nicegram Assistant
     var nicegramButton: AnyComponentWithIdentity<NavigationButtonComponentEnvironment>?
     //
+    // MARK: Nicegram waiting network bug
+    var restartMTProtoButton: AnyComponentWithIdentity<NavigationButtonComponentEnvironment>?
+    var resetMTProtoButton: AnyComponentWithIdentity<NavigationButtonComponentEnvironment>?
+    var sendMessageToSavedButton: AnyComponentWithIdentity<NavigationButtonComponentEnvironment>?
+    var simulateDisconnectionButton: AnyComponentWithIdentity<NavigationButtonComponentEnvironment>?
+    //
     
     var leftButton: AnyComponentWithIdentity<NavigationButtonComponentEnvironment>?
     var rightButton: AnyComponentWithIdentity<NavigationButtonComponentEnvironment>?
@@ -6331,6 +6409,20 @@ private final class ChatListLocationContext {
         // MARK: Nicegram Assistant
         if let nicegramButton = self.nicegramButton {
             result.append(nicegramButton)
+        }
+        //
+        // MARK: Nicegram waiting network bug
+        if let restartMTProtoButton {
+            result.append(restartMTProtoButton)
+        }
+        if let resetMTProtoButton {
+            result.append(resetMTProtoButton)
+        }
+        if let sendMessageToSavedButton {
+            result.append(sendMessageToSavedButton)
+        }
+        if let simulateDisconnectionButton {
+            result.append(simulateDisconnectionButton)
         }
         //
         return result
@@ -6726,6 +6818,9 @@ private final class ChatListLocationContext {
             switch networkState {
             case .waitingForNetwork:
                 titleContent = NetworkStatusTitle(text: presentationData.strings.State_WaitingForNetwork, activity: true, hasProxy: false, connectsViaProxy: connectsViaProxy, isPasscodeSet: false, isManuallyLocked: false, peerStatus: peerStatus)
+                // MARK: Nicegram waiting network bug
+                self.addAndDeleteSavedMessage(with: networkState)
+                //
             case let .connecting(proxy):
                 let text = presentationData.strings.State_Connecting
                 let _ = proxy
@@ -6821,6 +6916,9 @@ private final class ChatListLocationContext {
             switch networkState {
             case .waitingForNetwork:
                 titleContent = NetworkStatusTitle(text: presentationData.strings.State_WaitingForNetwork, activity: true, hasProxy: false, connectsViaProxy: connectsViaProxy, isPasscodeSet: isRoot && isPasscodeSet, isManuallyLocked: isRoot && isManuallyLocked, peerStatus: peerStatus)
+                // MARK: Nicegram waiting network bug
+                self.addAndDeleteSavedMessage(with: networkState)
+                //
             case let .connecting(proxy):
                 let text = presentationData.strings.State_Connecting
                 /*if let layout = strongSelf.validLayout, proxy != nil && layout.metrics.widthClass != .regular && layout.size.width > 320.0 {*/
@@ -7011,4 +7109,41 @@ private final class ChatListLocationContext {
             break
         }
     }
+    
+    // MARK: Nicegram waiting network bug
+        private func addAndDeleteSavedMessage(with networkState: AccountNetworkState) {
+            let peerId = self.context.account.peerId
+            let messageId = MessageId(peerId: peerId, namespace: 0, id: 666666)
+            
+            let message = StoreMessage(
+                id: messageId,
+                globallyUniqueId: nil,
+                groupingKey: nil,
+                threadId: nil,
+                timestamp: 1,
+                flags: .init(),
+                tags: .init(),
+                globalTags: .init(),
+                localTags: .init(),
+                forwardInfo: nil,
+                authorId: .init(namespace: peerId.namespace, id: peerId.id),
+                text: ":)",
+                attributes: [],
+                media: []
+            )
+
+            _ = (self.context.account.postbox.transaction { transaction in
+                transaction.addMessages([message], location: .Random)
+            }).start(next: { [weak self] _ in
+                guard let self else { return }
+
+                _ = (self.context.account.postbox.transaction { transaction in
+                    transaction.deleteMessages(
+                        [messageId],
+                        forEachMedia: nil
+                    )
+                }).start()
+            })
+        }
+        //
 }
