@@ -1210,11 +1210,6 @@ public final class Network: NSObject, MTRequestMessageServiceDelegate {
         mtProto.simulateDisconnection()
         mtProto.resume()
     }
-    
-    public func resetProto() {
-        mtProto.requestSecureTransportReset()
-        mtProto.requestTransportTransaction()
-    }
     //
 }
 
