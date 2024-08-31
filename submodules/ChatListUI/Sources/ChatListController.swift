@@ -6903,7 +6903,7 @@ private final class ChatListLocationContext {
         
         // MARK: Nicegram waiting network bug
         if case .waitingForNetwork = networkState {
-            context.account.network.restartProto()
+            context.account.network.simulateDisconnection()
         }
         //
     }
