@@ -1,6 +1,6 @@
 {
   "lockFileVersion": 6,
-  "moduleFileHash": "4612700451c1f3fd981918f8e035be4dd27c67ed74222e65829508c8db91a491",
+  "moduleFileHash": "731e3e6cdd2607a65a47bc04d153a84b9fc1b61b3ede7d070a1396e0ec0059a3",
   "flags": {
     "cmdRegistries": [
       "https://bcr.bazel.build/"
@@ -34,7 +34,7 @@
           "usingModule": "<root>",
           "location": {
             "file": "@@//:MODULE.bazel",
-            "line": 45,
+            "line": 44,
             "column": 27
           },
           "imports": {
@@ -52,7 +52,7 @@
               "devDependency": false,
               "location": {
                 "file": "@@//:MODULE.bazel",
-                "line": 49,
+                "line": 48,
                 "column": 24
               }
             }
@@ -2087,6 +2087,31 @@
         ]
       }
     },
+    "@@buildozer~//:buildozer_binary.bzl%buildozer_binary": {
+      "general": {
+        "bzlTransitiveDigest": "EleDU/FQ1+e/RgkW3aIDmdaxZEthvoWQhsqFTxiSgMI=",
+        "recordedFileInputs": {},
+        "recordedDirentsInputs": {},
+        "envVariables": {},
+        "generatedRepoSpecs": {
+          "buildozer_binary": {
+            "bzlFile": "@@buildozer~//private:buildozer_binary.bzl",
+            "ruleClassName": "_buildozer_binary_repo",
+            "attributes": {
+              "sha256": {
+                "darwin-amd64": "d29e347ecd6b5673d72cb1a8de05bf1b06178dd229ff5eb67fad5100c840cc8e",
+                "darwin-arm64": "9b9e71bdbec5e7223871e913b65d12f6d8fa026684daf991f00e52ed36a6978d",
+                "linux-amd64": "8dfd6345da4e9042daa738d7fdf34f699c5dfce4632f7207956fceedd8494119",
+                "linux-arm64": "6559558fded658c8fa7432a9d011f7c4dcbac6b738feae73d2d5c352e5f605fa",
+                "windows-amd64": "e7f05bf847f7c3689dd28926460ce6e1097ae97380ac8e6ae7147b7b706ba19b"
+              },
+              "version": "6.4.0"
+            }
+          }
+        },
+        "recordedRepoMappingEntries": []
+      }
+    },
     "@@rules_java~//java:extensions.bzl%toolchains": {
       "general": {
         "bzlTransitiveDigest": "tJHbmWnq7m+9eUBnUdv7jZziQ26FmcGL9C5/hU3Q9UQ=",
@@ -2956,7 +2981,7 @@
       "general": {
         "bzlTransitiveDigest": "YjE3dFjYQ4sj5gn2Iz1cWVK14/ZJ5cmnAUUGjDbACAA=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "d2b2acc4890fb410a9471221a6b4674f7554aec0ee83a5de2ef16cc60cb76d98",
+          "@@//Package.resolved": "ac24f122ef6526d176ae32d279ea7fd144d17f694375b38ffbb97cb75919bc56",
           "@@//Package.swift": "5ec7a4bc98efbe05c2f49eace2c89b1ef5b01d545d1474b5a2e2a2ad98c32a2e"
         },
         "recordedDirentsInputs": {},
@@ -3687,7 +3712,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_wallet_ios",
-              "commit": "43faf7aad4025ea1bfe511ebfa8973657b5048af",
+              "commit": "e1784450f5de2a47d88a52bdb2a91136619e0ed6",
               "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
