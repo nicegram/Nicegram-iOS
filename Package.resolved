@@ -77,8 +77,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/scenee/FloatingPanel",
       "state" : {
-        "revision" : "71f419a3cd212afc7615e2179c2fec1df1aa74da",
-        "version" : "2.8.5"
+        "revision" : "b6e8928b1a3ad909e6db6a0278d286c33cfd0dc3",
+        "version" : "2.8.6"
       }
     },
     {
@@ -132,7 +132,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "458be079925da10ff15a2b41961ae3bfb4468835"
+        "revision" : "d2655c574276adaf88ffd8d618b766a8d308c027"
       }
     },
     {
@@ -356,8 +356,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "160a6e6275d25c0edb91823ae62c605d3d66c013",
-        "version" : "4.1.5"
+        "revision" : "136506f3ed1ec904d4f5bbf4dd6e26f28bbfbdb6",
+        "version" : "4.1.6"
       }
     },
     {
@@ -365,8 +365,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/WalletConnect/WalletConnectSwiftV2.git",
       "state" : {
-        "revision" : "b6e9e37ab5981444f3898653c34fd39284534aad",
-        "version" : "1.20.0"
+        "revision" : "f2c407c4a4077ba6bfd43866f0b43d25c9a5df4e",
+        "version" : "1.20.1"
       }
     },
     {
