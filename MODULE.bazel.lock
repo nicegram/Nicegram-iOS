@@ -1,6 +1,6 @@
 {
   "lockFileVersion": 6,
-  "moduleFileHash": "4612700451c1f3fd981918f8e035be4dd27c67ed74222e65829508c8db91a491",
+  "moduleFileHash": "731e3e6cdd2607a65a47bc04d153a84b9fc1b61b3ede7d070a1396e0ec0059a3",
   "flags": {
     "cmdRegistries": [
       "https://bcr.bazel.build/"
@@ -34,7 +34,7 @@
           "usingModule": "<root>",
           "location": {
             "file": "@@//:MODULE.bazel",
-            "line": 45,
+            "line": 44,
             "column": 27
           },
           "imports": {
@@ -52,7 +52,7 @@
               "devDependency": false,
               "location": {
                 "file": "@@//:MODULE.bazel",
-                "line": 49,
+                "line": 48,
                 "column": 24
               }
             }
@@ -2087,6 +2087,31 @@
         ]
       }
     },
+    "@@buildozer~//:buildozer_binary.bzl%buildozer_binary": {
+      "general": {
+        "bzlTransitiveDigest": "EleDU/FQ1+e/RgkW3aIDmdaxZEthvoWQhsqFTxiSgMI=",
+        "recordedFileInputs": {},
+        "recordedDirentsInputs": {},
+        "envVariables": {},
+        "generatedRepoSpecs": {
+          "buildozer_binary": {
+            "bzlFile": "@@buildozer~//private:buildozer_binary.bzl",
+            "ruleClassName": "_buildozer_binary_repo",
+            "attributes": {
+              "sha256": {
+                "darwin-amd64": "d29e347ecd6b5673d72cb1a8de05bf1b06178dd229ff5eb67fad5100c840cc8e",
+                "darwin-arm64": "9b9e71bdbec5e7223871e913b65d12f6d8fa026684daf991f00e52ed36a6978d",
+                "linux-amd64": "8dfd6345da4e9042daa738d7fdf34f699c5dfce4632f7207956fceedd8494119",
+                "linux-arm64": "6559558fded658c8fa7432a9d011f7c4dcbac6b738feae73d2d5c352e5f605fa",
+                "windows-amd64": "e7f05bf847f7c3689dd28926460ce6e1097ae97380ac8e6ae7147b7b706ba19b"
+              },
+              "version": "6.4.0"
+            }
+          }
+        },
+        "recordedRepoMappingEntries": []
+      }
+    },
     "@@rules_java~//java:extensions.bzl%toolchains": {
       "general": {
         "bzlTransitiveDigest": "tJHbmWnq7m+9eUBnUdv7jZziQ26FmcGL9C5/hU3Q9UQ=",
@@ -2956,8 +2981,8 @@
       "general": {
         "bzlTransitiveDigest": "YjE3dFjYQ4sj5gn2Iz1cWVK14/ZJ5cmnAUUGjDbACAA=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "d81120287c19acb5e544c11ee5393145dcc4c12c81b62bcc19d5576dab06a370",
-          "@@//Package.swift": "300a72a2cbc0256b09d99520341bf9a81b4d296bdd151b64665889820664a83d"
+          "@@//Package.resolved": "30140fa448ac62bfa0781affd60171e7fbacc1f2d1e0f02a336c356162c102c7",
+          "@@//Package.swift": "fb3cb1d48066e64f8bf17fe1a49f689b7a6bf4bfc07aa90b9b80a02188501951"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -3147,7 +3172,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_ton_swift",
-              "commit": "e4c3def222afc125f7ee83c1569004e31f0cd05c",
+              "commit": "e08680928f8fd83319c47f1f48301a52ba502b8b",
               "remote": "https://github.com/denis15yo/ton-swift.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3183,7 +3208,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_core_swift",
-              "commit": "8fe212b4616cce8f534cc4708c8d6b2b548a5035",
+              "commit": "78f8920a260775686dd0e04f5045677447bb7a6c",
               "remote": "https://github.com/denis15yo/core-swift.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3201,7 +3226,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_walletconnectswiftv2",
-              "commit": "1427dcb1514e5d6f167ee7a41478ea1d6a6d8cc5",
+              "commit": "b6e9e37ab5981444f3898653c34fd39284534aad",
               "remote": "https://github.com/WalletConnect/WalletConnectSwiftV2.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3291,7 +3316,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_sdwebimage",
-              "commit": "5191b801aca999b704eb93f118f91468b4570571",
+              "commit": "8a1be70a625683bc04d6903e2935bf23f3c6d609",
               "remote": "https://github.com/SDWebImage/SDWebImage.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3345,7 +3370,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_swift_collections",
-              "commit": "3d2dc41a01f9e49d84f0a3925fb858bed64f702d",
+              "commit": "9bf03ff58ce34478e66aaee630e491823326fd06",
               "remote": "https://github.com/apple/swift-collections",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3435,7 +3460,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "741126d3991a3973a79cc7ecb81d84ece4649159",
+              "commit": "fda1e89c94fc546d2762d0b2d754e9654965774f",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3633,7 +3658,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_wallet_core",
-              "commit": "a05c01a44251254749801ebeb0fc4f9623c44f10",
+              "commit": "160a6e6275d25c0edb91823ae62c605d3d66c013",
               "remote": "https://github.com/trustwallet/wallet-core.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3687,7 +3712,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_wallet_ios",
-              "commit": "d726273283da0db83939374137006f808bfd4d4c",
+              "commit": "458be079925da10ff15a2b41961ae3bfb4468835",
               "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
               "init_submodules": false,
               "recursive_init_submodules": true,

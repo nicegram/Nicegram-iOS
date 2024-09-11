@@ -75,3 +75,4 @@ ci/working_dir
 .build
 Telegram/Telegram-iOS/FirebaseRemoteConfigDefaults.plist
 *telegram-bazel-cache*
+Package_local.swift

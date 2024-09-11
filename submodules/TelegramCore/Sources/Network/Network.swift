@@ -514,8 +514,8 @@ func initializedNetwork(accountId: AccountRecordId, arguments: NetworkInitializa
                 } else {
                     useNetworkFramework = false
                 }
-                
-                if useNetworkFramework {
+                // MARK: Nicegram waiting network bug
+                if useNetworkFramework || true {
                     if #available(iOS 12.0, macOS 14.0, *) {
                         context.makeTcpConnectionInterface = { delegate, delegateQueue in
                             return NetworkFrameworkTcpConnectionInterface(delegate: delegate, delegateQueue: delegateQueue)
@@ -1199,6 +1199,13 @@ public final class Network: NSObject, MTRequestMessageServiceDelegate {
             return state.markNotifyTimestamp()
         }
     }
+    
+    // MARK: Nicegram waiting network bug    
+    public func simulateDisconnection() {
+        mtProto.simulateDisconnection()
+        mtProto.resume()
+    }
+    //
 }
 
 public func retryRequest<T>(signal: Signal<T, MTRpcError>) -> Signal<T, NoError> {

@@ -6311,7 +6311,6 @@ private final class ChatListLocationContext {
     // MARK: Nicegram Assistant
     var nicegramButton: AnyComponentWithIdentity<NavigationButtonComponentEnvironment>?
     //
-    
     var leftButton: AnyComponentWithIdentity<NavigationButtonComponentEnvironment>?
     var rightButton: AnyComponentWithIdentity<NavigationButtonComponentEnvironment>?
     var proxyButton: AnyComponentWithIdentity<NavigationButtonComponentEnvironment>?
@@ -6332,7 +6331,7 @@ private final class ChatListLocationContext {
         if let nicegramButton = self.nicegramButton {
             result.append(nicegramButton)
         }
-        //
+
         return result
     }
     
@@ -6901,6 +6900,12 @@ private final class ChatListLocationContext {
             }
             self.parentController?.maybeDisplayStoryTooltip()
         })
+        
+        // MARK: Nicegram waiting network bug
+        if case .waitingForNetwork = networkState {
+            context.account.network.simulateDisconnection()
+        }
+        //
     }
     
     private func updateForum(
