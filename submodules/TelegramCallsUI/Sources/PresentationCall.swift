@@ -560,9 +560,6 @@ public final class PresentationCallImpl: PresentationCall {
                     self.audioSessionShouldBeActive.set(true)
                 }
             case let .active(id, key, _, connections, maxLayer, version, customParameters, allowsP2P):
-                // MARK: Nicegram NCG-5828 call recording
-                self.sharedAudioDevice?.startNicegramRecording()
-                //
                 self.audioSessionShouldBeActive.set(true)
                 if let _ = audioSessionControl, !wasActive || previousControl == nil {
                     let logName = "\(id.id)_\(id.accessHash)"
@@ -630,11 +627,6 @@ public final class PresentationCallImpl: PresentationCall {
                     }
                 }
             case let .terminated(_, _, options):
-                // MARK: Nicegram NCG-5828 call recording
-                self.sharedAudioDevice?.stopNicegramRecording { [weak self] path, duration, data in
-                    self?.saveCall(with: path, duration: duration, data: data)
-                }
-                //
                 self.audioSessionShouldBeActive.set(true)
                 if wasActive {
                     let debugLogValue = Promise<String?>()
@@ -1076,66 +1068,4 @@ public final class PresentationCallImpl: PresentationCall {
         self.useFrontCamera = !self.useFrontCamera
         self.videoCapturer?.switchVideoInput(isFront: self.useFrontCamera)
     }
-    
-    // MARK: Nicegram NCG-5828 call recording
-    private func saveCall(with path: String, duration: Double, data: Data) {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd_HH:mm:ss"
-
-        let date = Date()
-        
-        let id32 = Int32.random(in: 0 ... Int32.max)
-        let peerId = self.context.account.peerId
-        let messageId = MessageId(
-            peerId: peerId,
-            namespace: Namespaces.Message.Local,
-            id: id32
-        )
-        
-        let id = Int64.random(in: 0 ... Int64.max)
-        let resource = LocalFileReferenceMediaResource(
-            localFilePath: path,
-            randomId: id
-        )
-        
-        let file = TelegramMediaFile(
-            fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id),
-            partialReference: nil,
-            resource: resource,
-            previewRepresentations: [],
-            videoThumbnails: [],
-            immediateThumbnailData: nil,
-            mimeType: "audio/wav",
-            size: nil,
-            attributes: [.Audio(
-                isVoice: false,
-                duration: Int(duration),
-                title: dateFormatter.string(from: date),
-                performer: nil,
-                waveform: data)
-            ]
-        )
-
-        let message = StoreMessage(
-            id: messageId,
-            globallyUniqueId: nil,
-            groupingKey: nil,
-            threadId: nil,
-            timestamp: Int32(date.timeIntervalSince1970),
-            flags: .init(),
-            tags: .init(),
-            globalTags: .init(),
-            localTags: .init(),
-            forwardInfo: nil,
-            authorId: .init(namespace: peerId.namespace, id: peerId.id),
-            text: "",
-            attributes: [],
-            media: [file]
-        )
-
-        _ = (self.context.account.postbox.transaction { transaction in
-            transaction.addMessages([message], location: .Random)
-        }).start()
-    }
-    //
 }
