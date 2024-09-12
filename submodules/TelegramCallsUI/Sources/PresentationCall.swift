@@ -560,6 +560,9 @@ public final class PresentationCallImpl: PresentationCall {
                     self.audioSessionShouldBeActive.set(true)
                 }
             case let .active(id, key, _, connections, maxLayer, version, customParameters, allowsP2P):
+                // MARK: Nicegram NCG-5828 call recording
+                self.sharedAudioDevice?.startNicegramRecording()
+                //
                 self.audioSessionShouldBeActive.set(true)
                 if let _ = audioSessionControl, !wasActive || previousControl == nil {
                     let logName = "\(id.id)_\(id.accessHash)"
@@ -627,6 +630,11 @@ public final class PresentationCallImpl: PresentationCall {
                     }
                 }
             case let .terminated(_, _, options):
+                // MARK: Nicegram NCG-5828 call recording
+                self.sharedAudioDevice?.stopNicegramRecording { [weak self] path, duration, data in
+                    self?.saveCall(with: path, duration: duration, data: data)
+                }
+                //
                 self.audioSessionShouldBeActive.set(true)
                 if wasActive {
                     let debugLogValue = Promise<String?>()
@@ -1068,4 +1076,59 @@ public final class PresentationCallImpl: PresentationCall {
         self.useFrontCamera = !self.useFrontCamera
         self.videoCapturer?.switchVideoInput(isFront: self.useFrontCamera)
     }
+    
+    // MARK: Nicegram NCG-5828 call recording
+    private func saveCall(with path: String, duration: Double, data: Data) {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd_HH:mm:ss"
+
+        let date = Date()
+
+        let peerId = self.context.account.peerId
+        
+        let id = Int64.random(in: 0 ... Int64.max)
+        let resource = LocalFileReferenceMediaResource(
+            localFilePath: path,
+            randomId: id
+        )
+        
+        let file = TelegramMediaFile(
+            fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id),
+            partialReference: nil,
+            resource: resource,
+            previewRepresentations: [],
+            videoThumbnails: [],
+            immediateThumbnailData: nil,
+            mimeType: "audio/ogg", //if change to this mime type audio show as voice file
+//            mimeType: "audio/wav", if change to this mime type audio show as audio file
+            size: nil,
+            attributes: [.Audio(
+                isVoice: true,
+                duration: Int(duration),
+                title: dateFormatter.string(from: date),
+                performer: nil,
+                waveform: data)
+            ]
+        )
+        
+        let message: EnqueueMessage = .message(
+            text: "",
+            attributes: [],
+            inlineStickers: [:],
+            mediaReference: .standalone(media: file),
+            threadId: nil,
+            replyToMessageId: nil,
+            replyToStoryId: nil,
+            localGroupingKey: nil,
+            correlationId: nil,
+            bubbleUpEmojiOrStickersets: []
+        )
+
+        let _ = enqueueMessages(
+            account: context.account,
+            peerId: peerId,
+            messages: [message]
+        ).start()
+    }
+    //
 }

@@ -759,6 +759,24 @@ public final class OngoingCallContext {
                 CallAudioTone(samples: tone.samples, sampleRate: tone.sampleRate, loopCount: tone.loopCount)
             })
         }
+        
+        // MARK: Nicegram NCG-5828 call recording
+        public func initNicegramCallRecording(path: String) {
+            self.impl.initNicegramCallRecording(path)
+        }
+        
+        public func startNicegramRecording() {
+            self.impl.startNicegramRecording()
+        }
+        
+        public func stopNicegramRecording(callback: ((String, Double, Data) -> Void)?) {
+            self.impl.stopNicegramRecording(callback)
+        }
+        
+        public func setRecordOutputFolder(path: String) {
+            self.impl.setRecordOutputFolder(path)
+        }
+        //
     }
     
     public static func setupAudioSession() {
