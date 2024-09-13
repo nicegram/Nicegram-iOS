@@ -769,7 +769,7 @@ public final class OngoingCallContext {
             self.impl.startNicegramRecording()
         }
         
-        public func stopNicegramRecording(callback: ((String, Double, Data) -> Void)?) {
+        public func stopNicegramRecording(callback: ((String, Double) -> Void)?) {
             self.impl.stopNicegramRecording(callback)
         }
         

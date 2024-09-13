@@ -14,6 +14,9 @@ import UniversalMediaPlayer
 import AccountContext
 import DeviceProximity
 import PhoneNumberFormat
+// MARK: Nicegram NCG-5828 call recording
+import NGLogging
+//
 
 public final class PresentationCallImpl: PresentationCall {
     public let context: AccountContext
@@ -631,8 +634,8 @@ public final class PresentationCallImpl: PresentationCall {
                 }
             case let .terminated(_, _, options):
                 // MARK: Nicegram NCG-5828 call recording
-                self.sharedAudioDevice?.stopNicegramRecording { [weak self] path, duration, data in
-                    self?.saveCall(with: path, duration: duration, data: data)
+                self.sharedAudioDevice?.stopNicegramRecording { [weak self] path, duration in
+                    self?.saveCall(with: path, duration: duration)
                 }
                 //
                 self.audioSessionShouldBeActive.set(true)
@@ -1078,7 +1081,14 @@ public final class PresentationCallImpl: PresentationCall {
     }
     
     // MARK: Nicegram NCG-5828 call recording
-    private func saveCall(with path: String, duration: Double, data: Data) {
+    private func loadData(from path: String) async throws -> Data {
+        let fileURL = URL(fileURLWithPath: path)
+        let (data, _) = try await URLSession.shared.data(from: fileURL)
+        
+        return data
+    }
+
+    private func writeAudioToSaved(from path: String, duration: Double, data: Data) {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd_HH:mm:ss"
 
@@ -1129,6 +1139,17 @@ public final class PresentationCallImpl: PresentationCall {
             peerId: peerId,
             messages: [message]
         ).start()
+    }
+    
+    private func saveCall(with path: String, duration: Double) {
+        Task {
+            do {
+                let data = try await loadData(from: path)
+                writeAudioToSaved(from: path, duration: duration, data: data)
+            } catch {
+                ngLog("[\(#file)]-[\(#function)]-[\(#line)] Error load call data from wave file: \(error.localizedDescription)")
+            }
+        }
     }
     //
 }

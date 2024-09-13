@@ -172,15 +172,15 @@ private:
     });
 }
 
--(void)StopNicegramRecording:(void(^_Nullable)(NSString* _Nonnull, double, NSData* _Nonnull))completion {
+-(void)StopNicegramRecording:(void(^_Nullable)(NSString* _Nonnull, double))completion {
     _audioDeviceModule->perform([completion](tgcalls::SharedAudioDeviceModule *audioDeviceModule) {
         audioDeviceModule->audioDeviceModule()->StopNicegramRecording([completion](const std::string& outputFilePath,
                                                                                     double durationInSeconds,
                                                                                     std::vector<int16_t> rawData) {
             NSString *path = [NSString stringWithUTF8String: outputFilePath.c_str()];
-            NSData *data = [NSData dataWithBytes: rawData.data() length: sizeof(rawData)];
+
             if (completion != NULL) {
-                completion(path, durationInSeconds, data);
+                completion(path, durationInSeconds);
             }
         });
     });

@@ -34,7 +34,7 @@
 // MARK: Nicegram NCG-5828 call recording
 -(void)InitNicegramCallRecording:(NSString* _Nonnull)path;
 -(void)StartNicegramRecording;
--(void)StopNicegramRecording:(void(^_Nullable)(NSString* _Nonnull, double, NSData* _Nonnull))completion;
+-(void)StopNicegramRecording:(void(^_Nullable)(NSString* _Nonnull, double))completion;
 -(void)SetRecordOutputFolder:(NSString* _Nonnull)path;
 //
 @end
