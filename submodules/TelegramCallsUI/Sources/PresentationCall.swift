@@ -1080,15 +1080,22 @@ public final class PresentationCallImpl: PresentationCall {
         self.videoCapturer?.switchVideoInput(isFront: self.useFrontCamera)
     }
     
-    // MARK: Nicegram NCG-5828 call recording
-    private func loadData(from path: String) async throws -> Data {
-        let fileURL = URL(fileURLWithPath: path)
-        let (data, _) = try await URLSession.shared.data(from: fileURL)
+    // MARK: Nicegram NCG-5828 call recording    
+    private func deleteFile(from fileURL: URL) {
+        let fileManager = FileManager.default
         
-        return data
+        if fileManager.fileExists(atPath: fileURL.path) {
+            do {
+                try fileManager.removeItem(at: fileURL)
+            } catch {
+                ngLog("[\(#file)]-[\(#function)]-[\(#line)] Error remove call file: \(error.localizedDescription)")
+            }
+        } else {
+            ngLog("[\(#file)]-[\(#function)]-[\(#line)] Call wav file not found at path \(fileURL.path)")
+        }
     }
 
-    private func writeAudioToSaved(from path: String, duration: Double, data: Data) {
+    private func writeAudioToSaved(from fileURL: URL, duration: Double, data: Data) {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd_HH:mm:ss"
 
@@ -1098,7 +1105,7 @@ public final class PresentationCallImpl: PresentationCall {
         
         let id = Int64.random(in: 0 ... Int64.max)
         let resource = LocalFileReferenceMediaResource(
-            localFilePath: path,
+            localFilePath: fileURL.path,
             randomId: id
         )
         
@@ -1138,16 +1145,19 @@ public final class PresentationCallImpl: PresentationCall {
             account: context.account,
             peerId: peerId,
             messages: [message]
-        ).start()
+        ).start(completed: { [weak self] in
+            self?.deleteFile(from: fileURL)
+        })
     }
     
     private func saveCall(with path: String, duration: Double) {
         Task {
             do {
-                let data = try await loadData(from: path)
-                writeAudioToSaved(from: path, duration: duration, data: data)
+                let fileURL = URL(fileURLWithPath: path)
+                let (data, _) = try await URLSession.shared.data(from: fileURL)
+                writeAudioToSaved(from: fileURL, duration: duration, data: data)
             } catch {
-                ngLog("[\(#file)]-[\(#function)]-[\(#line)] Error load call data from wave file: \(error.localizedDescription)")
+                ngLog("[\(#file)]-[\(#function)]-[\(#line)] Error save call: \(error.localizedDescription)")
             }
         }
     }
