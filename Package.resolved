@@ -122,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "b35ee8e950f4ca23b2d2403c0ae8f43ef8196849"
+        "branch" : "qa/ton_v5-wallet_placement",
+        "revision" : "11ad3d1cbede5aab5f46374364ca51bb1f961473"
       }
     },
     {
@@ -131,8 +131,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "3379189f3bb62264c796a527f85d99e01a75b690"
+        "branch" : "qa/ton_v5-wallet_placement",
+        "revision" : "34522ec91540ac2ebd06c58f84b55ba2ac4d1411"
       }
     },
     {
@@ -365,8 +365,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/WalletConnect/WalletConnectSwiftV2.git",
       "state" : {
-        "revision" : "2d0c59f682f1c1395b3c2f6e27eb020087952df3",
-        "version" : "1.20.2"
+        "revision" : "3327c0a8c014b155534b91520554d812e2960077",
+        "version" : "1.20.3"
       }
     },
     {

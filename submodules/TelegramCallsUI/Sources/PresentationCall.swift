@@ -14,9 +14,6 @@ import UniversalMediaPlayer
 import AccountContext
 import DeviceProximity
 import PhoneNumberFormat
-// MARK: Nicegram NCG-5828 call recording
-import NGLogging
-//
 
 public final class PresentationCallImpl: PresentationCall {
     public let context: AccountContext
@@ -563,9 +560,6 @@ public final class PresentationCallImpl: PresentationCall {
                     self.audioSessionShouldBeActive.set(true)
                 }
             case let .active(id, key, _, connections, maxLayer, version, customParameters, allowsP2P):
-                // MARK: Nicegram NCG-5828 call recording
-                self.sharedAudioDevice?.startNicegramRecording()
-                //
                 self.audioSessionShouldBeActive.set(true)
                 if let _ = audioSessionControl, !wasActive || previousControl == nil {
                     let logName = "\(id.id)_\(id.accessHash)"
@@ -633,11 +627,6 @@ public final class PresentationCallImpl: PresentationCall {
                     }
                 }
             case let .terminated(_, _, options):
-                // MARK: Nicegram NCG-5828 call recording
-                self.sharedAudioDevice?.stopNicegramRecording { [weak self] path, duration in
-                    self?.saveCall(with: path, duration: duration)
-                }
-                //
                 self.audioSessionShouldBeActive.set(true)
                 if wasActive {
                     let debugLogValue = Promise<String?>()
@@ -1079,87 +1068,4 @@ public final class PresentationCallImpl: PresentationCall {
         self.useFrontCamera = !self.useFrontCamera
         self.videoCapturer?.switchVideoInput(isFront: self.useFrontCamera)
     }
-    
-    // MARK: Nicegram NCG-5828 call recording    
-    private func deleteFile(from fileURL: URL) {
-        let fileManager = FileManager.default
-        
-        if fileManager.fileExists(atPath: fileURL.path) {
-            do {
-                try fileManager.removeItem(at: fileURL)
-            } catch {
-                ngLog("[\(#file)]-[\(#function)]-[\(#line)] Error remove call file: \(error.localizedDescription)")
-            }
-        } else {
-            ngLog("[\(#file)]-[\(#function)]-[\(#line)] Call wav file not found at path \(fileURL.path)")
-        }
-    }
-
-    private func writeAudioToSaved(from fileURL: URL, duration: Double, data: Data) {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd_HH:mm:ss"
-
-        let date = Date()
-
-        let peerId = self.context.account.peerId
-        
-        let id = Int64.random(in: 0 ... Int64.max)
-        let resource = LocalFileReferenceMediaResource(
-            localFilePath: fileURL.path,
-            randomId: id
-        )
-        
-        let file = TelegramMediaFile(
-            fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id),
-            partialReference: nil,
-            resource: resource,
-            previewRepresentations: [],
-            videoThumbnails: [],
-            immediateThumbnailData: nil,
-            mimeType: "audio/ogg", //if change to this mime type audio show as voice file
-//            mimeType: "audio/wav", if change to this mime type audio show as audio file
-            size: nil,
-            attributes: [.Audio(
-                isVoice: true,
-                duration: Int(duration),
-                title: dateFormatter.string(from: date),
-                performer: nil,
-                waveform: data)
-            ]
-        )
-        
-        let message: EnqueueMessage = .message(
-            text: "",
-            attributes: [],
-            inlineStickers: [:],
-            mediaReference: .standalone(media: file),
-            threadId: nil,
-            replyToMessageId: nil,
-            replyToStoryId: nil,
-            localGroupingKey: nil,
-            correlationId: nil,
-            bubbleUpEmojiOrStickersets: []
-        )
-
-        let _ = enqueueMessages(
-            account: context.account,
-            peerId: peerId,
-            messages: [message]
-        ).start(completed: { [weak self] in
-            self?.deleteFile(from: fileURL)
-        })
-    }
-    
-    private func saveCall(with path: String, duration: Double) {
-        Task {
-            do {
-                let fileURL = URL(fileURLWithPath: path)
-                let (data, _) = try await URLSession.shared.data(from: fileURL)
-                writeAudioToSaved(from: fileURL, duration: duration, data: data)
-            } catch {
-                ngLog("[\(#file)]-[\(#function)]-[\(#line)] Error save call: \(error.localizedDescription)")
-            }
-        }
-    }
-    //
 }

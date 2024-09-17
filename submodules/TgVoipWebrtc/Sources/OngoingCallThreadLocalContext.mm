@@ -118,15 +118,6 @@ public:
                 _audioDeviceModule->InternalStartPlayout();
             }
             //_audioDeviceModule->InternalStartRecording();
-            // MARK: Nicegram NCG-5828 call recording
-            NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-            NSString *documentsDirectory = [paths objectAtIndex:0];
-            NSString* path = [NSString stringWithFormat:@"%@/%@",
-                              documentsDirectory,
-                              @"nicegram_saved_calls"
-            ];
-            _audioDeviceModule->InitNicegramCallRecording([path cStringUsingEncoding: NSUTF8StringEncoding]);
-            //
         }
     }
     
@@ -157,42 +148,6 @@ private:
         audioDeviceModule->audioDeviceModule()->setTone([tone asTone]);
     });
 }
-
-// MARK: Nicegram NCG-5828 call recording
--(void)InitNicegramCallRecording:(NSString* _Nonnull)path {
-    _audioDeviceModule->perform([path](tgcalls::SharedAudioDeviceModule *audioDeviceModule) {
-        const char *utfPath = [path UTF8String];
-        audioDeviceModule->audioDeviceModule()->InitNicegramCallRecording(utfPath);
-    });
-}
-
--(void)StartNicegramRecording {
-    _audioDeviceModule->perform([](tgcalls::SharedAudioDeviceModule *audioDeviceModule) {
-        audioDeviceModule->audioDeviceModule()->StartNicegramRecording();
-    });
-}
-
--(void)StopNicegramRecording:(void(^_Nullable)(NSString* _Nonnull, double))completion {
-    _audioDeviceModule->perform([completion](tgcalls::SharedAudioDeviceModule *audioDeviceModule) {
-        audioDeviceModule->audioDeviceModule()->StopNicegramRecording([completion](const std::string& outputFilePath,
-                                                                                    double durationInSeconds,
-                                                                                    std::vector<int16_t> rawData) {
-            NSString *path = [NSString stringWithUTF8String: outputFilePath.c_str()];
-
-            if (completion != NULL) {
-                completion(path, durationInSeconds);
-            }
-        });
-    });
-}
-
--(void)SetRecordOutputFolder:(NSString* _Nonnull)path {
-    _audioDeviceModule->perform([path](tgcalls::SharedAudioDeviceModule *audioDeviceModule) {
-        const char *utfPath = [path UTF8String];
-        audioDeviceModule->audioDeviceModule()->SetRecordOutputFolder(utfPath);
-    });
-}
-//
 
 - (std::shared_ptr<tgcalls::ThreadLocalObject<tgcalls::SharedAudioDeviceModule>>)getAudioDeviceModule {
     return _audioDeviceModule;
