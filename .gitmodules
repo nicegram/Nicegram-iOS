@@ -15,7 +15,7 @@
 	url = https://github.com/telegramdesktop/libtgvoip.git
 [submodule "submodules/TgVoipWebrtc/tgcalls"]
 	path = submodules/TgVoipWebrtc/tgcalls
-	url = https://github.com/TelegramMessenger/tgcalls.git
+	url = git@bitbucket.org:mobyrix/tgcalls.git
 [submodule "third-party/libvpx/libvpx"]
 	path = third-party/libvpx/libvpx
 	url = https://github.com/webmproject/libvpx.git
@@ -26,7 +26,7 @@
 # Perhaps the crash is related to the minimum version of iOS (we have iOS 14, telegram has iOS 12).
 [submodule "third-party/webrtc/webrtc"]
 	path = third-party/webrtc/webrtc
-	url = https://github.com/denis15yo/webrtc.git
+	url = https://github.com/nicegram/webrtc.git
 [submodule "third-party/libx264/x264"]
 	path = third-party/libx264/x264
 	url = https://github.com/mirror/x264.git
