@@ -132,7 +132,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "feat/stonfi-swap",
-        "revision" : "a28ea13441d33fa4c6f6aa5886eb7151916dc8ec"
+        "revision" : "0717b9623950e20f7834547792e30e28fd921b77"
       }
     },
     {
