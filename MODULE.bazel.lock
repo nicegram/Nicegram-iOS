@@ -2981,7 +2981,7 @@
       "general": {
         "bzlTransitiveDigest": "YjE3dFjYQ4sj5gn2Iz1cWVK14/ZJ5cmnAUUGjDbACAA=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "02b7002695fb73684ed45f2bfeb2b621b09e810529d4fcb8b3f276d04657a806",
+          "@@//Package.resolved": "a2405d0d4e61891eaaa152fff3fd65d880ce536aeef66ae6dc4c285a039dfaf5",
           "@@//Package.swift": "b55c7ef028c6f3d7460b682fbf5d3c7be38b92396f24d18cbe8467244e35b673"
         },
         "recordedDirentsInputs": {},
