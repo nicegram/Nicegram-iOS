@@ -230,6 +230,8 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
                 textString = strings.Stars_Purchase_GiftInfo(component.peers.first?.value.compactDisplayTitle ?? "").string
             case .transfer:
                 textString = strings.Stars_Purchase_StarsNeededInfo(component.peers.first?.value.compactDisplayTitle ?? "").string
+            case .reactions:
+                textString = strings.Stars_Purchase_StarsReactionsNeededInfo(component.peers.first?.value.compactDisplayTitle ?? "").string
             case let .subscription(_, _, renew):
                 textString = renew ? strings.Stars_Purchase_SubscriptionRenewInfo(component.peers.first?.value.compactDisplayTitle ?? "").string : strings.Stars_Purchase_SubscriptionInfo(component.peers.first?.value.compactDisplayTitle ?? "").string
             case .unlockMedia:
@@ -282,28 +284,6 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
             size.height += 21.0
             
             context.component.externalState.descriptionHeight = text.size.height
-
-            let stars: [Int64: Int] = [
-                15: 1,
-                75: 2,
-                250: 3,
-                500: 4,
-                1000: 5,
-                2500: 6,
-
-                25: 1,
-                50: 1,
-                100: 2,
-                150: 2,
-                350: 3,
-                750: 4,
-                1500: 5,
-                
-                5000: 6,
-                10000: 6,
-                25000: 7,
-                35000: 7
-            ]
             
             let externalStateUpdated = context.component.stateUpdated
             
@@ -367,7 +347,7 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
                                 title: titleComponent,
                                 contentInsets: UIEdgeInsets(top: 12.0, left: -6.0, bottom: 12.0, right: 0.0),
                                 leftIcon: .custom(AnyComponentWithIdentity(id: 0, component: AnyComponent(StarsIconComponent(
-                                    count: stars[product.count] ?? 1
+                                    amount: product.count
                                 ))), true),
                                 accessory: .custom(ListActionItemComponent.CustomAccessory(component: AnyComponentWithIdentity(id: 0, component: AnyComponent(MultilineTextComponent(
                                     text: .plain(NSAttributedString(
@@ -806,7 +786,8 @@ private final class StarsPurchaseScreenComponent: CombinedComponent {
                             UIColor(rgb: 0xf9b004),
                             UIColor(rgb: 0xfdd219)
                         ],
-                        particleColor: UIColor(rgb: 0xf9b004)
+                        particleColor: UIColor(rgb: 0xf9b004),
+                        backgroundColor: environment.theme.list.blocksBackgroundColor
                     ),
                     availableSize: CGSize(width: min(414.0, context.availableSize.width), height: 220.0),
                     transition: context.transition
@@ -837,7 +818,7 @@ private final class StarsPurchaseScreenComponent: CombinedComponent {
                 titleText = strings.Stars_Purchase_StarsNeeded(Int32(requiredStars))
             case .gift:
                 titleText = strings.Stars_Purchase_GiftStars
-            case let .transfer(_, requiredStars), let .subscription(_, requiredStars, _), let .unlockMedia(requiredStars):
+            case let .transfer(_, requiredStars), let .reactions(_, requiredStars), let .subscription(_, requiredStars, _), let .unlockMedia(requiredStars):
                 titleText = strings.Stars_Purchase_StarsNeeded(Int32(requiredStars))
             }
             
@@ -1129,7 +1110,30 @@ public final class StarsPurchaseScreen: ViewControllerComponentContainer {
     }
 }
 
-func generateStarsIcon(count: Int) -> UIImage {
+func generateStarsIcon(amount: Int64) -> UIImage {
+    let stars: [Int64: Int] = [
+        15: 1,
+        75: 2,
+        250: 3,
+        500: 4,
+        1000: 5,
+        2500: 6,
+
+        25: 1,
+        50: 1,
+        100: 2,
+        150: 2,
+        350: 3,
+        750: 4,
+        1500: 5,
+        
+        5000: 6,
+        10000: 6,
+        25000: 7,
+        35000: 7
+    ]
+    let count = stars[amount] ?? 1
+    
     let image = generateGradientTintedImage(
         image: UIImage(bundleImageName: "Peer Info/PremiumIcon"),
         colors: [
@@ -1181,16 +1185,16 @@ func generateStarsIcon(count: Int) -> UIImage {
 }
 
 final class StarsIconComponent: CombinedComponent {
-    let count: Int
+    let amount: Int64
     
     init(
-        count: Int
+        amount: Int64
     ) {
-        self.count = count
+        self.amount = amount
     }
     
     static func ==(lhs: StarsIconComponent, rhs: StarsIconComponent) -> Bool {
-        if lhs.count != rhs.count {
+        if lhs.amount != rhs.amount {
             return false
         }
         return true
@@ -1199,11 +1203,11 @@ final class StarsIconComponent: CombinedComponent {
     static var body: Body {
         let icon = Child(Image.self)
         
-        var image: (UIImage, Int)?
+        var image: (UIImage, Int64)?
         
         return { context in
-            if image == nil || image?.1 != context.component.count {
-                image = (generateStarsIcon(count: context.component.count), context.component.count)
+            if image == nil || image?.1 != context.component.amount {
+                image = (generateStarsIcon(amount: context.component.amount), context.component.amount)
             }
             
             let iconSize = CGSize(width: image!.0.size.width, height: 20.0)
@@ -1230,6 +1234,8 @@ private extension StarsPurchasePurpose {
             return [peerId]
         case let .transfer(peerId, _):
             return [peerId]
+        case let .reactions(peerId, _):
+            return [peerId]
         case let .subscription(peerId, _, _):
             return [peerId]
         default:
@@ -1242,6 +1248,8 @@ private extension StarsPurchasePurpose {
         case let .topUp(requiredStars, _):
             return requiredStars
         case let .transfer(_, requiredStars):
+            return requiredStars
+        case let .reactions(_, requiredStars):
             return requiredStars
         case let .subscription(_, requiredStars, _):
             return requiredStars

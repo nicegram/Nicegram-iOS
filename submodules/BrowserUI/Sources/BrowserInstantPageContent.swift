@@ -28,6 +28,9 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
     private var theme: InstantPageTheme
     private var settings: InstantPagePresentationSettings = .defaultSettings
     private let sourceLocation: InstantPageSourceLocation
+    private let preloadedResouces: [Any]?
+    private var originalContent: BrowserContent?
+    private let url: String
     
     private var webPage: TelegramMediaWebpage?
     
@@ -66,7 +69,8 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
     
     var currentAccessibilityAreas: [AccessibilityAreaNode] = []
     
-    var pushContent: (BrowserScreen.Subject) -> Void = { _ in }
+    var pushContent: (BrowserScreen.Subject, BrowserContent?) -> Void = { _, _ in }
+    var restoreContent: (BrowserContent) -> Void = { _ in }
     var openAppUrl: (String) -> Void = { _ in }
     var onScrollingUpdate: (ContentScrollingUpdate) -> Void = { _ in }
     var minimize: () -> Void = { }
@@ -84,19 +88,22 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
     private let loadWebpageDisposable = MetaDisposable()
     private let resolveUrlDisposable = MetaDisposable()
     private let updateLayoutDisposable = MetaDisposable()
-    
+        
     private let loadProgress = ValuePromise<CGFloat>(1.0, ignoreRepeated: true)
     private let readingProgress = ValuePromise<CGFloat>(1.0, ignoreRepeated: true)
 
     private var containerLayout: (size: CGSize, insets: UIEdgeInsets, fullInsets: UIEdgeInsets)?
     private var setupScrollOffsetOnLayout = false
     
-    init(context: AccountContext, presentationData: PresentationData, webPage: TelegramMediaWebpage, anchor: String?, url: String, sourceLocation: InstantPageSourceLocation) {
+    init(context: AccountContext, presentationData: PresentationData, webPage: TelegramMediaWebpage, anchor: String?, url: String, sourceLocation: InstantPageSourceLocation, preloadedResouces: [Any]?, originalContent: BrowserContent? = nil) {
         self.context = context
         self.webPage = webPage
         self.presentationData = presentationData
         self.theme = instantPageThemeForType(presentationData.theme.overallDarkAppearance ? .dark : .light, settings: .defaultSettings)
         self.sourceLocation = sourceLocation
+        self.preloadedResouces = preloadedResouces
+        self.originalContent = originalContent
+        self.url = url
         
         self.uuid = UUID()
         
@@ -107,7 +114,8 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
             title = ""
         }
         
-        self._state = BrowserContentState(title: title, url: url, estimatedProgress: 0.0, readingProgress: 0.0, contentType: .instantPage)
+        let isInnerInstantViewEnabled = originalContent != nil
+        self._state = BrowserContentState(title: title, url: url, estimatedProgress: 0.0, readingProgress: 0.0, contentType: .instantPage, isInnerInstantViewEnabled: isInnerInstantViewEnabled)
         self.statePromise = Promise<BrowserContentState>(self._state)
         
         self.wrapperNode = ASDisplayNode()
@@ -126,7 +134,7 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
                 self.readingProgress.get()
             )
             |> map { estimatedProgress, readingProgress in
-                return BrowserContentState(title: title, url: url, estimatedProgress: estimatedProgress, readingProgress: readingProgress, contentType: .instantPage)
+                return BrowserContentState(title: title, url: url, estimatedProgress: estimatedProgress, readingProgress: readingProgress, contentType: .instantPage, isInnerInstantViewEnabled: isInnerInstantViewEnabled)
             }
         ))
         
@@ -160,7 +168,6 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
             guard let self else {
                 return
             }
-            self.webPage = result
             self.updateWebPage(result, anchor: self.initialAnchor)
         })
     }
@@ -359,6 +366,12 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
         self.theme = instantPageThemeForType(self.presentationData.theme.overallDarkAppearance ? .dark : .light, settings: self.settings)
         self.updatePageLayout()
         self.updateVisibleItems(visibleBounds: self.scrollNode.view.bounds)
+    }
+    
+    func toggleInstantView(_ enabled: Bool) {
+        if !enabled, let originalContent = self.originalContent {
+            self.restoreContent(originalContent)
+        }
     }
         
     func setSearch(_ query: String?, completion: ((Int) -> Void)?) {
@@ -604,7 +617,9 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
                         self?.updateWebEmbedHeight(embedIndex, height)
                     }, updateDetailsExpanded: { [weak self] expanded in
                         self?.updateDetailsExpanded(detailsIndex, expanded)
-                    }, currentExpandedDetails: self.currentExpandedDetails) {
+                    }, currentExpandedDetails: self.currentExpandedDetails, getPreloadedResource: { [weak self] url in
+                        return self?.getPreloadedResource(url)
+                    }) {
                         newNode.frame = itemFrame
                         newNode.updateLayout(size: itemFrame.size, transition: transition)
                         if let topNode = topNode {
@@ -714,6 +729,24 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
         for index in removeItemIndices {
             self.visibleItemsWithNodes.removeValue(forKey: index)
         }
+    }
+    
+    private func getPreloadedResource(_ url: String) -> Data? {
+        guard let preloadedResouces = self.preloadedResouces else {
+            return nil
+        }
+        var cleanUrl = url
+        var components = URLComponents(string: url)
+        components?.queryItems = nil
+        cleanUrl = components?.url?.absoluteString ?? cleanUrl
+        for resource in preloadedResouces {
+            if let resource = resource as? [String: Any], let resourceUrl = resource["WebResourceURL"] as? String {
+                if resourceUrl == url || resourceUrl.hasPrefix(cleanUrl) {
+                    return resource["WebResourceData"] as? Data
+                }
+            }
+        }
+        return nil
     }
     
     private struct ScrollingOffsetState: Equatable {
@@ -878,8 +911,14 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
             anchor = String(baseUrl[anchorRange.upperBound...]).removingPercentEncoding
             baseUrl = String(baseUrl[..<anchorRange.lowerBound])
         }
+        
+        if !baseUrl.hasPrefix("http://") && !baseUrl.hasPrefix("https://") {
+            if let updatedUrl = URL(string: baseUrl, relativeTo: URL(string: "/", relativeTo: URL(string: self.url))) {
+                baseUrl = updatedUrl.absoluteString
+            }
+        }
 
-        if let webPage = self.webPage, case let .Loaded(content) = webPage.content, let page = content.instantPage, page.url == baseUrl, let anchor = anchor {
+        if let webPage = self.webPage, case let .Loaded(content) = webPage.content, let page = content.instantPage, page.url == baseUrl || baseUrl.isEmpty, let anchor = anchor {
             self.scrollToAnchor(anchor)
             return
         }
@@ -888,7 +927,7 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
         self.loadProgress.set(0.02)
     
         self.loadWebpageDisposable.set(nil)
-        self.resolveUrlDisposable.set((self.context.sharedContext.resolveUrl(context: self.context, peerId: nil, url: url.url, skipUrlAuth: true)
+        self.resolveUrlDisposable.set((self.context.sharedContext.resolveUrl(context: self.context, peerId: nil, url: baseUrl, skipUrlAuth: true)
         |> deliverOnMainQueue).start(next: { [weak self] result in
             if let strongSelf = self {
                 strongSelf.loadProgress.set(0.07)
@@ -906,7 +945,7 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
                                         case let .result(webpageResult):
                                             if let webpageResult = webpageResult, case .Loaded = webpageResult.webpage.content {
                                                 strongSelf.loadProgress.set(1.0)
-                                                strongSelf.pushContent(.instantPage(webPage: webpageResult.webpage, anchor: anchor, sourceLocation: strongSelf.sourceLocation))
+                                                strongSelf.pushContent(.instantPage(webPage: webpageResult.webpage, anchor: anchor, sourceLocation: strongSelf.sourceLocation, preloadedResources: nil), nil)
                                             }
                                             break
                                         case let .progress(progress):
@@ -916,11 +955,11 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
                             }))
                         } else {
                             strongSelf.loadProgress.set(1.0)
-                            strongSelf.pushContent(.webPage(url: externalUrl))
+                            strongSelf.pushContent(.webPage(url: externalUrl), nil)
                         }
                     case let .instantView(webpage, anchor):
                         strongSelf.loadProgress.set(1.0)
-                        strongSelf.pushContent(.instantPage(webPage: webpage, anchor: anchor, sourceLocation: strongSelf.sourceLocation))
+                        strongSelf.pushContent(.instantPage(webPage: webpage, anchor: anchor, sourceLocation: strongSelf.sourceLocation, preloadedResources: nil), nil)
                     default:
                         strongSelf.loadProgress.set(1.0)
                         strongSelf.minimize()
@@ -971,8 +1010,15 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
     }
     
     private func openUrlIn(_ url: InstantPageUrlItem) {
+        var baseUrl = url.url
+        if !baseUrl.hasPrefix("http://") && !baseUrl.hasPrefix("https://") {
+            if let updatedUrl = URL(string: baseUrl, relativeTo: URL(string: "/", relativeTo: URL(string: self.url))) {
+                baseUrl = updatedUrl.absoluteString
+            }
+        }
+        
         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
-        let actionSheet = OpenInActionSheetController(context: self.context, item: .url(url: url.url), openUrl: { [weak self] url in
+        let actionSheet = OpenInActionSheetController(context: self.context, item: .url(url: baseUrl), openUrl: { [weak self] url in
             if let self {
                 self.context.sharedContext.openExternalUrl(context: self.context, urlContext: .generic, url: url, forceExternal: true, presentationData: presentationData, navigationController: nil, dismissInput: {})
             }
@@ -1067,7 +1113,9 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
         
         if let centralIndex = centralIndex {
             let controller = InstantPageGalleryController(context: self.context, userLocation: self.sourceLocation.userLocation, webPage: webPage, entries: entries, centralIndex: centralIndex, fromPlayingVideo: fromPlayingVideo, replaceRootController: { _, _ in
-            }, baseNavigationController: self.getNavigationController())
+            }, baseNavigationController: self.getNavigationController(), getPreloadedResource: { [weak self] url in
+                return self?.getPreloadedResource(url)
+            })
             self.hiddenMediaDisposable.set((controller.hiddenMedia |> deliverOnMainQueue).start(next: { [weak self] entry in
                 if let strongSelf = self {
                     for (_, itemNode) in strongSelf.visibleItemsWithNodes {
@@ -1156,11 +1204,18 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
                             }
                         case .longTap:
                             if let url = self.urlForTapLocation(location) {
-                                let canOpenIn = availableOpenInOptions(context: self.context, item: .url(url: url.url)).count > 1
+                                var baseUrl = url.url
+                                if !baseUrl.hasPrefix("http://") && !baseUrl.hasPrefix("https://") {
+                                    if let updatedUrl = URL(string: baseUrl, relativeTo: URL(string: "/", relativeTo: URL(string: self.url))) {
+                                        baseUrl = updatedUrl.absoluteString
+                                    }
+                                }
+                                
+                                let canOpenIn = availableOpenInOptions(context: self.context, item: .url(url: baseUrl)).count > 1
                                 let openText = canOpenIn ? self.presentationData.strings.Conversation_FileOpenIn : self.presentationData.strings.Conversation_LinkDialogOpen
                                 let actionSheet = ActionSheetController(instantPageTheme: self.theme)
                                 actionSheet.setItemGroups([ActionSheetItemGroup(items: [
-                                    ActionSheetTextItem(title: url.url),
+                                    ActionSheetTextItem(title: baseUrl),
                                     ActionSheetButtonItem(title: openText, color: .accent, action: { [weak self, weak actionSheet] in
                                         actionSheet?.dismissAnimated()
                                         if let strongSelf = self {
@@ -1173,11 +1228,11 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
                                     }),
                                     ActionSheetButtonItem(title: self.presentationData.strings.ShareMenu_CopyShareLink, color: .accent, action: { [weak actionSheet] in
                                         actionSheet?.dismissAnimated()
-                                        UIPasteboard.general.string = url.url
+                                        UIPasteboard.general.string = baseUrl
                                     }),
                                     ActionSheetButtonItem(title: self.presentationData.strings.Conversation_AddToReadingList, color: .accent, action: { [weak actionSheet] in
                                         actionSheet?.dismissAnimated()
-                                        if let link = URL(string: url.url) {
+                                        if let link = URL(string: baseUrl) {
                                             let _ = try? SSReadingList.default()?.addItem(with: link, title: nil, previewText: nil)
                                         }
                                     })

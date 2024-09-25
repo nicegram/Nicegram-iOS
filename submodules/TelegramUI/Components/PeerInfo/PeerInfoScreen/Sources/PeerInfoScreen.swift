@@ -308,6 +308,10 @@ final class PeerInfoSelectionPanelNode: ASDisplayNode {
     let separatorNode: ASDisplayNode
     let backgroundNode: NavigationBackgroundNode
     
+    var viewForOverlayContent: UIView? {
+        return self.selectionPanel.viewForOverlayContent
+    }
+    
     init(context: AccountContext, presentationData: PresentationData, peerId: PeerId, deleteMessages: @escaping () -> Void, shareMessages: @escaping () -> Void, forwardMessages: @escaping () -> Void, reportMessages: @escaping () -> Void, displayCopyProtectionTip: @escaping (ASDisplayNode, Bool) -> Void) {
         self.context = context
         self.peerId = peerId
@@ -465,7 +469,7 @@ final class PeerInfoSelectionPanelNode: ASDisplayNode {
         self.separatorNode.backgroundColor = presentationData.theme.rootController.navigationBar.separatorColor
         
         let interfaceState = ChatPresentationInterfaceState(chatWallpaper: .color(0), theme: presentationData.theme, strings: presentationData.strings, dateTimeFormat: presentationData.dateTimeFormat, nameDisplayOrder: presentationData.nameDisplayOrder, limitsConfiguration: .defaultValue, fontSize: .regular, bubbleCorners: PresentationChatBubbleCorners(mainRadius: 16.0, auxiliaryRadius: 8.0, mergeBubbleCorners: true), accountPeerId: self.context.account.peerId, mode: .standard(.default), chatLocation: .peer(id: self.peerId), subject: nil, peerNearbyData: nil, greetingData: nil, pendingUnpinnedAllMessages: false, activeGroupCallInfo: nil, hasActiveGroupCall: false, importState: nil, threadData: nil, isGeneralThreadClosed: nil, replyMessage: nil, accountPeerColor: nil, businessIntro: nil)
-        let panelHeight = self.selectionPanel.updateLayout(width: layout.size.width, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, bottomInset: layout.intrinsicInsets.bottom, additionalSideInsets: UIEdgeInsets(), maxHeight: 0.0, isSecondary: false, transition: transition, interfaceState: interfaceState, metrics: layout.metrics, isMediaInputExpanded: false)
+        let panelHeight = self.selectionPanel.updateLayout(width: layout.size.width, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, bottomInset: layout.intrinsicInsets.bottom, additionalSideInsets: UIEdgeInsets(), maxHeight: layout.size.height, isSecondary: false, transition: transition, interfaceState: interfaceState, metrics: layout.metrics, isMediaInputExpanded: false)
         
         transition.updateFrame(node: self.selectionPanel, frame: CGRect(origin: CGPoint(), size: CGSize(width: layout.size.width, height: panelHeight)))
         
@@ -1859,7 +1863,7 @@ private func infoItems(data: PeerInfoScreenData?, context: AccountContext, prese
                                         attributedString.addAttribute(.baselineOffset, value: 1.5, range: NSRange(range, in: attributedString.string))
                                     }
                                     if let range = attributedString.string.range(of: "*") {
-                                        attributedString.addAttribute(ChatTextInputAttributes.customEmoji, value: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: 0, file: nil, custom: .stars(tinted: false)), range: NSRange(range, in: attributedString.string))
+                                        attributedString.addAttribute(ChatTextInputAttributes.customEmoji, value: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: 1, file: nil, custom: .stars(tinted: false)), range: NSRange(range, in: attributedString.string))
                                         attributedString.addAttribute(.baselineOffset, value: 1.5, range: NSRange(range, in: attributedString.string))
                                     }
                                     
@@ -6202,6 +6206,30 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                             })))
                         }
                         
+                        var addedPrivacy = false
+                        var privacyPolicyUrl: String?
+                        if let cachedData = (data.cachedData as? CachedUserData), let botInfo = cachedData.botInfo {
+                            if let url = botInfo.privacyPolicyUrl {
+                                privacyPolicyUrl = url
+                            } else if botInfo.commands.contains(where: { $0.text == "privacy" }) {
+                                
+                            } else {
+                                privacyPolicyUrl = presentationData.strings.WebApp_PrivacyPolicy_URL
+                            }
+                        }
+                        if let privacyPolicyUrl {
+                            items.append(.action(ContextMenuActionItem(text: presentationData.strings.UserInfo_BotPrivacy, icon: { theme in
+                                generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Info"), color: theme.contextMenu.primaryColor)
+                            }, action: { [weak self] _, f in
+                                f(.dismissWithoutContent)
+                                
+                                guard let self else {
+                                    return
+                                }
+                                self.context.sharedContext.openExternalUrl(context: self.context, urlContext: .generic, url: privacyPolicyUrl, forceExternal: false, presentationData: self.presentationData, navigationController: self.controller?.navigationController as? NavigationController, dismissInput: {})
+                            })))
+                            addedPrivacy = true
+                        }
                         if let cachedData = data.cachedData as? CachedUserData, let botInfo = cachedData.botInfo {
                             for command in botInfo.commands {
                                 if command.text == "settings" {
@@ -6218,7 +6246,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                                         f(.dismissWithoutContent)
                                         self?.performBotCommand(command: .help)
                                     })))
-                                } else if command.text == "privacy" {
+                                } else if command.text == "privacy" && !addedPrivacy {
                                     items.append(.action(ContextMenuActionItem(text: presentationData.strings.UserInfo_BotPrivacy, icon: { theme in
                                         generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Info"), color: theme.contextMenu.primaryColor)
                                     }, action: { [weak self] _, f in
@@ -12039,6 +12067,9 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                 })
                 self.paneContainerNode.selectionPanelNode = selectionPanelNode
                 self.paneContainerNode.addSubnode(selectionPanelNode)
+                if let viewForOverlayContent = selectionPanelNode.viewForOverlayContent {
+                    self.paneContainerNode.view.addSubview(viewForOverlayContent)
+                }
             }
             selectionPanelNode.selectionPanel.selectedMessages = selectedMessageIds
             let panelHeight = selectionPanelNode.update(layout: layout, presentationData: self.presentationData, transition: wasAdded ? .immediate : transition)
@@ -12046,13 +12077,23 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
             if wasAdded {
                 selectionPanelNode.frame = panelFrame
                 transition.animatePositionAdditive(node: selectionPanelNode, offset: CGPoint(x: 0.0, y: panelHeight))
+                
+                if let viewForOverlayContent = selectionPanelNode.viewForOverlayContent {
+                    viewForOverlayContent.frame = panelFrame
+                    transition.animatePositionAdditive(layer: viewForOverlayContent.layer, offset: CGPoint(x: 0.0, y: panelHeight))
+                }
             } else {
                 transition.updateFrame(node: selectionPanelNode, frame: panelFrame)
+                
+                if let viewForOverlayContent = selectionPanelNode.viewForOverlayContent {
+                    transition.updateFrame(view: viewForOverlayContent, frame: panelFrame)
+                }
             }
         } else if let selectionPanelNode = self.paneContainerNode.selectionPanelNode {
             self.paneContainerNode.selectionPanelNode = nil
             transition.updateFrame(node: selectionPanelNode, frame: CGRect(origin: CGPoint(x: 0.0, y: layout.size.height), size: selectionPanelNode.bounds.size), completion: { [weak selectionPanelNode] _ in
                 selectionPanelNode?.removeFromSupernode()
+                selectionPanelNode?.viewForOverlayContent?.removeFromSuperview()
             })
         }
         
