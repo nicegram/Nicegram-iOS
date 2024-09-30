@@ -124,7 +124,9 @@ private final class TonSchemeHandler: NSObject, WKURLSchemeHandler {
 final class WebView: WKWebView {
     var customBottomInset: CGFloat = 0.0 {
         didSet {
-            self.setNeedsLayout()
+            if self.customBottomInset != oldValue {
+                self.setNeedsLayout()
+            }
         }
     }
     
@@ -176,6 +178,7 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
     private var presentationData: PresentationData
     
     let webView: WebView
+    var readability: Readability?
     
     private let errorView: ComponentHostView<Empty>
     private var currentError: Error?
@@ -194,7 +197,7 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
     
     private let faviconDisposable = MetaDisposable()
     
-    var pushContent: (BrowserScreen.Subject) -> Void = { _ in }
+    var pushContent: (BrowserScreen.Subject, BrowserContent?) -> Void = { _, _ in }
     var openAppUrl: (String) -> Void = { _ in }
     var onScrollingUpdate: (ContentScrollingUpdate) -> Void = { _ in }
     var minimize: () -> Void = { }
@@ -245,7 +248,7 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
             contentController.add(WeakScriptMessageHandler { message in
                 handleScriptMessageImpl?(message)
             }, name: "performAction")
-
+            
             configuration.userContentController = contentController
             configuration.applicationNameForUserAgent = computedUserAgent()
         }
@@ -349,6 +352,7 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
         self.webView.removeObserver(self, forKeyPath: #keyPath(WKWebView.hasOnlySecureContent))
         
         self.faviconDisposable.dispose()
+        self.instantPageDisposable.dispose()
     }
     
     private func handleScriptMessage(_ message: WKScriptMessage) {
@@ -392,13 +396,36 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
         self.webView.evaluateJavaScript(js) { _, _ in }
     }
     
+    func toggleInstantView(_ enabled: Bool) {
+        if enabled {
+            if let instantPage = self.instantPage {
+                self.pushContent(.instantPage(webPage: instantPage, anchor: nil, sourceLocation: InstantPageSourceLocation(userLocation: .other, peerType: .channel), preloadedResources: self.instantPageResources), self)
+            } else if let readability = self.readability {
+                readability.webView.frame = self.webView.frame
+                self.addSubview(readability.webView)
+                
+                var collapsedFrame = readability.webView.frame
+                collapsedFrame.size.height = 0.0
+                readability.webView.clipsToBounds = true
+                readability.webView.layer.animateFrame(from: collapsedFrame, to: readability.webView.frame, duration: 0.3)
+            }
+        } else if let readability = self.readability {
+            var collapsedFrame = readability.webView.frame
+            collapsedFrame.size.height = 0.0
+            readability.webView.layer.animateFrame(from: readability.webView.frame, to: collapsedFrame, duration: 0.3, removeOnCompletion: false, completion: { _ in
+                readability.webView.removeFromSuperview()
+                readability.webView.layer.removeAllAnimations()
+            })
+        }
+    }
+    
     private var didSetupSearch = false
     private func setupSearch(completion: @escaping () -> Void) {
         guard !self.didSetupSearch else {
             completion()
             return
         }
-        
+                
         let bundle = getAppBundle()
         guard let scriptPath = bundle.path(forResource: "UIWebViewSearch", ofType: "js") else {
             return
@@ -738,7 +765,7 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
                 }
                 //
                 
-                if (navigationAction.targetFrame == nil || navigationAction.targetFrame?.isMainFrame == true) && (isTelegramMeLink(url) || isTelegraPhLink(url)) && !url.contains("/auth/push?") && !self._state.url.contains("/auth/push?") {
+                if (navigationAction.targetFrame == nil || navigationAction.targetFrame?.isMainFrame == true) && (isTelegramMeLink(url) || isTelegraPhLink(url) || url.hasPrefix("tg://")) && !url.contains("/auth/push?") && !self._state.url.contains("/auth/push?") {
                     decisionHandler(.cancel, preferences)
                     self.minimize()
                     self.openAppUrl(url)
@@ -774,7 +801,7 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
     
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         if let url = navigationAction.request.url?.absoluteString {
-            if (navigationAction.targetFrame == nil || navigationAction.targetFrame?.isMainFrame == true) && (isTelegramMeLink(url) || isTelegraPhLink(url)) {
+            if (navigationAction.targetFrame == nil || navigationAction.targetFrame?.isMainFrame == true) && (isTelegramMeLink(url) || isTelegraPhLink(url) || url.hasPrefix("tg://")) {
                 decisionHandler(.cancel)
                 self.minimize()
                 self.openAppUrl(url)
@@ -785,7 +812,12 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
             decisionHandler(.allow)
         }
     }
-        
+    
+    private let isLoaded = ValuePromise<Bool>(false)
+    private var instantPageDisposable = MetaDisposable()
+    private var instantPage: TelegramMediaWebpage?
+    private var instantPageResources: [Any]?
+    
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         if let _ = self.currentError {
             self.currentError = nil
@@ -794,6 +826,11 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
             }
         }
         self.updateFontState(self.currentFontState, force: true)
+        
+        self.readability = nil
+        self.instantPage = nil
+        self.instantPageResources = nil
+        self.isLoaded.set(false)
     }
     
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
@@ -802,11 +839,74 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
             .withUpdatedForwardList(webView.backForwardList.forwardList.map { BrowserContentState.HistoryItem(webItem: $0) })
         }
         self.parseFavicon()
+        
+        self.isLoaded.set(true)
+    }
+    
+    func releaseInstantView() {
+        self.instantPageDisposable.set(nil)
+    }
+        
+    func requestInstantView() {
+        guard self.readability == nil else {
+            return
+        }
+        
+        self.instantPageDisposable.set(
+            (self.isLoaded.get()
+            |> filter { $0 }
+            |> take(1)
+            |> deliverOnMainQueue).start(next: { [weak self] _ in
+                guard let self else {
+                    return
+                }
+                guard let url = URL(string: self._state.url) else {
+                    return
+                }
+                
+                if #available(iOS 14.5, *) {
+                    self.webView.createWebArchiveData { [weak self] result in
+                        guard let self, case let .success(data) = result else {
+                            return
+                        }
+                        let readability = Readability(url: url, archiveData: data, completionHandler: { [weak self] result, error in
+                            guard let self else {
+                                return
+                            }
+                            if let (webPage, resources) = result {
+                                self.updateState {$0
+                                    .withUpdatedHasInstantView(true)
+                                }
+                                self.instantPage = webPage
+                                self.instantPageResources = resources
+                                let _ = (updatedRemoteWebpage(postbox: self.context.account.postbox, network: self.context.account.network, accountPeerId: self.context.account.peerId, webPage: WebpageReference(TelegramMediaWebpage(webpageId: MediaId(namespace: 0, id: 0), content: .Loaded(TelegramMediaWebpageLoadedContent(url: self._state.url, displayUrl: "", hash: 0, type: nil, websiteName: nil, title: nil, text: nil, embedUrl: nil, embedType: nil, embedSize: nil, duration: nil, author: nil, isMediaLargeByDefault: nil, image: nil, file: nil, story: nil, attributes: [], instantPage: nil)))))
+                                |> deliverOnMainQueue).start(next: { [weak self] webPage in
+                                    guard let self, let webPage, case let .Loaded(result) = webPage.content, let _ = result.instantPage else {
+                                        return
+                                    }
+                                    self.instantPage = webPage
+                                })
+                            } else {
+                                self.instantPage = nil
+                                self.instantPageResources = nil
+                                self.updateState {$0
+                                    .withUpdatedHasInstantView(false)
+                                }
+                            }
+                        })
+                        self.readability = readability
+                    }
+                }
+            })
+        )
     }
     
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         if [-1003, -1100, 102].contains((error as NSError).code) {
-            self.currentError = error
+            if let url = (error as NSError).userInfo["NSErrorFailingURLKey"] as? URL, url.absoluteString.hasPrefix("itms-appss:") {
+            } else {
+                self.currentError = error
+            }
         } else {
             self.currentError = nil
         }
@@ -824,7 +924,7 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
                 }
                 //
                 
-                if isTelegramMeLink(url) || isTelegraPhLink(url) {
+                if isTelegramMeLink(url) || isTelegraPhLink(url) || url.hasPrefix("tg://") {
                     self.minimize()
                     self.openAppUrl(url)
                 } else {
@@ -979,7 +1079,7 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
             navigationController.pushViewController(controller)
             return (controller.node.content.last as? BrowserWebContent)?.webView
         } else {
-            self.pushContent(subject)
+            self.pushContent(subject, nil)
         }
         return nil
     }
@@ -1304,7 +1404,7 @@ let setupFontFunctions = """
 """
 
 private let videoSource = """
-function disableWebkitEnterFullscreen(videoElement) {
+function tgBrowserDisableWebkitEnterFullscreen(videoElement) {
   if (videoElement && videoElement.webkitEnterFullscreen) {
     Object.defineProperty(videoElement, 'webkitEnterFullscreen', {
       value: undefined
@@ -1312,11 +1412,11 @@ function disableWebkitEnterFullscreen(videoElement) {
   }
 }
 
-function disableFullscreenOnExistingVideos() {
-  document.querySelectorAll('video').forEach(disableWebkitEnterFullscreen);
+function tgBrowserDisableFullscreenOnExistingVideos() {
+  document.querySelectorAll('video').forEach(tgBrowserDisableWebkitEnterFullscreen);
 }
 
-function handleMutations(mutations) {
+function tgBrowserHandleMutations(mutations) {
   mutations.forEach((mutation) => {
     if (mutation.addedNodes && mutation.addedNodes.length > 0) {
       mutation.addedNodes.forEach((newNode) => {
@@ -1331,17 +1431,17 @@ function handleMutations(mutations) {
   });
 }
 
-disableFullscreenOnExistingVideos();
+tgBrowserDisableFullscreenOnExistingVideos();
 
-const observer = new MutationObserver(handleMutations);
+const _tgbrowser_observer = new MutationObserver(tgBrowserHandleMutations);
 
-observer.observe(document.body, {
+_tgbrowser_observer.observe(document.body, {
   childList: true,
   subtree: true
 });
 
-function disconnectObserver() {
-  observer.disconnect();
+function tgBrowserDisconnectObserver() {
+  _tgbrowser_observer.disconnect();
 }
 """
 

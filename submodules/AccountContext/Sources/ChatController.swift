@@ -1021,7 +1021,8 @@ public protocol ChatController: ViewController {
     var canReadHistory: ValuePromise<Bool> { get }
     var parentController: ViewController? { get set }
     var customNavigationController: NavigationController? { get set }
-        
+    
+    var dismissPreviewing: (() -> Void)? { get set }
     var purposefulAction: (() -> Void)? { get set }
     
     var stateUpdated: ((ContainedViewLayoutTransition) -> Void)? { get set }

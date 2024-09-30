@@ -935,21 +935,29 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                                 navigationController.pushViewController(groupCallController)
                             } else {
                                 strongSelf.hasGroupCallOnScreenPromise.set(true)
-                                let groupCallController = VoiceChatControllerImpl(sharedContext: strongSelf, accountContext: call.accountContext, call: call)
-                                groupCallController.onViewDidAppear = { [weak self] in
-                                    if let strongSelf = self {
-                                        strongSelf.hasGroupCallOnScreenPromise.set(true)
+                                
+                                let _ = (makeVoiceChatControllerInitialData(sharedContext: strongSelf, accountContext: call.accountContext, call: call)
+                                |> deliverOnMainQueue).start(next: { [weak strongSelf, weak navigationController] initialData in
+                                    guard let strongSelf, let navigationController else {
+                                        return
                                     }
-                                }
-                                groupCallController.onViewDidDisappear = { [weak self] in
-                                    if let strongSelf = self {
-                                        strongSelf.hasGroupCallOnScreenPromise.set(false)
+                                    
+                                    let groupCallController = makeVoiceChatController(sharedContext: strongSelf, accountContext: call.accountContext, call: call, initialData: initialData)
+                                    groupCallController.onViewDidAppear = { [weak strongSelf] in
+                                        if let strongSelf {
+                                            strongSelf.hasGroupCallOnScreenPromise.set(true)
+                                        }
                                     }
-                                }
-                                groupCallController.navigationPresentation = .flatModal
-                                groupCallController.parentNavigationController = navigationController
-                                strongSelf.groupCallController = groupCallController
-                                navigationController.pushViewController(groupCallController)
+                                    groupCallController.onViewDidDisappear = { [weak strongSelf] in
+                                        if let strongSelf {
+                                            strongSelf.hasGroupCallOnScreenPromise.set(false)
+                                        }
+                                    }
+                                    groupCallController.navigationPresentation = .flatModal
+                                    groupCallController.parentNavigationController = navigationController
+                                    strongSelf.groupCallController = groupCallController
+                                    navigationController.pushViewController(groupCallController)
+                                })
                             }
                                 
                             strongSelf.hasOngoingCall.set(true)
@@ -2912,6 +2920,10 @@ public final class SharedAccountContextImpl: SharedAccountContext {
     
     public func makeStarsGiftScreen(context: AccountContext, message: EngineMessage) -> ViewController {
         return StarsTransactionScreen(context: context, subject: .gift(message))
+    }
+    
+    public func makeStarsGiveawayBoostScreen(context: AccountContext, peerId: EnginePeer.Id, boost: ChannelBoostersContext.State.Boost) -> ViewController {
+        return StarsTransactionScreen(context: context, subject: .boost(peerId, boost))
     }
     
     public func makeMiniAppListScreenInitialData(context: AccountContext) -> Signal<MiniAppListScreenInitialData, NoError> {

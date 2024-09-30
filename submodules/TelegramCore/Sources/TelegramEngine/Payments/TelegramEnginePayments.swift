@@ -62,8 +62,8 @@ public extension TelegramEngine {
             return _internal_getPremiumGiveawayInfo(account: self.account, peerId: peerId, messageId: messageId)
         }
         
-        public func launchPrepaidGiveaway(peerId: EnginePeer.Id, id: Int64, additionalPeerIds: [EnginePeer.Id], countries: [String], onlyNewSubscribers: Bool, showWinners: Bool, prizeDescription: String?, randomId: Int64, untilDate: Int32) -> Signal<Never, LaunchPrepaidGiveawayError> {
-            return _internal_launchPrepaidGiveaway(account: self.account, peerId: peerId, id: id, additionalPeerIds: additionalPeerIds, countries: countries, onlyNewSubscribers: onlyNewSubscribers, showWinners: showWinners, prizeDescription: prizeDescription, randomId: randomId, untilDate: untilDate)
+        public func launchPrepaidGiveaway(peerId: EnginePeer.Id, id: Int64, purpose: LaunchGiveawayPurpose, additionalPeerIds: [EnginePeer.Id], countries: [String], onlyNewSubscribers: Bool, showWinners: Bool, prizeDescription: String?, randomId: Int64, untilDate: Int32) -> Signal<Never, LaunchPrepaidGiveawayError> {
+            return _internal_launchPrepaidGiveaway(account: self.account, peerId: peerId, purpose: purpose, id: id, additionalPeerIds: additionalPeerIds, countries: countries, onlyNewSubscribers: onlyNewSubscribers, showWinners: showWinners, prizeDescription: prizeDescription, randomId: randomId, untilDate: untilDate)
         }
         
         public func starsTopUpOptions() -> Signal<[StarsTopUpOption], NoError> {
@@ -72,6 +72,10 @@ public extension TelegramEngine {
         
         public func starsGiftOptions(peerId: EnginePeer.Id?) -> Signal<[StarsGiftOption], NoError> {
             return _internal_starsGiftOptions(account: self.account, peerId: peerId)
+        }
+        
+        public func starsGiveawayOptions() -> Signal<[StarsGiveawayOption], NoError> {
+            return _internal_starsGiveawayOptions(account: self.account)
         }
         
         public func peerStarsContext() -> StarsContext {
