@@ -79,9 +79,9 @@ public:
 
 class SharedAudioDeviceModuleImpl: public tgcalls::SharedAudioDeviceModule {
 public:
-    SharedAudioDeviceModuleImpl(bool disableAudioInput, bool enableSystemMute) {
+    SharedAudioDeviceModuleImpl(bool disableAudioInput) {
         RTC_DCHECK(tgcalls::StaticThreads::getThreads()->getWorkerThread()->IsCurrent());
-        _audioDeviceModule = rtc::make_ref_counted<webrtc::tgcalls_ios_adm::AudioDeviceModuleIOS>(false, disableAudioInput, enableSystemMute, disableAudioInput ? 2 : 1);
+        _audioDeviceModule = rtc::make_ref_counted<webrtc::tgcalls_ios_adm::AudioDeviceModuleIOS>(false, disableAudioInput, disableAudioInput ? 2 : 1);
     }
     
     virtual ~SharedAudioDeviceModuleImpl() override {
@@ -118,6 +118,9 @@ public:
                 _audioDeviceModule->InternalStartPlayout();
             }
             //_audioDeviceModule->InternalStartRecording();
+            // MARK: Nicegram NCG-5828 call recording
+            _audioDeviceModule->InitNicegramCallRecording();
+            //
         }
     }
     
@@ -129,11 +132,11 @@ private:
     std::shared_ptr<tgcalls::ThreadLocalObject<tgcalls::SharedAudioDeviceModule>> _audioDeviceModule;
 }
 
-- (instancetype _Nonnull)initWithDisableRecording:(bool)disableRecording enableSystemMute:(bool)enableSystemMute {
+- (instancetype _Nonnull)initWithDisableRecording:(bool)disableRecording {
     self = [super init];
     if (self != nil) {
-        _audioDeviceModule.reset(new tgcalls::ThreadLocalObject<tgcalls::SharedAudioDeviceModule>(tgcalls::StaticThreads::getThreads()->getWorkerThread(), [disableRecording, enableSystemMute]() mutable {
-            return std::static_pointer_cast<tgcalls::SharedAudioDeviceModule>(std::make_shared<SharedAudioDeviceModuleImpl>(disableRecording, enableSystemMute));
+        _audioDeviceModule.reset(new tgcalls::ThreadLocalObject<tgcalls::SharedAudioDeviceModule>(tgcalls::StaticThreads::getThreads()->getWorkerThread(), [disableRecording]() mutable {
+            return std::static_pointer_cast<tgcalls::SharedAudioDeviceModule>(std::make_shared<SharedAudioDeviceModuleImpl>(disableRecording));
         }));
     }
     return self;
@@ -148,6 +151,33 @@ private:
         audioDeviceModule->audioDeviceModule()->setTone([tone asTone]);
     });
 }
+
+// MARK: Nicegram NCG-5828 call recording
+-(void)InitNicegramCallRecording {
+    _audioDeviceModule->perform([](tgcalls::SharedAudioDeviceModule *audioDeviceModule) {
+        audioDeviceModule->audioDeviceModule()->InitNicegramCallRecording();
+    });
+}
+
+-(void)StartNicegramRecording {
+    _audioDeviceModule->perform([](tgcalls::SharedAudioDeviceModule *audioDeviceModule) {
+        audioDeviceModule->audioDeviceModule()->StartNicegramRecording();
+    });
+}
+
+-(void)StopNicegramRecording:(void(^_Nullable)(NSString* _Nonnull, double, NSUInteger))completion {
+    _audioDeviceModule->perform([completion](tgcalls::SharedAudioDeviceModule *audioDeviceModule) {
+        audioDeviceModule->audioDeviceModule()->StopNicegramRecording([completion](const std::string& outputFilePath,
+                                                                                   double durationInSeconds,
+                                                                                   size_t rawDataSize) {
+            NSString *path = [NSString stringWithUTF8String: outputFilePath.c_str()];
+            if (completion != NULL) {
+                completion(path, durationInSeconds, rawDataSize);
+            }
+        });
+    });
+}
+//
 
 - (std::shared_ptr<tgcalls::ThreadLocalObject<tgcalls::SharedAudioDeviceModule>>)getAudioDeviceModule {
     return _audioDeviceModule;
@@ -1278,7 +1308,7 @@ static void (*InternalVoipLoggingFunction)(NSString *) = NULL;
                     return audioDeviceModule->getSyncAssumingSameThread()->audioDeviceModule();
                 } else {
                     rtc::Thread *audioDeviceModuleThread = rtc::Thread::Current();
-                    auto resultModule = rtc::make_ref_counted<webrtc::tgcalls_ios_adm::AudioDeviceModuleIOS>(false, false, false, 1);
+                    auto resultModule = rtc::make_ref_counted<webrtc::tgcalls_ios_adm::AudioDeviceModuleIOS>(false, false, 1);
                     [queue dispatch:^{
                         __strong OngoingCallThreadLocalContextWebrtc *strongSelf = weakSelf;
                         if (strongSelf) {
@@ -1691,7 +1721,6 @@ private:
     videoContentType:(OngoingGroupCallVideoContentType)videoContentType
     enableNoiseSuppression:(bool)enableNoiseSuppression
     disableAudioInput:(bool)disableAudioInput
-    enableSystemMute:(bool)enableSystemMute
     preferX264:(bool)preferX264
     logPath:(NSString * _Nonnull)logPath
 onMutedSpeechActivityDetected:(void (^ _Nullable)(bool))onMutedSpeechActivityDetected
@@ -1887,7 +1916,6 @@ audioDevice:(SharedCallAudioDevice * _Nullable)audioDevice {
             .outgoingAudioBitrateKbit = outgoingAudioBitrateKbit,
             .disableOutgoingAudioProcessing = disableOutgoingAudioProcessing,
             .disableAudioInput = disableAudioInput,
-            .ios_enableSystemMute = enableSystemMute,
             .videoContentType = _videoContentType,
             .videoCodecPreferences = videoCodecPreferences,
             .initialEnableNoiseSuppression = enableNoiseSuppression,
@@ -1924,12 +1952,12 @@ audioDevice:(SharedCallAudioDevice * _Nullable)audioDevice {
                 return std::make_shared<RequestMediaChannelDescriptionTaskImpl>(task);
             },
             .minOutgoingVideoBitrateKbit = minOutgoingVideoBitrateKbit,
-            .createAudioDeviceModule = [weakSelf, queue, disableAudioInput, enableSystemMute, audioDeviceModule, onMutedSpeechActivityDetected = _onMutedSpeechActivityDetected](webrtc::TaskQueueFactory *taskQueueFactory) -> rtc::scoped_refptr<webrtc::AudioDeviceModule> {
+            .createAudioDeviceModule = [weakSelf, queue, disableAudioInput, audioDeviceModule, onMutedSpeechActivityDetected = _onMutedSpeechActivityDetected](webrtc::TaskQueueFactory *taskQueueFactory) -> rtc::scoped_refptr<webrtc::AudioDeviceModule> {
                 if (audioDeviceModule) {
                     return audioDeviceModule->getSyncAssumingSameThread()->audioDeviceModule();
                 } else {
                     rtc::Thread *audioDeviceModuleThread = rtc::Thread::Current();
-                    auto resultModule = rtc::make_ref_counted<webrtc::tgcalls_ios_adm::AudioDeviceModuleIOS>(false, disableAudioInput, enableSystemMute, disableAudioInput ? 2 : 1);
+                    auto resultModule = rtc::make_ref_counted<webrtc::tgcalls_ios_adm::AudioDeviceModuleIOS>(false, disableAudioInput, disableAudioInput ? 2 : 1);
                     if (resultModule) {
                         resultModule->mutedSpeechDetectionChanged = ^(bool value) {
                             if (onMutedSpeechActivityDetected) {

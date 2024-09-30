@@ -165,10 +165,8 @@ func mediaContentToUpload(accountPeerId: PeerId, network: Network, postbox: Post
             if media.count == results.count {
                 return .content(PendingMessageUploadedContentAndReuploadInfo(
                     content: .media(.inputMediaPaidMedia(
-                        flags: 0,
                         starsAmount: paidContent.amount,
-                        extendedMedia: media,
-                        payload: nil
+                        extendedMedia: media
                     ), text),
                     reuploadInfo: nil,
                     cacheReferenceKey: nil

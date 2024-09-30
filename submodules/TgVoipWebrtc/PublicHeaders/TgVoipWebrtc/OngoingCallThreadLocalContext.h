@@ -23,7 +23,7 @@
 
 @interface SharedCallAudioDevice : NSObject
 
-- (instancetype _Nonnull)initWithDisableRecording:(bool)disableRecording enableSystemMute:(bool)enableSystemMute;
+- (instancetype _Nonnull)initWithDisableRecording:(bool)disableRecording;
 
 + (void)setupAudioSession;
 
@@ -31,6 +31,11 @@
 
 - (void)setTone:(CallAudioTone * _Nullable)tone;
 
+// MARK: Nicegram NCG-5828 call recording
+-(void)InitNicegramCallRecording;
+-(void)StartNicegramRecording;
+-(void)StopNicegramRecording:(void(^_Nullable)(NSString* _Nonnull, double, NSUInteger))completion;
+//
 @end
 
 @interface OngoingCallConnectionDescriptionWebrtc : NSObject
@@ -412,7 +417,6 @@ typedef NS_ENUM(int32_t, OngoingGroupCallRequestedVideoQuality) {
     videoContentType:(OngoingGroupCallVideoContentType)videoContentType
     enableNoiseSuppression:(bool)enableNoiseSuppression
     disableAudioInput:(bool)disableAudioInput
-    enableSystemMute:(bool)enableSystemMute
     preferX264:(bool)preferX264
     logPath:(NSString * _Nonnull)logPath
 onMutedSpeechActivityDetected:(void (^ _Nullable)(bool))onMutedSpeechActivityDetected

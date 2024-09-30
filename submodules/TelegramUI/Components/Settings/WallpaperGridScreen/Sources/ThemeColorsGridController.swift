@@ -194,7 +194,7 @@ public final class ThemeColorsGridController: ViewController, AttachmentContaina
             self?.push(controller)
         }
         
-        self.mainButtonState = AttachmentMainButtonState(text: self.presentationData.strings.Conversation_Theme_SetPhotoWallpaper, font: .regular, background: .color(.clear), textColor: self.presentationData.theme.actionSheet.controlAccentColor, isVisible: true, progress: .none, isEnabled: true, hasShimmer: false)
+        self.mainButtonState = AttachmentMainButtonState(text: self.presentationData.strings.Conversation_Theme_SetPhotoWallpaper, font: .regular, background: .color(.clear), textColor: self.presentationData.theme.actionSheet.controlAccentColor, isVisible: true, progress: .none, isEnabled: true)
     }
     
     required public init(coder aDecoder: NSCoder) {

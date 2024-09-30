@@ -149,6 +149,7 @@ class BarsComponentController: GeneralChartComponentController {
                                          components: visibleComponents)
     }
     
+    var conversionRate: Double = 1.0
     func verticalLimitsLabels(verticalRange: ClosedRange<CGFloat>, secondary: Bool) -> (ClosedRange<CGFloat>, [LinesChartLabel]) {
         var (range, labels) = super.verticalLimitsLabels(verticalRange: verticalRange)
         if secondary {
@@ -222,8 +223,8 @@ class BarsComponentController: GeneralChartComponentController {
         return visibleCharts
     }
     
-    override func chartDetailsViewModel(closestDate: Date, pointIndex: Int, currency: GraphCurrency? = nil, rate: Double = 1.0) -> ChartDetailsViewModel {
-        var viewModel = super.chartDetailsViewModel(closestDate: closestDate, pointIndex: pointIndex, currency: currency, rate: rate)
+    override func chartDetailsViewModel(closestDate: Date, pointIndex: Int) -> ChartDetailsViewModel {
+        var viewModel = super.chartDetailsViewModel(closestDate: closestDate, pointIndex: pointIndex)
         let visibleChartValues = self.visibleChartValues
         let totalSumm: CGFloat = visibleChartValues.map { CGFloat($0.values[pointIndex]) }.reduce(0, +)
         viewModel.hideAction = { [weak self] in

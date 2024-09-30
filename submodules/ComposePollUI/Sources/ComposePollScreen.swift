@@ -488,8 +488,6 @@ final class ComposePollScreenComponent: Component {
             self.environment = environment
             
             if self.component == nil {
-                self.isQuiz = component.isQuiz ?? false
-                
                 self.pollOptions.append(ComposePollScreenComponent.PollOption(
                     id: self.nextPollOptionId
                 ))
@@ -1004,35 +1002,28 @@ final class ComposePollScreenComponent: Component {
             contentHeight += pollOptionsSectionFooterSize.height
             contentHeight += sectionSpacing
             
-            var canBePublic = true
-            if case let .channel(channel) = component.peer, case .broadcast = channel.info {
-                canBePublic = false
-            }
-            
             var pollSettingsSectionItems: [AnyComponentWithIdentity<Empty>] = []
-            if canBePublic {
-                pollSettingsSectionItems.append(AnyComponentWithIdentity(id: "anonymous", component: AnyComponent(ListActionItemComponent(
-                    theme: environment.theme,
-                    title: AnyComponent(VStack([
-                        AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
-                            text: .plain(NSAttributedString(
-                                string: environment.strings.CreatePoll_Anonymous,
-                                font: Font.regular(presentationData.listsFontSize.baseDisplaySize),
-                                textColor: environment.theme.list.itemPrimaryTextColor
-                            )),
-                            maximumNumberOfLines: 1
-                        ))),
-                    ], alignment: .left, spacing: 2.0)),
-                    accessory: .toggle(ListActionItemComponent.Toggle(style: .regular, isOn: self.isAnonymous, action: { [weak self] _ in
-                        guard let self else {
-                            return
-                        }
-                        self.isAnonymous = !self.isAnonymous
-                        self.state?.updated(transition: .spring(duration: 0.4))
-                    })),
-                    action: nil
-                ))))
-            }
+            pollSettingsSectionItems.append(AnyComponentWithIdentity(id: "anonymous", component: AnyComponent(ListActionItemComponent(
+                theme: environment.theme,
+                title: AnyComponent(VStack([
+                    AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
+                        text: .plain(NSAttributedString(
+                            string: environment.strings.CreatePoll_Anonymous,
+                            font: Font.regular(presentationData.listsFontSize.baseDisplaySize),
+                            textColor: environment.theme.list.itemPrimaryTextColor
+                        )),
+                        maximumNumberOfLines: 1
+                    ))),
+                ], alignment: .left, spacing: 2.0)),
+                accessory: .toggle(ListActionItemComponent.Toggle(style: .regular, isOn: self.isAnonymous, action: { [weak self] _ in
+                    guard let self else {
+                        return
+                    }
+                    self.isAnonymous = !self.isAnonymous
+                    self.state?.updated(transition: .spring(duration: 0.4))
+                })),
+                action: nil
+            ))))
             pollSettingsSectionItems.append(AnyComponentWithIdentity(id: "multiAnswer", component: AnyComponent(ListActionItemComponent(
                 theme: environment.theme,
                 title: AnyComponent(VStack([
@@ -1578,7 +1569,7 @@ public class ComposePollScreen: ViewControllerComponentContainer, AttachmentCont
     
     public static func initialData(context: AccountContext) -> InitialData {
         return InitialData(
-            maxPollTextLength: Int(200),
+            maxPollTextLength: Int(255),
             maxPollOptionLength: 100
         )
     }

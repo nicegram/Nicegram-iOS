@@ -335,7 +335,7 @@ final class MediaStreamVideoComponent: Component {
                     stallTimer = _stallTimer
                     self.clipsToBounds = component.isFullscreen // or just true
                     
-                    if let videoView = self.videoRenderingContext.makeView(input: input, blur: false, forceSampleBufferDisplayLayer: true) {
+                    if let videoView = self.videoRenderingContext.makeView(input: input, forceSampleBufferDisplayLayer: true) {
                         self.videoView = videoView
                         self.addSubview(videoView)
                         videoView.alpha = 0

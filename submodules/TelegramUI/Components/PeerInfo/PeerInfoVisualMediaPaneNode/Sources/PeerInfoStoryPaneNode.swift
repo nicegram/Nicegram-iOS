@@ -52,7 +52,7 @@ private final class VisualMediaItemInteraction {
     let openItemContextActions: (EngineStoryItem, ASDisplayNode, CGRect, ContextGesture?) -> Void
     let toggleSelection: (Int32, Bool) -> Void
     
-    var hiddenStories = Set<StoryId>()
+    var hiddenMedia = Set<Int32>()
     var selectedIds: Set<Int32>?
     
     init(
@@ -1825,7 +1825,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
             let listContext = PeerStoryListContentContextImpl(
                 context: self.context,
                 listContext: self.listSource,
-                initialId: item.storyId,
+                initialId: item.story.id,
                 splitIndexIntoDays: splitIndexIntoDays
             )
             self.pendingOpenListContext = listContext
@@ -1940,8 +1940,8 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                         return
                     }
                     if let itemId {
-                        let anyAmount = self.itemInteraction.hiddenStories.isEmpty
-                        self.itemInteraction.hiddenStories = Set([itemId])
+                        let anyAmount = self.itemInteraction.hiddenMedia.isEmpty
+                        self.itemInteraction.hiddenMedia = Set([itemId.id])
                         if let items = self.items, let item = items.items.first(where: { $0.id == AnyHashable(itemId.id) }) {
                             self.itemGrid.ensureItemVisible(index: item.index, anyAmount: anyAmount)
                             
@@ -1961,7 +1961,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                             }
                         }
                     } else {
-                        self.itemInteraction.hiddenStories = Set()
+                        self.itemInteraction.hiddenMedia = Set()
                     }
                     
                     self.updateHiddenItems()
@@ -2754,8 +2754,6 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                 }
             } else if case .botPreview = self.scope {
                 title = self.presentationData.strings.BotPreviews_SubtitleCount(Int32(state.totalCount))
-            } else if case .search = self.scope {
-                title = self.presentationData.strings.StoryList_SubtitleCount(Int32(state.totalCount))
             } else {
                 title = ""
             }
@@ -3020,6 +3018,23 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
     }
     
     public func updateHiddenMedia() {
+        //TODO:updateHiddenMedia
+        /*self.itemGrid.forEachVisibleItem { item in
+            guard let itemLayer = item.layer as? ItemLayer else {
+                return
+            }
+            if let item = itemLayer.item {
+                if self.itemInteraction.hiddenMedia[item.message.id] != nil {
+                    itemLayer.isHidden = true
+                    itemLayer.updateHasSpoiler(hasSpoiler: false)
+                    self.itemGridBinding.revealedSpoilerMessageIds.insert(item.message.id)
+                } else {
+                    itemLayer.isHidden = false
+                }
+            } else {
+                itemLayer.isHidden = false
+            }
+        }*/
     }
     
     public func transferVelocity(_ velocity: CGFloat) {
@@ -3266,7 +3281,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
             guard let itemLayer = itemValue.layer as? ItemLayer, let item = itemLayer.item else {
                 return
             }
-            let itemHidden = self.itemInteraction.hiddenStories.contains(item.storyId)
+            let itemHidden = self.itemInteraction.hiddenMedia.contains(item.story.id)
             itemLayer.isHidden = itemHidden
             
             if let blurLayer = itemValue.blurLayer {

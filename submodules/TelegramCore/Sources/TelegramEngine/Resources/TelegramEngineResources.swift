@@ -341,8 +341,8 @@ public extension TelegramEngine {
             }
         }
 
-        public func httpData(url: String, preserveExactUrl: Bool = false) -> Signal<Data, EngineMediaResource.Fetch.Error> {
-            return fetchHttpResource(url: url, preserveExactUrl: preserveExactUrl)
+        public func httpData(url: String) -> Signal<Data, EngineMediaResource.Fetch.Error> {
+            return fetchHttpResource(url: url)
             |> mapError { _ -> EngineMediaResource.Fetch.Error in
                 return .generic
             }

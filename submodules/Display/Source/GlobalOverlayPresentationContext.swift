@@ -24,10 +24,10 @@ public func isViewVisibleInHierarchy(_ view: UIView, _ initial: Bool = true) -> 
 }
 
 public final class HierarchyTrackingNode: ASDisplayNode {
-    public var updated: (Bool) -> Void
+    private let f: (Bool) -> Void
     
-    public init(_ f: @escaping (Bool) -> Void = { _ in }) {
-        self.updated = f
+    public init(_ f: @escaping (Bool) -> Void) {
+        self.f = f
         
         super.init()
         
@@ -37,13 +37,13 @@ public final class HierarchyTrackingNode: ASDisplayNode {
     override public func didEnterHierarchy() {
         super.didEnterHierarchy()
         
-        self.updated(true)
+        self.f(true)
     }
     
     override public func didExitHierarchy() {
         super.didExitHierarchy()
         
-        self.updated(false)
+        self.f(false)
     }
 }
 

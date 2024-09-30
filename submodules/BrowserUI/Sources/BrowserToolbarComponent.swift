@@ -257,7 +257,7 @@ final class NavigationToolbarContentComponent: CombinedComponent {
                     component: Button(
                         content: AnyComponent(
                             BundleIconComponent(
-                                name: "Instant View/OpenDocument",
+                                name: "Stories/EmbeddedViewIcon",
                                 tintColor: context.component.accentColor
                             )
                         ),

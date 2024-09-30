@@ -464,15 +464,14 @@ public class ChatMessageStickerItemNode: ChatMessageItemView {
             case let .peer(peerId):
                 if !peerId.isRepliesOrSavedMessages(accountPeerId: item.context.account.peerId) {
                     if peerId.isGroupOrChannel && item.message.author != nil {
-                        if let peer = item.message.peers[item.message.id.peerId] as? TelegramChannel, case let .broadcast(info) = peer.info {
-                            if info.flags.contains(.messagesShouldHaveProfiles) {
-                                hasAvatar = incoming
-                            }
-                        } else {
-                            hasAvatar = true
+                        var isBroadcastChannel = false
+                        if let peer = item.message.peers[item.message.id.peerId] as? TelegramChannel, case .broadcast = peer.info {
+                            isBroadcastChannel = true
                         }
                         
-                        if case .customChatContents = item.chatLocation {
+                        if !isBroadcastChannel {
+                            hasAvatar = true
+                        } else if case .customChatContents = item.chatLocation {
                             hasAvatar = false
                         }
                     }

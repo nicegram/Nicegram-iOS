@@ -548,7 +548,7 @@ final class StoryItemSetViewListComponent: Component {
                             title: item.peer.displayTitle(strings: component.strings, displayOrder: .firstLast),
                             peer: item.peer,
                             storyStats: item.storyStats,
-                            subtitle: PeerListItemComponent.Subtitle(text: dateText, color: .neutral),
+                            subtitle: dateText,
                             subtitleAccessory: subtitleAccessory,
                             presence: nil,
                             reaction: item.reaction.flatMap { reaction -> PeerListItemComponent.Reaction in
@@ -589,7 +589,7 @@ final class StoryItemSetViewListComponent: Component {
                             message: item.message,
                             selectionState: .none,
                             hasNext: index != viewListState.totalCount - 1 || itemLayout.premiumFooterSize != nil,
-                            action: { [weak self] peer, messageId, itemView in
+                            action: { [weak self] peer, messageId, sourceView in
                                 guard let self, let component = self.component else {
                                     return
                                 }
@@ -598,7 +598,7 @@ final class StoryItemSetViewListComponent: Component {
                                 }
                                 if let messageId {
                                     component.openMessage(peer, messageId)
-                                } else if let storyItem, let sourceView = itemView.imageNode?.view {
+                                } else if let storyItem, let sourceView {
                                     component.openReposts(peer, storyItem.id, sourceView)
                                 } else {
                                     component.openPeer(peer)
@@ -929,7 +929,7 @@ final class StoryItemSetViewListComponent: Component {
                     sideInset: 0.0,
                     title: "AAAAAAAAAAAA",
                     peer: nil,
-                    subtitle: PeerListItemComponent.Subtitle(text: "BBBBBBB", color: .neutral),
+                    subtitle: "BBBBBBB",
                     subtitleAccessory: .checks,
                     presence: nil,
                     selectionState: .none,

@@ -334,7 +334,11 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
             self.updateScreenBrightness(isFlashOn: isFlashOn)
             
             if controller.cameraState.position == .back {
-                camera.setTorchActive(isFlashOn)
+                if isFlashOn {
+                    camera.setTorchActive(true)
+                } else {
+                    camera.setTorchActive(false)
+                }
             }
         }
         

@@ -28,6 +28,8 @@ public enum GraphCurrency : String {
 }
 
 public class StackedBarsChartController: BaseChartController {
+    
+    
     let barsController: BarsComponentController
     let zoomedBarsController: BarsComponentController
     
@@ -53,7 +55,6 @@ public class StackedBarsChartController: BaseChartController {
                                                  secondaryScalesRenderer: secondaryScalesRenderer,
                                                  previewBarsChartRenderer: BarChartRenderer())
         if let currency {
-            barsController.currency = currency
             barsController.conversionRate = rate
             barsController.verticalLimitsNumberFormatter = currency.formatter
             barsController.detailsNumberFormatter = currency.formatter

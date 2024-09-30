@@ -348,8 +348,8 @@ public extension TelegramEngine {
             ).startStandalone()
         }
         
-        public func sendStarsReaction(id: EngineMessage.Id, count: Int, isAnonymous: Bool?) -> Signal<Bool, NoError> {
-            return _internal_sendStarsReactionsInteractively(account: self.account, messageId: id, count: count, isAnonymous: isAnonymous)
+        public func sendStarsReaction(id: EngineMessage.Id, count: Int, isAnonymous: Bool) {
+            let _ = sendStarsReactionsInteractively(account: self.account, messageId: id, count: count, isAnonymous: isAnonymous).startStandalone()
         }
         
         public func cancelPendingSendStarsReaction(id: EngineMessage.Id) {
@@ -1479,9 +1479,6 @@ public extension TelegramEngine {
         
         public func updateExtendedMedia(messageIds: [EngineMessage.Id]) -> Signal<Never, NoError> {
             return _internal_updateExtendedMedia(account: self.account, messageIds: messageIds)
-        }
-        public func markAdAction(peerId: EnginePeer.Id, opaqueId: Data) {
-            _internal_markAdAction(account: self.account, peerId: peerId, opaqueId: opaqueId)
         }
         
         public func getAllLocalChannels(count: Int) -> Signal<[EnginePeer.Id], NoError> {

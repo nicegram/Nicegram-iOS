@@ -506,7 +506,7 @@ public func getSharedDevideGraphicsContextSettings() -> DeviceGraphicsContextSet
             } else {
                 self.colorSpace = context.colorSpace!
             }
-            assert(self.rowAlignment == 32 || self.rowAlignment == 64)
+            assert(self.rowAlignment == 32)
             assert(self.bitsPerPixel == 32)
             assert(self.bitsPerComponent == 8)
         }
@@ -576,8 +576,7 @@ public struct DeviceGraphicsContextSettings {
 
     public func bytesPerRow(forWidth width: Int) -> Int {
         let baseValue = self.bitsPerPixel * width / 8
-        let alignmentMask = self.rowAlignment - 1
-        return (baseValue + alignmentMask) & ~alignmentMask
+        return (baseValue + 31) & ~0x1F
     }
 }
 

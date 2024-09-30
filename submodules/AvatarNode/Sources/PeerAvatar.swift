@@ -421,7 +421,7 @@ public enum AvatarBackgroundColor {
     case violet
 }
 
-public func generateAvatarImage(size: CGSize, icon: UIImage?, iconScale: CGFloat = 1.0, cornerRadius: CGFloat? = nil, circleCorners: Bool = false, color: AvatarBackgroundColor, customColors: [UIColor]? = nil, diagonal: Bool = false) -> UIImage? {
+public func generateAvatarImage(size: CGSize, icon: UIImage?, iconScale: CGFloat = 1.0, cornerRadius: CGFloat? = nil, circleCorners: Bool = false, color: AvatarBackgroundColor, customColors: [UIColor]? = nil) -> UIImage? {
     return generateImage(size, rotatedContext: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
         context.beginPath()
@@ -464,21 +464,14 @@ public func generateAvatarImage(size: CGSize, icon: UIImage?, iconScale: CGFloat
                 colorsArray = AvatarNode.gradientColors[colorIndex % AvatarNode.gradientColors.count].map(\.cgColor) as NSArray
             }
         }
-                
-        var locations: [CGFloat] = []
-        let delta = 1.0 / CGFloat(colorsArray.count - 1)
-        for i in 0 ..< colorsArray.count {
-            locations.append(1.0 - delta * CGFloat(i))
-        }
+        
+        var locations: [CGFloat] = [1.0, 0.0]
         
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         let gradient = CGGradient(colorsSpace: colorSpace, colors: colorsArray, locations: &locations)!
         
-        if diagonal {
-            context.drawLinearGradient(gradient, start: CGPoint(x: size.width, y: 0.0), end: CGPoint(x: 0.0, y: size.height), options: CGGradientDrawingOptions())
-        } else {
-            context.drawLinearGradient(gradient, start: CGPoint(), end: CGPoint(x: 0.0, y: size.height), options: CGGradientDrawingOptions())
-        }
+        context.drawLinearGradient(gradient, start: CGPoint(), end: CGPoint(x: 0.0, y: size.height), options: CGGradientDrawingOptions())
+        
         context.resetClip()
         
         context.setBlendMode(.normal)

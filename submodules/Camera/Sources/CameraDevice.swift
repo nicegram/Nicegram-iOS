@@ -271,10 +271,7 @@ final class CameraDevice {
             return
         }
         self.transaction(device) { device in
-            let torchMode: AVCaptureDevice.TorchMode = active ? .on : .off
-            if device.isTorchModeSupported(torchMode) {
-                device.torchMode = active ? .on : .off
-            }
+            device.torchMode = active ? .on : .off
         }
     }
     

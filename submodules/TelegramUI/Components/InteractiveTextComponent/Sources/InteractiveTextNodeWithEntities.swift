@@ -115,8 +115,6 @@ public final class InteractiveTextNodeWithEntities {
     
     private var enableLooping: Bool = true
     
-    public private(set) var attributedString: NSAttributedString?
-    
     public var visibilityRect: CGRect? {
         didSet {
             if !self.inlineStickerItemLayers.isEmpty && oldValue != self.visibilityRect {
@@ -219,8 +217,6 @@ public final class InteractiveTextNodeWithEntities {
                 let result = apply(applyArguments.applyArguments)
                 
                 if let maybeNode = maybeNode {
-                    maybeNode.attributedString = arguments.attributedString
-                    
                     maybeNode.updateInteractiveContents(
                         context: applyArguments.context,
                         cache: applyArguments.cache,
@@ -237,8 +233,6 @@ public final class InteractiveTextNodeWithEntities {
                     return maybeNode
                 } else {
                     let resultNode = InteractiveTextNodeWithEntities(textNode: result)
-                    
-                    resultNode.attributedString = arguments.attributedString
                     
                     resultNode.updateInteractiveContents(
                         context: applyArguments.context,

@@ -75,13 +75,6 @@ private func messagesShouldBeMerged(accountPeerId: PeerId, _ lhs: Message, _ rhs
         }
     }
     
-    if let channel = lhs.peers[lhs.id.peerId] as? TelegramChannel, case let .broadcast(info) = channel.info {
-        if info.flags.contains(.messagesShouldHaveProfiles) {
-            lhsEffectiveAuthor = lhs.author
-            rhsEffectiveAuthor = rhs.author
-        }
-    }
-    
     var sameChat = true
     if lhs.id.peerId != rhs.id.peerId {
         sameChat = false
@@ -358,7 +351,7 @@ public final class ChatMessageItemImpl: ChatMessageItem, CustomStringConvertible
             if !hasActionMedia {
                 if !isBroadcastChannel {
                     hasAvatar = true
-                } else if let channel = message.peers[message.id.peerId] as? TelegramChannel, case let .broadcast(info) = channel.info {
+                } else if let channel = message.peers[message.id.peerId] as? TelegramChannel, case let .broadcast(info) = channel.info, message.author?.id != channel.id {
                     if info.flags.contains(.messagesShouldHaveProfiles) {
                         hasAvatar = true
                         effectiveAuthor = message.author

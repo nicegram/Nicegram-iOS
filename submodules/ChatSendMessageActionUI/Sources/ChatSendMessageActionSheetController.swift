@@ -22,7 +22,6 @@ public enum SendMessageActionSheetControllerParams {
         public let forwardMessageIds: [EngineMessage.Id]
         public let canMakePaidContent: Bool
         public let currentPrice: Int64?
-        public let hasTimers: Bool
         
         public init(
             isScheduledMessages: Bool,
@@ -33,8 +32,7 @@ public enum SendMessageActionSheetControllerParams {
             canSendWhenOnline: Bool,
             forwardMessageIds: [EngineMessage.Id],
             canMakePaidContent: Bool,
-            currentPrice: Int64?,
-            hasTimers: Bool
+            currentPrice: Int64?
         ) {
             self.isScheduledMessages = isScheduledMessages
             self.mediaPreview = mediaPreview
@@ -45,7 +43,6 @@ public enum SendMessageActionSheetControllerParams {
             self.forwardMessageIds = forwardMessageIds
             self.canMakePaidContent = canMakePaidContent
             self.currentPrice = currentPrice
-            self.hasTimers = hasTimers
         }
     }
     

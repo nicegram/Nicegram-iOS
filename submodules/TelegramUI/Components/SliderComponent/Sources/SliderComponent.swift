@@ -70,10 +70,6 @@ public final class SliderComponent: Component {
         private var component: SliderComponent?
         private weak var state: EmptyComponentState?
         
-        public var hitTestTarget: UIView? {
-            return self.sliderView
-        }
-        
         override public init(frame: CGRect) {
             super.init(frame: frame)
         }

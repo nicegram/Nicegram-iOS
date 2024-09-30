@@ -141,7 +141,7 @@ public extension Api {
         case inputMediaGeoLive(flags: Int32, geoPoint: Api.InputGeoPoint, heading: Int32?, period: Int32?, proximityNotificationRadius: Int32?)
         case inputMediaGeoPoint(geoPoint: Api.InputGeoPoint)
         case inputMediaInvoice(flags: Int32, title: String, description: String, photo: Api.InputWebDocument?, invoice: Api.Invoice, payload: Buffer, provider: String?, providerData: Api.DataJSON, startParam: String?, extendedMedia: Api.InputMedia?)
-        case inputMediaPaidMedia(flags: Int32, starsAmount: Int64, extendedMedia: [Api.InputMedia], payload: String?)
+        case inputMediaPaidMedia(starsAmount: Int64, extendedMedia: [Api.InputMedia])
         case inputMediaPhoto(flags: Int32, id: Api.InputPhoto, ttlSeconds: Int32?)
         case inputMediaPhotoExternal(flags: Int32, url: String, ttlSeconds: Int32?)
         case inputMediaPoll(flags: Int32, poll: Api.Poll, correctAnswers: [Buffer]?, solution: String?, solutionEntities: [Api.MessageEntity]?)
@@ -228,18 +228,16 @@ public extension Api {
                     if Int(flags) & Int(1 << 1) != 0 {serializeString(startParam!, buffer: buffer, boxed: false)}
                     if Int(flags) & Int(1 << 2) != 0 {extendedMedia!.serialize(buffer, true)}
                     break
-                case .inputMediaPaidMedia(let flags, let starsAmount, let extendedMedia, let payload):
+                case .inputMediaPaidMedia(let starsAmount, let extendedMedia):
                     if boxed {
-                        buffer.appendInt32(-1005571194)
+                        buffer.appendInt32(-1436147773)
                     }
-                    serializeInt32(flags, buffer: buffer, boxed: false)
                     serializeInt64(starsAmount, buffer: buffer, boxed: false)
                     buffer.appendInt32(481674261)
                     buffer.appendInt32(Int32(extendedMedia.count))
                     for item in extendedMedia {
                         item.serialize(buffer, true)
                     }
-                    if Int(flags) & Int(1 << 0) != 0 {serializeString(payload!, buffer: buffer, boxed: false)}
                     break
                 case .inputMediaPhoto(let flags, let id, let ttlSeconds):
                     if boxed {
@@ -356,8 +354,8 @@ public extension Api {
                 return ("inputMediaGeoPoint", [("geoPoint", geoPoint as Any)])
                 case .inputMediaInvoice(let flags, let title, let description, let photo, let invoice, let payload, let provider, let providerData, let startParam, let extendedMedia):
                 return ("inputMediaInvoice", [("flags", flags as Any), ("title", title as Any), ("description", description as Any), ("photo", photo as Any), ("invoice", invoice as Any), ("payload", payload as Any), ("provider", provider as Any), ("providerData", providerData as Any), ("startParam", startParam as Any), ("extendedMedia", extendedMedia as Any)])
-                case .inputMediaPaidMedia(let flags, let starsAmount, let extendedMedia, let payload):
-                return ("inputMediaPaidMedia", [("flags", flags as Any), ("starsAmount", starsAmount as Any), ("extendedMedia", extendedMedia as Any), ("payload", payload as Any)])
+                case .inputMediaPaidMedia(let starsAmount, let extendedMedia):
+                return ("inputMediaPaidMedia", [("starsAmount", starsAmount as Any), ("extendedMedia", extendedMedia as Any)])
                 case .inputMediaPhoto(let flags, let id, let ttlSeconds):
                 return ("inputMediaPhoto", [("flags", flags as Any), ("id", id as Any), ("ttlSeconds", ttlSeconds as Any)])
                 case .inputMediaPhotoExternal(let flags, let url, let ttlSeconds):
@@ -548,22 +546,16 @@ public extension Api {
             }
         }
         public static func parse_inputMediaPaidMedia(_ reader: BufferReader) -> InputMedia? {
-            var _1: Int32?
-            _1 = reader.readInt32()
-            var _2: Int64?
-            _2 = reader.readInt64()
-            var _3: [Api.InputMedia]?
+            var _1: Int64?
+            _1 = reader.readInt64()
+            var _2: [Api.InputMedia]?
             if let _ = reader.readInt32() {
-                _3 = Api.parseVector(reader, elementSignature: 0, elementType: Api.InputMedia.self)
+                _2 = Api.parseVector(reader, elementSignature: 0, elementType: Api.InputMedia.self)
             }
-            var _4: String?
-            if Int(_1!) & Int(1 << 0) != 0 {_4 = parseString(reader) }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = _3 != nil
-            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
-            if _c1 && _c2 && _c3 && _c4 {
-                return Api.InputMedia.inputMediaPaidMedia(flags: _1!, starsAmount: _2!, extendedMedia: _3!, payload: _4)
+            if _c1 && _c2 {
+                return Api.InputMedia.inputMediaPaidMedia(starsAmount: _1!, extendedMedia: _2!)
             }
             else {
                 return nil

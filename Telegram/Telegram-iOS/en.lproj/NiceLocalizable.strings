@@ -102,6 +102,7 @@
 "Premium.OnetapTranslate" = "Quick Translate button";
 "Premium.IgnoreTranslate.Title" = "Ignored Languages";
 "Premium.IgnoreTranslate.Header" = "Quick Translate button will be DISABLED for languages you choose below.";
+"Premium.RecordAllCalls" = "Record all calls";
 
 /*Manage Filters*/
 "ManageFilters.Title" = "Manage Tabs";
@@ -211,3 +212,12 @@
 "NicegramSettings.ShareChannelsToggle" = "Share channel information";
 "NicegramSettings.ShareStickersToggle" = "Share stickers information";
 "NicegramSettings.ShareData.Note" = "Contribute to the most comprehensive wikipedia of Telegram channels and groups by automatically submitting channel information and link to our database. We do not connect your telegram profile and channel and do not share your personal data.";
+
+/*Call Record*/
+"NicegramCallRecord.Title" = "record";
+"NicegramCallRecord.StopAlertTitle" = "Stop recording";
+"NicegramCallRecord.StopAlertDescription" = "Do you want to stop recording this call?";
+"NicegramCallRecord.StopAlertButtonStop" = "Stop";
+"NicegramCallRecord.StopAlertButtonCancel" = "Cancel";
+"NicegramCallRecord.SavedMessage" = "Recorded Call saved to **Saved Messages**.";
+

@@ -262,7 +262,7 @@ public func actualizedWebpage(account: Account, webpage: TelegramMediaWebpage) -
     }
 }
 
-public func updatedRemoteWebpage(postbox: Postbox, network: Network, accountPeerId: EnginePeer.Id, webPage: WebpageReference) -> Signal<TelegramMediaWebpage?, NoError> {
+func updatedRemoteWebpage(postbox: Postbox, network: Network, accountPeerId: EnginePeer.Id, webPage: WebpageReference) -> Signal<TelegramMediaWebpage?, NoError> {
     if case let .webPage(id, url) = webPage.content {
         return network.request(Api.functions.messages.getWebPage(url: url, hash: 0))
         |> map(Optional.init)
@@ -270,20 +270,14 @@ public func updatedRemoteWebpage(postbox: Postbox, network: Network, accountPeer
             return .single(nil)
         }
         |> mapToSignal { result -> Signal<TelegramMediaWebpage?, NoError> in
-            if let result = result, case let .webPage(webpage, chats, users) = result, let updatedWebpage = telegramMediaWebpageFromApiWebpage(webpage), case .Loaded = updatedWebpage.content {
-                if updatedWebpage.webpageId.id == id {
-                    return postbox.transaction { transaction -> TelegramMediaWebpage? in
-                        let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
-                        updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
-                        if transaction.getMedia(updatedWebpage.webpageId) != nil {
-                            updateMessageMedia(transaction: transaction, id: updatedWebpage.webpageId, media: updatedWebpage)
-                        }
-                        return updatedWebpage
+            if let result = result, case let .webPage(webpage, chats, users) = result, let updatedWebpage = telegramMediaWebpageFromApiWebpage(webpage), case .Loaded = updatedWebpage.content, updatedWebpage.webpageId.id == id {
+                return postbox.transaction { transaction -> TelegramMediaWebpage? in
+                    let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
+                    updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
+                    if transaction.getMedia(updatedWebpage.webpageId) != nil {
+                        updateMessageMedia(transaction: transaction, id: updatedWebpage.webpageId, media: updatedWebpage)
                     }
-                } else if id == 0 {
-                    return .single(updatedWebpage)
-                } else {
-                    return .single(nil)
+                    return updatedWebpage
                 }
             } else {
                 return .single(nil)

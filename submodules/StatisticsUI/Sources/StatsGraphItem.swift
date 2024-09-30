@@ -295,16 +295,7 @@ public final class StatsGraphItemNode: ListViewItemNode {
                     strongSelf.activityIndicator.type = .custom(item.presentationData.theme.list.itemSecondaryTextColor, 16.0, 2.0, false)
                     
                     if let updatedTheme = updatedTheme {
-                        strongSelf.chartNode.setup(
-                            theme: ChartTheme(presentationTheme: updatedTheme),
-                            strings: ChartStrings(
-                                zoomOut: item.presentationData.strings.Stats_ZoomOut,
-                                total: item.presentationData.strings.Stats_Total,
-                                revenueInTon: item.presentationData.strings.Stats_RevenueInTon,
-                                revenueInStars: item.presentationData.strings.Stats_RevenueInStars,
-                                revenueInUsd: item.presentationData.strings.Stats_RevenueInUsd
-                            )
-                        )
+                        strongSelf.chartNode.setup(theme: ChartTheme(presentationTheme: updatedTheme), strings: ChartStrings(zoomOut: item.presentationData.strings.Stats_ZoomOut, total: item.presentationData.strings.Stats_Total))
                     }
                     
                     if let updatedGraph = updatedGraph {

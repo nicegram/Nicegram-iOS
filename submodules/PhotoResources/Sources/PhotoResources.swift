@@ -271,7 +271,7 @@ func chatMessagePhotoDatas(mediaBox: MediaBox, userLocation: MediaResourceUserLo
     }
 }
 
-public func chatMessageFileDatas(account: Account, userLocation: MediaResourceUserLocation, fileReference: FileMediaReference, pathExtension: String? = nil, progressive: Bool = false, fetched: Bool = false) -> Signal<Tuple3<Data?, String?, Bool>, NoError> {
+private func chatMessageFileDatas(account: Account, userLocation: MediaResourceUserLocation, fileReference: FileMediaReference, pathExtension: String? = nil, progressive: Bool = false, fetched: Bool = false) -> Signal<Tuple3<Data?, String?, Bool>, NoError> {
     let thumbnailResource = fetched ? nil : smallestImageRepresentation(fileReference.media.previewRepresentations)?.resource
     let fullSizeResource = fileReference.media.resource
     
@@ -2108,11 +2108,12 @@ public func chatMessageVideo(postbox: Postbox, userLocation: MediaResourceUserLo
 }
 
 private func chatSecretMessageVideoData(account: Account, userLocation: MediaResourceUserLocation, fileReference: FileMediaReference, synchronousLoad: Bool) -> Signal<Data?, NoError> {
-    let decodedThumbnailData = fileReference.media.immediateThumbnailData.flatMap(decodeTinyThumbnail)
     if let smallestRepresentation = smallestImageRepresentation(fileReference.media.previewRepresentations) {
         let thumbnailResource = smallestRepresentation.resource
         
         let fetchedThumbnail = fetchedMediaResource(mediaBox: account.postbox.mediaBox, userLocation: userLocation, userContentType: MediaResourceUserContentType(file: fileReference.media), reference: fileReference.resourceReference(thumbnailResource))
+        
+        let decodedThumbnailData = fileReference.media.immediateThumbnailData.flatMap(decodeTinyThumbnail)
         
         let thumbnail = Signal<Data?, NoError> { subscriber in
             let fetchedDisposable = fetchedThumbnail.start()
@@ -2128,7 +2129,7 @@ private func chatSecretMessageVideoData(account: Account, userLocation: MediaRes
         }
         return thumbnail
     } else {
-        return .single(decodedThumbnailData)
+        return .single(nil)
     }
 }
 

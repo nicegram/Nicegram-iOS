@@ -15,21 +15,19 @@ final class CreateGiveawayHeaderItem: ItemListControllerHeaderItem {
     let strings: PresentationStrings
     let title: String
     let text: String
-    let isStars: Bool
     let cancel: () -> Void
     
-    init(theme: PresentationTheme, strings: PresentationStrings, title: String, text: String, isStars: Bool, cancel: @escaping () -> Void) {
+    init(theme: PresentationTheme, strings: PresentationStrings, title: String, text: String, cancel: @escaping () -> Void) {
         self.theme = theme
         self.strings = strings
         self.title = title
         self.text = text
-        self.isStars = isStars
         self.cancel = cancel
     }
     
     func isEqual(to: ItemListControllerHeaderItem) -> Bool {
         if let item = to as? CreateGiveawayHeaderItem {
-            return self.theme === item.theme && self.title == item.title && self.text == item.text && self.isStars == item.isStars
+            return self.theme === item.theme && self.title == item.title && self.text == item.text
         } else {
             return false
         }
@@ -198,34 +196,16 @@ class CreateGiveawayHeaderItemNode: ItemListControllerHeaderItemNode {
         
         self.backgroundNode.update(size: CGSize(width: layout.size.width, height: navigationBarHeight), transition: transition)
                
-        let colors: [UIColor]
-        let particleColor: UIColor?
-        if self.item.isStars {
-            colors = [
-                UIColor(rgb: 0xe57d02),
-                UIColor(rgb: 0xf09903),
-                UIColor(rgb: 0xf9b004),
-                UIColor(rgb: 0xfdd219)
-            ]
-            particleColor = UIColor(rgb: 0xf9b004)
-        } else {
-            colors = [
-                UIColor(rgb: 0x6a94ff),
-                UIColor(rgb: 0x9472fd),
-                UIColor(rgb: 0xe26bd3)
-            ]
-            particleColor = nil
-        }
-        
         let component = AnyComponent(PremiumStarComponent(
             theme: self.item.theme,
             isIntro: true,
             isVisible: true,
             hasIdleAnimations: true,
-            colors: colors,
-            particleColor: particleColor,
-            backgroundColor: self.item.theme.list.blocksBackgroundColor
-            
+            colors: [
+                UIColor(rgb: 0x6a94ff),
+                UIColor(rgb: 0x9472fd),
+                UIColor(rgb: 0xe26bd3)
+            ]
         ))
         let containerSize = CGSize(width: min(414.0, layout.size.width), height: 220.0)
         

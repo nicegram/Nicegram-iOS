@@ -12,11 +12,6 @@ public final class TelegramMediaGiveaway: Media, Equatable {
         public static let showWinners = Flags(rawValue: 1 << 1)
     }
     
-    public enum Prize: Equatable {
-        case premium(months: Int32)
-        case stars(amount: Int64)
-    }
-    
     public var id: MediaId? {
         return nil
     }
@@ -28,16 +23,16 @@ public final class TelegramMediaGiveaway: Media, Equatable {
     public let channelPeerIds: [PeerId]
     public let countries: [String]
     public let quantity: Int32
-    public let prize: Prize
+    public let months: Int32
     public let untilDate: Int32
     public let prizeDescription: String?
     
-    public init(flags: Flags, channelPeerIds: [PeerId], countries: [String], quantity: Int32, prize: Prize, untilDate: Int32, prizeDescription: String?) {
+    public init(flags: Flags, channelPeerIds: [PeerId], countries: [String], quantity: Int32, months: Int32, untilDate: Int32, prizeDescription: String?) {
         self.flags = flags
         self.channelPeerIds = channelPeerIds
         self.countries = countries
         self.quantity = quantity
-        self.prize = prize
+        self.months = months
         self.untilDate = untilDate
         self.prizeDescription = prizeDescription
     }
@@ -47,13 +42,7 @@ public final class TelegramMediaGiveaway: Media, Equatable {
         self.channelPeerIds = decoder.decodeInt64ArrayForKey("cns").map { PeerId($0) }
         self.countries = decoder.decodeStringArrayForKey("cnt")
         self.quantity = decoder.decodeInt32ForKey("qty", orElse: 0)
-        if let months = decoder.decodeOptionalInt32ForKey("mts") {
-            self.prize = .premium(months: months)
-        } else if let stars = decoder.decodeOptionalInt64ForKey("str") {
-            self.prize = .stars(amount: stars)
-        } else {
-            self.prize = .premium(months: 0)
-        }
+        self.months = decoder.decodeInt32ForKey("mts", orElse: 0)
         self.untilDate = decoder.decodeInt32ForKey("unt", orElse: 0)
         self.prizeDescription = decoder.decodeOptionalStringForKey("des")
     }
@@ -63,12 +52,7 @@ public final class TelegramMediaGiveaway: Media, Equatable {
         encoder.encodeInt64Array(self.channelPeerIds.map { $0.toInt64() }, forKey: "cns")
         encoder.encodeStringArray(self.countries, forKey: "cnt")
         encoder.encodeInt32(self.quantity, forKey: "qty")
-        switch self.prize {
-        case let .premium(months):
-            encoder.encodeInt32(months, forKey: "mts")
-        case let .stars(amount):
-            encoder.encodeInt64(amount, forKey: "str")
-        }
+        encoder.encodeInt32(self.months, forKey: "mts")
         encoder.encodeInt32(self.untilDate, forKey: "unt")
         if let prizeDescription = self.prizeDescription {
             encoder.encodeString(prizeDescription, forKey: "des")
@@ -97,7 +81,7 @@ public final class TelegramMediaGiveaway: Media, Equatable {
         if self.quantity != other.quantity {
             return false
         }
-        if self.prize != other.prize {
+        if self.months != other.months {
             return false
         }
         if self.untilDate != other.untilDate {

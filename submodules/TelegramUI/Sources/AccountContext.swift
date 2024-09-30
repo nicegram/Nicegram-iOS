@@ -306,7 +306,11 @@ public final class AccountContextImpl: AccountContext {
         
         self.account.stateManager.starsContext = self.starsContext
         
-        self.peersNearbyManager = nil
+        if let locationManager = self.sharedContextImpl.locationManager, sharedContext.applicationBindings.isMainApp && !temp {
+            self.peersNearbyManager = PeersNearbyManagerImpl(account: account, engine: self.engine, locationManager: locationManager, inForeground: sharedContext.applicationBindings.applicationInForeground)
+        } else {
+            self.peersNearbyManager = nil
+        }
         
         self.cachedGroupCallContexts = AccountGroupCallContextCacheImpl()
         

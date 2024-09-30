@@ -14,6 +14,9 @@ final class ButtonGroupView: OverlayMaskContainerView {
                 case video
                 case microphone
                 case end
+// MARK: Nicegram NCG-5828 call recording
+                case record
+//
             }
             
             case speaker(audioOutput: PrivateCallScreen.State.AudioOutput)
@@ -21,6 +24,7 @@ final class ButtonGroupView: OverlayMaskContainerView {
             case video(isActive: Bool)
             case microphone(isMuted: Bool)
             case end
+            case record(isRecord: Bool)
             
             var key: Key {
                 switch self {
@@ -34,6 +38,10 @@ final class ButtonGroupView: OverlayMaskContainerView {
                     return .microphone
                 case .end:
                     return .end
+// MARK: Nicegram NCG-5828 call recording
+                case .record:
+                    return .record
+//
                 }
             }
         }
@@ -90,8 +98,9 @@ final class ButtonGroupView: OverlayMaskContainerView {
         self.buttons = buttons
         
         let buttonSize: CGFloat = 56.0
-        let buttonSpacing: CGFloat = 36.0
-        
+// MARK: Nicegram NCG-5828 call recording
+        let buttonSpacing: CGFloat = buttons.count > 4 ? 17.0 : 36.0
+//
         let buttonNoticeSpacing: CGFloat = 16.0
         let controlsHiddenNoticeSpacing: CGFloat = 0.0
         var nextNoticeY: CGFloat
@@ -264,6 +273,12 @@ final class ButtonGroupView: OverlayMaskContainerView {
                 image = UIImage(bundleImageName: "Call/End")
                 isActive = false
                 isDestructive = true
+// MARK: Nicegram NCG-5828 call recording
+            case let .record(isRecord):
+                title = "record"
+                image = isRecord ? UIImage(bundleImageName: "RecordStop") : UIImage(bundleImageName: "RecordStart")
+                isActive = isRecord
+//
             }
             
             var buttonTransition = transition

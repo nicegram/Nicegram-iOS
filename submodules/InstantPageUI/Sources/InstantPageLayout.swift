@@ -884,11 +884,9 @@ public func instantPageLayoutForWebPage(_ webPage: TelegramMediaWebpage, userLoc
     let closingSpacing = spacingBetweenBlocks(upper: previousBlock, lower: nil)
     contentSize.height += closingSpacing
     
-    if webPage.webpageId.id != 0 {
-        let feedbackItem = InstantPageFeedbackItem(frame: CGRect(x: 0.0, y: contentSize.height, width: boundingWidth, height: 40.0), webPage: webPage)
-        contentSize.height += feedbackItem.frame.height
-        items.append(feedbackItem)
-    }
+    let feedbackItem = InstantPageFeedbackItem(frame: CGRect(x: 0.0, y: contentSize.height, width: boundingWidth, height: 40.0), webPage: webPage)
+    contentSize.height += feedbackItem.frame.height
+    items.append(feedbackItem)
     
     return InstantPageLayout(origin: CGPoint(), contentSize: contentSize, items: items)
 }

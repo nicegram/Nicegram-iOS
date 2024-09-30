@@ -722,15 +722,7 @@ func enqueueMessages(transaction: Transaction, account: Account, peerId: PeerId,
                 
                     var authorId: PeerId?
                     if let sendAsPeer = sendAsPeer {
-                        if let peer = peer as? TelegramChannel, case let .broadcast(info) = peer.info {
-                            if info.flags.contains(.messagesShouldHaveProfiles) {
-                                authorId = sendAsPeer.id
-                            } else {
-                                authorId = peer.id
-                            }
-                        } else {
-                            authorId = sendAsPeer.id
-                        }
+                        authorId = sendAsPeer.id
                     } else if let peer = peer as? TelegramChannel {
                         if case .broadcast = peer.info {
                             authorId = peer.id
@@ -762,11 +754,7 @@ func enqueueMessages(transaction: Transaction, account: Account, peerId: PeerId,
                                     }
                                 }
                                 if info.flags.contains(.messagesShouldHaveSignatures) {
-                                    if let sendAsPeer {
-                                        if sendAsPeer.id == peerId {
-                                        } else {
-                                            attributes.append(AuthorSignatureMessageAttribute(signature: sendAsPeer.debugDisplayTitle))
-                                        }
+                                    if let sendAsPeer, sendAsPeer.id == peerId {
                                     } else {
                                         attributes.append(AuthorSignatureMessageAttribute(signature: accountPeer.debugDisplayTitle))
                                     }

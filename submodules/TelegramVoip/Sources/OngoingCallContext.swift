@@ -742,8 +742,8 @@ public final class OngoingCallContext {
     public final class AudioDevice {
         let impl: SharedCallAudioDevice
         
-        public static func create(enableSystemMute: Bool) -> AudioDevice? {
-            return AudioDevice(impl: SharedCallAudioDevice(disableRecording: false, enableSystemMute: enableSystemMute))
+        public static func create() -> AudioDevice? {
+            return AudioDevice(impl: SharedCallAudioDevice(disableRecording: false))
         }
         
         private init(impl: SharedCallAudioDevice) {
@@ -759,6 +759,20 @@ public final class OngoingCallContext {
                 CallAudioTone(samples: tone.samples, sampleRate: tone.sampleRate, loopCount: tone.loopCount)
             })
         }
+        
+        // MARK: Nicegram NCG-5828 call recording
+        public func initNicegramCallRecording() {
+            self.impl.initNicegramCallRecording()
+        }
+        
+        public func startNicegramRecording() {
+            self.impl.startNicegramRecording()
+        }
+        
+        public func stopNicegramRecording(callback: ((String, Double, UInt) -> Void)?) {
+            self.impl.stopNicegramRecording(callback)
+        }
+        //
     }
     
     public static func setupAudioSession() {
