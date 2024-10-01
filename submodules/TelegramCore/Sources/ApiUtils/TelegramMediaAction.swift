@@ -135,10 +135,10 @@ func telegramMediaActionFromApiAction(_ action: Api.MessageAction) -> TelegramMe
         }
     case let .messageActionGiftCode(flags, boostPeer, months, slug, currency, amount, cryptoCurrency, cryptoAmount):
         return TelegramMediaAction(action: .giftCode(slug: slug, fromGiveaway: (flags & (1 << 0)) != 0, isUnclaimed: (flags & (1 << 2)) != 0, boostPeerId: boostPeer?.peerId, months: months, currency: currency, amount: amount, cryptoCurrency: cryptoCurrency, cryptoAmount: cryptoAmount))
-    case .messageActionGiveawayLaunch:
-        return TelegramMediaAction(action: .giveawayLaunched)
-    case let .messageActionGiveawayResults(winners, unclaimed):
-        return TelegramMediaAction(action: .giveawayResults(winners: winners, unclaimed: unclaimed))
+    case let .messageActionGiveawayLaunch(_, stars):
+        return TelegramMediaAction(action: .giveawayLaunched(stars: stars))
+    case let .messageActionGiveawayResults(flags, winners, unclaimed):
+        return TelegramMediaAction(action: .giveawayResults(winners: winners, unclaimed: unclaimed, stars: (flags & (1 << 0)) != 0))
     case let .messageActionBoostApply(boosts):
         return TelegramMediaAction(action: .boostsApplied(boosts: boosts))
     case let .messageActionPaymentRefunded(_, peer, currency, totalAmount, payload, charge):
@@ -148,6 +148,8 @@ func telegramMediaActionFromApiAction(_ action: Api.MessageAction) -> TelegramMe
             transactionId = id
         }
         return TelegramMediaAction(action: .paymentRefunded(peerId: peer.peerId, currency: currency, totalAmount: totalAmount, payload: payload?.makeData(), transactionId: transactionId))
+    case let .messageActionPrizeStars(flags, stars, transactionId, boostPeer, giveawayMsgId):
+        return TelegramMediaAction(action: .prizeStars(amount: stars, isUnclaimed: (flags & (1 << 2)) != 0, boostPeerId: boostPeer.peerId, transactionId: transactionId, giveawayMessageId: MessageId(peerId: boostPeer.peerId, namespace: Namespaces.Message.Cloud, id: giveawayMsgId)))
     }
 }
 

@@ -12,10 +12,7 @@ import TelegramUIPreferences
 import AccountContext
 import CallKit
 import PhoneNumberFormat
-// MARK: Nicegram NCG-5828 call recording
-import NGLogging
-import NGData
-//
+
 private func callKitIntegrationIfEnabled(_ integration: CallKitIntegration?, settings: VoiceCallSettings?) -> CallKitIntegration?  {
     let enabled = settings?.enableSystemIntegration ?? true
     return enabled ? integration : nil
@@ -320,7 +317,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                     let autodownloadSettings = sharedData.entries[SharedDataKeys.autodownloadSettings]?.get(AutodownloadSettings.self) ?? .defaultSettings
                     let experimentalSettings = sharedData.entries[ApplicationSpecificSharedDataKeys.experimentalUISettings]?.get(ExperimentalUISettings.self) ?? .defaultSettings
                     let appConfiguration = preferences.values[PreferencesKeys.appConfiguration]?.get(AppConfiguration.self) ?? AppConfiguration.defaultValue
-                    // MARK: Nicegram NCG-5828 call recording, callState
+                    
                     let call = PresentationCallImpl(
                         context: firstState.0,
                         audioSession: strongSelf.audioSession,
@@ -342,16 +339,8 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                         isVideoPossible: firstState.2.isVideoPossible,
                         enableStunMarking: shouldEnableStunMarking(appConfiguration: appConfiguration),
                         enableTCP: experimentalSettings.enableVoipTcp,
-                        preferredVideoCodec: experimentalSettings.preferredVideoCodec,
-                        callState: { [strongSelf] state, audioDevice in
-                            strongSelf.callState(
-                                with: state,
-                                audioDevice: audioDevice,
-                                account: firstState.0.account
-                            )
-                        }
+                        preferredVideoCodec: experimentalSettings.preferredVideoCodec
                     )
-                    //
                     strongSelf.updateCurrentCall(call)
                     strongSelf.currentCallPromise.set(.single(call))
                     strongSelf.hasActivePersonalCallsPromise.set(true)
@@ -572,7 +561,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                     let isVideoPossible: Bool = areVideoCallsAvailable
                     
                     let experimentalSettings = sharedData.entries[ApplicationSpecificSharedDataKeys.experimentalUISettings]?.get(ExperimentalUISettings.self) ?? .defaultSettings
-                    // MARK: Nicegram NCG-5828 call recording, callState
+                    
                     let call = PresentationCallImpl(
                         context: context,
                         audioSession: strongSelf.audioSession,
@@ -597,16 +586,8 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                         isVideoPossible: isVideoPossible,
                         enableStunMarking: shouldEnableStunMarking(appConfiguration: appConfiguration),
                         enableTCP: experimentalSettings.enableVoipTcp,
-                        preferredVideoCodec: experimentalSettings.preferredVideoCodec,
-                        callState: { [strongSelf] state, audioDevice in
-                            strongSelf.callState(
-                                with: state,
-                                audioDevice: audioDevice,
-                                account: context.account
-                            )
-                        }
+                        preferredVideoCodec: experimentalSettings.preferredVideoCodec
                     )
-                    //
                     strongSelf.updateCurrentCall(call)
                     strongSelf.currentCallPromise.set(.single(call))
                     strongSelf.hasActivePersonalCallsPromise.set(true)
@@ -917,137 +898,4 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
             return .single(true)
         }
     }
-// MARK: Nicegram NCG-5828 call recording
-    private var isRecordSaved = false
-    private var audioDevice: OngoingCallContext.AudioDevice?
-    private var account: Account?
-    private var enginePeer: EnginePeer?
-
-    private func deleteFile(from path: String) {
-        let fileManager = FileManager.default
-        
-        if fileManager.fileExists(atPath: path) {
-            do {
-                let fileURL = URL(fileURLWithPath: path)
-                try fileManager.removeItem(at: fileURL)
-            } catch {
-                ngLog("[Call record] Error remove call file: \(error.localizedDescription)")
-            }
-        } else {
-            ngLog("[Call record] Call file not found at path \(path)")
-        }
-    }
-
-    private func writeAudioToSaved(
-        from path: String,
-        duration: Double,
-        size: UInt,
-        completion: (() -> Void)? = nil
-    ) {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd-MM-yyyy"
-        
-        let date = Date()
-        
-        let id = Int64.random(in: 0 ... Int64.max)
-        let resource = LocalFileReferenceMediaResource(
-            localFilePath: path,
-            randomId: id
-        )
-        
-        let file = TelegramMediaFile(
-            fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: id),
-            partialReference: nil,
-            resource: resource,
-            previewRepresentations: [],
-            videoThumbnails: [],
-            immediateThumbnailData: nil,
-//            mimeType: "audio/ogg",
-            mimeType: "audio/wav",
-            size: Int64(size),
-            attributes: [
-                .Audio(
-                    isVoice: false,
-                    duration: Int(duration),
-                    title: "\(enginePeer?.compactDisplayTitle ?? "")-\(dateFormatter.string(from: date))",
-                    performer: nil,
-                    waveform: nil
-                )
-            ]
-        )
-        
-        let message: EnqueueMessage = .message(
-            text: "",
-            attributes: [],
-            inlineStickers: [:],
-            mediaReference: .standalone(media: file),
-            threadId: nil,
-            replyToMessageId: nil,
-            replyToStoryId: nil,
-            localGroupingKey: nil,
-            correlationId: nil,
-            bubbleUpEmojiOrStickersets: []
-        )
-
-        DispatchQueue.main.async {
-            if let account = self.account {
-                let _ = enqueueMessages(
-                    account: account,
-                    peerId: account.peerId,
-                    messages: [message]
-                ).start(completed: { [weak self] in
-                    self?.deleteFile(from: path)
-                    self?.isRecordSaved = true
-                    completion?()
-                })
-            }
-        }
-    }
-    
-    private func callState(
-        with state: Bool,
-        audioDevice: OngoingCallContext.AudioDevice?,
-        account: Account
-    ) {
-        if let audioDevice {
-            self.audioDevice = audioDevice
-            self.account = account
-        }
-
-        if state && NGSettings.recordAllCalls {
-            startRecordCall()
-        } else if (state == false && !isRecordSaved) {
-            audioDevice?.stopNicegramRecording { [weak self] path, duration, size in
-                self?.writeAudioToSaved(
-                    from: path,
-                    duration: duration,
-                    size: size
-                )
-            }
-        }
-    }
-    
-    public func startRecordCall() {
-        isRecordSaved = false
-        audioDevice?.startNicegramRecording()
-    }
-    
-    public func stopRecordCall(
-        with completion: @escaping () -> Void
-    ) {
-        audioDevice?.stopNicegramRecording { [weak self] path, duration, size in
-            self?.isRecordSaved = true
-            self?.writeAudioToSaved(
-                from: path,
-                duration: duration,
-                size: size,
-                completion: completion
-            )
-        }
-    }
-    
-    public func setupPeer(peer: EnginePeer) {
-        self.enginePeer = peer
-    }
-    //
 }

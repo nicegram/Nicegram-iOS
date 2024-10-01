@@ -452,7 +452,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                         walletConnectProjectId: NGENV.wallet.walletConnectProjectId,
                         web3AuthBackupQuestion: NGENV.wallet.web3AuthBackupQuestion,
                         web3AuthClientId: NGENV.wallet.web3AuthClientId,
-                        web3AuthVerifier: NGENV.wallet.web3AuthVerifier
+                        web3AuthVerifier: NGENV.wallet.web3AuthVerifier,
+                        stonfiApiUrl: NGENV.wallet.stonfiApiUrl,
+                        stonfiNicegramApiUrl: NGENV.wallet.stonfiNicegramApiUrl
                     )
                 },
                 contactImageProvider: {

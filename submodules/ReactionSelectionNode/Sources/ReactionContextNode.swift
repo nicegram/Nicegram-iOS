@@ -2028,20 +2028,38 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
                                     ))
                                     return .single(resultGroups)
                                 } else {
+                                    let remoteSignal = context.engine.stickers.searchEmoji(emojiString: Array(allEmoticons.keys))
+                                    
                                     return combineLatest(
                                         context.account.postbox.itemCollectionsView(orderedItemListCollectionIds: [], namespaces: [Namespaces.ItemCollection.CloudEmojiPacks], aroundIndex: nil, count: 10000000) |> take(1),
                                         context.engine.stickers.availableReactions() |> take(1),
                                         hasPremium |> take(1),
                                         remotePacksSignal,
+                                        remoteSignal,
                                         localPacksSignal
                                     )
-                                    |> map { view, availableReactions, hasPremium, foundPacks, foundLocalPacks -> [EmojiPagerContentComponent.ItemGroup] in
+                                    |> map { view, availableReactions, hasPremium, foundPacks, foundEmoji, foundLocalPacks -> [EmojiPagerContentComponent.ItemGroup] in
                                         var result: [(String, TelegramMediaFile?, String)] = []
                                         
                                         var allEmoticons: [String: String] = [:]
                                         for keyword in keywords {
                                             for emoticon in keyword.emoticons {
                                                 allEmoticons[emoticon] = keyword.keyword
+                                            }
+                                        }
+                                        
+                                        for itemFile in foundEmoji.items {
+                                            for attribute in itemFile.attributes {
+                                                switch attribute {
+                                                case let .CustomEmoji(_, _, alt, _):
+                                                    if !alt.isEmpty, let keyword = allEmoticons[alt] {
+                                                        result.append((alt, itemFile, keyword))
+                                                    } else if alt == query {
+                                                        result.append((alt, itemFile, alt))
+                                                    }
+                                                default:
+                                                    break
+                                                }
                                             }
                                         }
                                         
@@ -2052,7 +2070,7 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
                                             for attribute in item.file.attributes {
                                                 switch attribute {
                                                 case let .CustomEmoji(_, _, alt, _):
-                                                    if !item.file.isPremiumEmoji || hasPremium {
+                                                    if !item.file.isPremiumEmoji {
                                                         if !alt.isEmpty, let keyword = allEmoticons[alt] {
                                                             result.append((alt, item.file, keyword))
                                                         } else if alt == query {
@@ -2079,7 +2097,7 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
                                                     animationData: animationData,
                                                     content: .animation(animationData),
                                                     itemFile: itemFile, subgroupId: nil,
-                                                    icon: .none,
+                                                    icon: (!hasPremium && itemFile.isPremiumEmoji) ? .locked : .none,
                                                     tintMode: animationData.isTemplate ? .primary : .none
                                                 )
                                                 items.append(item)
@@ -2141,7 +2159,7 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
                                                         content: .animation(animationData),
                                                         itemFile: item.file,
                                                         subgroupId: nil,
-                                                        icon: .none,
+                                                        icon: (!hasPremium && item.file.isPremiumEmoji) ? .locked : .none,
                                                         tintMode: tintMode
                                                     )
                                                     

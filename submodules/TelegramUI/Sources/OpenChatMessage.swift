@@ -239,6 +239,15 @@ func openChatMessageImpl(_ params: OpenChatMessageParams) -> Bool {
                             useBrowserScreen = true
                         }
                         if useBrowserScreen {
+                            if let navigationController = params.navigationController, let minimizedContainer = navigationController.minimizedContainer {
+                                for controller in minimizedContainer.controllers {
+                                    if let controller = controller as? BrowserScreen, controller.subject.fileId == file.fileId {
+                                        navigationController.maximizeViewController(controller, animated: true)
+                                        return
+                                    }
+                                }
+                            }
+                            
                             let subject: BrowserScreen.Subject
                             if file.mimeType == "application/pdf" {
                                 subject = .pdfDocument(file: file, canShare: canShare)
@@ -402,7 +411,7 @@ func makeInstantPageControllerImpl(context: AccountContext, message: Message, so
 }
 
 func makeInstantPageControllerImpl(context: AccountContext, webPage: TelegramMediaWebpage, anchor: String?, sourceLocation: InstantPageSourceLocation) -> ViewController {
-    return BrowserScreen(context: context, subject: .instantPage(webPage: webPage, anchor: anchor, sourceLocation: sourceLocation))
+    return BrowserScreen(context: context, subject: .instantPage(webPage: webPage, anchor: anchor, sourceLocation: sourceLocation, preloadedResources: nil))
 }
 
 func openChatWallpaperImpl(context: AccountContext, message: Message, present: @escaping (ViewController, Any?) -> Void) {

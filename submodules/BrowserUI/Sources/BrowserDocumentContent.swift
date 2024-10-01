@@ -36,7 +36,7 @@ final class BrowserDocumentContent: UIView, BrowserContent, WKNavigationDelegate
         return self.statePromise.get()
     }
     
-    var pushContent: (BrowserScreen.Subject) -> Void = { _ in }
+    var pushContent: (BrowserScreen.Subject, BrowserContent?) -> Void = { _, _ in }
     var openAppUrl: (String) -> Void = { _ in }
     var onScrollingUpdate: (ContentScrollingUpdate) -> Void = { _ in }
     var minimize: () -> Void = { }
@@ -92,6 +92,17 @@ final class BrowserDocumentContent: UIView, BrowserContent, WKNavigationDelegate
             self.webView.underPageBackgroundColor = presentationData.theme.list.plainBackgroundColor
         }
         self.addSubview(self.webView)
+        
+        self.webView.interactiveTransitionGestureRecognizerTest = { [weak self] point in
+            if let self {
+                if let result = self.webView.hitTest(point, with: nil), let scrollView = findScrollView(view: result), scrollView.isDescendant(of: self.webView) {
+                    if scrollView.contentSize.width > scrollView.frame.width, scrollView.contentOffset.x > -scrollView.contentInset.left {
+                        return true
+                    }
+                }
+            }
+            return false
+        }
     }
     
     required init?(coder: NSCoder) {
@@ -120,6 +131,9 @@ final class BrowserDocumentContent: UIView, BrowserContent, WKNavigationDelegate
         let textSizeAdjust = state.size != 100 ? "'\(state.size)%'" : "null"
         let js = "\(setupFontFunctions) setTelegramFontOverrides(\(fontFamily), \(textSizeAdjust))";
         self.webView.evaluateJavaScript(js) { _, _ in }
+    }
+    
+    func toggleInstantView(_ enabled: Bool) {
     }
     
     private var didSetupSearch = false
@@ -385,7 +399,7 @@ final class BrowserDocumentContent: UIView, BrowserContent, WKNavigationDelegate
             navigationController._keepModalDismissProgress = true
             navigationController.pushViewController(controller)
         } else {
-            self.pushContent(subject)
+            self.pushContent(subject, nil)
         }
     }
     
@@ -411,5 +425,16 @@ final class BrowserDocumentContent: UIView, BrowserContent, WKNavigationDelegate
             imageView.image = image
         })
         return imageView
+    }
+}
+
+private func findScrollView(view: UIView?) -> UIScrollView? {
+    if let view = view {
+        if let view = view as? UIScrollView {
+            return view
+        }
+        return findScrollView(view: view.superview)
+    } else {
+        return nil
     }
 }

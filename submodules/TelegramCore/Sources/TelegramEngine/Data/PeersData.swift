@@ -2159,5 +2159,24 @@ public extension TelegramEngine.EngineData.Item {
                 }
             }
         }
+        
+        public struct StarsReactionDefaultToPrivate: TelegramEngineDataItem, PostboxViewDataItem {
+            public typealias Result = Bool
+            
+            public init() {
+            }
+            
+            var key: PostboxViewKey {
+                return .cachedItem(ItemCacheEntryId(collectionId: Namespaces.CachedItemCollection.starsReactionDefaultToPrivate, key: StarsReactionDefaultToPrivateData.key()))
+            }
+            
+            func extract(view: PostboxView) -> Result {
+                if let value = (view as? CachedItemView)?.value?.get(StarsReactionDefaultToPrivateData.self) {
+                    return value.isPrivate
+                } else {
+                    return false
+                }
+            }
+        }
     }
 }

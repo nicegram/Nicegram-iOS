@@ -5633,6 +5633,8 @@ Sorry for the inconvenience.";
 
 "Settings.RemoveConfirmation" = "Remove";
 
+"Conversation.ContextMenuOpenInfo" = "Open Info";
+
 "Conversation.ContextMenuOpenProfile" = "Open Profile";
 "Conversation.ContextMenuSendMessage" = "Send Message";
 "Conversation.ContextMenuMention" = "Mention";
@@ -10290,6 +10292,9 @@ Sorry for the inconvenience.";
 "BoostGift.GiveawayCreated.Text" = "Check your channel's [Statistics]() to see how this giveaway boosted your channel.";
 "BoostGift.PremiumGifted.Title" = "Premium Subscriptions Gifted";
 "BoostGift.PremiumGifted.Text" = "Check your channel's [Statistics]() to see how gifts boosted your channel.";
+"BoostGift.StarsGiveawayCreated.Title" = "Stars Giveaway Created";
+"BoostGift.StarsGiveawayCreated.Text" = "Check your channel's [Statistics]() to see how this giveaway boosted your channel.";
+"BoostGift.Group.StarsGiveawayCreated.Text" = "Check your group's [Boosts]() to see how this giveaway boosted your group.";
 
 "BoostGift.Subscribers.Title" = "Gift Premium";
 "BoostGift.Subscribers.Subtitle" = "select up to %@ subscribers";
@@ -10505,11 +10510,15 @@ Sorry for the inconvenience.";
 
 "Notification.GiveawayResultsNoWinners_1" = "Due to the giveaway terms, no winners could be selected by Telegram, a gift link was forwarded to channel administrators.";
 "Notification.GiveawayResultsNoWinners_any" = "Due to the giveaway terms, no winners could be selected by Telegram, all **%@** gift links were forwarded to channel administrators.";
+"Notification.GiveawayResultsNoWinners.Group_1" = "Due to the giveaway terms, no winners could be selected by Telegram, a gift link was forwarded to group administrators.";
+"Notification.GiveawayResultsNoWinners.Group_any" = "Due to the giveaway terms, no winners could be selected by Telegram, all **%@** gift links were forwarded to group administrators.";
 
 "Notification.GiveawayResultsMixedWinners_1" = "**%@** winner of the giveaway was randomly selected by Telegram and received their gift link in a private message.";
 "Notification.GiveawayResultsMixedWinners_any" = "**%@** winners of the giveaway were randomly selected by Telegram and received their gift links in private messages.";
 "Notification.GiveawayResultsMixedUnclaimed_1" = "**%@** undistributed gift link was forwarded to channel administrators";
 "Notification.GiveawayResultsMixedUnclaimed_any" = "**%@** undistributed gift links were forwarded to channel administrators";
+"Notification.GiveawayResultsMixedUnclaimed.Group_1" = "**%@** undistributed gift link was forwarded to group administrators";
+"Notification.GiveawayResultsMixedUnclaimed.Group_any" = "**%@** undistributed gift links were forwarded to group administrators";
 
 "Chat.Giveaway.DeleteConfirmation.Title" = "Do you want to delete the Giveaway Announcement?";
 "Chat.Giveaway.DeleteConfirmation.Text" = "Deleting this message won't cancel the giveaway - the winners will still be selected on **%@**.\n\nOnce deleted, the Giveaway Announcement cannot be recovered.";
@@ -12264,6 +12273,7 @@ Sorry for the inconvenience.";
 "Stars.Intro.Incoming" = "Incoming";
 "Stars.Intro.Outgoing" = "Outgoing";
 
+"Stars.Intro.Transaction.GiveawayPrize" = "Giveaway Prize";
 "Stars.Intro.Transaction.MediaPurchase" = "Media Purchase";
 "Stars.Intro.Transaction.AppleTopUp.Title" = "Stars Top-Up";
 "Stars.Intro.Transaction.AppleTopUp.Subtitle" = "via App Store";
@@ -12811,6 +12821,121 @@ Sorry for the inconvenience.";
 
 "Chat.ToastStarsSent.Title_1" = "Star sent!";
 "Chat.ToastStarsSent.Title_any" = "Stars sent!";
+
+"Chat.ToastStarsSent.AnonymousTitle_1" = "Star sent anonymously!";
+"Chat.ToastStarsSent.AnonymousTitle_any" = "Stars sent anonymously!";
+
 "Chat.ToastStarsSent.Text" = "You have reacted with %1$@ %2$@.";
 "Chat.ToastStarsSent.TextStarAmount_1" = "star";
 "Chat.ToastStarsSent.TextStarAmount_any" = "stars";
+
+"Stars.Purchase.StarsReactionsNeededInfo" = "Buy Stars to send paid reactions **%@** and other channels.";
+"Chat.ToastStarsReactionsDisabled" = "Star Reactions were disabled in %@";
+
+"ChatContextMenu.SingleReactionEmojiSet" = "This reaction is from #[%@]() emoji pack.";
+
+"Channel.AdminLog.MessageParticipantSubscriptionExtended" = "%@ extended their subscription";
+
+"Notification.StarsPrize" = "You received a gift";
+
+"Notification.GiveawayStartedStars" = "%1$@ just started a giveaway of %2$@ Telegram Stars for its followers.";
+"Notification.GiveawayStartedStarsGroup" = "%1$@ just started a giveaway of %2$@ Telegram Stars for its members.";
+
+"Notification.StarsGiveawayStarted" = "%1$@ just started a giveaway of %2$@ for its followers.";
+"Notification.StarsGiveawayStartedGroup" = "%1$@ just started a giveaway of %2$@ for its members.";
+"Notification.StarsGiveawayStarted.Stars_1" = "%@ Telegram Star";
+"Notification.StarsGiveawayStarted.Stars_any" = "%@ Telegram Stars";
+
+"Chat.Giveaway.Message.Stars.PrizeText" = "%1$@ will be distributed %2$@.";
+"Chat.Giveaway.Message.Stars.Stars_1" = "**%@** Stars";
+"Chat.Giveaway.Message.Stars.Stars_any" = "**%@** Stars";
+"Chat.Giveaway.Message.Stars.Winners_1" = "to **%@** winner";
+"Chat.Giveaway.Message.Stars.Winners_any" = "among **%@** winners";
+
+"Chat.Giveaway.Info.Stars.Stars_1" = "**%@ Star**";
+"Chat.Giveaway.Info.Stars.Stars_any" = "**%@ Stars**";
+"Chat.Giveaway.Info.Stars.OngoingIntro" = "The giveaway is sponsored by the admins of **%1$@**, who acquired %2$@ for its followers.";
+"Chat.Giveaway.Info.Stars.EndedIntro" = "The giveaway was sponsored by the admins of **%1$@**, who acquired %2$@ for its followers.";
+"Chat.Giveaway.Info.Stars.Group.OngoingIntro" = "The giveaway is sponsored by the admins of **%1$@**, who acquired %2$@ for its members.";
+"Chat.Giveaway.Info.Stars.Group.EndedIntro" = "The giveaway was sponsored by the admins of **%1$@**, who acquired %2$@ for its members.";
+
+"Stars.Transaction.Giveaway.Title" = "Received Prize";
+"Stars.Transaction.Giveaway.Reason" = "Reason";
+"Stars.Transaction.Giveaway.Giveaway" = "Giveaway";
+"Stars.Transaction.Giveaway.Prize" = "Prize";
+"Stars.Transaction.Giveaway.Stars_1" = "%@ Star";
+"Stars.Transaction.Giveaway.Stars_any" = "%@ Stars";
+
+"Stats.RevenueInTon" = "Revenue in TON";
+"Stats.RevenueInStars" = "Revenue in Stars";
+"Stats.RevenueInUsd" = "Revenue in USD";
+
+"BoostGift.NewDescriptionGroup" = "Get more boosts and members for\nyour group by giving away prizes.";
+"BoostGift.NewDescription" = "Get more boosts and subscribers for\nyour channel by giving away prizes.";
+"BoostGift.Prize" = "PRIZE";
+"BoostGift.Prize.Premium" = "Telegram Premium";
+"BoostGift.Prize.Stars" = "Telegram Stars";
+"BoostGift.Stars.Title" = "STARS TO DISTRIBUTE";
+"BoostGift.Stars.Boosts_1" = "%@ BOOST";
+"BoostGift.Stars.Boosts_any" = "%@ BOOSTS";
+"BoostGift.Stars.Stars_1" = "%@ Star";
+"BoostGift.Stars.Stars_any" = "%@ Stars";
+"BoostGift.Stars.PerUser" = "%@ per user";
+"BoostGift.Stars.ShowMoreOptions" = "Show More Options";
+"BoostGift.Stars.Info" = "Choose how many stars to give away and how many boosts to receive for 1 year.";
+"BoostGift.AdditionalPrizesInfoStarsOff" = "Turn this on if you want to give the winners your own prizes in addition to Stars.";
+
+"BoostGift.AdditionalPrizesInfoStars_1" = "**%@** Star";
+"BoostGift.AdditionalPrizesInfoStars_any" = "**%@** Stars";
+"BoostGift.AdditionalPrizesInfoStarsOn" = "All prizes: %1$@%2$@.";
+"BoostGift.AdditionalPrizesInfoStarsAndOther" = " and **%1$@** %2$@";
+
+"BoostGift.Stars.Winners" = "NUMBER OF WINNERS";
+"BoostGift.Stars.WinnersInfo" = "Choose how many winners you want to distribute stars among.";
+
+"BoostGift.Group.StarsDateInfo" = "Choose when %@ of your group will be randomly selected to receive Stars.";
+"BoostGift.StarsDateInfo" = "Choose when %@ of your channel will be randomly selected to receive Stars.";
+
+"BoostGift.PrepaidGiveawayStarsCount_1" = "%@ Telegram Premium";
+"BoostGift.PrepaidGiveawayStarsCount_any" = "%@ Telegram Premium";
+"BoostGift.PrepaidGiveawayStarsMonths" = "%@-month subscriptions";
+
+"WebBrowser.ShowInstantView" = "Show Instant View";
+"WebBrowser.HideInstantView" = "Hide Instant View";
+
+"Stats.Boosts.Stars_1" = "%@ Star";
+"Stats.Boosts.Stars_any" = "%@ Stars";
+"Stats.Boosts.StarsWinners_1" = "for %@ winner";
+"Stats.Boosts.StarsWinners_any" = "among %@ winners";
+
+"BoostGift.PrepaidGiveaway.StarsCount_1" = "%@ Star";
+"BoostGift.PrepaidGiveaway.StarsCount_any" = "%@ Stars";
+"BoostGift.PrepaidGiveaway.StarsWinners_1" = "for %@ winner";
+"BoostGift.PrepaidGiveaway.StarsWinners_any" = "among %@ winners";
+
+"Stars.Transaction.Giveaway.Boost.Stars_1" = "%@ Star";
+"Stars.Transaction.Giveaway.Boost.Stars_any" = "%@ Stars";
+"Stars.Transaction.Giveaway.Boost.Boosts_1" = "%@ Boost";
+"Stars.Transaction.Giveaway.Boost.Boosts_any" = "%@ Boosts";
+"Stars.Transaction.Giveaway.Boost.Members_1" = "%@ Member";
+"Stars.Transaction.Giveaway.Boost.Members_any" = "%@ Members";
+"Stars.Transaction.Giveaway.Boost.Subscriber_1" = "%@ Subscriber";
+"Stars.Transaction.Giveaway.Boost.Subscriber_any" = "%@ Subscribers";
+
+"Conversation.ContextMenuCopyEmail" = "Copy Email";
+
+"Chat.Giveaway.Message.WinnersInfo.Stars_1" = "**%@ Star**";
+"Chat.Giveaway.Message.WinnersInfo.Stars_any" = "**%@ Stars**";
+"Chat.Giveaway.Message.WinnersInfo.Stars.One" = "The winner received %@.";
+"Chat.Giveaway.Message.WinnersInfo.Stars.Many" = "All winners received a total of %@.";
+
+"Premium.BoostByGiveawayDescription" = "Get more boosts and subscribers for your channel by giving away prizes. [Get boosts >]()";
+"Premium.Group.BoostByGiveawayDescription" = "Get more boosts and members for your group by giving away prizes. [Get boosts >]()";
+
+"Notification.StarsGiveawayResultsNoWinners" = "Due to the giveaway terms, no winners could be selected by Telegram, all stars were credited to channel administrators.";
+"Notification.StarsGiveawayResultsNoWinners.Group" = "Due to the giveaway terms, no winners could be selected by Telegram, all stars were credited to group administrators.";
+
+"Notification.StarsGiveaway.Title" = "Congratulations!";
+"Notification.StarsGiveaway.Subtitle" = "You won a prize in a giveaway organized by **%1$@**.\n\nYour prize is **%2$@**.";
+"Notification.StarsGiveaway.Subtitle.Stars_1" = "%@ Star";
+"Notification.StarsGiveaway.Subtitle.Stars_any" = "%@ Stars";

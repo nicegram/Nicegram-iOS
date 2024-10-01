@@ -335,14 +335,14 @@ public enum PresentationGroupCallTone {
     case recordingStarted
 }
 
-public struct PresentationGroupCallRequestedVideo {
+public struct PresentationGroupCallRequestedVideo: Equatable {
     public enum Quality {
         case thumbnail
         case medium
         case full
     }
 
-    public struct SsrcGroup {
+    public struct SsrcGroup: Equatable {
         public var semantics: String
         public var ssrcs: [UInt32]
     }
@@ -441,6 +441,7 @@ public protocol PresentationGroupCall: AnyObject {
     func updateDefaultParticipantsAreMuted(isMuted: Bool)
     func setVolume(peerId: EnginePeer.Id, volume: Int32, sync: Bool)
     func setRequestedVideoList(items: [PresentationGroupCallRequestedVideo])
+    func setSuspendVideoChannelRequests(_ value: Bool)
     func setCurrentAudioOutput(_ output: AudioSessionOutput)
 
     func playTone(_ tone: PresentationGroupCallTone)
@@ -471,11 +472,4 @@ public protocol PresentationCallManager: AnyObject {
     func requestCall(context: AccountContext, peerId: EnginePeer.Id, isVideo: Bool, endCurrentIfAny: Bool) -> RequestCallResult
     func joinGroupCall(context: AccountContext, peerId: EnginePeer.Id, invite: String?, requestJoinAsPeerId: ((@escaping (EnginePeer.Id?) -> Void) -> Void)?, initialCall: EngineGroupCallDescription, endCurrentIfAny: Bool) -> JoinGroupCallManagerResult
     func scheduleGroupCall(context: AccountContext, peerId: EnginePeer.Id, endCurrentIfAny: Bool) -> RequestScheduleGroupCallResult
-// MARK: Nicegram NCG-5828 call recording
-    func startRecordCall()
-    func stopRecordCall(
-        with completion: @escaping () -> Void
-    )
-    func setupPeer(peer: EnginePeer)
-//
 }

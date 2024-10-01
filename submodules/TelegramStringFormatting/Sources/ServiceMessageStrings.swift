@@ -241,7 +241,6 @@ public func universalServiceMessageString(presentationData: (PresentationTheme, 
                                         } else {
                                             type = .video
                                         }
-                                        break inner
                                     case let .Audio(isVoice, _, _, _, _):
                                         if isVoice {
                                             type = .audio
@@ -966,22 +965,37 @@ public func universalServiceMessageString(presentationData: (PresentationTheme, 
                 } else {
                     attributedString = NSAttributedString(string: strings.Notification_GiftLink, font: titleFont, textColor: primaryTextColor)
                 }
-            case .giveawayLaunched:
+            case let .giveawayLaunched(stars):
                 var isGroup = false
                 let messagePeer = message.peers[message.id.peerId]
                 if let channel = messagePeer as? TelegramChannel, case .group = channel.info {
                     isGroup = true
                 }
-                let resultTitleString = isGroup ? strings.Notification_GiveawayStartedGroup(compactAuthorName) : strings.Notification_GiveawayStarted(compactAuthorName)
+                let resultTitleString: PresentationStrings.FormattedString
+                if let stars {
+                    let starsString = strings.Notification_StarsGiveawayStarted_Stars(Int32(stars))
+                    resultTitleString = isGroup ? strings.Notification_StarsGiveawayStartedGroup(compactAuthorName, starsString) : strings.Notification_StarsGiveawayStarted(compactAuthorName, starsString)
+                } else {
+                    resultTitleString = isGroup ? strings.Notification_GiveawayStartedGroup(compactAuthorName) : strings.Notification_GiveawayStarted(compactAuthorName)
+                }
                 attributedString = addAttributesToStringWithRanges(resultTitleString._tuple, body: bodyAttributes, argumentAttributes: [0: boldAttributes])
             case .joinedChannel:
                 attributedString = NSAttributedString(string: strings.Notification_ChannelJoinedByYou, font: titleBoldFont, textColor: primaryTextColor)
-            case let .giveawayResults(winners, unclaimed):
+            case let .giveawayResults(winners, unclaimed, stars):
+                var isGroup = false
+                let messagePeer = message.peers[message.id.peerId]
+                if let channel = messagePeer as? TelegramChannel, case .group = channel.info {
+                    isGroup = true
+                }
                 if winners == 0 {
-                    attributedString = parseMarkdownIntoAttributedString(strings.Notification_GiveawayResultsNoWinners(unclaimed), attributes: MarkdownAttributes(body: bodyAttributes, bold: boldAttributes, link: bodyAttributes, linkAttribute: { _ in return nil }))
+                    if stars {
+                        attributedString = parseMarkdownIntoAttributedString(isGroup ? strings.Notification_StarsGiveawayResultsNoWinners_Group : strings.Notification_StarsGiveawayResultsNoWinners, attributes: MarkdownAttributes(body: bodyAttributes, bold: boldAttributes, link: bodyAttributes, linkAttribute: { _ in return nil }))
+                    } else {
+                        attributedString = parseMarkdownIntoAttributedString(isGroup ? strings.Notification_GiveawayResultsNoWinners_Group(unclaimed) : strings.Notification_GiveawayResultsNoWinners(unclaimed), attributes: MarkdownAttributes(body: bodyAttributes, bold: boldAttributes, link: bodyAttributes, linkAttribute: { _ in return nil }))
+                    }
                 } else if unclaimed > 0 {
                     let winnersString = parseMarkdownIntoAttributedString(strings.Notification_GiveawayResultsMixedWinners(winners), attributes: MarkdownAttributes(body: bodyAttributes, bold: boldAttributes, link: bodyAttributes, linkAttribute: { _ in return nil }))
-                    let unclaimedString = parseMarkdownIntoAttributedString(strings.Notification_GiveawayResultsMixedUnclaimed(unclaimed), attributes: MarkdownAttributes(body: bodyAttributes, bold: boldAttributes, link: bodyAttributes, linkAttribute: { _ in return nil }))
+                    let unclaimedString = parseMarkdownIntoAttributedString(isGroup ? strings.Notification_GiveawayResultsMixedUnclaimed_Group(unclaimed) : strings.Notification_GiveawayResultsMixedUnclaimed(unclaimed), attributes: MarkdownAttributes(body: bodyAttributes, bold: boldAttributes, link: bodyAttributes, linkAttribute: { _ in return nil }))
                     let combinedString = NSMutableAttributedString(attributedString: winnersString)
                     combinedString.append(NSAttributedString(string: "\n"))
                     combinedString.append(unclaimedString)
@@ -1035,6 +1049,8 @@ public func universalServiceMessageString(presentationData: (PresentationTheme, 
                     mutableString.addAttribute(NSAttributedString.Key(TelegramTextAttributes.PeerMention), value: TelegramPeerMention(peerId: peerId, mention: ""), range: NSMakeRange(range.location, (peerName as NSString).length))
                 }
                 attributedString = mutableString
+            case .prizeStars:
+                attributedString = NSAttributedString(string: strings.Notification_StarsPrize, font: titleFont, textColor: primaryTextColor)
             case .unknown:
                 attributedString = nil
             }

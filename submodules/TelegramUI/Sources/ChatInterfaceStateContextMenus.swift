@@ -1938,132 +1938,132 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             }
             //
             
-            // MARK: NG Context Menu
+            // MARK: Nicegram MessageContextMenu, helpers
+            let isSecretChat = message.id.peerId.namespace == Namespaces.Peer.SecretChat
+            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
             let nicegramIcon: (PresentationTheme) -> UIImage? = { theme in
                 return generateTintedImage(image: UIImage(bundleImageName: "logo-nicegram"), color: theme.actionSheet.primaryTextColor, customSize: CGSize(width: 24, height: 24))
             }
-            let isSecretChat = message.id.peerId.namespace == Namespaces.Peer.SecretChat
-            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-            actions.append(.action(ContextMenuActionItem(text: l("AppName") + "...", icon: nicegramIcon, action: { controller, f in
-                var ngContextItems: [ContextMenuItem] = []
-                
-                // Copyforward
-                if !message.isCopyProtected() {
-                    ngContextItems.append(.action(ContextMenuActionItem(text: l("Chat.ForwardAsCopy"), icon: { theme in
-                        return generateTintedImage(image: UIImage(bundleImageName: "CopyForward"), color: theme.actionSheet.primaryTextColor)
-                    }, action: { _, f in
-                        interfaceInteraction.copyForwardMessages(selectAll ? messages : [message])
-                        f(.dismissWithoutContent)
-                    })))
+            //
+            
+            // MARK: Nicegram ForwardAsCopy
+            if !message.isCopyProtected() {
+                actions.append(.action(ContextMenuActionItem(text: l("Chat.ForwardAsCopy"), icon: { theme in
+                    return generateTintedImage(image: UIImage(bundleImageName: "CopyForward"), color: theme.actionSheet.primaryTextColor)
+                }, action: { _, f in
+                    interfaceInteraction.copyForwardMessages(selectAll ? messages : [message])
+                    f(.dismissWithoutContent)
+                })))
+            }
+            //
+            
+            // MARK: Nicegram Translate
+            let textToTranslate = message.textToTranslate()
+            if !isSecretChat,
+               !textToTranslate.isEmpty {
+                var title = l("Messages.Translate")
+                if message.hasNicegramTranslation() {
+                    title = l("Messages.UndoTranslate")
                 }
-                
-                // Translate
-                let textToTranslate = message.textToTranslate()
-                if !isSecretChat,
-                   !textToTranslate.isEmpty {
-                    var title = l("Messages.Translate")
+                actions.append(.action(ContextMenuActionItem(text: title, icon: { theme in
+                    return generateTintedImage(image: UIImage(bundleImageName: "NGTranslateIcon"), color: theme.actionSheet.primaryTextColor)
+                }, action: { _, f in
                     if message.hasNicegramTranslation() {
-                        title = l("Messages.UndoTranslate")
-                    }
-                    ngContextItems.append(.action(ContextMenuActionItem(text: title, icon: { theme in
-                        return generateTintedImage(image: UIImage(bundleImageName: "NGTranslateIcon"), color: theme.actionSheet.primaryTextColor)
-                    }, action: { _, f in
-                        if message.hasNicegramTranslation() {
-                            message.removeNicegramTranslation(
+                        message.removeNicegramTranslation(
+                            context: context
+                        )
+                    } else {
+                        let toLang = getPreferredTranslationTargetLanguage(presentationData)
+                        let _ = (gtranslate(textToTranslate, toLang) |> deliverOnMainQueue).start(next: { translated in
+                            message.addNicegramTranslation(
+                                translated,
                                 context: context
                             )
-                        } else {
-                            let toLang = getPreferredTranslationTargetLanguage(presentationData)
-                            let _ = (gtranslate(textToTranslate, toLang) |> deliverOnMainQueue).start(next: { translated in
-                                message.addNicegramTranslation(
-                                    translated,
-                                    context: context
-                                )
-                            }, error: { _ in
-                                let c = getIAPErrorController(context: context, "Messages.TranslateError", presentationData)
-                                controllerInteraction.presentGlobalOverlayController(c, nil)
-                            })
-                        }
-                        f(.default)
-                    })))
-                }
-                
-                if let peer = chatPresentationInterfaceState.renderedPeer?.peer ?? message.peers[message.id.peerId] {
-                    let hasRestrictPermission: Bool
-                    if let channel = peer as? TelegramChannel {
-                        hasRestrictPermission = channel.hasPermission(.banMembers)
-                    } else if let group = peer as? TelegramGroup {
-                        switch group.role {
-                        case .creator:
-                            hasRestrictPermission = true
-                        case let .admin(adminRights, _):
-                            hasRestrictPermission = adminRights.rights.contains(.canBanUsers)
-                        case .member:
-                            hasRestrictPermission = false
-                        }
-                    } else {
+                        }, error: { _ in
+                            let c = getIAPErrorController(context: context, "Messages.TranslateError", presentationData)
+                            controllerInteraction.presentGlobalOverlayController(c, nil)
+                        })
+                    }
+                    f(.default)
+                })))
+            }
+            //
+            
+            // MARK: Nicegram RestrictFromContextMenu
+            if let peer = chatPresentationInterfaceState.renderedPeer?.peer ?? message.peers[message.id.peerId] {
+                let hasRestrictPermission: Bool
+                if let channel = peer as? TelegramChannel {
+                    hasRestrictPermission = channel.hasPermission(.banMembers)
+                } else if let group = peer as? TelegramGroup {
+                    switch group.role {
+                    case .creator:
+                        hasRestrictPermission = true
+                    case let .admin(adminRights, _):
+                        hasRestrictPermission = adminRights.rights.contains(.canBanUsers)
+                    case .member:
                         hasRestrictPermission = false
                     }
-                    
-                    if let user = message.author as? TelegramUser {
-                        if (user.id != context.account.peerId) && hasRestrictPermission {
-                            let banDisposables = DisposableDict<PeerId>()
-                            // TODO: Check is user an admin?
-                            ngContextItems.append(.action(ContextMenuActionItem(text: chatPresentationInterfaceState.strings.Conversation_ContextMenuBan, icon: { theme in
-                                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Restrict"), color: theme.actionSheet.primaryTextColor)
-                            }, action: { _, f in
-                                let participantSignal: Signal<ChannelParticipant?, NoError>
-                                if peer is TelegramChannel {
-                                    participantSignal = context.engine.peers.fetchChannelParticipant(peerId: peer.id, participantId: user.id)
-                                } else if peer is TelegramGroup {
-                                    participantSignal = .single(.member(id: user.id, invitedAt: 0, adminInfo: nil, banInfo: nil, rank: nil, subscriptionUntilDate: nil))
-                                } else {
-                                    participantSignal = .single(nil)
-                                }
-                                banDisposables.set((participantSignal
-                                    |> deliverOnMainQueue).start(next: { participant in
-                                controllerInteraction.presentController(channelBannedMemberController(context: context, peerId: peer.id, memberId: message.author!.id, initialParticipant: participant, updated: { _ in }, upgradedToSupergroup: { _, f in f() }), ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
-                                    }), forKey: user.id)
-                                f(.dismissWithoutContent)
-                            }))
-                            )
-                        }
-                    }
+                } else {
+                    hasRestrictPermission = false
                 }
                 
-                // MARK: Nicegram MessageMetadata
-                if !isCopyProtected, !isSecretChat, #available(iOS 15.0, *) {
-                    let messageMetadataAction = ContextMenuActionItem(
-                        text: "Metadata",
-                        icon: { theme in
-                            generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Info"), color: theme.actionSheet.primaryTextColor)
-                        },
-                        action: { _, f in
-                            Task {
-                                let data = try wrap(
-                                    message,
-                                    writingOptions: [
-                                        .prettyPrinted,
-                                        .sortedKeys,
-                                        .withoutEscapingSlashes
-                                    ]
-                                )
-                                let text = String(data: data, encoding: .utf8)
-                                
-                                await showMessageMetadataPopup(
-                                    text: text ?? ""
-                                )
+                if let user = message.author as? TelegramUser {
+                    if (user.id != context.account.peerId) && hasRestrictPermission {
+                        let banDisposables = DisposableDict<PeerId>()
+                        // TODO: Check is user an admin?
+                        actions.append(.action(ContextMenuActionItem(text: chatPresentationInterfaceState.strings.Conversation_ContextMenuBan, icon: { theme in
+                            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Restrict"), color: theme.actionSheet.primaryTextColor)
+                        }, action: { _, f in
+                            let participantSignal: Signal<ChannelParticipant?, NoError>
+                            if peer is TelegramChannel {
+                                participantSignal = context.engine.peers.fetchChannelParticipant(peerId: peer.id, participantId: user.id)
+                            } else if peer is TelegramGroup {
+                                participantSignal = .single(.member(id: user.id, invitedAt: 0, adminInfo: nil, banInfo: nil, rank: nil, subscriptionUntilDate: nil))
+                            } else {
+                                participantSignal = .single(nil)
                             }
-                            
+                            banDisposables.set((participantSignal
+                                |> deliverOnMainQueue).start(next: { participant in
+                            controllerInteraction.presentController(channelBannedMemberController(context: context, peerId: peer.id, memberId: message.author!.id, initialParticipant: participant, updated: { _ in }, upgradedToSupergroup: { _, f in f() }), ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+                                }), forKey: user.id)
                             f(.dismissWithoutContent)
-                        }
-                    )
-                    ngContextItems.append(.action(messageMetadataAction))
+                        }))
+                        )
+                    }
                 }
-                //
-
-                controller?.setItems(.single(ContextController.Items(content: .list(ngContextItems))), minHeight: nil, animated: true)
-            })))
+            }
+            //
+            
+            // MARK: Nicegram MessageMetadata
+            if !isCopyProtected, !isSecretChat, #available(iOS 15.0, *) {
+                let messageMetadataAction = ContextMenuActionItem(
+                    text: "Metadata",
+                    icon: { theme in
+                        generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Info"), color: theme.actionSheet.primaryTextColor)
+                    },
+                    action: { _, f in
+                        Task {
+                            let data = try wrap(
+                                message,
+                                writingOptions: [
+                                    .prettyPrinted,
+                                    .sortedKeys,
+                                    .withoutEscapingSlashes
+                                ]
+                            )
+                            let text = String(data: data, encoding: .utf8)
+                            
+                            await showMessageMetadataPopup(
+                                text: text ?? ""
+                            )
+                        }
+                        
+                        f(.dismissWithoutContent)
+                    }
+                )
+                actions.append(.action(messageMetadataAction))
+            }
+            //
                
             // MARK: Nicegram SelectAllMessagesWithAuthor
             if let authorId = message.author?.id {
