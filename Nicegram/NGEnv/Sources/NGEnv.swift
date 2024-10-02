@@ -25,8 +25,6 @@ public struct NGEnvObj: Decodable {
         public let web3AuthBackupQuestion: String
         public let web3AuthClientId: String
         public let web3AuthVerifier: String
-        public let stonfiApiUrl: String
-        public let stonfiNicegramApiUrl: String
     }
 }
 

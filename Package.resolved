@@ -113,8 +113,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "qa/ton_popup+ton_v5+stonfi_swap",
-        "revision" : "ea7780c34efd3f923959367720edd623e628c497"
+        "branch" : "master",
+        "revision" : "a2192f14cfe92c2363cd12dee79abd53f6ce12d4"
       }
     },
     {
@@ -122,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "qa/ton_popup+ton_v5+stonfi_swap",
-        "revision" : "6b22c01ff2546fee8f6dfdab737d2d1424a65ba4"
+        "branch" : "master",
+        "revision" : "b39e6dca69f39ebeb13f44e9b12da32397b5f6fa"
       }
     },
     {
