@@ -10,6 +10,7 @@ import FeatRewardsUI
 import FeatTasks
 import NGAiChatUI
 import NGAnalytics
+import NGEntryPoint
 import FeatAuth
 import NGCore
 import class NGCoreUI.SharedLoadingView
@@ -112,6 +113,13 @@ class NGDeeplinkHandler {
                 taskDeeplinkHandler.handle(url)
             }
             return true
+        case "tgAuthSuccess":
+            if #available(iOS 15.0, *) {
+                Task { @MainActor in
+                    TgAuthSuccessPresenter().presentIfNeeded()
+                }
+            }
+            return true
         default:
             return false
         }
@@ -125,11 +133,7 @@ private extension NGDeeplinkHandler {
     func handleAiAuth(url: URL) -> Bool {
         if #available(iOS 13.0, *) {
             Task { @MainActor in
-                AiChatUITgHelper.routeToAiOnboarding(
-                    push: { [self] controller in
-                        self.push(controller)
-                    }
-                )
+                AiChatUITgHelper.routeToAiOnboarding()
             }
             return true
         }
@@ -139,11 +143,7 @@ private extension NGDeeplinkHandler {
     func handleAi(url: URL) -> Bool {
         if #available(iOS 13.0, *) {
             Task { @MainActor in
-                AiChatUITgHelper.tryRouteToAiChatBotFromDeeplink(
-                    push: { [self] controller in
-                        self.push(controller)
-                    }
-                )
+                AiChatUITgHelper.tryRouteToAiChatBotFromDeeplink()
             }
             return true
         }
@@ -212,7 +212,7 @@ private extension NGDeeplinkHandler {
         
         Task { @MainActor in
             LoginViewPresenter().present(
-                feature: LoginFeature(source: .general)
+                feature: LoginFeature()
             )
         }
         return true
@@ -234,15 +234,6 @@ private extension NGDeeplinkHandler {
 private extension NGDeeplinkHandler {
     func getCurrentPresentationData() -> PresentationData {
         return tgAccountContext.sharedContext.currentPresentationData.with({ $0 })
-    }
-    
-    func push(_ c: UIViewController) {
-        self.navigationController?.pushViewController(
-            NativeControllerWrapper(
-                controller: c,
-                accountContext: self.tgAccountContext
-            )
-        )
     }
 }
 
