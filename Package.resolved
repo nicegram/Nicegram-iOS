@@ -118,6 +118,15 @@
       }
     },
     {
+      "identity" : "nicegram-wallet-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
+      "state" : {
+        "branch" : "feat/stonfi-swap",
+        "revision" : "62140a0d8732022c3adc96b0c3e520d478aed89e"
+      }
+    },
+    {
       "identity" : "qrcode",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/WalletConnect/QRCode.git",
