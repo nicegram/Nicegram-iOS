@@ -113,8 +113,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/stonfi-swap",
-        "revision" : "17c417dcae0ad7473bd4b4bf34cab3eb2a432591"
+        "branch" : "develop",
+        "revision" : "9c3190ce63e9adf4738ad999cb1592df3c5ed605"
       }
     },
     {
@@ -122,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "feat/stonfi-swap",
-        "revision" : "62140a0d8732022c3adc96b0c3e520d478aed89e"
+        "branch" : "develop",
+        "revision" : "43356c38f071208ba27bb4b15617b86c15ca1cd4"
       }
     },
     {
@@ -196,15 +196,6 @@
       "state" : {
         "revision" : "c6bfd1af48efcc9a9ad203665db12375ba6b145a",
         "version" : "4.0.8"
-      }
-    },
-    {
-      "identity" : "subscriptionanalytics-ios",
-      "kind" : "remoteSourceControl",
-      "location" : "git@bitbucket.org:mobyrix/subscriptionanalytics-ios.git",
-      "state" : {
-        "revision" : "53bfc6c6f26322ec647b87c338a071714ac69420",
-        "version" : "0.4.3"
       }
     },
     {
@@ -347,8 +338,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "26aa4289b0e9cd57d958f5f4342aaa9c53851fc0",
-        "version" : "4.1.10"
+        "revision" : "4af0ee33be559941fbda7d3519a9dd032006ab52",
+        "version" : "4.1.9"
       }
     },
     {

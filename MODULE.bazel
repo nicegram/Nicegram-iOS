@@ -1,6 +1,6 @@
 bazel_dep(
     name = "rules_swift_package_manager",
-    version = "0.36.0",
+    version = "0.39.0",
 )
 bazel_dep(
     name = "apple_support",

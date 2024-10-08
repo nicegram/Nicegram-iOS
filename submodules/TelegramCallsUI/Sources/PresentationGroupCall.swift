@@ -730,6 +730,10 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
     public var myAudioLevel: Signal<Float, NoError> {
         return self.myAudioLevelPipe.signal()
     }
+    private let myAudioLevelAndSpeakingPipe = ValuePipe<(Float, Bool)>()
+    public var myAudioLevelAndSpeaking: Signal<(Float, Bool), NoError> {
+        return self.myAudioLevelAndSpeakingPipe.signal()
+    }
     private var myAudioLevelDisposable = MetaDisposable()
     
     private var audioSessionControl: ManagedAudioSessionControl?
@@ -1957,6 +1961,7 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                 
                 let mappedLevel = myLevel * 1.5
                 strongSelf.myAudioLevelPipe.putNext(mappedLevel)
+                strongSelf.myAudioLevelAndSpeakingPipe.putNext((mappedLevel, myLevelHasVoice))
                 strongSelf.processMyAudioLevel(level: mappedLevel, hasVoice: myLevelHasVoice)
                 strongSelf.isSpeakingPromise.set(orignalMyLevelHasVoice)
                 
@@ -2105,7 +2110,7 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                     var topParticipants: [GroupCallParticipantsContext.Participant] = []
                     
                     var reportSpeakingParticipants: [PeerId: UInt32] = [:]
-                    let timestamp = CACurrentMediaTime()
+                    let timestamp = CFAbsoluteTimeGetCurrent()
                     for (peerId, ssrc) in speakingParticipants {
                         let shouldReport: Bool
                         if let previousTimestamp = strongSelf.speakingParticipantsReportTimestamp[peerId] {

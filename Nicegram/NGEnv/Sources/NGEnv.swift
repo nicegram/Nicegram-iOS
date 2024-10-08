@@ -7,7 +7,6 @@ public struct NGEnvObj: Decodable {
     public let premium_bundle: String
     public let ng_api_key: String
     public let ng_api_url: String
-    public let moby_key: String
     public let privacy_url: String
     public let terms_url: String
     public let referral_bot: String
@@ -25,8 +24,6 @@ public struct NGEnvObj: Decodable {
         public let web3AuthBackupQuestion: String
         public let web3AuthClientId: String
         public let web3AuthVerifier: String
-        public let stonfiApiUrl: String
-        public let stonfiNicegramApiUrl: String
     }
 }
 
