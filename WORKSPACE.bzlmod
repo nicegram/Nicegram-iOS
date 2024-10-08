@@ -86,9 +86,9 @@ provisioning_profile_repository(
 
 http_archive(
     name = "FirebaseSDK",
-    urls = ["https://github.com/firebase/firebase-ios-sdk/releases/download/v8.11.0/Firebase.zip"],
+    urls = ["https://github.com/firebase/firebase-ios-sdk/releases/download/10.20.0/Firebase.zip"],
     build_file = "@//third-party/Firebase:BUILD",
-	sha256 = "ecf1013b5d616bb5d3acc7d9ddf257c06228c0a7364dd84d03989bae6af5ac5b",
+	sha256 = "1cf4343231b9f3cb6930436d59161633e460ec351f3c39419836932693b2ac18",
 )
 
 http_archive(

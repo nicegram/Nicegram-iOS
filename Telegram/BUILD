@@ -2377,6 +2377,14 @@ plist_fragment(
     <true/>
     <key>UIApplicationSupportsIndirectInputEvents</key>
     <true/>
+    <key>GOOGLE_ANALYTICS_DEFAULT_ALLOW_ANALYTICS_STORAGE</key>
+    <true/>
+    <key>GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_STORAGE</key>
+    <true/>
+    <key>GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_USER_DATA</key>
+    <true/>
+    <key>GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS</key>
+    <true/>
     """.format(
         nicegram_queries_schemes = nicegram_queries_schemes,
         nicegram_skad_network_items = nicegram_skad_network_items,

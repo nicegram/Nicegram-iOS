@@ -2981,7 +2981,7 @@
       "general": {
         "bzlTransitiveDigest": "YjE3dFjYQ4sj5gn2Iz1cWVK14/ZJ5cmnAUUGjDbACAA=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "30140fa448ac62bfa0781affd60171e7fbacc1f2d1e0f02a336c356162c102c7",
+          "@@//Package.resolved": "4bebda61b63f729dd3d79fffe2890c072168135df0c4aeb5fbc1ee45b361d05e",
           "@@//Package.swift": "fb3cb1d48066e64f8bf17fe1a49f689b7a6bf4bfc07aa90b9b80a02188501951"
         },
         "recordedDirentsInputs": {},
@@ -2992,7 +2992,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_single_factor_auth_swift",
-              "commit": "4caaaa858950b25ea420dbba79de6b4c58801db4",
+              "commit": "44e222ea3fcec4faf17c5813f832cfc1d2d06d4b",
               "remote": "https://github.com/Web3Auth/single-factor-auth-swift.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3046,7 +3046,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_session_manager_swift",
-              "commit": "20cc7bff065d7fe53164d17e7714a3f17d4cea2a",
+              "commit": "67d5f7db655d02778861057fb280ecf47c923b09",
               "remote": "https://github.com/Web3Auth/session-manager-swift.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3082,7 +3082,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_swiftui_flow",
-              "commit": "9d122ace53e143dc3e1bf61c01a024535b0c7ab7",
+              "commit": "3086a602b98155eec28b4be79210d6cb1a43e339",
               "remote": "https://github.com/denis15yo/SwiftUI-Flow.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3118,7 +3118,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_torus_utils_swift",
-              "commit": "608c28404c506983bfec7bbd957632fc0544db8c",
+              "commit": "eda55b8537a600e657d19d4c452c0a36f217883c",
               "remote": "https://github.com/torusresearch/torus-utils-swift.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3208,7 +3208,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_core_swift",
-              "commit": "78f8920a260775686dd0e04f5045677447bb7a6c",
+              "commit": "6a36c9b16f84ed28ffbc27994ece3d974da35fdb",
               "remote": "https://github.com/denis15yo/core-swift.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3226,7 +3226,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_walletconnectswiftv2",
-              "commit": "b6e9e37ab5981444f3898653c34fd39284534aad",
+              "commit": "3327c0a8c014b155534b91520554d812e2960077",
               "remote": "https://github.com/WalletConnect/WalletConnectSwiftV2.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3370,7 +3370,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_swift_collections",
-              "commit": "9bf03ff58ce34478e66aaee630e491823326fd06",
+              "commit": "671108c96644956dddcd89dd59c203dcdb36cec7",
               "remote": "https://github.com/apple/swift-collections",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3460,7 +3460,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "fda1e89c94fc546d2762d0b2d754e9654965774f",
+              "commit": "065294e32e5fb6a34fa08c9a34e3ba4f19ee8a17",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3532,7 +3532,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_grdb.swift",
-              "commit": "afc958017ee4feefd3c61c8e2cddf81d079d2e39",
+              "commit": "156d630c7a4175ddf4d529244f4672428cc6e2fc",
               "remote": "https://github.com/denis15yo/GRDB.swift.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3568,7 +3568,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_floatingpanel",
-              "commit": "71f419a3cd212afc7615e2179c2fec1df1aa74da",
+              "commit": "b6e8928b1a3ad909e6db6a0278d286c33cfd0dc3",
               "remote": "https://github.com/scenee/FloatingPanel",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3635,30 +3635,12 @@
               "patches": []
             }
           },
-          "swiftpkg_anycodable": {
-            "bzlFile": "@@rules_swift_package_manager~//swiftpkg/internal:swift_package.bzl",
-            "ruleClassName": "swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_anycodable",
-              "commit": "862808b2070cd908cb04f9aafe7de83d35f81b05",
-              "remote": "https://github.com/Flight-School/AnyCodable",
-              "init_submodules": false,
-              "recursive_init_submodules": true,
-              "patch_args": [
-                "-p0"
-              ],
-              "patch_cmds": [],
-              "patch_cmds_win": [],
-              "patch_tool": "",
-              "patches": []
-            }
-          },
           "swiftpkg_wallet_core": {
             "bzlFile": "@@rules_swift_package_manager~//swiftpkg/internal:swift_package.bzl",
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_wallet_core",
-              "commit": "160a6e6275d25c0edb91823ae62c605d3d66c013",
+              "commit": "4af0ee33be559941fbda7d3519a9dd032006ab52",
               "remote": "https://github.com/trustwallet/wallet-core.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3694,7 +3676,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_xcodeedit",
-              "commit": "b6b67389a0f1a6fdd9c6457a8ab5b02eaab13c5c",
+              "commit": "017d23f71fa8d025989610db26d548c44cacefae",
               "remote": "https://github.com/tomlokhorst/XcodeEdit",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3712,7 +3694,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_wallet_ios",
-              "commit": "458be079925da10ff15a2b41961ae3bfb4468835",
+              "commit": "6470c253b57cc3dd47c5b088b7350138fbece800",
               "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
