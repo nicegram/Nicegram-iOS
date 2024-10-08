@@ -231,16 +231,6 @@ private func layoutMetricsForScreenSize(size: CGSize, orientation: UIInterfaceOr
 }
 
 public final class WindowKeyboardGestureRecognizerDelegate: NSObject, UIGestureRecognizerDelegate {
-    public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
-        if let view = gestureRecognizer.view {
-            let location = touch.location(in: gestureRecognizer.view)
-            if location.y > view.bounds.height - 44.0 {
-                return false
-            }
-        }
-        return true
-    }
-
     public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
         return true
     }
@@ -1311,7 +1301,7 @@ public class Window1 {
         }
     }
     
-    @objc func panGesture(_ recognizer: WindowPanRecognizer) {
+    @objc func panGesture(_ recognizer: UIPanGestureRecognizer) {
         switch recognizer.state {
             case .began:
                 self.panGestureBegan(location: recognizer.location(in: recognizer.view))

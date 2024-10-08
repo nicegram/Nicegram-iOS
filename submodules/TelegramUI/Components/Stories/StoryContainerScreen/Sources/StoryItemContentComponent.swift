@@ -200,7 +200,6 @@ final class StoryItemContentComponent: Component {
             if case let .file(file) = currentMessageMedia, let peerReference = PeerReference(component.peer._asPeer()) {
                 if self.videoNode == nil {
                     let videoNode = UniversalVideoNode(
-                        accountId: component.context.account.id,
                         postbox: component.context.account.postbox,
                         audioSession: component.context.sharedContext.mediaManager.audioSession,
                         manager: component.context.sharedContext.mediaManager.universalVideoManager,
@@ -599,10 +598,10 @@ final class StoryItemContentComponent: Component {
             
             let selectedMedia: EngineMedia
             var messageMedia: EngineMedia?
-            if !component.preferHighQuality, !component.item.isMy, let alternativeMediaValue = component.item.alternativeMediaList.first {
-                selectedMedia = alternativeMediaValue
+            if !component.preferHighQuality, !component.item.isMy, let alternativeMedia = component.item.alternativeMedia {
+                selectedMedia = alternativeMedia
                 
-                switch alternativeMediaValue {
+                switch alternativeMedia {
                 case let .image(image):
                     messageMedia = .image(image)
                 case let .file(file):
@@ -919,7 +918,7 @@ final class StoryItemContentComponent: Component {
                     }
                 }
                 
-                var shimmeringMediaAreas: [MediaArea] = component.item.mediaAreas.filter { mediaArea in
+                let shimmeringMediaAreas: [MediaArea] = component.item.mediaAreas.filter { mediaArea in
                     if case .link = mediaArea {
                         return true
                     } else if case .venue = mediaArea {
@@ -927,10 +926,6 @@ final class StoryItemContentComponent: Component {
                     } else {
                         return false
                     }
-                }
-                
-                if component.peer.id.isTelegramNotifications {
-                    shimmeringMediaAreas = []
                 }
                 
                 if !shimmeringMediaAreas.isEmpty {

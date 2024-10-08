@@ -239,6 +239,7 @@ final class StarsTransactionsScreenComponent: Component {
                 
                 if let starView = self.starView.view {
                     let starPosition = CGPoint(x: self.scrollView.frame.width / 2.0, y: topInset + starView.bounds.height / 2.0 - 30.0 - titleOffset * titleScale)
+                    
                     headerTransition.setPosition(view: starView, position: starPosition)
                     headerTransition.setScale(view: starView, scale: titleScale)
                 }
@@ -1037,7 +1038,7 @@ public final class StarsTransactionsScreen: ViewControllerComponentContainer {
                 guard let self else {
                     return
                 }
-                let controller = self.context.sharedContext.makeStarsGiftController(context: self.context, birthdays: birthdays, completion: { [weak self] peerIds in
+                let controller = self.context.sharedContext.makePremiumGiftController(context: self.context, source: .stars(birthdays), completion: { [weak self] peerIds in
                     guard let self, let peerId = peerIds.first else {
                         return
                     }

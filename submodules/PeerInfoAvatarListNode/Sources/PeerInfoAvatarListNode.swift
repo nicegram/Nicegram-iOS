@@ -370,7 +370,7 @@ public final class PeerInfoAvatarListItemNode: ASDisplayNode {
         }
         
         let mediaManager = self.context.sharedContext.mediaManager
-        let videoNode = UniversalVideoNode(accountId: self.context.account.id, postbox: self.context.account.postbox, audioSession: mediaManager.audioSession, manager: mediaManager.universalVideoManager, decoration: GalleryVideoDecoration(), content: videoContent, priority: .secondaryOverlay)
+        let videoNode = UniversalVideoNode(postbox: self.context.account.postbox, audioSession: mediaManager.audioSession, manager: mediaManager.universalVideoManager, decoration: GalleryVideoDecoration(), content: videoContent, priority: .secondaryOverlay)
         videoNode.isUserInteractionEnabled = false
         videoNode.canAttachContent = true
         videoNode.isHidden = true
@@ -519,7 +519,7 @@ public final class PeerInfoAvatarListItemNode: ASDisplayNode {
                 self.isReady.set(.single(true))
             }
         } else if let video = videoRepresentations.last, let peerReference = PeerReference(self.peer._asPeer()) {
-            let videoFileReference = FileMediaReference.avatarList(peer: peerReference, media: TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: 0), partialReference: nil, resource: video.representation.resource, previewRepresentations: representations.map { $0.representation }, videoThumbnails: [], immediateThumbnailData: immediateThumbnailData, mimeType: "video/mp4", size: nil, attributes: [.Animated, .Video(duration: 0, size: video.representation.dimensions, flags: [], preloadSize: nil, coverTime: nil, videoCodec: nil)], alternativeRepresentations: []))
+            let videoFileReference = FileMediaReference.avatarList(peer: peerReference, media: TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: 0), partialReference: nil, resource: video.representation.resource, previewRepresentations: representations.map { $0.representation }, videoThumbnails: [], immediateThumbnailData: immediateThumbnailData, mimeType: "video/mp4", size: nil, attributes: [.Animated, .Video(duration: 0, size: video.representation.dimensions, flags: [], preloadSize: nil, coverTime: nil)]))
             let videoContent = NativeVideoContent(id: .profileVideo(id, nil), userLocation: .other, fileReference: videoFileReference, streamVideo: isMediaStreamable(resource: video.representation.resource) ? .conservative : .none, loopVideo: true, enableSound: false, fetchAutomatically: true, onlyFullSizeThumbnail: fullSizeOnly, useLargeThumbnail: true, autoFetchFullSizeThumbnail: true, startTimestamp: video.representation.startTimestamp, continuePlayingWithoutSoundOnLostAudioSession: false, placeholderColor: .clear, storeAfterDownload: nil)
             
             if videoContent.id != self.videoContent?.id {
@@ -1135,22 +1135,17 @@ public final class PeerInfoAvatarListContainerNode: ASDisplayNode {
             let subject: ShareControllerSubject
             var actionCompletionText: String?
             if let video = videoRepresentations.last, let peer = self.peer, let peerReference = PeerReference(peer._asPeer()) {
-                let videoFileReference = FileMediaReference.avatarList(peer: peerReference, media: TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: 0), partialReference: nil, resource: video.representation.resource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "video/mp4", size: nil, attributes: [.Animated, .Video(duration: 0, size: video.representation.dimensions, flags: [], preloadSize: nil, coverTime: nil, videoCodec: nil)], alternativeRepresentations: []))
+                let videoFileReference = FileMediaReference.avatarList(peer: peerReference, media: TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: 0), partialReference: nil, resource: video.representation.resource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "video/mp4", size: nil, attributes: [.Animated, .Video(duration: 0, size: video.representation.dimensions, flags: [], preloadSize: nil, coverTime: nil)]))
                 subject = .media(videoFileReference.abstract)
                 actionCompletionText = presentationData.strings.Gallery_VideoSaved
             } else {
                 subject = .image(representations)
                 actionCompletionText = presentationData.strings.Gallery_ImageSaved
             }
-            
-            var forceTheme: PresentationTheme?
-            if !presentationData.theme.overallDarkAppearance {
-                forceTheme = defaultDarkColorPresentationTheme
-            }
-            
-            let shareController = ShareController(context: self.context, subject: subject, preferredAction: .saveToCameraRoll, forceTheme: forceTheme)
+            let shareController = ShareController(context: self.context, subject: subject, preferredAction: .saveToCameraRoll)
             shareController.actionCompleted = { [weak self] in
                 if let self = self, let actionCompletionText = actionCompletionText {
+                    let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
                     self.presentController?(UndoOverlayController(presentationData: presentationData, content: .mediaSaved(text: actionCompletionText), elevatedLayout: true, animateInAsReplacement: false, action: { _ in return true }))
                 }
             }

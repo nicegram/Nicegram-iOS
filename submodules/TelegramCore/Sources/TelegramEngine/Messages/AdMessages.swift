@@ -531,8 +531,8 @@ private class AdMessagesHistoryContextImpl {
         self.maskAsSeenDisposables.set(signal.start(), forKey: opaqueId)
     }
     
-    func markAction(opaqueId: Data, media: Bool, fullscreen: Bool) {
-        _internal_markAdAction(account: self.account, peerId: self.peerId, opaqueId: opaqueId, media: media, fullscreen: fullscreen)
+    func markAction(opaqueId: Data) {
+        _internal_markAdAction(account: self.account, peerId: self.peerId, opaqueId: opaqueId)
     }
     
     func remove(opaqueId: Data) {
@@ -593,9 +593,9 @@ public class AdMessagesHistoryContext {
         }
     }
     
-    public func markAction(opaqueId: Data, media: Bool, fullscreen: Bool) {
+    public func markAction(opaqueId: Data) {
         self.impl.with { impl in
-            impl.markAction(opaqueId: opaqueId, media: media, fullscreen: fullscreen)
+            impl.markAction(opaqueId: opaqueId)
         }
     }
     
@@ -607,7 +607,7 @@ public class AdMessagesHistoryContext {
 }
 
 
-func _internal_markAdAction(account: Account, peerId: EnginePeer.Id, opaqueId: Data, media: Bool, fullscreen: Bool) {
+func _internal_markAdAction(account: Account, peerId: EnginePeer.Id, opaqueId: Data) {
     let signal: Signal<Never, NoError> = account.postbox.transaction { transaction -> Api.InputChannel? in
         return transaction.getPeer(peerId).flatMap(apiInputChannel)
     }
@@ -615,14 +615,7 @@ func _internal_markAdAction(account: Account, peerId: EnginePeer.Id, opaqueId: D
         guard let inputChannel = inputChannel else {
             return .complete()
         }
-        var flags: Int32 = 0
-        if media {
-            flags |= (1 << 0)
-        }
-        if fullscreen {
-            flags |= (1 << 1)
-        }
-        return account.network.request(Api.functions.channels.clickSponsoredMessage(flags: flags, channel: inputChannel, randomId: Buffer(data: opaqueId)))
+        return account.network.request(Api.functions.channels.clickSponsoredMessage(channel: inputChannel, randomId: Buffer(data: opaqueId)))
         |> `catch` { _ -> Signal<Api.Bool, NoError> in
             return .single(.boolFalse)
         }

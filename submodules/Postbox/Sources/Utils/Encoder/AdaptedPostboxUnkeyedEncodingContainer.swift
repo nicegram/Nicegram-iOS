@@ -159,6 +159,10 @@ extension _AdaptedPostboxEncoder.UnkeyedContainer: UnkeyedEncodingContainer {
     func encode(_ value: String) throws {
         self.items.append(.string(value))
     }
+
+    func encode(_ value: Data) throws {
+        self.items.append(.data(value))
+    }
     
     func nestedContainer<NestedKey>(keyedBy keyType: NestedKey.Type) -> KeyedEncodingContainer<NestedKey> where NestedKey : CodingKey {
         preconditionFailure()
@@ -170,12 +174,6 @@ extension _AdaptedPostboxEncoder.UnkeyedContainer: UnkeyedEncodingContainer {
     
     func superEncoder() -> Encoder {
         preconditionFailure()
-    }
-}
-
-private extension _AdaptedPostboxEncoder.UnkeyedContainer {
-    func encode(_ value: Data) throws {
-        self.items.append(.data(value))
     }
 }
 

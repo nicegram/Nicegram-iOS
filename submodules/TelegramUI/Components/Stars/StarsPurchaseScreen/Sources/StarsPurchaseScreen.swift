@@ -25,7 +25,6 @@ import TextFormat
 import PremiumStarComponent
 import BundleIconComponent
 import ConfettiEffect
-import ItemShimmeringLoadingComponent
 
 private struct StarsProduct: Equatable {
     enum Option: Equatable {
@@ -237,8 +236,6 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
                 textString = renew ? strings.Stars_Purchase_SubscriptionRenewInfo(component.peers.first?.value.compactDisplayTitle ?? "").string : strings.Stars_Purchase_SubscriptionInfo(component.peers.first?.value.compactDisplayTitle ?? "").string
             case .unlockMedia:
                 textString = strings.Stars_Purchase_StarsNeededUnlockInfo
-            case .starGift:
-                textString = strings.Stars_Purchase_StarGiftInfo(component.peers.first?.value.compactDisplayTitle ?? "").string
             }
             
             let markdownAttributes = MarkdownAttributes(body: MarkdownAttributeSet(font: textFont, textColor: textColor), bold: MarkdownAttributeSet(font: boldTextFont, textColor: textColor), link: MarkdownAttributeSet(font: textFont, textColor: accentColor), linkAttribute: { contents in
@@ -331,7 +328,7 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
                     let backgroundComponent: AnyComponent<Empty>?
                     if product.storeProduct.id == context.component.selectedProductId {
                         backgroundComponent = AnyComponent(
-                            ItemShimmeringLoadingComponent(color: environment.theme.list.itemAccentColor)
+                            ItemLoadingComponent(color: environment.theme.list.itemAccentColor)
                         )
                     } else {
                         backgroundComponent = nil
@@ -817,9 +814,11 @@ private final class StarsPurchaseScreenComponent: CombinedComponent {
             switch context.component.purpose {
             case .generic:
                 titleText = strings.Stars_Purchase_GetStars
+            case let .topUp(requiredStars, _):
+                titleText = strings.Stars_Purchase_StarsNeeded(Int32(requiredStars))
             case .gift:
                 titleText = strings.Stars_Purchase_GiftStars
-            case let .topUp(requiredStars, _), let .transfer(_, requiredStars), let .reactions(_, requiredStars), let .subscription(_, requiredStars, _), let .unlockMedia(requiredStars), let .starGift(_, requiredStars):
+            case let .transfer(_, requiredStars), let .reactions(_, requiredStars), let .subscription(_, requiredStars, _), let .unlockMedia(requiredStars):
                 titleText = strings.Stars_Purchase_StarsNeeded(Int32(requiredStars))
             }
             
@@ -1239,8 +1238,6 @@ private extension StarsPurchasePurpose {
             return [peerId]
         case let .subscription(peerId, _, _):
             return [peerId]
-        case let .starGift(peerId, _):
-            return [peerId]
         default:
             return []
         }
@@ -1257,8 +1254,6 @@ private extension StarsPurchasePurpose {
         case let .subscription(_, requiredStars, _):
             return requiredStars
         case let .unlockMedia(requiredStars):
-            return requiredStars
-        case let .starGift(_, requiredStars):
             return requiredStars
         default:
             return nil

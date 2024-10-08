@@ -21,9 +21,18 @@ import UndoUI
 import ShareController
 import AvatarNode
 import TelegramAudio
-import LegacyComponents
 
-final class VideoChatScreenComponent: Component {
+import PeerInfoUI
+
+import DeleteChatPeerActionSheetItem
+import PeerListItemComponent
+import LegacyComponents
+import LegacyUI
+import WebSearchUI
+import MapResourceToAvatarSizes
+import LegacyMediaPickerUI
+
+private final class VideoChatScreenComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
     
     let initialData: VideoChatScreenV2Impl.InitialData
@@ -41,81 +50,68 @@ final class VideoChatScreenComponent: Component {
         return true
     }
     
-    private final class PanState {
-        var fraction: CGFloat
-        weak var scrollView: UIScrollView?
-        var startContentOffsetY: CGFloat = 0.0
-        var accumulatedOffset: CGFloat = 0.0
-        var dismissedTooltips: Bool = false
-        var didLockScrolling: Bool = false
-        var contentOffset: CGFloat?
+    private struct PanGestureState {
+        var offsetFraction: CGFloat
         
-        init(fraction: CGFloat, scrollView: UIScrollView?) {
-            self.fraction = fraction
-            self.scrollView = scrollView
+        init(offsetFraction: CGFloat) {
+            self.offsetFraction = offsetFraction
         }
     }
 
-    final class View: UIView, UIGestureRecognizerDelegate {
-        let containerView: UIView
+    final class View: UIView {
+        private let containerView: UIView
         
-        var component: VideoChatScreenComponent?
-        var environment: ViewControllerComponentContainer.Environment?
-        weak var state: EmptyComponentState?
-        var isUpdating: Bool = false
+        private var component: VideoChatScreenComponent?
+        private var environment: ViewControllerComponentContainer.Environment?
+        private weak var state: EmptyComponentState?
+        private var isUpdating: Bool = false
         
-        private var verticalPanState: PanState?
-        var notifyDismissedInteractivelyOnPanGestureApply: Bool = false
-        var completionOnPanGestureApply: (() -> Void)?
+        private var panGestureState: PanGestureState?
+        private var notifyDismissedInteractivelyOnPanGestureApply: Bool = false
+        private var completionOnPanGestureApply: (() -> Void)?
         
-        let videoRenderingContext = VideoRenderingContext()
+        private let videoRenderingContext = VideoRenderingContext()
         
-        let title = ComponentView<Empty>()
-        let navigationLeftButton = ComponentView<Empty>()
-        let navigationRightButton = ComponentView<Empty>()
-        var navigationSidebarButton: ComponentView<Empty>?
+        private let title = ComponentView<Empty>()
+        private let navigationLeftButton = ComponentView<Empty>()
+        private let navigationRightButton = ComponentView<Empty>()
+        private var navigationSidebarButton: ComponentView<Empty>?
         
-        let videoButton = ComponentView<Empty>()
-        let leaveButton = ComponentView<Empty>()
-        let microphoneButton = ComponentView<Empty>()
+        private let videoButton = ComponentView<Empty>()
+        private let leaveButton = ComponentView<Empty>()
+        private let microphoneButton = ComponentView<Empty>()
         
-        let participants = ComponentView<Empty>()
-        var scheduleInfo: ComponentView<Empty>?
+        private let participants = ComponentView<Empty>()
         
-        var reconnectedAsEventsDisposable: Disposable?
+        private var reconnectedAsEventsDisposable: Disposable?
         
-        var peer: EnginePeer?
-        var callState: PresentationGroupCallState?
-        var stateDisposable: Disposable?
+        private var peer: EnginePeer?
+        private var callState: PresentationGroupCallState?
+        private var stateDisposable: Disposable?
         
-        var audioOutputState: ([AudioSessionOutput], AudioSessionOutput?)?
-        var audioOutputStateDisposable: Disposable?
+        private var audioOutputState: ([AudioSessionOutput], AudioSessionOutput?)?
+        private var audioOutputStateDisposable: Disposable?
         
-        var displayAsPeers: [FoundPeer]?
-        var displayAsPeersDisposable: Disposable?
+        private var displayAsPeers: [FoundPeer]?
+        private var displayAsPeersDisposable: Disposable?
         
-        var inviteLinks: GroupCallInviteLinks?
-        var inviteLinksDisposable: Disposable?
+        private var inviteLinks: GroupCallInviteLinks?
+        private var inviteLinksDisposable: Disposable?
         
-        var isPushToTalkActive: Bool = false
+        private var isPushToTalkActive: Bool = false
         
-        var members: PresentationGroupCallMembers?
-        var membersDisposable: Disposable?
+        private var members: PresentationGroupCallMembers?
+        private var membersDisposable: Disposable?
         
-        var speakingParticipantPeers: [EnginePeer] = []
-        var visibleParticipants: Set<EnginePeer.Id> = Set()
+        private let isPresentedValue = ValuePromise<Bool>(false, ignoreRepeated: true)
+        private var applicationStateDisposable: Disposable?
         
-        let isPresentedValue = ValuePromise<Bool>(false, ignoreRepeated: true)
-        var applicationStateDisposable: Disposable?
+        private var expandedParticipantsVideoState: VideoChatParticipantsComponent.ExpandedVideoState?
         
-        var expandedParticipantsVideoState: VideoChatParticipantsComponent.ExpandedVideoState?
-        var focusedSpeakerAutoSwitchDeadline: Double = 0.0
-        var isTwoColumnSidebarHidden: Bool = false
-        
-        let inviteDisposable = MetaDisposable()
-        let currentAvatarMixin = Atomic<TGMediaAvatarMenuMixin?>(value: nil)
-        let updateAvatarDisposable = MetaDisposable()
-        var currentUpdatingAvatar: (TelegramMediaImageRepresentation, Float)?
+        private let inviteDisposable = MetaDisposable()
+        private let currentAvatarMixin = Atomic<TGMediaAvatarMenuMixin?>(value: nil)
+        private let updateAvatarDisposable = MetaDisposable()
+        private var currentUpdatingAvatar: (TelegramMediaImageRepresentation, Float)?
         
         override init(frame: CGRect) {
             self.containerView = UIView()
@@ -128,11 +124,9 @@ final class VideoChatScreenComponent: Component {
             
             self.addSubview(self.containerView)
             
-            let panGestureRecognizer = UIPanGestureRecognizer(target: self, action: #selector(self.panGesture(_:)))
-            panGestureRecognizer.delegate = self
-            self.addGestureRecognizer(panGestureRecognizer)
+            self.addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(self.panGesture(_:))))
             
-            self.verticalPanState = PanState(fraction: 1.0, scrollView: nil)
+            self.panGestureState = PanGestureState(offsetFraction: 1.0)
         }
         
         required init?(coder: NSCoder) {
@@ -152,159 +146,37 @@ final class VideoChatScreenComponent: Component {
         }
         
         func animateIn() {
-            self.verticalPanState = PanState(fraction: 1.0, scrollView: nil)
+            self.panGestureState = PanGestureState(offsetFraction: 1.0)
             self.state?.updated(transition: .immediate)
             
-            self.verticalPanState = nil
+            self.panGestureState = nil
             self.state?.updated(transition: .spring(duration: 0.5))
         }
         
         func animateOut(completion: @escaping () -> Void) {
-            self.verticalPanState = PanState(fraction: 1.0, scrollView: nil)
+            self.panGestureState = PanGestureState(offsetFraction: 1.0)
             self.completionOnPanGestureApply = completion
             self.state?.updated(transition: .spring(duration: 0.5))
         }
-        
-        @objc public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRequireFailureOf otherGestureRecognizer: UIGestureRecognizer) -> Bool {
-            if gestureRecognizer is UITapGestureRecognizer {
-                if otherGestureRecognizer is UIPanGestureRecognizer {
-                    return true
-                }
-                return false
-            } else {
-                return false
-            }
-        }
-        
-        public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
-            if gestureRecognizer is UIPanGestureRecognizer {
-                if let otherGestureRecognizer = otherGestureRecognizer as? UIPanGestureRecognizer {
-                    if otherGestureRecognizer.view is UIScrollView {
-                        return true
-                    }
-                    if let participantsView = self.participants.view as? VideoChatParticipantsComponent.View {
-                        if otherGestureRecognizer.view === participantsView {
-                            return true
-                        }
-                    }
-                }
-                return false
-            } else {
-                return false
-            }
-        }
-        
         
         @objc private func panGesture(_ recognizer: UIPanGestureRecognizer) {
             switch recognizer.state {
             case .began, .changed:
                 if !self.bounds.height.isZero && !self.notifyDismissedInteractivelyOnPanGestureApply {
                     let translation = recognizer.translation(in: self)
-                    let fraction = max(0.0, translation.y / self.bounds.height)
-                    if let verticalPanState = self.verticalPanState {
-                        verticalPanState.fraction = fraction
-                    } else {
-                        var targetScrollView: UIScrollView?
-                        if case .began = recognizer.state, let participantsView = self.participants.view as? VideoChatParticipantsComponent.View {
-                            if let hitResult = participantsView.hitTest(self.convert(recognizer.location(in: self), to: participantsView), with: nil) {
-                                func findTargetScrollView(target: UIView, minParent: UIView) -> UIScrollView? {
-                                    if target === participantsView {
-                                        return nil
-                                    }
-                                    if let target = target as? UIScrollView {
-                                        return target
-                                    }
-                                    if let parent = target.superview {
-                                        return findTargetScrollView(target: parent, minParent: minParent)
-                                    } else {
-                                        return nil
-                                    }
-                                }
-                                targetScrollView = findTargetScrollView(target: hitResult, minParent: participantsView)
-                            }
-                        }
-                        self.verticalPanState = PanState(fraction: fraction, scrollView: targetScrollView)
-                        if let targetScrollView {
-                            self.verticalPanState?.contentOffset = targetScrollView.contentOffset.y
-                            self.verticalPanState?.startContentOffsetY = recognizer.translation(in: self).y
-                        }
-                    }
-                    
-                    if let verticalPanState = self.verticalPanState {
-                        /*if abs(verticalPanState.fraction) >= 0.1 && !verticalPanState.dismissedTooltips {
-                            verticalPanState.dismissedTooltips = true
-                            self.dismissAllTooltips()
-                        }*/
-                        
-                        if let scrollView = verticalPanState.scrollView {
-                            let relativeTranslationY = recognizer.translation(in: self).y - verticalPanState.startContentOffsetY
-                            let overflowY = scrollView.contentOffset.y - relativeTranslationY
-                            
-                            if !verticalPanState.didLockScrolling {
-                                if scrollView.contentOffset.y == 0.0 {
-                                    verticalPanState.didLockScrolling = true
-                                }
-                                if let previousContentOffset = verticalPanState.contentOffset, (previousContentOffset < 0.0) != (scrollView.contentOffset.y < 0.0) {
-                                    verticalPanState.didLockScrolling = true
-                                }
-                            }
-                            
-                            var resetContentOffset = false
-                            if verticalPanState.didLockScrolling {
-                                verticalPanState.accumulatedOffset += -overflowY
-                                
-                                if verticalPanState.accumulatedOffset < 0.0 {
-                                    verticalPanState.accumulatedOffset = 0.0
-                                }
-                                if scrollView.contentOffset.y < 0.0 {
-                                    resetContentOffset = true
-                                }
-                            } else {
-                                verticalPanState.accumulatedOffset += -overflowY
-                                verticalPanState.accumulatedOffset = max(0.0, verticalPanState.accumulatedOffset)
-                            }
-                            
-                            if verticalPanState.accumulatedOffset > 0.0 || resetContentOffset {
-                                scrollView.contentOffset = CGPoint()
-                                
-                                if let participantsView = self.participants.view as? VideoChatParticipantsComponent.View {
-                                    let eventCycleState = VideoChatParticipantsComponent.EventCycleState()
-                                    eventCycleState.ignoreScrolling = true
-                                    participantsView.setEventCycleState(scrollView: scrollView, eventCycleState: eventCycleState)
-                                    
-                                    DispatchQueue.main.async { [weak scrollView, weak participantsView] in
-                                        guard let participantsView, let scrollView else {
-                                            return
-                                        }
-                                        participantsView.setEventCycleState(scrollView: scrollView, eventCycleState: nil)
-                                    }
-                                }
-                            }
-                            
-                            verticalPanState.contentOffset = scrollView.contentOffset.y
-                            verticalPanState.startContentOffsetY = recognizer.translation(in: self).y
-                        }
-                        
-                        self.state?.updated(transition: .immediate)
-                    }
+                    self.panGestureState = PanGestureState(offsetFraction: translation.y / self.bounds.height)
+                    self.state?.updated(transition: .immediate)
                 }
             case .cancelled, .ended:
-                if !self.bounds.height.isZero, let verticalPanState = self.verticalPanState {
+                if !self.bounds.height.isZero {
                     let translation = recognizer.translation(in: self)
-                    verticalPanState.fraction = max(0.0, translation.y / self.bounds.height)
-                    
-                    let effectiveFraction: CGFloat
-                    if verticalPanState.scrollView != nil {
-                        effectiveFraction = verticalPanState.accumulatedOffset / self.bounds.height
-                    } else {
-                        effectiveFraction = verticalPanState.fraction
-                    }
+                    let panGestureState = PanGestureState(offsetFraction: translation.y / self.bounds.height)
                     
                     let velocity = recognizer.velocity(in: self)
                     
-                    self.verticalPanState = nil
-                    if effectiveFraction > 0.6 || (effectiveFraction > 0.0 && velocity.y >= 100.0) {
-                        self.verticalPanState = PanState(fraction: effectiveFraction < 0.0 ? -1.0 : 1.0, scrollView: nil)
+                    self.panGestureState = nil
+                    if abs(panGestureState.offsetFraction) > 0.6 || abs(velocity.y) >= 100.0 {
+                        self.panGestureState = PanGestureState(offsetFraction: panGestureState.offsetFraction < 0.0 ? -1.0 : 1.0)
                         self.notifyDismissedInteractivelyOnPanGestureApply = true
                         if let controller = self.environment?.controller() as? VideoChatScreenV2Impl {
                             controller.notifyDismissed()
@@ -318,7 +190,1180 @@ final class VideoChatScreenComponent: Component {
             }
         }
         
-        func openTitleEditing() {
+        private func openMoreMenu() {
+            guard let sourceView = self.navigationLeftButton.view else {
+                return
+            }
+            guard let component = self.component, let environment = self.environment, let controller = environment.controller() else {
+                return
+            }
+            guard let peer = self.peer else {
+                return
+            }
+            guard let callState = self.callState else {
+                return
+            }
+            
+            let canManageCall = callState.canManageCall
+            
+            var items: [ContextMenuItem] = []
+            
+            if let displayAsPeers = self.displayAsPeers, displayAsPeers.count > 1 {
+                for peer in displayAsPeers {
+                    if peer.peer.id == callState.myPeerId {
+                        let avatarSize = CGSize(width: 28.0, height: 28.0)
+                        items.append(.action(ContextMenuActionItem(text: environment.strings.VoiceChat_DisplayAs, textLayout: .secondLineWithValue(EnginePeer(peer.peer).displayTitle(strings: environment.strings, displayOrder: component.call.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder)), icon: { _ in nil }, iconSource: ContextMenuActionItemIconSource(size: avatarSize, signal: peerAvatarCompleteImage(account: component.call.accountContext.account, peer: EnginePeer(peer.peer), size: avatarSize)), action: { [weak self] c, _ in
+                            guard let self else {
+                                return
+                            }
+                            c?.pushItems(items: .single(ContextController.Items(content: .list(self.contextMenuDisplayAsItems()))))
+                        })))
+                        items.append(.separator)
+                        break
+                    }
+                }
+            }
+            
+            if let (availableOutputs, currentOutput) = self.audioOutputState, availableOutputs.count > 1 {
+                var currentOutputTitle = ""
+                for output in availableOutputs {
+                    if output == currentOutput {
+                    let title: String
+                        switch output {
+                        case .builtin:
+                            title = UIDevice.current.model
+                        case .speaker:
+                            title = environment.strings.Call_AudioRouteSpeaker
+                        case .headphones:
+                            title = environment.strings.Call_AudioRouteHeadphones
+                        case let .port(port):
+                            title = port.name
+                        }
+                        currentOutputTitle = title
+                        break
+                    }
+                }
+                items.append(.action(ContextMenuActionItem(text: environment.strings.VoiceChat_ContextAudio, textLayout: .secondLineWithValue(currentOutputTitle), icon: { theme in
+                    return generateTintedImage(image: UIImage(bundleImageName: "Call/Context Menu/Audio"), color: theme.actionSheet.primaryTextColor)
+                }, action: { [weak self] c, _ in
+                    guard let self else {
+                        return
+                    }
+                    c?.pushItems(items: .single(ContextController.Items(content: .list(self.contextMenuAudioItems()))))
+                })))
+            }
+            
+            if canManageCall {
+                let text: String
+                if case let .channel(channel) = peer, case .broadcast = channel.info {
+                    text = environment.strings.LiveStream_EditTitle
+                } else {
+                    text = environment.strings.VoiceChat_EditTitle
+                }
+                items.append(.action(ContextMenuActionItem(text: text, icon: { theme -> UIImage? in
+                    return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Pencil"), color: theme.actionSheet.primaryTextColor)
+                }, action: { [weak self] _, f in
+                    f(.default)
+
+                    guard let self else {
+                        return
+                    }
+                    self.openTitleEditing()
+                })))
+
+                var hasPermissions = true
+                if case let .channel(chatPeer) = peer {
+                    if case .broadcast = chatPeer.info {
+                        hasPermissions = false
+                    } else if chatPeer.flags.contains(.isGigagroup) {
+                        hasPermissions = false
+                    }
+                }
+                if hasPermissions {
+                    items.append(.action(ContextMenuActionItem(text: environment.strings.VoiceChat_EditPermissions, icon: { theme -> UIImage? in
+                        return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Restrict"), color: theme.actionSheet.primaryTextColor)
+                    }, action: { [weak self] c, _ in
+                        guard let self else {
+                            return
+                        }
+                        c?.pushItems(items: .single(ContextController.Items(content: .list(self.contextMenuPermissionItems()))))
+                    })))
+                }
+            }
+        
+            if let inviteLinks = self.inviteLinks {
+                items.append(.action(ContextMenuActionItem(text: environment.strings.VoiceChat_Share, icon: { theme in
+                    return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Link"), color: theme.actionSheet.primaryTextColor)
+                }, action: { [weak self] _, f in
+                    f(.default)
+                    
+                    guard let self else {
+                        return
+                    }
+                    self.presentShare(inviteLinks)
+                })))
+            }
+            
+            //let isScheduled = strongSelf.isScheduled
+            //TODO:release
+            let isScheduled: Bool = !"".isEmpty
+
+            let canSpeak: Bool
+            if let muteState = callState.muteState {
+                canSpeak = muteState.canUnmute
+            } else {
+                canSpeak = true
+            }
+            
+            if !isScheduled && canSpeak {
+                if #available(iOS 15.0, *) {
+                    items.append(.action(ContextMenuActionItem(text: environment.strings.VoiceChat_MicrophoneModes, textColor: .primary, icon: { theme in
+                        return generateTintedImage(image: UIImage(bundleImageName: "Call/Context Menu/Noise"), color: theme.actionSheet.primaryTextColor)
+                    }, action: { _, f in
+                        f(.dismissWithoutContent)
+                        AVCaptureDevice.showSystemUserInterface(.microphoneModes)
+                    })))
+                }
+            }
+            
+            if callState.isVideoEnabled && (callState.muteState?.canUnmute ?? true) {
+                if component.call.hasScreencast {
+                    items.append(.action(ContextMenuActionItem(text: environment.strings.VoiceChat_StopScreenSharing, icon: { theme in
+                        return generateTintedImage(image: UIImage(bundleImageName: "Call/Context Menu/ShareScreen"), color: theme.actionSheet.primaryTextColor)
+                    }, action: { [weak self] _, f in
+                        f(.default)
+
+                        guard let self, let component = self.component else {
+                            return
+                        }
+                        component.call.disableScreencast()
+                    })))
+                } else {
+                    items.append(.custom(VoiceChatShareScreenContextItem(context: component.call.accountContext, text: environment.strings.VoiceChat_ShareScreen, icon: { theme in
+                        return generateTintedImage(image: UIImage(bundleImageName: "Call/Context Menu/ShareScreen"), color: theme.actionSheet.primaryTextColor)
+                    }, action: { _, _ in }), false))
+                }
+            }
+
+            if canManageCall {
+                if let recordingStartTimestamp = callState.recordingStartTimestamp {
+                    items.append(.custom(VoiceChatRecordingContextItem(timestamp: recordingStartTimestamp, action: { [weak self] _, f in
+                        f(.dismissWithoutContent)
+
+                        guard let self, let component = self.component, let environment = self.environment else {
+                            return
+                        }
+                        
+                        let alertController = textAlertController(context: component.call.accountContext, forceTheme: environment.theme, title: nil, text: environment.strings.VoiceChat_StopRecordingTitle, actions: [TextAlertAction(type: .genericAction, title: environment.strings.Common_Cancel, action: {}), TextAlertAction(type: .defaultAction, title: environment.strings.VoiceChat_StopRecordingStop, action: { [weak self] in
+                            guard let self, let component = self.component, let environment = self.environment else {
+                                return
+                            }
+                            component.call.setShouldBeRecording(false, title: nil, videoOrientation: nil)
+
+                            Queue.mainQueue().after(0.88) {
+                                HapticFeedback().success()
+                            }
+                            
+                            let text: String
+                            if case let .channel(channel) = self.peer, case .broadcast = channel.info {
+                                text = environment.strings.LiveStream_RecordingSaved
+                            } else {
+                                text = environment.strings.VideoChat_RecordingSaved
+                            }
+                            self.presentUndoOverlay(content: .forward(savedMessages: true, text: text), action: { [weak self] value in
+                                if case .info = value, let self, let component = self.component, let environment = self.environment, let navigationController = environment.controller()?.navigationController as? NavigationController {
+                                    let context = component.call.accountContext
+                                    environment.controller()?.dismiss(completion: { [weak navigationController] in
+                                        Queue.mainQueue().justDispatch {
+                                            let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
+                                            |> deliverOnMainQueue).start(next: { peer in
+                                                guard let peer, let navigationController else {
+                                                    return
+                                                }
+                                                context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: context, chatLocation: .peer(peer), keepStack: .always, purposefulAction: {}, peekData: nil))
+                                            })
+                                        }
+                                    })
+                                    
+                                    return true
+                                }
+                                return false
+                            })
+                        })])
+                        environment.controller()?.present(alertController, in: .window(.root))
+                    }), false))
+                } else {
+                    let text: String
+                    if case let .channel(channel) = peer, case .broadcast = channel.info {
+                        text = environment.strings.LiveStream_StartRecording
+                    } else {
+                        text = environment.strings.VoiceChat_StartRecording
+                    }
+                    if callState.scheduleTimestamp == nil {
+                        items.append(.action(ContextMenuActionItem(text: text, icon: { theme -> UIImage? in
+                            return generateStartRecordingIcon(color: theme.actionSheet.primaryTextColor)
+                        }, action: { [weak self] _, f in
+                            f(.dismissWithoutContent)
+
+                            guard let self, let component = self.component, let environment = self.environment, let peer = self.peer else {
+                                return
+                            }
+
+                            let controller = VoiceChatRecordingSetupController(context: component.call.accountContext, peer: peer, completion: { [weak self] videoOrientation in
+                                guard let self, let component = self.component, let environment = self.environment, let peer = self.peer else {
+                                    return
+                                }
+                                let title: String
+                                let text: String
+                                let placeholder: String
+                                if let _ = videoOrientation {
+                                    placeholder = environment.strings.VoiceChat_RecordingTitlePlaceholderVideo
+                                } else {
+                                    placeholder = environment.strings.VoiceChat_RecordingTitlePlaceholder
+                                }
+                                if case let .channel(channel) = peer, case .broadcast = channel.info {
+                                    title = environment.strings.LiveStream_StartRecordingTitle
+                                    if let _ = videoOrientation {
+                                        text = environment.strings.LiveStream_StartRecordingTextVideo
+                                    } else {
+                                        text = environment.strings.LiveStream_StartRecordingText
+                                    }
+                                } else {
+                                    title = environment.strings.VoiceChat_StartRecordingTitle
+                                    if let _ = videoOrientation {
+                                        text = environment.strings.VoiceChat_StartRecordingTextVideo
+                                    } else {
+                                        text = environment.strings.VoiceChat_StartRecordingText
+                                    }
+                                }
+
+                                let controller = voiceChatTitleEditController(sharedContext: component.call.accountContext.sharedContext, account: component.call.account, forceTheme: environment.theme, title: title, text: text, placeholder: placeholder, value: nil, maxLength: 40, apply: { [weak self] title in
+                                    guard let self, let component = self.component, let environment = self.environment, let peer = self.peer, let title else {
+                                        return
+                                    }
+                                    
+                                    component.call.setShouldBeRecording(true, title: title, videoOrientation: videoOrientation)
+
+                                    let text: String
+                                    if case let .channel(channel) = peer, case .broadcast = channel.info {
+                                        text = environment.strings.LiveStream_RecordingStarted
+                                    } else {
+                                        text = environment.strings.VoiceChat_RecordingStarted
+                                    }
+
+                                    self.presentUndoOverlay(content: .voiceChatRecording(text: text), action: { _ in return false })
+                                    component.call.playTone(.recordingStarted)
+                                })
+                                environment.controller()?.present(controller, in: .window(.root))
+                            })
+                            environment.controller()?.present(controller, in: .window(.root))
+                        })))
+                    }
+                }
+            }
+            
+            if canManageCall {
+                let text: String
+                if case let .channel(channel) = peer, case .broadcast = channel.info {
+                    text = isScheduled ? environment.strings.VoiceChat_CancelLiveStream : environment.strings.VoiceChat_EndLiveStream
+                } else {
+                    text = isScheduled ? environment.strings.VoiceChat_CancelVoiceChat : environment.strings.VoiceChat_EndVoiceChat
+                }
+                items.append(.action(ContextMenuActionItem(text: text, textColor: .destructive, icon: { theme in
+                    return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Clear"), color: theme.actionSheet.destructiveActionTextColor)
+                }, action: { [weak self] _, f in
+                    f(.dismissWithoutContent)
+
+                    guard let self, let component = self.component, let environment = self.environment else {
+                        return
+                    }
+
+                    let action: () -> Void = { [weak self] in
+                        guard let self, let component = self.component else {
+                            return
+                        }
+
+                        let _ = (component.call.leave(terminateIfPossible: true)
+                        |> filter { $0 }
+                        |> take(1)
+                        |> deliverOnMainQueue).start(completed: { [weak self] in
+                            guard let self, let environment = self.environment else {
+                                return
+                            }
+                            environment.controller()?.dismiss()
+                        })
+                    }
+
+                    let title: String
+                    let text: String
+                    if case let .channel(channel) = self.peer, case .broadcast = channel.info {
+                        title = isScheduled ? environment.strings.LiveStream_CancelConfirmationTitle : environment.strings.LiveStream_EndConfirmationTitle
+                        text = isScheduled ? environment.strings.LiveStream_CancelConfirmationText : environment.strings.LiveStream_EndConfirmationText
+                    } else {
+                        title = isScheduled ? environment.strings.VoiceChat_CancelConfirmationTitle : environment.strings.VoiceChat_EndConfirmationTitle
+                        text = isScheduled ? environment.strings.VoiceChat_CancelConfirmationText : environment.strings.VoiceChat_EndConfirmationText
+                    }
+
+                    let alertController = textAlertController(context: component.call.accountContext, forceTheme: environment.theme, title: title, text: text, actions: [TextAlertAction(type: .defaultAction, title: environment.strings.Common_Cancel, action: {}), TextAlertAction(type: .genericAction, title: isScheduled ? environment.strings.VoiceChat_CancelConfirmationEnd : environment.strings.VoiceChat_EndConfirmationEnd, action: {
+                        action()
+                    })])
+                    environment.controller()?.present(alertController, in: .window(.root))
+                })))
+            } else {
+                let leaveText: String
+                if case let .channel(channel) = peer, case .broadcast = channel.info {
+                    leaveText = environment.strings.LiveStream_LeaveVoiceChat
+                } else {
+                    leaveText = environment.strings.VoiceChat_LeaveVoiceChat
+                }
+                items.append(.action(ContextMenuActionItem(text: leaveText, textColor: .destructive, icon: { theme in
+                    return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Clear"), color: theme.actionSheet.destructiveActionTextColor)
+                }, action: { [weak self] _, f in
+                    f(.dismissWithoutContent)
+
+                    guard let self, let component = self.component else {
+                        return
+                    }
+
+                    let _ = (component.call.leave(terminateIfPossible: false)
+                    |> filter { $0 }
+                    |> take(1)
+                    |> deliverOnMainQueue).start(completed: { [weak self] in
+                        guard let self, let environment = self.environment else {
+                            return
+                        }
+                        environment.controller()?.dismiss()
+                    })
+                })))
+            }
+
+            let presentationData = component.call.accountContext.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: environment.theme)
+            let contextController = ContextController(presentationData: presentationData, source: .reference(VoiceChatContextReferenceContentSource(controller: controller, sourceView: sourceView)), items: .single(ContextController.Items(content: .list(items))), gesture: nil)
+            controller.presentInGlobalOverlay(contextController)
+        }
+        
+        private func contextMenuDisplayAsItems() -> [ContextMenuItem] {
+            guard let component = self.component, let environment = self.environment else {
+                return []
+            }
+            guard let callState = self.callState else {
+                return []
+            }
+            let myPeerId = callState.myPeerId
+
+            let avatarSize = CGSize(width: 28.0, height: 28.0)
+
+            var items: [ContextMenuItem] = []
+            
+            items.append(.action(ContextMenuActionItem(text: environment.strings.Common_Back, icon: { theme in
+                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Back"), color: theme.actionSheet.primaryTextColor)
+            }, iconPosition: .left, action: { (c, _) in
+                c?.popItems()
+            })))
+            items.append(.separator)
+            
+            var isGroup = false
+            if let displayAsPeers = self.displayAsPeers {
+                for peer in displayAsPeers {
+                    if peer.peer is TelegramGroup {
+                        isGroup = true
+                        break
+                    } else if let peer = peer.peer as? TelegramChannel, case .group = peer.info {
+                        isGroup = true
+                        break
+                    }
+                }
+            }
+            
+            items.append(.custom(VoiceChatInfoContextItem(text: isGroup ? environment.strings.VoiceChat_DisplayAsInfoGroup : environment.strings.VoiceChat_DisplayAsInfo, icon: { theme in
+                return generateTintedImage(image: UIImage(bundleImageName: "Call/Context Menu/Accounts"), color: theme.actionSheet.primaryTextColor)
+            }), true))
+
+            if let displayAsPeers = self.displayAsPeers {
+                for peer in displayAsPeers {
+                    var subtitle: String?
+                    if peer.peer.id.namespace == Namespaces.Peer.CloudUser {
+                        subtitle = environment.strings.VoiceChat_PersonalAccount
+                    } else if let subscribers = peer.subscribers {
+                        if let peer = peer.peer as? TelegramChannel, case .broadcast = peer.info {
+                            subtitle = environment.strings.Conversation_StatusSubscribers(subscribers)
+                        } else {
+                            subtitle = environment.strings.Conversation_StatusMembers(subscribers)
+                        }
+                    }
+                    
+                    let isSelected = peer.peer.id == myPeerId
+                    let extendedAvatarSize = CGSize(width: 35.0, height: 35.0)
+                    let theme = environment.theme
+                    let avatarSignal = peerAvatarCompleteImage(account: component.call.accountContext.account, peer: EnginePeer(peer.peer), size: avatarSize)
+                    |> map { image -> UIImage? in
+                        if isSelected, let image = image {
+                            return generateImage(extendedAvatarSize, rotatedContext: { size, context in
+                                let bounds = CGRect(origin: CGPoint(), size: size)
+                                context.clear(bounds)
+                                context.translateBy(x: size.width / 2.0, y: size.height / 2.0)
+                                context.scaleBy(x: 1.0, y: -1.0)
+                                context.translateBy(x: -size.width / 2.0, y: -size.height / 2.0)
+                                context.draw(image.cgImage!, in: CGRect(x: (extendedAvatarSize.width - avatarSize.width) / 2.0, y: (extendedAvatarSize.height - avatarSize.height) / 2.0, width: avatarSize.width, height: avatarSize.height))
+                                
+                                let lineWidth = 1.0 + UIScreenPixel
+                                context.setLineWidth(lineWidth)
+                                context.setStrokeColor(theme.actionSheet.controlAccentColor.cgColor)
+                                context.strokeEllipse(in: bounds.insetBy(dx: lineWidth / 2.0, dy: lineWidth / 2.0))
+                            })
+                        } else {
+                            return image
+                        }
+                    }
+                    
+                    items.append(.action(ContextMenuActionItem(text: EnginePeer(peer.peer).displayTitle(strings: environment.strings, displayOrder: component.call.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder), textLayout: subtitle.flatMap { .secondLineWithValue($0) } ?? .singleLine, icon: { _ in nil }, iconSource: ContextMenuActionItemIconSource(size: isSelected ? extendedAvatarSize : avatarSize, signal: avatarSignal), action: { [weak self] _, f in
+                        f(.default)
+                        
+                        guard let self, let component = self.component else {
+                            return
+                        }
+                        
+                        if peer.peer.id != myPeerId {
+                            component.call.reconnect(as: peer.peer.id)
+                        }
+                    })))
+                    
+                    if peer.peer.id.namespace == Namespaces.Peer.CloudUser {
+                        items.append(.separator)
+                    }
+                }
+            }
+            return items
+        }
+        
+        private func contextMenuAudioItems() -> [ContextMenuItem] {
+            guard let environment = self.environment else {
+                return []
+            }
+            guard let (availableOutputs, currentOutput) = self.audioOutputState else {
+                return []
+            }
+
+            var items: [ContextMenuItem] = []
+            
+            items.append(.action(ContextMenuActionItem(text: environment.strings.Common_Back, icon: { theme in
+                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Back"), color: theme.actionSheet.primaryTextColor)
+            }, iconPosition: .left, action: { (c, _) in
+                c?.popItems()
+            })))
+            items.append(.separator)
+            
+            for output in availableOutputs {
+                let title: String
+                switch output {
+                case .builtin:
+                    title = UIDevice.current.model
+                case .speaker:
+                    title = environment.strings.Call_AudioRouteSpeaker
+                case .headphones:
+                    title = environment.strings.Call_AudioRouteHeadphones
+                case let .port(port):
+                    title = port.name
+                }
+                items.append(.action(ContextMenuActionItem(text: title, icon: { theme in
+                    if output == currentOutput {
+                        return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.actionSheet.primaryTextColor)
+                    } else {
+                        return nil
+                    }
+                }, action: { [weak self] _, f in
+                    f(.default)
+                    
+                    guard let self, let component = self.component else {
+                        return
+                    }
+                    
+                    component.call.setCurrentAudioOutput(output)
+                })))
+            }
+            
+            return items
+        }
+        
+        private func contextMenuPermissionItems() -> [ContextMenuItem] {
+            guard let environment = self.environment, let callState = self.callState else {
+                return []
+            }
+            
+            var items: [ContextMenuItem] = []
+            if callState.canManageCall, let defaultParticipantMuteState = callState.defaultParticipantMuteState {
+                let isMuted = defaultParticipantMuteState == .muted
+
+                items.append(.action(ContextMenuActionItem(text: environment.strings.Common_Back, icon: { theme in
+                    return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Back"), color: theme.actionSheet.primaryTextColor)
+                }, iconPosition: .left, action: { (c, _) in
+                    c?.popItems()
+                })))
+                items.append(.separator)
+                items.append(.action(ContextMenuActionItem(text: environment.strings.VoiceChat_SpeakPermissionEveryone, icon: { theme in
+                    if isMuted {
+                        return nil
+                    } else {
+                        return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.actionSheet.primaryTextColor)
+                    }
+                }, action: { [weak self] _, f in
+                    f(.dismissWithoutContent)
+
+                    guard let self, let component = self.component else {
+                        return
+                    }
+                    component.call.updateDefaultParticipantsAreMuted(isMuted: false)
+                })))
+                items.append(.action(ContextMenuActionItem(text: environment.strings.VoiceChat_SpeakPermissionAdmin, icon: { theme in
+                    if !isMuted {
+                        return nil
+                    } else {
+                        return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.actionSheet.primaryTextColor)
+                    }
+                }, action: { [weak self] _, f in
+                    f(.dismissWithoutContent)
+
+                    guard let self, let component = self.component else {
+                        return
+                    }
+                    component.call.updateDefaultParticipantsAreMuted(isMuted: true)
+                })))
+            }
+            return items
+        }
+        
+        private func openParticipantContextMenu(id: EnginePeer.Id, sourceView: ContextExtractedContentContainingView, gesture: ContextGesture?) {
+            guard let component = self.component, let environment = self.environment else {
+                return
+            }
+            guard let members = self.members, let participant = members.participants.first(where: { $0.peer.id == id }) else {
+                return
+            }
+            
+            let muteStatePromise = Promise<GroupCallParticipantsContext.Participant.MuteState?>(participant.muteState)
+               
+            let itemsForEntry: (GroupCallParticipantsContext.Participant.MuteState?) -> [ContextMenuItem] = { [weak self] muteState in
+                guard let self, let component = self.component, let environment = self.environment else {
+                    return []
+                }
+                guard let callState = self.callState else {
+                    return []
+                }
+                
+                var items: [ContextMenuItem] = []
+                
+                var hasVolumeSlider = false
+                let peer = participant.peer
+                if let muteState = muteState, !muteState.canUnmute || muteState.mutedByYou {
+                } else {
+                    if callState.canManageCall || callState.myPeerId != id {
+                        hasVolumeSlider = true
+                        
+                        let minValue: CGFloat
+                        if callState.canManageCall && callState.adminIds.contains(peer.id) && muteState != nil {
+                            minValue = 0.01
+                        } else {
+                            minValue = 0.0
+                        }
+                        items.append(.custom(VoiceChatVolumeContextItem(minValue: minValue, value: participant.volume.flatMap { CGFloat($0) / 10000.0 } ?? 1.0, valueChanged: { [weak self] newValue, finished in
+                            guard let self, let component = self.component else {
+                                return
+                            }
+                            
+                            if finished && newValue.isZero {
+                                let updatedMuteState = component.call.updateMuteState(peerId: peer.id, isMuted: true)
+                                muteStatePromise.set(.single(updatedMuteState))
+                            } else {
+                                component.call.setVolume(peerId: peer.id, volume: Int32(newValue * 10000), sync: finished)
+                            }
+                        }), true))
+                    }
+                }
+                
+                if callState.myPeerId == id && !hasVolumeSlider && ((participant.about?.isEmpty ?? true) || participant.peer.smallProfileImage == nil) {
+                    items.append(.custom(VoiceChatInfoContextItem(text: environment.strings.VoiceChat_ImproveYourProfileText, icon: { theme in
+                        return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Tip"), color: theme.actionSheet.primaryTextColor)
+                    }), true))
+                }
+                                    
+                if peer.id == callState.myPeerId {
+                    if participant.hasRaiseHand {
+                        items.append(.action(ContextMenuActionItem(text: environment.strings.VoiceChat_CancelSpeakRequest, icon: { theme in
+                            return generateTintedImage(image: UIImage(bundleImageName: "Call/Context Menu/RevokeSpeak"), color: theme.actionSheet.primaryTextColor)
+                        }, action: { [weak self] _, f in
+                            guard let self, let component = self.component else {
+                                return
+                            }
+                            component.call.lowerHand()
+                            
+                            f(.default)
+                        })))
+                    }
+                    items.append(.action(ContextMenuActionItem(text: peer.smallProfileImage == nil ? environment.strings.VoiceChat_AddPhoto : environment.strings.VoiceChat_ChangePhoto, icon: { theme in
+                        return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Camera"), color: theme.actionSheet.primaryTextColor)
+                    }, action: { [weak self] _, f in
+                        f(.default)
+                        Queue.mainQueue().after(0.1) {
+                            guard let self else {
+                                return
+                            }
+                            
+                            self.openAvatarForEditing(fromGallery: false, completion: {})
+                        }
+                    })))
+                    
+                    items.append(.action(ContextMenuActionItem(text: (participant.about?.isEmpty ?? true) ? environment.strings.VoiceChat_AddBio : environment.strings.VoiceChat_EditBio, icon: { theme in
+                        return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Info"), color: theme.actionSheet.primaryTextColor)
+                    }, action: { [weak self] _, f in
+                        f(.default)
+                        
+                        Queue.mainQueue().after(0.1) {
+                            guard let self, let component = self.component, let environment = self.environment else {
+                                return
+                            }
+                            let maxBioLength: Int
+                            if peer.id.namespace == Namespaces.Peer.CloudUser {
+                                maxBioLength = 70
+                            } else {
+                                maxBioLength = 100
+                            }
+                            let controller = voiceChatTitleEditController(sharedContext: component.call.accountContext.sharedContext, account: component.call.accountContext.account, forceTheme: environment.theme, title: environment.strings.VoiceChat_EditBioTitle, text: environment.strings.VoiceChat_EditBioText, placeholder: environment.strings.VoiceChat_EditBioPlaceholder, doneButtonTitle: environment.strings.VoiceChat_EditBioSave, value: participant.about, maxLength: maxBioLength, apply: { [weak self] bio in
+                                guard let self, let component = self.component, let environment = self.environment, let bio else {
+                                    return
+                                }
+                                if peer.id.namespace == Namespaces.Peer.CloudUser {
+                                    let _ = (component.call.accountContext.engine.accountData.updateAbout(about: bio)
+                                    |> `catch` { _ -> Signal<Void, NoError> in
+                                        return .complete()
+                                    }).start()
+                                } else {
+                                    let _ = (component.call.accountContext.engine.peers.updatePeerDescription(peerId: peer.id, description: bio)
+                                    |> `catch` { _ -> Signal<Void, NoError> in
+                                        return .complete()
+                                    }).start()
+                                }
+                                
+                                self.presentUndoOverlay(content: .info(title: nil, text: environment.strings.VoiceChat_EditBioSuccess, timeout: nil, customUndoText: nil), action: { _ in return false })
+                            })
+                            environment.controller()?.present(controller, in: .window(.root))
+                        }
+                    })))
+                    
+                    if let peer = peer as? TelegramUser {
+                        items.append(.action(ContextMenuActionItem(text: environment.strings.VoiceChat_ChangeName, icon: { theme in
+                            return generateTintedImage(image: UIImage(bundleImageName: "Call/Context Menu/ChangeName"), color: theme.actionSheet.primaryTextColor)
+                        }, action: { [weak self] _, f in
+                            f(.default)
+                               
+                            Queue.mainQueue().after(0.1) {
+                                guard let self, let component = self.component, let environment = self.environment else {
+                                    return
+                                }
+                                let controller = voiceChatUserNameController(sharedContext: component.call.accountContext.sharedContext, account: component.call.accountContext.account, forceTheme: environment.theme, title: environment.strings.VoiceChat_ChangeNameTitle, firstNamePlaceholder: environment.strings.UserInfo_FirstNamePlaceholder, lastNamePlaceholder: environment.strings.UserInfo_LastNamePlaceholder, doneButtonTitle: environment.strings.VoiceChat_EditBioSave, firstName: peer.firstName, lastName: peer.lastName, maxLength: 128, apply: { [weak self] firstAndLastName in
+                                    guard let self, let component = self.component, let environment = self.environment, let (firstName, lastName) = firstAndLastName else {
+                                        return
+                                    }
+                                    let _ = component.call.accountContext.engine.accountData.updateAccountPeerName(firstName: firstName, lastName: lastName).startStandalone()
+                                    
+                                    self.presentUndoOverlay(content: .info(title: nil, text: environment.strings.VoiceChat_EditNameSuccess, timeout: nil, customUndoText: nil), action: { _ in return false })
+                                })
+                                environment.controller()?.present(controller, in: .window(.root))
+                            }
+                        })))
+                    }
+                } else {
+                    if (callState.canManageCall || callState.adminIds.contains(component.call.accountContext.account.peerId)) {
+                        if callState.adminIds.contains(peer.id) {
+                            if let _ = muteState {
+                            } else {
+                                items.append(.action(ContextMenuActionItem(text: environment.strings.VoiceChat_MutePeer, icon: { theme in
+                                    return generateTintedImage(image: UIImage(bundleImageName: "Call/Context Menu/Mute"), color: theme.actionSheet.primaryTextColor)
+                                }, action: { [weak self] _, f in
+                                    guard let self, let component = self.component else {
+                                        return
+                                    }
+                                    
+                                    let _ = component.call.updateMuteState(peerId: peer.id, isMuted: true)
+                                    f(.default)
+                                })))
+                            }
+                        } else {
+                            if let muteState = muteState, !muteState.canUnmute {
+                                items.append(.action(ContextMenuActionItem(text: environment.strings.VoiceChat_UnmutePeer, icon: { theme in
+                                    return generateTintedImage(image: UIImage(bundleImageName: participant.hasRaiseHand ? "Call/Context Menu/AllowToSpeak" : "Call/Context Menu/Unmute"), color: theme.actionSheet.primaryTextColor)
+                                }, action: { [weak self] _, f in
+                                    guard let self, let component = self.component, let environment = self.environment else {
+                                        return
+                                    }
+                                    
+                                    let _ = component.call.updateMuteState(peerId: peer.id, isMuted: false)
+                                    f(.default)
+                                    
+                                    self.presentUndoOverlay(content: .voiceChatCanSpeak(text: environment.strings.VoiceChat_UserCanNowSpeak(EnginePeer(participant.peer).displayTitle(strings: environment.strings, displayOrder: component.call.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder)).string), action: { _ in return true })
+                                })))
+                            } else {
+                                items.append(.action(ContextMenuActionItem(text: environment.strings.VoiceChat_MutePeer, icon: { theme in
+                                    return generateTintedImage(image: UIImage(bundleImageName: "Call/Context Menu/Mute"), color: theme.actionSheet.primaryTextColor)
+                                }, action: { [weak self] _, f in
+                                    guard let self, let component = self.component else {
+                                        return
+                                    }
+                                    
+                                    let _ = component.call.updateMuteState(peerId: peer.id, isMuted: true)
+                                    f(.default)
+                                })))
+                            }
+                        }
+                    } else {
+                        if let muteState = muteState, muteState.mutedByYou {
+                            items.append(.action(ContextMenuActionItem(text: environment.strings.VoiceChat_UnmuteForMe, icon: { theme in
+                                return generateTintedImage(image: UIImage(bundleImageName: "Call/Context Menu/Unmute"), color: theme.actionSheet.primaryTextColor)
+                            }, action: { [weak self] _, f in
+                                guard let self, let component = self.component else {
+                                    return
+                                }
+                                
+                                let _ = component.call.updateMuteState(peerId: peer.id, isMuted: false)
+                                f(.default)
+                            })))
+                        } else {
+                            items.append(.action(ContextMenuActionItem(text: environment.strings.VoiceChat_MuteForMe, icon: { theme in
+                                return generateTintedImage(image: UIImage(bundleImageName: "Call/Context Menu/Mute"), color: theme.actionSheet.primaryTextColor)
+                            }, action: { [weak self] _, f in
+                                guard let self, let component = self.component else {
+                                    return
+                                }
+                                
+                                let _ = component.call.updateMuteState(peerId: peer.id, isMuted: true)
+                                f(.default)
+                            })))
+                        }
+                    }
+                    
+                    let openTitle: String
+                    let openIcon: UIImage?
+                    if [Namespaces.Peer.CloudChannel, Namespaces.Peer.CloudGroup].contains(peer.id.namespace) {
+                        if let peer = peer as? TelegramChannel, case .broadcast = peer.info {
+                            openTitle = environment.strings.VoiceChat_OpenChannel
+                            openIcon = UIImage(bundleImageName: "Chat/Context Menu/Channels")
+                        } else {
+                            openTitle = environment.strings.VoiceChat_OpenGroup
+                            openIcon = UIImage(bundleImageName: "Chat/Context Menu/Groups")
+                        }
+                    } else {
+                        openTitle = environment.strings.Conversation_ContextMenuSendMessage
+                        openIcon = UIImage(bundleImageName: "Chat/Context Menu/Message")
+                    }
+                    items.append(.action(ContextMenuActionItem(text: openTitle, icon: { theme in
+                        return generateTintedImage(image: openIcon, color: theme.actionSheet.primaryTextColor)
+                    }, action: { [weak self] _, f in
+                        guard let self, let component = self.component, let environment = self.environment else {
+                            return
+                        }
+                        
+                        guard let controller = environment.controller() as? VideoChatScreenV2Impl, let navigationController = controller.parentNavigationController else {
+                            return
+                        }
+                    
+                        let context = component.call.accountContext
+                        environment.controller()?.dismiss(completion: { [weak navigationController] in
+                            Queue.mainQueue().after(0.3) {
+                                guard let navigationController else {
+                                    return
+                                }
+                                context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: context, chatLocation: .peer(EnginePeer(peer)), keepStack: .always, purposefulAction: {}, peekData: nil))
+                            }
+                        })
+                    
+                        f(.dismissWithoutContent)
+                    })))
+                
+                    if (callState.canManageCall && !callState.adminIds.contains(peer.id)), peer.id != component.call.peerId {
+                        items.append(.action(ContextMenuActionItem(text: environment.strings.VoiceChat_RemovePeer, textColor: .destructive, icon: { theme in
+                            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Clear"), color: theme.actionSheet.destructiveActionTextColor)
+                        }, action: { [weak self] c, _ in
+                            c?.dismiss(completion: {
+                                guard let self, let component = self.component else {
+                                    return
+                                }
+
+                                let _ = (component.call.accountContext.account.postbox.loadedPeerWithId(component.call.peerId)
+                                |> deliverOnMainQueue).start(next: { [weak self] chatPeer in
+                                    guard let self, let component = self.component, let environment = self.environment else {
+                                        return
+                                    }
+                                    
+                                    let presentationData = component.call.accountContext.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: environment.theme)
+                                    let actionSheet = ActionSheetController(presentationData: presentationData)
+                                    var items: [ActionSheetItem] = []
+                                    
+                                    let nameDisplayOrder = presentationData.nameDisplayOrder
+                                    items.append(DeleteChatPeerActionSheetItem(context: component.call.accountContext, peer: EnginePeer(peer), chatPeer: EnginePeer(chatPeer), action: .removeFromGroup, strings: environment.strings, nameDisplayOrder: nameDisplayOrder))
+
+                                    items.append(ActionSheetButtonItem(title: environment.strings.VoiceChat_RemovePeerRemove, color: .destructive, action: { [weak self, weak actionSheet] in
+                                        actionSheet?.dismissAnimated()
+                                        
+                                        guard let self, let component = self.component, let environment = self.environment else {
+                                            return
+                                        }
+                                        
+                                        let _ = component.call.accountContext.peerChannelMemberCategoriesContextsManager.updateMemberBannedRights(engine: component.call.accountContext.engine, peerId: component.call.peerId, memberId: peer.id, bannedRights: TelegramChatBannedRights(flags: [.banReadMessages], untilDate: Int32.max)).start()
+                                        component.call.removedPeer(peer.id)
+                                        
+                                        self.presentUndoOverlay(content: .banned(text: environment.strings.VoiceChat_RemovedPeerText(EnginePeer(peer).displayTitle(strings: environment.strings, displayOrder: nameDisplayOrder)).string), action: { _ in return false })
+                                    }))
+
+                                    actionSheet.setItemGroups([
+                                        ActionSheetItemGroup(items: items),
+                                        ActionSheetItemGroup(items: [
+                                            ActionSheetButtonItem(title: environment.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
+                                                actionSheet?.dismissAnimated()
+                                            })
+                                        ])
+                                    ])
+                                    environment.controller()?.present(actionSheet, in: .window(.root))
+                                })
+                            })
+                        })))
+                    }
+                }
+                return items
+            }
+            
+            let items = muteStatePromise.get()
+            |> map { muteState -> [ContextMenuItem] in
+                return itemsForEntry(muteState)
+            }
+            
+            let presentationData = component.call.accountContext.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: environment.theme)
+            let contextController = ContextController(
+                presentationData: presentationData,
+                source: .extracted(ParticipantExtractedContentSource(contentView: sourceView)),
+                items: items |> map { items in
+                    return ContextController.Items(content: .list(items))
+                },
+                recognizer: nil,
+                gesture: gesture
+            )
+            
+            environment.controller()?.forEachController({ controller in
+                if let controller = controller as? UndoOverlayController {
+                    controller.dismiss()
+                }
+                return true
+            })
+            
+            environment.controller()?.presentInGlobalOverlay(contextController)
+        }
+        
+        private func openAvatarForEditing(fromGallery: Bool = false, completion: @escaping () -> Void = {}) {
+            guard let component = self.component else {
+                return
+            }
+            guard let callState = self.callState else {
+                return
+            }
+            let peerId = callState.myPeerId
+            
+            let _ = (component.call.accountContext.engine.data.get(
+                TelegramEngine.EngineData.Item.Peer.Peer(id: peerId),
+                TelegramEngine.EngineData.Item.Configuration.SearchBots()
+            )
+            |> deliverOnMainQueue).start(next: { [weak self] peer, searchBotsConfiguration in
+                guard let self, let component = self.component, let environment = self.environment else {
+                    return
+                }
+                guard let peer else {
+                    return
+                }
+                
+                let presentationData = component.call.accountContext.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: environment.theme)
+                
+                let legacyController = LegacyController(presentation: .custom, theme: environment.theme)
+                legacyController.statusBar.statusBarStyle = .Ignore
+                
+                let emptyController = LegacyEmptyController(context: legacyController.context)!
+                let navigationController = makeLegacyNavigationController(rootController: emptyController)
+                navigationController.setNavigationBarHidden(true, animated: false)
+                navigationController.navigationBar.transform = CGAffineTransform(translationX: -1000.0, y: 0.0)
+                
+                legacyController.bind(controller: navigationController)
+                
+                self.endEditing(true)
+                environment.controller()?.present(legacyController, in: .window(.root))
+                
+                var hasPhotos = false
+                if !peer.profileImageRepresentations.isEmpty {
+                    hasPhotos = true
+                }
+                                
+                let mixin = TGMediaAvatarMenuMixin(context: legacyController.context, parentController: emptyController, hasSearchButton: true, hasDeleteButton: hasPhotos && !fromGallery, hasViewButton: false, personalPhoto: peerId.namespace == Namespaces.Peer.CloudUser, isVideo: false, saveEditedPhotos: false, saveCapturedMedia: false, signup: false, forum: false, title: nil, isSuggesting: false)!
+                mixin.forceDark = true
+                mixin.stickersContext = LegacyPaintStickersContext(context: component.call.accountContext)
+                let _ = self.currentAvatarMixin.swap(mixin)
+                mixin.requestSearchController = { [weak self] assetsController in
+                    guard let self, let component = self.component, let environment = self.environment else {
+                        return
+                    }
+                    let controller = WebSearchController(context: component.call.accountContext, peer: peer, chatLocation: nil, configuration: searchBotsConfiguration, mode: .avatar(initialQuery: peer.id.namespace == Namespaces.Peer.CloudUser ? nil : peer.displayTitle(strings: environment.strings, displayOrder: presentationData.nameDisplayOrder), completion: { [weak self] result in
+                        assetsController?.dismiss()
+                        
+                        guard let self else {
+                            return
+                        }
+                        self.updateProfilePhoto(result)
+                    }))
+                    controller.navigationPresentation = .modal
+                    environment.controller()?.push(controller)
+                    
+                    if fromGallery {
+                        completion()
+                    }
+                }
+                mixin.didFinishWithImage = { [weak self] image in
+                    if let image = image {
+                        completion()
+                        self?.updateProfilePhoto(image)
+                    }
+                }
+                mixin.didFinishWithVideo = { [weak self] image, asset, adjustments in
+                    if let image = image, let asset = asset {
+                        completion()
+                        self?.updateProfileVideo(image, asset: asset, adjustments: adjustments)
+                    }
+                }
+                mixin.didFinishWithDelete = { [weak self] in
+                    guard let self, let environment = self.environment else {
+                        return
+                    }
+                    
+                    let proceed = { [weak self] in
+                        guard let self, let component = self.component else {
+                            return
+                        }
+                        
+                        let _ = self.currentAvatarMixin.swap(nil)
+                        let postbox = component.call.accountContext.account.postbox
+                        self.updateAvatarDisposable.set((component.call.accountContext.engine.peers.updatePeerPhoto(peerId: peerId, photo: nil, mapResourceToAvatarSizes: { resource, representations in
+                            return mapResourceToAvatarSizes(postbox: postbox, resource: resource, representations: representations)
+                        })
+                        |> deliverOnMainQueue).start())
+                    }
+                    
+                    let actionSheet = ActionSheetController(presentationData: presentationData)
+                    let items: [ActionSheetItem] = [
+                        ActionSheetButtonItem(title: environment.strings.Settings_RemoveConfirmation, color: .destructive, action: { [weak actionSheet] in
+                            actionSheet?.dismissAnimated()
+                            proceed()
+                        })
+                    ]
+                    
+                    actionSheet.setItemGroups([
+                        ActionSheetItemGroup(items: items),
+                        ActionSheetItemGroup(items: [
+                            ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
+                                actionSheet?.dismissAnimated()
+                            })
+                        ])
+                    ])
+                    environment.controller()?.present(actionSheet, in: .window(.root))
+                }
+                mixin.didDismiss = { [weak self, weak legacyController] in
+                    guard let self else {
+                        return
+                    }
+                    let _ = self.currentAvatarMixin.swap(nil)
+                    legacyController?.dismiss()
+                }
+                let menuController = mixin.present()
+                if let menuController = menuController {
+                    menuController.customRemoveFromParentViewController = { [weak legacyController] in
+                        legacyController?.dismiss()
+                    }
+                }
+            })
+        }
+        
+        private func updateProfilePhoto(_ image: UIImage) {
+            guard let component = self.component else {
+                return
+            }
+            guard let callState = self.callState else {
+                return
+            }
+            guard let data = image.jpegData(compressionQuality: 0.6) else {
+                return
+            }
+            
+            let peerId = callState.myPeerId
+            
+            let resource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max))
+            component.call.account.postbox.mediaBox.storeResourceData(resource.id, data: data)
+            let representation = TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: 640, height: 640), resource: resource, progressiveSizes: [], immediateThumbnailData: nil, hasVideo: false, isPersonal: false)
+            
+            self.currentUpdatingAvatar = (representation, 0.0)
+
+            let postbox = component.call.account.postbox
+            let signal = peerId.namespace == Namespaces.Peer.CloudUser ? component.call.accountContext.engine.accountData.updateAccountPhoto(resource: resource, videoResource: nil, videoStartTimestamp: nil, markup: nil, mapResourceToAvatarSizes: { resource, representations in
+                return mapResourceToAvatarSizes(postbox: postbox, resource: resource, representations: representations)
+            }) : component.call.accountContext.engine.peers.updatePeerPhoto(peerId: peerId, photo: component.call.accountContext.engine.peers.uploadedPeerPhoto(resource: resource), mapResourceToAvatarSizes: { resource, representations in
+                return mapResourceToAvatarSizes(postbox: postbox, resource: resource, representations: representations)
+            })
+            
+            self.updateAvatarDisposable.set((signal
+            |> deliverOnMainQueue).start(next: { [weak self] result in
+                guard let self else {
+                    return
+                }
+                switch result {
+                case .complete:
+                    self.currentUpdatingAvatar = nil
+                    self.state?.updated(transition: .spring(duration: 0.4))
+                case let .progress(value):
+                    self.currentUpdatingAvatar = (representation, value)
+                }
+            }))
+            
+            self.state?.updated(transition: .spring(duration: 0.4))
+        }
+        
+        private func updateProfileVideo(_ image: UIImage, asset: Any?, adjustments: TGVideoEditAdjustments?) {
+            guard let component = self.component else {
+                return
+            }
+            guard let callState = self.callState else {
+                return
+            }
+            guard let data = image.jpegData(compressionQuality: 0.6) else {
+                return
+            }
+            let peerId = callState.myPeerId
+            
+            let photoResource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max))
+            component.call.accountContext.account.postbox.mediaBox.storeResourceData(photoResource.id, data: data)
+            let representation = TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: 640, height: 640), resource: photoResource, progressiveSizes: [], immediateThumbnailData: nil, hasVideo: false, isPersonal: false)
+            
+            self.currentUpdatingAvatar = (representation, 0.0)
+
+            var videoStartTimestamp: Double? = nil
+            if let adjustments = adjustments, adjustments.videoStartValue > 0.0 {
+                videoStartTimestamp = adjustments.videoStartValue - adjustments.trimStartValue
+            }
+
+            let context = component.call.accountContext
+            let account = context.account
+            let signal = Signal<TelegramMediaResource, UploadPeerPhotoError> { [weak self] subscriber in
+                let entityRenderer: LegacyPaintEntityRenderer? = adjustments.flatMap { adjustments in
+                    if let paintingData = adjustments.paintingData, paintingData.hasAnimation {
+                        return LegacyPaintEntityRenderer(postbox: account.postbox, adjustments: adjustments)
+                    } else {
+                        return nil
+                    }
+                }
+                
+                let tempFile = EngineTempBox.shared.tempFile(fileName: "video.mp4")
+                let uploadInterface = LegacyLiveUploadInterface(context: context)
+                let signal: SSignal
+                if let url = asset as? URL, url.absoluteString.hasSuffix(".jpg"), let data = try? Data(contentsOf: url, options: [.mappedRead]), let image = UIImage(data: data), let entityRenderer = entityRenderer {
+                    let durationSignal: SSignal = SSignal(generator: { subscriber in
+                        let disposable = (entityRenderer.duration()).start(next: { duration in
+                            subscriber.putNext(duration)
+                            subscriber.putCompletion()
+                        })
+                        
+                        return SBlockDisposable(block: {
+                            disposable.dispose()
+                        })
+                    })
+                    signal = durationSignal.map(toSignal: { duration -> SSignal in
+                        if let duration = duration as? Double {
+                            return TGMediaVideoConverter.renderUIImage(image, duration: duration, adjustments: adjustments, path: tempFile.path, watcher: nil, entityRenderer: entityRenderer)!
+                        } else {
+                            return SSignal.single(nil)
+                        }
+                    })
+                   
+                } else if let asset = asset as? AVAsset {
+                    signal = TGMediaVideoConverter.convert(asset, adjustments: adjustments, path: tempFile.path, watcher: uploadInterface, entityRenderer: entityRenderer)!
+                } else {
+                    signal = SSignal.complete()
+                }
+                
+                let signalDisposable = signal.start(next: { next in
+                    if let result = next as? TGMediaVideoConversionResult {
+                        if let image = result.coverImage, let data = image.jpegData(compressionQuality: 0.7) {
+                            account.postbox.mediaBox.storeResourceData(photoResource.id, data: data)
+                        }
+                        
+                        if let timestamp = videoStartTimestamp {
+                            videoStartTimestamp = max(0.0, min(timestamp, result.duration - 0.05))
+                        }
+                        
+                        var value = stat()
+                        if stat(result.fileURL.path, &value) == 0 {
+                            if let data = try? Data(contentsOf: result.fileURL) {
+                                let resource: TelegramMediaResource
+                                if let liveUploadData = result.liveUploadData as? LegacyLiveUploadInterfaceResult {
+                                    resource = LocalFileMediaResource(fileId: liveUploadData.id)
+                                } else {
+                                    resource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max))
+                                }
+                                account.postbox.mediaBox.storeResourceData(resource.id, data: data, synchronous: true)
+                                subscriber.putNext(resource)
+                                
+                                EngineTempBox.shared.dispose(tempFile)
+                            }
+                        }
+                        subscriber.putCompletion()
+                    } else if let progress = next as? NSNumber {
+                        Queue.mainQueue().async { [weak self] in
+                            guard let self else {
+                                return
+                            }
+                            self.currentUpdatingAvatar = (representation, Float(truncating: progress) * 0.25)
+                            self.state?.updated(transition: .spring(duration: 0.4))
+                        }
+                    }
+                }, error: { _ in
+                }, completed: nil)
+                
+                let disposable = ActionDisposable {
+                    signalDisposable?.dispose()
+                }
+                
+                return ActionDisposable {
+                    disposable.dispose()
+                }
+            }
+            
+            self.updateAvatarDisposable.set((signal
+            |> mapToSignal { videoResource -> Signal<UpdatePeerPhotoStatus, UploadPeerPhotoError> in
+                if peerId.namespace == Namespaces.Peer.CloudUser {
+                    return context.engine.accountData.updateAccountPhoto(resource: photoResource, videoResource: videoResource, videoStartTimestamp: videoStartTimestamp, markup: nil, mapResourceToAvatarSizes: { resource, representations in
+                        return mapResourceToAvatarSizes(postbox: account.postbox, resource: resource, representations: representations)
+                    })
+                } else {
+                    return context.engine.peers.updatePeerPhoto(peerId: peerId, photo: context.engine.peers.uploadedPeerPhoto(resource: photoResource), video: context.engine.peers.uploadedPeerVideo(resource: videoResource) |> map(Optional.init), videoStartTimestamp: videoStartTimestamp, mapResourceToAvatarSizes: { resource, representations in
+                        return mapResourceToAvatarSizes(postbox: account.postbox, resource: resource, representations: representations)
+                    })
+                }
+            }
+            |> deliverOnMainQueue).start(next: { [weak self] result in
+                guard let self else {
+                    return
+                }
+                switch result {
+                case .complete:
+                    self.currentUpdatingAvatar = nil
+                    self.state?.updated(transition: .spring(duration: 0.4))
+                case let .progress(value):
+                    self.currentUpdatingAvatar = (representation, 0.25 + value * 0.75)
+                    self.state?.updated(transition: .spring(duration: 0.4))
+                }
+            }))
+        }
+        
+        private func openTitleEditing() {
             guard let component = self.component else {
                 return
             }
@@ -367,7 +1412,7 @@ final class VideoChatScreenComponent: Component {
             })
         }
         
-        func presentUndoOverlay(content: UndoOverlayContent, action: @escaping (UndoOverlayAction) -> Bool) {
+        private func presentUndoOverlay(content: UndoOverlayContent, action: @escaping (UndoOverlayAction) -> Bool) {
             guard let component = self.component, let environment = self.environment else {
                 return
             }
@@ -383,7 +1428,340 @@ final class VideoChatScreenComponent: Component {
             environment.controller()?.present(UndoOverlayController(presentationData: presentationData, content: content, elevatedLayout: false, animateInAsReplacement: animateInAsReplacement, action: action), in: .current)
         }
         
-        func presentShare(_ inviteLinks: GroupCallInviteLinks) {
+        private func openInviteMembers() {
+            guard let component = self.component else {
+                return
+            }
+            
+            var canInvite = true
+            var inviteIsLink = false
+            if case let .channel(peer) = self.peer {
+                if peer.flags.contains(.isGigagroup) {
+                    if peer.flags.contains(.isCreator) || peer.adminRights != nil {
+                    } else {
+                        canInvite = false
+                    }
+                }
+                if case .broadcast = peer.info, !(peer.addressName?.isEmpty ?? true) {
+                    inviteIsLink = true
+                }
+            }
+            var inviteType: VideoChatParticipantsComponent.Participants.InviteType?
+            if canInvite {
+                if inviteIsLink {
+                    inviteType = .shareLink
+                } else {
+                    inviteType = .invite
+                }
+            }
+            
+            guard let inviteType else {
+                return
+            }
+            
+            switch inviteType {
+            case .invite:
+                let groupPeer = component.call.accountContext.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: component.call.peerId))
+                let _ = (groupPeer
+                         |> deliverOnMainQueue).start(next: { [weak self] groupPeer in
+                    guard let self, let component = self.component, let environment = self.environment, let groupPeer else {
+                        return
+                    }
+                    let inviteLinks = self.inviteLinks
+                    
+                    if case let .channel(groupPeer) = groupPeer {
+                        var canInviteMembers = true
+                        if case .broadcast = groupPeer.info, !(groupPeer.addressName?.isEmpty ?? true) {
+                            canInviteMembers = false
+                        }
+                        if !canInviteMembers {
+                            if let inviteLinks {
+                                self.presentShare(inviteLinks)
+                            }
+                            return
+                        }
+                    }
+                    
+                    var filters: [ChannelMembersSearchFilter] = []
+                    if let members = self.members {
+                        filters.append(.disable(Array(members.participants.map { $0.peer.id })))
+                    }
+                    if case let .channel(groupPeer) = groupPeer {
+                        if !groupPeer.hasPermission(.inviteMembers) && inviteLinks?.listenerLink == nil {
+                            filters.append(.excludeNonMembers)
+                        }
+                    } else if case let .legacyGroup(groupPeer) = groupPeer {
+                        if groupPeer.hasBannedPermission(.banAddMembers) {
+                            filters.append(.excludeNonMembers)
+                        }
+                    }
+                    filters.append(.excludeBots)
+                    
+                    var dismissController: (() -> Void)?
+                    let controller = ChannelMembersSearchController(context: component.call.accountContext, peerId: groupPeer.id, forceTheme: environment.theme, mode: .inviteToCall, filters: filters, openPeer: { [weak self] peer, participant in
+                        guard let self, let component = self.component, let environment = self.environment else {
+                            dismissController?()
+                            return
+                        }
+                        guard let callState = self.callState else {
+                            return
+                        }
+                        
+                        let presentationData = component.call.accountContext.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: environment.theme)
+                        if peer.id == callState.myPeerId {
+                            return
+                        }
+                        if let participant {
+                            dismissController?()
+                            
+                            if component.call.invitePeer(participant.peer.id) {
+                                let text: String
+                                if case let .channel(channel) = self.peer, case .broadcast = channel.info {
+                                    text = environment.strings.LiveStream_InvitedPeerText(peer.displayTitle(strings: environment.strings, displayOrder: component.call.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder)).string
+                                } else {
+                                    text = environment.strings.VoiceChat_InvitedPeerText(peer.displayTitle(strings: environment.strings, displayOrder: component.call.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder)).string
+                                }
+                                self.presentUndoOverlay(content: .invitedToVoiceChat(context: component.call.accountContext, peer: EnginePeer(participant.peer), title: nil, text: text, action: nil, duration: 3), action: { _ in return false })
+                            }
+                        } else {
+                            if case let .channel(groupPeer) = groupPeer, let listenerLink = inviteLinks?.listenerLink, !groupPeer.hasPermission(.inviteMembers) {
+                                let text = environment.strings.VoiceChat_SendPublicLinkText(peer.displayTitle(strings: environment.strings, displayOrder: component.call.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder), EnginePeer(groupPeer).displayTitle(strings: environment.strings, displayOrder: component.call.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder)).string
+                                
+                                environment.controller()?.present(textAlertController(context: component.call.accountContext, forceTheme: environment.theme, title: nil, text: text, actions: [TextAlertAction(type: .genericAction, title: environment.strings.Common_Cancel, action: {}), TextAlertAction(type: .defaultAction, title: environment.strings.VoiceChat_SendPublicLinkSend, action: { [weak self] in
+                                    dismissController?()
+                                    
+                                    guard let self, let component = self.component else {
+                                        return
+                                    }
+                                    
+                                    let _ = (enqueueMessages(account: component.call.accountContext.account, peerId: peer.id, messages: [.message(text: listenerLink, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])])
+                                             |> deliverOnMainQueue).start(next: { [weak self] _ in
+                                        guard let self, let environment = self.environment else {
+                                            return
+                                        }
+                                        self.presentUndoOverlay(content: .forward(savedMessages: false, text: environment.strings.UserInfo_LinkForwardTooltip_Chat_One(peer.displayTitle(strings: environment.strings, displayOrder: component.call.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder)).string), action: { _ in return true })
+                                    })
+                                })]), in: .window(.root))
+                            } else {
+                                let text: String
+                                if case let .channel(groupPeer) = groupPeer, case .broadcast = groupPeer.info {
+                                    text = environment.strings.VoiceChat_InviteMemberToChannelFirstText(peer.displayTitle(strings: environment.strings, displayOrder: component.call.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder), EnginePeer(groupPeer).displayTitle(strings: environment.strings, displayOrder: component.call.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder)).string
+                                } else {
+                                    text = environment.strings.VoiceChat_InviteMemberToGroupFirstText(peer.displayTitle(strings: environment.strings, displayOrder: component.call.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder), groupPeer.displayTitle(strings: environment.strings, displayOrder: component.call.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder)).string
+                                }
+                                
+                                environment.controller()?.present(textAlertController(context: component.call.accountContext, forceTheme: environment.theme, title: nil, text: text, actions: [TextAlertAction(type: .genericAction, title: environment.strings.Common_Cancel, action: {}), TextAlertAction(type: .defaultAction, title: environment.strings.VoiceChat_InviteMemberToGroupFirstAdd, action: { [weak self] in
+                                    guard let self, let component = self.component, let environment = self.environment else {
+                                        return
+                                    }
+                                    
+                                    if case let .channel(groupPeer) = groupPeer {
+                                        guard let selfController = environment.controller() else {
+                                            return
+                                        }
+                                        let inviteDisposable = self.inviteDisposable
+                                        var inviteSignal = component.call.accountContext.peerChannelMemberCategoriesContextsManager.addMembers(engine: component.call.accountContext.engine, peerId: groupPeer.id, memberIds: [peer.id])
+                                        var cancelImpl: (() -> Void)?
+                                        let progressSignal = Signal<Never, NoError> { [weak selfController] subscriber in
+                                            let controller = OverlayStatusController(theme: presentationData.theme, type: .loading(cancelled: {
+                                                cancelImpl?()
+                                            }))
+                                            selfController?.present(controller, in: .window(.root))
+                                            return ActionDisposable { [weak controller] in
+                                                Queue.mainQueue().async() {
+                                                    controller?.dismiss()
+                                                }
+                                            }
+                                        }
+                                        |> runOn(Queue.mainQueue())
+                                        |> delay(0.15, queue: Queue.mainQueue())
+                                        let progressDisposable = progressSignal.start()
+                                        
+                                        inviteSignal = inviteSignal
+                                        |> afterDisposed {
+                                            Queue.mainQueue().async {
+                                                progressDisposable.dispose()
+                                            }
+                                        }
+                                        cancelImpl = {
+                                            inviteDisposable.set(nil)
+                                        }
+                                        
+                                        inviteDisposable.set((inviteSignal |> deliverOnMainQueue).start(error: { [weak self] error in
+                                            dismissController?()
+                                            guard let self, let component = self.component, let environment = self.environment else {
+                                                return
+                                            }
+                                            
+                                            let text: String
+                                            switch error {
+                                            case .limitExceeded:
+                                                text = environment.strings.Channel_ErrorAddTooMuch
+                                            case .tooMuchJoined:
+                                                text = environment.strings.Invite_ChannelsTooMuch
+                                            case .generic:
+                                                text = environment.strings.Login_UnknownError
+                                            case .restricted:
+                                                text = environment.strings.Channel_ErrorAddBlocked
+                                            case .notMutualContact:
+                                                if case .broadcast = groupPeer.info {
+                                                    text = environment.strings.Channel_AddUserLeftError
+                                                } else {
+                                                    text = environment.strings.GroupInfo_AddUserLeftError
+                                                }
+                                            case .botDoesntSupportGroups:
+                                                text = environment.strings.Channel_BotDoesntSupportGroups
+                                            case .tooMuchBots:
+                                                text = environment.strings.Channel_TooMuchBots
+                                            case .bot:
+                                                text = environment.strings.Login_UnknownError
+                                            case .kicked:
+                                                text = environment.strings.Channel_AddUserKickedError
+                                            }
+                                            environment.controller()?.present(textAlertController(context: component.call.accountContext, forceTheme: environment.theme, title: nil, text: text, actions: [TextAlertAction(type: .defaultAction, title: environment.strings.Common_OK, action: {})]), in: .window(.root))
+                                        }, completed: { [weak self] in
+                                            guard let self, let component = self.component, let environment = self.environment else {
+                                                dismissController?()
+                                                return
+                                            }
+                                            dismissController?()
+                                            
+                                            if component.call.invitePeer(peer.id) {
+                                                let text: String
+                                                if case let .channel(channel) = self.peer, case .broadcast = channel.info {
+                                                    text = environment.strings.LiveStream_InvitedPeerText(peer.displayTitle(strings: environment.strings, displayOrder: presentationData.nameDisplayOrder)).string
+                                                } else {
+                                                    text = environment.strings.VoiceChat_InvitedPeerText(peer.displayTitle(strings: environment.strings, displayOrder: presentationData.nameDisplayOrder)).string
+                                                }
+                                                self.presentUndoOverlay(content: .invitedToVoiceChat(context: component.call.accountContext, peer: peer, title: nil, text: text, action: nil, duration: 3), action: { _ in return false })
+                                            }
+                                        }))
+                                    } else if case let .legacyGroup(groupPeer) = groupPeer {
+                                        guard let selfController = environment.controller() else {
+                                            return
+                                        }
+                                        let inviteDisposable = self.inviteDisposable
+                                        var inviteSignal = component.call.accountContext.engine.peers.addGroupMember(peerId: groupPeer.id, memberId: peer.id)
+                                        var cancelImpl: (() -> Void)?
+                                        let progressSignal = Signal<Never, NoError> { [weak selfController] subscriber in
+                                            let controller = OverlayStatusController(theme: presentationData.theme, type: .loading(cancelled: {
+                                                cancelImpl?()
+                                            }))
+                                            selfController?.present(controller, in: .window(.root))
+                                            return ActionDisposable { [weak controller] in
+                                                Queue.mainQueue().async() {
+                                                    controller?.dismiss()
+                                                }
+                                            }
+                                        }
+                                        |> runOn(Queue.mainQueue())
+                                        |> delay(0.15, queue: Queue.mainQueue())
+                                        let progressDisposable = progressSignal.start()
+                                        
+                                        inviteSignal = inviteSignal
+                                        |> afterDisposed {
+                                            Queue.mainQueue().async {
+                                                progressDisposable.dispose()
+                                            }
+                                        }
+                                        cancelImpl = {
+                                            inviteDisposable.set(nil)
+                                        }
+                                        
+                                        inviteDisposable.set((inviteSignal |> deliverOnMainQueue).start(error: { [weak self] error in
+                                            dismissController?()
+                                            guard let self, let component = self.component, let environment = self.environment else {
+                                                return
+                                            }
+                                            let context = component.call.accountContext
+                                            
+                                            switch error {
+                                            case .privacy:
+                                                let _ = (component.call.accountContext.account.postbox.loadedPeerWithId(peer.id)
+                                                         |> deliverOnMainQueue).start(next: { [weak self] peer in
+                                                    guard let self, let component = self.component, let environment = self.environment else {
+                                                        return
+                                                    }
+                                                    environment.controller()?.present(textAlertController(context: component.call.accountContext, title: nil, text: environment.strings.Privacy_GroupsAndChannels_InviteToGroupError(EnginePeer(peer).compactDisplayTitle, EnginePeer(peer).compactDisplayTitle).string, actions: [TextAlertAction(type: .genericAction, title: environment.strings.Common_OK, action: {})]), in: .window(.root))
+                                                })
+                                            case .notMutualContact:
+                                                environment.controller()?.present(textAlertController(context: context, title: nil, text: environment.strings.GroupInfo_AddUserLeftError, actions: [TextAlertAction(type: .genericAction, title: environment.strings.Common_OK, action: {})]), in: .window(.root))
+                                            case .tooManyChannels:
+                                                environment.controller()?.present(textAlertController(context: context, title: nil, text: environment.strings.Invite_ChannelsTooMuch, actions: [TextAlertAction(type: .genericAction, title: environment.strings.Common_OK, action: {})]), in: .window(.root))
+                                            case .groupFull, .generic:
+                                                environment.controller()?.present(textAlertController(context: context, forceTheme: environment.theme, title: nil, text: environment.strings.Login_UnknownError, actions: [TextAlertAction(type: .defaultAction, title: environment.strings.Common_OK, action: {})]), in: .window(.root))
+                                            }
+                                        }, completed: { [weak self] in
+                                            guard let self, let component = self.component, let environment = self.environment else {
+                                                dismissController?()
+                                                return
+                                            }
+                                            dismissController?()
+                                            
+                                            if component.call.invitePeer(peer.id) {
+                                                let text: String
+                                                if case let .channel(channel) = self.peer, case .broadcast = channel.info {
+                                                    text = environment.strings.LiveStream_InvitedPeerText(peer.displayTitle(strings: environment.strings, displayOrder: presentationData.nameDisplayOrder)).string
+                                                } else {
+                                                    text = environment.strings.VoiceChat_InvitedPeerText(peer.displayTitle(strings: environment.strings, displayOrder: presentationData.nameDisplayOrder)).string
+                                                }
+                                                self.presentUndoOverlay(content: .invitedToVoiceChat(context: component.call.accountContext, peer: peer, title: nil, text: text, action: nil, duration: 3), action: { _ in return false })
+                                            }
+                                        }))
+                                    }
+                                })]), in: .window(.root))
+                            }
+                        }
+                    })
+                    controller.copyInviteLink = { [weak self] in
+                        dismissController?()
+                        
+                        guard let self, let component = self.component else {
+                            return
+                        }
+                        let callPeerId = component.call.peerId
+                        
+                        let _ = (component.call.accountContext.engine.data.get(
+                            TelegramEngine.EngineData.Item.Peer.Peer(id: callPeerId),
+                            TelegramEngine.EngineData.Item.Peer.ExportedInvitation(id: callPeerId)
+                        )
+                                 |> map { peer, exportedInvitation -> String? in
+                            if let link = inviteLinks?.listenerLink {
+                                return link
+                            } else if let peer = peer, let addressName = peer.addressName, !addressName.isEmpty {
+                                return "https://t.me/\(addressName)"
+                            } else if let link = exportedInvitation?.link {
+                                return link
+                            } else {
+                                return nil
+                            }
+                        }
+                                 |> deliverOnMainQueue).start(next: { [weak self] link in
+                            guard let self, let environment = self.environment else {
+                                return
+                            }
+                            
+                            if let link {
+                                UIPasteboard.general.string = link
+                                
+                                self.presentUndoOverlay(content: .linkCopied(text: environment.strings.VoiceChat_InviteLinkCopiedText), action: { _ in return false })
+                            }
+                        })
+                    }
+                    dismissController = { [weak controller] in
+                        controller?.dismiss()
+                    }
+                    environment.controller()?.push(controller)
+                })
+            case .shareLink:
+                guard let inviteLinks = self.inviteLinks else {
+                    return
+                }
+                self.presentShare(inviteLinks)
+            }
+        }
+        
+        private func presentShare(_ inviteLinks: GroupCallInviteLinks) {
             guard let component = self.component else {
                 return
             }
@@ -601,140 +1979,10 @@ final class VideoChatScreenComponent: Component {
             }
         }
         
-        private func onLeavePressed() {
-            guard let component = self.component, let environment = self.environment else {
-                return
-            }
-            
-            //TODO:release
-            let isScheduled = !"".isEmpty
-            
-            let action: (Bool) -> Void = { [weak self] terminateIfPossible in
-                guard let self, let component = self.component else {
-                    return
-                }
-
-                let _ = component.call.leave(terminateIfPossible: terminateIfPossible).startStandalone()
-                
-                if let controller = self.environment?.controller() as? VideoChatScreenV2Impl {
-                    controller.dismiss(closing: true, manual: false)
-                }
-            }
-            
-            if let callState = self.callState, callState.canManageCall {
-                let presentationData = component.call.accountContext.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: environment.theme)
-                let actionSheet = ActionSheetController(presentationData: presentationData)
-                var items: [ActionSheetItem] = []
-
-                let leaveTitle: String
-                let leaveAndCancelTitle: String
-
-                if case let .channel(channel) = self.peer, case .broadcast = channel.info {
-                    leaveTitle = environment.strings.LiveStream_LeaveConfirmation
-                    leaveAndCancelTitle = isScheduled ? environment.strings.LiveStream_LeaveAndCancelVoiceChat : environment.strings.LiveStream_LeaveAndEndVoiceChat
-                } else {
-                    leaveTitle = environment.strings.VoiceChat_LeaveConfirmation
-                    leaveAndCancelTitle = isScheduled ? environment.strings.VoiceChat_LeaveAndCancelVoiceChat : environment.strings.VoiceChat_LeaveAndEndVoiceChat
-                }
-                
-                items.append(ActionSheetTextItem(title: leaveTitle))
-                items.append(ActionSheetButtonItem(title: leaveAndCancelTitle, color: .destructive, action: { [weak self, weak actionSheet] in
-                    actionSheet?.dismissAnimated()
-                    
-                    guard let self, let component = self.component, let environment = self.environment else {
-                        return
-                    }
-                    let title: String
-                    let text: String
-                    if case let .channel(channel) = self.peer, case .broadcast = channel.info {
-                        title = isScheduled ? environment.strings.LiveStream_CancelConfirmationTitle : environment.strings.LiveStream_EndConfirmationTitle
-                        text = isScheduled ? environment.strings.LiveStream_CancelConfirmationText :  environment.strings.LiveStream_EndConfirmationText
-                    } else {
-                        title = isScheduled ? environment.strings.VoiceChat_CancelConfirmationTitle : environment.strings.VoiceChat_EndConfirmationTitle
-                        text = isScheduled ? environment.strings.VoiceChat_CancelConfirmationText :  environment.strings.VoiceChat_EndConfirmationText
-                    }
-
-                    if let _ = self.members {
-                        let alertController = textAlertController(context: component.call.accountContext, forceTheme: environment.theme, title: title, text: text, actions: [TextAlertAction(type: .defaultAction, title: environment.strings.Common_Cancel, action: {}), TextAlertAction(type: .genericAction, title: isScheduled ? environment.strings.VoiceChat_CancelConfirmationEnd :  environment.strings.VoiceChat_EndConfirmationEnd, action: {
-                            action(true)
-                        })])
-                        environment.controller()?.present(alertController, in: .window(.root))
-                    } else {
-                        action(true)
-                    }
-                }))
-
-                let leaveText: String
-                if case let .channel(channel) = self.peer, case .broadcast = channel.info {
-                    leaveText = environment.strings.LiveStream_LeaveVoiceChat
-                } else {
-                    leaveText = environment.strings.VoiceChat_LeaveVoiceChat
-                }
-
-                items.append(ActionSheetButtonItem(title: leaveText, color: .accent, action: { [weak actionSheet] in
-                    actionSheet?.dismissAnimated()
-                    
-                    action(false)
-                }))
-                
-                actionSheet.setItemGroups([
-                    ActionSheetItemGroup(items: items),
-                    ActionSheetItemGroup(items: [
-                        ActionSheetButtonItem(title: environment.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
-                            actionSheet?.dismissAnimated()
-                        })
-                    ])
-                ])
-                environment.controller()?.present(actionSheet, in: .window(.root))
-            } else {
-                action(false)
-            }
-        }
-        
-        private func onVisibleParticipantsUpdated(ids: Set<EnginePeer.Id>) {
-            if self.visibleParticipants == ids {
-                return
-            }
-            self.visibleParticipants = ids
-            self.updateTitleSpeakingStatus()
-        }
-        
-        private func updateTitleSpeakingStatus() {
-            guard let titleView = self.title.view as? VideoChatTitleComponent.View else {
-                return
-            }
-            
-            if self.speakingParticipantPeers.isEmpty {
-                titleView.updateActivityStatus(value: nil, transition: .easeInOut(duration: 0.2))
-            } else {
-                var titleSpeakingStatusValue = ""
-                for participant in self.speakingParticipantPeers {
-                    if !self.visibleParticipants.contains(participant.id) {
-                        if !titleSpeakingStatusValue.isEmpty {
-                            titleSpeakingStatusValue.append(", ")
-                        }
-                        titleSpeakingStatusValue.append(participant.compactDisplayTitle)
-                    }
-                }
-                if titleSpeakingStatusValue.isEmpty {
-                    titleView.updateActivityStatus(value: nil, transition: .easeInOut(duration: 0.2))
-                } else {
-                    titleView.updateActivityStatus(value: titleSpeakingStatusValue, transition: .easeInOut(duration: 0.2))
-                }
-            }
-        }
-        
         func update(component: VideoChatScreenComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<ViewControllerComponentContainer.Environment>, transition: ComponentTransition) -> CGSize {
             self.isUpdating = true
             defer {
                 self.isUpdating = false
-            }
-            
-            let alphaTransition: ComponentTransition
-            if transition.animation.isImmediate {
-                alphaTransition = .immediate
-            } else {
-                alphaTransition = .easeInOut(duration: 0.25)
             }
             
             let environment = environment[ViewControllerComponentContainer.Environment.self].value
@@ -808,7 +2056,25 @@ final class VideoChatScreenComponent: Component {
                         #endif
                         
                         if let membersValue = members {
-                            let participants = membersValue.participants
+                            var participants = membersValue.participants
+                            participants = participants.sorted(by: { lhs, rhs in
+                                guard let lhsIndex = membersValue.participants.firstIndex(where: { $0.peer.id == lhs.peer.id }) else {
+                                    return false
+                                }
+                                guard let rhsIndex = membersValue.participants.firstIndex(where: { $0.peer.id == rhs.peer.id }) else {
+                                    return false
+                                }
+                                
+                                if let lhsActivityRank = lhs.activityRank, let rhsActivityRank = rhs.activityRank {
+                                    if lhsActivityRank != rhsActivityRank {
+                                        return lhsActivityRank < rhsActivityRank
+                                    }
+                                } else if (lhs.activityRank == nil) != (rhs.activityRank == nil) {
+                                    return lhs.activityRank != nil
+                                }
+                                
+                                return lhsIndex < rhsIndex
+                            })
                             members = PresentationGroupCallMembers(
                                 participants: participants,
                                 speakingParticipants: membersValue.speakingParticipants,
@@ -819,26 +2085,8 @@ final class VideoChatScreenComponent: Component {
                         
                         self.members = members
                         
-                        if let members, let _ = self.expandedParticipantsVideoState {
-                            var videoCount = 0
-                            for participant in members.participants {
-                                if participant.presentationDescription != nil {
-                                    videoCount += 1
-                                }
-                                if participant.videoDescription != nil {
-                                    videoCount += 1
-                                }
-                            }
-                            if videoCount == 1, let participantsView = self.participants.view as? VideoChatParticipantsComponent.View, let participantsComponent = participantsView.component {
-                                if participantsComponent.layout.videoColumn != nil {
-                                    self.expandedParticipantsVideoState = nil
-                                    self.focusedSpeakerAutoSwitchDeadline = 0.0
-                                }
-                            }
-                        }
-                        
                         if let expandedParticipantsVideoState = self.expandedParticipantsVideoState, let members {
-                            if CFAbsoluteTimeGetCurrent() > self.focusedSpeakerAutoSwitchDeadline, !expandedParticipantsVideoState.isMainParticipantPinned, let participant = members.participants.first(where: { participant in
+                            if !expandedParticipantsVideoState.isMainParticipantPinned, let participant = members.participants.first(where: { participant in
                                 if let callState = self.callState, participant.peer.id == callState.myPeerId {
                                     return false
                                 }
@@ -855,7 +2103,6 @@ final class VideoChatScreenComponent: Component {
                                     } else {
                                         self.expandedParticipantsVideoState = VideoChatParticipantsComponent.ExpandedVideoState(mainParticipant: VideoChatParticipantsComponent.VideoParticipantKey(id: participant.peer.id, isPresentation: false), isMainParticipantPinned: false, isUIHidden: expandedParticipantsVideoState.isUIHidden)
                                     }
-                                    self.focusedSpeakerAutoSwitchDeadline = CFAbsoluteTimeGetCurrent() + 1.0
                                 }
                             }
                             
@@ -888,31 +2135,15 @@ final class VideoChatScreenComponent: Component {
                                 } else {
                                     self.expandedParticipantsVideoState = VideoChatParticipantsComponent.ExpandedVideoState(mainParticipant: VideoChatParticipantsComponent.VideoParticipantKey(id: participant.peer.id, isPresentation: false), isMainParticipantPinned: false, isUIHidden: expandedParticipantsVideoState.isUIHidden)
                                 }
-                                self.focusedSpeakerAutoSwitchDeadline = CFAbsoluteTimeGetCurrent() + 1.0
                             } else {
                                 self.expandedParticipantsVideoState = nil
-                                self.focusedSpeakerAutoSwitchDeadline = 0.0
                             }
                         } else {
                             self.expandedParticipantsVideoState = nil
-                            self.focusedSpeakerAutoSwitchDeadline = 0.0
                         }
                         
                         if !self.isUpdating {
                             self.state?.updated(transition: .spring(duration: 0.4))
-                        }
-                        
-                        var speakingParticipantPeers: [EnginePeer] = []
-                        if let members, !members.speakingParticipants.isEmpty {
-                            for participant in members.participants {
-                                if members.speakingParticipants.contains(participant.peer.id) {
-                                    speakingParticipantPeers.append(EnginePeer(participant.peer))
-                                }
-                            }
-                        }
-                        if self.speakingParticipantPeers != speakingParticipantPeers {
-                            self.speakingParticipantPeers = speakingParticipantPeers
-                            self.updateTitleSpeakingStatus()
                         }
                     }
                 })
@@ -1066,12 +2297,8 @@ final class VideoChatScreenComponent: Component {
             }
             
             var containerOffset: CGFloat = 0.0
-            if let verticalPanState = self.verticalPanState {
-                if verticalPanState.scrollView != nil {
-                    containerOffset = verticalPanState.accumulatedOffset
-                } else {
-                    containerOffset = verticalPanState.fraction * availableSize.height
-                }
+            if let panGestureState = self.panGestureState {
+                containerOffset = panGestureState.offsetFraction * availableSize.height
                 self.containerView.layer.cornerRadius = environment.deviceMetrics.screenCornerRadius
             }
             
@@ -1079,7 +2306,7 @@ final class VideoChatScreenComponent: Component {
                 guard let self, completed else {
                     return
                 }
-                if self.verticalPanState == nil {
+                if self.panGestureState == nil {
                     self.containerView.layer.cornerRadius = 0.0
                 }
                 if self.notifyDismissedInteractivelyOnPanGestureApply {
@@ -1126,7 +2353,6 @@ final class VideoChatScreenComponent: Component {
                         size: CGSize(width: navigationButtonDiameter, height: navigationButtonDiameter)
                     )),
                     effectAlignment: .center,
-                    minSize: CGSize(width: navigationButtonDiameter, height: navigationButtonDiameter),
                     action: { [weak self] in
                         guard let self else {
                             return
@@ -1149,7 +2375,6 @@ final class VideoChatScreenComponent: Component {
                         size: CGSize(width: navigationButtonDiameter, height: navigationButtonDiameter)
                     )),
                     effectAlignment: .center,
-                    minSize: CGSize(width: navigationButtonDiameter, height: navigationButtonDiameter),
                     action: { [weak self] in
                         guard let self else {
                             return
@@ -1177,7 +2402,7 @@ final class VideoChatScreenComponent: Component {
                 transition.setFrame(view: navigationRightButtonView, frame: navigationRightButtonFrame)
             }
             
-            if isTwoColumnLayout {
+            if isTwoColumnLayout, !"".isEmpty {
                 var navigationSidebarButtonTransition = transition
                 let navigationSidebarButton: ComponentView<Empty>
                 if let current = self.navigationSidebarButton {
@@ -1194,19 +2419,25 @@ final class VideoChatScreenComponent: Component {
                             name: "Call/PanelIcon",
                             tintColor: .white
                         )),
-                        background: AnyComponent(FilledRoundedRectangleComponent(
-                            color: UIColor(white: 1.0, alpha: 0.1),
-                            cornerRadius: navigationButtonDiameter * 0.5,
-                            smoothCorners: false
+                        background: AnyComponent(Circle(
+                            fillColor: UIColor(white: 1.0, alpha: 0.1),
+                            size: CGSize(width: navigationButtonDiameter, height: navigationButtonDiameter)
                         )),
                         effectAlignment: .center,
-                        minSize: CGSize(width: navigationButtonDiameter + 10.0, height: navigationButtonDiameter),
                         action: { [weak self] in
                             guard let self else {
                                 return
                             }
-                            self.isTwoColumnSidebarHidden = !self.isTwoColumnSidebarHidden
-                            self.state?.updated(transition: .spring(duration: 0.4))
+                            if let expandedParticipantsVideoState = self.expandedParticipantsVideoState {
+                                self.expandedParticipantsVideoState = VideoChatParticipantsComponent.ExpandedVideoState(
+                                    mainParticipant: expandedParticipantsVideoState.mainParticipant,
+                                    isMainParticipantPinned: expandedParticipantsVideoState.isMainParticipantPinned,
+                                    isUIHidden: !expandedParticipantsVideoState.isUIHidden
+                                )
+                                self.state?.updated(transition: .spring(duration: 0.4))
+                            } else {
+                                
+                            }
                         }
                     )),
                     environment: {},
@@ -1214,18 +2445,12 @@ final class VideoChatScreenComponent: Component {
                 )
                 let navigationSidebarButtonFrame = CGRect(origin: CGPoint(x: navigationRightButtonFrame.minX - 32.0 - navigationSidebarButtonSize.width, y: topInset + floor((navigationBarHeight - navigationSidebarButtonSize.height) * 0.5)), size: navigationSidebarButtonSize)
                 if let navigationSidebarButtonView = navigationSidebarButton.view {
-                    var animateIn = false
                     if navigationSidebarButtonView.superview == nil {
-                        animateIn = true
                         if let navigationRightButtonView = self.navigationRightButton.view {
                             self.containerView.insertSubview(navigationSidebarButtonView, aboveSubview: navigationRightButtonView)
                         }
                     }
-                    navigationSidebarButtonTransition.setFrame(view: navigationSidebarButtonView, frame: navigationSidebarButtonFrame)
-                    if animateIn {
-                        transition.animateScale(view: navigationSidebarButtonView, from: 0.001, to: 1.0)
-                        transition.animateAlpha(view: navigationSidebarButtonView, from: 0.0, to: 1.0)
-                    }
+                    transition.setFrame(view: navigationSidebarButtonView, frame: navigationSidebarButtonFrame)
                 }
             } else if let navigationSidebarButton = self.navigationSidebarButton {
                 self.navigationSidebarButton = nil
@@ -1238,23 +2463,16 @@ final class VideoChatScreenComponent: Component {
             }
             
             let idleTitleStatusText: String
-            if let callState = self.callState {
-                if callState.networkState == .connected, let members = self.members {
-                    idleTitleStatusText = environment.strings.VoiceChat_Panel_Members(Int32(max(1, members.totalCount)))
-                } else if callState.scheduleTimestamp != nil {
-                    idleTitleStatusText = "scheduled"
-                } else {
-                    idleTitleStatusText = "connecting..."
-                }
+            if let callState = self.callState, callState.networkState == .connected, let members = self.members {
+                idleTitleStatusText = environment.strings.VoiceChat_Panel_Members(Int32(max(1, members.totalCount)))
             } else {
-                idleTitleStatusText = " "
+                idleTitleStatusText = "connecting..."
             }
             let titleSize = self.title.update(
                 transition: transition,
                 component: AnyComponent(VideoChatTitleComponent(
                     title: self.callState?.title ?? self.peer?.debugDisplayTitle ?? " ",
                     status: idleTitleStatusText,
-                    isRecording: self.callState?.recordingStartTimestamp != nil,
                     strings: environment.strings
                 )),
                 environment: {},
@@ -1263,7 +2481,6 @@ final class VideoChatScreenComponent: Component {
             let titleFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - titleSize.width) * 0.5), y: topInset + floor((navigationBarHeight - titleSize.height) * 0.5)), size: titleSize)
             if let titleView = self.title.view {
                 if titleView.superview == nil {
-                    titleView.isUserInteractionEnabled = false
                     self.containerView.addSubview(titleView)
                 }
                 transition.setFrame(view: titleView, frame: titleFrame)
@@ -1313,34 +2530,16 @@ final class VideoChatScreenComponent: Component {
                 }
             }
             
-            let buttonsSideInset: CGFloat = 26.0
+            let buttonsSideInset: CGFloat = 42.0
             
             let buttonsWidth: CGFloat = actionButtonDiameter * 2.0 + microphoneButtonDiameter
             let remainingButtonsSpace: CGFloat = availableSize.width - buttonsSideInset * 2.0 - buttonsWidth
-            
-            let effectiveMaxActionMicrophoneButtonSpacing: CGFloat
-            if areButtonsCollapsed {
-                effectiveMaxActionMicrophoneButtonSpacing = 80.0
-            } else {
-                effectiveMaxActionMicrophoneButtonSpacing = maxActionMicrophoneButtonSpacing
-            }
-            
-            let actionMicrophoneButtonSpacing = min(effectiveMaxActionMicrophoneButtonSpacing, floor(remainingButtonsSpace * 0.5))
+            let actionMicrophoneButtonSpacing = min(maxActionMicrophoneButtonSpacing, floor(remainingButtonsSpace * 0.5))
             
             var collapsedMicrophoneButtonFrame: CGRect = CGRect(origin: CGPoint(x: floor((availableSize.width - collapsedMicrophoneButtonDiameter) * 0.5), y: availableSize.height - 48.0 - environment.safeInsets.bottom - collapsedMicrophoneButtonDiameter), size: CGSize(width: collapsedMicrophoneButtonDiameter, height: collapsedMicrophoneButtonDiameter))
             var expandedMicrophoneButtonFrame: CGRect = CGRect(origin: CGPoint(x: floor((availableSize.width - expandedMicrophoneButtonDiameter) * 0.5), y: availableSize.height - environment.safeInsets.bottom - expandedMicrophoneButtonDiameter - 12.0), size: CGSize(width: expandedMicrophoneButtonDiameter, height: expandedMicrophoneButtonDiameter))
-            
-            var isMainColumnHidden = false
             if isTwoColumnLayout {
                 if let expandedParticipantsVideoState = self.expandedParticipantsVideoState, expandedParticipantsVideoState.isUIHidden {
-                    isMainColumnHidden = true
-                } else if self.isTwoColumnSidebarHidden {
-                    isMainColumnHidden = true
-                }
-            }
-            
-            if isTwoColumnLayout {
-                if isMainColumnHidden {
                     collapsedMicrophoneButtonFrame.origin.x = availableSize.width - sideInset - mainColumnWidth + floor((mainColumnWidth - collapsedMicrophoneButtonDiameter) * 0.5) + sideInset + mainColumnWidth
                 } else {
                     collapsedMicrophoneButtonFrame.origin.x = availableSize.width - sideInset - mainColumnWidth + floor((mainColumnWidth - collapsedMicrophoneButtonDiameter) * 0.5)
@@ -1392,8 +2591,7 @@ final class VideoChatScreenComponent: Component {
                         width: mainColumnWidth,
                         insets: mainColumnInsets
                     ),
-                    columnSpacing: columnSpacing,
-                    isMainColumnHidden: self.isTwoColumnSidebarHidden
+                    columnSpacing: columnSpacing
                 )
             } else {
                 let mainColumnInsets: UIEdgeInsets = UIEdgeInsets(top: navigationHeight, left: mainColumnSideInset, bottom: availableSize.height - collapsedParticipantsClippingY, right: mainColumnSideInset)
@@ -1403,8 +2601,7 @@ final class VideoChatScreenComponent: Component {
                         width: mainColumnWidth,
                         insets: mainColumnInsets
                     ),
-                    columnSpacing: columnSpacing,
-                    isMainColumnHidden: false
+                    columnSpacing: columnSpacing
                 )
             }
             
@@ -1450,7 +2647,7 @@ final class VideoChatScreenComponent: Component {
                         }
                         self.openParticipantContextMenu(id: id, sourceView: sourceView, gesture: gesture)
                     },
-                    updateMainParticipant: { [weak self] key, alsoSetIsUIHidden in
+                    updateMainParticipant: { [weak self] key in
                         guard let self else {
                             return
                         }
@@ -1458,14 +2655,7 @@ final class VideoChatScreenComponent: Component {
                             if let expandedParticipantsVideoState = self.expandedParticipantsVideoState, expandedParticipantsVideoState.mainParticipant == key {
                                 return
                             }
-                            
-                            var isUIHidden = self.expandedParticipantsVideoState?.isUIHidden ?? false
-                            if let alsoSetIsUIHidden {
-                                isUIHidden = alsoSetIsUIHidden
-                            }
-                            
-                            self.expandedParticipantsVideoState = VideoChatParticipantsComponent.ExpandedVideoState(mainParticipant: key, isMainParticipantPinned: false, isUIHidden: isUIHidden)
-                            self.focusedSpeakerAutoSwitchDeadline = CFAbsoluteTimeGetCurrent() + 3.0
+                            self.expandedParticipantsVideoState = VideoChatParticipantsComponent.ExpandedVideoState(mainParticipant: key, isMainParticipantPinned: false, isUIHidden: self.expandedParticipantsVideoState?.isUIHidden ?? false)
                             self.state?.updated(transition: .spring(duration: 0.4))
                         } else if self.expandedParticipantsVideoState != nil {
                             self.expandedParticipantsVideoState = nil
@@ -1511,12 +2701,6 @@ final class VideoChatScreenComponent: Component {
                             return
                         }
                         self.openInviteMembers()
-                    },
-                    visibleParticipantsUpdated: { [weak self] visibleParticipants in
-                        guard let self else {
-                            return
-                        }
-                        self.onVisibleParticipantsUpdated(ids: visibleParticipants)
                     }
                 )),
                 environment: {},
@@ -1525,88 +2709,35 @@ final class VideoChatScreenComponent: Component {
             let participantsFrame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: participantsSize)
             if let participantsView = self.participants.view {
                 if participantsView.superview == nil {
-                    participantsView.layer.allowsGroupOpacity = true
                     self.containerView.addSubview(participantsView)
                 }
                 transition.setFrame(view: participantsView, frame: participantsFrame)
-                var participantsAlpha: CGFloat = 1.0
-                if let callState = self.callState, callState.scheduleTimestamp != nil {
-                    participantsAlpha = 0.0
-                }
-                alphaTransition.setAlpha(view: participantsView, alpha: participantsAlpha)
-            }
-            
-            if let callState = self.callState, let scheduleTimestamp = callState.scheduleTimestamp {
-                let scheduleInfo: ComponentView<Empty>
-                var scheduleInfoTransition = transition
-                if let current = self.scheduleInfo {
-                    scheduleInfo = current
-                } else {
-                    scheduleInfoTransition = scheduleInfoTransition.withAnimation(.none)
-                    scheduleInfo = ComponentView()
-                    self.scheduleInfo = scheduleInfo
-                }
-                let scheduleInfoSize = scheduleInfo.update(
-                    transition: scheduleInfoTransition,
-                    component: AnyComponent(VideoChatScheduledInfoComponent(
-                        timestamp: scheduleTimestamp,
-                        strings: environment.strings
-                    )),
-                    environment: {},
-                    containerSize: participantsSize
-                )
-                let scheduleInfoFrame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: scheduleInfoSize)
-                if let scheduleInfoView = scheduleInfo.view {
-                    if scheduleInfoView.superview == nil {
-                        scheduleInfoView.isUserInteractionEnabled = false
-                        self.containerView.addSubview(scheduleInfoView)
-                    }
-                    scheduleInfoTransition.setFrame(view: scheduleInfoView, frame: scheduleInfoFrame)
-                }
-            } else if let scheduleInfo = self.scheduleInfo {
-                self.scheduleInfo = nil
-                if let scheduleInfoView = scheduleInfo.view {
-                    alphaTransition.setAlpha(view: scheduleInfoView, alpha: 0.0, completion: { [weak scheduleInfoView] _ in
-                        scheduleInfoView?.removeFromSuperview()
-                    })
-                }
             }
             
             let micButtonContent: VideoChatMicButtonComponent.Content
             let actionButtonMicrophoneState: VideoChatActionButtonComponent.MicrophoneState
             if let callState = self.callState {
-                if callState.scheduleTimestamp != nil {
-                    let scheduledState: VideoChatMicButtonComponent.ScheduledState
-                    if callState.canManageCall {
-                        scheduledState = .start
-                    } else {
-                        scheduledState = .toggleSubscription(isSubscribed: callState.subscribedToScheduled)
-                    }
-                    micButtonContent = .scheduled(state: scheduledState)
-                    actionButtonMicrophoneState = .scheduled
-                } else {
-                    switch callState.networkState {
-                    case .connecting:
-                        micButtonContent = .connecting
-                        actionButtonMicrophoneState = .connecting
-                    case .connected:
-                        if let muteState = callState.muteState {
-                            if muteState.canUnmute {
-                                if self.isPushToTalkActive {
-                                    micButtonContent = .unmuted(pushToTalk: self.isPushToTalkActive)
-                                    actionButtonMicrophoneState = .unmuted
-                                } else {
-                                    micButtonContent = .muted
-                                    actionButtonMicrophoneState = .muted
-                                }
+                switch callState.networkState {
+                case .connecting:
+                    micButtonContent = .connecting
+                    actionButtonMicrophoneState = .connecting
+                case .connected:
+                    if let callState = callState.muteState {
+                        if callState.canUnmute {
+                            if self.isPushToTalkActive {
+                                micButtonContent = .unmuted(pushToTalk: self.isPushToTalkActive)
+                                actionButtonMicrophoneState = .unmuted
                             } else {
-                                micButtonContent = .raiseHand(isRaised: callState.raisedHand)
-                                actionButtonMicrophoneState = .raiseHand
+                                micButtonContent = .muted
+                                actionButtonMicrophoneState = .muted
                             }
                         } else {
-                            micButtonContent = .unmuted(pushToTalk: false)
-                            actionButtonMicrophoneState = .unmuted
+                            micButtonContent = .raiseHand
+                            actionButtonMicrophoneState = .raiseHand
                         }
+                    } else {
+                        micButtonContent = .unmuted(pushToTalk: false)
+                        actionButtonMicrophoneState = .unmuted
                     }
                 }
             } else {
@@ -1665,23 +2796,6 @@ final class VideoChatScreenComponent: Component {
                         }
                         if !callState.raisedHand {
                             component.call.raiseHand()
-                        }
-                    },
-                    scheduleAction: { [weak self] in
-                        guard let self, let component = self.component else {
-                            return
-                        }
-                        guard let callState = self.callState else {
-                            return
-                        }
-                        guard callState.scheduleTimestamp != nil else {
-                            return
-                        }
-                        
-                        if callState.canManageCall {
-                            component.call.startScheduled()
-                        } else {
-                            component.call.toggleScheduledSubscription(!callState.subscribedToScheduled)
                         }
                     }
                 )),
@@ -1772,10 +2886,14 @@ final class VideoChatScreenComponent: Component {
                     )),
                     effectAlignment: .center,
                     action: { [weak self] in
-                        guard let self else {
+                        guard let self, let component = self.component else {
                             return
                         }
-                        self.onLeavePressed()
+                        let _ = component.call.leave(terminateIfPossible: false).startStandalone()
+                        
+                        if let controller = self.environment?.controller() as? VideoChatScreenV2Impl {
+                            controller.dismiss(closing: true, manual: false)
+                        }
                     },
                     animateAlpha: false
                 )),
@@ -1928,11 +3046,9 @@ final class VideoChatScreenV2Impl: ViewControllerComponentContainer, VoiceChatCo
                     }
                     self.isAnimatingDismiss = false
                     self.superDismiss()
-                    completion?()
                 })
             } else {
                 self.superDismiss()
-                completion?()
             }
         }
     }
@@ -1956,5 +3072,27 @@ final class VideoChatScreenV2Impl: ViewControllerComponentContainer, VoiceChatCo
                 callState: callState
             )
         }
+    }
+}
+
+private final class ParticipantExtractedContentSource: ContextExtractedContentSource {
+    let keepInPlace: Bool = false
+    let ignoreContentTouches: Bool = false
+    let blurBackground: Bool = true
+    
+    //let actionsHorizontalAlignment: ContextActionsHorizontalAlignment = .center
+    
+    private let contentView: ContextExtractedContentContainingView
+    
+    init(contentView: ContextExtractedContentContainingView) {
+        self.contentView = contentView
+    }
+    
+    func takeView() -> ContextControllerTakeViewInfo? {
+        return ContextControllerTakeViewInfo(containingItem: .view(self.contentView), contentAreaInScreenSpace: UIScreen.main.bounds)
+    }
+    
+    func putBack() -> ContextControllerPutBackViewInfo? {
+        return ContextControllerPutBackViewInfo(contentAreaInScreenSpace: UIScreen.main.bounds)
     }
 }

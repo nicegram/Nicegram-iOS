@@ -175,17 +175,11 @@ private final class GlowView: UIView {
 }
 
 final class VideoChatMicButtonComponent: Component {
-    enum ScheduledState: Equatable {
-        case start
-        case toggleSubscription(isSubscribed: Bool)
-    }
-    
     enum Content: Equatable {
         case connecting
         case muted
         case unmuted(pushToTalk: Bool)
-        case raiseHand(isRaised: Bool)
-        case scheduled(state: ScheduledState)
+        case raiseHand
     }
     
     let call: PresentationGroupCall
@@ -193,22 +187,19 @@ final class VideoChatMicButtonComponent: Component {
     let isCollapsed: Bool
     let updateUnmutedStateIsPushToTalk: (Bool?) -> Void
     let raiseHand: () -> Void
-    let scheduleAction: () -> Void
 
     init(
         call: PresentationGroupCall,
         content: Content,
         isCollapsed: Bool,
         updateUnmutedStateIsPushToTalk: @escaping (Bool?) -> Void,
-        raiseHand: @escaping () -> Void,
-        scheduleAction: @escaping () -> Void
+        raiseHand: @escaping () -> Void
     ) {
         self.call = call
         self.content = content
         self.isCollapsed = isCollapsed
         self.updateUnmutedStateIsPushToTalk = updateUnmutedStateIsPushToTalk
         self.raiseHand = raiseHand
-        self.scheduleAction = scheduleAction
     }
 
     static func ==(lhs: VideoChatMicButtonComponent, rhs: VideoChatMicButtonComponent) -> Bool {
@@ -226,7 +217,6 @@ final class VideoChatMicButtonComponent: Component {
         private var disappearingBackgrounds: [UIImageView] = []
         private var progressIndicator: RadialStatusNode?
         private let title = ComponentView<Empty>()
-        private var subtitle: ComponentView<Empty>?
         private let icon: VoiceChatActionButtonIconNode
         
         private var glowView: GlowView?
@@ -255,7 +245,7 @@ final class VideoChatMicButtonComponent: Component {
             self.beginTrackingTimestamp = CFAbsoluteTimeGetCurrent()
             if let component = self.component {
                 switch component.content {
-                case .connecting, .unmuted, .raiseHand, .scheduled:
+                case .connecting, .unmuted, .raiseHand:
                     self.beginTrackingWasPushToTalk = false
                 case .muted:
                     self.beginTrackingWasPushToTalk = true
@@ -301,8 +291,6 @@ final class VideoChatMicButtonComponent: Component {
                     self.icon.playRandomAnimation()
                     
                     component.raiseHand()
-                case .scheduled:
-                    component.scheduleAction()
                 }
             }
         }
@@ -323,7 +311,6 @@ final class VideoChatMicButtonComponent: Component {
             let alphaTransition: ComponentTransition = transition.animation.isImmediate ? .immediate : .easeInOut(duration: 0.2)
             
             let titleText: String
-            var subtitleText: String?
             var isEnabled = true
             switch component.content {
             case .connecting:
@@ -333,25 +320,8 @@ final class VideoChatMicButtonComponent: Component {
                 titleText = "Unmute"
             case let .unmuted(isPushToTalk):
                 titleText = isPushToTalk ? "You are Live" : "Tap to Mute"
-            case let .raiseHand(isRaised):
-                if isRaised {
-                    titleText = "You asked to speak"
-                    subtitleText = "We let the speakers know"
-                } else {
-                    titleText = "Muted by Admin"
-                    subtitleText = "Tap if you want to speak"
-                }
-            case let .scheduled(state):
-                switch state {
-                case .start:
-                    titleText = "Start Now"
-                case let .toggleSubscription(isSubscribed):
-                    if isSubscribed {
-                        titleText = "Clear Reminder"
-                    } else {
-                        titleText = "Set Reminder"
-                    }
-                }
+            case .raiseHand:
+                titleText = "Raise Hand"
             }
             self.isEnabled = isEnabled
             
@@ -361,7 +331,7 @@ final class VideoChatMicButtonComponent: Component {
                     text: .plain(NSAttributedString(string: titleText, font: Font.regular(15.0), textColor: .white))
                 )),
                 environment: {},
-                containerSize: CGSize(width: 180.0, height: 100.0)
+                containerSize: CGSize(width: 120.0, height: 100.0)
             )
             
             let size = CGSize(width: availableSize.width, height: availableSize.height)
@@ -420,13 +390,11 @@ final class VideoChatMicButtonComponent: Component {
                     case .connecting:
                         context.setFillColor(UIColor(white: 0.1, alpha: 1.0).cgColor)
                         context.fill(CGRect(origin: CGPoint(), size: size))
-                    case .muted, .unmuted, .raiseHand, .scheduled:
+                    case .muted, .unmuted, .raiseHand:
                         let colors: [UIColor]
                         if case .muted = component.content {
                             colors = [UIColor(rgb: 0x0080FF), UIColor(rgb: 0x00A1FE)]
                         } else if case .raiseHand = component.content {
-                            colors = [UIColor(rgb: 0x3252EF), UIColor(rgb: 0xC64688)]
-                        } else if case .scheduled = component.content {
                             colors = [UIColor(rgb: 0x3252EF), UIColor(rgb: 0xC64688)]
                         } else {
                             colors = [UIColor(rgb: 0x33C659), UIColor(rgb: 0x0BA8A5)]
@@ -478,10 +446,7 @@ final class VideoChatMicButtonComponent: Component {
                 transition.setScale(view: disappearingBackground, scale: size.width / 116.0)
             }
             
-            var titleFrame = CGRect(origin: CGPoint(x: floor((size.width - titleSize.width) * 0.5), y: size.height + 16.0), size: titleSize)
-            if subtitleText != nil {
-                titleFrame.origin.y -= 5.0
-            }
+            let titleFrame = CGRect(origin: CGPoint(x: floor((size.width - titleSize.width) * 0.5), y: size.height + 16.0), size: titleSize)
             if let titleView = self.title.view {
                 if titleView.superview == nil {
                     titleView.isUserInteractionEnabled = false
@@ -490,47 +455,6 @@ final class VideoChatMicButtonComponent: Component {
                 transition.setPosition(view: titleView, position: titleFrame.center)
                 titleView.bounds = CGRect(origin: CGPoint(), size: titleFrame.size)
                 alphaTransition.setAlpha(view: titleView, alpha: component.isCollapsed ? 0.0 : 1.0)
-            }
-            
-            if let subtitleText {
-                let subtitle: ComponentView<Empty>
-                var subtitleTransition = transition
-                if let current = self.subtitle {
-                    subtitle = current
-                } else {
-                    subtitleTransition = subtitleTransition.withAnimation(.none)
-                    subtitle = ComponentView()
-                    self.subtitle = subtitle
-                }
-                let subtitleSize = subtitle.update(
-                    transition: .immediate,
-                    component: AnyComponent(MultilineTextComponent(
-                        text: .plain(NSAttributedString(string: subtitleText, font: Font.regular(13.0), textColor: .white))
-                    )),
-                    environment: {},
-                    containerSize: CGSize(width: 180.0, height: 100.0)
-                )
-                let subtitleFrame = CGRect(origin: CGPoint(x: floor((size.width - subtitleSize.width) * 0.5), y: titleFrame.maxY + 1.0), size: subtitleSize)
-                if let subtitleView = subtitle.view {
-                    if subtitleView.superview == nil {
-                        subtitleView.isUserInteractionEnabled = false
-                        self.addSubview(subtitleView)
-                        
-                        subtitleView.alpha = 0.0
-                        transition.animateScale(view: subtitleView, from: 0.001, to: 1.0)
-                    }
-                    subtitleTransition.setPosition(view: subtitleView, position: subtitleFrame.center)
-                    subtitleView.bounds = CGRect(origin: CGPoint(), size: subtitleFrame.size)
-                    alphaTransition.setAlpha(view: subtitleView, alpha: component.isCollapsed ? 0.0 : 1.0)
-                }
-            } else if let subtitle = self.subtitle {
-                self.subtitle = nil
-                if let subtitleView = subtitle.view {
-                    transition.setScale(view: subtitleView, scale: 0.001)
-                    alphaTransition.setAlpha(view: subtitleView, alpha: 0.0, completion: { [weak subtitleView] _ in
-                        subtitleView?.removeFromSuperview()
-                    })
-                }
             }
             
             if self.icon.view.superview == nil {
@@ -553,21 +477,10 @@ final class VideoChatMicButtonComponent: Component {
                 self.icon.enqueueState(.unmute)
             case .raiseHand:
                 self.icon.enqueueState(.hand)
-            case let .scheduled(state):
-                switch state {
-                case .start:
-                    self.icon.enqueueState(.start)
-                case let .toggleSubscription(isSubscribed):
-                    if isSubscribed {
-                        self.icon.enqueueState(.unsubscribe)
-                    } else {
-                        self.icon.enqueueState(.subscribe)
-                    }
-                }
             }
             
             switch component.content {
-            case .muted, .unmuted, .raiseHand, .scheduled:
+            case .muted, .unmuted, .raiseHand:
                 let blobSize = CGRect(origin: CGPoint(), size: CGSize(width: 116.0, height: 116.0)).insetBy(dx: -40.0, dy: -40.0).size
                 
                 let blobTintTransition: ComponentTransition
@@ -599,8 +512,6 @@ final class VideoChatMicButtonComponent: Component {
                     blobsColor = UIColor(rgb: 0x0086FF)
                 } else if case .raiseHand = component.content {
                     blobsColor = UIColor(rgb: 0x914BAD)
-                } else if case .scheduled = component.content {
-                    blobsColor = UIColor(rgb: 0x914BAD)
                 } else {
                     blobsColor = UIColor(rgb: 0x33C758)
                 }
@@ -617,7 +528,7 @@ final class VideoChatMicButtonComponent: Component {
                             blobView.updateLevel(CGFloat(value), immediately: false)
                         })
                     }
-                case .connecting, .muted, .raiseHand, .scheduled:
+                case .connecting, .muted, .raiseHand:
                     if let audioLevelDisposable = self.audioLevelDisposable {
                         self.audioLevelDisposable = nil
                         audioLevelDisposable.dispose()
@@ -649,8 +560,6 @@ final class VideoChatMicButtonComponent: Component {
                 if case .muted = component.content {
                     glowColor = UIColor(rgb: 0x0086FF)
                 } else if case .raiseHand = component.content {
-                    glowColor = UIColor(rgb: 0x3252EF)
-                } else if case .scheduled = component.content {
                     glowColor = UIColor(rgb: 0x3252EF)
                 } else {
                     glowColor = UIColor(rgb: 0x33C758)

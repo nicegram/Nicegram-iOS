@@ -248,11 +248,7 @@ public func galleryItemForEntry(
                 content = NativeVideoContent(id: .message(message.stableId, file.fileId), userLocation: .peer(message.id.peerId), fileReference: .message(message: MessageReference(message), media: file), imageReference: mediaImage.flatMap({ ImageMediaReference.message(message: MessageReference(message), media: $0) }), loopVideo: true, enableSound: false, tempFilePath: tempFilePath, captureProtected: captureProtected, storeAfterDownload: generateStoreAfterDownload?(message, file))
             } else {
                 if true || (file.mimeType == "video/mpeg4" || file.mimeType == "video/mov" || file.mimeType == "video/mp4") {
-                    if NativeVideoContent.isHLSVideo(file: file) {
-                        content = HLSVideoContent(id: .message(message.id, message.stableId, file.fileId), userLocation: .peer(message.id.peerId), fileReference: .message(message: MessageReference(message), media: file), streamVideo: streamVideos, loopVideo: loopVideos)
-                    } else {
-                        content = NativeVideoContent(id: .message(message.stableId, file.fileId), userLocation: .peer(message.id.peerId), fileReference: .message(message: MessageReference(message), media: file), imageReference: mediaImage.flatMap({ ImageMediaReference.message(message: MessageReference(message), media: $0) }), streamVideo: .conservative, loopVideo: loopVideos, tempFilePath: tempFilePath, captureProtected: captureProtected, storeAfterDownload: generateStoreAfterDownload?(message, file))
-                    }
+                    content = NativeVideoContent(id: .message(message.stableId, file.fileId), userLocation: .peer(message.id.peerId), fileReference: .message(message: MessageReference(message), media: file), imageReference: mediaImage.flatMap({ ImageMediaReference.message(message: MessageReference(message), media: $0) }), streamVideo: .conservative, loopVideo: loopVideos, tempFilePath: tempFilePath, captureProtected: captureProtected, storeAfterDownload: generateStoreAfterDownload?(message, file))
                 } else {
                     content = PlatformVideoContent(id: .message(message.id, message.stableId, file.fileId), userLocation: .peer(message.id.peerId), content: .file(.message(message: MessageReference(message), media: file)), streamVideo: streamVideos, loopVideo: loopVideos)
                 }
@@ -584,7 +580,6 @@ public class GalleryController: ViewController, StandalonePresentableController,
     private let landscape: Bool
     private let timecode: Double?
     private var playbackRate: Double?
-    private var videoQuality: UniversalVideoContentVideoQuality = .auto
     
     private let accountInUseDisposable = MetaDisposable()
     private let disposable = MetaDisposable()
@@ -1760,16 +1755,6 @@ public class GalleryController: ViewController, StandalonePresentableController,
         self.galleryNode.pager.forEachItemNode { itemNode in
             if let itemNode = itemNode as? UniversalVideoGalleryItemNode {
                 itemNode.updatePlaybackRate(playbackRate)
-            }
-        }
-    }
-    
-    func updateSharedVideoQuality(_ videoQuality: UniversalVideoContentVideoQuality) {
-        self.videoQuality = videoQuality
-
-        self.galleryNode.pager.forEachItemNode { itemNode in
-            if let itemNode = itemNode as? UniversalVideoGalleryItemNode {
-                itemNode.updateVideoQuality(videoQuality)
             }
         }
     }

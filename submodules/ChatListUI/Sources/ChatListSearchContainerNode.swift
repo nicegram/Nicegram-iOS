@@ -809,7 +809,7 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
                             var type: PeerType = .group
                             for message in messages {
                                 if let user = message.author?._asPeer() as? TelegramUser {
-                                    if user.botInfo != nil && !user.id.isVerificationCodes {
+                                    if user.botInfo != nil {
                                         type = .bot
                                     } else {
                                         type = .user

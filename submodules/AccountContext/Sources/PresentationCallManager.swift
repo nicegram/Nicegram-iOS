@@ -4,7 +4,6 @@ import AsyncDisplayKit
 import TelegramCore
 import SwiftSignalKit
 import TelegramAudio
-import Display
 
 public enum RequestCallResult {
     case requested
@@ -414,7 +413,6 @@ public protocol PresentationGroupCall: AnyObject {
     var members: Signal<PresentationGroupCallMembers?, NoError> { get }
     var audioLevels: Signal<[(EnginePeer.Id, UInt32, Float, Bool)], NoError> { get }
     var myAudioLevel: Signal<Float, NoError> { get }
-    var myAudioLevelAndSpeaking: Signal<(Float, Bool), NoError> { get }
     var isMuted: Signal<Bool, NoError> { get }
     var isNoiseSuppressionEnabled: Signal<Bool, NoError> { get }
     
@@ -473,5 +471,12 @@ public protocol PresentationCallManager: AnyObject {
     
     func requestCall(context: AccountContext, peerId: EnginePeer.Id, isVideo: Bool, endCurrentIfAny: Bool) -> RequestCallResult
     func joinGroupCall(context: AccountContext, peerId: EnginePeer.Id, invite: String?, requestJoinAsPeerId: ((@escaping (EnginePeer.Id?) -> Void) -> Void)?, initialCall: EngineGroupCallDescription, endCurrentIfAny: Bool) -> JoinGroupCallManagerResult
-    func scheduleGroupCall(context: AccountContext, peerId: EnginePeer.Id, endCurrentIfAny: Bool, parentController: ViewController) -> RequestScheduleGroupCallResult
+    func scheduleGroupCall(context: AccountContext, peerId: EnginePeer.Id, endCurrentIfAny: Bool) -> RequestScheduleGroupCallResult
+// MARK: Nicegram NCG-5828 call recording
+    func startRecordCall()
+    func stopRecordCall(
+        with completion: @escaping () -> Void
+    )
+    func setupPeer(peer: EnginePeer)
+//
 }

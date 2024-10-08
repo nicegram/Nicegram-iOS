@@ -741,9 +741,6 @@ public final class TextFieldComponent: Component {
                         }
                         
                         self.insertText(NSAttributedString(string: insertString))
-                    } else if (range.length == 0 && text == "\n"), let returnKeyAction = component.returnKeyAction {
-                        returnKeyAction()
-                        return false
                     }
                     return false
                 }

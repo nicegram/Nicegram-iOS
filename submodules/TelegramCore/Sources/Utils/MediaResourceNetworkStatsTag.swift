@@ -11,7 +11,7 @@ public enum MediaResourceStatsCategory {
     case voiceMessages
 }
 
-public final class TelegramMediaResourceFetchTag: MediaResourceFetchTag {
+final class TelegramMediaResourceFetchTag: MediaResourceFetchTag {
     public let statsCategory: MediaResourceStatsCategory
     
     public init(statsCategory: MediaResourceStatsCategory, userContentType: MediaResourceUserContentType?) {

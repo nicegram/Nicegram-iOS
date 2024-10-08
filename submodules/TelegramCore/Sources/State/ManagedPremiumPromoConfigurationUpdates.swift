@@ -65,7 +65,7 @@ private extension PremiumPromoConfiguration {
 
                 var videos: [String: TelegramMediaFile] = [:]
                 for (key, document) in zip(videoSections, videoFiles) {
-                    if let file = telegramMediaFileFromApiDocument(document, altDocuments: []) {
+                    if let file = telegramMediaFileFromApiDocument(document) {
                         videos[key] = file
                     }
                 }

@@ -709,8 +709,7 @@ private final class SparseItemGridBindingImpl: SparseItemGridBinding, ListShimme
                 immediateThumbnailData: nil,
                 mimeType: "image/jpeg",
                 size: nil,
-                attributes: [.FileName(fileName: "file")],
-                alternativeRepresentations: []
+                attributes: [.FileName(fileName: "file")]
             )
             let fakeMessage = Message(
                 stableId: 1,
@@ -871,10 +870,7 @@ private final class SparseItemGridBindingImpl: SparseItemGridBinding, ListShimme
                 }
 
                 let message = item.message
-                var hasSpoiler = message.attributes.contains(where: { $0 is MediaSpoilerMessageAttribute }) && !self.revealedSpoilerMessageIds.contains(message.id)
-                if message.isSensitiveContent(platform: "ios") {
-                    hasSpoiler = true
-                }
+                let hasSpoiler = message.attributes.contains(where: { $0 is MediaSpoilerMessageAttribute }) && !self.revealedSpoilerMessageIds.contains(message.id)
                 layer.updateHasSpoiler(hasSpoiler: hasSpoiler)
                 
                 var selectedMedia: Media?
@@ -1276,11 +1272,7 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
                 }
                 strongSelf.chatControllerInteraction.toggleMessagesSelection([item.message.id], toggledValue)
             } else {
-                if item.message.isSensitiveContent(platform: "ios") {
-//                    strongSelf.context.currentContentSettings.with { $0 }.ignoreContentRestrictionReasons
-                } else {
-                    let _ = strongSelf.chatControllerInteraction.openMessage(item.message, OpenMessageParams(mode: .default))
-                }
+                let _ = strongSelf.chatControllerInteraction.openMessage(item.message, OpenMessageParams(mode: .default))
             }
         }
 
@@ -2134,8 +2126,7 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
                     immediateThumbnailData: nil,
                     mimeType: "image/jpeg",
                     size: nil,
-                    attributes: [.FileName(fileName: "file")],
-                    alternativeRepresentations: []
+                    attributes: [.FileName(fileName: "file")]
                 )
                 let fakeMessage = Message(
                     stableId: 1,

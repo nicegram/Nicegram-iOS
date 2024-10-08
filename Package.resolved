@@ -338,8 +338,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "4af0ee33be559941fbda7d3519a9dd032006ab52",
-        "version" : "4.1.9"
+        "revision" : "26aa4289b0e9cd57d958f5f4342aaa9c53851fc0",
+        "version" : "4.1.10"
       }
     },
     {

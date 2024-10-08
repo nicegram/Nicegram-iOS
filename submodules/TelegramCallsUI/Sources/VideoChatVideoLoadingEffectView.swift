@@ -8,196 +8,125 @@ private let shadowImage: UIImage? = {
     UIImage(named: "Stories/PanelGradient")
 }()
 
-private func generateGradient(baseAlpha: CGFloat) -> UIImage? {
-    return generateImage(CGSize(width: 200.0, height: 16.0), opaque: false, scale: 1.0, rotatedContext: { size, context in
-        context.clear(CGRect(origin: CGPoint(), size: size))
-        
-        let foregroundColor = UIColor(white: 1.0, alpha: min(1.0, baseAlpha * 4.0))
-        
-        if let shadowImage {
-            UIGraphicsPushContext(context)
-            
-            for i in 0 ..< 2 {
-                let shadowFrame = CGRect(origin: CGPoint(x: CGFloat(i) * (size.width * 0.5), y: 0.0), size: CGSize(width: size.width * 0.5, height: size.height))
-                
-                context.saveGState()
-                context.translateBy(x: shadowFrame.midX, y: shadowFrame.midY)
-                context.rotate(by: CGFloat(i == 0 ? 1.0 : -1.0) * CGFloat.pi * 0.5)
-                let adjustedRect = CGRect(origin: CGPoint(x: -shadowFrame.height * 0.5, y: -shadowFrame.width * 0.5), size: CGSize(width: shadowFrame.height, height: shadowFrame.width))
-                
-                context.clip(to: adjustedRect, mask: shadowImage.cgImage!)
-                context.setFillColor(foregroundColor.cgColor)
-                context.fill(adjustedRect)
-                
-                context.restoreGState()
-            }
-            
-            UIGraphicsPopContext()
-        }
-    })
-}
-
-private final class AnimatedGradientView: UIView {
-    private struct Params: Equatable {
-        var size: CGSize
-        var containerWidth: CGFloat
-        var offsetX: CGFloat
-        var gradientWidth: CGFloat
-        
-        init(size: CGSize, containerWidth: CGFloat, offsetX: CGFloat, gradientWidth: CGFloat) {
-            self.size = size
-            self.containerWidth = containerWidth
-            self.offsetX = offsetX
-            self.gradientWidth = gradientWidth
-        }
-    }
-    
+final class VideoChatVideoLoadingEffectView: UIView {
     private let duration: Double
+    private let hasCustomBorder: Bool
+    private let playOnce: Bool
+    
     private let hierarchyTrackingLayer: HierarchyTrackingLayer
     
-    private let backgroundContainerView: UIView
-    private let backgroundScaleView: UIView
-    private let backgroundOffsetView: UIView
+    private let gradientWidth: CGFloat
+    
+    let portalSource: PortalSourceView
+    
     private let backgroundView: UIImageView
     
-    private var params: Params?
+    private let borderGradientView: UIImageView
+    private let borderContainerView: UIView
+    let borderMaskLayer: SimpleShapeLayer
     
-    init(effectAlpha: CGFloat, duration: Double) {
+    private var didPlayOnce = false
+    
+    init(effectAlpha: CGFloat, borderAlpha: CGFloat, gradientWidth: CGFloat = 200.0, duration: Double, hasCustomBorder: Bool, playOnce: Bool) {
+        self.portalSource = PortalSourceView()
+        
         self.hierarchyTrackingLayer = HierarchyTrackingLayer()
         
         self.duration = duration
+        self.hasCustomBorder = hasCustomBorder
+        self.playOnce = playOnce
         
-        self.backgroundContainerView = UIView()
-        self.backgroundContainerView.layer.anchorPoint = CGPoint()
-        
-        self.backgroundScaleView = UIView()
-        self.backgroundOffsetView = UIView()
-        
+        self.gradientWidth = gradientWidth
         self.backgroundView = UIImageView()
         
-        super.init(frame: CGRect())
+        self.borderGradientView = UIImageView()
+        self.borderContainerView = UIView()
+        self.borderMaskLayer = SimpleShapeLayer()
         
-        self.layer.addSublayer(self.hierarchyTrackingLayer)
+        super.init(frame: .zero)
+        
+        self.portalSource.backgroundColor = .red
+        
+        self.portalSource.layer.addSublayer(self.hierarchyTrackingLayer)
         self.hierarchyTrackingLayer.didEnterHierarchy = { [weak self] in
-            guard let self else {
+            guard let self, self.bounds.width != 0.0 else {
                 return
             }
-            self.updateAnimations()
+            self.updateAnimations(size: self.bounds.size)
         }
         
-        self.backgroundView.image = generateGradient(baseAlpha: effectAlpha)
+        let generateGradient: (CGFloat) -> UIImage? = { baseAlpha in
+            return generateImage(CGSize(width: self.gradientWidth, height: 16.0), opaque: false, scale: 1.0, rotatedContext: { size, context in
+                context.clear(CGRect(origin: CGPoint(), size: size))
+                
+                let foregroundColor = UIColor(white: 1.0, alpha: min(1.0, baseAlpha * 4.0))
+                
+                if let shadowImage {
+                    UIGraphicsPushContext(context)
+                    
+                    for i in 0 ..< 2 {
+                        let shadowFrame = CGRect(origin: CGPoint(x: CGFloat(i) * (size.width * 0.5), y: 0.0), size: CGSize(width: size.width * 0.5, height: size.height))
+                        
+                        context.saveGState()
+                        context.translateBy(x: shadowFrame.midX, y: shadowFrame.midY)
+                        context.rotate(by: CGFloat(i == 0 ? 1.0 : -1.0) * CGFloat.pi * 0.5)
+                        let adjustedRect = CGRect(origin: CGPoint(x: -shadowFrame.height * 0.5, y: -shadowFrame.width * 0.5), size: CGSize(width: shadowFrame.height, height: shadowFrame.width))
+                        
+                        context.clip(to: adjustedRect, mask: shadowImage.cgImage!)
+                        context.setFillColor(foregroundColor.cgColor)
+                        context.fill(adjustedRect)
+                        
+                        context.restoreGState()
+                    }
+                    
+                    UIGraphicsPopContext()
+                }
+            })
+        }
+        self.backgroundView.image = generateGradient(effectAlpha)
+        self.portalSource.addSubview(self.backgroundView)
         
-        self.backgroundOffsetView.addSubview(self.backgroundView)
-        self.backgroundScaleView.addSubview(self.backgroundOffsetView)
-        self.backgroundContainerView.addSubview(self.backgroundScaleView)
-        self.addSubview(self.backgroundContainerView)
+        self.borderGradientView.image = generateGradient(borderAlpha)
+        self.borderContainerView.addSubview(self.borderGradientView)
+        self.portalSource.addSubview(self.borderContainerView)
+        self.borderContainerView.layer.mask = self.borderMaskLayer
     }
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
-    private func updateAnimations() {
-        if self.backgroundView.layer.animation(forKey: "shimmer") == nil {
-            let animation = self.backgroundView.layer.makeAnimation(from: -1.0 as NSNumber, to: 1.0 as NSNumber, keyPath: "position.x", timingFunction: CAMediaTimingFunctionName.easeOut.rawValue, duration: self.duration, delay: 0.0, mediaTimingFunction: nil, removeOnCompletion: true, additive: true)
-            animation.repeatCount = Float.infinity
-            animation.beginTime = 1.0
-            self.backgroundView.layer.add(animation, forKey: "shimmer")
-        }
-        if self.backgroundScaleView.layer.animation(forKey: "shimmer") == nil {
-            let animation = self.backgroundScaleView.layer.makeAnimation(from: 0.0 as NSNumber, to: 1.0 as NSNumber, keyPath: "position.x", timingFunction: CAMediaTimingFunctionName.easeOut.rawValue, duration: self.duration, delay: 0.0, mediaTimingFunction: nil, removeOnCompletion: true, additive: true)
-            animation.repeatCount = Float.infinity
-            animation.beginTime = 1.0
-            self.backgroundScaleView.layer.add(animation, forKey: "shimmer")
-        }
-    }
-    
-    func update(size: CGSize, containerWidth: CGFloat, offsetX: CGFloat, gradientWidth: CGFloat, transition: ComponentTransition) {
-        let params = Params(size: size, containerWidth: containerWidth, offsetX: offsetX, gradientWidth: gradientWidth)
-        if self.params == params {
+    private func updateAnimations(size: CGSize) {
+        if self.backgroundView.layer.animation(forKey: "shimmer") != nil || (self.playOnce && self.didPlayOnce) {
             return
         }
-        self.params = params
-        
-        let backgroundFrame = CGRect(origin: CGPoint(), size: CGSize(width: 1.0, height: 1.0))
-        transition.setPosition(view: self.backgroundView, position: backgroundFrame.center)
-        transition.setBounds(view: self.backgroundView, bounds: CGRect(origin: CGPoint(), size: backgroundFrame.size))
-        
-        transition.setPosition(view: self.backgroundOffsetView, position: backgroundFrame.center)
-        transition.setBounds(view: self.backgroundOffsetView, bounds: CGRect(origin: CGPoint(), size: backgroundFrame.size))
-        
-        transition.setTransform(view: self.backgroundOffsetView, transform: CATransform3DMakeScale(gradientWidth, 1.0, 1.0))
-        
-        let backgroundContainerViewSubFrame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: size.width, height: size.height))
-        transition.setPosition(view: self.backgroundContainerView, position: CGPoint())
-        transition.setBounds(view: self.backgroundContainerView, bounds: backgroundContainerViewSubFrame)
-        var containerTransform = CATransform3DIdentity
-        containerTransform = CATransform3DTranslate(containerTransform, -offsetX, 0.0, 0.0)
-        containerTransform = CATransform3DScale(containerTransform, containerWidth, size.height, 1.0)
-        transition.setSublayerTransform(view: self.backgroundContainerView, transform: containerTransform)
-        
-        transition.setSublayerTransform(view: self.backgroundScaleView, transform: CATransform3DMakeScale(1.0 / containerWidth, 1.0, 1.0))
-        
-        self.updateAnimations()
-    }
-}
 
-final class VideoChatVideoLoadingEffectView: UIView {
-    private struct Params: Equatable {
-        var size: CGSize
-        var containerWidth: CGFloat
-        var offsetX: CGFloat
-        var gradientWidth: CGFloat
+        let animation = self.backgroundView.layer.makeAnimation(from: 0.0 as NSNumber, to: (size.width + self.gradientWidth + size.width * 0.2) as NSNumber, keyPath: "position.x", timingFunction: CAMediaTimingFunctionName.easeOut.rawValue, duration: self.duration, delay: 0.0, mediaTimingFunction: nil, removeOnCompletion: true, additive: true)
+        animation.repeatCount = self.playOnce ? 1 : Float.infinity
+        self.backgroundView.layer.add(animation, forKey: "shimmer")
+        self.borderGradientView.layer.add(animation, forKey: "shimmer")
         
-        init(size: CGSize, containerWidth: CGFloat, offsetX: CGFloat, gradientWidth: CGFloat) {
-            self.size = size
-            self.containerWidth = containerWidth
-            self.offsetX = offsetX
-            self.gradientWidth = gradientWidth
+        self.didPlayOnce = true
+    }
+    
+    func update(size: CGSize, transition: ComponentTransition) {
+        if self.backgroundView.bounds.size != size {
+            self.backgroundView.layer.removeAllAnimations()
+            
+            if !self.hasCustomBorder {
+                self.borderMaskLayer.fillColor = nil
+                self.borderMaskLayer.strokeColor = UIColor.white.cgColor
+                let lineWidth: CGFloat = 3.0
+                self.borderMaskLayer.lineWidth = lineWidth
+                self.borderMaskLayer.path = UIBezierPath(roundedRect: CGRect(origin: CGPoint(), size: size).insetBy(dx: lineWidth * 0.5, dy: lineWidth * 0.5), cornerRadius: 12.0).cgPath
+            }
         }
-    }
-    
-    private let duration: Double
-    private let cornerRadius: CGFloat
-    
-    private let backgroundView: AnimatedGradientView
-    
-    private let borderMaskView: UIImageView
-    private let borderBackgroundView: AnimatedGradientView
-    
-    private var params: Params?
-    
-    init(effectAlpha: CGFloat, borderAlpha: CGFloat, cornerRadius: CGFloat = 12.0, duration: Double) {
-        self.duration = duration
-        self.cornerRadius = cornerRadius
         
-        self.backgroundView = AnimatedGradientView(effectAlpha: effectAlpha, duration: duration)
+        transition.setFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(x: -self.gradientWidth, y: 0.0), size: CGSize(width: self.gradientWidth, height: size.height)))
         
-        self.borderMaskView = UIImageView()
-        self.borderMaskView.image = generateStretchableFilledCircleImage(diameter: cornerRadius * 2.0, color: nil, strokeColor: .white, strokeWidth: 2.0)
-        self.borderBackgroundView = AnimatedGradientView(effectAlpha: borderAlpha, duration: duration)
+        transition.setFrame(view: self.borderContainerView, frame: CGRect(origin: CGPoint(), size: size))
+        transition.setFrame(view: self.borderGradientView, frame: CGRect(origin: CGPoint(x: -self.gradientWidth, y: 0.0), size: CGSize(width: self.gradientWidth, height: size.height)))
         
-        super.init(frame: CGRect())
-        
-        self.addSubview(self.backgroundView)
-        
-        self.borderBackgroundView.mask = self.borderMaskView
-        self.addSubview(self.borderBackgroundView)
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    func update(size: CGSize, containerWidth: CGFloat, offsetX: CGFloat, gradientWidth: CGFloat, transition: ComponentTransition) {
-        let params = Params(size: size, containerWidth: containerWidth, offsetX: offsetX, gradientWidth: gradientWidth)
-        if self.params == params {
-            return
-        }
-        self.params = params
-        
-        self.backgroundView.update(size: size, containerWidth: containerWidth, offsetX: offsetX, gradientWidth: gradientWidth, transition: transition)
-        self.borderBackgroundView.update(size: size, containerWidth: containerWidth, offsetX: offsetX, gradientWidth: gradientWidth, transition: transition)
-        transition.setFrame(view: self.borderMaskView, frame: CGRect(origin: CGPoint(), size: size))
+        self.updateAnimations(size: size)
     }
 }

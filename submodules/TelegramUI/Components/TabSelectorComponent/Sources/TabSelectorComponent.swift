@@ -3,24 +3,18 @@ import UIKit
 import Display
 import ComponentFlow
 import PlainButtonComponent
-import MultilineTextWithEntitiesComponent
-import TextFormat
-import AccountContext
 
 public final class TabSelectorComponent: Component {
     public struct Colors: Equatable {
         public var foreground: UIColor
         public var selection: UIColor
-        public var simple: Bool
 
         public init(
             foreground: UIColor,
-            selection: UIColor,
-            simple: Bool = false
+            selection: UIColor
         ) {
             self.foreground = foreground
             self.selection = selection
-            self.simple = simple
         }
     }
     
@@ -51,7 +45,6 @@ public final class TabSelectorComponent: Component {
         }
     }
 
-    public let context: AccountContext?
     public let colors: Colors
     public let customLayout: CustomLayout?
     public let items: [Item]
@@ -60,7 +53,6 @@ public final class TabSelectorComponent: Component {
     public let transitionFraction: CGFloat?
     
     public init(
-        context: AccountContext? = nil,
         colors: Colors,
         customLayout: CustomLayout? = nil,
         items: [Item],
@@ -68,7 +60,6 @@ public final class TabSelectorComponent: Component {
         setSelectedId: @escaping (AnyHashable) -> Void,
         transitionFraction: CGFloat? = nil
     ) {
-        self.context = context
         self.colors = colors
         self.customLayout = customLayout
         self.items = items
@@ -78,9 +69,6 @@ public final class TabSelectorComponent: Component {
     }
     
     public static func ==(lhs: TabSelectorComponent, rhs: TabSelectorComponent) -> Bool {
-        if lhs.context !== rhs.context {
-            return false
-        }
         if lhs.colors != rhs.colors {
             return false
         }
@@ -223,7 +211,6 @@ public final class TabSelectorComponent: Component {
                     transition: .immediate,
                     component: AnyComponent(PlainButtonComponent(
                         content: AnyComponent(ItemComponent(
-                            context: component.context,
                             text: item.title,
                             font: itemFont,
                             color: component.colors.foreground,
@@ -267,7 +254,7 @@ public final class TabSelectorComponent: Component {
                     }
                     itemTransition.setPosition(view: itemTitleView, position: itemTitleFrame.origin)
                     itemTransition.setBounds(view: itemTitleView, bounds: CGRect(origin: CGPoint(), size: itemTitleFrame.size))
-                    itemTransition.setAlpha(view: itemTitleView, alpha: item.id == component.selectedId || isLineSelection || component.colors.simple ? 1.0 : 0.4)
+                    itemTransition.setAlpha(view: itemTitleView, alpha: item.id == component.selectedId || isLineSelection ? 1.0 : 0.4)
                 }
                 index += 1
             }
@@ -315,7 +302,7 @@ public final class TabSelectorComponent: Component {
             self.contentSize = CGSize(width: contentWidth, height: baseHeight + verticalInset * 2.0)
             self.disablesInteractiveTransitionGestureRecognizer = contentWidth > availableSize.width
             
-            if let selectedBackgroundRect, self.bounds.width > 0.0 {
+            if let selectedBackgroundRect {
                 self.scrollRectToVisible(selectedBackgroundRect.insetBy(dx: -spacing, dy: 0.0), animated: false)
             }
             
@@ -344,7 +331,6 @@ extension CGRect {
 }
 
 private final class ItemComponent: CombinedComponent {
-    let context: AccountContext?
     let text: String
     let font: UIFont
     let color: UIColor
@@ -352,14 +338,12 @@ private final class ItemComponent: CombinedComponent {
     let selectionFraction: CGFloat
     
     init(
-        context: AccountContext?,
         text: String,
         font: UIFont,
         color: UIColor,
         selectedColor: UIColor,
         selectionFraction: CGFloat
     ) {
-        self.context = context
         self.text = text
         self.font = font
         self.color = color
@@ -368,9 +352,6 @@ private final class ItemComponent: CombinedComponent {
     }
 
     static func ==(lhs: ItemComponent, rhs: ItemComponent) -> Bool {
-        if lhs.context !== rhs.context {
-            return false
-        }
         if lhs.text != rhs.text {
             return false
         }
@@ -390,25 +371,17 @@ private final class ItemComponent: CombinedComponent {
     }
     
     static var body: Body {
-        let title = Child(MultilineTextWithEntitiesComponent.self)
-        let selectedTitle = Child(MultilineTextWithEntitiesComponent.self)
+        let title = Child(Text.self)
+        let selectedTitle = Child(Text.self)
         
         return { context in
             let component = context.component
-            
-            let attributedTitle = NSMutableAttributedString(string: component.text, font: component.font, textColor: component.color)
-            var range = (attributedTitle.string as NSString).range(of: "⭐️")
-            if range.location != NSNotFound {
-                attributedTitle.addAttribute(ChatTextInputAttributes.customEmoji, value: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: 0, file: nil, custom: .stars(tinted: false)), range: range)
-            }
-            
+           
             let title = title.update(
-                component: MultilineTextWithEntitiesComponent(
-                    context: component.context,
-                    animationCache: component.context?.animationCache,
-                    animationRenderer: component.context?.animationRenderer,
-                    placeholderColor: .white,
-                    text: .plain(attributedTitle)
+                component: Text(
+                    text: component.text,
+                    font: component.font,
+                    color: component.color
                 ),
                 availableSize: context.availableSize,
                 transition: .immediate
@@ -418,19 +391,11 @@ private final class ItemComponent: CombinedComponent {
                 .opacity(1.0 - component.selectionFraction)
             )
             
-            let selectedAttributedTitle = NSMutableAttributedString(string: component.text, font: component.font, textColor: component.selectedColor)
-            range = (selectedAttributedTitle.string as NSString).range(of: "⭐️")
-            if range.location != NSNotFound {
-                selectedAttributedTitle.addAttribute(ChatTextInputAttributes.customEmoji, value: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: 0, file: nil, custom: .stars(tinted: false)), range: range)
-            }
-            
             let selectedTitle = selectedTitle.update(
-                component: MultilineTextWithEntitiesComponent(
-                    context: nil,
-                    animationCache: nil,
-                    animationRenderer: nil,
-                    placeholderColor: .white,
-                    text: .plain(selectedAttributedTitle)
+                component: Text(
+                    text: component.text,
+                    font: component.font,
+                    color: component.selectedColor
                 ),
                 availableSize: context.availableSize,
                 transition: .immediate

@@ -2,7 +2,7 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 import SwiftSignalKit
-@preconcurrency import WebKit
+import WebKit
 import TelegramCore
 import UniversalMediaPlayer
 

@@ -386,8 +386,6 @@ final class PeerInfoScreenData {
     let starsRevenueStatsState: StarsRevenueStats?
     let starsRevenueStatsContext: StarsRevenueStatsContext?
     let revenueStatsState: RevenueStats?
-    let profileGiftsContext: ProfileGiftsContext?
-    let premiumGiftOptions: [PremiumGiftCodeOption]
     
     let _isContact: Bool
     var forceIsContact: Bool = false
@@ -433,9 +431,7 @@ final class PeerInfoScreenData {
         starsState: StarsContext.State?,
         starsRevenueStatsState: StarsRevenueStats?,
         starsRevenueStatsContext: StarsRevenueStatsContext?,
-        revenueStatsState: RevenueStats?,
-        profileGiftsContext: ProfileGiftsContext?,
-        premiumGiftOptions: [PremiumGiftCodeOption]
+        revenueStatsState: RevenueStats?
     ) {
         self.peer = peer
         self.chatPeer = chatPeer
@@ -470,8 +466,6 @@ final class PeerInfoScreenData {
         self.starsRevenueStatsState = starsRevenueStatsState
         self.starsRevenueStatsContext = starsRevenueStatsContext
         self.revenueStatsState = revenueStatsState
-        self.profileGiftsContext = profileGiftsContext
-        self.premiumGiftOptions = premiumGiftOptions
     }
 }
 
@@ -964,9 +958,7 @@ func peerInfoScreenSettingsData(context: AccountContext, peerId: EnginePeer.Id, 
             starsState: starsState,
             starsRevenueStatsState: nil,
             starsRevenueStatsContext: nil,
-            revenueStatsState: nil,
-            profileGiftsContext: nil,
-            premiumGiftOptions: []
+            revenueStatsState: nil
         )
     }
 }
@@ -1011,9 +1003,7 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                 starsState: nil,
                 starsRevenueStatsState: nil,
                 starsRevenueStatsContext: nil,
-                revenueStatsState: nil,
-                profileGiftsContext: nil,
-                premiumGiftOptions: []
+                revenueStatsState: nil
             ))
         case let .user(userPeerId, secretChatId, kind):
             let groupsInCommon: GroupsInCommonContext?
@@ -1023,19 +1013,6 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                 groupsInCommon = GroupsInCommonContext(account: context.account, peerId: userPeerId, hintGroupInCommon: hintGroupInCommon)
             } else {
                 groupsInCommon = nil
-            }
-            
-            let premiumGiftOptions: Signal<[PremiumGiftCodeOption], NoError>
-            let profileGiftsContext: ProfileGiftsContext?
-            if case .user = kind {
-                profileGiftsContext = ProfileGiftsContext(account: context.account, peerId: userPeerId)
-                premiumGiftOptions = .single([])
-                |> then(
-                    context.engine.payments.premiumGiftCodeOptions(peerId: nil, onlyCached: true)
-                )
-            } else {
-                profileGiftsContext = nil
-                premiumGiftOptions = .single([])
             }
             
             enum StatusInputData: Equatable {
@@ -1272,7 +1249,7 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                     return (starsRevenueStatsContext, state.stats)
                 }
             }
-                        
+            
             return combineLatest(
                 context.account.viewTracker.peerView(peerId, updateData: true),
                 peerInfoAvailableMediaPanes(context: context, peerId: peerId, chatLocation: chatLocation, isMyProfile: isMyProfile, chatLocationContextHolder: chatLocationContextHolder),
@@ -1289,30 +1266,18 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                 hasBotPreviewItems,
                 peerInfoPersonalChannel(context: context, peerId: peerId, isSettings: false),
                 privacySettings,
-                starsRevenueContextAndState,
-                premiumGiftOptions
+                starsRevenueContextAndState
             )
-            |> map { peerView, availablePanes, globalNotificationSettings, encryptionKeyFingerprint, status, hasStories, hasStoryArchive, accountIsPremium, savedMessagesPeer, hasSavedMessagesChats, hasSavedMessages, hasSavedMessageTags, hasBotPreviewItems, personalChannel, privacySettings, starsRevenueContextAndState, premiumGiftOptions -> PeerInfoScreenData in
+            |> map { peerView, availablePanes, globalNotificationSettings, encryptionKeyFingerprint, status, hasStories, hasStoryArchive, accountIsPremium, savedMessagesPeer, hasSavedMessagesChats, hasSavedMessages, hasSavedMessageTags, hasBotPreviewItems, personalChannel, privacySettings, starsRevenueContextAndState -> PeerInfoScreenData in
                 var availablePanes = availablePanes
                 if isMyProfile {
                     availablePanes?.insert(.stories, at: 0)
                     if let hasStoryArchive, hasStoryArchive {
                         availablePanes?.insert(.storyArchive, at: 1)
                     }
-                    if availablePanes != nil, profileGiftsContext != nil, let cachedData = peerView.cachedData as? CachedUserData {
-                        if let starGiftsCount = cachedData.starGiftsCount, starGiftsCount > 0 {
-                            availablePanes?.insert(.gifts, at: hasStoryArchive == true ? 2 : 1)
-                        }
-                    }
                 } else if let hasStories {
                     if hasStories, peerView.peers[peerView.peerId] is TelegramUser, peerView.peerId != context.account.peerId {
                         availablePanes?.insert(.stories, at: 0)
-                    }
-                    
-                    if availablePanes != nil, profileGiftsContext != nil, let cachedData = peerView.cachedData as? CachedUserData {
-                        if let starGiftsCount = cachedData.starGiftsCount, starGiftsCount > 0 {
-                            availablePanes?.insert(.gifts, at: hasStories ? 1 : 0)
-                        }
                     }
                     
                     if availablePanes != nil, groupsInCommon != nil, let cachedData = peerView.cachedData as? CachedUserData {
@@ -1408,9 +1373,7 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                     starsState: nil,
                     starsRevenueStatsState: starsRevenueContextAndState.1,
                     starsRevenueStatsContext: starsRevenueContextAndState.0,
-                    revenueStatsState: nil,
-                    profileGiftsContext: profileGiftsContext,
-                    premiumGiftOptions: premiumGiftOptions
+                    revenueStatsState: nil
                 )
             }
         case .channel:
@@ -1619,9 +1582,7 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                     starsState: nil,
                     starsRevenueStatsState: starsRevenueContextAndState.1,
                     starsRevenueStatsContext: starsRevenueContextAndState.0,
-                    revenueStatsState: revenueContextAndState.1,
-                    profileGiftsContext: nil,
-                    premiumGiftOptions: []
+                    revenueStatsState: revenueContextAndState.1
                 )
             }
         case let .group(groupId):
@@ -1921,9 +1882,7 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                     starsState: nil,
                     starsRevenueStatsState: nil,
                     starsRevenueStatsContext: nil,
-                    revenueStatsState: nil,
-                    profileGiftsContext: nil,
-                    premiumGiftOptions: []
+                    revenueStatsState: nil
                 ))
             }
         }

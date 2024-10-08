@@ -2,7 +2,7 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
-@preconcurrency import WebKit
+import WebKit
 import TelegramPresentationData
 import AccountContext
 

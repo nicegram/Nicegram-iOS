@@ -407,8 +407,6 @@ private final class PeerInfoPendingPane {
         var captureProtected = data.peer?.isCopyProtectionEnabled ?? false
         let paneNode: PeerInfoPaneNode
         switch key {
-        case .gifts:
-            paneNode = PeerInfoGiftsPaneNode(context: context, peerId: peerId, chatControllerInteraction: chatControllerInteraction, openPeerContextAction: openPeerContextAction, profileGifts: data.profileGiftsContext!)
         case .stories, .storyArchive, .botPreview:
             var canManage = false
             if let peer = data.peer {
@@ -1151,8 +1149,6 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
                 title = presentationData.strings.DialogList_TabTitle
             case .savedMessages:
                 title = presentationData.strings.PeerInfo_SavedMessagesTabTitle
-            case .gifts:
-                title = presentationData.strings.PeerInfo_PaneGifts
             }
             return PeerInfoPaneSpecifier(key: key, title: title)
         }, selectedPane: self.currentPaneKey, disableSwitching: disableTabSwitching, transitionFraction: self.transitionFraction, transition: transition)

@@ -3,7 +3,7 @@ import NicegramWallet
 //
 import Foundation
 import UIKit
-@preconcurrency import WebKit
+import WebKit
 import Display
 import AsyncDisplayKit
 import Postbox

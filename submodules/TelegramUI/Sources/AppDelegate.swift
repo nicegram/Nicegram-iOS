@@ -18,6 +18,7 @@ import NGRepoUser
 import NGStats
 import NGStrings
 import NicegramWallet
+import SubscriptionAnalytics
 
 import UIKit
 import SwiftSignalKit
@@ -395,6 +396,17 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         let buildConfig = BuildConfig(baseAppBundleId: baseAppBundleId)
         self.buildConfig = buildConfig
         let signatureDict = BuildConfigExtra.signatureDict()
+
+        let mobyApiKey = NGENV.moby_key
+        MobySubscriptionAnalytics.setup(apiKey: mobyApiKey) { account in
+            account.appsflyerID = nil
+        } completion: { _, _ in }
+
+        if AppCache.appLaunchCount == 1 {
+            let installTime = (time_t)(Date().timeIntervalSince1970)
+            let installInfo = InstallInfo(installDateTimestamp: installTime)
+            MobySubscriptionAnalytics.trackInstall(installInfo: installInfo)
+        }
         
         NGEntryPoint.onAppLaunch(
             env: Env(
@@ -2098,7 +2110,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             if resetOnce {
                 resetOnce = false
                 if count == 0 {
-                    //UIApplication.shared.applicationIconBadgeNumber = 1
+                    UIApplication.shared.applicationIconBadgeNumber = 1
                 }
             }
             UIApplication.shared.applicationIconBadgeNumber = Int(count)
@@ -2155,19 +2167,14 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         self.isActiveValue = false
         self.isActivePromise.set(false)
         
-        final class TaskIdHolder {
-            var taskId: UIBackgroundTaskIdentifier?
-        }
-        
-        let taskIdHolder = TaskIdHolder()
-        
-        taskIdHolder.taskId = application.beginBackgroundTask(withName: "lock", expirationHandler: {
-            if let taskId = taskIdHolder.taskId {
+        var taskId: UIBackgroundTaskIdentifier?
+        taskId = application.beginBackgroundTask(withName: "lock", expirationHandler: {
+            if let taskId = taskId {
                 UIApplication.shared.endBackgroundTask(taskId)
             }
         })
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 5.0, execute: {
-            if let taskId = taskIdHolder.taskId {
+            if let taskId = taskId {
                 UIApplication.shared.endBackgroundTask(taskId)
             }
         })
@@ -2746,7 +2753,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                         if let primary = primary {
                             for context in contexts {
                                 if let context = context, context.account.id == primary {
-                                    self.openChatWhenReady(accountId: nil, peerId: peerId, threadId: nil, storyId: nil, openAppIfAny: true)
+                                    self.openChatWhenReady(accountId: nil, peerId: peerId, threadId: nil, storyId: nil)
                                     return
                                 }
                             }
@@ -2754,7 +2761,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                         
                         for context in contexts {
                             if let context = context {
-                                self.openChatWhenReady(accountId: context.account.id, peerId: peerId, threadId: nil, storyId: nil, openAppIfAny: true)
+                                self.openChatWhenReady(accountId: context.account.id, peerId: peerId, threadId: nil, storyId: nil)
                                 return
                             }
                         }
@@ -2852,7 +2859,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }))
     }
     
-    private func openChatWhenReady(accountId: AccountRecordId?, peerId: PeerId, threadId: Int64?, messageId: MessageId? = nil, activateInput: Bool = false, storyId: StoryId?, openAppIfAny: Bool = false) {
+    private func openChatWhenReady(accountId: AccountRecordId?, peerId: PeerId, threadId: Int64?, messageId: MessageId? = nil, activateInput: Bool = false, storyId: StoryId?) {
         let signal = self.sharedContextPromise.get()
         |> take(1)
         |> deliverOnMainQueue
@@ -2871,7 +2878,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }
         self.openChatWhenReadyDisposable.set((signal
         |> deliverOnMainQueue).start(next: { context in
-            context.openChatWithPeerId(peerId: peerId, threadId: threadId, messageId: messageId, activateInput: activateInput, storyId: storyId, openAppIfAny: openAppIfAny)
+            context.openChatWithPeerId(peerId: peerId, threadId: threadId, messageId: messageId, activateInput: activateInput, storyId: storyId)
         }))
     }
     

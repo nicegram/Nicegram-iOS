@@ -97,16 +97,19 @@ private final class BlobView: UIView {
     }
     
     private func updateAudioLevel() {
-        let additionalAvatarScale = CGFloat(max(0.0, min(self.presentationAudioLevel * 0.3, 1.0)) * 1.0)
-        let blobScale = 1.28 + additionalAvatarScale
+        let additionalAvatarScale = CGFloat(max(0.0, min(self.presentationAudioLevel * 18.0, 5.0)) * 0.05)
+        let blobAmplificationFactor: CGFloat = 2.0
+        let blobScale = 1.0 + additionalAvatarScale * blobAmplificationFactor
         self.blobsLayer.transform = CATransform3DMakeScale(blobScale, blobScale, 1.0)
         
-        self.scaleUpdated?(additionalAvatarScale)
+        self.scaleUpdated?(blobScale)
     }
     
     public func startAnimating() {
         guard !self.isAnimating else { return }
         self.isAnimating = true
+        
+        self.updateBlobsState()
         
         self.displayLinkAnimator?.isPaused = false
     }
@@ -119,35 +122,51 @@ private final class BlobView: UIView {
         guard isAnimating else { return }
         self.isAnimating = false
         
+        self.updateBlobsState()
+        
         self.displayLinkAnimator?.isPaused = true
     }
     
-    func update(size: CGSize) {
+    private func updateBlobsState() {
+        /*if self.isAnimating {
+            if self.mediumBlob.frame.size != .zero {
+                self.mediumBlob.startAnimating()
+                self.bigBlob.startAnimating()
+            }
+        } else {
+            self.mediumBlob.stopAnimating()
+            self.bigBlob.stopAnimating()
+        }*/
+    }
+    
+    override public func layoutSubviews() {
         super.layoutSubviews()
         
-        let blobsFrame = CGRect(origin: CGPoint(), size: size)
+        //self.mediumBlob.frame = bounds
+        //self.bigBlob.frame = bounds
+        
+        let blobsFrame = bounds.insetBy(dx: floor(bounds.width * 0.12), dy: floor(bounds.height * 0.12))
         self.blobsLayer.position = blobsFrame.center
         self.blobsLayer.bounds = CGRect(origin: CGPoint(), size: blobsFrame.size)
+        
+        self.updateBlobsState()
     }
 }
 
 final class VideoChatParticipantAvatarComponent: Component {
     let call: PresentationGroupCall
     let peer: EnginePeer
-    let myPeerId: EnginePeer.Id
     let isSpeaking: Bool
     let theme: PresentationTheme
 
     init(
         call: PresentationGroupCall,
         peer: EnginePeer,
-        myPeerId: EnginePeer.Id,
         isSpeaking: Bool,
         theme: PresentationTheme
     ) {
         self.call = call
         self.peer = peer
-        self.myPeerId = myPeerId
         self.isSpeaking = isSpeaking
         self.theme = theme
     }
@@ -160,9 +179,6 @@ final class VideoChatParticipantAvatarComponent: Component {
             return false
         }
         if lhs.isSpeaking != rhs.isSpeaking {
-            return false
-        }
-        if lhs.myPeerId != rhs.myPeerId {
             return false
         }
         if lhs.theme !== rhs.theme {
@@ -181,7 +197,6 @@ final class VideoChatParticipantAvatarComponent: Component {
         
         private var wasSpeaking: Bool?
         private var noAudioTimer: Foundation.Timer?
-        private var lastAudioLevelTimestamp: Double = 0.0
         
         override init(frame: CGRect) {
             super.init(frame: frame)
@@ -194,31 +209,6 @@ final class VideoChatParticipantAvatarComponent: Component {
         deinit {
             self.audioLevelDisposable?.dispose()
             self.noAudioTimer?.invalidate()
-        }
-        
-        private func checkNoAudio() {
-            let timestamp = CFAbsoluteTimeGetCurrent()
-            if self.lastAudioLevelTimestamp + 1.0 < timestamp {
-                self.noAudioTimer?.invalidate()
-                self.noAudioTimer = nil
-                
-                if let blobView = self.blobView {
-                    let transition: ComponentTransition = .easeInOut(duration: 0.3)
-                    transition.setAlpha(view: blobView, alpha: 0.0, completion: { [weak self, weak blobView] completed in
-                        guard let self, let blobView, completed else {
-                            return
-                        }
-                        if self.blobView === blobView {
-                            self.blobView = nil
-                        }
-                        blobView.removeFromSuperview()
-                    })
-                    transition.setScale(layer: blobView.layer, scale: 0.5)
-                    if let avatarNode = self.avatarNode {
-                        transition.setScale(view: avatarNode.view, scale: 1.0)
-                    }
-                }
-            }
         }
         
         func update(component: VideoChatParticipantAvatarComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
@@ -278,60 +268,39 @@ final class VideoChatParticipantAvatarComponent: Component {
                 avatarNode.setPeer(context: component.call.accountContext, theme: component.theme, peer: component.peer, clipStyle: clipStyle, synchronousLoad: false, displayDimensions: avatarSize)
             }
             
-            let avatarFrame = CGRect(origin: CGPoint(), size: avatarSize)
-            transition.setPosition(view: avatarNode.view, position: avatarFrame.center)
-            transition.setBounds(view: avatarNode.view, bounds: CGRect(origin: CGPoint(), size: avatarFrame.size))
+            transition.setFrame(view: avatarNode.view, frame: CGRect(origin: CGPoint(), size: avatarSize))
             avatarNode.updateSize(size: avatarSize)
             
-            let blobScale: CGFloat = 2.0
-            
             if self.audioLevelDisposable == nil {
+                let peerId = component.peer.id
                 struct Level {
                     var value: Float
                     var isSpeaking: Bool
                 }
-                
-                let peerId = component.peer.id
-                let levelSignal: Signal<Level?, NoError>
-                if peerId == component.myPeerId {
-                    levelSignal = component.call.myAudioLevelAndSpeaking
-                    |> map { value, isSpeaking -> Level? in
-                        if value == 0.0 {
-                            return nil
-                        } else {
-                            return Level(value: value, isSpeaking: isSpeaking)
+                self.audioLevelDisposable = (component.call.audioLevels
+                |> map { levels -> Level? in
+                    for level in levels {
+                        if level.0 == peerId {
+                            return Level(value: level.2, isSpeaking: level.3)
                         }
                     }
-                } else {
-                    levelSignal = component.call.audioLevels
-                    |> map { levels -> Level? in
-                        for level in levels {
-                            if level.0 == peerId {
-                                return Level(value: level.2, isSpeaking: level.3)
-                            }
-                        }
-                        return nil
-                    }
+                    return nil
                 }
-                
-                self.audioLevelDisposable = (levelSignal
                 |> distinctUntilChanged(isEqual: { lhs, rhs in
                     if (lhs == nil) != (rhs == nil) {
                         return false
                     }
                     if lhs != nil {
-                        return false
-                    } else {
                         return true
+                    } else {
+                        return false
                     }
                 })
                 |> deliverOnMainQueue).startStrict(next: { [weak self] level in
                     guard let self, let component = self.component, let avatarNode = self.avatarNode else {
                         return
                     }
-                    if let level, level.value >= 0.1 {
-                        self.lastAudioLevelTimestamp = CFAbsoluteTimeGetCurrent()
-                        
+                    if let level {
                         let blobView: BlobView
                         if let current = self.blobView {
                             blobView = current
@@ -345,31 +314,14 @@ final class VideoChatParticipantAvatarComponent: Component {
                                 bigBlobRange: (0.71, 1.0)
                             )
                             self.blobView = blobView
-                            let blobSize = floor(avatarNode.bounds.width * blobScale)
-                            blobView.center = avatarNode.frame.center
-                            blobView.bounds = CGRect(origin: CGPoint(), size: CGSize(width: blobSize, height: blobSize))
-                            blobView.layer.transform = CATransform3DMakeScale(1.0 / blobScale, 1.0 / blobScale, 1.0)
-                            
-                            blobView.update(size: blobView.bounds.size)
+                            blobView.frame = avatarNode.frame
                             self.insertSubview(blobView, belowSubview: avatarNode.view)
                             
-                            blobView.layer.animateScale(from: 0.5, to: 1.0 / blobScale, duration: 0.2)
-                            
-                            blobView.scaleUpdated = { [weak self] additionalScale in
-                                guard let self, let avatarNode = self.avatarNode else {
-                                    return
-                                }
-                                avatarNode.layer.transform = CATransform3DMakeScale(1.0 + additionalScale, 1.0 + additionalScale, 1.0)
-                            }
+                            blobView.layer.animateScale(from: 0.001, to: 1.0, duration: 0.2)
                             
                             ComponentTransition.immediate.setTintColor(layer: blobView.blobsLayer, color: component.isSpeaking ? UIColor(rgb: 0x33C758) : component.theme.list.itemAccentColor)
                         }
                         
-                        if blobView.alpha == 0.0 {
-                            let transition: ComponentTransition = .easeInOut(duration: 0.3)
-                            transition.setAlpha(view: blobView, alpha: 1.0)
-                            transition.setScale(view: blobView, scale: 1.0 / blobScale)
-                        }
                         blobView.updateLevel(CGFloat(level.value), immediately: false)
                         
                         if let noAudioTimer = self.noAudioTimer {
@@ -377,18 +329,23 @@ final class VideoChatParticipantAvatarComponent: Component {
                             noAudioTimer.invalidate()
                         }
                     } else {
-                        if let blobView = self.blobView {
-                            blobView.updateLevel(0.0, immediately: false)
+                        if self.noAudioTimer == nil {
+                            self.noAudioTimer = Foundation.Timer.scheduledTimer(withTimeInterval: 0.4, repeats: false, block: { [weak self] _ in
+                                guard let self else {
+                                    return
+                                }
+                                self.noAudioTimer?.invalidate()
+                                self.noAudioTimer = nil
+                                
+                                if let blobView = self.blobView {
+                                    self.blobView = nil
+                                    blobView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.25, removeOnCompletion: false, completion: { [weak blobView] _ in
+                                        blobView?.removeFromSuperview()
+                                    })
+                                    blobView.layer.animateScale(from: 1.0, to: 0.001, duration: 0.3, removeOnCompletion: false)
+                                }
+                            })
                         }
-                    }
-                    
-                    if self.noAudioTimer == nil {
-                        self.noAudioTimer = Foundation.Timer.scheduledTimer(withTimeInterval: 0.4, repeats: true, block: { [weak self] _ in
-                            guard let self else {
-                                return
-                            }
-                            self.checkNoAudio()
-                        })
                     }
                 })
             }

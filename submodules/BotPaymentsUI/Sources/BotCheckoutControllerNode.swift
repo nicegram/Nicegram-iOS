@@ -1389,9 +1389,6 @@ final class BotCheckoutControllerNode: ItemListControllerNode, PKPaymentAuthoriz
                     }
                     
                     let botPeerId = paymentForm.paymentBotId
-                    guard let botPeerId else {
-                        return
-                    }
                     let _ = (context.engine.data.get(
                         TelegramEngine.EngineData.Item.Peer.Peer(id: botPeerId)
                     )
@@ -1463,15 +1460,15 @@ final class BotCheckoutControllerNode: ItemListControllerNode, PKPaymentAuthoriz
             }
         }
         
-        if !liabilityNoticeAccepted, let paymentBotId = paymentForm.paymentBotId {
+        if !liabilityNoticeAccepted {
             let botPeer: Signal<EnginePeer?, NoError> = self.context.engine.data.get(
-                TelegramEngine.EngineData.Item.Peer.Peer(id: paymentBotId)
+                TelegramEngine.EngineData.Item.Peer.Peer(id: paymentForm.paymentBotId)
             )
             let providerPeer: Signal<EnginePeer?, NoError> = paymentForm.providerId.flatMap { 
                 self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: $0))
             } ?? .single(nil)
             let _ = (combineLatest(
-                ApplicationSpecificNotice.getBotPaymentLiability(accountManager: self.context.sharedContext.accountManager, peerId: paymentBotId),
+                ApplicationSpecificNotice.getBotPaymentLiability(accountManager: self.context.sharedContext.accountManager, peerId: paymentForm.paymentBotId),
                 botPeer,
                 providerPeer
             )
@@ -1492,7 +1489,7 @@ final class BotCheckoutControllerNode: ItemListControllerNode, PKPaymentAuthoriz
                         
                         strongSelf.present(textAlertController(context: strongSelf.context, title: strongSelf.presentationData.strings.Checkout_LiabilityAlertTitle, text: paymentText, actions: [TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: { }), TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_OK, action: {
                             if let strongSelf = self {
-                                let _ = ApplicationSpecificNotice.setBotPaymentLiability(accountManager: strongSelf.context.sharedContext.accountManager, peerId: paymentBotId).start()
+                                let _ = ApplicationSpecificNotice.setBotPaymentLiability(accountManager: strongSelf.context.sharedContext.accountManager, peerId: paymentForm.paymentBotId).start()
                                 strongSelf.pay(savedCredentialsToken: savedCredentialsToken, liabilityNoticeAccepted: true)
                             }
                         })]), nil)

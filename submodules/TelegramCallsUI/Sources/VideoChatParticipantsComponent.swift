@@ -26,13 +26,11 @@ final class VideoChatParticipantsComponent: Component {
         var videoColumn: Column?
         var mainColumn: Column
         var columnSpacing: CGFloat
-        var isMainColumnHidden: Bool
         
-        init(videoColumn: Column?, mainColumn: Column, columnSpacing: CGFloat, isMainColumnHidden: Bool) {
+        init(videoColumn: Column?, mainColumn: Column, columnSpacing: CGFloat) {
             self.videoColumn = videoColumn
             self.mainColumn = mainColumn
             self.columnSpacing = columnSpacing
-            self.isMainColumnHidden = isMainColumnHidden
         }
     }
     
@@ -117,13 +115,6 @@ final class VideoChatParticipantsComponent: Component {
         }
     }
     
-    final class EventCycleState {
-        var ignoreScrolling: Bool = false
-        
-        init() {
-        }
-    }
-    
     let call: PresentationGroupCall
     let participants: Participants?
     let speakingParticipants: Set<EnginePeer.Id>
@@ -135,11 +126,10 @@ final class VideoChatParticipantsComponent: Component {
     let safeInsets: UIEdgeInsets
     let interfaceOrientation: UIInterfaceOrientation
     let openParticipantContextMenu: (EnginePeer.Id, ContextExtractedContentContainingView, ContextGesture?) -> Void
-    let updateMainParticipant: (VideoParticipantKey?, Bool?) -> Void
+    let updateMainParticipant: (VideoParticipantKey?) -> Void
     let updateIsMainParticipantPinned: (Bool) -> Void
     let updateIsExpandedUIHidden: (Bool) -> Void
     let openInviteMembers: () -> Void
-    let visibleParticipantsUpdated: (Set<EnginePeer.Id>) -> Void
 
     init(
         call: PresentationGroupCall,
@@ -153,11 +143,10 @@ final class VideoChatParticipantsComponent: Component {
         safeInsets: UIEdgeInsets,
         interfaceOrientation: UIInterfaceOrientation,
         openParticipantContextMenu: @escaping (EnginePeer.Id, ContextExtractedContentContainingView, ContextGesture?) -> Void,
-        updateMainParticipant: @escaping (VideoParticipantKey?, Bool?) -> Void,
+        updateMainParticipant: @escaping (VideoParticipantKey?) -> Void,
         updateIsMainParticipantPinned: @escaping (Bool) -> Void,
         updateIsExpandedUIHidden: @escaping (Bool) -> Void,
-        openInviteMembers: @escaping () -> Void,
-        visibleParticipantsUpdated: @escaping (Set<EnginePeer.Id>) -> Void
+        openInviteMembers: @escaping () -> Void
     ) {
         self.call = call
         self.participants = participants
@@ -174,7 +163,6 @@ final class VideoChatParticipantsComponent: Component {
         self.updateIsMainParticipantPinned = updateIsMainParticipantPinned
         self.updateIsExpandedUIHidden = updateIsExpandedUIHidden
         self.openInviteMembers = openInviteMembers
-        self.visibleParticipantsUpdated = visibleParticipantsUpdated
     }
 
     static func ==(lhs: VideoChatParticipantsComponent, rhs: VideoChatParticipantsComponent) -> Bool {
@@ -434,11 +422,7 @@ final class VideoChatParticipantsComponent: Component {
             let gridSideInset: CGFloat
             let gridContainerHeight: CGFloat
             if let videoColumn = layout.videoColumn {
-                if layout.isMainColumnHidden {
-                    gridWidth = videoColumn.width + layout.columnSpacing + layout.mainColumn.width
-                } else {
-                    gridWidth = videoColumn.width
-                }
+                gridWidth = videoColumn.width
                 gridSideInset = videoColumn.insets.left
                 gridContainerHeight = containerSize.height - videoColumn.insets.top - videoColumn.insets.bottom
             } else {
@@ -451,7 +435,7 @@ final class VideoChatParticipantsComponent: Component {
             self.list = List(containerSize: CGSize(width: listWidth, height: containerSize.height), sideInset: layout.mainColumn.insets.left, itemCount: listItemCount, itemHeight: listItemHeight, trailingItemHeight: listTrailingItemHeight)
             self.spacing = 4.0
             
-            if let videoColumn = layout.videoColumn, !isUIHidden && !layout.isMainColumnHidden {
+            if let videoColumn = layout.videoColumn, !isUIHidden {
                 self.expandedGrid = ExpandedGrid(containerSize: CGSize(width: videoColumn.width + expandedInsets.left, height: containerSize.height), layout: layout, expandedInsets: UIEdgeInsets(top: expandedInsets.top, left: expandedInsets.left, bottom: expandedInsets.bottom, right: 0.0), isUIHidden: isUIHidden)
             } else {
                 self.expandedGrid = ExpandedGrid(containerSize: containerSize, layout: layout, expandedInsets: expandedInsets, isUIHidden: isUIHidden)
@@ -475,8 +459,8 @@ final class VideoChatParticipantsComponent: Component {
                 var separateVideoGridFrame = CGRect(origin: CGPoint(x: floor((containerSize.width - columnsWidth) * 0.5), y: 0.0), size: CGSize(width: gridWidth, height: containerSize.height))
                 
                 var listFrame = CGRect(origin: CGPoint(x: separateVideoGridFrame.maxX + layout.columnSpacing, y: 0.0), size: CGSize(width: listWidth, height: containerSize.height))
-                if isUIHidden || layout.isMainColumnHidden {
-                    listFrame.origin.x = containerSize.width + columnsSideInset
+                if isUIHidden {
+                    listFrame.origin.x += columnsSideInset + layout.mainColumn.width
                     separateVideoGridFrame = CGRect(origin: CGPoint(x: floor((containerSize.width - columnsWidth) * 0.5), y: 0.0), size: CGSize(width: columnsWidth, height: containerSize.height))
                 }
                 
@@ -487,7 +471,7 @@ final class VideoChatParticipantsComponent: Component {
                 self.scrollClippingFrame = CGRect(origin: CGPoint(x: self.listFrame.minX, y: layout.mainColumn.insets.top), size: CGSize(width: self.listFrame.width, height: containerSize.height - layout.mainColumn.insets.top))
             } else {
                 self.listFrame = CGRect(origin: CGPoint(x: floor((containerSize.width - listWidth) * 0.5), y: 0.0), size: CGSize(width: listWidth, height: containerSize.height))
-                self.scrollClippingFrame = CGRect(origin: CGPoint(x: self.listFrame.minX + layout.mainColumn.insets.left, y: layout.mainColumn.insets.top), size: CGSize(width: listWidth - layout.mainColumn.insets.left - layout.mainColumn.insets.right, height: containerSize.height - layout.mainColumn.insets.top))
+                self.scrollClippingFrame = CGRect(origin: CGPoint(x: self.listFrame.minX, y: layout.mainColumn.insets.top), size: CGSize(width: listWidth, height: containerSize.height - layout.mainColumn.insets.top - layout.mainColumn.insets.bottom))
                 
                 self.separateVideoGridFrame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: 0.0, height: containerSize.height))
                 self.separateVideoScrollClippingFrame = CGRect(origin: CGPoint(x: self.separateVideoGridFrame.minX, y: layout.mainColumn.insets.top), size: CGSize(width: self.separateVideoGridFrame.width, height: containerSize.height - layout.mainColumn.insets.top))
@@ -607,20 +591,20 @@ final class VideoChatParticipantsComponent: Component {
     }
 
     final class View: UIView, UIScrollViewDelegate {
+        private var rootVideoLoadingEffectView: VideoChatVideoLoadingEffectView?
+        
         private let scrollViewClippingContainer: SolidRoundedCornersContainer
         private let scrollView: ScrollView
-        private let scrollViewBottomShadowView: UIImageView
         
         private let separateVideoScrollViewClippingContainer: SolidRoundedCornersContainer
         private let separateVideoScrollView: ScrollView
         
-        private(set) var component: VideoChatParticipantsComponent?
+        private var component: VideoChatParticipantsComponent?
         private weak var state: EmptyComponentState?
         private var isUpdating: Bool = false
         
         private var ignoreScrolling: Bool = false
         
-        //TODO:release
         private var gridParticipants: [VideoParticipant] = []
         private var listParticipants: [GroupCallParticipantsContext.Participant] = []
         
@@ -633,7 +617,6 @@ final class VideoChatParticipantsComponent: Component {
         private let expandedGridItemContainer: UIView
         private var expandedControlsView: ComponentView<Empty>?
         private var expandedThumbnailsView: ComponentView<Empty>?
-        private var expandedSpeakingToast: ComponentView<Empty>?
         
         private var listItemViews: [EnginePeer.Id: ListItem] = [:]
         private let listItemViewContainer: UIView
@@ -645,15 +628,9 @@ final class VideoChatParticipantsComponent: Component {
         
         private var appliedGridIsEmpty: Bool = true
         
-        private var currentLoadMoreToken: String?
-        
-        private var mainScrollViewEventCycleState: EventCycleState?
-        private var separateVideoScrollViewEventCycleState: EventCycleState?
-        
         override init(frame: CGRect) {
             self.scrollViewClippingContainer = SolidRoundedCornersContainer()
             self.scrollView = ScrollView()
-            self.scrollViewBottomShadowView = UIImageView()
             
             self.separateVideoScrollViewClippingContainer = SolidRoundedCornersContainer()
             self.separateVideoScrollView = ScrollView()
@@ -703,7 +680,6 @@ final class VideoChatParticipantsComponent: Component {
             self.scrollViewClippingContainer.addSubview(self.scrollView)
             self.addSubview(self.scrollViewClippingContainer)
             self.addSubview(self.scrollViewClippingContainer.cornersView)
-            self.addSubview(self.scrollViewBottomShadowView)
             
             self.separateVideoScrollViewClippingContainer.addSubview(self.separateVideoScrollView)
             self.addSubview(self.separateVideoScrollViewClippingContainer)
@@ -727,19 +703,9 @@ final class VideoChatParticipantsComponent: Component {
             if component.expandedVideoState != nil {
                 if let result = self.expandedGridItemContainer.hitTest(self.convert(point, to: self.expandedGridItemContainer), with: event) {
                     return result
+                } else {
+                    return self
                 }
-                
-                if component.layout.videoColumn != nil {
-                    if let result = self.scrollViewClippingContainer.hitTest(self.convert(point, to: self.scrollViewClippingContainer), with: event) {
-                        return result
-                    }
-                }
-                
-                if !self.expandedGridItemContainer.bounds.contains(self.convert(point, to: self.expandedGridItemContainer)) && !self.scrollViewClippingContainer.bounds.contains(self.convert(point, to: self.scrollViewClippingContainer)) {
-                    return nil
-                }
-                
-                return self
             } else {
                 if let result = self.scrollViewClippingContainer.hitTest(self.convert(point, to: self.scrollViewClippingContainer), with: event) {
                     return result
@@ -771,7 +737,7 @@ final class VideoChatParticipantsComponent: Component {
                 
                 let velocity = recognizer.velocity(in: self)
                 if abs(velocity.y) > 100.0 || abs(fraction) >= 0.5 {
-                    component.updateMainParticipant(nil, nil)
+                    component.updateMainParticipant(nil)
                 } else {
                     self.state?.updated(transition: .spring(duration: 0.4))
                 }
@@ -782,43 +748,7 @@ final class VideoChatParticipantsComponent: Component {
         
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
             if !self.ignoreScrolling {
-                if scrollView == self.scrollView {
-                    if let eventCycleState = self.mainScrollViewEventCycleState {
-                        if eventCycleState.ignoreScrolling {
-                            self.ignoreScrolling = true
-                            scrollView.contentOffset = CGPoint()
-                            self.ignoreScrolling = false
-                            return
-                        }
-                    }
-                } else if scrollView == self.separateVideoScrollView {
-                    if let eventCycleState = self.separateVideoScrollViewEventCycleState {
-                        if eventCycleState.ignoreScrolling {
-                            self.ignoreScrolling = true
-                            scrollView.contentOffset = CGPoint()
-                            self.ignoreScrolling = false
-                            return
-                        }
-                    }
-                }
-                
                 self.updateScrolling(transition: .immediate)
-            }
-        }
-        
-        func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
-            if scrollView == self.scrollView {
-                if let eventCycleState = self.mainScrollViewEventCycleState {
-                    if eventCycleState.ignoreScrolling {
-                        targetContentOffset.pointee.y = 0.0
-                    }
-                }
-            } else if scrollView == self.separateVideoScrollView {
-                if let eventCycleState = self.separateVideoScrollViewEventCycleState {
-                    if eventCycleState.ignoreScrolling {
-                        targetContentOffset.pointee.y = 0.0
-                    }
-                }
             }
         }
         
@@ -885,18 +815,11 @@ final class VideoChatParticipantsComponent: Component {
             var validGridItemIds: [VideoParticipantKey] = []
             var validGridItemIndices: [Int] = []
             
-            var clippedScrollViewBounds = self.scrollView.bounds
-            clippedScrollViewBounds.origin.y += component.layout.mainColumn.insets.top
-            clippedScrollViewBounds.size.height -= component.layout.mainColumn.insets.top + component.layout.mainColumn.insets.bottom
-            
             let visibleGridItemRange: (minIndex: Int, maxIndex: Int)
-            let clippedVisibleGridItemRange: (minIndex: Int, maxIndex: Int)
             if itemLayout.layout.videoColumn == nil {
                 visibleGridItemRange = itemLayout.visibleGridItemRange(for: self.scrollView.bounds)
-                clippedVisibleGridItemRange = itemLayout.visibleGridItemRange(for: clippedScrollViewBounds)
             } else {
                 visibleGridItemRange = itemLayout.visibleGridItemRange(for: self.separateVideoScrollView.bounds)
-                clippedVisibleGridItemRange = visibleGridItemRange
             }
             if visibleGridItemRange.maxIndex >= visibleGridItemRange.minIndex {
                 for index in visibleGridItemRange.minIndex ... visibleGridItemRange.maxIndex {
@@ -912,8 +835,6 @@ final class VideoChatParticipantsComponent: Component {
                     validGridItemIndices.append(index)
                 }
             }
-            
-            var visibleParticipants: [EnginePeer.Id] = []
              
             for index in validGridItemIndices {
                 let videoParticipant = self.gridParticipants[index]
@@ -941,10 +862,6 @@ final class VideoChatParticipantsComponent: Component {
                     }
                 }
                 
-                if isItemExpanded || (index >= clippedVisibleGridItemRange.minIndex && index <= clippedVisibleGridItemRange.maxIndex) {
-                    visibleParticipants.append(videoParticipant.key.id)
-                }
-                
                 var suppressItemExpansionCollapseAnimation = false
                 if isItemExpanded {
                     if let previousExpandedItemId, previousExpandedItemId != videoParticipantKey {
@@ -966,14 +883,6 @@ final class VideoChatParticipantsComponent: Component {
                     itemFrame = CGRect(origin: CGPoint(), size: itemLayout.expandedGrid.itemContainerFrame().size)
                 } else {
                     itemFrame = itemLayout.gridItemFrame(at: index)
-                }
-                
-                let itemReferenceX: CGFloat = itemFrame.minX
-                let itemContainerWidth: CGFloat
-                if isItemExpanded {
-                    itemContainerWidth = expandedGridItemContainerFrame.width
-                } else {
-                    itemContainerWidth = itemLayout.grid.containerSize.width
                 }
                 
                 let itemContentInsets: UIEdgeInsets
@@ -1003,10 +912,8 @@ final class VideoChatParticipantsComponent: Component {
                 let _ = itemView.view.update(
                     transition: itemTransition,
                     component: AnyComponent(VideoChatParticipantVideoComponent(
-                        strings: component.strings,
                         call: component.call,
                         participant: videoParticipant.participant,
-                        isMyPeer: videoParticipant.participant.peer.id == component.participants?.myPeerId,
                         isPresentation: videoParticipant.isPresentation,
                         isSpeaking: component.speakingParticipants.contains(videoParticipant.participant.peer.id),
                         isExpanded: isItemExpanded,
@@ -1014,30 +921,22 @@ final class VideoChatParticipantsComponent: Component {
                         contentInsets: itemContentInsets,
                         controlInsets: itemControlInsets,
                         interfaceOrientation: component.interfaceOrientation,
+                        rootVideoLoadingEffectView: self.rootVideoLoadingEffectView,
                         action: { [weak self] in
                             guard let self, let component = self.component else {
                                 return
                             }
-                            
-                            if self.gridParticipants.count == 1, component.layout.videoColumn != nil {
-                                if let expandedVideoState = component.expandedVideoState, expandedVideoState.mainParticipant == videoParticipantKey {
-                                    component.updateMainParticipant(nil, false)
-                                } else {
-                                    component.updateMainParticipant(videoParticipantKey, true)
-                                }
+                            if let expandedVideoState = component.expandedVideoState, expandedVideoState.mainParticipant == videoParticipantKey {
+                                component.updateIsExpandedUIHidden(!expandedVideoState.isUIHidden)
                             } else {
-                                if let expandedVideoState = component.expandedVideoState, expandedVideoState.mainParticipant == videoParticipantKey {
-                                    component.updateIsExpandedUIHidden(!expandedVideoState.isUIHidden)
-                                } else {
-                                    component.updateMainParticipant(videoParticipantKey, nil)
-                                }
+                                component.updateMainParticipant(videoParticipantKey)
                             }
                         }
                     )),
                     environment: {},
                     containerSize: itemFrame.size
                 )
-                if let itemComponentView = itemView.view.view as? VideoChatParticipantVideoComponent.View {
+                if let itemComponentView = itemView.view.view {
                     if itemComponentView.superview == nil {
                         itemComponentView.layer.allowsGroupOpacity = true
                         
@@ -1053,7 +952,6 @@ final class VideoChatParticipantsComponent: Component {
                         
                         itemComponentView.frame = itemFrame
                         itemComponentView.alpha = itemAlpha
-                        itemComponentView.updateHorizontalReferenceLocation(containerWidth: itemContainerWidth, positionX: itemReferenceX, transition: .immediate)
                         
                         if !resultingItemTransition.animation.isImmediate {
                             resultingItemTransition.animateScale(view: itemComponentView, from: 0.001, to: 1.0)
@@ -1088,13 +986,11 @@ final class VideoChatParticipantsComponent: Component {
                                 itemComponentView.center = targetLocalItemFrame.center
                                 itemComponentView.bounds = CGRect(origin: CGPoint(), size: targetLocalItemFrame.size)
                             })
-                            itemComponentView.updateHorizontalReferenceLocation(containerWidth: itemLayout.containerSize.width, positionX: itemFrame.minX, transition: commonGridItemTransition)
                         }
                     }
                     if !itemView.isCollapsing {
                         resultingItemTransition.setPosition(view: itemComponentView, position: itemFrame.center)
                         resultingItemTransition.setBounds(view: itemComponentView, bounds: CGRect(origin: CGPoint(), size: itemFrame.size))
-                        itemComponentView.updateHorizontalReferenceLocation(containerWidth: itemLayout.containerSize.width, positionX: itemFrame.minX, transition: resultingItemTransition)
                         
                         let resultingItemAlphaTransition: ComponentTransition
                         if !resultingItemTransition.animation.isImmediate {
@@ -1132,15 +1028,10 @@ final class VideoChatParticipantsComponent: Component {
             
             var validListItemIds: [EnginePeer.Id] = []
             let visibleListItemRange = itemLayout.visibleListItemRange(for: self.scrollView.bounds)
-            let clippedVisibleListItemRange = itemLayout.visibleListItemRange(for: clippedScrollViewBounds)
             if visibleListItemRange.maxIndex >= visibleListItemRange.minIndex {
                 for i in visibleListItemRange.minIndex ... visibleListItemRange.maxIndex {
                     let participant = self.listParticipants[i]
                     validListItemIds.append(participant.peer.id)
-                    
-                    if i >= clippedVisibleListItemRange.minIndex && i <= clippedVisibleListItemRange.maxIndex {
-                        visibleParticipants.append(participant.peer.id)
-                    }
                     
                     var itemTransition = transition
                     let itemView: ListItem
@@ -1158,15 +1049,9 @@ final class VideoChatParticipantsComponent: Component {
                     if participant.peer.id == component.call.accountContext.account.peerId {
                         subtitle = PeerListItemComponent.Subtitle(text: "this is you", color: .accent)
                     } else if component.speakingParticipants.contains(participant.peer.id) {
-                        if let volume = participant.volume, volume != 10000 {
-                            subtitle = PeerListItemComponent.Subtitle(text: "\(volume / 100)% speaking", color: .constructive)
-                        } else {
-                            subtitle = PeerListItemComponent.Subtitle(text: "speaking", color: .constructive)
-                        }
-                    } else if let about = participant.about, !about.isEmpty {
-                        subtitle = PeerListItemComponent.Subtitle(text: about, color: .neutral)
+                        subtitle = PeerListItemComponent.Subtitle(text: "speaking", color: .constructive)
                     } else {
-                        subtitle = PeerListItemComponent.Subtitle(text: "listening", color: .neutral)
+                        subtitle = PeerListItemComponent.Subtitle(text: participant.about ?? "listening", color: .neutral)
                     }
                     
                     let rightAccessoryComponent: AnyComponent<Empty> = AnyComponent(VideoChatParticipantStatusComponent(
@@ -1188,7 +1073,6 @@ final class VideoChatParticipantsComponent: Component {
                             avatarComponent: AnyComponent(VideoChatParticipantAvatarComponent(
                                 call: component.call,
                                 peer: EnginePeer(participant.peer),
-                                myPeerId: component.participants?.myPeerId ?? component.call.accountContext.account.peerId,
                                 isSpeaking: component.speakingParticipants.contains(participant.peer.id),
                                 theme: component.theme
                             )),
@@ -1353,12 +1237,11 @@ final class VideoChatParticipantsComponent: Component {
                             return VideoChatExpandedParticipantThumbnailsComponent.Participant.Key(id: expandedVideoState.mainParticipant.id, isPresentation: expandedVideoState.mainParticipant.isPresentation)
                         },
                         speakingParticipants: component.speakingParticipants,
-                        interfaceOrientation: component.interfaceOrientation,
                         updateSelectedParticipant: { [weak self] key in
                             guard let self, let component = self.component else {
                                 return
                             }
-                            component.updateMainParticipant(VideoParticipantKey(id: key.id, isPresentation: key.isPresentation), nil)
+                            component.updateMainParticipant(VideoParticipantKey(id: key.id, isPresentation: key.isPresentation))
                         }
                     )),
                     environment: {},
@@ -1406,7 +1289,7 @@ final class VideoChatParticipantsComponent: Component {
                             guard let self, let component = self.component else {
                                 return
                             }
-                            component.updateMainParticipant(nil, nil)
+                            component.updateMainParticipant(nil)
                         },
                         pinAction: { [weak self] in
                             guard let self, let component = self.component else {
@@ -1488,87 +1371,6 @@ final class VideoChatParticipantsComponent: Component {
                     }
                 }
             }
-            
-            if let expandedVideoState = component.expandedVideoState, expandedVideoState.isMainParticipantPinned, let participants = component.participants, !component.speakingParticipants.isEmpty, let firstOther = component.speakingParticipants.first(where: { $0 != expandedVideoState.mainParticipant.id }), let speakingPeer = participants.participants.first(where: { $0.peer.id == firstOther })?.peer {
-                let expandedSpeakingToast: ComponentView<Empty>
-                var expandedSpeakingToastTransition = transition
-                if let current = self.expandedSpeakingToast {
-                    expandedSpeakingToast = current
-                } else {
-                    expandedSpeakingToastTransition = expandedSpeakingToastTransition.withAnimation(.none)
-                    expandedSpeakingToast = ComponentView()
-                    self.expandedSpeakingToast = expandedSpeakingToast
-                }
-                let expandedSpeakingToastSize = expandedSpeakingToast.update(
-                    transition: expandedSpeakingToastTransition,
-                    component: AnyComponent(VideoChatExpandedSpeakingToastComponent(
-                        context: component.call.accountContext,
-                        peer: EnginePeer(speakingPeer),
-                        strings: component.strings,
-                        theme: component.theme,
-                        action: { [weak self] peer in
-                            guard let self, let component = self.component, let participants = component.participants else {
-                                return
-                            }
-                            guard let participant = participants.participants.first(where: { $0.peer.id == peer.id }) else {
-                                return
-                            }
-                            var key: VideoParticipantKey?
-                            if participant.presentationDescription != nil {
-                                key = VideoParticipantKey(id: peer.id, isPresentation: true)
-                            } else if participant.videoDescription != nil {
-                                key = VideoParticipantKey(id: peer.id, isPresentation: false)
-                            }
-                            if let key {
-                                component.updateMainParticipant(key, nil)
-                            }
-                        }
-                    )),
-                    environment: {},
-                    containerSize: itemLayout.expandedGrid.itemContainerFrame().size
-                )
-                let expandedSpeakingToastFrame = CGRect(origin: CGPoint(x: floor((itemLayout.expandedGrid.itemContainerFrame().size.width - expandedSpeakingToastSize.width) * 0.5), y: 44.0), size: expandedSpeakingToastSize)
-                if let expandedSpeakingToastView = expandedSpeakingToast.view {
-                    var animateIn = false
-                    if expandedSpeakingToastView.superview == nil {
-                        animateIn = true
-                        self.expandedGridItemContainer.addSubview(expandedSpeakingToastView)
-                    }
-                    expandedSpeakingToastTransition.setFrame(view: expandedSpeakingToastView, frame: expandedSpeakingToastFrame)
-                    
-                    if animateIn {
-                        alphaTransition.animateAlpha(view: expandedSpeakingToastView, from: 0.0, to: 1.0)
-                        transition.animateScale(view: expandedSpeakingToastView, from: 0.6, to: 1.0)
-                    }
-                }
-            } else {
-                if let expandedSpeakingToast = self.expandedSpeakingToast {
-                    self.expandedSpeakingToast = nil
-                    if let expandedSpeakingToastView = expandedSpeakingToast.view {
-                        alphaTransition.setAlpha(view: expandedSpeakingToastView, alpha: 0.0, completion: { [weak expandedSpeakingToastView] _ in
-                            expandedSpeakingToastView?.removeFromSuperview()
-                        })
-                        transition.setScale(view: expandedSpeakingToastView, scale: 0.6)
-                    }
-                }
-            }
-            
-            if let participants = component.participants, let loadMoreToken = participants.loadMoreToken, visibleListItemRange.maxIndex >= self.listParticipants.count - 5 {
-                if self.currentLoadMoreToken != loadMoreToken {
-                    self.currentLoadMoreToken = loadMoreToken
-                    component.call.loadMoreMembers(token: loadMoreToken)
-                }
-            }
-            
-            component.visibleParticipantsUpdated(Set(visibleParticipants))
-        }
-        
-        func setEventCycleState(scrollView: UIScrollView, eventCycleState: EventCycleState?) {
-            if scrollView == self.scrollView {
-                self.mainScrollViewEventCycleState = eventCycleState
-            } else if scrollView == self.separateVideoScrollView {
-                self.separateVideoScrollViewEventCycleState = eventCycleState
-            }
         }
         
         func update(component: VideoChatParticipantsComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
@@ -1633,16 +1435,11 @@ final class VideoChatParticipantsComponent: Component {
             var listParticipants: [GroupCallParticipantsContext.Participant] = []
             if let participants = component.participants {
                 for participant in participants.participants {
-                    var isFullyMuted = false
-                    if let muteState = participant.muteState, !muteState.canUnmute {
-                        isFullyMuted = true
-                    }
-                    
                     var hasVideo = false
                     if participant.videoDescription != nil {
                         hasVideo = true
                         let videoParticipant = VideoParticipant(participant: participant, isPresentation: false)
-                        if participant.peer.id == participants.myPeerId {
+                        if participant.peer.id == component.call.accountContext.account.peerId || participant.peer.id == participants.myPeerId {
                             gridParticipants.insert(videoParticipant, at: 0)
                         } else {
                             gridParticipants.append(videoParticipant)
@@ -1651,14 +1448,14 @@ final class VideoChatParticipantsComponent: Component {
                     if participant.presentationDescription != nil {
                         hasVideo = true
                         let videoParticipant = VideoParticipant(participant: participant, isPresentation: true)
-                        if participant.peer.id == participants.myPeerId {
+                        if participant.peer.id == component.call.accountContext.account.peerId {
                             gridParticipants.insert(videoParticipant, at: 0)
                         } else {
                             gridParticipants.append(videoParticipant)
                         }
                     }
                     if !hasVideo || component.layout.videoColumn != nil {
-                        if participant.peer.id == participants.myPeerId && !isFullyMuted {
+                        if participant.peer.id == component.call.accountContext.account.peerId {
                             listParticipants.insert(participant, at: 0)
                         } else {
                             listParticipants.append(participant)
@@ -1749,37 +1546,6 @@ final class VideoChatParticipantsComponent: Component {
                 cornerRadius: 10.0,
                 smoothCorners: false
             ), transition: transition)
-            
-            if self.scrollViewBottomShadowView.image == nil {
-                let height: CGFloat = 80.0
-                let baseGradientAlpha: CGFloat = 1.0
-                let numSteps = 8
-                let firstStep = 0
-                let firstLocation = 0.0
-                let colors = (0 ..< numSteps).map { i -> UIColor in
-                    if i < firstStep {
-                        return UIColor(white: 1.0, alpha: 1.0)
-                    } else {
-                        let step: CGFloat = CGFloat(i - firstStep) / CGFloat(numSteps - firstStep - 1)
-                        let value: CGFloat = 1.0 - bezierPoint(0.42, 0.0, 0.58, 1.0, step)
-                        return UIColor(white: 0.0, alpha: baseGradientAlpha * value)
-                    }
-                }
-                let locations = (0 ..< numSteps).map { i -> CGFloat in
-                    if i < firstStep {
-                        return 0.0
-                    } else {
-                        let step: CGFloat = CGFloat(i - firstStep) / CGFloat(numSteps - firstStep - 1)
-                        return (firstLocation + (1.0 - firstLocation) * step)
-                    }
-                }
-                
-                self.scrollViewBottomShadowView.image = generateGradientImage(size: CGSize(width: 8.0, height: height), colors: colors.reversed(), locations: locations.reversed().map { 1.0 - $0 })!.withRenderingMode(.alwaysTemplate).stretchableImage(withLeftCapWidth: 0, topCapHeight: Int(height - 1.0))
-                self.scrollViewBottomShadowView.tintColor = .black
-            }
-            let scrollViewBottomShadowOverflow: CGFloat = 30.0
-            let scrollViewBottomShadowFrame = CGRect(origin: CGPoint(x: itemLayout.scrollClippingFrame.minX, y: itemLayout.scrollClippingFrame.maxY - component.layout.mainColumn.insets.bottom - scrollViewBottomShadowOverflow), size: CGSize(width: itemLayout.scrollClippingFrame.width, height: component.layout.mainColumn.insets.bottom + scrollViewBottomShadowOverflow))
-            transition.setFrame(view: self.scrollViewBottomShadowView, frame: scrollViewBottomShadowFrame)
             
             transition.setPosition(view: self.separateVideoScrollViewClippingContainer, position: itemLayout.separateVideoScrollClippingFrame.center)
             transition.setBounds(view: self.separateVideoScrollViewClippingContainer, bounds: CGRect(origin: CGPoint(x: itemLayout.separateVideoScrollClippingFrame.minX - itemLayout.separateVideoGridFrame.minX, y: itemLayout.separateVideoScrollClippingFrame.minY - itemLayout.separateVideoGridFrame.minY), size: itemLayout.separateVideoScrollClippingFrame.size))

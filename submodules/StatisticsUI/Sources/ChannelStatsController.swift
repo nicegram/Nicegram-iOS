@@ -2500,11 +2500,7 @@ public func channelStatsController(context: AccountContext, updatedPresentationD
         }))
     }
     var tooltipScreen: UndoOverlayController?
-    #if compiler(>=6.0) // Xcode 16
-    nonisolated(unsafe) var timer: Foundation.Timer?
-    #else
     var timer: Foundation.Timer?
-    #endif
     showTimeoutTooltipImpl = { cooldownUntilTimestamp in
         let remainingCooldownSeconds = cooldownUntilTimestamp - Int32(Date().timeIntervalSince1970)
     

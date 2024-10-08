@@ -286,6 +286,7 @@ public func customizeDefaultDayTheme(theme: PresentationTheme, editing: Bool, ti
                         reactionActiveMediaPlaceholder: UIColor(rgb: 0xffffff, alpha: 0.2)
                     )
                 ),
+                linkHighlightColor: accentColor?.withAlphaComponent(0.3),
                 accentTextColor: accentColor,
                 accentControlColor: accentColor,
                 accentControlDisabledColor: accentColor?.withAlphaComponent(0.7),
@@ -330,7 +331,7 @@ public func customizeDefaultDayTheme(theme: PresentationTheme, editing: Bool, ti
                 primaryTextColor: outgoingPrimaryTextColor,
                 secondaryTextColor: outgoingSecondaryTextColor,
                 linkTextColor: outgoingLinkTextColor,
-                linkHighlightColor: day ? nil : outgoingLinkTextColor?.withAlphaComponent(0.3),
+                linkHighlightColor: day ? nil : accentColor?.withAlphaComponent(0.3),
                 scamColor: outgoingScamColor,
                 accentTextColor: outgoingAccentTextColor,
                 accentControlColor: outgoingControlColor,
@@ -1379,8 +1380,7 @@ public func defaultBuiltinWallpaper(data: BuiltinWallpaperData, colors: [UInt32]
             attributes: [
                 .ImageSize(size: PixelDimensions(width: 1440, height: 2960)),
                 .FileName(fileName: "pattern.tgv")
-            ],
-            alternativeRepresentations: []
+            ]
         ),
         settings: WallpaperSettings(colors: colors, intensity: intensity, rotation: rotation)
     ))

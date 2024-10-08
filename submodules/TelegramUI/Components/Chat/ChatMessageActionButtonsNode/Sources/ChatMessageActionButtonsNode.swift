@@ -215,8 +215,6 @@ private final class ChatMessageActionButtonNode: ASDisplayNode {
                     iconImage = incoming ? graphics.chatBubbleActionButtonIncomingProfileIconImage : graphics.chatBubbleActionButtonOutgoingProfileIconImage
                 case .openWebView:
                     iconImage = incoming ? graphics.chatBubbleActionButtonIncomingWebAppIconImage : graphics.chatBubbleActionButtonOutgoingWebAppIconImage
-                case .copyText:
-                    iconImage = incoming ? graphics.chatBubbleActionButtonIncomingCopyIconImage : graphics.chatBubbleActionButtonOutgoingCopyIconImage
                 default:
                     iconImage = nil
             }

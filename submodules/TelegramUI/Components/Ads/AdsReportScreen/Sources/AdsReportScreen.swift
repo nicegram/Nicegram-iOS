@@ -228,8 +228,7 @@ private final class SheetPageContent: CombinedComponent {
                             component.context.sharedContext.openExternalUrl(context: component.context, urlContext: .generic, url: strings.ReportAd_Help_URL, forceExternal: true, presentationData: presentationData, navigationController: nil, dismissInput: {})
                         }
                     )),
-                    items: items,
-                    isModal: true
+                    items: items
                 ),
                 environment: {},
                 availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: .greatestFiniteMagnitude),
@@ -397,7 +396,6 @@ private final class SheetContent: CombinedComponent {
             let navigation = navigation.update(
                 component: NavigationStackComponent(
                     items: items,
-                    clipContent: false,
                     requestPop: { [weak state] in
                         state?.pushedOptions.removeLast()
                         update(.spring(duration: 0.45))

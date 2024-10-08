@@ -468,7 +468,7 @@ private final class StarsContextImpl {
         }
         var transactions = state.transactions
         if addTransaction {
-            transactions.insert(.init(flags: [.isLocal], id: "\(arc4random())", count: balance, date: Int32(Date().timeIntervalSince1970), peer: .appStore, title: nil, description: nil, photo: nil, transactionDate: nil, transactionUrl: nil, paidMessageId: nil, giveawayMessageId: nil, media: [], subscriptionPeriod: nil, starGift: nil), at: 0)
+            transactions.insert(.init(flags: [.isLocal], id: "\(arc4random())", count: balance, date: Int32(Date().timeIntervalSince1970), peer: .appStore, title: nil, description: nil, photo: nil, transactionDate: nil, transactionUrl: nil, paidMessageId: nil, giveawayMessageId: nil, media: [], subscriptionPeriod: nil), at: 0)
         }
         
         self.updateState(StarsContext.State(flags: [.isPendingBalance], balance: max(0, state.balance + balance), subscriptions: state.subscriptions, canLoadMoreSubscriptions: state.canLoadMoreSubscriptions, transactions: transactions, canLoadMoreTransactions: state.canLoadMoreTransactions, isLoading: state.isLoading))
@@ -490,7 +490,7 @@ private final class StarsContextImpl {
 private extension StarsContext.State.Transaction {
     init?(apiTransaction: Api.StarsTransaction, peerId: EnginePeer.Id?, transaction: Transaction) {
         switch apiTransaction {
-        case let .starsTransaction(apiFlags, id, stars, date, transactionPeer, title, description, photo, transactionDate, transactionUrl, _, messageId, extendedMedia, subscriptionPeriod, giveawayPostId, starGift):
+        case let .starsTransaction(apiFlags, id, stars, date, transactionPeer, title, description, photo, transactionDate, transactionUrl, _, messageId, extendedMedia, subscriptionPeriod, giveawayPostId):
             let parsedPeer: StarsContext.State.Transaction.Peer
             var paidMessageId: MessageId?
             var giveawayMessageId: MessageId?
@@ -544,7 +544,7 @@ private extension StarsContext.State.Transaction {
             
             let media = extendedMedia.flatMap({ $0.compactMap { textMediaAndExpirationTimerFromApiMedia($0, PeerId(0)).media } }) ?? []
             let _ = subscriptionPeriod
-            self.init(flags: flags, id: id, count: stars, date: date, peer: parsedPeer, title: title, description: description, photo: photo.flatMap(TelegramMediaWebFile.init), transactionDate: transactionDate, transactionUrl: transactionUrl, paidMessageId: paidMessageId, giveawayMessageId: giveawayMessageId, media: media, subscriptionPeriod: subscriptionPeriod, starGift: starGift.flatMap { StarGift(apiStarGift: $0) })
+            self.init(flags: flags, id: id, count: stars, date: date, peer: parsedPeer, title: title, description: description, photo: photo.flatMap(TelegramMediaWebFile.init), transactionDate: transactionDate, transactionUrl: transactionUrl, paidMessageId: paidMessageId, giveawayMessageId: giveawayMessageId, media: media, subscriptionPeriod: subscriptionPeriod)
         }
     }
 }
@@ -613,7 +613,6 @@ public final class StarsContext {
             public let giveawayMessageId: MessageId?
             public let media: [Media]
             public let subscriptionPeriod: Int32?
-            public let starGift: StarGift?
             
             public init(
                 flags: Flags,
@@ -629,8 +628,7 @@ public final class StarsContext {
                 paidMessageId: MessageId?,
                 giveawayMessageId: MessageId?,
                 media: [Media],
-                subscriptionPeriod: Int32?,
-                starGift: StarGift?
+                subscriptionPeriod: Int32?
             ) {
                 self.flags = flags
                 self.id = id
@@ -646,7 +644,6 @@ public final class StarsContext {
                 self.giveawayMessageId = giveawayMessageId
                 self.media = media
                 self.subscriptionPeriod = subscriptionPeriod
-                self.starGift = starGift
             }
             
             public static func == (lhs: Transaction, rhs: Transaction) -> Bool {
@@ -690,9 +687,6 @@ public final class StarsContext {
                     return false
                 }
                 if lhs.subscriptionPeriod != rhs.subscriptionPeriod {
-                    return false
-                }
-                if lhs.starGift != rhs.starGift {
                     return false
                 }
                 return true
@@ -1235,7 +1229,10 @@ func _internal_sendStarsPaymentForm(account: Account, formId: Int64, source: Bot
         guard let invoice = invoice else {
             return .fail(.generic)
         }
-        return account.network.request(Api.functions.payments.sendStarsForm(formId: formId, invoice: invoice))
+        
+        let flags: Int32 = 0
+
+        return account.network.request(Api.functions.payments.sendStarsForm(flags: flags, formId: formId, invoice: invoice))
         |> map { result -> SendBotPaymentResult in
             switch result {
                 case let .paymentResult(updates):
@@ -1290,8 +1287,6 @@ func _internal_sendStarsPaymentForm(account: Account, formId: Int64, source: Bot
                                         case .giftCode, .stars, .starsGift:
                                             receiptMessageId = nil
                                         case .starsChatSubscription:
-                                            receiptMessageId = nil
-                                        case .starGift:
                                             receiptMessageId = nil
                                         }
                                     }

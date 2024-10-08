@@ -118,6 +118,9 @@ public:
                 _audioDeviceModule->InternalStartPlayout();
             }
             //_audioDeviceModule->InternalStartRecording();
+            // MARK: Nicegram NCG-5828 call recording
+            _audioDeviceModule->InitNicegramCallRecording();
+            //
         }
     }
     
@@ -148,6 +151,33 @@ private:
         audioDeviceModule->audioDeviceModule()->setTone([tone asTone]);
     });
 }
+
+// MARK: Nicegram NCG-5828 call recording
+-(void)InitNicegramCallRecording {
+    _audioDeviceModule->perform([](tgcalls::SharedAudioDeviceModule *audioDeviceModule) {
+        audioDeviceModule->audioDeviceModule()->InitNicegramCallRecording();
+    });
+}
+
+-(void)StartNicegramRecording {
+    _audioDeviceModule->perform([](tgcalls::SharedAudioDeviceModule *audioDeviceModule) {
+        audioDeviceModule->audioDeviceModule()->StartNicegramRecording();
+    });
+}
+
+-(void)StopNicegramRecording:(void(^_Nullable)(NSString* _Nonnull, double, NSUInteger))completion {
+    _audioDeviceModule->perform([completion](tgcalls::SharedAudioDeviceModule *audioDeviceModule) {
+        audioDeviceModule->audioDeviceModule()->StopNicegramRecording([completion](const std::string& outputFilePath,
+                                                                                   double durationInSeconds,
+                                                                                   size_t rawDataSize) {
+            NSString *path = [NSString stringWithUTF8String: outputFilePath.c_str()];
+            if (completion != NULL) {
+                completion(path, durationInSeconds, rawDataSize);
+            }
+        });
+    });
+}
+//
 
 - (std::shared_ptr<tgcalls::ThreadLocalObject<tgcalls::SharedAudioDeviceModule>>)getAudioDeviceModule {
     return _audioDeviceModule;
@@ -1781,11 +1811,7 @@ audioDevice:(SharedCallAudioDevice * _Nullable)audioDevice {
                 NSMutableArray *result = [[NSMutableArray alloc] init];
                 for (auto &it : levels.updates) {
                     [result addObject:@(it.ssrc)];
-                    auto level = it.value.level;
-                    if (it.value.isMuted) {
-                        level = 0.0;
-                    }
-                    [result addObject:@(level)];
+                    [result addObject:@(it.value.level)];
                     [result addObject:@(it.value.voice)];
                 }
                 audioLevelsUpdated(result);

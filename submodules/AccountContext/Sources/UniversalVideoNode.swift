@@ -10,11 +10,6 @@ import UniversalMediaPlayer
 import AVFoundation
 import RangeSet
 
-public enum UniversalVideoContentVideoQuality: Equatable {
-    case auto
-    case quality(Int)
-}
-
 public protocol UniversalVideoContentNode: AnyObject {
     var ready: Signal<Void, NoError> { get }
     var status: Signal<MediaPlayerStatus, NoError> { get }
@@ -34,8 +29,6 @@ public protocol UniversalVideoContentNode: AnyObject {
     func continuePlayingWithoutSound(actionAtEnd: MediaPlayerPlayOnceWithSoundActionAtEnd)
     func setContinuePlayingWithoutSoundOnLostAudioSession(_ value: Bool)
     func setBaseRate(_ baseRate: Double)
-    func setVideoQuality(_ videoQuality: UniversalVideoContentVideoQuality)
-    func videoQualityState() -> (current: Int, preferred: UniversalVideoContentVideoQuality, available: [Int])?
     func addPlaybackCompleted(_ f: @escaping () -> Void) -> Int
     func removePlaybackCompleted(_ index: Int)
     func fetchControl(_ control: UniversalVideoNodeFetchControl)
@@ -48,7 +41,7 @@ public protocol UniversalVideoContent {
     var dimensions: CGSize { get }
     var duration: Double { get }
     
-    func makeContentNode(accountId: AccountRecordId, postbox: Postbox, audioSession: ManagedAudioSession) -> UniversalVideoContentNode & ASDisplayNode
+    func makeContentNode(postbox: Postbox, audioSession: ManagedAudioSession) -> UniversalVideoContentNode & ASDisplayNode
     
     func isEqual(to other: UniversalVideoContent) -> Bool
 }
@@ -90,7 +83,6 @@ public enum UniversalVideoNodeFetchControl {
 }
 
 public final class UniversalVideoNode: ASDisplayNode {
-    private let accountId: AccountRecordId
     private let postbox: Postbox
     private let audioSession: ManagedAudioSession
     private let manager: UniversalVideoManager
@@ -136,12 +128,11 @@ public final class UniversalVideoNode: ASDisplayNode {
                 if self.canAttachContent {
                     assert(self.contentRequestIndex == nil)
                     
-                    let accountId = self.accountId
                     let content = self.content
                     let postbox = self.postbox
                     let audioSession = self.audioSession
                     self.contentRequestIndex = self.manager.attachUniversalVideoContent(content: self.content, priority: self.priority, create: {
-                        return content.makeContentNode(accountId: accountId, postbox: postbox, audioSession: audioSession)
+                        return content.makeContentNode(postbox: postbox, audioSession: audioSession)
                     }, update: { [weak self] contentNodeAndFlags in
                         if let strongSelf = self {
                             strongSelf.updateContentNode(contentNodeAndFlags)
@@ -162,8 +153,7 @@ public final class UniversalVideoNode: ASDisplayNode {
         return self.contentNode != nil
     }
     
-    public init(accountId: AccountRecordId, postbox: Postbox, audioSession: ManagedAudioSession, manager: UniversalVideoManager, decoration: UniversalVideoDecoration, content: UniversalVideoContent, priority: UniversalVideoPriority, autoplay: Bool = false, snapshotContentWhenGone: Bool = false) {
-        self.accountId = accountId
+    public init(postbox: Postbox, audioSession: ManagedAudioSession, manager: UniversalVideoManager, decoration: UniversalVideoDecoration, content: UniversalVideoContent, priority: UniversalVideoPriority, autoplay: Bool = false, snapshotContentWhenGone: Bool = false) {
         self.postbox = postbox
         self.audioSession = audioSession
         self.manager = manager
@@ -337,24 +327,6 @@ public final class UniversalVideoNode: ASDisplayNode {
                 contentNode.setBaseRate(baseRate)
             }
         })
-    }
-    
-    public func setVideoQuality(_ videoQuality: UniversalVideoContentVideoQuality) {
-        self.manager.withUniversalVideoContent(id: self.content.id, { contentNode in
-            if let contentNode = contentNode {
-                contentNode.setVideoQuality(videoQuality)
-            }
-        })
-    }
-    
-    public func videoQualityState() -> (current: Int, preferred: UniversalVideoContentVideoQuality, available: [Int])? {
-        var result: (current: Int, preferred: UniversalVideoContentVideoQuality, available: [Int])?
-        self.manager.withUniversalVideoContent(id: self.content.id, { contentNode in
-            if let contentNode {
-                result = contentNode.videoQualityState()
-            }
-        })
-        return result
     }
     
     public func continuePlayingWithoutSound(actionAtEnd: MediaPlayerPlayOnceWithSoundActionAtEnd = .loopDisablingSound) {

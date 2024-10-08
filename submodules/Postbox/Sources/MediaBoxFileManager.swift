@@ -2,13 +2,13 @@ import Foundation
 import SwiftSignalKit
 import ManagedFile
 
-public final class MediaBoxFileManager {
-    public enum Mode {
+final class MediaBoxFileManager {
+    enum Mode {
         case read
         case readwrite
     }
     
-    public enum AccessError: Error {
+    enum AccessError: Error {
         case generic
     }
     
@@ -129,7 +129,7 @@ public final class MediaBoxFileManager {
     private var nextItemId: Int = 0
     private let maxOpenFiles: Int
     
-    public init(queue: Queue?) {
+    init(queue: Queue?) {
         self.queue = queue
         self.maxOpenFiles = 16
     }

@@ -245,7 +245,6 @@ public enum Stories {
             case expirationTimestamp
             case media
             case alternativeMedia
-            case alternativeMediaList
             case mediaAreas
             case text
             case entities
@@ -269,7 +268,7 @@ public enum Stories {
         public let timestamp: Int32
         public let expirationTimestamp: Int32
         public let media: Media?
-        public let alternativeMediaList: [Media]
+        public let alternativeMedia: Media?
         public let mediaAreas: [MediaArea]
         public let text: String
         public let entities: [MessageTextEntity]
@@ -293,7 +292,7 @@ public enum Stories {
             timestamp: Int32,
             expirationTimestamp: Int32,
             media: Media?,
-            alternativeMediaList: [Media],
+            alternativeMedia: Media?,
             mediaAreas: [MediaArea],
             text: String,
             entities: [MessageTextEntity],
@@ -316,7 +315,7 @@ public enum Stories {
             self.timestamp = timestamp
             self.expirationTimestamp = expirationTimestamp
             self.media = media
-            self.alternativeMediaList = alternativeMediaList
+            self.alternativeMedia = alternativeMedia
             self.mediaAreas = mediaAreas
             self.text = text
             self.entities = entities
@@ -349,18 +348,10 @@ public enum Stories {
                 self.media = nil
             }
             
-            if let alternativeMediaListData = try container.decodeIfPresent([Data].self, forKey: .alternativeMediaList) {
-                self.alternativeMediaList = alternativeMediaListData.compactMap { data -> Media? in
-                    return PostboxDecoder(buffer: MemoryBuffer(data: data)).decodeRootObject() as? Media
-                }
-            } else if let alternativeMediaData = try container.decodeIfPresent(Data.self, forKey: .alternativeMedia) {
-                if let value = PostboxDecoder(buffer: MemoryBuffer(data: alternativeMediaData)).decodeRootObject() as? Media {
-                    self.alternativeMediaList = [value]
-                } else {
-                    self.alternativeMediaList = []
-                }
+            if let alternativeMediaData = try container.decodeIfPresent(Data.self, forKey: .alternativeMedia) {
+                self.alternativeMedia = PostboxDecoder(buffer: MemoryBuffer(data: alternativeMediaData)).decodeRootObject() as? Media
             } else {
-                self.alternativeMediaList = []
+                self.alternativeMedia = nil
             }
             
             self.mediaAreas = try container.decodeIfPresent([MediaArea].self, forKey: .mediaAreas) ?? []
@@ -397,12 +388,12 @@ public enum Stories {
                 try container.encode(mediaData, forKey: .media)
             }
             
-            let alternativeMediaListData = self.alternativeMediaList.map { alternativeMediaValue -> Data in
+            if let alternativeMedia = self.alternativeMedia {
                 let encoder = PostboxEncoder()
-                encoder.encodeRootObject(alternativeMediaValue)
-                return encoder.makeData()
+                encoder.encodeRootObject(alternativeMedia)
+                let alternativeMediaData = encoder.makeData()
+                try container.encode(alternativeMediaData, forKey: .alternativeMedia)
             }
-            try container.encode(alternativeMediaListData, forKey: .alternativeMediaList)
             
             try container.encode(self.mediaAreas, forKey: .mediaAreas)
             
@@ -445,8 +436,14 @@ public enum Stories {
                 }
             }
             
-            if !areMediaArraysEqual(lhs.alternativeMediaList, rhs.alternativeMediaList) {
-                return false
+            if let lhsAlternativeMedia = lhs.alternativeMedia, let rhsAlternativeMedia = rhs.alternativeMedia {
+                if !lhsAlternativeMedia.isEqual(to: rhsAlternativeMedia) {
+                    return false
+                }
+            } else {
+                if (lhs.alternativeMedia == nil) != (rhs.alternativeMedia == nil) {
+                    return false
+                }
             }
             
             if lhs.mediaAreas != rhs.mediaAreas {
@@ -874,9 +871,8 @@ private func prepareUploadStoryContent(account: Account, media: EngineStoryInput
             mimeType: "video/mp4",
             size: nil,
             attributes: [
-                TelegramMediaFileAttribute.Video(duration: duration, size: dimensions, flags: .supportsStreaming, preloadSize: nil, coverTime: coverTime, videoCodec: nil)
-            ],
-            alternativeRepresentations: []
+                TelegramMediaFileAttribute.Video(duration: duration, size: dimensions, flags: .supportsStreaming, preloadSize: nil, coverTime: coverTime)
+            ]
         )
         
         return fileMedia
@@ -1213,7 +1209,7 @@ func _internal_uploadStoryImpl(
                                                             timestamp: item.timestamp,
                                                             expirationTimestamp: item.expirationTimestamp,
                                                             media: item.media,
-                                                            alternativeMediaList: item.alternativeMediaList,
+                                                            alternativeMedia: item.alternativeMedia,
                                                             mediaAreas: item.mediaAreas,
                                                             text: item.text,
                                                             entities: item.entities,
@@ -1621,7 +1617,7 @@ func _internal_editStoryPrivacy(account: Account, id: Int32, privacy: EngineStor
                 timestamp: item.timestamp,
                 expirationTimestamp: item.expirationTimestamp,
                 media: item.media,
-                alternativeMediaList: item.alternativeMediaList,
+                alternativeMedia: item.alternativeMedia,
                 mediaAreas: item.mediaAreas,
                 text: item.text,
                 entities: item.entities,
@@ -1653,7 +1649,7 @@ func _internal_editStoryPrivacy(account: Account, id: Int32, privacy: EngineStor
                 timestamp: item.timestamp,
                 expirationTimestamp: item.expirationTimestamp,
                 media: item.media,
-                alternativeMediaList: item.alternativeMediaList,
+                alternativeMedia: item.alternativeMedia,
                 mediaAreas: item.mediaAreas,
                 text: item.text,
                 entities: item.entities,
@@ -1850,7 +1846,7 @@ func _internal_updateStoriesArePinned(account: Account, peerId: PeerId, ids: [In
                     timestamp: item.timestamp,
                     expirationTimestamp: item.expirationTimestamp,
                     media: item.media,
-                    alternativeMediaList: item.alternativeMediaList,
+                    alternativeMedia: item.alternativeMedia,
                     mediaAreas: item.mediaAreas,
                     text: item.text,
                     entities: item.entities,
@@ -1881,7 +1877,7 @@ func _internal_updateStoriesArePinned(account: Account, peerId: PeerId, ids: [In
                     timestamp: item.timestamp,
                     expirationTimestamp: item.expirationTimestamp,
                     media: item.media,
-                    alternativeMediaList: item.alternativeMediaList,
+                    alternativeMedia: item.alternativeMedia,
                     mediaAreas: item.mediaAreas,
                     text: item.text,
                     entities: item.entities,
@@ -2097,11 +2093,11 @@ extension Stories.StoredItem {
                     mergedForwardInfo = forwardFrom.flatMap(Stories.Item.ForwardInfo.init(apiForwardInfo:))
                 }
                 
-                var parsedAlternativeMedia: [Media] = []
+                var parsedAlternativeMedia: Media?
                 switch media {
-                case let .messageMediaDocument(_, _, altDocuments, _):
-                    if let altDocuments {
-                        parsedAlternativeMedia = altDocuments.compactMap { telegramMediaFileFromApiDocument($0, altDocuments: []) }
+                case let .messageMediaDocument(_, _, altDocument, _):
+                    if let altDocument = altDocument {
+                        parsedAlternativeMedia = telegramMediaFileFromApiDocument(altDocument)
                     }
                 default:
                     break
@@ -2112,7 +2108,7 @@ extension Stories.StoredItem {
                     timestamp: date,
                     expirationTimestamp: expireDate,
                     media: parsedMedia,
-                    alternativeMediaList: parsedAlternativeMedia,
+                    alternativeMedia: parsedAlternativeMedia,
                     mediaAreas: mediaAreas?.compactMap(mediaAreaFromApiMediaArea) ?? [],
                     text: caption ?? "",
                     entities: entities.flatMap { entities in return messageTextEntitiesFromApiEntities(entities) } ?? [],
@@ -2177,7 +2173,7 @@ func _internal_getStoryById(accountPeerId: PeerId, postbox: Postbox, network: Ne
                                 timestamp: item.timestamp,
                                 expirationTimestamp: item.expirationTimestamp,
                                 media: EngineMedia(media),
-                                alternativeMediaList: item.alternativeMediaList.map(EngineMedia.init),
+                                alternativeMedia: item.alternativeMedia.flatMap(EngineMedia.init),
                                 mediaAreas: item.mediaAreas,
                                 text: item.text,
                                 entities: item.entities,
@@ -2660,7 +2656,7 @@ func _internal_setStoryReaction(account: Account, peerId: EnginePeer.Id, id: Int
                         timestamp: item.timestamp,
                         expirationTimestamp: item.expirationTimestamp,
                         media: item.media,
-                        alternativeMediaList: item.alternativeMediaList,
+                        alternativeMedia: item.alternativeMedia,
                         mediaAreas: item.mediaAreas,
                         text: item.text,
                         entities: item.entities,
@@ -2694,7 +2690,7 @@ func _internal_setStoryReaction(account: Account, peerId: EnginePeer.Id, id: Int
                 timestamp: item.timestamp,
                 expirationTimestamp: item.expirationTimestamp,
                 media: item.media,
-                alternativeMediaList: item.alternativeMediaList,
+                alternativeMedia: item.alternativeMedia,
                 mediaAreas: item.mediaAreas,
                 text: item.text,
                 entities: item.entities,
