@@ -18,7 +18,7 @@ import NGRepoUser
 import NGStats
 import NGStrings
 import NicegramWallet
-import SubscriptionAnalytics
+//import SubscriptionAnalytics
 
 import UIKit
 import SwiftSignalKit
@@ -397,16 +397,16 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         self.buildConfig = buildConfig
         let signatureDict = BuildConfigExtra.signatureDict()
 
-        let mobyApiKey = NGENV.moby_key
-        MobySubscriptionAnalytics.setup(apiKey: mobyApiKey) { account in
-            account.appsflyerID = nil
-        } completion: { _, _ in }
-
-        if AppCache.appLaunchCount == 1 {
-            let installTime = (time_t)(Date().timeIntervalSince1970)
-            let installInfo = InstallInfo(installDateTimestamp: installTime)
-            MobySubscriptionAnalytics.trackInstall(installInfo: installInfo)
-        }
+//        let mobyApiKey = NGENV.moby_key
+//        MobySubscriptionAnalytics.setup(apiKey: mobyApiKey) { account in
+//            account.appsflyerID = nil
+//        } completion: { _, _ in }
+//
+//        if AppCache.appLaunchCount == 1 {
+//            let installTime = (time_t)(Date().timeIntervalSince1970)
+//            let installInfo = InstallInfo(installDateTimestamp: installTime)
+//            MobySubscriptionAnalytics.trackInstall(installInfo: installInfo)
+//        }
         
         NGEntryPoint.onAppLaunch(
             env: Env(

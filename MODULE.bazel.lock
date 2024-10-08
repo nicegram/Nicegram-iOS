@@ -2981,7 +2981,7 @@
       "general": {
         "bzlTransitiveDigest": "YjE3dFjYQ4sj5gn2Iz1cWVK14/ZJ5cmnAUUGjDbACAA=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "476037a193e95b0adf7e5882c32387bf9a443d4f8c0587b06da129fefdb30355",
+          "@@//Package.resolved": "784c20457646a45ee6924b566494866052c42f0929d6cda8418f3f08526410aa",
           "@@//Package.swift": "fb3cb1d48066e64f8bf17fe1a49f689b7a6bf4bfc07aa90b9b80a02188501951"
         },
         "recordedDirentsInputs": {},
@@ -3329,24 +3329,6 @@
               "patches": []
             }
           },
-          "swiftpkg_subscriptionanalytics_ios": {
-            "bzlFile": "@@rules_swift_package_manager~//swiftpkg/internal:swift_package.bzl",
-            "ruleClassName": "swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_subscriptionanalytics_ios",
-              "commit": "53bfc6c6f26322ec647b87c338a071714ac69420",
-              "remote": "git@bitbucket.org:mobyrix/subscriptionanalytics-ios.git",
-              "init_submodules": false,
-              "recursive_init_submodules": true,
-              "patch_args": [
-                "-p0"
-              ],
-              "patch_cmds": [],
-              "patch_cmds_win": [],
-              "patch_tool": "",
-              "patches": []
-            }
-          },
           "swiftpkg_swift_argument_parser": {
             "bzlFile": "@@rules_swift_package_manager~//swiftpkg/internal:swift_package.bzl",
             "ruleClassName": "swift_package",
@@ -3460,7 +3442,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "44a21c1abe091fd57733c626b79cf095ddedc465",
+              "commit": "9c3190ce63e9adf4738ad999cb1592df3c5ed605",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3640,7 +3622,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_wallet_core",
-              "commit": "4af0ee33be559941fbda7d3519a9dd032006ab52",
+              "commit": "26aa4289b0e9cd57d958f5f4342aaa9c53851fc0",
               "remote": "https://github.com/trustwallet/wallet-core.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
@@ -3694,7 +3676,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_wallet_ios",
-              "commit": "b39e6dca69f39ebeb13f44e9b12da32397b5f6fa",
+              "commit": "43356c38f071208ba27bb4b15617b86c15ca1cd4",
               "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
               "init_submodules": false,
               "recursive_init_submodules": true,
