@@ -169,7 +169,6 @@ objc_library(
         "//submodules/ffmpeg:ffmpeg",
         "//third-party/rnnoise:rnnoise",
         "//third-party/libyuv:libyuv",
-        "//submodules/OpusBinding:OpusBinding",
     ] + (["//third-party/libx264:libx264"] if enable_x264 else []),
     sdk_frameworks = [
         "Foundation",

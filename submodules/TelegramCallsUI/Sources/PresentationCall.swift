@@ -127,9 +127,7 @@ public final class PresentationCallImpl: PresentationCall {
     private let screencastFramesDisposable = MetaDisposable()
     private let screencastAudioDataDisposable = MetaDisposable()
     private let screencastStateDisposable = MetaDisposable()
-    // MARK: Nicegram NCG-5828 call recording
-    private var callState: ((Bool, OngoingCallContext.AudioDevice?) -> Void)?
-    // MARK: Nicegram NCG-5828 call recording, callState
+    
     init(
         context: AccountContext,
         audioSession: ManagedAudioSession,
@@ -151,8 +149,7 @@ public final class PresentationCallImpl: PresentationCall {
         isVideoPossible: Bool,
         enableStunMarking: Bool,
         enableTCP: Bool,
-        preferredVideoCodec: String?,
-        callState: @escaping (Bool, OngoingCallContext.AudioDevice?) -> Void
+        preferredVideoCodec: String?
     ) {
         self.context = context
         self.audioSession = audioSession
@@ -317,7 +314,6 @@ public final class PresentationCallImpl: PresentationCall {
             self.proximityManagerIndex = DeviceProximityManager.shared().add { _ in
             }
         }
-        self.callState = callState
     }
     
     deinit {
@@ -523,17 +519,9 @@ public final class PresentationCallImpl: PresentationCall {
                 presentationState = PresentationCallState(state: .terminating(reason), videoState: mappedVideoState, remoteVideoState: .inactive, remoteAudioState: mappedRemoteAudioState, remoteBatteryLevel: mappedRemoteBatteryLevel)
             case let .terminated(id, reason, options):
                 presentationState = PresentationCallState(state: .terminated(id, reason, self.callWasActive && (options.contains(.reportRating) || self.shouldPresentCallRating)), videoState: mappedVideoState, remoteVideoState: .inactive, remoteAudioState: mappedRemoteAudioState, remoteBatteryLevel: mappedRemoteBatteryLevel)
-                // MARK: Nicegram NCG-5828 call recording
-                callState?(false, sharedAudioDevice)
-                //
             case let .requesting(ringing):
                 presentationState = PresentationCallState(state: .requesting(ringing), videoState: mappedVideoState, remoteVideoState: mappedRemoteVideoState, remoteAudioState: mappedRemoteAudioState, remoteBatteryLevel: mappedRemoteBatteryLevel)
             case let .active(_, _, keyVisualHash, _, _, _, _, _):
-                // MARK: Nicegram NCG-5828 call recording
-                if !callWasActive {
-                    callState?(true, sharedAudioDevice)
-                }
-                //
                 self.callWasActive = true
                 if let callContextState = callContextState {
                     switch callContextState.state {

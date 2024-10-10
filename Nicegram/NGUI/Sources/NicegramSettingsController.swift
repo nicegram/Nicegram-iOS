@@ -80,7 +80,7 @@ private enum EasyToggleType {
     case showProfileId
     case showRegDate
     case hideReactions
-    case hideStories    
+    case hideStories
 }
 
 
@@ -226,7 +226,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return 6002
         case .shareDataNote:
             return 6010
-
         }
     }
 
@@ -702,7 +701,7 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     
     entries.append(.easyToggle(toggleIndex, .hideStories, l("NicegramSettings.HideStories"), NGSettings.hideStories))
     toggleIndex += 1
-        
+    
     if let sharingSettings {
         entries.append(
             .shareBotsData(

@@ -31,11 +31,6 @@
 
 - (void)setTone:(CallAudioTone * _Nullable)tone;
 
-// MARK: Nicegram NCG-5828 call recording
--(void)InitNicegramCallRecording;
--(void)StartNicegramRecording;
--(void)StopNicegramRecording:(void(^_Nullable)(NSString* _Nonnull, double, NSUInteger))completion;
-//
 @end
 
 @interface OngoingCallConnectionDescriptionWebrtc : NSObject

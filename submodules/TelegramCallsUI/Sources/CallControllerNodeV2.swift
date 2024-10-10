@@ -18,10 +18,7 @@ import TelegramVoip
 import MetalEngine
 import DeviceAccess
 import LibYuvBinding
-// MARK: Nicegram NCG-5828 call recording
-import NGStrings
-import UndoUI
-//
+
 final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeProtocol {
     private struct PanGestureState {
         var offsetFraction: CGFloat
@@ -158,24 +155,7 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
             }
             self.restoreUIForPictureInPicture?(completion)
         }
-// MARK: Nicegram NCG-5828 call recording
-        self.callScreen.recordAction = { [weak self] in
-            guard let self,
-                  let callScreenState else {
-                return
-            }
-
-            let isCallRecord = !callScreenState.isCallRecord
-            if isCallRecord {
-                self.sharedContext.callManager?.startRecordCall()
-                self.updateCallRecordButton(with: isCallRecord)
-            } else {
-                self.showRecordSaveAlert { [self] in
-                    self.updateCallRecordButton(with: isCallRecord)
-                }
-            }
-        }
-// MARK: Nicegram NCG-5828 call recording, isCallRecord
+        
         self.callScreenState = PrivateCallScreen.State(
             strings: presentationData.strings,
             lifecycleState: .connecting,
@@ -188,8 +168,7 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
             localVideo: nil,
             remoteVideo: nil,
             isRemoteBatteryLow: false,
-            isEnergySavingEnabled: !self.sharedContext.energyUsageSettings.fullTranslucency,
-            isCallRecord: false
+            isEnergySavingEnabled: !self.sharedContext.energyUsageSettings.fullTranslucency
         )
         if let peer = call.peer {
             self.updatePeer(peer: peer)
@@ -577,9 +556,6 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
     
     func updatePeer(accountPeer: Peer, peer: Peer, hasOther: Bool) {
         self.updatePeer(peer: EnginePeer(peer))
-// MARK: Nicegram NCG-5828 call recording
-        self.sharedContext.callManager?.setupPeer(peer: EnginePeer(peer))
-//
     }
     
     private func updatePeer(peer: EnginePeer) {
@@ -744,68 +720,6 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
             )
         }
     }
-// MARK: Nicegram NCG-5828 call recording
-    private func showRecordSaveAlert(with completion: @escaping () -> Void) {
-        let alertController = UIAlertController(
-            title: l("NicegramCallRecord.StopAlertTitle"),
-            message: l("NicegramCallRecord.StopAlertDescription"),
-            preferredStyle: .alert
-        )
-
-        alertController.addAction(.init(
-            title: l("NicegramCallRecord.StopAlertButtonCancel"),
-            style: .cancel
-        ))
-        alertController.addAction(.init(
-            title: l("NicegramCallRecord.StopAlertButtonStop"),
-            style: .default,
-            handler: { _ in
-                completion()
-                self.callScreen.stopRecordTimer()
-                self.sharedContext.callManager?.stopRecordCall { [weak self] in
-                    self?.showRecordSaveToast()
-                }
-            }
-        ))
-
-        sharedContext.mainWindow?.presentNative(alertController)
-    }
-    
-    private func updateCallRecordButton(with isCallRecord: Bool) {
-        guard var callScreenState = self.callScreenState else {
-            return
-        }
-        
-        callScreenState.isCallRecord = isCallRecord
-        self.callScreenState = callScreenState
-        self.update(transition: .animated(duration: 0.3, curve: .spring))
-    }
-    
-    private func showRecordSaveToast() {
-        guard let image = UIImage(bundleImageName: "RecordSave") else { return }
-
-        let content: UndoOverlayContent = .image(
-            image: image,
-            title: nil,
-            text: l("NicegramCallRecord.SavedMessage"),
-            round: true,
-            undoText: nil
-        )
-        
-        DispatchQueue.main.async {
-            let controller = UndoOverlayController(
-                presentationData: self.presentationData,
-                content: content,
-                elevatedLayout: false,
-                position: .top,
-                animateInAsReplacement: false,
-                action: { _ in return false }
-            )
-
-            self.sharedContext.mainWindow?.present(controller, on: .root)
-        }
-    }
-//
 }
 
 private func copyI420BufferToNV12Buffer(buffer: OngoingGroupCallContext.VideoFrameData.I420Buffer, pixelBuffer: CVPixelBuffer) -> Bool {

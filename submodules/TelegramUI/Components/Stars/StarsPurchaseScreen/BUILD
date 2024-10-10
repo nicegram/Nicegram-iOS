@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/AsyncDisplayKit",
@@ -37,6 +37,9 @@ swift_library(
         "//submodules/Components/BlurredBackgroundComponent",
         "//submodules/Components/BundleIconComponent",
         "//submodules/ConfettiEffect",
+        "//submodules/AnimatedStickerNode",
+        "//submodules/TelegramAnimatedStickerNode",
+        "//submodules/TelegramUI/Components/Stars/ItemShimmeringLoadingComponent",
     ],
     visibility = [
         "//visibility:public",

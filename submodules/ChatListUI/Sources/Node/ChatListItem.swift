@@ -601,7 +601,7 @@ private enum RevealOptionKey: Int32 {
 }
 
 private func canArchivePeer(id: EnginePeer.Id, accountPeerId: EnginePeer.Id) -> Bool {
-    if id.namespace == Namespaces.Peer.CloudUser && id.id._internalGetInt64Value() == 777000 {
+    if id.isTelegramNotifications {
         return false
     }
     if id == accountPeerId {
@@ -938,7 +938,7 @@ private final class ChatListMediaPreviewNode: ASDisplayNode {
     }
 }
 
-private let loginCodeRegex = try? NSRegularExpression(pattern: "[\\d\\-]{5,7}", options: [])
+private let loginCodeRegex = try? NSRegularExpression(pattern: "\\b\\d{5,8}\\b", options: [])
 
 public class ChatListItemNode: ItemListRevealOptionsItemNode {
     final class TopicItemNode: ASDisplayNode {
@@ -2341,14 +2341,20 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                         if let messagePeer = itemPeer.chatMainPeer {
                             peerText = messagePeer.displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder)
                         }
-                    } else if let message = messages.last, let author = message.author?._asPeer(), let peer = itemPeer.chatMainPeer, !isUser {
-                        if case let .channel(peer) = peer, case .broadcast = peer.info {
-                        } else if !displayAsMessage {
-                            if let forwardInfo = message.forwardInfo, forwardInfo.flags.contains(.isImported), let authorSignature = forwardInfo.authorSignature {
-                                peerText = authorSignature
-                            } else {
-                                peerText = author.id == account.peerId ? item.presentationData.strings.DialogList_You : EnginePeer(author).displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder)
-                                authorIsCurrentChat = author.id == peer.id
+                    } else if let message = messages.last, let author = message.author?._asPeer(), let peer = itemPeer.chatMainPeer {
+                        if peer.id.isVerificationCodes {
+                            if let message = messages.last, let forwardInfo = message.forwardInfo, let author = forwardInfo.author {
+                                peerText = EnginePeer(author).compactDisplayTitle
+                            }
+                        } else if !isUser {
+                            if case let .channel(peer) = peer, case .broadcast = peer.info {
+                            } else if !displayAsMessage {
+                                if let forwardInfo = message.forwardInfo, forwardInfo.flags.contains(.isImported), let authorSignature = forwardInfo.authorSignature {
+                                    peerText = authorSignature
+                                } else {
+                                    peerText = author.id == account.peerId ? item.presentationData.strings.DialogList_You : EnginePeer(author).displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder)
+                                    authorIsCurrentChat = author.id == peer.id
+                                }
                             }
                         }
                     }
@@ -2442,7 +2448,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                             }
                         }
                         
-                        if message.id.peerId.namespace == Namespaces.Peer.CloudUser && message.id.peerId.id._internalGetInt64Value() == 777000 {
+                        if message.id.peerId.isTelegramNotifications || message.id.peerId.isVerificationCodes {
                             if let cached = currentCustomTextEntities, cached.matches(text: message.text) {
                                 customTextEntities = cached
                             } else if let matches = loginCodeRegex?.matches(in: message.text, options: [], range: NSMakeRange(0, (message.text as NSString).length)) {
@@ -2619,7 +2625,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                         if !ignoreForwardedIcon {
                             if case .savedMessagesChats = item.chatListLocation {
                                 displayForwardedIcon = false
-                            } else if let forwardInfo = message.forwardInfo, !forwardInfo.flags.contains(.isImported) {
+                            } else if let forwardInfo = message.forwardInfo, !forwardInfo.flags.contains(.isImported) && !message.id.peerId.isVerificationCodes {
                                 displayForwardedIcon = true
                             } else if let _ = message.attributes.first(where: { $0 is ReplyStoryAttribute }) {
                                 displayStoryReplyIcon = true
@@ -2655,7 +2661,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                                             case let .preview(dimensions, immediateThumbnailData, videoDuration):
                                                 if let immediateThumbnailData {
                                                     if let videoDuration {
-                                                        let thumbnailMedia = TelegramMediaFile(fileId: MediaId(namespace: 0, id: index), partialReference: nil, resource: EmptyMediaResource(), previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: immediateThumbnailData, mimeType: "video/mp4", size: nil, attributes: [.Video(duration: Double(videoDuration), size: dimensions ?? PixelDimensions(width: 1, height: 1), flags: [], preloadSize: nil, coverTime: nil)])
+                                                        let thumbnailMedia = TelegramMediaFile(fileId: MediaId(namespace: 0, id: index), partialReference: nil, resource: EmptyMediaResource(), previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: immediateThumbnailData, mimeType: "video/mp4", size: nil, attributes: [.Video(duration: Double(videoDuration), size: dimensions ?? PixelDimensions(width: 1, height: 1), flags: [], preloadSize: nil, coverTime: nil, videoCodec: nil)], alternativeRepresentations: [])
                                                         contentImageSpecs.append(ContentImageSpec(message: message, media:  .file(thumbnailMedia), size: fitSize))
                                                     } else {
                                                         let thumbnailMedia = TelegramMediaImage(imageId: MediaId(namespace: 0, id: index), representations: [], immediateThumbnailData: immediateThumbnailData, reference: nil, partialReference: nil, flags: [])
