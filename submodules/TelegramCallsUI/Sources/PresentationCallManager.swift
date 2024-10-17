@@ -971,11 +971,37 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
         }
     }
 // MARK: Nicegram NCG-5828 call recording
+    public var callCompletion: (() -> Void)?
+    
     private weak var audioDevice: OngoingCallContext.AudioDevice?
     private var account: Account?
     private var enginePeer: EnginePeer?
-    public var callCompletion: (() -> Void)?
+    private var userDisplayName: String {
+        guard let enginePeer else { return "" }
 
+        switch enginePeer {
+        case let .user(telegramUser):
+            if let firstName = telegramUser.firstName, !firstName.isEmpty {
+                if let lastName = telegramUser.lastName, !lastName.isEmpty {
+                    return "\(firstName) \(lastName)"
+                } else {
+                    return firstName
+                }
+            } else if let username = telegramUser.username, !username.isEmpty {
+                return username
+            } else {
+                return ""
+            }
+        default: return ""
+        }
+    }
+    private let dateFormatter: DateFormatter = {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "dd-MM-yyyy"
+        
+        return dateFormatter
+    }()
+    
     private func deleteFile(from path: String) {
         let fileManager = FileManager.default
         
@@ -997,9 +1023,6 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
         size: UInt,
         completion: (() -> Void)? = nil
     ) {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd-MM-yyyy"
-        
         let date = Date()
         
         let id = Int64.random(in: 0 ... Int64.max)
@@ -1022,7 +1045,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                 .Audio(
                     isVoice: false,
                     duration: Int(duration),
-                    title: "\(enginePeer?.compactDisplayTitle ?? "")-\(dateFormatter.string(from: date))",
+                    title: "\(userDisplayName)-\(dateFormatter.string(from: date))",
                     performer: nil,
                     waveform: nil
                 )
