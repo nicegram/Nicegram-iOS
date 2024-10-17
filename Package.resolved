@@ -50,8 +50,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/hmlongco/Factory.git",
       "state" : {
-        "revision" : "587995f7d5cc667951d635fbf6b4252324ba0439",
-        "version" : "2.3.2"
+        "revision" : "dfe0852e8ebc146fe0f913af54a541d423b5ef37",
+        "version" : "2.4.0"
       }
     },
     {
@@ -320,8 +320,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/torusresearch/torus-utils-swift.git",
       "state" : {
-        "revision" : "eda55b8537a600e657d19d4c452c0a36f217883c",
-        "version" : "9.0.1"
+        "revision" : "0ac2810afef07283ae324eb1a2b17c5d6f7511d6",
+        "version" : "9.0.2"
       }
     },
     {
@@ -338,8 +338,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "26aa4289b0e9cd57d958f5f4342aaa9c53851fc0",
-        "version" : "4.1.10"
+        "revision" : "9ad3d1ac93c019c1b2daa812aadfe04d0d4706c3",
+        "version" : "4.1.13"
       }
     },
     {

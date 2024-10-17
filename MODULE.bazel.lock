@@ -635,7 +635,7 @@
         "bzlTransitiveDigest": "8/YWyYftd8THfVoADvrOmQLl45wUGfP2MVjLM5FFn50=",
         "usagesDigest": "voXBMcSNlo2fnK6JIvInIrncYhBKKG8nBeKvToaUA0Y=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "452f45a9c9a13ecfaf6c0d3d9742eac04aef1ab0f3fa4a2735429f45461c80b6",
+          "@@//Package.resolved": "2bfab2f2cabfe76f73c7382d47800bc3c86681e45970ff96a8593d037ecf9d17",
           "@@//Package.swift": "b9e2b86f6f986c3f74ad4806e3d35d2fd2a8097270805eb903ccb36da8935aac"
         },
         "recordedDirentsInputs": {},
@@ -779,9 +779,9 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_torus_utils_swift",
-              "commit": "eda55b8537a600e657d19d4c452c0a36f217883c",
+              "commit": "0ac2810afef07283ae324eb1a2b17c5d6f7511d6",
               "remote": "https://github.com/torusresearch/torus-utils-swift.git",
-              "version": "9.0.1",
+              "version": "9.0.2",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -798,9 +798,9 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_factory",
-              "commit": "587995f7d5cc667951d635fbf6b4252324ba0439",
+              "commit": "dfe0852e8ebc146fe0f913af54a541d423b5ef37",
               "remote": "https://github.com/hmlongco/Factory.git",
-              "version": "2.3.2",
+              "version": "2.4.0",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -1311,9 +1311,9 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_wallet_core",
-              "commit": "26aa4289b0e9cd57d958f5f4342aaa9c53851fc0",
+              "commit": "9ad3d1ac93c019c1b2daa812aadfe04d0d4706c3",
               "remote": "https://github.com/trustwallet/wallet-core.git",
-              "version": "4.1.10",
+              "version": "4.1.13",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
