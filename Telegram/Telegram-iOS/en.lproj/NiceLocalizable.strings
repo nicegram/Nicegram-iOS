@@ -155,6 +155,7 @@
 "NicegramSettings.Unblock.Header" = "Unblock";
 "NicegramSettings.Unblock.Button" = "Unblock Guide";
 "NicegramSettings.Other.hideReactions" = "Hide Reactions";
+"NicegramSettings.Other.hideReactionsToYourMessages" = "Hide reactions to your messages";
 "NicegramSettings.RoundVideos.DownloadVideos" = "Download videos to Gallery";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "Ignore Languages";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "App detects language of each message on your device. It's a high-performance task which can affect your battery life.";

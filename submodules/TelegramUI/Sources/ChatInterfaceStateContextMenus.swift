@@ -38,6 +38,7 @@ import NGStrings
 import NGTranslate
 import NGUI
 import PeerInfoUI
+import NGData
 //
 import TranslateUI
 import DebugSettingsUI
@@ -2114,12 +2115,16 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                         if mode == "do" {
                             if #available(iOS 13.0, *) {
                                 Task { @MainActor in
-                                    let manager = TgSpeechToTextManager(mediaBox: context.account.postbox.mediaBox)
+                                    let manager = TgSpeechToTextManager(
+                                        accountContext: context
+                                    )
                                     
                                     message.setSpeechToTextLoading(context: context)
                                     
                                     let result = await manager.convertSpeechToText(
-                                        mediaFile: mediaFile
+                                        mediaFile: mediaFile,
+                                        message: message,
+                                        useOpenAI: NGSettings.useOpenAI
                                     )
                                     
                                     switch result {

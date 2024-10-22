@@ -59,6 +59,7 @@ private enum PremiumSettingsToggle {
     case syncPins
     case oneTapTr
     case rememberFilterOnExit
+    case useOpenAI
 }
 
 private enum PremiumControllerEntry: ItemListNodeEntry {
@@ -83,8 +84,7 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
     case testButton(PresentationTheme, String)
     case ignoretr(PresentationTheme, String)
     
-    case useOpenAi(Bool)
-    
+    case useOpenAI(PresentationTheme, String, Bool)
     case recordAllCalls(String, Bool)
 
     var section: ItemListSectionId {
@@ -101,7 +101,7 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return premiumControllerSection.other.rawValue
         case .testButton:
             return premiumControllerSection.test.rawValue
-        case .useOpenAi:
+        case .useOpenAI:
             return premiumControllerSection.speechToText.rawValue
         case .recordAllCalls:
             return premiumControllerSection.calls.rawValue
@@ -136,7 +136,7 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return 11000
         case .ignoretr:
             return 12000
-        case .useOpenAi:
+        case .useOpenAI:
             return 13000
         case .recordAllCalls:
             return 14000
@@ -233,8 +233,8 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
-        case let .useOpenAi(lhsValue):
-            if case let .useOpenAi(rhsValue) = rhs, lhsValue == rhsValue {
+        case let .useOpenAI(lhsValue):
+            if case let .useOpenAI(rhsValue) = rhs, lhsValue == rhsValue {
                 return true
             } else {
                 return false
@@ -297,16 +297,9 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.toggleSetting(value, .rememberFilterOnExit)
             })
-        case let .useOpenAi(value):
-            return ItemListSwitchItem(presentationData: presentationData, title: l("SpeechToText.UseOpenAi"), value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
-                if #available(iOS 13.0, *) {
-                    Task {
-                        let setPreferredProviderTypeUseCase = SpeechToTextContainer.shared.setPreferredProviderTypeUseCase()
-                        await setPreferredProviderTypeUseCase(
-                            value ? .openAi : .google
-                        )
-                    }
-                }
+        case let .useOpenAI(_, text, value):
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                arguments.toggleSetting(value, .useOpenAI)
             })
         case let .recordAllCalls(title, value):
             return ItemListSwitchItem(presentationData: presentationData, title: title, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
@@ -317,7 +310,7 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
 }
 
 
-private func premiumControllerEntries(presentationData: PresentationData, useOpenAi: Bool) -> [PremiumControllerEntry] {
+private func premiumControllerEntries(presentationData: PresentationData) -> [PremiumControllerEntry] {
     var entries: [PremiumControllerEntry] = []
 
     let theme = presentationData.theme
@@ -326,8 +319,7 @@ private func premiumControllerEntries(presentationData: PresentationData, useOpe
     entries.append(.onetaptr(theme, l("Premium.OnetapTranslate"), NGSettings.oneTapTr))
     entries.append(.ignoretr(theme, l("Premium.IgnoreTranslate.Title")))
     
-    entries.append(.useOpenAi(useOpenAi))
-    
+    entries.append(.useOpenAI(theme, l("SpeechToText.UseOpenAi"), NGSettings.useOpenAI))
     entries.append(.recordAllCalls(l("Premium.RecordAllCalls"), NGSettings.recordAllCalls))
 
     #if DEBUG
@@ -367,19 +359,6 @@ public func premiumController(context: AccountContext) -> ViewController {
     let updateState: ((SelectionState) -> SelectionState) -> Void = { f in
         statePromise.set(stateValue.modify { f($0) })
     }
-    
-    let useOpenAiSignal: Signal<Bool, NoError>
-    if #available(iOS 13.0, *) {
-        let getPreferredProviderTypeUseCase = SpeechToTextContainer.shared.getPreferredProviderTypeUseCase()
-        
-        useOpenAiSignal = getPreferredProviderTypeUseCase
-            .publisher()
-            .map { $0 == .openAi }
-            .toSignal()
-            .skipError()
-    } else {
-        useOpenAiSignal = .single(false)
-    }
 
     let arguments = PremiumControllerArguments(toggleSetting: { value, setting in
         switch (setting) {
@@ -387,6 +366,8 @@ public func premiumController(context: AccountContext) -> ViewController {
             NGSettings.oneTapTr = value
         case .rememberFilterOnExit:
             NGSettings.rememberFolderOnExit = value
+        case .useOpenAI:
+            NGSettings.useOpenAI = value
         default:
             break
         }
@@ -486,10 +467,10 @@ public func premiumController(context: AccountContext) -> ViewController {
 
 
 
-    let signal = combineLatest(context.sharedContext.presentationData, statePromise.get(), useOpenAiSignal)
-        |> map { presentationData, state, useOpenAi -> (ItemListControllerState, (ItemListNodeState, Any)) in
+    let signal = combineLatest(context.sharedContext.presentationData, statePromise.get())
+        |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
 
-            let entries = premiumControllerEntries(presentationData: presentationData, useOpenAi: useOpenAi)
+            let entries = premiumControllerEntries(presentationData: presentationData)
 
             var _ = 0
             var scrollToItem: ListViewScrollToItem?

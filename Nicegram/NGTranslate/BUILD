@@ -12,11 +12,12 @@ swift_library(
         "//submodules/AccountContext:AccountContext",
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
         "//submodules/TelegramCore:TelegramCore",
+        "//submodules/Media/ConvertOpusToAAC",
         "//Nicegram/NGLogging:NGLogging",
         "//Nicegram/NGData:NGData",
         "//Nicegram/NGModels:NGModels",
         "//Nicegram/NGStrings:NGStrings",
-        "//Nicegram/NGUtils:NGUtils",
+        "//Nicegram/NGUtils:NGUtils"
     ],
     visibility = [
         "//visibility:public",

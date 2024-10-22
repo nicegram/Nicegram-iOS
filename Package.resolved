@@ -50,8 +50,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/hmlongco/Factory.git",
       "state" : {
-        "revision" : "dfe0852e8ebc146fe0f913af54a541d423b5ef37",
-        "version" : "2.4.0"
+        "revision" : "f350e0d71ba241b392f70519a67e769d5e3858d4",
+        "version" : "2.4.1"
       }
     },
     {
@@ -113,8 +113,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "7cfb6cbbc9fde39c006b915b406aa5498a7795ff"
+        "branch" : "feat/NCG-6326",
+        "revision" : "84a457c1a1bbaea02c7db624898b699b62a3ed28"
       }
     },
     {
@@ -338,8 +338,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "9ad3d1ac93c019c1b2daa812aadfe04d0d4706c3",
-        "version" : "4.1.13"
+        "revision" : "8c605ed267dec7b77415249a4e238bdc95d84c72",
+        "version" : "4.1.14"
       }
     },
     {

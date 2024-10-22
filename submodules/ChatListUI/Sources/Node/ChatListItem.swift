@@ -2977,8 +2977,10 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                     }
                     mentionBadgeContent = .mention
                 }
-                // MARK: Nicegram HideReactions, !VarSystemNGSettings.hideReactions added
-                else if hasUnseenReactions, !VarSystemNGSettings.hideReactions {
+                // MARK: Nicegram HideReactions, !VarSystemNGSettings.hideReactions added, !VarSystemNGSettings.hideReactionsToYourMessages
+                else if hasUnseenReactions,
+                        !VarSystemNGSettings.hideReactions,
+                        !VarSystemNGSettings.hideReactionsToYourMessages {
                     if isRemovedFromTotalUnreadCount {
                         currentMentionBadgeImage = PresentationResourcesChatList.badgeBackgroundInactiveReactions(item.presentationData.theme, diameter: badgeDiameter)
                     } else {
