@@ -1,3 +1,6 @@
+// MARK: Nicegram ATT
+import FeatAttentionEconomy
+//
 import Postbox
 import TelegramCore
 import TelegramPresentationData
@@ -48,8 +51,30 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
     case ReplyCountEntry(MessageIndex, Bool, Int, ChatPresentationData)
     case ChatInfoEntry(String, String, TelegramMediaImage?, TelegramMediaFile?, ChatPresentationData)
     case SearchEntry(PresentationTheme, PresentationStrings)
+    // MARK: Nicegram ATT
+    case NicegramAdEntry(String, AttAd, ChatPresentationData)
+    //
     
-    public var stableId: UInt64 {
+    // MARK: Nicegram ATT
+    public enum StableId: Hashable, Comparable {
+        case uint64(UInt64)
+        case nicegramAd(String)
+        
+        public var uint64Value: UInt64 {
+            switch self {
+            case let .uint64(uint64): uint64
+            case .nicegramAd: 0
+            }
+        }
+        
+        public static func <(lhs: StableId, rhs: StableId) -> Bool {
+            lhs.uint64Value < rhs.uint64Value
+        }
+    }
+    //
+    
+    // MARK: Nicegram ATT, changed UInt64 to StableId
+    public var stableId: StableId {
         switch self {
             case let .MessageEntry(message, _, _, _, _, attributes):
                 let type: UInt64
@@ -61,17 +86,27 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
                     case .animatedEmoji:
                         type = 4
                 }
-                return UInt64(message.stableId) | ((type << 40))
+                // MARK: Nicegram ATT, wrap in .uint64()
+                return .uint64(UInt64(message.stableId) | ((type << 40)))
             case let .MessageGroupEntry(groupInfo, _, _):
-                return UInt64(bitPattern: groupInfo) | ((UInt64(2) << 40))
+                // MARK: Nicegram ATT, wrap in .uint64()
+                return .uint64(UInt64(bitPattern: groupInfo) | ((UInt64(2) << 40)))
             case .UnreadEntry:
-                return UInt64(4) << 40
+                // MARK: Nicegram ATT, wrap in .uint64()
+                return .uint64(UInt64(4) << 40)
             case .ReplyCountEntry:
-                return UInt64(5) << 40
+                // MARK: Nicegram ATT, wrap in .uint64()
+                return .uint64(UInt64(5) << 40)
             case .ChatInfoEntry:
-                return UInt64(6) << 40
+                // MARK: Nicegram ATT, wrap in .uint64()
+                return .uint64(UInt64(6) << 40)
             case .SearchEntry:
-                return UInt64(7) << 40
+                // MARK: Nicegram ATT, wrap in .uint64()
+                return .uint64(UInt64(7) << 40)
+            // MARK: Nicegram ATT
+            case let .NicegramAdEntry(id, _, _):
+                return .nicegramAd(id)
+            //
         }
     }
     
@@ -89,6 +124,10 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
                 return MessageIndex.absoluteLowerBound()
             case .SearchEntry:
                 return MessageIndex.absoluteLowerBound()
+            // MARK: Nicegram ATT
+            case .NicegramAdEntry:
+                return MessageIndex.absoluteLowerBound()
+            //
         }
     }
     
@@ -106,6 +145,10 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
                 return MessageIndex.absoluteLowerBound()
             case .SearchEntry:
                 return MessageIndex.absoluteLowerBound()
+            // MARK: Nicegram ATT
+            case .NicegramAdEntry:
+                return MessageIndex.absoluteLowerBound()
+            //
         }
     }
     
@@ -284,6 +327,17 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
                 } else {
                     return false
                 }
+            // MARK: Nicegram ATT
+            case let .NicegramAdEntry(lhsId, lhsAd, lhsPresentationData):
+                if case let .NicegramAdEntry(rhsId, rhsAd, rhsPresentationData) = rhs,
+                   lhsId == rhsId,
+                   lhsAd == rhsAd,
+                   lhsPresentationData === rhsPresentationData {
+                    return true
+                } else {
+                    return false
+                }
+            //
         }
     }
     

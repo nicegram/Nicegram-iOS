@@ -127,9 +127,7 @@ public final class PresentationCallImpl: PresentationCall {
     private let screencastFramesDisposable = MetaDisposable()
     private let screencastAudioDataDisposable = MetaDisposable()
     private let screencastStateDisposable = MetaDisposable()
-// MARK: Nicegram NCG-5828 call recording
-    var callActiveState: ((OngoingCallContext.AudioDevice?) -> Void)?
-//
+    
     init(
         context: AccountContext,
         audioSession: ManagedAudioSession,
@@ -734,11 +732,6 @@ public final class PresentationCallImpl: PresentationCall {
             self.isAudioSessionActive = value
         }
         self.sharedAudioDevice?.setIsAudioSessionActive(value)
-// MARK: Nicegram NCG-5828 call recording
-        if value {
-            callActiveState?(sharedAudioDevice)
-        }
-//
     }
     
     public func answer() {

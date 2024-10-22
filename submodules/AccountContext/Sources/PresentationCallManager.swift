@@ -5,7 +5,6 @@ import TelegramCore
 import SwiftSignalKit
 import TelegramAudio
 import Display
-import Postbox
 
 public enum RequestCallResult {
     case requested
@@ -474,11 +473,5 @@ public protocol PresentationCallManager: AnyObject {
     
     func requestCall(context: AccountContext, peerId: EnginePeer.Id, isVideo: Bool, endCurrentIfAny: Bool) -> RequestCallResult
     func joinGroupCall(context: AccountContext, peerId: EnginePeer.Id, invite: String?, requestJoinAsPeerId: ((@escaping (EnginePeer.Id?) -> Void) -> Void)?, initialCall: EngineGroupCallDescription, endCurrentIfAny: Bool) -> JoinGroupCallManagerResult
-    func scheduleGroupCall(context: AccountContext, peerId: PeerId, endCurrentIfAny: Bool, parentController: ViewController) -> RequestScheduleGroupCallResult
-// MARK: Nicegram NCG-5828 call recording
-    var callCompletion: (() -> Void)? { get set }
-    func startRecordCall(with completion: @escaping () -> Void)
-    func stopRecordCall()
-    func setupPeer(peer: EnginePeer)
-//
+    func scheduleGroupCall(context: AccountContext, peerId: EnginePeer.Id, endCurrentIfAny: Bool, parentController: ViewController) -> RequestScheduleGroupCallResult
 }

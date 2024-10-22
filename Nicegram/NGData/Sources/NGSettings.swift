@@ -56,9 +56,6 @@ public struct NGSettings {
     
     @NGStorage(key: "rememberFolderOnExit", defaultValue: false)
     public static var rememberFolderOnExit: Bool
-
-    @NGStorage(key: "useOpenAI", defaultValue: false)
-    public static var useOpenAI: Bool
     
     @NGStorage(key: "lastFolder", defaultValue: -1)
     public static var lastFolder: Int32
@@ -108,9 +105,6 @@ public struct NGSettings {
     
     @NGStorage(key: "hideStories", defaultValue: false)
     public static var hideStories: Bool
-    
-    @NGStorage(key: "recordAllCalls", defaultValue: false)
-    public static var recordAllCalls: Bool
 }
 
 public struct NGWebSettings {
@@ -141,24 +135,23 @@ public var VarNGSharedSettings = NGSharedSettings()
 
 public func isPremium() -> Bool {
     if #available(iOS 13.0, *) {
-#if DEBUG
-        return true
-#else
         return PremiumContainer.shared
             .getPremiumStatusUseCase()
             .hasPremiumOnDevice()
-#endif
     } else {
         return false
     }
 }
 
 public func usetrButton() -> [(Bool, [String])] {
-    var ignoredLangs = NGSettings.ignoreTranslate
-    if !NGSettings.useIgnoreLanguages {
-        ignoredLangs = []
+    if isPremium() {
+        var ignoredLangs = NGSettings.ignoreTranslate
+        if !NGSettings.useIgnoreLanguages {
+            ignoredLangs = []
+        }
+        return [(NGSettings.oneTapTr, ignoredLangs)]
     }
-    return [(NGSettings.oneTapTr, ignoredLangs)]
+    return [(false, [])]
 }
 
 public class SystemNGSettings {
@@ -199,15 +192,6 @@ public class SystemNGSettings {
         }
         set {
             UD.set(newValue, forKey: "inDoubleBottom")
-        }
-    }
-    
-    public var hideReactionsToYourMessages: Bool {
-        get {
-            return UD.bool(forKey: "hideReactionsToYourMessages")
-        }
-        set {
-            UD.set(newValue, forKey: "hideReactionsToYourMessages")
         }
     }
 }
