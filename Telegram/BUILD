@@ -388,9 +388,12 @@ objc_library(
 NGRESOURCES = [
     ":FirebaseRemoteConfigDefaults",
     ":GoogleService-Info",
-    "//Nicegram/NGUI:NGUIAssets",
+    "//Nicegram/NGResources:NGImagesAssets"
 ]
-NGRESOURCES_DEPS = ["//Nicegram/NGUI:NGUI"]
+
+NGRESOURCES_DEPS = [
+    "//Nicegram/NGResources:NGResources"
+]
 
 swift_library(
     name = "Lib",

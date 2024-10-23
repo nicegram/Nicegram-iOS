@@ -1,12 +1,5 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
-
-filegroup(
-    name = "NGUIAssets",
-    srcs = glob(["Images.xcassets/**"]),
-    visibility = ["//visibility:public"],
-)
-
 swift_library(
     name = "NGUI",
     module_name = "NGUI",

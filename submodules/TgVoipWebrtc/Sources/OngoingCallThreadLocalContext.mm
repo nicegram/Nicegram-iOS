@@ -118,6 +118,9 @@ public:
                 _audioDeviceModule->InternalStartPlayout();
             }
             //_audioDeviceModule->InternalStartRecording();
+// MARK: Nicegram NCG-5828 call recording
+            _audioDeviceModule->InitNicegramCallRecording();
+//
         }
     }
     
@@ -148,6 +151,33 @@ private:
         audioDeviceModule->audioDeviceModule()->setTone([tone asTone]);
     });
 }
+
+// MARK: Nicegram NCG-5828 call recording
+-(void)InitNicegramCallRecording {
+    _audioDeviceModule->perform([](tgcalls::SharedAudioDeviceModule *audioDeviceModule) {
+        audioDeviceModule->audioDeviceModule()->InitNicegramCallRecording();
+    });
+}
+
+-(void)StartNicegramRecording:(void(^_Nullable)(NSString* _Nonnull, double, NSUInteger))completion {
+    _audioDeviceModule->perform([completion](tgcalls::SharedAudioDeviceModule *audioDeviceModule) {
+        audioDeviceModule->audioDeviceModule()->StartNicegramRecording([completion](const std::string& outputFilePath,
+                                                                                    double durationInSeconds,
+                                                                                    size_t rawDataSize) {
+            NSString *path = [NSString stringWithUTF8String: outputFilePath.c_str()];
+            if (completion != NULL) {
+                completion(path, durationInSeconds, rawDataSize);
+            }
+        });
+    });
+}
+
+-(void)StopNicegramRecording {
+    _audioDeviceModule->perform([](tgcalls::SharedAudioDeviceModule *audioDeviceModule) {
+        audioDeviceModule->audioDeviceModule()->StopNicegramRecording();
+    });
+}
+//
 
 - (std::shared_ptr<tgcalls::ThreadLocalObject<tgcalls::SharedAudioDeviceModule>>)getAudioDeviceModule {
     return _audioDeviceModule;
