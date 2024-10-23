@@ -11,6 +11,7 @@ import NGGrumUI
 //
 // MARK: Nicegram imports
 import NGData
+import NGStrings
 //
 import Foundation
 import UIKit
@@ -89,7 +90,9 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     // MARK: Nicegram Assistant
     public var assistantController: ViewController?
     //
-    
+// MARK: Nicegram NCG-6373 Feed tab
+    public var feedController: ChatController?
+//
     private let context: AccountContext
     
     public var rootTabController: TabBarController?
@@ -260,6 +263,25 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         if showCallsTab {
             controllers.append(callListController)
         }
+// MARK: Nicegram NCG-6373 Feed tab
+        let feedController = ChatControllerImpl(
+            context: self.context,
+            chatLocation: .peer(id: NGSettings.feedPeerId)
+        )
+        let image = UIImage(bundleImageName: "feed")?
+            .sd_resizedImage(with: .init(width: 30, height: 30), scaleMode: .aspectFit)?
+            .withRenderingMode(.alwaysTemplate)
+        feedController.tabBarItem = UITabBarItem(
+            title: l("NicegramFeed.Title"),
+            image: image,
+            tag: 1
+        )
+        if NGSettings.showFeedTab &&
+            NGSettings.feedPeerId.id._internalGetInt64Value() != 0 {
+            controllers.append(feedController)
+        }
+        self.feedController = feedController
+//
         controllers.append(chatListController)
         
         // MARK: Nicegram Assistant
@@ -368,6 +390,11 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         if showCallsTab {
             controllers.append(self.callListController!)
         }
+// MARK: Nicegram NCG-6373 Feed tab
+        if NGSettings.showFeedTab {
+            controllers.append(self.feedController!)
+        }
+//
         controllers.append(self.chatListController!)
         
         // MARK: Nicegram Assistant

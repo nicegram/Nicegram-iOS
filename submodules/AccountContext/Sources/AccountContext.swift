@@ -1164,6 +1164,10 @@ public protocol AccountContext: AnyObject {
     func scheduleGroupCall(peerId: PeerId, parentController: ViewController)
     func joinGroupCall(peerId: PeerId, invite: String?, requestJoinAsPeerId: ((@escaping (PeerId?) -> Void) -> Void)?, activeCall: EngineGroupCallDescription)
     func requestCall(peerId: PeerId, isVideo: Bool, completion: @escaping () -> Void)
+// MARK: Nicegram NCG-6373 Feed tab
+    var updateFeed: Signal<Void, NoError> { get }
+    func needUpdateFeed()
+//
 }
 
 public struct AntiSpamBotConfiguration {

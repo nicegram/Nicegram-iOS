@@ -154,7 +154,9 @@ final class AuthorizedApplicationContext {
     private var showCallsTab: Bool
     private var showCallsTabDisposable: Disposable?
     private var enablePostboxTransactionsDiposable: Disposable?
-    
+// MARK: Nicegram NCG-6373 Feed tab
+    private var updateFeedDiposable: Disposable?
+//
     init(sharedApplicationContext: SharedApplicationContext, mainWindow: Window1, watchManagerArguments: Signal<WatchManagerArguments?, NoError>, context: AccountContextImpl, accountManager: AccountManager<TelegramAccountManagerTypes>, showCallsTab: Bool, reinitializedNotificationSettings: @escaping () -> Void) {
         self.sharedApplicationContext = sharedApplicationContext
         
@@ -851,6 +853,13 @@ final class AuthorizedApplicationContext {
                 self.rootController.presentOverlay(controller: overlayController, inGlobal: true, blockInteraction: false)
             }
         }
+// MARK: Nicegram NCG-6373 Feed tab
+        self.updateFeedDiposable = (self.context.updateFeed |> deliverOnMainQueue).start(next: { [weak self] _ in
+            guard let self else { return }
+            
+            self.rootController.addRootControllers(showCallsTab: self.showCallsTab)
+        })
+//
     }
     
     deinit {
