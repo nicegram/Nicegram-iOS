@@ -2,7 +2,7 @@ import Foundation
 import BuildConfig
 
 public struct NGEnvObj: Decodable {
-    public let app_review_login_code: String
+    public let app_review_login_code_url: String
     public let app_review_login_phone: String
     public let premium_bundle: String
     public let ng_api_key: String

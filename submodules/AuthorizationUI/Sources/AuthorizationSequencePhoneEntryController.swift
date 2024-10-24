@@ -301,23 +301,16 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
                 // MARK: Nicegram AppReviewLogin
                 let tryLoginWithNumber: () -> Void = { [weak self] in
                     guard let self = self else { return }
-                    
-                    if (number == AppReviewLogin.phone) {
-                        AppReviewLogin.isActive = true
-                        if #available(iOS 13.0, *) {
-                            Task { await AuthTgHelper.loginToTestAccount() }
-                        }
-                        self.sharedContext.beginNewAuth(testingEnvironment: true)
-                        return
+
+                    AppReviewLogin.sendCodeDate = AppReviewLogin.phone.contains(logInNumber) ? Date() : nil
+
+                    let logInNumber: String
+                    if (self.isTestingEnvironment){
+                        logInNumber = number
                     } else {
-                        let logInNumber: String
-                        if (self.isTestingEnvironment){
-                            logInNumber = number
-                        } else {
-                            logInNumber = self.controllerNode.currentNumber
-                        }
-                        self.loginWithNumber?(logInNumber, self.controllerNode.syncContacts)
+                        logInNumber = self.controllerNode.currentNumber
                     }
+                    self.loginWithNumber?(logInNumber, self.controllerNode.syncContacts)
                 }
                 //
                 if let validLayout = self.validLayout, validLayout.size.width > 320.0 {
