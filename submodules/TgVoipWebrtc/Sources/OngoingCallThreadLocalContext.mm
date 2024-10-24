@@ -118,9 +118,6 @@ public:
                 _audioDeviceModule->InternalStartPlayout();
             }
             //_audioDeviceModule->InternalStartRecording();
-// MARK: Nicegram NCG-5828 call recording
-            _audioDeviceModule->InitNicegramCallRecording();
-//
         }
     }
     
@@ -153,12 +150,6 @@ private:
 }
 
 // MARK: Nicegram NCG-5828 call recording
--(void)InitNicegramCallRecording {
-    _audioDeviceModule->perform([](tgcalls::SharedAudioDeviceModule *audioDeviceModule) {
-        audioDeviceModule->audioDeviceModule()->InitNicegramCallRecording();
-    });
-}
-
 -(void)StartNicegramRecording:(void(^_Nullable)(NSString* _Nonnull, double, NSUInteger))completion {
     _audioDeviceModule->perform([completion](tgcalls::SharedAudioDeviceModule *audioDeviceModule) {
         audioDeviceModule->audioDeviceModule()->StartNicegramRecording([completion](const std::string& outputFilePath,

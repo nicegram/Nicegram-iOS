@@ -635,8 +635,8 @@
         "bzlTransitiveDigest": "8/YWyYftd8THfVoADvrOmQLl45wUGfP2MVjLM5FFn50=",
         "usagesDigest": "voXBMcSNlo2fnK6JIvInIrncYhBKKG8nBeKvToaUA0Y=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "2bfab2f2cabfe76f73c7382d47800bc3c86681e45970ff96a8593d037ecf9d17",
-          "@@//Package.swift": "b9e2b86f6f986c3f74ad4806e3d35d2fd2a8097270805eb903ccb36da8935aac"
+          "@@//Package.resolved": "f5c4c415f2edae2511c14308e4f0736cb0dfc7b011740e6b63889f46bc4ae63a",
+          "@@//Package.swift": "fb3cb1d48066e64f8bf17fe1a49f689b7a6bf4bfc07aa90b9b80a02188501951"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -798,9 +798,9 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_factory",
-              "commit": "dfe0852e8ebc146fe0f913af54a541d423b5ef37",
+              "commit": "f350e0d71ba241b392f70519a67e769d5e3858d4",
               "remote": "https://github.com/hmlongco/Factory.git",
-              "version": "2.4.0",
+              "version": "2.4.1",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -1121,7 +1121,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "7cfb6cbbc9fde39c006b915b406aa5498a7795ff",
+              "commit": "48df92e41a420e51cda4fd441cd2351a73d367f6",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "init_submodules": false,
@@ -1311,9 +1311,9 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_wallet_core",
-              "commit": "9ad3d1ac93c019c1b2daa812aadfe04d0d4706c3",
+              "commit": "8c605ed267dec7b77415249a4e238bdc95d84c72",
               "remote": "https://github.com/trustwallet/wallet-core.git",
-              "version": "4.1.13",
+              "version": "4.1.14",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [

@@ -92,7 +92,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     case showCallsTab(String, Bool)
     case showNicegramTab
     case showTabNames(String, Bool)
-    case showFeedTab(String, Bool)
     
     case pinnedChatsHeader
     case pinnedChat(Int32, PinnedChat)
@@ -128,7 +127,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
     var section: ItemListSectionId {
         switch self {
-        case .TabsHeader, .showContactsTab, .showCallsTab, .showNicegramTab, .showTabNames, .showFeedTab:
+        case .TabsHeader, .showContactsTab, .showCallsTab, .showNicegramTab, .showTabNames:
             return NicegramSettingsControllerSection.Tabs.rawValue
         case .FoldersHeader, .foldersAtBottom, .foldersAtBottomNotice:
             return NicegramSettingsControllerSection.Folders.rawValue
@@ -173,9 +172,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             
         case .showTabNames:
             return 1600
-
-        case .showFeedTab:
-            return 1650
 
         case .FoldersHeader:
             return 1700
@@ -268,13 +264,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
         case let .showTabNames(lhsText, lhsVar0Bool):
             if case let .showTabNames(rhsText, rhsVar0Bool) = rhs, lhsText == rhsText, lhsVar0Bool == rhsVar0Bool {
-                return true
-            } else {
-                return false
-            }
-            
-        case let .showFeedTab(lhsText, lhsVar0Bool):
-            if case let .showFeedTab(rhsText, rhsVar0Bool) = rhs, lhsText == rhsText, lhsVar0Bool == rhsVar0Bool {
                 return true
             } else {
                 return false
@@ -468,13 +457,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                 arguments.presentController(controller, nil)
             })
             
-        case let .showFeedTab(text, value):
-            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
-                ngLog("[showFeedTab] invoked with \(value)", LOGTAG)
-                NGSettings.showFeedTab = value
-                arguments.updateTabs()
-            })
-            
         case let .FoldersHeader(text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: section)
             
@@ -649,10 +631,6 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     entries.append(.showTabNames(
         l("NiceFeatures.Tabs.ShowNames"),
         NGSettings.showTabNames
-    ))
-    entries.append(.showFeedTab(
-        l("Show Feed Tab"),
-        NGSettings.showFeedTab
     ))
 
     entries.append(.FoldersHeader(l("NiceFeatures.Folders.Header")))

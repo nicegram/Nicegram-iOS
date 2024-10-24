@@ -1,5 +1,4 @@
 import FeatPremium
-import Postbox
 import Foundation
 import NGAppCache
 
@@ -109,12 +108,6 @@ public struct NGSettings {
     
     @NGStorage(key: "recordAllCalls", defaultValue: false)
     public static var recordAllCalls: Bool
-    
-    @NGStorage(key: "showFeedTab", defaultValue: false)
-    public static var showFeedTab: Bool
-    
-    @NGStorage(key: "feedPeerId", defaultValue: PeerId(namespace: PeerId.Namespace._internalFromInt32Value(0), id: PeerId.Id._internalFromInt64Value(0)))
-    public static var feedPeerId: PeerId
 }
 
 public struct NGWebSettings {

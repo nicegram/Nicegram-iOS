@@ -2,9 +2,6 @@
 import FeatHiddenChats
 import NGStrings
 //
-// MARK: Nicegram NCG-6373 Feed tab
-import NGData
-//
 import Foundation
 import UIKit
 import SwiftSignalKit
@@ -119,35 +116,7 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                     }
 
                     var items: [ContextMenuItem] = []
-// MARK: Nicegram NCG-6373 Feed tab
-                    if case .chatList = source {
-                        let isFeedPeerEqualPeer = NGSettings.feedPeerId == peerId
-                        let text = isFeedPeerEqualPeer ? l("NicegramFeed.Remove") : l("NicegramFeed.Add")
-                        let color: ContextMenuActionItemTextColor = isFeedPeerEqualPeer ? .destructive : .primary
-                        items.append(
-                            .action(ContextMenuActionItem(
-                                text: text,
-                                textColor: color,
-                                icon: { theme in
-                                    let color = isFeedPeerEqualPeer ? theme.contextMenu.destructiveColor : theme.contextMenu.primaryColor
-                                    return generateTintedImage(image: UIImage(bundleImageName: "feed"), color: color)
-                                },
-                                action: { _, f in
-                                    if isFeedPeerEqualPeer {
-                                        NGSettings.feedPeerId = PeerId(
-                                            namespace: PeerId.Namespace._internalFromInt32Value(0),
-                                            id: PeerId.Id._internalFromInt64Value(0)
-                                        )
-                                    } else {
-                                        NGSettings.feedPeerId = peerId
-                                    }
-                                    context.needUpdateFeed()
-                                    f(.default)
-                                }
-                            ))
-                        )
-                    }
-//
+
                     if case let .search(search) = source {
                         switch search {
                         case .recentPeers:
