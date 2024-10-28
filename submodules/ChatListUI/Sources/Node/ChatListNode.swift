@@ -2354,10 +2354,6 @@ public final class ChatListNode: ListView {
             if case .forum(_) = location {
                 nicegramItems = []
             }
-            
-            if #available(iOS 13.0, *) {
-                PinnedChatsUI.trackChatsView(nicegramItems.map(\.chat))
-            }
             //
             
             let innerIsMainTab = location == .chatList(groupId: .root) && chatListFilter == nil
