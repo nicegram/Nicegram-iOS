@@ -651,7 +651,10 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
             self.chatDisplayNode.showListEmptyResults = self.showListEmptyResults
         }
     }
-    
+// MARK: Nicegram NCG-6373 Feed tab
+    let isFeed: Bool
+//
+// MARK: Nicegram NCG-6373 Feed tab, isFeed
     public init(
         context: AccountContext,
         chatLocation: ChatLocation,
@@ -666,8 +669,12 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
         chatListFilter: Int32? = nil,
         chatNavigationStack: [ChatNavigationStackItem] = [],
         customChatNavigationStack: [EnginePeer.Id]? = nil,
-        params: ChatControllerParams? = nil
+        params: ChatControllerParams? = nil,
+        isFeed: Bool = false
     ) {
+// MARK: Nicegram NCG-6373 Feed tab
+        self.isFeed = isFeed
+//
         let _ = ChatControllerCount.modify { value in
             return value + 1
         }
@@ -5869,8 +5876,8 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                                     return interfaceState
                                 }
                         })
-
-                        if case .standard(.default) = mode, let channel = renderedPeer?.chatMainPeer as? TelegramChannel, case .broadcast = channel.info {
+                        // MARK: Nicegram NCG-6373 Feed tab, !isFeed
+                        if case .standard(.default) = mode, let channel = renderedPeer?.chatMainPeer as? TelegramChannel, case .broadcast = channel.info, !isFeed {
                             var isRegularChat = false
                             if let subject = subject {
                                 if case .message = subject {

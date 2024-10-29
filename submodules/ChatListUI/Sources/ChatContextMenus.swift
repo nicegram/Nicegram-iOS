@@ -2,6 +2,10 @@
 import FeatHiddenChats
 import NGStrings
 //
+// MARK: Nicegram NCG-6373 Feed tab
+import NGData
+import NGUI
+//
 import Foundation
 import UIKit
 import SwiftSignalKit
@@ -116,7 +120,41 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                     }
 
                     var items: [ContextMenuItem] = []
+// MARK: Nicegram NCG-6373 Feed tab
+                    if case .chatList = source {
+                        let isFeedPeerEqualPeer = NGSettings.feedPeerId == peerId
+                        let text = isFeedPeerEqualPeer ? l("NicegramFeed.Remove") : l("NicegramFeed.Add")
+                        let color: ContextMenuActionItemTextColor = isFeedPeerEqualPeer ? .destructive : .primary
+                        items.append(
+                            .action(ContextMenuActionItem(
+                                text: text,
+                                textColor: color,
+                                icon: { theme in
+                                    let color = isFeedPeerEqualPeer ? theme.contextMenu.destructiveColor : theme.contextMenu.primaryColor
+                                    return generateTintedImage(image: UIImage(bundleImageName: "feed"), color: color)
+                                },
+                                action: { _, f in
+                                    if isFeedPeerEqualPeer {
+                                        NGSettings.feedPeerId = NGSettings.zeroFeedPeerId
+                                        updateTabs(with: context)
+                                    } else {
+                                        let needUpdateTabs =
+                                        !NGSettings.showFeedTab ||
+                                        NGSettings.feedPeerId == NGSettings.zeroFeedPeerId
 
+                                        NGSettings.feedPeerId = peerId
+                                        if needUpdateTabs {
+                                            NGSettings.showFeedTab = true
+                                            updateTabs(with: context)
+                                        }
+                                    }
+                                    context.needUpdateFeed()
+                                    f(.default)
+                                }
+                            ))
+                        )
+                    }
+//
                     if case let .search(search) = source {
                         switch search {
                         case .recentPeers:

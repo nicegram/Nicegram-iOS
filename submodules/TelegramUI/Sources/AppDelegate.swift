@@ -395,24 +395,11 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         let buildConfig = BuildConfig(baseAppBundleId: baseAppBundleId)
         self.buildConfig = buildConfig
         let signatureDict = BuildConfigExtra.signatureDict()
-
-         // MARK: Nicegram, moved 'isDebugConfiguration' definition here
-        var isDebugConfiguration = false
-        #if DEBUG
-        isDebugConfiguration = true
-        #endif
         
-        if Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt" {
-            isDebugConfiguration = true
-        }
-        //
-        
-        let ngEnableLogging = isDebugConfiguration
         NGEntryPoint.onAppLaunch(
             env: Env(
                 apiBaseUrl: URL(string: NGENV.ng_api_url)!,
                 apiKey: NGENV.ng_api_key,
-                enableLogging: ngEnableLogging,
                 isAppStoreBuild: buildConfig.isAppStoreBuild,
                 premiumProductId: NGENV.premium_bundle,
                 privacyUrl: URL(string: NGENV.privacy_url)!,
@@ -446,7 +433,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 env: {
                     .init(
                         appUrlScheme: buildConfig.appSpecificUrlScheme,
-                        enableLogging: ngEnableLogging,
+                        enableLogging: false,
                         keychainGroupIdentifier: NGENV.wallet.keychainGroupIdentifier,
                         nicegramApiBaseUrl: URL(string: NGENV.ng_api_url)!
                             .appendingPathComponent("v7/"),
@@ -692,8 +679,15 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             self.mainWindow?.presentNative(UIAlertController(title: nil, message: "Error 2", preferredStyle: .alert))
             return true
         }
-
-        // MARK: Nicegram, moved 'isDebugConfiguration' definition up
+        
+        var isDebugConfiguration = false
+        #if DEBUG
+        isDebugConfiguration = true
+        #endif
+        
+        if Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt" {
+            isDebugConfiguration = true
+        }
         
         if isDebugConfiguration || buildConfig.isInternalBuild {
             LoggingSettings.defaultSettings = LoggingSettings(logToFile: true, logToConsole: false, redactSensitiveData: true)
