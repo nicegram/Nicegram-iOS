@@ -444,13 +444,8 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     private var displayVideoUnmuteTipDisposable: Disposable?
     
     private var onLayoutCompletions: [(ContainedViewLayoutTransition) -> Void] = []
-// MARK: Nicegram NCG-6373 Feed tab
-    private let isFeed: Bool
-    // MARK: Nicegram NCG-6373 Feed tab, isFeed
-    init(context: AccountContext, chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, subject: ChatControllerSubject?, controllerInteraction: ChatControllerInteraction, chatPresentationInterfaceState: ChatPresentationInterfaceState, automaticMediaDownloadSettings: MediaAutoDownloadSettings, navigationBar: NavigationBar?, statusBar: StatusBar?, backgroundNode: WallpaperBackgroundNode, controller: ChatControllerImpl?, isFeed: Bool) {
-// MARK: Nicegram NCG-6373 Feed tab
-        self.isFeed = isFeed
-//
+
+    init(context: AccountContext, chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, subject: ChatControllerSubject?, controllerInteraction: ChatControllerInteraction, chatPresentationInterfaceState: ChatPresentationInterfaceState, automaticMediaDownloadSettings: MediaAutoDownloadSettings, navigationBar: NavigationBar?, statusBar: StatusBar?, backgroundNode: WallpaperBackgroundNode, controller: ChatControllerImpl?) {
         self.context = context
         self.chatLocation = chatLocation
         self.controllerInteraction = controllerInteraction
@@ -893,11 +888,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
         
         self.wrappingNode.contentNode.addSubnode(self.inputContextPanelContainer)
-// MARK: Nicegram NCG-6373 Feed tab
-        if !isFeed {
-            self.wrappingNode.contentNode.addSubnode(self.inputPanelContainerNode)
-        }
-//
+        self.wrappingNode.contentNode.addSubnode(self.inputPanelContainerNode)
         self.wrappingNode.contentNode.addSubnode(self.inputContextOverTextPanelContainer)
         
         self.inputPanelContainerNode.addSubnode(self.inputPanelClippingNode)
@@ -2069,11 +2060,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 inputPanelsHeight = 0.0
             }
         }
-// MARK: Nicegram NCG-6373 Feed tab
-        if isFeed {
-            inputPanelsHeight = 0.0
-        }
-//
+        
         let inputBackgroundInset: CGFloat
         if cleanInsets.bottom < insets.bottom {
             if case .regular = layout.metrics.widthClass, insets.bottom < 88.0 {

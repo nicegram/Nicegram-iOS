@@ -214,7 +214,3 @@
 "NicegramCallRecord.StopAlertButtonCancel" = "Cancel";
 "NicegramCallRecord.SavedMessage" = "Recorded Call saved to **Saved Messages**.";
 
-/*Feed*/
-"NicegramFeed.Title" = "Feed";
-"NicegramFeed.Add" = "Add to Feed";
-"NicegramFeed.Remove" = "Remove from Feed";
