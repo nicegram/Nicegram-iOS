@@ -412,7 +412,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             env: Env(
                 apiBaseUrl: URL(string: NGENV.ng_api_url)!,
                 apiKey: NGENV.ng_api_key,
-                enableLogging: ngEnableLogging,
                 isAppStoreBuild: buildConfig.isAppStoreBuild,
                 premiumProductId: NGENV.premium_bundle,
                 privacyUrl: URL(string: NGENV.privacy_url)!,

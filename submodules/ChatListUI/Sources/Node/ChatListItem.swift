@@ -1,7 +1,3 @@
-// MARK: Nicegram ATT
-import class Combine.AnyCancellable
-import FeatAttentionEconomy
-//
 // MARK: Nicegram HideReactions, HideStories
 import FeatPinnedChats
 import NGData
@@ -404,12 +400,6 @@ public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
     // MARK: Nicegram PinnedChats
     let nicegramItem: PinnedChatToDisplay?
     //
-    
-    // MARK: Nicegram ATT
-    let attBannerFeature = AttBannerFeature()
-    var attAd: AttAd? { nicegramItem?.chat.attAd }
-    //
-    
     let presentationData: ChatListPresentationData
     let context: AccountContext
     let chatListLocation: ChatListControllerLocation
@@ -518,12 +508,8 @@ public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
             if let nicegramItem {
                 if #available(iOS 13.0, *) {
                     Task { @MainActor in
-                        if let attAd {
-                            attBannerFeature.onClick(ad: attAd)
-                        } else {
-                            let openPinnedChatUseCase = PinnedChatsContainer.shared.openPinnedChatUseCase()
-                            openPinnedChatUseCase(nicegramItem.chat)
-                        }
+                        let openPinnedChatUseCase = PinnedChatsContainer.shared.openPinnedChatUseCase()
+                        openPinnedChatUseCase(nicegramItem.chat)
                         
                         interaction.clearHighlightAnimated(true)
                     }
@@ -1224,11 +1210,6 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
     
     var item: ChatListItem?
     
-    // MARK: Nicegram ATT
-    private var attClaimAnimationView: AttClaimAnimationView?
-    private var attClaimAnimationCancellable: AnyCancellable?
-    //
-    
     private let backgroundNode: ASDisplayNode
     private let highlightedBackgroundNode: ASDisplayNode
     
@@ -1483,16 +1464,6 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                     )
                 }
                 self.authorNode.visibilityStatus = self.visibilityStatus
-                
-                // MARK: Nicegram ATT
-                if self.visibilityStatus, let item {
-                    if let attAd = item.attAd {
-                        item.attBannerFeature.onView(ad: attAd)
-                    } else if let nicegramItem = item.nicegramItem {
-                        PinnedChatsUI.trackChatView(nicegramItem.chat)
-                    }
-                }
-                //
             }
         }
     }
@@ -1852,13 +1823,6 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                 )
             )
         }
-        //
-        
-        // MARK: Nicegram ATT
-        attClaimAnimationCancellable = item.attBannerFeature.claimAnimationPublisher
-            .sink { [weak self] result in
-                self?.attClaimAnimationView?.animate(value: result.claimAmount)
-            }
         //
         
         self.contextContainer.isGestureEnabled = enablePreview && !item.editing
@@ -4515,27 +4479,6 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                         strongSelf.mutedIconNode.isHidden = true
                     }
                     
-                    // MARK: Nicegram ATT
-                    if item.attAd != nil {
-                        let attClaimAnimationView: AttClaimAnimationView
-                        if let current = strongSelf.attClaimAnimationView {
-                            attClaimAnimationView = current
-                        } else {
-                            attClaimAnimationView = AttClaimAnimationView()
-                            attClaimAnimationView.set(coinOpacity: 0)
-                            strongSelf.attClaimAnimationView = attClaimAnimationView
-                            strongSelf.mainContentContainerNode.view.addSubview(attClaimAnimationView)
-                        }
-                        
-                        let iconSize = CGSize(width: 20, height: 20)
-                        transition.updateFrame(view: attClaimAnimationView, frame: CGRect(origin: CGPoint(x: nextTitleIconOrigin, y: floorToScreenPixels(titleFrame.maxY - lastLineRect.height * 0.5 - iconSize.height / 2.0) - UIScreenPixel), size: iconSize))
-                        nextTitleIconOrigin += attClaimAnimationView.bounds.width + 4.0
-                    } else if let attClaimAnimationView = strongSelf.attClaimAnimationView {
-                        strongSelf.attClaimAnimationView = nil
-                        attClaimAnimationView.removeFromSuperview()
-                    }
-                    //
-                    
                     let separatorInset: CGFloat
                     if case let .groupReference(groupReferenceData) = item.content, groupReferenceData.hiddenByDefault {
                         separatorInset = 0.0
@@ -4723,14 +4666,10 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
             case RevealOptionKey.unpin.rawValue:
                 self.setRevealOptionsOpened(false, animated: true)
                 
-                if let ad = item.attAd {
-                    item.attBannerFeature.onRemoveAdClick(ad: ad)
-                } else {
-                    Task { @MainActor in
-                        PinnedChatsUI.unpin(
-                            nicegramItem.chat
-                        )
-                    }
+                Task { @MainActor in
+                    PinnedChatsUI.unpin(
+                        nicegramItem.chat
+                    )
                 }
             default:
                 break

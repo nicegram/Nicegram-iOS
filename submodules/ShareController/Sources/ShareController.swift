@@ -74,8 +74,7 @@ public enum ShareControllerSubject {
     case quote(text: String, url: String)
     case messages([Message])
     case image([ImageRepresentationWithReference])
-    // MARK: Nicegram, text added
-    case media(AnyMediaReference, text: String = "")
+    case media(AnyMediaReference)
     case mapMedia(TelegramMediaMap)
     case fromExternal(([PeerId], [PeerId: Int64], String, ShareControllerAccountContext, Bool) -> Signal<ShareControllerExternalStatus, ShareControllerError>)
 }
@@ -573,8 +572,7 @@ public final class ShareController: ViewController {
                         self?.actionCompleted?()
                     })
                 }
-            // MARK: Nicegram, text added
-            case let .media(mediaReference, _):
+            case let .media(mediaReference):
                 var canSave = false
                 var isVideo = false
                 if mediaReference.media is TelegramMediaImage {
@@ -815,8 +813,7 @@ public final class ShareController: ViewController {
                         return false
                     }
                 }
-            // MARK: Nicegram, text added
-            case let .media(mediaReference, _):
+            case let .media(mediaReference):
                 var sendTextAsCaption = false
                 if mediaReference.media is TelegramMediaImage || mediaReference.media is TelegramMediaFile {
                     sendTextAsCaption = true
@@ -1032,9 +1029,8 @@ public final class ShareController: ViewController {
                     case let .image(representations):
                         let media = TelegramMediaImage(imageId: MediaId(namespace: Namespaces.Media.LocalImage, id: Int64.random(in: Int64.min ... Int64.max)), representations: representations.map({ $0.representation }), immediateThumbnailData: nil, reference: nil, partialReference: nil, flags: [])
                         collectableItems.append(CollectableExternalShareItem(url: "", text: "", author: nil, timestamp: nil, mediaReference: .standalone(media: media)))
-                    // MARK: Nicegram, text added
-                    case let .media(mediaReference, text):
-                        collectableItems.append(CollectableExternalShareItem(url: "", text: text, author: nil, timestamp: nil, mediaReference: mediaReference))
+                    case let .media(mediaReference):
+                        collectableItems.append(CollectableExternalShareItem(url: "", text: "", author: nil, timestamp: nil, mediaReference: mediaReference))
                     case let .mapMedia(media):
                         let latLong = "\(media.latitude),\(media.longitude)"
                         collectableItems.append(CollectableExternalShareItem(url: "https://maps.apple.com/maps?ll=\(latLong)&q=\(latLong)&t=m", text: "", author: nil, timestamp: nil, mediaReference: nil))
@@ -1574,10 +1570,7 @@ public final class ShareController: ViewController {
                         messages: messages
                     ))
                 }
-            // MARK: Nicegram, text added
-            case let .media(mediaReference, string):
-                let text = "\(text)\n\n\(string)".trimmingCharacters(in: .whitespacesAndNewlines)
-                
+            case let .media(mediaReference):
                 var sendTextAsCaption = false
                 if mediaReference.media is TelegramMediaImage || mediaReference.media is TelegramMediaFile {
                     sendTextAsCaption = true
@@ -2100,10 +2093,7 @@ public final class ShareController: ViewController {
                     messages = transformMessages(messages, showNames: showNames, silently: silently)
                     shareSignals.append(enqueueMessages(account: currentContext.context.account, peerId: peerId, messages: messages))
                 }
-            // MARK: Nicegram, text added
-            case let .media(mediaReference, string):
-                let text = "\(text)\n\n\(string)".trimmingCharacters(in: .whitespacesAndNewlines)
-                
+            case let .media(mediaReference):
                 var sendTextAsCaption = false
                 if mediaReference.media is TelegramMediaImage || mediaReference.media is TelegramMediaFile {
                     sendTextAsCaption = true

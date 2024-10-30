@@ -54,7 +54,6 @@ import TooltipUI
 import StatisticsUI
 import NGWebUtils
 // MARK: Nicegram Imports
-import FeatTgUtils
 import NGAppCache
 import NGStrings
 import NGUI
@@ -617,11 +616,6 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
     var currentSpeechHolder: SpeechSynthesizerHolder?
     
     var powerSavingMonitoringDisposable: Disposable?
-    
-    // MARK: Nicegram
-    private var nicegramCloseCallback: (() -> Void)?
-    private var nicegramCloseCallbackDisposable: Disposable?
-    //
     
     var avatarNode: ChatAvatarNavigationNode?
     var storyStats: PeerStoryStats?
@@ -7059,11 +7053,6 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                 return state.updatedInterfaceState({ $0.withUpdatedSelectedMessages(messageIds) })
             })
         }
-        
-        // MARK: Nicegram
-        self.nicegramCloseCallback = TgChatCloseCallback.callback
-        TgChatCloseCallback.callback = nil
-        //
     }
     
     required public init(coder aDecoder: NSCoder) {
@@ -7167,9 +7156,6 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
             self.recorderDataDisposable.dispose()
             self.displaySendWhenOnlineTipDisposable.dispose()
             self.networkSpeedEventsDisposable?.dispose()
-            // MARK: Nicegram
-            self.nicegramCloseCallbackDisposable?.dispose()
-            //
         }
         deallocate()
     }
@@ -7696,19 +7682,6 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
             }
             self.hasBrowserOrAppInFront.set(hasBrowserOrWebAppInFront)
         }
-        
-        // MARK: Nicegram
-        self.nicegramCloseCallbackDisposable = self.effectiveNavigationController?.viewControllersSignal.start(
-            next: { [weak self] controllers in
-                guard let self else { return }
-                
-                if !controllers.contains(where: { $0 === self }) {
-                    self.nicegramCloseCallback?()
-                    self.nicegramCloseCallback = nil
-                }
-            }
-        )
-        //
     }
     
     var returnInputViewFocus = false
