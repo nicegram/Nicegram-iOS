@@ -395,7 +395,19 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         let buildConfig = BuildConfig(baseAppBundleId: baseAppBundleId)
         self.buildConfig = buildConfig
         let signatureDict = BuildConfigExtra.signatureDict()
+
+         // MARK: Nicegram, moved 'isDebugConfiguration' definition here
+        var isDebugConfiguration = false
+        #if DEBUG
+        isDebugConfiguration = true
+        #endif
         
+        if Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt" {
+            isDebugConfiguration = true
+        }
+        //
+        
+        let ngEnableLogging = isDebugConfiguration
         NGEntryPoint.onAppLaunch(
             env: Env(
                 apiBaseUrl: URL(string: NGENV.ng_api_url)!,
@@ -433,7 +445,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 env: {
                     .init(
                         appUrlScheme: buildConfig.appSpecificUrlScheme,
-                        enableLogging: false,
+                        enableLogging: ngEnableLogging,
                         keychainGroupIdentifier: NGENV.wallet.keychainGroupIdentifier,
                         nicegramApiBaseUrl: URL(string: NGENV.ng_api_url)!
                             .appendingPathComponent("v7/"),
@@ -679,15 +691,8 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             self.mainWindow?.presentNative(UIAlertController(title: nil, message: "Error 2", preferredStyle: .alert))
             return true
         }
-        
-        var isDebugConfiguration = false
-        #if DEBUG
-        isDebugConfiguration = true
-        #endif
-        
-        if Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt" {
-            isDebugConfiguration = true
-        }
+
+        // MARK: Nicegram, moved 'isDebugConfiguration' definition up
         
         if isDebugConfiguration || buildConfig.isInternalBuild {
             LoggingSettings.defaultSettings = LoggingSettings(logToFile: true, logToConsole: false, redactSensitiveData: true)

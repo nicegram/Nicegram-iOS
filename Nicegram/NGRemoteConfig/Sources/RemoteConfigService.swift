@@ -11,6 +11,7 @@ public class RemoteConfigServiceImpl {
     
     //  MARK: - Dependencies
     
+    private let remoteConfigFetchTask: RemoteConfigFetchTask
     private let firebaseRemoteConfig: FirebaseRemoteConfigService
     
     //  MARK: - Logic
@@ -35,34 +36,16 @@ public class RemoteConfigServiceImpl {
     
     private init(firebaseRemoteConfig: FirebaseRemoteConfigService) {
         self.firebaseRemoteConfig = firebaseRemoteConfig
-    }
-    
-    //  MARK: - Private Functions
-
-    @available(iOS 13.0, *)
-    private func startFetchTaskIfNeeded() -> Task<Void, Never> {
-        if let task = task as? Task<Void, Never> {
-            return task
-        }
-        
-        let task = Task {
-            await withCheckedContinuation { continuation in
-                firebaseRemoteConfig.prefetch {
-                    continuation.resume()
-                }
-            }
-        }
-        
-        self.task = task
-        
-        return task
+        self.remoteConfigFetchTask = .init(firebaseRemoteConfig: firebaseRemoteConfig)
     }
 }
 
 extension RemoteConfigServiceImpl: RemoteConfigService {
     public func prefetch() {
         if #available(iOS 13.0, *) {
-            _ = startFetchTaskIfNeeded()
+            Task {
+                _ = await remoteConfigFetchTask.startIfNeeded()
+            }
         } else {
             firebaseRemoteConfig.prefetch(completion: {})
         }
@@ -102,8 +85,36 @@ extension RemoteConfigServiceImpl: RemoteConfig {
     
     @available(iOS 13.0, *)
     public func asyncGet<Payload>(_ variable: RemoteVariable<Payload>) async -> Payload {
-        let task = startFetchTaskIfNeeded()
+        let task = await remoteConfigFetchTask.startIfNeeded()
         _ = await task.value
         return self.get(variable)
+    }
+}
+
+private actor RemoteConfigFetchTask {
+    private let firebaseRemoteConfig: FirebaseRemoteConfigService
+
+    private var task: Any?
+
+    init(firebaseRemoteConfig: FirebaseRemoteConfigService) {
+        self.firebaseRemoteConfig = firebaseRemoteConfig
+    }
+    
+    func startIfNeeded() -> Task<Void, Never> {
+        if let task = task as? Task<Void, Never> {
+            return task
+        }
+        
+        let task = Task {
+            await withCheckedContinuation { continuation in
+                firebaseRemoteConfig.prefetch {
+                    continuation.resume()
+                }
+            }
+        }
+        
+        self.task = task
+        
+        return task
     }
 }
