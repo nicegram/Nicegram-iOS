@@ -480,5 +480,6 @@ public protocol PresentationCallManager: AnyObject {
     func startRecordCall(with completion: @escaping () -> Void)
     func stopRecordCall()
     func setupPeer(peer: EnginePeer)
+    func showRecordSaveToast()
 //
 }
