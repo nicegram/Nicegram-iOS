@@ -1,4 +1,5 @@
 import FeatAssistant
+import FeatAttentionEconomy
 import Foundation
 import AccountContext
 import Display
@@ -21,6 +22,7 @@ import NGUI
 import TelegramPresentationData
 import UIKit
 
+@MainActor
 class NGDeeplinkHandler {
     
     //  MARK: - Dependencies
@@ -60,12 +62,14 @@ class NGDeeplinkHandler {
             return handleAssistant(url: url)
         case "assistant-auth":
             return handleLoginToAssistant(url: url)
+        case "attention-economy":
+            if #available(iOS 15.0, *) {
+                AttPresenter().present()
+            }
+            return true
         case "avatarGenerator":
             if #available(iOS 15.0, *) {
-                Task { @MainActor in
-                    guard let topController = UIApplication.topViewController else {
-                        return
-                    }
+                if let topController = UIApplication.topViewController {
                     AvatarGeneratorUIHelper().navigateToGenerationFlow(
                         from: topController
                     )
@@ -74,9 +78,7 @@ class NGDeeplinkHandler {
             return true
         case "avatarMyGenerations":
             if #available(iOS 15.0, *) {
-                Task { @MainActor in
-                    AvatarGeneratorUIHelper().navigateToGenerator()
-                }
+                AvatarGeneratorUIHelper().navigateToGenerator()
             }
             return true    
         case "generateImage":
@@ -87,26 +89,16 @@ class NGDeeplinkHandler {
             return handleOnboarding(url: url)
         case "profit":
             if #available(iOS 15.0, *) {
-                Task { @MainActor in
-                    RewardsUITgHelper.showRewards()
-                }   
+                RewardsUITgHelper.showRewards()
             }
             return true
         case "specialOffer":
-            if #available(iOS 13.0, *) {
-                return handleSpecialOffer(url: url)
-            } else {
-                return false
-            }
+            return handleSpecialOffer(url: url)
         case "refferaldraw":
             if #available(iOS 15.0, *) {
-                Task { @MainActor in
-                    AssistantTgHelper.showReferralDrawFromDeeplink()
-                }
-                return true
-            } else {
-                return false
+                AssistantTgHelper.showReferralDrawFromDeeplink()
             }
+            return true
         case "task":
             if #available(iOS 15.0, *) {
                 let taskDeeplinkHandler = TasksContainer.shared.taskDeeplinkHandler()
@@ -115,9 +107,7 @@ class NGDeeplinkHandler {
             return true
         case "tgAuthSuccess":
             if #available(iOS 15.0, *) {
-                Task { @MainActor in
-                    TgAuthSuccessPresenter().presentIfNeeded()
-                }
+                TgAuthSuccessPresenter().presentIfNeeded()
             }
             return true
         default:
@@ -131,37 +121,23 @@ class NGDeeplinkHandler {
 
 private extension NGDeeplinkHandler {
     func handleAiAuth(url: URL) -> Bool {
-        if #available(iOS 13.0, *) {
-            Task { @MainActor in
-                AiChatUITgHelper.routeToAiOnboarding()
-            }
-            return true
-        }
-        return false
+        AiChatUITgHelper.routeToAiOnboarding()
+        return true
     }
     
     func handleAi(url: URL) -> Bool {
-        if #available(iOS 13.0, *) {
-            Task { @MainActor in
-                AiChatUITgHelper.tryRouteToAiChatBotFromDeeplink()
-            }
-            return true
-        }
-        return false
+        AiChatUITgHelper.tryRouteToAiChatBotFromDeeplink()
+        return true
     }
     
     func handleGenerateImage(url: URL) -> Bool {
         if #available(iOS 15.0, *) {
-            Task { @MainActor in
-                ImagesHubUITgHelper.showFeed(
-                    source: .deeplink,
-                    forceGeneration: true
-                )
-            }
-            return true
-        } else {
-            return false
+            ImagesHubUITgHelper.showFeed(
+                source: .deeplink,
+                forceGeneration: true
+            )
         }
+        return true
     }
     
     func handleNicegramPremium(url: URL) -> Bool {
@@ -173,15 +149,11 @@ private extension NGDeeplinkHandler {
     
     func handleAssistant(url: URL) -> Bool {
         if #available(iOS 15.0, *) {
-            Task { @MainActor in
-                AssistantTgHelper.routeToAssistant(
-                    source: .deeplink
-                )
-            }
-            return true
-        } else {
-            return false
+            AssistantTgHelper.routeToAssistant(
+                source: .deeplink
+            )
         }
+        return true
     }
     
     func handleOnboarding(url: URL) -> Bool {
@@ -210,21 +182,16 @@ private extension NGDeeplinkHandler {
             return false
         }
         
-        Task { @MainActor in
-            LoginViewPresenter().present(
-                feature: LoginFeature()
-            )
-        }
+        LoginViewPresenter().present(
+            feature: LoginFeature()
+        )
         return true
     }
     
-    @available(iOS 13.0, *)
     func handleSpecialOffer(url: URL) -> Bool {
-        Task { @MainActor in
-            SpecialOfferTgHelper.showSpecialOfferFromDeeplink(
-                id: url.queryItems["id"]
-            )
-        }
+        SpecialOfferTgHelper.showSpecialOfferFromDeeplink(
+            id: url.queryItems["id"]
+        )
         return true
     }
 }

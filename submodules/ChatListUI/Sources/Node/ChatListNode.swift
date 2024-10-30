@@ -1276,6 +1276,11 @@ public final class ChatListNode: ListView {
     private var dequeuedInitialTransitionOnLayout = false
     private var enqueuedTransition: (ChatListNodeListViewTransition, () -> Void)?
     
+    // MARK: Nicegram PinnedChats
+    public let isOnScreen = CurrentValueSubject<Bool, Never>(false)
+    private var cancellables = Set<AnyCancellable>()
+    //
+    
     public private(set) var currentState: ChatListNodeState
     private let statePromise: ValuePromise<ChatListNodeState>
     public var state: Signal<ChatListNodeState, NoError> {
@@ -2254,16 +2259,24 @@ public final class ChatListNode: ListView {
         }
         
         // MARK: Nicegram PinnedChats
-        let nicegramItemsSignal: Signal<[PinnedChatToDisplay], NoError>
-        if #available(iOS 13.0, *) {
-            nicegramItemsSignal = PinnedChatsContainer.shared.getPinnedChatsToDisplayUseCase()
-                .publisher()
-                .map { $0.reversed() }
-                .toSignal()
-                .skipError()
-        } else {
-            nicegramItemsSignal = .single([])
-        }
+        let nicegramItems = CurrentValueSubject<[PinnedChatToDisplay], Never>([])
+        let nicegramItemsSignal = nicegramItems
+            .eraseToAnyPublisher()
+            .toSignal()
+            .skipError()
+        
+        PinnedChatsContainer.shared.getPinnedChatsToDisplayUseCase()
+            .publisher()
+            .map { $0.reversed() }
+            .combineLatestThreadSafe(
+                isOnScreen.eraseToAnyPublisher()
+            )
+            .sink { items, isOnScreen in
+                if isOnScreen {
+                    nicegramItems.value = items
+                }
+            }
+            .store(in: &cancellables)
         //
         
         // MARK: Nicegram HiddenChats
@@ -2353,10 +2366,6 @@ public final class ChatListNode: ListView {
             }
             if case .forum(_) = location {
                 nicegramItems = []
-            }
-            
-            if #available(iOS 13.0, *) {
-                PinnedChatsUI.trackChatsView(nicegramItems.map(\.chat))
             }
             //
             
