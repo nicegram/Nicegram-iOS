@@ -4522,7 +4522,6 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                             attClaimAnimationView = current
                         } else {
                             attClaimAnimationView = AttClaimAnimationView()
-                            attClaimAnimationView.set(coinOpacity: 0)
                             strongSelf.attClaimAnimationView = attClaimAnimationView
                             strongSelf.mainContentContainerNode.view.addSubview(attClaimAnimationView)
                         }

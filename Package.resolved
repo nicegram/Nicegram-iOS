@@ -114,7 +114,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "feat/attention-economy",
-        "revision" : "5b6dcaf165e2becab8fdfc82a7fc19e5fc956f87"
+        "revision" : "36b137160dc62a512c5d59f005774a7a29d6aff8"
       }
     },
     {
@@ -338,8 +338,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "8c605ed267dec7b77415249a4e238bdc95d84c72",
-        "version" : "4.1.14"
+        "revision" : "f6d8a10d749dd70fbd08bb098db550810bca34f5",
+        "version" : "4.1.15"
       }
     },
     {
