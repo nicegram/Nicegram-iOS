@@ -2,7 +2,8 @@
 
 /*Common*/
 "Nicegram.PrivacyPolicy" = "سياسة الخصوصية";
-"Nicegram.EULA" = "اتفاقية ترخيص المستخدم النهائي\n";
+"Nicegram.EULA" = "اتفاقية ترخيص المستخدم النهائي
+";
 
 /*ChatFilter*/
 "ChatFilter.Bots" = "بوتات";
@@ -19,14 +20,14 @@
 "NiceFeatures.Tabs.ShowContacts" = "إظهار تبويب جهات الاتصال";
 "NiceFeatures.ChatScreen.Header" = "شاشة الدردشة";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "الملصقات المتحركة";
-"NiceFeatures.useBackCam" = "استخدام الكاميرا الخلفية (فيديوهات مستديرة)";
+"NiceFeatures.useBackCam" = "استخدام الكاميرا الخلفية (فيديوهات دائرية)";
 
 "NiceFeatures.Folders.Header" = "المجلدات";
 "NiceFeatures.Account.Header" = "إعدادات الحساب";
 "NiceFeatures.Folders.TgFolders" = "المجلدات في الأسفل";
 "NiceFeatures.Folders.TgFolders.Notice" = "قائمة مجلدات بأسلوب iOS";
 
-"NiceFeatures.RoundVideos.Header" = "فيديوهات مستديرة";
+"NiceFeatures.RoundVideos.Header" = "فيديوهات دائرية";
 "NiceFeatures.RoundVideos.UseRearCamera" = "البدء بالكاميرا الخلفية";
 
 "NiceFeatures.InstantLock" = "فوراً ";
@@ -38,9 +39,7 @@
 "Chat.OpenPin" = "عرض المثبت";
 "ChatFilter.Admin" = "مدير";
 "NiceFeatures.Notifications.Fix" = "تعطيل الأشعارات غير المرغوب فيها";
-"NiceFeatures.Notifications.FixNotice" = "مفيد إذا حصلت على إشعارات من دردشات صامتة.\nالرد من الإشعارات، تسميات الحساب، ومعاينات الوسائط لن تكون متاحة.";
 "NiceFeatures.Filters.Header" = "الفلاتر (التبويبات)";
-"NiceFeatures.Filters.Notice" = "حدد عدد التبويبات المخصصة.\nأنقر مطولًا على التبويب لتغيير الفلتر.";
 "NiceFeatures.Filters.ShowBadge" = "إظهار الشارات (الفلاتر)";
 "NiceFeatures.UseClassicInfoUi" = "استخدام واجهة معلومات الدردشة الكلاسيكية";
 
@@ -60,7 +59,6 @@
 "Folder.Create" = "إنشاء مجلد...";
 "Folder.Create.Name" = "إسم المجلد";
 "Folder.Create.Placeholder" = "المجلد...";
-"Folder.LimitExceeded" = "عفوًا، لا يمكنك إنشاء أكثر من 3 مجلدات مخصصة.\nالمزيد من المجلدات متوفرة في Premium.";
 "NiceFeatures.HideNumber" = "إخفاء الرقم من الإعدادات";
 
 /*NGWeb*/
@@ -88,10 +86,8 @@
 "Common.SupportChatUsername" = "nicegramchat";
 "Common.FAQUrl" = "https://nicegram.app/faq/";
 "Common.FAQ.Button" = "الأسئلة الشاسعة حول Nicegram";
-"Common.FAQ.Intro" = "يرجى أن يكون في علمك بأن دعم Nicegram يتم بواسطة المطور والمجتمع فقط.\n\nأولًا، ألقى نظرة على الأسئلة الشاسعة بخصوص Nicegram يتضمن نصائح مهمة في استكشاف الأخطاء وإجابات على معظم الأسئلة.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "ميزات فريدة لا يمكنك رفضها!";
-"IAP.Premium.Features" = "مترجم الرسالة السريع\n\nتذكر المجلد المحدد عند الخروج";
 "IAP.Premium.Activated" = "تم تفعيل Premium!";
 "IAP.Common.Restore" = "استعادة عمليات الشراء";
 "IAP.Common.CantPay" = "عفوًا، ولكنك لا تستطيع القيام بعمليات الشراء بسبب قيود في جهازك أو حسابك.";
@@ -102,6 +98,7 @@
 "Premium.OnetapTranslate" = "زر الترجمة الفوري";
 "Premium.IgnoreTranslate.Title" = "اللغات المتجاهلة";
 "Premium.IgnoreTranslate.Header" = "زر ترجمة الفوري سوف يعطّل للغات المختارة ادناه.";
+"Premium.RecordAllCalls" = "تسجيل جميع المكالمات";
 
 /*Manage Filters*/
 "ManageFilters.Title" = "إدارة التبويبات";
@@ -134,7 +131,6 @@
 "NiceFeatures.BackupSettings.Done" = "تم إرسال النسح الاحتياطي إلى الرسائل المحفوظة";
 "NiceFeatures.BackupSettings.Error" = "خطا في إنشاء نسخة الاحتياط";
 
-"NiceFeatures.RestoreSettings.Confirm" = "هل أنت متأكد من أنك تودّ استعادة المجلدات والإعدادت من الملف؟\n⚠️سيتم تجاهل البيانات الحالية";
 "NiceFeatures.RestoreSettings.Done" = "تمت استعادة المجلدات والإعدادات بنجاح";
 "NiceFeatures.RestoreSettings.Error" = "خطأ في استعادة الإعدادت. قد يكون الملف تالفًا";
 
@@ -145,8 +141,8 @@
 "Gmod" = "وضع المعاينة";
 "Gmod.Enable" = "تمكين وضع المعاينة؟";
 "Gmod.Disable" = "تعطيل وضع المعاينة؟";
-"Gmod.Notice" = "سيتم إخفاء حالة اتصالك بالأنترنت عن الجميع عن طريق إعدادت الخصوصية في تيليجرام.\nسيُظهر التطبيق تحذيرًا إذا كنت تدخل إلى محادثة خاصة.\nقد يتم الكشف عن اتصالك بالأنترنيت إذا قمت بإرسال أو كتابة أي رسالة.";
 
+"ShowNicegramButtonInChat" = "عرض زر Nicegram في الدردشة";
 "SendWithKb" = "إرسال مع زر «إدخال»";
 "NiceFeatures.ShowGmodIcon" = "إظهار أيقونة وضع المعاينة";
 "Gmod.OpenChatQ" = "فتح الدردشة؟";
@@ -188,21 +184,6 @@
 "DoubleBottom.Enabled.OK" = "موافق";
 "DoubleBottom.Passcode.Error" = "يرجى تعيين رمز مرور مختلف عن الذي تستخدمه في رمز مرور القفل";
 
-/*Onboarding*/
-"NicegramOnboarding.Continue" = "الاستمرار";
-"NicegramOnboarding.1.Title" = "العميل رقم 1 لتيليجرام ماسنجر";
-"NicegramOnboarding.1.Desc" = "انضم إلى أكثر من 2 مليون مستخدم لنايسجرام واحصل على إتاحة الوصول إلى أقوى عميل تيليجرام للأعمال التجارية.";
-"NicegramOnboarding.2.Title" = "تجربة مراسلة متقدمة";
-"NicegramOnboarding.2.Desc" = "قم بتسريع اتصالك بميزات فريدة مثل المترجم المُضمن، وتحويل الكلام إلى نصوص، وإعادة توجيه الرسائل دون تحديد المُتحدث، والحفظ السريع في التفضيلات.";
-"NicegramOnboarding.3.Title" = "ملف تعريف مستخدم مُمتد";
-"NicegramOnboarding.3.Desc" = "أنشئ أكبر عدد تريده من حسابات تيليجرام مجانًا تمامًا، بالإضافة إلى عرض ملف تعريف مستخدم متقدم مع المعرف، وتاريخ التسجيل، والروابط القابلة للنقر.";
-"NicegramOnboarding.4.Title" = "ملحقات الأعمال الفريدة";
-"NicegramOnboarding.4.Desc" = "استفد من الابتكارات من فريق نايسجرام واحصل على eSIM مع إمكانية الوصول إلى الإنترنت في 133 دولة. كما يُمكنك تسجيل حسابات تيليجرام الجديدة على رقم هاتف خطة بيانات eSIM.";
-"NicegramOnboarding.5.Title" = "برنامج المراسلة الأكثر أمانًا";
-"NicegramOnboarding.5.Desc" = "برنامج مراسلة قوي بتشفير قوي، ومكالمات صوتية ومرئية جماعية، وقنوات عامة، ومجموعات وبرمجيات بوت، وتخزين سحابي غير محدود للمحادثات، ومشاركة الوسائط والمستندات.";
-"NicegramOnboarding.6.Title" = "تعرف على ليلي";
-"NicegramOnboarding.6.Desc" = "مساعد شخصي للتحدث مع الذكاء الاصطناعي وتبسيط حياتك!";
-
 /*Rounded Videos*/
 "RoundedVideos.ButtonTitle" = "أرسل كفيديو دائري";
 "RoundedVideos.MoreButtonTooltip" = "حول الفيديوهات المربعة لترسل كدوائر بنقرة واحدة.";
@@ -222,6 +203,19 @@
 
 /*Data Sharing*/
 "NicegramSettings.ShareBotsToggle" = "مشاركة معلومات البوتات";
-"NicegramSettings.ShareChannelsToggle" = "مشاركة معلومات القناة";
+"NicegramSettings.ShareChannelsToggle" = "شارك معلومات القناة";
 "NicegramSettings.ShareStickersToggle" = "مشاركة معلومات الملصقات";
 "NicegramSettings.ShareData.Note" = "ساهم في أكثر ويكيبيديا شمولية لقنوات ومجموعات تليغرام من خلال إرسال معلومات القناة والرابط تلقائيًا إلى قاعدة بياناتنا. نحن لا نربط ملفك الشخصي في تليغرام والقناة ولا نشارك بياناتك الشخصية.";
+
+/*Call Record*/
+"NicegramCallRecord.Title" = "تسجيل";
+"NicegramCallRecord.StopAlertTitle" = "إيقاف التسجيل";
+"NicegramCallRecord.StopAlertDescription" = "هل تريد إيقاف تسجيل هذه المكالمة؟";
+"NicegramCallRecord.StopAlertButtonStop" = "توقف";
+"NicegramCallRecord.StopAlertButtonCancel" = "إلغاء الأمر";
+"NicegramCallRecord.SavedMessage" = "تم حفظ المكالمة المسجلة في **الرسائل المحفوظة**.";
+
+/*Feed*/
+"NicegramFeed.Title" = "فيد";
+"NicegramFeed.Add" = "أضف إلى الخلاصة";
+"NicegramFeed.Remove" = "احذف من الخلاصة";

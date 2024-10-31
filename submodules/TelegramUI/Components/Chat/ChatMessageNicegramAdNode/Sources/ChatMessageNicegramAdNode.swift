@@ -44,16 +44,14 @@ class ChatMessageNicegramAdNode: ListViewItemNode {
         
         self.addSubnode(bannerNode)
         
-        bannerView.share = { [weak self] image, text in
+        bannerView.share = { @MainActor [weak self] image, text in
             guard let item = self?.item else { return }
-            Task { @MainActor in
-                let shareController = await shareController(
-                    image: image,
-                    text: text,
-                    context: item.context
-                )
-                item.controllerInteraction.presentController(shareController, nil)
-            }
+            let shareController = await shareController(
+                image: image,
+                text: text,
+                context: item.context
+            )
+            item.controllerInteraction.presentController(shareController, nil)
         }
     }
     

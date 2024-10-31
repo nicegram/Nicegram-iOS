@@ -263,6 +263,9 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         if showCallsTab {
             controllers.append(callListController)
         }
+
+        controllers.append(chatListController)
+        
 // MARK: Nicegram NCG-6373 Feed tab
         let feedController = FeedController(
             context: self.context
@@ -273,7 +276,6 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         }
         self.feedController = feedController
 //
-        controllers.append(chatListController)
         
         // MARK: Nicegram Assistant
         if #available(iOS 15.0, *) {
@@ -355,10 +357,16 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                 
         // MARK: Nicegram Assistant
         // calculate chatListControllerIndex (instead of (controllers.count - 2))
-        let chatListControllerIndex = controllers.firstIndex {
+        var selectedControllerIndex = controllers.firstIndex {
             $0 is ChatListController
         } ?? 0
-        tabBarController.setControllers(controllers, selectedIndex: restoreSettignsController != nil ? (controllers.count - 1) : chatListControllerIndex)
+        if NGSettings.showFeedTab &&
+            NGSettings.feedPeerId != NGSettings.zeroFeedPeerId {
+            selectedControllerIndex = controllers.firstIndex {
+                $0 is FeedController
+            } ?? 0
+        }
+        tabBarController.setControllers(controllers, selectedIndex: restoreSettignsController != nil ? (controllers.count - 1) : selectedControllerIndex)
         
         self.contactsController = contactsController
         self.callListController = callListController
@@ -381,14 +389,13 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         if showCallsTab {
             controllers.append(self.callListController!)
         }
+        controllers.append(self.chatListController!)
 // MARK: Nicegram NCG-6373 Feed tab
         if NGSettings.showFeedTab &&
             NGSettings.feedPeerId != NGSettings.zeroFeedPeerId {
             controllers.append(self.feedController!)
         }
 //
-        controllers.append(self.chatListController!)
-        
         // MARK: Nicegram Assistant
         if let assistantController,
            NGSettings.showNicegramTab {

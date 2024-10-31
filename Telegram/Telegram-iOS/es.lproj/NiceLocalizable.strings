@@ -38,9 +38,7 @@
 "Chat.OpenPin" = "Mostrar anclado";
 "ChatFilter.Admin" = "Administrador";
 "NiceFeatures.Notifications.Fix" = "Desactivar notificaciones no deseadas";
-"NiceFeatures.Notifications.FixNotice" = "Útil si recibes notificaciones de chats silenciados.\nResponder desde la notificación, etiquetas de cuenta y vistas previas de multimedia no estarán disponibles.";
 "NiceFeatures.Filters.Header" = "FILTROS (PESTAÑAS)";
-"NiceFeatures.Filters.Notice" = "Selecciona el número de pestañas personalizadas. \nMantén pulsado una pestaña para cambiar el filtro.";
 "NiceFeatures.Filters.ShowBadge" = "Mostrar globos (Filtros)";
 "NiceFeatures.UseClassicInfoUi" = "Usar interfaz clásica de perfil";
 
@@ -60,7 +58,6 @@
 "Folder.Create" = "Crear carpeta…";
 "Folder.Create.Name" = "Nombre de la carpeta";
 "Folder.Create.Placeholder" = "Carpeta…";
-"Folder.LimitExceeded" = "Lo siento pero no se puede crear más que 3 archivos personalizados.\nHay más archivos disponibles en Premium.";
 "NiceFeatures.HideNumber" = "Ocultar número en Ajustes";
 
 /*NGWeb*/
@@ -88,10 +85,8 @@
 "Common.SupportChatUsername" = "nicegram_es";
 "Common.FAQUrl" = "https://nicegram.app/faq/";
 "Common.FAQ.Button" = "Preguntas frecuentes de Nicegram";
-"Common.FAQ.Intro" = "Ten en cuenta que el soporte de Nicegram sólo lo realiza un desarrollador y una comunidad.\n\nPrimero, echa un vistazo a las preguntas frecuentes de Nicegram: Tiene consejos importantes para la solución de la mayoría de problemas.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "¡Características únicas que no puedes rechazar!";
-"IAP.Premium.Features" = "Traductor rápido de mensajes\n\nRecordar la carpeta seleccionada a la salida";
 "IAP.Premium.Activated" = "¡Premium activado!";
 "IAP.Common.Restore" = "Restaurar compras";
 "IAP.Common.CantPay" = "Lo sentimos, pero no se puede realizar compras debido a tu dispositivo o las restricciones de tu cuenta.";
@@ -102,6 +97,7 @@
 "Premium.OnetapTranslate" = "Botón de traducción rápida";
 "Premium.IgnoreTranslate.Title" = "Idiomas ignorados";
 "Premium.IgnoreTranslate.Header" = "El botón de traducción rápida será DESACTIVADO para los idiomas que elijas debajo.";
+"Premium.RecordAllCalls" = "Grabar todas las llamadas";
 
 /*Manage Filters*/
 "ManageFilters.Title" = "Administrar pestañas";
@@ -134,7 +130,6 @@
 "NiceFeatures.BackupSettings.Done" = "Copia de seguridad hecha en Mensajes guardados";
 "NiceFeatures.BackupSettings.Error" = "Error al crear la copia de seguridad";
 
-"NiceFeatures.RestoreSettings.Confirm" = "¿Quieres restaurar las carpetas y ajustes desde un archivo?\n⚠️ Sobreescribirá los datos actuales";
 "NiceFeatures.RestoreSettings.Done" = "Carpetas y ajustes restaurados con éxito";
 "NiceFeatures.RestoreSettings.Error" = "Error al restaurar los ajustes. El archivo podría estar corrupto";
 
@@ -145,8 +140,8 @@
 "Gmod" = "Modo de vista previa";
 "Gmod.Enable" = "¿Activar modo vista previa?";
 "Gmod.Disable" = "¿Desactivar modo vista previa?";
-"Gmod.Notice" = "Tu estado en línea estará oculto para todos por la configuración de privacidad de Telegram.\nLa aplicación mostrará una advertencia si estás entrando en un chat privado.\nTu estado en línea puede ser revelado si envías o escribes CUALQUIER mensaje.";
 
+"ShowNicegramButtonInChat" = "Mostrar botón Nicegram en el chat";
 "SendWithKb" = "Envía con el botón «Intro»";
 "NiceFeatures.ShowGmodIcon" = "Mostrar icono de modo vista previa";
 "Gmod.OpenChatQ" = "¿Abrir chat?";
@@ -188,21 +183,6 @@
 "DoubleBottom.Enabled.OK" = "Vale";
 "DoubleBottom.Passcode.Error" = "Establezca otro código de acceso diferente del que usa para «Passcode Lock»";
 
-/*Onboarding*/
-"NicegramOnboarding.Continue" = "Continuar";
-"NicegramOnboarding.1.Title" = "Cliente nº 1 de Telegram Messenger";
-"NicegramOnboarding.1.Desc" = "Únase  a más de 2 millones de usuarios de Nicegram y acceda al cliente de Telegram más potente y seguro para empresas.";
-"NicegramOnboarding.2.Title" = "Experiencia de mensajería avanzada";
-"NicegramOnboarding.2.Desc" = "Agilice sus comunicaciones con funciones únicas como el traductor integrado, el sistema de voz a texto, el reenvío de mensajes sin indicar el autor y el guardado rápido en favoritos.";
-"NicegramOnboarding.3.Title" = "Perfil de usuario ampliado";
-"NicegramOnboarding.3.Desc" = "Cree tantas cuentas de Telegram como necesite de forma totalmente gratuita, y vea un perfil de usuario avanzado con ID, fecha de registro y enlaces clicables.";
-"NicegramOnboarding.4.Title" = "Extensiones comerciales únicas";
-"NicegramOnboarding.4.Desc" = "Aproveche las innovaciones del equipo de Nicegram y obtenga una eSIM con acceso a Internet en 133 países. También puede registrar nuevas cuentas de Telegram en el número de teléfono del plan de datos eSIM.";
-"NicegramOnboarding.5.Title" = "El servicio de mensajería más seguro";
-"NicegramOnboarding.5.Desc" = "Servicio de mensajería seguro con cifrado robusto, llamadas de audio y vídeo grupales, canales públicos, grupos y \"bots\", almacenamiento ilimitado en la nube para chats, multimedia y documentos compartidos.";
-"NicegramOnboarding.6.Title" = "Conoce a Lily";
-"NicegramOnboarding.6.Desc" = "¡Tu chatbot de IA - el asistente personal diseñado para simplificar tu vida!";
-
 /*Rounded Videos*/
 "RoundedVideos.ButtonTitle" = "Enviar como Vídeo Redondeado";
 "RoundedVideos.MoreButtonTooltip" = "Convierte videos cuadrados en círculos para enviar con un solo toque.";
@@ -222,6 +202,19 @@
 
 /*Data Sharing*/
 "NicegramSettings.ShareBotsToggle" = "Compartir información de bots";
-"NicegramSettings.ShareChannelsToggle" = "Compartir información de canales";
+"NicegramSettings.ShareChannelsToggle" = "Compartir información del canal";
 "NicegramSettings.ShareStickersToggle" = "Compartir información de stickers";
 "NicegramSettings.ShareData.Note" = "Contribuye a la wikipedia más completa de canales y grupos de Telegram enviando automáticamente información y enlaces de canales a nuestra base de datos. No conectamos tu perfil de telegram con el canal y no compartimos tus datos personales.";
+
+/*Call Record*/
+"NicegramCallRecord.Title" = "grabar";
+"NicegramCallRecord.StopAlertTitle" = "Detener grabación";
+"NicegramCallRecord.StopAlertDescription" = "¿Quieres detener la grabación de esta llamada?";
+"NicegramCallRecord.StopAlertButtonStop" = "Detener";
+"NicegramCallRecord.StopAlertButtonCancel" = "Cancelar";
+"NicegramCallRecord.SavedMessage" = "Llamada grabada guardada en **Mensajes Guardados**.";
+
+/*Feed*/
+"NicegramFeed.Title" = "Feed";
+"NicegramFeed.Add" = "Añadir al feed";
+"NicegramFeed.Remove" = "Eliminar del feed";

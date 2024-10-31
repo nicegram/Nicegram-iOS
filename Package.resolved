@@ -114,7 +114,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "feat/attention-economy",
-        "revision" : "4308f026a3b0504f9ff9408359677a7014ec6990"
+        "revision" : "5b6dcaf165e2becab8fdfc82a7fc19e5fc956f87"
       }
     },
     {
