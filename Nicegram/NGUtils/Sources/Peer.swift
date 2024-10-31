@@ -14,3 +14,18 @@ public func extractPeerId(peer: Peer) -> Int64 {
     
     return Int64(idText) ?? peer.id.id._internalGetInt64Value()
 }
+
+public func getMembersCount(cachedPeerData: CachedPeerData?) -> Int? {
+    guard let cachedPeerData else {
+        return nil
+    }
+    
+    switch cachedPeerData {
+    case let channel as CachedChannelData:
+        return channel.participantsSummary.memberCount.flatMap(Int.init)
+    case let group as CachedGroupData:
+        return group.participants?.participants.count
+    default:
+        return nil
+    }
+}

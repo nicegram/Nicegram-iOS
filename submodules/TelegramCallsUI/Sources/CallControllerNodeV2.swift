@@ -168,7 +168,7 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
             let isCallRecord = !callScreenState.isCallRecord
             if isCallRecord {
                 self.sharedContext.callManager?.startRecordCall { [weak self] in
-                    self?.sharedContext.callManager?.showRecordSaveToast()
+                    self?.showRecordSaveToast()
                 }
                 self.updateCallRecordButton(with: isCallRecord)
             } else {
@@ -179,7 +179,7 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
         }
 
         self.sharedContext.callManager?.callCompletion = { [weak self] in
-            self?.sharedContext.callManager?.showRecordSaveToast()
+            self?.showRecordSaveToast()
         }
 // MARK: Nicegram NCG-5828 call recording, isCallRecord
         self.callScreenState = PrivateCallScreen.State(
@@ -783,6 +783,31 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
         callScreenState.isCallRecord = isCallRecord
         self.callScreenState = callScreenState
         self.update(transition: .animated(duration: 0.3, curve: .spring))
+    }
+    
+    private func showRecordSaveToast() {
+        guard let image = UIImage(bundleImageName: "RecordSave") else { return }
+
+        let content: UndoOverlayContent = .image(
+            image: image,
+            title: nil,
+            text: l("NicegramCallRecord.SavedMessage"),
+            round: true,
+            undoText: nil
+        )
+        
+        DispatchQueue.main.async {
+            let controller = UndoOverlayController(
+                presentationData: self.presentationData,
+                content: content,
+                elevatedLayout: false,
+                position: .top,
+                animateInAsReplacement: false,
+                action: { _ in return false }
+            )
+
+            self.sharedContext.mainWindow?.present(controller, on: .root)
+        }
     }
 //
 }

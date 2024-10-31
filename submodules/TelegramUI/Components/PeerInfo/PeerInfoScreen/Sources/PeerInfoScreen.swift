@@ -967,19 +967,19 @@ private func settingsItems(data: PeerInfoScreenData?, context: AccountContext, p
 
     // MARK: Nicegram AiChat
     if AiChatUITgHelper.isAiBotFeatureEnabled() {
-        items[.nicegram]!.append(PeerInfoScreenDisclosureItem(id: -1, text: AiChatUITgHelper.botName, icon: PresentationResourcesSettings.aiChatIcon, action: {
+        items[.nicegram]!.append(PeerInfoScreenDisclosureItem(id: -1, text: AiChatUITgHelper.botName, icon: PresentationResourcesSettings.ngAiChatIcon, action: {
                  interaction.openSettings(.nicegramAiChatBot)
         }))
     }
     //
     if !NGENV.premium_bundle.isEmpty {
-        items[.nicegram]!.append(PeerInfoScreenDisclosureItem(id: ngId, text: l("Premium.Title"), icon: PresentationResourcesSettings.premiumIcon, action: {
+        items[.nicegram]!.append(PeerInfoScreenDisclosureItem(id: ngId, text: l("Premium.Title"), icon: PresentationResourcesSettings.ngPremiumIcon, action: {
                  interaction.openSettings(.nicegramPremium)
         }))
         ngId += 1
     }
     
-    items[.nicegram]!.append(PeerInfoScreenDisclosureItem(id: ngId, text: l("AppName"), icon: PresentationResourcesSettings.nicegramIcon, action: {
+    items[.nicegram]!.append(PeerInfoScreenDisclosureItem(id: ngId, text: l("AppName"), icon: PresentationResourcesSettings.ngSettingsIcon, action: {
         interaction.openSettings(.nicegram)
     }))
     
@@ -987,7 +987,7 @@ private func settingsItems(data: PeerInfoScreenData?, context: AccountContext, p
     let getWalletAvailabilityUseCase = WalletContainer.shared.getWalletAvailabilityUseCase()
     if #available(iOS 15.0, *), getWalletAvailabilityUseCase() {
         items[.nicegramWallet]?.append(PeerInfoScreenHeaderItem(id: 0, text: "Multichain, Non-custodial"))
-        items[.nicegramWallet]!.append(PeerInfoScreenDisclosureItem(id: 1, text: "Nicegram Wallet", icon: PresentationResourcesSettings.nicegramIcon, action: {
+        items[.nicegramWallet]!.append(PeerInfoScreenDisclosureItem(id: 1, text: "Nicegram Wallet", icon: PresentationResourcesSettings.ngWalletIcon, action: {
             Task { @MainActor in
                 WalletEntryPoints.openHome()
             }

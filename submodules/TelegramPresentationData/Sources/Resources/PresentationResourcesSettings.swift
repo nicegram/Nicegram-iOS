@@ -65,9 +65,18 @@ private func renderIcon(name: String, scaleFactor: CGFloat = 1.0, backgroundColo
 
 public struct PresentationResourcesSettings {
     // MARK: Nicegram
-    public static let aiChatIcon = renderIcon(name: "ng.aichat.avatar")
-    public static let nicegramIcon = renderIcon(name: "logo-nicegram", backgroundColors: [.black], customSize: CGSize(width: 28, height: 28))
-    public static let premiumIcon = nicegramIcon
+    public static var ngAiChatIcon: UIImage? {
+        UIImage(bundleImageName: "ng-settings/ai-chatbot")
+    }
+    public static var ngPremiumIcon: UIImage? {
+        UIImage(bundleImageName: "ng-settings/premium")
+    }
+    public static var ngSettingsIcon: UIImage? {
+        UIImage(bundleImageName: "ng-settings/settings")
+    }
+    public static var ngWalletIcon: UIImage? {
+        UIImage(bundleImageName: "ng-settings/wallet")
+    }
     //
     
     public static let editProfile = renderIcon(name: "Settings/Menu/EditProfile")

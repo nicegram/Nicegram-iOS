@@ -54,6 +54,7 @@ import TooltipUI
 import StatisticsUI
 import NGWebUtils
 // MARK: Nicegram Imports
+import FeatTgUtils
 import NGAppCache
 import NGStrings
 import NGUI
@@ -617,6 +618,11 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
     
     var powerSavingMonitoringDisposable: Disposable?
     
+    // MARK: Nicegram
+    private var nicegramCloseCallback: (() -> Void)?
+    private var nicegramCloseCallbackDisposable: Disposable?
+    //
+    
     var avatarNode: ChatAvatarNavigationNode?
     var storyStats: PeerStoryStats?
     
@@ -651,7 +657,10 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
             self.chatDisplayNode.showListEmptyResults = self.showListEmptyResults
         }
     }
-    
+// MARK: Nicegram NCG-6373 Feed tab
+    let isFeed: Bool
+//
+// MARK: Nicegram NCG-6373 Feed tab, isFeed
     public init(
         context: AccountContext,
         chatLocation: ChatLocation,
@@ -666,8 +675,12 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
         chatListFilter: Int32? = nil,
         chatNavigationStack: [ChatNavigationStackItem] = [],
         customChatNavigationStack: [EnginePeer.Id]? = nil,
-        params: ChatControllerParams? = nil
+        params: ChatControllerParams? = nil,
+        isFeed: Bool = false
     ) {
+// MARK: Nicegram NCG-6373 Feed tab
+        self.isFeed = isFeed
+//
         let _ = ChatControllerCount.modify { value in
             return value + 1
         }
@@ -5869,8 +5882,8 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                                     return interfaceState
                                 }
                         })
-
-                        if case .standard(.default) = mode, let channel = renderedPeer?.chatMainPeer as? TelegramChannel, case .broadcast = channel.info {
+                        // MARK: Nicegram NCG-6373 Feed tab, !isFeed
+                        if case .standard(.default) = mode, let channel = renderedPeer?.chatMainPeer as? TelegramChannel, case .broadcast = channel.info, !isFeed {
                             var isRegularChat = false
                             if let subject = subject {
                                 if case .message = subject {
@@ -7053,6 +7066,11 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                 return state.updatedInterfaceState({ $0.withUpdatedSelectedMessages(messageIds) })
             })
         }
+        
+        // MARK: Nicegram
+        self.nicegramCloseCallback = TgChatCloseCallback.callback
+        TgChatCloseCallback.callback = nil
+        //
     }
     
     required public init(coder aDecoder: NSCoder) {
@@ -7156,6 +7174,9 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
             self.recorderDataDisposable.dispose()
             self.displaySendWhenOnlineTipDisposable.dispose()
             self.networkSpeedEventsDisposable?.dispose()
+            // MARK: Nicegram
+            self.nicegramCloseCallbackDisposable?.dispose()
+            //
         }
         deallocate()
     }
@@ -7682,6 +7703,19 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
             }
             self.hasBrowserOrAppInFront.set(hasBrowserOrWebAppInFront)
         }
+        
+        // MARK: Nicegram
+        self.nicegramCloseCallbackDisposable = self.effectiveNavigationController?.viewControllersSignal.start(
+            next: { [weak self] controllers in
+                guard let self else { return }
+                
+                if !controllers.contains(where: { $0 === self }) {
+                    self.nicegramCloseCallback?()
+                    self.nicegramCloseCallback = nil
+                }
+            }
+        )
+        //
     }
     
     var returnInputViewFocus = false

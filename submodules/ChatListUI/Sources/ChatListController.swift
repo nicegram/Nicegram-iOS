@@ -2244,6 +2244,10 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
+        // MARK: Nicegram PinnedChats
+        updateChatListNode(isOnScreen: true)
+        //
+        
         // MARK: Nicegram
         if #available(iOS 15.0, *), !didAppear {
             Task {
@@ -2674,6 +2678,10 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     override public func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         
+        // MARK: Nicegram PinnedChats
+        updateChatListNode(isOnScreen: false)
+        //
+        
         if self.dismissSearchOnDisappear {
             self.dismissSearchOnDisappear = false
             self.deactivateSearch(animated: false)
@@ -2692,6 +2700,12 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             storyPeerListView.cancelLoadingItem()
         }
     }
+    
+    // MARK: Nicegram PinnedChats
+    private func updateChatListNode(isOnScreen: Bool) {
+        chatListDisplayNode.effectiveContainerNode.currentItemNode.isOnScreen.value = isOnScreen
+    }
+    //
     
     func updateHeaderContent() -> (primaryContent: ChatListHeaderComponent.Content?, secondaryContent: ChatListHeaderComponent.Content?) {
         var primaryContent: ChatListHeaderComponent.Content?

@@ -15,7 +15,6 @@ import PhoneNumberFormat
 // MARK: Nicegram NCG-5828 call recording
 import NGLogging
 import NGData
-import NGStrings
 import UndoUI
 //
 private func callKitIntegrationIfEnabled(_ integration: CallKitIntegration?, settings: VoiceCallSettings?) -> CallKitIntegration?  {
@@ -322,7 +321,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                     let autodownloadSettings = sharedData.entries[SharedDataKeys.autodownloadSettings]?.get(AutodownloadSettings.self) ?? .defaultSettings
                     let experimentalSettings = sharedData.entries[ApplicationSpecificSharedDataKeys.experimentalUISettings]?.get(ExperimentalUISettings.self) ?? .defaultSettings
                     let appConfiguration = preferences.values[PreferencesKeys.appConfiguration]?.get(AppConfiguration.self) ?? AppConfiguration.defaultValue
-
+                    
                     let call = PresentationCallImpl(
                         context: firstState.0,
                         audioSession: strongSelf.audioSession,
@@ -350,7 +349,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                     call.callActiveState = { [strongSelf] audioDevice in
                         strongSelf.callActiveState(
                             with: audioDevice,
-                            accountContext: firstState.0
+                            account: firstState.0.account
                         )
                     }
 //
@@ -605,7 +604,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                     call.callActiveState = { [strongSelf] audioDevice in
                         strongSelf.callActiveState(
                             with: audioDevice,
-                            accountContext: context
+                            account: context.account
                         )
                     }
 //
@@ -975,7 +974,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
     public var callCompletion: (() -> Void)?
     
     private weak var audioDevice: OngoingCallContext.AudioDevice?
-    private var accountContext: AccountContext?
+    private var account: Account?
     private var enginePeer: EnginePeer?
     private var userDisplayName: String {
         guard let enginePeer else { return "" }
@@ -1068,14 +1067,13 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
         )
 
         DispatchQueue.main.async {
-            if let account = self.accountContext?.account {
+            if let account = self.account {
                 let _ = enqueueMessages(
                     account: account,
                     peerId: account.peerId,
                     messages: [message]
                 ).start(completed: { [weak self] in
                     self?.deleteFile(from: path)
-                    self?.showRecordSaveToast()
                     completion?()
                 })
             }
@@ -1084,11 +1082,11 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
     
     private func callActiveState(
         with audioDevice: OngoingCallContext.AudioDevice?,
-        accountContext: AccountContext
+        account: Account
     ) {
         if let audioDevice {
             self.audioDevice = audioDevice
-            self.accountContext = accountContext
+            self.account = account
         }
 
         if NGSettings.recordAllCalls {
@@ -1117,32 +1115,6 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
     
     public func setupPeer(peer: EnginePeer) {
         self.enginePeer = peer
-    }
-    
-    public func showRecordSaveToast() {
-        let (presentationData, _, _) = getDeviceAccessData()
-        guard let image = UIImage(bundleImageName: "RecordSave") else { return }
-
-        let content: UndoOverlayContent = .image(
-            image: image,
-            title: nil,
-            text: l("NicegramCallRecord.SavedMessage"),
-            round: true,
-            undoText: nil
-        )
-        
-        DispatchQueue.main.async {
-            let controller = UndoOverlayController(
-                presentationData: presentationData,
-                content: content,
-                elevatedLayout: false,
-                position: .top,
-                animateInAsReplacement: false,
-                action: { _ in return false }
-            )
-
-            self.accountContext?.sharedContext.mainWindow?.present(controller, on: .root)
-        }
     }
     //
 }
