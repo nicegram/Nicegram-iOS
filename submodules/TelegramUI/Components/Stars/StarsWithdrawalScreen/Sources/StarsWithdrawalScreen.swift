@@ -52,7 +52,6 @@ private final class SheetContent: CombinedComponent {
     }
     
     static var body: Body {
-        let background = Child(RoundedRectangle.self)
         let closeButton = Child(Button.self)
         let title = Child(Text.self)
         let amountSection = Child(ListSectionComponent.self)
@@ -74,15 +73,6 @@ private final class SheetContent: CombinedComponent {
             
             let sideInset: CGFloat = 16.0
             var contentSize = CGSize(width: context.availableSize.width, height: 18.0)
-                        
-            let background = background.update(
-                component: RoundedRectangle(color: theme.list.blocksBackgroundColor, cornerRadius: 8.0),
-                availableSize: CGSize(width: context.availableSize.width, height: 1000.0),
-                transition: .immediate
-            )
-            context.add(background
-                .position(CGPoint(x: context.availableSize.width / 2.0, y: background.size.height / 2.0))
-            )
             
             let constrainedTitleWidth = context.availableSize.width - 16.0 * 2.0
             
@@ -232,7 +222,8 @@ private final class SheetContent: CombinedComponent {
                 amountFooter = AnyComponent(MultilineTextComponent(
                     text: .plain(amountInfoString),
                     maximumNumberOfLines: 0,
-                    highlightColor: environment.theme.list.itemAccentColor.withAlphaComponent(0.2),
+                    highlightColor: environment.theme.list.itemAccentColor.withAlphaComponent(0.1),
+                    highlightInset: UIEdgeInsets(top: 0.0, left: 0.0, bottom: 0.0, right: -8.0),
                     highlightAction: { attributes in
                         if let _ = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.URL)] {
                             return NSAttributedString.Key(rawValue: TelegramTextAttributes.URL)
@@ -466,7 +457,7 @@ private final class StarsWithdrawSheetComponent: CombinedComponent {
                             })
                         }
                     )),
-                    backgroundColor: .blur(.light),
+                    backgroundColor: .color(environment.theme.list.blocksBackgroundColor),
                     followContentSizeChanges: false,
                     clipsContent: true,
                     isScrollEnabled: false,

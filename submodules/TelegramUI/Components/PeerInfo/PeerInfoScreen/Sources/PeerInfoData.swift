@@ -386,6 +386,7 @@ final class PeerInfoScreenData {
     let starsRevenueStatsState: StarsRevenueStats?
     let starsRevenueStatsContext: StarsRevenueStatsContext?
     let revenueStatsState: RevenueStats?
+    let revenueStatsContext: RevenueStatsContext?
     let profileGiftsContext: ProfileGiftsContext?
     let premiumGiftOptions: [PremiumGiftCodeOption]
     
@@ -434,6 +435,7 @@ final class PeerInfoScreenData {
         starsRevenueStatsState: StarsRevenueStats?,
         starsRevenueStatsContext: StarsRevenueStatsContext?,
         revenueStatsState: RevenueStats?,
+        revenueStatsContext: RevenueStatsContext?,
         profileGiftsContext: ProfileGiftsContext?,
         premiumGiftOptions: [PremiumGiftCodeOption]
     ) {
@@ -470,6 +472,7 @@ final class PeerInfoScreenData {
         self.starsRevenueStatsState = starsRevenueStatsState
         self.starsRevenueStatsContext = starsRevenueStatsContext
         self.revenueStatsState = revenueStatsState
+        self.revenueStatsContext = revenueStatsContext
         self.profileGiftsContext = profileGiftsContext
         self.premiumGiftOptions = premiumGiftOptions
     }
@@ -965,6 +968,7 @@ func peerInfoScreenSettingsData(context: AccountContext, peerId: EnginePeer.Id, 
             starsRevenueStatsState: nil,
             starsRevenueStatsContext: nil,
             revenueStatsState: nil,
+            revenueStatsContext: nil,
             profileGiftsContext: nil,
             premiumGiftOptions: []
         )
@@ -1012,6 +1016,7 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                 starsRevenueStatsState: nil,
                 starsRevenueStatsContext: nil,
                 revenueStatsState: nil,
+                revenueStatsContext: nil,
                 profileGiftsContext: nil,
                 premiumGiftOptions: []
             ))
@@ -1028,7 +1033,11 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
             let premiumGiftOptions: Signal<[PremiumGiftCodeOption], NoError>
             let profileGiftsContext: ProfileGiftsContext?
             if case .user = kind {
-                profileGiftsContext = ProfileGiftsContext(account: context.account, peerId: userPeerId)
+                if isMyProfile || userPeerId != context.account.peerId {
+                    profileGiftsContext = ProfileGiftsContext(account: context.account, peerId: userPeerId)
+                } else {
+                    profileGiftsContext = nil
+                }
                 premiumGiftOptions = .single([])
                 |> then(
                     context.engine.payments.premiumGiftCodeOptions(peerId: nil, onlyCached: true)
@@ -1263,13 +1272,45 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
             
             let starsRevenueContextAndState = context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
             |> mapToSignal { peer -> Signal<(StarsRevenueStatsContext?, StarsRevenueStats?), NoError> in
-                guard let peer, case let .user(user) = peer, let botInfo = user.botInfo, botInfo.flags.contains(.canEdit) || context.sharedContext.applicationBindings.appBuildType == .internal else {
+                var canViewStarsRevenue = false
+                if let peer, case let .user(user) = peer, let botInfo = user.botInfo, botInfo.flags.contains(.canEdit) || context.sharedContext.applicationBindings.appBuildType == .internal {
+                    canViewStarsRevenue = true
+                }
+                #if DEBUG
+                canViewStarsRevenue = "".isEmpty
+                #endif
+                
+                guard canViewStarsRevenue else {
                     return .single((nil, nil))
                 }
                 let starsRevenueStatsContext = StarsRevenueStatsContext(account: context.account, peerId: peerId)
                 return starsRevenueStatsContext.state
                 |> map { state -> (StarsRevenueStatsContext?, StarsRevenueStats?) in
                     return (starsRevenueStatsContext, state.stats)
+                }
+            }
+            
+            let revenueContextAndState = combineLatest(
+                context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+                |> distinctUntilChanged,
+                context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.CanViewRevenue(id: peerId))
+                |> distinctUntilChanged
+            )
+            |> mapToSignal { peer, canViewRevenue -> Signal<(RevenueStatsContext?, RevenueStats?), NoError> in
+                var canViewRevenue = canViewRevenue
+                if let peer, case let .user(user) = peer, let _ = user.botInfo, context.sharedContext.applicationBindings.appBuildType == .internal {
+                    canViewRevenue = true
+                }
+                #if DEBUG
+                canViewRevenue = "".isEmpty
+                #endif
+                guard canViewRevenue else {
+                    return .single((nil, nil))
+                }
+                let revenueStatsContext = RevenueStatsContext(account: context.account, peerId: peerId)
+                return revenueStatsContext.state
+                |> map { state -> (RevenueStatsContext?, RevenueStats?) in
+                    return (revenueStatsContext, state.stats)
                 }
             }
                         
@@ -1290,9 +1331,10 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                 peerInfoPersonalChannel(context: context, peerId: peerId, isSettings: false),
                 privacySettings,
                 starsRevenueContextAndState,
+                revenueContextAndState,
                 premiumGiftOptions
             )
-            |> map { peerView, availablePanes, globalNotificationSettings, encryptionKeyFingerprint, status, hasStories, hasStoryArchive, accountIsPremium, savedMessagesPeer, hasSavedMessagesChats, hasSavedMessages, hasSavedMessageTags, hasBotPreviewItems, personalChannel, privacySettings, starsRevenueContextAndState, premiumGiftOptions -> PeerInfoScreenData in
+            |> map { peerView, availablePanes, globalNotificationSettings, encryptionKeyFingerprint, status, hasStories, hasStoryArchive, accountIsPremium, savedMessagesPeer, hasSavedMessagesChats, hasSavedMessages, hasSavedMessageTags, hasBotPreviewItems, personalChannel, privacySettings, starsRevenueContextAndState, revenueContextAndState, premiumGiftOptions -> PeerInfoScreenData in
                 var availablePanes = availablePanes
                 if isMyProfile {
                     availablePanes?.insert(.stories, at: 0)
@@ -1309,7 +1351,7 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                         availablePanes?.insert(.stories, at: 0)
                     }
                     
-                    if availablePanes != nil, profileGiftsContext != nil, let cachedData = peerView.cachedData as? CachedUserData {
+                    if availablePanes != nil, profileGiftsContext != nil, let cachedData = peerView.cachedData as? CachedUserData, peerView.peerId != context.account.peerId {
                         if let starGiftsCount = cachedData.starGiftsCount, starGiftsCount > 0 {
                             availablePanes?.insert(.gifts, at: hasStories ? 1 : 0)
                         }
@@ -1408,7 +1450,8 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                     starsState: nil,
                     starsRevenueStatsState: starsRevenueContextAndState.1,
                     starsRevenueStatsContext: starsRevenueContextAndState.0,
-                    revenueStatsState: nil,
+                    revenueStatsState: revenueContextAndState.1,
+                    revenueStatsContext: revenueContextAndState.0,
                     profileGiftsContext: profileGiftsContext,
                     premiumGiftOptions: premiumGiftOptions
                 )
@@ -1620,6 +1663,7 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                     starsRevenueStatsState: starsRevenueContextAndState.1,
                     starsRevenueStatsContext: starsRevenueContextAndState.0,
                     revenueStatsState: revenueContextAndState.1,
+                    revenueStatsContext: revenueContextAndState.0,
                     profileGiftsContext: nil,
                     premiumGiftOptions: []
                 )
@@ -1922,6 +1966,7 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                     starsRevenueStatsState: nil,
                     starsRevenueStatsContext: nil,
                     revenueStatsState: nil,
+                    revenueStatsContext: nil,
                     profileGiftsContext: nil,
                     premiumGiftOptions: []
                 ))

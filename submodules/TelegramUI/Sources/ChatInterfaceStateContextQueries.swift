@@ -118,10 +118,10 @@ private func updatedContextQueryResultStateForQuery(context: AccountContext, pee
                     case .quickReply:
                         break
                     default:
-                        signal = .single({ _ in return .quickReplies([]) })
+                        signal = .single({ _ in return .quickReplies([], query) })
                 }
             } else {
-                signal = .single({ _ in return .quickReplies([]) })
+                signal = .single({ _ in return .quickReplies([], query) })
             }
         
             let querySignal = Signal<String, NoError>.single(query) |> deliverOn(Queue(name: "nicegram.quick-replies"))
@@ -129,7 +129,7 @@ private func updatedContextQueryResultStateForQuery(context: AccountContext, pee
             let hashtags: Signal<(ChatPresentationInputQueryResult?) -> ChatPresentationInputQueryResult?, ChatContextQueryError> = querySignal
                 |> map { query -> (ChatPresentationInputQueryResult?) -> ChatPresentationInputQueryResult? in
                 let result: [String] = getQuickReplies(query: query, context: context)
-                return { _ in return .quickReplies(result) }
+                return { _ in return .quickReplies(result, query) }
             }
             |> castError(ChatContextQueryError.self)
             
@@ -142,10 +142,10 @@ private func updatedContextQueryResultStateForQuery(context: AccountContext, pee
                     case .hashtag:
                         break
                     default:
-                        signal = .single({ _ in return .hashtags([]) })
+                        signal = .single({ _ in return .hashtags([], query) })
                 }
             } else {
-                signal = .single({ _ in return .hashtags([]) })
+                signal = .single({ _ in return .hashtags([], query) })
             }
             
             let hashtags: Signal<(ChatPresentationInputQueryResult?) -> ChatPresentationInputQueryResult?, ChatContextQueryError> = context.engine.messages.recentlyUsedHashtags()
@@ -157,7 +157,7 @@ private func updatedContextQueryResultStateForQuery(context: AccountContext, pee
                         result.append(hashtag)
                     }
                 }
-                return { _ in return .hashtags(result) }
+                return { _ in return .hashtags(result, query) }
             }
             |> castError(ChatContextQueryError.self)
             

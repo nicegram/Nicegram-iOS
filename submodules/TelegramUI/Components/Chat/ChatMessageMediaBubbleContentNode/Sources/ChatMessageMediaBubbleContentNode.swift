@@ -16,6 +16,7 @@ import ChatMessageItemCommon
 import ChatMessageInteractiveMediaNode
 import ChatControllerInteraction
 import InvisibleInkDustNode
+import TelegramUniversalVideoContent
 
 public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
     override public var supportsMosaic: Bool {
@@ -87,6 +88,12 @@ public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
                 return
             }
             strongSelf.item?.controllerInteraction.playMessageEffect(message)
+        }
+        self.interactiveImageNode.requestInlineUpdate = { [weak self] in
+            guard let self else {
+                return
+            }
+            self.requestInlineUpdate?()
         }
     }
     
@@ -163,7 +170,9 @@ public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
                                     automaticPlayback = item.context.account.postbox.mediaBox.completedResourcePath(telegramFile.resource) != nil
                                 }
                             } else if (telegramFile.isVideo && !telegramFile.isAnimated) && item.context.sharedContext.energyUsageSettings.autoplayVideo {
-                                if case .full = automaticDownload {
+                                if NativeVideoContent.isHLSVideo(file: telegramFile) {
+                                    automaticPlayback = true
+                                } else if case .full = automaticDownload {
                                     automaticPlayback = true
                                 } else {
                                     automaticPlayback = item.context.account.postbox.mediaBox.completedResourcePath(telegramFile.resource) != nil
@@ -207,7 +216,9 @@ public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
                                 automaticPlayback = item.context.account.postbox.mediaBox.completedResourcePath(telegramFile.resource) != nil
                             }
                         } else if (telegramFile.isVideo && !telegramFile.isAnimated) && item.context.sharedContext.energyUsageSettings.autoplayVideo {
-                            if case .full = automaticDownload {
+                            if NativeVideoContent.isHLSVideo(file: telegramFile) {
+                                automaticPlayback = true
+                            } else if case .full = automaticDownload {
                                 automaticPlayback = true
                             } else {
                                 automaticPlayback = item.context.account.postbox.mediaBox.completedResourcePath(telegramFile.resource) != nil
@@ -552,6 +563,13 @@ public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
     override public func messageEffectTargetView() -> UIView? {
         if !self.interactiveImageNode.dateAndStatusNode.isHidden {
             return self.interactiveImageNode.dateAndStatusNode.messageEffectTargetView()
+        }
+        return nil
+    }
+    
+    override public func getStatusNode() -> ASDisplayNode? {
+        if !self.interactiveImageNode.dateAndStatusNode.isHidden {
+            return self.interactiveImageNode.dateAndStatusNode
         }
         return nil
     }

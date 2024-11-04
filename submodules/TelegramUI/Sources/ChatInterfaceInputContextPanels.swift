@@ -10,7 +10,7 @@ private func inputQueryResultPriority(_ result: ChatPresentationInputQueryResult
     switch result {
         case let .stickers(items):
             return (0, !items.isEmpty)
-        case let .hashtags(items):
+        case let .hashtags(items, _):
             return (1, !items.isEmpty)
         case let .mentions(items):
             return (2, !items.isEmpty)
@@ -25,7 +25,7 @@ private func inputQueryResultPriority(_ result: ChatPresentationInputQueryResult
         case let .emojis(items, _):
             return (5, !items.isEmpty)
         // MARK: Nicegram QuickReplies
-        case let .quickReplies(items):
+        case let .quickReplies(items, _):
             return (6, !items.isEmpty)
         //
     }
@@ -103,28 +103,36 @@ func inputContextPanelForChatPresentationIntefaceState(_ chatPresentationInterfa
                 }
             }
         // MARK: Nicegram QuickReplies
-        case let .quickReplies(results):
+        case let .quickReplies(results, query):
+            var peer: EnginePeer?
+            if let chatPeer = chatPresentationInterfaceState.renderedPeer?.peer as? TelegramChannel, chatPeer.addressName != nil {
+                peer = EnginePeer(chatPeer)
+            }
             if !results.isEmpty {
                 if let currentPanel = currentPanel as? HashtagChatInputContextPanelNode {
-                    currentPanel.updateResults(results, canDelete: false)
+                    currentPanel.updateResults(results, query: query, peer: peer, canDelete: false)
                     return currentPanel
                 } else {
                     let panel = HashtagChatInputContextPanelNode(context: context, theme: chatPresentationInterfaceState.theme, strings: chatPresentationInterfaceState.strings, fontSize: chatPresentationInterfaceState.fontSize, chatPresentationContext: controllerInteraction.presentationContext)
                     panel.interfaceInteraction = interfaceInteraction
-                    panel.updateResults(results, canDelete: false)
+                    panel.updateResults(results, query: query, peer: peer, canDelete: false)
                     return panel
                 }
             }
         //
-        case let .hashtags(results):
-            if !results.isEmpty {
+        case let .hashtags(results, query):
+            var peer: EnginePeer?
+            if let chatPeer = chatPresentationInterfaceState.renderedPeer?.peer as? TelegramChannel, chatPeer.addressName != nil {
+                peer = EnginePeer(chatPeer)
+            }
+            if !results.isEmpty || (peer != nil && query.count >= 4) {
                 if let currentPanel = currentPanel as? HashtagChatInputContextPanelNode {
-                    currentPanel.updateResults(results)
+                    currentPanel.updateResults(results, query: query, peer: peer)
                     return currentPanel
                 } else {
                     let panel = HashtagChatInputContextPanelNode(context: context, theme: chatPresentationInterfaceState.theme, strings: chatPresentationInterfaceState.strings, fontSize: chatPresentationInterfaceState.fontSize, chatPresentationContext: controllerInteraction.presentationContext)
                     panel.interfaceInteraction = interfaceInteraction
-                    panel.updateResults(results)
+                    panel.updateResults(results, query: query, peer: peer)
                     return panel
                 }
             }
