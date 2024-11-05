@@ -2,7 +2,6 @@
 import AppLovinAdProvider
 import FeatNicegramHub
 import FeatOnboarding
-import FeatTasks
 import NGAiChat
 import NGAnalytics
 import NGAppCache
@@ -417,7 +416,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 premiumProductId: NGENV.premium_bundle,
                 privacyUrl: URL(string: NGENV.privacy_url)!,
                 referralBot: NGENV.referral_bot,
-                tapjoyApiKey: NGENV.tapjoy_api_key,
                 telegramAuthBot: NGENV.telegram_auth_bot,
                 termsUrl: URL(string: NGENV.terms_url)!,
                 webSocketUrl: NGENV.websocket_url
@@ -1319,10 +1317,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     RepoTgHelper.setTelegramId(
                         accountContext.account.peerId.id._internalGetInt64Value()
                     )
-                    
-                    TasksContainer.shared.channelSubscriptionChecker.register {
-                        ChannelSubscriptionCheckerImpl(context: accountContext)
-                    }
                 }
                 
                 if #available(iOS 13.0, *) {

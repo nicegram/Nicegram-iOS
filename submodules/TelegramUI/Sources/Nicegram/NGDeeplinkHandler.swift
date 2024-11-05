@@ -7,8 +7,6 @@ import FeatAvatarGeneratorUI
 import FeatImagesHubUI
 import FeatOnboarding
 import FeatPremiumUI
-import FeatRewardsUI
-import FeatTasks
 import NGAiChatUI
 import NGAnalytics
 import NGEntryPoint
@@ -88,22 +86,11 @@ class NGDeeplinkHandler {
             return handleNicegramPremium(url: url)
         case "onboarding":
             return handleOnboarding(url: url)
-        case "profit":
-            if #available(iOS 15.0, *) {
-                RewardsUITgHelper.showRewards()
-            }
-            return true
         case "specialOffer":
             return handleSpecialOffer(url: url)
         case "refferaldraw":
             if #available(iOS 15.0, *) {
                 AssistantTgHelper.showReferralDrawFromDeeplink()
-            }
-            return true
-        case "task":
-            if #available(iOS 15.0, *) {
-                let taskDeeplinkHandler = TasksContainer.shared.taskDeeplinkHandler()
-                taskDeeplinkHandler.handle(url)
             }
             return true
         case "tgAuthSuccess":
