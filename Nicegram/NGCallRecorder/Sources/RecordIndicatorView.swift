@@ -2,7 +2,7 @@ import UIKit
 import Display
 import ComponentFlow
 
-public class NGRecordIndicatorView: UIView {
+public class RecordIndicatorView: UIView {
     private let contentView = UIView()
     private let label: UILabel = {
         let label = UILabel()

@@ -762,8 +762,11 @@ public final class OngoingCallContext {
         
         // MARK: Nicegram NCG-5828 call recording
 
-        public func startNicegramRecording(callback: ((String, Double, UInt) -> Void)?) {
-            self.impl.startNicegramRecording(callback)
+        public func startNicegramRecording(
+            callback: @escaping ((String, Double, UInt) -> Void),
+            errorCallback: @escaping ((String) -> Void)
+        ) {
+            self.impl.startNicegramRecording(callback, errorCallback: errorCallback)
         }
         
         public func stopNicegramRecording() {

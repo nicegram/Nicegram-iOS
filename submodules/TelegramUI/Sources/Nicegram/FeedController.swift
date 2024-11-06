@@ -14,7 +14,7 @@ final class FeedController: ViewController {
     init(context: AccountContext) {
         self.context = context
         super.init(navigationBarPresentationData: nil)
-        
+
         let image = UIImage(bundleImageName: "feed")?
             .sd_resizedImage(with: .init(width: 30, height: 30), scaleMode: .aspectFit)?
             .withRenderingMode(.alwaysTemplate)
@@ -34,7 +34,8 @@ final class FeedController: ViewController {
             self.setupFeed(with: context)
         })
         
-        if NGSettings.feedPeerId != NGSettings.zeroFeedPeerId {
+        
+        if NGSettings.feedPeer[context.account.id.int64] != nil {
             setupFeed(with: context)
         }
     }
@@ -48,20 +49,27 @@ final class FeedController: ViewController {
         updateFeedDiposable = nil
     }
     
-    override func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {
+    override func containerLayoutUpdated(
+        _ layout: ContainerViewLayout,
+        transition: ContainedViewLayoutTransition
+    ) {
         super.containerLayoutUpdated(layout, transition: transition)
 
         feedController?.view.frame = view.bounds
         feedController?.containerLayoutUpdated(layout, transition: transition)
     }
 
-    private func setupFeed(with context: AccountContext) {
+    private func setupFeed(
+        with context: AccountContext
+    ) {
+        guard let id = NGSettings.feedPeer[context.account.id.int64] else { return }
+
         feedController?.removeFromParent()
         feedController?.view.removeFromSuperview()
 
         let feedController = ChatControllerImpl(
             context: context,
-            chatLocation: .peer(id: NGSettings.feedPeerId),
+            chatLocation: .peer(id: id),
             isFeed: true
         )
         

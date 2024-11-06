@@ -739,8 +739,24 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             })
         case .sendNGLogs:
         return ItemListDisclosureItem(presentationData: presentationData, title: "Send Nicegram Logs", label: "", sectionId: self.section, style: .blocks, action: {
-            let _ = (Logger(rootPath: arguments.sharedContext.basePath, basePath: arguments.sharedContext.basePath + "/ngLogs").collectLogs()
-                |> deliverOnMainQueue).start(next: { logs in
+            let ngLogs = Logger(
+                rootPath: arguments.sharedContext.basePath,
+                basePath: arguments.sharedContext.basePath + "/ngLogs"
+            ).collectLogs()
+            
+            let accountPathName: String? = if let context = arguments.context {
+                accountRecordIdPathName(context.account.id)
+            } else {
+                nil
+            }
+            let callRecorderLogs = Logger.shared.collectLogs(
+                with: arguments.sharedContext.basePath,
+                accountPathName: accountPathName
+            )
+            
+            let _ = (combineLatest(ngLogs, callRecorderLogs) |> deliverOnMainQueue)
+                .start(next: { logs in
+                    let allLogs = logs.0 + logs.1
                     guard let context = arguments.context else {
                         return
                     }
@@ -750,8 +766,8 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                         
                         if let strongController = controller {
                             strongController.dismiss()
-                            
-                            let messages = logs.map { (name, path) -> EnqueueMessage in
+
+                            let messages = allLogs.map { (name, path) -> EnqueueMessage in
                                 let id = Int64.random(in: Int64.min ... Int64.max)
                                 let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: LocalFileReferenceMediaResource(localFilePath: path, randomId: id), previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/text", size: nil, attributes: [.FileName(fileName: name)], alternativeRepresentations: [])
                                 return .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: file), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])

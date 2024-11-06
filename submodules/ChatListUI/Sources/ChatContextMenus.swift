@@ -122,7 +122,7 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                     var items: [ContextMenuItem] = []
 // MARK: Nicegram NCG-6373 Feed tab
                     if case .chatList = source {
-                        let isFeedPeerEqualPeer = NGSettings.feedPeerId == peerId
+                        let isFeedPeerEqualPeer = NGSettings.feedPeer[context.account.id.int64] == peerId
                         let text = isFeedPeerEqualPeer ? l("NicegramFeed.Remove") : l("NicegramFeed.Add")
                         let color: ContextMenuActionItemTextColor = isFeedPeerEqualPeer ? .destructive : .primary
                         items.append(
@@ -135,14 +135,14 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                                 },
                                 action: { _, f in
                                     if isFeedPeerEqualPeer {
-                                        NGSettings.feedPeerId = NGSettings.zeroFeedPeerId
+                                        NGSettings.feedPeer.removeValue(forKey: context.account.id.int64)
                                         updateTabs(with: context)
                                     } else {
                                         let needUpdateTabs =
                                         !NGSettings.showFeedTab ||
-                                        NGSettings.feedPeerId == NGSettings.zeroFeedPeerId
+                                        NGSettings.feedPeer[context.account.id.int64] == nil
 
-                                        NGSettings.feedPeerId = peerId
+                                        NGSettings.feedPeer[context.account.id.int64] = peerId
                                         if needUpdateTabs {
                                             NGSettings.showFeedTab = true
                                             updateTabs(with: context)
@@ -153,6 +153,7 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                                 }
                             ))
                         )
+                        items.append(.separator)
                     }
 //
                     if case let .search(search) = source {

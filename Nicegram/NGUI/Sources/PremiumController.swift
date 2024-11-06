@@ -19,6 +19,7 @@ import AccountContext
 import TelegramNotices
 import NGData
 import NGStrings
+import NGUtils
 
 private struct SelectionState: Equatable {
 }
@@ -311,6 +312,9 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
         case let .recordAllCalls(title, value):
             return ItemListSwitchItem(presentationData: presentationData, title: title, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 NGSettings.recordAllCalls = value
+                if value {
+                    sendUserSettingsAnalytics(with: .recordAllCallsOn)
+                }
             })
         }
     }

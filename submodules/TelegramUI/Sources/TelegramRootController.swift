@@ -271,7 +271,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
             context: self.context
         )
         if NGSettings.showFeedTab &&
-            NGSettings.feedPeerId != NGSettings.zeroFeedPeerId {
+           NGSettings.feedPeer[context.account.id.int64] != nil {
             controllers.append(feedController)
         }
         self.feedController = feedController
@@ -361,7 +361,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
             $0 is ChatListController
         } ?? 0
         if NGSettings.showFeedTab &&
-            NGSettings.feedPeerId != NGSettings.zeroFeedPeerId {
+            NGSettings.feedPeer[context.account.id.int64] != nil {
             selectedControllerIndex = controllers.firstIndex {
                 $0 is FeedController
             } ?? 0
@@ -392,7 +392,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         controllers.append(self.chatListController!)
 // MARK: Nicegram NCG-6373 Feed tab
         if NGSettings.showFeedTab &&
-            NGSettings.feedPeerId != NGSettings.zeroFeedPeerId {
+           NGSettings.feedPeer[context.account.id.int64] != nil {
             controllers.append(self.feedController!)
         }
 //

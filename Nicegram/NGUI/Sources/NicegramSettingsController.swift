@@ -36,6 +36,7 @@ import NGDoubleBottom
 import NGQuickReplies
 import NGRemoteConfig
 import NGStats
+import NGUtils
 
 fileprivate let LOGTAG = extractNameFromPath(#file)
 
@@ -532,8 +533,14 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                     NGSettings.showRegDate = value
                 case .hideReactions:
                     VarSystemNGSettings.hideReactions = value
+                    if value {
+                        sendUserSettingsAnalytics(with: .hideReactionsOn)
+                    }
                 case .hideStories:
                     NGSettings.hideStories = value
+                    if value {
+                        sendUserSettingsAnalytics(with: .hideStoriesOn)
+                    }
                 }
             })
         case let .unblockHeader(text):

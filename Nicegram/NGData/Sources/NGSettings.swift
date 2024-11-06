@@ -113,10 +113,8 @@ public struct NGSettings {
     @NGStorage(key: "showFeedTab", defaultValue: false)
     public static var showFeedTab: Bool
     
-    @NGStorage(key: "feedPeerId", defaultValue: NGSettings.zeroFeedPeerId)
-    public static var feedPeerId: PeerId
-    
-    public static let zeroFeedPeerId: PeerId = .init(namespace: PeerId.Namespace._internalFromInt32Value(0), id: PeerId.Id._internalFromInt64Value(0))
+    @NGStorage(key: "feedPeer", defaultValue: [:])
+    public static var feedPeer: [Int64: PeerId]
 }
 
 public struct NGWebSettings {

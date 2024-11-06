@@ -775,7 +775,14 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
         }
 // MARK: Nicegram NCG-5828 call recording
         if case .active = params.state.lifecycleState,
-           !NGSettings.recordAllCalls && isPremium() {
+           isPremium() {
+            if NGSettings.recordAllCalls &&
+               !params.state.isCallRecord &&
+               isRecordAllCallsFirstStart {
+                isRecordAllCallsFirstStart = false
+                startRecordTimer()
+                recordAction?()
+            }
             buttons.insert(
                 ButtonGroupView.Button(
                     content: .record(isRecord: params.state.isCallRecord),
@@ -1425,9 +1432,10 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
 // MARK: Nicegram NCG-5828 call recording
     public var recordAction: (() -> Void)?
 
-    private let recordTimerView = NGRecordIndicatorView()
+    private let recordTimerView = RecordIndicatorView()
 
     private var recordTimer: SwiftSignalKit.Timer?
+    private var isRecordAllCallsFirstStart: Bool = true
     
     private func startRecordTimer() {
         var duration: Int = 1
