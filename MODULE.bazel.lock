@@ -635,7 +635,7 @@
         "bzlTransitiveDigest": "8/YWyYftd8THfVoADvrOmQLl45wUGfP2MVjLM5FFn50=",
         "usagesDigest": "voXBMcSNlo2fnK6JIvInIrncYhBKKG8nBeKvToaUA0Y=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "a29c04a59f6c4d84c8d127c42ddf79241a403b69826c5f206cdcd762b09cad23",
+          "@@//Package.resolved": "6b4ebd8bfcc2d75252c1c90cbedeff68136a2c8cf765f3264d9aa1ff4d5ba335",
           "@@//Package.swift": "b9e2b86f6f986c3f74ad4806e3d35d2fd2a8097270805eb903ccb36da8935aac"
         },
         "recordedDirentsInputs": {},
@@ -1311,9 +1311,9 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_wallet_core",
-              "commit": "f6d8a10d749dd70fbd08bb098db550810bca34f5",
+              "commit": "c4907d444673e7eb4c131b67ce2ced5b2d2cb09e",
               "remote": "https://github.com/trustwallet/wallet-core.git",
-              "version": "4.1.15",
+              "version": "4.1.16",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -1368,7 +1368,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_wallet_ios",
-              "commit": "9196ef088891b7ce6647e38d41c901b62f38dd8c",
+              "commit": "6417219110dae50a9dd129c61795dc469ceb12d0",
               "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
               "version": "",
               "init_submodules": false,

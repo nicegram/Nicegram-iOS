@@ -86,6 +86,7 @@ public final class ChatListNodeInteraction {
     
     // MARK: Nicegram PinnedChats
     let clearHighlightAnimated: (Bool) -> Void
+    let isChatListVisible: () -> Bool
     //
     
     let peerSelected: (EnginePeer, EnginePeer?, Int64?, ChatListNodeEntryPromoInfo?) -> Void
@@ -146,6 +147,7 @@ public final class ChatListNodeInteraction {
         activateSearch: @escaping () -> Void,
         // MARK: Nicegram PinnedChats
         clearHighlightAnimated: @escaping (Bool) -> Void = { _ in },
+        isChatListVisible: @escaping () -> Bool = { false },
         //
         peerSelected: @escaping (EnginePeer, EnginePeer?, Int64?, ChatListNodeEntryPromoInfo?) -> Void,
         disabledPeerSelected: @escaping (EnginePeer, Int64?, ChatListDisabledPeerReason) -> Void,
@@ -190,6 +192,7 @@ public final class ChatListNodeInteraction {
         self.activateSearch = activateSearch
         // MARK: Nicegram PinnedChats
         self.clearHighlightAnimated = clearHighlightAnimated
+        self.isChatListVisible = isChatListVisible
         //
         self.peerSelected = peerSelected
         self.disabledPeerSelected = disabledPeerSelected
@@ -1277,7 +1280,8 @@ public final class ChatListNode: ListView {
     private var enqueuedTransition: (ChatListNodeListViewTransition, () -> Void)?
     
     // MARK: Nicegram PinnedChats
-    public let isOnScreen = CurrentValueSubject<Bool, Never>(false)
+    private let getPinnedChatsToDisplayUseCase = PinnedChatsContainer.shared.getPinnedChatsToDisplayUseCase()
+    public let isChatListVisible = CurrentValueSubject<Bool, Never>(false)
     private var cancellables = Set<AnyCancellable>()
     //
     
@@ -1426,6 +1430,8 @@ public final class ChatListNode: ListView {
             // MARK: Nicegram PinnedChats
         }, clearHighlightAnimated: { [weak self] flag in
             self?.clearHighlightAnimated(flag)
+        }, isChatListVisible: { [weak self] in
+            self?.isChatListVisible.value ?? false
             //
         }, peerSelected: { [weak self] peer, _, threadId, promoInfo in
             if let strongSelf = self, let peerSelected = strongSelf.peerSelected {
@@ -2270,21 +2276,24 @@ public final class ChatListNode: ListView {
         }
         
         // MARK: Nicegram PinnedChats
-        let nicegramItems = CurrentValueSubject<[PinnedChatToDisplay], Never>([])
-        let nicegramItemsSignal = nicegramItems
-            .eraseToAnyPublisher()
+        let nicegramItemsSignal = getPinnedChatsToDisplayUseCase
+            .publisher(
+                isViewVisible: isChatListVisible.eraseToAnyPublisher()
+            )
+            .map { Array($0.reversed()) }
             .toSignal()
             .skipError()
         
-        PinnedChatsContainer.shared.getPinnedChatsToDisplayUseCase()
-            .publisher()
-            .map { $0.reversed() }
-            .combineLatestThreadSafe(
-                isOnScreen.eraseToAnyPublisher()
-            )
-            .sink { items, isOnScreen in
-                if isOnScreen {
-                    nicegramItems.value = items
+        isChatListVisible
+            .removeDuplicates()
+            .sink { [weak self] isChatListVisible in
+                guard let self else { return }
+                if isChatListVisible {
+                    self.forEachItemNode { itemNode in
+                        if let itemNode = itemNode as? ChatListItemNode {
+                            itemNode.trackViewIfNeeded()
+                        }
+                    }
                 }
             }
             .store(in: &cancellables)

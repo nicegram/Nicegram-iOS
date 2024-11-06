@@ -1485,17 +1485,27 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                 self.authorNode.visibilityStatus = self.visibilityStatus
                 
                 // MARK: Nicegram ATT
-                if self.visibilityStatus, let item {
-                    if let attAd = item.attAd {
-                        item.attBannerFeature.onView(ad: attAd)
-                    } else if let nicegramItem = item.nicegramItem {
-                        PinnedChatsUI.trackChatView(nicegramItem.chat)
-                    }
-                }
+                trackViewIfNeeded()
                 //
             }
         }
     }
+    
+    // MARK: Nicegram ATT
+    public func trackViewIfNeeded() {
+        guard self.visibilityStatus,
+              let item,
+              item.interaction.isChatListVisible() else {
+            return
+        }
+        
+        if let attAd = item.attAd {
+            item.attBannerFeature.onView(ad: attAd)
+        } else if let nicegramItem = item.nicegramItem {
+            PinnedChatsUI.trackChatView(nicegramItem.chat)
+        }
+    }
+    //
     
     private var trackingIsInHierarchy: Bool = false {
         didSet {

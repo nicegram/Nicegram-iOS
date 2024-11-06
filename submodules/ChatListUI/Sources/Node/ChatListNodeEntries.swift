@@ -194,6 +194,11 @@ enum ChatListNodeEntry: Comparable, Identifiable {
         }
         
         static func ==(lhs: PeerEntryData, rhs: PeerEntryData) -> Bool {
+            // MARK: Nicegram PinnedChats
+            if lhs.nicegramItem != rhs.nicegramItem {
+                return false
+            }
+            //
             if lhs.index != rhs.index {
                 return false
             }

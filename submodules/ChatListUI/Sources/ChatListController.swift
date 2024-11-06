@@ -2245,7 +2245,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         super.viewDidAppear(animated)
         
         // MARK: Nicegram PinnedChats
-        updateChatListNode(isOnScreen: true)
+        updateChatListNode(isVisible: true)
         //
         
         // MARK: Nicegram
@@ -2679,7 +2679,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         super.viewDidDisappear(animated)
         
         // MARK: Nicegram PinnedChats
-        updateChatListNode(isOnScreen: false)
+        updateChatListNode(isVisible: false)
         //
         
         if self.dismissSearchOnDisappear {
@@ -2702,8 +2702,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     }
     
     // MARK: Nicegram PinnedChats
-    private func updateChatListNode(isOnScreen: Bool) {
-        chatListDisplayNode.effectiveContainerNode.currentItemNode.isOnScreen.value = isOnScreen
+    private func updateChatListNode(isVisible: Bool) {
+        chatListDisplayNode.effectiveContainerNode.currentItemNode.isChatListVisible.value = isVisible
     }
     //
     
