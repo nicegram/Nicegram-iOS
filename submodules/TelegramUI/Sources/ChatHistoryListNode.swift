@@ -283,7 +283,7 @@ private func mappedInsertEntries(context: AccountContext, chatLocation: ChatLoca
             // MARK: Nicegram ATT
             case let .NicegramAdEntry(_, ad, presentationData):
                 if #available(iOS 15.0, *) {
-                    return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatMessageNicegramAdItem(ad: ad, context: context, controllerInteraction: controllerInteraction, presentationData: presentationData), directionHint: entry.directionHint)
+                    return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatMessageNicegramAdItem(ad: ad, chatLocation: chatLocation, context: context, controllerInteraction: controllerInteraction, presentationData: presentationData), directionHint: entry.directionHint)
                 } else {
                     fatalError()
                 }
@@ -343,7 +343,7 @@ private func mappedUpdateEntries(context: AccountContext, chatLocation: ChatLoca
             // MARK: Nicegram ATT
             case let .NicegramAdEntry(_, ad, presentationData):
                 if #available(iOS 15.0, *) {
-                    return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatMessageNicegramAdItem(ad: ad, context: context, controllerInteraction: controllerInteraction, presentationData: presentationData), directionHint: entry.directionHint)
+                    return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatMessageNicegramAdItem(ad: ad, chatLocation: chatLocation, context: context, controllerInteraction: controllerInteraction, presentationData: presentationData), directionHint: entry.directionHint)
                 } else {
                     fatalError()
                 }

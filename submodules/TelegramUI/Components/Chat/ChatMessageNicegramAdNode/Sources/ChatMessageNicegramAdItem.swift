@@ -10,12 +10,14 @@ import TelegramPresentationData
 @available(iOS 15.0, *)
 public final class ChatMessageNicegramAdItem: ListViewItem {
     public let ad: AttAd
+    public let chatLocation: ChatLocation
     public let context: AccountContext
     public let controllerInteraction: ChatControllerInteraction
     public let presentationData: ChatPresentationData
     
-    public init(ad: AttAd, context: AccountContext, controllerInteraction: ChatControllerInteraction, presentationData: ChatPresentationData) {
+    public init(ad: AttAd, chatLocation: ChatLocation, context: AccountContext, controllerInteraction: ChatControllerInteraction, presentationData: ChatPresentationData) {
         self.ad = ad
+        self.chatLocation = chatLocation
         self.context = context
         self.controllerInteraction = controllerInteraction
         self.presentationData = presentationData

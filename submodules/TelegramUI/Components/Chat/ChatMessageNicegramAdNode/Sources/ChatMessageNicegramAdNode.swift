@@ -57,6 +57,9 @@ class ChatMessageNicegramAdNode: ListViewItemNode {
     
     func setupItem(_ item: ChatMessageNicegramAdItem) {
         self.item = item
+        
+        let chatId = item.chatLocation.peerId?.ng_toInt64()
+        self.bannerView.set(chatId: chatId)
     }
     
     override func layoutForParams(_ params: ListViewItemLayoutParams, item: ListViewItem, previousItem: ListViewItem?, nextItem: ListViewItem?) {

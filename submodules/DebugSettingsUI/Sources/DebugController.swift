@@ -70,6 +70,9 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     case sendLogs(PresentationTheme)
     case sendOneLog(PresentationTheme)
     case sendNGLogs(PresentationTheme)
+// MARK: Nicegram NCG-5828 call recording
+    case sendNGCallRecorderLogs(PresentationTheme)
+//
     case sendShareLogs
     case sendGroupCallLogs
     case sendStorageStats
@@ -136,8 +139,10 @@ private enum DebugControllerEntry: ItemListNodeEntry {
         //
         case .testStickerImport:
             return DebugControllerSection.sticker.rawValue
-        case .sendNGLogs, .sendLogs, .sendOneLog, .sendShareLogs, .sendGroupCallLogs, .sendStorageStats, .sendNotificationLogs, .sendCriticalLogs, .sendAllLogs:
+// MARK: Nicegram NCG-5828 call recording, .sendNGCallRecorderLogs
+        case .sendNGLogs, .sendLogs, .sendOneLog, .sendShareLogs, .sendGroupCallLogs, .sendStorageStats, .sendNotificationLogs, .sendCriticalLogs, .sendAllLogs, .sendNGCallRecorderLogs:
             return DebugControllerSection.logs.rawValue
+//
         case .accounts:
             return DebugControllerSection.logs.rawValue
         case .logToFile, .logToConsole, .redactSensitiveData:
@@ -163,10 +168,14 @@ private enum DebugControllerEntry: ItemListNodeEntry {
         switch self {
         // MARK: Nicegram DebugMenu
         case .showOnboarding:
-            return -2
+            return -3
         //
         case .sendNGLogs:
+            return -2
+// MARK: Nicegram NCG-5828 call recording
+        case .sendNGCallRecorderLogs:
             return -1
+//
         case .testStickerImport:
             return 0
         case .sendLogs:
@@ -737,6 +746,53 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     arguments.presentController(actionSheet, nil)
                 })
             })
+// MARK: Nicegram NCG-5828 call recording
+        case .sendNGCallRecorderLogs:
+            return ItemListDisclosureItem(
+                presentationData: presentationData,
+                title: "Send Nicegram Call Recorder Logs",
+                label: "",
+                sectionId: self.section,
+                style: .blocks, action: {
+                let ngLogs = Logger(
+                    rootPath: arguments.sharedContext.basePath,
+                    basePath: arguments.sharedContext.basePath + "/ngLogs"
+                ).collectLogs()
+                
+                let accountPathName: String? = if let context = arguments.context {
+                    accountRecordIdPathName(context.account.id)
+                } else {
+                    nil
+                }
+                let callRecorderLogs = Logger.shared.collectLogs(
+                    with: arguments.sharedContext.basePath,
+                    accountPathName: accountPathName
+                )
+                
+                let _ = (callRecorderLogs |> deliverOnMainQueue)
+                    .start(next: { logs in
+                        guard let context = arguments.context else {
+                            return
+                        }
+                        let controller = context.sharedContext.makePeerSelectionController(PeerSelectionControllerParams(context: context, filter: [.onlyWriteable, .excludeDisabled]))
+                        controller.peerSelected = { [weak controller] peer, _ in
+                            let peerId = peer.id
+                            
+                            if let strongController = controller {
+                                strongController.dismiss()
+
+                                let messages = logs.map { (name, path) -> EnqueueMessage in
+                                    let id = Int64.random(in: Int64.min ... Int64.max)
+                                    let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: LocalFileReferenceMediaResource(localFilePath: path, randomId: id), previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/text", size: nil, attributes: [.FileName(fileName: name)], alternativeRepresentations: [])
+                                    return .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: file), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
+                                }
+                                let _ = enqueueMessages(account: context.account, peerId: peerId, messages: messages).start()
+                            }
+                        }
+                        arguments.pushController(controller)
+                    })
+            })
+//
         case .sendNGLogs:
         return ItemListDisclosureItem(presentationData: presentationData, title: "Send Nicegram Logs", label: "", sectionId: self.section, style: .blocks, action: {
             let ngLogs = Logger(
@@ -744,19 +800,8 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                 basePath: arguments.sharedContext.basePath + "/ngLogs"
             ).collectLogs()
             
-            let accountPathName: String? = if let context = arguments.context {
-                accountRecordIdPathName(context.account.id)
-            } else {
-                nil
-            }
-            let callRecorderLogs = Logger.shared.collectLogs(
-                with: arguments.sharedContext.basePath,
-                accountPathName: accountPathName
-            )
-            
-            let _ = (combineLatest(ngLogs, callRecorderLogs) |> deliverOnMainQueue)
+            let _ = (ngLogs |> deliverOnMainQueue)
                 .start(next: { logs in
-                    let allLogs = logs.0 + logs.1
                     guard let context = arguments.context else {
                         return
                     }
@@ -767,7 +812,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                         if let strongController = controller {
                             strongController.dismiss()
 
-                            let messages = allLogs.map { (name, path) -> EnqueueMessage in
+                            let messages = logs.map { (name, path) -> EnqueueMessage in
                                 let id = Int64.random(in: Int64.min ... Int64.max)
                                 let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: LocalFileReferenceMediaResource(localFilePath: path, randomId: id), previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/text", size: nil, attributes: [.FileName(fileName: name)], alternativeRepresentations: [])
                                 return .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: file), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
@@ -1532,6 +1577,9 @@ private func debugControllerEntries(sharedContext: SharedAccountContext, present
     entries.append(.showOnboarding(!AppCache.wasOnboardingShown))
     //
     entries.append(.sendNGLogs(presentationData.theme))
+// MARK: Nicegram NCG-5828 call recording
+    entries.append(.sendNGCallRecorderLogs(presentationData.theme))
+//
 
     let isMainApp = sharedContext.applicationBindings.isMainApp
     
