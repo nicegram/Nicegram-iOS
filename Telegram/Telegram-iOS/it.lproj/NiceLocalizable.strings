@@ -38,9 +38,7 @@
 "Chat.OpenPin" = "Mostra pin";
 "ChatFilter.Admin" = "Amministratore";
 "NiceFeatures.Notifications.Fix" = "Disabilita notifiche indesiderate";
-"NiceFeatures.Notifications.FixNotice" = "Utile se ricevi notifiche da chat silenziate.\nLe risposte alle notifiche, etichette degli account e le anteprime multimediali non saranno disponibili.";
 "NiceFeatures.Filters.Header" = "FILTRI (TAB)";
-"NiceFeatures.Filters.Notice" = "Seleziona il numero di tab personalizzate.\nTocca a lungo la tab per cambiare filtro.";
 "NiceFeatures.Filters.ShowBadge" = "Mostra badge (Filtri)";
 "NiceFeatures.UseClassicInfoUi" = "Usa l'interfaccia delle info classica";
 
@@ -60,7 +58,6 @@
 "Folder.Create" = "Crea cartella...";
 "Folder.Create.Name" = "Nome cartella";
 "Folder.Create.Placeholder" = "Cartella...";
-"Folder.LimitExceeded" = "Spiacente, puoi creare solo 3 cartelle personalizzate.\nPuoi aggiungerne di più con Premium.";
 "NiceFeatures.HideNumber" = "Nascondi il numero di telefono nelle impostazioni";
 
 /*NGWeb*/
@@ -71,7 +68,8 @@
 "NiceFeatures.Use.DataStorage" = "Per favore, usa «%1» per configurare il tuo browser predefinito";
 "NiceFeatures.Browser.Header" = "URL";
 "NiceFeatures.Browser.UseBrowser" = "Apri link nel browser";
-"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram aprirà i link in un browser esterno invece di farlo nell'app.\nIl browser selezionato deve essere installato.";
+"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram aprirà i link in un browser esterno invece di farlo nell'app.
+Il browser selezionato deve essere installato.";
 "ChatFilter.Missed" = "Mancati";
 
 /*Premium*/
@@ -88,10 +86,8 @@
 "Common.SupportChatUsername" = "nicegram_it";
 "Common.FAQUrl" = "https://nicegram.app/it/faq/";
 "Common.FAQ.Button" = "FAQ Nicegram";
-"Common.FAQ.Intro" = "Per favore, nota che il supporto di Nicegram è operato solo dall'unico sviluppatore e dalla community.\n\nPrima di tutto, dai una occhiata alle FAQ di Nicegram: contiene molte soluzioni a problemi frequenti.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Feature uniche che non puoi rifiutare!";
-"IAP.Premium.Features" = "Traduttore istantaneo dei messaggi\n\nRicorda la cartella corrente all'uscita";
 "IAP.Premium.Activated" = "Premium attivato!";
 "IAP.Common.Restore" = "Ripristina acquisti";
 "IAP.Common.CantPay" = "Spiacente, non puoi effettuare acquisti a causa di restrizioni sul tuo dispositivo o account.";
@@ -102,6 +98,7 @@
 "Premium.OnetapTranslate" = "Bottone di traduzione rapida";
 "Premium.IgnoreTranslate.Title" = "Lingue ignorate";
 "Premium.IgnoreTranslate.Header" = "Il bottone di traduzione rapida sarà DISABILITATO per le lingue che selezioni sotto.";
+"Premium.RecordAllCalls" = "Registra tutte le chiamate";
 
 /*Manage Filters*/
 "ManageFilters.Title" = "Gestisci tab";
@@ -134,7 +131,6 @@
 "NiceFeatures.BackupSettings.Done" = "Backup eseguito nei messaggi salvati";
 "NiceFeatures.BackupSettings.Error" = "Errore creazione backup";
 
-"NiceFeatures.RestoreSettings.Confirm" = "Sicuro di voler ripristinare cartelle e impostazioni dal file?\n⚠️ Questo sovrascriverà i dati attuali";
 "NiceFeatures.RestoreSettings.Done" = "✔️ Cartelle e impostazioni ripristinate";
 "NiceFeatures.RestoreSettings.Error" = "Errore ripristino impostazioni. Il file potrebbe essere corrotto";
 
@@ -145,8 +141,8 @@
 "Gmod" = "Modalità anteprima";
 "Gmod.Enable" = "Abilitare modalità anteprima?";
 "Gmod.Disable" = "Disabilitare modalità anteprima?";
-"Gmod.Notice" = "Il tuo stato online sarà nascosto da tutti tramite le impostazioni della privacy di Telegram.\nL'app mostrerà un avviso se entri in una chat privata.\nIl tuo stato online verrà rivelato se mandi o scrivi qualunque messaggio.";
 
+"ShowNicegramButtonInChat" = "Mostra il pulsante Nicegram nella chat";
 "SendWithKb" = "Invia con il pulsante «Invio»";
 "NiceFeatures.ShowGmodIcon" = "Mostra icona modalità anteprima";
 "Gmod.OpenChatQ" = "Aprire chat?";
@@ -188,21 +184,6 @@
 "DoubleBottom.Enabled.OK" = "OK";
 "DoubleBottom.Passcode.Error" = "Si prega di impostare un altro codice di accesso diverso da quello utilizzato per il blocco del codice stesso";
 
-/*Onboarding*/
-"NicegramOnboarding.Continue" = "Continua";
-"NicegramOnboarding.1.Title" = "Il client numero uno per Telegram";
-"NicegramOnboarding.1.Desc" = "Unisciti a oltre 2 milioni di utenti Nicegram e accedi al client Telegram più potente e sicuro per le aziende.";
-"NicegramOnboarding.2.Title" = "Esperienza di messaggistica avanzata";
-"NicegramOnboarding.2.Desc" = "Velocizza la tua comunicazione con funzionalità uniche come un traduttore integrato, riconoscimento vocale, inoltro di messaggi senza indicare l'autore e salvataggio rapido nei preferiti.";
-"NicegramOnboarding.3.Title" = "Profilo utente esteso";
-"NicegramOnboarding.3.Desc" = "Crea tutti gli account Telegram di cui hai bisogno in modo completamente gratuito, oltre a visualizzare un profilo utente avanzato con ID, data di registrazione e link cliccabili.";
-"NicegramOnboarding.4.Title" = "Estensioni aziendali uniche";
-"NicegramOnboarding.4.Desc" = "Approfitta delle innovazioni del team di Nicegram e ottieni una eSIM con accesso a Internet in 133 paesi. Puoi inoltre registrare nuovi account Telegram al numero di telefono del piano dati della eSIM.";
-"NicegramOnboarding.5.Title" = "Il client di messaggistica più sicuro";
-"NicegramOnboarding.5.Desc" = "Client di messaggistica sicuro con crittografia avanzata, chiamate audio e video di gruppo, canali pubblici, gruppi e bot, spazio di archiviazione cloud illimitato per le chat, condivisione di file multimediali e documenti.";
-"NicegramOnboarding.6.Title" = "Conosci Lily";
-"NicegramOnboarding.6.Desc" = "Il tuo assistente personale Chatbot d'IA per semplificare la tua vita!";
-
 /*Rounded Videos*/
 "RoundedVideos.ButtonTitle" = "Invia come video rotondo";
 "RoundedVideos.MoreButtonTooltip" = "Converti i video quadrati in cerchi da inviare con un solo tocco.";
@@ -222,6 +203,19 @@
 
 /*Data Sharing*/
 "NicegramSettings.ShareBotsToggle" = "Condividi informazioni sui bot";
-"NicegramSettings.ShareChannelsToggle" = "Condividi informazioni sul canale";
+"NicegramSettings.ShareChannelsToggle" = "Condividi le informazioni del canale";
 "NicegramSettings.ShareStickersToggle" = "Condividi informazioni sugli sticker";
 "NicegramSettings.ShareData.Note" = "Contribuisci all'enciclopedia più completa di canali e gruppi Telegram inviando automaticamente informazioni e link sul canale al nostro database. Non collegiamo il tuo profilo Telegram e il canale e non condividiamo i tuoi dati personali.";
+
+/*Call Record*/
+"NicegramCallRecord.Title" = "registrare";
+"NicegramCallRecord.StopAlertTitle" = "Ferma la registrazione";
+"NicegramCallRecord.StopAlertDescription" = "Vuoi interrompere la registrazione di questa chiamata?";
+"NicegramCallRecord.StopAlertButtonStop" = "Ferma";
+"NicegramCallRecord.StopAlertButtonCancel" = "Cancella";
+"NicegramCallRecord.SavedMessage" = "Chiamata registrata salvata in **Messaggi Salvati**.";
+
+/*Feed*/
+"NicegramFeed.Title" = "Feed";
+"NicegramFeed.Add" = "Aggiungi al feed";
+"NicegramFeed.Remove" = "Rimuovi dal feed";

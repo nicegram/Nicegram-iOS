@@ -580,6 +580,17 @@ public extension Message {
 }
 
 public extension Message {
+    var pendingProcessingAttribute: PendingProcessingMessageAttribute? {
+        for attribute in self.attributes {
+            if let attribute = attribute as? PendingProcessingMessageAttribute {
+                return attribute
+            }
+        }
+        return nil
+    }
+}
+
+public extension Message {
     func areReactionsTags(accountPeerId: PeerId) -> Bool {
         if self.id.peerId == accountPeerId {
             if let reactionsAttribute = self.reactionsAttribute, !reactionsAttribute.reactions.isEmpty {
@@ -599,7 +610,7 @@ public func _internal_parseMediaAttachment(data: Data) -> Media? {
     if let photo = object as? Api.Photo {
         return telegramMediaImageFromApiPhoto(photo)
     } else if let file = object as? Api.Document {
-        return telegramMediaFileFromApiDocument(file)
+        return telegramMediaFileFromApiDocument(file, altDocuments: [])
     } else {
         return nil
     }

@@ -194,6 +194,11 @@ enum ChatListNodeEntry: Comparable, Identifiable {
         }
         
         static func ==(lhs: PeerEntryData, rhs: PeerEntryData) -> Bool {
+            // MARK: Nicegram PinnedChats
+            if lhs.nicegramItem != rhs.nicegramItem {
+                return false
+            }
+            //
             if lhs.index != rhs.index {
                 return false
             }
@@ -671,6 +676,10 @@ func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, 
         pinnedIndexOffset += UInt16(filteredAdditionalItemEntries.count)
     }
     
+    // MARK: Nicegram PinnedChats
+    pinnedIndexOffset += UInt16(nicegramItems.count)
+    //
+    
     var hiddenGeneralThread: ChatListNodeEntry?
     
     loop: for entry in view.items {
@@ -772,10 +781,6 @@ func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, 
     
     if !view.hasLater {
         var pinningIndex: UInt16 = UInt16(pinnedIndexOffset == 0 ? 0 : (pinnedIndexOffset - 1))
-        
-        // MARK: Nicegram PinnedChats
-        pinningIndex += UInt16(nicegramItems.count)
-        //
         
         if let savedMessagesPeer = savedMessagesPeer {
             if !foundPeers.isEmpty {

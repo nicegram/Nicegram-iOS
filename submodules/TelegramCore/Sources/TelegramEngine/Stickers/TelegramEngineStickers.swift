@@ -22,8 +22,8 @@ public extension TelegramEngine {
             return _internal_cachedStickerPack(postbox: self.account.postbox, network: self.account.network, reference: reference, forceRemote: forceRemote)
         }
 
-        public func loadedStickerPack(reference: StickerPackReference, forceActualized: Bool) -> Signal<LoadedStickerPack, NoError> {
-            return _internal_loadedStickerPack(postbox: self.account.postbox, network: self.account.network, reference: reference, forceActualized: forceActualized)
+        public func loadedStickerPack(reference: StickerPackReference, forceActualized: Bool, ignoreCache: Bool = false) -> Signal<LoadedStickerPack, NoError> {
+            return _internal_loadedStickerPack(postbox: self.account.postbox, network: self.account.network, reference: reference, forceActualized: forceActualized, ignoreCache: ignoreCache)
         }
 
         public func randomGreetingSticker() -> Signal<FoundStickerItem?, NoError> {
@@ -361,7 +361,7 @@ public func _internal_resolveInlineStickers(postbox: Postbox, network: Network, 
                 for result in documentSets {
                     if let result = result {
                         for document in result {
-                            if let file = telegramMediaFileFromApiDocument(document) {
+                            if let file = telegramMediaFileFromApiDocument(document, altDocuments: []) {
                                 resultFiles[file.fileId.id] = file
                                 transaction.storeMediaIfNotPresent(media: file)
                             }

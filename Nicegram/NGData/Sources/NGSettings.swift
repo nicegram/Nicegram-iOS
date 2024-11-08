@@ -1,4 +1,5 @@
 import FeatPremium
+import Postbox
 import Foundation
 import NGAppCache
 
@@ -105,6 +106,15 @@ public struct NGSettings {
     
     @NGStorage(key: "hideStories", defaultValue: false)
     public static var hideStories: Bool
+    
+    @NGStorage(key: "recordAllCalls", defaultValue: false)
+    public static var recordAllCalls: Bool
+    
+    @NGStorage(key: "showFeedTab", defaultValue: false)
+    public static var showFeedTab: Bool
+    
+    @NGStorage(key: "feedPeer", defaultValue: [:])
+    public static var feedPeer: [Int64: PeerId]
 }
 
 public struct NGWebSettings {
@@ -135,9 +145,13 @@ public var VarNGSharedSettings = NGSharedSettings()
 
 public func isPremium() -> Bool {
     if #available(iOS 13.0, *) {
+#if DEBUG
+        return true
+#else
         return PremiumContainer.shared
             .getPremiumStatusUseCase()
             .hasPremiumOnDevice()
+#endif
     } else {
         return false
     }

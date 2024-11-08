@@ -86,6 +86,7 @@ public final class ChatListNodeInteraction {
     
     // MARK: Nicegram PinnedChats
     let clearHighlightAnimated: (Bool) -> Void
+    let isChatListVisible: () -> Bool
     //
     
     let peerSelected: (EnginePeer, EnginePeer?, Int64?, ChatListNodeEntryPromoInfo?) -> Void
@@ -116,7 +117,7 @@ public final class ChatListNodeInteraction {
     let openStorageManagement: () -> Void
     let openPasswordSetup: () -> Void
     let openPremiumIntro: () -> Void
-    let openPremiumGift: ([EnginePeer.Id: TelegramBirthday]?) -> Void
+    let openPremiumGift: ([EnginePeer], [EnginePeer.Id: TelegramBirthday]?) -> Void
     let openPremiumManagement: () -> Void
     let openActiveSessions: () -> Void
     let openBirthdaySetup: () -> Void
@@ -146,6 +147,7 @@ public final class ChatListNodeInteraction {
         activateSearch: @escaping () -> Void,
         // MARK: Nicegram PinnedChats
         clearHighlightAnimated: @escaping (Bool) -> Void = { _ in },
+        isChatListVisible: @escaping () -> Bool = { false },
         //
         peerSelected: @escaping (EnginePeer, EnginePeer?, Int64?, ChatListNodeEntryPromoInfo?) -> Void,
         disabledPeerSelected: @escaping (EnginePeer, Int64?, ChatListDisabledPeerReason) -> Void,
@@ -175,7 +177,7 @@ public final class ChatListNodeInteraction {
         openStorageManagement: @escaping () -> Void,
         openPasswordSetup: @escaping () -> Void,
         openPremiumIntro: @escaping () -> Void,
-        openPremiumGift: @escaping ([EnginePeer.Id: TelegramBirthday]?) -> Void,
+        openPremiumGift: @escaping ([EnginePeer], [EnginePeer.Id: TelegramBirthday]?) -> Void,
         openPremiumManagement: @escaping () -> Void,
         openActiveSessions: @escaping () -> Void,
         openBirthdaySetup: @escaping () -> Void,
@@ -190,6 +192,7 @@ public final class ChatListNodeInteraction {
         self.activateSearch = activateSearch
         // MARK: Nicegram PinnedChats
         self.clearHighlightAnimated = clearHighlightAnimated
+        self.isChatListVisible = isChatListVisible
         //
         self.peerSelected = peerSelected
         self.disabledPeerSelected = disabledPeerSelected
@@ -765,13 +768,13 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
                         case .premiumUpgrade, .premiumAnnualDiscount, .premiumRestore:
                             nodeInteraction?.openPremiumIntro()
                         case .xmasPremiumGift:
-                            nodeInteraction?.openPremiumGift(nil)
+                            nodeInteraction?.openPremiumGift([], nil)
                         case .premiumGrace:
                             nodeInteraction?.openPremiumManagement()
                         case .setupBirthday:
                             nodeInteraction?.openBirthdaySetup()
-                        case let .birthdayPremiumGift(_, birthdays):
-                            nodeInteraction?.openPremiumGift(birthdays)
+                        case let .birthdayPremiumGift(peers, birthdays):
+                            nodeInteraction?.openPremiumGift(peers, birthdays)
                         case .reviewLogin:
                             break
                         case let .starsSubscriptionLowBalance(amount, _):
@@ -1108,13 +1111,13 @@ private func mappedUpdateEntries(context: AccountContext, nodeInteraction: ChatL
                         case .premiumUpgrade, .premiumAnnualDiscount, .premiumRestore:
                             nodeInteraction?.openPremiumIntro()
                         case .xmasPremiumGift:
-                            nodeInteraction?.openPremiumGift(nil)
+                            nodeInteraction?.openPremiumGift([], nil)
                         case .premiumGrace:
                             nodeInteraction?.openPremiumManagement()
                         case .setupBirthday:
                             nodeInteraction?.openBirthdaySetup()
-                        case let .birthdayPremiumGift(_, birthdays):
-                            nodeInteraction?.openPremiumGift(birthdays)
+                        case let .birthdayPremiumGift(peers, birthdays):
+                            nodeInteraction?.openPremiumGift(peers, birthdays)
                         case .reviewLogin:
                             break
                         case let .starsSubscriptionLowBalance(amount, _):
@@ -1276,6 +1279,12 @@ public final class ChatListNode: ListView {
     private var dequeuedInitialTransitionOnLayout = false
     private var enqueuedTransition: (ChatListNodeListViewTransition, () -> Void)?
     
+    // MARK: Nicegram PinnedChats
+    private let getPinnedChatsToDisplayUseCase = PinnedChatsContainer.shared.getPinnedChatsToDisplayUseCase()
+    public let isChatListVisible = CurrentValueSubject<Bool, Never>(false)
+    private var cancellables = Set<AnyCancellable>()
+    //
+    
     public private(set) var currentState: ChatListNodeState
     private let statePromise: ValuePromise<ChatListNodeState>
     public var state: Signal<ChatListNodeState, NoError> {
@@ -1421,6 +1430,8 @@ public final class ChatListNode: ListView {
             // MARK: Nicegram PinnedChats
         }, clearHighlightAnimated: { [weak self] flag in
             self?.clearHighlightAnimated(flag)
+        }, isChatListVisible: { [weak self] in
+            self?.isChatListVisible.value ?? false
             //
         }, peerSelected: { [weak self] peer, _, threadId, promoInfo in
             if let strongSelf = self, let peerSelected = strongSelf.peerSelected {
@@ -1745,13 +1756,24 @@ public final class ChatListNode: ListView {
             }
             let controller = self.context.sharedContext.makePremiumIntroController(context: self.context, source: .ads, forceDark: false, dismissed: nil)
             self.push?(controller)
-        }, openPremiumGift: { [weak self] birthdays in
+        }, openPremiumGift: { [weak self] peers, birthdays in
             guard let self else {
                 return
             }
-            let controller = self.context.sharedContext.makePremiumGiftController(context: self.context, source: .chatList(birthdays), completion: nil)
-            controller.navigationPresentation = .modal
-            self.push?(controller)
+            if peers.count == 1, let peerId = peers.first?.id {
+                let _ = (self.context.engine.payments.premiumGiftCodeOptions(peerId: nil, onlyCached: true)
+                |> filter { !$0.isEmpty }
+                |> deliverOnMainQueue).start(next: { giftOptions in
+                    let premiumOptions = giftOptions.filter { $0.users == 1 }.map { CachedPremiumGiftOption(months: $0.months, currency: $0.currency, amount: $0.amount, botUrl: "", storeProductId: $0.storeProductId) }
+                    let controller = self.context.sharedContext.makeGiftOptionsController(context: self.context, peerId: peerId, premiumOptions: premiumOptions)
+                    controller.navigationPresentation = .modal
+                    self.push?(controller)
+                })
+            } else {
+                let controller = self.context.sharedContext.makePremiumGiftController(context: self.context, source: .chatList(birthdays), completion: nil)
+                controller.navigationPresentation = .modal
+                self.push?(controller)
+            }
         }, openPremiumManagement: { [weak self] in
             guard let self else {
                 return
@@ -2254,16 +2276,27 @@ public final class ChatListNode: ListView {
         }
         
         // MARK: Nicegram PinnedChats
-        let nicegramItemsSignal: Signal<[PinnedChatToDisplay], NoError>
-        if #available(iOS 13.0, *) {
-            nicegramItemsSignal = PinnedChatsContainer.shared.getPinnedChatsToDisplayUseCase()
-                .publisher()
-                .map { $0.reversed() }
-                .toSignal()
-                .skipError()
-        } else {
-            nicegramItemsSignal = .single([])
-        }
+        let nicegramItemsSignal = getPinnedChatsToDisplayUseCase
+            .publisher(
+                isViewVisible: isChatListVisible.eraseToAnyPublisher()
+            )
+            .map { Array($0.reversed()) }
+            .toSignal()
+            .skipError()
+        
+        isChatListVisible
+            .removeDuplicates()
+            .sink { [weak self] isChatListVisible in
+                guard let self else { return }
+                if isChatListVisible {
+                    self.forEachItemNode { itemNode in
+                        if let itemNode = itemNode as? ChatListItemNode {
+                            itemNode.trackViewIfNeeded()
+                        }
+                    }
+                }
+            }
+            .store(in: &cancellables)
         //
         
         // MARK: Nicegram HiddenChats
@@ -2354,10 +2387,6 @@ public final class ChatListNode: ListView {
             if case .forum(_) = location {
                 nicegramItems = []
             }
-            
-            if #available(iOS 13.0, *) {
-                PinnedChatsUI.trackChatsView(nicegramItems.map(\.chat))
-            }
             //
             
             let innerIsMainTab = location == .chatList(groupId: .root) && chatListFilter == nil
@@ -2388,7 +2417,7 @@ public final class ChatListNode: ListView {
                         guard !filter.contains(.onlyPrivateChats) || peer.peerId.namespace == Namespaces.Peer.CloudUser else { return false }
                         
                         if let peer = peer.peer {
-                            if peer.id.isReplies {
+                            if peer.id.isRepliesOrVerificationCodes {
                                 return false
                             }
                             
@@ -4339,7 +4368,7 @@ private func statusStringForPeerType(accountPeerId: EnginePeer.Id, strings: Pres
         }
     }
     
-    if peer.id.isReplies {
+    if peer.id.isReplies || peer.id.isVerificationCodes {
         return nil
     } else if case let .user(user) = peer {
         if user.botInfo != nil || user.flags.contains(.isSupport) {

@@ -38,9 +38,7 @@
 "Chat.OpenPin" = "Mostrar Marcador";
 "ChatFilter.Admin" = "Administrador";
 "NiceFeatures.Notifications.Fix" = "Desativar Notificações Indesejadas";
-"NiceFeatures.Notifications.FixNotice" = "Útil se você receber notificações de chats silenciados.\nA resposta das notificações, rótulos da conta e visualizações da mídia não estarão disponíveis.";
 "NiceFeatures.Filters.Header" = "FILTROS (ABAS)";
-"NiceFeatures.Filters.Notice" = "Selecione o número de abas personalizadas.\nToque longo na guia para alterar o filtro.";
 "NiceFeatures.Filters.ShowBadge" = "Mostrar Badges (Filtros)";
 "NiceFeatures.UseClassicInfoUi" = "Use UI clássico nas informações do chat";
 
@@ -60,7 +58,6 @@
 "Folder.Create" = "Criar pasta...";
 "Folder.Create.Name" = "Nome da Pasta";
 "Folder.Create.Placeholder" = "Pasta...";
-"Folder.LimitExceeded" = "Desculpe, você não pode criar mais do que 3 pastas personalizadas.\nMais pastas estão disponíveis no Premium.";
 "NiceFeatures.HideNumber" = "Ocultar telefone nas configurações";
 
 /*NGWeb*/
@@ -88,10 +85,8 @@
 "Common.SupportChatUsername" = "nicegramchat";
 "Common.FAQUrl" = "https://nicegram.app/faq/";
 "Common.FAQ.Button" = "Nicegram FAQ";
-"Common.FAQ.Intro" = "Por favor, note que o suporte do Nicegram é feito pelo desenvolvedor e comunidade.\n\nPrimeiramente, dê uma olhada no Nicegram FAQ: ele tem dicas e respostas importantes para a maioria das perguntas.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Recursos exclusivos que você não pode recusar!";
-"IAP.Premium.Features" = "Lembre-se da pasta selecionada ao sair";
 "IAP.Premium.Activated" = "Premium ativado!";
 "IAP.Common.Restore" = "Restaurar Compras";
 "IAP.Common.CantPay" = "Desculpe, mas você não pode fazer compras devido a restrições no seu dispositivo ou conta.";
@@ -102,6 +97,7 @@
 "Premium.OnetapTranslate" = "Botão de Tradução Rápida";
 "Premium.IgnoreTranslate.Title" = "Idiomas Ignorados";
 "Premium.IgnoreTranslate.Header" = "O botão De traduzir esta DESATIVADO para os idiomas que você escolher abaixo.";
+"Premium.RecordAllCalls" = "Gravar todas as chamadas";
 
 /*Manage Filters*/
 "ManageFilters.Title" = "Administrar Abas";
@@ -134,7 +130,6 @@
 "NiceFeatures.BackupSettings.Done" = "Backup enviado para Mensagens Salvas";
 "NiceFeatures.BackupSettings.Error" = "Erro ao criar backup";
 
-"NiceFeatures.RestoreSettings.Confirm" = "Tem certeza de que deseja restaurar pastas e configurações do arquivo?\n⚠️ Ele irá substituir os dados atuais";
 "NiceFeatures.RestoreSettings.Done" = "Pastas e Configurações restauradas com sucesso";
 "NiceFeatures.RestoreSettings.Error" = "Erro ao restaurar as configurações. O arquivo pode estar corrompido";
 
@@ -145,8 +140,8 @@
 "Gmod" = "Modo Pré-visualização";
 "Gmod.Enable" = "Ativar modo pré-visualização?";
 "Gmod.Disable" = "Desativar modo de pré-visualização?";
-"Gmod.Notice" = "Seu status online será ocultado para todos pelas configurações de privacidade do Telegram.\nO aplicativo irá mostrar um aviso se você estiver entrando em um chat privado.\nSeu status online pode ser revelado se você enviar ou digitar QUALQUER mensagem.";
 
+"ShowNicegramButtonInChat" = "Mostrar botão Nicegram no chat";
 "SendWithKb" = "Enviar usando o botão «Enter»";
 "NiceFeatures.ShowGmodIcon" = "Mostrar ícone do modo pré-visualização";
 "Gmod.OpenChatQ" = "Abrir Chat?";
@@ -188,21 +183,6 @@
 "DoubleBottom.Enabled.OK" = "OK";
 "DoubleBottom.Passcode.Error" = "Por favor, defina outra senha, diferente da que você usa como senha de bloqueio";
 
-/*Onboarding*/
-"NicegramOnboarding.Continue" = "Continuar";
-"NicegramOnboarding.1.Title" = "O Cliente Nº 1 para o Telegram Messenger";
-"NicegramOnboarding.1.Desc" = "Junte-se aos mais de 2 milhões de usuários do Nicegram e tenha acesso ao mais potente e seguro cliente do Telegram para negócios.";
-"NicegramOnboarding.2.Title" = "Experiência Avançada de Sistema de Mensagens";
-"NicegramOnboarding.2.Desc" = "Acelere suas comunicações com recursos únicos como o Tradutor Integrado, Conversão de Fala em Texto, Encaminhamento de mensagens sem especificar o autor e Salvamento rápido nos favoritos. ";
-"NicegramOnboarding.3.Title" = "Perfil Estendido de Usuário";
-"NicegramOnboarding.3.Desc" = "Crie quantas contas no Telegram você precisar gratuitamente e tenha acesso a um perfil avançado de usuário com ID, data de cadastro e links clicáveis. ";
-"NicegramOnboarding.4.Title" = "Extensões Únicas para Negócios";
-"NicegramOnboarding.4.Desc" = "Aproveite as inovações da equipe do Nicegram e receba um eSIM com acesso à internet em 133 países. Você também pode cadastrar novas contas no Telegram utilizando o número de telefone do plano de dados do eSIM.";
-"NicegramOnboarding.5.Title" = "O Aplicativo de Mensagens Mais Seguro";
-"NicegramOnboarding.5.Desc" = "Proteja o Aplicativo de Mensagens com Criptografia de Alta Segurança, Chamadas de Áudio e Vídeo em Grupo, Canais Públicos, Grupos e Bots, Armazenamento Ilimitado em Nuvem para as Conversas, compartilhamento de Mídia e Documentos.";
-"NicegramOnboarding.6.Title" = "Conheça a Lily";
-"NicegramOnboarding.6.Desc" = "Seu assistente pessoal de IA Chatbot para simplificar sua vida!";
-
 /*Rounded Videos*/
 "RoundedVideos.ButtonTitle" = "Enviar como Vídeo Arredondado";
 "RoundedVideos.MoreButtonTooltip" = "Converta vídeos quadrados em círculos para enviar com apenas um toque.";
@@ -222,6 +202,19 @@
 
 /*Data Sharing*/
 "NicegramSettings.ShareBotsToggle" = "Partilhar informação de bots";
-"NicegramSettings.ShareChannelsToggle" = "Partilhar informação de canais";
+"NicegramSettings.ShareChannelsToggle" = "Compartilhar informações do canal";
 "NicegramSettings.ShareStickersToggle" = "Partilhar informação de stickers";
 "NicegramSettings.ShareData.Note" = "Contribua para a wikipedia mais abrangente de canais e grupos do Telegram, submetendo automaticamente informações e links de canais à nossa base de dados. Não associamos o seu perfil do Telegram ao canal e não partilhamos os seus dados pessoais.";
+
+/*Call Record*/
+"NicegramCallRecord.Title" = "gravar";
+"NicegramCallRecord.StopAlertTitle" = "Parar gravação";
+"NicegramCallRecord.StopAlertDescription" = "Você deseja parar a gravação desta chamada?";
+"NicegramCallRecord.StopAlertButtonStop" = "Parar";
+"NicegramCallRecord.StopAlertButtonCancel" = "Cancelar";
+"NicegramCallRecord.SavedMessage" = "Chamada gravada salva em **Mensagens Salvas**.";
+
+/*Feed*/
+"NicegramFeed.Title" = "Feed";
+"NicegramFeed.Add" = "Adicionar ao feed";
+"NicegramFeed.Remove" = "Remover do feed";

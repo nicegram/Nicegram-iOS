@@ -11,6 +11,7 @@ import NGGrumUI
 //
 // MARK: Nicegram imports
 import NGData
+import NGStrings
 //
 import Foundation
 import UIKit
@@ -89,7 +90,9 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     // MARK: Nicegram Assistant
     public var assistantController: ViewController?
     //
-    
+// MARK: Nicegram NCG-6373 Feed tab
+    private var feedController: FeedController?
+//
     private let context: AccountContext
     
     public var rootTabController: TabBarController?
@@ -260,7 +263,19 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         if showCallsTab {
             controllers.append(callListController)
         }
+
         controllers.append(chatListController)
+        
+// MARK: Nicegram NCG-6373 Feed tab
+        let feedController = FeedController(
+            context: self.context
+        )
+        if NGSettings.showFeedTab &&
+           NGSettings.feedPeer[context.account.id.int64] != nil {
+            controllers.append(feedController)
+        }
+        self.feedController = feedController
+//
         
         // MARK: Nicegram Assistant
         if #available(iOS 15.0, *) {
@@ -342,10 +357,16 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                 
         // MARK: Nicegram Assistant
         // calculate chatListControllerIndex (instead of (controllers.count - 2))
-        let chatListControllerIndex = controllers.firstIndex {
+        var selectedControllerIndex = controllers.firstIndex {
             $0 is ChatListController
         } ?? 0
-        tabBarController.setControllers(controllers, selectedIndex: restoreSettignsController != nil ? (controllers.count - 1) : chatListControllerIndex)
+        if NGSettings.showFeedTab &&
+            NGSettings.feedPeer[context.account.id.int64] != nil {
+            selectedControllerIndex = controllers.firstIndex {
+                $0 is FeedController
+            } ?? 0
+        }
+        tabBarController.setControllers(controllers, selectedIndex: restoreSettignsController != nil ? (controllers.count - 1) : selectedControllerIndex)
         
         self.contactsController = contactsController
         self.callListController = callListController
@@ -369,7 +390,12 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
             controllers.append(self.callListController!)
         }
         controllers.append(self.chatListController!)
-        
+// MARK: Nicegram NCG-6373 Feed tab
+        if NGSettings.showFeedTab &&
+           NGSettings.feedPeer[context.account.id.int64] != nil {
+            controllers.append(self.feedController!)
+        }
+//
         // MARK: Nicegram Assistant
         if let assistantController,
            NGSettings.showNicegramTab {

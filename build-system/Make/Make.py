@@ -100,13 +100,13 @@ class BazelCommandLine:
 
             # https://github.com/bazelbuild/rules_swift
             # Use -Osize instead of -O when building swift modules.
-            #'--features=swift.opt_uses_osize',
+            '--features=swift.opt_uses_osize',
 
             # --num-threads 0 forces swiftc to generate one object file per module; it:
             # 1. resolves issues with the linker caused by the swift-objc mixing.
             # 2. makes the resulting binaries significantly smaller (up to 9% for this project).
+            #'--swiftcopt=-num-threads', '--swiftcopt=1',
             '--swiftcopt=-num-threads', '--swiftcopt=1',
-            '--swiftcopt=-j1',
 
             # Strip unsused code.
             '--features=dead_strip',
@@ -147,18 +147,7 @@ class BazelCommandLine:
         self.disable_provisioning_profiles = True
 
     def set_configuration(self, configuration):
-        if configuration == 'debug_universal':
-            self.configuration_args = [
-                # bazel debug build configuration
-                '-c', 'dbg',
-
-                # Build universal binaries.
-                '--ios_multi_cpus=armv7,arm64',
-
-                # Always build universal Watch binaries.
-                '--watchos_cpus=arm64_32'
-            ] + self.common_debug_args
-        elif configuration == 'debug_arm64':
+        if configuration == 'debug_arm64':
             self.configuration_args = [
                 # bazel debug build configuration
                 '-c', 'dbg',
@@ -191,16 +180,6 @@ class BazelCommandLine:
                 # Always build universal Watch binaries.
                 '--watchos_cpus=arm64_32'
             ] + self.common_debug_args
-        elif configuration == 'debug_armv7':
-            self.configuration_args = [
-                # bazel debug build configuration
-                '-c', 'dbg',
-
-                '--ios_multi_cpus=armv7',
-
-                # Always build universal Watch binaries.
-                '--watchos_cpus=arm64_32'
-            ] + self.common_debug_args
         elif configuration == 'release_arm64':
             self.configuration_args = [
                 # bazel optimized build configuration
@@ -216,41 +195,10 @@ class BazelCommandLine:
                 '--apple_generate_dsym',
 
                 # Require DSYM files as build output.
-                '--output_groups=+dsyms'
-            ] + self.common_release_args
-        elif configuration == 'release_armv7':
-            self.configuration_args = [
-                # bazel optimized build configuration
-                '-c', 'opt',
+                '--output_groups=+dsyms',
 
-                # Build single-architecture binaries. It is almost 2 times faster is 32-bit support is not required.
-                '--ios_multi_cpus=armv7',
-
-                # Always build universal Watch binaries.
-                '--watchos_cpus=arm64_32',
-
-                # Generate DSYM files when building.
-                '--apple_generate_dsym',
-
-                # Require DSYM files as build output.
-                '--output_groups=+dsyms'
-            ] + self.common_release_args
-        elif configuration == 'release_universal':
-            self.configuration_args = [
-                # bazel optimized build configuration
-                '-c', 'opt',
-
-                # Build universal binaries.
-                '--ios_multi_cpus=armv7,arm64',
-
-                # Always build universal Watch binaries.
-                '--watchos_cpus=arm64_32',
-                
-                # Generate DSYM files when building.
-                '--apple_generate_dsym',
-
-                # Require DSYM files as build output.
-                '--output_groups=+dsyms'
+                '--swiftcopt=-num-threads',
+                '--swiftcopt=0',
             ] + self.common_release_args
         else:
             raise Exception('Unknown configuration {}'.format(configuration))

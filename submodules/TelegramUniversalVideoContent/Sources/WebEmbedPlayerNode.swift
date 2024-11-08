@@ -2,7 +2,7 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 import SwiftSignalKit
-import WebKit
+@preconcurrency import WebKit
 import TelegramCore
 import UniversalMediaPlayer
 
@@ -226,5 +226,15 @@ final class WebEmbedPlayerNode: ASDisplayNode, WKNavigationDelegate {
     }
 
     func setCanPlaybackWithoutHierarchy(_ canPlaybackWithoutHierarchy: Bool) {
+    }
+    
+    func enterNativePictureInPicture() -> Bool {
+        return false
+    }
+    
+    func exitNativePictureInPicture() {
+    }
+    
+    func setNativePictureInPictureIsActive(_ value: Bool) {
     }
 }

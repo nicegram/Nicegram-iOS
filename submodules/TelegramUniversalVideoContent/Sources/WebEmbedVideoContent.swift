@@ -36,7 +36,7 @@ public final class WebEmbedVideoContent: UniversalVideoContent {
         self.openUrl = openUrl
     }
     
-    public func makeContentNode(postbox: Postbox, audioSession: ManagedAudioSession) -> UniversalVideoContentNode & ASDisplayNode {
+    public func makeContentNode(accountId: AccountRecordId, postbox: Postbox, audioSession: ManagedAudioSession) -> UniversalVideoContentNode & ASDisplayNode {
         return WebEmbedVideoContentNode(postbox: postbox, audioSessionManager: audioSession, userLocation: self.userLocation, webPage: self.webPage, webpageContent: self.webpageContent, forcedTimestamp: self.forcedTimestamp, openUrl: self.openUrl)
     }
 }
@@ -56,6 +56,10 @@ final class WebEmbedVideoContentNode: ASDisplayNode, UniversalVideoContentNode {
     private let _bufferingStatus = Promise<(RangeSet<Int64>, Int64)?>()
     var bufferingStatus: Signal<(RangeSet<Int64>, Int64)?, NoError> {
         return self._bufferingStatus.get()
+    }
+    
+    var isNativePictureInPictureActive: Signal<Bool, NoError> {
+        return .single(false)
     }
     
     private var seekId: Int = 0
@@ -116,7 +120,7 @@ final class WebEmbedVideoContentNode: ASDisplayNode, UniversalVideoContentNode {
         self.readyDisposable.dispose()
     }
     
-    func updateLayout(size: CGSize, transition: ContainedViewLayoutTransition) {
+    func updateLayout(size: CGSize, actualSize: CGSize, transition: ContainedViewLayoutTransition) {
         transition.updatePosition(node: self.playerNode, position: CGPoint(x: size.width / 2.0, y: size.height / 2.0))
         transition.updateTransformScale(node: self.playerNode, scale: size.width / self.intrinsicDimensions.width)
 
@@ -183,6 +187,17 @@ final class WebEmbedVideoContentNode: ASDisplayNode, UniversalVideoContentNode {
         self.playerNode.setBaseRate(baseRate)
     }
     
+    func setVideoQuality(_ videoQuality: UniversalVideoContentVideoQuality) {
+    }
+    
+    func videoQualityState() -> (current: Int, preferred: UniversalVideoContentVideoQuality, available: [Int])? {
+        return nil
+    }
+    
+    func videoQualityStateSignal() -> Signal<(current: Int, preferred: UniversalVideoContentVideoQuality, available: [Int])?, NoError> {
+        return .single(nil)
+    }
+    
     func addPlaybackCompleted(_ f: @escaping () -> Void) -> Int {
         return self.playbackCompletedListeners.add(f)
     }
@@ -199,5 +214,15 @@ final class WebEmbedVideoContentNode: ASDisplayNode, UniversalVideoContentNode {
     }
 
     func setCanPlaybackWithoutHierarchy(_ canPlaybackWithoutHierarchy: Bool) {
+    }
+    
+    func enterNativePictureInPicture() -> Bool {
+        return false
+    }
+    
+    func exitNativePictureInPicture() {
+    }
+    
+    func setNativePictureInPictureIsActive(_ value: Bool) {
     }
 }

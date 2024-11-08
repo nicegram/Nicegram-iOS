@@ -1,3 +1,7 @@
+// MARK: Nicegram ATT
+import ChatMessageNicegramAdNode
+import FeatAttentionEconomy
+//
 // MARK: Nicegram AiChat
 import NGAiChatUI
 //
@@ -276,6 +280,14 @@ private func mappedInsertEntries(context: AccountContext, chatLocation: ChatLoca
                 return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListSearchItem(theme: theme, placeholder: strings.Common_Search, activate: {
                     controllerInteraction.openSearch()
                 }), directionHint: entry.directionHint)
+            // MARK: Nicegram ATT
+            case let .NicegramAdEntry(_, ad, presentationData):
+                if #available(iOS 15.0, *) {
+                    return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatMessageNicegramAdItem(ad: ad, chatLocation: chatLocation, context: context, controllerInteraction: controllerInteraction, presentationData: presentationData), directionHint: entry.directionHint)
+                } else {
+                    fatalError()
+                }
+            //
         }
     }
 }
@@ -328,6 +340,14 @@ private func mappedUpdateEntries(context: AccountContext, chatLocation: ChatLoca
                 return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListSearchItem(theme: theme, placeholder: strings.Common_Search, activate: {
                     controllerInteraction.openSearch()
                 }), directionHint: entry.directionHint)
+            // MARK: Nicegram ATT
+            case let .NicegramAdEntry(_, ad, presentationData):
+                if #available(iOS 15.0, *) {
+                    return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatMessageNicegramAdItem(ad: ad, chatLocation: chatLocation, context: context, controllerInteraction: controllerInteraction, presentationData: presentationData), directionHint: entry.directionHint)
+                } else {
+                    fatalError()
+                }
+            //
         }
     }
 }
@@ -678,6 +698,9 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
     private var loadStateUpdated: ((ChatHistoryNodeLoadState, Bool) -> Void)?
     private var additionalLoadStateUpdated: [(ChatHistoryNodeLoadState, Bool) -> Void] = []
     
+    public private(set) var hasAtLeast3Messages: Bool = false
+    public var hasAtLeast3MessagesUpdated: ((Bool) -> Void)?
+    
     public private(set) var hasPlentyOfMessages: Bool = false
     public var hasPlentyOfMessagesUpdated: ((Bool) -> Void)?
     
@@ -808,7 +831,11 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
         if case .bubbles = mode, let peerId = displayAdPeer {
             let adMessagesContext = context.engine.messages.adMessages(peerId: peerId)
             self.adMessagesContext = adMessagesContext
-            adMessages = adMessagesContext.state
+            if peerId.namespace == Namespaces.Peer.CloudUser {
+                adMessages = .single((nil, []))
+            } else {
+                adMessages = adMessagesContext.state
+            }
         } else {
             self.adMessagesContext = nil
             adMessages = .single((nil, []))
@@ -1640,6 +1667,27 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
         }
         |> distinctUntilChanged
         
+        // MARK: Nicegram ATT
+        let getPlacementAdsUseCase = AttCoreModule.shared.getPlacementAdsUseCase()
+        let getSettingsUseCase = AttCoreModule.shared.getSettingsUseCase()
+        let nicegramAd = getPlacementAdsUseCase
+            .publisher(placementId: .chat)
+            .combineLatestThreadSafe(
+                getSettingsUseCase.publisher()
+            )
+            .map { ad, settings in
+                let enableAds = settings.enableAds
+                let enablePlacement = settings.settings(for: .chat)?.enabled ?? false
+                let forceRemove = !enableAds || !enablePlacement
+                return NicegramAdInChat(
+                    ad: ad,
+                    forceRemove: forceRemove
+                )
+            }
+            .toSignal()
+            .skipError()
+        //
+        
         let messageViewQueue = Queue.mainQueue()
         let historyViewTransitionDisposable = combineLatest(queue: messageViewQueue,
             historyViewUpdate,
@@ -1666,8 +1714,10 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
             audioTranscriptionTrial,
             chatThemes,
             deviceContactsNumbers,
-            contentSettings
-        ).startStrict(next: { [weak self] update, chatPresentationData, selectedMessages, updatingMedia, networkType, preferredStoryHighQuality, animatedEmojiStickers, additionalAnimatedEmojiStickers, customChannelDiscussionReadState, customThreadOutgoingReadState, availableReactions, availableMessageEffects, savedMessageTags, defaultReaction, accountPeer, suggestAudioTranscription, promises, topicAuthorId, translationState, maxReadStoryId, recommendedChannels, audioTranscriptionTrial, chatThemes, deviceContactsNumbers, contentSettings in
+            contentSettings,
+            // MARK: Nicegram ATT
+            nicegramAd
+        ).startStrict(next: { [weak self] update, chatPresentationData, selectedMessages, updatingMedia, networkType, preferredStoryHighQuality, animatedEmojiStickers, additionalAnimatedEmojiStickers, customChannelDiscussionReadState, customThreadOutgoingReadState, availableReactions, availableMessageEffects, savedMessageTags, defaultReaction, accountPeer, suggestAudioTranscription, promises, topicAuthorId, translationState, maxReadStoryId, recommendedChannels, audioTranscriptionTrial, chatThemes, deviceContactsNumbers, contentSettings, nicegramAd in
             let (historyAppearsCleared, pendingUnpinnedAllMessages, pendingRemovedMessages, currentlyPlayingMessageIdAndType, scrollToMessageId, chatHasBots, allAdMessages) = promises
             
             func applyHole() {
@@ -1879,12 +1929,7 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                     if languageCode.hasSuffix(rawSuffix) {
                         languageCode = String(languageCode.dropLast(rawSuffix.count))
                     }
-                    if languageCode == "nb" {
-                        languageCode = "no"
-                    } else if languageCode == "pt-br" {
-                        languageCode = "pt"
-                    }
-                    translateToLanguage = languageCode
+                    translateToLanguage = normalizeTranslationLanguage(languageCode)
                 }
                 
                 let associatedData = extractAssociatedData(chatLocation: chatLocation, view: view, automaticDownloadNetworkType: networkType, preferredStoryHighQuality: preferredStoryHighQuality, animatedEmojiStickers: animatedEmojiStickers, additionalAnimatedEmojiStickers: additionalAnimatedEmojiStickers, subject: subject, currentlyPlayingMessageId: currentlyPlayingMessageIdAndType?.0, isCopyProtectionEnabled: isCopyProtectionEnabled, availableReactions: availableReactions, availableMessageEffects: availableMessageEffects, savedMessageTags: savedMessageTags, defaultReaction: defaultReaction, isPremium: isPremium, alwaysDisplayTranscribeButton: alwaysDisplayTranscribeButton, accountPeer: accountPeer, topicAuthorId: topicAuthorId, hasBots: chatHasBots, translateToLanguage: translateToLanguage, maxReadStoryId: maxReadStoryId, recommendedChannels: recommendedChannels, audioTranscriptionTrial: audioTranscriptionTrial, chatThemes: chatThemes, deviceContactsNumbers: deviceContactsNumbers, isInline: !rotated, showSensitiveContent: contentSettings.ignoreContentRestrictionReasons.contains("sensitive"))
@@ -1896,7 +1941,8 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                 
                 let previousChatHistoryEntriesForViewState = chatHistoryEntriesForViewState.with({ $0 })
                 
-                let (filteredEntries, updatedChatHistoryEntriesForViewState) = chatHistoryEntriesForView(
+                // MARK: Nicegram ATT, changed 'let' to 'var'
+                var (filteredEntries, updatedChatHistoryEntriesForViewState) = chatHistoryEntriesForView(
                     currentState: previousChatHistoryEntriesForViewState,
                     context: context,
                     location: chatLocation,
@@ -1923,6 +1969,26 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                     adMessage: allAdMessages.fixed,
                     dynamicAdMessages: allAdMessages.opportunistic
                 )
+                // MARK: Nicegram ATT
+                if let self {
+                    var cachedPeerData: CachedPeerData?
+                    for entry in view.additionalData {
+                        if case let .cachedPeerData(_, maybeCachedPeerData) = entry, let maybeCachedPeerData {
+                            cachedPeerData = maybeCachedPeerData
+                        }
+                    }
+                    
+                    filteredEntries = nicegramMapChatHistoryEntries(
+                        oldEntries: previousView.with { $0?.0.filteredEntries } ?? [],
+                        newEntries: filteredEntries,
+                        nicegramAd: nicegramAd,
+                        visibleItemRange: self.displayedItemRange.visibleRange,
+                        chatPresentationData: chatPresentationData,
+                        cachedPeerData: cachedPeerData
+                    )
+                }
+                //
+                
                 let lastHeaderId = filteredEntries.last.flatMap { listMessageDateHeaderId(timestamp: $0.index.timestamp) } ?? 0
                 let processedView = ChatHistoryView(originalView: view, filteredEntries: filteredEntries, associatedData: associatedData, lastHeaderId: lastHeaderId, id: id, locationInput: update.2, ignoreMessagesInTimestampRange: update.3, ignoreMessageIds: update.4)
                 let previousValueAndVersion = previousView.swap((processedView, update.1, selectedMessages, allAdMessages.version))
@@ -3500,6 +3566,9 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                 }
             }
             for id in self.context.engine.messages.synchronouslyIsMessageDeletedInteractively(ids: testIds) {
+                if id.namespace == Namespaces.Message.ScheduledCloud {
+                    continue
+                }
                 inner: for (stableId, listId) in maybeRemovedInteractivelyMessageIds {
                     if listId == id {
                         expiredMessageStableIds.insert(stableId)
@@ -3809,13 +3878,18 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                     }
                 }
                 
+                var hasAtLeast3Messages = false
                 var hasPlentyOfMessages = false
                 var hasLotsOfMessages = false
                 if let historyView = strongSelf.historyView {
                     if historyView.originalView.holeEarlier || historyView.originalView.holeLater {
+                        hasAtLeast3Messages = true
                         hasPlentyOfMessages = true
                         hasLotsOfMessages = true
                     } else if !historyView.originalView.holeEarlier && !historyView.originalView.holeLater {
+                        if historyView.filteredEntries.count >= 3 {
+                            hasAtLeast3Messages = true
+                        }
                         if historyView.filteredEntries.count >= 10 {
                             hasPlentyOfMessages = true
                         }
@@ -3825,6 +3899,10 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                     }
                 }
                 
+                if strongSelf.hasAtLeast3Messages != hasAtLeast3Messages {
+                    strongSelf.hasAtLeast3Messages = hasAtLeast3Messages
+                    strongSelf.hasAtLeast3MessagesUpdated?(hasAtLeast3Messages)
+                }
                 if strongSelf.hasPlentyOfMessages != hasPlentyOfMessages {
                     strongSelf.hasPlentyOfMessages = hasPlentyOfMessages
                     strongSelf.hasPlentyOfMessagesUpdated?(hasPlentyOfMessages)

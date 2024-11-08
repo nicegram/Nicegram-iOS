@@ -149,6 +149,33 @@ private:
     });
 }
 
+// MARK: Nicegram NCG-5828 call recording
+-(void)StartNicegramRecording:(void(^_Nullable)(NSString* _Nonnull, double, NSUInteger))completion
+                 errorCallback:(void (^_Nullable)(NSString* _Nonnull))errorCallback {
+    _audioDeviceModule->perform([completion, errorCallback](tgcalls::SharedAudioDeviceModule *audioDeviceModule) {
+        audioDeviceModule->audioDeviceModule()->StartNicegramRecording([completion](const std::string& outputFilePath,
+                                                                                    double durationInSeconds,
+                                                                                    size_t rawDataSize) {
+            NSString *path = [NSString stringWithUTF8String: outputFilePath.c_str()];
+            if (completion != NULL) {
+                completion(path, durationInSeconds, rawDataSize);
+            }
+        }, [errorCallback](const std::string& error){
+            NSString *message = [NSString stringWithUTF8String: error.c_str()];
+            if (errorCallback != NULL) {
+                errorCallback(message);
+            }
+        });
+    });
+}
+
+-(void)StopNicegramRecording {
+    _audioDeviceModule->perform([](tgcalls::SharedAudioDeviceModule *audioDeviceModule) {
+        audioDeviceModule->audioDeviceModule()->StopNicegramRecording();
+    });
+}
+//
+
 - (std::shared_ptr<tgcalls::ThreadLocalObject<tgcalls::SharedAudioDeviceModule>>)getAudioDeviceModule {
     return _audioDeviceModule;
 }
@@ -1781,7 +1808,11 @@ audioDevice:(SharedCallAudioDevice * _Nullable)audioDevice {
                 NSMutableArray *result = [[NSMutableArray alloc] init];
                 for (auto &it : levels.updates) {
                     [result addObject:@(it.ssrc)];
-                    [result addObject:@(it.value.level)];
+                    auto level = it.value.level;
+                    if (it.value.isMuted) {
+                        level = 0.0;
+                    }
+                    [result addObject:@(level)];
                     [result addObject:@(it.value.voice)];
                 }
                 audioLevelsUpdated(result);

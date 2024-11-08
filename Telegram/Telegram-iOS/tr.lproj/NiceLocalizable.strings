@@ -38,9 +38,7 @@
 "Chat.OpenPin" = "Sabiti Göster";
 "ChatFilter.Admin" = "Yönetici";
 "NiceFeatures.Notifications.Fix" = "İstenmeyen Bildirimleri Devre Dışı Bırak";
-"NiceFeatures.Notifications.FixNotice" = "Sessiz sohbetlerden bildirimler alıyorsanız kullanışlıdır.\nBildirimlerden yanıtlama, hesap etiketleri ve medya önizlemeleri kullanılamaz olacak.";
 "NiceFeatures.Filters.Header" = "FİLTRELER (SEKMELER)";
-"NiceFeatures.Filters.Notice" = "Özel sekmelerin sayısını seçin.\nFiltreyi değiştirmek için sekmeye uzun basın.";
 "NiceFeatures.Filters.ShowBadge" = "Rozetleri Göster (Filtreler)";
 "NiceFeatures.UseClassicInfoUi" = "Klasik Sohbet Bilgisi Arayüzünü Kullan";
 
@@ -60,7 +58,6 @@
 "Folder.Create" = "Klasör Oluştur...";
 "Folder.Create.Name" = "Klasör İsmi";
 "Folder.Create.Placeholder" = "Klasör...";
-"Folder.LimitExceeded" = "Üzgünüz, 3’ten fazla özel klasör oluşturamazsınız.\nDaha fazla klasör Premium’da kullanılabilir.";
 "NiceFeatures.HideNumber" = "Ayarlarda numarayı gizle";
 
 /*NGWeb*/
@@ -88,10 +85,8 @@
 "Common.SupportChatUsername" = "nicegram_tr";
 "Common.FAQUrl" = "https://nicegram.app/tr/faq/";
 "Common.FAQ.Button" = "Nicegram SSS";
-"Common.FAQ.Intro" = "Lütfen Nicegram Destek’in sadece geliştirici ve topluluktan ibaret olduğunu unutmayın.\n\nİlk olarak, Nicegram SSS’e göz atın: önemli çözüm ipuçları ve birçok soruya cevaplar var.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Reddedemeyeceğiniz benzersiz özellikler!";
-"IAP.Premium.Features" = "Hızlı Mesaj Çevirmeni\n\nÇıkışta seçili klasörü hatırla";
 "IAP.Premium.Activated" = "Premium Aktive Edildi!";
 "IAP.Common.Restore" = "Satın Alımları Geri Yükle";
 "IAP.Common.CantPay" = "Üzgünüz, ama cihaz veya hesap kısıtlamalarınız yüzünden satın alım yapamazsınız.";
@@ -102,6 +97,7 @@
 "Premium.OnetapTranslate" = "Hızlı Çeviri butonu";
 "Premium.IgnoreTranslate.Title" = "İstenmeyen Diller";
 "Premium.IgnoreTranslate.Header" = "Hızlı Çeviri butonu, aşağıda seçtiğiniz diller için DEVRE DIŞI bırakılacaktır.";
+"Premium.RecordAllCalls" = "Tüm çağrıları kaydet";
 
 /*Manage Filters*/
 "ManageFilters.Title" = "Sekmeleri Yönet";
@@ -115,7 +111,8 @@
 "Messages.SelectAllFromUser" = "Bu Kullanıcıdan Olan Bütün Mesajları Seç";
 "Messages.ToLanguage" = "Hedef Dil";
 "Messages.ToLanguage.WithCode" = "Hedef Dil: %@";
-"Messages.TranslateError.ToLanguageNotFound" = "Metni çevirmek istediğiniz dili tespit edemedik. Lütfen manuel olarak seçin ve tekrar deneyin.\n";
+"Messages.TranslateError.ToLanguageNotFound" = "Metni çevirmek istediğiniz dili tespit edemedik. Lütfen manuel olarak seçin ve tekrar deneyin.
+";
 "Messages.ReplyPrivately" = "Özelden Cevapla";
 "Messages.DeleteAllSystemMessages" = "Tümünü Sil";
 
@@ -134,7 +131,6 @@
 "NiceFeatures.BackupSettings.Done" = "Yedekleme, Kayıtlı Mesajlar’a gönderildi";
 "NiceFeatures.BackupSettings.Error" = "Yedekleme oluşturulurken hata";
 
-"NiceFeatures.RestoreSettings.Confirm" = "Klasör & Ayarları dosyadan geri yüklemek istediğinize emin misiniz?\n⚠️ Şu ankinin üzerine yazılacak";
 "NiceFeatures.RestoreSettings.Done" = "Klasör & Ayarlar başarılı bir şekilde geri yüklendi";
 "NiceFeatures.RestoreSettings.Error" = "Ayarlar geri yüklenirken hata. Dosya bozulmuş olabilir";
 
@@ -145,8 +141,8 @@
 "Gmod" = "Önizleme Modu";
 "Gmod.Enable" = "Önizleme Modu etkinleştirilsin mi?";
 "Gmod.Disable" = "Önizleme Modu devre dışı bırakılsın mı?";
-"Gmod.Notice" = "Çevrimiçi durumunuz, Telegram gizlilik ayarlarına göre herkesten gizlenecek.\nUygulama, siz özel bir sohbete girerken bir uyarı gösterecek.\nHERHANGİ BİR mesaj yazar veya gönderirseniz, çevrimiçi durumunuz görünebilir.";
 
+"ShowNicegramButtonInChat" = "Sohbette Nicegram Butonunu Göster";
 "SendWithKb" = "«Enter» butonu ile gönder";
 "NiceFeatures.ShowGmodIcon" = "Önizleme Modu simgesini göster";
 "Gmod.OpenChatQ" = "Sohbet açılsın mı?";
@@ -188,21 +184,6 @@
 "DoubleBottom.Enabled.OK" = "TAMAM";
 "DoubleBottom.Passcode.Error" = "Lütfen Parola Kilidi için mevcut kullandığınızdan farklı bir parola belirleyin";
 
-/*Onboarding*/
-"NicegramOnboarding.Continue" = "Devam et";
-"NicegramOnboarding.1.Title" = "Telegram Messenger için 1 Numaralı İstemci";
-"NicegramOnboarding.1.Desc" = "2 Milyondan fazla Nicegram kullanıcısına katılın ve iş için en güçlü ve güvenli Telegram istemcisine erişin. ";
-"NicegramOnboarding.2.Title" = "Gelişmiş Mesajlaşma Tecrübesi";
-"NicegramOnboarding.2.Desc" = "Dahili Çevirmen, Konuşmayı Metne Çevirme, Konuşmayı yazar belirtmeden iletme ve Sık kullanılanlara hızlı kaydetme gibi özgün özellikleri ile iletişiminizi hızlandırın. ";
-"NicegramOnboarding.3.Title" = "Genişletilmiş Kullanıcı Profili";
-"NicegramOnboarding.3.Desc" = "Tamamen ücretsiz bir şekilde istediğiniz kadar Telegram hesabı oluşturun ve bununla birlikte kimlik, kayıt tarihi ve tıklanabilir bağlantılar ile gelişmiş bir kullanıcı profili görüntüleyin.";
-"NicegramOnboarding.4.Title" = "Özgün İşletme Uzantıları";
-"NicegramOnboarding.4.Desc" = "Nicegram takımının yeniliklerinden faydalanın ve 133 ülkede internet erişimi olan bir eSIM'e sahip olun.  Aynı zamanda eSIM veri planının telefon numarasına yeni Telegram hesapları da kaydedebilirsiniz.  ";
-"NicegramOnboarding.5.Title" = "En Güvenli Mesenger";
-"NicegramOnboarding.5.Desc" = "Güçlü Şifreleme, Grup Sesli ve Görüntülü Aramalar, Genel kanallar, Gruplar ve Botlar, Sohbetler Belgeler ve Dökümanlar için Limitsiz Bulut depolaması ile Güvenli Messenger.";
-"NicegramOnboarding.6.Title" = "Lily ile Tanışın";
-"NicegramOnboarding.6.Desc" = "Hayatınızı Basitleştirmek için Kişisel Yapay Zeka Sohbet Robotu Asistanınız!";
-
 /*Rounded Videos*/
 "RoundedVideos.ButtonTitle" = "Yuvarlak Video Olarak Gönder";
 "RoundedVideos.MoreButtonTooltip" = "Kare videoları tek dokunuşla daire olarak göndermek için dönüştürün.";
@@ -222,6 +203,19 @@
 
 /*Data Sharing*/
 "NicegramSettings.ShareBotsToggle" = "Bot bilgilerini paylaş";
-"NicegramSettings.ShareChannelsToggle" = "Kanal bilgilerini paylaş";
+"NicegramSettings.ShareChannelsToggle" = "Kanal bilgisini paylaş";
 "NicegramSettings.ShareStickersToggle" = "Sticker bilgilerini paylaş";
 "NicegramSettings.ShareData.Note" = "Kanal bilgileri ve bağlantısını otomatik olarak göndererek Telegram kanalları ve gruplarının en kapsamlı vikipedisine katkıda bulunun. Telegram profilinizle ve kanalınızla bağlantı kurmuyoruz ve kişisel verilerinizi paylaşmıyoruz.";
+
+/*Call Record*/
+"NicegramCallRecord.Title" = "kaydet";
+"NicegramCallRecord.StopAlertTitle" = "Kaydı durdur";
+"NicegramCallRecord.StopAlertDescription" = "Bu çağrıyı kaydetmeyi durdurmak istiyor musunuz?";
+"NicegramCallRecord.StopAlertButtonStop" = "Durdur";
+"NicegramCallRecord.StopAlertButtonCancel" = "İptal";
+"NicegramCallRecord.SavedMessage" = "Kaydedilen Çağrı **Kaydedilen Mesajlar** bölümüne kaydedildi.";
+
+/*Feed*/
+"NicegramFeed.Title" = "Akış";
+"NicegramFeed.Add" = "Akışa ekle";
+"NicegramFeed.Remove" = "Akıştan kaldır";

@@ -2,7 +2,6 @@
 import AppLovinAdProvider
 import FeatNicegramHub
 import FeatOnboarding
-import FeatTasks
 import NGAiChat
 import NGAnalytics
 import NGAppCache
@@ -18,7 +17,6 @@ import NGRepoUser
 import NGStats
 import NGStrings
 import NicegramWallet
-import SubscriptionAnalytics
 
 import UIKit
 import SwiftSignalKit
@@ -397,26 +395,27 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         self.buildConfig = buildConfig
         let signatureDict = BuildConfigExtra.signatureDict()
 
-        let mobyApiKey = NGENV.moby_key
-        MobySubscriptionAnalytics.setup(apiKey: mobyApiKey) { account in
-            account.appsflyerID = nil
-        } completion: { _, _ in }
-
-        if AppCache.appLaunchCount == 1 {
-            let installTime = (time_t)(Date().timeIntervalSince1970)
-            let installInfo = InstallInfo(installDateTimestamp: installTime)
-            MobySubscriptionAnalytics.trackInstall(installInfo: installInfo)
-        }
+         // MARK: Nicegram, moved 'isDebugConfiguration' definition here
+        var isDebugConfiguration = false
+        #if DEBUG
+        isDebugConfiguration = true
+        #endif
         
+        if Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt" {
+            isDebugConfiguration = true
+        }
+        //
+        
+        let ngEnableLogging = isDebugConfiguration
         NGEntryPoint.onAppLaunch(
             env: Env(
                 apiBaseUrl: URL(string: NGENV.ng_api_url)!,
                 apiKey: NGENV.ng_api_key,
+                enableLogging: ngEnableLogging,
                 isAppStoreBuild: buildConfig.isAppStoreBuild,
                 premiumProductId: NGENV.premium_bundle,
                 privacyUrl: URL(string: NGENV.privacy_url)!,
                 referralBot: NGENV.referral_bot,
-                tapjoyApiKey: NGENV.tapjoy_api_key,
                 telegramAuthBot: NGENV.telegram_auth_bot,
                 termsUrl: URL(string: NGENV.terms_url)!,
                 webSocketUrl: NGENV.websocket_url
@@ -445,14 +444,16 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 env: {
                     .init(
                         appUrlScheme: buildConfig.appSpecificUrlScheme,
-                        enableLogging: false,
+                        enableLogging: ngEnableLogging,
                         keychainGroupIdentifier: NGENV.wallet.keychainGroupIdentifier,
                         nicegramApiBaseUrl: URL(string: NGENV.ng_api_url)!
                             .appendingPathComponent("v7/"),
                         walletConnectProjectId: NGENV.wallet.walletConnectProjectId,
                         web3AuthBackupQuestion: NGENV.wallet.web3AuthBackupQuestion,
                         web3AuthClientId: NGENV.wallet.web3AuthClientId,
-                        web3AuthVerifier: NGENV.wallet.web3AuthVerifier
+                        web3AuthVerifier: NGENV.wallet.web3AuthVerifier,
+                        stonfiApiUrl: NGENV.wallet.stonfiApiUrl,
+                        stonfiNicegramApiUrl: NGENV.wallet.stonfiNicegramApiUrl
                     )
                 },
                 contactImageProvider: {
@@ -689,15 +690,8 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             self.mainWindow?.presentNative(UIAlertController(title: nil, message: "Error 2", preferredStyle: .alert))
             return true
         }
-        
-        var isDebugConfiguration = false
-        #if DEBUG
-        isDebugConfiguration = true
-        #endif
-        
-        if Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt" {
-            isDebugConfiguration = true
-        }
+
+        // MARK: Nicegram, moved 'isDebugConfiguration' definition up
         
         if isDebugConfiguration || buildConfig.isInternalBuild {
             LoggingSettings.defaultSettings = LoggingSettings(logToFile: true, logToConsole: false, redactSensitiveData: true)
@@ -1323,10 +1317,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     RepoTgHelper.setTelegramId(
                         accountContext.account.peerId.id._internalGetInt64Value()
                     )
-                    
-                    TasksContainer.shared.channelSubscriptionChecker.register {
-                        ChannelSubscriptionCheckerImpl(context: accountContext)
-                    }
                 }
                 
                 if #available(iOS 13.0, *) {
@@ -1849,6 +1839,12 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         let timestamp = Int(CFAbsoluteTimeGetCurrent())
         let minReindexTimestamp = timestamp - 2 * 24 * 60 * 60
         if let indexTimestamp = UserDefaults.standard.object(forKey: "TelegramCacheIndexTimestamp") as? NSNumber, indexTimestamp.intValue >= minReindexTimestamp {
+            #if DEBUG && false
+            Logger.shared.log("App \(self.episodeId)", "Executing low-impact cache reindex in foreground")
+            let _ = self.runCacheReindexTasks(lowImpact: true, completion: {
+                Logger.shared.log("App \(self.episodeId)", "Executing low-impact cache reindex in foreground — done1")
+            })
+            #endif
         } else {
             UserDefaults.standard.set(timestamp as NSNumber, forKey: "TelegramCacheIndexTimestamp")
             
@@ -2110,7 +2106,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             if resetOnce {
                 resetOnce = false
                 if count == 0 {
-                    UIApplication.shared.applicationIconBadgeNumber = 1
+                    //UIApplication.shared.applicationIconBadgeNumber = 1
                 }
             }
             UIApplication.shared.applicationIconBadgeNumber = Int(count)
@@ -2167,14 +2163,19 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         self.isActiveValue = false
         self.isActivePromise.set(false)
         
-        var taskId: UIBackgroundTaskIdentifier?
-        taskId = application.beginBackgroundTask(withName: "lock", expirationHandler: {
-            if let taskId = taskId {
+        final class TaskIdHolder {
+            var taskId: UIBackgroundTaskIdentifier?
+        }
+        
+        let taskIdHolder = TaskIdHolder()
+        
+        taskIdHolder.taskId = application.beginBackgroundTask(withName: "lock", expirationHandler: {
+            if let taskId = taskIdHolder.taskId {
                 UIApplication.shared.endBackgroundTask(taskId)
             }
         })
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 5.0, execute: {
-            if let taskId = taskId {
+            if let taskId = taskIdHolder.taskId {
                 UIApplication.shared.endBackgroundTask(taskId)
             }
         })
@@ -2753,7 +2754,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                         if let primary = primary {
                             for context in contexts {
                                 if let context = context, context.account.id == primary {
-                                    self.openChatWhenReady(accountId: nil, peerId: peerId, threadId: nil, storyId: nil)
+                                    self.openChatWhenReady(accountId: nil, peerId: peerId, threadId: nil, storyId: nil, openAppIfAny: true)
                                     return
                                 }
                             }
@@ -2761,7 +2762,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                         
                         for context in contexts {
                             if let context = context {
-                                self.openChatWhenReady(accountId: context.account.id, peerId: peerId, threadId: nil, storyId: nil)
+                                self.openChatWhenReady(accountId: context.account.id, peerId: peerId, threadId: nil, storyId: nil, openAppIfAny: true)
                                 return
                             }
                         }
@@ -2859,7 +2860,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }))
     }
     
-    private func openChatWhenReady(accountId: AccountRecordId?, peerId: PeerId, threadId: Int64?, messageId: MessageId? = nil, activateInput: Bool = false, storyId: StoryId?) {
+    private func openChatWhenReady(accountId: AccountRecordId?, peerId: PeerId, threadId: Int64?, messageId: MessageId? = nil, activateInput: Bool = false, storyId: StoryId?, openAppIfAny: Bool = false) {
         let signal = self.sharedContextPromise.get()
         |> take(1)
         |> deliverOnMainQueue
@@ -2878,7 +2879,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }
         self.openChatWhenReadyDisposable.set((signal
         |> deliverOnMainQueue).start(next: { context in
-            context.openChatWithPeerId(peerId: peerId, threadId: threadId, messageId: messageId, activateInput: activateInput, storyId: storyId)
+            context.openChatWithPeerId(peerId: peerId, threadId: threadId, messageId: messageId, activateInput: activateInput, storyId: storyId, openAppIfAny: openAppIfAny)
         }))
     }
     

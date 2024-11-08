@@ -498,12 +498,7 @@ final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
         
         var translateToLanguage: String?
         if let translationState = interfaceState.translationState, translationState.isEnabled {
-            translateToLanguage = translationState.toLang
-            if translateToLanguage == "nb" {
-                translateToLanguage = "no"
-            } else if translateToLanguage == "pt-br" {
-                translateToLanguage = "pt"
-            }
+            translateToLanguage = normalizeTranslationLanguage(translationState.toLang)
         }
         
         var currentTranslateToLanguageUpdated = false
@@ -971,6 +966,8 @@ final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
                         controllerInteraction.openWebView(button.title, url, simple, .generic)
                     case .requestPeer:
                         break
+                    case let .copyText(payload):
+                        controllerInteraction.copyText(payload)
                     }
                     
                     break

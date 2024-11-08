@@ -123,8 +123,6 @@ class CaptionScrollWrapperNode: ASDisplayNode {
     }
 }
 
-
-
 final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScrollViewDelegate {
     private let context: AccountContext
     private var presentationData: PresentationData
@@ -859,7 +857,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
             } else if let media = media as? TelegramMediaFile, !media.isAnimated {
                 for attribute in media.attributes {
                     switch attribute {
-                    case let .Video(_, dimensions, _, _, _):
+                    case let .Video(_, dimensions, _, _, _, _):
                         isVideo = true
                         if dimensions.height > 0 {
                             if CGFloat(dimensions.width) / CGFloat(dimensions.height) > 1.33 {
@@ -959,7 +957,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
             } else if media is TelegramMediaImage {
                 hasCaption = true
             } else if let file = media as? TelegramMediaFile {
-                hasCaption = file.mimeType.hasPrefix("image/")
+                hasCaption = file.mimeType.hasPrefix("image/") || file.mimeType.hasPrefix("video/")
             } else if media is TelegramMediaInvoice {
                 hasCaption = true
             }
@@ -1106,8 +1104,11 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                 
                 let dustNode = InvisibleInkDustNode(textNode: spoilerTextNode, enableAnimations: self.context.sharedContext.energyUsageSettings.fullTranslucency)
                 self.dustNode = dustNode
-                spoilerTextNode.supernode?.insertSubnode(dustNode, aboveSubnode: spoilerTextNode)
-                
+                if let textSelectionNode = self.textSelectionNode {
+                    spoilerTextNode.supernode?.insertSubnode(dustNode, aboveSubnode: textSelectionNode)
+                } else {
+                    spoilerTextNode.supernode?.insertSubnode(dustNode, aboveSubnode: spoilerTextNode)
+                }
             }
             if let dustNode = self.dustNode {
                 dustNode.update(size: textFrame.size, color: .white, textColor: .white, rects: textLayout.spoilers.map { $0.1.offsetBy(dx: 3.0, dy: 3.0).insetBy(dx: 0.0, dy: 1.0) }, wordRects: textLayout.spoilerWords.map { $0.1.offsetBy(dx: 3.0, dy: 3.0).insetBy(dx: 0.0, dy: 1.0) })

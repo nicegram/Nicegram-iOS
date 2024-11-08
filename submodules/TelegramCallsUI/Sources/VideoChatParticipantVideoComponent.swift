@@ -12,6 +12,9 @@ import AccountContext
 import SwiftSignalKit
 import DirectMediaImageCache
 import FastBlur
+import ContextUI
+import ComponentDisplayAdapters
+import AvatarNode
 
 private func blurredAvatarImage(_ dataImage: UIImage) -> UIImage? {
     let imageContextSize = CGSize(width: 64.0, height: 64.0)
@@ -35,8 +38,11 @@ private let activityBorderImage: UIImage = {
 }()
 
 final class VideoChatParticipantVideoComponent: Component {
+    let theme: PresentationTheme
+    let strings: PresentationStrings
     let call: PresentationGroupCall
     let participant: GroupCallParticipantsContext.Participant
+    let isMyPeer: Bool
     let isPresentation: Bool
     let isSpeaking: Bool
     let isExpanded: Bool
@@ -44,12 +50,17 @@ final class VideoChatParticipantVideoComponent: Component {
     let contentInsets: UIEdgeInsets
     let controlInsets: UIEdgeInsets
     let interfaceOrientation: UIInterfaceOrientation
-    weak var rootVideoLoadingEffectView: VideoChatVideoLoadingEffectView?
     let action: (() -> Void)?
+    let contextAction: ((EnginePeer, ContextExtractedContentContainingView, ContextGesture) -> Void)?
+    let activatePinch: ((PinchSourceContainerNode) -> Void)?
+    let deactivatedPinch: (() -> Void)?
     
     init(
+        theme: PresentationTheme,
+        strings: PresentationStrings,
         call: PresentationGroupCall,
         participant: GroupCallParticipantsContext.Participant,
+        isMyPeer: Bool,
         isPresentation: Bool,
         isSpeaking: Bool,
         isExpanded: Bool,
@@ -57,11 +68,16 @@ final class VideoChatParticipantVideoComponent: Component {
         contentInsets: UIEdgeInsets,
         controlInsets: UIEdgeInsets,
         interfaceOrientation: UIInterfaceOrientation,
-        rootVideoLoadingEffectView: VideoChatVideoLoadingEffectView?,
-        action: (() -> Void)?
+        action: (() -> Void)?,
+        contextAction: ((EnginePeer, ContextExtractedContentContainingView, ContextGesture) -> Void)?,
+        activatePinch: ((PinchSourceContainerNode) -> Void)?,
+        deactivatedPinch: (() -> Void)?
     ) {
+        self.theme = theme
+        self.strings = strings
         self.call = call
         self.participant = participant
+        self.isMyPeer = isMyPeer
         self.isPresentation = isPresentation
         self.isSpeaking = isSpeaking
         self.isExpanded = isExpanded
@@ -69,12 +85,17 @@ final class VideoChatParticipantVideoComponent: Component {
         self.contentInsets = contentInsets
         self.controlInsets = controlInsets
         self.interfaceOrientation = interfaceOrientation
-        self.rootVideoLoadingEffectView = rootVideoLoadingEffectView
         self.action = action
+        self.contextAction = contextAction
+        self.activatePinch = activatePinch
+        self.deactivatedPinch = deactivatedPinch
     }
     
     static func ==(lhs: VideoChatParticipantVideoComponent, rhs: VideoChatParticipantVideoComponent) -> Bool {
         if lhs.participant != rhs.participant {
+            return false
+        }
+        if lhs.isMyPeer != rhs.isMyPeer {
             return false
         }
         if lhs.isPresentation != rhs.isPresentation {
@@ -101,6 +122,15 @@ final class VideoChatParticipantVideoComponent: Component {
         if (lhs.action == nil) != (rhs.action == nil) {
             return false
         }
+        if (lhs.contextAction == nil) != (rhs.contextAction == nil) {
+            return false
+        }
+        if (lhs.activatePinch == nil) != (rhs.activatePinch == nil) {
+            return false
+        }
+        if (lhs.deactivatedPinch == nil) != (rhs.deactivatedPinch == nil) {
+            return false
+        }
         return true
     }
     
@@ -116,11 +146,35 @@ final class VideoChatParticipantVideoComponent: Component {
         }
     }
     
-    final class View: HighlightTrackingButton {
+    private struct ReferenceLocation: Equatable {
+        var containerWidth: CGFloat
+        var positionX: CGFloat
+        
+        init(containerWidth: CGFloat, positionX: CGFloat) {
+            self.containerWidth = containerWidth
+            self.positionX = positionX
+        }
+    }
+    
+    private final class AnimationHint {
+        enum Kind {
+            case videoAvailabilityChanged
+        }
+        
+        let kind: Kind
+        
+        init(kind: Kind) {
+            self.kind = kind
+        }
+    }
+    
+    final class View: ContextControllerSourceView {
         private var component: VideoChatParticipantVideoComponent?
         private weak var componentState: EmptyComponentState?
         private var isUpdating: Bool = false
         private var previousSize: CGSize?
+        
+        private let backgroundGradientView: UIImageView
         
         private let muteStatus = ComponentView<Empty>()
         private let title = ComponentView<Empty>()
@@ -128,24 +182,61 @@ final class VideoChatParticipantVideoComponent: Component {
         private var blurredAvatarDisposable: Disposable?
         private var blurredAvatarView: UIImageView?
         
+        private let pinchContainerNode: PinchSourceContainerNode
+        private let extractedContainerView: ContextExtractedContentContainingView
         private var videoSource: AdaptedCallVideoSource?
         private var videoDisposable: Disposable?
         private var videoBackgroundLayer: SimpleLayer?
         private var videoLayer: PrivateCallVideoLayer?
         private var videoSpec: VideoSpec?
         
+        private var awaitingFirstVideoFrameForUnpause: Bool = false
+        private var videoStatus: ComponentView<Empty>?
         private var activityBorderView: UIImageView?
         
-        private var loadingEffectView: PortalView?
+        private var referenceLocation: ReferenceLocation?
+        private var loadingEffectView: VideoChatVideoLoadingEffectView?
         
         override init(frame: CGRect) {
+            self.backgroundGradientView = UIImageView()
+            self.pinchContainerNode = PinchSourceContainerNode()
+            self.extractedContainerView = ContextExtractedContentContainingView()
+            
             super.init(frame: frame)
             
-            //TODO:release optimize
-            self.clipsToBounds = true
-            self.layer.cornerRadius = 10.0
+            self.addSubview(self.extractedContainerView)
+            self.targetViewForActivationProgress = self.extractedContainerView.contentView
             
-            self.addTarget(self, action: #selector(self.pressed), for: .touchUpInside)
+            self.extractedContainerView.contentView.addSubview(self.pinchContainerNode.view)
+            self.pinchContainerNode.contentNode.view.addSubview(self.backgroundGradientView)
+            
+            //TODO:release optimize
+            self.pinchContainerNode.contentNode.view.layer.cornerRadius = 10.0
+            self.pinchContainerNode.contentNode.view.clipsToBounds = true
+            
+            self.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.tapGesture(_:))))
+            
+            self.pinchContainerNode.activate = { [weak self] sourceNode in
+                guard let self, let component = self.component else {
+                    return
+                }
+                component.activatePinch?(sourceNode)
+            }
+            self.pinchContainerNode.animatedOut = { [weak self] in
+                guard let self, let component = self.component else {
+                    return
+                }
+                
+                component.deactivatedPinch?()
+            }
+            
+            self.activated = { [weak self] gesture, _ in
+                guard let self, let component = self.component else {
+                    gesture.cancel()
+                    return
+                }
+                component.contextAction?(EnginePeer(component.participant.peer), self.extractedContainerView, gesture)
+            }
         }
         
         required init?(coder: NSCoder) {
@@ -157,11 +248,13 @@ final class VideoChatParticipantVideoComponent: Component {
             self.blurredAvatarDisposable?.dispose()
         }
         
-        @objc private func pressed() {
-            guard let component = self.component, let action = component.action else {
-                return
+        @objc private func tapGesture(_ recognizer: UITapGestureRecognizer) {
+            if case .ended = recognizer.state {
+                guard let component = self.component, let action = component.action else {
+                    return
+                }
+                action()
             }
-            action()
         }
         
         func update(component: VideoChatParticipantVideoComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
@@ -170,8 +263,26 @@ final class VideoChatParticipantVideoComponent: Component {
                 self.isUpdating = false
             }
             
+            let previousComponent = self.component
             self.component = component
             self.componentState = state
+            
+            self.isGestureEnabled = !component.isExpanded
+            
+            self.pinchContainerNode.isPinchGestureEnabled = component.activatePinch != nil
+            transition.setPosition(view: self.pinchContainerNode.view, position: CGRect(origin: CGPoint(), size: availableSize).center)
+            transition.setBounds(view: self.pinchContainerNode.view, bounds: CGRect(origin: CGPoint(), size: availableSize))
+            self.pinchContainerNode.update(size: availableSize, transition: transition.containedViewLayoutTransition)
+            
+            transition.setPosition(view: self.extractedContainerView, position: CGRect(origin: CGPoint(), size: availableSize).center)
+            transition.setBounds(view: self.extractedContainerView, bounds: CGRect(origin: CGPoint(), size: availableSize))
+            transition.setPosition(view: self.extractedContainerView.contentView, position: CGRect(origin: CGPoint(), size: availableSize).center)
+            transition.setBounds(view: self.extractedContainerView.contentView, bounds: CGRect(origin: CGPoint(), size: availableSize))
+            self.extractedContainerView.contentRect = CGRect(origin: CGPoint(), size: availableSize)
+            
+            transition.setFrame(view: self.pinchContainerNode.contentNode.view, frame: CGRect(origin: CGPoint(), size: availableSize))
+            
+            transition.setFrame(view: self.backgroundGradientView, frame: CGRect(origin: CGPoint(), size: availableSize))
             
             let alphaTransition: ComponentTransition
             if !transition.animation.isImmediate {
@@ -180,11 +291,20 @@ final class VideoChatParticipantVideoComponent: Component {
                 alphaTransition = .immediate
             }
             
+            let videoAlphaTransition: ComponentTransition
+            if let animationHint = transition.userData(AnimationHint.self), case .videoAvailabilityChanged = animationHint.kind {
+                videoAlphaTransition = .easeInOut(duration: 0.2)
+            } else {
+                videoAlphaTransition = alphaTransition
+            }
+            
             let controlsAlpha: CGFloat = component.isUIHidden ? 0.0 : 1.0
             
-            let nameColor = component.participant.peer.nameColor ?? .blue
-            let nameColors = component.call.accountContext.peerNameColors.get(nameColor, dark: true)
-            self.backgroundColor = nameColors.main.withMultiplied(hue: 1.0, saturation: 1.0, brightness: 0.4)
+            if previousComponent == nil {
+                let colors = calculateAvatarColors(context: component.call.accountContext, explicitColorIndex: nil, peerId: component.participant.peer.id, nameColor: component.participant.peer.nameColor, icon: .none, theme: component.theme)
+                
+                self.backgroundGradientView.image = generateGradientImage(size: CGSize(width: 8.0, height: 32.0), colors: colors.reversed(), locations: [0.0, 1.0], direction: .vertical)
+            }
             
             if let smallProfileImage = component.participant.peer.smallProfileImage {
                 let blurredAvatarView: UIImageView
@@ -196,7 +316,7 @@ final class VideoChatParticipantVideoComponent: Component {
                     blurredAvatarView = UIImageView()
                     blurredAvatarView.contentMode = .scaleAspectFill
                     self.blurredAvatarView = blurredAvatarView
-                    self.insertSubview(blurredAvatarView, at: 0)
+                    self.pinchContainerNode.contentNode.view.insertSubview(blurredAvatarView, aboveSubview: self.backgroundGradientView)
                     
                     blurredAvatarView.frame = CGRect(origin: CGPoint(), size: availableSize)
                 }
@@ -239,7 +359,9 @@ final class VideoChatParticipantVideoComponent: Component {
                 transition: transition,
                 component: AnyComponent(VideoChatMuteIconComponent(
                     color: .white,
-                    content: component.isPresentation ? .screenshare : .mute(isFilled: true, isMuted: component.participant.muteState != nil && !component.isSpeaking)
+                    content: component.isPresentation ? .screenshare : .mute(isFilled: true, isMuted: component.participant.muteState != nil && !component.isSpeaking),
+                    shadowColor: UIColor(white: 0.0, alpha: 0.7),
+                    shadowBlur: 8.0
                 )),
                 environment: {},
                 containerSize: CGSize(width: 36.0, height: 36.0)
@@ -252,7 +374,7 @@ final class VideoChatParticipantVideoComponent: Component {
             }
             if let muteStatusView = self.muteStatus.view {
                 if muteStatusView.superview == nil {
-                    self.addSubview(muteStatusView)
+                    self.pinchContainerNode.contentNode.view.addSubview(muteStatusView)
                     muteStatusView.alpha = controlsAlpha
                 }
                 transition.setPosition(view: muteStatusView, position: muteStatusFrame.center)
@@ -261,24 +383,28 @@ final class VideoChatParticipantVideoComponent: Component {
                 alphaTransition.setAlpha(view: muteStatusView, alpha: controlsAlpha)
             }
             
+            let titleInnerInsets = UIEdgeInsets(top: 8.0, left: 8.0, bottom: 8.0, right: 8.0)
             let titleSize = self.title.update(
                 transition: .immediate,
                 component: AnyComponent(MultilineTextComponent(
-                    text: .plain(NSAttributedString(string: component.participant.peer.debugDisplayTitle, font: Font.semibold(16.0), textColor: .white))
+                    text: .plain(NSAttributedString(string: component.participant.peer.debugDisplayTitle, font: Font.semibold(16.0), textColor: .white)),
+                    insets: titleInnerInsets,
+                    textShadowColor: UIColor(white: 0.0, alpha: 0.7),
+                    textShadowBlur: 8.0
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - 8.0 * 2.0, height: 100.0)
+                containerSize: CGSize(width: availableSize.width - 8.0 * 2.0 - 4.0, height: 100.0)
             )
             let titleFrame: CGRect
             if component.isExpanded {
-                titleFrame = CGRect(origin: CGPoint(x: 36.0, y: availableSize.height - component.controlInsets.bottom - 8.0 - titleSize.height), size: titleSize)
+                titleFrame = CGRect(origin: CGPoint(x: 36.0 - titleInnerInsets.left, y: availableSize.height - component.controlInsets.bottom - 8.0 - titleSize.height + titleInnerInsets.top), size: titleSize)
             } else {
-                titleFrame = CGRect(origin: CGPoint(x: 29.0, y: availableSize.height - component.controlInsets.bottom - 4.0 - titleSize.height), size: titleSize)
+                titleFrame = CGRect(origin: CGPoint(x: 29.0 - titleInnerInsets.left, y: availableSize.height - component.controlInsets.bottom - 4.0 - titleSize.height + titleInnerInsets.top + 1.0), size: titleSize)
             }
             if let titleView = self.title.view {
                 if titleView.superview == nil {
                     titleView.layer.anchorPoint = CGPoint()
-                    self.addSubview(titleView)
+                    self.pinchContainerNode.contentNode.view.addSubview(titleView)
                     titleView.alpha = controlsAlpha
                 }
                 transition.setPosition(view: titleView, position: titleFrame.origin)
@@ -287,18 +413,34 @@ final class VideoChatParticipantVideoComponent: Component {
                 alphaTransition.setAlpha(view: titleView, alpha: controlsAlpha)
             }
             
-            if let videoDescription = component.isPresentation ? component.participant.presentationDescription : component.participant.videoDescription {
+            let videoDescription = component.isPresentation ? component.participant.presentationDescription : component.participant.videoDescription
+            
+            var isEffectivelyPaused = false
+            if let videoDescription, videoDescription.isPaused {
+                isEffectivelyPaused = true
+            } else if let previousComponent {
+                let previousVideoDescription = previousComponent.isPresentation ? previousComponent.participant.presentationDescription : previousComponent.participant.videoDescription
+                if let previousVideoDescription, previousVideoDescription.isPaused {
+                    self.awaitingFirstVideoFrameForUnpause = true
+                }
+                if self.awaitingFirstVideoFrameForUnpause {
+                    isEffectivelyPaused = true
+                }
+            }
+            
+            if let videoDescription {
                 let videoBackgroundLayer: SimpleLayer
                 if let current = self.videoBackgroundLayer {
                     videoBackgroundLayer = current
                 } else {
                     videoBackgroundLayer = SimpleLayer()
                     videoBackgroundLayer.backgroundColor = UIColor(white: 0.1, alpha: 1.0).cgColor
+                    videoBackgroundLayer.opacity = 0.0
                     self.videoBackgroundLayer = videoBackgroundLayer
                     if let blurredAvatarView = self.blurredAvatarView {
-                        self.layer.insertSublayer(videoBackgroundLayer, above: blurredAvatarView.layer)
+                        self.pinchContainerNode.contentNode.view.layer.insertSublayer(videoBackgroundLayer, above: blurredAvatarView.layer)
                     } else {
-                        self.layer.insertSublayer(videoBackgroundLayer, at: 0)
+                        self.pinchContainerNode.contentNode.view.layer.insertSublayer(videoBackgroundLayer, above: self.backgroundGradientView.layer)
                     }
                     videoBackgroundLayer.isHidden = true
                 }
@@ -309,10 +451,11 @@ final class VideoChatParticipantVideoComponent: Component {
                 } else {
                     videoLayer = PrivateCallVideoLayer()
                     self.videoLayer = videoLayer
-                    self.layer.insertSublayer(videoLayer.blurredLayer, above: videoBackgroundLayer)
-                    self.layer.insertSublayer(videoLayer, above: videoLayer.blurredLayer)
+                    videoLayer.opacity = 0.0
+                    self.pinchContainerNode.contentNode.view.layer.insertSublayer(videoLayer.blurredLayer, above: videoBackgroundLayer)
+                    self.pinchContainerNode.contentNode.view.layer.insertSublayer(videoLayer, above: videoLayer.blurredLayer)
                     
-                    videoLayer.blurredLayer.opacity = 0.25
+                    videoLayer.blurredLayer.opacity = 0.0
                     
                     if let input = (component.call as! PresentationGroupCallImpl).video(endpointId: videoDescription.endpointId) {
                         let videoSource = AdaptedCallVideoSource(videoStreamSignal: input)
@@ -329,10 +472,12 @@ final class VideoChatParticipantVideoComponent: Component {
                             
                             if let videoOutput {
                                 let videoSpec = VideoSpec(resolution: videoOutput.resolution, rotationAngle: videoOutput.rotationAngle, followsDeviceOrientation: videoOutput.followsDeviceOrientation)
-                                if self.videoSpec != videoSpec {
+                                if self.videoSpec != videoSpec || self.awaitingFirstVideoFrameForUnpause {
+                                    self.awaitingFirstVideoFrameForUnpause = false
+                                    
                                     self.videoSpec = videoSpec
                                     if !self.isUpdating {
-                                        self.componentState?.updated(transition: .immediate, isLocal: true)
+                                        self.componentState?.updated(transition: ComponentTransition.immediate.withUserData(AnimationHint(kind: .videoAvailabilityChanged)), isLocal: true)
                                     }
                                 }
                             } else {
@@ -350,7 +495,19 @@ final class VideoChatParticipantVideoComponent: Component {
                 transition.setFrame(layer: videoBackgroundLayer, frame: CGRect(origin: CGPoint(), size: availableSize))
                 
                 if let videoSpec = self.videoSpec {
-                    videoBackgroundLayer.isHidden = false
+                    if videoBackgroundLayer.isHidden {
+                        videoBackgroundLayer.isHidden = false
+                    }
+                    
+                    videoAlphaTransition.setAlpha(layer: videoBackgroundLayer, alpha: 1.0)
+                    
+                    if isEffectivelyPaused {
+                        videoAlphaTransition.setAlpha(layer: videoLayer, alpha: 0.0)
+                        videoAlphaTransition.setAlpha(layer: videoLayer.blurredLayer, alpha: 0.9)
+                    } else {
+                        videoAlphaTransition.setAlpha(layer: videoLayer, alpha: 1.0)
+                        videoAlphaTransition.setAlpha(layer: videoLayer.blurredLayer, alpha: 0.25)
+                    }
                     
                     let rotationAngle = resolveCallVideoRotationAngle(angle: videoSpec.rotationAngle, followsDeviceOrientation: videoSpec.followsDeviceOrientation, interfaceOrientation: component.interfaceOrientation)
                     
@@ -410,17 +567,69 @@ final class VideoChatParticipantVideoComponent: Component {
                 self.videoSpec = nil
             }
             
-            if self.loadingEffectView == nil, let rootVideoLoadingEffectView = component.rootVideoLoadingEffectView {
-                if let loadingEffectView = PortalView(matchPosition: true) {
-                    self.loadingEffectView = loadingEffectView
-                    self.addSubview(loadingEffectView.view)
-                    rootVideoLoadingEffectView.portalSource.addPortal(view: loadingEffectView)
-                    loadingEffectView.view.isUserInteractionEnabled = false
-                    loadingEffectView.view.frame = CGRect(origin: CGPoint(), size: availableSize)
+            var statusKind: VideoChatParticipantVideoStatusComponent.Kind?
+            if component.isPresentation && component.isMyPeer {
+                statusKind = .ownScreenshare
+            } else if isEffectivelyPaused {
+                statusKind = .paused
+            }
+            
+            if let statusKind {
+                let videoStatus: ComponentView<Empty>
+                var videoStatusTransition = transition
+                if let current = self.videoStatus {
+                    videoStatus = current
+                } else {
+                    videoStatusTransition = videoStatusTransition.withAnimation(.none)
+                    videoStatus = ComponentView()
+                    self.videoStatus = videoStatus
+                }
+                let _ = videoStatus.update(
+                    transition: videoStatusTransition,
+                    component: AnyComponent(VideoChatParticipantVideoStatusComponent(
+                        strings: component.strings,
+                        kind: statusKind,
+                        isExpanded: component.isExpanded
+                    )),
+                    environment: {},
+                    containerSize: availableSize
+                )
+                if let videoStatusView = videoStatus.view {
+                    if videoStatusView.superview == nil {
+                        videoStatusView.isUserInteractionEnabled = false
+                        videoStatusView.alpha = 0.0
+                        self.pinchContainerNode.contentNode.view.addSubview(videoStatusView)
+                    }
+                    videoStatusTransition.setFrame(view: videoStatusView, frame: CGRect(origin: CGPoint(), size: availableSize))
+                    videoAlphaTransition.setAlpha(view: videoStatusView, alpha: 1.0)
+                }
+            } else if let videoStatus = self.videoStatus {
+                self.videoStatus = nil
+                if let videoStatusView = videoStatus.view {
+                    videoAlphaTransition.setAlpha(view: videoStatusView, alpha: 0.0, completion: { [weak videoStatusView] _ in
+                        videoStatusView?.removeFromSuperview()
+                    })
                 }
             }
-            if let loadingEffectView = self.loadingEffectView {
-                transition.setFrame(view: loadingEffectView.view, frame: CGRect(origin: CGPoint(), size: availableSize))
+            
+            if videoDescription != nil && self.videoSpec == nil && !isEffectivelyPaused {
+                if self.loadingEffectView == nil {
+                    let loadingEffectView = VideoChatVideoLoadingEffectView(effectAlpha: 0.1, borderAlpha: 0.2, cornerRadius: 10.0, duration: 1.0)
+                    self.loadingEffectView = loadingEffectView
+                    loadingEffectView.alpha = 0.0
+                    loadingEffectView.isUserInteractionEnabled = false
+                    self.pinchContainerNode.contentNode.view.addSubview(loadingEffectView)
+                    if let referenceLocation = self.referenceLocation {
+                        self.updateHorizontalReferenceLocation(containerWidth: referenceLocation.containerWidth, positionX: referenceLocation.positionX, transition: .immediate)
+                    }
+                    videoAlphaTransition.setAlpha(view: loadingEffectView, alpha: 1.0)
+                }
+            } else if let loadingEffectView = self.loadingEffectView {
+                self.loadingEffectView = nil
+                
+                videoAlphaTransition.setAlpha(view: loadingEffectView, alpha: 0.0, completion: { [weak loadingEffectView] _ in
+                    loadingEffectView?.removeFromSuperview()
+                })
             }
             
             if component.isSpeaking && !component.isExpanded {
@@ -430,7 +639,7 @@ final class VideoChatParticipantVideoComponent: Component {
                 } else {
                     activityBorderView = UIImageView()
                     self.activityBorderView = activityBorderView
-                    self.addSubview(activityBorderView)
+                    self.pinchContainerNode.contentNode.view.addSubview(activityBorderView)
                     
                     activityBorderView.image = activityBorderImage
                     activityBorderView.tintColor = UIColor(rgb: 0x33C758)
@@ -466,6 +675,15 @@ final class VideoChatParticipantVideoComponent: Component {
             self.previousSize = availableSize
             
             return availableSize
+        }
+        
+        func updateHorizontalReferenceLocation(containerWidth: CGFloat, positionX: CGFloat, transition: ComponentTransition) {
+            self.referenceLocation = ReferenceLocation(containerWidth: containerWidth, positionX: positionX)
+            
+            if let loadingEffectView = self.loadingEffectView, let size = self.previousSize {
+                transition.setFrame(view: loadingEffectView, frame: CGRect(origin: CGPoint(), size: size))
+                loadingEffectView.update(size: size, containerWidth: containerWidth, offsetX: positionX, gradientWidth: floor(containerWidth * 0.8), transition: transition)
+            }
         }
     }
     

@@ -76,3 +76,8 @@ ci/working_dir
 Telegram/Telegram-iOS/FirebaseRemoteConfigDefaults.plist
 *telegram-bazel-cache*
 Package_local.swift
+submodules/OpusBinding/SharedHeaders/*
+submodules/FFMpegBinding/SharedHeaders/*
+submodules/OpenSSLEncryptionProvider/SharedHeaders/*
+
+

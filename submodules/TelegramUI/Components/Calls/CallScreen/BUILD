@@ -1,5 +1,9 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
+NGDEPS = [
+    "//Nicegram/NGResources:NGResources"
+]
+
 load(
     "@build_bazel_rules_apple//apple:resources.bzl",
     "apple_resource_bundle",
@@ -69,6 +73,8 @@ swift_library(
         "//submodules/AppBundle",
         "//submodules/UIKitRuntimeUtils",
         "//submodules/TelegramPresentationData",
+        "//Nicegram/NGCallRecorder:NGCallRecorder",
+        "//Nicegram/NGData:NGData"
     ],
     visibility = [
         "//visibility:public",

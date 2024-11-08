@@ -38,9 +38,7 @@
 "Chat.OpenPin" = "显示置顶";
 "ChatFilter.Admin" = "管理员";
 "NiceFeatures.Notifications.Fix" = "禁用多余通知";
-"NiceFeatures.Notifications.FixNotice" = "如果在已关闭通知群组/频道仍然会收到通知，那开启此功能可以禁用此通知.\n开启此功能，在通知界面回复消息，帐户标签和媒体预览将会被禁用。";
 "NiceFeatures.Filters.Header" = "标签过滤";
-"NiceFeatures.Filters.Notice" = "选择自定义标签的数量。\n长按标签更改标签选项。";
 "NiceFeatures.Filters.ShowBadge" = "标签上显示角标";
 "NiceFeatures.UseClassicInfoUi" = "使用经典对话信息界面";
 
@@ -60,7 +58,6 @@
 "Folder.Create" = "创建分组...";
 "Folder.Create.Name" = "分组名";
 "Folder.Create.Placeholder" = "分组...";
-"Folder.LimitExceeded" = "抱歉，您最多只能创建3个自定义分组。\n升级至 Premium 可创建更多分组。";
 "NiceFeatures.HideNumber" = "设置中隐藏手机号码";
 
 /*NGWeb*/
@@ -88,10 +85,8 @@
 "Common.SupportChatUsername" = "nicegram_cn";
 "Common.FAQUrl" = "https://nicegram.app/cn/faq/";
 "Common.FAQ.Button" = "Nicegram 常见问题";
-"Common.FAQ.Intro" = "请注意：Nicegram 的支持服务由开发者和社区提供。\n\n如用疑问，请前往“Nicegram 常见问题”，那里有常见问题和故障排除指南。";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "您无法拒绝的独特功能！";
-"IAP.Premium.Features" = "快速消息翻译器\n\n退出时记住选定的文件夹";
 "IAP.Premium.Activated" = "Premium 已激活！";
 "IAP.Common.Restore" = "恢复购买";
 "IAP.Common.CantPay" = "抱歉，由于您的设备或帐户限制，您无法购买。";
@@ -102,6 +97,7 @@
 "Premium.OnetapTranslate" = "快速翻译按钮";
 "Premium.IgnoreTranslate.Title" = "忽略的语言";
 "Premium.IgnoreTranslate.Header" = "对于您在下面选择的语言，快速翻译按钮将被禁用。";
+"Premium.RecordAllCalls" = "录制所有通话";
 
 /*Manage Filters*/
 "ManageFilters.Title" = "管理标签";
@@ -134,7 +130,6 @@
 "NiceFeatures.BackupSettings.Done" = "备份已完成，存放在\"收藏夹\"里。";
 "NiceFeatures.BackupSettings.Error" = "创建备份出错";
 
-"NiceFeatures.RestoreSettings.Confirm" = "您确定要从备份文件中恢复分组和设置吗？\n⚠️ 这将会覆盖当前的数据";
 "NiceFeatures.RestoreSettings.Done" = "分组和设置已恢复成功";
 "NiceFeatures.RestoreSettings.Error" = "恢复设置出错，备份文件可能已损坏。";
 
@@ -145,8 +140,8 @@
 "Gmod" = "幽灵模式";
 "Gmod.Enable" = "启用幽灵模式？";
 "Gmod.Disable" = "关闭幽灵模式？";
-"Gmod.Notice" = "通过 Telegram 隐私设置，您的在线状态会对所有人隐藏。\n如果您进入私有对话，将会显示警告提示。\n如果您在对话中发送或编辑任何消息，您的在线状态可能会显示出来。";
 
+"ShowNicegramButtonInChat" = "在聊天中显示 Nicegram 按钮";
 "SendWithKb" = "按<回车>发送";
 "NiceFeatures.ShowGmodIcon" = "显示幽灵模式图标";
 "Gmod.OpenChatQ" = "打开对话？";
@@ -188,21 +183,6 @@
 "DoubleBottom.Enabled.OK" = "确认";
 "DoubleBottom.Passcode.Error" = "请设置另一个与密码锁不同的密码";
 
-/*Onboarding*/
-"NicegramOnboarding.Continue" = "继续";
-"NicegramOnboarding.1.Title" = "Telegram 通讯的首选客户端";
-"NicegramOnboarding.1.Desc" = "加入 200 多万 Nicegram 用户，使用最强大且安全的 Telegram 客户端开展业务。";
-"NicegramOnboarding.2.Title" = "高级的通讯体验";
-"NicegramOnboarding.2.Desc" = "凭借独特的功能加速您的交流，比如内置翻译器，语音转文字，隐藏作者转发消息，以及快速保存到收藏夹。";
-"NicegramOnboarding.3.Title" = "扩展用户个人资料";
-"NicegramOnboarding.3.Desc" = "根据需要，想创建多少 Telegram 账户都可以，完全免费；还可以查看显示 ID、注册日期和可点击链接的高级用户个人资料。";
-"NicegramOnboarding.4.Title" = "独特的商业扩展能力";
-"NicegramOnboarding.4.Desc" = "利用 Nicegram 团队的创新，获取可在 133 个国家上网的 eSIM。您也可以用 eSIM 数据计划的电话号码注册新的 Telegram 账户。";
-"NicegramOnboarding.5.Title" = "最安全的通讯工具";
-"NicegramOnboarding.5.Desc" = "安全的通讯工具，拥有强加密、群组音频和视频电话、公共频道、群聊和机器人、无限制的聊天云存储空间、媒体和文档共享功能。";
-"NicegramOnboarding.6.Title" = "认识莉莉";
-"NicegramOnboarding.6.Desc" = "您的个人人工智能聊天机器人助手，简化您的生活!";
-
 /*Rounded Videos*/
 "RoundedVideos.ButtonTitle" = "以圆形视频发送";
 "RoundedVideos.MoreButtonTooltip" = "一键将方形视频转换为圆形发送。";
@@ -225,3 +205,16 @@
 "NicegramSettings.ShareChannelsToggle" = "分享频道信息";
 "NicegramSettings.ShareStickersToggle" = "分享贴纸信息";
 "NicegramSettings.ShareData.Note" = "通过自动提交频道信息和链接到我们的数据库，为最全面的Telegram频道和群组维基百科做出贡献。我们不会连接您的Telegram个人资料和频道，也不会分享您的个人数据。";
+
+/*Call Record*/
+"NicegramCallRecord.Title" = "记录";
+"NicegramCallRecord.StopAlertTitle" = "停止录音";
+"NicegramCallRecord.StopAlertDescription" = "您想停止录制这个通话吗？";
+"NicegramCallRecord.StopAlertButtonStop" = "停止";
+"NicegramCallRecord.StopAlertButtonCancel" = "取消";
+"NicegramCallRecord.SavedMessage" = "已将录制的通话保存到 **保存的消息** 中。";
+
+/*Feed*/
+"NicegramFeed.Title" = "动态";
+"NicegramFeed.Add" = "添加到订阅源";
+"NicegramFeed.Remove" = "从订阅源中移除";

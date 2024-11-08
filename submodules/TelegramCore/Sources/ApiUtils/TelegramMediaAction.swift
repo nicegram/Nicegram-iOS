@@ -100,8 +100,18 @@ func telegramMediaActionFromApiAction(_ action: Api.MessageAction) -> TelegramMe
         return TelegramMediaAction(action: .joinedByRequest)
     case let .messageActionWebViewDataSentMe(text, _), let .messageActionWebViewDataSent(text):
         return TelegramMediaAction(action: .webViewData(text))
-    case let .messageActionGiftPremium(_, currency, amount, months, cryptoCurrency, cryptoAmount):
-        return TelegramMediaAction(action: .giftPremium(currency: currency, amount: amount, months: months, cryptoCurrency: cryptoCurrency, cryptoAmount: cryptoAmount))
+    case let .messageActionGiftPremium(_, currency, amount, months, cryptoCurrency, cryptoAmount, message):
+        let text: String?
+        let entities: [MessageTextEntity]?
+        switch message {
+        case let .textWithEntities(textValue, entitiesValue):
+            text = textValue
+            entities = messageTextEntitiesFromApiEntities(entitiesValue)
+        default:
+            text = nil
+            entities = nil
+        }
+        return TelegramMediaAction(action: .giftPremium(currency: currency, amount: amount, months: months, cryptoCurrency: cryptoCurrency, cryptoAmount: cryptoAmount, text: text, entities: entities))
     case let .messageActionGiftStars(_, currency, amount, stars, cryptoCurrency, cryptoAmount, transactionId):
         return TelegramMediaAction(action: .giftStars(currency: currency, amount: amount, count: stars, cryptoCurrency: cryptoCurrency, cryptoAmount: cryptoAmount, transactionId: transactionId))
     case let .messageActionTopicCreate(_, title, iconColor, iconEmojiId):
@@ -133,8 +143,18 @@ func telegramMediaActionFromApiAction(_ action: Api.MessageAction) -> TelegramMe
         } else {
             return TelegramMediaAction(action: .setChatWallpaper(wallpaper: TelegramWallpaper(apiWallpaper: wallpaper), forBoth: (flags & (1 << 1)) != 0))
         }
-    case let .messageActionGiftCode(flags, boostPeer, months, slug, currency, amount, cryptoCurrency, cryptoAmount):
-        return TelegramMediaAction(action: .giftCode(slug: slug, fromGiveaway: (flags & (1 << 0)) != 0, isUnclaimed: (flags & (1 << 2)) != 0, boostPeerId: boostPeer?.peerId, months: months, currency: currency, amount: amount, cryptoCurrency: cryptoCurrency, cryptoAmount: cryptoAmount))
+    case let .messageActionGiftCode(flags, boostPeer, months, slug, currency, amount, cryptoCurrency, cryptoAmount, message):
+        let text: String?
+        let entities: [MessageTextEntity]?
+        switch message {
+        case let .textWithEntities(textValue, entitiesValue):
+            text = textValue
+            entities = messageTextEntitiesFromApiEntities(entitiesValue)
+        default:
+            text = nil
+            entities = nil
+        }
+        return TelegramMediaAction(action: .giftCode(slug: slug, fromGiveaway: (flags & (1 << 0)) != 0, isUnclaimed: (flags & (1 << 2)) != 0, boostPeerId: boostPeer?.peerId, months: months, currency: currency, amount: amount, cryptoCurrency: cryptoCurrency, cryptoAmount: cryptoAmount, text: text, entities: entities))
     case let .messageActionGiveawayLaunch(_, stars):
         return TelegramMediaAction(action: .giveawayLaunched(stars: stars))
     case let .messageActionGiveawayResults(flags, winners, unclaimed):
@@ -150,6 +170,21 @@ func telegramMediaActionFromApiAction(_ action: Api.MessageAction) -> TelegramMe
         return TelegramMediaAction(action: .paymentRefunded(peerId: peer.peerId, currency: currency, totalAmount: totalAmount, payload: payload?.makeData(), transactionId: transactionId))
     case let .messageActionPrizeStars(flags, stars, transactionId, boostPeer, giveawayMsgId):
         return TelegramMediaAction(action: .prizeStars(amount: stars, isUnclaimed: (flags & (1 << 2)) != 0, boostPeerId: boostPeer.peerId, transactionId: transactionId, giveawayMessageId: MessageId(peerId: boostPeer.peerId, namespace: Namespaces.Message.Cloud, id: giveawayMsgId)))
+    case let .messageActionStarGift(flags, apiGift, message, convertStars):
+        let text: String?
+        let entities: [MessageTextEntity]?
+        switch message {
+        case let .textWithEntities(textValue, entitiesValue):
+            text = textValue
+            entities = messageTextEntitiesFromApiEntities(entitiesValue)
+        default:
+            text = nil
+            entities = nil
+        }
+        guard let gift = StarGift(apiStarGift: apiGift) else {
+            return nil
+        }
+        return TelegramMediaAction(action: .starGift(gift: gift, convertStars: convertStars, text: text, entities: entities, nameHidden: (flags & (1 << 0)) != 0, savedToProfile: (flags & (1 << 2)) != 0, converted: (flags & (1 << 3)) != 0))
     }
 }
 

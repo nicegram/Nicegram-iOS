@@ -1,0 +1,10 @@
+"base_path": "."
+"base_url": "https://api.crowdin.com"
+"preserve_hierarchy": true
+files: [
+  {
+    "source": "/Telegram/**/en.lproj/NiceLocalizable.strings",
+    "dest": "iOS/nicegram-client/%original_file_name%",
+    "translation": "/Telegram/**/%two_letters_code%.lproj/%original_file_name%"
+  }
+]

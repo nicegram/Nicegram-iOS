@@ -864,10 +864,10 @@ public struct ChatInputQueryCommandsResult: Equatable {
 
 public enum ChatPresentationInputQueryResult: Equatable {
     // MARK: Nicegram QuickReplies
-    case quickReplies([String])
+    case quickReplies([String], String)
     //
     case stickers([FoundStickerItem])
-    case hashtags([String])
+    case hashtags([String], String)
     case mentions([EnginePeer])
     case commands(ChatInputQueryCommandsResult)
     case emojis([(String, TelegramMediaFile?, String)], NSRange)
@@ -876,9 +876,9 @@ public enum ChatPresentationInputQueryResult: Equatable {
     public static func ==(lhs: ChatPresentationInputQueryResult, rhs: ChatPresentationInputQueryResult) -> Bool {
         switch lhs {
         // MARK: Nicegram QuickReplies
-        case let .quickReplies(lhsResults):
-            if case let .quickReplies(rhsResults) = rhs {
-                return lhsResults == rhsResults
+        case let .quickReplies(lhsResults, lhsQuery):
+            if case let .quickReplies(rhsResults, rhsQuery) = rhs {
+                return lhsResults == rhsResults && lhsQuery == rhsQuery
             } else {
                 return false
             }
@@ -889,9 +889,9 @@ public enum ChatPresentationInputQueryResult: Equatable {
             } else {
                 return false
             }
-        case let .hashtags(lhsResults):
-            if case let .hashtags(rhsResults) = rhs {
-                return lhsResults == rhsResults
+        case let .hashtags(lhsResults, lhsQuery):
+            if case let .hashtags(rhsResults, rhsQuery) = rhs {
+                return lhsResults == rhsResults && lhsQuery == rhsQuery
             } else {
                 return false
             }
@@ -1036,14 +1036,18 @@ public protocol ChatController: ViewController {
     
     var visibleContextController: ViewController? { get }
     
+    var contentContainerNode: ASDisplayNode { get }
+    
     var searching: ValuePromise<Bool> { get }
+    var searchResultsCount: ValuePromise<Int32> { get }
+    var externalSearchResultsCount: Int32? { get set }
     
     var alwaysShowSearchResultsAsList: Bool { get set }
     var includeSavedPeersInSearchResults: Bool { get set }
     var showListEmptyResults: Bool { get set }
+    func beginMessageSearch(_ query: String)
     
     func updatePresentationMode(_ mode: ChatControllerPresentationMode)
-    func beginMessageSearch(_ query: String)
     func displayPromoAnnouncement(text: String)
     
     func updatePushedTransition(_ fraction: CGFloat, transition: ContainedViewLayoutTransition)

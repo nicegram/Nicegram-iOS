@@ -38,9 +38,7 @@
 "Chat.OpenPin" = "Afișare Pin";
 "ChatFilter.Admin" = "Administratori";
 "NiceFeatures.Notifications.Fix" = "Dezactivare notificări standard";
-"NiceFeatures.Notifications.FixNotice" = "Este util dacă primiți notificări de la chat-urile dezactivate.\nRăspunsul de la notificări, etichetele contului și previzualizările media nu vor fi disponibile.";
 "NiceFeatures.Filters.Header" = "FILTRE (FERESTRE)";
-"NiceFeatures.Filters.Notice" = "Selectați numărul de file personalizate.\nApăsați lung pe filă pentru a schimba filtrul.";
 "NiceFeatures.Filters.ShowBadge" = "Afișați Insigne (Filtre)";
 "NiceFeatures.UseClassicInfoUi" = "Utilizează interfața clasică de informații chat";
 
@@ -60,7 +58,6 @@
 "Folder.Create" = "Creaţi folderul...";
 "Folder.Create.Name" = "Nume folder";
 "Folder.Create.Placeholder" = "Folder...";
-"Folder.LimitExceeded" = "Ne pare rău, nu puteți crea mai mult de 3 foldere personalizate.\nMai multe foldere sunt disponibile achiziţionând varianta Premium.";
 "NiceFeatures.HideNumber" = "Ascunde telefonul din setări";
 
 /*NGWeb*/
@@ -88,10 +85,8 @@
 "Common.SupportChatUsername" = "nicegramchat";
 "Common.FAQUrl" = "https://nicegram.app/faq/";
 "Common.FAQ.Button" = "Nicegram Întrebări frecvente";
-"Common.FAQ.Intro" = "Vă rugăm să rețineți că asistența Nicegram este realizată de un singur dezvoltator și de comunitate.";
 "IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Funcții unice pe care nu le poți refuza!";
-"IAP.Premium.Features" = "Traducător de mesaje rapide\n\nMemorează dosarul selectat la ieșire";
 "IAP.Premium.Activated" = "Premium Activat!";
 "IAP.Common.Restore" = "Restabiliţi cumpărăturile";
 "IAP.Common.CantPay" = "Ne pare rău, dar nu puteți face achiziții din cauza restricțiilor de pe dispozitiv sau cont.";
@@ -134,22 +129,78 @@
 "NiceFeatures.BackupSettings.Done" = "Copie de rezervă facută pentru Mesajele Salvate";
 "NiceFeatures.BackupSettings.Error" = "Eroare la crearea copiei de rezervă";
 
-"NiceFeatures.RestoreSettings.Confirm" = "Sigur doriți să restaurați folderele și setările din fișier?\n⚠️ Va anula datele actuale";
 "NiceFeatures.RestoreSettings.Done" = "Dosare & Setarile restaurat cu succes";
 "NiceFeatures.RestoreSettings.Error" = "Eroare restabilire setări. Fișierle pot fi corupte";
+
+/*Preview Mode*/
+"Gmod.Restricted" = "Nu poți trimite mesaje în Modul de Previzualizare.";
+"Gmod.Unavailable" = "Modul de Previzualizare Indisponibil";
+"Gmod.Disable.Notice" = "Vizibilitatea ultimei tale vizite va fi setată la «%1»";
+"Gmod" = "Modul de Previzualizare";
+"Gmod.Enable" = "Activați Modul de Previzualizare?";
+"Gmod.Disable" = "Dezactivați Modul de Previzualizare?";
+
+"ShowNicegramButtonInChat" = "Afișați butonul Nicegram în Chat";
+"SendWithKb" = "Trimiteți cu butonul «Enter»";
+"NiceFeatures.ShowGmodIcon" = "Afișați iconița Modului de Previzualizare";
+"Gmod.OpenChatQ" = "Deschideți chatul?";
+"Gmod.OpenChatNotice" = "Chatul va fi marcat ca \"citit\", dar puteți previzualiza chatul cu o apăsare lungă (force-touch)";
+"Gmod.OpenChatBtn" = "Da, deschide chatul";
+"Gmod.DisableBtn" = "Dezactivează avertismentele";
+
+"NicegramSettings.Other.hidePhoneInSettingsNotice" = "Numărul tău va fi ascuns doar în interfața utilizatorului. Pentru a-l ascunde de alții, te rog folosește setările de confidențialitate.";
+"NicegramSettings.Other.showProfileId" = "Afișează ID-ul Profilului";
+"NicegramSettings.Other.showRegDate" = "Afișează Data Înregistrării";
+"NicegramSettings.Unblock.Header" = "Deblochează";
+"NicegramSettings.Unblock.Button" = "Ghid de Deblocare";
+"NicegramSettings.Other.hideReactions" = "Ascunde Reacțiile";
+"NicegramSettings.RoundVideos.DownloadVideos" = "Descarcă videoclipurile în Galerie";
+"Premium.OnetapTranslate.UseIgnoreLanguages" = "Ignoră Limbile";
+"Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Aplicația detectează limba fiecărui mesaj pe dispozitivul tău. Este o sarcină de înaltă performanță care poate afecta durata de viață a bateriei.";
+"Premium.rememberFolderOnExit" = "Ține minte folderul curent la ieșire";
+"NicegramSettings.HideStories" = "Ascunde Poveștile";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Mai vechi de";
 "NiceFeatures.RegDate.Approximately" = "Aproximativ";
 "NiceFeatures.RegDate.NewerThan" = "Mai noi de";
-"DoubleBottom.Enabled.OK" = "OK";
 
-/*Onboarding*/
-"NicegramOnboarding.Continue" = "Continuă";
-"NicegramOnboarding.1.Title" = "Client No1 pentru Telegram Messenger";
-"NicegramOnboarding.1.Desc" = "Alătură-te celor peste 2 milioane de utilizatori Nicegram şi obţine acces la cel mai puternic şi sigur client Telegramă pentru afaceri.";
-"NicegramOnboarding.2.Title" = "Experiență de mesagerie avansată";
-"NicegramOnboarding.3.Title" = "Profil utilizator extins";
-"NicegramOnboarding.4.Title" = "Extensii unice Business";
-"NicegramOnboarding.5.Title" = "Cel mai sigur Messenger";
-"NicegramOnboarding.5.Desc" = "Securizează Messenger cu o criptare puternică, grup de apeluri audio și video, canale publice, grupuri și bot, stocare nelimitată în Cloud pentru partajarea de chaturi, media și documente.";
+/*Quick Replies*/
+"NiceFeatures.QuickReplies" = "Răspunsuri Rapide";
+"NiceFeatures.QuickReplies.Description" = "Puteți adăuga un număr nelimitat de răspunsuri folosind butonul de mai jos. Pentru a folosi răspunsul rapid, introduceți simbolul \"&\" în câmpul de introducere a mesajului.";
+"NiceFeatures.QuickReplies.AddNew" = "Adaugă Nou";
+"NiceFeatures.QuickReplies.Placeholder" = "Introduceți Textul";
+
+/*Telegram Premium*/
+"TelegramPremium.Description" = "Din păcate, nu puteți obține Funcțiile Premium Telegram în timp ce sunteți autentificat în aplicația Nicegram. Vă rugăm să mergeți la aplicația oficială Telegram și să vă abonați la Telegram Premium. După ce reveniți la Nicegram, toate Funcțiile Premium vor fi disponibile pentru utilizare.";
+
+/*Double Bottom*/
+"DoubleBottom.Title" = "Double bottom";
+"DoubleBottom.Description" = "Pentru a activa această funcție, ar trebui să aveți mai mult de un cont și să activați Blocarea prin Cod de Acces (mergeți la Setări → Confidențialitate și Securitate → Blocare prin Cod de Acces)";
+"DoubleBottom.Enabled.Title" = "Dublu Fund este activat";
+"DoubleBottom.Enabled.Description" = "Vă rugăm să vă amintiți codul de acces pe care tocmai l-ați setat și să reporniți aplicația pentru ca Dublu Fund să funcționeze bine";
+"DoubleBottom.Enabled.OK" = "OK";
+"DoubleBottom.Passcode.Error" = "Vă rugăm să setați un alt cod de acces diferit de cel pe care îl utilizați pentru Blocarea prin Cod de Acces";
+
+/*Rounded Videos*/
+"RoundedVideos.ButtonTitle" = "Trimite ca Video Rotund";
+"RoundedVideos.MoreButtonTooltip" = "Convertește videoclipurile pătrate pentru a le trimite ca cercuri cu un singur atingere.";
+"RoundedVideos.SendButtonTooltip" = "Apăsați lung pentru a trimite videoclipul dvs. ca un cerc stilat.";
+
+/*Speech to text*/
+"SpeechToText.UseOpenAi" = "OpenAI Speech2Text";
+"SpeechToText.Toast" = "[Abonați-vă la Nicegram Premium]() pentru tehnologii OpenAI Speech2Text mai rapide și mai bune!";
+
+/*Confirm Call*/
+"ConfirmCall.Desc" = "Sunteți sigur că doriți să efectuați un apel?";
+
+/*Hidden Chats*/
+"ChatContextMenu.Hide" = "Ascunde";
+"ChatContextMenu.Unhide" = "Dezvăluie";
+"HiddenChatsTooltip" = "Apăsați și mențineți apăsat logo-ul 'N' pentru a dezvălui conversațiile secrete ascunse";
+
+/*Data Sharing*/
+"NicegramSettings.ShareBotsToggle" = "Distribuie informații despre boți";
+"NicegramSettings.ShareStickersToggle" = "Distribuie informații despre stickere";
+"NicegramSettings.ShareData.Note" = "Contribuie la cea mai cuprinzătoare wikipedia a canalelor și grupurilor Telegram prin trimiterea automată a informațiilor și a linkului canalului în baza noastră de date. Nu conectăm profilul dvs. de Telegram și canalul și nu împărtășim datele dvs. personale.";
+"NicegramCallRecord.StopAlertButtonCancel" = "Anulează";

@@ -50,8 +50,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/hmlongco/Factory.git",
       "state" : {
-        "revision" : "587995f7d5cc667951d635fbf6b4252324ba0439",
-        "version" : "2.3.2"
+        "revision" : "f350e0d71ba241b392f70519a67e769d5e3858d4",
+        "version" : "2.4.1"
       }
     },
     {
@@ -114,7 +114,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "master",
-        "revision" : "73622cebd67fd56abf014708d5da860f0773c66c"
+        "revision" : "df0f5d6db8a979f215d18b05e889e5c66d64fe28"
       }
     },
     {
@@ -123,7 +123,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "master",
-        "revision" : "43356c38f071208ba27bb4b15617b86c15ca1cd4"
+        "revision" : "6417219110dae50a9dd129c61795dc469ceb12d0"
       }
     },
     {
@@ -158,8 +158,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SDWebImage/SDWebImage.git",
       "state" : {
-        "revision" : "8a1be70a625683bc04d6903e2935bf23f3c6d609",
-        "version" : "5.19.7"
+        "revision" : "10d06f6a33bafae8c164fbfd1f03391f6d4692b3",
+        "version" : "5.20.0"
       }
     },
     {
@@ -196,15 +196,6 @@
       "state" : {
         "revision" : "c6bfd1af48efcc9a9ad203665db12375ba6b145a",
         "version" : "4.0.8"
-      }
-    },
-    {
-      "identity" : "subscriptionanalytics-ios",
-      "kind" : "remoteSourceControl",
-      "location" : "git@bitbucket.org:mobyrix/subscriptionanalytics-ios.git",
-      "state" : {
-        "revision" : "53bfc6c6f26322ec647b87c338a071714ac69420",
-        "version" : "0.4.3"
       }
     },
     {
@@ -329,8 +320,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/torusresearch/torus-utils-swift.git",
       "state" : {
-        "revision" : "eda55b8537a600e657d19d4c452c0a36f217883c",
-        "version" : "9.0.1"
+        "revision" : "0ac2810afef07283ae324eb1a2b17c5d6f7511d6",
+        "version" : "9.0.2"
       }
     },
     {
@@ -347,8 +338,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "4af0ee33be559941fbda7d3519a9dd032006ab52",
-        "version" : "4.1.9"
+        "revision" : "c4907d444673e7eb4c131b67ce2ced5b2d2cb09e",
+        "version" : "4.1.16"
       }
     },
     {
@@ -365,8 +356,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tomlokhorst/XcodeEdit",
       "state" : {
-        "revision" : "017d23f71fa8d025989610db26d548c44cacefae",
-        "version" : "2.10.2"
+        "revision" : "1e761a55dd8d73b4e9cc227a297f438413953571",
+        "version" : "2.11.1"
       }
     }
   ],

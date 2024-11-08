@@ -267,7 +267,16 @@ public final class AccountContextImpl: AccountContext {
     public private(set) var isPremium: Bool
     
     public let imageCache: AnyObject?
+// MARK: Nicegram NCG-6373 Feed tab
+    private let _updateFeed = Promise<Void>()
+    public var updateFeed: Signal<Void, NoError> {
+        _updateFeed.get()
+    }
     
+    public func needUpdateFeed() {
+        _updateFeed.set(.single(()))
+    }
+//
     public init(sharedContext: SharedAccountContextImpl, account: Account, limitsConfiguration: LimitsConfiguration, contentSettings: ContentSettings, appConfiguration: AppConfiguration, availableReplyColors: EngineAvailableColorOptions, availableProfileColors: EngineAvailableColorOptions, temp: Bool = false)
     {
         self.sharedContextImpl = sharedContext
@@ -578,8 +587,8 @@ public final class AccountContextImpl: AccountContext {
         }
     }
     
-    public func scheduleGroupCall(peerId: PeerId) {
-        let _ = self.sharedContext.callManager?.scheduleGroupCall(context: self, peerId: peerId, endCurrentIfAny: true)
+    public func scheduleGroupCall(peerId: PeerId, parentController: ViewController) {
+        let _ = self.sharedContext.callManager?.scheduleGroupCall(context: self, peerId: peerId, endCurrentIfAny: true, parentController: parentController)
     }
     
     public func joinGroupCall(peerId: PeerId, invite: String?, requestJoinAsPeerId: ((@escaping (PeerId?) -> Void) -> Void)?, activeCall: EngineGroupCallDescription) {

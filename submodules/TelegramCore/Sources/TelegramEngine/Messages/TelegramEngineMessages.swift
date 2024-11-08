@@ -1249,8 +1249,8 @@ public extension TelegramEngine {
                         }
                         
                         var selectedMedia: EngineMedia
-                        if let alternativeMedia = itemAndPeer.item.alternativeMedia.flatMap(EngineMedia.init), (!preferHighQuality && !itemAndPeer.item.isMy) {
-                            selectedMedia = alternativeMedia
+                        if let alternativeMediaValue = itemAndPeer.item.alternativeMediaList.first.flatMap(EngineMedia.init), (!preferHighQuality && !itemAndPeer.item.isMy) {
+                            selectedMedia = alternativeMediaValue
                         } else {
                             selectedMedia = EngineMedia(media)
                         }
@@ -1291,7 +1291,7 @@ public extension TelegramEngine {
                                     timestamp: item.timestamp,
                                     expirationTimestamp: item.expirationTimestamp,
                                     media: item.media,
-                                    alternativeMedia: item.alternativeMedia,
+                                    alternativeMediaList: item.alternativeMediaList,
                                     mediaAreas: item.mediaAreas,
                                     text: item.text,
                                     entities: item.entities,
@@ -1415,6 +1415,10 @@ public extension TelegramEngine {
             return self.account.stateManager.synchronouslyIsMessageDeletedInteractively(ids: ids)
         }
         
+        public func synchronouslyIsMessageDeletedRemotely(ids: [EngineMessage.Id]) -> [EngineMessage.Id] {
+            return self.account.stateManager.synchronouslyIsMessageDeletedRemotely(ids: ids)
+        }
+        
         public func synchronouslyLookupCorrelationId(correlationId: Int64) -> EngineMessage.Id? {
             return self.account.pendingMessageManager.synchronouslyLookupCorrelationId(correlationId: correlationId)
         }
@@ -1477,11 +1481,16 @@ public extension TelegramEngine {
             return _internal_reportAdMessage(account: self.account, peerId: peerId, opaqueId: opaqueId, option: option)
         }
         
+        public func reportContent(subject: ReportContentSubject, option: Data?, message: String?) -> Signal<ReportContentResult, ReportContentError> {
+            return _internal_reportContent(account: self.account, subject: subject, option: option, message: message)
+        }
+        
         public func updateExtendedMedia(messageIds: [EngineMessage.Id]) -> Signal<Never, NoError> {
             return _internal_updateExtendedMedia(account: self.account, messageIds: messageIds)
         }
-        public func markAdAction(peerId: EnginePeer.Id, opaqueId: Data) {
-            _internal_markAdAction(account: self.account, peerId: peerId, opaqueId: opaqueId)
+        
+        public func markAdAction(peerId: EnginePeer.Id, opaqueId: Data, media: Bool, fullscreen: Bool) {
+            _internal_markAdAction(account: self.account, peerId: peerId, opaqueId: opaqueId, media: media, fullscreen: fullscreen)
         }
         
         public func getAllLocalChannels(count: Int) -> Signal<[EnginePeer.Id], NoError> {

@@ -1229,7 +1229,7 @@ final class MediaEditorScreenComponent: Component {
                         style: .editor,
                         placeholder: .plain(environment.strings.Story_Editor_InputPlaceholderAddCaption),
                         maxLength: Int(component.context.userLimits.maxStoryCaptionLength),
-                        queryTypes: [.mention],
+                        queryTypes: [.mention, .hashtag],
                         alwaysDarkWhenHasText: false,
                         resetInputContents: nil,
                         nextInputMode: { _ in  return nextInputMode },
@@ -1363,12 +1363,12 @@ final class MediaEditorScreenComponent: Component {
                         header: header,
                         isChannel: false,
                         storyItem: nil,
-                        chatLocation: nil
+                        chatLocation: controller.customTarget.flatMap { .peer(id: $0) }
                     )),
                     environment: {},
                     containerSize: CGSize(width: inputPanelAvailableWidth, height: inputPanelAvailableHeight)
                 )
-                
+                                
                 if self.inputPanelExternalState.isEditing && controller.node.entitiesView.hasSelection {
                     Queue.mainQueue().justDispatch {
                         controller.node.entitiesView.selectEntity(nil)
@@ -8305,7 +8305,7 @@ private func stickerFile(resource: TelegramMediaResource, thumbnailResource: Tel
     fileAttributes.append(.FileName(fileName: isVideo ? "sticker.webm" : "sticker.webp"))
     fileAttributes.append(.Sticker(displayText: "", packReference: nil, maskData: nil))
     if isVideo {
-        fileAttributes.append(.Video(duration: duration ?? 3.0, size: dimensions, flags: [], preloadSize: nil, coverTime: nil))
+        fileAttributes.append(.Video(duration: duration ?? 3.0, size: dimensions, flags: [], preloadSize: nil, coverTime: nil, videoCodec: nil))
     } else {
         fileAttributes.append(.ImageSize(size: dimensions))
     }
@@ -8314,7 +8314,7 @@ private func stickerFile(resource: TelegramMediaResource, thumbnailResource: Tel
         previewRepresentations.append(TelegramMediaImageRepresentation(dimensions: dimensions, resource: thumbnailResource, progressiveSizes: [], immediateThumbnailData: nil))
     }
     
-    return TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: Int64.random(in: Int64.min ... Int64.max)), partialReference: nil, resource: resource, previewRepresentations: previewRepresentations, videoThumbnails: [], immediateThumbnailData: nil, mimeType: isVideo ? "video/webm" : "image/webp", size: size, attributes: fileAttributes)
+    return TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: Int64.random(in: Int64.min ... Int64.max)), partialReference: nil, resource: resource, previewRepresentations: previewRepresentations, videoThumbnails: [], immediateThumbnailData: nil, mimeType: isVideo ? "video/webm" : "image/webp", size: size, attributes: fileAttributes, alternativeRepresentations: [])
 }
 
 private struct MediaEditorConfiguration {

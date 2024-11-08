@@ -12,7 +12,13 @@ import TelegramUIPreferences
 import AccountContext
 import CallKit
 import PhoneNumberFormat
-
+// MARK: Nicegram NCG-5828 call recording
+import NGLogging
+import NGData
+import NGStrings
+import UndoUI
+import NGUtils
+//
 private func callKitIntegrationIfEnabled(_ integration: CallKitIntegration?, settings: VoiceCallSettings?) -> CallKitIntegration?  {
     let enabled = settings?.enableSystemIntegration ?? true
     return enabled ? integration : nil
@@ -317,7 +323,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                     let autodownloadSettings = sharedData.entries[SharedDataKeys.autodownloadSettings]?.get(AutodownloadSettings.self) ?? .defaultSettings
                     let experimentalSettings = sharedData.entries[ApplicationSpecificSharedDataKeys.experimentalUISettings]?.get(ExperimentalUISettings.self) ?? .defaultSettings
                     let appConfiguration = preferences.values[PreferencesKeys.appConfiguration]?.get(AppConfiguration.self) ?? AppConfiguration.defaultValue
-                    
+
                     let call = PresentationCallImpl(
                         context: firstState.0,
                         audioSession: strongSelf.audioSession,
@@ -341,6 +347,14 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                         enableTCP: experimentalSettings.enableVoipTcp,
                         preferredVideoCodec: experimentalSettings.preferredVideoCodec
                     )
+// MARK: Nicegram NCG-5828 call recording, callState
+                    call.callActiveState = { [strongSelf] audioDevice in
+                        strongSelf.callActiveState(
+                            with: audioDevice,
+                            accountContext: firstState.0
+                        )
+                    }
+//
                     strongSelf.updateCurrentCall(call)
                     strongSelf.currentCallPromise.set(.single(call))
                     strongSelf.hasActivePersonalCallsPromise.set(true)
@@ -561,7 +575,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                     let isVideoPossible: Bool = areVideoCallsAvailable
                     
                     let experimentalSettings = sharedData.entries[ApplicationSpecificSharedDataKeys.experimentalUISettings]?.get(ExperimentalUISettings.self) ?? .defaultSettings
-                    
+
                     let call = PresentationCallImpl(
                         context: context,
                         audioSession: strongSelf.audioSession,
@@ -588,6 +602,14 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                         enableTCP: experimentalSettings.enableVoipTcp,
                         preferredVideoCodec: experimentalSettings.preferredVideoCodec
                     )
+// MARK: Nicegram NCG-5828 call recording, callState
+                    call.callActiveState = { [strongSelf] audioDevice in
+                        strongSelf.callActiveState(
+                            with: audioDevice,
+                            accountContext: context
+                        )
+                    }
+//
                     strongSelf.updateCurrentCall(call)
                     strongSelf.currentCallPromise.set(.single(call))
                     strongSelf.hasActivePersonalCallsPromise.set(true)
@@ -639,7 +661,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
         }
     }
     
-    private func requestScheduleGroupCall(accountContext: AccountContext, peerId: PeerId, internalId: CallSessionInternalId = CallSessionInternalId()) -> Signal<Bool, NoError> {
+    private func requestScheduleGroupCall(accountContext: AccountContext, peerId: PeerId, internalId: CallSessionInternalId = CallSessionInternalId(), parentController: ViewController) -> Signal<Bool, NoError> {
         let (presentationData, present, openSettings) = self.getDeviceAccessData()
         
         let isVideo = false
@@ -673,7 +695,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
             accountContext.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
         )
         |> deliverOnMainQueue
-        |> mapToSignal { [weak self] accessEnabled, peer -> Signal<Bool, NoError> in
+        |> mapToSignal { [weak self, weak parentController] accessEnabled, peer -> Signal<Bool, NoError> in
             guard let strongSelf = self else {
                 return .single(false)
             }
@@ -686,46 +708,98 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
             if let peer = peer, case let .channel(channel) = peer, case .broadcast = channel.info {
                 isChannel = true
             }
-                    
-            let call = PresentationGroupCallImpl(
-                accountContext: accountContext,
-                audioSession: strongSelf.audioSession,
-                callKitIntegration: nil,
-                getDeviceAccessData: strongSelf.getDeviceAccessData,
-                initialCall: nil,
-                internalId: internalId,
-                peerId: peerId,
-                isChannel: isChannel,
-                invite: nil,
-                joinAsPeerId: nil,
-                isStream: false
-            )
-            strongSelf.updateCurrentGroupCall(call)
-            strongSelf.currentGroupCallPromise.set(.single(call))
-            strongSelf.hasActiveGroupCallsPromise.set(true)
-            strongSelf.removeCurrentGroupCallDisposable.set((call.canBeRemoved
-            |> filter { $0 }
-            |> take(1)
-            |> deliverOnMainQueue).start(next: { [weak call] value in
-                guard let strongSelf = self, let call = call else {
-                    return
+            
+            if shouldUseV2VideoChatImpl(context: accountContext) {
+                if let parentController {
+                    parentController.push(ScheduleVideoChatSheetScreen(
+                        context: accountContext,
+                        scheduleAction: { timestamp in
+                            guard let self else {
+                                return
+                            }
+                            
+                            let call = PresentationGroupCallImpl(
+                                accountContext: accountContext,
+                                audioSession: self.audioSession,
+                                callKitIntegration: nil,
+                                getDeviceAccessData: self.getDeviceAccessData,
+                                initialCall: nil,
+                                internalId: internalId,
+                                peerId: peerId,
+                                isChannel: isChannel,
+                                invite: nil,
+                                joinAsPeerId: nil,
+                                isStream: false
+                            )
+                            call.schedule(timestamp: timestamp)
+                            
+                            self.updateCurrentGroupCall(call)
+                            self.currentGroupCallPromise.set(.single(call))
+                            self.hasActiveGroupCallsPromise.set(true)
+                            self.removeCurrentGroupCallDisposable.set((call.canBeRemoved
+                            |> filter { $0 }
+                            |> take(1)
+                            |> deliverOnMainQueue).start(next: { [weak self, weak call] value in
+                                guard let self, let call else {
+                                    return
+                                }
+                                if value {
+                                    if self.currentGroupCall === call {
+                                        self.updateCurrentGroupCall(nil)
+                                        self.currentGroupCallPromise.set(.single(nil))
+                                        self.hasActiveGroupCallsPromise.set(false)
+                                    }
+                                }
+                            }))
+                        }
+                    ))
                 }
-                if value {
-                    if strongSelf.currentGroupCall === call {
-                        strongSelf.updateCurrentGroupCall(nil)
-                        strongSelf.currentGroupCallPromise.set(.single(nil))
-                        strongSelf.hasActiveGroupCallsPromise.set(false)
+                
+                return .single(true)
+            } else {
+                let call = PresentationGroupCallImpl(
+                    accountContext: accountContext,
+                    audioSession: strongSelf.audioSession,
+                    callKitIntegration: nil,
+                    getDeviceAccessData: strongSelf.getDeviceAccessData,
+                    initialCall: nil,
+                    internalId: internalId,
+                    peerId: peerId,
+                    isChannel: isChannel,
+                    invite: nil,
+                    joinAsPeerId: nil,
+                    isStream: false
+                )
+                strongSelf.updateCurrentGroupCall(call)
+                strongSelf.currentGroupCallPromise.set(.single(call))
+                strongSelf.hasActiveGroupCallsPromise.set(true)
+                strongSelf.removeCurrentGroupCallDisposable.set((call.canBeRemoved
+                                                                 |> filter { $0 }
+                                                                 |> take(1)
+                                                                 |> deliverOnMainQueue).start(next: { [weak call] value in
+                    guard let strongSelf = self, let call = call else {
+                        return
                     }
-                }
-            }))
+                    if value {
+                        if strongSelf.currentGroupCall === call {
+                            strongSelf.updateCurrentGroupCall(nil)
+                            strongSelf.currentGroupCallPromise.set(.single(nil))
+                            strongSelf.hasActiveGroupCallsPromise.set(false)
+                        }
+                    }
+                }))
+            }
         
             return .single(true)
         }
     }
     
-    public func scheduleGroupCall(context: AccountContext, peerId: PeerId, endCurrentIfAny: Bool) -> RequestScheduleGroupCallResult {
-        let begin: () -> Void = { [weak self] in
-            let _ = self?.requestScheduleGroupCall(accountContext: context, peerId: peerId).start()
+    public func scheduleGroupCall(context: AccountContext, peerId: PeerId, endCurrentIfAny: Bool, parentController: ViewController) -> RequestScheduleGroupCallResult {
+        let begin: () -> Void = { [weak self, weak parentController] in
+            guard let parentController else {
+                return
+            }
+            let _ = self?.requestScheduleGroupCall(accountContext: context, peerId: peerId, parentController: parentController).start()
         }
         
         if let currentGroupCall = self.currentGroupCallValue {
@@ -898,4 +972,183 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
             return .single(true)
         }
     }
+// MARK: Nicegram NCG-5828 call recording
+    public var callCompletion: (() -> Void)?
+    
+    private weak var audioDevice: OngoingCallContext.AudioDevice?
+    private var accountContext: AccountContext?
+    private var enginePeer: EnginePeer?
+    private var userDisplayName: String {
+        guard let enginePeer else { return "" }
+
+        switch enginePeer {
+        case let .user(telegramUser):
+            if let firstName = telegramUser.firstName, !firstName.isEmpty {
+                if let lastName = telegramUser.lastName, !lastName.isEmpty {
+                    return "\(firstName) \(lastName)"
+                } else {
+                    return firstName
+                }
+            } else if let username = telegramUser.username, !username.isEmpty {
+                return username
+            } else {
+                return ""
+            }
+        default: return ""
+        }
+    }
+    private let dateFormatter: DateFormatter = {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "dd-MM-yyyy"
+        
+        return dateFormatter
+    }()
+    
+    private func deleteFile(from path: String) {
+        let fileManager = FileManager.default
+        
+        if fileManager.fileExists(atPath: path) {
+            do {
+                let fileURL = URL(fileURLWithPath: path)
+                try fileManager.removeItem(at: fileURL)
+            } catch {
+                ngLog("[Call Recorder] Error remove call file: \(error.localizedDescription)")
+            }
+        } else {
+            ngLog("[Call Recorder] Call file not found at path \(path)")
+        }
+    }
+
+    private func writeAudioToSaved(
+        from path: String,
+        duration: Double,
+        size: UInt,
+        completion: (() -> Void)? = nil
+    ) {
+        let date = Date()
+        
+        let id = Int64.random(in: 0 ... Int64.max)
+        let resource = LocalFileReferenceMediaResource(
+            localFilePath: path,
+            randomId: id
+        )
+        
+        let file = TelegramMediaFile(
+            fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: id),
+            partialReference: nil,
+            resource: resource,
+            previewRepresentations: [],
+            videoThumbnails: [],
+            immediateThumbnailData: nil,
+//            mimeType: "audio/ogg",
+            mimeType: "audio/wav",
+            size: Int64(size),
+            attributes: [
+                .Audio(
+                    isVoice: false,
+                    duration: Int(duration),
+                    title: "\(userDisplayName)-\(dateFormatter.string(from: date))",
+                    performer: nil,
+                    waveform: nil
+                )
+            ],
+            alternativeRepresentations: []
+        )
+        
+        let message: EnqueueMessage = .message(
+            text: "",
+            attributes: [],
+            inlineStickers: [:],
+            mediaReference: .standalone(media: file),
+            threadId: nil,
+            replyToMessageId: nil,
+            replyToStoryId: nil,
+            localGroupingKey: nil,
+            correlationId: nil,
+            bubbleUpEmojiOrStickersets: []
+        )
+
+        DispatchQueue.main.async {
+            if let account = self.accountContext?.account {
+                let _ = enqueueMessages(
+                    account: account,
+                    peerId: account.peerId,
+                    messages: [message]
+                ).start(completed: { [weak self] in
+                    self?.deleteFile(from: path)
+                    self?.showRecordSaveToast()
+                    sendCallRecorderAnalytics(with: .end)
+                    completion?()
+                })
+            }
+        }
+    }
+    
+    private func callActiveState(
+        with audioDevice: OngoingCallContext.AudioDevice?,
+        accountContext: AccountContext
+    ) {
+        if let audioDevice {
+            self.audioDevice = audioDevice
+            self.accountContext = accountContext
+        }
+
+//        if NGSettings.recordAllCalls {
+//            sendCallRecorderAnalytics(with: .startAuto)
+//            startRecordCall { [weak self] in
+//                self?.callCompletion?()
+//            }
+//        }
+    }
+    
+    public func startRecordCall(
+        with completion: @escaping () -> Void
+    ) {
+        audioDevice?.startNicegramRecording(callback: { [weak self] path, duration, size in
+            self?.writeAudioToSaved(
+                from: path,
+                duration: duration,
+                size: size,
+                completion: completion
+            )
+        }, errorCallback: { error in
+            sendCallRecorderAnalytics(with: .error)
+        })
+        sendCallRecorderAnalytics(with: .start)
+    }
+    
+    public func stopRecordCall() {
+        audioDevice?.stopNicegramRecording()
+    }
+    
+    public func setupPeer(peer: EnginePeer) {
+        self.enginePeer = peer
+    }
+    
+    public func showRecordSaveToast() {
+        let (presentationData, _, _) = getDeviceAccessData()
+        guard let image = UIImage(bundleImageName: "RecordSave") else { return }
+
+        let content: UndoOverlayContent = .image(
+            image: image,
+            title: nil,
+            text: l("NicegramCallRecord.SavedMessage"),
+            round: true,
+            undoText: nil
+        )
+        
+        DispatchQueue.main.async {
+            let controller = UndoOverlayController(
+                presentationData: presentationData,
+                content: content,
+                elevatedLayout: false,
+                position: .top,
+                animateInAsReplacement: false,
+                action: { _ in return false }
+            )
+
+            self.accountContext?.sharedContext.mainWindow?.present(controller, on: .root)
+        }
+    }
+    //
 }

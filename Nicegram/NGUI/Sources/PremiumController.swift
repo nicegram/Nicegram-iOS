@@ -19,6 +19,7 @@ import AccountContext
 import TelegramNotices
 import NGData
 import NGStrings
+import NGUtils
 
 private struct SelectionState: Equatable {
 }
@@ -47,6 +48,7 @@ private enum premiumControllerSection: Int32 {
     case manageFilters
     case other
     case speechToText
+    case calls
     case test
 }
 
@@ -83,6 +85,8 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
     case ignoretr(PresentationTheme, String)
     
     case useOpenAi(Bool)
+    
+    case recordAllCalls(String, Bool)
 
     var section: ItemListSectionId {
         switch self {
@@ -100,9 +104,12 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return premiumControllerSection.test.rawValue
         case .useOpenAi:
             return premiumControllerSection.speechToText.rawValue
+        case .recordAllCalls:
+            return premiumControllerSection.calls.rawValue
         }
-
     }
+//    case .recordAllCalls:
+//        NGSettings.recordAllCalls = value
 
     var stableId: Int32 {
         switch self {
@@ -132,6 +139,8 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return 12000
         case .useOpenAi:
             return 13000
+        case .recordAllCalls:
+            return 14000
         case .testButton:
             return 999999
         }
@@ -231,6 +240,12 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
+        case let .recordAllCalls(lhsText, lhsBool):
+            if case let .recordAllCalls(rhsText, rhsBool) = rhs, lhsText == rhsText, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
         }
     }
 
@@ -294,6 +309,13 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
                     }
                 }
             })
+        case let .recordAllCalls(title, value):
+            return ItemListSwitchItem(presentationData: presentationData, title: title, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                NGSettings.recordAllCalls = value
+                if value {
+                    sendUserSettingsAnalytics(with: .recordAllCallsOn)
+                }
+            })
         }
     }
 }
@@ -303,13 +325,14 @@ private func premiumControllerEntries(presentationData: PresentationData, useOpe
     var entries: [PremiumControllerEntry] = []
 
     let theme = presentationData.theme
-    let strings = presentationData.strings
 
     entries.append(.rememberFolderOnExit(theme, l("Premium.rememberFolderOnExit"), NGSettings.rememberFolderOnExit))
     entries.append(.onetaptr(theme, l("Premium.OnetapTranslate"), NGSettings.oneTapTr))
     entries.append(.ignoretr(theme, l("Premium.IgnoreTranslate.Title")))
     
     entries.append(.useOpenAi(useOpenAi))
+    
+    entries.append(.recordAllCalls(l("Premium.RecordAllCalls"), NGSettings.recordAllCalls))
 
     #if DEBUG
     entries.append(.testButton(theme, "TEST"))

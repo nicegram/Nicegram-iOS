@@ -3,32 +3,42 @@ import UIKit
 import Display
 import ComponentFlow
 import PlainButtonComponent
+import MultilineTextWithEntitiesComponent
+import TextFormat
+import AccountContext
 
 public final class TabSelectorComponent: Component {
     public struct Colors: Equatable {
         public var foreground: UIColor
         public var selection: UIColor
+        public var simple: Bool
 
         public init(
             foreground: UIColor,
-            selection: UIColor
+            selection: UIColor,
+            simple: Bool = false
         ) {
             self.foreground = foreground
             self.selection = selection
+            self.simple = simple
         }
     }
     
     public struct CustomLayout: Equatable {
         public var font: UIFont
         public var spacing: CGFloat
+        public var innerSpacing: CGFloat?
         public var lineSelection: Bool
         public var verticalInset: CGFloat
+        public var allowScroll: Bool
         
-        public init(font: UIFont, spacing: CGFloat, lineSelection: Bool = false, verticalInset: CGFloat = 0.0) {
+        public init(font: UIFont, spacing: CGFloat, innerSpacing: CGFloat? = nil, lineSelection: Bool = false, verticalInset: CGFloat = 0.0, allowScroll: Bool = true) {
             self.font = font
             self.spacing = spacing
+            self.innerSpacing = innerSpacing
             self.lineSelection = lineSelection
             self.verticalInset = verticalInset
+            self.allowScroll = allowScroll
         }
     }
     
@@ -45,6 +55,7 @@ public final class TabSelectorComponent: Component {
         }
     }
 
+    public let context: AccountContext?
     public let colors: Colors
     public let customLayout: CustomLayout?
     public let items: [Item]
@@ -53,6 +64,7 @@ public final class TabSelectorComponent: Component {
     public let transitionFraction: CGFloat?
     
     public init(
+        context: AccountContext? = nil,
         colors: Colors,
         customLayout: CustomLayout? = nil,
         items: [Item],
@@ -60,6 +72,7 @@ public final class TabSelectorComponent: Component {
         setSelectedId: @escaping (AnyHashable) -> Void,
         transitionFraction: CGFloat? = nil
     ) {
+        self.context = context
         self.colors = colors
         self.customLayout = customLayout
         self.items = items
@@ -69,6 +82,9 @@ public final class TabSelectorComponent: Component {
     }
     
     public static func ==(lhs: TabSelectorComponent, rhs: TabSelectorComponent) -> Bool {
+        if lhs.context !== rhs.context {
+            return false
+        }
         if lhs.colors != rhs.colors {
             return false
         }
@@ -142,16 +158,19 @@ public final class TabSelectorComponent: Component {
                 verticalInset = customLayout.verticalInset * 2.0
             }
             
-            let innerInset: CGFloat = 12.0
-            let spacing: CGFloat = component.customLayout?.spacing ?? 2.0
+            var innerInset: CGFloat = component.customLayout?.innerSpacing ?? 12.0
+            var spacing: CGFloat = component.customLayout?.spacing ?? 2.0
             
             let itemFont: UIFont
             var isLineSelection = false
+            let allowScroll: Bool
             if let customLayout = component.customLayout {
                 itemFont = customLayout.font
                 isLineSelection = customLayout.lineSelection
+                allowScroll = customLayout.allowScroll || component.items.count > 3
             } else {
                 itemFont = Font.semibold(14.0)
+                allowScroll = true
             }
             
             if selectionColorUpdated {
@@ -169,15 +188,14 @@ public final class TabSelectorComponent: Component {
                 }
             }
             
-            var contentWidth: CGFloat = spacing
-            var previousBackgroundRect: CGRect?
-            var selectedBackgroundRect: CGRect?
-            var nextBackgroundRect: CGRect?
+            var innerContentWidth: CGFloat = 0.0
             
             let selectedIndex = component.items.firstIndex(where: { $0.id == component.selectedId })
             
             var validIds: [AnyHashable] = []
             var index = 0
+            var itemViews: [AnyHashable: (VisibleItem, CGSize, ComponentTransition)] = [:]
+            
             for item in component.items {
                 var itemTransition = transition
                 let itemView: VisibleItem
@@ -211,6 +229,7 @@ public final class TabSelectorComponent: Component {
                     transition: .immediate,
                     component: AnyComponent(PlainButtonComponent(
                         content: AnyComponent(ItemComponent(
+                            context: component.context,
                             text: item.title,
                             font: itemFont,
                             color: component.colors.foreground,
@@ -230,8 +249,27 @@ public final class TabSelectorComponent: Component {
                     environment: {},
                     containerSize: CGSize(width: 200.0, height: 100.0)
                 )
-                
-                if !contentWidth.isZero {
+                innerContentWidth += itemSize.width
+                itemViews[item.id] = (itemView, itemSize, itemTransition)
+                index += 1
+            }
+            
+            let estimatedContentWidth = 2.0 * spacing + innerContentWidth + (CGFloat(component.items.count - 1) * (spacing + innerInset))
+            if estimatedContentWidth > availableSize.width && !allowScroll {
+                spacing = (availableSize.width - innerContentWidth) / CGFloat(component.items.count + 1)
+                innerInset = 0.0
+            }
+            
+            var contentWidth: CGFloat = spacing
+            var previousBackgroundRect: CGRect?
+            var selectedBackgroundRect: CGRect?
+            var nextBackgroundRect: CGRect?
+            
+            for item in component.items {
+                guard let (itemView, itemSize, itemTransition) = itemViews[item.id] else {
+                    continue
+                }
+                if contentWidth > spacing {
                     contentWidth += spacing
                 }
                 let itemTitleFrame = CGRect(origin: CGPoint(x: contentWidth + innerInset, y: verticalInset + floor((baseHeight - itemSize.height) * 0.5)), size: itemSize)
@@ -254,9 +292,8 @@ public final class TabSelectorComponent: Component {
                     }
                     itemTransition.setPosition(view: itemTitleView, position: itemTitleFrame.origin)
                     itemTransition.setBounds(view: itemTitleView, bounds: CGRect(origin: CGPoint(), size: itemTitleFrame.size))
-                    itemTransition.setAlpha(view: itemTitleView, alpha: item.id == component.selectedId || isLineSelection ? 1.0 : 0.4)
+                    itemTransition.setAlpha(view: itemTitleView, alpha: item.id == component.selectedId || isLineSelection || component.colors.simple ? 1.0 : 0.4)
                 }
-                index += 1
             }
             contentWidth += spacing
             
@@ -288,7 +325,7 @@ public final class TabSelectorComponent: Component {
                         }
                     }
                     
-                    var mappedSelectionFrame = effectiveBackgroundRect.insetBy(dx: 12.0, dy: 0.0)
+                    var mappedSelectionFrame = effectiveBackgroundRect.insetBy(dx: innerInset, dy: 0.0)
                     mappedSelectionFrame.origin.y = mappedSelectionFrame.maxY + 6.0
                     mappedSelectionFrame.size.height = 3.0
                     transition.setFrame(view: self.selectionView, frame: mappedSelectionFrame)
@@ -302,7 +339,7 @@ public final class TabSelectorComponent: Component {
             self.contentSize = CGSize(width: contentWidth, height: baseHeight + verticalInset * 2.0)
             self.disablesInteractiveTransitionGestureRecognizer = contentWidth > availableSize.width
             
-            if let selectedBackgroundRect {
+            if let selectedBackgroundRect, self.bounds.width > 0.0 {
                 self.scrollRectToVisible(selectedBackgroundRect.insetBy(dx: -spacing, dy: 0.0), animated: false)
             }
             
@@ -331,6 +368,7 @@ extension CGRect {
 }
 
 private final class ItemComponent: CombinedComponent {
+    let context: AccountContext?
     let text: String
     let font: UIFont
     let color: UIColor
@@ -338,12 +376,14 @@ private final class ItemComponent: CombinedComponent {
     let selectionFraction: CGFloat
     
     init(
+        context: AccountContext?,
         text: String,
         font: UIFont,
         color: UIColor,
         selectedColor: UIColor,
         selectionFraction: CGFloat
     ) {
+        self.context = context
         self.text = text
         self.font = font
         self.color = color
@@ -352,6 +392,9 @@ private final class ItemComponent: CombinedComponent {
     }
 
     static func ==(lhs: ItemComponent, rhs: ItemComponent) -> Bool {
+        if lhs.context !== rhs.context {
+            return false
+        }
         if lhs.text != rhs.text {
             return false
         }
@@ -371,17 +414,25 @@ private final class ItemComponent: CombinedComponent {
     }
     
     static var body: Body {
-        let title = Child(Text.self)
-        let selectedTitle = Child(Text.self)
+        let title = Child(MultilineTextWithEntitiesComponent.self)
+        let selectedTitle = Child(MultilineTextWithEntitiesComponent.self)
         
         return { context in
             let component = context.component
-           
+            
+            let attributedTitle = NSMutableAttributedString(string: component.text, font: component.font, textColor: component.color)
+            var range = (attributedTitle.string as NSString).range(of: "⭐️")
+            if range.location != NSNotFound {
+                attributedTitle.addAttribute(ChatTextInputAttributes.customEmoji, value: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: 0, file: nil, custom: .stars(tinted: false)), range: range)
+            }
+            
             let title = title.update(
-                component: Text(
-                    text: component.text,
-                    font: component.font,
-                    color: component.color
+                component: MultilineTextWithEntitiesComponent(
+                    context: component.context,
+                    animationCache: component.context?.animationCache,
+                    animationRenderer: component.context?.animationRenderer,
+                    placeholderColor: .white,
+                    text: .plain(attributedTitle)
                 ),
                 availableSize: context.availableSize,
                 transition: .immediate
@@ -391,11 +442,19 @@ private final class ItemComponent: CombinedComponent {
                 .opacity(1.0 - component.selectionFraction)
             )
             
+            let selectedAttributedTitle = NSMutableAttributedString(string: component.text, font: component.font, textColor: component.selectedColor)
+            range = (selectedAttributedTitle.string as NSString).range(of: "⭐️")
+            if range.location != NSNotFound {
+                selectedAttributedTitle.addAttribute(ChatTextInputAttributes.customEmoji, value: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: 0, file: nil, custom: .stars(tinted: false)), range: range)
+            }
+            
             let selectedTitle = selectedTitle.update(
-                component: Text(
-                    text: component.text,
-                    font: component.font,
-                    color: component.selectedColor
+                component: MultilineTextWithEntitiesComponent(
+                    context: nil,
+                    animationCache: nil,
+                    animationRenderer: nil,
+                    placeholderColor: .white,
+                    text: .plain(selectedAttributedTitle)
                 ),
                 availableSize: context.availableSize,
                 transition: .immediate

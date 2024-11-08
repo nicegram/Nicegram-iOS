@@ -1,3 +1,7 @@
+// MARK: Nicegram ATT
+import class Combine.AnyCancellable
+import FeatAttentionEconomy
+//
 // MARK: Nicegram HideReactions, HideStories
 import FeatPinnedChats
 import NGData
@@ -400,6 +404,12 @@ public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
     // MARK: Nicegram PinnedChats
     let nicegramItem: PinnedChatToDisplay?
     //
+    
+    // MARK: Nicegram ATT
+    let attBannerFeature = AttBannerFeature()
+    var attAd: AttAd? { nicegramItem?.chat.attAd }
+    //
+    
     let presentationData: ChatListPresentationData
     let context: AccountContext
     let chatListLocation: ChatListControllerLocation
@@ -508,8 +518,12 @@ public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
             if let nicegramItem {
                 if #available(iOS 13.0, *) {
                     Task { @MainActor in
-                        let openPinnedChatUseCase = PinnedChatsContainer.shared.openPinnedChatUseCase()
-                        openPinnedChatUseCase(nicegramItem.chat)
+                        if let attAd {
+                            attBannerFeature.onClick(ad: attAd)
+                        } else {
+                            let openPinnedChatUseCase = PinnedChatsContainer.shared.openPinnedChatUseCase()
+                            openPinnedChatUseCase(nicegramItem.chat)
+                        }
                         
                         interaction.clearHighlightAnimated(true)
                     }
@@ -601,7 +615,7 @@ private enum RevealOptionKey: Int32 {
 }
 
 private func canArchivePeer(id: EnginePeer.Id, accountPeerId: EnginePeer.Id) -> Bool {
-    if id.namespace == Namespaces.Peer.CloudUser && id.id._internalGetInt64Value() == 777000 {
+    if id.isTelegramNotifications {
         return false
     }
     if id == accountPeerId {
@@ -938,7 +952,7 @@ private final class ChatListMediaPreviewNode: ASDisplayNode {
     }
 }
 
-private let loginCodeRegex = try? NSRegularExpression(pattern: "[\\d\\-]{5,7}", options: [])
+private let loginCodeRegex = try? NSRegularExpression(pattern: "\\b\\d{5,8}\\b", options: [])
 
 public class ChatListItemNode: ItemListRevealOptionsItemNode {
     final class TopicItemNode: ASDisplayNode {
@@ -1210,6 +1224,11 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
     
     var item: ChatListItem?
     
+    // MARK: Nicegram ATT
+    private var attClaimAnimationView: AttClaimAnimationView?
+    private var attClaimAnimationCancellable: AnyCancellable?
+    //
+    
     private let backgroundNode: ASDisplayNode
     private let highlightedBackgroundNode: ASDisplayNode
     
@@ -1464,9 +1483,29 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                     )
                 }
                 self.authorNode.visibilityStatus = self.visibilityStatus
+                
+                // MARK: Nicegram ATT
+                trackViewIfNeeded()
+                //
             }
         }
     }
+    
+    // MARK: Nicegram ATT
+    public func trackViewIfNeeded() {
+        guard self.visibilityStatus,
+              let item,
+              item.interaction.isChatListVisible() else {
+            return
+        }
+        
+        if let attAd = item.attAd {
+            item.attBannerFeature.onView(ad: attAd)
+        } else if let nicegramItem = item.nicegramItem {
+            PinnedChatsUI.trackChatView(nicegramItem.chat)
+        }
+    }
+    //
     
     private var trackingIsInHierarchy: Bool = false {
         didSet {
@@ -1823,6 +1862,13 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                 )
             )
         }
+        //
+        
+        // MARK: Nicegram ATT
+        attClaimAnimationCancellable = item.attBannerFeature.claimAnimationPublisher
+            .sink { [weak self] result in
+                self?.attClaimAnimationView?.animate(value: result.claimAmount)
+            }
         //
         
         self.contextContainer.isGestureEnabled = enablePreview && !item.editing
@@ -2341,14 +2387,20 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                         if let messagePeer = itemPeer.chatMainPeer {
                             peerText = messagePeer.displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder)
                         }
-                    } else if let message = messages.last, let author = message.author?._asPeer(), let peer = itemPeer.chatMainPeer, !isUser {
-                        if case let .channel(peer) = peer, case .broadcast = peer.info {
-                        } else if !displayAsMessage {
-                            if let forwardInfo = message.forwardInfo, forwardInfo.flags.contains(.isImported), let authorSignature = forwardInfo.authorSignature {
-                                peerText = authorSignature
-                            } else {
-                                peerText = author.id == account.peerId ? item.presentationData.strings.DialogList_You : EnginePeer(author).displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder)
-                                authorIsCurrentChat = author.id == peer.id
+                    } else if let message = messages.last, let author = message.author?._asPeer(), let peer = itemPeer.chatMainPeer {
+                        if peer.id.isVerificationCodes {
+                            if let message = messages.last, let forwardInfo = message.forwardInfo, let author = forwardInfo.author {
+                                peerText = EnginePeer(author).compactDisplayTitle
+                            }
+                        } else if !isUser {
+                            if case let .channel(peer) = peer, case .broadcast = peer.info {
+                            } else if !displayAsMessage {
+                                if let forwardInfo = message.forwardInfo, forwardInfo.flags.contains(.isImported), let authorSignature = forwardInfo.authorSignature {
+                                    peerText = authorSignature
+                                } else {
+                                    peerText = author.id == account.peerId ? item.presentationData.strings.DialogList_You : EnginePeer(author).displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder)
+                                    authorIsCurrentChat = author.id == peer.id
+                                }
                             }
                         }
                     }
@@ -2442,7 +2494,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                             }
                         }
                         
-                        if message.id.peerId.namespace == Namespaces.Peer.CloudUser && message.id.peerId.id._internalGetInt64Value() == 777000 {
+                        if message.id.peerId.isTelegramNotifications || message.id.peerId.isVerificationCodes {
                             if let cached = currentCustomTextEntities, cached.matches(text: message.text) {
                                 customTextEntities = cached
                             } else if let matches = loginCodeRegex?.matches(in: message.text, options: [], range: NSMakeRange(0, (message.text as NSString).length)) {
@@ -2560,7 +2612,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                             }
                             
                             let firstRangeOrigin = chatListSearchResult.text.distance(from: chatListSearchResult.text.startIndex, to: firstRange.lowerBound)
-                            if firstRangeOrigin > 24 {
+                            if firstRangeOrigin > 24 && !chatListSearchResult.searchQuery.hasPrefix("#") {
                                 var leftOrigin: Int = 0
                                 (composedString.string as NSString).enumerateSubstrings(in: NSMakeRange(0, firstRangeOrigin), options: [.byWords, .reverse]) { (str, range1, _, _) in
                                     let distanceFromEnd = firstRangeOrigin - range1.location
@@ -2619,7 +2671,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                         if !ignoreForwardedIcon {
                             if case .savedMessagesChats = item.chatListLocation {
                                 displayForwardedIcon = false
-                            } else if let forwardInfo = message.forwardInfo, !forwardInfo.flags.contains(.isImported) {
+                            } else if let forwardInfo = message.forwardInfo, !forwardInfo.flags.contains(.isImported) && !message.id.peerId.isVerificationCodes {
                                 displayForwardedIcon = true
                             } else if let _ = message.attributes.first(where: { $0 is ReplyStoryAttribute }) {
                                 displayStoryReplyIcon = true
@@ -2655,7 +2707,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                                             case let .preview(dimensions, immediateThumbnailData, videoDuration):
                                                 if let immediateThumbnailData {
                                                     if let videoDuration {
-                                                        let thumbnailMedia = TelegramMediaFile(fileId: MediaId(namespace: 0, id: index), partialReference: nil, resource: EmptyMediaResource(), previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: immediateThumbnailData, mimeType: "video/mp4", size: nil, attributes: [.Video(duration: Double(videoDuration), size: dimensions ?? PixelDimensions(width: 1, height: 1), flags: [], preloadSize: nil, coverTime: nil)])
+                                                        let thumbnailMedia = TelegramMediaFile(fileId: MediaId(namespace: 0, id: index), partialReference: nil, resource: EmptyMediaResource(), previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: immediateThumbnailData, mimeType: "video/mp4", size: nil, attributes: [.Video(duration: Double(videoDuration), size: dimensions ?? PixelDimensions(width: 1, height: 1), flags: [], preloadSize: nil, coverTime: nil, videoCodec: nil)], alternativeRepresentations: [])
                                                         contentImageSpecs.append(ContentImageSpec(message: message, media:  .file(thumbnailMedia), size: fitSize))
                                                     } else {
                                                         let thumbnailMedia = TelegramMediaImage(imageId: MediaId(namespace: 0, id: index), representations: [], immediateThumbnailData: immediateThumbnailData, reference: nil, partialReference: nil, flags: [])
@@ -4473,6 +4525,26 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                         strongSelf.mutedIconNode.isHidden = true
                     }
                     
+                    // MARK: Nicegram ATT
+                    if item.attAd != nil {
+                        let attClaimAnimationView: AttClaimAnimationView
+                        if let current = strongSelf.attClaimAnimationView {
+                            attClaimAnimationView = current
+                        } else {
+                            attClaimAnimationView = AttClaimAnimationView()
+                            strongSelf.attClaimAnimationView = attClaimAnimationView
+                            strongSelf.mainContentContainerNode.view.addSubview(attClaimAnimationView)
+                        }
+                        
+                        let iconSize = CGSize(width: 20, height: 20)
+                        transition.updateFrame(view: attClaimAnimationView, frame: CGRect(origin: CGPoint(x: nextTitleIconOrigin, y: floorToScreenPixels(titleFrame.maxY - lastLineRect.height * 0.5 - iconSize.height / 2.0) - UIScreenPixel), size: iconSize))
+                        nextTitleIconOrigin += attClaimAnimationView.bounds.width + 4.0
+                    } else if let attClaimAnimationView = strongSelf.attClaimAnimationView {
+                        strongSelf.attClaimAnimationView = nil
+                        attClaimAnimationView.removeFromSuperview()
+                    }
+                    //
+                    
                     let separatorInset: CGFloat
                     if case let .groupReference(groupReferenceData) = item.content, groupReferenceData.hiddenByDefault {
                         separatorInset = 0.0
@@ -4660,10 +4732,14 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
             case RevealOptionKey.unpin.rawValue:
                 self.setRevealOptionsOpened(false, animated: true)
                 
-                Task { @MainActor in
-                    PinnedChatsUI.unpin(
-                        nicegramItem.chat
-                    )
+                if let ad = item.attAd {
+                    item.attBannerFeature.onRemoveAdClick(ad: ad)
+                } else {
+                    Task { @MainActor in
+                        PinnedChatsUI.unpin(
+                            nicegramItem.chat
+                        )
+                    }
                 }
             default:
                 break

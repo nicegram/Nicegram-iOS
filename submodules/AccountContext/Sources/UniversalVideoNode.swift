@@ -10,12 +10,18 @@ import UniversalMediaPlayer
 import AVFoundation
 import RangeSet
 
+public enum UniversalVideoContentVideoQuality: Equatable {
+    case auto
+    case quality(Int)
+}
+
 public protocol UniversalVideoContentNode: AnyObject {
     var ready: Signal<Void, NoError> { get }
     var status: Signal<MediaPlayerStatus, NoError> { get }
     var bufferingStatus: Signal<(RangeSet<Int64>, Int64)?, NoError> { get }
+    var isNativePictureInPictureActive: Signal<Bool, NoError> { get }
         
-    func updateLayout(size: CGSize, transition: ContainedViewLayoutTransition)
+    func updateLayout(size: CGSize, actualSize: CGSize, transition: ContainedViewLayoutTransition)
     
     func play()
     func pause()
@@ -29,11 +35,17 @@ public protocol UniversalVideoContentNode: AnyObject {
     func continuePlayingWithoutSound(actionAtEnd: MediaPlayerPlayOnceWithSoundActionAtEnd)
     func setContinuePlayingWithoutSoundOnLostAudioSession(_ value: Bool)
     func setBaseRate(_ baseRate: Double)
+    func setVideoQuality(_ videoQuality: UniversalVideoContentVideoQuality)
+    func videoQualityState() -> (current: Int, preferred: UniversalVideoContentVideoQuality, available: [Int])?
+    func videoQualityStateSignal() -> Signal<(current: Int, preferred: UniversalVideoContentVideoQuality, available: [Int])?, NoError>
     func addPlaybackCompleted(_ f: @escaping () -> Void) -> Int
     func removePlaybackCompleted(_ index: Int)
     func fetchControl(_ control: UniversalVideoNodeFetchControl)
     func notifyPlaybackControlsHidden(_ hidden: Bool)
     func setCanPlaybackWithoutHierarchy(_ canPlaybackWithoutHierarchy: Bool)
+    func enterNativePictureInPicture() -> Bool
+    func exitNativePictureInPicture()
+    func setNativePictureInPictureIsActive(_ value: Bool)
 }
 
 public protocol UniversalVideoContent {
@@ -41,7 +53,7 @@ public protocol UniversalVideoContent {
     var dimensions: CGSize { get }
     var duration: Double { get }
     
-    func makeContentNode(postbox: Postbox, audioSession: ManagedAudioSession) -> UniversalVideoContentNode & ASDisplayNode
+    func makeContentNode(accountId: AccountRecordId, postbox: Postbox, audioSession: ManagedAudioSession) -> UniversalVideoContentNode & ASDisplayNode
     
     func isEqual(to other: UniversalVideoContent) -> Bool
 }
@@ -61,7 +73,7 @@ public protocol UniversalVideoDecoration: AnyObject {
     
     func updateContentNode(_ contentNode: (UniversalVideoContentNode & ASDisplayNode)?)
     func updateContentNodeSnapshot(_ snapshot: UIView?)
-    func updateLayout(size: CGSize, transition: ContainedViewLayoutTransition)
+    func updateLayout(size: CGSize, actualSize: CGSize, transition: ContainedViewLayoutTransition)
     func tap()
 }
 
@@ -83,6 +95,7 @@ public enum UniversalVideoNodeFetchControl {
 }
 
 public final class UniversalVideoNode: ASDisplayNode {
+    private let accountId: AccountRecordId
     private let postbox: Postbox
     private let audioSession: ManagedAudioSession
     private let manager: UniversalVideoManager
@@ -92,7 +105,7 @@ public final class UniversalVideoNode: ASDisplayNode {
     private let autoplay: Bool
     private let snapshotContentWhenGone: Bool
     
-    private var contentNode: (UniversalVideoContentNode & ASDisplayNode)?
+    private(set) var contentNode: (UniversalVideoContentNode & ASDisplayNode)?
     private var contentNodeId: Int32?
     
     private var playbackCompletedIndex: Int?
@@ -117,6 +130,11 @@ public final class UniversalVideoNode: ASDisplayNode {
         return self._bufferingStatus.get()
     }
     
+    private let _isNativePictureInPictureActive = Promise<Bool>()
+    public var isNativePictureInPictureActive: Signal<Bool, NoError> {
+        return self._isNativePictureInPictureActive.get()
+    }
+    
     private let _ready = Promise<Void>()
     public var ready: Signal<Void, NoError> {
         return self._ready.get()
@@ -128,11 +146,12 @@ public final class UniversalVideoNode: ASDisplayNode {
                 if self.canAttachContent {
                     assert(self.contentRequestIndex == nil)
                     
+                    let accountId = self.accountId
                     let content = self.content
                     let postbox = self.postbox
                     let audioSession = self.audioSession
                     self.contentRequestIndex = self.manager.attachUniversalVideoContent(content: self.content, priority: self.priority, create: {
-                        return content.makeContentNode(postbox: postbox, audioSession: audioSession)
+                        return content.makeContentNode(accountId: accountId, postbox: postbox, audioSession: audioSession)
                     }, update: { [weak self] contentNodeAndFlags in
                         if let strongSelf = self {
                             strongSelf.updateContentNode(contentNodeAndFlags)
@@ -153,7 +172,8 @@ public final class UniversalVideoNode: ASDisplayNode {
         return self.contentNode != nil
     }
     
-    public init(postbox: Postbox, audioSession: ManagedAudioSession, manager: UniversalVideoManager, decoration: UniversalVideoDecoration, content: UniversalVideoContent, priority: UniversalVideoPriority, autoplay: Bool = false, snapshotContentWhenGone: Bool = false) {
+    public init(accountId: AccountRecordId, postbox: Postbox, audioSession: ManagedAudioSession, manager: UniversalVideoManager, decoration: UniversalVideoDecoration, content: UniversalVideoContent, priority: UniversalVideoPriority, autoplay: Bool = false, snapshotContentWhenGone: Bool = false) {
+        self.accountId = accountId
         self.postbox = postbox
         self.audioSession = audioSession
         self.manager = manager
@@ -171,6 +191,7 @@ public final class UniversalVideoNode: ASDisplayNode {
         
         self._status.set(self.manager.statusSignal(content: self.content))
         self._bufferingStatus.set(self.manager.bufferingStatusSignal(content: self.content))
+        self._isNativePictureInPictureActive.set(self.manager.isNativePictureInPictureActiveSignal(content: self.content))
         
         self.decoration.setStatus(self.status)
         
@@ -237,8 +258,8 @@ public final class UniversalVideoNode: ASDisplayNode {
         }
     }
     
-    public func updateLayout(size: CGSize, transition: ContainedViewLayoutTransition) {
-        self.decoration.updateLayout(size: size, transition: transition)
+    public func updateLayout(size: CGSize, actualSize: CGSize? = nil, transition: ContainedViewLayoutTransition) {
+        self.decoration.updateLayout(size: size, actualSize: actualSize ?? size, transition: transition)
     }
     
     public func play() {
@@ -329,6 +350,34 @@ public final class UniversalVideoNode: ASDisplayNode {
         })
     }
     
+    public func setVideoQuality(_ videoQuality: UniversalVideoContentVideoQuality) {
+        self.manager.withUniversalVideoContent(id: self.content.id, { contentNode in
+            if let contentNode = contentNode {
+                contentNode.setVideoQuality(videoQuality)
+            }
+        })
+    }
+    
+    public func videoQualityState() -> (current: Int, preferred: UniversalVideoContentVideoQuality, available: [Int])? {
+        var result: (current: Int, preferred: UniversalVideoContentVideoQuality, available: [Int])?
+        self.manager.withUniversalVideoContent(id: self.content.id, { contentNode in
+            if let contentNode {
+                result = contentNode.videoQualityState()
+            }
+        })
+        return result
+    }
+    
+    public func videoQualityStateSignal() -> Signal<(current: Int, preferred: UniversalVideoContentVideoQuality, available: [Int])?, NoError> {
+        var result: Signal<(current: Int, preferred: UniversalVideoContentVideoQuality, available: [Int])?, NoError>?
+        self.manager.withUniversalVideoContent(id: self.content.id, { contentNode in
+            if let contentNode {
+                result = contentNode.videoQualityStateSignal()
+            }
+        })
+        return result ?? .single(nil)
+    }
+    
     public func continuePlayingWithoutSound(actionAtEnd: MediaPlayerPlayOnceWithSoundActionAtEnd = .loopDisablingSound) {
         self.manager.withUniversalVideoContent(id: self.content.id, { contentNode in
             if let contentNode = contentNode {
@@ -387,6 +436,32 @@ public final class UniversalVideoNode: ASDisplayNode {
         self.manager.withUniversalVideoContent(id: self.content.id, { contentNode in
             if let contentNode = contentNode {
                 contentNode.setCanPlaybackWithoutHierarchy(canPlaybackWithoutHierarchy)
+            }
+        })
+    }
+    
+    public func enterNativePictureInPicture() -> Bool {
+        var result = false
+        self.manager.withUniversalVideoContent(id: self.content.id, { contentNode in
+            if let contentNode = contentNode {
+                result = contentNode.enterNativePictureInPicture()
+            }
+        })
+        return result
+    }
+    
+    public func exitNativePictureInPicture() {
+        self.manager.withUniversalVideoContent(id: self.content.id, { contentNode in
+            if let contentNode = contentNode {
+                contentNode.exitNativePictureInPicture()
+            }
+        })
+    }
+    
+    public func setNativePictureInPictureIsActive(_ value: Bool) {
+        self.manager.withUniversalVideoContent(id: self.content.id, { contentNode in
+            if let contentNode = contentNode {
+                contentNode.setNativePictureInPictureIsActive(value)
             }
         })
     }

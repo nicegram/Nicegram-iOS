@@ -36,6 +36,7 @@ import NGDoubleBottom
 import NGQuickReplies
 import NGRemoteConfig
 import NGStats
+import NGUtils
 
 fileprivate let LOGTAG = extractNameFromPath(#file)
 
@@ -80,7 +81,7 @@ private enum EasyToggleType {
     case showProfileId
     case showRegDate
     case hideReactions
-    case hideStories
+    case hideStories    
 }
 
 
@@ -92,6 +93,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     case showCallsTab(String, Bool)
     case showNicegramTab
     case showTabNames(String, Bool)
+    case showFeedTab(String, Bool)
     
     case pinnedChatsHeader
     case pinnedChat(Int32, PinnedChat)
@@ -127,7 +129,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
     var section: ItemListSectionId {
         switch self {
-        case .TabsHeader, .showContactsTab, .showCallsTab, .showNicegramTab, .showTabNames:
+        case .TabsHeader, .showContactsTab, .showCallsTab, .showNicegramTab, .showTabNames, .showFeedTab:
             return NicegramSettingsControllerSection.Tabs.rawValue
         case .FoldersHeader, .foldersAtBottom, .foldersAtBottomNotice:
             return NicegramSettingsControllerSection.Folders.rawValue
@@ -172,6 +174,9 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             
         case .showTabNames:
             return 1600
+
+        case .showFeedTab:
+            return 1650
 
         case .FoldersHeader:
             return 1700
@@ -226,6 +231,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return 6002
         case .shareDataNote:
             return 6010
+
         }
     }
 
@@ -263,6 +269,13 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
         case let .showTabNames(lhsText, lhsVar0Bool):
             if case let .showTabNames(rhsText, rhsVar0Bool) = rhs, lhsText == rhsText, lhsVar0Bool == rhsVar0Bool {
+                return true
+            } else {
+                return false
+            }
+            
+        case let .showFeedTab(lhsText, lhsVar0Bool):
+            if case let .showFeedTab(rhsText, rhsVar0Bool) = rhs, lhsText == rhsText, lhsVar0Bool == rhsVar0Bool {
                 return true
             } else {
                 return false
@@ -456,6 +469,13 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                 arguments.presentController(controller, nil)
             })
             
+        case let .showFeedTab(text, value):
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
+                ngLog("[showFeedTab] invoked with \(value)", LOGTAG)
+                NGSettings.showFeedTab = value
+                arguments.updateTabs()
+            })
+            
         case let .FoldersHeader(text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: section)
             
@@ -513,8 +533,14 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                     NGSettings.showRegDate = value
                 case .hideReactions:
                     VarSystemNGSettings.hideReactions = value
+                    if value {
+                        sendUserSettingsAnalytics(with: .hideReactionsOn)
+                    }
                 case .hideStories:
                     NGSettings.hideStories = value
+                    if value {
+                        sendUserSettingsAnalytics(with: .hideStoriesOn)
+                    }
                 }
             })
         case let .unblockHeader(text):
@@ -631,6 +657,10 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
         l("NiceFeatures.Tabs.ShowNames"),
         NGSettings.showTabNames
     ))
+    entries.append(.showFeedTab(
+        l("Show Feed Tab"),
+        NGSettings.showFeedTab
+    ))
 
     entries.append(.FoldersHeader(l("NiceFeatures.Folders.Header")))
     entries.append(.foldersAtBottom(
@@ -701,7 +731,7 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     
     entries.append(.easyToggle(toggleIndex, .hideStories, l("NicegramSettings.HideStories"), NGSettings.hideStories))
     toggleIndex += 1
-    
+        
     if let sharingSettings {
         entries.append(
             .shareBotsData(
@@ -816,19 +846,23 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
         controller?.view.window?.rootViewController
     }
     updateTabsImpl = {
+        updateTabs(with: context)
+    }
+    return controller
+}
+
+public func updateTabs(with context: AccountContext) {
+    _ = updateCallListSettingsInteractively(accountManager: context.sharedContext.accountManager) { settings in
+        var settings = settings
+        settings.showTab = !settings.showTab
+        return settings
+    }.start(completed: {
         _ = updateCallListSettingsInteractively(accountManager: context.sharedContext.accountManager) { settings in
             var settings = settings
             settings.showTab = !settings.showTab
             return settings
         }.start(completed: {
-            _ = updateCallListSettingsInteractively(accountManager: context.sharedContext.accountManager) { settings in
-                var settings = settings
-                settings.showTab = !settings.showTab
-                return settings
-            }.start(completed: {
-                ngLog("Tabs refreshed", LOGTAG)
-            })
+            ngLog("Tabs refreshed", LOGTAG)
         })
-    }
-    return controller
+    })
 }

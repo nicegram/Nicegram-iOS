@@ -414,8 +414,8 @@ private class ExtendedMediaOverlayNode: ASDisplayNode {
 }
 
 private func selectStoryMedia(item: Stories.Item, preferredHighQuality: Bool) -> Media? {
-    if !preferredHighQuality, let alternativeMedia = item.alternativeMedia {
-        return alternativeMedia
+    if !preferredHighQuality, let alternativeMediaValue = item.alternativeMediaList.first {
+        return alternativeMediaValue
     } else {
         return item.media
     }
@@ -430,7 +430,7 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
     private var highQualityImageNode: TransformImageNode?
 
     private var videoNode: UniversalVideoNode?
-    private var videoContent: NativeVideoContent?
+    private var videoContent: UniversalVideoContent?
     private var animatedStickerNode: AnimatedStickerNode?
     private var statusNode: RadialStatusNode?
     public var videoNodeDecoration: ChatBubbleVideoDecoration?
@@ -513,6 +513,11 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
     public var updateMessageReaction: ((Message, ChatControllerInteractionReaction, Bool, ContextExtractedContentContainingView?) -> Void)?
     public var playMessageEffect: ((Message) -> Void)?
     public var activateAgeRestrictedMedia: (() -> Void)?
+    public var requestInlineUpdate: (() -> Void)?
+    
+    private var hlsInlinePlaybackRange: Range<Int64>?
+    private var appliedHlsInlinePlaybackRange: Range<Int64>?
+    private var hlsInlinePlaybackRangeDisposable: Disposable?
     
     override public init() {
         self.pinchContainerNode = PinchSourceContainerNode()
@@ -618,10 +623,15 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
         self.playerStatusDisposable.dispose()
         self.fetchDisposable.dispose()
         self.secretTimer?.invalidate()
+        self.hlsInlinePlaybackRangeDisposable?.dispose()
     }
     
     public func isAvailableForGalleryTransition() -> Bool {
-        return self.automaticPlayback ?? false
+        if let automaticPlayback = self.automaticPlayback, automaticPlayback, self.decoration != nil {
+            return true
+        } else {
+            return false
+        }
     }
     
     public func isAvailableForInstantPageTransition() -> Bool {
@@ -680,10 +690,10 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                                 } else if let media = media as? TelegramMediaImage, let resource = largestImageRepresentation(media.representations)?.resource {
                                     messageMediaImageCancelInteractiveFetch(context: context, messageId: message.id, image: media, resource: resource)
                                 }
-                                if let alternativeMedia = item.alternativeMedia {
-                                    if let media = alternativeMedia as? TelegramMediaFile {
+                                if let alternativeMediaValue = item.alternativeMediaList.first {
+                                    if let media = alternativeMediaValue as? TelegramMediaFile {
                                         messageMediaFileCancelInteractiveFetch(context: context, messageId: message.id, file: media)
-                                    } else if let media = alternativeMedia as? TelegramMediaImage, let resource = largestImageRepresentation(media.representations)?.resource {
+                                    } else if let media = alternativeMediaValue as? TelegramMediaImage, let resource = largestImageRepresentation(media.representations)?.resource {
                                         messageMediaImageCancelInteractiveFetch(context: context, messageId: message.id, image: media, resource: resource)
                                     }
                                 }
@@ -719,7 +729,20 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                 }
             } else if let fetchStatus = self.fetchStatus, case .Local = fetchStatus {
                 var videoContentMatch = true
-                if let content = self.videoContent, case let .message(stableId, mediaId) = content.nativeId {
+                if let content = self.videoContent as? NativeVideoContent, case let .message(stableId, mediaId) = content.nativeId {
+                    var media = self.media
+                    if let invoice = media as? TelegramMediaInvoice, let extendedMedia = invoice.extendedMedia, case let .full(fullMedia) = extendedMedia {
+                        media = fullMedia
+                    }
+                    
+                    if let storyMedia = media as? TelegramMediaStory, let storyItem = self.message?.associatedStories[storyMedia.storyId]?.get(Stories.StoredItem.self) {
+                        if case let .item(item) = storyItem, let _ = item.media {
+                            media = selectStoryMedia(item: item, preferredHighQuality: self.preferredStoryHighQuality)
+                        }
+                    }
+                    
+                    videoContentMatch = self.message?.stableId == stableId && media?.id == mediaId
+                } else if let content = self.videoContent as? PlatformVideoContent, case let .message(_, stableId, mediaId) = content.nativeId {
                     var media = self.media
                     if let invoice = media as? TelegramMediaInvoice, let extendedMedia = invoice.extendedMedia, case let .full(fullMedia) = extendedMedia {
                         media = fullMedia
@@ -769,6 +792,9 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
         let hasCurrentAnimatedStickerNode = currentAnimatedStickerNode != nil
         let currentAutomaticDownload = self.automaticDownload
         let currentAutomaticPlayback = self.automaticPlayback
+        
+        let hlsInlinePlaybackRange = self.hlsInlinePlaybackRange
+        let appliedHlsInlinePlaybackRange = self.appliedHlsInlinePlaybackRange
         
         return { [weak self] context, presentationData, dateTimeFormat, message, associatedData, attributes, media, mediaIndex, dateAndStatus, automaticDownload, peerType, peerId, sizeCalculation, layoutConstants, contentMode, presentationContext in
             let _ = peerType
@@ -1076,6 +1102,7 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                     } else {
                         mediaUpdated = true
                     }
+                    let inlinePlaybackRangeUpdated = hlsInlinePlaybackRange != appliedHlsInlinePlaybackRange
                     
                     var isSendingUpdated = false
                     if let currentMessage = currentMessage {
@@ -1097,6 +1124,8 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                     var updateVideoFile: TelegramMediaFile?
                     var updateAnimatedStickerFile: TelegramMediaFile?
                     var onlyFullSizeVideoThumbnail: Bool?
+                    
+                    var loadHLSRangeVideoFile: TelegramMediaFile?
                     
                     var emptyColor: UIColor
                     var patternArguments: PatternWallpaperArguments?
@@ -1131,7 +1160,8 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                         }
                     }
                     
-                    if mediaUpdated || isSendingUpdated || automaticPlaybackUpdated {
+                    let reloadMedia = mediaUpdated || isSendingUpdated || automaticPlaybackUpdated
+                    if mediaUpdated || isSendingUpdated || automaticPlaybackUpdated || inlinePlaybackRangeUpdated {
                         var media = media
                         
                         var extendedMedia: TelegramExtendedMedia?
@@ -1207,7 +1237,7 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                                             messageMediaImageCancelInteractiveFetch(context: context, messageId: message.id, image: image, resource: resource)
                                         }
                                     })
-                                } else if let file = media as? TelegramMediaFile {
+                                } else if var file = media as? TelegramMediaFile {
                                     if isSecretMedia {
                                         updateImageSignal = { synchronousLoad, _ in
                                             return chatSecretMessageVideo(account: context.account, userLocation: .peer(message.id.peerId), videoReference: .message(message: MessageReference(message), media: file))
@@ -1239,20 +1269,34 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                                     }
                                     
                                     if file.isVideo && !file.isVideoSticker && !isSecretMedia && automaticPlayback && !uploading {
-                                        updateVideoFile = file
-                                        if hasCurrentVideoNode {
-                                            if let currentFile = currentMedia as? TelegramMediaFile {
-                                                if currentFile.resource is EmptyMediaResource {
-                                                    replaceVideoNode = true
-                                                } else if currentFile.fileId.namespace == Namespaces.Media.CloudFile && file.fileId.namespace == Namespaces.Media.CloudFile && currentFile.fileId != file.fileId {
-                                                    replaceVideoNode = true
-                                                } else if currentFile.fileId != file.fileId && file.fileId.namespace == Namespaces.Media.CloudSecretFile {
-                                                    replaceVideoNode = true
-                                                } else if file.isAnimated && currentFile.fileId.namespace == Namespaces.Media.LocalFile && file.fileId.namespace == Namespaces.Media.CloudFile {
-                                                    replaceVideoNode = true
-                                                }
+                                        loadHLSRangeVideoFile = file
+                                        
+                                        var passFile = true
+                                        if NativeVideoContent.isHLSVideo(file: file), let minimizedQualityFile = HLSVideoContent.minimizedHLSQuality(file: .message(message: MessageReference(message), media: file)) {
+                                            file = minimizedQualityFile.file.media
+                                            if hlsInlinePlaybackRange == nil {
+                                                passFile = false
                                             }
-                                        } else if !(file.resource is LocalFileVideoMediaResource) {
+                                        }
+                                        
+                                        if passFile {
+                                            updateVideoFile = file
+                                            if hasCurrentVideoNode {
+                                                if let currentFile = currentMedia as? TelegramMediaFile {
+                                                    if currentFile.resource is EmptyMediaResource {
+                                                        replaceVideoNode = true
+                                                    } else if currentFile.fileId.namespace == Namespaces.Media.CloudFile && file.fileId.namespace == Namespaces.Media.CloudFile && currentFile.fileId != file.fileId {
+                                                        replaceVideoNode = true
+                                                    } else if currentFile.fileId != file.fileId && file.fileId.namespace == Namespaces.Media.CloudSecretFile {
+                                                        replaceVideoNode = true
+                                                    } else if file.isAnimated && currentFile.fileId.namespace == Namespaces.Media.LocalFile && file.fileId.namespace == Namespaces.Media.CloudFile {
+                                                        replaceVideoNode = true
+                                                    }
+                                                }
+                                            } else if !(file.resource is LocalFileVideoMediaResource) {
+                                                replaceVideoNode = true
+                                            }
+                                        } else if hasCurrentVideoNode {
                                             replaceVideoNode = true
                                         }
                                     } else {
@@ -1343,7 +1387,64 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                             }, cancel: {
                                 chatMessageWebFileCancelInteractiveFetch(account: context.account, image: image)
                             })
-                        } else if let file = media as? TelegramMediaFile {
+                        } else if var file = media as? TelegramMediaFile {
+                            var uploading = false
+                            if file.resource is VideoLibraryMediaResource {
+                                uploading = true
+                            }
+                            
+                            if file.isVideo && !file.isVideoSticker && !isSecretMedia && automaticPlayback && !uploading {
+                                loadHLSRangeVideoFile = file
+                                
+                                var passFile = true
+                                if NativeVideoContent.isHLSVideo(file: file), let minimizedQualityFile = HLSVideoContent.minimizedHLSQuality(file: .message(message: MessageReference(message), media: file)) {
+                                    file = minimizedQualityFile.file.media
+                                    if hlsInlinePlaybackRange == nil {
+                                        passFile = false
+                                    }
+                                }
+                                
+                                if passFile {
+                                    updateVideoFile = file
+                                    if hasCurrentVideoNode {
+                                        if let currentFile = currentMedia as? TelegramMediaFile {
+                                            if currentFile.resource is EmptyMediaResource {
+                                                replaceVideoNode = true
+                                            } else if currentFile.fileId.namespace == Namespaces.Media.CloudFile && file.fileId.namespace == Namespaces.Media.CloudFile && currentFile.fileId != file.fileId {
+                                                replaceVideoNode = true
+                                            } else if currentFile.fileId != file.fileId && file.fileId.namespace == Namespaces.Media.CloudSecretFile {
+                                                replaceVideoNode = true
+                                            } else if file.isAnimated && currentFile.fileId.namespace == Namespaces.Media.LocalFile && file.fileId.namespace == Namespaces.Media.CloudFile {
+                                                replaceVideoNode = true
+                                            }
+                                        }
+                                    } else if !(file.resource is LocalFileVideoMediaResource) {
+                                        replaceVideoNode = true
+                                    }
+                                } else if hasCurrentVideoNode {
+                                    replaceVideoNode = true
+                                }
+                            } else {
+                                if hasCurrentVideoNode {
+                                    replaceVideoNode = false
+                                }
+                                
+                                if file.isAnimatedSticker || file.isVideoSticker {
+                                    updateAnimatedStickerFile = file
+                                    if hasCurrentAnimatedStickerNode {
+                                        if let currentMedia = currentMedia {
+                                            if !currentMedia.isSemanticallyEqual(to: file) {
+                                                replaceAnimatedStickerNode = true
+                                            }
+                                        } else {
+                                            replaceAnimatedStickerNode = true
+                                        }
+                                    } else {
+                                        replaceAnimatedStickerNode = true
+                                    }
+                                }
+                            }
+                            
                             if isSecretMedia {
                                 updateImageSignal = { synchronousLoad, _ in
                                     return chatSecretMessageVideo(account: context.account, userLocation: .peer(message.id.peerId), videoReference: .message(message: MessageReference(message), media: file))
@@ -1369,53 +1470,12 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                                 }
                             }
                             
-                            var uploading = false
-                            if file.resource is VideoLibraryMediaResource {
-                                uploading = true
-                            }
-                            
-                            if file.isVideo && !file.isVideoSticker && !isSecretMedia && automaticPlayback && !uploading {
-                                updateVideoFile = file
-                                if hasCurrentVideoNode {
-                                    if let currentFile = currentMedia as? TelegramMediaFile {
-                                        if currentFile.resource is EmptyMediaResource {
-                                            replaceVideoNode = true
-                                        } else if currentFile.fileId.namespace == Namespaces.Media.CloudFile && file.fileId.namespace == Namespaces.Media.CloudFile && currentFile.fileId != file.fileId {
-                                            replaceVideoNode = true
-                                        } else if currentFile.fileId != file.fileId && file.fileId.namespace == Namespaces.Media.CloudSecretFile {
-                                            replaceVideoNode = true
-                                        } else if file.isAnimated && currentFile.fileId.namespace == Namespaces.Media.LocalFile && file.fileId.namespace == Namespaces.Media.CloudFile {
-                                            replaceVideoNode = true
-                                        }
-                                    }
-                                } else if !(file.resource is LocalFileVideoMediaResource) {
-                                    replaceVideoNode = true
-                                }
-                            } else {
-                                if hasCurrentVideoNode {
-                                    replaceVideoNode = false
-                                }
-                                
-                                if file.isAnimatedSticker || file.isVideoSticker {
-                                    updateAnimatedStickerFile = file
-                                    if hasCurrentAnimatedStickerNode {
-                                        if let currentMedia = currentMedia {
-                                            if !currentMedia.isSemanticallyEqual(to: file) {
-                                                replaceAnimatedStickerNode = true
-                                            }
-                                        } else {
-                                            replaceAnimatedStickerNode = true
-                                        }
-                                    } else {
-                                        replaceAnimatedStickerNode = true
-                                    }
-                                }
-                            }
-                            
                             updatedFetchControls = FetchControls(fetch: { manual in
                                 if let strongSelf = self {
                                     if file.isAnimated {
                                         strongSelf.fetchDisposable.set(fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .peer(message.id.peerId), userContentType: MediaResourceUserContentType(file: file), reference: AnyMediaReference.message(message: MessageReference(message), media: file).resourceReference(file.resource), statsCategory: statsCategoryForFileWithAttributes(file.attributes)).startStrict())
+                                    } else if NativeVideoContent.isHLSVideo(file: file) {
+                                        strongSelf.fetchDisposable.set(nil)
                                     } else {
                                         // MARK: Nicegram downloading feature, shouldSave added
                                         strongSelf.fetchDisposable.set(messageMediaFileInteractiveFetched(context: context, message: message, file: file, userInitiated: manual, storeToDownloadsPeerId: storeToDownloadsPeerId, shouldSave: true).startStrict())
@@ -1478,6 +1538,11 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                                 boundingSize = CGSize(width: boundingSize.width, height: boundingSize.width)
                             }
                         }
+                    }
+                    if !reloadMedia {
+                        updateImageSignal = nil
+                    } else {
+                        print("reload media")
                     }
                     
                     var isExtendedMedia = false
@@ -1649,13 +1714,30 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                                     
                                     let streamVideo = isMediaStreamable(message: message, media: updatedVideoFile)
                                     let loopVideo = updatedVideoFile.isAnimated
-                                    let videoContent = NativeVideoContent(id: .message(message.stableId, updatedVideoFile.fileId), userLocation: .peer(message.id.peerId), fileReference: .message(message: MessageReference(message), media: updatedVideoFile), streamVideo: streamVideo ? .conservative : .none, loopVideo: loopVideo, enableSound: false, fetchAutomatically: false, onlyFullSizeThumbnail: (onlyFullSizeVideoThumbnail ?? false), continuePlayingWithoutSoundOnLostAudioSession: isInlinePlayableVideo, placeholderColor: emptyColor, captureProtected: message.isCopyProtected() || isExtendedMedia, storeAfterDownload: { [weak context] in
-                                        guard let context, let peerId else {
-                                            return
+                                    
+                                    let videoContent: UniversalVideoContent
+                                    videoContent = NativeVideoContent(
+                                        id: .message(message.stableId, updatedVideoFile.fileId),
+                                        userLocation: .peer(message.id.peerId),
+                                        fileReference: .message(message: MessageReference(message), media: updatedVideoFile),
+                                        limitedFileRange: hlsInlinePlaybackRange,
+                                        streamVideo: streamVideo ? .conservative : .none,
+                                        loopVideo: loopVideo,
+                                        enableSound: false,
+                                        fetchAutomatically: false,
+                                        onlyFullSizeThumbnail: (onlyFullSizeVideoThumbnail ?? false),
+                                        autoFetchFullSizeThumbnail: true,
+                                        continuePlayingWithoutSoundOnLostAudioSession: isInlinePlayableVideo,
+                                        placeholderColor: emptyColor,
+                                        captureProtected: message.isCopyProtected() || isExtendedMedia,
+                                        storeAfterDownload: { [weak context] in
+                                            guard let context, let peerId else {
+                                                return
+                                            }
+                                            let _ = storeDownloadedMedia(storeManager: context.downloadedMediaStoreManager, media: .message(message: MessageReference(message), media: updatedVideoFile), peerId: peerId).startStandalone()
                                         }
-                                        let _ = storeDownloadedMedia(storeManager: context.downloadedMediaStoreManager, media: .message(message: MessageReference(message), media: updatedVideoFile), peerId: peerId).startStandalone()
-                                    })
-                                    let videoNode = UniversalVideoNode(postbox: context.account.postbox, audioSession: mediaManager.audioSession, manager: mediaManager.universalVideoManager, decoration: decoration, content: videoContent, priority: .embedded)
+                                    )
+                                    let videoNode = UniversalVideoNode(accountId: context.account.id, postbox: context.account.postbox, audioSession: mediaManager.audioSession, manager: mediaManager.universalVideoManager, decoration: decoration, content: videoContent, priority: .embedded)
                                     videoNode.isUserInteractionEnabled = false
                                     videoNode.ownsContentNodeUpdated = { [weak self] owns in
                                         if let strongSelf = self {
@@ -1673,6 +1755,7 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                                         videoNode.isHidden = true
                                         strongSelf.pinchContainerNode.contentNode.insertSubnode(videoNode, aboveSubnode: strongSelf.imageNode)
                                     }
+                                    //videoNode.alpha = 0.5
                                     
                                     updatedVideoNodeReadySignal = videoNode.ready
                                     updatedPlayerStatusSignal = videoNode.status
@@ -1836,7 +1919,32 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                                     }
                                 }
                                 
-                                if case .full = automaticDownload {
+                                if automaticDownload != .none, let file = media as? TelegramMediaFile, NativeVideoContent.isHLSVideo(file: file) {
+                                    let postbox = context.account.postbox
+                                    let fetchSignal = HLSVideoContent.minimizedHLSQualityPreloadData(postbox: context.account.postbox, file: .message(message: MessageReference(message), media: file), userLocation: .peer(message.id.peerId), prefixSeconds: 10, autofetchPlaylist: true)
+                                    |> mapToSignal { fileAndRange -> Signal<Never, NoError> in
+                                        guard let fileAndRange else {
+                                            return .complete()
+                                        }
+                                        return freeMediaFileResourceInteractiveFetched(postbox: postbox, userLocation: .peer(message.id.peerId), fileReference: fileAndRange.0, resource: fileAndRange.0.media.resource, range: (fileAndRange.1, .default))
+                                        |> ignoreValues
+                                        |> `catch` { _ -> Signal<Never, NoError> in
+                                            return .complete()
+                                        }
+                                    }
+                                    
+                                    let visibilityAwareFetchSignal = strongSelf.visibilityPromise.get()
+                                    |> mapToSignal { visibility -> Signal<Void, NoError> in
+                                        if visibility {
+                                            return fetchSignal
+                                            |> mapToSignal { _ -> Signal<Void, NoError> in
+                                            }
+                                        } else {
+                                            return .complete()
+                                        }
+                                    }
+                                    strongSelf.fetchDisposable.set(visibilityAwareFetchSignal.startStrict())
+                                } else if case .full = automaticDownload {
                                     if let _ = media as? TelegramMediaImage {
                                         updatedFetchControls.fetch(false)
                                     } else if let image = media as? TelegramMediaWebFile {
@@ -1879,6 +1987,36 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                             strongSelf.updateStatus(animated: synchronousLoads)
 
                             strongSelf.pinchContainerNode.isPinchGestureEnabled = !isSecretMedia && !isExtendedMediaPreview && !hasSpoiler
+                            
+                            strongSelf.appliedHlsInlinePlaybackRange = hlsInlinePlaybackRange
+                            
+                            if let loadHLSRangeVideoFile, NativeVideoContent.isHLSVideo(file: loadHLSRangeVideoFile) {
+                                if strongSelf.hlsInlinePlaybackRangeDisposable == nil {
+                                    strongSelf.hlsInlinePlaybackRangeDisposable = (HLSVideoContent.minimizedHLSQualityPreloadData(
+                                        postbox: context.account.postbox,
+                                        file: .message(message: MessageReference(message), media: loadHLSRangeVideoFile),
+                                        userLocation: .peer(message.id.peerId),
+                                        prefixSeconds: 10,
+                                        autofetchPlaylist: false
+                                    )
+                                    //|> delay(2.0, queue: .mainQueue())
+                                    |> deliverOnMainQueue).startStrict(next: { [weak strongSelf] preloadData in
+                                        guard let strongSelf else {
+                                            return
+                                        }
+                                        let hlsInlinePlaybackRange: Range<Int64>?
+                                        if let preloadData {
+                                            hlsInlinePlaybackRange = preloadData.1
+                                        } else {
+                                            hlsInlinePlaybackRange = nil
+                                        }
+                                        if strongSelf.hlsInlinePlaybackRange != hlsInlinePlaybackRange {
+                                            strongSelf.hlsInlinePlaybackRange = hlsInlinePlaybackRange
+                                            strongSelf.requestInlineUpdate?()
+                                        }
+                                    })
+                                }
+                            }
                         }
                     })
                 })
@@ -2102,6 +2240,10 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                         }
                     }
                 }
+            }
+            
+            if let file = self.media as? TelegramMediaFile, NativeVideoContent.isHLSVideo(file: file) {
+                fetchStatus = .Local
             }
                         
             let formatting = DataSizeStringFormatting(strings: strings, decimalSeparator: decimalSeparator)
@@ -2634,8 +2776,13 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
     
     public func playMediaWithSound() -> (action: (Double?) -> Void, soundEnabled: Bool, isVideoMessage: Bool, isUnread: Bool, badgeNode: ASDisplayNode?)? {
         var isAnimated = false
-        if let file = self.media as? TelegramMediaFile, file.isAnimated {
-            isAnimated = true
+        if let file = self.media as? TelegramMediaFile {
+            if NativeVideoContent.isHLSVideo(file: file) {
+                return nil
+            }
+            if file.isAnimated {
+                isAnimated = true
+            }
         }
 
         var actionAtEnd: MediaPlayerPlayOnceWithSoundActionAtEnd = .loopDisablingSound

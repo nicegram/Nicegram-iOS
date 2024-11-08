@@ -625,7 +625,7 @@ private final class PremiumGiftScreenContentComponent: CombinedComponent {
                         if let signal = signal {
                             let _ = (signal
                             |> deliverOnMainQueue).start(next: { resolvedUrl in
-                                context.sharedContext.openResolvedUrl(resolvedUrl, context: context, urlContext: .generic, navigationController: navigationController, forceExternal: false, openPeer: { peer, navigation in
+                                context.sharedContext.openResolvedUrl(resolvedUrl, context: context, urlContext: .generic, navigationController: navigationController, forceExternal: false, forceUpdate: false, openPeer: { peer, navigation in
                                 }, sendFile: nil, sendSticker: nil, sendEmoji: nil, requestMessageActionUrlAuth: nil, joinVoiceChat: nil, present: { [weak controller] c, arguments in
                                     controller?.push(c)
                                 }, dismissInput: {}, contentContext: nil, progress: nil, completion: nil)
@@ -910,7 +910,7 @@ private final class PremiumGiftScreenComponent: CombinedComponent {
             if self.source == .profile || self.source == .attachMenu, let peerId = self.peerIds.first {
                 purpose = .gift(peerId: peerId, currency: currency, amount: amount)
             } else {
-                purpose = .giftCode(peerIds: self.peerIds, boostPeer: nil, currency: currency, amount: amount)
+                purpose = .giftCode(peerIds: self.peerIds, boostPeer: nil, currency: currency, amount: amount, text: nil, entities: nil)
                 quantity = Int32(self.peerIds.count)
             }
             

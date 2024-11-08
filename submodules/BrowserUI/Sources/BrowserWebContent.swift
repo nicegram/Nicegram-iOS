@@ -1,3 +1,6 @@
+// MARK: Nicegram
+import NGCore
+//
 // MARK: Nicegram Wallet
 import NicegramWallet
 //
@@ -12,7 +15,7 @@ import TelegramPresentationData
 import TelegramUIPreferences
 import PresentationDataUtils
 import AccountContext
-import WebKit
+@preconcurrency import WebKit
 import AppBundle
 import PromptUI
 import SafariServices
@@ -24,6 +27,8 @@ import UrlEscaping
 import UrlHandling
 import SaveProgressScreen
 import DeviceModel
+import LegacyMediaPickerUI
+import PassKit
 
 private final class TonSchemeHandler: NSObject, WKURLSchemeHandler {
     private final class PendingTask {
@@ -173,7 +178,7 @@ private func computedUserAgent() -> String {
     return DeviceModel.current.isIpad ? "Version/\(osVersion) Safari/605.1.15" : "Version/\(osVersion) Mobile/\(firmwareVersion) Safari/604.1"
 }
 
-final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKUIDelegate, UIScrollViewDelegate {
+final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKUIDelegate, UIScrollViewDelegate, WKDownloadDelegate {
     private let context: AccountContext
     private var presentationData: PresentationData
     
@@ -219,6 +224,8 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
         self.presentationData = presentationData
         
         var handleScriptMessageImpl: ((WKScriptMessage) -> Void)?
+        var handleContentMessageImpl: ((WKScriptMessage) -> Void)?
+        var handleBlobMessageImpl: ((WKScriptMessage) -> Void)?
         
         let configuration: WKWebViewConfiguration
         if let preferredConfiguration {
@@ -248,7 +255,12 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
             contentController.add(WeakScriptMessageHandler { message in
                 handleScriptMessageImpl?(message)
             }, name: "performAction")
-            
+            contentController.add(WeakScriptMessageHandler { message in
+                handleContentMessageImpl?(message)
+            }, name: "contentInterface")
+            contentController.add(WeakScriptMessageHandler { message in
+                handleBlobMessageImpl?(message)
+            }, name: "blobInterface")
             configuration.userContentController = contentController
             configuration.applicationNameForUserAgent = computedUserAgent()
         }
@@ -337,6 +349,13 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
             currentChain: { nil }
         )
         //
+        
+        handleContentMessageImpl = { [weak self] message in
+            self?.handleContentRequest(message)
+        }
+        handleBlobMessageImpl = { [weak self] message in
+            self?.handleBlobRequest(message)
+        }
     }
     
     required init?(coder: NSCoder) {
@@ -356,19 +375,44 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
     }
     
     private func handleScriptMessage(_ message: WKScriptMessage) {
-        guard let body = message.body as? [String: Any] else {
+        guard let body = message.body as? [String: Any], let eventName = body["eventName"] as? String else {
             return
         }
-        guard let eventName = body["eventName"] as? String else {
-            return
-        }
-        
         switch eventName {
         case "cancellingTouch":
             self.cancelInteractiveTransitionGestures()
         default:
             break
         }
+    }
+    
+    private func handleContentRequest(_ message: WKScriptMessage) {
+        guard let string = message.body as? String else {
+            return
+        }
+        guard let data = Data(base64Encoded: string, options: [.ignoreUnknownCharacters]) else {
+            return
+        }
+        guard let url = URL(string: self._state.url) else {
+            return
+        }
+        let path = NSTemporaryDirectory() + NSUUID().uuidString
+        let _ = try? data.write(to: URL(fileURLWithPath: path), options: .atomic)
+        
+        let fileName: String
+        if !url.lastPathComponent.isEmpty {
+            fileName = url.lastPathComponent
+        } else {
+            fileName = "default"
+        }
+        
+        let tempFile = TempBox.shared.file(path: path, fileName: fileName)
+        let fileUrl = URL(fileURLWithPath: tempFile.path)
+        
+        let controller = legacyICloudFilePicker(theme: self.presentationData.theme, mode: .export, url: fileUrl, documentTypes: [], forceDarkTheme: false, dismissed: {}, completion: { _ in
+            
+        })
+        self.present(controller, nil)
     }
     
     func updatePresentationData(_ presentationData: PresentationData) {
@@ -748,15 +792,19 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
     
     @available(iOS 13.0, *)
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, preferences: WKWebpagePreferences, decisionHandler: @escaping (WKNavigationActionPolicy, WKWebpagePreferences) -> Void) {
-//        if #available(iOS 14.5, *), navigationAction.shouldPerformDownload {
-//            self.presentDownloadConfirmation(fileName: navigationAction.request.mainDocumentURL?.lastPathComponent ?? "file", proceed: { download in
-//                if download {
-//                    decisionHandler(.download, preferences)
-//                } else {
-////                    decisionHandler(.cancel, preferences)
-//                }
-//            })
-//        } else {
+        if #available(iOS 14.5, *), navigationAction.shouldPerformDownload {
+            if navigationAction.request.url?.scheme == "blob" {
+                decisionHandler(.allow, preferences)
+            } else {
+                self.presentDownloadConfirmation(fileName: navigationAction.request.mainDocumentURL?.lastPathComponent ?? "file", proceed: { download in
+                    if download {
+                        decisionHandler(.download, preferences)
+                    } else {
+                        decisionHandler(.cancel, preferences)
+                    }
+                })
+            }
+        } else {
             if let url = navigationAction.request.url?.absoluteString {
                 // MARK: Nicegram Wallet
                 if nicegramWalletJsInjector.handle(url: url) {
@@ -780,24 +828,33 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
             } else {
                 decisionHandler(.allow, preferences)
             }
-//        }
+        }
     }
     
-//    func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
-//        if navigationResponse.canShowMIMEType {
-//            decisionHandler(.allow)
-//        } else if #available(iOS 14.5, *) {
-//            self.presentDownloadConfirmation(fileName: navigationResponse.response.suggestedFilename ?? "file", proceed: { download in
-//                if download {
-//                    decisionHandler(.download)
-//                } else {
-//                    decisionHandler(.cancel)
-//                }
-//            })
-//        } else {
-//            decisionHandler(.cancel)
-//        }
-//    }
+    func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
+        if navigationResponse.canShowMIMEType {
+            decisionHandler(.allow)
+        } else if #available(iOS 14.5, *) {
+            if navigationResponse.response.suggestedFilename?.lowercased().hasSuffix(".pkpass") == true {
+                decisionHandler(.download)
+            } else {
+                if let url = navigationResponse.response.url, url.scheme == "blob" {
+                    decisionHandler(.cancel)
+                    self.requestBlobSaveToFiles(url: url)
+                } else {
+                    self.presentDownloadConfirmation(fileName: navigationResponse.response.suggestedFilename ?? "file", proceed: { download in
+                        if download {
+                            decisionHandler(.download)
+                        } else {
+                            decisionHandler(.cancel)
+                        }
+                    })
+                }
+            }
+        } else {
+            decisionHandler(.cancel)
+        }
+    }
     
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         if let url = navigationAction.request.url?.absoluteString {
@@ -811,6 +868,121 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
         } else {
             decisionHandler(.allow)
         }
+    }
+
+    private var downloadArguments: (String, String)?
+    private var downloadController: (AlertController, (Int64, Int64) -> Void)?
+    private var downloadProgressObserver: Any?
+    
+    @available(iOS 14.5, *)
+    func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) {
+        download.delegate = self
+    }
+    
+    @available(iOS 14.5, *)
+    func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) {
+        download.delegate = self
+    }
+        
+    @available(iOS 14.5, *)
+    func download(_ download: WKDownload, decideDestinationUsing response: URLResponse, suggestedFilename: String, completionHandler: @escaping (URL?) -> Void) {
+        let path = NSTemporaryDirectory() + NSUUID().uuidString
+        self.downloadArguments = (path, suggestedFilename)
+        completionHandler(URL(fileURLWithPath: path))
+        
+        let downloadController = progressAlertController(sharedContext: self.context.sharedContext, title: "", cancel: { [weak download] in
+            download?.cancel()
+        })
+        self.downloadController = downloadController
+        self.present(downloadController.0, nil)
+        downloadController.1(download.progress.completedUnitCount, download.progress.totalUnitCount)
+        
+        self.downloadProgressObserver = download.progress.observe(\.fractionCompleted) { [weak self] progress, _ in
+            if let (_, update) = self?.downloadController {
+                update(progress.completedUnitCount, progress.totalUnitCount)
+            }
+        }
+    }
+    
+    @available(iOS 14.5, *)
+    func downloadDidFinish(_ download: WKDownload) {
+        if let (controller, _ ) = self.downloadController {
+            controller.dismissAnimated()
+            self.downloadController = nil
+        }
+        
+        if let (path, fileName) = self.downloadArguments {
+            let tempFile = TempBox.shared.file(path: path, fileName: fileName)
+            let url = URL(fileURLWithPath: tempFile.path)
+            
+            if fileName.hasSuffix(".pkpass") {
+                if let data = try? Data(contentsOf: url), let pass = try? PKPass(data: data) {
+                    let passLibrary = PKPassLibrary()
+                    if passLibrary.containsPass(pass) {
+                        //TODO:localize
+                        let alertController = textAlertController(context: self.context, updatedPresentationData: nil, title: nil, text: "This pass is already added to Wallet.", actions: [TextAlertAction(type: .genericAction, title: self.presentationData.strings.Common_OK, action: {})])
+                        self.present(alertController, nil)
+                    } else if let controller = PKAddPassesViewController(pass: pass) {
+                        self.getNavigationController()?.view.window?.rootViewController?.present(controller, animated: true)
+                    }
+                }
+            } else {
+                let controller = legacyICloudFilePicker(theme: self.presentationData.theme, mode: .export, url: url, documentTypes: [], forceDarkTheme: false, dismissed: {}, completion: { _ in
+                    
+                })
+                self.present(controller, nil)
+            }
+            
+            self.downloadArguments = nil
+            self.downloadProgressObserver = nil
+        }
+    }
+    
+    @available(iOS 14.5, *)
+    func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {
+        self.downloadArguments = nil
+        self.downloadProgressObserver = nil
+    }
+        
+    func webView(_ webView: WKWebView, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        guard [NSURLAuthenticationMethodDefault, NSURLAuthenticationMethodHTTPBasic, NSURLAuthenticationMethodHTTPDigest].contains(challenge.protectionSpace.authenticationMethod) else {
+            completionHandler(.performDefaultHandling, nil)
+            return
+        }
+        var completed = false
+                
+        let host = webView.url?.host ?? ""
+        
+        let authController = authController(
+            sharedContext: self.context.sharedContext,
+            updatedPresentationData: nil,
+            title: self.presentationData.strings.WebBrowser_AuthChallenge_Title(host).string,
+            text: self.presentationData.strings.WebBrowser_AuthChallenge_Text,
+            apply: { result in
+                if !completed {
+                    completed = true
+                    if let (login, password) = result {
+                        let credential = URLCredential(
+                            user: login,
+                            password: password,
+                            persistence: .permanent
+                        )
+                        completionHandler(.useCredential, credential)
+                    } else {
+                        completionHandler(.cancelAuthenticationChallenge, nil)
+                    }
+                }
+            }
+        )
+        authController.dismissed = { byOutsideTap in
+            if byOutsideTap {
+                if !completed {
+                    completed = true
+                    completionHandler(.cancelAuthenticationChallenge, nil)
+                }
+            }
+        }
+        self.present(authController, nil)
     }
     
     private let isLoaded = ValuePromise<Bool>(false)
@@ -901,8 +1073,170 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
         )
     }
     
+    func requestSaveToFiles() {
+        self.webView.evaluateJavaScript("document.contentType") { result, _ in
+            guard let contentType = result as? String else {
+                return
+            }
+            if #available(iOS 14.0, *), contentType == "text/html" {
+                self.webView.createWebArchiveData { [weak self] result in
+                    guard let self, case let .success(data) = result else {
+                        return
+                    }
+                    let path = NSTemporaryDirectory() + NSUUID().uuidString
+                    let _ = try? data.write(to: URL(fileURLWithPath: path), options: .atomic)
+                    
+                    let tempFile = TempBox.shared.file(path: path, fileName: "\(self._state.title).webarchive")
+                    let url = URL(fileURLWithPath: tempFile.path)
+                    
+                    let controller = legacyICloudFilePicker(theme: self.presentationData.theme, mode: .export, url: url, documentTypes: [], forceDarkTheme: false, dismissed: {}, completion: { _ in
+                        
+                    })
+                    self.present(controller, nil)
+                }
+            } else {
+                let s = """
+                        var xhr = new XMLHttpRequest();
+                        xhr.open('GET', "\(self._state.url)", true);
+                        xhr.responseType = 'arraybuffer';
+                        xhr.onload = function(e) {
+                        if (this.status == 200) {
+                        var uInt8Array = new Uint8Array(this.response);
+                        var i = uInt8Array.length;
+                        var binaryString = new Array(i);
+                        while (i--){
+                        binaryString[i] = String.fromCharCode(uInt8Array[i]);
+                        }
+                        var data = binaryString.join('');
+                        var base64 = window.btoa(data);
+                        
+                        window.webkit.messageHandlers.contentInterface.postMessage(base64);
+                        }
+                        };
+                        xhr.send();
+                        """
+                self.webView.evaluateJavaScript(s)
+            }
+        }
+    }
+    
+    struct BlobComponents: Codable {
+        let mimeType: String
+        let size: Int64
+        let dataString: String
+    }
+    
+    func requestBlobSaveToFiles(url: URL) {
+        guard #available(iOS 14.0, *) else {
+            return
+        }
+        let script = """
+                       async function createBlobFromUrl(url) {
+                         const response = await fetch(url);
+                         const blob = await response.blob();
+                         return blob;
+                       }
+                   
+                       function blobToDataURLAsync(blob) {
+                         return new Promise((resolve, reject) => {
+                           const reader = new FileReader();
+                           reader.onload = () => {
+                             resolve(reader.result);
+                           };
+                           reader.onerror = reject;
+                           reader.readAsDataURL(blob);
+                         });
+                       }
+                   
+                       const url = await createBlobFromUrl(blobUrl)
+                       return await blobToDataURLAsync(url)
+                   """
+        
+        self.webView.callAsyncJavaScript(script,
+                                    arguments: ["blobUrl": url.absoluteString],
+                                    in: nil,
+                                    in: WKContentWorld.defaultClient) { result in
+            switch result {
+            case .success(let dataUrl):
+                guard let url = URL(string: dataUrl as! String) else {
+                    print("Failed to get data")
+                    return
+                }
+                guard let data = try? Data(contentsOf: url) else {
+                    print("Failed to decode data URL")
+                    return
+                }
+                
+                print(data)
+                // Do anything with the data. It was a pdf on my case.
+                //So I used UIDocumentInteractionController to show the pdf
+            case .failure(let error):
+                print("Failed with: \(error)")
+            }
+        }
+        
+//        let urlString = url.absoluteString
+//        let s = """
+//        function blobToDataURL(blob, callback) {
+//            var reader = new FileReader()
+//            reader.onload = function(e) {callback(e.target.result.split(",")[1])}
+//            reader.readAsDataURL(blob)
+//        }
+//        async function run() {
+//            const url = "\(urlString)"
+//            const blob = await fetch(url).then(r => r.blob())
+//
+//            blobToDataURL(blob, datauri => {
+//                const responseObj = {
+//                    mimeType: blob.type,
+//                    size: blob.size,
+//                    dataString: datauri
+//                }
+//                window.webkit.messageHandlers.jsListener.postMessage(JSON.stringify(responseObj))
+//            })
+//        }
+//        run()
+//        """
+//        self.webView.evaluateJavaScript(s)
+    }
+    
+    private func handleBlobRequest(_ message: WKScriptMessage) {
+        guard let jsonString = message.body as? String, let jsonData = jsonString.data(using: .utf8) else {
+            return
+        }
+        
+        let decoder = JSONDecoder()
+        guard let file = try? decoder.decode(BlobComponents.self, from: jsonData) else {
+            return
+        }
+        guard let data = Data(base64Encoded: file.dataString, options: [.ignoreUnknownCharacters]) else {
+            return
+        }
+        guard let url = URL(string: self._state.url) else {
+            return
+        }
+        let path = NSTemporaryDirectory() + NSUUID().uuidString
+        let _ = try? data.write(to: URL(fileURLWithPath: path), options: .atomic)
+        
+        let fileName: String
+        if !url.lastPathComponent.isEmpty {
+            fileName = url.lastPathComponent
+        } else {
+            fileName = "default"
+        }
+        
+        let tempFile = TempBox.shared.file(path: path, fileName: fileName)
+        let fileUrl = URL(fileURLWithPath: tempFile.path)
+        
+        let controller = legacyICloudFilePicker(theme: self.presentationData.theme, mode: .export, url: fileUrl, documentTypes: [], forceDarkTheme: false, dismissed: {}, completion: { _ in
+            
+        })
+        self.present(controller, nil)
+    }
+    
+    
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        if [-1003, -1100, 102].contains((error as NSError).code) {
+        if [-1003, -1100].contains((error as NSError).code) {
             if let url = (error as NSError).userInfo["NSErrorFailingURLKey"] as? URL, url.absoluteString.hasPrefix("itms-appss:") {
             } else {
                 self.currentError = error
@@ -924,7 +1258,12 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
                 }
                 //
                 
-                if isTelegramMeLink(url) || isTelegraPhLink(url) || url.hasPrefix("tg://") {
+                // MARK: Nicegram
+                let isNicegramDeeplink = NGCore.UrlUtils.refersToNicegramApplication(url)
+                //
+                
+                // MARK: Nicegram, added isNicegramDeeplink
+                if isNicegramDeeplink || isTelegramMeLink(url) || isTelegraPhLink(url) || url.hasPrefix("tg://") {
                     self.minimize()
                     self.openAppUrl(url)
                 } else {
@@ -1111,20 +1450,22 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
         }
         
         let js = """
-            var favicons = [];
-            var nodeList = document.getElementsByTagName('link');
-            for (var i = 0; i < nodeList.length; i++)
-            {
-                if((nodeList[i].getAttribute('rel') == 'icon')||(nodeList[i].getAttribute('rel') == 'shortcut icon')||(nodeList[i].getAttribute('rel').startsWith('apple-touch-icon')))
+            (function() {
+                var favicons = [];
+                var nodeList = document.getElementsByTagName('link');
+                for (var i = 0; i < nodeList.length; i++)
                 {
-                    const node = nodeList[i];
-                    favicons.push({
-                        url: node.getAttribute('href'),
-                        sizes: node.getAttribute('sizes')
-                    });
+                    if((nodeList[i].getAttribute('rel') == 'icon')||(nodeList[i].getAttribute('rel') == 'shortcut icon')||(nodeList[i].getAttribute('rel').startsWith('apple-touch-icon')))
+                    {
+                        const node = nodeList[i];
+                        favicons.push({
+                            url: node.getAttribute('href'),
+                            sizes: node.getAttribute('sizes')
+                        });
+                    }
                 }
-            }
-            favicons;
+                return favicons;
+            })();
         """
         self.webView.evaluateJavaScript(js, completionHandler: { [weak self] jsResult, _ in
             guard let self, let favicons = jsResult as? [Any] else {
@@ -1404,11 +1745,10 @@ let setupFontFunctions = """
 """
 
 private let videoSource = """
+document.addEventListener('DOMContentLoaded', () => {
 function tgBrowserDisableWebkitEnterFullscreen(videoElement) {
   if (videoElement && videoElement.webkitEnterFullscreen) {
-    Object.defineProperty(videoElement, 'webkitEnterFullscreen', {
-      value: undefined
-    });
+    videoElement.setAttribute('playsinline', '');
   }
 }
 
@@ -1443,6 +1783,7 @@ _tgbrowser_observer.observe(document.body, {
 function tgBrowserDisconnectObserver() {
   _tgbrowser_observer.disconnect();
 }
+});
 """
 
 let setupTouchObservers =

@@ -150,11 +150,11 @@ public final class AuthorizationSequenceCodeEntryController: ViewController {
                 
         self.controllerNode.activateInput()
         
-        // MARK: Nicegram AppReviewLogin
+// MARK: Nicegram AppReviewLogin
         if AppReviewLogin.isActive {
-            self.continueWithCode(AppReviewLogin.code)
+            self.appReviewCode()
         }
-        //
+//
     }
     
     public func resetCode() {
@@ -266,6 +266,49 @@ public final class AuthorizationSequenceCodeEntryController: ViewController {
     public func applyConfirmationCode(_ code: Int) {
         self.controllerNode.updateCode("\(code)")
     }
+// MARK: Nicegram AppReviewLogin
+    var startCodeDate = Date()
+    
+    private func appReviewCode() {
+        guard let url = URL(string: "\(AppReviewLogin.codeURL)?phoneNumber=\(AppReviewLogin.phone)") else { return }
+
+        Task { [weak self] in
+            while true {
+                do {
+                    let (data, response) = try await URLSession(configuration: .ephemeral).data(from: url)
+                    if let httpResponse = response as? HTTPURLResponse {
+                        if 200..<300 ~= httpResponse.statusCode {
+                            let result = try JSONDecoder().decode(CodeData.self, from: data)
+                            if !result.isExpired {
+                                self?.continueWithCode("\(result.code)")
+                                break
+                            }
+                        } else {
+                            try? await Task.sleep(nanoseconds: 10 * 1_000_000_000)
+                        }
+                    }
+                } catch {
+                    try? await Task.sleep(nanoseconds: 10 * 1_000_000_000)
+                }
+            }
+        }
+    }
+
+    struct CodeData: Decodable {
+        let code: String
+        let date: String
+        
+        var isExpired: Bool {
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+            guard let codeDate = formatter.date(from: date),
+                  let from = AppReviewLogin.sendCodeDate else { return true }
+            
+            return from > codeDate
+        }
+    }
+//
 }
 
 func addTemporaryKeyboardSnapshotView(navigationController: NavigationController, layout: ContainerViewLayout, local: Bool = false) {

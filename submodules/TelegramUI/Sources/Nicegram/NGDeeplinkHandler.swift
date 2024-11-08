@@ -1,4 +1,5 @@
 import FeatAssistant
+import FeatAttentionEconomy
 import Foundation
 import AccountContext
 import Display
@@ -6,8 +7,6 @@ import FeatAvatarGeneratorUI
 import FeatImagesHubUI
 import FeatOnboarding
 import FeatPremiumUI
-import FeatRewardsUI
-import FeatTasks
 import NGAiChatUI
 import NGAnalytics
 import NGEntryPoint
@@ -16,11 +15,13 @@ import NGCore
 import class NGCoreUI.SharedLoadingView
 import NGModels
 import NGRemoteConfig
+import NGRepoUser
 import NGSpecialOffer
 import NGUI
 import TelegramPresentationData
 import UIKit
 
+@MainActor
 class NGDeeplinkHandler {
     
     //  MARK: - Dependencies
@@ -60,12 +61,14 @@ class NGDeeplinkHandler {
             return handleAssistant(url: url)
         case "assistant-auth":
             return handleLoginToAssistant(url: url)
+        case "attention-economy":
+            if #available(iOS 15.0, *) {
+                AttPresenter().present()
+            }
+            return true
         case "avatarGenerator":
             if #available(iOS 15.0, *) {
-                Task { @MainActor in
-                    guard let topController = UIApplication.topViewController else {
-                        return
-                    }
+                if let topController = UIApplication.topViewController {
                     AvatarGeneratorUIHelper().navigateToGenerationFlow(
                         from: topController
                     )
@@ -74,9 +77,7 @@ class NGDeeplinkHandler {
             return true
         case "avatarMyGenerations":
             if #available(iOS 15.0, *) {
-                Task { @MainActor in
-                    AvatarGeneratorUIHelper().navigateToGenerator()
-                }
+                AvatarGeneratorUIHelper().navigateToGenerator()
             }
             return true    
         case "generateImage":
@@ -85,39 +86,16 @@ class NGDeeplinkHandler {
             return handleNicegramPremium(url: url)
         case "onboarding":
             return handleOnboarding(url: url)
-        case "profit":
-            if #available(iOS 15.0, *) {
-                Task { @MainActor in
-                    RewardsUITgHelper.showRewards()
-                }   
-            }
-            return true
         case "specialOffer":
-            if #available(iOS 13.0, *) {
-                return handleSpecialOffer(url: url)
-            } else {
-                return false
-            }
+            return handleSpecialOffer(url: url)
         case "refferaldraw":
             if #available(iOS 15.0, *) {
-                Task { @MainActor in
-                    AssistantTgHelper.showReferralDrawFromDeeplink()
-                }
-                return true
-            } else {
-                return false
-            }
-        case "task":
-            if #available(iOS 15.0, *) {
-                let taskDeeplinkHandler = TasksContainer.shared.taskDeeplinkHandler()
-                taskDeeplinkHandler.handle(url)
+                AssistantTgHelper.showReferralDrawFromDeeplink()
             }
             return true
         case "tgAuthSuccess":
             if #available(iOS 15.0, *) {
-                Task { @MainActor in
-                    TgAuthSuccessPresenter().presentIfNeeded()
-                }
+                TgAuthSuccessPresenter().presentIfNeeded()
             }
             return true
         default:
@@ -131,37 +109,23 @@ class NGDeeplinkHandler {
 
 private extension NGDeeplinkHandler {
     func handleAiAuth(url: URL) -> Bool {
-        if #available(iOS 13.0, *) {
-            Task { @MainActor in
-                AiChatUITgHelper.routeToAiOnboarding()
-            }
-            return true
-        }
-        return false
+        AiChatUITgHelper.routeToAiOnboarding()
+        return true
     }
     
     func handleAi(url: URL) -> Bool {
-        if #available(iOS 13.0, *) {
-            Task { @MainActor in
-                AiChatUITgHelper.tryRouteToAiChatBotFromDeeplink()
-            }
-            return true
-        }
-        return false
+        AiChatUITgHelper.tryRouteToAiChatBotFromDeeplink()
+        return true
     }
     
     func handleGenerateImage(url: URL) -> Bool {
         if #available(iOS 15.0, *) {
-            Task { @MainActor in
-                ImagesHubUITgHelper.showFeed(
-                    source: .deeplink,
-                    forceGeneration: true
-                )
-            }
-            return true
-        } else {
-            return false
+            ImagesHubUITgHelper.showFeed(
+                source: .deeplink,
+                forceGeneration: true
+            )
         }
+        return true
     }
     
     func handleNicegramPremium(url: URL) -> Bool {
@@ -173,15 +137,11 @@ private extension NGDeeplinkHandler {
     
     func handleAssistant(url: URL) -> Bool {
         if #available(iOS 15.0, *) {
-            Task { @MainActor in
-                AssistantTgHelper.routeToAssistant(
-                    source: .deeplink
-                )
-            }
-            return true
-        } else {
-            return false
+            AssistantTgHelper.routeToAssistant(
+                source: .deeplink
+            )
         }
+        return true
     }
     
     func handleOnboarding(url: URL) -> Bool {
@@ -211,20 +171,35 @@ private extension NGDeeplinkHandler {
         }
         
         Task { @MainActor in
-            LoginViewPresenter().present(
-                feature: LoginFeature()
-            )
+            let getCurrentUserUseCase = RepoUserContainer.shared.getCurrentUserUseCase()
+            let initTgLoginUseCase = AuthContainer.shared.initTgLoginUseCase()
+            let toastManager = CoreContainer.shared.toastManager()
+            let urlOpener = CoreContainer.shared.urlOpener()
+            
+            guard !getCurrentUserUseCase.isAuthorized() else {
+                return
+            }
+            
+            SharedLoadingView.start()
+            
+            let result = await initTgLoginUseCase(source: .general)
+            
+            SharedLoadingView.stop()
+            switch result {
+            case let .success(url):
+                urlOpener.open(url)
+            case let .failure(error):
+                toastManager.showError(error)
+            }
         }
+        
         return true
     }
     
-    @available(iOS 13.0, *)
     func handleSpecialOffer(url: URL) -> Bool {
-        Task { @MainActor in
-            SpecialOfferTgHelper.showSpecialOfferFromDeeplink(
-                id: url.queryItems["id"]
-            )
-        }
+        SpecialOfferTgHelper.showSpecialOfferFromDeeplink(
+            id: url.queryItems["id"]
+        )
         return true
     }
 }

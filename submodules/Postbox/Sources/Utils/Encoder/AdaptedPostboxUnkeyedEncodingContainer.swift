@@ -119,7 +119,7 @@ extension _AdaptedPostboxEncoder.UnkeyedContainer: UnkeyedEncodingContainer {
         } else if value is String {
             try self.encode(value as! String)
         } else if value is Data {
-            try self.encode(value as! Data)
+            try self.encodeData(value as! Data)
         } else if let value = value as? AdaptedPostboxEncoder.RawObjectData {
             let buffer = WriteBuffer()
 
@@ -159,10 +159,6 @@ extension _AdaptedPostboxEncoder.UnkeyedContainer: UnkeyedEncodingContainer {
     func encode(_ value: String) throws {
         self.items.append(.string(value))
     }
-
-    func encode(_ value: Data) throws {
-        self.items.append(.data(value))
-    }
     
     func nestedContainer<NestedKey>(keyedBy keyType: NestedKey.Type) -> KeyedEncodingContainer<NestedKey> where NestedKey : CodingKey {
         preconditionFailure()
@@ -174,6 +170,12 @@ extension _AdaptedPostboxEncoder.UnkeyedContainer: UnkeyedEncodingContainer {
     
     func superEncoder() -> Encoder {
         preconditionFailure()
+    }
+}
+
+private extension _AdaptedPostboxEncoder.UnkeyedContainer {
+    func encodeData(_ value: Data) throws {
+        self.items.append(.data(value))
     }
 }
 

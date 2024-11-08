@@ -170,6 +170,8 @@ private func extractNicegramDeeplink(from link: String) -> String? {
 func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, url: String, forceExternal: Bool, presentationData: PresentationData, navigationController: NavigationController?, skipNicegramProcessing: Bool = false, dismissInput: @escaping () -> Void) {
     // MARK: Nicegram
     if !skipNicegramProcessing {
+        let url = NGCore.UrlUtils.normalizeNicegramDeeplink(url)
+        
         if let nicegramDeeplink = extractNicegramDeeplink(from: url) {
             openExternalUrlImpl(context: context, urlContext: urlContext, url: nicegramDeeplink, forceExternal: false, presentationData: presentationData, navigationController: navigationController, dismissInput: dismissInput)
             return
@@ -253,7 +255,7 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
             if case let .externalUrl(value) = resolved {
                 context.sharedContext.applicationBindings.openUrl(value)
             } else {
-                context.sharedContext.openResolvedUrl(resolved, context: context, urlContext: .generic, navigationController: navigationController, forceExternal: false, openPeer: { peer, navigation in
+                context.sharedContext.openResolvedUrl(resolved, context: context, urlContext: .generic, navigationController: navigationController, forceExternal: false, forceUpdate: false, openPeer: { peer, navigation in
                     switch navigation {
                         case .info:
                             if let infoController = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer._asPeer(), mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
@@ -1079,9 +1081,6 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
             
             if let convertedUrl = convertedUrl {
                 handleInternalUrl(convertedUrl)
-            // MARK: Nicegram Deeplink, added 'else' block
-            } else {
-                showUpdateAppAlert()
             }
             return
         }
@@ -1189,33 +1188,3 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
         continueHandling()
     }
 }
-
-// MARK: Nicegram Deeplink
-private func showUpdateAppAlert() {
-    let alert = UIAlertController(
-        title: "Update the app",
-        message: "Please update the app to use the newest features!",
-        preferredStyle: .alert
-    )
-    
-    alert.addAction(
-        UIAlertAction(
-            title: "Close",
-            style: .cancel
-        )
-    )
-    
-    alert.addAction(
-        UIAlertAction(
-            title: "Update",
-            style: .default,
-            handler: { _ in
-                let urlOpener = CoreContainer.shared.urlOpener()
-                urlOpener.open(.appStoreAppUrl)
-            }
-        )
-    )
-    
-    UIApplication.topViewController?.present(alert, animated: true)
-}
-//

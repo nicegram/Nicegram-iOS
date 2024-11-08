@@ -1573,7 +1573,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
                 isEditingMedia = !value.isEmpty
                 isMediaEnabled = !value.isEmpty
             } else {
-                isMediaEnabled = false
+                isMediaEnabled = true
             }
         }
         

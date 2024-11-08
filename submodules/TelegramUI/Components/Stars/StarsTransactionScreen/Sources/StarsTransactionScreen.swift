@@ -25,6 +25,7 @@ import GalleryUI
 import StarsAvatarComponent
 import MiniAppListScreen
 import PremiumStarComponent
+import GiftAnimationComponent
 
 private final class StarsTransactionSheetContent: CombinedComponent {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -145,6 +146,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
         let title = Child(MultilineTextComponent.self)
         let star = Child(StarsImageComponent.self)
         let activeStar = Child(PremiumStarComponent.self)
+        let gift = Child(GiftAnimationComponent.self)
         let amountBackground = Child(RoundedRectangle.self)
         let amount = Child(BalancedTextComponent.self)
         let amountStar = Child(BundleIconComponent.self)
@@ -225,6 +227,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
             var isReaction = false
             var giveawayMessageId: MessageId?
             var isBoost = false
+            var giftAnimation: TelegramMediaFile?
             
             var delayedCloseOnOpenPeer = true
             switch subject {
@@ -322,7 +325,18 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                     }
                 }
             case let .transaction(transaction, parentPeer):
-                if let giveawayMessageIdValue = transaction.giveawayMessageId {
+                if let starGift = transaction.starGift {
+                    titleText = strings.Stars_Transaction_Gift_Title
+                    descriptionText = ""
+                    count = transaction.count
+                    transactionId = transaction.id
+                    date = transaction.date
+                    if case let .peer(peer) = transaction.peer {
+                        toPeer = peer
+                    }
+                    transactionPeer = transaction.peer
+                    giftAnimation = starGift.file
+                } else if let giveawayMessageIdValue = transaction.giveawayMessageId {
                     titleText = strings.Stars_Transaction_Giveaway_Title
                     descriptionText = ""
                     count = transaction.count
@@ -396,10 +410,15 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                     case .ads:
                         titleText = strings.Stars_Transaction_TelegramAds_Title
                         via = strings.Stars_Transaction_TelegramAds_Subtitle
+                    case .apiLimitExtension:
+                        titleText = strings.Stars_Transaction_TelegramBotApi_Title
                     case .unsupported:
                         titleText = strings.Stars_Transaction_Unsupported_Title
                     }
-                    if !transaction.media.isEmpty {
+                    
+                    if let floodskipNumber = transaction.floodskipNumber {
+                        descriptionText = strings.Stars_Transaction_TelegramBotApi_Messages(floodskipNumber)
+                    } else if !transaction.media.isEmpty {
                         var description: String = ""
                         var photoCount: Int32 = 0
                         var videoCount: Int32 = 0
@@ -572,7 +591,17 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                 imageIcon = nil
             }
             var starChild: _UpdatedChildComponent
-            if isBoost {
+            if let giftAnimation {
+                starChild = gift.update(
+                    component: GiftAnimationComponent(
+                        context: component.context,
+                        theme: theme,
+                        file: giftAnimation
+                    ),
+                    availableSize: CGSize(width: 128.0, height: 128.0),
+                    transition: .immediate
+                )
+            } else if isBoost {
                 starChild = activeStar.update(
                     component: PremiumStarComponent(
                         theme: theme,
@@ -877,7 +906,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
             )
                     
             context.add(starChild
-                .position(CGPoint(x: context.availableSize.width / 2.0, y: starChild.size.height / 2.0 - 19.0))
+                .position(CGPoint(x: context.availableSize.width / 2.0, y: 200.0 / 2.0 - 19.0))
             )
         
             context.add(title
@@ -885,7 +914,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
             )
             
             var originY: CGFloat = 0.0
-            originY += starChild.size.height - 23.0
+            originY += 200.0 - 23.0
             
             var descriptionSize: CGSize = .zero
             if !descriptionText.isEmpty {
@@ -909,7 +938,8 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                         horizontalAlignment: .center,
                         maximumNumberOfLines: 5,
                         lineSpacing: 0.2,
-                        highlightColor: linkColor.withAlphaComponent(0.2),
+                        highlightColor: linkColor.withAlphaComponent(0.1),
+                        highlightInset: UIEdgeInsets(top: 0.0, left: 0.0, bottom: 0.0, right: -8.0),
                         highlightAction: { attributes in
                             if let _ = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.URL)] {
                                 return NSAttributedString.Key(rawValue: TelegramTextAttributes.URL)

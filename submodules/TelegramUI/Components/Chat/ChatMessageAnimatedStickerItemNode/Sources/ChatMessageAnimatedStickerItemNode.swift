@@ -343,15 +343,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
             }
             
             if oldValue != self.visibility {
-                switch self.visibility {
-                case .none:
-                    self.textNode.visibilityRect = nil
-                case let .visible(_, subRect):
-                    var subRect = subRect
-                    subRect.origin.x = 0.0
-                    subRect.size.width = 10000.0
-                    self.textNode.visibilityRect = subRect
-                }
+                self.updateVisibility()
             }
         }
     }
@@ -593,6 +585,21 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
         }
         
         let isPlaying = self.visibilityStatus == true && !self.forceStopAnimations
+        
+        var effectiveVisibility = self.visibility
+        if !isPlaying {
+            effectiveVisibility = .none
+        }
+        
+        switch effectiveVisibility {
+        case .none:
+            self.textNode.visibilityRect = nil
+        case let .visible(_, subRect):
+            var subRect = subRect
+            subRect.origin.x = 0.0
+            subRect.size.width = 10000.0
+            self.textNode.visibilityRect = subRect
+        }
         
         var canPlayEffects = isPlaying
         if !item.controllerInteraction.canReadHistory {
@@ -3063,7 +3070,7 @@ public struct AnimatedEmojiSoundsConfiguration {
                     
                     if let idString = dict["id"], let id = Int64(idString), let accessHashString = dict["access_hash"], let accessHash = Int64(accessHashString), let fileReference = Data(base64Encoded: fileReferenceString) {
                         let resource = CloudDocumentMediaResource(datacenterId: 1, fileId: id, accessHash: accessHash, size: nil, fileReference: fileReference, fileName: nil)
-                        let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: 0), partialReference: nil, resource: resource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "audio/ogg", size: nil, attributes: [])
+                        let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: 0), partialReference: nil, resource: resource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "audio/ogg", size: nil, attributes: [], alternativeRepresentations: [])
                         sounds[key] = file
                     }
                 }

@@ -22,7 +22,8 @@ private func generateStarsReactionFile(kind: Int, isAnimatedSticker: Bool) -> Te
         immediateThumbnailData: nil,
         mimeType: isAnimatedSticker ? "application/x-tgsticker" : "image/webp",
         size: nil,
-        attributes: attributes
+        attributes: attributes,
+        alternativeRepresentations: []
     )
 }
 
@@ -222,7 +223,6 @@ public final class AvailableReactions: Equatable, Codable {
         
         var reactions = reactions
         reactions.removeAll(where: { if case .stars = $0.value { return true } else { return false } })
-        //TODO:release
         reactions.append(generateStarsReaction())
         self.reactions = reactions
     }
@@ -242,7 +242,6 @@ public final class AvailableReactions: Equatable, Codable {
         
         self.hash = try container.decodeIfPresent(Int32.self, forKey: .newHash) ?? 0
         
-        //TODO:release
         var reactions = try container.decode([Reaction].self, forKey: .reactions)
         reactions.removeAll(where: { if case .stars = $0.value { return true } else { return false } })
         reactions.append(generateStarsReaction())
@@ -261,23 +260,23 @@ private extension AvailableReactions.Reaction {
     convenience init?(apiReaction: Api.AvailableReaction) {
         switch apiReaction {
         case let .availableReaction(flags, reaction, title, staticIcon, appearAnimation, selectAnimation, activateAnimation, effectAnimation, aroundAnimation, centerIcon):
-            guard let staticIconFile = telegramMediaFileFromApiDocument(staticIcon) else {
+            guard let staticIconFile = telegramMediaFileFromApiDocument(staticIcon, altDocuments: []) else {
                 return nil
             }
-            guard let appearAnimationFile = telegramMediaFileFromApiDocument(appearAnimation) else {
+            guard let appearAnimationFile = telegramMediaFileFromApiDocument(appearAnimation, altDocuments: []) else {
                 return nil
             }
-            guard let selectAnimationFile = telegramMediaFileFromApiDocument(selectAnimation) else {
+            guard let selectAnimationFile = telegramMediaFileFromApiDocument(selectAnimation, altDocuments: []) else {
                 return nil
             }
-            guard let activateAnimationFile = telegramMediaFileFromApiDocument(activateAnimation) else {
+            guard let activateAnimationFile = telegramMediaFileFromApiDocument(activateAnimation, altDocuments: []) else {
                 return nil
             }
-            guard let effectAnimationFile = telegramMediaFileFromApiDocument(effectAnimation) else {
+            guard let effectAnimationFile = telegramMediaFileFromApiDocument(effectAnimation, altDocuments: []) else {
                 return nil
             }
-            let aroundAnimationFile = aroundAnimation.flatMap { telegramMediaFileFromApiDocument($0) }
-            let centerAnimationFile = centerIcon.flatMap { telegramMediaFileFromApiDocument($0) }
+            let aroundAnimationFile = aroundAnimation.flatMap { telegramMediaFileFromApiDocument($0, altDocuments: []) }
+            let centerAnimationFile = centerIcon.flatMap { telegramMediaFileFromApiDocument($0, altDocuments: []) }
             let isEnabled = (flags & (1 << 0)) == 0
             let isPremium = (flags & (1 << 2)) != 0
             self.init(
