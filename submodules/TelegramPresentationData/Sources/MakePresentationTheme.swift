@@ -7,6 +7,16 @@ import TelegramCore
 public func makeDefaultPresentationTheme(reference: PresentationBuiltinThemeReference, extendingThemeReference: PresentationThemeReference? = nil, serviceBackgroundColor: UIColor?, preview: Bool = false) -> PresentationTheme {
     let theme: PresentationTheme
     switch reference {
+        // MARK: Nicegram DefaultTheme
+        case .nicegram:
+            if let nicegramThemeFileUrl = Bundle.main.url(forResource: "nicegram-theme", withExtension: "txt"),
+               let nicegramThemeData = try? Data(contentsOf: nicegramThemeFileUrl),
+               let nicegramTheme = makePresentationTheme(data: nicegramThemeData) {
+                theme = nicegramTheme
+            } else {
+                theme = makeDefaultDayPresentationTheme(extendingThemeReference: extendingThemeReference, serviceBackgroundColor: serviceBackgroundColor, day: false, preview: preview)
+            }
+        //
         case .dayClassic:
             theme = makeDefaultDayPresentationTheme(extendingThemeReference: extendingThemeReference, serviceBackgroundColor: serviceBackgroundColor, day: false, preview: preview)
         case .day:
@@ -24,6 +34,10 @@ public func customizePresentationTheme(_ theme: PresentationTheme, editing: Bool
         return theme
     }
     switch theme.referenceTheme {
+        // MARK: Nicegram DefaultTheme
+        case .nicegram:
+            return theme
+        //
         case .day, .dayClassic:
             return customizeDefaultDayTheme(theme: theme, editing: editing, title: title, accentColor: accentColor, outgoingAccentColor: outgoingAccentColor, backgroundColors: backgroundColors, bubbleColors: bubbleColors, animateBubbleColors: animateBubbleColors ?? false, wallpaper: wallpaper, serviceBackgroundColor: nil)
         case .night:

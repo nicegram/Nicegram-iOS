@@ -1003,17 +1003,15 @@ public func themePickerController(context: AccountContext, focusOnItemTag: Theme
             rightNavigationButton = nil
         }
         
-        var defaultThemes: [PresentationThemeReference] = []
-        if presentationData.autoNightModeTriggered {
-            defaultThemes.append(contentsOf: [.builtin(.nightAccent), .builtin(.night)])
-        } else {
-            defaultThemes.append(contentsOf: [
-                .builtin(.dayClassic),
-                .builtin(.nightAccent),
-                .builtin(.day),
-                .builtin(.night)
-            ])
-        }
+        // MARK: Nicegram DefaultTheme, always include all themes (regardless of presentationData.autoNightModeTriggered)
+        let defaultThemes: [PresentationThemeReference] = [
+            .builtin(.nicegram),
+            .builtin(.dayClassic),
+            .builtin(.nightAccent),
+            .builtin(.day),
+            .builtin(.night)
+        ]
+        //
         
         let cloudThemes: [PresentationThemeReference] = cloudThemes.map { .cloud(PresentationCloudTheme(theme: $0, resolvedWallpaper: nil, creatorAccountId: $0.isCreator ? context.account.id : nil)) }.filter { !removedThemeIndexes.contains($0.index) }
         
