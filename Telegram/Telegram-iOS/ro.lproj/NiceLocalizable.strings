@@ -159,6 +159,10 @@
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Aplicația detectează limba fiecărui mesaj pe dispozitivul tău. Este o sarcină de înaltă performanță care poate afecta durata de viață a bateriei.";
 "Premium.rememberFolderOnExit" = "Ține minte folderul curent la ieșire";
 "NicegramSettings.HideStories" = "Ascunde Poveștile";
+"NicegramSettings.HideBadgeCounters" = "Ascunde contoarele de insigne";
+"NicegramSettings.EnableAnimationsInChatList" = "Animații în lista de chat";
+"NicegramSettings.EnableGrayscaleInChatList" = "Scala de gri în lista de chat";
+"NicegramSettings.EnableGrayscaleInChat" = "Gri în chat";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Mai vechi de";

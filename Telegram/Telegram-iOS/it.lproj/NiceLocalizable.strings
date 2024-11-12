@@ -161,6 +161,10 @@ Il browser selezionato deve essere installato.";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "L'app rileva la lingua di ogni messaggio sul tuo dispositivo. È un'attività che consuma tante risorse e che può influire sulla durata della batteria.";
 "Premium.rememberFolderOnExit" = "Ricorda la cartella corrente all'uscita";
 "NicegramSettings.HideStories" = "Nascondi Storie";
+"NicegramSettings.HideBadgeCounters" = "Nascondi i contatori dei badge";
+"NicegramSettings.EnableAnimationsInChatList" = "Animazioni nella lista chat";
+"NicegramSettings.EnableGrayscaleInChatList" = "Scala di grigi nella lista chat";
+"NicegramSettings.EnableGrayscaleInChat" = "In scala di grigi nella chat";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Più vecchio di";

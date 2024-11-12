@@ -1,6 +1,9 @@
 // MARK: Nicegram HideStories
 import NGData
 //
+// MARK: Nicegram ColorAlign
+import NGUtils
+//
 import Foundation
 import UIKit
 import AsyncDisplayKit
@@ -1056,6 +1059,10 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
         }
     }
     
+    // MARK: Nicegram ColorAlign
+    private let grayscaleApplier = GrayscaleApplier()
+    //
+    
     private(set) var inlineStackContainerTransitionFraction: CGFloat = 0.0
     private(set) var inlineStackContainerNode: ChatListContainerNode?
     private var inlineContentPanRecognizer: InteractiveTransitionGestureRecognizer?
@@ -1658,6 +1665,17 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
             navigationBarComponentView.deferScrollApplication = false
             navigationBarComponentView.applyCurrentScroll(transition: ComponentTransition(transition))
         }
+        
+        // MARK: Nicegram ColorAlign
+        self.grayscaleApplier.onLayoutUpdated(
+            apply: NGSettings.chatListDisplaySettings.enableGrayscale,
+            frame: CGRect(
+                origin: .zero,
+                size: layout.size
+            ),
+            superlayer: self.layer
+        )
+        //
     }
     
     func activateSearch(placeholderNode: SearchBarPlaceholderNode, displaySearchFilters: Bool, hasDownloads: Bool, initialFilter: ChatListSearchFilter, navigationController: NavigationController?) -> (ASDisplayNode, (Bool) -> Void)? {

@@ -96,6 +96,10 @@ public final class TextNodeWithEntities {
     
     private var enableLooping: Bool = true
     
+    // MARK: Nicegram ColorAlign
+    public var disableAnimations: Bool = false
+    //
+    
     public var visibilityRect: CGRect? {
         didSet {
             if !self.inlineStickerItemLayers.isEmpty && oldValue != self.visibilityRect {
@@ -127,6 +131,10 @@ public final class TextNodeWithEntities {
     public static func asyncLayout(_ maybeNode: TextNodeWithEntities?) -> (TextNodeLayoutArguments) -> (TextNodeLayout, (TextNodeWithEntities.Arguments?) -> TextNodeWithEntities) {
         let makeLayout = TextNode.asyncLayout(maybeNode?.textNode)
         return { [weak maybeNode] arguments in
+            // MARK: Nicegram ColorAlign
+            let arguments = maybeNode?.nicegramAdjust(textNodeLayoutArguments: arguments) ?? arguments
+            //
+            
             var updatedString: NSAttributedString?
             if let sourceString = arguments.attributedString {
                 let string = NSMutableAttributedString(attributedString: sourceString)
@@ -213,6 +221,42 @@ public final class TextNodeWithEntities {
             })
         }
     }
+    
+    // MARK: Nicegram ColorAlign
+    func nicegramAdjust(textNodeLayoutArguments arguments: TextNodeLayoutArguments) -> TextNodeLayoutArguments {
+        guard self.disableAnimations else {
+            return arguments
+        }
+        
+        let attributedString: NSAttributedString?
+        if let originalAttributedString = arguments.attributedString {
+            let mutableString = NSMutableAttributedString(attributedString: originalAttributedString)
+            
+            var attributesToRemove = [
+                ChatTextInputAttributes.customEmoji,
+                ChatTextInputAttributes.spoiler
+            ]
+            attributesToRemove.append(
+                contentsOf: [TelegramTextAttributes.Spoiler].compactMap {
+                    NSAttributedString.Key($0)
+                }
+            )
+            attributesToRemove.forEach {
+                mutableString.removeAttribute(
+                    $0,
+                    range: NSRange(location: 0, length: mutableString.length)
+                )
+            }
+            
+            attributedString = mutableString
+        } else {
+            attributedString = nil
+        }
+        
+        return arguments
+            .withAttributedString(attributedString)
+    }
+    //
     
     private func isItemVisible(itemRect: CGRect) -> Bool {
         if let visibilityRect = self.visibilityRect {

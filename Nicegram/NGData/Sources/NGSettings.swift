@@ -115,6 +115,28 @@ public struct NGSettings {
     
     @NGStorage(key: "feedPeer", defaultValue: [:])
     public static var feedPeer: [Int64: PeerId]
+    
+    @NGStorage(key: "hideBadgeCounters", defaultValue: false)
+    public static var hideBadgeCounters: Bool
+}
+
+public extension NGSettings {
+    struct ChatDisplaySettings: Codable {
+        public var enableGrayscale: Bool = false
+    }
+    
+    @NGStorage(key: "chatDisplaySettings", defaultValue: ChatDisplaySettings())
+    static var chatDisplaySettings
+}
+
+public extension NGSettings {
+    struct ChatListDisplaySettings: Codable {
+        public var disableAnimations: Bool = false
+        public var enableGrayscale: Bool = false
+    }
+    
+    @NGStorage(key: "chatListDisplaySettings", defaultValue: ChatListDisplaySettings())
+    static var chatListDisplaySettings
 }
 
 public struct NGWebSettings {

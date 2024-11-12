@@ -160,6 +160,10 @@
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "应用会检测您设备上每条消息使用的语言。这一功能需要很高的性能，可能会影响电池寿命。";
 "Premium.rememberFolderOnExit" = "退出时记住当前分组";
 "NicegramSettings.HideStories" = "隐藏故事";
+"NicegramSettings.HideBadgeCounters" = "隐藏徽章计数器";
+"NicegramSettings.EnableAnimationsInChatList" = "聊天列表中的动画";
+"NicegramSettings.EnableGrayscaleInChatList" = "聊天列表中的灰度";
+"NicegramSettings.EnableGrayscaleInChat" = "灰度在聊天中";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "早于";

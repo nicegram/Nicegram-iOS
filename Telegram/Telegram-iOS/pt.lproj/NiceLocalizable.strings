@@ -160,6 +160,10 @@
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "O aplicativo detecta o idioma de cada mensagem em seu dispositivo. É uma tarefa de alto desempenho que pode afetar a vida útil da bateria.";
 "Premium.rememberFolderOnExit" = "Lembrar pasta atual antes de sair";
 "NicegramSettings.HideStories" = "Ocultar Stories";
+"NicegramSettings.HideBadgeCounters" = "Ocultar contadores de distintivos";
+"NicegramSettings.EnableAnimationsInChatList" = "Animações na lista de chat";
+"NicegramSettings.EnableGrayscaleInChatList" = "Escala de cinza na lista de chat";
+"NicegramSettings.EnableGrayscaleInChat" = "Escala de cinza no chat";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Mais antigo que";
