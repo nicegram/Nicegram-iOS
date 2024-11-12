@@ -1540,10 +1540,6 @@ public extension PresentationThemeReference {
         switch self {
             case let .builtin(theme):
                 switch theme {
-                    // MARK: Nicegram DefaultTheme
-                    case .nicegram:
-                        return .custom("Nicegram")
-                    //
                     case .day:
                         return .builtin(.day)
                     case .dayClassic:

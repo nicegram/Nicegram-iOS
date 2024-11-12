@@ -11,9 +11,6 @@ private extension UIColor {
 }
 
 public enum PresentationBuiltinThemeReference: Int32 {
-    // MARK: Nicegram DefaultTheme
-    case nicegram = -1
-    //
     case dayClassic = 0
     case night = 1
     case day = 2
@@ -21,10 +18,6 @@ public enum PresentationBuiltinThemeReference: Int32 {
     
     public init(baseTheme: TelegramBaseTheme) {
         switch baseTheme {
-            // MARK: Nicegram DefaultTheme
-            case .nicegram:
-                self = .nicegram
-            //
             case .classic:
                 self = .dayClassic
             case .day:
@@ -38,10 +31,6 @@ public enum PresentationBuiltinThemeReference: Int32 {
     
     public var baseTheme: TelegramBaseTheme {
         switch self {
-            // MARK: Nicegram DefaultTheme
-            case .nicegram:
-                return .nicegram
-            //
             case .dayClassic:
                 return .classic
             case .day:
@@ -664,8 +653,7 @@ public struct PresentationThemeSettings: Codable {
     }
     
     public static var defaultSettings: PresentationThemeSettings {
-        // MARK: Nicegram DefaultTheme, change defaultSettings
-        return PresentationThemeSettings(theme: .builtin(.nicegram), themePreferredBaseTheme: [:], themeSpecificAccentColors: [:], themeSpecificChatWallpapers: [:], useSystemFont: true, fontSize: .regular, listsFontSize: .regular, chatBubbleSettings: .default, automaticThemeSwitchSetting: AutomaticThemeSwitchSetting(force: false, trigger: .explicitNone, theme: .builtin(.nicegram)), largeEmoji: true, reduceMotion: false)
+        return PresentationThemeSettings(theme: .builtin(.dayClassic), themePreferredBaseTheme: [:], themeSpecificAccentColors: [:], themeSpecificChatWallpapers: [:], useSystemFont: true, fontSize: .regular, listsFontSize: .regular, chatBubbleSettings: .default, automaticThemeSwitchSetting: AutomaticThemeSwitchSetting(force: false, trigger: .system, theme: .builtin(.night)), largeEmoji: true, reduceMotion: false)
     }
     
     public init(theme: PresentationThemeReference, themePreferredBaseTheme: [Int64: TelegramBaseTheme], themeSpecificAccentColors: [Int64: PresentationThemeAccentColor], themeSpecificChatWallpapers: [Int64: TelegramWallpaper], useSystemFont: Bool, fontSize: PresentationFontSize, listsFontSize: PresentationFontSize, chatBubbleSettings: PresentationChatBubbleSettings, automaticThemeSwitchSetting: AutomaticThemeSwitchSetting, largeEmoji: Bool, reduceMotion: Bool) {

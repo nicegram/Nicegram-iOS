@@ -1,5 +1,4 @@
 // MARK: Nicegram Imports
-import FeatTgUserNotes
 import NGData
 //
 import Foundation
@@ -390,9 +389,6 @@ final class PeerInfoScreenData {
     let revenueStatsContext: RevenueStatsContext?
     let profileGiftsContext: ProfileGiftsContext?
     let premiumGiftOptions: [PremiumGiftCodeOption]
-    // MARK: Nicegram TgUserNotes
-    var note: String
-    //
     
     let _isContact: Bool
     var forceIsContact: Bool = false
@@ -441,10 +437,7 @@ final class PeerInfoScreenData {
         revenueStatsState: RevenueStats?,
         revenueStatsContext: RevenueStatsContext?,
         profileGiftsContext: ProfileGiftsContext?,
-        premiumGiftOptions: [PremiumGiftCodeOption],
-        // MARK: Nicegram TgUserNotes
-        note: String = ""
-        //
+        premiumGiftOptions: [PremiumGiftCodeOption]
     ) {
         self.peer = peer
         self.chatPeer = chatPeer
@@ -482,9 +475,6 @@ final class PeerInfoScreenData {
         self.revenueStatsContext = revenueStatsContext
         self.profileGiftsContext = profileGiftsContext
         self.premiumGiftOptions = premiumGiftOptions
-        // MARK: Nicegram TgUserNotes
-        self.note = note
-        //
     }
 }
 
@@ -1983,23 +1973,6 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
             }
         }
     }
-    // MARK: Nicegram TgUserNotes
-    |> mapToSignal { peerInfoScreenData -> Signal<PeerInfoScreenData, NoError> in
-        let note = TgUserNotesModule.shared.getTgUserNoteUseCase()
-            .publisher(userId: peerId.ng_toInt64())
-            .prepend("")
-            .removeDuplicates()
-            .toSignal()
-            .skipError()
-        
-        return note
-        |> map { note in
-            var peerInfoScreenData = peerInfoScreenData
-            peerInfoScreenData.note = note
-            return peerInfoScreenData
-        }
-    }
-    //
 }
 
 func canEditPeerInfo(context: AccountContext, peer: Peer?, chatLocation: ChatLocation, threadData: MessageHistoryThreadData?) -> Bool {

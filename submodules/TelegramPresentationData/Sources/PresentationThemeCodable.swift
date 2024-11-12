@@ -2056,10 +2056,6 @@ extension PresentationBuiltinThemeReference: Codable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {
-            // MARK: Nicegram DefaultTheme
-            case .nicegram:
-                try container.encode("nicegram")
-            //
             case .day:
                 try container.encode("day")
             case .dayClassic:

@@ -8,7 +8,6 @@ NGDEPS = [
     "//Nicegram/NGUI:NGUI",
     "//Nicegram/NGWebUtils:NGWebUtils",
     "@swiftpkg_nicegram_assistant_ios//:FeatPremiumUI",
-    "@swiftpkg_nicegram_assistant_ios//:FeatTgUserNotes",
     "@swiftpkg_nicegram_assistant_ios//:NGAiChatUI",
 ]
 

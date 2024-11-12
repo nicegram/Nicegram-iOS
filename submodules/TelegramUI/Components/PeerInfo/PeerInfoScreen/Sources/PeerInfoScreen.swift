@@ -50,7 +50,6 @@ import PeerInfoUI
 // MARK: Nicegram Imports
 import FeatAssistant
 import struct FeatPremiumUI.PremiumUITgHelper
-import FeatTgUserNotes
 import FeatWallet
 import NGAiChatUI
 import NGRepoUser
@@ -1645,7 +1644,6 @@ private func infoItems(data: PeerInfoScreenData?, context: AccountContext, prese
                 let overallStarsBalance = data.starsRevenueStatsState?.balances.overallRevenue ?? 0
                 
                 if overallRevenueBalance > 0 || overallStarsBalance > 0 {
-                    //TODO:localize
                     items[.balances]!.append(PeerInfoScreenHeaderItem(id: 20, text: presentationData.strings.PeerInfo_BotBalance_Title))
                     if overallRevenueBalance > 0 {
                         let string = "*\(formatTonAmountText(revenueBalance, dateTimeFormat: presentationData.dateTimeFormat))"
@@ -2018,55 +2016,6 @@ private func infoItems(data: PeerInfoScreenData?, context: AccountContext, prese
         }))
         ngItemId += 1
     }
-    
-    // MARK: Nicegram TgUserNotes
-    if #available(iOS 15.0, *),
-       let userId = data.peer?.id.ng_toInt64() {
-        let note = data.note.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        let noteText: String
-        let noteColor: PeerInfoScreenLabeledValueTextColor
-        let noteImage: UIImage?
-        if note.isEmpty {
-            noteText = FeatTgUserNotes.strings.setNote()
-            noteColor = .accent
-            noteImage = nil
-        } else {
-            noteText = note
-            noteColor = .primary
-            noteImage = UIImage(bundleImageName: "Chat/Context Menu/Edit")
-        }
-        
-        let presentNoteEdit: () -> Void = {
-            Task { @MainActor in
-                EditNotePresenter().present(userId: userId, note: note)
-            }
-        }
-        
-        items[.nicegram]!.append(
-            PeerInfoScreenLabeledValueItem(
-                id: ngItemId,
-                label: FeatTgUserNotes.strings.note().lowercased(),
-                text: noteText,
-                textColor: noteColor,
-                textBehavior: .multiLine(maxLines: 100, enabledEntities: enabledPrivateBioEntities),
-                icon: noteImage.map { PeerInfoScreenLabeledValueIcon.nicegram($0) },
-                action: { _, _ in
-                    presentNoteEdit()
-                },
-                linkItemAction: bioLinkAction,
-                iconAction: {
-                    presentNoteEdit()
-                },
-                contextAction: nil,
-                requestLayout: { animated in
-                    interaction.requestLayout(animated)
-                }
-            )
-        )
-        ngItemId += 1
-    }
-    //
     
     var result: [(AnyHashable, [PeerInfoScreenItem])] = []
     for section in InfoSection.allCases {

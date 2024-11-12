@@ -887,10 +887,6 @@ public func themeDisplayName(strings: PresentationStrings, reference: Presentati
     switch reference {
     case let .builtin(theme):
         switch theme {
-        // MARK: Nicegram DefaultTheme
-        case .nicegram:
-            name = "Nicegram"
-        //
         case .dayClassic:
             name = strings.Appearance_ThemeCarouselClassic
         case .day:
