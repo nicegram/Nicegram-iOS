@@ -120,25 +120,6 @@ public struct NGSettings {
     public static var hideBadgeCounters: Bool
 }
 
-public extension NGSettings {
-    struct ChatDisplaySettings: Codable {
-        public var enableGrayscale: Bool = false
-    }
-    
-    @NGStorage(key: "chatDisplaySettings", defaultValue: ChatDisplaySettings())
-    static var chatDisplaySettings
-}
-
-public extension NGSettings {
-    struct ChatListDisplaySettings: Codable {
-        public var disableAnimations: Bool = false
-        public var enableGrayscale: Bool = false
-    }
-    
-    @NGStorage(key: "chatListDisplaySettings", defaultValue: ChatListDisplaySettings())
-    static var chatListDisplaySettings
-}
-
 public struct NGWebSettings {
     // MARK: Remote Settings
     @NGStorage(key: "syncPins", defaultValue: false)

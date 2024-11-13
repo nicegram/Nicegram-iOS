@@ -83,9 +83,6 @@ private enum EasyToggleType {
     case hideReactions
     case hideStories
     case hideBadgeCounters
-    case enableAnimationsInChatList
-    case enableGrayscaleInChatList
-    case enableGrayscaleInChat
 }
 
 
@@ -547,12 +544,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                     }
                 case .hideBadgeCounters:
                     NGSettings.hideBadgeCounters = value
-                case .enableAnimationsInChatList:
-                    NGSettings.chatListDisplaySettings.disableAnimations = !value
-                case .enableGrayscaleInChatList:
-                    NGSettings.chatListDisplaySettings.enableGrayscale = value
-                case .enableGrayscaleInChat:
-                    NGSettings.chatDisplaySettings.enableGrayscale = value
                 }
             })
         case let .unblockHeader(text):
@@ -743,19 +734,10 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     
     entries.append(.easyToggle(toggleIndex, .hideStories, l("NicegramSettings.HideStories"), NGSettings.hideStories))
     toggleIndex += 1
-    
+
     entries.append(.easyToggle(toggleIndex, .hideBadgeCounters, l("NicegramSettings.HideBadgeCounters"), NGSettings.hideBadgeCounters))
     toggleIndex += 1
-    
-    entries.append(.easyToggle(toggleIndex, .enableAnimationsInChatList, l("NicegramSettings.EnableAnimationsInChatList"), !NGSettings.chatListDisplaySettings.disableAnimations))
-    toggleIndex += 1
-    
-    entries.append(.easyToggle(toggleIndex, .enableGrayscaleInChatList, l("NicegramSettings.EnableGrayscaleInChatList"), NGSettings.chatListDisplaySettings.enableGrayscale))
-    toggleIndex += 1
-    
-    entries.append(.easyToggle(toggleIndex, .enableGrayscaleInChat, l("NicegramSettings.EnableGrayscaleInChat"), NGSettings.chatDisplaySettings.enableGrayscale))
-    toggleIndex += 1
-        
+
     if let sharingSettings {
         entries.append(
             .shareBotsData(

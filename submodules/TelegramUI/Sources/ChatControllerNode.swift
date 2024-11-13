@@ -14,9 +14,6 @@ import FeatTgChatButton
 import NGUtils
 import NicegramWallet
 //
-// MARK: Nicegram ColorAlign
-import NGData
-//
 import Foundation
 import UIKit
 import AsyncDisplayKit
@@ -177,10 +174,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     let historyNodeContainer: HistoryNodeContainer
     let loadingNode: ChatLoadingNode
     private(set) var loadingPlaceholderNode: ChatLoadingPlaceholderNode?
-    
-    // MARK: Nicegram ColorAlign
-    private var grayscaleApplier = GrayscaleApplier()
-    //
     
     var alwaysShowSearchResultsAsList: Bool = false
     var includeSavedPeersInSearchResults: Bool = false
@@ -3235,17 +3228,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
 
         self.derivedLayoutState = ChatControllerNodeDerivedLayoutState(inputContextPanelsFrame: inputContextPanelsFrame, inputContextPanelsOverMainPanelFrame: inputContextPanelsOverMainPanelFrame, inputNodeHeight: inputNodeHeightAndOverflow?.0, inputNodeAdditionalHeight: inputNodeHeightAndOverflow?.1, upperInputPositionBound: inputNodeHeightAndOverflow?.0 != nil ? self.upperInputPositionBound : nil)
-        
-        // MARK: Nicegram ColorAlign
-        self.grayscaleApplier.onLayoutUpdated(
-            apply: NGSettings.chatDisplaySettings.enableGrayscale,
-            frame: CGRect(
-                origin: .zero,
-                size: layout.size
-            ),
-            superlayer: self.layer
-        )
-        //
         
         //self.notifyTransitionCompletionListeners(transition: transition)
     }
