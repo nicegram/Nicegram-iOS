@@ -161,6 +161,9 @@
 "Premium.rememberFolderOnExit" = "Aktuellen Ordner beim Beenden merken";
 "NicegramSettings.HideStories" = "Stories verbergen";
 "NicegramSettings.HideBadgeCounters" = "Ausblenden der Abzeichenzähler";
+"NicegramSettings.EnableAnimationsInChatList" = "Animationen in der Chatliste";
+"NicegramSettings.EnableGrayscaleInChatList" = "Graustufen in der Chatliste";
+"NicegramSettings.EnableGrayscaleInChat" = "Graustufen im Chat";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Älter als";

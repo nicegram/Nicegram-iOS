@@ -1,3 +1,6 @@
+// MARK: Nicegram ColorAlign
+import NGData
+//
 import Foundation
 import UIKit
 import SwiftSignalKit
@@ -313,6 +316,12 @@ private final class NativeWindow: UIWindow, WindowHost {
         }
     }
     
+    // MARK: Nicegram ColorAlign
+    private let grayscaleLayer = GrayscaleLayer(
+        enablePublisher: NicegramSettingsModule.shared.getGrayscaleSettingsUseCase().grayscaleAllPublisher()
+    )
+    //
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
         
@@ -329,6 +338,13 @@ private final class NativeWindow: UIWindow, WindowHost {
     
     override func layoutSubviews() {
         super.layoutSubviews()
+        
+        // MARK: Nicegram ColorAlign
+        if grayscaleLayer.superlayer == nil {
+            self.layer.addSublayer(grayscaleLayer)
+        }
+        grayscaleLayer.frame = self.bounds
+        //
         
         self.layoutSubviewsEvent?()
     }

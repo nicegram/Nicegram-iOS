@@ -161,6 +161,9 @@
 "Premium.rememberFolderOnExit" = "Запомнить текущую папку при выходе";
 "NicegramSettings.HideStories" = "Скрыть истории";
 "NicegramSettings.HideBadgeCounters" = "Скрыть счетчики значков";
+"NicegramSettings.EnableAnimationsInChatList" = "Анимации в списке чата";
+"NicegramSettings.EnableGrayscaleInChatList" = "Оттенки серого в списке чата";
+"NicegramSettings.EnableGrayscaleInChat" = "Оттенки серого в чате";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Старше, чем";

@@ -1,6 +1,9 @@
 // MARK: Nicegram HideStories
 import NGData
 //
+// MARK: Nicegram ColorAlign
+import NGUtils
+//
 import Foundation
 import UIKit
 import AsyncDisplayKit
@@ -1056,6 +1059,12 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
         }
     }
     
+    // MARK: Nicegram ColorAlign
+    private let grayscaleLayer = GrayscaleLayer(
+        enablePublisher: NicegramSettingsModule.shared.getGrayscaleSettingsUseCase().grayscaleInChatListPublisher()
+    )
+    //
+    
     private(set) var inlineStackContainerTransitionFraction: CGFloat = 0.0
     private(set) var inlineStackContainerNode: ChatListContainerNode?
     private var inlineContentPanRecognizer: InteractiveTransitionGestureRecognizer?
@@ -1144,6 +1153,10 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
         
         // MARK: Nicegram FoldersAtBottom
         self.addSubnode(self.inlineTabContainerNode)
+        //
+        
+        // MARK: Nicegram ColorAlign
+        self.layer.addSublayer(self.grayscaleLayer)
         //
         
         self.mainContainerNode.contentOffsetChanged = { [weak self] offset, listView in
@@ -1658,6 +1671,13 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
             navigationBarComponentView.deferScrollApplication = false
             navigationBarComponentView.applyCurrentScroll(transition: ComponentTransition(transition))
         }
+        
+        // MARK: Nicegram ColorAlign
+        transition.updateFrame(
+            layer: self.grayscaleLayer,
+            frame: CGRect(origin: .zero, size: layout.size)
+        )
+        //
     }
     
     func activateSearch(placeholderNode: SearchBarPlaceholderNode, displaySearchFilters: Bool, hasDownloads: Bool, initialFilter: ChatListSearchFilter, navigationController: NavigationController?) -> (ASDisplayNode, (Bool) -> Void)? {

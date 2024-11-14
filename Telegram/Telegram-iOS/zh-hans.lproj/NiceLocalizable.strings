@@ -161,6 +161,9 @@
 "Premium.rememberFolderOnExit" = "退出时记住当前分组";
 "NicegramSettings.HideStories" = "隐藏故事";
 "NicegramSettings.HideBadgeCounters" = "隐藏徽章计数器";
+"NicegramSettings.EnableAnimationsInChatList" = "聊天列表中的动画";
+"NicegramSettings.EnableGrayscaleInChatList" = "聊天列表中的灰度";
+"NicegramSettings.EnableGrayscaleInChat" = "灰度在聊天中";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "早于";

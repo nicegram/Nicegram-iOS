@@ -162,6 +162,9 @@
 "Premium.rememberFolderOnExit" = "Çıkışta şu anki klasörü hatırla";
 "NicegramSettings.HideStories" = "Hikayeleri Gizle";
 "NicegramSettings.HideBadgeCounters" = "Rozet sayacını gizle";
+"NicegramSettings.EnableAnimationsInChatList" = "Sohbet listesinde animasyonlar";
+"NicegramSettings.EnableGrayscaleInChatList" = "Sohbet listesinde gri tonlama";
+"NicegramSettings.EnableGrayscaleInChat" = "Sohbette gri tonlama";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Şundan daha eski:";

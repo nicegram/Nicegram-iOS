@@ -162,6 +162,9 @@
 "Premium.rememberFolderOnExit" = "تذكر المجلد الحالي عند الخروج";
 "NicegramSettings.HideStories" = "إخفاء الستوري";
 "NicegramSettings.HideBadgeCounters" = "إخفاء عدادات الشارات";
+"NicegramSettings.EnableAnimationsInChatList" = "الرسوم المتحركة في قائمة الدردشة";
+"NicegramSettings.EnableGrayscaleInChatList" = "الرمادي في قائمة الدردشة";
+"NicegramSettings.EnableGrayscaleInChat" = "الرمادي في الدردشة";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "أقدم من";
