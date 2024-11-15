@@ -14,6 +14,9 @@ struct ContactsRetrieverImpl {
                 )
                 .awaitForFirstValue()
                 .peers
+                .filter {
+                    $0.id != context.account.peerId
+                }
                 .map { peer in
                     WalletTgUtils.peerToWalletContact(
                         peer: peer

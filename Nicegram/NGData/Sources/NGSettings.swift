@@ -118,6 +118,12 @@ public struct NGSettings {
     
     @NGStorage(key: "hideBadgeCounters", defaultValue: false)
     public static var hideBadgeCounters: Bool
+    
+    @NGStorage(key: "hideUnreadCounters", defaultValue: false)
+    public static var hideUnreadCounters: Bool
+
+    @NGStorage(key: "hideMentionNotification", defaultValue: false)
+    public static var hideMentionNotification: Bool
 }
 
 public struct NGWebSettings {

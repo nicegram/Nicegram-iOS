@@ -914,6 +914,9 @@ private func settingsItems(data: PeerInfoScreenData?, context: AccountContext, p
         
         if !settings.accountsAndPeers.isEmpty {
             for (peerAccountContext, peer, badgeCount) in settings.accountsAndPeers {
+// MARK: Nicegram NCG-6652 Hide UI notifications, NGSettings.hideUnreadCounters
+                let badgeCount = NGSettings.hideUnreadCounters ? 0 : badgeCount
+//
                 let mappedContext = ItemListPeerItem.Context.custom(ItemListPeerItem.Context.Custom(
                     accountPeerId: peerAccountContext.account.peerId,
                     postbox: peerAccountContext.account.postbox,
@@ -12848,7 +12851,8 @@ public final class PeerInfoScreenImpl: ViewController, PeerInfoScreen, KeyShortc
             
             let accountTabBarAvatarBadge: Signal<Int32, NoError> = combineLatest(notificationsFromAllAccounts, self.accountsAndPeers.get())
             |> map { notificationsFromAllAccounts, primaryAndOther -> Int32 in
-                if !notificationsFromAllAccounts {
+// MARK: Nicegram NCG-6652 Hide UI notifications, NGSettings.hideUnreadCounters
+                if !notificationsFromAllAccounts || NGSettings.hideUnreadCounters {
                     return 0
                 }
                 let (primary, other) = primaryAndOther

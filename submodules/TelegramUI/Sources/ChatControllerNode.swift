@@ -14,9 +14,6 @@ import FeatTgChatButton
 import NGUtils
 import NicegramWallet
 //
-// MARK: Nicegram ColorAlign
-import NGData
-//
 import Foundation
 import UIKit
 import AsyncDisplayKit
@@ -177,12 +174,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     let historyNodeContainer: HistoryNodeContainer
     let loadingNode: ChatLoadingNode
     private(set) var loadingPlaceholderNode: ChatLoadingPlaceholderNode?
-    
-    // MARK: Nicegram ColorAlign
-    private let grayscaleLayer = GrayscaleLayer(
-        enablePublisher: NicegramSettingsModule.shared.getGrayscaleSettingsUseCase().grayscaleInChatPublisher()
-    )
-    //
     
     var alwaysShowSearchResultsAsList: Bool = false
     var includeSavedPeersInSearchResults: Bool = false
@@ -953,10 +944,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             )
         }
         self.ngBannerNode.isHidden = true
-        //
-        
-        // MARK: Nicegram ColorAlign
-        self.layer.addSublayer(self.grayscaleLayer)
         //
         
         self.wrappingNode.contentNode.addSubnode(self.messageTransitionNode)
@@ -3241,22 +3228,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
 
         self.derivedLayoutState = ChatControllerNodeDerivedLayoutState(inputContextPanelsFrame: inputContextPanelsFrame, inputContextPanelsOverMainPanelFrame: inputContextPanelsOverMainPanelFrame, inputNodeHeight: inputNodeHeightAndOverflow?.0, inputNodeAdditionalHeight: inputNodeHeightAndOverflow?.1, upperInputPositionBound: inputNodeHeightAndOverflow?.0 != nil ? self.upperInputPositionBound : nil)
-        
-        // MARK: Nicegram ColorAlign
-        let grayscaleFrame = CGRect(origin: .zero, size: layout.size)
-            .inset(
-                by: UIEdgeInsets(
-                    top: navigationBarHeight,
-                    left: 0,
-                    bottom: 0,
-                    right: 0
-                )
-            )
-        transition.updateFrame(
-            layer: self.grayscaleLayer,
-            frame: grayscaleFrame
-        )
-        //
         
         //self.notifyTransitionCompletionListeners(transition: transition)
     }

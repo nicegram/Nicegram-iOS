@@ -62,9 +62,6 @@ public final class EmojiStatusComponent: Component {
     public let size: CGSize?
     public let isVisibleForAnimations: Bool
     public let useSharedAnimation: Bool
-    // MARK: Nicegram ColorAlign
-    public var ngDisableAnimations: Bool
-    //
     public let action: (() -> Void)?
     public let emojiFileUpdated: ((TelegramMediaFile?) -> Void)?
     
@@ -76,9 +73,6 @@ public final class EmojiStatusComponent: Component {
         size: CGSize? = nil,
         isVisibleForAnimations: Bool,
         useSharedAnimation: Bool = false,
-        // MARK: Nicegram ColorAlign
-        ngDisableAnimations: Bool = false,
-        //
         action: (() -> Void)?,
         emojiFileUpdated: ((TelegramMediaFile?) -> Void)? = nil
     ) {
@@ -94,9 +88,6 @@ public final class EmojiStatusComponent: Component {
             size: size,
             isVisibleForAnimations: isVisibleForAnimations,
             useSharedAnimation: useSharedAnimation,
-            // MARK: Nicegram ColorAlign
-            ngDisableAnimations: ngDisableAnimations,
-            //
             action: action,
             emojiFileUpdated: emojiFileUpdated
         )
@@ -112,9 +103,6 @@ public final class EmojiStatusComponent: Component {
         size: CGSize? = nil,
         isVisibleForAnimations: Bool,
         useSharedAnimation: Bool = false,
-        // MARK: Nicegram ColorAlign
-        ngDisableAnimations: Bool = false,
-        //
         action: (() -> Void)?,
         emojiFileUpdated: ((TelegramMediaFile?) -> Void)? = nil
     ) {
@@ -127,9 +115,6 @@ public final class EmojiStatusComponent: Component {
         self.size = size
         self.isVisibleForAnimations = isVisibleForAnimations
         self.useSharedAnimation = useSharedAnimation
-        // MARK: Nicegram ColorAlign
-        self.ngDisableAnimations = ngDisableAnimations
-        //
         self.action = action
         self.emojiFileUpdated = emojiFileUpdated
     }
@@ -145,9 +130,6 @@ public final class EmojiStatusComponent: Component {
             size: self.size,
             isVisibleForAnimations: isVisibleForAnimations,
             useSharedAnimation: self.useSharedAnimation,
-            // MARK: Nicegram ColorAlign
-            ngDisableAnimations: self.ngDisableAnimations,
-            //
             action: self.action,
             emojiFileUpdated: self.emojiFileUpdated
         )
@@ -564,11 +546,6 @@ public final class EmojiStatusComponent: Component {
                     
                     animationLayer.frame = CGRect(origin: CGPoint(), size: size)
                     animationLayer.isVisibleForAnimations = component.isVisibleForAnimations
-                    // MARK: Nicegram ColorAlign
-                    if component.ngDisableAnimations {
-                        animationLayer.isVisibleForAnimations = false
-                    }
-                    //
                     /*} else {
                         if self.emojiFileDataPathDisposable == nil {
                             let account = component.context.account
