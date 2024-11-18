@@ -162,6 +162,8 @@ Il browser selezionato deve essere installato.";
 "Premium.rememberFolderOnExit" = "Ricorda la cartella corrente all'uscita";
 "NicegramSettings.HideStories" = "Nascondi Storie";
 "NicegramSettings.HideBadgeCounters" = "Nascondi i contatori dei badge";
+"NicegramSettings.HideUnreadCounters" = "Nascondi contatori dei non letti";
+"NicegramSettings.HideMentionNotification" = "Nascondi notifiche di menzione";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Più vecchio di";

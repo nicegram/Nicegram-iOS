@@ -162,6 +162,8 @@
 "Premium.rememberFolderOnExit" = "Çıkışta şu anki klasörü hatırla";
 "NicegramSettings.HideStories" = "Hikayeleri Gizle";
 "NicegramSettings.HideBadgeCounters" = "Rozet sayacını gizle";
+"NicegramSettings.HideUnreadCounters" = "Okunmamış sayacını gizle";
+"NicegramSettings.HideMentionNotification" = "Bahsetme bildirimlerini gizle";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Şundan daha eski:";

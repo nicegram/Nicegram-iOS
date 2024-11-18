@@ -161,6 +161,8 @@
 "Premium.rememberFolderOnExit" = "Aktuellen Ordner beim Beenden merken";
 "NicegramSettings.HideStories" = "Stories verbergen";
 "NicegramSettings.HideBadgeCounters" = "Ausblenden der Abzeichenzähler";
+"NicegramSettings.HideUnreadCounters" = "Ungelesene Zähler verbergen";
+"NicegramSettings.HideMentionNotification" = "Erwähnungsbenachrichtigungen verbergen";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Älter als";

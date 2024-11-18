@@ -1,5 +1,7 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
+NGDEPS = ["//Nicegram/NGData:NGData"]
+
 swift_library(
     name = "Display",
     module_name = "Display",
@@ -9,7 +11,7 @@ swift_library(
     copts = [
         #"-warnings-as-errors",
     ],
-    deps = [
+    deps = NGDEPS + [
     	"//submodules/ObjCRuntimeUtils:ObjCRuntimeUtils",
     	"//submodules/UIKitRuntimeUtils:UIKitRuntimeUtils",
         "//submodules/AppBundle:AppBundle",

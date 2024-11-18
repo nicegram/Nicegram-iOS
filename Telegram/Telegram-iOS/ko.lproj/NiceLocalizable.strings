@@ -163,6 +163,8 @@
 "Premium.rememberFolderOnExit" = "종료시 현재 폴더 기억하기";
 "NicegramSettings.HideStories" = "스토리 숨기기";
 "NicegramSettings.HideBadgeCounters" = "뱃지 카운터 숨기기";
+"NicegramSettings.HideUnreadCounters" = "읽지 않은 카운터 숨기기";
+"NicegramSettings.HideMentionNotification" = "언급 알림 숨기기";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "이전의";

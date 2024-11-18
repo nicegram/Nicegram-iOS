@@ -161,6 +161,8 @@
 "Premium.rememberFolderOnExit" = "記下應用程式關閉時所在的資料夾";
 "NicegramSettings.HideStories" = "隱藏故事";
 "NicegramSettings.HideBadgeCounters" = "隱藏徽章計數器";
+"NicegramSettings.HideUnreadCounters" = "隱藏未讀計數器";
+"NicegramSettings.HideMentionNotification" = "隱藏提及通知";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "早於";

@@ -1,7 +1,9 @@
 import UIKit
 import AsyncDisplayKit
 import SwiftSignalKit
-
+// MARK: Nicegram NCG-6652 Hide UI notifications
+import NGData
+//
 private var backArrowImageCache: [Int32: UIImage] = [:]
 
 open class SparseNode: ASDisplayNode {
@@ -809,6 +811,9 @@ open class NavigationBar: ASDisplayNode {
     }
     
     private func updateBadgeText(text: String?) {
+// MARK: Nicegram NCG-6652 Hide UI notifications
+        guard !NGSettings.hideUnreadCounters else { return }
+//
         let actualText = text ?? ""
         if self.badgeNode.text != actualText {
             self.badgeNode.text = actualText

@@ -161,6 +161,8 @@
 "Premium.rememberFolderOnExit" = "Mémoriser le dossier actuel en quittant";
 "NicegramSettings.HideStories" = "Cacher les histoires";
 "NicegramSettings.HideBadgeCounters" = "Masquer les compteurs de badges";
+"NicegramSettings.HideUnreadCounters" = "Masquer les compteurs de non-lus";
+"NicegramSettings.HideMentionNotification" = "Masquer la notification de mention";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Plus vieux que";
