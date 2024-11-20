@@ -160,6 +160,9 @@
 "Premium.rememberFolderOnExit" = "dan Kattaroq";
 "NicegramSettings.HideStories" = "Hikoyalarni yashirish";
 "NicegramSettings.HideBadgeCounters" = "Belgilar sonini yashirish";
+"NicegramSettings.EnableAnimationsInChatList" = "Суҳбат рўйхатидаги анимациялар";
+"NicegramSettings.EnableGrayscaleInChatList" = "Чат рўйхатидаги кулранглар";
+"NicegramSettings.EnableGrayscaleInChat" = "Чатда кулранглар";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "dan kattaroq";

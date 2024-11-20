@@ -165,6 +165,10 @@
 "NicegramSettings.HideBadgeCounters" = "뱃지 카운터 숨기기";
 "NicegramSettings.HideUnreadCounters" = "읽지 않은 카운터 숨기기";
 "NicegramSettings.HideMentionNotification" = "언급 알림 숨기기";
+"NicegramSettings.EnableAnimationsInChatList" = "채팅 목록의 애니메이션";
+"NicegramSettings.EnableGrayscaleAll" = "전체 화면 흑백";
+"NicegramSettings.EnableGrayscaleInChatList" = "채팅 목록의 그레이스케일";
+"NicegramSettings.EnableGrayscaleInChat" = "채팅에서의 그레이스케일";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "이전의";

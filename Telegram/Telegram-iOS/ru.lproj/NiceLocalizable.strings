@@ -163,6 +163,10 @@
 "NicegramSettings.HideBadgeCounters" = "Скрыть счетчики значков";
 "NicegramSettings.HideUnreadCounters" = "Скрыть счетчики непрочитанных сообщений";
 "NicegramSettings.HideMentionNotification" = "Скрыть уведомления об упоминаниях";
+"NicegramSettings.EnableAnimationsInChatList" = "Анимации в списке чата";
+"NicegramSettings.EnableGrayscaleAll" = "Полноэкранный черно-белый режим";
+"NicegramSettings.EnableGrayscaleInChatList" = "Оттенки серого в списке чата";
+"NicegramSettings.EnableGrayscaleInChat" = "Оттенки серого в чате";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Старше, чем";

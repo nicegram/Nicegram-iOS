@@ -1628,8 +1628,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         } else {
             if #available(iOS 15.0, *),
                let rootController = window.rootViewController {
-                let controller = onboardingController(
-                    onComplete: { [weak rootController] in
+                let controller = LaunchOnboardingFactory().makeController(
+                    launchOnboardingBridge: LaunchOnboardingBridgeImpl(),
+                    onFinish: { [weak rootController] in
                         AppCache.wasOnboardingShown = true
                         
                         rootController?.dismiss(animated: true)

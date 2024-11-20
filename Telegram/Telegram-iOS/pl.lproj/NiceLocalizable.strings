@@ -163,6 +163,10 @@
 "NicegramSettings.HideBadgeCounters" = "Ukryj liczniki odznak";
 "NicegramSettings.HideUnreadCounters" = "Ukryj liczniki nieprzeczytanych";
 "NicegramSettings.HideMentionNotification" = "Ukryj powiadomienia o wzmiankach";
+"NicegramSettings.EnableAnimationsInChatList" = "Animacje na liście czatów";
+"NicegramSettings.EnableGrayscaleAll" = "Pełnoekranowy skala szarości";
+"NicegramSettings.EnableGrayscaleInChatList" = "Skala szarości na liście czatów";
+"NicegramSettings.EnableGrayscaleInChat" = "Skala szarości w czacie";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Starsze niż";

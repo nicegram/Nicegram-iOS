@@ -164,6 +164,10 @@
 "NicegramSettings.HideBadgeCounters" = "إخفاء عدادات الشارات";
 "NicegramSettings.HideUnreadCounters" = "إخفاء عدادات الغير مقروءة";
 "NicegramSettings.HideMentionNotification" = "إخفاء إشعارات الإشارة";
+"NicegramSettings.EnableAnimationsInChatList" = "الرسوم المتحركة في قائمة الدردشة";
+"NicegramSettings.EnableGrayscaleAll" = "الشاشة كاملة بالأبيض والأسود";
+"NicegramSettings.EnableGrayscaleInChatList" = "الرمادي في قائمة الدردشة";
+"NicegramSettings.EnableGrayscaleInChat" = "الرمادي في الدردشة";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "أقدم من";

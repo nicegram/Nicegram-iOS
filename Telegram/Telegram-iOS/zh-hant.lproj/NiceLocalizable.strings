@@ -163,6 +163,10 @@
 "NicegramSettings.HideBadgeCounters" = "隱藏徽章計數器";
 "NicegramSettings.HideUnreadCounters" = "隱藏未讀計數器";
 "NicegramSettings.HideMentionNotification" = "隱藏提及通知";
+"NicegramSettings.EnableAnimationsInChatList" = "聊天列表中的動畫";
+"NicegramSettings.EnableGrayscaleAll" = "全螢幕灰階";
+"NicegramSettings.EnableGrayscaleInChatList" = "聊天列表中的灰階";
+"NicegramSettings.EnableGrayscaleInChat" = "灰階在聊天中";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "早於";

@@ -163,6 +163,10 @@
 "NicegramSettings.HideBadgeCounters" = "Masquer les compteurs de badges";
 "NicegramSettings.HideUnreadCounters" = "Masquer les compteurs de non-lus";
 "NicegramSettings.HideMentionNotification" = "Masquer la notification de mention";
+"NicegramSettings.EnableAnimationsInChatList" = "Animations dans la liste de chat";
+"NicegramSettings.EnableGrayscaleAll" = "Écran complet en niveaux de gris";
+"NicegramSettings.EnableGrayscaleInChatList" = "Niveaux de gris dans la liste de chat";
+"NicegramSettings.EnableGrayscaleInChat" = "Gris dans le chat";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Plus vieux que";

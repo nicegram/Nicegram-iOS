@@ -164,6 +164,10 @@
 "NicegramSettings.HideBadgeCounters" = "Rozet sayacını gizle";
 "NicegramSettings.HideUnreadCounters" = "Okunmamış sayacını gizle";
 "NicegramSettings.HideMentionNotification" = "Bahsetme bildirimlerini gizle";
+"NicegramSettings.EnableAnimationsInChatList" = "Sohbet listesinde animasyonlar";
+"NicegramSettings.EnableGrayscaleAll" = "Tam Ekran Gri Tonlama";
+"NicegramSettings.EnableGrayscaleInChatList" = "Sohbet listesinde gri tonlama";
+"NicegramSettings.EnableGrayscaleInChat" = "Sohbette gri tonlama";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Şundan daha eski:";

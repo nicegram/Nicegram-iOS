@@ -4,6 +4,9 @@ import FeatPhoneEntryBanner
 // MARK: Nicegram Auth
 import FeatAuth
 //
+// MARK: Nicegram Onboarding
+import FeatOnboarding
+//
 import Foundation
 import UIKit
 import Display
@@ -201,6 +204,23 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
                 view: self.controllerNode.ngBannerNode.view,
                 controller: self
             )
+        }
+        //
+        
+        // MARK: Nicegram Onboarding
+        if #available(iOS 15.0, *) {
+            let proceedNode = self.controllerNode.proceedNode
+            setupPhoneEntryGuideButton(
+                config: PhoneEntryGuideButtonConfig(
+                    buttonBackgroundColor: proceedNode.theme.disabledBackgroundColor ?? .clear,
+                    buttonForegroundColor: .label,
+                    buttonHeight: proceedNode.buttonHeight,
+                    buttonCornerRadius: proceedNode.buttonCornerRadius,
+                    separatorColor: self.presentationData.theme.list.itemPlainSeparatorColor
+                ),
+               view: self.controllerNode.ngGuideButtonNode.view,
+               controller: self
+           )
         }
         //
     }

@@ -1,3 +1,6 @@
+// MARK: Nicegram Onboarding
+import FeatOnboarding
+//
 // MARK: Nicegram PhoneEntryBanner
 import FeatPhoneEntryBanner
 //
@@ -299,6 +302,12 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
     let ngBannerNode = ASDisplayNode { UIView() }
     //
     
+    // MARK: Nicegram Onboarding
+    let ngGuideButtonNode = ASDisplayNode { UIView() }
+    
+    let isNgOnboarding: Bool
+    //
+    
     private let animationNode: AnimatedStickerNode
     private let managedAnimationNode: ManagedPhoneAnimationNode
     private let titleNode: ASTextNode
@@ -307,7 +316,8 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
     private let noticeActivateAreaNode: AccessibilityAreaNode
     private let phoneAndCountryNode: PhoneAndCountryNode
     private let contactSyncNode: ContactSyncNode
-    private let proceedNode: SolidRoundedButtonNode
+    // MARK: Nicegram Onboarding, removed 'private'
+    let proceedNode: SolidRoundedButtonNode
     
     private var qrNode: ASImageNode?
     private let exportTokenDisposable = MetaDisposable()
@@ -405,7 +415,17 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         self.noticeActivateAreaNode = AccessibilityAreaNode()
         self.noticeActivateAreaNode.accessibilityTraits = .staticText
         
-        self.noticeNode.attributedText = NSAttributedString(string: account == nil ? strings.ChangePhoneNumberNumber_Help : strings.Login_PhoneAndCountryHelp, font: Font.regular(17.0), textColor: theme.list.itemPrimaryTextColor, paragraphAlignment: .center)
+        // MARK: Nicegram Onboarding
+        let isNgOnboarding = !hasOtherAccounts
+        self.isNgOnboarding = isNgOnboarding
+        //
+        
+        // MARK: Nicegram Onboarding, overwrite 'notice' if isNgOnboarding
+        var notice = account == nil ? strings.ChangePhoneNumberNumber_Help : strings.Login_PhoneAndCountryHelp
+        if isNgOnboarding {
+            notice = FeatOnboarding.strings.phoneEntryDesc()
+        }
+        self.noticeNode.attributedText = NSAttributedString(string: notice, font: Font.regular(17.0), textColor: theme.list.itemPrimaryTextColor, paragraphAlignment: .center)
         
         self.contactSyncNode = ContactSyncNode(theme: theme, strings: strings)
         
@@ -426,6 +446,11 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         // MARK: Nicegram PhoneEntryBanner
         ngBannerNode.isHidden = true
         self.addSubnode(ngBannerNode)
+        //
+        
+        // MARK: Nicegram Onboarding
+        ngGuideButtonNode.isHidden = true
+        self.addSubnode(self.ngGuideButtonNode)
         //
         
         self.addSubnode(self.titleNode)
@@ -561,7 +586,12 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         let titleInset: CGFloat = layout.size.width > 320.0 ? 18.0 : 0.0
         let additionalBottomInset: CGFloat = layout.size.width > 320.0 ? 80.0 : 10.0
         
-        self.titleNode.attributedText = NSAttributedString(string: self.account == nil ? strings.Login_NewNumber : strings.Login_PhoneTitle, font: Font.bold(28.0), textColor: self.theme.list.itemPrimaryTextColor)
+        // MARK: Nicegram Onboarding, overwrite 'title' if isNgOnboarding
+        var title = self.account == nil ? strings.Login_NewNumber : strings.Login_PhoneTitle
+        if self.isNgOnboarding {
+            title = FeatOnboarding.strings.phoneEntryTitle()
+        }
+        self.titleNode.attributedText = NSAttributedString(string: title, font: Font.bold(28.0), textColor: self.theme.list.itemPrimaryTextColor)
         self.titleActivateAreaNode.accessibilityLabel = self.titleNode.attributedText?.string ?? ""
         
         let inset: CGFloat = 24.0
@@ -572,7 +602,8 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         
         let noticeInset: CGFloat = self.account == nil ? 32.0 : 0.0
         
-        let noticeSize = self.noticeNode.measure(CGSize(width: min(274.0 + noticeInset, maximumWidth - 28.0), height: CGFloat.greatestFiniteMagnitude))
+        // MARK: Nicegram Onboarding, changed width
+        let noticeSize = self.noticeNode.measure(CGSize(width: maximumWidth - 28.0, height: CGFloat.greatestFiniteMagnitude))
         let proceedHeight = self.proceedNode.updateLayout(width: maximumWidth - inset * 2.0, transition: transition)
         let proceedSize = CGSize(width: maximumWidth - inset * 2.0, height: proceedHeight)
         
@@ -583,10 +614,12 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         ]
         
         // MARK: Nicegram PhoneEntryBanner
-        let showBanner = if #available(iOS 15.0, *) {
-            true
-        } else {
-            false
+        var showBanner = true
+        if #unavailable(iOS 15.0) {
+            showBanner = false
+        }
+        if isNgOnboarding {
+            showBanner = false
         }
         
         if showBanner {
@@ -624,19 +657,39 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
             self.contactSyncNode.isHidden = true
         }
         
-        let buttonFrame: CGRect
+        // MARK: Nicegram Onboarding
+        if #available(iOS 15.0, *), self.isNgOnboarding {
+            let ngGuideButtonHeight = PhoneEntryGuideButtonConstants.HEIGHT
+            transition.updateFrame(
+                node: self.ngGuideButtonNode,
+                frame: CGRect(
+                    x: floorToScreenPixels((layout.size.width - proceedSize.width) / 2.0),
+                    y: layout.size.height - insets.bottom - ngGuideButtonHeight - inset,
+                    width: proceedSize.width,
+                    height: ngGuideButtonHeight
+                )
+            )
+            self.ngGuideButtonNode.isHidden = false
+        }
+        //
+        
+        // MARK: Nicegram Onboarding, changed 'let' to 'var'
+        var buttonFrame: CGRect
         if let forcedButtonFrame = self.forcedButtonFrame, (layout.inputHeight ?? 0.0).isZero {
             buttonFrame = forcedButtonFrame
         } else {
             buttonFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((layout.size.width - proceedSize.width) / 2.0), y: layout.size.height - insets.bottom - proceedSize.height - inset), size: proceedSize)
+            // MARK: Nicegram Onboarding
+            buttonFrame.origin.y -= self.ngGuideButtonNode.frame.height
+            //
         }
         
         transition.updateFrame(node: self.proceedNode, frame: buttonFrame)
         
         self.animationNode.updateLayout(size: animationSize)
         
-        // MARK: Nicegram PhoneEntryBanner, reduce height by buttonFrame.height
-        let _ = layoutAuthorizationItems(bounds: CGRect(origin: CGPoint(x: 0.0, y: insets.top), size: CGSize(width: layout.size.width, height: layout.size.height - insets.top - insets.bottom - additionalBottomInset - buttonFrame.height)), items: items, transition: transition, failIfDoesNotFit: false)
+        // MARK: Nicegram PhoneEntryBanner, reduce height by (buttonFrame.height + self.ngGuideButtonNode.frame.height)
+        let _ = layoutAuthorizationItems(bounds: CGRect(origin: CGPoint(x: 0.0, y: insets.top), size: CGSize(width: layout.size.width, height: layout.size.height - insets.top - insets.bottom - additionalBottomInset - buttonFrame.height - self.ngGuideButtonNode.frame.height)), items: items, transition: transition, failIfDoesNotFit: false)
         
         transition.updateFrame(node: self.managedAnimationNode, frame: self.animationNode.frame)
         

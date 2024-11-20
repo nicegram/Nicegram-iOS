@@ -151,9 +151,12 @@ private extension NGDeeplinkHandler {
         
         var dismissImpl: (() -> Void)?
         
-        let c = onboardingController() {
-            dismissImpl?()
-        }
+        let c = LaunchOnboardingFactory().makeController(
+            launchOnboardingBridge: LaunchOnboardingBridgeImpl(),
+            onFinish: {
+                dismissImpl?()
+            }
+        )
         c.modalPresentationStyle = .fullScreen
         
         dismissImpl = { [weak c] in
