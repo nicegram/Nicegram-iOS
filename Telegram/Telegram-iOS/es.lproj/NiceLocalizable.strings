@@ -160,7 +160,7 @@
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "La aplicación detecta el idioma de cada mensaje en su aparato. Es una tarea de alta predeterminación que puede afectar la duración de su batería.";
 "Premium.rememberFolderOnExit" = "Recordar la carpeta actual a la salida";
 "NicegramSettings.HideStories" = "Ocultar Historias";
-"NicegramSettings.HideBadgeCounters" = "Ocultar contadores de insignias";
+"NicegramSettings.HideBadgeCounters" = "Ocultar notificaciones de reacción";
 "NicegramSettings.HideUnreadCounters" = "Ocultar contadores de no leídos";
 "NicegramSettings.HideMentionNotification" = "Ocultar notificación de mención";
 "NicegramSettings.EnableAnimationsInChatList" = "Animaciones en la lista de chat";

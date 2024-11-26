@@ -108,9 +108,7 @@
 "Messages.TranslateError" = "죄송합니다. 번역 할 수 없습니다.";
 "Messages.SpeechToText" = "음성-텍스트 변환";
 "Messages.UndoSpeechToText" = "음성-텍스트 변환 취소";
-"Messages.SelectAllFromUser" = "이 사용자에게서 온 모든 메시지 선택 
-
-";
+"Messages.SelectAllFromUser" = "이 사용자에게서 온 모든 메시지 선택 \n\n";
 "Messages.ToLanguage" = "언어";
 "Messages.ToLanguage.WithCode" = "언어: %@";
 "Messages.TranslateError.ToLanguageNotFound" = "텍스트를 번역할 언어를 결정할 수 없습니다. 수동으로 선택하고 다시 시도하십시오.";
@@ -162,7 +160,7 @@
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "앱은 기기에서 각 메시지의 언어를 감지합니다. 배터리 수명에 영향을 줄 수 있는 고성능 작업입니다.";
 "Premium.rememberFolderOnExit" = "종료시 현재 폴더 기억하기";
 "NicegramSettings.HideStories" = "스토리 숨기기";
-"NicegramSettings.HideBadgeCounters" = "뱃지 카운터 숨기기";
+"NicegramSettings.HideBadgeCounters" = "반응 알림 숨기기";
 "NicegramSettings.HideUnreadCounters" = "읽지 않은 카운터 숨기기";
 "NicegramSettings.HideMentionNotification" = "언급 알림 숨기기";
 "NicegramSettings.EnableAnimationsInChatList" = "채팅 목록의 애니메이션";

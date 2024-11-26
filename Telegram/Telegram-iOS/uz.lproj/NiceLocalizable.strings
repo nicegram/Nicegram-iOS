@@ -159,7 +159,7 @@
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Ilova qurilmangizdagi har bir xabarning tilini aniqlaydi. Bu batareyaning ishlash muddatiga ta'sir qilishi mumkin bo'lgan yuqori samarali vazifa.";
 "Premium.rememberFolderOnExit" = "dan Kattaroq";
 "NicegramSettings.HideStories" = "Hikoyalarni yashirish";
-"NicegramSettings.HideBadgeCounters" = "Belgilar sonini yashirish";
+"NicegramSettings.HideBadgeCounters" = "Reaksiya bildirishnomalarini yashirish";
 "NicegramSettings.EnableAnimationsInChatList" = "Суҳбат рўйхатидаги анимациялар";
 "NicegramSettings.EnableGrayscaleInChatList" = "Чат рўйхатидаги кулранглар";
 "NicegramSettings.EnableGrayscaleInChat" = "Чатда кулранглар";
