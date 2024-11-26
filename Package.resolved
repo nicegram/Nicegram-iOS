@@ -109,15 +109,6 @@
       }
     },
     {
-      "identity" : "nicegram-assistant-ios",
-      "kind" : "remoteSourceControl",
-      "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
-      "state" : {
-        "branch" : "feat/daily-login-limit",
-        "revision" : "3efed4eedb5cfd3a1a587b6ca4ce19a57b146df4"
-      }
-    },
-    {
       "identity" : "nicegram-wallet-ios",
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",

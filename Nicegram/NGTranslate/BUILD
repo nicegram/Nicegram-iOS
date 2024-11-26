@@ -11,12 +11,12 @@ swift_library(
         "@swiftpkg_nicegram_assistant_ios//:NGCore",
         "//submodules/AccountContext:AccountContext",
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
-        "//submodules/TelegramCore:TelegramCore",
+        "//submodules/TelegramCore:TelegramCore",        
         "//Nicegram/NGLogging:NGLogging",
         "//Nicegram/NGData:NGData",
         "//Nicegram/NGModels:NGModels",
         "//Nicegram/NGStrings:NGStrings",
-        "//Nicegram/NGUtils:NGUtils",
+        "//Nicegram/NGUtils:NGUtils"
     ],
     visibility = [
         "//visibility:public",

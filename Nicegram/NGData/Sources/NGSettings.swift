@@ -57,6 +57,9 @@ public struct NGSettings {
     
     @NGStorage(key: "rememberFolderOnExit", defaultValue: false)
     public static var rememberFolderOnExit: Bool
+
+    @NGStorage(key: "useOpenAI", defaultValue: false)
+    public static var useOpenAI: Bool
     
     @NGStorage(key: "lastFolder", defaultValue: -1)
     public static var lastFolder: Int32
@@ -124,6 +127,9 @@ public struct NGSettings {
 
     @NGStorage(key: "hideMentionNotification", defaultValue: false)
     public static var hideMentionNotification: Bool
+    
+    @NGStorage(key: "appleSpeechToTextLocale", defaultValue: [:])
+    public static var appleSpeechToTextLocale: [Int64: Locale]
 }
 
 public struct NGWebSettings {
@@ -167,14 +173,11 @@ public func isPremium() -> Bool {
 }
 
 public func usetrButton() -> [(Bool, [String])] {
-    if isPremium() {
-        var ignoredLangs = NGSettings.ignoreTranslate
-        if !NGSettings.useIgnoreLanguages {
-            ignoredLangs = []
-        }
-        return [(NGSettings.oneTapTr, ignoredLangs)]
+    var ignoredLangs = NGSettings.ignoreTranslate
+    if !NGSettings.useIgnoreLanguages {
+        ignoredLangs = []
     }
-    return [(false, [])]
+    return [(NGSettings.oneTapTr, ignoredLangs)]
 }
 
 public class SystemNGSettings {
@@ -215,6 +218,15 @@ public class SystemNGSettings {
         }
         set {
             UD.set(newValue, forKey: "inDoubleBottom")
+        }
+    }
+    
+    public var hideReactionsToYourMessages: Bool {
+        get {
+            return UD.bool(forKey: "hideReactionsToYourMessages")
+        }
+        set {
+            UD.set(newValue, forKey: "hideReactionsToYourMessages")
         }
     }
 }
