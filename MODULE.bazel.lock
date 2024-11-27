@@ -633,8 +633,8 @@
         "bzlTransitiveDigest": "8/YWyYftd8THfVoADvrOmQLl45wUGfP2MVjLM5FFn50=",
         "usagesDigest": "voXBMcSNlo2fnK6JIvInIrncYhBKKG8nBeKvToaUA0Y=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "7de70fa7d1a23415390fe4c6fe15f9c7c0da47ffdd69a15336508dbd2c3e9f95",
-          "@@//Package.swift": "eaf6aafbca4191a0958627ee991651315af378f1f685799283b819816edff045"
+          "@@//Package.resolved": "9a214b9e4277b2079a62495d1cf0e54f8d84e92890a52e5c98a922cb5511e3ef",
+          "@@//Package.swift": "a01ead48828dfc3ca25abb493aea1a8d8bf7fcdaa5c177c410a1e02bb28c4255"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -796,9 +796,9 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_factory",
-              "commit": "51660d788542bf33033a35f9a9660b7005f6e89e",
+              "commit": "fb04a8918848e413d3921d346a23bae7f81088d9",
               "remote": "https://github.com/hmlongco/Factory.git",
-              "version": "2.4.2",
+              "version": "2.4.3",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -872,7 +872,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_core_swift",
-              "commit": "6a36c9b16f84ed28ffbc27994ece3d974da35fdb",
+              "commit": "5791b36ee8d27cbd4b9532d050dd878c6f2ffa90",
               "remote": "https://github.com/denis15yo/core-swift.git",
               "version": "",
               "init_submodules": false,
@@ -1115,11 +1115,22 @@
             }
           },
           "swiftpkg_nicegram_assistant_ios": {
-            "bzlFile": "@@rules_swift_package_manager~//swiftpkg/internal:local_swift_package.bzl",
-            "ruleClassName": "local_swift_package",
+            "bzlFile": "@@rules_swift_package_manager~//swiftpkg/internal:swift_package.bzl",
+            "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "path": "/Users/denisshilovich/work/nicegram-assistant-ios"
+              "commit": "19004555c3a1a8697c2e068a71f72e392a7b5823",
+              "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
+              "version": "",
+              "init_submodules": false,
+              "recursive_init_submodules": true,
+              "patch_args": [
+                "-p0"
+              ],
+              "patch_cmds": [],
+              "patch_cmds_win": [],
+              "patch_tool": "",
+              "patches": []
             }
           },
           "swiftpkg_fetch_node_details_swift": {
@@ -1391,7 +1402,8 @@
         },
         "moduleExtensionMetadata": {
           "explicitRootModuleDirectDeps": [
-            "swiftpkg_nicegram_assistant_ios"
+            "swiftpkg_nicegram_assistant_ios",
+            "swiftpkg_nicegram_wallet_ios"
           ],
           "explicitRootModuleDirectDevDeps": [],
           "useAllRepos": "NO",
