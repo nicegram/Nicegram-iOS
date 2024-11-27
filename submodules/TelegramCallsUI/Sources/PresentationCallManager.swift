@@ -1040,8 +1040,8 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
             previewRepresentations: [],
             videoThumbnails: [],
             immediateThumbnailData: nil,
-            mimeType: "audio/ogg",
-//            mimeType: "audio/wav",
+//            mimeType: "audio/ogg",
+            mimeType: "audio/wav",
             size: Int64(size),
             attributes: [
                 .Audio(

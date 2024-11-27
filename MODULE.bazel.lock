@@ -633,8 +633,8 @@
         "bzlTransitiveDigest": "8/YWyYftd8THfVoADvrOmQLl45wUGfP2MVjLM5FFn50=",
         "usagesDigest": "voXBMcSNlo2fnK6JIvInIrncYhBKKG8nBeKvToaUA0Y=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "02bb8ee898ee1b18302fd7ef3409c9ee2b439a6bebf07bee8c48cfb5d58588c1",
-          "@@//Package.swift": "a01ead48828dfc3ca25abb493aea1a8d8bf7fcdaa5c177c410a1e02bb28c4255"
+          "@@//Package.resolved": "7de70fa7d1a23415390fe4c6fe15f9c7c0da47ffdd69a15336508dbd2c3e9f95",
+          "@@//Package.swift": "eaf6aafbca4191a0958627ee991651315af378f1f685799283b819816edff045"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -1115,22 +1115,11 @@
             }
           },
           "swiftpkg_nicegram_assistant_ios": {
-            "bzlFile": "@@rules_swift_package_manager~//swiftpkg/internal:swift_package.bzl",
-            "ruleClassName": "swift_package",
+            "bzlFile": "@@rules_swift_package_manager~//swiftpkg/internal:local_swift_package.bzl",
+            "ruleClassName": "local_swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "8688089fa2b71fe3d61e880a3e3d771d4cf6072f",
-              "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
-              "version": "",
-              "init_submodules": false,
-              "recursive_init_submodules": true,
-              "patch_args": [
-                "-p0"
-              ],
-              "patch_cmds": [],
-              "patch_cmds_win": [],
-              "patch_tool": "",
-              "patches": []
+              "path": "/Users/denisshilovich/work/nicegram-assistant-ios"
             }
           },
           "swiftpkg_fetch_node_details_swift": {
@@ -1402,8 +1391,7 @@
         },
         "moduleExtensionMetadata": {
           "explicitRootModuleDirectDeps": [
-            "swiftpkg_nicegram_assistant_ios",
-            "swiftpkg_nicegram_wallet_ios"
+            "swiftpkg_nicegram_assistant_ios"
           ],
           "explicitRootModuleDirectDevDeps": [],
           "useAllRepos": "NO",

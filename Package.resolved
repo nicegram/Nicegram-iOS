@@ -24,7 +24,7 @@
       "location" : "https://github.com/denis15yo/core-swift.git",
       "state" : {
         "branch" : "release/1.0.0",
-        "revision" : "6a36c9b16f84ed28ffbc27994ece3d974da35fdb"
+        "revision" : "5791b36ee8d27cbd4b9532d050dd878c6f2ffa90"
       }
     },
     {
@@ -50,8 +50,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/hmlongco/Factory.git",
       "state" : {
-        "revision" : "51660d788542bf33033a35f9a9660b7005f6e89e",
-        "version" : "2.4.2"
+        "revision" : "fb04a8918848e413d3921d346a23bae7f81088d9",
+        "version" : "2.4.3"
       }
     },
     {
@@ -113,8 +113,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/NCG-6326",
-        "revision" : "8688089fa2b71fe3d61e880a3e3d771d4cf6072f"
+        "branch" : "feat/nft",
+        "revision" : "2b57cec5002450aea7bdd1cce7e515325316eefa"
       }
     },
     {
@@ -122,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "bacbf786664979e1b99783b81a0abaf8ad4735cf"
+        "branch" : "feat/nft",
+        "revision" : "58a8f147f5fa4eabc7cc901763102bee6b7eef4a"
       }
     },
     {
