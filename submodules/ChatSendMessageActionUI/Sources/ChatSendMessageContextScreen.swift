@@ -1,3 +1,6 @@
+// MARK: Nicegram AiChat
+import NGAiChatUI
+//
 // MARK: Nicegram TranslateEnteredMessage
 import NGStrings
 import NGTranslate
@@ -668,6 +671,40 @@ final class ChatSendMessageContextScreenComponent: Component {
                     }
                 )))
             }
+            
+            // MARK: Nicegram AiChat
+            if let improveWritingCommand = TgChatAiHelper.improveWritingCommand() {
+                if case .separator = items.last {} else {
+                    items.append(.separator)
+                }
+                
+                items.append(.action(ContextMenuActionItem(
+                    id: AnyHashable("improveWriting"),
+                    text: improveWritingCommand.title,
+                    icon: { theme in
+                        generateTintedImage(
+                            image: UIImage(systemName: "wand.and.stars"),
+                            color: theme.contextMenu.primaryColor
+                        )
+                    },
+                    action: { [weak self] _, _ in
+                        guard let self, let component = self.component else {
+                            return
+                        }
+                        self.animateOutToEmpty = true
+                        
+                        let request = TgChatAiRequst(
+                            peerId: component.peerId?.id._internalGetInt64Value(),
+                            command: improveWritingCommand,
+                            text: component.textInputView.text
+                        )
+                        TgChatAiHelper.send(request: request)
+                        
+                        self.environment?.controller()?.dismiss()
+                    }
+                )))
+            }
+            //
             
             // MARK: Nicegram TranslateEnteredMessage
             if component.nicegramData.canTranslate {

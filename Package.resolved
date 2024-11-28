@@ -24,7 +24,7 @@
       "location" : "https://github.com/denis15yo/core-swift.git",
       "state" : {
         "branch" : "release/1.0.0",
-        "revision" : "6a36c9b16f84ed28ffbc27994ece3d974da35fdb"
+        "revision" : "5791b36ee8d27cbd4b9532d050dd878c6f2ffa90"
       }
     },
     {
@@ -114,7 +114,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "ce8a2283832865fbcc1685c85ccf08562bd7f935"
+        "revision" : "9276922f033177ea277e5fa7c718683e8cce07cf"
       }
     },
     {
