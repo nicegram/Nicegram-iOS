@@ -6,6 +6,7 @@ import NGStrings
 import NGTelegramIntegration
 import NGTranslate
 import NGUI
+import NGSpeechToText
 //
 import Foundation
 import UIKit
@@ -358,12 +359,8 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
         guard let arguments = self.arguments, let context = self.context, let message = self.message else {
             return
         }
-        
-        // MARK: Nicegram Speech2Text
-        let isNicegramPremium = isPremium()
-        //
-        
-        if !context.isPremium, case .inProgress = self.audioTranscriptionState {
+// MARK: Nicegram NCG-6326 Apple Speech2Text, remove premium check !context.isPremium
+        if case .inProgress = self.audioTranscriptionState {
             return
         }
         
@@ -371,7 +368,8 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
         let premiumConfiguration = PremiumConfiguration.with(appConfiguration: arguments.context.currentAppConfiguration.with { $0 })
         
         let transcriptionText = self.forcedAudioTranscriptionText ?? transcribedText(message: message)
-        if transcriptionText == nil && !arguments.associatedData.alwaysDisplayTranscribeButton.providedByGroupBoost {
+// MARK: Nicegram NCG-6326 Apple Speech2Text, added false to skip this condition
+        if transcriptionText == nil && !arguments.associatedData.alwaysDisplayTranscribeButton.providedByGroupBoost && false {
             if premiumConfiguration.audioTransciptionTrialCount > 0 {
                 if !arguments.associatedData.isPremium {
                     if self.presentAudioTranscriptionTooltip(finished: false) {
@@ -379,40 +377,28 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                     }
                 }
             } else {
-                // MARK: Nicegram Speech2Text, nicegram premium check
-                guard arguments.associatedData.isPremium || isNicegramPremium else {
-                    // MARK: Nicegram Speech2Text, routeToNicegramPremium
-                    if isNicegram() {
-                        PremiumUITgHelper.routeToPremium(
-                            source: .speechToText
-                        )
-                        return
-                    }
-                    //
-                    
-                    if self.hapticFeedback == nil {
-                        self.hapticFeedback = HapticFeedback()
-                    }
-                    self.hapticFeedback?.impact(.medium)
-                    
-                    let tipController = UndoOverlayController(presentationData: presentationData, content: .universal(animation: "anim_voiceToText", scale: 0.065, colors: [:], title: nil, text: presentationData.strings.Message_AudioTranscription_SubscribeToPremium, customUndoText: presentationData.strings.Message_AudioTranscription_SubscribeToPremiumAction, timeout: nil), elevatedLayout: false, position: .top, animateInAsReplacement: false, action: { action in
-                        if case .undo = action {
-                            var replaceImpl: ((ViewController) -> Void)?
-                            let controller = context.sharedContext.makePremiumDemoController(context: context, subject: .voiceToText, forceDark: false, action: {
-                                let controller = context.sharedContext.makePremiumIntroController(context: context, source: .settings, forceDark: false, dismissed: nil)
-                                replaceImpl?(controller)
-                            }, dismissed: nil)
-                            replaceImpl = { [weak controller] c in
-                                controller?.replace(with: c)
-                            }
-                            arguments.controllerInteraction.navigationController()?.pushViewController(controller, animated: true)
-                            
-                            let _ = ApplicationSpecificNotice.incrementAudioTranscriptionSuggestion(accountManager: context.sharedContext.accountManager).startStandalone()
-                        }
-                        return false })
-                    arguments.controllerInteraction.presentControllerInCurrent(tipController, nil)
-                    return
+                if self.hapticFeedback == nil {
+                    self.hapticFeedback = HapticFeedback()
                 }
+                self.hapticFeedback?.impact(.medium)
+                
+                let tipController = UndoOverlayController(presentationData: presentationData, content: .universal(animation: "anim_voiceToText", scale: 0.065, colors: [:], title: nil, text: presentationData.strings.Message_AudioTranscription_SubscribeToPremium, customUndoText: presentationData.strings.Message_AudioTranscription_SubscribeToPremiumAction, timeout: nil), elevatedLayout: false, position: .top, animateInAsReplacement: false, action: { action in
+                    if case .undo = action {
+                        var replaceImpl: ((ViewController) -> Void)?
+                        let controller = context.sharedContext.makePremiumDemoController(context: context, subject: .voiceToText, forceDark: false, action: {
+                            let controller = context.sharedContext.makePremiumIntroController(context: context, source: .settings, forceDark: false, dismissed: nil)
+                            replaceImpl?(controller)
+                        }, dismissed: nil)
+                        replaceImpl = { [weak controller] c in
+                            controller?.replace(with: c)
+                        }
+                        arguments.controllerInteraction.navigationController()?.pushViewController(controller, animated: true)
+                        
+                        let _ = ApplicationSpecificNotice.incrementAudioTranscriptionSuggestion(accountManager: context.sharedContext.accountManager).startStandalone()
+                    }
+                    return false })
+                arguments.controllerInteraction.presentControllerInCurrent(tipController, nil)
+                return
             }
         }
         
@@ -441,53 +427,10 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                 self.requestUpdateLayout(true)
                 
                 // MARK: Nicegram Speech2Text
-                let shouldUseNicegramTranscribe: Bool
-                if #available(iOS 13.0, *) {
-                    let resolveProviderTypeUseCase = SpeechToTextContainer.shared.resolveProviderTypeUseCase()
-                    
-                    let isTelegramPremium = arguments.associatedData.isPremium
-                    let useOpenAi = resolveProviderTypeUseCase() == .openAi
-                    
-                    shouldUseNicegramTranscribe = !isTelegramPremium || useOpenAi
-                } else {
-                    shouldUseNicegramTranscribe = false
-                }
+                let shouldUseNicegramTranscribe = true
                 
                 if shouldUseNicegramTranscribe {
-                    if let mediaFile = message.media.compactMap({ $0 as? TelegramMediaFile }).first(where: { $0.isVoice }) {
-                        
-                        if #available(iOS 13.0, *) {
-                            Task { @MainActor in
-                                let manager = TgSpeechToTextManager(
-                                    mediaBox: context.account.postbox.mediaBox
-                                )
-                                
-                                let result = await manager.convertSpeechToText(
-                                    mediaFile: mediaFile
-                                )
-                                
-                                switch result {
-                                case .success(let text):
-                                    message.updateAudioTranscriptionAttribute(text: text, error: nil, context: context)
-                                case .needsPremium:
-                                    PremiumUITgHelper.routeToPremium(
-                                        source: .speechToText
-                                    )
-                                case .error(let error):
-                                    message.updateAudioTranscriptionAttribute(text: "", error: error, context: context)
-                                    
-                                    let c = getIAPErrorController(
-                                        context: context,
-                                        error.localizedDescription,
-                                        context.sharedContext.currentPresentationData.with({ $0 })
-                                    )
-                                    self.arguments?.controllerInteraction.presentGlobalOverlayController(c, nil)
-                                }
-                                
-                                self.audioTranscriptionState = .expanded
-                            }
-                        }
-                    }
+                    internalConvertSpeechToText()
                 }
                 //
                 else if context.sharedContext.immediateExperimentalUISettings.localTranscription {
@@ -923,12 +866,10 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                     
                     // MARK: Nicegram Speech2Text
                     if #available(iOS 13.0, *) {
-                        let isNicegramPrmeium = isPremium()
-                        
                         let getSpeechToTextConfigUseCase = SpeechToTextContainer.shared.getSpeechToTextConfigUseCase()
                         let alwaysShowButton = getSpeechToTextConfigUseCase().alwaysShowButton
                         
-                        if isNicegramPrmeium || alwaysShowButton {
+                        if alwaysShowButton {
                             displayTranscribe = true
                         }
                     }
@@ -2238,6 +2179,37 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
             view.animateIn()
         }
     }
+    
+// MARK: Nicegram NCG-6326 Apple Speech2Text
+    private func internalConvertSpeechToText(
+        with languageStyle: RecognitionLanguagesControllerStyle = .normal
+    ) {
+        guard let arguments = self.arguments,
+              let context = self.context,
+              let message = self.message,
+              let mediaFile = message.media.compactMap({ $0 as? TelegramMediaFile }).first(where: { $0.isVoice }) else {
+            return
+        }
+        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+        let controllerInteraction = arguments.controllerInteraction
+        
+        convertSpeechToText(
+            languageStyle: languageStyle,
+            context: context,
+            mediaFile: mediaFile,
+            message: message,
+            presentationData: presentationData,
+            controllerInteraction: controllerInteraction
+        ) { [weak self] in
+            self?.audioTranscriptionState = .expanded
+        } closeWithoutSelect: { [weak self] in
+            Queue.mainQueue().async {
+                self?.audioTranscriptionState = .collapsed
+                self?.requestUpdateLayout(true)
+            }
+        }
+    }
+//
 }
 
 

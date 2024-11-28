@@ -7,6 +7,8 @@ import Display
 import Postbox
 import TelegramPresentationData
 
+private let TOP_OFFSET_FROM_VISIBLE_RANGE = 10
+private let BOTTOM_OFFSET_FROM_VISIBLE_RANGE = 10
 private let THRESHOLD_MEMBERS = 1000
 
 struct NicegramAdInChat {
@@ -20,8 +22,7 @@ func nicegramMapChatHistoryEntries(
     nicegramAd: NicegramAdInChat,
     visibleItemRange: ListViewVisibleItemRange?,
     chatPresentationData: ChatPresentationData,
-    cachedPeerData: CachedPeerData?,
-    attConfig: AttConfig
+    cachedPeerData: CachedPeerData?
 ) -> [ChatHistoryEntry] {
     var result = newEntries
     
@@ -47,8 +48,7 @@ func nicegramMapChatHistoryEntries(
         oldEntries: oldEntries,
         result: result,
         nicegramAd: nicegramAd,
-        visibleRange: visibleRange,
-        attConfig: attConfig
+        visibleRange: visibleRange
     )
     result = updateOldAdEntries(
         result: result,
@@ -58,8 +58,7 @@ func nicegramMapChatHistoryEntries(
         result: result,
         nicegramAd: nicegramAd,
         visibleRange: visibleRange,
-        chatPresentationData: chatPresentationData,
-        attConfig: attConfig
+        chatPresentationData: chatPresentationData
     )
     
     return result
@@ -99,8 +98,7 @@ private func insertOldAdEntries(
     oldEntries: [ChatHistoryEntry],
     result: [ChatHistoryEntry],
     nicegramAd: AttAd?,
-    visibleRange: Range<Int>,
-    attConfig: AttConfig
+    visibleRange: Range<Int>
 ) -> [ChatHistoryEntry] {
     struct OldEntry {
         let entry: ChatHistoryEntry
@@ -127,13 +125,10 @@ private func insertOldAdEntries(
             return
         }
         
-        let expandedOffset = attConfig.CHAT_AD_OFFSET + 5
-        let expandedVisibleRange = visibleRange.expanded(
-            leftOffset: expandedOffset,
-            rightOffset: expandedOffset
-        )
+        let isCurrentAd = (nicegramAd?.adId == ad.adId)
+        let isVisible = visibleRange.contains(index)
         
-        if expandedVisibleRange.contains(index) {
+        if isCurrentAd || isVisible {
             let targetIndex: Int
             if let left, let index = result.firstIndex(where: { $0.stableId == left.entry.stableId }) {
                 targetIndex = index + 1
@@ -172,8 +167,7 @@ private func insertNewAdEntries(
     result: [ChatHistoryEntry],
     nicegramAd: AttAd?,
     visibleRange: Range<Int>,
-    chatPresentationData: ChatPresentationData,
-    attConfig: AttConfig
+    chatPresentationData: ChatPresentationData
 ) -> [ChatHistoryEntry] {
     var result = result
     
@@ -191,8 +185,8 @@ private func insertNewAdEntries(
     }
     if !alreadyContainsAd {
         let indicesToInsert = [
-            visibleRange.lowerBound - attConfig.CHAT_AD_OFFSET,
-            visibleRange.upperBound + attConfig.CHAT_AD_OFFSET
+            visibleRange.lowerBound - TOP_OFFSET_FROM_VISIBLE_RANGE,
+            visibleRange.upperBound + BOTTOM_OFFSET_FROM_VISIBLE_RANGE
         ]
         indicesToInsert.forEach { index in
             let index = index.clamped(to: result.startIndex...result.endIndex)
@@ -221,16 +215,5 @@ private extension Array {
             let right = i < self.count - 1 ? self[i + 1] : nil
             body(left, self[i], right)
         }
-    }
-}
-
-private extension Range<Int> {
-    func expanded(
-        leftOffset: Int,
-        rightOffset: Int
-    ) -> Range<Int> {
-        let leftIndex = self.lowerBound - leftOffset
-        let rightIndex = self.upperBound + rightOffset
-        return leftIndex..<rightIndex
     }
 }

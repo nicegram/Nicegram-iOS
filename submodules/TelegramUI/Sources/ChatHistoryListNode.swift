@@ -1686,9 +1686,6 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
             }
             .toSignal()
             .skipError()
-        
-        let getAttConfigUseCase = AttCoreModule.shared.getAttConfigUseCase()
-        let attConfig = getAttConfigUseCase()
         //
         
         let messageViewQueue = Queue.mainQueue()
@@ -1987,8 +1984,7 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                         nicegramAd: nicegramAd,
                         visibleItemRange: self.displayedItemRange.visibleRange,
                         chatPresentationData: chatPresentationData,
-                        cachedPeerData: cachedPeerData,
-                        attConfig: attConfig
+                        cachedPeerData: cachedPeerData
                     )
                 }
                 //

@@ -106,9 +106,9 @@
 "Messages.Translate" = "번역";
 "Messages.UndoTranslate" = "번역 취소";
 "Messages.TranslateError" = "죄송합니다. 번역 할 수 없습니다.";
-"Messages.SpeechToText" = "음성-텍스트 변환";
-"Messages.UndoSpeechToText" = "음성-텍스트 변환 취소";
-"Messages.SelectAllFromUser" = "이 사용자에게서 온 모든 메시지 선택 \n\n";
+"Messages.SelectAllFromUser" = "이 사용자에게서 온 모든 메시지 선택 
+
+";
 "Messages.ToLanguage" = "언어";
 "Messages.ToLanguage.WithCode" = "언어: %@";
 "Messages.TranslateError.ToLanguageNotFound" = "텍스트를 번역할 언어를 결정할 수 없습니다. 수동으로 선택하고 다시 시도하십시오.";
@@ -155,6 +155,7 @@
 "NicegramSettings.Unblock.Header" = "차단 해제";
 "NicegramSettings.Unblock.Button" = "차단해제 안내";
 "NicegramSettings.Other.hideReactions" = "반응 숨기기";
+"NicegramSettings.Other.hideReactionsToYourMessages" = "메시지에 대한 반응 숨기기";
 "NicegramSettings.RoundVideos.DownloadVideos" = "사진앨범으로 동영상 다운로드";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "언어 무시하기";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "앱은 기기에서 각 메시지의 언어를 감지합니다. 배터리 수명에 영향을 줄 수 있는 고성능 작업입니다.";
@@ -225,3 +226,9 @@
 "NicegramFeed.Title" = "피드";
 "NicegramFeed.Add" = "피드에 추가";
 "NicegramFeed.Remove" = "피드에서 제거";
+
+/*SpeechToText*/
+"NicegramSpeechToText.Language.Title" = "Speech-2-Text";
+"NicegramSpeechToText.Language.Whisper" = "⚠️ 정확도를 높이기 위해 음성 메시지의 언어를 선택하거나, [Whisper를 활성화](https://my.nicegram.app/)하여 수월한 자동 인식을 사용하세요";
+"NicegramSpeechToText.Language.Choose" = "인식할 언어 선택";
+"NicegramSpeechToText.SelectLanguage" = "언어 선택";

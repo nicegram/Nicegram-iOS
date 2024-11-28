@@ -68,7 +68,8 @@
 "NiceFeatures.Use.DataStorage" = "Per favore, usa «%1» per configurare il tuo browser predefinito";
 "NiceFeatures.Browser.Header" = "URL";
 "NiceFeatures.Browser.UseBrowser" = "Apri link nel browser";
-"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram aprirà i link in un browser esterno invece di farlo nell'app.\nIl browser selezionato deve essere installato.";
+"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram aprirà i link in un browser esterno invece di farlo nell'app.
+Il browser selezionato deve essere installato.";
 "ChatFilter.Missed" = "Mancati";
 
 /*Premium*/
@@ -106,8 +107,6 @@
 "Messages.Translate" = "Traduci";
 "Messages.UndoTranslate" = "Annulla traduzione";
 "Messages.TranslateError" = "Spiacente, traduzione non disponibile.";
-"Messages.SpeechToText" = "Speech2Text";
-"Messages.UndoSpeechToText" = "Annulla Speech2Text";
 "Messages.SelectAllFromUser" = "Seleziona tutto da questo utente";
 "Messages.ToLanguage" = "Nella lingua";
 "Messages.ToLanguage.WithCode" = "Nella lingua: %@";
@@ -155,6 +154,7 @@
 "NicegramSettings.Unblock.Header" = "Sblocca";
 "NicegramSettings.Unblock.Button" = "Guida allo sblocco";
 "NicegramSettings.Other.hideReactions" = "Nascondi Reazioni";
+"NicegramSettings.Other.hideReactionsToYourMessages" = "Nascondi reazioni ai tuoi messaggi";
 "NicegramSettings.RoundVideos.DownloadVideos" = "Scarica i video nella Galleria";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "Ignora Lingue";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "L'app rileva la lingua di ogni messaggio sul tuo dispositivo. È un'attività che consuma tante risorse e che può influire sulla durata della batteria.";
@@ -225,3 +225,9 @@
 "NicegramFeed.Title" = "Feed";
 "NicegramFeed.Add" = "Aggiungi al feed";
 "NicegramFeed.Remove" = "Rimuovi dal feed";
+
+/*SpeechToText*/
+"NicegramSpeechToText.Language.Title" = "Speech-2-Text";
+"NicegramSpeechToText.Language.Whisper" = "⚠️ Seleziona la lingua del tuo messaggio vocale per aumentare l'accuratezza, oppure [attiva Whisper](https://my.nicegram.app/) per un riconoscimento automatico senza sforzo";
+"NicegramSpeechToText.Language.Choose" = "Scegli una lingua per il riconoscimento";
+"NicegramSpeechToText.SelectLanguage" = "Seleziona la lingua";

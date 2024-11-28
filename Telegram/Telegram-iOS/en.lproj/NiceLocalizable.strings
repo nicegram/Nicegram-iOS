@@ -106,8 +106,6 @@
 "Messages.Translate" = "Translate";
 "Messages.UndoTranslate" = "Undo Translate";
 "Messages.TranslateError" = "Sorry, translation unavailable.";
-"Messages.SpeechToText" = "Speech2Text";
-"Messages.UndoSpeechToText" = "Undo Speech2Text";
 "Messages.SelectAllFromUser" = "Select All From This User";
 "Messages.ToLanguage" = "To Language";
 "Messages.ToLanguage.WithCode" = "To Language: %@";
@@ -155,6 +153,7 @@
 "NicegramSettings.Unblock.Header" = "Unblock";
 "NicegramSettings.Unblock.Button" = "Unblock Guide";
 "NicegramSettings.Other.hideReactions" = "Hide Reactions";
+"NicegramSettings.Other.hideReactionsToYourMessages" = "Hide reactions to your messages";
 "NicegramSettings.RoundVideos.DownloadVideos" = "Download videos to Gallery";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "Ignore Languages";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "App detects language of each message on your device. It's a high-performance task which can affect your battery life.";
@@ -225,3 +224,9 @@
 "NicegramFeed.Title" = "Feed";
 "NicegramFeed.Add" = "Add to Feed";
 "NicegramFeed.Remove" = "Remove from Feed";
+
+/*SpeechToText*/
+"NicegramSpeechToText.Language.Title" = "Speеch-2-Text";
+"NicegramSpeechToText.Language.Whisper" = "⚠️ Select the language of your voice message to enhance accuracy, or [activate Whisper](https://my.nicegram.app/) for effortless automatic recognition";
+"NicegramSpeechToText.Language.Choose" = "Choose a language for recognition";
+"NicegramSpeechToText.SelectLanguage" = "Select Language";
