@@ -31,8 +31,6 @@ import ReactionListContextMenuContent
 import TelegramUIPreferences
 // MARK: Nicegram Imports
 import FeatPremiumUI
-import struct NGAiChat.AiChatTgHelper
-import struct NGAiChat.AiContextMenuNotificationPayload
 import NGAiChatUI
 import NGStrings
 import NGTranslate
@@ -1956,7 +1954,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             // MARK: Nicegram AiChat
             let messageTextIsEmpty = message.text.isEmpty
             if #available(iOS 13.0, *), !messageTextIsEmpty {
-                let commands = AiChatTgHelper.getCommandsForContextMenu()
+                let commands = TgChatAiHelper.getCommandsForMessage()
                 
                 if !commands.isEmpty {
                     actions.append(.action(ContextMenuActionItem(text: AiChatUITgHelper.botName, icon: { theme in
@@ -1966,18 +1964,12 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                         
                         for command in commands {
                             items.append(.action(ContextMenuActionItem(text: command.title, icon: { _ in nil }, action: { _, f in
-                                let payload = AiContextMenuNotificationPayload(
+                                let request = TgChatAiRequst(
                                     peerId: chatPresentationInterfaceState.chatLocation.peerId?.id._internalGetInt64Value(),
                                     command: command,
                                     text: message.text
                                 )
-                                NotificationCenter.default.post(
-                                    name: AiChatTgHelper.aiContextMenuNotification,
-                                    object: nil,
-                                    userInfo: [
-                                        AiChatTgHelper.aiContextMenuNotificationPayloadKey: payload
-                                    ]
-                                )
+                                TgChatAiHelper.send(request: request)
                                 
                                 f(.dismissWithoutContent)
                             })))
