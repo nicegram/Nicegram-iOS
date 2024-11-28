@@ -105,6 +105,8 @@
 "Messages.Translate" = "Tarjima";
 "Messages.UndoTranslate" = "Tarjimani bekor qilish";
 "Messages.TranslateError" = "Kechirasiz, tarjima mavjud emas.";
+"Messages.SpeechToText" = "Nutq2Matn";
+"Messages.UndoSpeechToText" = "Nutq2Matnni bekor qilish";
 "Messages.SelectAllFromUser" = "Bu foydalanuvchidan hammasini tanlang";
 "Messages.ToLanguage" = "Tilga";
 "Messages.ToLanguage.WithCode" = "Tilga: %@";

@@ -2,8 +2,7 @@
 
 /*Common*/
 "Nicegram.PrivacyPolicy" = "سياسة الخصوصية";
-"Nicegram.EULA" = "اتفاقية ترخيص المستخدم النهائي
-";
+"Nicegram.EULA" = "اتفاقية ترخيص المستخدم النهائي\n";
 
 /*ChatFilter*/
 "ChatFilter.Bots" = "بوتات";
@@ -107,6 +106,8 @@
 "Messages.Translate" = "ترجمة";
 "Messages.UndoTranslate" = "التراجع عن الترجمة";
 "Messages.TranslateError" = "عفوًا، الترجمة غير متوفرة.";
+"Messages.SpeechToText" = "نص البيان2";
+"Messages.UndoSpeechToText" = "إلغاء نص البيان2";
 "Messages.SelectAllFromUser" = "حدد كافة الرسائل الواردة من هذا المستخدم";
 "Messages.ToLanguage" = "إلى اللغة";
 "Messages.ToLanguage.WithCode" = "إلى اللغة: %@";
@@ -154,7 +155,6 @@
 "NicegramSettings.Unblock.Header" = "فتح";
 "NicegramSettings.Unblock.Button" = "دليل الفتح";
 "NicegramSettings.Other.hideReactions" = "إخفاء ردود الفعل";
-"NicegramSettings.Other.hideReactionsToYourMessages" = "إخفاء ردود الفعل على رسائلك";
 "NicegramSettings.RoundVideos.DownloadVideos" = "نزّل الفيديوهات إلى المعرض";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "تجاهل اللغات";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "التطبيق يحدد لغات كل رسالة في جهازك. ويتطلب اداء عالي من الجهاز و بالتالي إستهلاك البطارية.";
@@ -225,9 +225,3 @@
 "NicegramFeed.Title" = "فيد";
 "NicegramFeed.Add" = "أضف إلى الخلاصة";
 "NicegramFeed.Remove" = "احذف من الخلاصة";
-
-/*SpeechToText*/
-"NicegramSpeechToText.Language.Title" = "Speech-2-Text";
-"NicegramSpeechToText.Language.Whisper" = "⚠️ حدد لغة رسالتك الصوتية لتحسين الدقة، أو [فعّل Whisper](https://my.nicegram.app/) للتعرف التلقائي بدون جهد";
-"NicegramSpeechToText.Language.Choose" = "اختر لغة للتعرف عليها";
-"NicegramSpeechToText.SelectLanguage" = "حدد اللغة";

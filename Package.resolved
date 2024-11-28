@@ -24,7 +24,7 @@
       "location" : "https://github.com/denis15yo/core-swift.git",
       "state" : {
         "branch" : "release/1.0.0",
-        "revision" : "5791b36ee8d27cbd4b9532d050dd878c6f2ffa90"
+        "revision" : "6a36c9b16f84ed28ffbc27994ece3d974da35fdb"
       }
     },
     {
@@ -113,8 +113,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/NCG-6326",
-        "revision" : "19004555c3a1a8697c2e068a71f72e392a7b5823"
+        "branch" : "develop",
+        "revision" : "ba367c214e83340cad35f1d85096e8cd9fae43d5"
       }
     },
     {
@@ -123,7 +123,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "bacbf786664979e1b99783b81a0abaf8ad4735cf"
+        "revision" : "0520ea0bbe945c808fd283d9977d06bd6a5e1ed3"
       }
     },
     {

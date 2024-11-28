@@ -38,8 +38,6 @@ import NGStrings
 import NGTranslate
 import NGUI
 import PeerInfoUI
-import NGData
-import NGSpeechToText
 //
 import TranslateUI
 import DebugSettingsUI
@@ -947,9 +945,6 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
     return dataSignal
     |> deliverOnMainQueue
     |> map { data, updatingMessageMedia, infoSummaryData, appConfig, isMessageRead, messageViewsPrivacyTips, availableReactions, translationSettings, loggingSettings, notificationSoundList, accountPeer -> ContextController.Items in
-// MARK: Nicegram NCG-6326 Apple Speech2Text
-        let nicegramPremium = isPremium()
-//
         let isPremium = accountPeer?.isPremium ?? false
         
         var actions: [ContextMenuItem] = []
@@ -1044,31 +1039,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                 break
             }
         }
-// MARK: Nicegram NCG-6326 Apple Speech2Text
-        if let mediaFile = message.media.compactMap({ $0 as? TelegramMediaFile }).first(where: { $0.isVoice }),
-           !(nicegramPremium && NGSettings.useOpenAI) {
-            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-            didRateAudioTranscription = true
-            actions.append(.action(ContextMenuActionItem(
-                text: l("NicegramSpeechToText.SelectLanguage"),
-                icon: { theme in
-                    nil
-                }, action: { _, f in
-                    convertSpeechToText(
-                        from: .chat,
-                        languageStyle: .whisper,
-                        context: context,
-                        mediaFile: mediaFile,
-                        message: message,
-                        presentationData: presentationData,
-                        controllerInteraction: controllerInteraction
-                    )
-                    f(.dismissWithoutContent)
-                }
-            )))
-            actions.append(.separator)
-        }
-//
+        
         var hasRateTranscription = false
         if hasExpandedAudioTranscription, let audioTranscription = audioTranscription, !didRateAudioTranscription {
             hasRateTranscription = true
@@ -2143,7 +2114,64 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                 })))
             }
             //
-
+            
+            // MARK: Nicegram Speech2Text
+            
+            if !isSecretChat,
+               let mediaFile = message.media.compactMap({ $0 as? TelegramMediaFile }).first(where: { $0.isVoice }) {
+                let title: String
+                let mode: String
+                if message.isSpeechToTextDone() {
+                    title = l("Messages.UndoSpeechToText")
+                    mode = "undo"
+                } else {
+                    title = l("Messages.SpeechToText")
+                    mode = "do"
+                }
+                
+                let action = ContextMenuActionItem(
+                    text: title,
+                    icon: nicegramIcon,
+                    action: { controller, f in
+                        if mode == "do" {
+                            if #available(iOS 13.0, *) {
+                                Task { @MainActor in
+                                    let manager = TgSpeechToTextManager(mediaBox: context.account.postbox.mediaBox)
+                                    
+                                    message.setSpeechToTextLoading(context: context)
+                                    
+                                    let result = await manager.convertSpeechToText(
+                                        mediaFile: mediaFile
+                                    )
+                                    
+                                    switch result {
+                                    case .success(let translation):
+                                        message.setSpeechToTextTranslation(translation, context: context)
+                                    case .needsPremium:
+                                        message.removeSpeechToTextMeta(context: context)
+                                        
+                                        PremiumUITgHelper.routeToPremium(
+                                            source: .speechToText
+                                        )
+                                    case .error(let error):
+                                        message.removeSpeechToTextMeta(context: context)
+                                        
+                                        let c = getIAPErrorController(context: context, error.localizedDescription, presentationData)
+                                        controllerInteraction.presentGlobalOverlayController(c, nil)
+                                    }
+                                }
+                            }
+                        } else {
+                            message.removeSpeechToTextMeta(context: context)
+                        }
+                        
+                        f(.default)
+                    }
+                )
+                
+                actions.append(.action(action))
+            }
+            //
             var didAddSeparator = false
             if !selectAll || messages.count == 1 {
                 if !actions.isEmpty && !didAddSeparator {

@@ -106,11 +106,12 @@
 "Messages.Translate" = "Çevir";
 "Messages.UndoTranslate" = "Çeviriyi Geri Al";
 "Messages.TranslateError" = "Üzgünüz, çeviri kullanılamıyor.";
+"Messages.SpeechToText" = "Konuşmadan Metne";
+"Messages.UndoSpeechToText" = "Konuşmadan Metne Özelliğini Geri Al";
 "Messages.SelectAllFromUser" = "Bu Kullanıcıdan Olan Bütün Mesajları Seç";
 "Messages.ToLanguage" = "Hedef Dil";
 "Messages.ToLanguage.WithCode" = "Hedef Dil: %@";
-"Messages.TranslateError.ToLanguageNotFound" = "Metni çevirmek istediğiniz dili tespit edemedik. Lütfen manuel olarak seçin ve tekrar deneyin.
-";
+"Messages.TranslateError.ToLanguageNotFound" = "Metni çevirmek istediğiniz dili tespit edemedik. Lütfen manuel olarak seçin ve tekrar deneyin.\n";
 "Messages.ReplyPrivately" = "Özelden Cevapla";
 "Messages.DeleteAllSystemMessages" = "Tümünü Sil";
 
@@ -154,7 +155,6 @@
 "NicegramSettings.Unblock.Header" = "Engeli Kaldır";
 "NicegramSettings.Unblock.Button" = "Rehberin Engelini Kaldır";
 "NicegramSettings.Other.hideReactions" = "Tepkileri Gizle";
-"NicegramSettings.Other.hideReactionsToYourMessages" = "Mesajlarına gelen tepkileri gizle";
 "NicegramSettings.RoundVideos.DownloadVideos" = "Videoları galeriye indir";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "Dilleri görmezden gel";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Uygulama, cihazınızdaki her mesajın dilini algılar. Bu, pil ömrünüzü etkileyebilecek yüksek öncelikli bir görevdir.";
@@ -225,9 +225,3 @@
 "NicegramFeed.Title" = "Akış";
 "NicegramFeed.Add" = "Akışa ekle";
 "NicegramFeed.Remove" = "Akıştan kaldır";
-
-/*SpeechToText*/
-"NicegramSpeechToText.Language.Title" = "Speech-2-Text";
-"NicegramSpeechToText.Language.Whisper" = "⚠️ Sesli mesajınızın dilini seçerek doğruluğu artırın, veya [Whisper'ı etkinleştirin](https://my.nicegram.app/) zahmetsiz otomatik tanıma için";
-"NicegramSpeechToText.Language.Choose" = "Tanıma için bir dil seçin";
-"NicegramSpeechToText.SelectLanguage" = "Dil Seç";

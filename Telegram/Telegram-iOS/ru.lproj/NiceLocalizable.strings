@@ -106,6 +106,8 @@
 "Messages.Translate" = "Перевод";
 "Messages.UndoTranslate" = "Отменить Перевод";
 "Messages.TranslateError" = "К сожалению, перевод недоступен.";
+"Messages.SpeechToText" = "Речь в текст";
+"Messages.UndoSpeechToText" = "Отменить «Речь в текст»";
 "Messages.SelectAllFromUser" = "Выбрать все от этого пользователя";
 "Messages.ToLanguage" = "На язык";
 "Messages.ToLanguage.WithCode" = "На язык: %@";
@@ -153,7 +155,6 @@
 "NicegramSettings.Unblock.Header" = "Разблокировать";
 "NicegramSettings.Unblock.Button" = "Руководство по разблокировке";
 "NicegramSettings.Other.hideReactions" = "Скрыть реакции";
-"NicegramSettings.Other.hideReactionsToYourMessages" = "Скрыть реакции на ваши сообщения";
 "NicegramSettings.RoundVideos.DownloadVideos" = "Скачивать видео в галерею";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "Игнорировать языки";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Приложение определяет язык для каждого сообщения на Вашем устройстве. Поскольку это высокопроизводительная задача, время работы аккумулятора может уменьшиться.";
@@ -224,9 +225,3 @@
 "NicegramFeed.Title" = "Лента";
 "NicegramFeed.Add" = "Добавить в ленту";
 "NicegramFeed.Remove" = "Удалить из ленты";
-
-/*SpeechToText*/
-"NicegramSpeechToText.Language.Title" = "Speech-2-Text";
-"NicegramSpeechToText.Language.Whisper" = "⚠️ Выберите язык голосового сообщения для повышения точности, или [активируйте Whisper] (https://my.nicegram.app/) для упрощения автоматического распознавания";
-"NicegramSpeechToText.Language.Choose" = "Выберите язык для распознавания";
-"NicegramSpeechToText.SelectLanguage" = "Выбрать язык";
