@@ -441,7 +441,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         
         self.badgeDisposable = (combineLatest(renderedTotalUnreadCount(accountManager: context.sharedContext.accountManager, engine: context.engine), self.presentationDataValue.get()) |> deliverOnMainQueue).startStrict(next: { [weak self] count, presentationData in
             if let strongSelf = self {
-                if count.0 == 0 {
+// MARK: Nicegram NCG-6652 Hide UI notifications, NGSettings.hideUnreadCounters
+                if count.0 == 0 || NGSettings.hideUnreadCounters {
                     strongSelf.tabBarItem.badgeValue = ""
                 } else {
                     strongSelf.tabBarItem.badgeValue = compactNumericCountString(Int(count.0), decimalSeparator: presentationData.dateTimeFormat.decimalSeparator)
@@ -3883,6 +3884,23 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 }
             }
             let filtersLimit = isPremium == false ? limits.maxFoldersCount : nil
+// MARK: Nicegram NCG-6652 Hide UI notifications
+            resolvedItems = resolvedItems.map { filter -> ChatListFilterTabEntry in
+                switch filter {
+                case let .all(unreadCount):
+                    return .all(unreadCount: NGSettings.hideUnreadCounters ? 0 : unreadCount)
+                case let .filter(id, text, unread):
+                    return .filter(
+                        id: id,
+                        text: text,
+                        unread: .init(
+                            value: NGSettings.hideUnreadCounters ? 0 : unread.value,
+                            hasUnmuted: unread.hasUnmuted
+                        )
+                    )
+                }
+            }
+//
             // MARK: Nicegram (displayTabsAtBottom instead false)
             strongSelf.tabContainerData = (resolvedItems, displayTabsAtBottom, filtersLimit)
             var availableFilters: [ChatListContainerNodeFilter] = []

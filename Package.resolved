@@ -24,7 +24,7 @@
       "location" : "https://github.com/denis15yo/core-swift.git",
       "state" : {
         "branch" : "release/1.0.0",
-        "revision" : "6a36c9b16f84ed28ffbc27994ece3d974da35fdb"
+        "revision" : "5791b36ee8d27cbd4b9532d050dd878c6f2ffa90"
       }
     },
     {
@@ -50,8 +50,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/hmlongco/Factory.git",
       "state" : {
-        "revision" : "f350e0d71ba241b392f70519a67e769d5e3858d4",
-        "version" : "2.4.1"
+        "revision" : "fb04a8918848e413d3921d346a23bae7f81088d9",
+        "version" : "2.4.3"
       }
     },
     {
@@ -114,7 +114,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "master",
-        "revision" : "df0f5d6db8a979f215d18b05e889e5c66d64fe28"
+        "revision" : "62e34d8c7943aaa9d07fd956ff2d13d218c8be23"
       }
     },
     {
@@ -123,7 +123,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "master",
-        "revision" : "6417219110dae50a9dd129c61795dc469ceb12d0"
+        "revision" : "4118d0178e2c47622d038a210bad90a94ae4cdf0"
       }
     },
     {
@@ -221,8 +221,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-http-types",
       "state" : {
-        "revision" : "ae67c8178eb46944fd85e4dc6dd970e1f3ed6ccd",
-        "version" : "1.3.0"
+        "revision" : "ef18d829e8b92d731ad27bb81583edd2094d1ce3",
+        "version" : "1.3.1"
       }
     },
     {
@@ -338,8 +338,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "c4907d444673e7eb4c131b67ce2ced5b2d2cb09e",
-        "version" : "4.1.16"
+        "revision" : "e34e9ba2ed6e571e2b0531a5cfe1495cea5258f7",
+        "version" : "4.1.19"
       }
     },
     {

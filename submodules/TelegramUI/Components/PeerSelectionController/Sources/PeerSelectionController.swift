@@ -9,7 +9,9 @@ import ProgressNavigationButtonNode
 import AccountContext
 import SearchUI
 import ChatListUI
-
+// MARK: Nicegram NCG-6652 Hide UI notifications
+import NGData
+//
 public final class PeerSelectionControllerImpl: ViewController, PeerSelectionController {
     private let context: AccountContext
     
@@ -444,8 +446,23 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
                 }
             }
             
-            let resolvedItems = filterItems
-        
+// MARK: Nicegram NCG-6652 Hide UI notifications
+            let resolvedItems = filterItems.map { filter -> ChatListFilterTabEntry in
+                switch filter {
+                case let .all(unreadCount):
+                    return .all(unreadCount: NGSettings.hideUnreadCounters ? 0 : unreadCount)
+                case let .filter(id, text, unread):
+                    return .filter(
+                        id: id,
+                        text: text,
+                        unread: .init(
+                            entry: unread,
+                            hideUnreadCounters: NGSettings.hideUnreadCounters
+                        )
+                    )
+                }
+            }
+//
             var wasEmpty = false
             if let tabContainerData = strongSelf.tabContainerData {
                 wasEmpty = tabContainerData.0.count <= 1 || tabContainerData.1

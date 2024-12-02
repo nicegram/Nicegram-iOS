@@ -2,6 +2,9 @@ import Foundation
 import Postbox
 
 public enum TelegramBaseTheme: Int32, Codable {
+    // MARK: Nicegram DefaultTheme
+    case nicegram = -1
+    //
     case classic
     case day
     case night

@@ -111,8 +111,7 @@
 "Messages.SelectAllFromUser" = "Bu Kullanıcıdan Olan Bütün Mesajları Seç";
 "Messages.ToLanguage" = "Hedef Dil";
 "Messages.ToLanguage.WithCode" = "Hedef Dil: %@";
-"Messages.TranslateError.ToLanguageNotFound" = "Metni çevirmek istediğiniz dili tespit edemedik. Lütfen manuel olarak seçin ve tekrar deneyin.
-";
+"Messages.TranslateError.ToLanguageNotFound" = "Metni çevirmek istediğiniz dili tespit edemedik. Lütfen manuel olarak seçin ve tekrar deneyin.\n";
 "Messages.ReplyPrivately" = "Özelden Cevapla";
 "Messages.DeleteAllSystemMessages" = "Tümünü Sil";
 
@@ -161,6 +160,13 @@
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Uygulama, cihazınızdaki her mesajın dilini algılar. Bu, pil ömrünüzü etkileyebilecek yüksek öncelikli bir görevdir.";
 "Premium.rememberFolderOnExit" = "Çıkışta şu anki klasörü hatırla";
 "NicegramSettings.HideStories" = "Hikayeleri Gizle";
+"NicegramSettings.HideBadgeCounters" = "Tepki bildirimlerini gizle";
+"NicegramSettings.HideUnreadCounters" = "Okunmamış sayacını gizle";
+"NicegramSettings.HideMentionNotification" = "Bahsetme bildirimlerini gizle";
+"NicegramSettings.EnableAnimationsInChatList" = "Sohbet listesinde animasyonlar";
+"NicegramSettings.EnableGrayscaleAll" = "Tam Ekran Gri Tonlama";
+"NicegramSettings.EnableGrayscaleInChatList" = "Sohbet listesinde gri tonlama";
+"NicegramSettings.EnableGrayscaleInChat" = "Sohbette gri tonlama";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Şundan daha eski:";

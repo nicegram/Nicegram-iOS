@@ -4,6 +4,12 @@ import FeatPhoneEntryBanner
 // MARK: Nicegram Auth
 import FeatAuth
 //
+// MARK: Nicegram DailyLoginLimit
+import CoreSwiftUI
+//
+// MARK: Nicegram Onboarding
+import FeatOnboarding
+//
 import Foundation
 import UIKit
 import Display
@@ -203,6 +209,23 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
             )
         }
         //
+        
+        // MARK: Nicegram Onboarding
+        if #available(iOS 15.0, *) {
+            let proceedNode = self.controllerNode.proceedNode
+            setupPhoneEntryGuideButton(
+                config: PhoneEntryGuideButtonConfig(
+                    buttonBackgroundColor: proceedNode.theme.disabledBackgroundColor ?? .clear,
+                    buttonForegroundColor: .label,
+                    buttonHeight: proceedNode.buttonHeight,
+                    buttonCornerRadius: proceedNode.buttonCornerRadius,
+                    separatorColor: self.presentationData.theme.list.itemPlainSeparatorColor
+                ),
+               view: self.controllerNode.ngGuideButtonNode.view,
+               controller: self
+           )
+        }
+        //
     }
     
     public func updateCountryCode() {
@@ -226,6 +249,10 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
         }
     }
     
+    // MARK: Nicegram DailyLoginLimit
+    private var sawDailyLoginLimitPopup = false
+    //
+    
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
@@ -236,6 +263,18 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
         // MARK: Nicegram AppReviewLogin
         if AppReviewLogin.isActive {
             self.loginWithNumber?(AppReviewLogin.phone, self.controllerNode.syncContacts)
+        }
+        //
+        
+        // MARK: Nicegram DailyLoginLimit
+        if #available(iOS 15.0, *) {
+            if self.otherAccountPhoneNumbers.1.count >= 3, !self.sawDailyLoginLimitPopup {
+                self.sawDailyLoginLimitPopup = true
+                Task {
+                    try? await Task.sleep(seconds: 0.5)
+                    DailyLoginLimitPopupPresenter().present()
+                }
+            }
         }
         //
     }

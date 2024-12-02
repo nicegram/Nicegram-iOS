@@ -2,8 +2,7 @@
 
 /*Common*/
 "Nicegram.PrivacyPolicy" = "سياسة الخصوصية";
-"Nicegram.EULA" = "اتفاقية ترخيص المستخدم النهائي
-";
+"Nicegram.EULA" = "اتفاقية ترخيص المستخدم النهائي\n";
 
 /*ChatFilter*/
 "ChatFilter.Bots" = "بوتات";
@@ -161,6 +160,13 @@
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "التطبيق يحدد لغات كل رسالة في جهازك. ويتطلب اداء عالي من الجهاز و بالتالي إستهلاك البطارية.";
 "Premium.rememberFolderOnExit" = "تذكر المجلد الحالي عند الخروج";
 "NicegramSettings.HideStories" = "إخفاء الستوري";
+"NicegramSettings.HideBadgeCounters" = "إخفاء إشعارات ردود الفعل";
+"NicegramSettings.HideUnreadCounters" = "إخفاء عدادات الغير مقروءة";
+"NicegramSettings.HideMentionNotification" = "إخفاء إشعارات الإشارة";
+"NicegramSettings.EnableAnimationsInChatList" = "الرسوم المتحركة في قائمة الدردشة";
+"NicegramSettings.EnableGrayscaleAll" = "الشاشة كاملة بالأبيض والأسود";
+"NicegramSettings.EnableGrayscaleInChatList" = "الرمادي في قائمة الدردشة";
+"NicegramSettings.EnableGrayscaleInChat" = "الرمادي في الدردشة";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "أقدم من";

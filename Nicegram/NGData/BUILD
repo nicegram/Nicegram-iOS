@@ -10,7 +10,8 @@ swift_library(
         "//Nicegram/NGRequests:NGRequests",
         "//Nicegram/NGLogging:NGLogging",
         "//Nicegram/NGEnv:NGEnv",
-        "//Nicegram/NGAppCache:NGAppCache"
+        "//Nicegram/NGAppCache:NGAppCache",
+        "@swiftpkg_nicegram_assistant_ios//:NGCore",
     ],
     visibility = [
         "//visibility:public",

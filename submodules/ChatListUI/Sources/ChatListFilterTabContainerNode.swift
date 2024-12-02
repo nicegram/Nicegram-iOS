@@ -463,6 +463,11 @@ public struct ChatListFilterTabEntryUnreadCount: Equatable {
         self.value = value
         self.hasUnmuted = hasUnmuted
     }
+    
+    public init(entry: ChatListFilterTabEntryUnreadCount, hideUnreadCounters: Bool) {
+        self.value = hideUnreadCounters ? 0 : entry.value
+        self.hasUnmuted = entry.hasUnmuted
+    }
 }
 
 public enum ChatListFilterTabEntry: Equatable {

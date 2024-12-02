@@ -160,6 +160,13 @@
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Приложение определяет язык для каждого сообщения на Вашем устройстве. Поскольку это высокопроизводительная задача, время работы аккумулятора может уменьшиться.";
 "Premium.rememberFolderOnExit" = "Запомнить текущую папку при выходе";
 "NicegramSettings.HideStories" = "Скрыть истории";
+"NicegramSettings.HideBadgeCounters" = "Скрыть уведомления о реакциях";
+"NicegramSettings.HideUnreadCounters" = "Скрыть счетчики непрочитанных сообщений";
+"NicegramSettings.HideMentionNotification" = "Скрыть уведомления об упоминаниях";
+"NicegramSettings.EnableAnimationsInChatList" = "Анимации в списке чата";
+"NicegramSettings.EnableGrayscaleAll" = "Полноэкранный черно-белый режим";
+"NicegramSettings.EnableGrayscaleInChatList" = "Оттенки серого в списке чата";
+"NicegramSettings.EnableGrayscaleInChat" = "Оттенки серого в чате";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Старше, чем";

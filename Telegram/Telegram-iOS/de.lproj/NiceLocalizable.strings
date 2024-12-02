@@ -160,6 +160,13 @@
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Die App erkennt die Sprache jeder Nachricht auf deinem Gerät. Das ist eine Aufgabe mit hoher Priorität, die sich auf die Akkulaufzeit auswirken kann.";
 "Premium.rememberFolderOnExit" = "Aktuellen Ordner beim Beenden merken";
 "NicegramSettings.HideStories" = "Stories verbergen";
+"NicegramSettings.HideBadgeCounters" = "Reaktionsbenachrichtigungen ausblenden";
+"NicegramSettings.HideUnreadCounters" = "Ungelesene Zähler verbergen";
+"NicegramSettings.HideMentionNotification" = "Erwähnungsbenachrichtigungen verbergen";
+"NicegramSettings.EnableAnimationsInChatList" = "Animationen in der Chatliste";
+"NicegramSettings.EnableGrayscaleAll" = "Vollbild-Graustufen";
+"NicegramSettings.EnableGrayscaleInChatList" = "Graustufen in der Chatliste";
+"NicegramSettings.EnableGrayscaleInChat" = "Graustufen im Chat";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Älter als";

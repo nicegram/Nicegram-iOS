@@ -62,6 +62,7 @@ import MediaEditor
 import TelegramUIDeclareEncodables
 import ContextMenuScreen
 import MetalEngine
+import TranslateUI
 
 #if canImport(AppCenter)
 import AppCenter
@@ -544,6 +545,12 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             UIDevice.current.isBatteryMonitoringEnabled = true
         }
         
+        #if DEBUG
+        if #available(iOS 18.0, *) {
+            let translationService = ExperimentalInternalTranslationServiceImpl(view: hostView.containerView)
+            engineExperimentalInternalTranslationService = translationService
+        }
+        #endif
         
         let clearNotificationsManager = ClearNotificationsManager(getNotificationIds: { completion in
             if #available(iOS 10.0, *) {
@@ -1621,8 +1628,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         } else {
             if #available(iOS 15.0, *),
                let rootController = window.rootViewController {
-                let controller = onboardingController(
-                    onComplete: { [weak rootController] in
+                let controller = LaunchOnboardingFactory().makeController(
+                    launchOnboardingBridge: LaunchOnboardingBridgeImpl(),
+                    onFinish: { [weak rootController] in
                         AppCache.wasOnboardingShown = true
                         
                         rootController?.dismiss(animated: true)
@@ -1838,15 +1846,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         
         let timestamp = Int(CFAbsoluteTimeGetCurrent())
         let minReindexTimestamp = timestamp - 2 * 24 * 60 * 60
-        if let indexTimestamp = UserDefaults.standard.object(forKey: "TelegramCacheIndexTimestamp") as? NSNumber, indexTimestamp.intValue >= minReindexTimestamp {
-            #if DEBUG && false
-            Logger.shared.log("App \(self.episodeId)", "Executing low-impact cache reindex in foreground")
-            let _ = self.runCacheReindexTasks(lowImpact: true, completion: {
-                Logger.shared.log("App \(self.episodeId)", "Executing low-impact cache reindex in foreground — done1")
-            })
-            #endif
+        if let indexTimestamp = UserDefaults.standard.object(forKey: "TelegramCacheIndexTimestamp_v2") as? NSNumber, indexTimestamp.intValue >= minReindexTimestamp {
         } else {
-            UserDefaults.standard.set(timestamp as NSNumber, forKey: "TelegramCacheIndexTimestamp")
+            UserDefaults.standard.set(timestamp as NSNumber, forKey: "TelegramCacheIndexTimestamp_v2")
             
             Logger.shared.log("App \(self.episodeId)", "Executing low-impact cache reindex in foreground")
             let _ = self.runCacheReindexTasks(lowImpact: true, completion: {

@@ -81,7 +81,14 @@ private enum EasyToggleType {
     case showProfileId
     case showRegDate
     case hideReactions
-    case hideStories    
+    case hideStories
+    case hideBadgeCounters
+    case hideUnreadCounters
+    case hideMentionNotification
+    case enableAnimationsInChatList
+    case enableGrayscaleAll
+    case enableGrayscaleInChatList
+    case enableGrayscaleInChat
 }
 
 
@@ -463,10 +470,8 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
                 ngLog("[showTabNames] invoked with \(value)", LOGTAG)
                 NGSettings.showTabNames = value
-                let controller = standardTextAlertController(theme: AlertControllerTheme(presentationData: arguments.context.sharedContext.currentPresentationData.with {
-                    $0
-                }), title: nil, text: l("Common.RestartRequired"), actions: [/* TextAlertAction(type: .destructiveAction, title: l("Common.ExitNow"), action: { preconditionFailure() }),*/ TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})])
-                arguments.presentController(controller, nil)
+                
+                showRestartRequiredAlert(with: arguments, presentationData: presentationData)
             })
             
         case let .showFeedTab(text, value):
@@ -540,6 +545,31 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                     NGSettings.hideStories = value
                     if value {
                         sendUserSettingsAnalytics(with: .hideStoriesOn)
+                    }
+                case .hideBadgeCounters:
+                    NGSettings.hideBadgeCounters = value
+                    showRestartRequiredAlert(with: arguments, presentationData: presentationData)
+                case .hideUnreadCounters:
+                    NGSettings.hideUnreadCounters = value
+                    showRestartRequiredAlert(with: arguments, presentationData: presentationData)
+                case .hideMentionNotification:
+                    NGSettings.hideMentionNotification = value
+                    showRestartRequiredAlert(with: arguments, presentationData: presentationData)
+                case .enableAnimationsInChatList:
+                    updateNicegramSettings {
+                        $0.disableAnimationsInChatList = !value
+                    }
+                case .enableGrayscaleAll:
+                    updateNicegramSettings {
+                        $0.grayscaleAll = value
+                    }
+                case .enableGrayscaleInChatList:
+                    updateNicegramSettings {
+                        $0.grayscaleInChatList = value
+                    }
+                case .enableGrayscaleInChat:
+                    updateNicegramSettings {
+                        $0.grayscaleInChat = value
                     }
                 }
             })
@@ -634,6 +664,8 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 // MARK: Entries list
 
 private func nicegramSettingsControllerEntries(presentationData: PresentationData, experimentalSettings: ExperimentalUISettings, showCalls: Bool, pinnedChats: [PinnedChat], sharingSettings: SharingSettings?, context: AccountContext) -> [NicegramSettingsControllerEntry] {
+    let nicegramSettings = getNicegramSettings()
+    
     var entries: [NicegramSettingsControllerEntry] = []
     
     if !hideUnblock {
@@ -730,6 +762,48 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     toggleIndex += 1
     
     entries.append(.easyToggle(toggleIndex, .hideStories, l("NicegramSettings.HideStories"), NGSettings.hideStories))
+    toggleIndex += 1
+
+    entries.append(
+        .easyToggle(
+            toggleIndex,
+            .hideBadgeCounters,
+            l("NicegramSettings.HideBadgeCounters"),
+            NGSettings.hideBadgeCounters
+        )
+    )
+    toggleIndex += 1
+
+    entries.append(
+        .easyToggle(
+            toggleIndex,
+            .hideUnreadCounters,
+            l("NicegramSettings.HideUnreadCounters"),
+            NGSettings.hideUnreadCounters
+        )
+    )
+    toggleIndex += 1
+
+    entries.append(
+        .easyToggle(
+            toggleIndex,
+            .hideMentionNotification,
+            l("NicegramSettings.HideMentionNotification"),
+            NGSettings.hideMentionNotification
+        )
+    )
+    toggleIndex += 1
+    
+    entries.append(.easyToggle(toggleIndex, .enableAnimationsInChatList, l("NicegramSettings.EnableAnimationsInChatList"), !nicegramSettings.disableAnimationsInChatList))
+    toggleIndex += 1
+    
+    entries.append(.easyToggle(toggleIndex, .enableGrayscaleAll, l("NicegramSettings.EnableGrayscaleAll"), nicegramSettings.grayscaleAll))
+    toggleIndex += 1
+    
+    entries.append(.easyToggle(toggleIndex, .enableGrayscaleInChatList, l("NicegramSettings.EnableGrayscaleInChatList"), nicegramSettings.grayscaleInChatList))
+    toggleIndex += 1
+    
+    entries.append(.easyToggle(toggleIndex, .enableGrayscaleInChat, l("NicegramSettings.EnableGrayscaleInChat"), nicegramSettings.grayscaleInChat))
     toggleIndex += 1
         
     if let sharingSettings {
@@ -865,4 +939,22 @@ public func updateTabs(with context: AccountContext) {
             ngLog("Tabs refreshed", LOGTAG)
         })
     })
+}
+
+private func showRestartRequiredAlert(
+    with arguments: NicegramSettingsControllerArguments,
+    presentationData: ItemListPresentationData
+) {
+    let controller = standardTextAlertController(
+        theme: AlertControllerTheme(
+            presentationData: arguments.context.sharedContext.currentPresentationData.with { $0 }
+        ),
+        title: nil,
+        text: l("Common.RestartRequired"),
+        actions: [
+            TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})
+        ]
+    )
+
+    arguments.presentController(controller, nil)
 }

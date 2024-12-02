@@ -1,6 +1,7 @@
 // MARK: Nicegram Assistant
 import CoreSwiftUI
 import FeatAssistant
+import FeatOnboarding
 import let NGCoreUI.images
 import var NGCoreUI.strings
 import NGUI
@@ -176,13 +177,31 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
+        if #available(iOS 15.0, *) {
+            Task {
+                PostTgLoginOnboardingPresenter().presentIfNeeded()
+                PostLoginOnboardingPresenter().presentIfNeeded()
+            }
+        }
+        
         if #available(iOS 15.0, *), !didAppear {
             Task {
                 let canPresent = { [weak self] in
                     guard let window = self?.context.sharedContext.mainWindow else {
                         return false
                     }
-                    return !window.hasOverlayController()
+                    
+                    if window.hasOverlayController() {
+                        return false
+                    }
+                    
+                    let windowRootController = UIApplication.findKeyWindow()?.rootViewController
+                    if let windowRootController,
+                       windowRootController.presentedViewController != nil {
+                        return false
+                    }
+                    
+                    return true
                 }
                 await AssistantTgHelper.showAlertsFromHomeIfNeeded(
                     canPresent: canPresent,
@@ -194,6 +213,11 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                     }
                 )
             }
+        }
+        
+        Task {
+            try await Task.sleep(seconds: 0.5)
+            TosPopupPresenter().presentIfNeeded()
         }
         
         didAppear = true

@@ -85,7 +85,7 @@
 "Common.SupportChatUsername" = "nicegram_tw";
 "Common.FAQUrl" = "https://nicegram-tw.gitbook.io/";
 "Common.FAQ.Button" = "Nicegram 常見問題";
-"IAP.Premium.Title" = "進階版功能";
+"IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "您無法抗拒的獨特功能！";
 "IAP.Premium.Activated" = "已升級進階版！";
 "IAP.Common.Restore" = "恢復購買";
@@ -160,6 +160,13 @@
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "App 會檢測您設備上每則訊息的語言。這是一項高耗電的功能，會影響您的電池壽命。";
 "Premium.rememberFolderOnExit" = "記下應用程式關閉時所在的資料夾";
 "NicegramSettings.HideStories" = "隱藏故事";
+"NicegramSettings.HideBadgeCounters" = "隱藏反應通知";
+"NicegramSettings.HideUnreadCounters" = "隱藏未讀計數器";
+"NicegramSettings.HideMentionNotification" = "隱藏提及通知";
+"NicegramSettings.EnableAnimationsInChatList" = "聊天列表中的動畫";
+"NicegramSettings.EnableGrayscaleAll" = "全螢幕灰階";
+"NicegramSettings.EnableGrayscaleInChatList" = "聊天列表中的灰階";
+"NicegramSettings.EnableGrayscaleInChat" = "灰階在聊天中";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "早於";
