@@ -633,8 +633,8 @@
         "bzlTransitiveDigest": "8/YWyYftd8THfVoADvrOmQLl45wUGfP2MVjLM5FFn50=",
         "usagesDigest": "voXBMcSNlo2fnK6JIvInIrncYhBKKG8nBeKvToaUA0Y=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "77c5c9186d1e347fd51f37a22df18e2bffdaadcc052f28e7d7e6baae533a2ff8",
-          "@@//Package.swift": "a01ead48828dfc3ca25abb493aea1a8d8bf7fcdaa5c177c410a1e02bb28c4255"
+          "@@//Package.resolved": "94bf3b85d62a900e06c42285c58a3880c117606257f792e93f9318ff65b76a58",
+          "@@//Package.swift": "fb3cb1d48066e64f8bf17fe1a49f689b7a6bf4bfc07aa90b9b80a02188501951"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -1119,7 +1119,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "f2592f6c31e2a4b7f49a7968cef19721a8a7a8f3",
+              "commit": "597a76fda9061acee5562a901ccabef38e37e034",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "init_submodules": false,
@@ -1309,9 +1309,9 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_wallet_core",
-              "commit": "e34e9ba2ed6e571e2b0531a5cfe1495cea5258f7",
+              "commit": "60ef068eb19138ac05b8bc3c966ef770ef9fc8f2",
               "remote": "https://github.com/trustwallet/wallet-core.git",
-              "version": "4.1.19",
+              "version": "4.1.20",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -1385,9 +1385,9 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_rive_ios",
-              "commit": "52ab8860c3b2264cc44757cb8fc24689f5e1b564",
-              "remote": "https://github.com/rive-app/rive-ios.git",
-              "version": "5.11.3",
+              "commit": "c3fdfcce8dcd24ee2385e14a7e7932735cb4e6d3",
+              "remote": "https://github.com/denis15yo/rive-ios",
+              "version": "",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [

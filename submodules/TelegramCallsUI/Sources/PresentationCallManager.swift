@@ -1041,11 +1041,10 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
             videoThumbnails: [],
             immediateThumbnailData: nil,
             mimeType: "audio/ogg",
-//            mimeType: "audio/wav",
             size: Int64(size),
             attributes: [
                 .Audio(
-                    isVoice: false,
+                    isVoice: true,
                     duration: Int(duration),
                     title: "\(userDisplayName)-\(dateFormatter.string(from: date))",
                     performer: nil,
