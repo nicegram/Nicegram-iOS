@@ -2381,8 +2381,8 @@ public final class ChatListNode: ListView {
             
             // MARK: Nicegram PinnedChats
             var nicegramItems = nicegramItems
-            if filter != nil {
-                nicegramItems = []
+            nicegramItems = nicegramItems.filter { item in
+                filter == nil || item.chat.showInAllFolders
             }
             if case .forum(_) = location {
                 nicegramItems = []

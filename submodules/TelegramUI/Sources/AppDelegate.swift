@@ -444,6 +444,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             walletData: .init(
                 env: {
                     .init(
+                        appUniversalLinkDomain: NGCore.UrlUtils.ASSOCIATED_DOMAIN,
                         appUrlScheme: buildConfig.appSpecificUrlScheme,
                         enableLogging: ngEnableLogging,
                         keychainGroupIdentifier: NGENV.wallet.keychainGroupIdentifier,

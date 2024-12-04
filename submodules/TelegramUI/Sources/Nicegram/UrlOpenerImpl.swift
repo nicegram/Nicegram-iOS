@@ -18,6 +18,8 @@ class UrlOpenerImpl {
 
 extension UrlOpenerImpl: UrlOpener {
     func open(_ url: URL) {
+        let url = prepare(url: url)
+        
         let sharedContext = accountContext.sharedContext
         let navigationController = sharedContext.mainWindow?.viewController as? NavigationController
         let presentationData = sharedContext.currentPresentationData.with { $0 }
@@ -36,5 +38,18 @@ extension UrlOpenerImpl: UrlOpener {
             navigationController: navigationController,
             dismissInput: {}
         )
+    }
+}
+
+private extension UrlOpenerImpl {
+    func prepare(url: URL) -> URL {
+        var result = url.absoluteString
+        
+        let isSchemeEmpty = url.scheme?.isEmpty ?? true
+        if isSchemeEmpty {
+            result = "https://\(result)"
+        }
+        
+        return URL(string: result) ?? url
     }
 }

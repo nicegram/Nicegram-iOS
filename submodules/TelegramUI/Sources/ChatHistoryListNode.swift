@@ -1684,6 +1684,12 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                     forceRemove: forceRemove
                 )
             }
+            .prepend(
+                NicegramAdInChat(
+                    ad: nil,
+                    forceRemove: false
+                )
+            )
             .toSignal()
             .skipError()
         
