@@ -415,10 +415,10 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 enableLogging: ngEnableLogging,
                 isAppStoreBuild: buildConfig.isAppStoreBuild,
                 premiumProductId: NGENV.premium_bundle,
-                privacyUrl: URL(string: NGENV.privacy_url)!,
+                privacyUrl: URL(string: "https://nicegram.app/privacy-policy")!,
                 referralBot: NGENV.referral_bot,
                 telegramAuthBot: NGENV.telegram_auth_bot,
-                termsUrl: URL(string: NGENV.terms_url)!,
+                termsUrl: URL(string: "https://nicegram.app/terms-of-use")!,
                 webSocketUrl: NGENV.websocket_url
             ),
             appLovinAdProvider: {

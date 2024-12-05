@@ -1676,9 +1676,7 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                 getSettingsUseCase.publisher()
             )
             .map { ad, settings in
-                let enableAds = settings.enableAds
-                let enablePlacement = settings.settings(for: .chat)?.enabled ?? false
-                let forceRemove = !enableAds || !enablePlacement
+                let forceRemove = !settings.shouldShowAds(placementId: .chat)
                 return NicegramAdInChat(
                     ad: ad,
                     forceRemove: forceRemove
