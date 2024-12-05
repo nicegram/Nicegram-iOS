@@ -109,8 +109,7 @@
 "Messages.SelectAllFromUser" = "Bu Kullanıcıdan Olan Bütün Mesajları Seç";
 "Messages.ToLanguage" = "Hedef Dil";
 "Messages.ToLanguage.WithCode" = "Hedef Dil: %@";
-"Messages.TranslateError.ToLanguageNotFound" = "Metni çevirmek istediğiniz dili tespit edemedik. Lütfen manuel olarak seçin ve tekrar deneyin.
-";
+"Messages.TranslateError.ToLanguageNotFound" = "Metni çevirmek istediğiniz dili tespit edemedik. Lütfen manuel olarak seçin ve tekrar deneyin.\n";
 "Messages.ReplyPrivately" = "Özelden Cevapla";
 "Messages.DeleteAllSystemMessages" = "Tümünü Sil";
 
@@ -227,7 +226,7 @@
 "NicegramFeed.Remove" = "Akıştan kaldır";
 
 /*SpeechToText*/
-"NicegramSpeechToText.Language.Title" = "Speech-2-Text";
+"NicegramSpeechToText.Language.Title" = "Speеch-2-Text";
 "NicegramSpeechToText.Language.Whisper" = "⚠️ Sesli mesajınızın dilini seçerek doğruluğu artırın, veya [Whisper'ı etkinleştirin](https://my.nicegram.app/) zahmetsiz otomatik tanıma için";
 "NicegramSpeechToText.Language.Choose" = "Tanıma için bir dil seçin";
 "NicegramSpeechToText.SelectLanguage" = "Dil Seç";

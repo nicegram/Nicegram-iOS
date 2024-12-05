@@ -85,7 +85,7 @@
 "Common.SupportChatUsername" = "nicegram_tw";
 "Common.FAQUrl" = "https://nicegram-tw.gitbook.io/";
 "Common.FAQ.Button" = "Nicegram 常見問題";
-"IAP.Premium.Title" = "進階版功能";
+"IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "您無法抗拒的獨特功能！";
 "IAP.Premium.Activated" = "已升級進階版！";
 "IAP.Common.Restore" = "恢復購買";
@@ -226,7 +226,7 @@
 "NicegramFeed.Remove" = "從訂閱源中移除";
 
 /*SpeechToText*/
-"NicegramSpeechToText.Language.Title" = "Speech-2-Text";
+"NicegramSpeechToText.Language.Title" = "Speеch-2-Text";
 "NicegramSpeechToText.Language.Whisper" = "⚠️ 選擇您語音消息的語言以提高準確性，或[啟動 Whisper](https://my.nicegram.app/) 以輕鬆自動識別";
 "NicegramSpeechToText.Language.Choose" = "選擇識別語言";
 "NicegramSpeechToText.SelectLanguage" = "選擇語言";

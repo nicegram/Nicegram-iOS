@@ -226,7 +226,7 @@
 "NicegramFeed.Remove" = "从订阅源中移除";
 
 /*SpeechToText*/
-"NicegramSpeechToText.Language.Title" = "Speech-2-Text";
+"NicegramSpeechToText.Language.Title" = "Speеch-2-Text";
 "NicegramSpeechToText.Language.Whisper" = "⚠️ 选择您语音消息的语言以提高准确性，或[激活 Whisper](https://my.nicegram.app/) 进行轻松的自动识别";
 "NicegramSpeechToText.Language.Choose" = "选择识别语言";
 "NicegramSpeechToText.SelectLanguage" = "选择语言";

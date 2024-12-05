@@ -1091,13 +1091,6 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
             self.audioDevice = audioDevice
             self.accountContext = accountContext
         }
-
-//        if NGSettings.recordAllCalls {
-//            sendCallRecorderAnalytics(with: .startAuto)
-//            startRecordCall { [weak self] in
-//                self?.callCompletion?()
-//            }
-//        }
     }
     
     public func startRecordCall(

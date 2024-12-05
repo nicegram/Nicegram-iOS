@@ -226,7 +226,7 @@
 "NicegramFeed.Remove" = "Remover do feed";
 
 /*SpeechToText*/
-"NicegramSpeechToText.Language.Title" = "Speech-2-Text";
+"NicegramSpeechToText.Language.Title" = "Speеch-2-Text";
 "NicegramSpeechToText.Language.Whisper" = "⚠️ Selecione o idioma da sua mensagem de voz para aumentar a precisão, ou [ative o Whisper](https://my.nicegram.app/) para reconhecimento automático sem esforço";
 "NicegramSpeechToText.Language.Choose" = "Escolha um idioma para reconhecimento";
 "NicegramSpeechToText.SelectLanguage" = "Selecionar idioma";

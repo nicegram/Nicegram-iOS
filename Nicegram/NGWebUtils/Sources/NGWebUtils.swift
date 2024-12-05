@@ -92,3 +92,23 @@ public func isAllowedPeerInfo(peer: Peer?, contentSettings: ContentSettings) -> 
     return isAllowedChat(peer: peer, contentSettings: contentSettings)
 }
 
+public extension Peer {
+    func unblockRequiresAnotherPhoneNumber(contentSettings: ContentSettings) -> Bool {
+        if isAllowedChat(peer: self, contentSettings: contentSettings) {
+            return false
+        }
+        
+        let restrictionInfo: PeerAccessRestrictionInfo? = switch self {
+        case let user as TelegramUser:
+            user.restrictionInfo
+        case let channel as TelegramChannel:
+            channel.restrictionInfo
+        default:
+            nil
+        }
+        
+        let rules = restrictionInfo?.rules ?? []
+        
+        return rules.contains(where: { $0.platform == "all" } )
+    }
+}

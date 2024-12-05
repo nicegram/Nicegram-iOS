@@ -1189,6 +1189,8 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             return
         }
         
+        let contentSettings = self.context.currentContentSettings.with { $0 }
+        
         let isChannel = switch EnginePeer(peer) {
         case .channel, .legacyGroup:
             true
@@ -1198,7 +1200,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         let isPrivate = (peer.addressName == nil)
         
         let isPornChat = peer.hasPornRestriction(
-            contentSettings: self.context.currentContentSettings.with { $0 }
+            contentSettings: contentSettings
         )
         
         ngBannerModel.set(
@@ -1206,7 +1208,9 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 isChannel: isChannel,
                 isPornChat: isPornChat,
                 isPrivate: isPrivate,
-                unblockRequiresAnotherPhoneNumber: peer.unblockRequiresAnotherPhoneNumber()
+                unblockRequiresAnotherPhoneNumber: peer.unblockRequiresAnotherPhoneNumber(
+                    contentSettings: contentSettings
+                )
             )
         )
     }
@@ -3450,13 +3454,14 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             }
             
             // MARK: Nicegram
+            let contentSettings = context.currentContentSettings.with { $0 }
             var showUnblockButton: Bool = false
             if (restrictionText != chatPresentationInterfaceState.strings.Channel_ErrorAccessDenied || restrictionText != chatPresentationInterfaceState.strings.Group_ErrorAccessDenied) {
                 let peer = chatPresentationInterfaceState.renderedPeer?.peer
-                if (isAllowedChat(peer: peer, contentSettings: context.currentContentSettings.with { $0 })) {
+                if (isAllowedChat(peer: peer, contentSettings: contentSettings)) {
                     restrictionText = nil
                 } else if restrictionText != nil {
-                    if let peer, !peer.unblockRequiresAnotherPhoneNumber() {
+                    if let peer, !peer.unblockRequiresAnotherPhoneNumber(contentSettings: contentSettings) {
                         showUnblockButton = true
                         AppCache.lastSeenBlockedChatId = peer.id.id._internalGetInt64Value()
                     }

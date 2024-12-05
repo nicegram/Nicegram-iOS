@@ -2,7 +2,9 @@ import Foundation
 import UIKit
 import Postbox
 // MARK: Nicegram Imports
+import class Combine.CurrentValueSubject
 import FeatAssistant
+import FeatPinnedChats
 import NGAiChat
 import NGAiChatUI
 import NGAnalytics
@@ -2703,8 +2705,29 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     }
     
     // MARK: Nicegram PinnedChats
+    let chatListNicegramData: ChatListNicegramData = {
+        let isChatListVisible = CurrentValueSubject<Bool, Never>(false)
+        let pinnedChats = PinnedChatsContainer.shared.getPinnedChatsToDisplayUseCase()
+            .publisher(
+                isViewVisible: isChatListVisible.eraseToAnyPublisher()
+            )
+        
+        return ChatListNicegramData(
+            isChatListVisible: isChatListVisible,
+            pinnedChats: pinnedChats
+        )
+    }()
     private func updateChatListNode(isVisible: Bool) {
-        chatListDisplayNode.effectiveContainerNode.currentItemNode.isChatListVisible.value = isVisible
+        let oldIsVisible = self.chatListNicegramData.isChatListVisible.value
+        self.chatListNicegramData.isChatListVisible.value = isVisible
+        
+        if isVisible, !oldIsVisible {
+            chatListDisplayNode.effectiveContainerNode.currentItemNode.forEachItemNode { itemNode in
+                if let itemNode = itemNode as? ChatListItemNode {
+                    itemNode.trackViewIfNeeded()
+                }
+            }
+        }
     }
     //
     

@@ -139,7 +139,7 @@
 "Gmod.Enable" = "Enable Preview Mode?";
 "Gmod.Disable" = "Disable Preview Mode?";
 
-"ShowNicegramButtonInChat" = "Show Nicegram Button in Chat";
+"ShowNicegramButtonInChat" = "Show Nicegram button in chat";
 "SendWithKb" = "Send with «Enter» button";
 "NiceFeatures.ShowGmodIcon" = "Show Preview Mode icon";
 "Gmod.OpenChatQ" = "Open chat?";
@@ -161,7 +161,7 @@
 "NicegramSettings.HideStories" = "Hide Stories";
 "NicegramSettings.HideBadgeCounters" = "Hide Reaction notifications";
 "NicegramSettings.HideUnreadCounters" = "Hide Unread counters";
-"NicegramSettings.HideMentionNotification" = "Hide Mention notification";
+"NicegramSettings.HideMentionNotification" = "Hide Mention notifications";
 "NicegramSettings.EnableAnimationsInChatList" = "Animations in chat list";
 "NicegramSettings.EnableGrayscaleAll" = "Full-Screen Grayscale";
 "NicegramSettings.EnableGrayscaleInChatList" = "Grayscale in chat list";
@@ -230,3 +230,7 @@
 "NicegramSpeechToText.Language.Whisper" = "⚠️ Select the language of your voice message to enhance accuracy, or [activate Whisper](https://my.nicegram.app/) for effortless automatic recognition";
 "NicegramSpeechToText.Language.Choose" = "Choose a language for recognition";
 "NicegramSpeechToText.SelectLanguage" = "Select Language";
+
+/*Stars Purchase*/
+"StarsPurchase.GetOnFragment" = "Get on Fragment";
+"StarsPurchase.GetOnTelegram" = "Get on Telegram";
