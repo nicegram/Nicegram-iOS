@@ -3,6 +3,7 @@ import FeatBilling
 import Postbox
 import Foundation
 import NGAppCache
+import FeatSpeechToText
 
 @propertyWrapper
 public struct NGStorage<T: Codable> {
@@ -60,7 +61,24 @@ public struct NGSettings {
     public static var rememberFolderOnExit: Bool
 
     @NGStorage(key: "useOpenAI", defaultValue: false)
-    public static var useOpenAI: Bool
+    private static var _useOpenAI: Bool
+
+    @available(*, deprecated, message: "Deprecation version 1.9.1(392). Use _useOpenAI instead")
+    public static var useOpenAI: Bool {
+        get {
+            let preferredProviderTypeUseCase = SpeechToTextContainer.shared.getPreferredProviderTypeUseCase()
+            let type = preferredProviderTypeUseCase()
+
+            return type == .openAi ? true : NGSettings._useOpenAI
+        }
+        set {
+            NGSettings._useOpenAI = newValue
+            let preferredProviderTypeUseCase = SpeechToTextContainer.shared.setPreferredProviderTypeUseCase()
+            Task {
+                await preferredProviderTypeUseCase(.google)
+            }
+        }
+    }
     
     @NGStorage(key: "lastFolder", defaultValue: -1)
     public static var lastFolder: Int32
