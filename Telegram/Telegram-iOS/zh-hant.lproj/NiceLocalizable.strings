@@ -106,8 +106,6 @@
 "Messages.Translate" = "翻譯";
 "Messages.UndoTranslate" = "取消翻譯";
 "Messages.TranslateError" = "抱歉，無法翻譯。";
-"Messages.SpeechToText" = "語音轉文字";
-"Messages.UndoSpeechToText" = "取消語音轉文字";
 "Messages.SelectAllFromUser" = "選取來自這個人的所有訊息";
 "Messages.ToLanguage" = "翻譯為";
 "Messages.ToLanguage.WithCode" = "翻譯為：%@";
@@ -155,6 +153,7 @@
 "NicegramSettings.Unblock.Header" = "解鎖";
 "NicegramSettings.Unblock.Button" = "解鎖指南";
 "NicegramSettings.Other.hideReactions" = "隱藏心情回應";
+"NicegramSettings.Other.hideReactionsToYourMessages" = "隱藏對您消息的反應";
 "NicegramSettings.RoundVideos.DownloadVideos" = "將影片下載至圖片庫";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "忽略語言";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "App 會檢測您設備上每則訊息的語言。這是一項高耗電的功能，會影響您的電池壽命。";
@@ -225,3 +224,9 @@
 "NicegramFeed.Title" = "動態";
 "NicegramFeed.Add" = "添加到訂閱源";
 "NicegramFeed.Remove" = "從訂閱源中移除";
+
+/*SpeechToText*/
+"NicegramSpeechToText.Language.Title" = "Speеch-2-Text";
+"NicegramSpeechToText.Language.Whisper" = "⚠️ 選擇您語音消息的語言以提高準確性，或[啟動 Whisper](https://my.nicegram.app/) 以輕鬆自動識別";
+"NicegramSpeechToText.Language.Choose" = "選擇識別語言";
+"NicegramSpeechToText.SelectLanguage" = "選擇語言";

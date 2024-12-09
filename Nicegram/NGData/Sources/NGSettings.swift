@@ -1,7 +1,9 @@
 import FeatPremium
+import FeatBilling
 import Postbox
 import Foundation
 import NGAppCache
+import FeatSpeechToText
 
 @propertyWrapper
 public struct NGStorage<T: Codable> {
@@ -57,6 +59,26 @@ public struct NGSettings {
     
     @NGStorage(key: "rememberFolderOnExit", defaultValue: false)
     public static var rememberFolderOnExit: Bool
+
+    @NGStorage(key: "useOpenAI", defaultValue: false)
+    private static var _useOpenAI: Bool
+
+    @available(*, deprecated, message: "Deprecation version 1.9.1(392). Use _useOpenAI instead")
+    public static var useOpenAI: Bool {
+        get {
+            let preferredProviderTypeUseCase = SpeechToTextContainer.shared.getPreferredProviderTypeUseCase()
+            let type = preferredProviderTypeUseCase()
+
+            return type == .openAi ? true : NGSettings._useOpenAI
+        }
+        set {
+            NGSettings._useOpenAI = newValue
+            let preferredProviderTypeUseCase = SpeechToTextContainer.shared.setPreferredProviderTypeUseCase()
+            Task {
+                await preferredProviderTypeUseCase(.google)
+            }
+        }
+    }
     
     @NGStorage(key: "lastFolder", defaultValue: -1)
     public static var lastFolder: Int32
@@ -124,6 +146,9 @@ public struct NGSettings {
 
     @NGStorage(key: "hideMentionNotification", defaultValue: false)
     public static var hideMentionNotification: Bool
+    
+    @NGStorage(key: "appleSpeechToTextLocale", defaultValue: [:])
+    public static var appleSpeechToTextLocale: [Int64: Locale]
 }
 
 public struct NGWebSettings {
@@ -151,30 +176,33 @@ public struct NGSharedSettings {
 
 public var VarNGSharedSettings = NGSharedSettings()
 
+public func checkPremium(completion: @escaping (Bool) -> Void) {
+    Task {
+        let refreshPremiumSubStatusUseCase = BillingContainer.shared.refreshPremiumSubStatusUseCase()
+        await refreshPremiumSubStatusUseCase()
+
+        await MainActor.run {
+            completion(PremiumContainer.shared.getPremiumStatusUseCase().hasPremiumOnDevice())
+        }
+    }
+}
 
 public func isPremium() -> Bool {
     if #available(iOS 13.0, *) {
-#if DEBUG
-        return true
-#else
         return PremiumContainer.shared
             .getPremiumStatusUseCase()
             .hasPremiumOnDevice()
-#endif
     } else {
         return false
     }
 }
 
 public func usetrButton() -> [(Bool, [String])] {
-    if isPremium() {
-        var ignoredLangs = NGSettings.ignoreTranslate
-        if !NGSettings.useIgnoreLanguages {
-            ignoredLangs = []
-        }
-        return [(NGSettings.oneTapTr, ignoredLangs)]
+    var ignoredLangs = NGSettings.ignoreTranslate
+    if !NGSettings.useIgnoreLanguages {
+        ignoredLangs = []
     }
-    return [(false, [])]
+    return [(NGSettings.oneTapTr, ignoredLangs)]
 }
 
 public class SystemNGSettings {
@@ -215,6 +243,15 @@ public class SystemNGSettings {
         }
         set {
             UD.set(newValue, forKey: "inDoubleBottom")
+        }
+    }
+    
+    public var hideReactionsToYourMessages: Bool {
+        get {
+            return UD.bool(forKey: "hideReactionsToYourMessages")
+        }
+        set {
+            UD.set(newValue, forKey: "hideReactionsToYourMessages")
         }
     }
 }

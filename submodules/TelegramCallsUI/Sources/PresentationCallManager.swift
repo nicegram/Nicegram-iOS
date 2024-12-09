@@ -1040,12 +1040,11 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
             previewRepresentations: [],
             videoThumbnails: [],
             immediateThumbnailData: nil,
-//            mimeType: "audio/ogg",
-            mimeType: "audio/wav",
+            mimeType: "audio/ogg",
             size: Int64(size),
             attributes: [
                 .Audio(
-                    isVoice: false,
+                    isVoice: true,
                     duration: Int(duration),
                     title: "\(userDisplayName)-\(dateFormatter.string(from: date))",
                     performer: nil,
@@ -1092,13 +1091,6 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
             self.audioDevice = audioDevice
             self.accountContext = accountContext
         }
-
-//        if NGSettings.recordAllCalls {
-//            sendCallRecorderAnalytics(with: .startAuto)
-//            startRecordCall { [weak self] in
-//                self?.callCompletion?()
-//            }
-//        }
     }
     
     public func startRecordCall(

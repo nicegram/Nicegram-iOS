@@ -7,11 +7,16 @@ import SwiftSignalKit
 import TelegramPresentationData
 import TranslateUI
 
-private final class LanguageListControllerArguments {
-    let selectLanguage: (String) -> Void
+public final class LanguageListControllerArguments {
+    public let selectLanguage: (String) -> Void
+    public let selectWhisper: () -> Void
     
-    init(selectLanguage: @escaping (String) -> Void) {
+    public init(
+        selectLanguage: @escaping (String) -> Void,
+        selectWhisper: @escaping () -> Void
+    ) {
         self.selectLanguage = selectLanguage
+        self.selectWhisper = selectWhisper
     }
 }
 
@@ -53,15 +58,26 @@ private enum LanguageListControllerEntry: ItemListNodeEntry {
     }
 }
 
-private struct LanguageInfo: Hashable {
-    let code: String
-    let title: String
-    let subtitle: String
+public struct LanguageInfo: Hashable {
+    public let code: String
+    public let title: String
+    public let subtitle: String
+    
+    public init(code: String, title: String, subtitle: String) {
+        self.code = code
+        self.title = title
+        self.subtitle = subtitle
+    }
 }
 
-private struct LanguageListControllerState: Equatable {
-    var languages: [LanguageInfo]
-    var selectedLanguageCode: String?
+public struct LanguageListControllerState: Equatable {
+    public var languages: [LanguageInfo]
+    public var selectedLanguageCode: String?
+    
+    public init(languages: [LanguageInfo], selectedLanguageCode: String?) {
+        self.languages = languages
+        self.selectedLanguageCode = selectedLanguageCode
+    }
 }
 
 private func languageListControllerEntries(theme: PresentationTheme, state: LanguageListControllerState) -> [LanguageListControllerEntry] {
@@ -77,7 +93,11 @@ private func languageListControllerEntries(theme: PresentationTheme, state: Lang
     return entries
 }
 
-public func languageListController(context: AccountContext, selectedLanguageCode: String?, selectLanguage: @escaping (String) -> Void) -> ViewController {
+public func languageListController(
+    context: AccountContext,
+    selectedLanguageCode: String?,
+    selectLanguage: @escaping (String) -> Void
+) -> ViewController {
     let primaryLanguageCodes = [selectedLanguageCode].compactMap{$0} + popularTranslationLanguages
     let supportedTranslationLanguageCodes = supportedTranslationLanguages
     
@@ -103,7 +123,8 @@ public func languageListController(context: AccountContext, selectedLanguageCode
                 return state
             }
             selectLanguage(code)
-        }
+        },
+        selectWhisper: {}
     )
 
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get())

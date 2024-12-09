@@ -213,11 +213,11 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                     }
                 )
             }
-        }
-        
-        Task {
-            try await Task.sleep(seconds: 0.5)
-            TosPopupPresenter().presentIfNeeded()
+            
+            Task {
+                try await Task.sleep(seconds: 0.5)
+                TosPopupPresenter().presentIfNeeded()
+            }
         }
         
         didAppear = true

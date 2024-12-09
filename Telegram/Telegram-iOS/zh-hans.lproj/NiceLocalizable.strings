@@ -106,8 +106,6 @@
 "Messages.Translate" = "翻译";
 "Messages.UndoTranslate" = "撤消翻译";
 "Messages.TranslateError" = "抱歉，翻译不可用。";
-"Messages.SpeechToText" = "语音转文本";
-"Messages.UndoSpeechToText" = "撤销语音转文本";
 "Messages.SelectAllFromUser" = "选择来自该用户的所有消息";
 "Messages.ToLanguage" = "为语言";
 "Messages.ToLanguage.WithCode" = "为语言: %@";
@@ -155,6 +153,7 @@
 "NicegramSettings.Unblock.Header" = "解封";
 "NicegramSettings.Unblock.Button" = "解封指南";
 "NicegramSettings.Other.hideReactions" = "隐藏反应";
+"NicegramSettings.Other.hideReactionsToYourMessages" = "隐藏对您消息的反应";
 "NicegramSettings.RoundVideos.DownloadVideos" = "将视频下载到图库";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "忽略语言";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "应用会检测您设备上每条消息使用的语言。这一功能需要很高的性能，可能会影响电池寿命。";
@@ -225,3 +224,9 @@
 "NicegramFeed.Title" = "动态";
 "NicegramFeed.Add" = "添加到订阅源";
 "NicegramFeed.Remove" = "从订阅源中移除";
+
+/*SpeechToText*/
+"NicegramSpeechToText.Language.Title" = "Speеch-2-Text";
+"NicegramSpeechToText.Language.Whisper" = "⚠️ 选择您语音消息的语言以提高准确性，或[激活 Whisper](https://my.nicegram.app/) 进行轻松的自动识别";
+"NicegramSpeechToText.Language.Choose" = "选择识别语言";
+"NicegramSpeechToText.SelectLanguage" = "选择语言";

@@ -1195,6 +1195,13 @@ public enum ChatListNodeEmptyState: Equatable {
     case empty(isLoading: Bool, hasArchiveInfo: Bool)
 }
 
+// MARK: Nicegram PinnedChats
+public struct ChatListNicegramData {
+    let isChatListVisible: CurrentValueSubject<Bool, Never>
+    let pinnedChats: AnyPublisher<[PinnedChatToDisplay], Never>
+}
+//
+
 public final class ChatListNode: ListView {
     public enum OpenStoriesSubject {
         case peer(EnginePeer.Id)
@@ -1280,9 +1287,7 @@ public final class ChatListNode: ListView {
     private var enqueuedTransition: (ChatListNodeListViewTransition, () -> Void)?
     
     // MARK: Nicegram PinnedChats
-    private let getPinnedChatsToDisplayUseCase = PinnedChatsContainer.shared.getPinnedChatsToDisplayUseCase()
-    public let isChatListVisible = CurrentValueSubject<Bool, Never>(false)
-    private var cancellables = Set<AnyCancellable>()
+    private let nicegramData: ChatListNicegramData
     //
     
     public private(set) var currentState: ChatListNodeState
@@ -1385,7 +1390,8 @@ public final class ChatListNode: ListView {
     
     public var synchronousDrawingWhenNotAnimated: Bool = false
     
-    public init(context: AccountContext, location: ChatListControllerLocation, chatListFilter: ChatListFilter? = nil, previewing: Bool, fillPreloadItems: Bool, mode: ChatListNodeMode, isPeerEnabled: ((EnginePeer) -> Bool)? = nil, theme: PresentationTheme, fontSize: PresentationFontSize, strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat, nameSortOrder: PresentationPersonNameOrder, nameDisplayOrder: PresentationPersonNameOrder, animationCache: AnimationCache, animationRenderer: MultiAnimationRenderer, disableAnimations: Bool, isInlineMode: Bool, autoSetReady: Bool, isMainTab: Bool?) {
+    // MARK: Nicegram PinnedChats, added 'nicegramData'
+    public init(context: AccountContext, location: ChatListControllerLocation, chatListFilter: ChatListFilter? = nil, previewing: Bool, fillPreloadItems: Bool, mode: ChatListNodeMode, isPeerEnabled: ((EnginePeer) -> Bool)? = nil, theme: PresentationTheme, fontSize: PresentationFontSize, strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat, nameSortOrder: PresentationPersonNameOrder, nameDisplayOrder: PresentationPersonNameOrder, animationCache: AnimationCache, animationRenderer: MultiAnimationRenderer, disableAnimations: Bool, isInlineMode: Bool, autoSetReady: Bool, isMainTab: Bool?, nicegramData: ChatListNicegramData? = nil) {
         self.context = context
         self.location = location
         self.chatListFilter = chatListFilter
@@ -1395,6 +1401,12 @@ public final class ChatListNode: ListView {
         self.animationCache = animationCache
         self.animationRenderer = animationRenderer
         self.autoSetReady = autoSetReady
+        // MARK: Nicegram PinnedChats
+        self.nicegramData = nicegramData ?? ChatListNicegramData(
+            isChatListVisible: .init(false),
+            pinnedChats: Just([]).eraseToAnyPublisher()
+        )
+        //
         
         if let isMainTab {
             self.isMainTab.set(isMainTab)
@@ -1431,7 +1443,7 @@ public final class ChatListNode: ListView {
         }, clearHighlightAnimated: { [weak self] flag in
             self?.clearHighlightAnimated(flag)
         }, isChatListVisible: { [weak self] in
-            self?.isChatListVisible.value ?? false
+            self?.nicegramData.isChatListVisible.value ?? false
             //
         }, peerSelected: { [weak self] peer, _, threadId, promoInfo in
             if let strongSelf = self, let peerSelected = strongSelf.peerSelected {
@@ -2276,27 +2288,10 @@ public final class ChatListNode: ListView {
         }
         
         // MARK: Nicegram PinnedChats
-        let nicegramItemsSignal = getPinnedChatsToDisplayUseCase
-            .publisher(
-                isViewVisible: isChatListVisible.eraseToAnyPublisher()
-            )
+        let nicegramItemsSignal = self.nicegramData.pinnedChats
             .map { Array($0.reversed()) }
             .toSignal()
             .skipError()
-        
-        isChatListVisible
-            .removeDuplicates()
-            .sink { [weak self] isChatListVisible in
-                guard let self else { return }
-                if isChatListVisible {
-                    self.forEachItemNode { itemNode in
-                        if let itemNode = itemNode as? ChatListItemNode {
-                            itemNode.trackViewIfNeeded()
-                        }
-                    }
-                }
-            }
-            .store(in: &cancellables)
         //
         
         // MARK: Nicegram HiddenChats
@@ -2381,8 +2376,8 @@ public final class ChatListNode: ListView {
             
             // MARK: Nicegram PinnedChats
             var nicegramItems = nicegramItems
-            if filter != nil {
-                nicegramItems = []
+            nicegramItems = nicegramItems.filter { item in
+                filter == nil || item.chat.showInAllFolders
             }
             if case .forum(_) = location {
                 nicegramItems = []

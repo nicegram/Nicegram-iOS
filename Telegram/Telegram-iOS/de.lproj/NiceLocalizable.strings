@@ -106,8 +106,6 @@
 "Messages.Translate" = "Übersetzen";
 "Messages.UndoTranslate" = "Rückgängig übersetzen";
 "Messages.TranslateError" = "Die Übersetzung ist leider nicht verfügbar.";
-"Messages.SpeechToText" = "Sprache zu Text";
-"Messages.UndoSpeechToText" = "Sprache zu Text rückgängig machen";
 "Messages.SelectAllFromUser" = "Alle von diesem Benutzer auswählen";
 "Messages.ToLanguage" = "Zielsprache";
 "Messages.ToLanguage.WithCode" = "Zielsprache: %@";
@@ -155,6 +153,7 @@
 "NicegramSettings.Unblock.Header" = "Blockierung aufheben";
 "NicegramSettings.Unblock.Button" = "Anleitung zum Aufheben einer Blockierung";
 "NicegramSettings.Other.hideReactions" = "Reaktionen verbergen";
+"NicegramSettings.Other.hideReactionsToYourMessages" = "Reaktionen auf Ihre Nachrichten verbergen";
 "NicegramSettings.RoundVideos.DownloadVideos" = "Videos in die Galerie herunterladen";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "Sprachen ignorieren";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Die App erkennt die Sprache jeder Nachricht auf deinem Gerät. Das ist eine Aufgabe mit hoher Priorität, die sich auf die Akkulaufzeit auswirken kann.";
@@ -225,3 +224,9 @@
 "NicegramFeed.Title" = "Feed";
 "NicegramFeed.Add" = "Zum Feed hinzufügen";
 "NicegramFeed.Remove" = "Vom Feed entfernen";
+
+/*SpeechToText*/
+"NicegramSpeechToText.Language.Title" = "Speеch-2-Text";
+"NicegramSpeechToText.Language.Whisper" = "⚠️ Wählen Sie die Sprache Ihrer Sprachnachricht, um die Genauigkeit zu erhöhen, oder [aktivieren Sie Whisper](https://my.nicegram.app/) für eine mühelose automatische Erkennung";
+"NicegramSpeechToText.Language.Choose" = "Wählen Sie eine Sprache zur Erkennung";
+"NicegramSpeechToText.SelectLanguage" = "Sprache auswählen";

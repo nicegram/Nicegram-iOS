@@ -1,5 +1,10 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
+NGDEPS = [
+    "//Nicegram/NGStrings:NGStrings",
+    "//submodules/TelegramUI/Components/ButtonComponent",
+]
+
 swift_library(
     name = "StarsPurchaseScreen",
     module_name = "StarsPurchaseScreen",
@@ -9,7 +14,7 @@ swift_library(
     copts = [
         #"-warnings-as-errors",
     ],
-    deps = [
+    deps = NGDEPS + [
         "//submodules/AsyncDisplayKit",
         "//submodules/Display",
         "//submodules/Postbox",

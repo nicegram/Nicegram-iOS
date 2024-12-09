@@ -11,6 +11,7 @@ import TelegramPresentationData
 // MARK: Nicegram NCG-5828 call recording
 import NGData
 import NGCallRecorder
+import NGUtils
 //
 
 public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictureControllerDelegate {
@@ -782,6 +783,7 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
                 isRecordAllCallsFirstStart = false
                 startRecordTimer()
                 recordAction?()
+                sendCallRecorderAnalytics(with: .startAuto)
             }
             buttons.insert(
                 ButtonGroupView.Button(
