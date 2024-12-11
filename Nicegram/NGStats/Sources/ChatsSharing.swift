@@ -54,7 +54,7 @@ private func sharePeerData(
     default:
         return
     }
-    
+
     let sharePeerDataUseCase = NicegramHubContainer.shared.sharePeerDataUseCase()
     
     await sharePeerDataUseCase(
@@ -118,6 +118,7 @@ private func extractPayload(
                 extractPayload(
                     bot: user,
                     botInfo: botInfo,
+                    cachedData: cachedData as? CachedUserData,
                     lastMessageLanguageCode: interlocutorLanguage
                 )
             )
@@ -129,7 +130,11 @@ private func extractPayload(
     }
 }
 
-private func extractPayload(group: TelegramGroup, cachedData: CachedGroupData?, lastMessageLanguageCode: String?) -> LegacyGroupPayload {
+private func extractPayload(
+    group: TelegramGroup,
+    cachedData: CachedGroupData?,
+    lastMessageLanguageCode: String?
+) -> LegacyGroupPayload {
     LegacyGroupPayload(
         deactivated: group.flags.contains(.deactivated),
         title: group.title,
@@ -142,7 +147,11 @@ private func extractPayload(group: TelegramGroup, cachedData: CachedGroupData?, 
     )
 }
 
-private func extractPayload(channel: TelegramChannel, cachedData: CachedChannelData?, lastMessageLanguageCode: String?) -> ChannelPayload {
+private func extractPayload(
+    channel: TelegramChannel,
+    cachedData: CachedChannelData?,
+    lastMessageLanguageCode: String?
+) -> ChannelPayload {
     ChannelPayload(
         verified: channel.isVerified,
         scam: channel.isScam,
@@ -166,6 +175,7 @@ private func extractPayload(channel: TelegramChannel, cachedData: CachedChannelD
 private func extractPayload(
     bot: TelegramUser,
     botInfo: BotUserInfo,
+    cachedData: CachedUserData?,
     lastMessageLanguageCode: String?
 ) -> UserPayload {
     let botFlags = botInfo.flags
@@ -199,7 +209,8 @@ private func extractPayload(
                 active: $0.isActive,
                 username: $0.username
             )
-        }
+        },
+        description: cachedData?.botInfo?.description
     )
 }
 
@@ -266,7 +277,9 @@ private func extractGeoLocation(
     GeoLocation(latitude: geo.latitude, longitude: geo.longitude, address: geo.address)
 }
 
-private func extractInviteLinks(_ links: ExportedInvitations?) -> [InviteLink]? {
+private func extractInviteLinks(
+    _ links: ExportedInvitations?
+) -> [InviteLink]? {
     links?.list?.compactMap { link in
         switch link {
         case let .link(link, title, isPermanent, requestApproval, isRevoked, adminId, date, startDate, expireDate, usageLimit, count, requestedCount, _):

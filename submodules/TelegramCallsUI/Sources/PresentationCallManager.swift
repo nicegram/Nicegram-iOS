@@ -974,7 +974,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
     }
 // MARK: Nicegram NCG-5828 call recording
     public var callCompletion: (() -> Void)?
-    
+
     private weak var audioDevice: OngoingCallContext.AudioDevice?
     private var accountContext: AccountContext?
     private var enginePeer: EnginePeer?
@@ -1003,7 +1003,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
         
         return dateFormatter
     }()
-    
+
     private func deleteFile(from path: String) {
         let fileManager = FileManager.default
         
@@ -1026,13 +1026,13 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
         completion: (() -> Void)? = nil
     ) {
         let date = Date()
-        
+
         let id = Int64.random(in: 0 ... Int64.max)
         let resource = LocalFileReferenceMediaResource(
             localFilePath: path,
             randomId: id
         )
-        
+
         let file = TelegramMediaFile(
             fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: id),
             partialReference: nil,
@@ -1046,16 +1046,16 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                 .Audio(
                     isVoice: true,
                     duration: Int(duration),
-                    title: "\(userDisplayName)-\(dateFormatter.string(from: date))",
+                    title: "",
                     performer: nil,
                     waveform: nil
                 )
             ],
             alternativeRepresentations: []
         )
-        
+
         let message: EnqueueMessage = .message(
-            text: "",
+            text: "\(userDisplayName)-\(dateFormatter.string(from: date))",
             attributes: [],
             inlineStickers: [:],
             mediaReference: .standalone(media: file),
@@ -1082,7 +1082,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
             }
         }
     }
-    
+
     private func callActiveState(
         with audioDevice: OngoingCallContext.AudioDevice?,
         accountContext: AccountContext
@@ -1092,7 +1092,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
             self.accountContext = accountContext
         }
     }
-    
+
     public func startRecordCall(
         with completion: @escaping () -> Void
     ) {
@@ -1108,15 +1108,15 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
         })
         sendCallRecorderAnalytics(with: .start)
     }
-    
+
     public func stopRecordCall() {
         audioDevice?.stopNicegramRecording()
     }
-    
+
     public func setupPeer(peer: EnginePeer) {
         self.enginePeer = peer
     }
-    
+
     public func showRecordSaveToast() {
         let (presentationData, _, _) = getDeviceAccessData()
         guard let image = UIImage(bundleImageName: "RecordSave") else { return }
@@ -1128,7 +1128,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
             round: true,
             undoText: nil
         )
-        
+
         DispatchQueue.main.async {
             let controller = UndoOverlayController(
                 presentationData: presentationData,
