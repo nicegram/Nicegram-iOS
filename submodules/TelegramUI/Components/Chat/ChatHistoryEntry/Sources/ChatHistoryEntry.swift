@@ -54,7 +54,6 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
     // MARK: Nicegram ATT
     case NicegramAdEntry(String, AttAd, ChatPresentationData)
     //
-    case WebViewAd(ChatPresentationData)
     
     // MARK: Nicegram ATT
     public enum StableId: Hashable, Comparable {
@@ -108,8 +107,6 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
             case let .NicegramAdEntry(id, _, _):
                 return .nicegramAd(id)
             //
-            case .WebViewAd:
-                return .nicegramAd("web-view-ad")
         }
     }
     
@@ -131,8 +128,6 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
             case .NicegramAdEntry:
                 return MessageIndex.absoluteLowerBound()
             //
-            case .WebViewAd:
-                return MessageIndex.absoluteLowerBound()
         }
     }
     
@@ -154,8 +149,6 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
             case .NicegramAdEntry:
                 return MessageIndex.absoluteLowerBound()
             //
-            case .WebViewAd:
-                return MessageIndex.absoluteLowerBound()
         }
     }
     
@@ -345,13 +338,6 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
                     return false
                 }
             //
-            case let .WebViewAd(lhsPresentationData):
-                if case let .WebViewAd(rhsPresentationData) = rhs,
-                   lhsPresentationData === rhsPresentationData {
-                    return true
-                } else {
-                    return false
-                }
         }
     }
     

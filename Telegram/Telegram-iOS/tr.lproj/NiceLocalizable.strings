@@ -230,3 +230,7 @@
 "NicegramSpeechToText.Language.Whisper" = "⚠️ Sesli mesajınızın dilini seçerek doğruluğu artırın, veya [Whisper'ı etkinleştirin](https://my.nicegram.app/) zahmetsiz otomatik tanıma için";
 "NicegramSpeechToText.Language.Choose" = "Tanıma için bir dil seçin";
 "NicegramSpeechToText.SelectLanguage" = "Dil Seç";
+
+/*Stars Purchase*/
+"StarsPurchase.GetOnFragment" = "Fragment'tan al";
+"StarsPurchase.GetOnTelegram" = "Telegram'dan al";

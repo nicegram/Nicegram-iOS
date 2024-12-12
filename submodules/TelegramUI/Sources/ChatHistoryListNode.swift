@@ -2,7 +2,6 @@
 import ChatMessageNicegramAdNode
 import FeatAttentionEconomy
 //
-import ChatMessageWebViewAdNode
 // MARK: Nicegram AiChat
 import NGAiChatUI
 //
@@ -289,12 +288,6 @@ private func mappedInsertEntries(context: AccountContext, chatLocation: ChatLoca
                     fatalError()
                 }
             //
-            case let .WebViewAd(presentationData):
-                if #available(iOS 15.0, *) {
-                    return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatMessageWebViewAdItem(chatLocation: chatLocation, context: context, controllerInteraction: controllerInteraction, presentationData: presentationData), directionHint: entry.directionHint)
-                } else {
-                    fatalError()
-                }
         }
     }
 }
@@ -355,12 +348,6 @@ private func mappedUpdateEntries(context: AccountContext, chatLocation: ChatLoca
                     fatalError()
                 }
             //
-            case let .WebViewAd(presentationData):
-                if #available(iOS 15.0, *) {
-                    return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatMessageWebViewAdItem(chatLocation: chatLocation, context: context, controllerInteraction: controllerInteraction, presentationData: presentationData), directionHint: entry.directionHint)
-                } else {
-                    fatalError()
-                }
         }
     }
 }
@@ -1989,9 +1976,6 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                     adMessage: allAdMessages.fixed,
                     dynamicAdMessages: allAdMessages.opportunistic
                 )
-                if #available(iOS 15.0, *) {
-                    filteredEntries.append(.WebViewAd(chatPresentationData))
-                }
                 // MARK: Nicegram ATT
                 if let self {
                     var cachedPeerData: CachedPeerData?
