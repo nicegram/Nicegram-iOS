@@ -114,7 +114,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "master",
-        "revision" : "51eee9dd7af19fed75e00e117a777d907a9be189"
+        "revision" : "8112c79a18205330e3993825a782b6705469d50d"
       }
     },
     {
@@ -123,7 +123,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "master",
-        "revision" : "3fefdb8ee40b9708e7760a157b73a997b5f414e7"
+        "revision" : "69efa8724a63fd366dd506d0135aa826617703cc"
       }
     },
     {
@@ -338,8 +338,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "60ef068eb19138ac05b8bc3c966ef770ef9fc8f2",
-        "version" : "4.1.20"
+        "revision" : "99b69d1c2267354270769f6adef2d370553ce436",
+        "version" : "4.1.21"
       }
     },
     {

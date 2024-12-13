@@ -230,3 +230,7 @@
 "NicegramSpeechToText.Language.Whisper" = "⚠️ 选择您语音消息的语言以提高准确性，或[激活 Whisper](https://my.nicegram.app/) 进行轻松的自动识别";
 "NicegramSpeechToText.Language.Choose" = "选择识别语言";
 "NicegramSpeechToText.SelectLanguage" = "选择语言";
+
+/*Stars Purchase*/
+"StarsPurchase.GetOnFragment" = "购买于 Fragment";
+"StarsPurchase.GetOnTelegram" = "购买于 Telegram";

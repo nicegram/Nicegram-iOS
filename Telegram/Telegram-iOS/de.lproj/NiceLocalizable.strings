@@ -230,3 +230,7 @@
 "NicegramSpeechToText.Language.Whisper" = "⚠️ Wählen Sie die Sprache Ihrer Sprachnachricht, um die Genauigkeit zu erhöhen, oder [aktivieren Sie Whisper](https://my.nicegram.app/) für eine mühelose automatische Erkennung";
 "NicegramSpeechToText.Language.Choose" = "Wählen Sie eine Sprache zur Erkennung";
 "NicegramSpeechToText.SelectLanguage" = "Sprache auswählen";
+
+/*Stars Purchase*/
+"StarsPurchase.GetOnFragment" = "Kaufen auf Fragment";
+"StarsPurchase.GetOnTelegram" = "Kaufen auf Telegram";

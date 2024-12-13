@@ -230,3 +230,7 @@
 "NicegramSpeechToText.Language.Whisper" = "⚠️ حدد لغة رسالتك الصوتية لتحسين الدقة، أو [فعّل Whisper](https://my.nicegram.app/) للتعرف التلقائي بدون جهد";
 "NicegramSpeechToText.Language.Choose" = "اختر لغة للتعرف عليها";
 "NicegramSpeechToText.SelectLanguage" = "حدد اللغة";
+
+/*Stars Purchase*/
+"StarsPurchase.GetOnFragment" = "اشترِ في Fragment";
+"StarsPurchase.GetOnTelegram" = "اشترِ في Telegram";
