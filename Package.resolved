@@ -123,7 +123,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "feat/solana",
-        "revision" : "89cc6b9114220db8f4a418a39d427d3579fb2271"
+        "revision" : "3eb2ba7fcd53bad81b82a53163fee84a867d182c"
       }
     },
     {
