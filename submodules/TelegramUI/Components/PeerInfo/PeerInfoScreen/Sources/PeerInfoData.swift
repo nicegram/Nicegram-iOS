@@ -1,7 +1,6 @@
 // MARK: Nicegram Imports
 import FeatTgUserNotes
 import NGData
-import NicegramWallet
 //
 import Foundation
 import UIKit
@@ -391,9 +390,6 @@ final class PeerInfoScreenData {
     let revenueStatsContext: RevenueStatsContext?
     let profileGiftsContext: ProfileGiftsContext?
     let premiumGiftOptions: [PremiumGiftCodeOption]
-    // MARK: Nicegram Wallet
-    var blockchains: [Blockchain]
-    //
     // MARK: Nicegram TgUserNotes
     var note: String
     //
@@ -446,9 +442,6 @@ final class PeerInfoScreenData {
         revenueStatsContext: RevenueStatsContext?,
         profileGiftsContext: ProfileGiftsContext?,
         premiumGiftOptions: [PremiumGiftCodeOption],
-        // MARK: Nicegram Wallet
-        blockchains: [Blockchain] = [],
-        //
         // MARK: Nicegram TgUserNotes
         note: String = ""
         //
@@ -489,9 +482,6 @@ final class PeerInfoScreenData {
         self.revenueStatsContext = revenueStatsContext
         self.profileGiftsContext = profileGiftsContext
         self.premiumGiftOptions = premiumGiftOptions
-        // MARK: Nicegram Wallet
-        self.blockchains = blockchains
-        //
         // MARK: Nicegram TgUserNotes
         self.note = note
         //
@@ -993,23 +983,6 @@ func peerInfoScreenSettingsData(context: AccountContext, peerId: EnginePeer.Id, 
             premiumGiftOptions: []
         )
     }
-    // MARK: Nicegram Wallet
-    |> mapToSignal { peerInfoScreenData -> Signal<PeerInfoScreenData, NoError> in
-        let blockchains = WalletSettingsModule.shared.getAvailableBlockchainsUseCase()
-            .onlyExactPublisher()
-            .prepend([])
-            .removeDuplicates()
-            .toSignal()
-            .skipError()
-        
-        return blockchains
-        |> map { blockchains in
-            var peerInfoScreenData = peerInfoScreenData
-            peerInfoScreenData.blockchains = blockchains
-            return peerInfoScreenData
-        }
-    }
-    //
 }
 
 func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat, isSettings: Bool, isMyProfile: Bool, hintGroupInCommon: PeerId?, existingRequestsContext: PeerInvitationImportersContext?, chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, privacySettings: Signal<AccountPrivacySettings?, NoError>) -> Signal<PeerInfoScreenData, NoError> {

@@ -993,17 +993,8 @@ private func settingsItems(data: PeerInfoScreenData?, context: AccountContext, p
     // MARK: Nicegram Wallet
     let getWalletAvailabilityUseCase = WalletContainer.shared.getWalletAvailabilityUseCase()
     if #available(iOS 15.0, *), getWalletAvailabilityUseCase() {
-        let blockchains = data.blockchains
-        let sectionTitle: String
-        let buttonText: String
-        if blockchains.count == 1 {
-            let blockchain = blockchains[0]
-            sectionTitle = "Non-custodial"
-            buttonText = "\(blockchain.title) Wallet"
-        } else {
-            sectionTitle = "Multichain, Non-custodial"
-            buttonText = "Nicegram Wallet"
-        }
+        let sectionTitle = "Non-custodial"
+        let buttonText = "Solana Wallet"
         
         items[.nicegramWallet]?.append(PeerInfoScreenHeaderItem(id: 0, text: sectionTitle))
         items[.nicegramWallet]!.append(PeerInfoScreenDisclosureItem(id: 1, text: buttonText, icon: PresentationResourcesSettings.ngWalletIcon, action: {
