@@ -357,9 +357,6 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
         itemNode.listNode.openStarsTopup = { [weak self] amount in
             self?.openStarsTopup?(amount)
         }
-        itemNode.listNode.openWebApp = { [weak self] amount in
-            self?.openWebApp?(amount)
-        }
         
         self.currentItemStateValue.set(itemNode.listNode.state |> map { state in
             let filterId: Int32?
@@ -426,7 +423,6 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
     var openPremiumManagement: (() -> Void)?
     var openStories: ((ChatListNode.OpenStoriesSubject, ASDisplayNode?) -> Void)?
     var openStarsTopup: ((Int64?) -> Void)?
-    var openWebApp: ((TelegramUser) -> Void)?
     var addedVisibleChatsWithPeerIds: (([EnginePeer.Id]) -> Void)?
     var didBeginSelectingChats: (() -> Void)?
     var canExpandHiddenItems: (() -> Bool)?
@@ -1115,8 +1111,7 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
     var isEmptyUpdated: ((Bool) -> Void)?
     var emptyListAction: ((EnginePeer.Id?) -> Void)?
     var cancelEditing: (() -> Void)?
-    var dismissSearch: (() -> Void)?
-    
+
     let debugListView = ListView()
     
     init(context: AccountContext, location: ChatListControllerLocation, previewing: Bool, controlsHistoryPreload: Bool, presentationData: PresentationData, animationCache: AnimationCache, animationRenderer: MultiAnimationRenderer, controller: ChatListControllerImpl) {
@@ -1717,9 +1712,6 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
         }, navigationController: navigationController, parentController: { [weak self] in
             return self?.controller
         })
-        contentNode.dismissSearch = { [weak self] in
-            self?.dismissSearch?()
-        }
         
         self.searchDisplayController = SearchDisplayController(presentationData: self.presentationData, mode: .list, contentNode: contentNode, cancel: { [weak self] in
             if let requestDeactivateSearch = self?.requestDeactivateSearch {

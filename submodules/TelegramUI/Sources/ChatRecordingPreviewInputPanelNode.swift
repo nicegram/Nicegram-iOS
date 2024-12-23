@@ -333,7 +333,6 @@ final class ChatRecordingPreviewInputPanelNode: ChatInputPanelNode {
                                         isMain: true
                                     )
                                 ],
-                                isCollage: false,
                                 positionUpdated: { _, _ in },
                                 trackTrimUpdated: { [weak self] _, start, end, updatedEnd, apply in
                                     if let self {

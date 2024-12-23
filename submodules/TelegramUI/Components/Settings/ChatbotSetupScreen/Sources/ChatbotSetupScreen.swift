@@ -284,7 +284,7 @@ final class ChatbotSetupScreenComponent: Component {
                         }
                     }
                     
-                    self.botResolutionDisposable = (component.context.engine.peers.resolvePeerByName(name: cleanQuery, referrer: nil)
+                    self.botResolutionDisposable = (component.context.engine.peers.resolvePeerByName(name: cleanQuery)
                     |> delay(0.4, queue: .mainQueue())
                     |> deliverOnMainQueue).start(next: { [weak self] result in
                         guard let self else {

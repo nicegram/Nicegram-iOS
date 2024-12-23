@@ -48,7 +48,7 @@ extension ChatControllerImpl {
         if let peerId {
             peer = self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
         } else {
-            peer = self.context.engine.peers.resolvePeerByName(name: username, referrer: nil)
+            peer = self.context.engine.peers.resolvePeerByName(name: username)
             |> mapToSignal { value in
                 switch value {
                 case .progress:

@@ -539,7 +539,7 @@ public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
                     self.deleteButton,
                     tagButton,
                     self.shareButton,
-                    self.forwardButton
+                    self.forwardButton,
                 ]
             } else {
                 buttons = [

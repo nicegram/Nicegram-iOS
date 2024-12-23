@@ -1495,13 +1495,9 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                                 transitionCompletion()
                             }, getCaptionPanelView: { [weak self] in
                                 return self?.getCaptionPanelView(isFile: false)
-                            }, sendMessagesWithSignals: { [weak self] signals, _, _, isCaptionAbove in
+                            }, sendMessagesWithSignals: { [weak self] signals, _, _ in
                                 if let strongSelf = self {
-                                    var parameters: ChatSendMessageActionSheetController.SendParameters?
-                                    if isCaptionAbove {
-                                        parameters = ChatSendMessageActionSheetController.SendParameters(effect: nil, textIsAboveMedia: true)
-                                    }
-                                    strongSelf.enqueueMediaMessages(signals: signals, silentPosting: false, parameters: parameters)
+                                    strongSelf.enqueueMediaMessages(signals: signals, silentPosting: false)
                                 }
                             }, present: { [weak self] c, a in
                                 self?.present(c, in: .window(.root), with: a)
@@ -1792,7 +1788,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                                 return
                             }
                             
-                            if balance < StarsAmount(value: 1, nanos: 0) {
+                            if balance < 1 {
                                 let _ = (strongSelf.context.engine.payments.starsTopUpOptions()
                                 |> take(1)
                                 |> deliverOnMainQueue).startStandalone(next: { [weak strongSelf] options in
@@ -2918,7 +2914,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                                 if let sourceMessageId = message.forwardInfo?.sourceMessageId {
                                     messageId = sourceMessageId
                                 }
-                                let invoice = TelegramMediaInvoice(title: "", description: "", photo: nil, receiptMessageId: nil, currency: "XTR", totalAmount: paidContent.amount, startParam: "", extendedMedia: .preview(dimensions: dimensions, immediateThumbnailData: immediateThumbnailData, videoDuration: nil), subscriptionPeriod: nil, flags: [], version: 0)
+                                let invoice = TelegramMediaInvoice(title: "", description: "", photo: nil, receiptMessageId: nil, currency: "XTR", totalAmount: paidContent.amount, startParam: "", extendedMedia: .preview(dimensions: dimensions, immediateThumbnailData: immediateThumbnailData, videoDuration: nil), flags: [], version: 0)
                                 let controller = strongSelf.context.sharedContext.makeStarsTransferScreen(context: strongSelf.context, starsContext: starsContext, invoice: invoice, source: .message(messageId), extendedMedia: paidContent.extendedMedia, inputData: starsInputData, completion: { _ in })
                                 strongSelf.push(controller)
                                 
@@ -3839,7 +3835,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                         let inputText = strongSelf.presentationInterfaceState.interfaceState.effectiveInputState.inputText
                         legacyMediaEditor(context: strongSelf.context, peer: peer, threadTitle: strongSelf.threadInfo?.title, media: mediaReference, mode: .draw, initialCaption: inputText, snapshots: [], transitionCompletion: nil, getCaptionPanelView: { [weak self] in
                             return self?.getCaptionPanelView(isFile: true)
-                        }, sendMessagesWithSignals: { [weak self] signals, _, _, _ in
+                        }, sendMessagesWithSignals: { [weak self] signals, _, _ in
                             if let strongSelf = self {
                                 strongSelf.interfaceInteraction?.setupEditMessage(messageId, { _ in })
                                 strongSelf.editMessageMediaWithLegacySignals(signals!)
@@ -9126,7 +9122,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
         }
         
         if let stickerPackReference = stickerPackReference {
-            self.presentEmojiList(references: [stickerPackReference], previewIconFile: file)
+            self.presentEmojiList(references: [stickerPackReference])
             
             /*let _ = (self.context.engine.stickers.loadedStickerPack(reference: stickerPackReference, forceActualized: false)
             |> deliverOnMainQueue).startStandalone(next: { [weak self] stickerPack in
@@ -9690,7 +9686,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                 disposable = MetaDisposable()
                 self.resolvePeerByNameDisposable = disposable
             }
-            var resolveSignal = self.context.engine.peers.resolvePeerByName(name: name, referrer: nil, ageLimit: 10)
+            var resolveSignal = self.context.engine.peers.resolvePeerByName(name: name, ageLimit: 10)
             
             var cancelImpl: (() -> Void)?
             let presentationData = self.presentationData
@@ -9757,7 +9753,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
             }
             var resolveSignal: Signal<Peer?, NoError>
             if let peerName = peerName {
-                resolveSignal = self.context.engine.peers.resolvePeerByName(name: peerName, referrer: nil)
+                resolveSignal = self.context.engine.peers.resolvePeerByName(name: peerName)
                 |> mapToSignal { result -> Signal<EnginePeer?, NoError> in
                     guard case let .result(result) = result else {
                         return .complete()
@@ -10002,17 +9998,16 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                 case let .withBotApp(botAppStart):
                     let _ = (strongSelf.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId.id))
                     |> deliverOnMainQueue).startStandalone(next: { [weak self] peer in
-                        guard let self, let peer else {
-                            return
-                        }
-                        if let botApp = botAppStart.botApp {
-                            self.presentBotApp(botApp: botApp, botPeer: peer, payload: botAppStart.payload, mode: botAppStart.mode, concealed: concealed, commit: {
-                                dismissWebAppControllers()
+                        if let strongSelf = self, let peer {
+                            if let botApp = botAppStart.botApp {
+                                strongSelf.presentBotApp(botApp: botApp, botPeer: peer, payload: botAppStart.payload, compact: botAppStart.compact, concealed: concealed, commit: {
+                                    dismissWebAppControllers()
+                                    commit()
+                                })
+                            } else {
+                                strongSelf.context.sharedContext.openWebApp(context: strongSelf.context, parentController: strongSelf, updatedPresentationData: strongSelf.updatedPresentationData, peer: peer, threadId: nil, buttonText: "", url: "", simple: true, source: .generic, skipTermsOfService: false, payload: botAppStart.payload)
                                 commit()
-                            })
-                        } else {
-                            self.context.sharedContext.openWebApp(context: self.context, parentController: self, updatedPresentationData: self.updatedPresentationData, botPeer: peer, chatPeer: nil, threadId: nil, buttonText: "", url: "", simple: true, source: .generic, skipTermsOfService: false, payload: botAppStart.payload)
-                            commit()
+                            }
                         }
                     })
                 default:

@@ -15,7 +15,6 @@ import ContextUI
 import TooltipUI
 import LegacyMessageInputPanelInputView
 import UndoUI
-import TelegramNotices
 
 public class LegacyMessageInputPanelNode: ASDisplayNode, TGCaptionPanelView {
     private let context: AccountContext
@@ -34,21 +33,11 @@ public class LegacyMessageInputPanelNode: ASDisplayNode, TGCaptionPanelView {
     private var currentIsEditing = false
     private var currentHeight: CGFloat?
     private var currentIsVideo = false
-    private var currentIsCaptionAbove = false
     
     private let hapticFeedback = HapticFeedback()
     
     private var inputView: LegacyMessageInputPanelInputView?
     private var isEmojiKeyboardActive = false
-    
-    public var sendPressed: ((NSAttributedString?) -> Void)?
-    public var focusUpdated: ((Bool) -> Void)?
-    public var heightUpdated: ((Bool) -> Void)?
-    public var timerUpdated: ((NSNumber?) -> Void)?
-    public var captionIsAboveUpdated: ((Bool) -> Void)?
-    
-    private weak var undoController: UndoOverlayController?
-    private weak var tooltipController: TooltipScreen?
     
     private var validLayout: (width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, keyboardHeight: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, isSecondary: Bool, metrics: LayoutMetrics)?
     
@@ -78,6 +67,11 @@ public class LegacyMessageInputPanelNode: ASDisplayNode, TGCaptionPanelView {
         }
     }
     
+    public var sendPressed: ((NSAttributedString?) -> Void)?
+    public var focusUpdated: ((Bool) -> Void)?
+    public var heightUpdated: ((Bool) -> Void)?
+    public var timerUpdated: ((NSNumber?) -> Void)?
+    
     public func updateLayoutSize(_ size: CGSize, keyboardHeight: CGFloat, sideInset: CGFloat, animated: Bool) -> CGFloat {
         return self.updateLayout(width: size.width, leftInset: sideInset, rightInset: sideInset, bottomInset: 0.0, keyboardHeight: keyboardHeight,  additionalSideInsets: UIEdgeInsets(), maxHeight: size.height, isSecondary: false, transition: animated ? .animated(duration: 0.2, curve: .easeInOut) : .immediate, metrics: LayoutMetrics(widthClass: .compact, heightClass: .compact, orientation: nil), isMediaInputExpanded: false)
     }
@@ -105,15 +99,14 @@ public class LegacyMessageInputPanelNode: ASDisplayNode, TGCaptionPanelView {
         transition.setFrame(view: view, frame: frame)
     }
     
-    public func setTimeout(_ timeout: Int32, isVideo: Bool, isCaptionAbove: Bool) {
-        self.dismissAllTooltips()
+    public func setTimeout(_ timeout: Int32, isVideo: Bool) {
+        self.dismissTimeoutTooltip()
         var timeout: Int32? = timeout
         if timeout == 0 {
             timeout = nil
         }
         self.currentTimeout = timeout
         self.currentIsVideo = isVideo
-        self.currentIsCaptionAbove = isCaptionAbove
     }
     
     public func activateInput() {
@@ -139,7 +132,7 @@ public class LegacyMessageInputPanelNode: ASDisplayNode, TGCaptionPanelView {
     }
     
     public func onAnimateOut() {
-        self.dismissAllTooltips()
+        self.dismissTimeoutTooltip()
     }
     
     public func baseHeight() -> CGFloat {
@@ -240,12 +233,7 @@ public class LegacyMessageInputPanelNode: ASDisplayNode, TGCaptionPanelView {
                     lockMediaRecording: nil,
                     stopAndPreviewMediaRecording: nil,
                     discardMediaRecordingPreview: nil,
-                    attachmentAction: { [weak self] in
-                        if let self {
-                            self.toggleIsCaptionAbove()
-                        }
-                    },
-                    attachmentButtonMode: self.currentIsCaptionAbove ? .captionDown : .captionUp,
+                    attachmentAction: nil,
                     myReaction: nil,
                     likeAction: nil,
                     likeOptionsAction: nil,
@@ -261,11 +249,6 @@ public class LegacyMessageInputPanelNode: ASDisplayNode, TGCaptionPanelView {
                     } : nil,
                     forwardAction: nil,
                     moreAction: nil,
-                    presentCaptionPositionTooltip: { [weak self] sourceView in
-                        if let self {
-                            self.presentCaptionPositionTooltip(sourceView: sourceView)
-                        }
-                    },
                     presentVoiceMessagesUnavailableTooltip: nil,
                     presentTextLengthLimitTooltip: nil,
                     presentTextFormattingTooltip: nil,
@@ -357,30 +340,6 @@ public class LegacyMessageInputPanelNode: ASDisplayNode, TGCaptionPanelView {
         }
     }
     
-    private func toggleIsCaptionAbove() {
-        self.currentIsCaptionAbove = !self.currentIsCaptionAbove
-        self.captionIsAboveUpdated?(self.currentIsCaptionAbove)
-        self.update(transition: .animated(duration: 0.3, curve: .spring))
-        
-        self.dismissAllTooltips()
-    
-        let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
-        
-        let title = self.currentIsCaptionAbove ? presentationData.strings.MediaPicker_InvertCaption_Updated_Up_Title : presentationData.strings.MediaPicker_InvertCaption_Updated_Down_Title
-        let text = self.currentIsCaptionAbove ? presentationData.strings.MediaPicker_InvertCaption_Updated_Up_Text : presentationData.strings.MediaPicker_InvertCaption_Updated_Down_Title
-        let animationName = self.currentIsCaptionAbove ? "message_preview_sort_above" : "message_preview_sort_below"
-        
-        let controller = UndoOverlayController(
-            presentationData: presentationData,
-            content: .universal(animation: animationName, scale: 1.0, colors: ["__allcolors__": UIColor.white], title: title, text: text, customUndoText: nil, timeout: 2.0),
-            elevatedLayout: false,
-            position: self.currentIsCaptionAbove ? .bottom : .top,
-            action: { _ in  return false }
-        )
-        self.present(controller)
-        self.undoController = controller
-    }
-    
     private func presentTimeoutSetup(sourceView: UIView, gesture: ContextGesture?) {
         self.hapticFeedback.impact(.light)
         
@@ -433,15 +392,13 @@ public class LegacyMessageInputPanelNode: ASDisplayNode, TGCaptionPanelView {
             updateTimeout(nil)
         })))
         
-        let contextController = ContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(sourceView: sourceView, position: self.currentIsCaptionAbove ? .bottom : .top)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+        let contextController = ContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(sourceView: sourceView)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
         self.present(contextController)
     }
-        
-    private func dismissAllTooltips() {
-        if let undoController = self.undoController {
-            self.undoController = nil
-            undoController.dismissWithCommitAction()
-        }
+    
+    private weak var tooltipController: TooltipScreen?
+    
+    private func dismissTimeoutTooltip() {
         if let tooltipController = self.tooltipController {
             self.tooltipController = nil
             tooltipController.dismiss()
@@ -452,7 +409,7 @@ public class LegacyMessageInputPanelNode: ASDisplayNode, TGCaptionPanelView {
         guard let superview = self.view.superview?.superview else {
             return
         }
-        self.dismissAllTooltips()
+        self.dismissTimeoutTooltip()
         
         let parentFrame = superview.convert(superview.bounds, to: nil)
         let absoluteFrame = sourceView.convert(sourceView.bounds, to: nil).offsetBy(dx: -parentFrame.minX, dy: 0.0)
@@ -492,51 +449,6 @@ public class LegacyMessageInputPanelNode: ASDisplayNode, TGCaptionPanelView {
         self.present(tooltipController)
     }
     
-    private func presentCaptionPositionTooltip(sourceView: UIView) {
-        guard let superview = self.view.superview?.superview else {
-            return
-        }
-        self.dismissAllTooltips()
-        
-        
-        let _ = (ApplicationSpecificNotice.getCaptionAboveMediaTooltip(accountManager: self.context.sharedContext.accountManager)
-        |> deliverOnMainQueue).start(next: { [weak self] count in
-            guard let self else {
-                return
-            }
-            if count > 2 {
-                return
-            }
-            
-            let parentFrame = superview.convert(superview.bounds, to: nil)
-            let absoluteFrame = sourceView.convert(sourceView.bounds, to: nil).offsetBy(dx: -parentFrame.minX, dy: 0.0)
-            let location = CGRect(origin: CGPoint(x: absoluteFrame.midX + 2.0, y: absoluteFrame.minY + 6.0), size: CGSize())
-            
-            let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
-            
-            let tooltipController = TooltipScreen(
-                account: self.context.account,
-                sharedContext: self.context.sharedContext,
-                text: .plain(text: presentationData.strings.MediaPicker_InvertCaptionTooltip),
-                balancedTextLayout: false,
-                style: .customBlur(UIColor(rgb: 0x18181a), 4.0),
-                arrowStyle: .small,
-                icon: nil,
-                location: .point(location, .bottom),
-                displayDuration: .default,
-                inset: 4.0,
-                cornerRadius: 10.0,
-                shouldDismissOnTouch: { _, _ in
-                    return .ignore
-                }
-            )
-            self.tooltipController = tooltipController
-            self.present(tooltipController)
-            
-            let _ = ApplicationSpecificNotice.incrementCaptionAboveMediaTooltip(accountManager: self.context.sharedContext.accountManager).start()
-        })
-    }
-    
     public override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         let result = super.hitTest(point, with: event)
         if let view = self.inputPanel.view, let panelResult = view.hitTest(self.view.convert(point, to: view), with: event) {
@@ -551,15 +463,12 @@ private final class HeaderContextReferenceContentSource: ContextReferenceContent
     var keepInPlace: Bool {
         return true
     }
-    
-    let position: ContextControllerReferenceViewInfo.ActionsPosition
 
-    init(sourceView: UIView, position: ContextControllerReferenceViewInfo.ActionsPosition) {
+    init(sourceView: UIView) {
         self.sourceView = sourceView
-        self.position = position
     }
 
     func transitionInfo() -> ContextControllerReferenceViewInfo? {
-        return ContextControllerReferenceViewInfo(referenceView: self.sourceView, contentAreaInScreenSpace: UIScreen.main.bounds, actionsPosition: self.position)
+        return ContextControllerReferenceViewInfo(referenceView: self.sourceView, contentAreaInScreenSpace: UIScreen.main.bounds, actionsPosition: .top)
     }
 }

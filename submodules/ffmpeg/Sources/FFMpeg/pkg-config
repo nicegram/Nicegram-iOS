@@ -16,8 +16,6 @@ elif [ "$1" == "--exists" ]; then
 		exit 0
 	elif [ "$NAME" == "vpx" ]; then
 		exit 0
-	elif [ "$NAME" == "dav1d" ]; then
-		exit 0
 	else
 		if [ "PRINT_ERRORS" == "1" ]; then
 			echo "Package $NAME was not found in the pkg-config search path."
@@ -30,20 +28,14 @@ elif [ "$1" == "--cflags" ]; then
 	NAME="$2"
 	LIBOPUS_PATH=""
 	LIBVPX_PATH=""
-	LIBDAV1D_PATH=""
 	if [ "$2" == "--libopus_path" ]; then
 		LIBOPUS_PATH="$3"
-		NAME="$8"
+		NAME="$6"
 	else
 		exit 1
 	fi
 	if [ "$4" == "--libvpx_path" ]; then
 		LIBVPX_PATH="$5"
-	else
-		exit 1
-	fi
-	if [ "$6" == "--libdav1d_path" ]; then
-		LIBDAV1D_PATH="$7"
 	else
 		exit 1
 	fi
@@ -56,9 +48,6 @@ elif [ "$1" == "--cflags" ]; then
 	elif [ "$NAME" == "vpx" ]; then
 		echo "-I$LIBVPX_PATH/include"
 		exit 0
-	elif [ "$NAME" == "dav1d" ]; then
-		echo "-I$LIBDAV1D_PATH/include"
-		exit 0
 	else
 		exit 1
 	fi
@@ -66,20 +55,14 @@ elif [ "$1" == "--libs" ]; then
 	NAME="$2"
 	LIBOPUS_PATH=""
 	LIBVPX_PATH=""
-	LIBDAV1D_PATH=""
 	if [ "$2" == "--libopus_path" ]; then
 		LIBOPUS_PATH="$3"
-		NAME="$8"
+		NAME="$6"
 	else
 		exit 1
 	fi
 	if [ "$4" == "--libvpx_path" ]; then
 		LIBVPX_PATH="$5"
-	else
-		exit 1
-	fi
-	if [ "$6" == "--libdav1d_path" ]; then
-		LIBDAV1D_PATH="$7"
 	else
 		exit 1
 	fi
@@ -91,9 +74,6 @@ elif [ "$1" == "--libs" ]; then
 		exit 0
 	elif [ "$NAME" == "vpx" ]; then
 		echo "-L$LIBVPX_PATH/lib -lVPX"
-		exit 0
-	elif [ "$NAME" == "dav1d" ]; then
-		echo "-L$LIBDAV1D_PATH/lib -ldav1d"
 		exit 0
 	else
 		exit 1

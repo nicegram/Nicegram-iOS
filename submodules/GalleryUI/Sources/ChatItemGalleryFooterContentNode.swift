@@ -871,7 +871,6 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                 
                 if !isVideo {
                     canEdit = true
-                    isImage = true
                 }
             } else if let media = media as? TelegramMediaWebpage, case let .Loaded(content) = media.content {
                 let type = webEmbedType(content: content)

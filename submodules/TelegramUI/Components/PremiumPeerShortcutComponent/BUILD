@@ -17,8 +17,6 @@ swift_library(
         "//submodules/AvatarNode",
         "//submodules/Components/MultilineTextComponent",
         "//submodules/AccountContext",
-        "//submodules/TelegramUI/Components/EmojiTextAttachmentView",
-        "//submodules/TextFormat",
     ],
     visibility = [
         "//visibility:public",

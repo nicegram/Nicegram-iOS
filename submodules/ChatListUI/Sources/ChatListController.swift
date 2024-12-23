@@ -1243,26 +1243,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             self.openStarsTopup(amount: amount)
         }
         
-        self.chatListDisplayNode.mainContainerNode.openWebApp = { [weak self] user in
-            guard let self else {
-                return
-            }
-            self.context.sharedContext.openWebApp(
-                context: self.context,
-                parentController: self,
-                updatedPresentationData: self.updatedPresentationData,
-                botPeer: .user(user),
-                chatPeer: nil,
-                threadId: nil,
-                buttonText: "",
-                url: "",
-                simple: true,
-                source: .generic,
-                skipTermsOfService: true,
-                payload: nil
-            )
-        }
-        
         self.chatListDisplayNode.mainContainerNode.openPremiumManagement = { [weak self] in
             guard let self else {
                 return
@@ -1334,12 +1314,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                         }
                     }
                 }))
-            }
-        }
-        
-        self.chatListDisplayNode.dismissSearch = { [weak self] in
-            if let self {
-                self.deactivateSearch(animated: true)
             }
         }
         

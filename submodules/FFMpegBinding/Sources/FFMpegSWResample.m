@@ -2,7 +2,6 @@
 
 #import <FFMpegBinding/FFMpegAVFrame.h>
 
-#import "libavformat/avformat.h"
 #import "libavcodec/avcodec.h"
 #import "libswresample/swresample.h"
 
@@ -54,29 +53,8 @@
         _context = NULL;
     }
     
-    #if LIBAVFORMAT_VERSION_MAJOR >= 59
-    AVChannelLayout channelLayoutIn;
-    av_channel_layout_default(&channelLayoutIn, channelCount);
-    
-    AVChannelLayout channelLayoutOut;
-    av_channel_layout_default(&channelLayoutOut, _destinationChannelCount);
-    
-    if (swr_alloc_set_opts2(
-        &_context,
-        &channelLayoutOut,
-        (enum AVSampleFormat)_destinationSampleFormat,
-        (int)_destinationSampleRate,
-        &channelLayoutIn,
-        (enum AVSampleFormat)_sourceSampleFormat,
-        (int)_sourceSampleRate,
-        0,
-        NULL
-    ) != 0) {
-        return;
-    }
-    #else
-    #pragma clang diagnostic push
-    #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     _context = swr_alloc_set_opts(NULL,
                                   av_get_default_channel_layout((int)_destinationChannelCount),
                                   (enum AVSampleFormat)_destinationSampleFormat,
@@ -86,8 +64,7 @@
                                   (int)_sourceSampleRate,
                                   0,
                                   NULL);
-    #pragma clang diagnostic pop
-    #endif
+#pragma clang diagnostic pop
     _currentSourceChannelCount = channelCount;
     _ratio = MAX(1, _destinationSampleRate / MAX(_sourceSampleRate, 1)) * MAX(1, _destinationChannelCount / channelCount) * 2;
     if (_context) {

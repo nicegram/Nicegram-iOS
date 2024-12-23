@@ -7,7 +7,6 @@ import TelegramPresentationData
 import ItemListUI
 import MergeLists
 import Photos
-import MediaAssetsContext
 
 private struct MediaGroupsGridAlbumEntry: Comparable, Identifiable {
     let theme: PresentationTheme

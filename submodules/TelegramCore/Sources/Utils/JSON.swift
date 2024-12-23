@@ -50,18 +50,6 @@ extension JSON {
             return nil
         }
     }
-    
-    public init?(dictionary: [String: Any]) {
-        var values: [String: JSON] = [:]
-        for (key, value) in dictionary {
-            if let v = JSON(value) {
-                values[key] = v
-            } else {
-                return nil
-            }
-        }
-        self = .dictionary(values)
-    }
 }
 
 extension JSON: Collection {
@@ -137,7 +125,7 @@ extension JSON {
         get {
             switch self {
                 case .null:
-                    return NSNull()
+                    return 0
                 case let .number(value):
                     return value
                 case let .string(value):
@@ -184,18 +172,6 @@ extension JSON {
     }
 }
 
-extension JSON {
-    public var string: String? {
-        guard let jsonData = try? JSONSerialization.data(withJSONObject: self.value) else {
-            return nil
-        }
-        guard let jsonDataString = String(data: jsonData, encoding: .utf8) else {
-            return nil
-        }
-        return jsonDataString
-    }
-}
-
 extension JSON: ExpressibleByDictionaryLiteral {
     public init(dictionaryLiteral elements: (String, Any)...) {
         self = .dictionary(elements.reduce([String: JSON]()) { (dictionary, element) in
@@ -217,12 +193,6 @@ extension JSON: ExpressibleByArrayLiteral {
 public protocol JSONElement {}
 private protocol JSONValue {
     var jsonValue: JSON { get }
-}
-
-extension NSNull: JSONElement, JSONValue {
-    var jsonValue: JSON {
-        return .null
-    }
 }
 
 extension Int: JSONElement, JSONValue {

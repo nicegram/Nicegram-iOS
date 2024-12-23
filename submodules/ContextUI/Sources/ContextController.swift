@@ -2359,7 +2359,6 @@ public final class ContextController: ViewController, StandalonePresentableContr
         case notificationTopicExceptions(text: String, action: (() -> Void)?)
         case starsReactions(topCount: Int)
         case videoProcessing
-        case collageReordering
         
         public static func ==(lhs: Tip, rhs: Tip) -> Bool {
             switch lhs {
@@ -2413,12 +2412,6 @@ public final class ContextController: ViewController, StandalonePresentableContr
                 }
             case .videoProcessing:
                 if case .videoProcessing = rhs {
-                    return true
-                } else {
-                    return false
-                }
-            case .collageReordering:
-                if case .collageReordering = rhs {
                     return true
                 } else {
                     return false

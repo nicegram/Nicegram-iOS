@@ -585,7 +585,7 @@ public final class ChatInlineSearchResultsListComponent: Component {
                         animationRenderer: component.context.animationRenderer,
                         activateSearch: {
                         },
-                        peerSelected: { _, _, _, _, _ in
+                        peerSelected: { _, _, _, _ in
                         },
                         disabledPeerSelected: { _, _, _ in
                         },
@@ -669,8 +669,6 @@ public final class ChatInlineSearchResultsListComponent: Component {
                         dismissNotice: { _ in
                         },
                         editPeer: { _ in
-                        },
-                        openWebApp: { _ in
                         }
                     )
                     self.chatListNodeInteraction = chatListNodeInteraction

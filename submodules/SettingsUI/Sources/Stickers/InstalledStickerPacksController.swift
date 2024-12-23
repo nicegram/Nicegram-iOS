@@ -759,7 +759,7 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
         ])
         presentControllerImpl?(controller, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
     }, openStickersBot: {
-        resolveDisposable.set((context.engine.peers.resolvePeerByName(name: "stickers", referrer: nil)
+        resolveDisposable.set((context.engine.peers.resolvePeerByName(name: "stickers")
         |> mapToSignal { result -> Signal<EnginePeer?, NoError> in
             guard case let .result(result) = result else {
                 return .complete()

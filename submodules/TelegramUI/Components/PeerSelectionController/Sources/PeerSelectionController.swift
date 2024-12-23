@@ -67,7 +67,6 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
     private let hasTypeHeaders: Bool
     private let requestPeerType: [ReplyMarkupButtonRequestPeerType]?
     private let hasCreation: Bool
-    let immediatelyActivateMultipleSelection: Bool
     
     override public var _presentedInModal: Bool {
         get {
@@ -108,7 +107,6 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
         self.selectForumThreads = params.selectForumThreads
         self.requestPeerType = params.requestPeerType
         self.hasCreation = params.hasCreation
-        self.immediatelyActivateMultipleSelection = params.immediatelyActivateMultipleSelection
         
         super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData))
         
@@ -171,11 +169,7 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
         })
         self.navigationBar?.setContentNode(self.searchContentNode, animated: false)
         
-        if params.immediatelyActivateMultipleSelection {
-            Queue.mainQueue().after(0.1) {
-                self.beginSelection()
-            }
-        } else if params.multipleSelection {
+        if params.multipleSelection {
             self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Select, style: .plain, target: self, action: #selector(self.beginSelection))
         }
         

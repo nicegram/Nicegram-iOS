@@ -346,7 +346,7 @@ final class PeerAllowedReactionsScreenComponent: Component {
                             
                     UIPasteboard.general.string = link
                     let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
-                    self.environment?.controller()?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.ChannelBoost_BoostLinkCopied), elevatedLayout: false, position: .bottom, animateInAsReplacement: false, action: { _ in return false }), in: .current)
+                    self.environment?.controller()?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(text: presentationData.strings.ChannelBoost_BoostLinkCopied), elevatedLayout: false, position: .bottom, animateInAsReplacement: false, action: { _ in return false }), in: .current)
                     return true
                 }, openStats: { [weak self] in
                     guard let self else {
@@ -687,7 +687,7 @@ final class PeerAllowedReactionsScreenComponent: Component {
                                                 ))
                                                 return .single(resultGroups)
                                             } else {
-                                                let remoteSignal = context.engine.stickers.searchEmoji(query: query, emoticon: Array(allEmoticons.keys), inputLanguageCode: languageCode)
+                                                let remoteSignal = context.engine.stickers.searchEmoji(emojiString: Array(allEmoticons.keys))
                                                 
                                                 return combineLatest(
                                                     context.account.postbox.itemCollectionsView(orderedItemListCollectionIds: [], namespaces: [Namespaces.ItemCollection.CloudEmojiPacks], aroundIndex: nil, count: 10000000) |> take(1),
@@ -1199,7 +1199,7 @@ final class PeerAllowedReactionsScreenComponent: Component {
                                 return
                             }
                             self.resolveStickersBotDisposable?.dispose()
-                            self.resolveStickersBotDisposable = (component.context.engine.peers.resolvePeerByName(name: "stickers", referrer: nil)
+                            self.resolveStickersBotDisposable = (component.context.engine.peers.resolvePeerByName(name: "stickers")
                             |> mapToSignal { result -> Signal<EnginePeer?, NoError> in
                                 guard case let .result(result) = result else {
                                     return .complete()
@@ -1281,22 +1281,20 @@ final class PeerAllowedReactionsScreenComponent: Component {
                         items: [
                             AnyComponentWithIdentity(id: 0, component: AnyComponent(ListItemSliderSelectorComponent(
                                 theme: environment.theme,
-                                content: .discrete(ListItemSliderSelectorComponent.Discrete(
-                                    values: reactionCountValueList.map { item in
-                                        return item
-                                    },
-                                    markPositions: false,
-                                    selectedIndex: max(0, min(reactionCountValueList.count - 1, self.allowedReactionCount - 1)),
-                                    title: sliderTitle,
-                                    selectedIndexUpdated: { [weak self] index in
-                                        guard let self else {
-                                            return
-                                        }
-                                        let index = max(1, min(reactionCountValueList.count, index + 1))
-                                        self.allowedReactionCount = index
-                                        self.state?.updated(transition: .immediate)
+                                values: reactionCountValueList.map { item in
+                                    return item
+                                },
+                                markPositions: false,
+                                selectedIndex: max(0, min(reactionCountValueList.count - 1, self.allowedReactionCount - 1)),
+                                title: sliderTitle,
+                                selectedIndexUpdated: { [weak self] index in
+                                    guard let self else {
+                                        return
                                     }
-                                ))
+                                    let index = max(1, min(reactionCountValueList.count, index + 1))
+                                    self.allowedReactionCount = index
+                                    self.state?.updated(transition: .immediate)
+                                }
                             )))
                         ],
                         displaySeparators: false

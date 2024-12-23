@@ -103,11 +103,10 @@ public final class TelegramMediaInvoice: Media, Equatable {
     public let photo: TelegramMediaWebFile?
     public let flags: TelegramMediaInvoiceFlags
     public let extendedMedia: TelegramExtendedMedia?
-    public let subscriptionPeriod: Int32?
     
     public let version: Int32
     
-    public init(title: String, description: String, photo: TelegramMediaWebFile?, receiptMessageId: MessageId?, currency: String, totalAmount: Int64, startParam: String, extendedMedia: TelegramExtendedMedia?, subscriptionPeriod: Int32?, flags: TelegramMediaInvoiceFlags, version: Int32) {
+    public init(title: String, description: String, photo: TelegramMediaWebFile?, receiptMessageId: MessageId?, currency: String, totalAmount: Int64, startParam: String, extendedMedia: TelegramExtendedMedia?, flags: TelegramMediaInvoiceFlags, version: Int32) {
         self.title = title
         self.description = description
         self.photo = photo
@@ -115,9 +114,8 @@ public final class TelegramMediaInvoice: Media, Equatable {
         self.currency = currency
         self.totalAmount = totalAmount
         self.startParam = startParam
-        self.extendedMedia = extendedMedia
-        self.subscriptionPeriod = subscriptionPeriod
         self.flags = flags
+        self.extendedMedia = extendedMedia
         self.version = version
     }
     
@@ -128,9 +126,8 @@ public final class TelegramMediaInvoice: Media, Equatable {
         self.totalAmount = decoder.decodeInt64ForKey("ta", orElse: 0)
         self.startParam = decoder.decodeStringForKey("sp", orElse: "")
         self.photo = decoder.decodeObjectForKey("p") as? TelegramMediaWebFile
-        self.extendedMedia = decoder.decodeObjectForKey("m", decoder: { TelegramExtendedMedia(decoder: $0) }) as? TelegramExtendedMedia
-        self.subscriptionPeriod = decoder.decodeOptionalInt32ForKey("sp")
         self.flags = TelegramMediaInvoiceFlags(rawValue: decoder.decodeInt32ForKey("f", orElse: 0))
+        self.extendedMedia = decoder.decodeObjectForKey("m", decoder: { TelegramExtendedMedia(decoder: $0) }) as? TelegramExtendedMedia
         
         if let receiptMessageIdPeerId = decoder.decodeOptionalInt64ForKey("r.p") as Int64?, let receiptMessageIdNamespace = decoder.decodeOptionalInt32ForKey("r.n") as Int32?, let receiptMessageIdId = decoder.decodeOptionalInt32ForKey("r.i") as Int32? {
             self.receiptMessageId = MessageId(peerId: PeerId(receiptMessageIdPeerId), namespace: receiptMessageIdNamespace, id: receiptMessageIdId)
@@ -159,12 +156,6 @@ public final class TelegramMediaInvoice: Media, Equatable {
             encoder.encodeObject(extendedMedia, forKey: "m")
         } else {
             encoder.encodeNil(forKey: "m")
-        }
-        
-        if let subscriptionPeriod = self.subscriptionPeriod {
-            encoder.encodeInt32(subscriptionPeriod, forKey: "sp")
-        } else {
-            encoder.encodeNil(forKey: "sp")
         }
         
         if let receiptMessageId = self.receiptMessageId {
@@ -221,10 +212,6 @@ public final class TelegramMediaInvoice: Media, Equatable {
             return false
         }
         
-        if self.subscriptionPeriod != other.subscriptionPeriod {
-            return false
-        }
-        
         if self.version != other.version {
             return false
         }
@@ -246,7 +233,6 @@ public final class TelegramMediaInvoice: Media, Equatable {
             totalAmount: self.totalAmount,
             startParam: self.startParam,
             extendedMedia: extendedMedia,
-            subscriptionPeriod: self.subscriptionPeriod,
             flags: self.flags,
             version: self.version
         )

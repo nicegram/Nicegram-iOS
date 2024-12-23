@@ -25,8 +25,6 @@
     "webpack-merge": "^6.0.1"
   },
   "dependencies": {
-    "base-64": "^1.0.0",
-    "event-target-polyfill": "^0.0.4",
     "hls.js": "^1.5.15"
   }
 }

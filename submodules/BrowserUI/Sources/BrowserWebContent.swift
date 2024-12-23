@@ -657,11 +657,8 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
             self.webView.reloadInputViews()
         }
         
-        if fullInsets.bottom.isZero {
-            self.webView.customBottomInset = safeInsets.bottom
-        } else {
-            self.webView.customBottomInset = safeInsets.bottom * (1.0 - insets.bottom / fullInsets.bottom)
-        }
+        self.webView.customBottomInset = safeInsets.bottom * (1.0 - insets.bottom / fullInsets.bottom)
+
 //        self.webView.scrollView.scrollIndicatorInsets = UIEdgeInsets(top: 0.0, left: -insets.left, bottom: 0.0, right: -insets.right)
 //        self.webView.scrollView.horizontalScrollIndicatorInsets = UIEdgeInsets(top: 0.0, left: -insets.left, bottom: 0.0, right: -insets.right)
         
@@ -835,7 +832,7 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
     }
     
     func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
-        if navigationResponse.canShowMIMEType || navigationResponse.response.url?.scheme == "tonsite" {
+        if navigationResponse.canShowMIMEType {
             decisionHandler(.allow)
         } else if #available(iOS 14.5, *) {
             if navigationResponse.response.suggestedFilename?.lowercased().hasSuffix(".pkpass") == true {
@@ -922,7 +919,8 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
                 if let data = try? Data(contentsOf: url), let pass = try? PKPass(data: data) {
                     let passLibrary = PKPassLibrary()
                     if passLibrary.containsPass(pass) {
-                        let alertController = textAlertController(context: self.context, updatedPresentationData: nil, title: nil, text: self.presentationData.strings.WebBrowser_PassExistsError, actions: [TextAlertAction(type: .genericAction, title: self.presentationData.strings.Common_OK, action: {})])
+                        //TODO:localize
+                        let alertController = textAlertController(context: self.context, updatedPresentationData: nil, title: nil, text: "This pass is already added to Wallet.", actions: [TextAlertAction(type: .genericAction, title: self.presentationData.strings.Common_OK, action: {})])
                         self.present(alertController, nil)
                     } else if let controller = PKAddPassesViewController(pass: pass) {
                         self.getNavigationController()?.view.window?.rootViewController?.present(controller, animated: true)
@@ -930,7 +928,7 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
                 }
             } else {
                 let controller = legacyICloudFilePicker(theme: self.presentationData.theme, mode: .export, url: url, documentTypes: [], forceDarkTheme: false, dismissed: {}, completion: { _ in
-                    let _ = tempFile
+                    
                 })
                 self.present(controller, nil)
             }
@@ -1375,7 +1373,7 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
                 }),
                 UIAction(title: presentationData.strings.Browser_ContextMenu_CopyLink, image: generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Copy"), color: presentationData.theme.contextMenu.primaryColor), handler: { [weak self] _ in
                     UIPasteboard.general.string = url.absoluteString
-                    self?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
+                    self?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
                 }),
                 UIAction(title: presentationData.strings.Browser_ContextMenu_Share, image: generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Forward"), color: presentationData.theme.contextMenu.primaryColor), handler: { [weak self] _ in
                     self?.share(url: url.absoluteString)
@@ -1429,7 +1427,7 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
         let shareController = ShareController(context: self.context, subject: .url(url))
         shareController.actionCompleted = { [weak self] in
-            self?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
+            self?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
         }
         self.present(shareController, nil)
     }
@@ -1496,7 +1494,8 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
                 }
             }
             
-            if result.isEmpty, let webViewUrl = self.webView.url,  let schemeAndHostUrl = URL(string: "/", relativeTo: webViewUrl) {
+            if result.isEmpty, let webViewUrl = self.webView.url {
+                let schemeAndHostUrl = webViewUrl.deletingPathExtension()
                 let url = schemeAndHostUrl.appendingPathComponent("favicon.ico")
                 result.insert(Favicon(url: url.absoluteString, dimensions: nil))
             }

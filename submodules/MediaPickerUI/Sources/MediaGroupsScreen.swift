@@ -13,7 +13,7 @@ import Photos
 import LegacyComponents
 import AttachmentUI
 import ItemListUI
-import MediaAssetsContext
+import CameraScreen
 
 private enum MediaGroupsEntry: Comparable, Identifiable {
     enum StableId: Hashable {
@@ -470,7 +470,7 @@ public final class MediaGroupsScreen: ViewController, AttachmentContainable {
         } else {
             self.updateNavigationStack { current in
                 var mediaPickerContext: AttachmentMediaPickerContext?
-                if let first = current.first as? MediaPickerScreenImpl {
+                if let first = current.first as? MediaPickerScreen {
                     mediaPickerContext = first.webSearchController?.mediaPickerContext ?? first.mediaPickerContext
                 }
                 return (current.filter { $0 !== self }, mediaPickerContext)

@@ -42,7 +42,6 @@ swift_library(
         "//submodules/Pasteboard:Pasteboard",
         "//submodules/TelegramUI/Components/Stickers/StickerPackEditTitleController",
         "//submodules/TelegramUI/Components/CameraScreen",
-        "//submodules/TelegramUI/Components/EmojiStatusComponent",
     ],
     visibility = [
         "//visibility:public",

@@ -24,7 +24,7 @@ public enum TelegramChannelPermission {
 }
 
 public extension TelegramChannel {
-    func hasPermission(_ permission: TelegramChannelPermission, ignoreDefault: Bool = false) -> Bool {
+    func hasPermission(_ permission: TelegramChannelPermission) -> Bool {
         if self.flags.contains(.isCreator) {
             if case .canBeAnonymous = permission {
                 if let adminRights = self.adminRights {
@@ -50,7 +50,7 @@ public extension TelegramChannel {
                     if let bannedRights = self.bannedRights, bannedRights.flags.contains(.banSendText) {
                         return false
                     }
-                    if let defaultBannedRights = self.defaultBannedRights, defaultBannedRights.flags.contains(.banSendText) && !ignoreDefault {
+                    if let defaultBannedRights = self.defaultBannedRights, defaultBannedRights.flags.contains(.banSendText) {
                         return false
                     }
                     return true
@@ -69,7 +69,7 @@ public extension TelegramChannel {
                     if let bannedRights = self.bannedRights, bannedRights.flags.contains(.banSendPhotos) {
                         return false
                     }
-                    if let defaultBannedRights = self.defaultBannedRights, defaultBannedRights.flags.contains(.banSendText) && !ignoreDefault {
+                    if let defaultBannedRights = self.defaultBannedRights, defaultBannedRights.flags.contains(.banSendPhotos) {
                         return false
                     }
                     return true
@@ -88,7 +88,7 @@ public extension TelegramChannel {
                     if let bannedRights = self.bannedRights, bannedRights.flags.contains(.banSendVideos) {
                         return false
                     }
-                    if let defaultBannedRights = self.defaultBannedRights, defaultBannedRights.flags.contains(.banSendVideos) && !ignoreDefault {
+                    if let defaultBannedRights = self.defaultBannedRights, defaultBannedRights.flags.contains(.banSendVideos) {
                         return false
                     }
                     return true
@@ -121,7 +121,7 @@ public extension TelegramChannel {
                     if let bannedRights = self.bannedRights, bannedRights.flags.intersection(flags) == flags {
                         return false
                     }
-                    if let defaultBannedRights = self.defaultBannedRights, defaultBannedRights.flags.intersection(flags) == flags && !ignoreDefault {
+                    if let defaultBannedRights = self.defaultBannedRights, defaultBannedRights.flags.intersection(flags) == flags {
                         return false
                     }
                     return true

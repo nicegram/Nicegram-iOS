@@ -49,7 +49,7 @@ private final class UpdatedRevenueBalancesSubscriberContext {
 }
 
 private final class UpdatedStarsBalanceSubscriberContext {
-    let subscribers = Bag<([PeerId: StarsAmount]) -> Void>()
+    let subscribers = Bag<([PeerId: Int64]) -> Void>()
 }
 
 private final class UpdatedStarsRevenueStatusSubscriberContext {
@@ -331,11 +331,6 @@ public final class AccountStateManager {
         fileprivate let sentScheduledMessageIdsPipe = ValuePipe<Set<MessageId>>()
         public var sentScheduledMessageIds: Signal<Set<MessageId>, NoError> {
             return self.sentScheduledMessageIdsPipe.signal()
-        }
-        
-        fileprivate let starRefBotConnectionEventsPipe = ValuePipe<StarRefBotConnectionEvent>()
-        public var starRefBotConnectionEvents: Signal<StarRefBotConnectionEvent, NoError> {
-            return self.starRefBotConnectionEventsPipe.signal()
         }
         
         private var updatedWebpageContexts: [MediaId: UpdatedWebpageSubscriberContext] = [:]
@@ -1710,7 +1705,7 @@ public final class AccountStateManager {
             }
         }
         
-        public func updatedStarsBalance() -> Signal<[PeerId: StarsAmount], NoError> {
+        public func updatedStarsBalance() -> Signal<[PeerId: Int64], NoError> {
             let queue = self.queue
             return Signal { [weak self] subscriber in
                 let disposable = MetaDisposable()
@@ -1731,7 +1726,7 @@ public final class AccountStateManager {
             }
         }
         
-        private func notifyUpdatedStarsBalance(_ updatedStarsBalance: [PeerId: StarsAmount]) {
+        private func notifyUpdatedStarsBalance(_ updatedStarsBalance: [PeerId: Int64]) {
             for subscriber in self.updatedStarsBalanceContext.subscribers.copyItems() {
                 subscriber(updatedStarsBalance)
             }
@@ -1808,10 +1803,6 @@ public final class AccountStateManager {
             self.queue.async {
                 self.removePossiblyDeliveredMessagesUniqueIds.merge(uniqueIds, uniquingKeysWith: { _, rhs in rhs })
             }
-        }
-        
-        func addStarRefBotConnectionEvent(event: StarRefBotConnectionEvent) {
-            self.starRefBotConnectionEventsPipe.putNext(event)
         }
     }
     
@@ -2093,7 +2084,7 @@ public final class AccountStateManager {
         }
     }
 
-    public func updatedStarsBalance() -> Signal<[PeerId: StarsAmount], NoError> {
+    public func updatedStarsBalance() -> Signal<[PeerId: Int64], NoError> {
         return self.impl.signalWith { impl, subscriber in
             return impl.updatedStarsBalance().start(next: subscriber.putNext, error: subscriber.putError, completed: subscriber.putCompletion)
         }
@@ -2191,18 +2182,6 @@ public final class AccountStateManager {
     
     public func synchronouslyIsMessageDeletedRemotely(ids: [EngineMessage.Id]) -> [EngineMessage.Id] {
         return self.messagesRemovedContext.synchronouslyIsMessageDeletedRemotely(ids: ids)
-    }
-    
-    func starRefBotConnectionEvents() -> Signal<StarRefBotConnectionEvent, NoError> {
-        return self.impl.signalWith { impl, subscriber in
-            return impl.starRefBotConnectionEventsPipe.signal().start(next: subscriber.putNext)
-        }
-    }
-    
-    func addStarRefBotConnectionEvent(event: StarRefBotConnectionEvent) {
-        self.impl.with { impl in
-            impl.addStarRefBotConnectionEvent(event: event)
-        }
     }
 }
 

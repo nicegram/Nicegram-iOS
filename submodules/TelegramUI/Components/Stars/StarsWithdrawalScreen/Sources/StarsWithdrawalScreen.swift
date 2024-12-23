@@ -102,8 +102,8 @@ private final class SheetContent: CombinedComponent {
             let amountPlaceholder: String
             let amountLabel: String?
             
-            let minAmount: StarsAmount?
-            let maxAmount: StarsAmount?
+            let minAmount: Int64?
+            let maxAmount: Int64?
             
             let configuration = StarsWithdrawConfiguration.with(appConfiguration: component.context.currentAppConfiguration.with { $0 })
             
@@ -113,7 +113,7 @@ private final class SheetContent: CombinedComponent {
                 amountTitle = environment.strings.Stars_Withdraw_AmountTitle
                 amountPlaceholder = environment.strings.Stars_Withdraw_AmountPlaceholder
                 
-                minAmount = configuration.minWithdrawAmount.flatMap { StarsAmount(value: $0, nanos: 0) }
+                minAmount = configuration.minWithdrawAmount
                 maxAmount = status.balances.availableBalance
                 amountLabel = nil
             case .paidMedia:
@@ -121,13 +121,13 @@ private final class SheetContent: CombinedComponent {
                 amountTitle = environment.strings.Stars_PaidContent_AmountTitle
                 amountPlaceholder = environment.strings.Stars_PaidContent_AmountPlaceholder
                
-                minAmount = StarsAmount(value: 1, nanos: 0)
-                maxAmount = configuration.maxPaidMediaAmount.flatMap { StarsAmount(value: $0, nanos: 0) }
+                minAmount = 1
+                maxAmount = configuration.maxPaidMediaAmount
                 
                 var usdRate = 0.012
-                if let usdWithdrawRate = configuration.usdWithdrawRate, let amount = state.amount, amount > StarsAmount.zero {
+                if let usdWithdrawRate = configuration.usdWithdrawRate, let amount = state.amount, amount > 0 {
                     usdRate = Double(usdWithdrawRate) / 1000.0 / 100.0
-                    amountLabel = "≈\(formatTonUsdValue(amount.value, divide: false, rate: usdRate, dateTimeFormat: environment.dateTimeFormat))"
+                    amountLabel = "≈\(formatTonUsdValue(amount, divide: false, rate: usdRate, dateTimeFormat: environment.dateTimeFormat))"
                 } else {
                     amountLabel = nil
                 }
@@ -136,8 +136,8 @@ private final class SheetContent: CombinedComponent {
                 amountTitle = environment.strings.Stars_SendStars_AmountTitle
                 amountPlaceholder = environment.strings.Stars_SendStars_AmountPlaceholder
                 
-                minAmount = StarsAmount(value: 1, nanos: 0)
-                maxAmount = configuration.maxPaidMediaAmount.flatMap { StarsAmount(value: $0, nanos: 0) }
+                minAmount = 1
+                maxAmount = configuration.maxPaidMediaAmount
                 amountLabel = nil
             }
             
@@ -152,7 +152,7 @@ private final class SheetContent: CombinedComponent {
             contentSize.height += title.size.height
             contentSize.height += 40.0
             
-            let balance: StarsAmount?
+            let balance: Int64?
             if case .reaction = component.mode {
                 balance = state.balance
             } else if case let .withdraw(starsState) = component.mode {
@@ -177,7 +177,7 @@ private final class SheetContent: CombinedComponent {
                 let balanceValue = balanceValue.update(
                     component: MultilineTextComponent(
                         text: .plain(NSAttributedString(
-                            string: presentationStringsFormattedNumber(balance, environment.dateTimeFormat.groupingSeparator),
+                            string: presentationStringsFormattedNumber(Int32(balance), environment.dateTimeFormat.groupingSeparator),
                             font: Font.semibold(16.0),
                             textColor: theme.list.itemPrimaryTextColor
                         )),
@@ -246,6 +246,7 @@ private final class SheetContent: CombinedComponent {
             default:
                 amountFooter = nil
             }
+                         
             let amountSection = amountSection.update(
                 component: ListSectionComponent(
                     theme: theme,
@@ -266,13 +267,13 @@ private final class SheetContent: CombinedComponent {
                                     textColor: theme.list.itemPrimaryTextColor,
                                     secondaryColor: theme.list.itemSecondaryTextColor,
                                     placeholderColor: theme.list.itemPlaceholderTextColor,
-                                    value: state.amount?.value,
-                                    minValue: minAmount?.value,
-                                    maxValue: maxAmount?.value,
+                                    value: state.amount,
+                                    minValue: minAmount,
+                                    maxValue: maxAmount,
                                     placeholderText: amountPlaceholder,
                                     labelText: amountLabel,
                                     amountUpdated: { [weak state] amount in
-                                        state?.amount = amount.flatMap { StarsAmount(value: $0, nanos: 0) }
+                                        state?.amount = amount
                                         state?.updated()
                                     },
                                     tag: amountTag
@@ -297,7 +298,7 @@ private final class SheetContent: CombinedComponent {
             if case .paidMedia = component.mode {
                 buttonString = environment.strings.Stars_PaidContent_Create
             } else if let amount = state.amount {
-                buttonString = "\(environment.strings.Stars_Withdraw_Withdraw)   #  \(presentationStringsFormattedNumber(amount, environment.dateTimeFormat.groupingSeparator))"
+                buttonString = "\(environment.strings.Stars_Withdraw_Withdraw)   #  \(presentationStringsFormattedNumber(Int32(amount), environment.dateTimeFormat.groupingSeparator))"
             } else {
                 buttonString = environment.strings.Stars_Withdraw_Withdraw
             }
@@ -325,14 +326,14 @@ private final class SheetContent: CombinedComponent {
                         id: AnyHashable(0),
                         component: AnyComponent(MultilineTextComponent(text: .plain(buttonAttributedString)))
                     ),
-                    isEnabled: (state.amount ?? StarsAmount.zero) > StarsAmount.zero,
+                    isEnabled: (state.amount ?? 0) > 0,
                     displaysProgress: false,
                     action: { [weak state] in
                         if let controller = controller() as? StarsWithdrawScreen, let amount = state?.amount {
                             if let minAmount, amount < minAmount {
-                                controller.presentMinAmountTooltip(minAmount.value)
+                                controller.presentMinAmountTooltip(minAmount)
                             } else {
-                                controller.completion(amount.value)
+                                controller.completion(amount)
                                 controller.dismissAnimated()
                             }
                         }
@@ -359,9 +360,9 @@ private final class SheetContent: CombinedComponent {
         private let context: AccountContext
         private let mode: StarsWithdrawScreen.Mode
         
-        fileprivate var amount: StarsAmount?
+        fileprivate var amount: Int64?
         
-        fileprivate var balance: StarsAmount?
+        fileprivate var balance: Int64?
         private var stateDisposable: Disposable?
         
         var cachedCloseImage: (UIImage, PresentationTheme)?
@@ -375,12 +376,12 @@ private final class SheetContent: CombinedComponent {
             self.context = context
             self.mode = mode
             
-            var amount: StarsAmount?
+            var amount: Int64?
             switch mode {
             case let .withdraw(stats):
                 amount = stats.balances.availableBalance
             case let .paidMedia(initialValue):
-                amount = initialValue.flatMap { StarsAmount(value: $0, nanos: 0) }
+                amount = initialValue
             case .reaction:
                 amount = nil
             }

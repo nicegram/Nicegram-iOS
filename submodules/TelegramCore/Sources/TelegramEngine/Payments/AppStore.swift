@@ -61,11 +61,10 @@ private func apiInputStorePaymentPurpose(account: Account, purpose: AppStoreTran
             }
             
             var message: Api.TextWithEntities?
-            if let text, !text.isEmpty {
+            if let text {
                 flags |= (1 << 1)
-                message = .textWithEntities(text: text, entities: entities.flatMap { apiEntitiesFromMessageTextEntities($0, associatedPeers: SimpleDictionary()) } ?? [])
+                message = .textWithEntities(text: text, entities: apiEntitiesFromMessageTextEntities(entities ?? [], associatedPeers: SimpleDictionary()))
             }
-            
             return .inputStorePaymentPremiumGiftCode(flags: flags, users: apiInputUsers, boostPeer: apiBoostPeer, currency: currency, amount: amount, message: message)
         }
     case let .giveaway(boostPeerId, additionalPeerIds, countries, onlyNewSubscribers, showWinners, prizeDescription, randomId, untilDate, currency, amount):

@@ -56,7 +56,6 @@ swift_library(
         "//submodules/AsyncDisplayKit",
         "//submodules/Display",
         "//submodules/TelegramCore",
-        "//submodules/MetalEngine",
         "//submodules/SSignalKit/SwiftSignalKit",
         "//submodules/ComponentFlow",
         "//submodules/Components/ViewControllerComponent",
@@ -82,9 +81,6 @@ swift_library(
         "//submodules/TelegramNotices",
         "//submodules/DeviceAccess",
         "//submodules/TelegramUI/Components/Utils/RoundedRectWithTailPath",
-        "//submodules/TelegramUI/Components/MediaAssetsContext",
-        "//submodules/UndoUI",
-        "//submodules/ContextUI",
         
     ],
     visibility = [

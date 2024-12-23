@@ -10,9 +10,9 @@ import TelegramPresentationData
 import DeviceAccess
 import AccountContext
 
-extension MediaEditorScreenImpl {
+extension MediaEditorScreen {
     final class Recording {
-        private weak var controller: MediaEditorScreenImpl?
+        private weak var controller: MediaEditorScreen?
         
         private var recorder: EntityVideoRecorder?
         
@@ -37,7 +37,7 @@ extension MediaEditorScreenImpl {
         
         var isLocked = false
         
-        init(controller: MediaEditorScreenImpl) {
+        init(controller: MediaEditorScreen) {
             self.controller = controller
             
             self.authorizationStatusDisposables.add((DeviceAccess.authorizationStatus(subject: .camera(.video))

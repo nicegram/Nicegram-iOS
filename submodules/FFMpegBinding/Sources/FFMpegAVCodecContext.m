@@ -3,7 +3,6 @@
 #import <FFMpegBinding/FFMpegAVFrame.h>
 #import <FFMpegBinding/FFMpegAVCodec.h>
 
-#import "libavformat/avformat.h"
 #import "libavcodec/avcodec.h"
 
 @interface FFMpegAVCodecContext () {
@@ -36,11 +35,11 @@
 }
 
 - (int32_t)channels {
-    #if LIBAVFORMAT_VERSION_MAJOR >= 59
+#if LIBAVFORMAT_VERSION_MAJOR >= 59
     return (int32_t)_impl->ch_layout.nb_channels;
-    #else
+#else
     return (int32_t)_impl->channels;
-    #endif
+#endif
 }
 
 - (int32_t)sampleRate {

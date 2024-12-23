@@ -10,13 +10,12 @@ import PresentationDataUtils
 import ButtonComponent
 import BundleIconComponent
 import TelegramStringFormatting
-import TelegramCore
 
 final class StarsBalanceComponent: Component {
     let theme: PresentationTheme
     let strings: PresentationStrings
     let dateTimeFormat: PresentationDateTimeFormat
-    let count: StarsAmount
+    let count: Int64
     let rate: Double?
     let actionTitle: String
     let actionAvailable: Bool
@@ -30,7 +29,7 @@ final class StarsBalanceComponent: Component {
         theme: PresentationTheme,
         strings: PresentationStrings,
         dateTimeFormat: PresentationDateTimeFormat,
-        count: StarsAmount,
+        count: Int64,
         rate: Double?,
         actionTitle: String,
         actionAvailable: Bool,
@@ -140,7 +139,7 @@ final class StarsBalanceComponent: Component {
             let sideInset: CGFloat = 16.0
             var contentHeight: CGFloat = sideInset
             
-            let balanceString = presentationStringsFormattedNumber(component.count, component.dateTimeFormat.groupingSeparator)
+            let balanceString = presentationStringsFormattedNumber(Int32(component.count), component.dateTimeFormat.groupingSeparator)
             let titleSize = self.title.update(
                 transition: .immediate,
                 component: AnyComponent(
@@ -169,7 +168,7 @@ final class StarsBalanceComponent: Component {
         
             let subtitleText: String
             if let rate = component.rate {
-                subtitleText = "≈\(formatTonUsdValue(component.count.value, divide: false, rate: rate, dateTimeFormat: component.dateTimeFormat))"
+                subtitleText = "≈\(formatTonUsdValue(component.count, divide: false, rate: rate, dateTimeFormat: component.dateTimeFormat))"
             } else {
                 subtitleText = component.strings.Stars_Intro_YourBalance
             }

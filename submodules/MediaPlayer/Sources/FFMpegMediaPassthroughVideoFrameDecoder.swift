@@ -1,59 +1,16 @@
 import CoreMedia
 
 final class FFMpegMediaPassthroughVideoFrameDecoder: MediaTrackFrameDecoder {
-    final class VideoFormatData {
-        let codecType: CMVideoCodecType
-        let width: Int32
-        let height: Int32
-        let extraData: Data
-        
-        init(codecType: CMVideoCodecType, width: Int32, height: Int32, extraData: Data) {
-            self.codecType = codecType
-            self.width = width
-            self.height = height
-            self.extraData = extraData
-        }
-    }
-    
-    private let videoFormatData: VideoFormatData
-    private var videoFormat: CMVideoFormatDescription?
+    private let videoFormat: CMVideoFormatDescription
     private let rotationAngle: Double
     private var resetDecoderOnNextFrame = true
     
-    private var sentFrameQueue: [MediaTrackDecodableFrame] = []
-    
-    init(videoFormatData: VideoFormatData, rotationAngle: Double) {
-        self.videoFormatData = videoFormatData
+    init(videoFormat: CMVideoFormatDescription, rotationAngle: Double) {
+        self.videoFormat = videoFormat
         self.rotationAngle = rotationAngle
     }
     
-    func send(frame: MediaTrackDecodableFrame) -> Bool {
-        self.sentFrameQueue.append(frame)
-        return true
-    }
-    
-    func decode() -> MediaTrackFrame? {
-        guard let frame = self.sentFrameQueue.first else {
-            return nil
-        }
-        self.sentFrameQueue.removeFirst()
-        
-        if self.videoFormat == nil {
-            if self.videoFormatData.codecType == kCMVideoCodecType_MPEG4Video {
-                self.videoFormat = FFMpegMediaFrameSourceContextHelpers.createFormatDescriptionFromMpeg4CodecData(UInt32(kCMVideoCodecType_MPEG4Video), self.videoFormatData.width, self.videoFormatData.height, self.videoFormatData.extraData)
-            } else if self.videoFormatData.codecType == kCMVideoCodecType_H264 {
-                self.videoFormat = FFMpegMediaFrameSourceContextHelpers.createFormatDescriptionFromAVCCodecData(UInt32(kCMVideoCodecType_H264), self.videoFormatData.width, self.videoFormatData.height, self.videoFormatData.extraData)
-            } else if self.videoFormatData.codecType == kCMVideoCodecType_HEVC {
-                self.videoFormat = FFMpegMediaFrameSourceContextHelpers.createFormatDescriptionFromHEVCCodecData(UInt32(kCMVideoCodecType_HEVC), self.videoFormatData.width, self.videoFormatData.height, self.videoFormatData.extraData)
-            } else if self.videoFormatData.codecType == kCMVideoCodecType_AV1 {
-                self.videoFormat = FFMpegMediaFrameSourceContextHelpers.createFormatDescriptionFromAV1CodecData(UInt32(kCMVideoCodecType_AV1), self.videoFormatData.width, self.videoFormatData.height, self.videoFormatData.extraData, frameData: frame.copyPacketData())
-            }
-        }
-        
-        if self.videoFormat == nil {
-            return nil
-        }
-        
+    func decode(frame: MediaTrackDecodableFrame) -> MediaTrackFrame? {
         var blockBuffer: CMBlockBuffer?
         
         let bytes = malloc(Int(frame.packet.size))!
@@ -92,9 +49,5 @@ final class FFMpegMediaPassthroughVideoFrameDecoder: MediaTrackFrameDecoder {
     
     func reset() {
         self.resetDecoderOnNextFrame = true
-    }
-    
-    func sendEndToDecoder() -> Bool {
-        return true
     }
 }

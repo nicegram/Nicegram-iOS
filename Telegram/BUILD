@@ -1817,7 +1817,6 @@ ios_extension(
         ":SwiftSignalKitFramework",
         ":PostboxFramework",
         ":TelegramCoreFramework",
-        ":TelegramUIFramework",
     ],
 )
 

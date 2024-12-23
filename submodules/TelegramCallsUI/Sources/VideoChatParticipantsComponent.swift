@@ -129,7 +129,6 @@ final class VideoChatParticipantsComponent: Component {
     let participants: Participants?
     let speakingParticipants: Set<EnginePeer.Id>
     let expandedVideoState: ExpandedVideoState?
-    let maxVideoQuality: Int
     let theme: PresentationTheme
     let strings: PresentationStrings
     let layout: Layout
@@ -148,7 +147,6 @@ final class VideoChatParticipantsComponent: Component {
         participants: Participants?,
         speakingParticipants: Set<EnginePeer.Id>,
         expandedVideoState: ExpandedVideoState?,
-        maxVideoQuality: Int,
         theme: PresentationTheme,
         strings: PresentationStrings,
         layout: Layout,
@@ -166,7 +164,6 @@ final class VideoChatParticipantsComponent: Component {
         self.participants = participants
         self.speakingParticipants = speakingParticipants
         self.expandedVideoState = expandedVideoState
-        self.maxVideoQuality = maxVideoQuality
         self.theme = theme
         self.strings = strings
         self.layout = layout
@@ -189,9 +186,6 @@ final class VideoChatParticipantsComponent: Component {
             return false
         }
         if lhs.expandedVideoState != rhs.expandedVideoState {
-            return false
-        }
-        if lhs.maxVideoQuality != rhs.maxVideoQuality {
             return false
         }
         if lhs.theme !== rhs.theme {
@@ -1028,7 +1022,6 @@ final class VideoChatParticipantsComponent: Component {
                         isMyPeer: videoParticipant.participant.peer.id == component.participants?.myPeerId,
                         isPresentation: videoParticipant.isPresentation,
                         isSpeaking: component.speakingParticipants.contains(videoParticipant.participant.peer.id),
-                        maxVideoQuality: component.maxVideoQuality,
                         isExpanded: isItemExpanded,
                         isUIHidden: isItemUIHidden || self.isPinchToZoomActive,
                         contentInsets: itemContentInsets,
@@ -1383,7 +1376,6 @@ final class VideoChatParticipantsComponent: Component {
                     component: AnyComponent(VideoChatExpandedParticipantThumbnailsComponent(
                         call: component.call,
                         theme: component.theme,
-                        displayVideo: component.maxVideoQuality != 0,
                         participants: thumbnailParticipants,
                         selectedParticipant: component.expandedVideoState.flatMap { expandedVideoState in
                             return VideoChatExpandedParticipantThumbnailsComponent.Participant.Key(id: expandedVideoState.mainParticipant.id, isPresentation: expandedVideoState.mainParticipant.isPresentation)
@@ -1770,18 +1762,12 @@ final class VideoChatParticipantsComponent: Component {
             }
             
             var requestedVideo: [PresentationGroupCallRequestedVideo] = []
-            if let participants = component.participants, component.maxVideoQuality != 0 {
+            if let participants = component.participants {
                 for participant in participants.participants {
                     var maxVideoQuality: PresentationGroupCallRequestedVideo.Quality = .medium
                     if let expandedVideoState = component.expandedVideoState {
                         if expandedVideoState.mainParticipant.id == participant.peer.id, !expandedVideoState.mainParticipant.isPresentation {
-                            if component.maxVideoQuality == Int.max {
-                                maxVideoQuality = .full
-                            } else if component.maxVideoQuality == 360 {
-                                maxVideoQuality = .medium
-                            } else {
-                                maxVideoQuality = .thumbnail
-                            }
+                            maxVideoQuality = .full
                         } else {
                             maxVideoQuality = .thumbnail
                         }
@@ -1790,27 +1776,15 @@ final class VideoChatParticipantsComponent: Component {
                     var maxPresentationQuality: PresentationGroupCallRequestedVideo.Quality = .medium
                     if let expandedVideoState = component.expandedVideoState {
                         if expandedVideoState.mainParticipant.id == participant.peer.id, expandedVideoState.mainParticipant.isPresentation {
-                            if component.maxVideoQuality == Int.max {
-                                maxVideoQuality = .full
-                            } else if component.maxVideoQuality == 360 {
-                                maxVideoQuality = .medium
-                            } else {
-                                maxVideoQuality = .thumbnail
-                            }
+                            maxPresentationQuality = .full
                         } else {
                             maxPresentationQuality = .thumbnail
                         }
                     }
                     
                     if component.layout.videoColumn != nil && gridParticipants.count == 1 {
-                        if component.maxVideoQuality == Int.max {
-                            maxVideoQuality = .full
-                        } else if component.maxVideoQuality == 360 {
-                            maxVideoQuality = .medium
-                        } else {
-                            maxVideoQuality = .thumbnail
-                        }
-                        maxPresentationQuality = maxVideoQuality
+                        maxVideoQuality = .full
+                        maxPresentationQuality = .full
                     }
                     
                     if let videoChannel = participant.requestedVideoChannel(minQuality: .thumbnail, maxQuality: maxVideoQuality) {

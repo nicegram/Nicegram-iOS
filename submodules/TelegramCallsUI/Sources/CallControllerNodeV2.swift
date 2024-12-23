@@ -76,8 +76,6 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
     private var audioLevelDisposable: Disposable?
     private var audioOutputCheckTimer: Foundation.Timer?
     
-    private var applicationInForegroundDisposable: Disposable?
-    
     private var localVideo: AdaptedCallVideoSource?
     private var remoteVideo: AdaptedCallVideoSource?
     
@@ -241,37 +239,6 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
                 }
             }
         })
-        
-        self.applicationInForegroundDisposable = (self.sharedContext.applicationBindings.applicationInForeground
-        |> filter { $0 }
-        |> deliverOnMainQueue).startStrict(next: { [weak self] _ in
-            guard let self else {
-                return
-            }
-            if self.callScreen.isPictureInPictureRequested {
-                Queue.mainQueue().after(0.5, { [weak self] in
-                    guard let self else {
-                        return
-                    }
-                    if self.callScreen.isPictureInPictureRequested && !self.callScreen.restoreFromPictureInPictureIfPossible() {
-                        Queue.mainQueue().after(0.2, { [weak self] in
-                            guard let self else {
-                                return
-                            }
-                            if self.callScreen.isPictureInPictureRequested && !self.callScreen.restoreFromPictureInPictureIfPossible() {
-                                Queue.mainQueue().after(0.3, { [weak self] in
-                                    guard let self else {
-                                        return
-                                    }
-                                    if self.callScreen.isPictureInPictureRequested && !self.callScreen.restoreFromPictureInPictureIfPossible() {
-                                    }
-                                })
-                            }
-                        })
-                    }
-                })
-            }
-        })
     }
     
     deinit {
@@ -280,7 +247,6 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
         self.audioLevelDisposable?.dispose()
         self.audioOutputCheckTimer?.invalidate()
         self.signalQualityTimer?.invalidate()
-        self.applicationInForegroundDisposable?.dispose()
     }
     
     func updateAudioOutputs(availableOutputs: [AudioSessionOutput], currentOutput: AudioSessionOutput?) {
@@ -687,8 +653,6 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
                 self.containerView.layer.allowsGroupOpacity = false
             })
         }
-        
-        let _ = self.callScreen.restoreFromPictureInPictureIfPossible()
     }
     
     func animateOut(completion: @escaping () -> Void) {

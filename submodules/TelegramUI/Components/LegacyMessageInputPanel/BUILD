@@ -24,7 +24,6 @@ swift_library(
         "//submodules/UndoUI",
         "//submodules/TelegramUI/Components/MessageInputPanelComponent",
         "//submodules/TelegramUI/Components/LegacyMessageInputPanelInputView",
-        "//submodules/TelegramNotices",
     ],
     visibility = [
         "//visibility:public",

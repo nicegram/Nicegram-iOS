@@ -30,7 +30,6 @@ import AudioToolbox
 import TextFormat
 import InAppPurchaseManager
 import BlurredBackgroundComponent
-import ProgressNavigationButtonNode
 
 final class GiftSetupScreenComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -204,7 +203,7 @@ final class GiftSetupScreenComponent: Component {
             self.buttonSeparator.opacity = Float(bottomPanelAlpha)
         }
         
-        @objc private func proceed() {
+        func proceed() {
             guard let component = self.component else {
                 return
             }
@@ -216,7 +215,7 @@ final class GiftSetupScreenComponent: Component {
             }
         }
         
-        private func proceedWithPremiumGift() {
+        func proceedWithPremiumGift() {
             guard let component = self.component, case let .premium(product) = component.subject, let storeProduct = product.storeProduct, let inAppPurchaseManager = component.context.inAppPurchaseManager else {
                 return
             }
@@ -305,7 +304,7 @@ final class GiftSetupScreenComponent: Component {
             })
         }
         
-        private func proceedWithStarGift() {
+        func proceedWithStarGift() {
             guard let component = self.component, case let .starGift(starGift) = component.subject, let starsContext = component.context.starsContext, let starsState = starsContext.currentState else {
                 return
             }
@@ -391,7 +390,7 @@ final class GiftSetupScreenComponent: Component {
                 })
             }
             
-            if starsState.balance < StarsAmount(value: starGift.price, nanos: 0) {
+            if starsState.balance < starGift.price {
                 let _ = (self.optionsPromise.get()
                 |> filter { $0 != nil }
                 |> take(1)
@@ -405,8 +404,8 @@ final class GiftSetupScreenComponent: Component {
                         options: options ?? [],
                         purpose: .starGift(peerId: component.peerId, requiredStars: starGift.price),
                         completion: { [weak starsContext] stars in
-                            starsContext?.add(balance: StarsAmount(value: stars, nanos: 0))
-                            Queue.mainQueue().after(2.0) {
+                            starsContext?.add(balance: stars)
+                            Queue.mainQueue().after(0.1) {
                                 proceed()
                             }
                         }
@@ -450,8 +449,6 @@ final class GiftSetupScreenComponent: Component {
             defer {
                 self.isUpdating = false
             }
-            
-            let peerName = self.peerMap[component.peerId]?.compactDisplayTitle ?? ""
             
             if self.component == nil {
                 let _ = (component.context.engine.data.get(
@@ -591,16 +588,26 @@ final class GiftSetupScreenComponent: Component {
             self.component = component
             self.state = state
             
+            let alphaTransition: ComponentTransition
+            if !transition.animation.isImmediate {
+                alphaTransition = .easeInOut(duration: 0.25)
+            } else {
+                alphaTransition = .immediate
+            }
+            
             if themeUpdated {
                 self.backgroundColor = environment.theme.list.blocksBackgroundColor
             }
             
             let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
-                        
+            
+            let _ = alphaTransition
+            let _ = presentationData
+            
             let navigationTitleSize = self.navigationTitle.update(
                 transition: transition,
                 component: AnyComponent(MultilineTextComponent(
-                    text: .plain(NSAttributedString(string: environment.strings.Gift_Send_TitleTo(peerName).string, font: Font.semibold(17.0), textColor: environment.theme.rootController.navigationBar.primaryTextColor)),
+                    text: .plain(NSAttributedString(string: environment.strings.Gift_Send_Title, font: Font.semibold(17.0), textColor: environment.theme.rootController.navigationBar.primaryTextColor)),
                     horizontalAlignment: .center
                 )),
                 environment: {},
@@ -713,6 +720,7 @@ final class GiftSetupScreenComponent: Component {
             ))))
             self.resetText = nil
             
+            let peerName = self.peerMap[component.peerId]?.compactDisplayTitle ?? ""
             let introFooter: AnyComponent<Empty>?
             switch component.subject {
             case .premium:
@@ -952,20 +960,6 @@ final class GiftSetupScreenComponent: Component {
                 buttonView.frame = CGRect(origin: CGPoint(x: floor((availableSize.width - buttonSize.width) / 2.0), y: availableSize.height - bottomPanelHeight + bottomPanelPadding), size: buttonSize)
             }
             
-            let controller = environment.controller()
-            if inputHeight > 10.0 {
-                if self.inProgress {
-                    let item = UIBarButtonItem(customDisplayNode: ProgressNavigationButtonNode(color: environment.theme.rootController.navigationBar.accentTextColor))
-                    controller?.navigationItem.rightBarButtonItem = item
-                } else {
-                    let rightBarButtonItem = UIBarButtonItem(title: environment.strings.Gift_Send_SendShort, style: .done, target: self, action: #selector(self.proceed))
-                    rightBarButtonItem.isEnabled = buttonIsEnabled
-                    controller?.navigationItem.setRightBarButton(rightBarButtonItem, animated: controller?.navigationItem.rightBarButtonItem == nil)
-                }
-            } else {
-                controller?.navigationItem.setRightBarButton(nil, animated: true)
-            }
-            
             if self.textInputState.isEditing, let emojiSuggestion = self.textInputState.currentEmojiSuggestion, emojiSuggestion.disposable == nil {
                 emojiSuggestion.disposable = (EmojiSuggestionsComponent.suggestionData(context: component.context, isSavedMessages: false, query: emojiSuggestion.position.value)
                 |> deliverOnMainQueue).start(next: { [weak self, weak emojiSuggestion] result in
@@ -1096,6 +1090,7 @@ final class GiftSetupScreenComponent: Component {
                 }
             }
 
+            
             let previousBounds = self.scrollView.bounds
             
             self.recenterOnTag = nil

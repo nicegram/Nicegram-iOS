@@ -51,16 +51,15 @@ func _internal_requestAccountPrivacySettings(account: Account) -> Signal<Account
     let voiceMessagesPrivacy = account.network.request(Api.functions.account.getPrivacy(key: .inputPrivacyKeyVoiceMessages))
     let bioPrivacy = account.network.request(Api.functions.account.getPrivacy(key: .inputPrivacyKeyAbout))
     let birthdayPrivacy = account.network.request(Api.functions.account.getPrivacy(key: .inputPrivacyKeyBirthday))
-    let giftsAutoSavePrivacy = account.network.request(Api.functions.account.getPrivacy(key: .inputPrivacyKeyStarGiftsAutoSave))
     let autoremoveTimeout = account.network.request(Api.functions.account.getAccountTTL())
     let globalPrivacySettings = account.network.request(Api.functions.account.getGlobalPrivacySettings())
     let messageAutoremoveTimeout = account.network.request(Api.functions.messages.getDefaultHistoryTTL())
     
-    return combineLatest(lastSeenPrivacy, groupPrivacy, voiceCallPrivacy, voiceCallP2P, profilePhotoPrivacy, forwardPrivacy, phoneNumberPrivacy, phoneDiscoveryPrivacy, voiceMessagesPrivacy, bioPrivacy, birthdayPrivacy, giftsAutoSavePrivacy, autoremoveTimeout, globalPrivacySettings, messageAutoremoveTimeout)
+    return combineLatest(lastSeenPrivacy, groupPrivacy, voiceCallPrivacy, voiceCallP2P, profilePhotoPrivacy, forwardPrivacy, phoneNumberPrivacy, phoneDiscoveryPrivacy, voiceMessagesPrivacy, bioPrivacy, birthdayPrivacy, autoremoveTimeout, globalPrivacySettings, messageAutoremoveTimeout)
     |> `catch` { _ in
         return .complete()
     }
-    |> mapToSignal { lastSeenPrivacy, groupPrivacy, voiceCallPrivacy, voiceCallP2P, profilePhotoPrivacy, forwardPrivacy, phoneNumberPrivacy, phoneDiscoveryPrivacy, voiceMessagesPrivacy, bioPrivacy, birthdayPrivacy, giftsAutoSavePrivacy, autoremoveTimeout, globalPrivacySettings, messageAutoremoveTimeout -> Signal<AccountPrivacySettings, NoError> in
+    |> mapToSignal { lastSeenPrivacy, groupPrivacy, voiceCallPrivacy, voiceCallP2P, profilePhotoPrivacy, forwardPrivacy, phoneNumberPrivacy, phoneDiscoveryPrivacy, voiceMessagesPrivacy, bioPrivacy, birthdayPrivacy, autoremoveTimeout, globalPrivacySettings, messageAutoremoveTimeout -> Signal<AccountPrivacySettings, NoError> in
         let accountTimeoutSeconds: Int32
         switch autoremoveTimeout {
             case let .accountDaysTTL(days):
@@ -87,7 +86,6 @@ func _internal_requestAccountPrivacySettings(account: Account) -> Signal<Account
         let voiceMessagesRules: [Api.PrivacyRule]
         let bioRules: [Api.PrivacyRule]
         let birthdayRules: [Api.PrivacyRule]
-        let giftsAutoSaveRules: [Api.PrivacyRule]
         var apiUsers: [Api.User] = []
         var apiChats: [Api.Chat] = []
         
@@ -174,13 +172,6 @@ func _internal_requestAccountPrivacySettings(account: Account) -> Signal<Account
                 birthdayRules = rules
         }
         
-        switch giftsAutoSavePrivacy {
-            case let .privacyRules(rules, chats, users):
-                apiUsers.append(contentsOf: users)
-                apiChats.append(contentsOf: chats)
-                giftsAutoSaveRules = rules
-        }
-        
         var peers: [SelectivePrivacyPeer] = []
         for user in apiUsers {
             peers.append(SelectivePrivacyPeer(peer: TelegramUser(user: user), participantCount: nil))
@@ -246,7 +237,6 @@ func _internal_requestAccountPrivacySettings(account: Account) -> Signal<Account
                 voiceMessages: SelectivePrivacySettings(apiRules: voiceMessagesRules, peers: peerMap),
                 bio: SelectivePrivacySettings(apiRules: bioRules, peers: peerMap),
                 birthday: SelectivePrivacySettings(apiRules: birthdayRules, peers: peerMap),
-                giftsAutoSave: SelectivePrivacySettings(apiRules: giftsAutoSaveRules, peers: peerMap),
                 globalSettings: globalSettings,
                 accountRemovalTimeout: accountTimeoutSeconds,
                 messageAutoremoveTimeout: messageAutoremoveSeconds
@@ -381,7 +371,6 @@ public enum UpdateSelectiveAccountPrivacySettingsType {
     case voiceMessages
     case bio
     case birthday
-    case giftsAutoSave
     
     var apiKey: Api.InputPrivacyKey {
         switch self {
@@ -405,8 +394,6 @@ public enum UpdateSelectiveAccountPrivacySettingsType {
                 return .inputPrivacyKeyAbout
             case .birthday:
                 return .inputPrivacyKeyBirthday
-            case .giftsAutoSave:
-                return .inputPrivacyKeyStarGiftsAutoSave
         }
     }
 }
@@ -438,7 +425,7 @@ func _internal_updateSelectiveAccountPrivacySettings(account: Account, type: Upd
     return account.postbox.transaction { transaction -> Signal<Void, NoError> in
         var rules: [Api.InputPrivacyRule] = []
         switch settings {
-            case let .disableEveryone(enableFor, enableForCloseFriends, enableForPremium, enableForBots):
+            case let .disableEveryone(enableFor, enableForCloseFriends, enableForPremium):
                 let enablePeers = apiUserAndGroupIds(peerIds: enableFor)
                 
                 if !enablePeers.users.isEmpty {
@@ -455,10 +442,7 @@ func _internal_updateSelectiveAccountPrivacySettings(account: Account, type: Upd
                 if enableForPremium {
                     rules.append(.inputPrivacyValueAllowPremium)
                 }
-                if enableForBots {
-                    rules.append(.inputPrivacyValueAllowBots)
-                }
-            case let .enableContacts(enableFor, disableFor, enableForPremium, enableForBots):
+            case let .enableContacts(enableFor, disableFor, enableForPremium):
                 let enablePeers = apiUserAndGroupIds(peerIds: enableFor)
                 let disablePeers = apiUserAndGroupIds(peerIds: disableFor)
                 
@@ -480,9 +464,7 @@ func _internal_updateSelectiveAccountPrivacySettings(account: Account, type: Upd
                 if enableForPremium {
                     rules.append(.inputPrivacyValueAllowPremium)
                 }
-                if enableForBots {
-                    rules.append(.inputPrivacyValueAllowBots)
-                }
+                let _ = enableForPremium
             case let .enableEveryone(disableFor):
                 let disablePeers = apiUserAndGroupIds(peerIds: disableFor)
                 

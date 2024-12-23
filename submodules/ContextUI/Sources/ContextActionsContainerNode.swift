@@ -438,7 +438,6 @@ final class InnerTextSelectionTipContainerNode: ASDisplayNode {
             icon = nil
             isUserInteractionEnabled = action != nil
         case let .starsReactions(topCount):
-            //TODO:localize
             self.action = nil
             self.text = "Send \(topCount) or more to highlight your profile"
             self.targetSelectionIndex = nil
@@ -446,15 +445,10 @@ final class InnerTextSelectionTipContainerNode: ASDisplayNode {
             isUserInteractionEnabled = action != nil
         case .videoProcessing:
             self.action = nil
-            self.text = self.presentationData.strings.Chat_VideoProcessingInfo
+            self.text = "The video will be published once converted and optimized."
             self.targetSelectionIndex = nil
             icon = nil
             isUserInteractionEnabled = action != nil
-        case .collageReordering:
-            self.action = nil
-            self.text = self.presentationData.strings.Camera_CollageReorderingInfo
-            self.targetSelectionIndex = nil
-            icon = UIImage(bundleImageName: "Chat/Context Menu/Tip")
         }
         
         self.iconNode = ASImageNode()

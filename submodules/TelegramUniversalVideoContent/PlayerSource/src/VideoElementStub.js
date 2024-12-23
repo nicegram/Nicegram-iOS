@@ -109,15 +109,8 @@ export class VideoElementStub extends EventTarget {
     }
 
     querySelectorAll(name) {
-        if (global.isJsCore) {
-            return [];
-        } else {
-            const fragment = document.createDocumentFragment();
-            return fragment.querySelectorAll('*');
-        }
-    }
-
-    removeChild(child) {
+        const fragment = document.createDocumentFragment();
+        return fragment.querySelectorAll('*');
     }
 
     updateBufferedFromMediaSource() {

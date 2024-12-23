@@ -269,78 +269,9 @@ func _internal_starsGiveawayOptions(account: Account) -> Signal<[StarsGiveawayOp
     }
 }
 
-public struct StarsAmount: Equatable, Comparable, Hashable, Codable, CustomStringConvertible {
-    public static let zero: StarsAmount = StarsAmount(value: 0, nanos: 0)
-    
-    public var value: Int64
-    public var nanos: Int32
-    
-    public init(value: Int64, nanos: Int32) {
-        self.value = value
-        self.nanos = nanos
-    }
-    
-    public var stringValue: String {
-        return "\(totalValue)"
-    }
-    
-    public var totalValue: Double {
-        if self.nanos == 0 {
-            return Double(self.value)
-        } else {
-            let totalValue = (Double(self.value) * 1e9 + Double(self.nanos)) / 1e9
-            return totalValue
-        }
-    }
-    
-    public var description: String {
-        return self.stringValue
-    }
-    
-    public static func <(lhs: StarsAmount, rhs: StarsAmount) -> Bool {
-        if lhs.value == rhs.value {
-            return lhs.nanos < rhs.nanos
-        } else {
-            return lhs.value < rhs.value
-        }
-    }
-    
-    public static func +(lhs: StarsAmount, rhs: StarsAmount) -> StarsAmount {
-        if rhs.value < 0 || rhs.nanos < 0 {
-            return lhs - StarsAmount(value: abs(rhs.value), nanos: abs(rhs.nanos))
-        }
-        
-        let totalNanos = Int64(lhs.nanos) + Int64(rhs.nanos)
-        let overflow = totalNanos / 1_000_000_000
-        let remainingNanos = totalNanos % 1_000_000_000
-        return StarsAmount(value: lhs.value + rhs.value + overflow, nanos: Int32(remainingNanos))
-    }
-    
-    public static func -(lhs: StarsAmount, rhs: StarsAmount) -> StarsAmount {
-        var totalNanos = Int64(lhs.nanos) - Int64(rhs.nanos)
-        var totalValue = lhs.value - rhs.value
-
-        if totalNanos < 0 {
-            totalValue -= 1
-            totalNanos += 1_000_000_000
-        }
-
-        return StarsAmount(value: totalValue, nanos: Int32(totalNanos))
-    }
-}
-
-extension StarsAmount {
-    init(apiAmount: Api.StarsAmount) {
-        switch apiAmount {
-        case let .starsAmount(amount, nanos):
-            self.init(value: amount, nanos: nanos)
-        }
-    }
-}
-
 struct InternalStarsStatus {
-    let balance: StarsAmount
-    let subscriptionsMissingBalance: StarsAmount?
+    let balance: Int64
+    let subscriptionsMissingBalance: Int64?
     let subscriptions: [StarsContext.State.Subscription]
     let nextSubscriptionsOffset: String?
     let transactions: [StarsContext.State.Transaction]
@@ -386,7 +317,7 @@ private func _internal_requestStarsState(account: Account, peerId: EnginePeer.Id
         |> mapToSignal { result -> Signal<InternalStarsStatus, RequestStarsStateError> in
             return account.postbox.transaction { transaction -> InternalStarsStatus in
                 switch result {
-                case let .starsStatus(flags: _, balance, _, _, subscriptionsMissingBalance, transactions, nextTransactionsOffset, chats, users):
+                case let .starsStatus(_, balance, _, _, subscriptionsMissingBalance, transactions, nextTransactionsOffset, chats, users):
                     let peers = AccumulatedPeers(chats: chats, users: users)
                     updatePeers(transaction: transaction, accountPeerId: account.peerId, peers: peers)
                 
@@ -399,8 +330,8 @@ private func _internal_requestStarsState(account: Account, peerId: EnginePeer.Id
                         }
                     }
                     return InternalStarsStatus(
-                        balance: StarsAmount(apiAmount: balance),
-                        subscriptionsMissingBalance: subscriptionsMissingBalance.flatMap { StarsAmount(value: $0, nanos: 0) },
+                        balance: balance,
+                        subscriptionsMissingBalance: subscriptionsMissingBalance,
                         subscriptions: [],
                         nextSubscriptionsOffset: nil,
                         transactions: parsedTransactions,
@@ -451,8 +382,8 @@ private func _internal_requestStarsSubscriptions(account: Account, peerId: Engin
                         }
                     }
                     return InternalStarsStatus(
-                        balance: StarsAmount(apiAmount: balance),
-                        subscriptionsMissingBalance: subscriptionsMissingBalance.flatMap { StarsAmount(value: $0, nanos: 0) },
+                        balance: balance,
+                        subscriptionsMissingBalance: subscriptionsMissingBalance,
                         subscriptions: parsedSubscriptions,
                         nextSubscriptionsOffset: subscriptionsNextOffset,
                         transactions: [],
@@ -531,19 +462,19 @@ private final class StarsContextImpl {
         }))
     }
     
-    func add(balance: StarsAmount, addTransaction: Bool) {
+    func add(balance: Int64, addTransaction: Bool) {
         guard let state = self._state else {
             return
         }
         var transactions = state.transactions
         if addTransaction {
-            transactions.insert(.init(flags: [.isLocal], id: "\(arc4random())", count: balance, date: Int32(Date().timeIntervalSince1970), peer: .appStore, title: nil, description: nil, photo: nil, transactionDate: nil, transactionUrl: nil, paidMessageId: nil, giveawayMessageId: nil, media: [], subscriptionPeriod: nil, starGift: nil, floodskipNumber: nil, starrefCommissionPermille: nil, starrefPeerId: nil, starrefAmount: nil), at: 0)
+            transactions.insert(.init(flags: [.isLocal], id: "\(arc4random())", count: balance, date: Int32(Date().timeIntervalSince1970), peer: .appStore, title: nil, description: nil, photo: nil, transactionDate: nil, transactionUrl: nil, paidMessageId: nil, giveawayMessageId: nil, media: [], subscriptionPeriod: nil, starGift: nil, floodskipNumber: nil), at: 0)
         }
         
-        self.updateState(StarsContext.State(flags: [.isPendingBalance], balance: max(StarsAmount(value: 0, nanos: 0), state.balance + balance), subscriptions: state.subscriptions, canLoadMoreSubscriptions: state.canLoadMoreSubscriptions, transactions: transactions, canLoadMoreTransactions: state.canLoadMoreTransactions, isLoading: state.isLoading))
+        self.updateState(StarsContext.State(flags: [.isPendingBalance], balance: max(0, state.balance + balance), subscriptions: state.subscriptions, canLoadMoreSubscriptions: state.canLoadMoreSubscriptions, transactions: transactions, canLoadMoreTransactions: state.canLoadMoreTransactions, isLoading: state.isLoading))
     }
     
-    fileprivate func updateBalance(_ balance: StarsAmount, transactions: [StarsContext.State.Transaction]?) {
+    fileprivate func updateBalance(_ balance: Int64, transactions: [StarsContext.State.Transaction]?) {
         guard let state = self._state else {
             return
         }
@@ -559,7 +490,7 @@ private final class StarsContextImpl {
 private extension StarsContext.State.Transaction {
     init?(apiTransaction: Api.StarsTransaction, peerId: EnginePeer.Id?, transaction: Transaction) {
         switch apiTransaction {
-        case let .starsTransaction(apiFlags, id, stars, date, transactionPeer, title, description, photo, transactionDate, transactionUrl, _, messageId, extendedMedia, subscriptionPeriod, giveawayPostId, starGift, floodskipNumber, starrefCommissionPermille, starrefPeer, starrefAmount):
+        case let .starsTransaction(apiFlags, id, stars, date, transactionPeer, title, description, photo, transactionDate, transactionUrl, _, messageId, extendedMedia, subscriptionPeriod, giveawayPostId, starGift, floodskipNumber):
             let parsedPeer: StarsContext.State.Transaction.Peer
             var paidMessageId: MessageId?
             var giveawayMessageId: MessageId?
@@ -615,7 +546,7 @@ private extension StarsContext.State.Transaction {
             
             let media = extendedMedia.flatMap({ $0.compactMap { textMediaAndExpirationTimerFromApiMedia($0, PeerId(0)).media } }) ?? []
             let _ = subscriptionPeriod
-            self.init(flags: flags, id: id, count: StarsAmount(apiAmount: stars), date: date, peer: parsedPeer, title: title, description: description, photo: photo.flatMap(TelegramMediaWebFile.init), transactionDate: transactionDate, transactionUrl: transactionUrl, paidMessageId: paidMessageId, giveawayMessageId: giveawayMessageId, media: media, subscriptionPeriod: subscriptionPeriod, starGift: starGift.flatMap { StarGift(apiStarGift: $0) }, floodskipNumber: floodskipNumber, starrefCommissionPermille: starrefCommissionPermille, starrefPeerId: starrefPeer.flatMap(\.peerId), starrefAmount: starrefAmount.flatMap(StarsAmount.init(apiAmount:)))
+            self.init(flags: flags, id: id, count: stars, date: date, peer: parsedPeer, title: title, description: description, photo: photo.flatMap(TelegramMediaWebFile.init), transactionDate: transactionDate, transactionUrl: transactionUrl, paidMessageId: paidMessageId, giveawayMessageId: giveawayMessageId, media: media, subscriptionPeriod: subscriptionPeriod, starGift: starGift.flatMap { StarGift(apiStarGift: $0) }, floodskipNumber: floodskipNumber)
         }
     }
 }
@@ -623,7 +554,7 @@ private extension StarsContext.State.Transaction {
 private extension StarsContext.State.Subscription {
     init?(apiSubscription: Api.StarsSubscription, transaction: Transaction) {
         switch apiSubscription {
-        case let .starsSubscription(apiFlags, id, apiPeer, untilDate, pricing, inviteHash, title, photo, invoiceSlug):
+        case let .starsSubscription(apiFlags, id, apiPeer, untilDate, pricing, inviteHash):
             guard let peer = transaction.getPeer(apiPeer.peerId) else {
                 return nil
             }
@@ -637,10 +568,7 @@ private extension StarsContext.State.Subscription {
             if (apiFlags & (1 << 2)) != 0 {
                 flags.insert(.missingBalance)
             }
-            if (apiFlags & (1 << 7)) != 0 {
-                flags.insert(.isCancelledByBot)
-            }
-            self.init(flags: flags, id: id, peer: EnginePeer(peer), untilDate: untilDate, pricing: StarsSubscriptionPricing(apiStarsSubscriptionPricing: pricing), inviteHash: inviteHash, title: title, photo: photo.flatMap(TelegramMediaWebFile.init), invoiceSlug: invoiceSlug)
+            self.init(flags: flags, id: id, peer: EnginePeer(peer), untilDate: untilDate, pricing: StarsSubscriptionPricing(apiStarsSubscriptionPricing: pricing), inviteHash: inviteHash)
         }
     }
 }
@@ -676,7 +604,7 @@ public final class StarsContext {
             
             public let flags: Flags
             public let id: String
-            public let count: StarsAmount
+            public let count: Int64
             public let date: Int32
             public let peer: Peer
             public let title: String?
@@ -690,14 +618,11 @@ public final class StarsContext {
             public let subscriptionPeriod: Int32?
             public let starGift: StarGift?
             public let floodskipNumber: Int32?
-            public let starrefCommissionPermille: Int32?
-            public let starrefPeerId: PeerId?
-            public let starrefAmount: StarsAmount?
             
             public init(
                 flags: Flags,
                 id: String,
-                count: StarsAmount,
+                count: Int64,
                 date: Int32,
                 peer: Peer,
                 title: String?,
@@ -710,10 +635,7 @@ public final class StarsContext {
                 media: [Media],
                 subscriptionPeriod: Int32?,
                 starGift: StarGift?,
-                floodskipNumber: Int32?,
-                starrefCommissionPermille: Int32?,
-                starrefPeerId: PeerId?,
-                starrefAmount: StarsAmount?
+                floodskipNumber: Int32?
             ) {
                 self.flags = flags
                 self.id = id
@@ -731,9 +653,6 @@ public final class StarsContext {
                 self.subscriptionPeriod = subscriptionPeriod
                 self.starGift = starGift
                 self.floodskipNumber = floodskipNumber
-                self.starrefCommissionPermille = starrefCommissionPermille
-                self.starrefPeerId = starrefPeerId
-                self.starrefAmount = starrefAmount
             }
             
             public static func == (lhs: Transaction, rhs: Transaction) -> Bool {
@@ -785,15 +704,6 @@ public final class StarsContext {
                 if lhs.floodskipNumber != rhs.floodskipNumber {
                     return false
                 }
-                if lhs.starrefCommissionPermille != rhs.starrefCommissionPermille {
-                    return false
-                }
-                if lhs.starrefPeerId != rhs.starrefPeerId {
-                    return false
-                }
-                if lhs.starrefAmount != rhs.starrefAmount {
-                    return false
-                }
                 return true
             }
         }
@@ -809,7 +719,6 @@ public final class StarsContext {
                 public static let isCancelled = Flags(rawValue: 1 << 0)
                 public static let canRefulfill = Flags(rawValue: 1 << 1)
                 public static let missingBalance = Flags(rawValue: 1 << 2)
-                public static let isCancelledByBot = Flags(rawValue: 1 << 3)
             }
             
             public let flags: Flags
@@ -818,9 +727,6 @@ public final class StarsContext {
             public let untilDate: Int32
             public let pricing: StarsSubscriptionPricing
             public let inviteHash: String?
-            public let title: String?
-            public let photo: TelegramMediaWebFile?
-            public let invoiceSlug: String?
             
             public init(
                 flags: Flags,
@@ -828,10 +734,7 @@ public final class StarsContext {
                 peer: EnginePeer,
                 untilDate: Int32,
                 pricing: StarsSubscriptionPricing,
-                inviteHash: String?,
-                title: String?,
-                photo: TelegramMediaWebFile?,
-                invoiceSlug: String?
+                inviteHash: String?
             ) {
                 self.flags = flags
                 self.id = id
@@ -839,9 +742,6 @@ public final class StarsContext {
                 self.untilDate = untilDate
                 self.pricing = pricing
                 self.inviteHash = inviteHash
-                self.title = title
-                self.photo = photo
-                self.invoiceSlug = invoiceSlug
             }
             
             public static func == (lhs: Subscription, rhs: Subscription) -> Bool {
@@ -863,15 +763,6 @@ public final class StarsContext {
                 if lhs.inviteHash != rhs.inviteHash {
                     return false
                 }
-                if lhs.title != rhs.title {
-                    return false
-                }
-                if lhs.photo != rhs.photo {
-                    return false
-                }
-                if lhs.invoiceSlug != rhs.invoiceSlug {
-                    return false
-                }
                 return true
             }
         }
@@ -887,14 +778,14 @@ public final class StarsContext {
         }
         
         public var flags: Flags
-        public var balance: StarsAmount
+        public var balance: Int64
         public var subscriptions: [Subscription]
         public var canLoadMoreSubscriptions: Bool
         public var transactions: [Transaction]
         public var canLoadMoreTransactions: Bool
         public var isLoading: Bool
         
-        init(flags: Flags, balance: StarsAmount, subscriptions: [Subscription], canLoadMoreSubscriptions: Bool, transactions: [Transaction], canLoadMoreTransactions: Bool, isLoading: Bool) {
+        init(flags: Flags, balance: Int64, subscriptions: [Subscription], canLoadMoreSubscriptions: Bool, transactions: [Transaction], canLoadMoreTransactions: Bool, isLoading: Bool) {
             self.flags = flags
             self.balance = balance
             self.subscriptions = subscriptions
@@ -957,13 +848,13 @@ public final class StarsContext {
         return state
     }
     
-    public func add(balance: StarsAmount, addTransaction: Bool = true) {
+    public func add(balance: Int64, addTransaction: Bool = true) {
         self.impl.with {
             $0.add(balance: balance, addTransaction: addTransaction)
         }
     }
     
-    fileprivate func updateBalance(_ balance: StarsAmount, transactions: [StarsContext.State.Transaction]?) {
+    fileprivate func updateBalance(_ balance: Int64, transactions: [StarsContext.State.Transaction]?) {
         self.impl.with {
             $0.updateBalance(balance, transactions: transactions)
         }
@@ -1026,9 +917,9 @@ private final class StarsTransactionsContextImpl {
         case .all:
             initialTransactions = currentTransactions
         case .incoming:
-            initialTransactions = currentTransactions.filter { $0.count > StarsAmount.zero }
+            initialTransactions = currentTransactions.filter { $0.count > 0 }
         case .outgoing:
-            initialTransactions = currentTransactions.filter { $0.count < StarsAmount.zero }
+            initialTransactions = currentTransactions.filter { $0.count < 0 }
         }
         
         self._state = StarsTransactionsContext.State(transactions: initialTransactions, canLoadMore: true, isLoading: false)
@@ -1046,9 +937,9 @@ private final class StarsTransactionsContextImpl {
                 case .all:
                     filteredTransactions = currentTransactions
                 case .incoming:
-                    filteredTransactions = currentTransactions.filter { $0.count > StarsAmount.zero }
+                    filteredTransactions = currentTransactions.filter { $0.count > 0 }
                 case .outgoing:
-                    filteredTransactions = currentTransactions.filter { $0.count < StarsAmount.zero }
+                    filteredTransactions = currentTransactions.filter { $0.count < 0 }
                 }
                 
                 if !filteredTransactions.isEmpty && self._state.transactions.isEmpty  && filteredTransactions != initialTransactions {
@@ -1073,9 +964,9 @@ private final class StarsTransactionsContextImpl {
                 case .all:
                     filteredTransactions = currentTransactions
                 case .incoming:
-                    filteredTransactions = currentTransactions.filter { $0.count > StarsAmount.zero }
+                    filteredTransactions = currentTransactions.filter { $0.count > 0 }
                 case .outgoing:
-                    filteredTransactions = currentTransactions.filter { $0.count < StarsAmount.zero }
+                    filteredTransactions = currentTransactions.filter { $0.count < 0 }
                 }
                 
                 if filteredTransactions != initialTransactions {
@@ -1245,7 +1136,7 @@ private final class StarsSubscriptionsContextImpl {
         let currentSubscriptions = starsContext?.currentState?.subscriptions ?? []
         let canLoadMore = starsContext?.currentState?.canLoadMoreSubscriptions ?? true
         
-        self._state = StarsSubscriptionsContext.State(balance: StarsAmount.zero, subscriptions: currentSubscriptions, canLoadMore: canLoadMore, isLoading: false)
+        self._state = StarsSubscriptionsContext.State(balance: 0, subscriptions: currentSubscriptions, canLoadMore: canLoadMore, isLoading: false)
         self._statePromise.set(.single(self._state))
         
         self.loadMore()
@@ -1278,7 +1169,7 @@ private final class StarsSubscriptionsContextImpl {
             self.nextOffset = status.nextSubscriptionsOffset
             
             var updatedState = self._state
-            updatedState.balance = status.subscriptionsMissingBalance ?? StarsAmount.zero
+            updatedState.balance = status.subscriptionsMissingBalance ?? 0
             updatedState.subscriptions = nextOffset.isEmpty ? status.subscriptions : updatedState.subscriptions + status.subscriptions
             updatedState.isLoading = false
             updatedState.canLoadMore = self.nextOffset != nil
@@ -1301,7 +1192,7 @@ private final class StarsSubscriptionsContextImpl {
             } else {
                 updatedFlags.remove(.isCancelled)
             }
-            let updatedSubscription = StarsContext.State.Subscription(flags: updatedFlags, id: subscription.id, peer: subscription.peer, untilDate: subscription.untilDate, pricing: subscription.pricing, inviteHash: subscription.inviteHash, title: subscription.title, photo: subscription.photo, invoiceSlug: subscription.invoiceSlug)
+            let updatedSubscription = StarsContext.State.Subscription(flags: updatedFlags, id: subscription.id, peer: subscription.peer, untilDate: subscription.untilDate, pricing: subscription.pricing, inviteHash: subscription.inviteHash)
             updatedState.subscriptions[index] = updatedSubscription
         }
         self.updateState(updatedState)
@@ -1341,12 +1232,12 @@ private final class StarsSubscriptionsContextImpl {
     
 public final class StarsSubscriptionsContext {
     public struct State: Equatable {
-        public var balance: StarsAmount
+        public var balance: Int64
         public var subscriptions: [StarsContext.State.Subscription]
         public var canLoadMore: Bool
         public var isLoading: Bool
         
-        init(balance: StarsAmount, subscriptions: [StarsContext.State.Subscription], canLoadMore: Bool, isLoading: Bool) {
+        init(balance: Int64, subscriptions: [StarsContext.State.Subscription], canLoadMore: Bool, isLoading: Bool) {
             self.balance = balance
             self.subscriptions = subscriptions
             self.canLoadMore = canLoadMore
@@ -1549,13 +1440,12 @@ public struct StarsSubscriptionPricing: Codable, Equatable {
     private enum CodingKeys: String, CodingKey {
         case period
         case amount
-        case starsAmount
     }
     
     public let period: Int32
-    public let amount: StarsAmount
+    public let amount: Int64
     
-    public init(period: Int32, amount: StarsAmount) {
+    public init(period: Int32, amount: Int64) {
         self.period = period
         self.amount = amount
     }
@@ -1564,19 +1454,14 @@ public struct StarsSubscriptionPricing: Codable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
         self.period = try container.decode(Int32.self, forKey: .period)
-        
-        if let legacyAmount = try container.decodeIfPresent(Int64.self, forKey: .amount) {
-            self.amount = StarsAmount(value: legacyAmount, nanos: 0)
-        } else {
-            self.amount = try container.decode(StarsAmount.self, forKey: .starsAmount)
-        }
+        self.amount = try container.decode(Int64.self, forKey: .amount)
     }
     
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         
         try container.encode(self.period, forKey: .period)
-        try container.encode(self.amount, forKey: .starsAmount)
+        try container.encode(self.amount, forKey: .amount)
     }
     
     public static let monthPeriod: Int32 = 2592000
@@ -1587,12 +1472,12 @@ extension StarsSubscriptionPricing {
     init(apiStarsSubscriptionPricing: Api.StarsSubscriptionPricing) {
         switch apiStarsSubscriptionPricing {
         case let .starsSubscriptionPricing(period, amount):
-            self = .init(period: period, amount: StarsAmount(value: amount, nanos: 0))
+            self = .init(period: period, amount: amount)
         }
     }
     
     var apiStarsSubscriptionPricing: Api.StarsSubscriptionPricing {
-        return .starsSubscriptionPricing(period: self.period, amount: self.amount.value)
+        return .starsSubscriptionPricing(period: self.period, amount: self.amount)
     }
 }
 

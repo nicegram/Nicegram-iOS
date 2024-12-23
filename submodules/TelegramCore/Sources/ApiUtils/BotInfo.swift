@@ -13,25 +13,10 @@ extension BotMenuButton {
     }
 }
 
-extension BotAppSettings {
-    init(apiBotAppSettings: Api.BotAppSettings) {
-        switch apiBotAppSettings {
-        case let .botAppSettings(_, placeholder, backgroundColor, backgroundDarkColor, headerColor, headerDarkColor):
-            self.init(
-                placeholderData: placeholder.flatMap { $0.makeData() },
-                backgroundColor: backgroundColor,
-                backgroundDarkColor: backgroundDarkColor,
-                headerColor: headerColor,
-                headerDarkColor: headerDarkColor
-            )
-        }
-    }
-}
-
 extension BotInfo {
     convenience init(apiBotInfo: Api.BotInfo) {
         switch apiBotInfo {
-            case let .botInfo(_, _, description, descriptionPhoto, descriptionDocument, apiCommands, apiMenuButton, privacyPolicyUrl, appSettings):
+            case let .botInfo(_, _, description, descriptionPhoto, descriptionDocument, apiCommands, apiMenuButton, privacyPolicyUrl):
                 let photo: TelegramMediaImage? = descriptionPhoto.flatMap(telegramMediaImageFromApiPhoto)
                 let video: TelegramMediaFile? = descriptionDocument.flatMap { telegramMediaFileFromApiDocument($0, altDocuments: []) }
                 var commands: [BotCommand] = []
@@ -47,7 +32,7 @@ extension BotInfo {
                 if let apiMenuButton = apiMenuButton {
                     menuButton = BotMenuButton(apiBotMenuButton: apiMenuButton)
                 }
-            self.init(description: description ?? "", photo: photo, video: video, commands: commands, menuButton: menuButton, privacyPolicyUrl: privacyPolicyUrl, appSettings: appSettings.flatMap { BotAppSettings(apiBotAppSettings: $0) })
+            self.init(description: description ?? "", photo: photo, video: video, commands: commands, menuButton: menuButton, privacyPolicyUrl: privacyPolicyUrl)
         }
     }
 }

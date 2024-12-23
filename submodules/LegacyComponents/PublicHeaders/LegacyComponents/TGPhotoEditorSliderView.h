@@ -8,9 +8,6 @@
 
 @property (nonatomic, assign) UIInterfaceOrientation interfaceOrientation;
 
-@property (nonatomic, assign) CGFloat lowerBoundValue;
-@property (nonatomic, assign) UIColor *lowerBoundTrackColor;
-
 @property (nonatomic, assign) CGFloat minimumValue;
 @property (nonatomic, assign) CGFloat maximumValue;
 

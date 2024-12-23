@@ -97,11 +97,7 @@ final class NavigationTransitionCoordinator {
         case .Push:
             self.container.addSubnode(topNode)
         case .Pop:
-            if topNode.supernode == self.container {
-                self.container.insertSubnode(bottomNode, belowSubnode: topNode)
-            } else {
-                self.container.addSubnode(topNode)
-            }
+            self.container.insertSubnode(bottomNode, belowSubnode: topNode)
         }
         
         if !self.isFlat {

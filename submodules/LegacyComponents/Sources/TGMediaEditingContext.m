@@ -126,11 +126,8 @@
     SPipe *_pricePipe;
     SPipe *_fullSizePipe;
     SPipe *_cropPipe;
-    SPipe *_captionAbovePipe;
     
     NSAttributedString *_forcedCaption;
-    
-    bool _captionAbove;
 }
 @end
 
@@ -199,7 +196,6 @@
         _pricePipe = [[SPipe alloc] init];
         _fullSizePipe = [[SPipe alloc] init];
         _cropPipe = [[SPipe alloc] init];
-        _captionAbovePipe = [[SPipe alloc] init];
     }
     return self;
 }
@@ -855,28 +851,6 @@
     {
         [[NSFileManager defaultManager] removeItemAtURL:url error:NULL];
     }
-}
-
-- (bool)isCaptionAbove {
-    return _captionAbove;
-}
-
-- (SSignal *)captionAbove
-{
-    __weak TGMediaEditingContext *weakSelf = self;
-    SSignal *updateSignal = [_captionAbovePipe.signalProducer() map:^NSNumber *(NSNumber *update)
-    {
-        __strong TGMediaEditingContext *strongSelf = weakSelf;
-        return @(strongSelf->_captionAbove);
-    }];
-    
-    return [[SSignal single:@(_captionAbove)] then:updateSignal];
-}
-
-- (void)setCaptionAbove:(bool)captionAbove
-{
-    _captionAbove = captionAbove;
-    _captionAbovePipe.sink(@(captionAbove));
 }
 
 - (SSignal *)facesForItem:(NSObject<TGMediaEditableItem> *)item

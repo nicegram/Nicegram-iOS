@@ -20,7 +20,6 @@ final class VideoChatParticipantThumbnailComponent: Component {
     let isPresentation: Bool
     let isSelected: Bool
     let isSpeaking: Bool
-    let displayVideo: Bool
     let interfaceOrientation: UIInterfaceOrientation
     let action: (() -> Void)?
     let contextAction: ((EnginePeer, ContextExtractedContentContainingView, ContextGesture) -> Void)?
@@ -32,7 +31,6 @@ final class VideoChatParticipantThumbnailComponent: Component {
         isPresentation: Bool,
         isSelected: Bool,
         isSpeaking: Bool,
-        displayVideo: Bool,
         interfaceOrientation: UIInterfaceOrientation,
         action: (() -> Void)?,
         contextAction: ((EnginePeer, ContextExtractedContentContainingView, ContextGesture) -> Void)?
@@ -43,7 +41,6 @@ final class VideoChatParticipantThumbnailComponent: Component {
         self.isPresentation = isPresentation
         self.isSelected = isSelected
         self.isSpeaking = isSpeaking
-        self.displayVideo = displayVideo
         self.interfaceOrientation = interfaceOrientation
         self.action = action
         self.contextAction = contextAction
@@ -66,9 +63,6 @@ final class VideoChatParticipantThumbnailComponent: Component {
             return false
         }
         if lhs.isSpeaking != rhs.isSpeaking {
-            return false
-        }
-        if lhs.displayVideo != rhs.displayVideo {
             return false
         }
         if lhs.interfaceOrientation != rhs.interfaceOrientation {
@@ -257,7 +251,7 @@ final class VideoChatParticipantThumbnailComponent: Component {
                 titleView.bounds = CGRect(origin: CGPoint(), size: titleFrame.size)
             }
             
-            if component.displayVideo, let videoDescription = component.isPresentation ? component.participant.presentationDescription : component.participant.videoDescription {
+            if let videoDescription = component.isPresentation ? component.participant.presentationDescription : component.participant.videoDescription {
                 let videoBackgroundLayer: SimpleLayer
                 if let current = self.videoBackgroundLayer {
                     videoBackgroundLayer = current
@@ -476,7 +470,6 @@ final class VideoChatExpandedParticipantThumbnailsComponent: Component {
 
     let call: PresentationGroupCall
     let theme: PresentationTheme
-    let displayVideo: Bool
     let participants: [Participant]
     let selectedParticipant: Participant.Key?
     let speakingParticipants: Set<EnginePeer.Id>
@@ -487,7 +480,6 @@ final class VideoChatExpandedParticipantThumbnailsComponent: Component {
     init(
         call: PresentationGroupCall,
         theme: PresentationTheme,
-        displayVideo: Bool,
         participants: [Participant],
         selectedParticipant: Participant.Key?,
         speakingParticipants: Set<EnginePeer.Id>,
@@ -497,7 +489,6 @@ final class VideoChatExpandedParticipantThumbnailsComponent: Component {
     ) {
         self.call = call
         self.theme = theme
-        self.displayVideo = displayVideo
         self.participants = participants
         self.selectedParticipant = selectedParticipant
         self.speakingParticipants = speakingParticipants
@@ -511,9 +502,6 @@ final class VideoChatExpandedParticipantThumbnailsComponent: Component {
             return false
         }
         if lhs.theme !== rhs.theme {
-            return false
-        }
-        if lhs.displayVideo != rhs.displayVideo {
             return false
         }
         if lhs.participants != rhs.participants {
@@ -666,7 +654,6 @@ final class VideoChatExpandedParticipantThumbnailsComponent: Component {
                             isPresentation: participant.isPresentation,
                             isSelected: component.selectedParticipant == participant.key,
                             isSpeaking: component.speakingParticipants.contains(participant.participant.peer.id),
-                            displayVideo: component.displayVideo,
                             interfaceOrientation: component.interfaceOrientation,
                             action: { [weak self] in
                                 guard let self, let component = self.component else {

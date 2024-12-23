@@ -167,7 +167,6 @@ final class ChatListNoticeItemNode: ItemListRevealOptionsItemNode {
             
             let sideInset: CGFloat = params.leftInset + 16.0
             let rightInset: CGFloat = sideInset + 24.0
-            var titleRightInset = rightInset
             let verticalInset: CGFloat = 9.0
             var spacing: CGFloat = 0.0
             
@@ -215,7 +214,6 @@ final class ChatListNoticeItemNode: ItemListRevealOptionsItemNode {
                 titleString = titleStringValue
                 
                 textString = NSAttributedString(string: item.strings.ChatList_PremiumAnnualDiscountText, font: textFont, textColor: item.theme.rootController.navigationBar.secondaryTextColor)
-                titleRightInset = sideInset
             case let .premiumRestore(discount):
                 let discountString = "\(discount)%"
                 let rawTitleString = item.strings.ChatList_PremiumRestoreDiscountTitle(discountString)
@@ -270,7 +268,7 @@ final class ChatListNoticeItemNode: ItemListRevealOptionsItemNode {
             case let .starsSubscriptionLowBalance(amount, peers):
                 let title: String
                 let text: String
-                let starsValue = item.strings.ChatList_SubscriptionsLowBalance_Stars(Int32(amount.value))
+                let starsValue = item.strings.ChatList_SubscriptionsLowBalance_Stars(Int32(amount))
                 if let peer = peers.first, peers.count == 1 {
                     title = item.strings.ChatList_SubscriptionsLowBalance_Single_Title(starsValue, peer.compactDisplayTitle).string
                     text = item.strings.ChatList_SubscriptionsLowBalance_Single_Text
@@ -293,7 +291,7 @@ final class ChatListNoticeItemNode: ItemListRevealOptionsItemNode {
                 leftInset += avatarsWidth + 4.0
             }
             
-            let titleLayout = makeTitleLayout(TextNodeLayoutArguments(attributedString: titleString, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - titleRightInset, height: 100.0), alignment: alignment, lineSpacing: 0.18))
+            let titleLayout = makeTitleLayout(TextNodeLayoutArguments(attributedString: titleString, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - rightInset, height: 100.0), alignment: alignment, lineSpacing: 0.18))
             
             let textLayout = makeTextLayout(TextNodeLayoutArguments(attributedString: textString, maximumNumberOfLines: 10, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - rightInset, height: 100.0), alignment: alignment, lineSpacing: 0.18))
             

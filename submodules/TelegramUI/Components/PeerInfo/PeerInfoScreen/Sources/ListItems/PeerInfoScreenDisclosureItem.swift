@@ -20,7 +20,6 @@ final class PeerInfoScreenDisclosureItem: PeerInfoScreenItem {
         case semitransparentBadge(String, UIColor)
         case titleBadge(String, UIColor)
         case image(UIImage, CGSize)
-        case labelBadge(String)
         
         var text: String {
             switch self {
@@ -28,14 +27,14 @@ final class PeerInfoScreenDisclosureItem: PeerInfoScreenItem {
                 return ""
             case let .attributedText(text):
                 return text.string
-            case let .text(text), let .coloredText(text, _), let .badge(text, _), let .semitransparentBadge(text, _), let .titleBadge(text, _), let .labelBadge(text):
+            case let .text(text), let .coloredText(text, _), let .badge(text, _), let .semitransparentBadge(text, _), let .titleBadge(text, _):
                 return text
             }
         }
         
         var badgeColor: UIColor? {
             switch self {
-            case .none, .text, .coloredText, .image, .attributedText, .labelBadge:
+            case .none, .text, .coloredText, .image, .attributedText:
                 return nil
             case let .badge(_, color), let .semitransparentBadge(_, color), let .titleBadge(_, color):
                 return color
@@ -171,9 +170,6 @@ private final class PeerInfoScreenDisclosureItemNode: PeerInfoScreenItemNode {
         } else if case .titleBadge = item.label {
             labelColorValue = presentationData.theme.list.itemCheckColors.foregroundColor
             labelFont = Font.medium(11.0)
-        } else if case .labelBadge = item.label {
-            labelColorValue = presentationData.theme.list.itemCheckColors.foregroundColor
-            labelFont = Font.medium(12.0)
         } else if case let .coloredText(_, color) = item.label {
             switch color {
             case .generic:
@@ -278,31 +274,15 @@ private final class PeerInfoScreenDisclosureItemNode: PeerInfoScreenItemNode {
             if self.labelBadgeNode.supernode == nil {
                 self.insertSubnode(self.labelBadgeNode, belowSubnode: self.labelNode)
             }
-        } else if case let .labelBadge(text) = item.label, !text.isEmpty {
-            let badgeColor = presentationData.theme.list.itemCheckColors.fillColor
-            if previousItem?.label.badgeColor != badgeColor {
-                self.labelBadgeNode.image = generateFilledRoundedRectImage(size: CGSize(width: 16.0, height: 16.0), cornerRadius: 5.0, color: badgeColor)?.stretchableImage(withLeftCapWidth: 6, topCapHeight: 6)
+        } else if item.additionalBadgeLabel != nil {
+            if previousItem?.additionalBadgeLabel == nil {
+                self.labelBadgeNode.image = generateFilledRoundedRectImage(size: CGSize(width: 16.0, height: 16.0), cornerRadius: 5.0, color: presentationData.theme.list.itemCheckColors.fillColor)?.stretchableImage(withLeftCapWidth: 6, topCapHeight: 6)
             }
             if self.labelBadgeNode.supernode == nil {
                 self.insertSubnode(self.labelBadgeNode, belowSubnode: self.labelNode)
             }
         } else {
             self.labelBadgeNode.removeFromSupernode()
-        }
-        
-        if item.additionalBadgeLabel != nil {
-            if previousItem?.additionalBadgeLabel == nil {
-                let additionalLabelBadgeNode: ASImageNode
-                if let current = self.additionalLabelBadgeNode {
-                    additionalLabelBadgeNode = current
-                } else {
-                    additionalLabelBadgeNode = ASImageNode()
-                    additionalLabelBadgeNode.isUserInteractionEnabled = false
-                    self.additionalLabelBadgeNode = additionalLabelBadgeNode
-                    self.insertSubnode(additionalLabelBadgeNode, belowSubnode: self.labelNode)
-                }
-                additionalLabelBadgeNode.image = generateFilledRoundedRectImage(size: CGSize(width: 16.0, height: 16.0), cornerRadius: 5.0, color: presentationData.theme.list.itemCheckColors.fillColor)?.stretchableImage(withLeftCapWidth: 6, topCapHeight: 6)
-            }
         }
         
         if let additionalBadgeIcon = item.additionalBadgeIcon {
@@ -316,7 +296,7 @@ private final class PeerInfoScreenDisclosureItemNode: PeerInfoScreenItemNode {
                 self.insertSubnode(additionalLabelBadgeNode, belowSubnode: self.labelNode)
             }
             additionalLabelBadgeNode.image = additionalBadgeIcon
-        } else if item.additionalBadgeLabel == nil {
+        } else {
             if let additionalLabelBadgeNode = self.additionalLabelBadgeNode {
                 self.additionalLabelBadgeNode = nil
                 additionalLabelBadgeNode.removeFromSupernode()
@@ -334,8 +314,6 @@ private final class PeerInfoScreenDisclosureItemNode: PeerInfoScreenItemNode {
             labelFrame = CGRect(origin: CGPoint(x: width - rightInset - badgeWidth + (badgeWidth - labelSize.width) / 2.0, y: floor((height - labelSize.height) / 2.0)), size: labelSize)
         } else if case .titleBadge = item.label {
             labelFrame = CGRect(origin: CGPoint(x: textFrame.maxX + 10.0, y: floor((height - labelSize.height) / 2.0) + 1.0), size: labelSize)
-        } else if case .labelBadge = item.label {
-            labelFrame = CGRect(origin: CGPoint(x: width - rightInset - badgeWidth + (badgeWidth - labelSize.width) / 2.0, y: floor((height - labelSize.height) / 2.0)), size: labelSize)
         } else {
             labelFrame = CGRect(origin: CGPoint(x: width - rightInset - labelSize.width, y: 12.0), size: labelSize)
         }
@@ -360,20 +338,14 @@ private final class PeerInfoScreenDisclosureItemNode: PeerInfoScreenItemNode {
         }
         
         if let additionalLabelBadgeNode = self.additionalLabelBadgeNode, let image = additionalLabelBadgeNode.image {
-            if item.additionalBadgeLabel != nil, let additionalLabelNode = self.additionalLabelNode {
-                additionalLabelBadgeNode.frame = additionalLabelNode.frame.insetBy(dx: -4.0, dy: -2.0 + UIScreenPixel)
-            } else {
-                let additionalLabelSize = image.size
-                additionalLabelBadgeNode.frame = CGRect(origin: CGPoint(x: textFrame.maxX + 6.0, y: floor((height - additionalLabelSize.height) / 2.0) + 1.0), size: additionalLabelSize)
-            }
+            let additionalLabelSize = image.size
+            additionalLabelBadgeNode.frame = CGRect(origin: CGPoint(x: textFrame.maxX + 6.0, y: floor((height - additionalLabelSize.height) / 2.0) + 1.0), size: additionalLabelSize)
         }
         
         let labelBadgeNodeFrame: CGRect
         if case let .image(_, imageSize) = item.label {
-            labelBadgeNodeFrame = CGRect(origin: CGPoint(x: width - rightInset - imageSize.width, y: floorToScreenPixels(textFrame.midY - imageSize.height / 2.0)), size: imageSize)
+            labelBadgeNodeFrame = CGRect(origin: CGPoint(x: width - rightInset - imageSize.width, y: floorToScreenPixels(textFrame.midY - imageSize.height / 2.0)), size:imageSize)
         } else if case .titleBadge = item.label {
-            labelBadgeNodeFrame = labelFrame.insetBy(dx: -4.0, dy: -2.0 + UIScreenPixel)
-        } else if case .labelBadge = item.label {
             labelBadgeNodeFrame = labelFrame.insetBy(dx: -4.0, dy: -2.0 + UIScreenPixel)
         } else if let additionalLabelNode = self.additionalLabelNode {
             labelBadgeNodeFrame = additionalLabelNode.frame.insetBy(dx: -4.0, dy: -2.0 + UIScreenPixel)

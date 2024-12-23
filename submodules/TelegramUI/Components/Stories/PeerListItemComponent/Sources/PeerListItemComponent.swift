@@ -28,24 +28,7 @@ private let readIconImage: UIImage? = generateTintedImage(image: UIImage(bundleI
 private let repostIconImage: UIImage? = generateTintedImage(image: UIImage(bundleImageName: "Stories/HeaderRepost"), color: .white)?.withRenderingMode(.alwaysTemplate)
 private let forwardIconImage: UIImage? = generateTintedImage(image: UIImage(bundleImageName: "Stories/HeaderForward"), color: .white)?.withRenderingMode(.alwaysTemplate)
 private let checkImage: UIImage? = generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: .white)?.withRenderingMode(.alwaysTemplate)
-
-private func generateDisclosureImage() -> UIImage? {
-    return generateImage(CGSize(width: 7.0, height: 12.0), rotatedContext: { size, context in
-        context.clear(CGRect(origin: CGPoint(), size: size))
-        context.setStrokeColor(UIColor.white.cgColor)
-        
-        let lineWidth: CGFloat = 2.0
-        context.setLineWidth(lineWidth)
-        context.setLineJoin(.round)
-        context.setLineCap(.round)
-        
-        context.move(to: CGPoint(x: lineWidth * 0.5, y: lineWidth * 0.5))
-        context.addLine(to: CGPoint(x: size.width - lineWidth * 0.5, y: size.height * 0.5))
-        context.addLine(to: CGPoint(x: lineWidth * 0.5, y: size.height - lineWidth * 0.5))
-        context.strokePath()
-    })?.withRenderingMode(.alwaysTemplate)
-}
-private let disclosureImage: UIImage? = generateDisclosureImage()
+private let disclosureImage: UIImage? = generateTintedImage(image: UIImage(bundleImageName: "Item List/DisclosureArrow"), color: .white)?.withRenderingMode(.alwaysTemplate)
 
 public final class PeerListItemComponent: Component {
     public final class TransitionHint {
@@ -231,7 +214,6 @@ public final class PeerListItemComponent: Component {
     let peer: EnginePeer?
     let storyStats: PeerStoryStats?
     let subtitle: Subtitle?
-    let subtitleComponent: AnyComponent<Empty>?
     let subtitleAccessory: SubtitleAccessory
     let presence: EnginePeer.Presence?
     let rightAccessory: RightAccessory
@@ -244,7 +226,6 @@ public final class PeerListItemComponent: Component {
     let isEnabled: Bool
     let hasNext: Bool
     let extractedTheme: ExtractedTheme?
-    let insets: UIEdgeInsets?
     let action: (EnginePeer, EngineMessage.Id?, PeerListItemComponent.View) -> Void
     let inlineActions: InlineActionsState?
     let contextAction: ((EnginePeer, ContextExtractedContentContainingView, ContextGesture) -> Void)?
@@ -262,7 +243,6 @@ public final class PeerListItemComponent: Component {
         peer: EnginePeer?,
         storyStats: PeerStoryStats? = nil,
         subtitle: Subtitle?,
-        subtitleComponent: AnyComponent<Empty>? = nil,
         subtitleAccessory: SubtitleAccessory,
         presence: EnginePeer.Presence?,
         rightAccessory: RightAccessory = .none,
@@ -275,7 +255,6 @@ public final class PeerListItemComponent: Component {
         isEnabled: Bool = true,
         hasNext: Bool,
         extractedTheme: ExtractedTheme? = nil,
-        insets: UIEdgeInsets? = nil,
         action: @escaping (EnginePeer, EngineMessage.Id?, PeerListItemComponent.View) -> Void,
         inlineActions: InlineActionsState? = nil,
         contextAction: ((EnginePeer, ContextExtractedContentContainingView, ContextGesture) -> Void)? = nil,
@@ -292,7 +271,6 @@ public final class PeerListItemComponent: Component {
         self.peer = peer
         self.storyStats = storyStats
         self.subtitle = subtitle
-        self.subtitleComponent = subtitleComponent
         self.subtitleAccessory = subtitleAccessory
         self.presence = presence
         self.rightAccessory = rightAccessory
@@ -305,7 +283,6 @@ public final class PeerListItemComponent: Component {
         self.isEnabled = isEnabled
         self.hasNext = hasNext
         self.extractedTheme = extractedTheme
-        self.insets = insets
         self.action = action
         self.inlineActions = inlineActions
         self.contextAction = contextAction
@@ -346,9 +323,6 @@ public final class PeerListItemComponent: Component {
         if lhs.subtitle != rhs.subtitle {
             return false
         }
-        if lhs.subtitleComponent != rhs.subtitleComponent {
-            return false
-        }
         if lhs.subtitleAccessory != rhs.subtitleAccessory {
             return false
         }
@@ -382,12 +356,6 @@ public final class PeerListItemComponent: Component {
         if lhs.hasNext != rhs.hasNext {
             return false
         }
-        if lhs.insets != rhs.insets {
-            return false
-        }
-        if lhs.extractedTheme != rhs.extractedTheme {
-            return false
-        }
         if lhs.inlineActions != rhs.inlineActions {
             return false
         }
@@ -402,7 +370,6 @@ public final class PeerListItemComponent: Component {
         
         private let title = ComponentView<Empty>()
         private var label = ComponentView<Empty>()
-        private var subtitleView: ComponentView<Empty>?
         private let separatorLayer: SimpleLayer
         private var avatarNode: AvatarNode?
         private var avatarImageView: UIImageView?
@@ -411,7 +378,6 @@ public final class PeerListItemComponent: Component {
         
         private var avatarComponentView: ComponentView<Empty>?
         
-        private var rightIconView: UIImageView?
         private var iconView: UIImageView?
         private var checkLayer: CheckLayer?
         private var rightAccessoryComponentView: ComponentView<Empty>?
@@ -699,8 +665,25 @@ public final class PeerListItemComponent: Component {
                 contextInset = 0.0
             }
             
-            let verticalInset: CGFloat = component.insets?.top ?? 1.0
+            let height: CGFloat
+            let titleFont: UIFont
+            let subtitleFont: UIFont
+            switch component.style {
+            case .generic:
+                titleFont = Font.semibold(17.0)
+                subtitleFont = Font.regular(15.0)
+                if labelData.0.isEmpty {
+                    height = 50.0
+                } else {
+                    height = 60.0
+                }
+            case .compact:
+                titleFont = Font.semibold(14.0)
+                subtitleFont = Font.regular(14.0)
+                height = 42.0
+            }
             
+            let verticalInset: CGFloat = 1.0
             var leftInset: CGFloat = 53.0 + component.sideInset
             if case .generic = component.style {
                 leftInset += 9.0
@@ -711,50 +694,6 @@ public final class PeerListItemComponent: Component {
             }
             if component.story != nil {
                 rightInset += 40.0
-            }
-            
-            var subtitleComponentSize: CGSize?
-            if let subtitleComponent = component.subtitleComponent {
-                let subtitleView: ComponentView<Empty>
-                if let current = self.subtitleView {
-                    subtitleView = current
-                } else {
-                    subtitleView = ComponentView()
-                    self.subtitleView = subtitleView
-                }
-                subtitleComponentSize = subtitleView.update(
-                    transition: transition,
-                    component: subtitleComponent,
-                    environment: {},
-                    containerSize: CGSize(width: availableSize.width - leftInset - rightInset, height: 100.0)
-                )
-            } else if let subtitleView = self.subtitleView {
-                self.subtitleView = nil
-                subtitleView.view?.removeFromSuperview()
-            }
-            
-            var height: CGFloat
-            let titleFont: UIFont
-            let subtitleFont: UIFont
-            switch component.style {
-            case .generic:
-                titleFont = Font.semibold(17.0)
-                subtitleFont = Font.regular(15.0)
-                if let subtitleComponentSize {
-                    height = 40.0 + subtitleComponentSize.height + verticalInset * 2.0
-                } else if labelData.0.isEmpty {
-                    height = 48.0 + verticalInset * 2.0
-                } else {
-                    height = 58.0 + verticalInset * 2.0
-                }
-            case .compact:
-                titleFont = Font.semibold(14.0)
-                subtitleFont = Font.regular(14.0)
-                if let subtitleComponentSize {
-                    height = 20.0 + subtitleComponentSize.height + verticalInset * 2.0
-                } else {
-                    height = 40.0 + verticalInset * 2.0
-                }
             }
             
             var rightAccessoryComponentSize: CGSize?
@@ -972,13 +911,9 @@ public final class PeerListItemComponent: Component {
             
             let availableTextWidth = availableSize.width - leftInset - rightInset
             var titleAvailableWidth = component.style == .compact ? availableTextWidth * 0.7 : availableSize.width - leftInset - rightInset
-            switch component.rightAccessory {
-            case .disclosure:
-                titleAvailableWidth -= 32.0
-            case .check:
+            if case .none = component.rightAccessory {
+            } else {
                 titleAvailableWidth -= 20.0
-            case .none:
-                break
             }
             
             if statusIcon != nil {
@@ -1036,9 +971,7 @@ public final class PeerListItemComponent: Component {
             let titleSpacing: CGFloat = 2.0
             let titleVerticalOffset: CGFloat = 0.0
             let centralContentHeight: CGFloat
-            if let subtitleComponentSize {
-                centralContentHeight = titleSize.height + subtitleComponentSize.height + titleSpacing
-            } else if labelSize.height > 0.0, case .generic = component.style {
+            if labelSize.height > 0.0, case .generic = component.style {
                 centralContentHeight = titleSize.height + labelSize.height + titleSpacing
             } else {
                 centralContentHeight = titleSize.height
@@ -1153,6 +1086,7 @@ public final class PeerListItemComponent: Component {
                     labelFrame = CGRect(origin: CGPoint(x: titleFrame.maxX + 4.0, y: floor((height - verticalInset * 2.0 - centralContentHeight) / 2.0)), size: labelSize)
                 }
                 
+                
                 if labelView.superview == nil {
                     labelView.isUserInteractionEnabled = false
                     labelView.layer.anchorPoint = CGPoint()
@@ -1173,31 +1107,20 @@ public final class PeerListItemComponent: Component {
                 }
             }
             
-            if let subtitleComponentView = self.subtitleView?.view, let subtitleComponentSize {
-                let subtitleFrame = CGRect(origin: CGPoint(x: titleFrame.minX, y: titleFrame.maxY + titleSpacing), size: subtitleComponentSize)
-
-                if subtitleComponentView.superview == nil {
-                    subtitleComponentView.isUserInteractionEnabled = false
-                    subtitleComponentView.layer.anchorPoint = CGPoint()
-                    self.containerButton.addSubview(subtitleComponentView)
-                }
-                transition.setFrame(view: subtitleComponentView, frame: subtitleFrame)
-            }
-            
             let imageSize = CGSize(width: 22.0, height: 22.0)
             self.iconFrame = CGRect(origin: CGPoint(x: availableSize.width - (contextInset * 2.0 + 14.0 + component.sideInset) - imageSize.width, y: floor((height - verticalInset * 2.0 - imageSize.height) * 0.5)), size: imageSize)
             
             if case .none = component.rightAccessory {
                 if case .none = component.subtitleAccessory {
-                    if let rightIconView = self.rightIconView {
-                        self.rightIconView = nil
-                        rightIconView.removeFromSuperview()
+                    if let iconView = self.iconView {
+                        self.iconView = nil
+                        iconView.removeFromSuperview()
                     }
                 }
             } else {
-                let rightIconView: UIImageView
-                if let current = self.rightIconView {
-                    rightIconView = current
+                let iconView: UIImageView
+                if let current = self.iconView {
+                    iconView = current
                 } else {
                     var image: UIImage?
                     var color: UIColor = component.theme.list.itemSecondaryTextColor
@@ -1207,26 +1130,17 @@ public final class PeerListItemComponent: Component {
                         color = component.theme.list.itemAccentColor
                     case .disclosure:
                         image = disclosureImage
-                        color = component.theme.list.disclosureArrowColor
                     case .none:
                         break
                     }
-                    rightIconView = UIImageView(image: image)
-                    rightIconView.tintColor = color
-                    self.rightIconView = rightIconView
-                    self.containerButton.addSubview(rightIconView)
+                    iconView = UIImageView(image: image)
+                    iconView.tintColor = color
+                    self.iconView = iconView
+                    self.containerButton.addSubview(iconView)
                 }
                 
-                if let image = rightIconView.image {
-                    let iconFrame: CGRect
-                    switch component.rightAccessory {
-                    case .disclosure:
-                        iconFrame = CGRect(origin: CGPoint(x: availableSize.width - image.size.width - 16.0 - contextInset, y: floor((height - verticalInset * 2.0 - image.size.height) / 2.0)), size: image.size)
-                    default:
-                        iconFrame = CGRect(origin: CGPoint(x: availableSize.width - image.size.width, y: floor((height - verticalInset * 2.0 - image.size.height) / 2.0)), size: image.size)
-                    }
-                    
-                    transition.setFrame(view: rightIconView, frame: iconFrame)
+                if let image = iconView.image {
+                    transition.setFrame(view: iconView, frame: CGRect(origin: CGPoint(x: availableSize.width - image.size.width, y: floor((height - verticalInset * 2.0 - image.size.width) / 2.0)), size: image.size))
                 }
             }
             

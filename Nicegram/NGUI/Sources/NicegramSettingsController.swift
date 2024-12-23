@@ -89,6 +89,7 @@ private enum EasyToggleType {
     case enableGrayscaleAll
     case enableGrayscaleInChatList
     case enableGrayscaleInChat
+    case enableAppleSpeech2Text
 }
 
 
@@ -571,6 +572,10 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                     updateNicegramSettings {
                         $0.grayscaleInChat = value
                     }
+                case .enableAppleSpeech2Text:
+                    updateNicegramSettings {
+                        $0.speechToText.enableApple = value
+                    }
                 }
             })
         case let .unblockHeader(text):
@@ -804,6 +809,15 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     toggleIndex += 1
     
     entries.append(.easyToggle(toggleIndex, .enableGrayscaleInChat, l("NicegramSettings.EnableGrayscaleInChat"), nicegramSettings.grayscaleInChat))
+    toggleIndex += 1
+    
+    entries.append(
+        .easyToggle(
+            toggleIndex,
+            .enableAppleSpeech2Text,
+            l("NicegramSettings.EnableAppleSpeech2Text"),
+            nicegramSettings.speechToText.enableApple ?? false
+        ))
     toggleIndex += 1
         
     if let sharingSettings {

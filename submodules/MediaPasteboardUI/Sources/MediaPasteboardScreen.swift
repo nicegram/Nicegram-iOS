@@ -14,8 +14,8 @@ public func mediaPasteboardScreen(
     context: AccountContext,
     updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil,
     peer: EnginePeer,
-    subjects: [MediaPickerScreenImpl.Subject.Media],
-    presentMediaPicker: @escaping (_ subject: MediaPickerScreenImpl.Subject, _ saveEditedPhotos: Bool, _ bannedSendPhotos: (Int32, Bool)?, _ bannedSendVideos: (Int32, Bool)?, _ present: @escaping (MediaPickerScreenImpl, AttachmentMediaPickerContext?) -> Void) -> Void,
+    subjects: [MediaPickerScreen.Subject.Media],
+    presentMediaPicker: @escaping (_ subject: MediaPickerScreen.Subject, _ saveEditedPhotos: Bool, _ bannedSendPhotos: (Int32, Bool)?, _ bannedSendVideos: (Int32, Bool)?, _ present: @escaping (MediaPickerScreen, AttachmentMediaPickerContext?) -> Void) -> Void,
     getSourceRect: (() -> CGRect?)? = nil,
     makeEntityInputView: @escaping () -> AttachmentTextInputPanelInputView? = { return nil }
 ) -> ViewController {

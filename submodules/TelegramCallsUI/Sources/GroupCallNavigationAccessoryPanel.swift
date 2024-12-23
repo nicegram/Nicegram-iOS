@@ -677,7 +677,8 @@ public final class GroupCallNavigationAccessoryPanel: ASDisplayNode {
                     joinText = textForTimeout(value: elapsedTime).uppercased()
                 }
             } else {
-                joinText = strings.Chat_TitleVideochatPanel_NotifyScheduledButton
+                //TODO:localize
+                joinText = "Notify Me"
             }
             
             if self.updateTimer == nil {

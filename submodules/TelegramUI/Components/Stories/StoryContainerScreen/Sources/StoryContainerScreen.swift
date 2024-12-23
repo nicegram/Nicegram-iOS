@@ -2057,7 +2057,7 @@ public class StoryContainerScreen: ViewControllerComponentContainer {
         ), navigationBarAppearance: .none, theme: .dark)
         
         self.statusBar.statusBarStyle = .White
-        self.navigationPresentation = .standaloneFlatModal
+        self.navigationPresentation = .flatModal
         self.blocksBackgroundWhenInOverlay = true
         self.automaticallyControlPresentationContextLayout = false
         self.supportedOrientations = ViewControllerSupportedOrientations(regularSize: .all, compactSize: [.portrait])

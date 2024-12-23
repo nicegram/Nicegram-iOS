@@ -15,8 +15,6 @@
     
     CGRect _currentFrame;
     UIEdgeInsets _currentEdgeInsets;
-    
-    bool _currentIsCaptionAbove;
 }
 @end
 
@@ -61,6 +59,7 @@
     _inputPanel.sendPressed = ^(NSAttributedString *string) {
         __strong TGPhotoCaptionInputMixin *strongSelf = weakSelf;
         [TGViewController enableAutorotation];
+        strongSelf->_dismissView.hidden = true;
     
         strongSelf->_editing = false;
         
@@ -73,7 +72,9 @@
             [TGViewController disableAutorotation];
             
             [strongSelf beginEditing];
-                            
+            
+            strongSelf->_dismissView.hidden = false;
+                
             if (strongSelf.panelFocused != nil)
                 strongSelf.panelFocused();
             
@@ -93,21 +94,12 @@
         }
     };
     
-    _inputPanel.captionIsAboveUpdated = ^(bool value) {
-        __strong TGPhotoCaptionInputMixin *strongSelf = weakSelf;
-        if (strongSelf.captionIsAboveUpdated != nil) {
-            strongSelf.captionIsAboveUpdated(value);
-            
-            strongSelf->_currentIsCaptionAbove = value;
-            [strongSelf updateLayoutWithFrame:strongSelf->_currentFrame edgeInsets:strongSelf->_currentEdgeInsets animated:true];
-        }
-    };
     
     _inputPanelView = inputPanel.view;
     
     _backgroundView = [[UIView alloc] init];
     _backgroundView.backgroundColor = [TGPhotoEditorInterfaceAssets toolbarTransparentBackgroundColor];
-    //[parentView addSubview:_backgroundView];
+    [parentView addSubview:_backgroundView];
     [parentView addSubview:_inputPanelView];
 }
 
@@ -126,13 +118,12 @@
     
     _dismissView = [[UIView alloc] initWithFrame:parentView.bounds];
     _dismissView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    _dismissView.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.4];
     
     _dismissTapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleDismissTap:)];
     _dismissTapRecognizer.enabled = false;
     [_dismissView addGestureRecognizer:_dismissTapRecognizer];
     
-    [parentView insertSubview:_dismissView belowSubview:_inputPanelView];
+    [parentView insertSubview:_dismissView belowSubview:_backgroundView];
 }
 
 - (void)setCaption:(NSAttributedString *)caption
@@ -150,9 +141,8 @@
     [_inputPanel setCaption:caption];
 }
 
-- (void)setTimeout:(int32_t)timeout isVideo:(bool)isVideo isCaptionAbove:(bool)isCaptionAbove {
-    _currentIsCaptionAbove = isCaptionAbove;
-    [_inputPanel setTimeout:timeout isVideo:isVideo isCaptionAbove:isCaptionAbove];
+- (void)setTimeout:(int32_t)timeout isVideo:(bool)isVideo {
+    [_inputPanel setTimeout:timeout isVideo:isVideo];
 }
 
 - (void)setCaptionPanelHidden:(bool)hidden animated:(bool)__unused animated
@@ -166,12 +156,6 @@
     
     [self createDismissViewIfNeeded];
     [self createInputPanelIfNeeded];
-    
-    _dismissView.alpha = 0.0;
-    [UIView animateWithDuration:0.3 delay:0.0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
-        _dismissView.alpha = 1.0f;
-    } completion:^(BOOL finished) {
-    }];
 }
 
 - (void)enableDismissal
@@ -181,21 +165,19 @@
 
 #pragma mark - 
 
-- (void)finishEditing {
-    if ([self.inputPanel dismissInput]) {
-        _editing = false;
-                
-        if (self.finishedWithCaption != nil)
-            self.finishedWithCaption([_inputPanel caption]);
-    }
-}
-
 - (void)handleDismissTap:(UITapGestureRecognizer *)gestureRecognizer
 {
     if (gestureRecognizer.state != UIGestureRecognizerStateRecognized)
         return;
     
-    [self finishEditing];
+    if ([self.inputPanel dismissInput]) {
+        _editing = false;
+        
+        [_dismissView removeFromSuperview];
+        
+        if (self.finishedWithCaption != nil)
+            self.finishedWithCaption([_inputPanel caption]);
+    }
 }
 
 #pragma mark - Input Panel Delegate
@@ -234,49 +216,20 @@
     
     _keyboardHeight = keyboardHeight;
     
-    CGFloat fadeAlpha = 1.0;
-    if (keyboardHeight < FLT_EPSILON) {
-        fadeAlpha = 0.0;
-    }
-    
-    if (ABS(_dismissView.alpha - fadeAlpha) > FLT_EPSILON) {
-        [UIView animateWithDuration:0.3 delay:0.0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
-            _dismissView.alpha = fadeAlpha;
-        } completion:^(BOOL finished) {
-            
-        }];
-    }
-    
     if (!UIInterfaceOrientationIsPortrait([[LegacyComponentsGlobals provider] applicationStatusBarOrientation]) && !TGIsPad())
         return;
     
     CGRect frame = _currentFrame;
     UIEdgeInsets edgeInsets = _currentEdgeInsets;
     CGFloat panelHeight = [_inputPanel updateLayoutSize:frame.size keyboardHeight:keyboardHeight sideInset:0.0 animated:false];
-    
-    CGFloat panelY = 0.0;
-    if (frame.size.width > frame.size.height && !TGIsPad()) {
-        panelY = edgeInsets.top + frame.size.height;
-    } else {
-        if (_currentIsCaptionAbove) {
-            if (_keyboardHeight > 0.0) {
-                panelY = _safeAreaInset.top + 8.0;
-            } else {
-                panelY = _safeAreaInset.top + 8.0 + 40.0;
-            }
-        } else {
-            panelY = edgeInsets.top + frame.size.height - panelHeight - MAX(edgeInsets.bottom, _keyboardHeight);
-        }
-    }
-    
-    CGFloat backgroundHeight = panelHeight;
-    if (_keyboardHeight > 0.0) {
-        backgroundHeight += _keyboardHeight - edgeInsets.bottom;
-    }
-    
     [UIView animateWithDuration:duration delay:0.0f options:(curve << 16) animations:^{
-        _inputPanelView.frame = CGRectMake(edgeInsets.left, panelY, frame.size.width, panelHeight);
-        _backgroundView.frame = CGRectMake(edgeInsets.left, panelY, frame.size.width, backgroundHeight);
+        _inputPanelView.frame = CGRectMake(edgeInsets.left, frame.size.height - panelHeight - MAX(edgeInsets.bottom, _keyboardHeight), frame.size.width, panelHeight);
+        
+        CGFloat backgroundHeight = panelHeight;
+        if (_keyboardHeight > 0.0) {
+            backgroundHeight += _keyboardHeight - edgeInsets.bottom;
+        }
+        _backgroundView.frame = CGRectMake(edgeInsets.left, frame.size.height - panelHeight - MAX(edgeInsets.bottom, _keyboardHeight), frame.size.width, backgroundHeight);
     } completion:nil];
 
     if (self.keyboardHeightChanged != nil)
@@ -290,19 +243,11 @@
     
     CGFloat panelHeight = [_inputPanel updateLayoutSize:frame.size keyboardHeight:_keyboardHeight sideInset:0.0 animated:animated];
     
-    CGFloat panelY = 0.0;
+    CGFloat y = 0.0;
     if (frame.size.width > frame.size.height && !TGIsPad()) {
-        panelY = edgeInsets.top + frame.size.height;
+        y = edgeInsets.top + frame.size.height;
     } else {
-        if (_currentIsCaptionAbove) {
-            if (_keyboardHeight > 0.0) {
-                panelY = _safeAreaInset.top + 8.0;
-            } else {
-                panelY = _safeAreaInset.top + 8.0 + 40.0;
-            }
-        } else {
-            panelY = edgeInsets.top + frame.size.height - panelHeight - MAX(edgeInsets.bottom, _keyboardHeight);
-        }
+        y = edgeInsets.top + frame.size.height - panelHeight - MAX(edgeInsets.bottom, _keyboardHeight);
     }
     
     CGFloat backgroundHeight = panelHeight;
@@ -310,8 +255,8 @@
         backgroundHeight += _keyboardHeight - edgeInsets.bottom;
     }
     
-    CGRect panelFrame = CGRectMake(edgeInsets.left, panelY, frame.size.width, panelHeight);
-    CGRect backgroundFrame = CGRectMake(edgeInsets.left, panelY, frame.size.width, backgroundHeight);
+    CGRect panelFrame = CGRectMake(edgeInsets.left, y, frame.size.width, panelHeight);
+    CGRect backgroundFrame = CGRectMake(edgeInsets.left, y, frame.size.width, backgroundHeight);
     
     if (animated) {
         [_inputPanel animateView:_inputPanelView frame:panelFrame];
