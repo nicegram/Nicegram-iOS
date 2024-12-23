@@ -75,6 +75,7 @@ import GiftOptionsScreen
 import GiftViewScreen
 import StarsIntroScreen
 import ContentReportScreen
+import AffiliateProgramSetupScreen
 
 import NGCore
 import NGData
@@ -2463,11 +2464,13 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                 sendMessageImpl?(peer)
             }
         ))
+        controller.navigationPresentation = .modal
+        
         let _ = combineLatest(queue: Queue.mainQueue(), controller.result, options.get())
         .startStandalone(next: { [weak controller] result, options in
             if let (peers, _, _, _, _, _) = result, let contactPeer = peers.first, case let .peer(peer, _, _) = contactPeer, let starsContext = context.starsContext {
                 let premiumOptions = options.filter { $0.users == 1 }.map { CachedPremiumGiftOption(months: $0.months, currency: $0.currency, amount: $0.amount, botUrl: "", storeProductId: $0.storeProductId) }
-                let giftController = GiftOptionsScreen(context: context, starsContext: starsContext, peerId: peer.id, premiumOptions: premiumOptions)
+                let giftController = GiftOptionsScreen(context: context, starsContext: starsContext, peerId: peer.id, premiumOptions: premiumOptions, hasBirthday: currentBirthdays?[peer.id] != nil)
                 giftController.navigationPresentation = .modal
                 controller?.push(giftController)
             }
@@ -2533,11 +2536,11 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return controller
     }
     
-    public func makeGiftOptionsController(context: AccountContext, peerId: EnginePeer.Id, premiumOptions: [CachedPremiumGiftOption]) -> ViewController {
+    public func makeGiftOptionsController(context: AccountContext, peerId: EnginePeer.Id, premiumOptions: [CachedPremiumGiftOption], hasBirthday: Bool) -> ViewController {
         guard let starsContext = context.starsContext else {
             fatalError()
         }
-        let controller = GiftOptionsScreen(context: context, starsContext: starsContext, peerId: peerId, premiumOptions: premiumOptions)
+        let controller = GiftOptionsScreen(context: context, starsContext: starsContext, peerId: peerId, premiumOptions: premiumOptions, hasBirthday: hasBirthday)
         controller.navigationPresentation = .modal
         return controller
     }
@@ -2589,7 +2592,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                     let presence = current.presence
                     var disabledFor: [PeerId: SelectivePrivacyPeer] = [:]
                     switch presence {
-                    case let .enableEveryone(disabledForValue), let .enableContacts(_, disabledForValue, _):
+                    case let .enableEveryone(disabledForValue), let .enableContacts(_, disabledForValue, _, _):
                         disabledFor = disabledForValue
                     default:
                         break
@@ -2689,21 +2692,21 @@ public final class SharedAccountContextImpl: SharedAccountContext {
     }
     
     public func makeBotPreviewEditorScreen(context: AccountContext, source: Any?, target: Stories.PendingTarget, transitionArguments: (UIView, CGRect, UIImage?)?, transitionOut: @escaping () -> BotPreviewEditorTransitionOut?, externalState: MediaEditorTransitionOutExternalState, completion: @escaping (MediaEditorScreenResult, @escaping (@escaping () -> Void) -> Void) -> Void, cancelled: @escaping () -> Void) -> ViewController {
-        let subject: Signal<MediaEditorScreen.Subject?, NoError>
+        let subject: Signal<MediaEditorScreenImpl.Subject?, NoError>
         if let asset = source as? PHAsset {
             subject = .single(.asset(asset))
         } else if let image = source as? UIImage {
-            subject = .single(.image(image, PixelDimensions(image.size), nil, .bottomRight))
+            subject = .single(.image(image: image, dimensions: PixelDimensions(image.size), additionalImage: nil, additionalImagePosition: .bottomRight))
         } else {
             subject = .single(.empty(PixelDimensions(width: 1080, height: 1920)))
         }
-        let editorController = MediaEditorScreen(
+        let editorController = MediaEditorScreenImpl(
             context: context,
             mode: .botPreview,
             subject: subject,
             customTarget: nil,
             transitionIn: transitionArguments.flatMap { .gallery(
-                MediaEditorScreen.TransitionIn.GalleryTransitionIn(
+                MediaEditorScreenImpl.TransitionIn.GalleryTransitionIn(
                     sourceView: $0.0,
                     sourceRect: $0.1,
                     sourceImage: $0.2
@@ -2711,13 +2714,13 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             ) },
             transitionOut: { finished, isNew in
                 if !finished, let transitionArguments {
-                    return MediaEditorScreen.TransitionOut(
+                    return MediaEditorScreenImpl.TransitionOut(
                         destinationView: transitionArguments.0,
                         destinationRect: transitionArguments.0.bounds,
                         destinationCornerRadius: 0.0
                     )
                 } else if finished, let transitionOut = transitionOut(), let destinationView = transitionOut.destinationView {
-                    return MediaEditorScreen.TransitionOut(
+                    return MediaEditorScreenImpl.TransitionOut(
                         destinationView: destinationView,
                         destinationRect: transitionOut.destinationRect,
                         destinationCornerRadius: transitionOut.destinationCornerRadius,
@@ -2727,7 +2730,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                 return nil
             }, completion: { result, commit in
                 completion(result, commit)
-            } as (MediaEditorScreen.Result, @escaping (@escaping () -> Void) -> Void) -> Void
+            } as (MediaEditorScreenImpl.Result, @escaping (@escaping () -> Void) -> Void) -> Void
         )
         editorController.cancelled = { _ in
             cancelled()
@@ -2736,8 +2739,8 @@ public final class SharedAccountContextImpl: SharedAccountContext {
     }
     
     public func makeStickerEditorScreen(context: AccountContext, source: Any?, intro: Bool, transitionArguments: (UIView, CGRect, UIImage?)?, completion: @escaping (TelegramMediaFile, [String], @escaping () -> Void) -> Void, cancelled: @escaping () -> Void) -> ViewController {
-        let subject: Signal<MediaEditorScreen.Subject?, NoError>
-        var mode: MediaEditorScreen.Mode.StickerEditorMode
+        let subject: Signal<MediaEditorScreenImpl.Subject?, NoError>
+        var mode: MediaEditorScreenImpl.Mode.StickerEditorMode
         var fromCamera = false
         if let (file, emoji) = source as? (TelegramMediaFile, [String]) {
             subject = .single(.sticker(file, emoji))
@@ -2746,16 +2749,16 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             subject = .single(.asset(asset))
             mode = .addingToPack
         } else if let image = source as? UIImage {
-            subject = .single(.image(image, PixelDimensions(image.size), nil, .bottomRight))
+            subject = .single(.image(image: image, dimensions: PixelDimensions(image.size), additionalImage: nil, additionalImagePosition: .bottomRight))
             mode = .addingToPack
-        } else if let source = source as? Signal<CameraScreen.Result, NoError> {
+        } else if let source = source as? Signal<CameraScreenImpl.Result, NoError> {
             subject = source
-            |> map { value -> MediaEditorScreen.Subject? in
+            |> map { value -> MediaEditorScreenImpl.Subject? in
                 switch value {
                 case .pendingImage:
                     return nil
                 case let .image(image):
-                    return .image(image.image, PixelDimensions(image.image.size), nil, .topLeft)
+                    return .image(image: image.image, dimensions: PixelDimensions(image.image.size), additionalImage: nil, additionalImagePosition: .topLeft)
                 default:
                     return nil
                 }
@@ -2769,12 +2772,12 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         if intro {
             mode = .businessIntro
         }
-        let editorController = MediaEditorScreen(
+        let editorController = MediaEditorScreenImpl(
             context: context,
             mode: .stickerEditor(mode: mode),
             subject: subject,
             transitionIn: fromCamera ? .camera : transitionArguments.flatMap { .gallery(
-                MediaEditorScreen.TransitionIn.GalleryTransitionIn(
+                MediaEditorScreenImpl.TransitionIn.GalleryTransitionIn(
                     sourceView: $0.0,
                     sourceRect: $0.1,
                     sourceImage: $0.2
@@ -2782,7 +2785,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             ) },
             transitionOut: { finished, isNew in
                 if !finished, let transitionArguments {
-                    return MediaEditorScreen.TransitionOut(
+                    return MediaEditorScreenImpl.TransitionOut(
                         destinationView: transitionArguments.0,
                         destinationRect: transitionArguments.0.bounds,
                         destinationCornerRadius: 0.0
@@ -2795,7 +2798,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                         commit({})
                     })
                 }
-            } as (MediaEditorScreen.Result, @escaping (@escaping () -> Void) -> Void) -> Void
+            } as (MediaEditorScreenImpl.Result, @escaping (@escaping () -> Void) -> Void) -> Void
         )
         editorController.cancelled = { _ in
             cancelled()
@@ -2804,15 +2807,15 @@ public final class SharedAccountContextImpl: SharedAccountContext {
     }
         
     public func makeStoryMediaEditorScreen(context: AccountContext, source: Any?, text: String?, link: (url: String, name: String?)?, completion: @escaping (MediaEditorScreenResult, @escaping (@escaping () -> Void) -> Void) -> Void) -> ViewController {
-        let subject: Signal<MediaEditorScreen.Subject?, NoError>
+        let subject: Signal<MediaEditorScreenImpl.Subject?, NoError>
         if let image = source as? UIImage {
-            subject = .single(.image(image, PixelDimensions(image.size), nil, .bottomRight))
+            subject = .single(.image(image: image, dimensions: PixelDimensions(image.size), additionalImage: nil, additionalImagePosition: .bottomRight))
         } else if let path = source as? String {
-            subject = .single(.video(path, nil, false, nil, nil, PixelDimensions(width: 1080, height: 1920), 0.0, [], .bottomRight))
+            subject = .single(.video(videoPath: path, thumbnail: nil, mirror: false, additionalVideoPath: nil, additionalThumbnail: nil, dimensions: PixelDimensions(width: 1080, height: 1920), duration: 0.0, videoPositionChanges: [], additionalVideoPosition: .bottomRight))
         } else {
             subject = .single(.empty(PixelDimensions(width: 1080, height: 1920)))
         }
-        let editorController = MediaEditorScreen(
+        let editorController = MediaEditorScreenImpl(
             context: context,
             mode: .storyEditor,
             subject: subject,
@@ -2824,7 +2827,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                 return nil
             }, completion: { result, commit in
                 completion(result, commit)
-            } as (MediaEditorScreen.Result, @escaping (@escaping () -> Void) -> Void) -> Void
+            } as (MediaEditorScreenImpl.Result, @escaping (@escaping () -> Void) -> Void) -> Void
         )
 //        editorController.cancelled = { _ in
 //            cancelled()
@@ -2836,8 +2839,8 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return mediaPickerController(context: context, hasSearch: hasSearch, completion: completion)
     }
     
-    public func makeStoryMediaPickerScreen(context: AccountContext, isDark: Bool, getSourceRect: @escaping () -> CGRect, completion: @escaping (Any, UIView, CGRect, UIImage?, @escaping (Bool?) -> (UIView, CGRect)?, @escaping () -> Void) -> Void, dismissed: @escaping () -> Void, groupsPresented: @escaping () -> Void) -> ViewController {
-        return storyMediaPickerController(context: context, isDark: isDark, getSourceRect: getSourceRect, completion: completion, dismissed: dismissed, groupsPresented: groupsPresented)
+    public func makeStoryMediaPickerScreen(context: AccountContext, isDark: Bool, forCollage: Bool, getSourceRect: @escaping () -> CGRect, completion: @escaping (Any, UIView, CGRect, UIImage?, @escaping (Bool?) -> (UIView, CGRect)?, @escaping () -> Void) -> Void, dismissed: @escaping () -> Void, groupsPresented: @escaping () -> Void) -> ViewController {
+        return storyMediaPickerController(context: context, isDark: isDark, forCollage: forCollage, getSourceRect: getSourceRect, completion: completion, dismissed: dismissed, groupsPresented: groupsPresented)
     }
     
     public func makeStickerMediaPickerScreen(context: AccountContext, getSourceRect: @escaping () -> CGRect?, completion: @escaping (Any?, UIView?, CGRect, UIImage?, Bool, @escaping (Bool?) -> (UIView, CGRect)?, @escaping () -> Void) -> Void, dismissed: @escaping () -> Void) -> ViewController {
@@ -2956,8 +2959,20 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return MiniAppListScreen(context: context, initialData: initialData as! MiniAppListScreen.InitialData)
     }
     
-    public func openWebApp(context: AccountContext, parentController: ViewController, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, peer: EnginePeer, threadId: Int64?, buttonText: String, url: String, simple: Bool, source: ChatOpenWebViewSource, skipTermsOfService: Bool, payload: String?) {
-        openWebAppImpl(context: context, parentController: parentController, updatedPresentationData: updatedPresentationData, peer: peer, threadId: threadId, buttonText: buttonText, url: url, simple: simple, source: source, skipTermsOfService: skipTermsOfService, payload: payload)
+    public func openWebApp(context: AccountContext, parentController: ViewController, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, botPeer: EnginePeer, chatPeer: EnginePeer?, threadId: Int64?, buttonText: String, url: String, simple: Bool, source: ChatOpenWebViewSource, skipTermsOfService: Bool, payload: String?) {
+        openWebAppImpl(context: context, parentController: parentController, updatedPresentationData: updatedPresentationData, botPeer: botPeer, chatPeer: chatPeer, threadId: threadId, buttonText: buttonText, url: url, simple: simple, source: source, skipTermsOfService: skipTermsOfService, payload: payload)
+    }
+    
+    public func makeAffiliateProgramSetupScreenInitialData(context: AccountContext, peerId: EnginePeer.Id, mode: AffiliateProgramSetupScreenMode) -> Signal<AffiliateProgramSetupScreenInitialData, NoError> {
+        return AffiliateProgramSetupScreen.content(context: context, peerId: peerId, mode: mode)
+    }
+    
+    public func makeAffiliateProgramSetupScreen(context: AccountContext, initialData: AffiliateProgramSetupScreenInitialData) -> ViewController {
+        return AffiliateProgramSetupScreen(context: context, initialContent: initialData)
+    }
+    
+    public func makeAffiliateProgramJoinScreen(context: AccountContext, sourcePeer: EnginePeer, commissionPermille: Int32, programDuration: Int32?, revenuePerUser: Double, mode: JoinAffiliateProgramScreenMode) -> ViewController {
+        return JoinAffiliateProgramScreen(context: context, sourcePeer: sourcePeer, commissionPermille: commissionPermille, programDuration: programDuration, revenuePerUser: revenuePerUser, mode: mode)
     }
 }
 

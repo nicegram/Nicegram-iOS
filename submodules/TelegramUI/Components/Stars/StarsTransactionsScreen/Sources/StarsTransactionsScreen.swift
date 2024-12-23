@@ -21,6 +21,8 @@ import UndoUI
 import ListActionItemComponent
 import StarsAvatarComponent
 import TelegramStringFormatting
+import ListItemComponentAdaptor
+import ItemListUI
 
 private let initialSubscriptionsDisplayedLimit: Int32 = 3
 
@@ -102,6 +104,7 @@ final class StarsTransactionsScreenComponent: Component {
         private let descriptionView = ComponentView<Empty>()
         
         private let balanceView = ComponentView<Empty>()
+        private let earnStarsSection = ComponentView<Empty>()
         
         private let subscriptionsView = ComponentView<Empty>()
         
@@ -127,7 +130,7 @@ final class StarsTransactionsScreenComponent: Component {
         private var stateDisposable: Disposable?
         private var starsState: StarsContext.State?
         
-        private var previousBalance: Int64?
+        private var previousBalance: StarsAmount?
         
         private var subscriptionsStateDisposable: Disposable?
         private var subscriptionsState: StarsSubscriptionsContext.State?
@@ -527,7 +530,7 @@ final class StarsTransactionsScreenComponent: Component {
                 transition: .immediate,
                 component: AnyComponent(MultilineTextComponent(
                     text: .plain(NSAttributedString(
-                        string: presentationStringsFormattedNumber(Int32(self.starsState?.balance ?? 0), environment.dateTimeFormat.groupingSeparator),
+                        string: presentationStringsFormattedNumber(self.starsState?.balance ?? StarsAmount.zero, environment.dateTimeFormat.groupingSeparator),
                         font: Font.semibold(14.0),
                         textColor: environment.theme.actionSheet.primaryTextColor
                     )),
@@ -611,7 +614,7 @@ final class StarsTransactionsScreenComponent: Component {
                             theme: environment.theme,
                             strings: environment.strings,
                             dateTimeFormat: environment.dateTimeFormat,
-                            count: self.starsState?.balance ?? 0,
+                            count: self.starsState?.balance ?? StarsAmount.zero,
                             rate: nil,
                             actionTitle: environment.strings.Stars_Intro_Buy,
                             actionAvailable: !premiumConfiguration.areStarsDisabled,
@@ -657,7 +660,58 @@ final class StarsTransactionsScreenComponent: Component {
                 starTransition.setFrame(view: balanceView, frame: balanceFrame)
             }
             contentHeight += balanceSize.height
-            contentHeight += 44.0
+            contentHeight += 34.0
+            
+            var canJoinRefProgram = false
+            if let data = component.context.currentAppConfiguration.with({ $0 }).data, let value = data["starref_connect_allowed"] {
+                if let value = value as? Double {
+                    canJoinRefProgram = value != 0.0
+                } else if let value = value as? Bool {
+                    canJoinRefProgram = value
+                }
+            }
+            
+            if canJoinRefProgram {
+                let earnStarsSectionSize = self.earnStarsSection.update(
+                    transition: .immediate,
+                    component: AnyComponent(ListSectionComponent(
+                        theme: environment.theme,
+                        header: nil,
+                        footer: nil,
+                        items: [
+                            AnyComponentWithIdentity(id: 0, component: AnyComponent(ListItemComponentAdaptor(
+                                itemGenerator: ItemListDisclosureItem(presentationData: ItemListPresentationData(presentationData), icon: PresentationResourcesSettings.earnStars, title: environment.strings.Monetization_EarnStarsInfo_Title, titleBadge: presentationData.strings.Settings_New, label: environment.strings.Monetization_EarnStarsInfo_Text, labelStyle: .multilineDetailText, sectionId: 0, style: .blocks, action: {
+                                }),
+                                params: ListViewItemLayoutParams(width: availableSize.width, leftInset: 0.0, rightInset: 0.0, availableHeight: 10000.0, isStandalone: true),
+                                action: { [weak self] in
+                                    guard let self, let component = self.component else {
+                                        return
+                                    }
+                                    let _ = (component.context.sharedContext.makeAffiliateProgramSetupScreenInitialData(context: component.context, peerId: component.context.account.peerId, mode: .connectedPrograms)
+                                             |> deliverOnMainQueue).startStandalone(next: { [weak self] initialData in
+                                        guard let self, let component = self.component else {
+                                            return
+                                        }
+                                        let setupScreen = component.context.sharedContext.makeAffiliateProgramSetupScreen(context: component.context, initialData: initialData)
+                                        self.controller?()?.push(setupScreen)
+                                    })
+                                }
+                            )))
+                        ]
+                    )),
+                    environment: {},
+                    containerSize: CGSize(width: availableSize.width - sideInsets, height: availableSize.height)
+                )
+                let earnStarsSectionFrame = CGRect(origin: CGPoint(x: sideInsets * 0.5, y: contentHeight), size: earnStarsSectionSize)
+                if let earnStarsSectionView = self.earnStarsSection.view {
+                    if earnStarsSectionView.superview == nil {
+                        self.scrollView.addSubview(earnStarsSectionView)
+                    }
+                    starTransition.setFrame(view: earnStarsSectionView, frame: earnStarsSectionFrame)
+                }
+                contentHeight += earnStarsSectionSize.height
+                contentHeight += 44.0
+            }
             
             let fontBaseDisplaySize = 17.0
             var subscriptionsItems: [AnyComponentWithIdentity<Empty>] = []
@@ -698,8 +752,33 @@ final class StarsTransactionsScreenComponent: Component {
                             isExpired = true
                         }
                     }
+                    
+                    if let title = subscription.title {
+                        let nameComponent = AnyComponent(MultilineTextComponent(
+                            text: .plain(NSAttributedString(
+                                string: title,
+                                font: Font.regular(fontBaseDisplaySize * 16.0 / 17.0),
+                                textColor: environment.theme.list.itemPrimaryTextColor
+                            ))
+                        ))
+                        var nameGroupComponent: AnyComponent<Empty>
+                        if let photo = subscription.photo {
+                            nameGroupComponent = AnyComponent(
+                                HStack([
+                                    AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(StarsAvatarComponent(context: component.context, theme: environment.theme, peer: nil, photo: photo, media: [], backgroundColor: .clear, size: CGSize(width: 19.0, height: 19.0)))),
+                                    AnyComponentWithIdentity(id: AnyHashable(1), component: nameComponent)
+                                ], spacing: 6.0)
+                            )
+                        } else {
+                            nameGroupComponent = nameComponent
+                        }
+                        titleComponents.append(
+                            AnyComponentWithIdentity(id: AnyHashable(1), component: nameGroupComponent)
+                        )
+                    }
+                    
                     titleComponents.append(
-                        AnyComponentWithIdentity(id: AnyHashable(1), component: AnyComponent(MultilineTextComponent(
+                        AnyComponentWithIdentity(id: AnyHashable(2), component: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
                                 string: dateText,
                                 font: Font.regular(floor(fontBaseDisplaySize * 15.0 / 17.0)),
@@ -1030,6 +1109,10 @@ public final class StarsTransactionsScreen: ViewControllerComponentContainer {
                         let _ = self.context.engine.payments.fulfillStarsSubscription(peerId: context.account.peerId, subscriptionId: subscription.id).startStandalone()
                         updated = true
                     }
+                    if let _ = subscription.inviteHash, !subscription.flags.contains(.isCancelledByBot) {
+                        let _ = self.context.engine.payments.fulfillStarsSubscription(peerId: context.account.peerId, subscriptionId: subscription.id).startStandalone()
+                        updated = true
+                    }
                     if !updated {
                         if subscription.flags.contains(.isCancelled) {
                             self.subscriptionsContext.updateSubscription(id: subscription.id, cancel: false)
@@ -1040,6 +1123,8 @@ public final class StarsTransactionsScreen: ViewControllerComponentContainer {
                 } else {
                     if let inviteHash = subscription.inviteHash {
                         self.context.sharedContext.handleTextLinkAction(context: self.context, peerId: nil, navigateDisposable: self.navigateDisposable, controller: self, action: .tap, itemLink: .url(url: "https://t.me/+\(inviteHash)", concealed: false))
+                    } else if let invoiceSlug = subscription.invoiceSlug {
+                        self.context.sharedContext.handleTextLinkAction(context: self.context, peerId: nil, navigateDisposable: self.navigateDisposable, controller: self, action: .tap, itemLink: .url(url: "https://t.me/$\(invoiceSlug)", concealed: false))
                     }
                 }
             })
@@ -1060,7 +1145,7 @@ public final class StarsTransactionsScreen: ViewControllerComponentContainer {
                     guard let self else {
                         return
                     }
-                    self.starsContext.add(balance: stars)
+                    self.starsContext.add(balance: StarsAmount(value: stars, nanos: 0))
                     
                     let presentationData = context.sharedContext.currentPresentationData.with { $0 }
                     let resultController = UndoOverlayController(

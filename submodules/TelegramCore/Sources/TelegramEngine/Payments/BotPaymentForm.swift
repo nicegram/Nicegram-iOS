@@ -63,14 +63,16 @@ public struct BotPaymentInvoice : Equatable {
     public let prices: [BotPaymentPrice]
     public let tip: Tip?
     public let termsInfo: RecurrentInfo?
+    public let subscriptionPeriod: Int32?
     
-    public init(isTest: Bool, requestedFields: BotPaymentInvoiceFields, currency: String, prices: [BotPaymentPrice], tip: Tip?, termsInfo: RecurrentInfo?) {
+    public init(isTest: Bool, requestedFields: BotPaymentInvoiceFields, currency: String, prices: [BotPaymentPrice], tip: Tip?, termsInfo: RecurrentInfo?, subscriptionPeriod: Int32?) {
         self.isTest = isTest
         self.requestedFields = requestedFields
         self.currency = currency
         self.prices = prices
         self.tip = tip
         self.termsInfo = termsInfo
+        self.subscriptionPeriod = subscriptionPeriod
     }
 }
 
@@ -170,12 +172,13 @@ extension BotPaymentMethod {
 
 public enum BotPaymentFormRequestError {
     case generic
+    case alreadyActive
 }
 
 extension BotPaymentInvoice {
     init(apiInvoice: Api.Invoice) {
         switch apiInvoice {
-        case let .invoice(flags, currency, prices, maxTipAmount, suggestedTipAmounts, termsUrl):
+        case let .invoice(flags, currency, prices, maxTipAmount, suggestedTipAmounts, termsUrl, subscriptionPeriod):
             var fields = BotPaymentInvoiceFields()
             if (flags & (1 << 1)) != 0 {
                 fields.insert(.name)
@@ -212,7 +215,7 @@ extension BotPaymentInvoice {
                 case let .labeledPrice(label, amount):
                     return BotPaymentPrice(label: label, amount: amount)
                 }
-            }, tip: parsedTip, termsInfo: termsInfo)
+            }, tip: parsedTip, termsInfo: termsInfo, subscriptionPeriod: subscriptionPeriod)
         }
     }
 }
@@ -294,13 +297,13 @@ func _internal_parseInputInvoice(transaction: Transaction, source: BotPaymentInv
         }
         
         var inputPurposeFlags: Int32 = 0
-        var textWithEntities: Api.TextWithEntities?
-        if let text, let entities {
+        var message: Api.TextWithEntities?
+        if let text, !text.isEmpty {
             inputPurposeFlags |= (1 << 1)
-            textWithEntities = .textWithEntities(text: text, entities: apiEntitiesFromMessageTextEntities(entities, associatedPeers: SimpleDictionary()))
+            message = .textWithEntities(text: text, entities: entities.flatMap { apiEntitiesFromMessageTextEntities($0, associatedPeers: SimpleDictionary()) } ?? [])
         }
         
-        let inputPurpose: Api.InputStorePaymentPurpose = .inputStorePaymentPremiumGiftCode(flags: inputPurposeFlags, users: inputUsers, boostPeer: nil, currency: currency, amount: amount, message: textWithEntities)
+        let inputPurpose: Api.InputStorePaymentPurpose = .inputStorePaymentPremiumGiftCode(flags: inputPurposeFlags, users: inputUsers, boostPeer: nil, currency: currency, amount: amount, message: message)
         
         var flags: Int32 = 0
         if let _ = option.storeProductId {
@@ -383,8 +386,12 @@ func _internal_fetchBotPaymentInvoice(postbox: Postbox, network: Network, source
         let flags: Int32 = 0
 
         return network.request(Api.functions.payments.getPaymentForm(flags: flags, invoice: invoice, themeParams: nil))
-        |> `catch` { _ -> Signal<Api.payments.PaymentForm, BotPaymentFormRequestError> in
-            return .fail(.generic)
+        |> `catch` { error -> Signal<Api.payments.PaymentForm, BotPaymentFormRequestError> in
+            if error.errorDescription == "SUBSCRIPTION_ALREADY_ACTIVE" {
+                return .fail(.alreadyActive)
+            } else {
+                return .fail(.generic)
+            }
         }
         |> mapToSignal { result -> Signal<TelegramMediaInvoice, BotPaymentFormRequestError> in
             return postbox.transaction { transaction -> TelegramMediaInvoice in
@@ -400,13 +407,13 @@ func _internal_fetchBotPaymentInvoice(postbox: Postbox, network: Network, source
                         parsedFlags.insert(.shippingAddressRequested)
                     }
                     
-                    return TelegramMediaInvoice(title: title, description: description, photo: photo.flatMap(TelegramMediaWebFile.init), receiptMessageId: nil, currency: parsedInvoice.currency, totalAmount: 0, startParam: "", extendedMedia: nil, flags: parsedFlags, version: TelegramMediaInvoice.lastVersion)
+                    return TelegramMediaInvoice(title: title, description: description, photo: photo.flatMap(TelegramMediaWebFile.init), receiptMessageId: nil, currency: parsedInvoice.currency, totalAmount: 0, startParam: "", extendedMedia: nil, subscriptionPeriod: parsedInvoice.subscriptionPeriod, flags: parsedFlags, version: TelegramMediaInvoice.lastVersion)
                 case let .paymentFormStars(_, _, _, title, description, photo, invoice, _):
                     let parsedInvoice = BotPaymentInvoice(apiInvoice: invoice)
-                    return TelegramMediaInvoice(title: title, description: description, photo: photo.flatMap(TelegramMediaWebFile.init), receiptMessageId: nil, currency: parsedInvoice.currency, totalAmount: parsedInvoice.prices.reduce(0, { $0 + $1.amount }), startParam: "", extendedMedia: nil, flags: [], version: TelegramMediaInvoice.lastVersion)
+                    return TelegramMediaInvoice(title: title, description: description, photo: photo.flatMap(TelegramMediaWebFile.init), receiptMessageId: nil, currency: parsedInvoice.currency, totalAmount: parsedInvoice.prices.reduce(0, { $0 + $1.amount }), startParam: "", extendedMedia: nil, subscriptionPeriod: parsedInvoice.subscriptionPeriod, flags: [], version: TelegramMediaInvoice.lastVersion)
                 case let .paymentFormStarGift(_, invoice):
                     let parsedInvoice = BotPaymentInvoice(apiInvoice: invoice)
-                    return TelegramMediaInvoice(title: "", description: "", photo: nil, receiptMessageId: nil, currency: parsedInvoice.currency, totalAmount: parsedInvoice.prices.reduce(0, { $0 + $1.amount }), startParam: "", extendedMedia: nil, flags: [], version: TelegramMediaInvoice.lastVersion)
+                    return TelegramMediaInvoice(title: "", description: "", photo: nil, receiptMessageId: nil, currency: parsedInvoice.currency, totalAmount: parsedInvoice.prices.reduce(0, { $0 + $1.amount }), startParam: "", extendedMedia: nil, subscriptionPeriod: parsedInvoice.subscriptionPeriod, flags: [], version: TelegramMediaInvoice.lastVersion)
                 }
             }
             |> mapError { _ -> BotPaymentFormRequestError in }
@@ -798,6 +805,7 @@ func _internal_requestBotPaymentReceipt(account: Account, messageId: MessageId) 
                         totalAmount: totalAmount,
                         startParam: "",
                         extendedMedia: nil,
+                        subscriptionPeriod: parsedInvoice.subscriptionPeriod,
                         flags: [],
                         version: TelegramMediaInvoice.lastVersion
                     )
@@ -820,6 +828,7 @@ func _internal_requestBotPaymentReceipt(account: Account, messageId: MessageId) 
                         totalAmount: totalAmount,
                         startParam: "",
                         extendedMedia: nil,
+                        subscriptionPeriod: parsedInvoice.subscriptionPeriod,
                         flags: [],
                         version: TelegramMediaInvoice.lastVersion
                     )

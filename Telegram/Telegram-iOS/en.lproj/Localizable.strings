@@ -7525,9 +7525,6 @@ Sorry for the inconvenience.";
 "WebApp.OpenWebViewAlertTitle" = "Open Web App";
 "WebApp.OpenWebViewAlertText" = "**%@** would like to open its web app to proceed.\n\nIt will be able to access your **IP address** and basic device info.";
 
-"WebApp.MessagePreview" = "Message Preview";
-"WebApp.Send" = "Send";
-
 "WebApp.RemoveConfirmationTitle" = "Remove Bot";
 "WebApp.RemoveConfirmationText" = "Remove **%@** from the attachment menu?";
 
@@ -13218,3 +13215,230 @@ Sorry for the inconvenience.";
 "Gift.Convert.Period.Unavailable.Text" = "Sorry, you can't convert this gift.\n\nStars can only be claimed within %@ after receiving a gift.";
 "Gift.Convert.Period.Unavailable.Days_1" = "%@ day";
 "Gift.Convert.Period.Unavailable.Days_any" = "%@ days";
+
+"Gift.Send.TitleTo" = "Gift to %@";
+"Gift.Send.SendShort" = "Send";
+
+"Premium.EmojiStatus.Proceed" = "Unlock Emoji Statuses";
+
+"Stars.Transaction.Subscription.CancelledByBot" = "Your subscription was cancelled by the bot.";
+"Stars.Transaction.Subscription.CancelledByBusiness" = "Your subscription was cancelled by the business.";
+
+"Gift.View.BotDescription" = "You can keep this gift in your Profile or hide it.";
+
+"Notification.StarGift.Bot.Subtitle" = "Display this gift on your page.";
+"Notification.StarGift.Bot.Subtitle.Displaying" = "You are displaying this gift on your page.";
+
+"Privacy.Gifts" = "Gifts";
+"Privacy.Gifts.WhoCanSeeMyBio" = "WHO CAN DISPLAY GIFTS ON MY PROFILE";
+"Privacy.Gifts.CustomHelp" = "Choose whether gifts from specific senders need your approval before they’re visible to others on your profile.";
+"Privacy.Gifts.AlwaysAllow.Title" = "Always Allow";
+"Privacy.Gifts.NeverAllow.Title" = "Never Allow";
+
+"PrivacySettings.ValueBots" = "Mini Apps";
+"PrivacySettings.ValueBotsPlus" = "Mini Apps +%@";
+
+"PrivacySettings.CategoryBots" = "Mini Apps";
+
+"PeerInfo.Permissions.Title" = "ALLOW ACCESS TO";
+"PeerInfo.Permissions.EmojiStatus" = "Emoji Status";
+"PeerInfo.Permissions.Geolocation" = "Geolocation";
+"PeerInfo.Permissions.Biometry" = "Biometry";
+
+"Stars.Transaction.Subscription" = "Subscription";
+"Stars.Transaction.Subscription.Bot" = "Bot";
+"Stars.Transaction.Subscription.Business" = "Business";
+
+"Stars.Transfer.BotSubscribeInfo" = "Do you want to subscribe to **%1$@** in **%2$@** for **%3$@** per month?";
+"Stars.Transfer.BotSubscribeInfo.Stars_1" = "%@ Star";
+"Stars.Transfer.BotSubscribeInfo.Stars_any" = "%@ Stars";
+"Stars.Transfer.SubscribeFor" = "Subscribe for";
+"Stars.Transfer.SubscribePerMonth" = "/ month";
+
+"WebApp.AddToHomeScreen" = "Add to Home Screen";
+
+"WebApp.Emoji.Title" = "Set Emoji Status";
+"WebApp.Emoji.Text" = "Do you want to set this emoji status suggested by **%@**?";
+"WebApp.Emoji.DurationText" = "Do you want to set this emoji status suggested by **%1$@** for **%2$@**?";
+"WebApp.Emoji.Confirm" = "Confirm";
+
+"WebApp.Emoji.Succeed" = "Your emoji status updated.";
+"WebApp.Emoji.DurationSucceed" = "Your emoji status set for %@.";
+
+"WebApp.EmojiPermission.Text" = "**%1$@** requests access to set your **emoji status**. You will be able to revoke this access in the profile page of **%2$@**.";
+"WebApp.EmojiPermission.Allow" = "Allow";
+"WebApp.EmojiPermission.Decline" = "Decline";
+"WebApp.EmojiPermission.Succeed" = "**%@** can now set your emoji status anytime.";
+"WebApp.EmojiPermission.Undo" = "Undo";
+
+"WebApp.LocationPermission.Text" = "**%1$@** requests access to your **location**. You will be able to revoke this access in the profile page of **%2$@**.";
+"WebApp.LocationPermission.Allow" = "Allow";
+"WebApp.LocationPermission.Decline" = "Decline";
+"WebApp.LocationPermission.Succeed" = "**%@** can now have access to your location.";
+"WebApp.LocationPermission.Undo" = "Undo";
+
+"WebApp.Download.Photo" = "Download Photo";
+"WebApp.Download.Video" = "Download Video";
+"WebApp.Download.Document" = "Download Document";
+"WebApp.Download.Text" = "**%1$@** suggests you to download **%2$@**%3$@.";
+"WebApp.Download.Download" = "Download";
+"WebApp.Download.Cancel" = "Cancel";
+
+"WebApp.Download.SavedToPhotos" = "Saved to Photos.";
+"WebApp.Download.SavedToFiles" = "Saved to Files.";
+
+"MediaGallery.ToastVideoPip.Title" = "Video Minimized";
+"MediaGallery.ToastVideoPip.Text" = "Swipe down on a video to close it.";
+
+"Chat.ToastSubscribedToScheduledLiveStream.Text" = "You will be notified when the live stream starts.";
+"Chat.TitleVideochatPanel.NotifyScheduledButton" = "Notify Me";
+
+"WebApp.ShareMessage.Title" = "Share Message";
+"WebApp.ShareMessage.PreviewTitle" = "MESSAGE PREVIEW";
+"WebApp.ShareMessage.Info" = "%@ mini app suggests you to send this message to a chat you select.";
+"WebApp.ShareMessage.Share" = "Share With...";
+
+"Notification.Gift" = "Gift";
+
+"WebBrowser.PassExistsError" = "This pass is already added to Wallet.";
+
+"Chat.VideoProcessingInfo" = "The video will be published once converted and optimized.";
+
+"Camera.CollageRetake" = "Retake";
+"Camera.CollageDelete" = "Delete";
+"Camera.CollageManagementTooltip" = "Tap a tile to delete or reorder it.";
+"Camera.CollageReorderingInfo" = "Hold and drag tiles to reorder them.";
+
+"MediaPicker.InvertCaptionTooltip" = "Tap here to move caption up.";
+"MediaPicker.InvertCaption.Updated.Up.Title" = "Caption moved up";
+"MediaPicker.InvertCaption.Updated.Up.Text" = "Text will be shown above the media.";
+"MediaPicker.InvertCaption.Updated.Down.Title" = "Caption moved down";
+"MediaPicker.InvertCaption.Updated.Down.Text" = "Text will be shown below the media.";
+
+"AffiliateSetup.AlertTerminate.Title" = "Warning";
+"AffiliateSetup.AlertTerminate.Text" = "If you end your affiliate program:\n\n• Any referral links already shared will be disabled in 24 hours.\n\n• All participating affiliates will be notified.\n\n• You will be able to start a new affiliate program only in 24 hours.";
+"AffiliateSetup.AlertTerminate.Action" = "End Anyway";
+"AffiliateSetup.AlertApply.Title" = "Warning";
+"AffiliateSetup.AlertApply.Text" = "Once you start the affiliate program, you won't be able to decrease its commission or duration. You can only increase these parameters or end the program, whuch will disable all previously distributed referral links.";
+"AffiliateSetup.AlertApply.SectionCommission" = "Commission";
+"AffiliateSetup.AlertApply.SectionDuration" = "Duration";
+"AffiliateSetup.AlertApply.Action" = "Start";
+
+"AffiliateSetup.ToastTerminated.Title" = "Affiliate Program Ended";
+"AffiliateSetup.ToastTerminated.Text" = "Participating affiliates have been notified. All referral links will be disabled in 24 hours.";
+
+"AffiliateSetup.SectionDuration" = "DURATION";
+"AffiliateSetup.SectionDurationFooter" = "Set the duration for which affiliates will earn commissions from referred users.";
+
+"AffiliateSetup.SectionCommission" = "COMMISSION";
+"AffiliateSetup.SectionCommissionFooter" = "Define the percentage of star revenue your affiliates earn for referring users to your bot.";
+
+"AffiliateSetup.ExistingPrograms.Action" = "View Existing Programs";
+"AffiliateSetup.ExistingPrograms.Footer" = "Explore what other mini apps offer.";
+
+"AffiliateSetup.EndAction" = "End Affiliate Program";
+
+"AffiliateSetup.StartTitle" = "Start Affiliate Program";
+"AffiliateSetup.UpdateTitle" = "Update Affiliate Program";
+
+"AffiliateSetup.TermsFooter" = "By creating an affiliate program, you afree to the [terms and conditions](https://telegram.org/terms) of Affiliate Programs.";
+
+"AffiliateSetup.ProgramMenu.OpenBot" = "Open Bot";
+"AffiliateSetup.ProgramMenu.OpenApp" = "Open App";
+"AffiliateSetup.ProgramMenu.CopyLink" = "Copy Link";
+"AffiliateSetup.ProgramMenu.Leave" = "Leave";
+"AffiliateSetup.ProgramLeave" = "Leave";
+
+"AffiliateSetup.ConnectedSectionTitle" = "MY PROGRAMS";
+"AffiliateSetup.SuggestedSectionTitle" = "PROGRAMS";
+"AffiliateSetup.SuggestedSectionEmpty" = "No available programs yet.\nPlease check the page later.";
+
+"AffiliateSetup.TitleNew" = "Affiliate Program";
+"AffiliateSetup.TextNew" = "Affiliate Program";
+"AffiliateSetup.TitleJoin" = "Affiliate Programs";
+"AffiliateSetup.TextJoin" = "Earn a commission each time a user who first accessed a mini app through your referral link spends **Stars** within it.";
+
+"AffiliateSetup.IntroNew.Title1" = "Share revenue with affiliates";
+"AffiliateSetup.IntroNew.Text1" = "Set the commission for revenue generated by users referred to you.";
+"AffiliateSetup.IntroNew.Title2" = "Launch your affiliate program";
+"AffiliateSetup.IntroNew.Text2" = "Telegram will feature your program for millions of potential affiliates.";
+"AffiliateSetup.IntroNew.Title3" = "Let affiliates promote you";
+"AffiliateSetup.IntroNew.Text3" = "Affiliates will share your referral link with their audience.";
+
+"AffiliateSetup.IntroJoin.Title1" = "Reliable";
+"AffiliateSetup.IntroJoin.Text1" = "Receive guaranteed commissions for spending by users you refer.";
+"AffiliateSetup.IntroJoin.Title2" = "Transparent";
+"AffiliateSetup.IntroJoin.Text2" = "Track your commissions from referred users in real time.";
+"AffiliateSetup.IntroJoin.Title3" = "Simple";
+"AffiliateSetup.IntroJoin.Text3" = "Choose a mini app below, get your referral link, and start earning Stars.";
+
+"AffiliateProgram.ToastLinkCopied.Title" = "Link copied to clipboard";
+"AffiliateProgram.ToastLinkCopied.Text" = "Share this link and earn **%1$@** of what people who use it spend in **%2$@!";
+
+"AffiliateProgram.DurationLifetime" = "Lifetime";
+
+"AffiliateProgram.SortSelectorProfitability" = "Profitability";
+"AffiliateProgram.SortSelectorRevenue" = "Revenue";
+"AffiliateProgram.SortSelectorDate" = "Date";
+
+"AffiliateProgram.ValueShortMonths_1" = "%@m";
+"AffiliateProgram.ValueShortMonths_any" = "%@m";
+"AffiliateProgram.ValueShortYears_1" = "%@y";
+"AffiliateProgram.ValueShortYears_any" = "%@y";
+
+"AffiliateProgram.ValueLongMonths_1" = "%@ MONTH";
+"AffiliateProgram.ValueLongMonths_any" = "%@ MONTHS";
+"AffiliateProgram.ValueLongYears_1" = "%@ YEAR";
+"AffiliateProgram.ValueLongYears_any" = "%@ YEARS";
+
+"AffiliateProgram.PeerTypeSelf" = "personal account";
+
+"AffiliateProgram.JoinTitle" = "Affiliate Program";
+"AffiliateProgram.JoinTerms" = "By joining this program, you afree to the [terms and conditions](https://telegram.org/terms) of Affiliate Programs.";
+"AffiliateProgram.DailyRevenueText" = "The average daily revenue per user: #**%@**";
+
+"AffiliateProgram.LinkTitle" = "Referral Link";
+"AffiliateProgram.LinkSubtitleLifetime" = "Share this link with your users to earn a **{commission}** commission on their spending in **{bot}** **forever** after they follow your link.";
+"AffiliateProgram.LinkSubtitleMonths_1" = "Share this link with your users to earn a **{commission}** commission on their spending in **{bot}** for **1 month** after they follow your link.";
+"AffiliateProgram.LinkSubtitleMonths_any" = "Share this link with your users to earn a **{commission}** commission on their spending in **{bot}** for **%d months** after they follow your link.";
+"AffiliateProgram.LinkSubtitleYears_1" = "Share this link with your users to earn a **{commission}** commission on their spending in **{bot}** for **1 year** after they follow your link.";
+"AffiliateProgram.LinkSubtitleYears_any" = "Share this link with your users to earn a **{commission}** commission on their spending in **{bot}** for **%d years** after they follow your link.";
+
+"AffiliateProgram.JoinSubtitleLifetime" = "**{bot}** will share **{commission}** of the revenue from each user you refer to it **forever**.";
+"AffiliateProgram.JoinSubtitleMonths_1" = "**{bot}** will share **{commission}** of the revenue from each user you refer to it for **1 month.**";
+"AffiliateProgram.JoinSubtitleMonths_any" = "**{bot}** will share **{commission}** of the revenue from each user you refer to it for **%d months.**";
+"AffiliateProgram.JoinSubtitleYears_1" = "**{bot}** will share **{commission}** of the revenue from each user you refer to it for **1 month.**";
+"AffiliateProgram.JoinSubtitleYears_any" = "**{bot}** will share **{commission}** of the revenue from each user you refer to it for **%d months.**";
+
+"AffiliateProgram.CommistionDestinationText" = "Commission will be sent to:";
+
+"AffiliateProgram.ActionJoin" = "Join Program";
+"AffiliateProgram.ActionCopyLink" = "Copy Link";
+
+"AffiliateProgram.ToastJoined.Title" = "Program joined";
+"AffiliateProgram.ToastJoined.Text" = "You can now copy the referral link.";
+
+"AffiliateSetup.SortSectionHeader.Date" = "SORT BY [DATE]()";
+"AffiliateSetup.SortSectionHeader.Profitability" = "SORT BY [PROFITABILITY]()";
+"AffiliateSetup.SortSectionHeader.Revenue" = "SORT BY [REVENUE]()";
+
+"AffiliateProgram.UserCountFooter_0" = "No one opened {bot} through this link yet.";
+"AffiliateProgram.UserCountFooter_1" = "1 user opened {bot} through this link.";
+"AffiliateProgram.UserCountFooter_any" = "%d users opened {bot} through this link.";
+
+"ChatList.InlineButtonOpenApp" = "OPEN";
+
+"Monetization.EarnStarsInfo.Title" = "Earn Stars";
+"Monetization.EarnStarsInfo.Text" = "Distribute links to mini apps and earn a share of their revenue in Stars.";
+
+"PeerInfo.ItemAffiliateProgram.Title" = "Affiliate Program";
+"PeerInfo.ItemAffiliatePrograms.Title" = "Affiliate Programs";
+"PeerInfo.ItemAffiliateProgram.Footer" = "Share a link to %1$@ with your friends and and earn %2$@% of their spending there.";
+"PeerInfo.ItemAffiliateProgram.ValueOff" = "Off";
+
+"StarsTransaction.TitleCommission" = "%@% Commission";
+"StarsTransaction.StarRefReason.Title" = "Reason";
+"StarsTransaction.StarRefReason.Program" = "Affiliate Program";
+"StarsTransaction.StarRefReason.Miniapp" = "Mini App";
+"StarsTransaction.StarRefReason.Affiliate" = "Affiliate";
+"StarsTransaction.StarRefReason.Referred" = "Referred User";

@@ -248,7 +248,6 @@ public func fetchVideoLibraryMediaResource(postbox: Postbox, resource: VideoLibr
                         
                         let configuration = recommendedVideoExportConfiguration(values: mediaEditorValues, duration: 5.0, image: true, frameRate: 30.0)
                         let videoExport = MediaEditorVideoExport(postbox: postbox, subject: .image(image: image), configuration: configuration, outputPath: tempFile.path)
-                        videoExport.start()
                                                 
                         let statusDisposable = videoExport.status.start(next: { status in
                             switch status {
@@ -352,7 +351,6 @@ public func fetchVideoLibraryMediaResource(postbox: Postbox, resource: VideoLibr
                         let duration: Double = avAsset.duration.seconds
                         let configuration = recommendedVideoExportConfiguration(values: mediaEditorValues, duration: duration, frameRate: 30.0)
                         let videoExport = MediaEditorVideoExport(postbox: postbox, subject: .video(asset: avAsset, isStory: isStory), configuration: configuration, outputPath: tempFile.path)
-                        videoExport.start()
                         
                         let statusDisposable = videoExport.status.start(next: { status in
                             switch status {
@@ -557,7 +555,6 @@ public func fetchLocalFileVideoMediaResource(postbox: Postbox, resource: LocalFi
             
             let configuration = recommendedVideoExportConfiguration(values: mediaEditorValues, duration: duration, frameRate: 30.0)
             let videoExport = MediaEditorVideoExport(postbox: postbox, subject: subject, configuration: configuration, outputPath: tempFile.path)
-            videoExport.start()
             
             let statusDisposable = videoExport.status.start(next: { status in
                 switch status {
@@ -903,6 +900,7 @@ private extension MediaEditorValues {
             additionalVideoTrimRange: nil,
             additionalVideoOffset: nil,
             additionalVideoVolume: nil,
+            collage: [],
             nightTheme: false,
             drawing: nil,
             maskDrawing: nil,
@@ -913,6 +911,7 @@ private extension MediaEditorValues {
             audioTrackOffset: nil,
             audioTrackVolume: nil,
             audioTrackSamples: nil,
+            collageTrackSamples: nil,
             coverImageTimestamp: nil,
             qualityPreset: qualityPreset
         )
@@ -1072,6 +1071,7 @@ private extension MediaEditorValues {
             additionalVideoTrimRange: nil,
             additionalVideoOffset: nil,
             additionalVideoVolume: nil,
+            collage: [],
             nightTheme: false,
             drawing: drawing,
             maskDrawing: nil,
@@ -1082,6 +1082,7 @@ private extension MediaEditorValues {
             audioTrackOffset: nil,
             audioTrackVolume: nil,
             audioTrackSamples: nil,
+            collageTrackSamples: nil,
             coverImageTimestamp: nil,
             qualityPreset: qualityPreset
         )

@@ -32,13 +32,13 @@ struct FFMpegMediaFrameSourceDescriptionSet {
 }
 
 private final class InitializedState {
-    fileprivate let avIoContext: FFMpegAVIOContext
+    fileprivate let avIoContext: FFMpegAVIOContext?
     fileprivate let avFormatContext: FFMpegAVFormatContext
     
     fileprivate let audioStream: StreamContext?
     fileprivate let videoStream: StreamContext?
     
-    init(avIoContext: FFMpegAVIOContext, avFormatContext: FFMpegAVFormatContext, audioStream: StreamContext?, videoStream: StreamContext?) {
+    init(avIoContext: FFMpegAVIOContext?, avFormatContext: FFMpegAVFormatContext, audioStream: StreamContext?, videoStream: StreamContext?) {
         self.avIoContext = avIoContext
         self.avFormatContext = avFormatContext
         self.audioStream = audioStream
@@ -297,7 +297,6 @@ final class FFMpegMediaFrameSourceContext: NSObject {
     fileprivate var streamable: Bool?
     fileprivate var statsCategory: MediaResourceStatsCategory?
     
-    private let ioBufferSize = 1 * 1024
     fileprivate var readingOffset: Int64 = 0
     
     fileprivate var requestedDataOffset: Int64?
@@ -338,7 +337,7 @@ final class FFMpegMediaFrameSourceContext: NSObject {
         self.autosaveDisposable.dispose()
     }
     
-    func initializeState(postbox: Postbox, userLocation: MediaResourceUserLocation, resourceReference: MediaResourceReference, tempFilePath: String?, limitedFileRange: Range<Int64>?, streamable: Bool, isSeekable: Bool, video: Bool, preferSoftwareDecoding: Bool, fetchAutomatically: Bool, maximumFetchSize: Int?, storeAfterDownload: (() -> Void)?) {
+    func initializeState(postbox: Postbox, userLocation: MediaResourceUserLocation, resourceReference: MediaResourceReference, tempFilePath: String?, limitedFileRange: Range<Int64>?, streamable: Bool, isSeekable: Bool, video: Bool, preferSoftwareDecoding: Bool, fetchAutomatically: Bool, maximumFetchSize: Int?, storeAfterDownload: (() -> Void)?, isAudioVideoMessage: Bool) {
         if self.readingError || self.initializedState != nil {
             return
         }
@@ -408,16 +407,43 @@ final class FFMpegMediaFrameSourceContext: NSObject {
             }
         }
         
-        let avFormatContext = FFMpegAVFormatContext()
-        
-        guard let avIoContext = FFMpegAVIOContext(bufferSize: Int32(self.ioBufferSize), opaqueContext: Unmanaged.passUnretained(self).toOpaque(), readPacket: readPacketCallback, writePacket: nil, seek: seekCallback, isSeekable: isSeekable) else {
-            self.readingError = true
-            return
+        var directFilePath: String?
+        if !streamable && isAudioVideoMessage {
+            let data = postbox.mediaBox.resourceData(resourceReference.resource, pathExtension: nil, option: .complete(waitUntilFetchStatus: false))
+            let semaphore = DispatchSemaphore(value: 0)
+            let _ = self.currentSemaphore.swap(semaphore)
+            var resultFilePath: String?
+            let disposable = data.start(next: { next in
+                if next.complete {
+                    resultFilePath = next.path
+                    semaphore.signal()
+                }
+            })
+            semaphore.wait()
+            let _ = self.currentSemaphore.swap(nil)
+            disposable.dispose()
+            
+            if let resultFilePath {
+                directFilePath = resultFilePath
+            } else {
+                self.readingError = true
+                return
+            }
         }
         
-        avFormatContext.setIO(avIoContext)
+        let avFormatContext = FFMpegAVFormatContext()
         
-        if !avFormatContext.openInput() {
+        var avIoContext: FFMpegAVIOContext?
+        if directFilePath == nil {
+            guard let avIoContextValue = FFMpegAVIOContext(bufferSize: 64 * 1024, opaqueContext: Unmanaged.passUnretained(self).toOpaque(), readPacket: readPacketCallback, writePacket: nil, seek: seekCallback, isSeekable: isSeekable) else {
+                self.readingError = true
+                return
+            }
+            avIoContext = avIoContextValue
+            avFormatContext.setIO(avIoContextValue)
+        }
+        
+        if !avFormatContext.openInput(withDirectFilePath: directFilePath) {
             self.readingError = true
             return
         }
@@ -469,20 +495,19 @@ final class FFMpegMediaFrameSourceContext: NSObject {
                         }
                     }
                 }
-            } else if codecId == FFMpegCodecIdMPEG4 {
-                if let videoFormat = FFMpegMediaFrameSourceContextHelpers.createFormatDescriptionFromMpeg4CodecData(UInt32(kCMVideoCodecType_MPEG4Video), metrics.width, metrics.height, metrics.extradata, metrics.extradataSize) {
-                    videoStream = StreamContext(index: Int(streamIndex), codecContext: nil, fps: fps, timebase: timebase, startTime: startTime, duration: duration, decoder: FFMpegMediaPassthroughVideoFrameDecoder(videoFormat: videoFormat, rotationAngle: rotationAngle), rotationAngle: rotationAngle, aspect: aspect)
-                    break
+            } else {
+                var videoFormatData: FFMpegMediaPassthroughVideoFrameDecoder.VideoFormatData?
+                if codecId == FFMpegCodecIdMPEG4 {
+                    videoFormatData = FFMpegMediaPassthroughVideoFrameDecoder.VideoFormatData(codecType: kCMVideoCodecType_MPEG4Video, width: metrics.width, height: metrics.height, extraData: Data(bytes: metrics.extradata, count: Int(metrics.extradataSize)))
+                } else if codecId == FFMpegCodecIdH264 {
+                    videoFormatData = FFMpegMediaPassthroughVideoFrameDecoder.VideoFormatData(codecType: kCMVideoCodecType_H264, width: metrics.width, height: metrics.height, extraData: Data(bytes: metrics.extradata, count: Int(metrics.extradataSize)))
+                } else if codecId == FFMpegCodecIdHEVC {
+                    videoFormatData = FFMpegMediaPassthroughVideoFrameDecoder.VideoFormatData(codecType: kCMVideoCodecType_HEVC, width: metrics.width, height: metrics.height, extraData: Data(bytes: metrics.extradata, count: Int(metrics.extradataSize)))
+                } else if codecId == FFMpegCodecIdAV1 {
+                    videoFormatData = FFMpegMediaPassthroughVideoFrameDecoder.VideoFormatData(codecType: kCMVideoCodecType_AV1, width: metrics.width, height: metrics.height, extraData: Data(bytes: metrics.extradata, count: Int(metrics.extradataSize)))
                 }
-            } else if codecId == FFMpegCodecIdH264 {
-                if let videoFormat = FFMpegMediaFrameSourceContextHelpers.createFormatDescriptionFromAVCCodecData(UInt32(kCMVideoCodecType_H264), metrics.width, metrics.height, metrics.extradata, metrics.extradataSize) {
-                    videoStream = StreamContext(index: Int(streamIndex), codecContext: nil, fps: fps, timebase: timebase, startTime: startTime, duration: duration, decoder: FFMpegMediaPassthroughVideoFrameDecoder(videoFormat: videoFormat, rotationAngle: rotationAngle), rotationAngle: rotationAngle, aspect: aspect)
-                    break
-                }
-            } else if codecId == FFMpegCodecIdHEVC {
-                if let videoFormat = FFMpegMediaFrameSourceContextHelpers.createFormatDescriptionFromHEVCCodecData(UInt32(kCMVideoCodecType_HEVC), metrics.width, metrics.height, metrics.extradata, metrics.extradataSize) {
-                    videoStream = StreamContext(index: Int(streamIndex), codecContext: nil, fps: fps, timebase: timebase, startTime: startTime, duration: duration, decoder: FFMpegMediaPassthroughVideoFrameDecoder(videoFormat: videoFormat, rotationAngle: rotationAngle), rotationAngle: rotationAngle, aspect: aspect)
-                    break
+                if let videoFormatData {
+                    videoStream = StreamContext(index: Int(streamIndex), codecContext: nil, fps: fps, timebase: timebase, startTime: startTime, duration: duration, decoder: FFMpegMediaPassthroughVideoFrameDecoder(videoFormatData: videoFormatData, rotationAngle: rotationAngle), rotationAngle: rotationAngle, aspect: aspect)
                 }
             }
         }
@@ -644,7 +669,13 @@ final class FFMpegMediaFrameSourceContext: NSObject {
             for stream in [initializedState.videoStream, initializedState.audioStream] {
                 if let stream = stream {
                     let pts = CMTimeMakeWithSeconds(timestamp, preferredTimescale: stream.timebase.timescale)
+                    #if DEBUG && false
+                    let startTime = CFAbsoluteTimeGetCurrent()
+                    #endif
                     initializedState.avFormatContext.seekFrame(forStreamIndex: Int32(stream.index), pts: pts.value, positionOnKeyframe: true)
+                    #if DEBUG && false
+                    print("Seek time: \(CFAbsoluteTimeGetCurrent() - startTime) s")
+                    #endif
                     break
                 }
             }

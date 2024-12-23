@@ -19,6 +19,7 @@ import AccountContext
 import PresentationDataUtils
 import StarsImageComponent
 import ConfettiEffect
+import PremiumPeerShortcutComponent
 
 private final class SheetContent: CombinedComponent {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -79,7 +80,7 @@ private final class SheetContent: CombinedComponent {
         private(set) var chatPeer: EnginePeer?
         private(set) var authorPeer: EnginePeer?
         private var peerDisposable: Disposable?
-        private(set) var balance: Int64?
+        private(set) var balance: StarsAmount?
         private(set) var form: BotPaymentForm?
         private(set) var navigateToPeer: (EnginePeer) -> Void
         
@@ -128,14 +129,14 @@ private final class SheetContent: CombinedComponent {
                 guard let self else {
                     return
                 }
-                self.balance = inputData?.0.balance ?? 0
+                self.balance = inputData?.0.balance ?? StarsAmount.zero
                 self.form = inputData?.1
                 self.botPeer = inputData?.2
                 self.chatPeer = chatPeer
                 self.authorPeer = inputData?.3
                 self.updated(transition: .immediate)
                 
-                if self.optionsDisposable == nil, let balance = self.balance, balance < self.invoice.totalAmount {
+                if self.optionsDisposable == nil, let balance = self.balance, balance < StarsAmount(value: self.invoice.totalAmount, nanos: 0) {
                     self.optionsDisposable = (context.engine.payments.starsTopUpOptions()
                     |> deliverOnMainQueue).start(next: { [weak self] options in
                         guard let self else {
@@ -205,7 +206,7 @@ private final class SheetContent: CombinedComponent {
                 })
             }
             
-            if balance < self.invoice.totalAmount {
+            if balance < StarsAmount(value: self.invoice.totalAmount, nanos: 0) {
                 if self.options.isEmpty {
                     self.inProgress = true
                     self.updated()
@@ -235,7 +236,7 @@ private final class SheetContent: CombinedComponent {
                             |> take(1)
                             |> deliverOnMainQueue).start(next: { _ in
                                 Queue.mainQueue().after(0.1, { [weak self] in
-                                    if let self, let balance = self.balance, balance < self.invoice.totalAmount {
+                                    if let self, let balance = self.balance, balance < StarsAmount(value: self.invoice.totalAmount, nanos: 0) {
                                         self.inProgress = false
                                         self.updated()
                                         
@@ -263,13 +264,15 @@ private final class SheetContent: CombinedComponent {
         let star = Child(StarsImageComponent.self)
         let closeButton = Child(Button.self)
         let title = Child(Text.self)
+        let peerShortcut = Child(PremiumPeerShortcutComponent.self)
+        
         let text = Child(BalancedTextComponent.self)
         let button = Child(ButtonComponent.self)
         let balanceTitle = Child(MultilineTextComponent.self)
         let balanceValue = Child(MultilineTextComponent.self)
         let balanceIcon = Child(BundleIconComponent.self)
         let info = Child(BalancedTextComponent.self)
-        
+
         return { context in
             let environment = context.environment[EnvironmentType.self]
             let component = context.component
@@ -303,8 +306,15 @@ private final class SheetContent: CombinedComponent {
                 subject = .none
             }
             
+            var isBot = false
+            if case let .user(user) = state.botPeer, user.botInfo != nil {
+                isBot = true
+            }
+            
             var isSubscription = false
-            if case .starsChatSubscription = context.component.source {
+            if case .starsChatSubscription = component.source {
+                isSubscription = true
+            } else if let _ = component.invoice.subscriptionPeriod {
                 isSubscription = true
             }
             let star = star.update(
@@ -314,7 +324,8 @@ private final class SheetContent: CombinedComponent {
                     theme: theme,
                     diameter: 90.0,
                     backgroundColor: theme.actionSheet.opaqueItemBackgroundColor,
-                    icon: isSubscription ? .star : nil
+                    icon: isSubscription && !isBot ? .star : nil,
+                    value: isBot ? component.invoice.totalAmount : nil
                 ),
                 availableSize: CGSize(width: min(414.0, context.availableSize.width), height: 220.0),
                 transition: context.transition
@@ -350,7 +361,11 @@ private final class SheetContent: CombinedComponent {
             
             let titleString: String
             if isSubscription {
-                titleString = strings.Stars_Transfer_Subscribe_Channel_Title
+                if isBot {
+                    titleString = component.invoice.title
+                } else {
+                    titleString = strings.Stars_Transfer_Subscribe_Channel_Title
+                }
             } else {
                 titleString = strings.Stars_Transfer_Title
             }
@@ -365,6 +380,24 @@ private final class SheetContent: CombinedComponent {
             )
             contentSize.height += title.size.height
             contentSize.height += 13.0
+            
+            if isBot, let peer = state.botPeer {
+                contentSize.height -= 3.0
+                let peerShortcut = peerShortcut.update(
+                    component: PremiumPeerShortcutComponent(
+                        context: component.context,
+                        theme: theme,
+                        peer: peer
+                    ),
+                    availableSize: CGSize(width: context.availableSize.width - 32.0, height: context.availableSize.height),
+                    transition: .immediate
+                )
+                context.add(peerShortcut
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + peerShortcut.size.height / 2.0))
+                )
+                contentSize.height += peerShortcut.size.height
+                contentSize.height += 13.0
+            }
                         
             let textFont = Font.regular(15.0)
             let boldTextFont = Font.semibold(15.0)
@@ -378,6 +411,8 @@ private final class SheetContent: CombinedComponent {
             let infoText: String
             if case .starsChatSubscription = context.component.source {
                 infoText = strings.Stars_Transfer_SubscribeInfo(state.botPeer?.compactDisplayTitle ?? "", strings.Stars_Transfer_Info_Stars(Int32(amount))).string
+            } else if let _ = component.invoice.subscriptionPeriod {
+                infoText = strings.Stars_Transfer_BotSubscribeInfo(component.invoice.title, state.botPeer?.compactDisplayTitle ?? "", strings.Stars_Transfer_BotSubscribeInfo_Stars(Int32(amount))).string
             } else if !component.extendedMedia.isEmpty {
                 var description: String = ""
                 var photoCount: Int32 = 0
@@ -466,7 +501,7 @@ private final class SheetContent: CombinedComponent {
             let balanceValue = balanceValue.update(
                 component: MultilineTextComponent(
                     text: .plain(NSAttributedString(
-                        string: presentationStringsFormattedNumber(Int32(state.balance ?? 0), environment.dateTimeFormat.groupingSeparator),
+                        string: presentationStringsFormattedNumber(state.balance ?? StarsAmount.zero, environment.dateTimeFormat.groupingSeparator),
                         font: Font.semibold(16.0),
                         textColor: textColor
                     )),
@@ -499,7 +534,10 @@ private final class SheetContent: CombinedComponent {
             let amountString = presentationStringsFormattedNumber(Int32(amount), presentationData.dateTimeFormat.groupingSeparator)
             let buttonAttributedString: NSMutableAttributedString
             if case .starsChatSubscription = component.source {
-                buttonAttributedString = NSMutableAttributedString(string: strings.Stars_Transfer_Subscribe, font: Font.semibold(17.0), textColor: theme.list.itemCheckColors.foregroundColor, paragraphAlignment: .center)
+                buttonAttributedString = NSMutableAttributedString(string: "\(strings.Stars_Transfer_SubscribeFor)   #  \(amountString) \(strings.Stars_Transfer_SubscribePerMonth)", font: Font.semibold(17.0), textColor: theme.list.itemCheckColors.foregroundColor, paragraphAlignment: .center)
+                
+            } else if let _ = component.invoice.subscriptionPeriod {
+                buttonAttributedString = NSMutableAttributedString(string: "\(strings.Stars_Transfer_SubscribeFor)   #  \(amountString) \(strings.Stars_Transfer_SubscribePerMonth)", font: Font.semibold(17.0), textColor: theme.list.itemCheckColors.foregroundColor, paragraphAlignment: .center)
             } else {
                 buttonAttributedString = NSMutableAttributedString(string: "\(strings.Stars_Transfer_Pay)   #  \(amountString)", font: Font.semibold(17.0), textColor: theme.list.itemCheckColors.foregroundColor, paragraphAlignment: .center)
             }
@@ -548,7 +586,7 @@ private final class SheetContent: CombinedComponent {
                                     options: state?.options ?? [],
                                     purpose: purpose,
                                     completion: { [weak starsContext] stars in
-                                        starsContext?.add(balance: stars)
+                                        starsContext?.add(balance: StarsAmount(value: stars, nanos: 0))
                                         Queue.mainQueue().after(0.1) {
                                             completion()
                                         }
@@ -612,7 +650,6 @@ private final class SheetContent: CombinedComponent {
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + button.size.height / 2.0))
             )
             contentSize.height += button.size.height
-
             if isSubscription  {
                 contentSize.height += 14.0
                 

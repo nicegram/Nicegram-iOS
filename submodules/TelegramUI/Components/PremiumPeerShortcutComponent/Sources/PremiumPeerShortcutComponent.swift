@@ -7,16 +7,25 @@ import TelegramPresentationData
 import AccountContext
 import AvatarNode
 import MultilineTextComponent
+import EmojiTextAttachmentView
+import TextFormat
 
 public final class PremiumPeerShortcutComponent: Component {
     let context: AccountContext
     let theme: PresentationTheme
     let peer: EnginePeer
+    let icon: TelegramMediaFile?
 
-    public init(context: AccountContext, theme: PresentationTheme, peer: EnginePeer) {
+    public init(
+        context: AccountContext,
+        theme: PresentationTheme,
+        peer: EnginePeer,
+        icon: TelegramMediaFile? = nil
+    ) {
         self.context = context
         self.theme = theme
         self.peer = peer
+        self.icon = icon
     }
 
     public static func ==(lhs: PremiumPeerShortcutComponent, rhs: PremiumPeerShortcutComponent) -> Bool {
@@ -36,6 +45,7 @@ public final class PremiumPeerShortcutComponent: Component {
         private let backgroundView = UIView()
         private let avatarNode: AvatarNode
         private let text = ComponentView<Empty>()
+        private var animationLayer: InlineStickerItemLayer?
         
         private var component: PremiumPeerShortcutComponent?
         private weak var state: EmptyComponentState?
@@ -81,13 +91,52 @@ public final class PremiumPeerShortcutComponent: Component {
                 containerSize: CGSize(width: availableSize.width - 50.0, height: availableSize.height)
             )
             
-            let size = CGSize(width: 30.0 + textSize.width + 20.0, height: 32.0)
+            var size = CGSize(width: 30.0 + textSize.width + 20.0, height: 32.0)
             if let view = self.text.view {
                 if view.superview == nil {
                     self.addSubview(view)
                 }
                 let textFrame = CGRect(origin: CGPoint(x: 38.0, y: floorToScreenPixels((size.height - textSize.height) / 2.0)), size: textSize)
                 view.frame = textFrame
+            }
+            
+            if let icon = component.icon {
+                let iconSize = CGSize(width: 20.0, height: 20.0)
+                let iconSpacing: CGFloat = 2.0
+                let animationLayer: InlineStickerItemLayer
+                if let current = self.animationLayer {
+                    animationLayer = current
+                } else {
+                    let emoji = ChatTextInputTextCustomEmojiAttribute(
+                        interactivelySelectedFromPackId: nil,
+                        fileId: icon.fileId.id,
+                        file: icon
+                    )
+                    animationLayer = InlineStickerItemLayer(
+                        context: .account(component.context),
+                        userLocation: .other,
+                        attemptSynchronousLoad: false,
+                        emoji: emoji,
+                        file: icon,
+                        cache: component.context.animationCache,
+                        renderer: component.context.animationRenderer,
+                        unique: true,
+                        placeholderColor: component.theme.list.mediaPlaceholderColor,
+                        pointSize: CGSize(width: 20.0, height: 20.0),
+                        loopCount: 1
+                    )
+                    animationLayer.isVisibleForAnimations = true
+                    if icon.isCustomTemplateEmoji {
+                        animationLayer.dynamicColor = component.theme.actionSheet.controlAccentColor
+                    }
+                    self.layer.addSublayer(animationLayer)
+                    self.animationLayer = animationLayer
+                }
+                animationLayer.frame = CGRect(origin: CGPoint(x: size.width - 7.0, y: floorToScreenPixels((size.height - iconSize.height) / 2.0)), size: iconSize)
+                size.width += iconSize.width + iconSpacing
+            } else if let animationLayer = self.animationLayer  {
+                self.animationLayer = nil
+                animationLayer.removeFromSuperlayer()
             }
             
             self.backgroundView.frame = CGRect(origin: .zero, size: size)

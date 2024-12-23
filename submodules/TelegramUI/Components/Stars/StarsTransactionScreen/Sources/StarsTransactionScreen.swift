@@ -33,7 +33,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
     let context: AccountContext
     let subject: StarsTransactionScreen.Subject
     let cancel: (Bool) -> Void
-    let openPeer: (EnginePeer) -> Void
+    let openPeer: (EnginePeer, Bool) -> Void
     let openMessage: (EngineMessage.Id) -> Void
     let openMedia: ([Media], @escaping (Media) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))?, @escaping (UIView) -> Void) -> Void
     let openAppExamples: () -> Void
@@ -44,7 +44,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
         context: AccountContext,
         subject: StarsTransactionScreen.Subject,
         cancel: @escaping  (Bool) -> Void,
-        openPeer: @escaping (EnginePeer) -> Void,
+        openPeer: @escaping (EnginePeer, Bool) -> Void,
         openMessage: @escaping (EngineMessage.Id) -> Void,
         openMedia: @escaping ([Media], @escaping (Media) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))?, @escaping (UIView) -> Void) -> Void,
         openAppExamples: @escaping () -> Void,
@@ -94,6 +94,9 @@ private final class StarsTransactionSheetContent: CombinedComponent {
             case let .transaction(transaction, _):
                 if case let .peer(peer) = transaction.peer {
                     peerIds.append(peer.id)
+                }
+                if let starrefPeerId = transaction.starrefPeerId {
+                    peerIds.append(starrefPeerId)
                 }
             case let .receipt(receipt):
                 peerIds.append(receipt.botPaymentId)
@@ -154,6 +157,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
         let table = Child(TableComponent.self)
         let additional = Child(BalancedTextComponent.self)
         let status = Child(BalancedTextComponent.self)
+        let cancelButton = Child(SolidRoundedButtonComponent.self)
         let button = Child(SolidRoundedButtonComponent.self)
         
         let transactionStatusBackgound = Child(RoundedRectangle.self)
@@ -201,11 +205,12 @@ private final class StarsTransactionSheetContent: CombinedComponent {
             var boostsText: String?
             let additionalText = strings.Stars_Transaction_Terms
             var buttonText: String? = strings.Common_OK
-            var buttonIsDestructive = false
+            
+            var cancelButtonText: String?
             var statusText: String?
             var statusIsDestructive = false
             
-            let count: Int64
+            let count: StarsAmount
             var countIsGeneric = false
             var countOnTop = false
             var transactionId: String?
@@ -223,11 +228,14 @@ private final class StarsTransactionSheetContent: CombinedComponent {
             var isSubscription = false
             var isSubscriber = false
             var isSubscriptionFee = false
+            var isBotSubscription = false
+            var isBusinessSubscription = false
             var isCancelled = false
             var isReaction = false
             var giveawayMessageId: MessageId?
             var isBoost = false
             var giftAnimation: TelegramMediaFile?
+            var isRefProgram = false
             
             var delayedCloseOnOpenPeer = true
             switch subject {
@@ -239,14 +247,14 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                 titleText = strings.Stars_Transaction_Giveaway_Boost_Stars(Int32(stars))
                 descriptionText = ""
                 boostsText = strings.Stars_Transaction_Giveaway_Boost_Boosts(boosts)
-                count = stars
+                count = StarsAmount(value: stars, nanos: 0)
                 date = boost.date
                 toPeer = state.peerMap[peerId]
 //                toString = strings.Stars_Transaction_Giveaway_Boost_Subscribers(boost.quantity)
                 giveawayMessageId = boost.giveawayMessageId
                 isBoost = true
             case let .importer(peer, pricing, importer, usdRate):
-                let usdValue = formatTonUsdValue(pricing.amount, divide: false, rate: usdRate, dateTimeFormat: environment.dateTimeFormat)
+                let usdValue = formatTonUsdValue(pricing.amount.value, divide: false, rate: usdRate, dateTimeFormat: environment.dateTimeFormat)
                 titleText = strings.Stars_Transaction_Subscription_Title
                 descriptionText = strings.Stars_Transaction_Subscription_PerMonthUsd(usdValue).string
                 count = pricing.amount
@@ -256,7 +264,20 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                 transactionPeer = .peer(peer)
                 isSubscriber = true
             case let .subscription(subscription):
-                titleText = strings.Stars_Transaction_Subscription_Title
+                if case let .user(user) = subscription.peer {
+                    if user.botInfo != nil {
+                        isBotSubscription = true
+                    } else {
+                        isBusinessSubscription = true
+                    }
+                }
+                if let title = subscription.title {
+                    titleText = title
+                } else {
+                    titleText = strings.Stars_Transaction_Subscription_Title
+                }
+                photo = subscription.photo
+                
                 descriptionText = ""
                 count = subscription.pricing.amount
                 date = subscription.untilDate
@@ -306,22 +327,34 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                     }
                     isCancelled = true
                 } else {
-                    if subscription.flags.contains(.isCancelled) {
+                    if subscription.flags.contains(.isCancelledByBot) {
+                        if case let .user(user) = subscription.peer, user.botInfo == nil {
+                            statusText = strings.Stars_Transaction_Subscription_CancelledByBusiness
+                        } else {
+                            statusText = strings.Stars_Transaction_Subscription_CancelledByBot
+                        }
+                        statusIsDestructive = true
+                        buttonText = strings.Common_OK
+                        isCancelled = true
+                    } else if subscription.flags.contains(.isCancelled) {
                         statusText = strings.Stars_Transaction_Subscription_Cancelled
                         statusIsDestructive = true
                         if date > Int32(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970) {
                             buttonText = strings.Stars_Transaction_Subscription_Renew
                         } else {
-                            if let _ = subscription.inviteHash, !isKicked {
+                            if let _ = subscription.invoiceSlug {
+                                buttonText = strings.Stars_Transaction_Subscription_Renew
+                            } else if let _ = subscription.inviteHash, !isKicked {
                                 buttonText = strings.Stars_Transaction_Subscription_JoinAgainChannel
                             } else {
                                 buttonText = strings.Common_OK
                             }
                         }
+                        isCancelled = true
                     } else {
                         statusText = strings.Stars_Transaction_Subscription_Active(stringForMediumDate(timestamp: subscription.untilDate, strings: strings, dateTimeFormat: dateTimeFormat, withTime: false)).string
-                        buttonText = strings.Stars_Transaction_Subscription_Cancel
-                        buttonIsDestructive = true
+                        cancelButtonText = strings.Stars_Transaction_Subscription_Cancel
+                        buttonText = strings.Common_OK
                     }
                 }
             case let .transaction(transaction, parentPeer):
@@ -370,6 +403,22 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                     }
                     transactionPeer = transaction.peer
                     isGift = true
+                } else if let starrefCommissionPermille = transaction.starrefCommissionPermille {
+                    isRefProgram = true
+                    if transaction.starrefPeerId == nil {
+                        titleText = strings.StarsTransaction_TitleCommission(formatPermille(starrefCommissionPermille)).string
+                    } else {
+                        titleText = transaction.title ?? " "
+                    }
+                    descriptionText = ""
+                    count = transaction.count
+                    countOnTop = false
+                    transactionId = transaction.id
+                    date = transaction.date
+                    transactionPeer = transaction.peer
+                    if case let .peer(peer) = transaction.peer {
+                        toPeer = peer
+                    }
                 } else if transaction.flags.contains(.isReaction) {
                     titleText = strings.Stars_Transaction_Reaction_Title
                     descriptionText = ""
@@ -470,7 +519,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
             case let .receipt(receipt):
                 titleText = receipt.invoiceMedia.title
                 descriptionText = receipt.invoiceMedia.description
-                count = (receipt.invoice.prices.first?.amount ?? receipt.invoiceMedia.totalAmount) * -1
+                count = StarsAmount(value: (receipt.invoice.prices.first?.amount ?? receipt.invoiceMedia.totalAmount) * -1, nanos: 0)
                 transactionId = receipt.transactionId
                 date = receipt.date
                 if let peer = state.peerMap[receipt.botPaymentId] {
@@ -487,7 +536,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                     if case let .giftStars(_, _, countValue, _, _, _) = action.action {
                         titleText = incoming ? strings.Stars_Gift_Received_Title : strings.Stars_Gift_Sent_Title
                         
-                        count = countValue
+                        count = StarsAmount(value: countValue, nanos: 0)
                         if !incoming {
                             countIsGeneric = true
                         }
@@ -501,7 +550,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                     } else if case let .prizeStars(countValue, _, boostPeerId, _, giveawayMessageIdValue) = action.action {
                         titleText = strings.Stars_Transaction_Giveaway_Title
                         
-                        count = countValue
+                        count = StarsAmount(value: countValue, nanos: 0)
                         countOnTop = true
                         transactionId = nil
                         giveawayMessageId = giveawayMessageIdValue
@@ -532,7 +581,8 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                 descriptionText = modifiedString
             }
             
-            let formattedAmount = presentationStringsFormattedNumber(abs(Int32(count)), dateTimeFormat.groupingSeparator)
+            let absCount = StarsAmount(value: abs(count.value), nanos: abs(count.nanos))
+            let formattedAmount = presentationStringsFormattedNumber(absCount, dateTimeFormat.groupingSeparator)
             let countColor: UIColor
             var countFont: UIFont = isSubscription || isSubscriber ? Font.regular(17.0) : Font.semibold(17.0)
             var countBackgroundColor: UIColor?
@@ -547,7 +597,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
             } else if countIsGeneric {
                 amountText = "\(formattedAmount)"
                 countColor = theme.list.itemPrimaryTextColor
-            } else if count < 0 {
+            } else if count < StarsAmount.zero {
                 amountText = "- \(formattedAmount)"
                 countColor = theme.list.itemDestructiveColor
             } else {
@@ -571,9 +621,9 @@ private final class StarsTransactionSheetContent: CombinedComponent {
             )
             
             let imageSubject: StarsImageComponent.Subject
-            let imageIcon: StarsImageComponent.Icon?
+            var imageIcon: StarsImageComponent.Icon?
             if isGift {
-                imageSubject = .gift(count)
+                imageSubject = .gift(count.value)
             } else if !media.isEmpty {
                 imageSubject = .media(media)
             } else if let photo {
@@ -590,6 +640,11 @@ private final class StarsTransactionSheetContent: CombinedComponent {
             } else {
                 imageIcon = nil
             }
+            
+            if isSubscription && "".isEmpty {
+                imageIcon = nil
+            }
+            
             var starChild: _UpdatedChildComponent
             if let giftAnimation {
                 starChild = gift.update(
@@ -687,14 +742,20 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                         )
                     )
                 ))
-            } else if let toPeer {
+            } else if let toPeer, !isRefProgram {
                 let title: String
                 if isSubscription {
-                    title = strings.Stars_Transaction_Subscription_Subscription
+                    if isBotSubscription {
+                        title = strings.Stars_Transaction_Subscription_Bot
+                    } else if isBusinessSubscription {
+                        title = strings.Stars_Transaction_Subscription_Business
+                    } else {
+                        title = strings.Stars_Transaction_Subscription_Subscription
+                    }
                 } else if isSubscriber {
                     title = strings.Stars_Transaction_Subscription_Subscriber
                 } else {
-                    title = count < 0 || countIsGeneric ? strings.Stars_Transaction_To : strings.Stars_Transaction_From
+                    title = count < StarsAmount.zero || countIsGeneric ? strings.Stars_Transaction_To : strings.Stars_Transaction_From
                 }
                 tableItems.append(.init(
                     id: "to",
@@ -710,7 +771,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                             ),
                             action: {
                                 if delayedCloseOnOpenPeer {
-                                    component.openPeer(toPeer)
+                                    component.openPeer(toPeer, false)
                                     Queue.mainQueue().after(1.0, {
                                         component.cancel(false)
                                     })
@@ -724,6 +785,15 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                         )
                     )
                 ))
+                if case let .subscription(subscription) = component.subject, let title = subscription.title {
+                    tableItems.append(.init(
+                        id: "subscription",
+                        title: strings.Stars_Transaction_Subscription,
+                        component: AnyComponent(
+                            MultilineTextComponent(text: .plain(NSAttributedString(string: title, font: tableFont, textColor: tableTextColor)))
+                        )
+                    ))
+                }
             } else if let via {
                 tableItems.append(.init(
                     id: "via",
@@ -739,7 +809,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                     id: "prize",
                     title: strings.Stars_Transaction_Giveaway_Prize,
                     component: AnyComponent(
-                        MultilineTextComponent(text: .plain(NSAttributedString(string: strings.Stars_Transaction_Giveaway_Stars(Int32(count)), font: tableFont, textColor: tableTextColor)))
+                        MultilineTextComponent(text: .plain(NSAttributedString(string: strings.Stars_Transaction_Giveaway_Stars(Int32(count.value)), font: tableFont, textColor: tableTextColor)))
                     )
                 ))
                 
@@ -794,6 +864,131 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                         )
                     )
                 ))
+            }
+            
+            if case let .transaction(transaction, _) = subject {
+                if transaction.starrefCommissionPermille != nil {
+                    if transaction.starrefPeerId == nil {
+                        tableItems.append(.init(
+                            id: "reason",
+                            title: strings.StarsTransaction_StarRefReason_Title,
+                            component: AnyComponent(
+                                Button(
+                                    content: AnyComponent(MultilineTextComponent(text: .plain(NSAttributedString(string: strings.StarsTransaction_StarRefReason_Program, font: tableFont, textColor: tableLinkColor))
+                                    )),
+                                    action: {
+                                        if let toPeer {
+                                            component.openPeer(toPeer, true)
+                                            Queue.mainQueue().after(1.0, {
+                                                component.cancel(false)
+                                            })
+                                        }
+                                    }
+                                )
+                            ),
+                            insets: UIEdgeInsets(top: 0.0, left: 12.0, bottom: 0.0, right: 5.0)
+                        ))
+                    }
+                    if let toPeer, transaction.starrefPeerId == nil {
+                        tableItems.append(.init(
+                            id: "miniapp",
+                            title: strings.StarsTransaction_StarRefReason_Miniapp,
+                            component: AnyComponent(
+                                Button(
+                                    content: AnyComponent(
+                                        PeerCellComponent(
+                                            context: component.context,
+                                            theme: theme,
+                                            peer: toPeer
+                                        )
+                                    ),
+                                    action: {
+                                        if delayedCloseOnOpenPeer {
+                                            component.openPeer(toPeer, false)
+                                            Queue.mainQueue().after(1.0, {
+                                                component.cancel(false)
+                                            })
+                                        } else {
+                                            if let controller = controller() as? StarsTransactionScreen, let navigationController = controller.navigationController, let chatController = navigationController.viewControllers.first(where: { $0 is ChatController }) as? ChatController {
+                                                chatController.playShakeAnimation()
+                                            }
+                                            component.cancel(true)
+                                        }
+                                    }
+                                )
+                            )
+                        ))
+                    }
+                }
+                if let starRefPeerId = transaction.starrefPeerId, let starRefPeer = state.peerMap[starRefPeerId] {
+                    tableItems.append(.init(
+                        id: "to",
+                        title: strings.StarsTransaction_StarRefReason_Affiliate,
+                        component: AnyComponent(
+                            Button(
+                                content: AnyComponent(
+                                    PeerCellComponent(
+                                        context: component.context,
+                                        theme: theme,
+                                        peer: starRefPeer
+                                    )
+                                ),
+                                action: {
+                                    if delayedCloseOnOpenPeer {
+                                        component.openPeer(starRefPeer, false)
+                                        Queue.mainQueue().after(1.0, {
+                                            component.cancel(false)
+                                        })
+                                    } else {
+                                        if let controller = controller() as? StarsTransactionScreen, let navigationController = controller.navigationController, let chatController = navigationController.viewControllers.first(where: { $0 is ChatController }) as? ChatController {
+                                            chatController.playShakeAnimation()
+                                        }
+                                        component.cancel(true)
+                                    }
+                                }
+                            )
+                        )
+                    ))
+                    if let toPeer {
+                        tableItems.append(.init(
+                            id: "referred",
+                            title: strings.StarsTransaction_StarRefReason_Referred,
+                            component: AnyComponent(
+                                Button(
+                                    content: AnyComponent(
+                                        PeerCellComponent(
+                                            context: component.context,
+                                            theme: theme,
+                                            peer: toPeer
+                                        )
+                                    ),
+                                    action: {
+                                        if delayedCloseOnOpenPeer {
+                                            component.openPeer(toPeer, true)
+                                            Queue.mainQueue().after(1.0, {
+                                                component.cancel(false)
+                                            })
+                                        } else {
+                                            if let controller = controller() as? StarsTransactionScreen, let navigationController = controller.navigationController, let chatController = navigationController.viewControllers.first(where: { $0 is ChatController }) as? ChatController {
+                                                chatController.playShakeAnimation()
+                                            }
+                                            component.cancel(true)
+                                        }
+                                    }
+                                )
+                            )
+                        ))
+                    }
+                }
+                if let starrefCommissionPermille = transaction.starrefCommissionPermille, transaction.starrefPeerId != nil {
+                    tableItems.append(.init(
+                        id: "commission",
+                        title: "Commission",
+                        component: AnyComponent(MultilineTextComponent(text: .plain(NSAttributedString(string: "\(formatPermille(starrefCommissionPermille))%", font: tableFont, textColor: tableTextColor))
+                        )),
+                        insets: UIEdgeInsets(top: 0.0, left: 12.0, bottom: 0.0, right: 5.0)
+                    ))
+                }
             }
 
             if let transactionId {
@@ -1069,12 +1264,12 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                 originY += status.size.height + (statusIsDestructive ? 23.0 : 13.0)
             }
             
-            if let buttonText {
-                let button = button.update(
+            if let cancelButtonText {
+                let cancelButton = cancelButton.update(
                     component: SolidRoundedButtonComponent(
-                        title: buttonText,
-                        theme: buttonIsDestructive ? SolidRoundedButtonComponent.Theme(backgroundColor: .clear, foregroundColor: destructiveColor) : SolidRoundedButtonComponent.Theme(theme: theme),
-                        font: buttonIsDestructive ? .regular : .bold,
+                        title: cancelButtonText,
+                        theme: SolidRoundedButtonComponent.Theme(backgroundColor: .clear, foregroundColor: linkColor),
+                        font: .regular,
                         fontSize: 17.0,
                         height: 50.0,
                         cornerRadius: 10.0,
@@ -1086,6 +1281,39 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                         action: {
                             component.cancel(true)
                             if isSubscription {
+                                component.updateSubscription()
+                            }
+                        }
+                    ),
+                    availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: 50.0),
+                    transition: context.transition
+                )
+                
+                let cancelButtonFrame = CGRect(origin: CGPoint(x: sideInset, y: originY), size: cancelButton.size)
+                context.add(cancelButton
+                    .position(CGPoint(x: cancelButtonFrame.midX, y: cancelButtonFrame.midY))
+                )
+                originY += cancelButton.size.height
+                originY += 8.0
+            }
+            
+            if let buttonText {
+                let button = button.update(
+                    component: SolidRoundedButtonComponent(
+                        title: buttonText,
+                        theme: SolidRoundedButtonComponent.Theme(theme: theme),
+                        font: .bold,
+                        fontSize: 17.0,
+                        height: 50.0,
+                        cornerRadius: 10.0,
+                        gloss: false,
+                        iconName: nil,
+                        animationName: nil,
+                        iconPosition: .left,
+                        isLoading: state.inProgress,
+                        action: {
+                            component.cancel(true)
+                            if isSubscription && cancelButtonText == nil {
                                 component.updateSubscription()
                             }
                         }
@@ -1117,7 +1345,7 @@ private final class StarsTransactionSheetComponent: CombinedComponent {
     
     let context: AccountContext
     let subject: StarsTransactionScreen.Subject
-    let openPeer: (EnginePeer) -> Void
+    let openPeer: (EnginePeer, Bool) -> Void
     let openMessage: (EngineMessage.Id) -> Void
     let openMedia: ([Media], @escaping (Media) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))?, @escaping (UIView) -> Void) -> Void
     let openAppExamples: () -> Void
@@ -1127,7 +1355,7 @@ private final class StarsTransactionSheetComponent: CombinedComponent {
     init(
         context: AccountContext,
         subject: StarsTransactionScreen.Subject,
-        openPeer: @escaping (EnginePeer) -> Void,
+        openPeer: @escaping (EnginePeer, Bool) -> Void,
         openMessage: @escaping (EngineMessage.Id) -> Void,
         openMedia: @escaping ([Media], @escaping (Media) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))?, @escaping (UIView) -> Void) -> Void,
         openAppExamples: @escaping () -> Void,
@@ -1280,7 +1508,7 @@ public class StarsTransactionScreen: ViewControllerComponentContainer {
     ) {
         self.context = context
         
-        var openPeerImpl: ((EnginePeer) -> Void)?
+        var openPeerImpl: ((EnginePeer, Bool) -> Void)?
         var openMessageImpl: ((EngineMessage.Id) -> Void)?
         var openMediaImpl: (([Media], @escaping (Media) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))?, @escaping (UIView) -> Void) -> Void)?
         var openAppExamplesImpl: (() -> Void)?
@@ -1292,8 +1520,8 @@ public class StarsTransactionScreen: ViewControllerComponentContainer {
             component: StarsTransactionSheetComponent(
                 context: context,
                 subject: subject,
-                openPeer: { peerId in
-                    openPeerImpl?(peerId)
+                openPeer: { peerId, isProfile in
+                    openPeerImpl?(peerId, isProfile)
                 },
                 openMessage: { messageId in
                     openMessageImpl?(messageId)
@@ -1319,7 +1547,7 @@ public class StarsTransactionScreen: ViewControllerComponentContainer {
         self.navigationPresentation = .flatModal
         self.automaticallyControlPresentationContextLayout = false
         
-        openPeerImpl = { [weak self] peer in
+        openPeerImpl = { [weak self] peer, isProfile in
             guard let self, let navigationController = self.navigationController as? NavigationController else {
                 return
             }
@@ -1332,7 +1560,13 @@ public class StarsTransactionScreen: ViewControllerComponentContainer {
                 guard let peer else {
                     return
                 }
-                context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, chatController: nil, context: context, chatLocation: .peer(peer), subject: nil, botStart: nil, updateTextInputState: nil, keepStack: .always, useExisting: true, purposefulAction: nil, scrollToEndIfExists: false, activateMessageSearch: nil, animated: true))
+                if isProfile {
+                    if let controller = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer._asPeer(), mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
+                        navigationController.pushViewController(controller)
+                    }
+                } else {
+                    context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, chatController: nil, context: context, chatLocation: .peer(peer), subject: nil, botStart: nil, updateTextInputState: nil, keepStack: .always, useExisting: true, purposefulAction: nil, scrollToEndIfExists: false, activateMessageSearch: nil, animated: true))
+                }
             })
         }
         

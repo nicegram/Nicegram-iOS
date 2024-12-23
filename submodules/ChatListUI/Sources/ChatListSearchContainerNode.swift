@@ -64,8 +64,9 @@ final class ChatListSearchInteraction {
     let getSelectedMessageIds: () -> Set<EngineMessage.Id>?
     let openStories: ((PeerId, ASDisplayNode) -> Void)?
     let switchToFilter: (ChatListSearchPaneKey) -> Void
+    let dismissSearch: () -> Void
     
-    init(openPeer: @escaping (EnginePeer, EnginePeer?, Int64?, Bool) -> Void, openDisabledPeer: @escaping (EnginePeer, Int64?, ChatListDisabledPeerReason) -> Void, openMessage: @escaping (EnginePeer, Int64?, EngineMessage.Id, Bool) -> Void, openUrl: @escaping (String) -> Void, clearRecentSearch: @escaping () -> Void, addContact: @escaping (String) -> Void, toggleMessageSelection: @escaping (EngineMessage.Id, Bool) -> Void, messageContextAction: @escaping ((EngineMessage, ASDisplayNode?, CGRect?, UIGestureRecognizer?, ChatListSearchPaneKey, (id: String, size: Int64, isFirstInList: Bool)?) -> Void), mediaMessageContextAction: @escaping ((EngineMessage, ASDisplayNode?, CGRect?, UIGestureRecognizer?) -> Void), peerContextAction: ((EnginePeer, ChatListSearchContextActionSource, ASDisplayNode, ContextGesture?, CGPoint?) -> Void)?, present: @escaping (ViewController, Any?) -> Void, dismissInput: @escaping () -> Void, getSelectedMessageIds: @escaping () -> Set<EngineMessage.Id>?, openStories: ((PeerId, ASDisplayNode) -> Void)?, switchToFilter: @escaping (ChatListSearchPaneKey) -> Void) {
+    init(openPeer: @escaping (EnginePeer, EnginePeer?, Int64?, Bool) -> Void, openDisabledPeer: @escaping (EnginePeer, Int64?, ChatListDisabledPeerReason) -> Void, openMessage: @escaping (EnginePeer, Int64?, EngineMessage.Id, Bool) -> Void, openUrl: @escaping (String) -> Void, clearRecentSearch: @escaping () -> Void, addContact: @escaping (String) -> Void, toggleMessageSelection: @escaping (EngineMessage.Id, Bool) -> Void, messageContextAction: @escaping ((EngineMessage, ASDisplayNode?, CGRect?, UIGestureRecognizer?, ChatListSearchPaneKey, (id: String, size: Int64, isFirstInList: Bool)?) -> Void), mediaMessageContextAction: @escaping ((EngineMessage, ASDisplayNode?, CGRect?, UIGestureRecognizer?) -> Void), peerContextAction: ((EnginePeer, ChatListSearchContextActionSource, ASDisplayNode, ContextGesture?, CGPoint?) -> Void)?, present: @escaping (ViewController, Any?) -> Void, dismissInput: @escaping () -> Void, getSelectedMessageIds: @escaping () -> Set<EngineMessage.Id>?, openStories: ((PeerId, ASDisplayNode) -> Void)?, switchToFilter: @escaping (ChatListSearchPaneKey) -> Void, dismissSearch: @escaping () -> Void) {
         self.openPeer = openPeer
         self.openDisabledPeer = openDisabledPeer
         self.openMessage = openMessage
@@ -81,6 +82,7 @@ final class ChatListSearchInteraction {
         self.getSelectedMessageIds = getSelectedMessageIds
         self.openStories = openStories
         self.switchToFilter = switchToFilter
+        self.dismissSearch = dismissSearch
     }
 }
 
@@ -102,6 +104,8 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
     private var interaction: ChatListSearchInteraction?
     private let openMessage: (EnginePeer, Int64?, EngineMessage.Id, Bool) -> Void
     private let navigationController: NavigationController?
+    
+    var dismissSearch: (() -> Void)?
     
     private let dimNode: ASDisplayNode
     let filterContainerNode: ChatListSearchFiltersContainerNode
@@ -301,6 +305,8 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
             Queue.mainQueue().justDispatch {
                 self.paneContainerNode.requestSelectPane(filter)
             }
+        }, dismissSearch: { [weak self] in
+            self?.dismissSearch?()
         })
         self.paneContainerNode.interaction = interaction
         
@@ -1177,7 +1183,7 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
                     UIPasteboard.general.string = linkForCopying
                     
                     let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                    self?.present?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
+                    self?.present?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
                 })))
             }
             

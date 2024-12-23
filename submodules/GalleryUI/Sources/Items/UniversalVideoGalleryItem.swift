@@ -1783,7 +1783,7 @@ final class UniversalVideoGalleryItemNode: ZoomableContentGalleryItemNode {
                         if let item = strongSelf.item, let _ = item.content as? PlatformVideoContent {
                             strongSelf.videoNode?.play()
                         } else {
-                            strongSelf.videoNode?.playOnceWithSound(playAndRecord: false, actionAtEnd: isAnimated ? .loop : strongSelf.actionAtEnd)
+                            strongSelf.videoNode?.playOnceWithSound(playAndRecord: false, seek: .none, actionAtEnd: isAnimated ? .loop : strongSelf.actionAtEnd)
                         }
 
                         if let playbackRate = strongSelf.playbackRate {
@@ -1837,7 +1837,14 @@ final class UniversalVideoGalleryItemNode: ZoomableContentGalleryItemNode {
                             return
                         }
 
-                        if let status = status, status.duration >= 60.0 * 10.0 {
+                        if let status = status {
+                            let shouldStorePlaybacksState: Bool
+                            #if DEBUG && false
+                            shouldStorePlaybacksState = status.duration >= 10.0
+                            #else
+                            shouldStorePlaybacksState = status.duration >= 60.0 * 10.0
+                            #endif
+                            
                             var timestamp: Double?
                             if status.timestamp > 5.0 && status.timestamp < status.duration - 5.0 {
                                 timestamp = status.timestamp
@@ -2763,16 +2770,36 @@ final class UniversalVideoGalleryItemNode: ZoomableContentGalleryItemNode {
     }
     
     override func maybePerformActionForSwipeDismiss() -> Bool {
-        if let data = self.context.currentAppConfiguration.with({ $0 }).data, let _ = data["ios_killswitch_disable_swipe_pip"] {
-            return false
+        if let data = self.context.currentAppConfiguration.with({ $0 }).data {
+            if let _ = data["ios_killswitch_disable_swipe_pip"] {
+                return false
+            }
+            var swipeUpToClose = false
+            if let value = data["video_swipe_up_to_close"] as? Double, value == 1.0 {
+                swipeUpToClose = true
+            } else if let value = data["video_swipe_up_to_close"] as? Bool, value {
+                swipeUpToClose = true
+            }
+            
+            if swipeUpToClose {
+                addAppLogEvent(postbox: self.context.account.postbox, type: "swipe_up_close", peerId: self.context.account.peerId)
+                
+                return false
+            }
         }
         
         if #available(iOS 15.0, *) {
             if let nativePictureInPictureContent = self.nativePictureInPictureContent as? NativePictureInPictureContentImpl {
+                addAppLogEvent(postbox: self.context.account.postbox, type: "swipe_up_pip", peerId: self.context.account.peerId)
                 nativePictureInPictureContent.beginPictureInPicture()
                 return true
             }
         }
+        return false
+    }
+    
+    override func maybePerformActionForSwipeDownDismiss() -> Bool {
+        addAppLogEvent(postbox: self.context.account.postbox, type: "swipe_down_close", peerId: self.context.account.peerId)
         return false
     }
     
@@ -2981,6 +3008,8 @@ final class UniversalVideoGalleryItemNode: ZoomableContentGalleryItemNode {
                 if !didExpand {
                     self.activePictureInPictureController = nil
                     self.activePictureInPictureNavigationController = nil
+                    
+                    addAppLogEvent(postbox: self.context.account.postbox, type: "pip_close_btn", peerId: self.context.account.peerId)
                 }
             }, expand: { [weak self] completion in
                 didExpand = true
@@ -3013,6 +3042,7 @@ final class UniversalVideoGalleryItemNode: ZoomableContentGalleryItemNode {
     @objc func pictureInPictureButtonPressed() {
         if #available(iOS 15.0, *) {
             if let nativePictureInPictureContent = self.nativePictureInPictureContent as? NativePictureInPictureContentImpl {
+                addAppLogEvent(postbox: self.context.account.postbox, type: "pip_btn", peerId: self.context.account.peerId)
                 nativePictureInPictureContent.beginPictureInPicture()
                 return
             }
@@ -3539,14 +3569,14 @@ final class UniversalVideoGalleryItemNode: ZoomableContentGalleryItemNode {
                             } else {
                                 return nil
                             }
-                        }, action: { [weak self] _, f in
+                        }, action: { [weak strongSelf] _, f in
                             f(.default)
                             
-                            guard let self, let videoNode = self.videoNode else {
+                            guard let strongSelf, let videoNode = strongSelf.videoNode else {
                                 return
                             }
                             videoNode.setVideoQuality(.auto)
-                            self.videoQualityPromise.set(.auto)
+                            strongSelf.videoQualityPromise.set(.auto)
                         })))
                     }
                     
@@ -3565,7 +3595,29 @@ final class UniversalVideoGalleryItemNode: ZoomableContentGalleryItemNode {
                             } else {
                                 qualityTitle = strongSelf.presentationData.strings.Gallery_VideoSettings_QualityQHD
                             }
-                            items.append(.action(ContextMenuActionItem(text: qualityTitle, textLayout: .secondLineWithValue("\(quality)p"), icon: { _ in
+                            var qualityDebugText = ""
+                            var displayDebugInfo = false
+                            if strongSelf.context.sharedContext.applicationBindings.appBuildType == .internal {
+                                displayDebugInfo = true
+                            } else {
+                                #if DEBUG
+                                displayDebugInfo = true
+                                #endif
+                            }
+                            if displayDebugInfo, let content = item.content as? HLSVideoContent, let qualitySet = HLSQualitySet(baseFile: content.fileReference, codecConfiguration: HLSCodecConfiguration(context: strongSelf.context)), let qualityFile = qualitySet.qualityFiles[quality] {
+                                for attribute in qualityFile.media.attributes {
+                                    if case let .Video(_, _, _, _, _, videoCodec) = attribute, let videoCodec {
+                                        qualityDebugText += " \(videoCodec)"
+                                        if videoCodec == "av1" || videoCodec == "av01" {
+                                            qualityDebugText += isHardwareAv1Supported ? " (HW)" : " (SW)"
+                                        }
+                                    }
+                                }
+                                if let size = qualityFile.media.size {
+                                    qualityDebugText += ", \(dataSizeString(size, formatting: DataSizeStringFormatting(presentationData: strongSelf.presentationData)))"
+                                }
+                            }
+                            items.append(.action(ContextMenuActionItem(text: qualityTitle, textLayout: .secondLineWithValue("\(quality)p\(qualityDebugText)"), icon: { _ in
                                 if isSelected {
                                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: .white)
                                 } else {
@@ -3602,7 +3654,7 @@ final class UniversalVideoGalleryItemNode: ZoomableContentGalleryItemNode {
                             if qualityState.available.isEmpty {
                                 return
                             }
-                            guard let qualitySet = HLSQualitySet(baseFile: content.fileReference) else {
+                            guard let qualitySet = HLSQualitySet(baseFile: content.fileReference, codecConfiguration: HLSCodecConfiguration(context: self.context)) else {
                                 return
                             }
                             

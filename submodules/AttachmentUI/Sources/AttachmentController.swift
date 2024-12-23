@@ -124,7 +124,7 @@ public protocol AttachmentContainable: ViewController, MinimizableController {
     var isInnerPanGestureEnabled: (() -> Bool)? { get }
     var mediaPickerContext: AttachmentMediaPickerContext? { get }
     var getCurrentSendMessageContextMediaPreview: (() -> ChatSendMessageContextScreenMediaPreview?)? { get }
-    
+        
     func isContainerPanningUpdated(_ panning: Bool)
     
     func resetForReuse()
@@ -163,6 +163,10 @@ public extension AttachmentContainable {
     
     var minimizedBounds: CGRect? {
         return nil
+    }
+    
+    var isFullscreen: Bool {
+        return false
     }
     
     var minimizedTopEdgeOffset: CGFloat? {
@@ -362,6 +366,10 @@ public class AttachmentController: ViewController, MinimizableController {
     public private(set) var minimizedBounds: CGRect?
     public var minimizedIcon: UIImage? {
         return self.mainController.minimizedIcon
+    }
+    
+    public var isFullscreen: Bool {
+        return self.mainController.isFullscreen
     }
         
     private final class Node: ASDisplayNode {
@@ -1049,50 +1057,57 @@ public class AttachmentController: ViewController, MinimizableController {
             var containerLayout = layout
             let containerRect: CGRect
             if case .regular = layout.metrics.widthClass {
-                let availableHeight = layout.size.height - (layout.inputHeight ?? 0.0) - 60.0
-                
-                let size = CGSize(width: 390.0, height: min(620.0, availableHeight))
-                
-                let insets = layout.insets(options: [.input])
-                let masterWidth = min(max(320.0, floor(layout.size.width / 3.0)), floor(layout.size.width / 2.0))
-                                
-                let position: CGPoint
-                let positionY = layout.size.height - size.height - insets.bottom - 40.0
-                if let sourceRect = controller.getSourceRect?() {
-                    position = CGPoint(x: min(layout.size.width - size.width - 28.0, floor(sourceRect.midX - size.width / 2.0)), y: min(positionY, sourceRect.minY - size.height))
+                if controller.isFullscreen {
+                    containerRect = CGRect(origin: .zero, size: layout.size)
+                    self.wrapperNode.cornerRadius = 0.0
+                    self.wrapperNode.view.mask = nil
+                    self.shadowNode.alpha = 0.0
                 } else {
-                    position = CGPoint(x: masterWidth - 174.0, y: positionY)
-                }
-                
-                if controller.isStandalone && !controller.forceSourceRect {
-                    var containerY = floorToScreenPixels((layout.size.height - size.height) / 2.0)
-                    if let inputHeight = layout.inputHeight, inputHeight > 88.0 {
-                        containerY = layout.size.height - inputHeight - size.height - 80.0
+                    let availableHeight = layout.size.height - (layout.inputHeight ?? 0.0) - 60.0
+                    
+                    let size = CGSize(width: 390.0, height: min(620.0, availableHeight))
+                    
+                    let insets = layout.insets(options: [.input])
+                    let masterWidth = min(max(320.0, floor(layout.size.width / 3.0)), floor(layout.size.width / 2.0))
+                    
+                    let position: CGPoint
+                    let positionY = layout.size.height - size.height - insets.bottom - 40.0
+                    if let sourceRect = controller.getSourceRect?() {
+                        position = CGPoint(x: min(layout.size.width - size.width - 28.0, floor(sourceRect.midX - size.width / 2.0)), y: min(positionY, sourceRect.minY - size.height))
+                    } else {
+                        position = CGPoint(x: masterWidth - 174.0, y: positionY)
                     }
-                    containerRect = CGRect(origin: CGPoint(x: floorToScreenPixels((layout.size.width - size.width) / 2.0), y: containerY), size: size)
-                } else {
-                    containerRect = CGRect(origin: position, size: size)
-                }
-                containerLayout.size = containerRect.size
-                containerLayout.intrinsicInsets.bottom = 12.0
-                containerLayout.inputHeight = nil
-                
-                if controller.isStandalone {
-                    self.wrapperNode.cornerRadius = 10.0
-                } else if self.wrapperNode.view.mask == nil {
-                    let maskView = UIImageView()
-                    maskView.image = generateMaskImage()
-                    maskView.contentMode = .scaleToFill
-                    self.wrapperNode.view.mask = maskView
-                }
-                
-                if let maskView = self.wrapperNode.view.mask {
-                    transition.updateFrame(view: maskView, frame: CGRect(origin: CGPoint(), size: size))
-                }
-                
-                self.shadowNode.alpha = 1.0
-                if self.shadowNode.image == nil {
-                    self.shadowNode.image = generateShadowImage()
+                    
+                    if controller.isStandalone && !controller.forceSourceRect {
+                        var containerY = floorToScreenPixels((layout.size.height - size.height) / 2.0)
+                        if let inputHeight = layout.inputHeight, inputHeight > 88.0 {
+                            containerY = layout.size.height - inputHeight - size.height - 80.0
+                        }
+                        containerRect = CGRect(origin: CGPoint(x: floorToScreenPixels((layout.size.width - size.width) / 2.0), y: containerY), size: size)
+                    } else {
+                        containerRect = CGRect(origin: position, size: size)
+                    }
+                    containerLayout.size = containerRect.size
+                    containerLayout.intrinsicInsets.bottom = 12.0
+                    containerLayout.inputHeight = nil
+                    
+                    if controller.isStandalone {
+                        self.wrapperNode.cornerRadius = 10.0
+                    } else if self.wrapperNode.view.mask == nil {
+                        let maskView = UIImageView()
+                        maskView.image = generateMaskImage()
+                        maskView.contentMode = .scaleToFill
+                        self.wrapperNode.view.mask = maskView
+                    }
+                    
+                    if let maskView = self.wrapperNode.view.mask {
+                        transition.updateFrame(view: maskView, frame: CGRect(origin: CGPoint(), size: size))
+                    }
+                    
+                    self.shadowNode.alpha = 1.0
+                    if self.shadowNode.image == nil {
+                        self.shadowNode.image = generateShadowImage()
+                    }
                 }
             } else {
                 let containerHeight: CGFloat
@@ -1268,6 +1283,10 @@ public class AttachmentController: ViewController, MinimizableController {
     
     public var ensureUnfocused = true
     
+    public func requestMinimize(topEdgeOffset: CGFloat?, initialVelocity: CGFloat?) {
+        self.node.minimize()
+    }
+    
     public override func dismiss(animated flag: Bool, completion: (() -> Void)? = nil) {
         if self.ensureUnfocused {
             self.view.endEditing(true)
@@ -1397,7 +1416,11 @@ public class AttachmentController: ViewController, MinimizableController {
     public func makeContentSnapshotView() -> UIView? {
         let snapshotView = self.view.snapshotView(afterScreenUpdates: false)
         if let contentSnapshotView = self.mainController.makeContentSnapshotView() {
-            contentSnapshotView.frame = contentSnapshotView.frame.offsetBy(dx: 0.0, dy: 64.0 + 56.0)
+            if !self.mainController.isFullscreen {
+                if let layout = self.validLayout {
+                    contentSnapshotView.frame = contentSnapshotView.frame.offsetBy(dx: 0.0, dy: (layout.statusBarHeight ?? 0.0) + 10.0 + 56.0)
+                }
+            }
             snapshotView?.addSubview(contentSnapshotView)
         }
         return snapshotView
