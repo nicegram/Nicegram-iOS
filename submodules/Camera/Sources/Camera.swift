@@ -51,7 +51,7 @@ final class CameraDeviceContext {
     let device = CameraDevice()
     let input = CameraInput()
     let output: CameraOutput
-    
+        
     init(session: CameraSession, exclusive: Bool, additional: Bool, ciContext: CIContext, colorSpace: CGColorSpace, isRoundVideo: Bool = false) {
         self.session = session
         self.exclusive = exclusive
@@ -126,7 +126,7 @@ private final class CameraContext {
     private let audioLevelPipe = ValuePipe<Float>()
     fileprivate let modeChangePromise = ValuePromise<Camera.ModeChange>(.none)
     
-    var previewView: CameraPreviewView?
+    var videoOutput: CameraVideoOutput?
     
     var simplePreviewView: CameraSimplePreviewView?
     var secondaryPreviewView: CameraSimplePreviewView?
@@ -257,6 +257,7 @@ private final class CameraContext {
             
             mainDeviceContext.output.markPositionChange(position: targetPosition)
         } else {
+            self.session.session.stopRunning()
             self.configure {
                 let isRoundVideo = self.initialConfiguration.isRoundVideo
                 self.mainDeviceContext?.invalidate(switchAudio: !isRoundVideo)
@@ -284,6 +285,7 @@ private final class CameraContext {
                     self.modeChange = .none
                 }
             }
+            self.session.session.startRunning()
         }
     }
     
@@ -308,7 +310,7 @@ private final class CameraContext {
     
     private var micLevelPeak: Int16 = 0
     private var micLevelPeakCount = 0
-
+    
     private var isDualCameraEnabled: Bool?
     public func setDualCameraEnabled(_ enabled: Bool, change: Bool = true) {
         guard enabled != self.isDualCameraEnabled else {
@@ -320,6 +322,7 @@ private final class CameraContext {
             self.modeChange = .dualCamera
         }
         
+        self.session.session.stopRunning()
         if enabled {
             self.configure {
                 self.mainDeviceContext?.invalidate()
@@ -375,12 +378,20 @@ private final class CameraContext {
                 guard let self, let mainDeviceContext = self.mainDeviceContext else {
                     return
                 }
+                
+                var front = false
+                if #available(iOS 13.0, *) {
+                    front = connection.inputPorts.first?.sourceDevicePosition == .front
+                }
+                
+                if sampleBuffer.type == kCMMediaType_Video {
+                    Queue.mainQueue().async {
+                        self.videoOutput?.push(sampleBuffer, mirror: front)
+                    }
+                }
+                
                 let timestamp = CACurrentMediaTime()
                 if timestamp > self.lastSnapshotTimestamp + 2.5, !mainDeviceContext.output.isRecording || !self.savedSnapshot {
-                    var front = false
-                    if #available(iOS 13.0, *) {
-                        front = connection.inputPorts.first?.sourceDevicePosition == .front
-                    }
                     self.savePreviewSnapshot(pixelBuffer: pixelBuffer, front: front)
                     self.lastSnapshotTimestamp = timestamp
                     self.savedSnapshot = true
@@ -432,6 +443,7 @@ private final class CameraContext {
                 self?.detectedCodesPipe.putNext(codes)
             }
         }
+        self.session.session.startRunning()
         
         if change {
             if #available(iOS 13.0, *), let previewView = self.simplePreviewView {
@@ -691,6 +703,26 @@ public final class Camera {
     public typealias FocusMode = AVCaptureDevice.FocusMode
     public typealias ExposureMode = AVCaptureDevice.ExposureMode
     public typealias FlashMode = AVCaptureDevice.FlashMode
+    
+    public struct CollageGrid: Hashable {
+        public struct Row: Hashable {
+            public let columns: Int
+            
+            public init(columns: Int) {
+                self.columns = columns
+            }
+        }
+
+        public let rows: [Row]
+        
+        public init(rows: [Row]) {
+            self.rows = rows
+        }
+        
+        public var count: Int {
+            return self.rows.reduce(0) { $0 + $1.columns }
+        }
+    }
     
     public struct Configuration {
         let preset: Preset
@@ -971,16 +1003,19 @@ public final class Camera {
         }
     }
     
-    public func attachPreviewView(_ view: CameraPreviewView) {
-        self.previewView = view
-        let viewRef: Unmanaged<CameraPreviewView> = Unmanaged.passRetained(view)
+    public func setPreviewOutput(_ output: CameraVideoOutput?) {
+        let outputRef: Unmanaged<CameraVideoOutput>? = output.flatMap { Unmanaged.passRetained($0) }
         self.queue.async {
             if let context = self.contextRef?.takeUnretainedValue() {
-                context.previewView = viewRef.takeUnretainedValue()
-                viewRef.release()
+                if let outputRef {
+                    context.videoOutput = outputRef.takeUnretainedValue()
+                    outputRef.release()
+                } else {
+                    context.videoOutput = nil
+                }
             } else {
                 Queue.mainQueue().async {
-                    viewRef.release()
+                    outputRef?.release()
                 }
             }
         }
@@ -1103,4 +1138,16 @@ public struct CameraRecordingData {
 
 public enum CameraRecordingError {
     case audioInitializationError
+}
+
+public class CameraVideoOutput {
+    private let sink: (CMSampleBuffer, Bool) -> Void
+    
+    public init(sink: @escaping (CMSampleBuffer, Bool) -> Void) {
+        self.sink = sink
+    }
+    
+    func push(_ buffer: CMSampleBuffer, mirror: Bool) {
+        self.sink(buffer, mirror)
+    }
 }

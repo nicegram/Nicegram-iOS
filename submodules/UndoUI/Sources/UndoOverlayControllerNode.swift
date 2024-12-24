@@ -38,7 +38,7 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
     private var multiAvatarsSize: CGSize?
     private var iconImageSize: CGSize?
     private let iconCheckNode: RadialStatusNode?
-    private let animationNode: AnimationNode?
+    private var animationNode: AnimationNode?
     private var animatedStickerNode: AnimatedStickerNode?
     private var slotMachineNode: SlotMachineAnimationNode?
     private var stillStickerNode: TransformImageNode?
@@ -293,12 +293,16 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
                 if text.contains("](") {
                     isUserInteractionEnabled = true
                 }
-            case let .linkCopied(text):
+            case let .linkCopied(title, text):
                 self.avatarNode = nil
                 self.iconNode = nil
                 self.iconCheckNode = nil
                 self.animationNode = AnimationNode(animation: "anim_linkcopied", colors: ["info1.info1.stroke": self.animationBackgroundColor, "info2.info2.Fill": self.animationBackgroundColor], scale: 1.0)
                 self.animatedStickerNode = nil
+            
+                if let title {
+                    self.titleNode.attributedText = NSAttributedString(string: title, font: Font.semibold(14.0), textColor: .white)
+                }
             
                 let body = MarkdownAttributeSet(font: Font.regular(14.0), textColor: .white)
                 let bold = MarkdownAttributeSet(font: Font.semibold(14.0), textColor: .white)
@@ -1351,6 +1355,45 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
                 if let updatedImageSignal = updatedImageSignal {
                     stillStickerNode.setSignal(updatedImageSignal)
                 }
+            case let .progress(progress, title, text, customUndoText):
+                self.avatarNode = nil
+                self.iconNode = ASImageNode()
+                self.iconNode?.displayWithoutProcessing = true
+                self.iconNode?.displaysAsynchronously = false
+                self.iconNode?.image = generateTintedImage(image: UIImage(bundleImageName: "Premium/File"), color: .white)
+                self.iconImageSize = CGSize(width: 14.0, height: 14.0)
+                self.iconCheckNode = nil
+                self.animationNode = nil
+                self.animatedStickerNode = nil
+            
+                self.statusNode = RadialStatusNode(backgroundNodeColor: .clear)
+            
+                self.titleNode.attributedText = NSAttributedString(string: title, font: Font.semibold(14.0), textColor: .white)
+                
+                let body = MarkdownAttributeSet(font: Font.regular(14.0), textColor: .white)
+                let bold = MarkdownAttributeSet(font: Font.semibold(14.0), textColor: .white)
+                let link = MarkdownAttributeSet(font: Font.semibold(14.0), textColor: undoTextColor)
+                let attributedText = parseMarkdownIntoAttributedString(text, attributes: MarkdownAttributes(body: body, bold: bold, link: link, linkAttribute: { contents in
+                    return ("URL", contents)
+                }), textAlignment: .natural)
+                self.textNode.attributedText = attributedText
+                
+            
+                if text.contains("](") {
+                    isUserInteractionEnabled = true
+                }
+                self.originalRemainingSeconds = 5
+            
+                self.textNode.maximumNumberOfLines = 5
+                
+                if let customUndoText = customUndoText {
+                    undoText = customUndoText
+                    displayUndo = true
+                } else {
+                    displayUndo = false
+                }
+            
+                self.statusNode?.transitionToState(.progress(color: .white, lineWidth: nil, value: max(progress, 0.027), cancelEnabled: false, animateRotation: true), completion: {})
         }
         
         self.remainingSeconds = self.originalRemainingSeconds
@@ -1394,7 +1437,7 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
             } else {
                 self.isUserInteractionEnabled = false
             }
-        case .sticker, .customEmoji, .media:
+        case .sticker, .customEmoji, .media, .progress:
             self.isUserInteractionEnabled = displayUndo
         case .dice:
             self.panelWrapperNode.clipsToBounds = true
@@ -1431,6 +1474,7 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
         self.slotMachineNode.flatMap(self.panelWrapperNode.addSubnode)
         self.avatarNode.flatMap(self.panelWrapperNode.addSubnode)
         self.multiAvatarsNode.flatMap(self.panelWrapperNode.addSubnode)
+        
         self.panelWrapperNode.addSubnode(self.buttonNode)
         self.panelWrapperNode.addSubnode(self.titleNode)
         self.panelWrapperNode.addSubnode(self.textNode)
@@ -1585,6 +1629,7 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
     }
     
     func updateContent(_ content: UndoOverlayContent) {
+        let previousContent = self.content
         self.content = content
         
         var undoTextColor = self.presentationData.theme.list.itemAccentColor.withMultiplied(hue: 0.933, saturation: 0.61, brightness: 1.0)
@@ -1611,6 +1656,35 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
             self.textNode.attributedText = NSAttributedString(string: text, font: Font.regular(14.0), textColor: .white)
             self.renewWithCurrentContent()
         case let .actionSucceeded(title, text, _, destructive):
+            if case .progress = previousContent {
+                self.remainingSeconds = 5.0
+                
+                if let snapshotView = self.textNode.view.snapshotView(afterScreenUpdates: false) {
+                    snapshotView.frame = self.textNode.frame
+                    self.textNode.view.superview?.addSubview(snapshotView)
+                    snapshotView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.25, removeOnCompletion: false, completion: { _ in
+                        snapshotView.removeFromSuperview()
+                    })
+                    self.textNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.25)
+                }
+                
+                self.animationNode = AnimationNode(animation: "anim_success", colors: ["info1.info1.stroke": self.animationBackgroundColor, "info2.info2.Fill": self.animationBackgroundColor], scale: 1.0)
+                self.animationNode.flatMap(self.panelWrapperNode.addSubnode)
+                
+                if let iconNode = self.iconNode, let statusNode = self.statusNode {
+                    iconNode.layer.animateScale(from: 1.0, to: 0.01, duration: 0.25, removeOnCompletion: false)
+                    iconNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.25)
+                    statusNode.layer.animateScale(from: 1.0, to: 0.01, duration: 0.25, removeOnCompletion: false)
+                    statusNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.25)
+                }
+                
+                self.animationNode?.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.1)
+                Queue.mainQueue().justDispatch {
+                    self.animationNode?.layer.animateScale(from: 0.01, to: 1.0, duration: 0.2)
+                    self.animationNode?.play()
+                }
+            }
+            
             if destructive {
                 undoTextColor = UIColor(rgb: 0xff7b74)
             }
@@ -1629,6 +1703,15 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
             
             self.renewWithCurrentContent()
             transition = .animated(duration: 0.1, curve: .easeInOut)
+        case let .progress(progress, title, text, _):
+            let body = MarkdownAttributeSet(font: Font.regular(14.0), textColor: .white)
+            let bold = MarkdownAttributeSet(font: Font.semibold(14.0), textColor: .white)
+            let link = MarkdownAttributeSet(font: Font.regular(14.0), textColor: undoTextColor)
+            let attributedText = parseMarkdownIntoAttributedString(text, attributes: MarkdownAttributes(body: body, bold: bold, link: link, linkAttribute: { _ in return nil }), textAlignment: .natural)
+            self.titleNode.attributedText = NSAttributedString(string: title, font: Font.semibold(14.0), textColor: .white)
+            self.textNode.attributedText = attributedText
+            
+            self.statusNode?.transitionToState(.progress(color: .white, lineWidth: nil, value: max(progress, 0.027), cancelEnabled: false, animateRotation: true), completion: {})
         default:
             break
         }
@@ -1667,7 +1750,11 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
         
         var leftInset: CGFloat = 50.0
         if let iconImageSize = self.iconImageSize {
-            leftInset = 9.0 + iconImageSize.width + 9.0
+            if case .progress = self.content {
+            } else if case .actionSucceeded = self.content {
+            } else {
+                leftInset = 9.0 + iconImageSize.width + 9.0
+            }
         } else if let iconSize = preferredSize {
             if iconSize.width > leftInset {
                 leftInset = iconSize.width - 8.0
@@ -1802,8 +1889,15 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
                 iconSize = CGSize()
             }
             
+            var isProgress = false
+            if case .progress = self.content {
+                isProgress = true
+            } else if case .actionSucceeded = self.content {
+                isProgress = true
+            }
+            
             let iconFrame: CGRect
-            if self.iconImageSize != nil {
+            if self.iconImageSize != nil && !isProgress {
                 iconFrame = CGRect(origin: CGPoint(x: 9.0, y: floor((contentHeight - iconSize.height) / 2.0) + verticalOffset), size: iconSize)
             } else {
                 iconFrame = CGRect(origin: CGPoint(x: floor((leftInset - iconSize.width) / 2.0), y: floor((contentHeight - iconSize.height) / 2.0) + verticalOffset), size: iconSize)
@@ -1885,13 +1979,17 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
             }
             transition.updateFrame(node: statusNode, frame: statusFrame)
             if !self.didStartStatusNode {
-                let statusColor: UIColor
-                if case .starsSent = self.content {
-                    statusColor = self.undoTextColor
+                if case .progress = self.content {
+                    
                 } else {
-                    statusColor = .white
+                    let statusColor: UIColor
+                    if case .starsSent = self.content {
+                        statusColor = self.undoTextColor
+                    } else {
+                        statusColor = .white
+                    }
+                    statusNode.transitionToState(.secretTimeout(color: statusColor, icon: .none, beginTime: CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970, timeout: Double(self.remainingSeconds), sparks: false), completion: {})
                 }
-                statusNode.transitionToState(.secretTimeout(color: statusColor, icon: .none, beginTime: CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970, timeout: Double(self.remainingSeconds), sparks: false), completion: {})
                 self.didStartStatusNode = true
             }
         }

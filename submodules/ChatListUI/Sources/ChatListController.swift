@@ -1243,6 +1243,26 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             self.openStarsTopup(amount: amount)
         }
         
+        self.chatListDisplayNode.mainContainerNode.openWebApp = { [weak self] user in
+            guard let self else {
+                return
+            }
+            self.context.sharedContext.openWebApp(
+                context: self.context,
+                parentController: self,
+                updatedPresentationData: self.updatedPresentationData,
+                botPeer: .user(user),
+                chatPeer: nil,
+                threadId: nil,
+                buttonText: "",
+                url: "",
+                simple: true,
+                source: .generic,
+                skipTermsOfService: true,
+                payload: nil
+            )
+        }
+        
         self.chatListDisplayNode.mainContainerNode.openPremiumManagement = { [weak self] in
             guard let self else {
                 return
@@ -1314,6 +1334,12 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                         }
                     }
                 }))
+            }
+        }
+        
+        self.chatListDisplayNode.dismissSearch = { [weak self] in
+            if let self {
+                self.deactivateSearch(animated: true)
             }
         }
         
@@ -2705,14 +2731,19 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     }
     
     // MARK: Nicegram PinnedChats
-    let chatListNicegramData: ChatListNicegramData = {
+    lazy var chatListNicegramData: ChatListNicegramData = {
+        let currentFolder = { [weak self] in
+            self?.chatListDisplayNode.mainContainerNode.currentItemNode.chatListFilter
+        }
         let isChatListVisible = CurrentValueSubject<Bool, Never>(false)
         let pinnedChats = PinnedChatsContainer.shared.getPinnedChatsToDisplayUseCase()
             .publisher(
                 isViewVisible: isChatListVisible.eraseToAnyPublisher()
             )
+            .saveAndShare(initialValue: [])
         
         return ChatListNicegramData(
+            currentFolder: currentFolder,
             isChatListVisible: isChatListVisible,
             pinnedChats: pinnedChats
         )

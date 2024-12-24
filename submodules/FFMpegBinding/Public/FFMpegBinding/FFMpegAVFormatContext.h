@@ -28,6 +28,7 @@ extern int FFMpegCodecIdH264;
 extern int FFMpegCodecIdHEVC;
 extern int FFMpegCodecIdMPEG4;
 extern int FFMpegCodecIdVP9;
+extern int FFMpegCodecIdAV1;
 
 @class FFMpegAVCodecContext;
 
@@ -36,7 +37,7 @@ extern int FFMpegCodecIdVP9;
 - (instancetype)init;
 
 - (void)setIOContext:(FFMpegAVIOContext *)ioContext;
-- (bool)openInput;
+- (bool)openInputWithDirectFilePath:(NSString * _Nullable)directFilePath;
 - (bool)findStreamInfo;
 - (void)seekFrameForStreamIndex:(int32_t)streamIndex pts:(int64_t)pts positionOnKeyframe:(bool)positionOnKeyframe;
 - (bool)readFrameIntoPacket:(FFMpegPacket *)packet;

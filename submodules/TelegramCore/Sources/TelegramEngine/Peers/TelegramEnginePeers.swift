@@ -179,8 +179,8 @@ public extension TelegramEngine {
             return _internal_inactiveChannelList(network: self.account.network)
         }
 
-        public func resolvePeerByName(name: String, ageLimit: Int32 = 2 * 60 * 60 * 24) -> Signal<ResolvePeerResult, NoError> {
-            return _internal_resolvePeerByName(account: self.account, name: name, ageLimit: ageLimit)
+        public func resolvePeerByName(name: String, referrer: String?, ageLimit: Int32 = 2 * 60 * 60 * 24) -> Signal<ResolvePeerResult, NoError> {
+            return _internal_resolvePeerByName(account: self.account, name: name, referrer: referrer, ageLimit: ageLimit)
             |> mapToSignal { result -> Signal<ResolvePeerResult, NoError> in
                 switch result {
                 case .progress:
@@ -809,6 +809,10 @@ public extension TelegramEngine {
         
         public func updateBotAbout(peerId: PeerId, about: String) -> Signal<Void, UpdateBotInfoError> {
             return _internal_updateBotAbout(account: self.account, peerId: peerId, about: about)
+        }
+        
+        public func toggleBotEmojiStatusAccess(peerId: PeerId, enabled: Bool) -> Signal<Never, ToggleBotEmojiStatusAccessError> {
+            return _internal_toggleBotEmojiStatusAccess(account: self.account, peerId: peerId, enabled: enabled)
         }
         
         public func updatePeerNameColorAndEmoji(peerId: EnginePeer.Id, nameColor: PeerNameColor, backgroundEmojiId: Int64?, profileColor: PeerNameColor?, profileBackgroundEmojiId: Int64?) -> Signal<Void, UpdatePeerNameColorAndEmojiError> {
@@ -1627,6 +1631,30 @@ public extension TelegramEngine {
             let _ = self.account.postbox.transaction({ transaction in
                 _internal_setStarsReactionDefaultToPrivate(isPrivate: isPrivate, transaction: transaction)
             }).startStandalone()
+        }
+        
+        public func updateStarRefProgram(id: EnginePeer.Id, program: (commissionPermille: Int32, durationMonths: Int32?)?) -> Signal<Never, NoError> {
+            return _internal_updateStarRefProgram(account: self.account, id: id, program: program)
+        }
+        
+        public func connectedStarRefBots(id: EnginePeer.Id) -> EngineConnectedStarRefBotsContext {
+            return EngineConnectedStarRefBotsContext(account: self.account, peerId: id)
+        }
+        
+        public func suggestedStarRefBots(id: EnginePeer.Id, sortMode: EngineSuggestedStarRefBotsContext.SortMode) -> EngineSuggestedStarRefBotsContext {
+            return EngineSuggestedStarRefBotsContext(account: self.account, peerId: id, sortMode: sortMode)
+        }
+        
+        public func connectStarRefBot(id: EnginePeer.Id, botId: EnginePeer.Id) -> Signal<EngineConnectedStarRefBotsContext.Item, ConnectStarRefBotError> {
+            return _internal_connectStarRefBot(account: self.account, id: id, botId: botId)
+        }
+        
+        public func getStarRefBotConnection(id: EnginePeer.Id, targetId: EnginePeer.Id) -> Signal<EngineConnectedStarRefBotsContext.Item?, NoError> {
+            return _internal_getStarRefBotConnection(account: self.account, id: id, targetId: targetId)
+        }
+        
+        public func getPossibleStarRefBotTargets() -> Signal<[EnginePeer], NoError> {
+            return _internal_getPossibleStarRefBotTargets(account: self.account)
         }
     }
 }

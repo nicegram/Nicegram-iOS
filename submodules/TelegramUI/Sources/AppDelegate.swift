@@ -62,7 +62,6 @@ import MediaEditor
 import TelegramUIDeclareEncodables
 import ContextMenuScreen
 import MetalEngine
-import TranslateUI
 
 #if canImport(AppCenter)
 import AppCenter
@@ -406,6 +405,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             isDebugConfiguration = true
         }
         //
+        
         let ngEnableLogging = isDebugConfiguration
         NGEntryPoint.onAppLaunch(
             env: Env(
@@ -510,10 +510,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         |> take(1)
         |> deliverOnMainQueue).start(next: { context in
             if let context = context {
-                // MARK: Nicegram NCG-6326 Apple Speech2Text
-                let setDefaultSpeech2TextSettingsUseCase = NicegramSettingsModule.shared.setDefaultSpeech2TextSettingsUseCase()
-                setDefaultSpeech2TextSettingsUseCase(with: context.context.isPremium)
-                //
                 Queue().async {
                     self.fetchNGUserSettings(context.context.account.peerId.id._internalGetInt64Value())
                 }
@@ -548,13 +544,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         if !UIDevice.current.isBatteryMonitoringEnabled {
             UIDevice.current.isBatteryMonitoringEnabled = true
         }
-        
-        #if DEBUG
-        if #available(iOS 18.0, *) {
-            let translationService = ExperimentalInternalTranslationServiceImpl(view: hostView.containerView)
-            engineExperimentalInternalTranslationService = translationService
-        }
-        #endif
         
         let clearNotificationsManager = ClearNotificationsManager(getNotificationIds: { completion in
             if #available(iOS 10.0, *) {
@@ -1911,6 +1900,48 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         })
         
         //self.addBackgroundDownloadTask()
+        
+        let reflectorBenchmarkDisposable = MetaDisposable()
+        let runReflectorBenchmarkDisposable = MetaDisposable()
+        let _ = (self.context.get()
+        |> deliverOnMainQueue).startStandalone(next: { context in
+            reflectorBenchmarkDisposable.set(nil)
+            runReflectorBenchmarkDisposable.set(nil)
+            
+            guard let context = context?.context else {
+                return
+            }
+            var defaultAutoBenchmarkReflectors = false
+            if case .internal = context.sharedContext.applicationBindings.appBuildType {
+                defaultAutoBenchmarkReflectors = true
+            }
+            if context.sharedContext.immediateExperimentalUISettings.autoBenchmarkReflectors ?? defaultAutoBenchmarkReflectors {
+                reflectorBenchmarkDisposable.set((context.sharedContext.applicationBindings.applicationInForeground
+                |> distinctUntilChanged
+                |> deliverOnMainQueue).startStrict(next: { value in
+                    if value {
+                        let signal: Signal<ReflectorBenchmark.Results, NoError> = Signal { subscriber in
+                            var reflectorBenchmark: ReflectorBenchmark? = ReflectorBenchmark(address: "91.108.13.35", port: 599)
+                            reflectorBenchmark?.start(completion: { results in
+                                subscriber.putNext(results)
+                                subscriber.putCompletion()
+                            })
+                            
+                            return ActionDisposable {
+                                reflectorBenchmark = nil
+                            }
+                        }
+                        |> runOn(.mainQueue())
+                        |> delay(Double.random(in: 1.0 ..< 5.0), queue: Queue.mainQueue())
+                        runReflectorBenchmarkDisposable.set(signal.startStrict(next: { results in
+                            print("Reflector banchmark:\nBandwidth: \(results.bandwidthBytesPerSecond * 8 / 1024) kbit/s (expected \(results.expectedBandwidthBytesPerSecond * 8 / 1024) kbit/s)\nAvg latency: \(Int(results.averageDelay * 1000.0)) ms")
+                        }))
+                    } else {
+                        runReflectorBenchmarkDisposable.set(nil)
+                    }
+                }))
+            }
+        })
         
         return true
     }

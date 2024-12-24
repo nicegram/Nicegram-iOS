@@ -12,7 +12,6 @@ import MediaPickerUI
 import LegacyMediaPickerUI
 import LocationUI
 import ChatEntityKeyboardInputNode
-import WebUI
 import ChatScheduleTimeController
 import TextFormat
 import PhoneNumberFormat
@@ -1023,7 +1022,7 @@ final class StoryItemSetContainerSendMessage {
                             let presentationData = component.context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: component.theme)
                             component.presentController(UndoOverlayController(
                                 presentationData: presentationData,
-                                content: .linkCopied(text: presentationData.strings.Story_ToastLinkCopied),
+                                content: .linkCopied(title: nil, text: presentationData.strings.Story_ToastLinkCopied),
                                 elevatedLayout: false,
                                 animateInAsReplacement: false,
                                 action: { _ in return false }
@@ -1271,7 +1270,7 @@ final class StoryItemSetContainerSendMessage {
                 let presentationData = component.context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: component.theme)
                 component.presentController(UndoOverlayController(
                     presentationData: presentationData,
-                    content: .linkCopied(text: presentationData.strings.Story_ToastLinkCopied),
+                    content: .linkCopied(title: nil, text: presentationData.strings.Story_ToastLinkCopied),
                     elevatedLayout: false,
                     animateInAsReplacement: false,
                     action: { _ in return false }
@@ -1484,7 +1483,7 @@ final class StoryItemSetContainerSendMessage {
                     return
                 }
                 
-                let currentMediaController = Atomic<MediaPickerScreen?>(value: nil)
+                let currentMediaController = Atomic<MediaPickerScreenImpl?>(value: nil)
                 let currentFilesController = Atomic<AttachmentFileController?>(value: nil)
                 let currentLocationController = Atomic<LocationPickerController?>(value: nil)
                 
@@ -1808,37 +1807,38 @@ final class StoryItemSetContainerSendMessage {
                         //TODO:gift controller
                         break
                     case let .app(bot):
-                        let params = WebAppParameters(source: .attachMenu, peerId: peer.id, botId: bot.peer.id, botName: bot.shortName, botVerified: bot.peer.isVerified, url: nil, queryId: nil, payload: nil, buttonText: nil, keepAliveSignal: nil, forceHasSettings: false, fullSize: true)
-                        let theme = component.theme
-                        let updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>) = (component.context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: theme), component.context.sharedContext.presentationData |> map { $0.withUpdated(theme: theme) })
-                        let controller = WebAppController(context: component.context, updatedPresentationData: updatedPresentationData, params: params, replyToMessageId: nil, threadId: nil)
-                        controller.openUrl = { [weak self] url, _, _, _ in
-                            guard let self else {
-                                return
-                            }
-                            let _ = self
-                            //self?.openUrl(url, concealed: true, forceExternal: true)
-                        }
-                        controller.getNavigationController = { [weak view] in
-                            guard let view, let controller = view.component?.controller() else {
-                                return nil
-                            }
-                            return controller.navigationController as? NavigationController
-                        }
-                        controller.completion = { [weak self] in
-                            guard let self else {
-                                return
-                            }
-                            let _ = self
-                            /*if let strongSelf = self {
-                                strongSelf.updateChatPresentationInterfaceState(animated: true, interactive: false, {
-                                    $0.updatedInterfaceState { $0.withUpdatedReplyMessageSubject(nil) }
-                                })
-                                strongSelf.chatDisplayNode.historyNode.scrollToEndOfHistory()
-                            }*/
-                        }
-                        completion(controller, controller.mediaPickerContext)
-                        self.controllerNavigationDisposable.set(nil)
+                        let _ = bot
+//                        let params = WebAppParameters(source: .attachMenu, peerId: peer.id, botId: bot.peer.id, botName: bot.shortName, botVerified: bot.peer.isVerified, url: nil, queryId: nil, payload: nil, buttonText: nil, keepAliveSignal: nil, forceHasSettings: false, fullSize: true)
+//                        let theme = component.theme
+//                        let updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>) = (component.context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: theme), component.context.sharedContext.presentationData |> map { $0.withUpdated(theme: theme) })
+//                        let controller = WebAppController(context: component.context, updatedPresentationData: updatedPresentationData, params: params, replyToMessageId: nil, threadId: nil)
+//                        controller.openUrl = { [weak self] url, _, _, _ in
+//                            guard let self else {
+//                                return
+//                            }
+//                            let _ = self
+//                            //self?.openUrl(url, concealed: true, forceExternal: true)
+//                        }
+//                        controller.getNavigationController = { [weak view] in
+//                            guard let view, let controller = view.component?.controller() else {
+//                                return nil
+//                            }
+//                            return controller.navigationController as? NavigationController
+//                        }
+//                        controller.completion = { [weak self] in
+//                            guard let self else {
+//                                return
+//                            }
+//                            let _ = self
+//                            /*if let strongSelf = self {
+//                                strongSelf.updateChatPresentationInterfaceState(animated: true, interactive: false, {
+//                                    $0.updatedInterfaceState { $0.withUpdatedReplyMessageSubject(nil) }
+//                                })
+//                                strongSelf.chatDisplayNode.historyNode.scrollToEndOfHistory()
+//                            }*/
+//                        }
+//                        completion(controller, controller.mediaPickerContext)
+//                        self.controllerNavigationDisposable.set(nil)
                     default:
                         break
                     }
@@ -1869,11 +1869,11 @@ final class StoryItemSetContainerSendMessage {
         peer: EnginePeer,
         replyToMessageId: EngineMessage.Id?,
         replyToStoryId: StoryId?,
-        subject: MediaPickerScreen.Subject = .assets(nil, .default),
+        subject: MediaPickerScreenImpl.Subject = .assets(nil, .default),
         saveEditedPhotos: Bool,
         bannedSendPhotos: (Int32, Bool)?,
         bannedSendVideos: (Int32, Bool)?,
-        present: @escaping (MediaPickerScreen, AttachmentMediaPickerContext?) -> Void,
+        present: @escaping (MediaPickerScreenImpl, AttachmentMediaPickerContext?) -> Void,
         updateMediaPickerContext: @escaping (AttachmentMediaPickerContext?) -> Void,
         completion: @escaping ([Any], Bool, Int32?, ChatSendMessageActionSheetController.SendParameters?, @escaping (String) -> UIView?, @escaping () -> Void) -> Void
     ) {
@@ -1881,7 +1881,7 @@ final class StoryItemSetContainerSendMessage {
             return
         }
         let theme = component.theme
-        let controller = MediaPickerScreen(context: component.context, updatedPresentationData: (component.context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: theme), component.context.sharedContext.presentationData |> map { $0.withUpdated(theme: theme) }), peer: peer, threadTitle: nil, chatLocation: .peer(id: peer.id), bannedSendPhotos: bannedSendPhotos, bannedSendVideos: bannedSendVideos, subject: subject, saveEditedPhotos: saveEditedPhotos)
+        let controller = MediaPickerScreenImpl(context: component.context, updatedPresentationData: (component.context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: theme), component.context.sharedContext.presentationData |> map { $0.withUpdated(theme: theme) }), peer: peer, threadTitle: nil, chatLocation: .peer(id: peer.id), bannedSendPhotos: bannedSendPhotos, bannedSendVideos: bannedSendVideos, subject: subject, saveEditedPhotos: saveEditedPhotos)
         let mediaPickerContext = controller.mediaPickerContext
         controller.openCamera = { [weak self, weak view] cameraView in
             guard let self, let view else {
@@ -2195,7 +2195,7 @@ final class StoryItemSetContainerSendMessage {
         })
     }
     
-    func presentMediaPasteboard(view: StoryItemSetContainerComponent.View, subjects: [MediaPickerScreen.Subject.Media]) {
+    func presentMediaPasteboard(view: StoryItemSetContainerComponent.View, subjects: [MediaPickerScreenImpl.Subject.Media]) {
         guard let component = view.component else {
             return
         }
@@ -2315,7 +2315,7 @@ final class StoryItemSetContainerSendMessage {
         })
     }
     
-    private func getCaptionPanelView(view: StoryItemSetContainerComponent.View, peer: EnginePeer, mediaPicker: MediaPickerScreen? = nil) -> TGCaptionPanelView? {
+    private func getCaptionPanelView(view: StoryItemSetContainerComponent.View, peer: EnginePeer, mediaPicker: MediaPickerScreenImpl? = nil) -> TGCaptionPanelView? {
         guard let component = view.component else {
             return nil
         }
@@ -2780,7 +2780,7 @@ final class StoryItemSetContainerSendMessage {
             return
         }
         let disposable = self.resolvePeerByNameDisposable
-        var resolveSignal = component.context.engine.peers.resolvePeerByName(name: name, ageLimit: 10)
+        var resolveSignal = component.context.engine.peers.resolvePeerByName(name: name, referrer: nil, ageLimit: 10)
         
         var cancelImpl: (() -> Void)?
         let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
@@ -2856,7 +2856,7 @@ final class StoryItemSetContainerSendMessage {
         
         var resolveSignal: Signal<Peer?, NoError>
         if let peerName = peerName {
-            resolveSignal = component.context.engine.peers.resolvePeerByName(name: peerName)
+            resolveSignal = component.context.engine.peers.resolvePeerByName(name: peerName, referrer: nil)
             |> mapToSignal { result -> Signal<EnginePeer?, NoError> in
                 guard case let .result(result) = result else {
                     return .complete()

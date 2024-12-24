@@ -9,6 +9,7 @@ import ProgressNavigationButtonNode
 import AccountContext
 import SearchUI
 import ChatListUI
+import CounterControllerTitleView
 // MARK: Nicegram NCG-6652 Hide UI notifications
 import NGData
 //
@@ -66,7 +67,9 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
     private let forwardedMessageIds: [EngineMessage.Id]
     private let hasTypeHeaders: Bool
     private let requestPeerType: [ReplyMarkupButtonRequestPeerType]?
+    let multipleSelectionLimit: Int32?
     private let hasCreation: Bool
+    let immediatelyActivateMultipleSelection: Bool
     
     override public var _presentedInModal: Bool {
         get {
@@ -82,6 +85,7 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
         }
     }
     
+    private(set) var titleView: CounterControllerTitleView?
     private var searchContentNode: NavigationBarSearchContentNode?
     var tabContainerNode: ChatListFilterTabContainerNode?
     private var tabContainerData: ([ChatListFilterTabEntry], Bool, Int32?)?
@@ -107,6 +111,8 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
         self.selectForumThreads = params.selectForumThreads
         self.requestPeerType = params.requestPeerType
         self.hasCreation = params.hasCreation
+        self.immediatelyActivateMultipleSelection = params.immediatelyActivateMultipleSelection
+        self.multipleSelectionLimit = params.multipleSelectionLimit
         
         super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData))
         
@@ -133,7 +139,13 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
             }
         }
         
-        self.title = self.customTitle ?? self.presentationData.strings.Conversation_ForwardTitle
+        if let maxCount = params.multipleSelectionLimit {
+            self.titleView = CounterControllerTitleView(theme: self.presentationData.theme)
+            self.titleView?.title = CounterControllerTitle(title: self.customTitle ?? self.presentationData.strings.Conversation_ForwardTitle, counter: "0/\(maxCount)")
+            self.navigationItem.titleView = self.titleView
+        } else {
+            self.title = self.customTitle ?? self.presentationData.strings.Conversation_ForwardTitle
+        }
         
         if params.forumPeerId == nil {
             self.navigationPresentation = .modal
@@ -169,7 +181,11 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
         })
         self.navigationBar?.setContentNode(self.searchContentNode, animated: false)
         
-        if params.multipleSelection {
+        if params.immediatelyActivateMultipleSelection {
+            Queue.mainQueue().after(0.1) {
+                self.beginSelection()
+            }
+        } else if params.multipleSelection {
             self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Select, style: .plain, target: self, action: #selector(self.beginSelection))
         }
         

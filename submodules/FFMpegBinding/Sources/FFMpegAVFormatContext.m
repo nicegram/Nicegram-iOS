@@ -11,6 +11,7 @@ int FFMpegCodecIdH264 = AV_CODEC_ID_H264;
 int FFMpegCodecIdHEVC = AV_CODEC_ID_HEVC;
 int FFMpegCodecIdMPEG4 = AV_CODEC_ID_MPEG4;
 int FFMpegCodecIdVP9 = AV_CODEC_ID_VP9;
+int FFMpegCodecIdAV1 = AV_CODEC_ID_AV1;
 
 @interface FFMpegAVFormatContext () {
     AVFormatContext *_impl;
@@ -38,10 +39,15 @@ int FFMpegCodecIdVP9 = AV_CODEC_ID_VP9;
     _impl->pb = [ioContext impl];
 }
 
-- (bool)openInput {
+- (bool)openInputWithDirectFilePath:(NSString * _Nullable)directFilePath {
     AVDictionary *options = nil;
     av_dict_set(&options, "usetoc", "1", 0);
-    int result = avformat_open_input(&_impl, "file", nil, &options);
+    
+    const char *url = "file";
+    if (directFilePath) {
+        url = [directFilePath UTF8String];
+    }
+    int result = avformat_open_input(&_impl, url, nil, &options);
     av_dict_free(&options);
     if (_impl != nil) {
         _impl->flags |= AVFMT_FLAG_FAST_SEEK;

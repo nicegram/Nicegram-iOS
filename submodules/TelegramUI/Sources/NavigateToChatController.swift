@@ -15,7 +15,6 @@ import AttachmentUI
 import ForumCreateTopicScreen
 import LegacyInstantVideoController
 import StoryContainerScreen
-import CameraScreen
 import MediaEditorScreen
 import ChatControllerInteraction
 import SavedMessagesScreen
@@ -165,7 +164,7 @@ public func navigateToChatControllerImpl(_ params: NavigateToChatControllerParam
                         controller.presentAttachmentBot(botId: attachBotStart.botId, payload: attachBotStart.payload, justInstalled: attachBotStart.justInstalled)
                     }
                     if let botAppStart = params.botAppStart, case let .peer(peer) = params.chatLocation {
-                        controller.presentBotApp(botApp: botAppStart.botApp, botPeer: peer, payload: botAppStart.payload, compact: botAppStart.compact)
+                        controller.presentBotApp(botApp: botAppStart.botApp, botPeer: peer, payload: botAppStart.payload, mode: botAppStart.mode)
                     }
                     params.setupController(controller)
                     found = true
@@ -188,7 +187,7 @@ public func navigateToChatControllerImpl(_ params: NavigateToChatControllerParam
                 }
                 if let botAppStart = params.botAppStart, case let .peer(peer) = params.chatLocation {
                     Queue.mainQueue().after(0.1) {
-                        controller.presentBotApp(botApp: botAppStart.botApp, botPeer: peer, payload: botAppStart.payload, compact: botAppStart.compact)
+                        controller.presentBotApp(botApp: botAppStart.botApp, botPeer: peer, payload: botAppStart.payload, mode: botAppStart.mode)
                     }
                 }
             } else {
@@ -196,7 +195,7 @@ public func navigateToChatControllerImpl(_ params: NavigateToChatControllerParam
                 
                 if let botAppStart = params.botAppStart, case let .peer(peer) = params.chatLocation {
                     Queue.mainQueue().after(0.1) {
-                        controller.presentBotApp(botApp: botAppStart.botApp, botPeer: peer, payload: botAppStart.payload, compact: botAppStart.compact)
+                        controller.presentBotApp(botApp: botAppStart.botApp, botPeer: peer, payload: botAppStart.payload, mode: botAppStart.mode)
                     }
                 }
             }

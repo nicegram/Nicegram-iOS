@@ -17,7 +17,7 @@ class UrlOpenerImpl {
 }
 
 extension UrlOpenerImpl: UrlOpener {
-    func open(_ url: URL) {
+    func open(_ url: URL, options: Options) {
         let url = prepare(url: url)
         
         let sharedContext = accountContext.sharedContext
@@ -26,8 +26,14 @@ extension UrlOpenerImpl: UrlOpener {
         
         let telegramHosts = ["t.me", "telegram.me"]
         let isTelegramHost = telegramHosts.contains(url._wrapperHost() ?? "")
+        let isExternalLink = !isTelegramHost
         
-        let forceExternal = !isTelegramHost
+        let forceExternal: Bool
+        if isExternalLink, options.externalLinkBehavior == .openExternally {
+            forceExternal = true
+        } else {
+            forceExternal = false
+        }
         
         sharedContext.openExternalUrl(
             context: accountContext,

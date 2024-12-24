@@ -1,3 +1,4 @@
+import Foundation
 import Postbox
 
 public struct BotCommand: PostboxCoding, Hashable {
@@ -45,6 +46,58 @@ public enum BotMenuButton: PostboxCoding, Hashable {
     }
 }
 
+public struct BotAppSettings: PostboxCoding, Equatable {
+    public let placeholderData: Data?
+    public let backgroundColor: Int32?
+    public let backgroundDarkColor: Int32?
+    public let headerColor: Int32?
+    public let headerDarkColor: Int32?
+    
+    public init(placeholderData: Data?, backgroundColor: Int32?, backgroundDarkColor: Int32?, headerColor: Int32?, headerDarkColor: Int32?) {
+        self.placeholderData = placeholderData
+        self.backgroundColor = backgroundColor
+        self.backgroundDarkColor = backgroundDarkColor
+        self.headerColor = headerColor
+        self.headerDarkColor = headerDarkColor
+    }
+    
+    public init(decoder: PostboxDecoder) {
+        self.placeholderData = decoder.decodeDataForKey("pd")
+        self.backgroundColor = decoder.decodeOptionalInt32ForKey("b")
+        self.backgroundDarkColor = decoder.decodeOptionalInt32ForKey("bd")
+        self.headerColor = decoder.decodeOptionalInt32ForKey("h")
+        self.headerDarkColor = decoder.decodeOptionalInt32ForKey("hd")
+    }
+    
+    public func encode(_ encoder: PostboxEncoder) {
+        if let placeholderData = self.placeholderData {
+            encoder.encodeData(placeholderData, forKey: "pd")
+        } else {
+            encoder.encodeNil(forKey: "pd")
+        }
+        if let backgroundColor = self.backgroundColor {
+            encoder.encodeInt32(backgroundColor, forKey: "b")
+        } else {
+            encoder.encodeNil(forKey: "b")
+        }
+        if let backgroundDarkColor = self.backgroundDarkColor {
+            encoder.encodeInt32(backgroundDarkColor, forKey: "bd")
+        } else {
+            encoder.encodeNil(forKey: "bd")
+        }
+        if let headerColor = self.headerColor {
+            encoder.encodeInt32(headerColor, forKey: "h")
+        } else {
+            encoder.encodeNil(forKey: "h")
+        }
+        if let headerDarkColor = self.headerDarkColor {
+            encoder.encodeInt32(headerDarkColor, forKey: "hd")
+        } else {
+            encoder.encodeNil(forKey: "hd")
+        }
+    }
+}
+
 public final class BotInfo: PostboxCoding, Equatable {
     public let description: String
     public let photo: TelegramMediaImage?
@@ -52,14 +105,16 @@ public final class BotInfo: PostboxCoding, Equatable {
     public let commands: [BotCommand]
     public let menuButton: BotMenuButton
     public let privacyPolicyUrl: String?
+    public let appSettings: BotAppSettings?
     
-    public init(description: String, photo: TelegramMediaImage?, video: TelegramMediaFile?, commands: [BotCommand], menuButton: BotMenuButton, privacyPolicyUrl: String?) {
+    public init(description: String, photo: TelegramMediaImage?, video: TelegramMediaFile?, commands: [BotCommand], menuButton: BotMenuButton, privacyPolicyUrl: String?, appSettings: BotAppSettings?) {
         self.description = description
         self.photo = photo
         self.video = video
         self.commands = commands
         self.menuButton = menuButton
         self.privacyPolicyUrl = privacyPolicyUrl
+        self.appSettings = appSettings
     }
     
     public init(decoder: PostboxDecoder) {
@@ -77,6 +132,11 @@ public final class BotInfo: PostboxCoding, Equatable {
         self.commands = decoder.decodeObjectArrayWithDecoderForKey("c")
         self.menuButton = (decoder.decodeObjectForKey("b", decoder: { BotMenuButton(decoder: $0) }) as? BotMenuButton) ?? .commands
         self.privacyPolicyUrl = decoder.decodeOptionalStringForKey("pp")
+        if let appSettings = decoder.decodeObjectForKey("as", decoder: { BotAppSettings(decoder: $0) }) as? BotAppSettings {
+            self.appSettings = appSettings
+        } else {
+            self.appSettings = nil
+        }
     }
     
     public func encode(_ encoder: PostboxEncoder) {
@@ -98,9 +158,14 @@ public final class BotInfo: PostboxCoding, Equatable {
         } else {
             encoder.encodeNil(forKey: "pp")
         }
+        if let appSettings = self.appSettings {
+            encoder.encodeObject(appSettings, forKey: "as")
+        } else {
+            encoder.encodeNil(forKey: "as")
+        }
     }
     
     public static func ==(lhs: BotInfo, rhs: BotInfo) -> Bool {
-        return lhs.description == rhs.description && lhs.commands == rhs.commands && lhs.menuButton == rhs.menuButton && lhs.photo == rhs.photo && lhs.privacyPolicyUrl == rhs.privacyPolicyUrl
+        return lhs.description == rhs.description && lhs.commands == rhs.commands && lhs.menuButton == rhs.menuButton && lhs.photo == rhs.photo && lhs.privacyPolicyUrl == rhs.privacyPolicyUrl && lhs.appSettings == rhs.appSettings
     }
 }

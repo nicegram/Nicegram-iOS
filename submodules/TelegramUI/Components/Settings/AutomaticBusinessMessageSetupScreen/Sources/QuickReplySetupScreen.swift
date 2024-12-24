@@ -119,7 +119,7 @@ final class QuickReplySetupScreenComponent: Component {
                     animationRenderer: listNode.context.animationRenderer,
                     activateSearch: {
                     },
-                    peerSelected: { [weak listNode] _, _, _, _ in
+                    peerSelected: { [weak listNode] _, _, _, _, _ in
                         guard let listNode, let parentView = listNode.parentView else {
                             return
                         }
@@ -228,6 +228,8 @@ final class QuickReplySetupScreenComponent: Component {
                         if let itemId = item.id {
                             parentView.openEditShortcut(id: itemId, currentValue: item.shortcut)
                         }
+                    },
+                    openWebApp: { _ in
                     }
                 )
                 

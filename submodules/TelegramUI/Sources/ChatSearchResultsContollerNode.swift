@@ -227,7 +227,7 @@ class ChatSearchResultsControllerNode: ViewControllerTracingNode, ASScrollViewDe
         }
         
         let interaction = ChatListNodeInteraction(context: context, animationCache: self.animationCache, animationRenderer: self.animationRenderer, activateSearch: {
-        }, peerSelected: { _, _, _, _ in
+        }, peerSelected: { _, _, _, _, _ in
         }, disabledPeerSelected: { _, _, _ in
         }, togglePeerSelected: { _, _ in
         }, togglePeersSelection: { _, _ in
@@ -293,6 +293,7 @@ class ChatSearchResultsControllerNode: ViewControllerTracingNode, ASScrollViewDe
         }, openStarsTopup: { _ in
         }, dismissNotice: { _ in
         }, editPeer: { _ in
+        }, openWebApp: { _ in
         })
         interaction.searchTextHighightState = searchQuery
         self.interaction = interaction
