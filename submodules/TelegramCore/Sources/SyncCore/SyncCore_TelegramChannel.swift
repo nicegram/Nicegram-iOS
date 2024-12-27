@@ -149,6 +149,9 @@ public struct TelegramChannelFlags: OptionSet {
     public static let joinToSend = TelegramChannelFlags(rawValue: 1 << 9)
     public static let requestToJoin = TelegramChannelFlags(rawValue: 1 << 10)
     public static let isForum = TelegramChannelFlags(rawValue: 1 << 11)
+// MARK: Nicegram NCG-6554 channels info
+    public static let isMegagroup = TelegramChannelFlags(rawValue: 1 << 256)
+//
 }
 
 public final class TelegramChannel: Peer, Equatable {

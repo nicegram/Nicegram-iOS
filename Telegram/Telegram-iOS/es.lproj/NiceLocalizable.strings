@@ -166,6 +166,7 @@
 "NicegramSettings.EnableGrayscaleAll" = "Escala de grises en pantalla completa";
 "NicegramSettings.EnableGrayscaleInChatList" = "Escala de grises en la lista de chat";
 "NicegramSettings.EnableGrayscaleInChat" = "Escala de grises en el chat";
+"NicegramSettings.EnableAppleSpeech2Text" = "Activar Apple Speech2Text";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Mayor que";

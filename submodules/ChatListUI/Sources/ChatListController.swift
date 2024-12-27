@@ -19,6 +19,7 @@ import NGRepoUser
 import NGSpecialOffer
 import NGTranslate
 import NGEnv
+import NGCollectInformation
 
 import SwiftSignalKit
 import AsyncDisplayKit
@@ -2272,7 +2273,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        
+
         // MARK: Nicegram PinnedChats
         updateChatListNode(isVisible: true)
         //

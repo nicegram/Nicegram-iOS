@@ -166,6 +166,7 @@
 "NicegramSettings.EnableGrayscaleAll" = "Vollbild-Graustufen";
 "NicegramSettings.EnableGrayscaleInChatList" = "Graustufen in der Chatliste";
 "NicegramSettings.EnableGrayscaleInChat" = "Graustufen im Chat";
+"NicegramSettings.EnableAppleSpeech2Text" = "Apple Speech2Text aktivieren";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Älter als";
