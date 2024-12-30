@@ -535,6 +535,14 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
         if let _ = otherGestureRecognizer as? InteractiveTransitionGestureRecognizer {
             return false
         }
+        // MARK: Nicegram ChatListWidget
+        let isNicegramWidget = otherGestureRecognizer.view?.superviewSequence().contains {
+            $0 is ChatListNicegramWidgetView
+        } ?? false
+        if isNicegramWidget {
+            return false
+        }
+        //
         if let _ = otherGestureRecognizer as? UIPanGestureRecognizer {
             return true
         }

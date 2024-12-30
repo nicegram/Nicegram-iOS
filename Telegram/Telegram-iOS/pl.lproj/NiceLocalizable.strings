@@ -166,7 +166,6 @@
 "NicegramSettings.EnableGrayscaleAll" = "Pełnoekranowy skala szarości";
 "NicegramSettings.EnableGrayscaleInChatList" = "Skala szarości na liście czatów";
 "NicegramSettings.EnableGrayscaleInChat" = "Skala szarości w czacie";
-"NicegramSettings.EnableAppleSpeech2Text" = "Włącz Apple Speech2Text";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Starsze niż";

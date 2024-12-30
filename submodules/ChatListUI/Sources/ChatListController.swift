@@ -2733,6 +2733,9 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     
     // MARK: Nicegram PinnedChats
     lazy var chatListNicegramData: ChatListNicegramData = {
+        let controller = { [weak self] in
+            self
+        }
         let currentFolder = { [weak self] in
             self?.chatListDisplayNode.mainContainerNode.currentItemNode.chatListFilter
         }
@@ -2744,6 +2747,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             .saveAndShare(initialValue: [])
         
         return ChatListNicegramData(
+            controller: controller,
             currentFolder: currentFolder,
             isChatListVisible: isChatListVisible,
             pinnedChats: pinnedChats

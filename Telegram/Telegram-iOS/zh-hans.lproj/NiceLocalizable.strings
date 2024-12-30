@@ -166,7 +166,6 @@
 "NicegramSettings.EnableGrayscaleAll" = "全屏灰度";
 "NicegramSettings.EnableGrayscaleInChatList" = "聊天列表中的灰度";
 "NicegramSettings.EnableGrayscaleInChat" = "灰度在聊天中";
-"NicegramSettings.EnableAppleSpeech2Text" = "启用Apple Speech2Text";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "早于";

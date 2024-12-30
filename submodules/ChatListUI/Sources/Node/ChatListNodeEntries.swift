@@ -10,6 +10,9 @@ import MergeLists
 import AccountContext
 
 enum ChatListNodeEntryId: Hashable {
+    // MARK: Nicegram ChatListWidget
+    case ngWidget
+    //
     // MARK: Nicegram PinnedChats
     case ngPinnedChat(PinnedChat.ID)
     //
@@ -418,6 +421,9 @@ enum ChatListNodeEntry: Comparable, Identifiable {
         }
     }
     
+    // MARK: Nicegram ChatListWidget
+    case NicegramWidget
+    //
     case HeaderEntry
     case PeerEntry(PeerEntryData)
     case HoleEntry(EngineMessage.Index, theme: PresentationTheme)
@@ -431,6 +437,10 @@ enum ChatListNodeEntry: Comparable, Identifiable {
     
     var sortIndex: ChatListNodeEntrySortIndex {
         switch self {
+        // MARK: Nicegram ChatListWidget
+        case .NicegramWidget:
+            return .index(.chatList(EngineChatList.Item.Index.ChatList.absoluteUpperBound.successor.successor.successor))
+        //
         case .HeaderEntry:
             return .index(.chatList(.absoluteUpperBound))
         case let .PeerEntry(peerEntry):
@@ -456,6 +466,10 @@ enum ChatListNodeEntry: Comparable, Identifiable {
     
     var stableId: ChatListNodeEntryId {
         switch self {
+        // MARK: Nicegram ChatListWidget
+        case .NicegramWidget:
+            return .ngWidget
+        //
         case .HeaderEntry:
             return .Header
         case let .PeerEntry(peerEntry):
@@ -496,6 +510,14 @@ enum ChatListNodeEntry: Comparable, Identifiable {
     
     static func ==(lhs: ChatListNodeEntry, rhs: ChatListNodeEntry) -> Bool {
         switch lhs {
+            // MARK: Nicegram ChatListWidget
+            case .NicegramWidget:
+                if case .NicegramWidget = rhs {
+                    return true
+                } else {
+                    return false
+                }
+            //
             case .HeaderEntry:
                 if case .HeaderEntry = rhs {
                     return true
@@ -619,7 +641,8 @@ struct ChatListContactPeer {
 }
 
 // MARK: Nicegram PinnedChats, nicegramItems added
-func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, savedMessagesPeer: EnginePeer?, foundPeers: [(EnginePeer, EnginePeer?)], hideArchivedFolderByDefault: Bool, displayArchiveIntro: Bool, notice: ChatListNotice?, mode: ChatListNodeMode, chatListLocation: ChatListControllerLocation, contacts: [ChatListContactPeer], accountPeerId: EnginePeer.Id, isMainTab: Bool, nicegramItems: [PinnedChatToDisplay]) -> (entries: [ChatListNodeEntry], loading: Bool) {
+// MARK: Nicegram ChatListWidget, showNicegramWidget added
+func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, savedMessagesPeer: EnginePeer?, foundPeers: [(EnginePeer, EnginePeer?)], hideArchivedFolderByDefault: Bool, displayArchiveIntro: Bool, notice: ChatListNotice?, mode: ChatListNodeMode, chatListLocation: ChatListControllerLocation, contacts: [ChatListContactPeer], accountPeerId: EnginePeer.Id, isMainTab: Bool, nicegramItems: [PinnedChatToDisplay], showNicegramWidget: Bool) -> (entries: [ChatListNodeEntry], loading: Bool) {
     var groupItems = view.groupItems
     if isMainTab && state.archiveStoryState != nil && groupItems.isEmpty {
         groupItems.append(EngineChatList.GroupItem(
@@ -1007,6 +1030,12 @@ func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, 
             if let notice {
                 result.append(.Notice(presentationData: state.presentationData, notice: notice))
             }
+            
+            // MARK: Nicegram ChatListWidget, showNicegramWidget added
+            if #available(iOS 15.0, *), showNicegramWidget {
+                result.append(.NicegramWidget)
+            }
+            //
             
             result.append(.HeaderEntry)
         }

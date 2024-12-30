@@ -427,13 +427,9 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                 self.requestUpdateLayout(true)
                 
                 // MARK: Nicegram Speech2Text
-                let getSpeech2TextSettingsUseCase = NicegramSettingsModule.shared
-                    .getSpeech2TextSettingsUseCase()
-                let useNicegram = getSpeech2TextSettingsUseCase()
-
-                if useNicegram ||
-                   NGSettings.useOpenAI ||
-                   isLongMedia() {
+                let shouldUseNicegramTranscribe = true
+                
+                if shouldUseNicegramTranscribe {
                     internalConvertSpeechToText()
                 }
                 //
@@ -494,13 +490,70 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                         strongSelf.transcribeDisposable?.dispose()
                         strongSelf.transcribeDisposable = nil
                     })
-                // MARK: Nicegram NCG-6326 Apple Speech2Text, add if context.isPremium
-                } else if context.isPremium {
+                } else {
+                    // MARK: Nicegram Speech2Text
+                    if #available(iOS 13.0, *) {
+                        Task { @MainActor [weak self] in
+                            try await Task.sleep(seconds: 4)
+                            
+                            guard let self else { return }
+                            
+                            let preferencesRepository = SpeechToTextContainer.shared.preferencesRepository()
+                            guard await !preferencesRepository.sawNicegramPremiumTooltip() else {
+                                return
+                            }
+                            
+                            guard let message = self.message,
+                                  transcribedText(message: message) == nil else {
+                                return
+                            }
+                            
+                            guard !isPremium() else {
+                                return
+                            }
+                            
+                            let tooltipController = UndoOverlayController(
+                                presentationData: presentationData,
+                                content: .universal(
+                                    animation: "Transcribe",
+                                    scale: 0.06,
+                                    colors: [:],
+                                    title: nil,
+                                    text: l("SpeechToText.Toast"),
+                                    customUndoText: nil,
+                                    timeout: nil
+                                ),
+                                elevatedLayout: false,
+                                animateInAsReplacement: false,
+                                blurred: true,
+                                action: { action in
+                                    if case .info = action {
+                                        PremiumUITgHelper.routeToPremium(
+                                            source: .speechToText
+                                        )
+                                    }
+                                    
+                                    return true
+                                }
+                            )
+                            
+                            self.arguments?.controllerInteraction.presentControllerInCurrent(tooltipController, nil)
+                            
+                            await preferencesRepository.set(
+                                sawNicegramPremiumTooltip: true
+                            )
+                        }
+                    }
+                    //
+                    
                     self.transcribeDisposable = (context.engine.messages.transcribeAudio(messageId: message.id)
                     |> deliverOnMainQueue).startStrict(next: { [weak self] result in
                         guard let strongSelf = self else {
                             return
                         }
+                        // MARK: Nicegram Speech2Text
+                        strongSelf.audioTranscriptionState = .expanded
+                        //
                         strongSelf.transcribeDisposable?.dispose()
                         strongSelf.transcribeDisposable = nil
                         
@@ -511,17 +564,6 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                         }
                     })
                 }
-                // MARK: Nicegram NCG-6326 Apple Speech2Text
-                else {
-                    Queue.mainQueue().async { [weak self] in
-                        self?.audioTranscriptionState = .collapsed
-                        self?.requestUpdateLayout(true)
-                    }
-                    PremiumUITgHelper.routeToPremium(
-                        source: .speechToText
-                    )
-                }
-                //
             }
         }
         
@@ -2166,12 +2208,6 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                 self?.requestUpdateLayout(true)
             }
         }
-    }
-    
-    private func isLongMedia(_ limit: Double = 2 * 60) -> Bool {
-        let duration = message?.media.compactMap({ $0 as? TelegramMediaFile }).first(where: { $0.isVoice })?.duration ?? 0
-        
-        return duration >= limit
     }
 //
 }

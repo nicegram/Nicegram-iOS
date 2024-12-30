@@ -406,6 +406,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             isDebugConfiguration = true
         }
         //
+        
         let ngEnableLogging = isDebugConfiguration
         NGEntryPoint.onAppLaunch(
             env: Env(
@@ -510,10 +511,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         |> take(1)
         |> deliverOnMainQueue).start(next: { context in
             if let context = context {
-                // MARK: Nicegram NCG-6326 Apple Speech2Text
-                let setDefaultSpeech2TextSettingsUseCase = NicegramSettingsModule.shared.setDefaultSpeech2TextSettingsUseCase()
-                setDefaultSpeech2TextSettingsUseCase(with: context.context.isPremium)
-                //
                 Queue().async {
                     self.fetchNGUserSettings(context.context.account.peerId.id._internalGetInt64Value())
                 }

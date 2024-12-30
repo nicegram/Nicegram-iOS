@@ -166,7 +166,6 @@
 "NicegramSettings.EnableGrayscaleAll" = "Escala de cinza em tela cheia";
 "NicegramSettings.EnableGrayscaleInChatList" = "Escala de cinza na lista de chat";
 "NicegramSettings.EnableGrayscaleInChat" = "Escala de cinza no chat";
-"NicegramSettings.EnableAppleSpeech2Text" = "Ativar Apple Speech2Text";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Mais antigo que";

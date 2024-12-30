@@ -159,7 +159,6 @@
 "NicegramSettings.HideStories" = "Hikoyalarni yashirish";
 "NicegramSettings.HideBadgeCounters" = "Reaksiya bildirishnomalarini yashirish";
 "NicegramSettings.EnableAnimationsInChatList" = "Суҳбат рўйхатидаги анимациялар";
-"NicegramSettings.EnableGrayscaleAll" = "Toʻliq kulrangli ekran";
 "NicegramSettings.EnableGrayscaleInChatList" = "Чат рўйхатидаги кулранглар";
 "NicegramSettings.EnableGrayscaleInChat" = "Чатда кулранглар";
 
@@ -207,7 +206,3 @@
 "NicegramSettings.ShareStickersToggle" = "Stiker ma'lumotlarini baham ko'ring";
 "NicegramSettings.ShareData.Note" = "Kanal ma'lumotlarini avtomatik ravishda yuborish va ma'lumotlar bazasiga havola qilish orqali Telegram kanallari va guruhlari haqidagi eng to'liq vikipediyaga hissa qo'shing. Biz sizning telegram profilingiz va kanalingizni bog'lamaymiz va shaxsiy ma'lumotlaringizni baham ko'rmaymiz.";
 "NicegramCallRecord.StopAlertButtonCancel" = "Bekor qilish";
-
-/*Stars Purchase*/
-"StarsPurchase.GetOnFragment" = "Fragmentga kiring";
-"StarsPurchase.GetOnTelegram" = "Telegramga kiring";

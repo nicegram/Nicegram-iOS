@@ -40,10 +40,6 @@ apple_resource_bundle(
     ],
 )
 
-NGDEPS = [
-    "@swiftpkg_nicegram_assistant_ios//:FeatCallRecorder"
-]
-
 swift_library(
     name = "TelegramCallsUI",
     module_name = "TelegramCallsUI",
@@ -56,7 +52,7 @@ swift_library(
     data = [
         ":TelegramCallsUIBundle",
     ],
-    deps = NGDEPS + [
+    deps = [
     	"//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
         "//submodules/Display:Display",
         "//submodules/TelegramPresentationData:TelegramPresentationData",
