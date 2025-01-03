@@ -1,17 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "ai-chatbot-light.pdf",
-      "idiom" : "universal"
-    },
-    {
-      "appearances" : [
-        {
-          "appearance" : "luminosity",
-          "value" : "dark"
-        }
-      ],
-      "filename" : "ai-chatbot-dark.pdf",
+      "filename" : "ai-chatbot.pdf",
       "idiom" : "universal"
     }
   ],

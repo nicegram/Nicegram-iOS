@@ -114,7 +114,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "feat/solana-v2",
-        "revision" : "0aa269c0be0c256d586aeb1692e7a640540c1f51"
+        "revision" : "da079f5ed72bf6579762c164648b7b17c1c869d4"
       }
     },
     {
@@ -123,7 +123,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "feat/solana-v2",
-        "revision" : "4f718e1910dfe945af13865b6ea21f8d00f04550"
+        "revision" : "10466c9dcdf265eaae4dfd2132785f109710b40d"
       }
     },
     {

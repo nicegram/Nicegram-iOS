@@ -100,6 +100,7 @@ public enum ChatListNotice: Equatable {
     case reviewLogin(newSessionReview: NewSessionReview, totalCount: Int)
     case premiumGrace
     case starsSubscriptionLowBalance(amount: StarsAmount, peers: [EnginePeer])
+    case setupPhoto(EnginePeer)
 }
 
 enum ChatListNodeEntry: Comparable, Identifiable {
@@ -422,7 +423,7 @@ enum ChatListNodeEntry: Comparable, Identifiable {
     }
     
     // MARK: Nicegram ChatListWidget
-    case NicegramWidget
+    case NicegramWidget(presentationData: ChatListPresentationData)
     //
     case HeaderEntry
     case PeerEntry(PeerEntryData)
@@ -439,7 +440,7 @@ enum ChatListNodeEntry: Comparable, Identifiable {
         switch self {
         // MARK: Nicegram ChatListWidget
         case .NicegramWidget:
-            return .index(.chatList(EngineChatList.Item.Index.ChatList.absoluteUpperBound.successor.successor.successor))
+            return .index(.chatList(EngineChatList.Item.Index.ChatList.absoluteUpperBound))
         //
         case .HeaderEntry:
             return .index(.chatList(.absoluteUpperBound))
@@ -511,8 +512,11 @@ enum ChatListNodeEntry: Comparable, Identifiable {
     static func ==(lhs: ChatListNodeEntry, rhs: ChatListNodeEntry) -> Bool {
         switch lhs {
             // MARK: Nicegram ChatListWidget
-            case .NicegramWidget:
-                if case .NicegramWidget = rhs {
+            case let .NicegramWidget(lhsPresentationData):
+                if case let .NicegramWidget(rhsPresentationData) = rhs {
+                    if lhsPresentationData !== rhsPresentationData {
+                        return false
+                    }
                     return true
                 } else {
                     return false
@@ -1027,15 +1031,19 @@ func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, 
                 result.append(.EmptyIntro(presentationData: state.presentationData))
             }
             
+            // MARK: Nicegram ChatListWidget, showNicegramWidget added
+            if #available(iOS 15.0, *), showNicegramWidget {
+                result.append(
+                    .NicegramWidget(
+                        presentationData: state.presentationData
+                    )
+                )
+            }
+            //
+            
             if let notice {
                 result.append(.Notice(presentationData: state.presentationData, notice: notice))
             }
-            
-            // MARK: Nicegram ChatListWidget, showNicegramWidget added
-            if #available(iOS 15.0, *), showNicegramWidget {
-                result.append(.NicegramWidget)
-            }
-            //
             
             result.append(.HeaderEntry)
         }

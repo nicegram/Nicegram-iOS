@@ -1698,6 +1698,8 @@ private:
     SharedCallAudioDevice * _audioDevice;
     
     void (^_onMutedSpeechActivityDetected)(bool);
+    
+    int32_t _signalBars;
 }
 
 @end
@@ -1707,6 +1709,7 @@ private:
 - (instancetype _Nonnull)initWithQueue:(id<OngoingCallThreadLocalContextQueueWebrtc> _Nonnull)queue
     networkStateUpdated:(void (^ _Nonnull)(GroupCallNetworkState))networkStateUpdated
     audioLevelsUpdated:(void (^ _Nonnull)(NSArray<NSNumber *> * _Nonnull))audioLevelsUpdated
+    activityUpdated:(void (^ _Nonnull)(NSArray<NSNumber *> * _Nonnull))activityUpdated
     inputDeviceId:(NSString * _Nonnull)inputDeviceId
     outputDeviceId:(NSString * _Nonnull)outputDeviceId
     videoCapturer:(OngoingCallThreadLocalContextVideoCapturer * _Nullable)videoCapturer
@@ -1721,8 +1724,11 @@ private:
     enableSystemMute:(bool)enableSystemMute
     preferX264:(bool)preferX264
     logPath:(NSString * _Nonnull)logPath
+statsLogPath:(NSString * _Nonnull)statsLogPath
 onMutedSpeechActivityDetected:(void (^ _Nullable)(bool))onMutedSpeechActivityDetected
-audioDevice:(SharedCallAudioDevice * _Nullable)audioDevice {
+audioDevice:(SharedCallAudioDevice * _Nullable)audioDevice
+encryptionKey:(NSData * _Nullable)encryptionKey
+isConference:(bool)isConference {
     self = [super init];
     if (self != nil) {
         _queue = queue;
@@ -1787,11 +1793,22 @@ audioDevice:(SharedCallAudioDevice * _Nullable)audioDevice {
         tgcalls::GroupConfig config;
         config.need_log = true;
         config.logPath.data = std::string(logPath.length == 0 ? "" : logPath.UTF8String);
+        
+        std::string statsLogPathValue(statsLogPath.length == 0 ? "" : statsLogPath.UTF8String);
+        
+        std::optional<tgcalls::EncryptionKey> mappedEncryptionKey;
+        if (encryptionKey) {
+            auto encryptionKeyValue = std::make_shared<std::array<uint8_t, 256>>();
+            memcpy(encryptionKeyValue->data(), encryptionKey.bytes, encryptionKey.length);
+            
+            mappedEncryptionKey = tgcalls::EncryptionKey(encryptionKeyValue, true);
+        }
 
         __weak GroupCallThreadLocalContext *weakSelf = self;
         _instance.reset(new tgcalls::GroupInstanceCustomImpl((tgcalls::GroupInstanceDescriptor){
             .threads = tgcalls::StaticThreads::getThreads(),
             .config = config,
+            .statsLogPath = statsLogPathValue,
             .networkStateUpdated = [weakSelf, queue, networkStateUpdated](tgcalls::GroupNetworkState networkState) {
                 [queue dispatch:^{
                     __strong GroupCallThreadLocalContext *strongSelf = weakSelf;
@@ -1802,6 +1819,17 @@ audioDevice:(SharedCallAudioDevice * _Nullable)audioDevice {
                     mappedState.isConnected = networkState.isConnected;
                     mappedState.isTransitioningFromBroadcastToRtc = networkState.isTransitioningFromBroadcastToRtc;
                     networkStateUpdated(mappedState);
+                }];
+            },
+            .signalBarsUpdated = [weakSelf, queue](int value) {
+                [queue dispatch:^{
+                    __strong GroupCallThreadLocalContext *strongSelf = weakSelf;
+                    if (strongSelf) {
+                        strongSelf->_signalBars = value;
+                        if (strongSelf->_signalBarsChanged) {
+                            strongSelf->_signalBarsChanged(value);
+                        }
+                    }
                 }];
             },
             .audioLevelsUpdated = [audioLevelsUpdated](tgcalls::GroupLevelsUpdate const &levels) {
@@ -1816,6 +1844,13 @@ audioDevice:(SharedCallAudioDevice * _Nullable)audioDevice {
                     [result addObject:@(it.value.voice)];
                 }
                 audioLevelsUpdated(result);
+            },
+            .ssrcActivityUpdated = [activityUpdated](tgcalls::GroupActivitiesUpdate const &update) {
+                NSMutableArray *result = [[NSMutableArray alloc] init];
+                for (auto &it : update.updates) {
+                    [result addObject:@(it.ssrc)];
+                }
+                activityUpdated(result);
             },
             .initialInputDeviceId = inputDeviceId.UTF8String,
             .initialOutputDeviceId = outputDeviceId.UTF8String,
@@ -1985,7 +2020,9 @@ audioDevice:(SharedCallAudioDevice * _Nullable)audioDevice {
                         strongSelf->_onMutedSpeechActivityDetected(value);
                     }
                 }];
-            }
+            },
+            .encryptionKey = mappedEncryptionKey,
+            .isConference = isConference
         }));
     }
     return self;
@@ -2001,7 +2038,7 @@ audioDevice:(SharedCallAudioDevice * _Nullable)audioDevice {
     }
 }
 
-- (void)stop {
+- (void)stop:(void (^ _Nullable)())completion {
     if (_currentAudioDeviceModuleThread) {
         auto currentAudioDeviceModule = _currentAudioDeviceModule;
         _currentAudioDeviceModule = nullptr;
@@ -2011,8 +2048,17 @@ audioDevice:(SharedCallAudioDevice * _Nullable)audioDevice {
     }
     
     if (_instance) {
-        _instance->stop();
+        void (^capturedCompletion)() = [completion copy];
+        _instance->stop([capturedCompletion] {
+            if (capturedCompletion) {
+                capturedCompletion();
+            }
+        });
         _instance.reset();
+    } else {
+        if (completion) {
+            completion();
+        }
     }
 }
 
@@ -2301,6 +2347,12 @@ audioDevice:(SharedCallAudioDevice * _Nullable)audioDevice {
 
             completion([[OngoingGroupCallStats alloc] initWithIncomingVideoStats:incomingVideoStats]);
         });
+    }
+}
+
+- (void)addRemoteConnectedEvent:(bool)isRemoteConnected {
+    if (_instance) {
+        _instance->internal_addCustomNetworkEvent(isRemoteConnected);
     }
 }
 

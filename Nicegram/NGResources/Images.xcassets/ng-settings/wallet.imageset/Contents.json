@@ -1,17 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "wallet-light.pdf",
-      "idiom" : "universal"
-    },
-    {
-      "appearances" : [
-        {
-          "appearance" : "luminosity",
-          "value" : "dark"
-        }
-      ],
-      "filename" : "wallet-dark.pdf",
+      "filename" : "wallet.pdf",
       "idiom" : "universal"
     }
   ],

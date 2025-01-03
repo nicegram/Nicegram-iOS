@@ -49,7 +49,7 @@ public func collectChannelsInformation(with context: AccountContext) {
                         let chat = chats.first
                         
                         switch chat {
-                        case let .channel(_, _, id, accessHash, _, _, photo, _, _, _, _, _, _, _, _,  _, _, _, _, _):
+                        case let .channel(_, _, id, accessHash, _, _, photo, _, _, _, _, _, _, _, _,  _, _, _, _, _, _):
                             return getFullChannel(
                                 with: context,
                                 id: id,
@@ -158,7 +158,7 @@ private func lastMessageLanguageCode(
         
         let message = allMessages.compactMap {
             switch $0 {
-            case let .message(_, _, _, _, _, _, _, _, _, _, _, _, message, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
+            case let .message(_, _, _, _, _, _, _, _, _, _, _, _, message, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
                 return message
             default: return nil
             }
@@ -404,7 +404,7 @@ private extension Api.Chat {
         }
 
         switch self {
-        case let .channel(_, _, id, _, title, username, _, date, restrictionReason, _, _, _, participantsCount, _, _, _, _, _, _, _):
+        case let .channel(_, _, id, _, title, username, _, date, restrictionReason, _, _, _, participantsCount, _, _, _, _, _, _, _, _):
             let restriction : [FullInformation.Information.Payload.Restriction] = restrictionReason?.map { reason -> FullInformation.Information.Payload.Restriction in
                 switch reason {
                 case let .restrictionReason(platform, reason, text):
@@ -444,7 +444,7 @@ private extension Api.ChatFull {
     func toModel() -> Model {
         var model = Model()
         switch self {
-        case let .channelFull(_, _, id, about, participantsCount, _, _, _, _, _, _, _, _, _, _, _,  _, _, _, _, _, _, _, location, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
+        case let .channelFull(_, _, id, about, participantsCount, _, _, _, _, _, _, _, _, _, _, _,  _, _, _, _, _, _, _, location, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
             model = model
                 .with(\.id, id)
                 .with(\.participantsCount, participantsCount ?? 0)

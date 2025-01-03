@@ -87,9 +87,6 @@ public struct NGSettings {
     @NGStorage(key: "showContactsTab", defaultValue: true)
     public static var showContactsTab: Bool
     
-    @NGStorage(key: "showNicegramTab", defaultValue: true)
-    public static var showNicegramTab: Bool
-    
     @NGStorage(key: "showNicegramButtonInChat", defaultValue: true)
     public static var showNicegramButtonInChat: Bool
     

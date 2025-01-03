@@ -319,9 +319,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
             
             self.assistantController = assistantController
             
-            if NGSettings.showNicegramTab {
-                controllers.append(assistantController)
-            }
+            controllers.append(assistantController)
             
             AssistantTgHelper.routeToAssistantImpl = { [weak self] source in
                 guard let self, let rootTabController else {
@@ -415,8 +413,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         }
 //
         // MARK: Nicegram Assistant
-        if let assistantController,
-           NGSettings.showNicegramTab {
+        if let assistantController {
             controllers.append(assistantController)
         }
         //
@@ -590,7 +587,12 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                             case let .asset(asset):
                                 content = .asset(asset)
                             }
-                            return MediaEditorScreenImpl.Subject.VideoCollageItem(content: content, frame: item.frame)
+                            return MediaEditorScreenImpl.Subject.VideoCollageItem(
+                                content: content,
+                                frame: item.frame,
+                                contentScale: item.contentScale,
+                                contentOffset: item.contentOffset
+                            )
                         }
                         return .videoCollage(items: collage.items.map { editorCollageItem($0) })
                     case let .asset(asset):
@@ -955,6 +957,10 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     
     public func openBirthdaySetup() {
         self.accountSettingsController?.openBirthdaySetup()
+    }
+    
+    public func openPhotoSetup() {
+        self.accountSettingsController?.openAvatarSetup()
     }
 }
 

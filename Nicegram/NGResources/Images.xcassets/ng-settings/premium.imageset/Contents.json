@@ -1,17 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "premium-light.pdf",
-      "idiom" : "universal"
-    },
-    {
-      "appearances" : [
-        {
-          "appearance" : "luminosity",
-          "value" : "dark"
-        }
-      ],
-      "filename" : "premium-dark.pdf",
+      "filename" : "premium.pdf",
       "idiom" : "universal"
     }
   ],

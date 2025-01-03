@@ -3,16 +3,19 @@ import Display
 import FeatChatListWidget
 import Foundation
 import SwiftSignalKit
+import TelegramPresentationData
 import UIKit
 
 @available(iOS 15.0, *)
 class ChatListNicegramWidget: ListViewItem {
     let chatListNodeInteraction: ChatListNodeInteraction
+    let theme: PresentationTheme
     
     private var widgetView: ChatListNicegramWidgetView?
     
-    init(chatListNodeInteraction: ChatListNodeInteraction) {
+    init(chatListNodeInteraction: ChatListNodeInteraction, theme: PresentationTheme) {
         self.chatListNodeInteraction = chatListNodeInteraction
+        self.theme = theme
     }
     
     func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, previousItem: ListViewItem?, nextItem: ListViewItem?, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void) {
@@ -104,7 +107,10 @@ final class ChatListNicegramWidgetNode: ListViewItemNode {
             )
             
             let apply: () -> Void = {
-                self?.widgetNode.frame = CGRect(origin: .zero, size: size)
+                guard let self else { return }
+                
+                self.widgetNode.backgroundColor = item.theme.chatList.itemBackgroundColor
+                self.widgetNode.frame = CGRect(origin: .zero, size: size)
             }
             
             return (layout, apply)
