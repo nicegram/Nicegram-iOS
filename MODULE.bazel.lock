@@ -633,8 +633,8 @@
         "bzlTransitiveDigest": "8/YWyYftd8THfVoADvrOmQLl45wUGfP2MVjLM5FFn50=",
         "usagesDigest": "voXBMcSNlo2fnK6JIvInIrncYhBKKG8nBeKvToaUA0Y=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "4f9688620440a545a562eabbbaaad0badd2a7d880b807f3529f402cc59e13805",
-          "@@//Package.swift": "a22f972695b0361de5193d2293f34fbe8712340ba22520d60d11cb94ec3d99ea"
+          "@@//Package.resolved": "4b59e15d04fa63530715738bafe34bd9e79cf1dcaf14eaa32a4cc16a4c532d37",
+          "@@//Package.swift": "9696be545e5e35e7ca27cb12df2537c71dd74d8e30c3ce548220ad63d293afaf"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -1115,11 +1115,22 @@
             }
           },
           "swiftpkg_nicegram_assistant_ios": {
-            "bzlFile": "@@rules_swift_package_manager~//swiftpkg/internal:local_swift_package.bzl",
-            "ruleClassName": "local_swift_package",
+            "bzlFile": "@@rules_swift_package_manager~//swiftpkg/internal:swift_package.bzl",
+            "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "path": "/Users/eugenefilipkov/Documents/mobyrix/nicegram-assistant-ios"
+              "commit": "3a66015da2897392932fe06ea69dc213c4661ec9",
+              "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
+              "version": "",
+              "init_submodules": false,
+              "recursive_init_submodules": true,
+              "patch_args": [
+                "-p0"
+              ],
+              "patch_cmds": [],
+              "patch_cmds_win": [],
+              "patch_tool": "",
+              "patches": []
             }
           },
           "swiftpkg_fetch_node_details_swift": {
