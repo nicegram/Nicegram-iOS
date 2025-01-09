@@ -20,6 +20,7 @@ import NGSpecialOffer
 import NGUI
 import TelegramPresentationData
 import UIKit
+import FeatPersonalityUI
 
 @MainActor
 class NGDeeplinkHandler {
@@ -96,6 +97,11 @@ class NGDeeplinkHandler {
         case "tgAuthSuccess":
             if #available(iOS 15.0, *) {
                 TgAuthSuccessPresenter().presentIfNeeded()
+            }
+            return true
+        case "personality":
+            if #available(iOS 15.0, *) {
+                PersonalityPresenter().present()
             }
             return true
         default:

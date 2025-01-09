@@ -5,7 +5,8 @@ import PackageDescription
 let package = Package(
     name: "nicegram-package",
     dependencies: [
-        .package(url: "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git", branch: "feat/dapp-webview-banner"),
-        .package(url: "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git", branch: "feat/dapp-webview-banner")
+        //.package(url: "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git", branch: "feat/NCG-6903_personality"),
+        .package(path: "../nicegram-assistant-ios"),
+        .package(url: "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git", branch: "develop")
     ]
 )
