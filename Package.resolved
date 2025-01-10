@@ -113,8 +113,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/blockchains-remote-config",
-        "revision" : "1d8891399124436bb284eab20203a83e5921785f"
+        "branch" : "feat/NCG-6903_personality",
+        "revision" : "112a35d3b194c92b387a1ea31aff9046c909c0b8"
       }
     },
     {
@@ -122,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "feat/blockchains-remote-config",
-        "revision" : "e3fab0151e3b844efe9b62ac9dcc16763bb9c6d3"
+        "branch" : "develop",
+        "revision" : "0543f19bc662dfc357aa9379c8acbe8ed49d5c42"
       }
     },
     {

@@ -1,5 +1,9 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
+NGDEPS = [
+    "//Nicegram/NGPersonalityCore:NGPersonalityCore"
+]
+
 swift_library(
     name = "TelegramCore",
     module_name = "TelegramCore",
@@ -9,7 +13,7 @@ swift_library(
     copts = [
         #"-warnings-as-errors",
     ],
-    deps = [
+    deps = NGDEPS + [
         "//submodules/TelegramApi:TelegramApi",
         "//submodules/MtProtoKit:MtProtoKit",
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
