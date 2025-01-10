@@ -43,21 +43,3 @@ public extension Signal {
         }
     }
 }
-
-public extension Signal {
-    func toAnyPublisher() -> AnyPublisher<T, Never> {
-        let subject = PassthroughSubject<T, Never>()
-        
-        let disposable = self.start(next: { value in
-            subject.send(value)
-        }, completed: {
-            subject.send(completion: .finished)
-        })
-        
-        return subject
-            .handleEvents(receiveCancel: {
-                disposable.dispose()
-            })
-            .eraseToAnyPublisher()
-    }
-}

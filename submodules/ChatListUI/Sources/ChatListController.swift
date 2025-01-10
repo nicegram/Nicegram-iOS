@@ -14,7 +14,6 @@ import NGCore
 import FeatAuth
 import NGModels
 import NGRemoteConfig
-import NGRepoTg
 import NGRepoUser
 import NGSpecialOffer
 import NGTranslate

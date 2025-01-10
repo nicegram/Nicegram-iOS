@@ -1,12 +1,20 @@
 import AccountContext
+import MemberwiseInit
 import NGUtils
 import NicegramWallet
 import TelegramCore
 
-struct ContactsRetrieverImpl {
-    static func getContacts(
-        context: AccountContext
-    ) async -> [WalletContact] {
+@MemberwiseInit
+class ContactsRetrieverImpl {
+    @Init(.internal) private let contextProvider: ContextProvider
+}
+
+extension ContactsRetrieverImpl: ContactsRetriever {
+    func getContacts() async -> [WalletContact] {
+        guard let context = contextProvider.context() else {
+            return []
+        }
+        
         do {
             return try await context.engine.data
                 .get(
