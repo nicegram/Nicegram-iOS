@@ -14,6 +14,7 @@ NGDEPS = [
     "@swiftpkg_nicegram_assistant_ios//:FeatHiddenChats",
     "@swiftpkg_nicegram_assistant_ios//:FeatPinnedChats",
     "@swiftpkg_nicegram_assistant_ios//:NGAiChat",
+    "@swiftpkg_nicegram_assistant_ios//:NGRepoTg",
     "@swiftpkg_nicegram_assistant_ios//:NGRepoUser",
     "@swiftpkg_nicegram_assistant_ios//:NGSpecialOffer",
 ]

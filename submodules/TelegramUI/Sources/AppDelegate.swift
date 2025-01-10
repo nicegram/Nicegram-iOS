@@ -12,11 +12,17 @@ import NGEnv
 import NGLogging
 import NGLottie
 import NGRemoteConfig
+import NGRepoTg
 import NGRepoUser
 import NGStats
 import NGStrings
-import NGUtils
 import NicegramWallet
+import NGPersonalityCore
+import NGPersonality
+import Combine
+import AvatarNode
+import NGLab
+import FeatPersonality
 import NGCollectInformation
 //
 import UIKit
@@ -369,7 +375,45 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     
     private let voipDeviceToken = Promise<Data?>(nil)
     private let regularDeviceToken = Promise<Data?>(nil)
+// MARK: Nicegram NCG-6903 Nicegram Personality
+    private let personalityInput = CurrentValueSubject<PersonalityContainer.Input, Never>(.refresh(0))
+    private let personalityOutput = CurrentValueSubject<Void, Never>(())//PassthroughSubject<Void, Never>()
+    
+    func loadUserInformation(with context: AccountContext) {
+        let signal = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
+        |> mapToSignal { peer -> Signal<(Int64, String?, UIImage?, Int?), NoError> in
+            if case let .user(user) = peer {
+                return peerAvatarCompleteImage(
+                    account: context.account,
+                    peer: EnginePeer(user),
+                    forceProvidedRepresentation: false,
+                    representation: nil,
+                    size: CGSize(width: 168, height: 168)
+                )
+                |> mapToSignal { image -> Signal<(Int64, String?, UIImage?, Int?), NoError> in
+                    getDaysFromRegDate(with: user.id.toInt64())
+                    |> map { days -> (Int64, String?, UIImage?, Int?) in
+                        var displayName = user.username
+                        if let firstName = user.firstName,
+                           let lastName = user.lastName,
+                           !firstName.isEmpty &&
+                           !lastName.isEmpty {
+                            displayName = "\(firstName) \(lastName)"
+                        }
+
+                        return (user.id.toInt64() , displayName?.capitalized, image, days)
+                    }
+                }
+            }
+            
+            return .single((0, nil, nil, nil))
+        }
         
+        _ = signal.start(next: { [weak self] result in
+            self?.personalityInput.send(.user(result.0, result.1, result.2, result.3))
+        })
+    }
+//
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         precondition(!testIsLaunched)
         testIsLaunched = true
@@ -407,12 +451,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }
         //
         
-        let contextProvider = ContextProvider(
-            contextValue: { [weak self] in
-                self?.contextValue?.context
-            }
-        )
-        
         let ngEnableLogging = isDebugConfiguration
         NGEntryPoint.onAppLaunch(
             env: Env(
@@ -447,18 +485,8 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             remoteConfig: {
                 RemoteConfigServiceImpl.shared
             },
-            stickersDataProvider: {
-                StickersDataProviderImpl(contextProvider: contextProvider)
-            },
-            telegramIdProvider: {
-                TelegramIdProviderImpl(contextProvider: contextProvider)
-            },
-            telegramMessageSender: {
-                TelegramMessageSenderImpl(contextProvider: contextProvider)
-            },
-            urlOpener: {
-                UrlOpenerImpl(contextProvider: contextProvider)
-            },
+            personalityInput: personalityInput.eraseToAnyPublisher(),
+            personalityOutput: personalityOutput,
             walletData: .init(
                 env: {
                     .init(
@@ -477,13 +505,49 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     )
                 },
                 contactImageProvider: {
-                    ContactImageProviderImpl(contextProvider: contextProvider)
+                    AnonymousContactImageProvider { contact in
+                        guard let contextValue = self.contextValue else {
+                            return nil
+                        }
+                        return await ContactImageProviderImpl.image(
+                            context: contextValue.context,
+                            contact: contact
+                        )
+                    }
+                },
+                contactMessageSender: {
+                    AnonymousContactMessageSender { text, contactId in
+                        guard let contextValue = self.contextValue else {
+                            return
+                        }
+                        ContactMessageSenderImpl.send(
+                            context: contextValue.context,
+                            text: text,
+                            contactId: contactId
+                        )
+                    }
                 },
                 contactsRetriever: {
-                    ContactsRetrieverImpl(contextProvider: contextProvider)
+                    AnonymousContactsRetriever {
+                        guard let contextValue = self.contextValue else {
+                            return []
+                        }
+                        return await ContactsRetrieverImpl.getContacts(
+                            context: contextValue.context
+                        )
+                    }
                 },
                 walletVerificationInterceptor: {
-                    WalletVerificationInterceptorImpl(contextProvider: contextProvider)
+                    AnonymousWalletVerificationInterceptor(
+                        shouldVerifyOnApplicationResignActive: {
+                            guard let contextValue = self.contextValue else {
+                                return false
+                            }
+                            return await WalletVerificationInterceptorImpl.shouldVerifyOnApplicationResignActive(
+                                context: contextValue.context
+                            )
+                        }
+                    )
                 }
             )
         )
@@ -491,10 +555,10 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         // MARK: Nicegram Unblock
         let _ = (self.context.get()
         |> take(1)
-        |> deliverOnMainQueue).start(next: { context in
+        |> deliverOnMainQueue).start(next: { [weak self] context in
             if let context = context {
                 Queue().async {
-                    self.fetchNGUserSettings(context.context.account.peerId.id._internalGetInt64Value())
+                    self?.fetchNGUserSettings(context.context.account.peerId.id._internalGetInt64Value())
                 }
             }
         })
@@ -1286,9 +1350,27 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         // MARK: Nicegram
         let _ = self.context.get().start(next: { context in
             if let context = context {
-                Task {
-                    let shareStickersUseCase = NicegramHubContainer.shared.shareStickersUseCase()
-                    await shareStickersUseCase()
+                let accountContext = context.context
+                
+                CoreContainer.shared.urlOpener.register {
+                    UrlOpenerImpl(accountContext: accountContext)
+                }
+                
+                if #available(iOS 13.0, *) {
+                    NicegramHubContainer.shared.stickersDataProvider.register {
+                        StickersDataProviderImpl(context: accountContext)
+                    }
+                    
+                    RepoTgHelper.setTelegramId(
+                        accountContext.account.peerId.id._internalGetInt64Value()
+                    )
+                }
+                
+                if #available(iOS 13.0, *) {
+                    Task {
+                        let shareStickersUseCase = NicegramHubContainer.shared.shareStickersUseCase()
+                        await shareStickersUseCase()
+                    }
                 }
             }
         })
@@ -2143,6 +2225,18 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {
+// MARK: Nicegram NCG-6903 Nicegram Personality
+        let _ = (self.context.get()
+        |> take(1)
+        |> deliverOnMainQueue).start(next: { context in
+            if let context = context {
+                collectDailyActivity(
+                    with: context.context.account.peerId.toInt64(),
+                    notificationName: UIApplication.didEnterBackgroundNotification
+                )
+            }
+        })
+//
         // MARK: Nicegram DB Changes
         
         let _ = (self.sharedContextPromise.get()
@@ -2154,6 +2248,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     extendNow = true
                 }
             }
+            
             if !sharedApplicationContext.sharedContext.energyUsageSettings.extendBackgroundWork {
                 extendNow = false
             }
@@ -2231,17 +2326,50 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
 		    //self.fetchPremium()
         }
         //
+// MARK: Nicegram NCG-6903 Nicegram Personality
+        let getContext = (self.context.get()
+                          |> take(1)
+                          |> deliverOnMainQueue)
         
+        let _ = combineLatest(getContext, personalityOutput.toSignal().skipError())
+            .start(next: { [weak self] result in
+                if let context = result.0 {
+                    self?.loadUserInformation(with: context.context)
+                    
+                    let id = context.context.account.peerId.toInt64()
+                    _ = context.context.account.postbox.transaction { transaction in
+                        let contactPeerIds = transaction.getContactPeerIds()
+//                        let totalCount = transaction.getRemoteContactCount()
+
+                        collectContactsActivity(with: id, count: contactPeerIds.count)
+                    }.start()
+                    
+                    collectDailyActivity(
+                        with: id,
+                        notificationName: UIApplication.didBecomeActiveNotification
+                    )
+                    collectGhostScore(with: context.context) { [weak self] in
+                        self?.personalityInput.send(.refresh(id))
+                    }
+                    collectInfluencerScore(with: context.context) { [weak self] in
+                        self?.personalityInput.send(.refresh(id))
+                    }
+                    collectMessagesActivity(with: context.context) { [weak self] in
+                        self?.personalityInput.send(.refresh(id))
+                    }
+                }
+            })
+//
+
         SharedDisplayLinkDriver.shared.updateForegroundState(self.isActiveValue)
         
 // MARK: Nicegram NCG-6554 channels info
-        let _ = (self.context.get()
-        |> take(1)
-        |> deliverOnMainQueue).start(next: { authorizedApplicationContext in
-            if let authorizedApplicationContext {
-                collectChannelsInformation(with: authorizedApplicationContext.context)
-            }
-        })
+        let _ = getContext
+            .start(next: { authorizedApplicationContext in
+                if let authorizedApplicationContext {
+                    collectChannelsInformation(with: authorizedApplicationContext.context)
+                }
+            })
 //
     }
     

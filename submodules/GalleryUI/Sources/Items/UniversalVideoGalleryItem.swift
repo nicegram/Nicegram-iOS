@@ -33,6 +33,9 @@ import RasterizedCompositionComponent
 import BadgeComponent
 import ComponentFlow
 import ComponentDisplayAdapters
+// MARK: Nicegram NCG-6903 Nicegram Personality
+import NGPersonalityCore
+//
 
 public enum UniversalVideoGalleryItemContentInfo {
     case message(Message, Int?)
@@ -1805,9 +1808,14 @@ final class UniversalVideoGalleryItemNode: ZoomableContentGalleryItemNode {
             } else {
                 self.updateDisplayPlaceholder()
             }
-            
-            scrubberView.setStatusSignal(videoNode.status |> map { value -> MediaPlayerStatus in
+// MARK: Nicegram NCG-6903 Nicegram Personality, added [weak self] in
+            scrubberView.setStatusSignal(videoNode.status |> map { [weak self] value -> MediaPlayerStatus in
                 if let value = value, !value.duration.isZero {
+// MARK: Nicegram NCG-6903 Nicegram Personality
+                    if let self {
+                        collectVideoActivity(with: self.context.account.peerId.toInt64())
+                    }
+//
                     return value
                 } else {
                     return MediaPlayerStatus(generationTimestamp: 0.0, duration: max(Double(item.content.duration), 0.01), dimensions: CGSize(), timestamp: 0.0, baseRate: 1.0, seekId: 0, status: .paused, soundEnabled: true)

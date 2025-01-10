@@ -6,6 +6,16 @@ import TelegramCore
 public struct WalletTgUtils {}
 
 public extension WalletTgUtils {
+    static func contactIdToPeerId(_ id: WalletContactId) -> PeerId? {
+        guard let int64Id = Int64(id.id) else {
+            return nil
+        }
+        return PeerId(
+            namespace: ._internalFromInt32Value(id.namespace),
+            id: ._internalFromInt64Value(int64Id)
+        )
+    }
+    
     static func peerById(
         _ id: PeerId,
         context: AccountContext
@@ -30,7 +40,10 @@ public extension WalletTgUtils {
         }
         
         return WalletContact(
-            id: .init(peer.id),
+            id: WalletContactId(
+                namespace: peer.id.namespace._internalGetInt32Value(),
+                id: String(peer.id.id._internalGetInt64Value())
+            ),
             name: peer.compactDisplayTitle,
             username: username
         )
