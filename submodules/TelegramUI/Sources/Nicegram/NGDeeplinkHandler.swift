@@ -20,7 +20,6 @@ import NGSpecialOffer
 import NGUI
 import TelegramPresentationData
 import UIKit
-import FeatPersonalityUI
 
 @MainActor
 class NGDeeplinkHandler {
@@ -96,12 +95,7 @@ class NGDeeplinkHandler {
             return true
         case "tgAuthSuccess":
             if #available(iOS 15.0, *) {
-                TgAuthSuccessPresenter().presentIfNeeded()
-            }
-            return true
-        case "personality":
-            if #available(iOS 15.0, *) {
-                PersonalityPresenter().present()
+                AssistantTgHelper.routeToAssistant(source: .generic)
             }
             return true
         default:
@@ -179,28 +173,7 @@ private extension NGDeeplinkHandler {
             return false
         }
         
-        Task { @MainActor in
-            let getCurrentUserUseCase = RepoUserContainer.shared.getCurrentUserUseCase()
-            let initTgLoginUseCase = AuthContainer.shared.initTgLoginUseCase()
-            let toastManager = CoreContainer.shared.toastManager()
-            let urlOpener = CoreContainer.shared.urlOpener()
-            
-            guard !getCurrentUserUseCase.isAuthorized() else {
-                return
-            }
-            
-            SharedLoadingView.start()
-            
-            let result = await initTgLoginUseCase(source: .general)
-            
-            SharedLoadingView.stop()
-            switch result {
-            case let .success(url):
-                urlOpener.open(url)
-            case let .failure(error):
-                toastManager.showError(error)
-            }
-        }
+        LoginViewPresenter().present(feature: LoginFeature())
         
         return true
     }

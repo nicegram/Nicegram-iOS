@@ -113,8 +113,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/NCG-6903_personality",
-        "revision" : "3a66015da2897392932fe06ea69dc213c4661ec9"
+        "branch" : "feat/blockchains-remote-config",
+        "revision" : "1d8891399124436bb284eab20203a83e5921785f"
       }
     },
     {
@@ -122,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "1b525ab43a4f463ec959e58bdfe4fb2968653b65"
+        "branch" : "feat/blockchains-remote-config",
+        "revision" : "e3fab0151e3b844efe9b62ac9dcc16763bb9c6d3"
       }
     },
     {
@@ -226,6 +226,15 @@
       }
     },
     {
+      "identity" : "swift-memberwise-init-macro",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/gohanlon/swift-memberwise-init-macro",
+      "state" : {
+        "revision" : "21ca6d8c8f9e4ce27e92f82da294e0d91953b8b6",
+        "version" : "0.5.1"
+      }
+    },
+    {
       "identity" : "swift-numerics",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-numerics.git",
@@ -259,6 +268,15 @@
       "state" : {
         "revision" : "5ca09b6a2ad190f94aa3d6ddef45b187f8c0343b",
         "version" : "1.0.3"
+      }
+    },
+    {
+      "identity" : "swift-syntax",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swiftlang/swift-syntax",
+      "state" : {
+        "revision" : "0687f71944021d616d34d922343dcef086855920",
+        "version" : "600.0.1"
       }
     },
     {
@@ -338,8 +356,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "d631d5b498e6bb44e923cf12366c945ee9b864d5",
-        "version" : "4.2.0"
+        "revision" : "6bae05377e9feff9dedf92f821c8dc157cef7e8c",
+        "version" : "4.2.1"
       }
     },
     {
