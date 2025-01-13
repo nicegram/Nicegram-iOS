@@ -2,6 +2,7 @@ load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
 NGDEPS = [
     "//Nicegram/NGData:NGData",
+    "//Nicegram/NGPersonalityCore:NGPersonalityCore"
 ]
 
 swift_library(
