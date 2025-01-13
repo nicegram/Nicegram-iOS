@@ -17,15 +17,12 @@ import NGStats
 import NGStrings
 import NGUtils
 import NicegramWallet
-import NGPersonalityCore
-import NGPersonality
-import Combine
 import AvatarNode
 import NGLab
-import FeatPersonality
 import NGCollectInformation
 import Combine
-import FeatPersonality
+import NGPersonalityCore
+import NGPersonality
 //
 import UIKit
 import SwiftSignalKit
@@ -378,7 +375,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     private let voipDeviceToken = Promise<Data?>(nil)
     private let regularDeviceToken = Promise<Data?>(nil)
 // MARK: Nicegram NCG-6903 Nicegram Personality
-    private let personalityInput = CurrentValueSubject<PersonalityContainer.Input, Never>(.refresh(0))
+    private let personalityInput = CurrentValueSubject<(Int64, String?, UIImage?, Int?), Never>((0, nil, nil, nil))
     private let personalityOutput = CurrentValueSubject<Void, Never>(())
     
     func loadUserInformation(with context: AccountContext) {
@@ -412,7 +409,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }
         
         _ = signal.start(next: { [weak self] result in
-            self?.personalityInput.send(.user(result.0, result.1, result.2, result.3))
+            self?.personalityInput.send(result)
         })
     }
 //
@@ -2315,13 +2312,13 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                         notificationName: UIApplication.didBecomeActiveNotification
                     )
                     collectGhostScore(with: context.context) { [weak self] in
-                        self?.personalityInput.send(.refresh(id))
+                        self?.personalityInput.send((id, nil, nil, nil))
                     }
                     collectInfluencerScore(with: context.context) { [weak self] in
-                        self?.personalityInput.send(.refresh(id))
+                        self?.personalityInput.send((id, nil, nil, nil))
                     }
                     collectMessagesActivity(with: context.context) { [weak self] in
-                        self?.personalityInput.send(.refresh(id))
+                        self?.personalityInput.send((id, nil, nil, nil))
                     }
                 }
             })

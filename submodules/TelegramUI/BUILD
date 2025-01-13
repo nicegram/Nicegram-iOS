@@ -28,8 +28,6 @@ NGDEPS = [
     "@swiftpkg_nicegram_assistant_ios//:NGEntryPoint",
     "@swiftpkg_nicegram_assistant_ios//:_NGRemoteConfig",
     "//Nicegram/NGCollectInformation:NGCollectInformation",
-    "@swiftpkg_nicegram_assistant_ios//:FeatPersonalityUI",
-    "@swiftpkg_nicegram_assistant_ios//:FeatPersonality",
     "//Nicegram/NGPersonalityCore:NGPersonalityCore",
     "//Nicegram/NGPersonality:NGPersonality",
 ]

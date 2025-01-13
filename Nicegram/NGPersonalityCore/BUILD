@@ -7,8 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     deps = [
-        "@swiftpkg_nicegram_assistant_ios//:FeatPersonality",
-        "@swiftpkg_nicegram_assistant_ios//:FeatPersonalityUI"
+        "@swiftpkg_nicegram_assistant_ios//:FeatPersonality"
     ],
     visibility = [
         "//visibility:public",
