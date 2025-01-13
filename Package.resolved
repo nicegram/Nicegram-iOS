@@ -114,7 +114,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "feat/NCG-6903_personality",
-        "revision" : "112a35d3b194c92b387a1ea31aff9046c909c0b8"
+        "revision" : "6e95acf571edf2a073506594a4f27ff4fe00e842"
       }
     },
     {
