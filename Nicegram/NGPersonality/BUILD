@@ -11,7 +11,7 @@ swift_library(
         "//submodules/TelegramApi:TelegramApi",
         "//submodules/AccountContext:AccountContext",
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
-        "//Nicegram/NGPersonalityCore:NGPersonalityCore"
+        "@swiftpkg_nicegram_assistant_ios//:FeatPersonality"        
     ],
     visibility = [
         "//visibility:public",

@@ -3,9 +3,6 @@ import Postbox
 import TelegramApi
 import SwiftSignalKit
 import Emoji
-// MARK: Nicegram NCG-6903 Nicegram Personality
-//import NGPersonalityCore
-//
 
 public enum EnqueueMessageGrouping {
     case none
@@ -442,9 +439,6 @@ public func resendMessages(account: Account, messageIds: [MessageId]) -> Signal<
 }
 
 func enqueueMessages(transaction: Transaction, account: Account, peerId: PeerId, messages: [(Bool, EnqueueMessage)], disableAutoremove: Bool = false, transformGroupingKeysWithPeerId: Bool = false) -> [MessageId?] {
-// MARK: Nicegram NCG-6903 Nicegram Personality
-//    collectMessageActivity(with: account.peerId.toInt64())
-//
     /**
      * If it is a support account, mark messages as read here as they are
      * not marked as read when chat is opened.

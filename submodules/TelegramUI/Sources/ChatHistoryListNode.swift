@@ -6,7 +6,7 @@ import NGAiChatUI
 // MARK: Nicegram ChatBanner
 import FeatChatBanner
 // MARK: Nicegram NCG-6903 Nicegram Personality
-//import NGPersonalityCore
+import NGPersonality
 //
 import Foundation
 import UIKit
@@ -999,7 +999,7 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                                 offsetFromBottom = offsetValue
                             }
 // MARK: Nicegram NCG-6903 Nicegram Personality
-//                        collectScrollActivity(with: strongSelf.context.account.peerId.toInt64())
+                        collectScrollActivity(with: strongSelf.context.account.peerId.toInt64())
 //
                             //print("offsetValue: \(offsetValue)")
                         default:

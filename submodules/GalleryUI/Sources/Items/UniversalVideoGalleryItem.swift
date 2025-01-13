@@ -34,7 +34,7 @@ import BadgeComponent
 import ComponentFlow
 import ComponentDisplayAdapters
 // MARK: Nicegram NCG-6903 Nicegram Personality
-import NGPersonalityCore
+import NGPersonality
 //
 
 public enum UniversalVideoGalleryItemContentInfo {

@@ -22,7 +22,7 @@ import LibYuvBinding
 import NGStrings
 import UndoUI
 // MARK: Nicegram NCG-6903 Nicegram Personality
-import NGPersonalityCore
+import NGPersonality
 //
 final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeProtocol {
     private struct PanGestureState {
