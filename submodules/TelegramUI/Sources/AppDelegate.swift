@@ -21,8 +21,8 @@ import AvatarNode
 import NGLab
 import NGCollectInformation
 import Combine
-import NGPersonalityCore
-import NGPersonality
+//import NGPersonalityCore
+//import NGPersonality
 //
 import UIKit
 import SwiftSignalKit
@@ -2193,10 +2193,10 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         |> take(1)
         |> deliverOnMainQueue).start(next: { context in
             if let context = context {
-                collectDailyActivity(
-                    with: context.context.account.peerId.toInt64(),
-                    notificationName: UIApplication.didEnterBackgroundNotification
-                )
+//                collectDailyActivity(
+//                    with: context.context.account.peerId.toInt64(),
+//                    notificationName: UIApplication.didEnterBackgroundNotification
+//                )
             }
         })
 //
@@ -2299,27 +2299,27 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 if let context = result.0 {
                     self?.loadUserInformation(with: context.context)
                     
-                    let id = context.context.account.peerId.toInt64()
-                    _ = context.context.account.postbox.transaction { transaction in
-                        let contactPeerIds = transaction.getContactPeerIds()
-//                        let totalCount = transaction.getRemoteContactCount()
-
-                        collectContactsActivity(with: id, count: contactPeerIds.count)
-                    }.start()
-                    
-                    collectDailyActivity(
-                        with: id,
-                        notificationName: UIApplication.didBecomeActiveNotification
-                    )
-                    collectGhostScore(with: context.context) { [weak self] in
-                        self?.personalityInput.send((id, nil, nil, nil))
-                    }
-                    collectInfluencerScore(with: context.context) { [weak self] in
-                        self?.personalityInput.send((id, nil, nil, nil))
-                    }
-                    collectMessagesActivity(with: context.context) { [weak self] in
-                        self?.personalityInput.send((id, nil, nil, nil))
-                    }
+//                    let id = context.context.account.peerId.toInt64()
+//                    _ = context.context.account.postbox.transaction { transaction in
+//                        let contactPeerIds = transaction.getContactPeerIds()
+////                        let totalCount = transaction.getRemoteContactCount()
+//
+//                        collectContactsActivity(with: id, count: contactPeerIds.count)
+//                    }.start()
+//                    
+//                    collectDailyActivity(
+//                        with: id,
+//                        notificationName: UIApplication.didBecomeActiveNotification
+//                    )
+//                    collectGhostScore(with: context.context) { [weak self] in
+//                        self?.personalityInput.send((id, nil, nil, nil))
+//                    }
+//                    collectInfluencerScore(with: context.context) { [weak self] in
+//                        self?.personalityInput.send((id, nil, nil, nil))
+//                    }
+//                    collectMessagesActivity(with: context.context) { [weak self] in
+//                        self?.personalityInput.send((id, nil, nil, nil))
+//                    }
                 }
             })
 //
