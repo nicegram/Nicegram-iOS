@@ -379,7 +379,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     private let regularDeviceToken = Promise<Data?>(nil)
 // MARK: Nicegram NCG-6903 Nicegram Personality
     private let personalityInput = CurrentValueSubject<PersonalityContainer.Input, Never>(.refresh(0))
-    private let personalityOutput = CurrentValueSubject<Void, Never>(())//PassthroughSubject<Void, Never>()
+    private let personalityOutput = CurrentValueSubject<Void, Never>(())
     
     func loadUserInformation(with context: AccountContext) {
         let signal = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))

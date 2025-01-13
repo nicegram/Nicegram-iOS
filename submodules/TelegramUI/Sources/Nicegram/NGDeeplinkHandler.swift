@@ -104,11 +104,6 @@ class NGDeeplinkHandler {
                 PersonalityPresenter().present()
             }
             return true
-        case "personality":
-            if #available(iOS 15.0, *) {
-                PersonalityPresenter().present()
-            }
-            return true
         default:
             return false
         }
