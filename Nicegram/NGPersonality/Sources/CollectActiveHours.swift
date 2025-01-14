@@ -8,7 +8,9 @@ private let collectActiveHoursUseCase = container.collectActiveHoursUseCase()
 public func collectMessageActivity(with userId: Int64) {
     guard checkPreferencesStateUseCase(with: .activeHours([])) else { return }
 
-    collectActiveHoursUseCase.collectMessageActivity(with: userId)
+    Task {
+        await collectActiveHoursUseCase.collectMessageActivity(with: userId)
+    }
 }
 
 public func collectScrollActivity(with userId: Int64) {

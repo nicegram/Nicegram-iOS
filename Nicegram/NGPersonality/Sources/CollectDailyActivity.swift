@@ -7,9 +7,13 @@ private let collectDailyActivityUseCases = container.collectDailyActivityUseCase
 
 public func collectDailyActivity(
     with userId: Int64,
-    notificationName: NSNotification.Name
+    notificationName: NSNotification.Name,
+    completion: @escaping () -> Void = {}
 ) {
     guard checkPreferencesStateUseCase(with: .dailyActivity(.empty)) else { return }
 
-    collectDailyActivityUseCases(with: userId, notificationName: notificationName)
+    Task {
+        await collectDailyActivityUseCases(with: userId, notificationName: notificationName)
+        completion()
+    }
 }

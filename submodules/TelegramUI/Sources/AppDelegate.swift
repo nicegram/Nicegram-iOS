@@ -374,42 +374,46 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     private let voipDeviceToken = Promise<Data?>(nil)
     private let regularDeviceToken = Promise<Data?>(nil)
 // MARK: Nicegram NCG-6903 Nicegram Personality
+    private var personalityInputClojure: ((Int64, String?, UIImage?, Int?) -> Void)?
+   
     private let personalityInput = CurrentValueSubject<(Int64, String?, UIImage?, Int?), Never>((0, nil, nil, nil))
     private let personalityOutput = CurrentValueSubject<Void, Never>(())
     
-    func loadUserInformation(with context: AccountContext) {
-        let signal = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
-        |> mapToSignal { peer -> Signal<(Int64, String?, UIImage?, Int?), NoError> in
+    func loadUserInformation(with context: AccountContext) -> Signal<(AccountContext?, Int64, String?, UIImage?, Int?), NoError> {
+        return context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
+        |> mapToSignal { peer -> Signal<(AccountContext?, Int64, String?, UIImage?, Int?), NoError> in
             if case let .user(user) = peer {
                 return peerAvatarCompleteImage(
                     account: context.account,
                     peer: EnginePeer(user),
                     forceProvidedRepresentation: false,
                     representation: nil,
-                    size: CGSize(width: 168, height: 168)
+                    size: CGSize(width: 50, height: 50)
                 )
-                |> mapToSignal { image -> Signal<(Int64, String?, UIImage?, Int?), NoError> in
+                |> mapToSignal { image -> Signal<(AccountContext?, Int64, String?, UIImage?, Int?), NoError> in
                     getDaysFromRegDate(with: user.id.toInt64())
-                    |> map { days -> (Int64, String?, UIImage?, Int?) in
+                    |> map { days -> (AccountContext?, Int64, String?, UIImage?, Int?) in
                         var displayName = user.username
-                        if let firstName = user.firstName,
-                           let lastName = user.lastName,
+                        let firstName = user.firstName
+                        let lastName = user.lastName
+                        
+                        if let firstName,
+                           let lastName,
                            !firstName.isEmpty &&
                            !lastName.isEmpty {
                             displayName = "\(firstName) \(lastName)"
+                        } else if let firstName,
+                                  !firstName.isEmpty {
+                            displayName = firstName
                         }
 
-                        return (user.id.toInt64() , displayName?.capitalized, image, days)
+                        return (context, user.id.toInt64() , displayName?.capitalized, image, days)
                     }
                 }
             }
             
-            return .single((0, nil, nil, nil))
+            return .single((nil, 0, nil, nil, nil))
         }
-        
-        _ = signal.start(next: { [weak self] result in
-            self?.personalityInput.send(result)
-        })
     }
 //
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
@@ -503,6 +507,10 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             },
             personalityInput: personalityInput.eraseToAnyPublisher(),
             personalityOutput: personalityOutput,
+//            personalitySender: personalityInputClojure,
+//            personalityReceiver: {
+//                personalityOutput.send(())
+//            },
             walletData: .init(
                 env: {
                     .init(
@@ -2293,31 +2301,43 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                           |> take(1)
                           |> deliverOnMainQueue)
         
-        let _ = combineLatest(getContext, personalityOutput.toSignal().skipError())
+        let userInformation = combineLatest(getContext, personalityOutput.toSignal().skipError())
+        |> mapToSignal { [weak self] result -> Signal<(AccountContext?, Int64, String?, UIImage?, Int?), NoError> in
+            guard let self,
+                  let context = result.0 else { return .single((nil, 0, nil, nil, nil)) }
+                            
+            return self.loadUserInformation(with: context.context)
+        }
+
+        _ = userInformation
             .start(next: { [weak self] result in
                 if let context = result.0 {
-                    self?.loadUserInformation(with: context.context)
+                    let id = result.1
                     
-                    let id = context.context.account.peerId.toInt64()
-                    _ = context.context.account.postbox.transaction { transaction in
+                    let informationResult = (id, result.2, result.3, result.4)
+                    
+                    _ = context.account.postbox.transaction { transaction in
                         let contactPeerIds = transaction.getContactPeerIds()
-//                        let totalCount = transaction.getRemoteContactCount()
-
+                        //let totalCount = transaction.getRemoteContactCount()
+                        
                         collectContactsActivity(with: id, count: contactPeerIds.count)
                     }.start()
                     
                     collectDailyActivity(
                         with: id,
                         notificationName: UIApplication.didBecomeActiveNotification
-                    )
-                    collectGhostScore(with: context.context) { [weak self] in
-                        self?.personalityInput.send((id, nil, nil, nil))
+                    ) { [weak self] in
+                        self?.personalityInput.send(informationResult)
                     }
-                    collectInfluencerScore(with: context.context) { [weak self] in
-                        self?.personalityInput.send((id, nil, nil, nil))
+                    
+                    collectGhostScore(with: context) { [weak self] in
+                        self?.personalityInput.send(informationResult)
                     }
-                    collectMessagesActivity(with: context.context) { [weak self] in
-                        self?.personalityInput.send((id, nil, nil, nil))
+                    collectInfluencerScore(with: context) { [weak self] in
+                        self?.personalityInput.send(informationResult)
+                    }
+                    collectMessagesActivity(with: context) { [weak self] in
+                        self?.personalityInput.send(informationResult)
                     }
                 }
             })

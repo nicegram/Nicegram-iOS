@@ -16,9 +16,8 @@ public func collectGhostScore(
     with context: AccountContext,
     completion: @escaping () -> Void = {}
 ) {
-    guard checkCollectStateUseCase(with: .ghostScore(.empty)) else { return }
     guard checkPreferencesStateUseCase(with: .ghostScore(.empty)) else { return }
-    
+    guard checkCollectStateUseCase(with: .ghostScore(.empty)) else { return }
 
     _ = context.account.postbox.transaction { transaction -> ChatListTotalUnreadState in
         transaction.getTotalUnreadState(groupId: .root)
@@ -26,10 +25,12 @@ public func collectGhostScore(
     .start { state in
         let count = state.count(for: .filtered, in: .messages, with: .contact)
         
-        collectGhostScoreUseCase(
-            with: context.account.peerId.toInt64(),
-            count: count
-        )
-        completion()
+        Task {
+            await collectGhostScoreUseCase(
+                with: context.account.peerId.toInt64(),
+                count: count
+            )
+            completion()
+        }
     }
 }

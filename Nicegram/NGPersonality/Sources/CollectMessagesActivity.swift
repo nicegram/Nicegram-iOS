@@ -16,8 +16,8 @@ public func collectMessagesActivity(
     with context: AccountContext,
     completion: @escaping () -> Void = {}
 ) {
-    guard checkCollectStateUseCase(with: .messagesActivity(.empty)) else { return }
     guard checkPreferencesStateUseCase(with: .messagesActivity(.empty)) else { return }
+    guard checkCollectStateUseCase(with: .messagesActivity(.empty)) else { return }
     
     _ = combineLatest(
         searchGlobal(with: context),
@@ -42,13 +42,15 @@ public func collectMessagesActivity(
         default: break
         }
         
-        collectMessagesActivityUseCase(
-            with: context.account.peerId.toInt64(),
-            allMessagesCount: allCount,
-            userMessagesCount: userCount
-        )
-        
-        completion()
+        Task {
+            await collectMessagesActivityUseCase(
+                with: context.account.peerId.toInt64(),
+                allMessagesCount: allCount,
+                userMessagesCount: userCount
+            )
+            
+            completion()
+        }
     }
 }
 

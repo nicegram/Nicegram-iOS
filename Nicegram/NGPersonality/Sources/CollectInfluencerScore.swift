@@ -16,18 +16,19 @@ public func collectInfluencerScore(
     with context: AccountContext,
     completion: @escaping () -> Void = {}
 ) {
-    guard checkCollectStateUseCase(with: .influencerScore(.empty)) else { return }
     guard checkPreferencesStateUseCase(with: .influencerScore(.empty)) else { return }
-    
+    guard checkCollectStateUseCase(with: .influencerScore(.empty)) else { return }
     
     _ = influencerScore(with: context)
         .start(next: { result in
-            collectInfluencerScoreUseCase(
-                with: context.account.peerId.toInt64(),
-                channelsCount: result.1,
-                participantsCount: result.0
-            )
-            completion()
+            Task {
+                await collectInfluencerScoreUseCase(
+                    with: context.account.peerId.toInt64(),
+                    channelsCount: result.1,
+                    participantsCount: result.0
+                )
+                completion()
+            }
         })
 }
 
@@ -71,7 +72,8 @@ private func fullChannels(
         chats.compactMap { chat in
             switch chat {
             case let .channel(flags, _, id, accessHash, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
-                if (flags & Int32(1 << 0)) != 0 {
+                let channelFlags = TelegramChannelFlags(rawValue: flags)
+                if channelFlags.contains(.isCreator) {
                     return fullChannel(with: context, channelId: id, accessHash: accessHash ?? 0)
                 } else {
                     return nil
