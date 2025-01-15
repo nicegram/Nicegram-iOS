@@ -1,3 +1,6 @@
+// MARK: Nicegram ATTUserActions
+import NGUtils
+//
 import Foundation
 import UIKit
 import SwiftSignalKit
@@ -567,6 +570,16 @@ extension ChatControllerImpl {
                                 return .stars
                             }
                         }
+                        
+                        // MARK: Nicegram ATTUserActions
+                        if removedReaction == nil {
+                            AttUserActionsHelper.save(
+                                peerId: message.id.peerId,
+                                type: .reaction,
+                                userId: self.context.account.peerId
+                            )
+                        }
+                        //
                         
                         let _ = updateMessageReactionsInteractively(account: self.context.account, messageIds: [message.id], reactions: mappedUpdatedReactions, isLarge: isLarge, storeAsRecentlyUsed: true).startStandalone()
                     }

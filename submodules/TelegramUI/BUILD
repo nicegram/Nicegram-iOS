@@ -27,8 +27,7 @@ NGDEPS = [
     "@swiftpkg_nicegram_assistant_ios//:FeatTgChatButton",
     "@swiftpkg_nicegram_assistant_ios//:NGEntryPoint",
     "@swiftpkg_nicegram_assistant_ios//:_NGRemoteConfig",
-    "//Nicegram/NGCollectInformation:NGCollectInformation",
-    "//Nicegram/NGPersonality:NGPersonality",
+    "//Nicegram/NGCollectInformation:NGCollectInformation"
 ]
 
 load(

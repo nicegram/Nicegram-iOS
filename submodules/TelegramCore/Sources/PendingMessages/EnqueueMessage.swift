@@ -165,6 +165,19 @@ public enum EnqueueMessage {
     }
 }
 
+// MARK: Nicegram
+public extension EnqueueMessage {
+    var threadId: Int64? {
+        switch self {
+        case let .message(_, _, _, _, threadId, _, _, _, _, _):
+            return threadId
+        case let .forward(_, threadId, _, _, _, _):
+            return threadId
+        }
+    }
+}
+//
+
 private extension EnqueueMessage {
     var correlationId: Int64? {
         switch self {
