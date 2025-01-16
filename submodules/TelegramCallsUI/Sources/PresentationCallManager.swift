@@ -18,6 +18,7 @@ import NGData
 import NGStrings
 import UndoUI
 import NGUtils
+import FeatCallRecorder
 //
 private func callKitIntegrationIfEnabled(_ integration: CallKitIntegration?, settings: VoiceCallSettings?) -> CallKitIntegration?  {
     let enabled = settings?.enableSystemIntegration ?? true
@@ -1066,8 +1067,9 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
             alternativeRepresentations: []
         )
 
+        let text = "\(userDisplayName)-\(dateFormatter.string(from: date))"
         let message: EnqueueMessage = .message(
-            text: "\(userDisplayName)-\(dateFormatter.string(from: date))",
+            text: text,
             attributes: [],
             inlineStickers: [:],
             mediaReference: .standalone(media: file),
@@ -1081,11 +1083,20 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
 
         DispatchQueue.main.async {
             if let account = self.accountContext?.account {
+                let setCallRecorderHistoryUseCase = FeatCallRecorderModule.shared.setCallRecorderHistoryUseCase()
                 let _ = enqueueMessages(
                     account: account,
                     peerId: account.peerId,
                     messages: [message]
-                ).start(completed: { [weak self] in
+                ).start(next: { messagesIds in
+                    if let messageId = messagesIds.compactMap({ $0 }).first {
+                        setCallRecorderHistoryUseCase(
+                            with: account.peerId.toInt64(),
+                            id: messageId.id,
+                            text: text
+                        )
+                    }
+                }, completed: { [weak self] in
                     self?.deleteFile(from: path)
                     self?.showRecordSaveToast()
                     sendCallRecorderAnalytics(with: .end)

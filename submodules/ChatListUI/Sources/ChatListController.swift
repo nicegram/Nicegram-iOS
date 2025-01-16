@@ -814,6 +814,23 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         })
         
         self.updateNavigationMetadata()
+        
+// MARK: Nicegram NCG-7102 bottom folders fix
+        _ = mainReady
+            .get()
+            .start { [weak self] flag in
+                guard let self else { return }
+                
+                if flag,
+                   NGSettings.rememberFolderOnExit,
+                   NGData.isPremium() {
+                    let lastFolder = NGSettings.lastFolder
+                    if lastFolder != -1 {
+                        self.selectTab(id: .filter(lastFolder))
+                    }
+                }
+            }
+//
     }
 
     required public init(coder aDecoder: NSCoder) {
@@ -4029,13 +4046,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             if !notifiedFirstUpdate {
                 notifiedFirstUpdate = true
                 firstUpdate?()
-                // MARK: Nicegram folder after restart
-                if NGSettings.rememberFolderOnExit, NGData.isPremium() {
-                    let lastFolder = NGSettings.lastFolder
-                    if lastFolder != -1 {
-                        strongSelf.selectTab(id: .filter(lastFolder))
-                    }
-                }
             }
             
             if resetCurrentEntry {

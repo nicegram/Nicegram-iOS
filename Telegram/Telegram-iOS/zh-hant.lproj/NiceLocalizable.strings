@@ -1,5 +1,7 @@
 "AppName" = "Nicegram";
 
+"ViewAuditReport" = "查看CertiK報告";
+
 /*Common*/
 "Nicegram.PrivacyPolicy" = "隱私權政策";
 "Nicegram.EULA" = "授權條款";

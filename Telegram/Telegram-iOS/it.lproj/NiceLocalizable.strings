@@ -1,5 +1,7 @@
 "AppName" = "Nicegram";
 
+"ViewAuditReport" = "Visualizza il rapporto CertiK";
+
 /*Common*/
 "Nicegram.PrivacyPolicy" = "Informativa sulla privacy";
 "Nicegram.EULA" = "EULA";

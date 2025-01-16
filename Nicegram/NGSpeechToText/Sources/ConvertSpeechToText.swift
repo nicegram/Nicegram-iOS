@@ -36,6 +36,11 @@ public func convertSpeechToText(
             return
         }
     }
+    
+    guard let id else {
+        completion?()
+        return
+    }
 
     checkPremium { isPremium in
         if isPremium &&
@@ -51,9 +56,9 @@ public func convertSpeechToText(
                 completion: completion
             )
         } else {
-            if let id,
-               let locale = NGSettings.appleSpeechToTextLocale[id],
-               languageStyle == .normal {
+            let locale = NGSettings.appleSpeechToTextLocale[id] ?? Locale.current
+
+            if languageStyle == .normal {
                 startConvertSpeechToTextTask(
                     from: source,
                     context: context,
@@ -74,11 +79,10 @@ public func convertSpeechToText(
                     style: languageStyle,
                     currentLocale: currentLocale
                 ) { locale in
-                    if let id {
-                       var appleSpeechToTextLocale = NGSettings.appleSpeechToTextLocale
-                        appleSpeechToTextLocale[id] = locale
-                        NGSettings.appleSpeechToTextLocale = appleSpeechToTextLocale
-                    }
+                    var appleSpeechToTextLocale = NGSettings.appleSpeechToTextLocale
+                    appleSpeechToTextLocale[id] = locale
+                    NGSettings.appleSpeechToTextLocale = appleSpeechToTextLocale
+                    
                     _ = controllerInteraction.navigationController()?.popViewController(animated: true)
                     startConvertSpeechToTextTask(
                         from: source,
