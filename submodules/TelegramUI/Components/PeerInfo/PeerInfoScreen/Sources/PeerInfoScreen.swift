@@ -53,7 +53,6 @@ import struct FeatPremiumUI.PremiumUITgHelper
 import FeatTgUserNotes
 import FeatWallet
 import NGAiChatUI
-import _NGRemoteConfig
 import NGRepoUser
 import NGWebUtils
 import NGStrings
@@ -1000,11 +999,9 @@ private func settingsItems(data: PeerInfoScreenData?, context: AccountContext, p
     
     // MARK: Nicegram Wallet
     let getWalletAvailabilityUseCase = WalletContainer.shared.getWalletAvailabilityUseCase()
-    let getAuditConfigUseCase = RemoteConfigContainer.shared.getAuditConfigUseCase()
-    let urlOpener = CoreContainer.shared.urlOpener()
     if #available(iOS 15.0, *), getWalletAvailabilityUseCase() {
         let sectionTitle = "Non-custodial"
-        let buttonText = "Nicegram Wallet"
+        let buttonText = "Solana Wallet"
         
         items[.nicegramWallet]?.append(PeerInfoScreenHeaderItem(id: 0, text: sectionTitle))
         items[.nicegramWallet]!.append(PeerInfoScreenDisclosureItem(id: 1, text: buttonText, icon: PresentationResourcesSettings.ngWalletIcon, action: {
@@ -1012,14 +1009,6 @@ private func settingsItems(data: PeerInfoScreenData?, context: AccountContext, p
                 WalletEntryPoints.openHome()
             }
         }))
-        
-        if let auditConfig = getAuditConfigUseCase() {
-            items[.nicegramWallet]!.append(PeerInfoScreenDisclosureItem(id: 2, text: l("ViewAuditReport"), icon: PresentationResourcesSettings.ngAuditIcon, action: {
-                Task { @MainActor in
-                    urlOpener.open(auditConfig.reportLink)
-                }
-            }))
-        }
     }
     //
     

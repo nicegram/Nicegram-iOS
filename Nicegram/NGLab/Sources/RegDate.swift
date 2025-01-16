@@ -142,6 +142,44 @@ public func makeNiceRegDateStr(_ date: String) -> String {
     }
 }
 
+public func getDaysFromRegDate(with id: Int64) -> Signal<Int?, NoError> {
+    if let dateString = getCachedRegDate(id) {
+        return .single(days(from: dateString))
+    } else {
+        return getRegDate(id)
+            .skipError()
+            |> map { dateString in
+                days(from: dateString)
+            }
+    }
+}
+
+private func days(from dateString: String, to: Date = Date()) -> Int? {
+    let monthDateFormatter = DateFormatter()
+    monthDateFormatter.dateFormat = "yyyy-MM"
+    
+    let dayDateFormatter = DateFormatter()
+    dayDateFormatter.dateFormat = "yyyy-MM-dd"
+    
+    var convertDateFormatter = DateFormatter()
+    
+    var date: Date?
+    if let monthDate = monthDateFormatter.date(from: dateString) {
+        date = monthDate
+    } else if let dayDate = dayDateFormatter.date(from: dateString) {
+        date = dayDate
+    }
+    
+    if let date {
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.day], from: date, to: to)
+        if let days = components.day {
+            return days
+        }
+    }
+    
+    return nil
+}
 
 public func resetRegDateCache() -> Void {
     UserDefaults.standard.removePersistentDomain(forName: "CachedRegDate")

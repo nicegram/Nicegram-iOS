@@ -66,7 +66,6 @@ private func renderIcon(name: String, scaleFactor: CGFloat = 1.0, backgroundColo
 public struct PresentationResourcesSettings {
     // MARK: Nicegram
     public static let ngAiChatIcon = renderIcon(name: "ng-settings/ai-chatbot")
-    public static let ngAuditIcon = renderIcon(name: "ng-settings/audit")
     public static let ngPremiumIcon = renderIcon(name: "ng-settings/premium")
     public static let ngSettingsIcon = renderIcon(name: "ng-settings/settings")
     public static let ngWalletIcon = renderIcon(name: "ng-settings/wallet")
