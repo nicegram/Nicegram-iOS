@@ -30,12 +30,12 @@ public func collectInfluencerScore(
     
     await collectInfluencerScoreUseCase(
         with: context.account.peerId.toInt64(),
-        ownerCount: result.0,
-        ownerParticipantsCount: result.1,
-        allGroupsCount: result.2,
-        allGroupsParticipantsCount: result.3,
-        allChannelsCount: result.4,
-        allChatParticipantsCount: result.5
+        ownerChannelCount: result.0,
+        ownerChannelParticipantsCount: result.1,
+        ownerGroupCount: result.2,
+        ownerGroupParticipantsCount: result.3,
+        groupCount: result.4,
+        groupParticipantsCount: result.5
     )
 }
 
@@ -53,13 +53,14 @@ private func influencerScore(
         }
     }
     |> map { fullChannels -> (Int32, Int32, Int32, Int32, Int32, Int32) in
-        var ownerParticipantsCount: Int32 = 0
-        var ownerCount: Int32 = 0
-        var allGroupsParticipantsCount: Int32 = 0
-        var allGroupsCount: Int32 = 0
-        var allChannelsCount: Int32 = 0
-        var allChatParticipantsCount: Int32 = 0
-        
+        var ownerChannelCount: Int32 = 0
+        var ownerChannelParticipantsCount: Int32 = 0
+        var ownerGroupCount: Int32 = 0
+        var ownerGroupParticipantsCount: Int32 = 0
+
+        var groupCount: Int32 = 0
+        var groupParticipantsCount: Int32 = 0
+                
         fullChannels.forEach { chatFull in
             switch chatFull {
             case let .chatFull(fullChat, _, _):
@@ -67,24 +68,34 @@ private func influencerScore(
                 case let .channelFull(flags, _, _, _, participantsCount, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
                     let channelFlags = TelegramChannelFlags(rawValue: flags)
                     if channelFlags.contains(.isCreator) {
-                        ownerCount += 1
-                        ownerParticipantsCount += (participantsCount ?? 0)
+                        if channelFlags.contains(.isMegagroup) ||
+                           channelFlags.contains(.isGigagroup) {
+                            ownerGroupCount += 1
+                            ownerGroupParticipantsCount += (participantsCount ?? 0)
+                        } else {
+                            ownerChannelCount += 1
+                            ownerChannelParticipantsCount += (participantsCount ?? 0)
+                        }
                     }
-                    allGroupsParticipantsCount += (participantsCount ?? 0)
-                    allGroupsCount += 1
-                case let .chatFull(_, _, _, participants, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
-                    switch participants {
-                    case let .chatParticipants(_, participants, _):
-                        allChatParticipantsCount += Int32(participants.count)
-                    default: break
+                    if channelFlags.contains(.isMegagroup) ||
+                        channelFlags.contains(.isGigagroup) {
+                        groupCount += 1
+                        groupParticipantsCount += (participantsCount ?? 0)
                     }
-                    allChannelsCount += 1
+                default: break
                 }
             default: break
             }
         }
 
-        return (ownerCount, ownerParticipantsCount, allGroupsCount, allGroupsParticipantsCount, allChannelsCount, allChatParticipantsCount)
+        return (
+            ownerChannelCount,
+            ownerChannelParticipantsCount,
+            ownerGroupCount,
+            ownerGroupParticipantsCount,
+            groupCount,
+            groupParticipantsCount
+        )
     }
 }
 

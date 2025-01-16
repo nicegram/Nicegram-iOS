@@ -29,6 +29,7 @@ class NGDeeplinkHandler {
     
     private let tgAccountContext: AccountContext
     private let navigationController: NavigationController?
+    private let analyticsManager = AnalyticsContainer.shared.analyticsManager()
     
     //  MARK: - Lifecycle
     
@@ -101,6 +102,11 @@ class NGDeeplinkHandler {
             return true
         case "personality":
             if #available(iOS 15.0, *) {
+                analyticsManager.trackEvent(
+                    "nice_personality_banner_clicked",
+                    params: [:]
+                )
+                
                 PersonalityPresenter().present()
             }
             return true

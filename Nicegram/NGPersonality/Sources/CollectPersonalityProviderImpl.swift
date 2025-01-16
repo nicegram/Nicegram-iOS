@@ -24,6 +24,8 @@ extension PersonalityProviderImpl: PersonalityProvider {
     public func loadInformation() async -> PersonalityInformation {
         do {
             let context = try contextProvider.context().unwrap()
+
+            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
             
             let result = try await loadUserInformation(with: context).awaitForFirstValue()
             
@@ -31,7 +33,8 @@ extension PersonalityProviderImpl: PersonalityProvider {
                 id: result.0,
                 displayName: result.1,
                 avatar: result.2,
-                daysFromCreation: result.3
+                daysFromCreation: result.3,
+                overallDarkAppearance: presentationData.theme.overallDarkAppearance
             )
         } catch {
             return PersonalityInformation(id: 0)
