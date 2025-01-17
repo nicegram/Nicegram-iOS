@@ -26,6 +26,7 @@ swift_library(
         "//submodules/Components/ViewControllerComponent",
         "//submodules/Components/BundleIconComponent",
         "//submodules/Components/MultilineTextComponent",
+        "//submodules/Components/MultilineTextWithEntitiesComponent",
         "//submodules/Components/BalancedTextComponent",
         "//submodules/TelegramUI/Components/ListSectionComponent",
         "//submodules/TelegramUI/Components/ListActionItemComponent",
@@ -44,6 +45,8 @@ swift_library(
         "//submodules/TelegramUI/Components/ChatEntityKeyboardInputNode",
         "//submodules/InAppPurchaseManager",
         "//submodules/Components/BlurredBackgroundComponent",
+        "//submodules/ProgressNavigationButtonNode",
+        "//submodules/TelegramUI/Components/Gifts/GiftViewScreen",
     ],
     visibility = [
         "//visibility:public",

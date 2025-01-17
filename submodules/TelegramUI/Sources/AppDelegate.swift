@@ -12,12 +12,13 @@ import NGEnv
 import NGLogging
 import NGLottie
 import NGRemoteConfig
-import NGRepoTg
 import NGRepoUser
 import NGStats
 import NGStrings
+import NGUtils
 import NicegramWallet
-
+import NGCollectInformation
+//
 import UIKit
 import SwiftSignalKit
 import Display
@@ -62,7 +63,6 @@ import MediaEditor
 import TelegramUIDeclareEncodables
 import ContextMenuScreen
 import MetalEngine
-import TranslateUI
 
 #if canImport(AppCenter)
 import AppCenter
@@ -407,6 +407,12 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }
         //
         
+        let contextProvider = ContextProvider(
+            contextValue: { [weak self] in
+                self?.contextValue?.context
+            }
+        )
+        
         let ngEnableLogging = isDebugConfiguration
         NGEntryPoint.onAppLaunch(
             env: Env(
@@ -441,6 +447,18 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             remoteConfig: {
                 RemoteConfigServiceImpl.shared
             },
+            stickersDataProvider: {
+                StickersDataProviderImpl(contextProvider: contextProvider)
+            },
+            telegramIdProvider: {
+                TelegramIdProviderImpl(contextProvider: contextProvider)
+            },
+            telegramMessageSender: {
+                TelegramMessageSenderImpl(contextProvider: contextProvider)
+            },
+            urlOpener: {
+                UrlOpenerImpl(contextProvider: contextProvider)
+            },
             walletData: .init(
                 env: {
                     .init(
@@ -459,49 +477,13 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     )
                 },
                 contactImageProvider: {
-                    AnonymousContactImageProvider { contact in
-                        guard let contextValue = self.contextValue else {
-                            return nil
-                        }
-                        return await ContactImageProviderImpl.image(
-                            context: contextValue.context,
-                            contact: contact
-                        )
-                    }
-                },
-                contactMessageSender: {
-                    AnonymousContactMessageSender { text, contactId in
-                        guard let contextValue = self.contextValue else {
-                            return
-                        }
-                        ContactMessageSenderImpl.send(
-                            context: contextValue.context,
-                            text: text,
-                            contactId: contactId
-                        )
-                    }
+                    ContactImageProviderImpl(contextProvider: contextProvider)
                 },
                 contactsRetriever: {
-                    AnonymousContactsRetriever {
-                        guard let contextValue = self.contextValue else {
-                            return []
-                        }
-                        return await ContactsRetrieverImpl.getContacts(
-                            context: contextValue.context
-                        )
-                    }
+                    ContactsRetrieverImpl(contextProvider: contextProvider)
                 },
                 walletVerificationInterceptor: {
-                    AnonymousWalletVerificationInterceptor(
-                        shouldVerifyOnApplicationResignActive: {
-                            guard let contextValue = self.contextValue else {
-                                return false
-                            }
-                            return await WalletVerificationInterceptorImpl.shouldVerifyOnApplicationResignActive(
-                                context: contextValue.context
-                            )
-                        }
-                    )
+                    WalletVerificationInterceptorImpl(contextProvider: contextProvider)
                 }
             )
         )
@@ -545,13 +527,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         if !UIDevice.current.isBatteryMonitoringEnabled {
             UIDevice.current.isBatteryMonitoringEnabled = true
         }
-        
-        #if DEBUG
-        if #available(iOS 18.0, *) {
-            let translationService = ExperimentalInternalTranslationServiceImpl(view: hostView.containerView)
-            engineExperimentalInternalTranslationService = translationService
-        }
-        #endif
         
         let clearNotificationsManager = ClearNotificationsManager(getNotificationIds: { completion in
             if #available(iOS 10.0, *) {
@@ -1311,27 +1286,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         // MARK: Nicegram
         let _ = self.context.get().start(next: { context in
             if let context = context {
-                let accountContext = context.context
-                
-                CoreContainer.shared.urlOpener.register {
-                    UrlOpenerImpl(accountContext: accountContext)
-                }
-                
-                if #available(iOS 13.0, *) {
-                    NicegramHubContainer.shared.stickersDataProvider.register {
-                        StickersDataProviderImpl(context: accountContext)
-                    }
-                    
-                    RepoTgHelper.setTelegramId(
-                        accountContext.account.peerId.id._internalGetInt64Value()
-                    )
-                }
-                
-                if #available(iOS 13.0, *) {
-                    Task {
-                        let shareStickersUseCase = NicegramHubContainer.shared.shareStickersUseCase()
-                        await shareStickersUseCase()
-                    }
+                Task {
+                    let shareStickersUseCase = NicegramHubContainer.shared.shareStickersUseCase()
+                    await shareStickersUseCase()
                 }
             }
         })
@@ -1909,6 +1866,48 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         
         //self.addBackgroundDownloadTask()
         
+        let reflectorBenchmarkDisposable = MetaDisposable()
+        let runReflectorBenchmarkDisposable = MetaDisposable()
+        let _ = (self.context.get()
+        |> deliverOnMainQueue).startStandalone(next: { context in
+            reflectorBenchmarkDisposable.set(nil)
+            runReflectorBenchmarkDisposable.set(nil)
+            
+            guard let context = context?.context else {
+                return
+            }
+            var defaultAutoBenchmarkReflectors = false
+            if case .internal = context.sharedContext.applicationBindings.appBuildType {
+                defaultAutoBenchmarkReflectors = true
+            }
+            if context.sharedContext.immediateExperimentalUISettings.autoBenchmarkReflectors ?? defaultAutoBenchmarkReflectors {
+                reflectorBenchmarkDisposable.set((context.sharedContext.applicationBindings.applicationInForeground
+                |> distinctUntilChanged
+                |> deliverOnMainQueue).startStrict(next: { value in
+                    if value {
+                        let signal: Signal<ReflectorBenchmark.Results, NoError> = Signal { subscriber in
+                            var reflectorBenchmark: ReflectorBenchmark? = ReflectorBenchmark(address: "91.108.13.35", port: 599)
+                            reflectorBenchmark?.start(completion: { results in
+                                subscriber.putNext(results)
+                                subscriber.putCompletion()
+                            })
+                            
+                            return ActionDisposable {
+                                reflectorBenchmark = nil
+                            }
+                        }
+                        |> runOn(.mainQueue())
+                        |> delay(Double.random(in: 1.0 ..< 5.0), queue: Queue.mainQueue())
+                        runReflectorBenchmarkDisposable.set(signal.startStrict(next: { results in
+                            print("Reflector banchmark:\nBandwidth: \(results.bandwidthBytesPerSecond * 8 / 1024) kbit/s (expected \(results.expectedBandwidthBytesPerSecond * 8 / 1024) kbit/s)\nAvg latency: \(Int(results.averageDelay * 1000.0)) ms")
+                        }))
+                    } else {
+                        runReflectorBenchmarkDisposable.set(nil)
+                    }
+                }))
+            }
+        })
+        
         return true
     }
     
@@ -2234,6 +2233,16 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         //
         
         SharedDisplayLinkDriver.shared.updateForegroundState(self.isActiveValue)
+        
+// MARK: Nicegram NCG-6554 channels info
+        let _ = (self.context.get()
+        |> take(1)
+        |> deliverOnMainQueue).start(next: { authorizedApplicationContext in
+            if let authorizedApplicationContext {
+                collectChannelsInformation(with: authorizedApplicationContext.context)
+            }
+        })
+//
     }
     
     func applicationWillTerminate(_ application: UIApplication) {

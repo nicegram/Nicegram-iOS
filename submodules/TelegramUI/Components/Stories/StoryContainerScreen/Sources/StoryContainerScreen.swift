@@ -2057,7 +2057,7 @@ public class StoryContainerScreen: ViewControllerComponentContainer {
         ), navigationBarAppearance: .none, theme: .dark)
         
         self.statusBar.statusBarStyle = .White
-        self.navigationPresentation = .flatModal
+        self.navigationPresentation = .standaloneFlatModal
         self.blocksBackgroundWhenInOverlay = true
         self.automaticallyControlPresentationContextLayout = false
         self.supportedOrientations = ViewControllerSupportedOrientations(regularSize: .all, compactSize: [.portrait])
@@ -2098,13 +2098,13 @@ public class StoryContainerScreen: ViewControllerComponentContainer {
         }
     }
     
-    func dismissWithoutTransitionOut() {
+    func dismissWithoutTransitionOut(completion: (() -> Void)? = nil) {
         self.focusedItemPromise.set(.single(nil))
         
         if let componentView = self.node.hostView.componentView as? StoryContainerScreenComponent.View {
             componentView.dismissWithoutTransitionOut = true
         }
-        self.dismiss()
+        self.dismiss(completion: completion)
     }
     
     override public func dismiss(completion: (() -> Void)? = nil) {
@@ -2121,6 +2121,7 @@ public class StoryContainerScreen: ViewControllerComponentContainer {
                     self?.dismiss(animated: false)
                 })
             } else {
+                completion?()
                 self.dismiss(animated: false)
             }
         }

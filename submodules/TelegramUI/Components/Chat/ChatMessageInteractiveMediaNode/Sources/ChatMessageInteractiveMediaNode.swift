@@ -800,6 +800,13 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
         return { [weak self] context, presentationData, dateTimeFormat, message, associatedData, attributes, media, mediaIndex, dateAndStatus, automaticDownload, peerType, peerId, sizeCalculation, layoutConstants, contentMode, presentationContext in
             let _ = peerType
             
+            var useInlineHLS = true
+            if let data = context.currentAppConfiguration.with({ $0 }).data {
+                if let value = data["ios_inline_hls_v2"] as? Double {
+                    useInlineHLS = value != 0.0
+                }
+            }
+            
             var nativeSize: CGSize
             
             let isSecretMedia = message.containsSecretMedia
@@ -1020,6 +1027,13 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
             
             return (nativeSize, maxWidth, { constrainedSize, automaticPlayback, wideLayout, corners in
                 var resultWidth: CGFloat
+                
+                var automaticPlayback = automaticPlayback
+                if let file = media as? TelegramMediaFile, NativeVideoContent.isHLSVideo(file: file) {
+                    if automaticDownload != .full {
+                        automaticPlayback = false
+                    }
+                }
                 
                 isInlinePlayableVideo = isInlinePlayableVideo && automaticPlayback
                 
@@ -1273,8 +1287,10 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                                         loadHLSRangeVideoFile = file
                                         
                                         var passFile = true
-                                        if NativeVideoContent.isHLSVideo(file: file), let minimizedQualityFile = HLSVideoContent.minimizedHLSQuality(file: .message(message: MessageReference(message), media: file)) {
-                                            file = minimizedQualityFile.file.media
+                                        if NativeVideoContent.isHLSVideo(file: file), let minimizedQualityFile = HLSVideoContent.minimizedHLSQuality(file: .message(message: MessageReference(message), media: file), codecConfiguration: HLSCodecConfiguration(context: context)) {
+                                            if !useInlineHLS {
+                                                file = minimizedQualityFile.file.media
+                                            }
                                             if hlsInlinePlaybackRange == nil {
                                                 passFile = false
                                             }
@@ -1398,8 +1414,10 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                                 loadHLSRangeVideoFile = file
                                 
                                 var passFile = true
-                                if NativeVideoContent.isHLSVideo(file: file), let minimizedQualityFile = HLSVideoContent.minimizedHLSQuality(file: .message(message: MessageReference(message), media: file)) {
-                                    file = minimizedQualityFile.file.media
+                                if NativeVideoContent.isHLSVideo(file: file), let minimizedQualityFile = HLSVideoContent.minimizedHLSQuality(file: .message(message: MessageReference(message), media: file), codecConfiguration: HLSCodecConfiguration(context: context)) {
+                                    if !useInlineHLS {
+                                        file = minimizedQualityFile.file.media
+                                    }
                                     if hlsInlinePlaybackRange == nil {
                                         passFile = false
                                     }
@@ -1590,7 +1608,7 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                                 }
                             }
                         } else if let file = media as? TelegramMediaFile {
-                            if NativeVideoContent.isHLSVideo(file: file), let minimizedQuality = HLSVideoContent.minimizedHLSQuality(file: .standalone(media: file)) {
+                            if NativeVideoContent.isHLSVideo(file: file), let minimizedQuality = HLSVideoContent.minimizedHLSQuality(file: .standalone(media: file), codecConfiguration: HLSCodecConfiguration(context: context)) {
                                 let postbox = context.account.postbox
                                 
                                 let playlistStatusSignal = postbox.mediaBox.resourceStatus(minimizedQuality.playlist.media.resource)
@@ -1617,7 +1635,7 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                                         break
                                     }
                                     
-                                    return HLSVideoContent.minimizedHLSQualityPreloadData(postbox: postbox, file: .message(message: MessageReference(message), media: file), userLocation: .peer(message.id.peerId), prefixSeconds: 10, autofetchPlaylist: true)
+                                    return HLSVideoContent.minimizedHLSQualityPreloadData(postbox: postbox, file: .message(message: MessageReference(message), media: file), userLocation: .peer(message.id.peerId), prefixSeconds: 10, autofetchPlaylist: true, codecConfiguration: HLSCodecConfiguration(context: context))
                                     |> mapToSignal { preloadData -> Signal<(MediaResourceStatus, MediaResourceStatus?), NoError> in
                                         guard let preloadData else {
                                             return .single((.Local, nil))
@@ -1782,28 +1800,42 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                                     let loopVideo = updatedVideoFile.isAnimated
                                     
                                     let videoContent: UniversalVideoContent
-                                    videoContent = NativeVideoContent(
-                                        id: .message(message.stableId, updatedVideoFile.fileId),
-                                        userLocation: .peer(message.id.peerId),
-                                        fileReference: .message(message: MessageReference(message), media: updatedVideoFile),
-                                        limitedFileRange: hlsInlinePlaybackRange,
-                                        streamVideo: streamVideo ? .conservative : .none,
-                                        loopVideo: loopVideo,
-                                        enableSound: false,
-                                        fetchAutomatically: false,
-                                        onlyFullSizeThumbnail: (onlyFullSizeVideoThumbnail ?? false),
-                                        autoFetchFullSizeThumbnail: true,
-                                        continuePlayingWithoutSoundOnLostAudioSession: isInlinePlayableVideo,
-                                        placeholderColor: emptyColor,
-                                        captureProtected: message.isCopyProtected() || isExtendedMedia,
-                                        storeAfterDownload: { [weak context] in
-                                            guard let context, let peerId else {
-                                                return
+                                    if useInlineHLS && NativeVideoContent.isHLSVideo(file: updatedVideoFile) {
+                                        videoContent = HLSVideoContent(
+                                            id: .message(message.stableId, updatedVideoFile.fileId),
+                                            userLocation: .peer(message.id.peerId),
+                                            fileReference: .message(message: MessageReference(message), media: updatedVideoFile),
+                                            loopVideo: loopVideo,
+                                            enableSound: false,
+                                            fetchAutomatically: false,
+                                            onlyFullSizeThumbnail: (onlyFullSizeVideoThumbnail ?? false),
+                                            autoFetchFullSizeThumbnail: true,
+                                            codecConfiguration: HLSCodecConfiguration(context: context)
+                                        )
+                                    } else {
+                                        videoContent = NativeVideoContent(
+                                            id: .message(message.stableId, updatedVideoFile.fileId),
+                                            userLocation: .peer(message.id.peerId),
+                                            fileReference: .message(message: MessageReference(message), media: updatedVideoFile),
+                                            limitedFileRange: hlsInlinePlaybackRange,
+                                            streamVideo: streamVideo ? .conservative : .none,
+                                            loopVideo: loopVideo,
+                                            enableSound: false,
+                                            fetchAutomatically: false,
+                                            onlyFullSizeThumbnail: (onlyFullSizeVideoThumbnail ?? false),
+                                            autoFetchFullSizeThumbnail: true,
+                                            continuePlayingWithoutSoundOnLostAudioSession: isInlinePlayableVideo,
+                                            placeholderColor: emptyColor,
+                                            captureProtected: message.isCopyProtected() || isExtendedMedia,
+                                            storeAfterDownload: { [weak context] in
+                                                guard let context, let peerId else {
+                                                    return
+                                                }
+                                                let _ = storeDownloadedMedia(storeManager: context.downloadedMediaStoreManager, media: .message(message: MessageReference(message), media: updatedVideoFile), peerId: peerId).startStandalone()
                                             }
-                                            let _ = storeDownloadedMedia(storeManager: context.downloadedMediaStoreManager, media: .message(message: MessageReference(message), media: updatedVideoFile), peerId: peerId).startStandalone()
-                                        }
-                                    )
-                                    let videoNode = UniversalVideoNode(accountId: context.account.id, postbox: context.account.postbox, audioSession: mediaManager.audioSession, manager: mediaManager.universalVideoManager, decoration: decoration, content: videoContent, priority: .embedded)
+                                        )
+                                    }
+                                    let videoNode = UniversalVideoNode(context: context, postbox: context.account.postbox, audioSession: mediaManager.audioSession, manager: mediaManager.universalVideoManager, decoration: decoration, content: videoContent, priority: .embedded)
                                     videoNode.isUserInteractionEnabled = false
                                     videoNode.ownsContentNodeUpdated = { [weak self] owns in
                                         if let strongSelf = self {
@@ -1908,6 +1940,8 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                                     imageDimensions = dimensions.cgSize
                                 } else if let image = media as? TelegramMediaWebFile, let dimensions = image.dimensions {
                                     imageDimensions = dimensions.cgSize
+                                } else if let file = media as? TelegramMediaWebFile, let dimensions = file.dimensions {
+                                    imageDimensions = dimensions.cgSize
                                 }
 
                                 if let imageDimensions = imageDimensions {
@@ -1987,7 +2021,7 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                                 
                                 if automaticDownload != .none, let file = media as? TelegramMediaFile, NativeVideoContent.isHLSVideo(file: file) {
                                     let postbox = context.account.postbox
-                                    let fetchSignal = HLSVideoContent.minimizedHLSQualityPreloadData(postbox: context.account.postbox, file: .message(message: MessageReference(message), media: file), userLocation: .peer(message.id.peerId), prefixSeconds: 10, autofetchPlaylist: true)
+                                    let fetchSignal = HLSVideoContent.minimizedHLSQualityPreloadData(postbox: context.account.postbox, file: .message(message: MessageReference(message), media: file), userLocation: .peer(message.id.peerId), prefixSeconds: 10, autofetchPlaylist: true, codecConfiguration: HLSCodecConfiguration(context: context))
                                     |> mapToSignal { fileAndRange -> Signal<Never, NoError> in
                                         guard let fileAndRange else {
                                             return .complete()
@@ -2063,7 +2097,8 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                                         file: .message(message: MessageReference(message), media: loadHLSRangeVideoFile),
                                         userLocation: .peer(message.id.peerId),
                                         prefixSeconds: 10,
-                                        autofetchPlaylist: true
+                                        autofetchPlaylist: true,
+                                        codecConfiguration: HLSCodecConfiguration(context: context)
                                     )
                                     |> deliverOnMainQueue).startStrict(next: { [weak strongSelf] preloadData in
                                         guard let strongSelf else {

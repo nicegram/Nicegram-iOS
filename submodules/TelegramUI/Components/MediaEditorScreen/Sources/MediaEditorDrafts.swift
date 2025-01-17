@@ -9,7 +9,7 @@ import AccountContext
 import MediaEditor
 import DrawingUI
 
-extension MediaEditorScreen {
+extension MediaEditorScreenImpl {
     func isEligibleForDraft() -> Bool {
         if self.isEditingStory {
             return false
@@ -20,6 +20,10 @@ extension MediaEditorScreen {
         let entities = self.node.entitiesView.entities.filter { !($0 is DrawingMediaEntity) }
         let codableEntities = DrawingEntitiesView.encodeEntities(entities, entitiesView: self.node.entitiesView)
         mediaEditor.setDrawingAndEntities(data: nil, image: mediaEditor.values.drawing, entities: codableEntities)
+        
+        if case .avatarEditor = self.mode {
+            return false
+        }
         
         let filteredEntities = self.node.entitiesView.entities.filter { entity in
             if entity is DrawingMediaEntity {
@@ -41,13 +45,15 @@ extension MediaEditorScreen {
                 return false
             } else if case .empty = subject, !self.node.hasAnyChanges && !self.node.drawingView.internalState.canUndo {
                 return false
+            } else if case .videoCollage = subject {
+                return false
             }
         }
         return true
     }
     
     func saveDraft(id: Int64?, edit: Bool = false) {
-        guard let subject = self.node.subject, let actualSubject = self.node.actualSubject, let mediaEditor = self.node.mediaEditor else {
+        guard case .storyEditor = self.mode, let subject = self.node.subject, let actualSubject = self.node.actualSubject, let mediaEditor = self.node.mediaEditor else {
             return
         }
         try? FileManager.default.createDirectory(atPath: draftPath(engine: self.context.engine), withIntermediateDirectories: true)
@@ -173,6 +179,8 @@ extension MediaEditorScreen {
                     innerSaveDraft(media: .image(image: image, dimensions: dimensions))
                 case let .video(path, _, _, _, _, dimensions, _, _, _):
                     innerSaveDraft(media: .video(path: path, dimensions: dimensions, duration: duration))
+                case let .videoCollage(items):
+                    let _ = items
                 case let .asset(asset):
                     if asset.mediaType == .video {
                         PHImageManager.default().requestAVAsset(forVideo: asset, options: nil) { avAsset, _, _ in

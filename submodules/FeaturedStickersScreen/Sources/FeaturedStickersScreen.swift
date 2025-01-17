@@ -9,7 +9,6 @@ import AccountContext
 import TelegramPresentationData
 import TelegramUIPreferences
 import MergeLists
-import StickerPackPreviewUI
 import StickerPeekUI
 import OverlayStatusController
 import PresentationDataUtils
@@ -319,13 +318,25 @@ private final class FeaturedStickersScreenNode: ViewControllerTracingNode {
                 if let strongSelf = self, let info = info as? StickerPackCollectionInfo {
                     strongSelf.view.window?.endEditing(true)
                     let packReference: StickerPackReference = .id(id: info.id.id, accessHash: info.accessHash)
-                    let controller = StickerPackScreen(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, mainStickerPack: packReference, stickerPacks: [packReference], actionTitle: strongSelf.controller?.stickerActionTitle, parentNavigationController: strongSelf.controller?.navigationController as? NavigationController, sendSticker: { fileReference, sourceNode, sourceRect in
-                        if let strongSelf = self {
-                            return strongSelf.sendSticker?(fileReference, sourceNode, sourceRect) ?? false
-                        } else {
-                            return false
-                        }
-                    })
+                    let controller = strongSelf.context.sharedContext.makeStickerPackScreen(
+                        context: strongSelf.context,
+                        updatedPresentationData: strongSelf.updatedPresentationData,
+                        mainStickerPack: packReference,
+                        stickerPacks: [packReference],
+                        loadedStickerPacks: [],
+                        actionTitle: strongSelf.controller?.stickerActionTitle,
+                        isEditing: false,
+                        expandIfNeeded: false,
+                        parentNavigationController: strongSelf.controller?.navigationController as? NavigationController,
+                        sendSticker: { file, sourceNode, sourceRect in
+                            if let strongSelf = self {
+                                return strongSelf.sendSticker?(file, sourceNode, sourceRect) ?? false
+                            } else {
+                                return false
+                            }
+                        },
+                        actionPerformed: nil
+                    )
                     strongSelf.controller?.present(controller, in: .window(.root))
                 }
             },
@@ -552,14 +563,25 @@ private final class FeaturedStickersScreenNode: ViewControllerTracingNode {
                                                 switch attribute {
                                                 case let .Sticker(_, packReference, _):
                                                     if let packReference = packReference {
-                                                        let controller = StickerPackScreen(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, mainStickerPack: packReference, stickerPacks: [packReference], actionTitle: strongSelf.controller?.stickerActionTitle, parentNavigationController: strongSelf.controller?.navigationController as? NavigationController, sendSticker: { file, sourceNode, sourceRect in
-                                                            if let strongSelf = self {
-                                                                return strongSelf.sendSticker?(file, sourceNode, sourceRect) ?? false
-                                                            } else {
-                                                                return false
-                                                            }
-                                                        })
-                                                        
+                                                        let controller = strongSelf.context.sharedContext.makeStickerPackScreen(
+                                                            context: strongSelf.context,
+                                                            updatedPresentationData: strongSelf.updatedPresentationData,
+                                                            mainStickerPack: packReference,
+                                                            stickerPacks: [packReference],
+                                                            loadedStickerPacks: [],
+                                                            actionTitle: strongSelf.controller?.stickerActionTitle,
+                                                            isEditing: false,
+                                                            expandIfNeeded: false,
+                                                            parentNavigationController: strongSelf.controller?.navigationController as? NavigationController,
+                                                            sendSticker: { file, sourceNode, sourceRect in
+                                                                if let strongSelf = self {
+                                                                    return strongSelf.sendSticker?(file, sourceNode, sourceRect) ?? false
+                                                                } else {
+                                                                    return false
+                                                                }
+                                                            },
+                                                            actionPerformed: nil
+                                                        )
                                                         strongSelf.controller?.view.endEditing(true)
                                                         strongSelf.controller?.present(controller, in: .window(.root))
                                                     }
@@ -640,14 +662,25 @@ private final class FeaturedStickersScreenNode: ViewControllerTracingNode {
                                         switch attribute {
                                         case let .Sticker(_, packReference, _):
                                             if let packReference = packReference {
-                                                let controller = StickerPackScreen(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, mainStickerPack: packReference, stickerPacks: [packReference], actionTitle: strongSelf.controller?.stickerActionTitle, parentNavigationController: strongSelf.controller?.navigationController as? NavigationController, sendSticker: { file, sourceNode, sourceRect in
-                                                    if let strongSelf = self {
-                                                        return strongSelf.sendSticker?(file, sourceNode, sourceRect) ?? false
-                                                    } else {
-                                                        return false
-                                                    }
-                                                })
-                                                
+                                                let controller = strongSelf.context.sharedContext.makeStickerPackScreen(
+                                                    context: strongSelf.context,
+                                                    updatedPresentationData: strongSelf.updatedPresentationData,
+                                                    mainStickerPack: packReference,
+                                                    stickerPacks: [packReference],
+                                                    loadedStickerPacks: [],
+                                                    actionTitle: strongSelf.controller?.stickerActionTitle,
+                                                    isEditing: false,
+                                                    expandIfNeeded: false,
+                                                    parentNavigationController: strongSelf.controller?.navigationController as? NavigationController,
+                                                    sendSticker: { file, sourceNode, sourceRect in
+                                                        if let strongSelf = self {
+                                                            return strongSelf.sendSticker?(file, sourceNode, sourceRect) ?? false
+                                                        } else {
+                                                            return false
+                                                        }
+                                                    },
+                                                    actionPerformed: nil
+                                                )
                                                 strongSelf.controller?.view.endEditing(true)
                                                 strongSelf.controller?.present(controller, in: .window(.root))
                                             }
@@ -1192,13 +1225,26 @@ private final class FeaturedPaneSearchContentNode: ASDisplayNode {
             if let strongSelf = self {
                 strongSelf.view.window?.endEditing(true)
                 let packReference: StickerPackReference = .id(id: info.id.id, accessHash: info.accessHash)
-                let controller = StickerPackScreen(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, mainStickerPack: packReference, stickerPacks: [packReference], actionTitle: strongSelf.controller?.stickerActionTitle, parentNavigationController: strongSelf.controller?.navigationController as? NavigationController, sendSticker: { [weak self] fileReference, sourceNode, sourceRect in
-                    if let strongSelf = self {
-                        return strongSelf.sendSticker?(fileReference, sourceNode, sourceRect) ?? false
-                    } else {
-                        return false
-                    }
-                })
+                
+                let controller = strongSelf.context.sharedContext.makeStickerPackScreen(
+                    context: strongSelf.context,
+                    updatedPresentationData: strongSelf.updatedPresentationData,
+                    mainStickerPack: packReference,
+                    stickerPacks: [packReference],
+                    loadedStickerPacks: [],
+                    actionTitle: strongSelf.controller?.stickerActionTitle,
+                    isEditing: false,
+                    expandIfNeeded: false,
+                    parentNavigationController: strongSelf.controller?.navigationController as? NavigationController,
+                    sendSticker: { file, sourceNode, sourceRect in
+                        if let strongSelf = self {
+                            return strongSelf.sendSticker?(file, sourceNode, sourceRect) ?? false
+                        } else {
+                            return false
+                        }
+                    },
+                    actionPerformed: nil
+                )
                 strongSelf.controller?.present(controller, in: .window(.root))
             }
         }, install: { [weak self] info, items, install in
@@ -1244,7 +1290,7 @@ private final class FeaturedPaneSearchContentNode: ASDisplayNode {
                 
                 let query = text.trimmingCharacters(in: .whitespacesAndNewlines)
                 if query.isSingleEmoji {
-                    signals = .single([context.engine.stickers.searchStickers(query: [text.basicEmoji.0])
+                    signals = .single([context.engine.stickers.searchStickers(query: nil, emoticon: [text.basicEmoji.0], inputLanguageCode: "")
                     |> map { (nil, $0.items) }])
                 } else if query.count > 1, let languageCode = languageCode, !languageCode.isEmpty && languageCode != "emoji" {
                     var signal = context.engine.stickers.searchEmojiKeywords(inputLanguageCode: languageCode, query: query.lowercased(), completeMatch: query.count < 3)
@@ -1260,17 +1306,11 @@ private final class FeaturedPaneSearchContentNode: ASDisplayNode {
                             )
                         }
                     }
-                    
                     signals = signal
                     |> map { keywords -> [Signal<(String?, [FoundStickerItem]), NoError>] in
-                        var signals: [Signal<(String?, [FoundStickerItem]), NoError>] = []
-                        let emoticons = keywords.flatMap { $0.emoticons }
-                        for emoji in emoticons {
-                            signals.append(context.engine.stickers.searchStickers(query: [emoji.basicEmoji.0])
-                            |> take(1)
-                            |> map { (emoji, $0.items) })
-                        }
-                        return signals
+                        let emoticon = keywords.flatMap { $0.emoticons }.map { $0.basicEmoji.0 }
+                        return [context.engine.stickers.searchStickers(query: query, emoticon: emoticon, inputLanguageCode: languageCode)
+                        |> map { (nil, $0.items) }]
                     }
                 }
                 

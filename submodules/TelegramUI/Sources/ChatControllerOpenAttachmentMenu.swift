@@ -269,7 +269,7 @@ extension ChatControllerImpl {
             
             let inputText = strongSelf.presentationInterfaceState.interfaceState.effectiveInputState.inputText
             
-            let currentMediaController = Atomic<MediaPickerScreen?>(value: nil)
+            let currentMediaController = Atomic<MediaPickerScreenImpl?>(value: nil)
             let currentFilesController = Atomic<AttachmentFileControllerImpl?>(value: nil)
             let currentLocationController = Atomic<LocationPickerController?>(value: nil)
             
@@ -591,7 +591,7 @@ extension ChatControllerImpl {
                     if let peer = strongSelf.presentationInterfaceState.renderedPeer?.peer, let starsContext = context.starsContext {
                         let premiumGiftOptions = strongSelf.presentationInterfaceState.premiumGiftOptions
                         if !premiumGiftOptions.isEmpty {
-                            let controller = PremiumGiftAttachmentScreen(context: context, starsContext: starsContext, peerId: peer.id, premiumOptions: premiumGiftOptions, completion: { [weak self] in
+                            let controller = PremiumGiftAttachmentScreen(context: context, starsContext: starsContext, peerId: peer.id, premiumOptions: premiumGiftOptions, hasBirthday: true, completion: { [weak self] in
                                 guard let self else {
                                     return
                                 }
@@ -613,7 +613,7 @@ extension ChatControllerImpl {
                             payload = botPayload
                             fromAttachMenu = false
                         }
-                        let params = WebAppParameters(source: fromAttachMenu ? .attachMenu : .generic, peerId: peer.id, botId: bot.peer.id, botName: bot.shortName, botVerified: bot.peer.isVerified, url: nil, queryId: nil, payload: payload, buttonText: nil, keepAliveSignal: nil, forceHasSettings: false, fullSize: false)
+                        let params = WebAppParameters(source: fromAttachMenu ? .attachMenu : .generic, peerId: peer.id, botId: bot.peer.id, botName: bot.shortName, botVerified: bot.peer.isVerified, botAddress: bot.peer.addressName ?? "", appName: "", url: nil, queryId: nil, payload: payload, buttonText: nil, keepAliveSignal: nil, forceHasSettings: false, fullSize: false, isFullscreen: false)
                         let replyMessageSubject = strongSelf.presentationInterfaceState.interfaceState.replyMessageSubject
                         let controller = WebAppController(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, params: params, replyToMessageId: replyMessageSubject?.messageId, threadId: strongSelf.chatLocation.threadId)
                         controller.openUrl = { [weak self] url, concealed, forceUpdate, commit in
@@ -1159,7 +1159,7 @@ extension ChatControllerImpl {
         self.present(actionSheet, in: .window(.root))
     }
     
-    func presentMediaPicker(subject: MediaPickerScreen.Subject = .assets(nil, .default), saveEditedPhotos: Bool, bannedSendPhotos: (Int32, Bool)?, bannedSendVideos: (Int32, Bool)?, present: @escaping (MediaPickerScreen, AttachmentMediaPickerContext?) -> Void, updateMediaPickerContext: @escaping (AttachmentMediaPickerContext?) -> Void, completion: @escaping ([Any], Bool, Int32?, ChatSendMessageActionSheetController.SendParameters?, @escaping (String) -> UIView?, @escaping () -> Void) -> Void) {
+    func presentMediaPicker(subject: MediaPickerScreenImpl.Subject = .assets(nil, .default), saveEditedPhotos: Bool, bannedSendPhotos: (Int32, Bool)?, bannedSendVideos: (Int32, Bool)?, present: @escaping (MediaPickerScreenImpl, AttachmentMediaPickerContext?) -> Void, updateMediaPickerContext: @escaping (AttachmentMediaPickerContext?) -> Void, completion: @escaping ([Any], Bool, Int32?, ChatSendMessageActionSheetController.SendParameters?, @escaping (String) -> UIView?, @escaping () -> Void) -> Void) {
         var isScheduledMessages = false
         if case .scheduledMessages = self.presentationInterfaceState.subject {
             isScheduledMessages = true
@@ -1168,7 +1168,7 @@ extension ChatControllerImpl {
         if let cachedData = self.peerView?.cachedData as? CachedChannelData, cachedData.flags.contains(.paidMediaAllowed) {
             paidMediaAllowed = true
         }
-        let controller = MediaPickerScreen(
+        let controller = MediaPickerScreenImpl(
             context: self.context,
             updatedPresentationData: self.updatedPresentationData,
             peer: (self.presentationInterfaceState.renderedPeer?.peer).flatMap(EnginePeer.init),
@@ -1767,19 +1767,19 @@ extension ChatControllerImpl {
                 guard let self else {
                     return
                 }
-                let subject: Signal<MediaEditorScreen.Subject?, NoError>
+                let subject: Signal<MediaEditorScreenImpl.Subject?, NoError>
                 if let asset = result as? PHAsset {
                     subject = .single(.asset(asset))
                 } else if let image = result as? UIImage {
-                    subject = .single(.image(image, PixelDimensions(image.size), nil, .bottomRight))
-                } else if let result = result as? Signal<CameraScreen.Result, NoError> {
+                    subject = .single(.image(image: image, dimensions: PixelDimensions(image.size), additionalImage: nil, additionalImagePosition: .bottomRight))
+                } else if let result = result as? Signal<CameraScreenImpl.Result, NoError> {
                     subject = result
-                    |> map { value -> MediaEditorScreen.Subject? in
+                    |> map { value -> MediaEditorScreenImpl.Subject? in
                         switch value {
                         case .pendingImage:
                             return nil
                         case let .image(image):
-                            return .image(image.image, PixelDimensions(image.image.size), nil, .topLeft)
+                            return .image(image: image.image, dimensions: PixelDimensions(image.image.size), additionalImage: nil, additionalImagePosition: .topLeft)
                         default:
                             return nil
                         }
@@ -1788,12 +1788,12 @@ extension ChatControllerImpl {
                     subject = .single(.empty(PixelDimensions(width: 1080, height: 1920)))
                 }
                 
-                let editorController = MediaEditorScreen(
+                let editorController = MediaEditorScreenImpl(
                     context: self.context,
                     mode: .stickerEditor(mode: .generic),
                     subject: subject,
                     transitionIn: fromCamera ? .camera : transitionView.flatMap({ .gallery(
-                        MediaEditorScreen.TransitionIn.GalleryTransitionIn(
+                        MediaEditorScreenImpl.TransitionIn.GalleryTransitionIn(
                             sourceView: $0,
                             sourceRect: transitionRect,
                             sourceImage: transitionImage
@@ -1801,7 +1801,7 @@ extension ChatControllerImpl {
                     ) }),
                     transitionOut: { finished, isNew in
                         if !finished, let transitionView {
-                            return MediaEditorScreen.TransitionOut(
+                            return MediaEditorScreenImpl.TransitionOut(
                                 destinationView: transitionView,
                                 destinationRect: transitionView.bounds,
                                 destinationCornerRadius: 0.0
@@ -1818,7 +1818,7 @@ extension ChatControllerImpl {
                                 self?.enqueueStickerFile(file)
                             }
                         }
-                    } as (MediaEditorScreen.Result, @escaping (@escaping () -> Void) -> Void) -> Void
+                    } as (MediaEditorScreenImpl.Result, @escaping (@escaping () -> Void) -> Void) -> Void
                 )
                 editorController.cancelled = { _ in
                     cancelled()

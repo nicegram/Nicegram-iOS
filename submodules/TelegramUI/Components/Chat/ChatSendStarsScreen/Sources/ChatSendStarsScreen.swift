@@ -20,18 +20,19 @@ import AvatarNode
 import BundleIconComponent
 import CheckNode
 import TextFormat
+import CheckComponent
 
 private final class BalanceComponent: CombinedComponent {
     let context: AccountContext
     let theme: PresentationTheme
     let strings: PresentationStrings
-    let balance: Int64?
+    let balance: StarsAmount?
     
     init(
         context: AccountContext,
         theme: PresentationTheme,
         strings: PresentationStrings,
-        balance: Int64?
+        balance: StarsAmount?
     ) {
         self.context = context
         self.theme = theme
@@ -76,7 +77,7 @@ private final class BalanceComponent: CombinedComponent {
             
             let balanceText: String
             if let value = context.component.balance {
-                balanceText = "\(value)"
+                balanceText = "\(value.stringValue)"
             } else {
                 balanceText = "..."
             }
@@ -822,7 +823,7 @@ private final class ChatSendStarsScreenComponent: Component {
     let myPeer: EnginePeer
     let messageId: EngineMessage.Id
     let maxAmount: Int
-    let balance: Int64?
+    let balance: StarsAmount?
     let currentSentAmount: Int?
     let topPeers: [ChatSendStarsScreen.TopPeer]
     let myTopPeer: ChatSendStarsScreen.TopPeer?
@@ -834,7 +835,7 @@ private final class ChatSendStarsScreenComponent: Component {
         myPeer: EnginePeer,
         messageId: EngineMessage.Id,
         maxAmount: Int,
-        balance: Int64?,
+        balance: StarsAmount?,
         currentSentAmount: Int?,
         topPeers: [ChatSendStarsScreen.TopPeer],
         myTopPeer: ChatSendStarsScreen.TopPeer?,
@@ -1021,7 +1022,7 @@ private final class ChatSendStarsScreenComponent: Component {
         
         private var topOffsetDistance: CGFloat?
         
-        private var balance: Int64?
+        private var balance: StarsAmount?
         
         private var amount: Amount = Amount(realValue: 1, maxRealValue: 1000, maxSliderValue: 1000, isLogarithmic: true)
         private var didChangeAmount: Bool = false
@@ -1363,42 +1364,44 @@ private final class ChatSendStarsScreenComponent: Component {
             let sliderSize = self.slider.update(
                 transition: transition,
                 component: AnyComponent(SliderComponent(
-                    valueCount: self.amount.maxSliderValue + 1,
-                    value: self.amount.sliderValue,
-                    markPositions: false,
+                    content: .discrete(SliderComponent.Discrete(
+                        valueCount: self.amount.maxSliderValue + 1,
+                        value: self.amount.sliderValue,
+                        markPositions: false,
+                        valueUpdated: { [weak self] value in
+                            guard let self, let component = self.component else {
+                                return
+                            }
+                            self.amount = self.amount.withSliderValue(value)
+                            self.didChangeAmount = true
+                            
+                            self.state?.updated(transition: ComponentTransition(animation: .none).withUserData(IsAdjustingAmountHint()))
+                            
+                            let sliderValue = Float(value) / Float(component.maxAmount)
+                            let currentTimestamp = CACurrentMediaTime()
+                            
+                            if let previousTimestamp {
+                                let deltaTime = currentTimestamp - previousTimestamp
+                                let delta = sliderValue - self.previousSliderValue
+                                let deltaValue = abs(sliderValue - self.previousSliderValue)
+                                
+                                let speed = deltaValue / Float(deltaTime)
+                                let newSpeed = max(0, min(65.0, speed * 70.0))
+                                
+                                if newSpeed < 0.01 && deltaValue < 0.001 {
+                                } else {
+                                    self.badgeStars.update(speed: newSpeed, delta: delta)
+                                }
+                            }
+                            
+                            self.previousSliderValue = sliderValue
+                            self.previousTimestamp = currentTimestamp
+                        }
+                    )),
                     trackBackgroundColor: .clear,
                     trackForegroundColor: .clear,
                     knobSize: 26.0,
                     knobColor: .white,
-                    valueUpdated: { [weak self] value in
-                        guard let self, let component = self.component else {
-                            return
-                        }
-                        self.amount = self.amount.withSliderValue(value)
-                        self.didChangeAmount = true
-                        
-                        self.state?.updated(transition: ComponentTransition(animation: .none).withUserData(IsAdjustingAmountHint()))
-                        
-                        let sliderValue = Float(value) / Float(component.maxAmount)
-                        let currentTimestamp = CACurrentMediaTime()
-                        
-                        if let previousTimestamp {
-                            let deltaTime = currentTimestamp - previousTimestamp
-                            let delta = sliderValue - self.previousSliderValue
-                            let deltaValue = abs(sliderValue - self.previousSliderValue)
-                            
-                            let speed = deltaValue / Float(deltaTime)
-                            let newSpeed = max(0, min(65.0, speed * 70.0))
-                            
-                            if newSpeed < 0.01 && deltaValue < 0.001 {
-                            } else {
-                                self.badgeStars.update(speed: newSpeed, delta: delta)
-                            }
-                        }
-                        
-                        self.previousSliderValue = sliderValue
-                        self.previousTimestamp = currentTimestamp
-                    },
                     isTrackingUpdated: { [weak self] isTracking in
                         guard let self else {
                             return
@@ -1951,7 +1954,7 @@ private final class ChatSendStarsScreenComponent: Component {
                             return
                         }
                         
-                        if balance < self.amount.realValue {
+                        if balance < StarsAmount(value: Int64(self.amount.realValue), nanos: 0) {
                             let _ = (component.context.engine.payments.starsTopUpOptions()
                             |> take(1)
                             |> deliverOnMainQueue).startStandalone(next: { [weak self] options in
@@ -2100,7 +2103,7 @@ public class ChatSendStarsScreen: ViewControllerComponentContainer {
         fileprivate let peer: EnginePeer
         fileprivate let myPeer: EnginePeer
         fileprivate let messageId: EngineMessage.Id
-        fileprivate let balance: Int64?
+        fileprivate let balance: StarsAmount?
         fileprivate let currentSentAmount: Int?
         fileprivate let topPeers: [ChatSendStarsScreen.TopPeer]
         fileprivate let myTopPeer: ChatSendStarsScreen.TopPeer?
@@ -2109,7 +2112,7 @@ public class ChatSendStarsScreen: ViewControllerComponentContainer {
             peer: EnginePeer,
             myPeer: EnginePeer,
             messageId: EngineMessage.Id,
-            balance: Int64?,
+            balance: StarsAmount?,
             currentSentAmount: Int?,
             topPeers: [ChatSendStarsScreen.TopPeer],
             myTopPeer: ChatSendStarsScreen.TopPeer?
@@ -2238,7 +2241,7 @@ public class ChatSendStarsScreen: ViewControllerComponentContainer {
     }
     
     public static func initialData(context: AccountContext, peerId: EnginePeer.Id, messageId: EngineMessage.Id, topPeers: [ReactionsMessageAttribute.TopPeer]) -> Signal<InitialData?, NoError> {
-        let balance: Signal<Int64?, NoError>
+        let balance: Signal<StarsAmount?, NoError>
         if let starsContext = context.starsContext {
             balance = starsContext.state
             |> map { state in
@@ -2565,99 +2568,5 @@ private final class SliderStarsView: UIView {
         self.emitterLayer.frame = CGRect(origin: .zero, size: size)
         self.emitterLayer.emitterPosition = CGPoint(x: size.width / 2.0, y: size.height / 2.0)
         self.emitterLayer.emitterSize = size
-    }
-}
-
-private final class CheckComponent: Component {
-    struct Theme: Equatable {
-        public let backgroundColor: UIColor
-        public let strokeColor: UIColor
-        public let borderColor: UIColor
-        public let overlayBorder: Bool
-        public let hasInset: Bool
-        public let hasShadow: Bool
-        public let filledBorder: Bool
-        public let borderWidth: CGFloat?
-        
-        public init(backgroundColor: UIColor, strokeColor: UIColor, borderColor: UIColor, overlayBorder: Bool, hasInset: Bool, hasShadow: Bool, filledBorder: Bool = false, borderWidth: CGFloat? = nil) {
-            self.backgroundColor = backgroundColor
-            self.strokeColor = strokeColor
-            self.borderColor = borderColor
-            self.overlayBorder = overlayBorder
-            self.hasInset = hasInset
-            self.hasShadow = hasShadow
-            self.filledBorder = filledBorder
-            self.borderWidth = borderWidth
-        }
-        
-        var checkNodeTheme: CheckNodeTheme {
-            return CheckNodeTheme(
-                backgroundColor: self.backgroundColor,
-                strokeColor: self.strokeColor,
-                borderColor: self.borderColor,
-                overlayBorder: self.overlayBorder,
-                hasInset: self.hasInset,
-                hasShadow: self.hasShadow,
-                filledBorder: self.filledBorder,
-                borderWidth: self.borderWidth
-            )
-        }
-    }
-    
-    let theme: Theme
-    let selected: Bool
-    
-    init(
-        theme: Theme,
-        selected: Bool
-    ) {
-        self.theme = theme
-        self.selected = selected
-    }
-    
-    static func ==(lhs: CheckComponent, rhs: CheckComponent) -> Bool {
-        if lhs.theme != rhs.theme {
-            return false
-        }
-        if lhs.selected != rhs.selected {
-            return false
-        }
-        return true
-    }
-    
-    final class View: UIView {
-        private var currentValue: CGFloat?
-        private var animator: DisplayLinkAnimator?
-
-        private var checkLayer: CheckLayer {
-            return self.layer as! CheckLayer
-        }
-        
-        override class var layerClass: AnyClass {
-            return CheckLayer.self
-        }
-        
-        init() {
-            super.init(frame: CGRect())
-        }
-
-        required init?(coder aDecoder: NSCoder) {
-            preconditionFailure()
-        }
-    
-        func update(component: CheckComponent, availableSize: CGSize, transition: ComponentTransition) -> CGSize {
-            self.checkLayer.setSelected(component.selected, animated: true)
-            self.checkLayer.theme = component.theme.checkNodeTheme
-            
-            return CGSize(width: 22.0, height: 22.0)
-        }
-    }
-
-    func makeView() -> View {
-        return View()
-    }
-
-    func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
-        return view.update(component: self, availableSize: availableSize, transition: transition)
     }
 }

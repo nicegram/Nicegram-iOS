@@ -65,18 +65,11 @@ private func renderIcon(name: String, scaleFactor: CGFloat = 1.0, backgroundColo
 
 public struct PresentationResourcesSettings {
     // MARK: Nicegram
-    public static var ngAiChatIcon: UIImage? {
-        UIImage(bundleImageName: "ng-settings/ai-chatbot")
-    }
-    public static var ngPremiumIcon: UIImage? {
-        UIImage(bundleImageName: "ng-settings/premium")
-    }
-    public static var ngSettingsIcon: UIImage? {
-        UIImage(bundleImageName: "ng-settings/settings")
-    }
-    public static var ngWalletIcon: UIImage? {
-        UIImage(bundleImageName: "ng-settings/wallet")
-    }
+    public static let ngAiChatIcon = renderIcon(name: "ng-settings/ai-chatbot")
+    public static let ngAuditIcon = renderIcon(name: "ng-settings/audit")
+    public static let ngPremiumIcon = renderIcon(name: "ng-settings/premium")
+    public static let ngSettingsIcon = renderIcon(name: "ng-settings/settings")
+    public static let ngWalletIcon = renderIcon(name: "ng-settings/wallet")
     //
     
     public static let editProfile = renderIcon(name: "Settings/Menu/EditProfile")
@@ -99,6 +92,8 @@ public struct PresentationResourcesSettings {
     public static let myProfile = renderIcon(name: "Settings/Menu/Profile")
     public static let reactions = renderIcon(name: "Settings/Menu/Reactions")
     public static let balance = renderIcon(name: "Settings/Menu/Balance", scaleFactor: 0.97, backgroundColors: [UIColor(rgb: 0x34c759)])
+    public static let affiliateProgram = renderIcon(name: "Settings/Menu/AffiliateProgram")
+    public static let earnStars = renderIcon(name: "Settings/Menu/EarnStars")
     
     public static let premium = generateImage(CGSize(width: 29.0, height: 29.0), contextGenerator: { size, context in
         let bounds = CGRect(origin: CGPoint(), size: size)

@@ -468,7 +468,7 @@ final class ThemeGridSearchContentNode: SearchDisplayControllerContentNode {
                     guard let name = configuration.imageBotUsername else {
                         return .single(nil)
                     }
-                    return context.engine.peers.resolvePeerByName(name: name)
+                    return context.engine.peers.resolvePeerByName(name: name, referrer: nil)
                     |> mapToSignal { result -> Signal<EnginePeer?, NoError> in
                         guard case let .result(result) = result else {
                             return .complete()
@@ -585,7 +585,7 @@ final class ThemeGridSearchContentNode: SearchDisplayControllerContentNode {
                     entries.append(.query(i, queries[i]))
                 }
                 
-                let header = ChatListSearchItemHeader(type: .recentPeers, theme: presentationData.theme, strings: presentationData.strings, actionTitle: presentationData.strings.WebSearch_RecentSectionClear, action: {
+                let header = ChatListSearchItemHeader(type: .recentPeers, theme: presentationData.theme, strings: presentationData.strings, actionTitle: presentationData.strings.WebSearch_RecentSectionClear, action: { _ in
                     let _ = clearRecentWallpaperSearchQueries(engine: strongSelf.context.engine).start()
                 })
                 

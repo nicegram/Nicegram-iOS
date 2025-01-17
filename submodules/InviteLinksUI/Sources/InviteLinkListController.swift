@@ -56,7 +56,7 @@ private enum InviteLinksListSection: Int32 {
 }
 
 private enum InviteLinksListEntry: ItemListNodeEntry {
-    case header(PresentationTheme, String)
+    case header(PresentationTheme, NSAttributedString)
    
     case mainLinkHeader(PresentationTheme, String)
     case mainLink(PresentationTheme, ExportedInvitation?, [EnginePeer], Int32, Bool)
@@ -278,7 +278,7 @@ private func inviteLinkListControllerEntries(presentationData: PresentationData,
         } else {
             helpText = presentationData.strings.InviteLink_CreatePrivateLinkHelp
         }
-        entries.append(.header(presentationData.theme, helpText))
+        entries.append(.header(presentationData.theme, NSAttributedString(string: helpText)))
     }
     
     let mainInvite: ExportedInvitation?
@@ -483,7 +483,7 @@ public func inviteLinkListController(context: AccountContext, updatedPresentatio
         }
         shareController.actionCompleted = {
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-            presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(text: presentationData.strings.InviteLink_InviteLinkCopiedText), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
+            presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.InviteLink_InviteLinkCopiedText), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
         }
         presentControllerImpl?(shareController, nil)
     }, openMainLink: { invite in
@@ -495,7 +495,7 @@ public func inviteLinkListController(context: AccountContext, updatedPresentatio
         dismissTooltipsImpl?()
         
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(text: presentationData.strings.InviteLink_InviteLinkCopiedText), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
+        presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.InviteLink_InviteLinkCopiedText), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
     }, mainLinkContextAction: { invite, node, gesture in
         guard let node = node as? ContextReferenceContentNode, let controller = getControllerImpl?(), let invite = invite else {
             return
@@ -513,7 +513,7 @@ public func inviteLinkListController(context: AccountContext, updatedPresentatio
             UIPasteboard.general.string = invite.link
             
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-            presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(text: presentationData.strings.InviteLink_InviteLinkCopiedText), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
+            presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.InviteLink_InviteLinkCopiedText), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
         })))
         
         items.append(.action(ContextMenuActionItem(text: presentationData.strings.InviteLink_ContextGetQRCode, icon: { theme in
@@ -634,7 +634,7 @@ public func inviteLinkListController(context: AccountContext, updatedPresentatio
             UIPasteboard.general.string = invite.link
 
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-            presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(text: presentationData.strings.InviteLink_InviteLinkCopiedText), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
+            presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.InviteLink_InviteLinkCopiedText), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
         })))
         
         if !invite.isRevoked {
@@ -699,7 +699,7 @@ public func inviteLinkListController(context: AccountContext, updatedPresentatio
                     }
                     shareController.actionCompleted = {
                         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                        presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(text: presentationData.strings.InviteLink_InviteLinkCopiedText), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
+                        presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.InviteLink_InviteLinkCopiedText), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
                     }
                     presentControllerImpl?(shareController, nil)
                 })))

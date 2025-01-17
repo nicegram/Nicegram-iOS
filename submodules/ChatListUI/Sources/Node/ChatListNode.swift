@@ -1,3 +1,6 @@
+// MARK: Nicegram ChatListWidget
+import FeatChatListWidget
+//
 // MARK: Nicegram PinnedChats
 import Combine
 import FeatImagesHubUI
@@ -85,11 +88,11 @@ public final class ChatListNodeInteraction {
     let activateSearch: () -> Void
     
     // MARK: Nicegram PinnedChats
+    let getController: () -> ChatListControllerImpl?
     let clearHighlightAnimated: (Bool) -> Void
     let isChatListVisible: () -> Bool
     //
-    
-    let peerSelected: (EnginePeer, EnginePeer?, Int64?, ChatListNodeEntryPromoInfo?) -> Void
+    let peerSelected: (EnginePeer, EnginePeer?, Int64?, ChatListNodeEntryPromoInfo?, Bool) -> Void
     let disabledPeerSelected: (EnginePeer, Int64?, ChatListDisabledPeerReason) -> Void
     let togglePeerSelected: (EnginePeer, Int64?) -> Void
     let togglePeersSelection: ([PeerEntry], Bool) -> Void
@@ -128,6 +131,8 @@ public final class ChatListNodeInteraction {
     let openStarsTopup: (Int64?) -> Void
     let dismissNotice: (ChatListNotice) -> Void
     let editPeer: (ChatListItem) -> Void
+    let openWebApp: (TelegramUser) -> Void
+    let openPhotoSetup: () -> Void
     
     public var searchTextHighightState: String?
     var highlightedChatLocation: ChatListHighlightedLocation?
@@ -146,10 +151,11 @@ public final class ChatListNodeInteraction {
         animationRenderer: MultiAnimationRenderer,
         activateSearch: @escaping () -> Void,
         // MARK: Nicegram PinnedChats
+        getController: @escaping () -> ChatListControllerImpl? = { nil },
         clearHighlightAnimated: @escaping (Bool) -> Void = { _ in },
         isChatListVisible: @escaping () -> Bool = { false },
         //
-        peerSelected: @escaping (EnginePeer, EnginePeer?, Int64?, ChatListNodeEntryPromoInfo?) -> Void,
+        peerSelected: @escaping (EnginePeer, EnginePeer?, Int64?, ChatListNodeEntryPromoInfo?, Bool) -> Void,
         disabledPeerSelected: @escaping (EnginePeer, Int64?, ChatListDisabledPeerReason) -> Void,
         togglePeerSelected: @escaping (EnginePeer, Int64?) -> Void,
         togglePeersSelection: @escaping ([PeerEntry], Bool) -> Void,
@@ -187,10 +193,13 @@ public final class ChatListNodeInteraction {
         openStories: @escaping (ChatListNode.OpenStoriesSubject, ASDisplayNode?) -> Void,
         openStarsTopup: @escaping (Int64?) -> Void,
         dismissNotice: @escaping (ChatListNotice) -> Void,
-        editPeer: @escaping (ChatListItem) -> Void
+        editPeer: @escaping (ChatListItem) -> Void,
+        openWebApp: @escaping (TelegramUser) -> Void,
+        openPhotoSetup: @escaping () -> Void
     ) {
         self.activateSearch = activateSearch
         // MARK: Nicegram PinnedChats
+        self.getController = getController
         self.clearHighlightAnimated = clearHighlightAnimated
         self.isChatListVisible = isChatListVisible
         //
@@ -235,6 +244,8 @@ public final class ChatListNodeInteraction {
         self.openStarsTopup = openStarsTopup
         self.dismissNotice = dismissNotice
         self.editPeer = editPeer
+        self.openWebApp = openWebApp
+        self.openPhotoSetup = openPhotoSetup
     }
 }
 
@@ -386,6 +397,14 @@ public struct ChatListNodeState: Equatable {
 private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatListNodeInteraction, location: ChatListControllerLocation, isPremium: Bool, filterData: ChatListItemFilterData?, chatListFilters: [ChatListFilter]?, mode: ChatListNodeMode, isPeerEnabled: ((EnginePeer) -> Bool)?, entries: [ChatListNodeViewTransitionInsertEntry]) -> [ListViewInsertItem] {
     return entries.map { entry -> ListViewInsertItem in
         switch entry.entry {
+            // MARK: Nicegram ChatListWidget
+            case let .NicegramWidget(presentationData):
+                if #available(iOS 15.0, *) {
+                    return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListNicegramWidget(chatListNodeInteraction: nodeInteraction, theme: presentationData.theme), directionHint: entry.directionHint)
+                } else {
+                    fatalError()
+                }
+            //
             case .HeaderEntry:
                 return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListEmptyHeaderItem(), directionHint: entry.directionHint)
             case let .AdditionalCategory(_, id, title, image, appearance, selected, presentationData):
@@ -543,10 +562,13 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
                                         default:
                                             break
                                         }
-                                    }
-                                    
-                                    if canManage {
                                     } else if case let .channel(peer) = peer, case .group = peer.info, peer.hasPermission(.inviteMembers) {
+                                        canManage = true
+                                    } else if case let .channel(peer) = peer, case .broadcast = peer.info, peer.hasPermission(.addAdmins) {
+                                        canManage = true
+                                    }
+
+                                    if canManage {
                                     } else {
                                         enabled = false
                                     }
@@ -640,7 +662,7 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
                                     if editing {
                                         nodeInteraction.togglePeerSelected(chatPeer, threadId)
                                     } else {
-                                        nodeInteraction.peerSelected(chatPeer, nil, threadId, nil)
+                                        nodeInteraction.peerSelected(chatPeer, nil, threadId, nil, false)
                                     }
                                 }
                             }, disabledAction: (isForum && editing) && !peerEntry.requiresPremiumForMessaging ? nil : { _ in
@@ -671,13 +693,17 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
                         status: status,
                         requiresPremiumForMessaging: peerEntry.requiresPremiumForMessaging,
                         enabled: true,
-                        selection: .none,
+                        selection: editing ? .selectable(selected: selected) : .none,
                         editing: ContactsPeerItemEditing(editable: false, editing: false, revealed: false),
                         index: nil,
                         header: nil,
                         action: { _ in
                             if let chatPeer = chatPeer {
-                                nodeInteraction.peerSelected(chatPeer, nil, nil, nil)
+                                if editing {
+                                    nodeInteraction.togglePeerSelected(chatPeer, nil)
+                                } else {
+                                    nodeInteraction.peerSelected(chatPeer, nil, nil, nil, false)
+                                }
                             }
                         }, disabledAction: peerEntry.requiresPremiumForMessaging ? { _ in
                             if let chatPeer {
@@ -742,7 +768,7 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
                     index: nil,
                     header: header,
                     action: { _ in
-                        nodeInteraction.peerSelected(contactEntry.peer, nil, nil, nil)
+                        nodeInteraction.peerSelected(contactEntry.peer, nil, nil, nil, false)
                     },
                     disabledAction: nil,
                     animationCache: nodeInteraction.animationCache,
@@ -778,7 +804,9 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
                         case .reviewLogin:
                             break
                         case let .starsSubscriptionLowBalance(amount, _):
-                            nodeInteraction?.openStarsTopup(amount)
+                            nodeInteraction?.openStarsTopup(amount.value)
+                        case .setupPhoto:
+                            nodeInteraction?.openPhotoSetup()
                         }
                     case .hide:
                         nodeInteraction?.dismissNotice(notice)
@@ -798,6 +826,14 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
 private func mappedUpdateEntries(context: AccountContext, nodeInteraction: ChatListNodeInteraction, location: ChatListControllerLocation, isPremium: Bool, filterData: ChatListItemFilterData?, chatListFilters: [ChatListFilter]?, mode: ChatListNodeMode, isPeerEnabled: ((EnginePeer) -> Bool)?, entries: [ChatListNodeViewTransitionUpdateEntry]) -> [ListViewUpdateItem] {
     return entries.map { entry -> ListViewUpdateItem in
         switch entry.entry {
+            // MARK: Nicegram ChatListWidget
+            case let .NicegramWidget(presentationData):
+                if #available(iOS 15.0, *) {
+                    return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListNicegramWidget(chatListNodeInteraction: nodeInteraction, theme: presentationData.theme), directionHint: entry.directionHint)
+                } else {
+                    fatalError()
+                }
+            //
             case let .PeerEntry(peerEntry):
                 let index = peerEntry.index
                 let presentationData = peerEntry.presentationData
@@ -983,7 +1019,7 @@ private func mappedUpdateEntries(context: AccountContext, nodeInteraction: ChatL
                                     if editing {
                                         nodeInteraction.togglePeerSelected(chatPeer, threadId)
                                     } else {
-                                        nodeInteraction.peerSelected(chatPeer, nil, threadId, nil)
+                                        nodeInteraction.peerSelected(chatPeer, nil, threadId, nil, false)
                                     }
                                 }
                             }, disabledAction: (isForum && editing) && !peerEntry.requiresPremiumForMessaging ? nil : { _ in
@@ -1014,13 +1050,17 @@ private func mappedUpdateEntries(context: AccountContext, nodeInteraction: ChatL
                             status: status,
                             requiresPremiumForMessaging: peerEntry.requiresPremiumForMessaging,
                             enabled: true,
-                            selection: .none,
+                            selection: editing ? .selectable(selected: selected) : .none,
                             editing: ContactsPeerItemEditing(editable: false, editing: false, revealed: false),
                             index: nil,
                             header: nil,
                             action: { _ in
                                 if let chatPeer = chatPeer {
-                                    nodeInteraction.peerSelected(chatPeer, nil, nil, nil)
+                                    if editing {
+                                        nodeInteraction.togglePeerSelected(chatPeer, nil)
+                                    } else {
+                                        nodeInteraction.peerSelected(chatPeer, nil, nil, nil, false)
+                                    }
                                 }
                             }, disabledAction: peerEntry.requiresPremiumForMessaging ? { _ in
                                 if let chatPeer {
@@ -1085,7 +1125,7 @@ private func mappedUpdateEntries(context: AccountContext, nodeInteraction: ChatL
                     index: nil,
                     header: header,
                     action: { _ in
-                        nodeInteraction.peerSelected(contactEntry.peer, nil, nil, nil)
+                        nodeInteraction.peerSelected(contactEntry.peer, nil, nil, nil, false)
                     },
                     disabledAction: nil,
                     animationCache: nodeInteraction.animationCache,
@@ -1121,7 +1161,9 @@ private func mappedUpdateEntries(context: AccountContext, nodeInteraction: ChatL
                         case .reviewLogin:
                             break
                         case let .starsSubscriptionLowBalance(amount, _):
-                            nodeInteraction?.openStarsTopup(amount)
+                            nodeInteraction?.openStarsTopup(amount.value)
+                        case .setupPhoto:
+                            nodeInteraction?.openPhotoSetup()
                         }
                     case .hide:
                         nodeInteraction?.dismissNotice(notice)
@@ -1197,6 +1239,8 @@ public enum ChatListNodeEmptyState: Equatable {
 
 // MARK: Nicegram PinnedChats
 public struct ChatListNicegramData {
+    let controller: () -> ChatListControllerImpl?
+    let currentFolder: () -> ChatListFilter?
     let isChatListVisible: CurrentValueSubject<Bool, Never>
     let pinnedChats: AnyPublisher<[PinnedChatToDisplay], Never>
 }
@@ -1249,6 +1293,8 @@ public final class ChatListNode: ListView {
     public var openBirthdaySetup: (() -> Void)?
     public var openPremiumManagement: (() -> Void)?
     public var openStarsTopup: ((Int64?) -> Void)?
+    public var openWebApp: ((TelegramUser) -> Void)?
+    public var openPhotoSetup: (() -> Void)?
     
     private var theme: PresentationTheme
     
@@ -1265,6 +1311,10 @@ public final class ChatListNode: ListView {
         if let chatListView = self.chatListView {
             return chatListView.filteredEntries.compactMap { item -> EnginePeer.Id? in
                 switch item.stableId {
+                // MARK: Nicegram ChatListWidget
+                case .ngWidget:
+                    return nil
+                //
                 // MARK: Nicegram PinnedChats
                 case .ngPinnedChat:
                     return nil
@@ -1403,6 +1453,8 @@ public final class ChatListNode: ListView {
         self.autoSetReady = autoSetReady
         // MARK: Nicegram PinnedChats
         self.nicegramData = nicegramData ?? ChatListNicegramData(
+            controller: { nil },
+            currentFolder: { nil },
             isChatListVisible: .init(false),
             pinnedChats: Just([]).eraseToAnyPublisher()
         )
@@ -1440,12 +1492,18 @@ public final class ChatListNode: ListView {
                 activateSearch()
             }
             // MARK: Nicegram PinnedChats
+        }, getController: { [weak self] in
+            self?.nicegramData.controller()
         }, clearHighlightAnimated: { [weak self] flag in
             self?.clearHighlightAnimated(flag)
         }, isChatListVisible: { [weak self] in
-            self?.nicegramData.isChatListVisible.value ?? false
+            guard let self else { return false }
+            let nicegramData = self.nicegramData
+            let isChatListVisible = nicegramData.isChatListVisible.value
+            let isCurrentFolder = nicegramData.currentFolder() == self.chatListFilter
+            return isChatListVisible && isCurrentFolder
             //
-        }, peerSelected: { [weak self] peer, _, threadId, promoInfo in
+        }, peerSelected: { [weak self] peer, _, threadId, promoInfo, _ in
             if let strongSelf = self, let peerSelected = strongSelf.peerSelected {
                 peerSelected(peer, threadId, true, true, promoInfo)
             }
@@ -1777,7 +1835,7 @@ public final class ChatListNode: ListView {
                 |> filter { !$0.isEmpty }
                 |> deliverOnMainQueue).start(next: { giftOptions in
                     let premiumOptions = giftOptions.filter { $0.users == 1 }.map { CachedPremiumGiftOption(months: $0.months, currency: $0.currency, amount: $0.amount, botUrl: "", storeProductId: $0.storeProductId) }
-                    let controller = self.context.sharedContext.makeGiftOptionsController(context: self.context, peerId: peerId, premiumOptions: premiumOptions)
+                    let controller = self.context.sharedContext.makeGiftOptionsController(context: self.context, peerId: peerId, premiumOptions: premiumOptions, hasBirthday: true)
                     controller.navigationPresentation = .modal
                     self.push?(controller)
                 })
@@ -1917,6 +1975,16 @@ public final class ChatListNode: ListView {
                 break
             }
         }, editPeer: { _ in
+        }, openWebApp: { [weak self] user in
+            guard let self else {
+                return
+            }
+            self.openWebApp?(user)
+        }, openPhotoSetup: { [weak self] in
+            guard let self else {
+                return
+            }
+            self.openPhotoSetup?()
         })
         nodeInteraction.isInlineMode = isInlineMode
         
@@ -2011,11 +2079,16 @@ public final class ChatListNode: ListView {
                 context.engine.notices.getServerDismissedSuggestions(),
                 twoStepData,
                 newSessionReviews(postbox: context.account.postbox),
-                context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Birthday(id: context.account.peerId)),
+                context.engine.data.subscribe(
+                    TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId),
+                    TelegramEngine.EngineData.Item.Peer.Birthday(id: context.account.peerId)
+                ),
                 context.account.stateManager.contactBirthdays,
                 starsSubscriptionsContextPromise.get()
             )
-            |> mapToSignal { suggestions, dismissedSuggestions, configuration, newSessionReviews, birthday, birthdays, starsSubscriptionsContext -> Signal<ChatListNotice?, NoError> in
+            |> mapToSignal { suggestions, dismissedSuggestions, configuration, newSessionReviews, data, birthdays, starsSubscriptionsContext -> Signal<ChatListNotice?, NoError> in
+                let (accountPeer, birthday) = data
+                
                 if let newSessionReview = newSessionReviews.first {
                     return .single(.reviewLogin(newSessionReview: newSessionReview, totalCount: newSessionReviews.count))
                 }
@@ -2053,7 +2126,7 @@ public final class ChatListNode: ListView {
                     if let starsSubscriptionsContext {
                         return starsSubscriptionsContext.state
                         |> map { state in
-                            if state.balance > 0 && !state.subscriptions.isEmpty {
+                            if state.balance > StarsAmount.zero && !state.subscriptions.isEmpty {
                                 return .starsSubscriptionLowBalance(
                                     amount: state.balance,
                                     peers: state.subscriptions.map { $0.peer }
@@ -2066,6 +2139,8 @@ public final class ChatListNode: ListView {
                         starsSubscriptionsContextPromise.set(.single(context.engine.payments.peerStarsSubscriptionsContext(starsContext: nil, missingBalance: true)))
                         return .single(nil)
                     }
+                } else if suggestions.contains(.setupPhoto), let accountPeer, accountPeer.smallProfileImage == nil {
+                    return .single(.setupPhoto(accountPeer))
                 } else if suggestions.contains(.gracePremium) {
                     return .single(.premiumGrace)
                 } else if suggestions.contains(.setupBirthday) && birthday == nil {
@@ -2306,6 +2381,13 @@ public final class ChatListNode: ListView {
         }
         //
         
+        // MARK: Nicegram ChatListWidget
+        let showNicegramWidgetSignal = ChatListWidgetModule.shared.getChatListWidgetStatusUseCase()
+            .showWidgetPublisher()
+            .toSignal()
+            .skipError()
+        //
+        
         let accountPeerId = context.account.peerId
         
         let chatListFilters: Signal<[ChatListFilter]?, NoError>
@@ -2353,6 +2435,9 @@ public final class ChatListNode: ListView {
             // MARK: Nicegram HiddenChats
             hiddenChatsSignal,
             //
+            // MARK: Nicegram ChatListWidget
+            showNicegramWidgetSignal,
+            //
             self.statePromise.get(),
             contacts,
             chatListFilters,
@@ -2360,7 +2445,8 @@ public final class ChatListNode: ListView {
         )
         // MARK: Nicegram PinnedChats, nicegramItems added
         // MARK: Nicegram HiddenChats, hiddenChats added
-        |> mapToQueue { (hideArchivedFolderByDefault, displayArchiveIntro, storageInfo, suggestedChatListNotice, savedMessagesPeer, updateAndFilter, nicegramItems, hiddenChats, state, contacts, chatListFilters, accountIsPremium) -> Signal<ChatListNodeListViewTransition, NoError> in
+        // MARK: Nicegram ChatListWidget, showNicegramWidget added
+        |> mapToQueue { (hideArchivedFolderByDefault, displayArchiveIntro, storageInfo, suggestedChatListNotice, savedMessagesPeer, updateAndFilter, nicegramItems, hiddenChats, showNicegramWidget, state, contacts, chatListFilters, accountIsPremium) -> Signal<ChatListNodeListViewTransition, NoError> in
             let (update, filter) = updateAndFilter
             
             let previousHideArchivedFolderByDefaultValue = previousHideArchivedFolderByDefault.swap(hideArchivedFolderByDefault)
@@ -2387,7 +2473,8 @@ public final class ChatListNode: ListView {
             let innerIsMainTab = location == .chatList(groupId: .root) && chatListFilter == nil
             
             // MARK: Nicegram PinnedChats, nicegramItems added
-            let (rawEntries, isLoading) = chatListNodeEntriesForView(view: update.list, state: state, savedMessagesPeer: savedMessagesPeer, foundPeers: state.foundPeers, hideArchivedFolderByDefault: hideArchivedFolderByDefault, displayArchiveIntro: displayArchiveIntro, notice: notice, mode: mode, chatListLocation: location, contacts: contacts, accountPeerId: accountPeerId, isMainTab: innerIsMainTab, nicegramItems: nicegramItems)
+            // MARK: Nicegram ChatListWidget, showNicegramWidget added
+            let (rawEntries, isLoading) = chatListNodeEntriesForView(view: update.list, state: state, savedMessagesPeer: savedMessagesPeer, foundPeers: state.foundPeers, hideArchivedFolderByDefault: hideArchivedFolderByDefault, displayArchiveIntro: displayArchiveIntro, notice: notice, mode: mode, chatListLocation: location, contacts: contacts, accountPeerId: accountPeerId, isMainTab: innerIsMainTab, nicegramItems: nicegramItems, showNicegramWidget: showNicegramWidget)
             var isEmpty = true
             var entries = rawEntries.filter { entry in
                 // MARK: Nicegram HiddenChats
@@ -2499,10 +2586,13 @@ public final class ChatListNode: ListView {
                                     default:
                                         break
                                     }
+                                } else if case let .channel(peer) = peer, case .group = peer.info, peer.hasPermission(.inviteMembers) {
+                                    canManage = true
+                                } else if case let .channel(peer) = peer, case .broadcast = peer.info, peer.hasPermission(.addAdmins) {
+                                    canManage = true
                                 }
                                 
                                 if canManage {
-                                } else if case let .channel(peer) = peer, case .group = peer.info, peer.hasPermission(.inviteMembers) {
                                 } else {
                                     return false
                                 }
@@ -2524,6 +2614,9 @@ public final class ChatListNode: ListView {
                                 case let .user(userType):
                                     if case let .user(user) = peer {
                                         match = true
+                                        if user.id.isVerificationCodes {
+                                            match = false
+                                        }
                                         if let isBot = userType.isBot {
                                             if isBot != (user.botInfo != nil) {
                                                 match = false
@@ -3675,7 +3768,8 @@ public final class ChatListNode: ListView {
                                 } else {
                                     break loop
                                 }
-                            case .ArchiveIntro, .EmptyIntro, .SectionHeader, .Notice, .HeaderEntry, .AdditionalCategory:
+                            // MARK: Nicegram ChatListWidget, added .NicegramWidget
+                            case .ArchiveIntro, .EmptyIntro, .SectionHeader, .Notice, .HeaderEntry, .AdditionalCategory, .NicegramWidget:
                                 break
                             }
                         }
@@ -3686,6 +3780,8 @@ public final class ChatListNode: ListView {
                     for item in transition.insertItems {
                         if let item = item.item as? ChatListItem {
                             switch item.content {
+                            case .loading:
+                                break
                             case let .peer(peerData):
                                 insertedPeerIds.append(peerData.peer.peerId)
                             case .groupReference:
@@ -4331,32 +4427,32 @@ public final class ChatListNode: ListView {
     }
 }
 
-private func statusStringForPeerType(accountPeerId: EnginePeer.Id, strings: PresentationStrings, peer: EnginePeer, isMuted: Bool, isUnread: Bool, isContact: Bool, hasUnseenMentions: Bool, chatListFilters: [ChatListFilter]?, displayAutoremoveTimeout: Bool, autoremoveTimeout: Int32?) -> (String, Bool, Bool, ContactsPeerItemStatus.Icon?)? {
+private func statusStringForPeerType(accountPeerId: EnginePeer.Id, strings: PresentationStrings, peer: EnginePeer, isMuted: Bool, isUnread: Bool, isContact: Bool, hasUnseenMentions: Bool, chatListFilters: [ChatListFilter]?, displayAutoremoveTimeout: Bool, autoremoveTimeout: Int32?) -> (NSAttributedString, Bool, Bool, ContactsPeerItemStatus.Icon?)? {
     if accountPeerId == peer.id {
         return nil
     }
     
     if displayAutoremoveTimeout {
         if let autoremoveTimeout = autoremoveTimeout {
-            return (strings.ChatList_LabelAutodeleteAfter(timeIntervalString(strings: strings, value: autoremoveTimeout, usage: .afterTime)).string, false, true, .autoremove)
+            return (NSAttributedString(string: strings.ChatList_LabelAutodeleteAfter(timeIntervalString(strings: strings, value: autoremoveTimeout, usage: .afterTime)).string), false, true, .autoremove)
         } else {
-            return (strings.ChatList_LabelAutodeleteDisabled, false, false, .autoremove)
+            return (NSAttributedString(string: strings.ChatList_LabelAutodeleteDisabled), false, false, .autoremove)
         }
     }
     
     if let chatListFilters = chatListFilters {
-        var result = ""
+        let result = NSMutableAttributedString(string: "")
         for case let .filter(_, title, _, data) in chatListFilters {
             let predicate = chatListFilterPredicate(filter: data, accountPeerId: accountPeerId)
             if predicate.includes(peer: peer._asPeer(), groupId: .root, isRemovedFromTotalUnreadCount: isMuted, isUnread: isUnread, isContact: isContact, messageTagSummaryResult: hasUnseenMentions) {
-                if !result.isEmpty {
-                    result.append(", ")
+                if result.length != 0 {
+                    result.append(NSAttributedString(string: ", "))
                 }
-                result.append(title)
+                result.append(title.rawAttributedString)
             }
         }
         
-        if result.isEmpty {
+        if result.length == 0 {
             return nil
         } else {
             return (result, true, false, nil)
@@ -4367,30 +4463,30 @@ private func statusStringForPeerType(accountPeerId: EnginePeer.Id, strings: Pres
         return nil
     } else if case let .user(user) = peer {
         if user.botInfo != nil || user.flags.contains(.isSupport) {
-            return (strings.ChatList_PeerTypeBot, false, false, nil)
+            return (NSAttributedString(string: strings.ChatList_PeerTypeBot), false, false, nil)
         } else {
             if isContact {
-                return (strings.ChatList_PeerTypeContact, false, false, nil)
+                return (NSAttributedString(string: strings.ChatList_PeerTypeContact), false, false, nil)
             } else {
-                return (strings.ChatList_PeerTypeNonContactUser, false, false, nil)
+                return (NSAttributedString(string: strings.ChatList_PeerTypeNonContactUser), false, false, nil)
             }
         }
     } else if case .secretChat = peer {
         if isContact {
-            return (strings.ChatList_PeerTypeContact, false, false, nil)
+            return (NSAttributedString(string: strings.ChatList_PeerTypeContact), false, false, nil)
         } else {
-            return (strings.ChatList_PeerTypeNonContactUser, false, false, nil)
+            return (NSAttributedString(string: strings.ChatList_PeerTypeNonContactUser), false, false, nil)
         }
     } else if case .legacyGroup = peer {
-        return (strings.ChatList_PeerTypeGroup, false, false, nil)
+        return (NSAttributedString(string: strings.ChatList_PeerTypeGroup), false, false, nil)
     } else if case let .channel(channel) = peer {
         if case .group = channel.info {
-            return (strings.ChatList_PeerTypeGroup, false, false, nil)
+            return (NSAttributedString(string: strings.ChatList_PeerTypeGroup), false, false, nil)
         } else {
-            return (strings.ChatList_PeerTypeChannel, false, false, nil)
+            return (NSAttributedString(string: strings.ChatList_PeerTypeChannel), false, false, nil)
         }
     }
-    return (strings.ChatList_PeerTypeNonContactUser, false, false, nil)
+    return (NSAttributedString(string: strings.ChatList_PeerTypeNonContactUser), false, false, nil)
 }
 
 public class ChatHistoryListSelectionRecognizer: UIPanGestureRecognizer {

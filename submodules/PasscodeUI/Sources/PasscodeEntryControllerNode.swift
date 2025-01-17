@@ -323,7 +323,8 @@ final class PasscodeEntryControllerNode: ASDisplayNode {
                 let uptime = getDeviceUptimeSeconds(&bootTimestamp)
                 
                 if attempts.bootTimestamp != bootTimestamp {
-                    return true
+                    // MARK: Nicegram, changed to 'false' (allow passcode entry if the device has been rebooted after unsuccessful attempts)
+                    return false
                 }
                 
                 if uptime - attempts.uptime < waitInterval {

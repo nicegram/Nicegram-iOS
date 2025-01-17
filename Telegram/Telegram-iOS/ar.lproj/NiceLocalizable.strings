@@ -44,7 +44,7 @@
 
 /*Common*/
 "Common.ExitNow" = "خروج الآن";
-"Common.Later" = "لاحقاً";
+"Common.Later" = "لاحقًا";
 "Common.RestartRequired" = "يجب إعادة التشغيل!";
 "NiceFeatures.Tabs.ShowNames" = "إظهار أسماء التبويبات";
 "Chat.ForwardAsCopy" = "إعادة توجيه كنسخة";

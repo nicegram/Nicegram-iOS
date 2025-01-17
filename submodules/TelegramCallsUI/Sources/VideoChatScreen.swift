@@ -119,6 +119,8 @@ final class VideoChatScreenComponent: Component {
         let updateAvatarDisposable = MetaDisposable()
         var currentUpdatingAvatar: (TelegramMediaImageRepresentation, Float)?
         
+        var maxVideoQuality: Int = Int.max
+        
         override init(frame: CGRect) {
             self.containerView = UIView()
             self.containerView.clipsToBounds = true
@@ -325,8 +327,11 @@ final class VideoChatScreenComponent: Component {
             guard let component = self.component else {
                 return
             }
+            guard let peerId = component.call.peerId else {
+                return
+            }
             
-            let _ = (component.call.accountContext.account.postbox.loadedPeerWithId(component.call.peerId)
+            let _ = (component.call.accountContext.account.postbox.loadedPeerWithId(peerId)
             |> deliverOnMainQueue).start(next: { [weak self] chatPeer in
                 guard let self, let component = self.component, let environment = self.environment else {
                     return
@@ -390,6 +395,9 @@ final class VideoChatScreenComponent: Component {
             guard let component = self.component else {
                 return
             }
+            guard let peerId = component.call.peerId else {
+                return
+            }
             
             let formatSendTitle: (String) -> String = { string in
                 var string = string
@@ -403,7 +411,7 @@ final class VideoChatScreenComponent: Component {
                 return string
             }
             
-            let _ = (component.call.accountContext.account.postbox.loadedPeerWithId(component.call.peerId)
+            let _ = (component.call.accountContext.account.postbox.loadedPeerWithId(peerId)
             |> deliverOnMainQueue).start(next: { [weak self] peer in
                 guard let self, let component = self.component, let environment = self.environment else {
                     return
@@ -475,7 +483,7 @@ final class VideoChatScreenComponent: Component {
                         return
                     }
                     let presentationData = component.call.accountContext.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: environment.theme)
-                    environment.controller()?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(text: presentationData.strings.VoiceChat_InviteLinkCopiedText), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .window(.root))
+                    environment.controller()?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.VoiceChat_InviteLinkCopiedText), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .window(.root))
                 }
                 environment.controller()?.present(shareController, in: .window(.root))
             })
@@ -782,7 +790,8 @@ final class VideoChatScreenComponent: Component {
                                         backgroundEmojiId: user.backgroundEmojiId,
                                         profileColor: user.profileColor,
                                         profileBackgroundEmojiId: user.profileBackgroundEmojiId,
-                                        subscriberCount: user.subscriberCount
+                                        subscriberCount: user.subscriberCount,
+                                        verification: user.verification
                                     )
                                     participants.append(GroupCallParticipantsContext.Participant(
                                         peer: mappedUser,
@@ -973,9 +982,15 @@ final class VideoChatScreenComponent: Component {
                 |> map { peer in
                     return [FoundPeer(peer: peer, subscribers: nil)]
                 }
+                let cachedDisplayAsAvailablePeers: Signal<[FoundPeer], NoError>
+                if let peerId = component.call.peerId {
+                    cachedDisplayAsAvailablePeers = component.call.accountContext.engine.calls.cachedGroupCallDisplayAsAvailablePeers(peerId: peerId)
+                } else {
+                    cachedDisplayAsAvailablePeers = .single([])
+                }
                 let displayAsPeers: Signal<[FoundPeer], NoError> = currentAccountPeer
                 |> then(
-                    combineLatest(currentAccountPeer, component.call.accountContext.engine.calls.cachedGroupCallDisplayAsAvailablePeers(peerId: component.call.peerId))
+                    combineLatest(currentAccountPeer, cachedDisplayAsAvailablePeers)
                     |> map { currentAccountPeer, availablePeers -> [FoundPeer] in
                         var result = currentAccountPeer
                         result.append(contentsOf: availablePeers)
@@ -1506,6 +1521,7 @@ final class VideoChatScreenComponent: Component {
                     participants: mappedParticipants,
                     speakingParticipants: self.members?.speakingParticipants ?? Set(),
                     expandedVideoState: self.expandedParticipantsVideoState,
+                    maxVideoQuality: self.maxVideoQuality,
                     theme: environment.theme,
                     strings: environment.strings,
                     layout: participantsLayout,
@@ -2013,10 +2029,16 @@ final class VideoChatScreenV2Impl: ViewControllerComponentContainer, VoiceChatCo
     }
     
     static func initialData(call: PresentationGroupCall) -> Signal<InitialData, NoError> {
+        let callPeer: Signal<EnginePeer?, NoError>
+        if let peerId = call.peerId {
+            callPeer = call.accountContext.engine.data.get(
+                TelegramEngine.EngineData.Item.Peer.Peer(id: peerId)
+            )
+        } else {
+            callPeer = .single(nil)
+        }
         return combineLatest(
-            call.accountContext.engine.data.get(
-                TelegramEngine.EngineData.Item.Peer.Peer(id: call.peerId)
-            ),
+            callPeer,
             call.members |> take(1),
             call.state |> take(1)
         )

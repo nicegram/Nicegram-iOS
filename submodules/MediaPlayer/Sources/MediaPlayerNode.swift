@@ -19,6 +19,10 @@ private final class MediaPlayerNodeLayer: AVSampleBufferDisplayLayer {
         fatalError("init(coder:) has not been implemented")
     }
     
+    deinit {
+        assert(Queue.mainQueue().isCurrent())
+    }
+    
     override func action(forKey event: String) -> CAAction? {
         return MediaPlayerNodeLayerNullAction()
     }
@@ -66,7 +70,9 @@ public final class MediaPlayerNode: ASDisplayNode {
     
     private var videoNode: MediaPlayerNodeDisplayNode
     
-    private var videoLayer: AVSampleBufferDisplayLayer?
+    public private(set) var videoLayer: AVSampleBufferDisplayLayer?
+    private var videoLayerReadyForDisplayObserver: NSObjectProtocol?
+    private var didNotifyVideoLayerReadyForDisplay: Bool = false
     
     private let videoQueue: Queue
     
@@ -213,7 +219,13 @@ public final class MediaPlayerNode: ASDisplayNode {
                             return
                         }
                         videoLayer.enqueue(frame.sampleBuffer)
-                        strongSelf.hasSentFramesToDisplay?()
+                        if #available(iOS 17.4, *) {
+                        } else {
+                            if !strongSelf.didNotifyVideoLayerReadyForDisplay {
+                                strongSelf.didNotifyVideoLayerReadyForDisplay = true
+                                strongSelf.hasSentFramesToDisplay?()
+                            }
+                        }
                     }
                 }
                 Queue.mainQueue().async {
@@ -248,7 +260,10 @@ public final class MediaPlayerNode: ASDisplayNode {
                             return
                         }
                         videoLayer.enqueue(frame.sampleBuffer)
-                        strongSelf.hasSentFramesToDisplay?()
+                        if !strongSelf.didNotifyVideoLayerReadyForDisplay {
+                            strongSelf.didNotifyVideoLayerReadyForDisplay = true
+                            strongSelf.hasSentFramesToDisplay?()
+                        }
                     }
                     
                     Queue.mainQueue().async {
@@ -345,6 +360,18 @@ public final class MediaPlayerNode: ASDisplayNode {
                     strongSelf.updateLayout()
                     
                     strongSelf.layer.addSublayer(videoLayer)
+                    
+                    if #available(iOS 17.4, *) {
+                        strongSelf.videoLayerReadyForDisplayObserver = NotificationCenter.default.addObserver(forName: NSNotification.Name.AVSampleBufferDisplayLayerReadyForDisplayDidChange, object: videoLayer, queue: .main, using: { [weak strongSelf] _ in
+                            guard let strongSelf else {
+                                return
+                            }
+                            if !strongSelf.didNotifyVideoLayerReadyForDisplay {
+                                strongSelf.didNotifyVideoLayerReadyForDisplay = true
+                                strongSelf.hasSentFramesToDisplay?()
+                            }
+                        })
+                    }
                     
                     strongSelf.updateState()
                 }

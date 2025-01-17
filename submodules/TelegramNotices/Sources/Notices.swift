@@ -199,6 +199,7 @@ private enum ApplicationSpecificGlobalNotice: Int32 {
     case dismissedBusinessIntroBadge = 72
     case dismissedBusinessLinksBadge = 73
     case dismissedBusinessChatbotsBadge = 74
+    case captionAboveMediaTooltip = 75
     
     var key: ValueBoxKey {
         let v = ValueBoxKey(length: 4)
@@ -234,6 +235,7 @@ private struct ApplicationSpecificNoticeKeys {
     private static let dismissedPremiumGiftNamespace: Int32 = 9
     private static let groupEmojiPackNamespace: Int32 = 9
     private static let dismissedBirthdayPremiumGiftTipNamespace: Int32 = 10
+    private static let displayedPeerVerificationNamespace: Int32 = 11
     
     static func inlineBotLocationRequestNotice(peerId: PeerId) -> NoticeEntryKey {
         return NoticeEntryKey(namespace: noticeNamespace(namespace: inlineBotLocationRequestNamespace), key: noticeKey(peerId: peerId, key: 0))
@@ -515,6 +517,10 @@ private struct ApplicationSpecificNoticeKeys {
         return NoticeEntryKey(namespace: noticeNamespace(namespace: dismissedBirthdayPremiumGiftTipNamespace), key: noticeKey(peerId: peerId, key: 0))
     }
     
+    static func displayedPeerVerification(peerId: PeerId) -> NoticeEntryKey {
+        return NoticeEntryKey(namespace: noticeNamespace(namespace: displayedPeerVerificationNamespace), key: noticeKey(peerId: peerId, key: 0))
+    }
+    
     static func monetizationIntroDismissed() -> NoticeEntryKey {
         return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.monetizationIntroDismissed.key)
     }
@@ -533,6 +539,10 @@ private struct ApplicationSpecificNoticeKeys {
     
     static func dismissedBusinessChatbotsBadge() -> NoticeEntryKey {
         return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.dismissedBusinessChatbotsBadge.key)
+    }
+    
+    static func captionAboveMediaTooltip() -> NoticeEntryKey {
+        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.captionAboveMediaTooltip.key)
     }
 }
 
@@ -2136,6 +2146,26 @@ public struct ApplicationSpecificNotice {
         |> ignoreValues
     }
     
+    public static func displayedPeerVerification(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId) -> Signal<Bool, NoError> {
+        return accountManager.noticeEntry(key: ApplicationSpecificNoticeKeys.displayedPeerVerification(peerId: peerId))
+        |> map { view -> Bool in
+            if let _ = view.value?.get(ApplicationSpecificBoolNotice.self) {
+                return true
+            } else {
+                return false
+            }
+        }
+    }
+    
+    public static func setDisplayedPeerVerification(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId) -> Signal<Never, NoError> {
+        return accountManager.transaction { transaction -> Void in
+            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
+                transaction.setNotice(ApplicationSpecificNoticeKeys.displayedPeerVerification(peerId: peerId), entry)
+            }
+        }
+        |> ignoreValues
+    }
+    
     public static func setMonetizationIntroDismissed(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Never, NoError> {
         return accountManager.transaction { transaction -> Void in
             if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
@@ -2245,5 +2275,32 @@ public struct ApplicationSpecificNotice {
             }
         }
         |> take(1)
+    }
+    
+    public static func getCaptionAboveMediaTooltip(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Int32, NoError> {
+        return accountManager.transaction { transaction -> Int32 in
+            if let value = transaction.getNotice(ApplicationSpecificNoticeKeys.captionAboveMediaTooltip())?.get(ApplicationSpecificCounterNotice.self) {
+                return value.value
+            } else {
+                return 0
+            }
+        }
+    }
+    
+    public static func incrementCaptionAboveMediaTooltip(accountManager: AccountManager<TelegramAccountManagerTypes>, count: Int = 1) -> Signal<Int, NoError> {
+        return accountManager.transaction { transaction -> Int in
+            var currentValue: Int32 = 0
+            if let value = transaction.getNotice(ApplicationSpecificNoticeKeys.captionAboveMediaTooltip())?.get(ApplicationSpecificCounterNotice.self) {
+                currentValue = value.value
+            }
+            let previousValue = currentValue
+            currentValue += Int32(count)
+
+            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+                transaction.setNotice(ApplicationSpecificNoticeKeys.captionAboveMediaTooltip(), entry)
+            }
+            
+            return Int(previousValue)
+        }
     }
 }

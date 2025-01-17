@@ -263,6 +263,9 @@
 "PUSH_MESSAGE_WALLPAPER" = "%1$@ set a new wallpaper for the chat with you";
 "PUSH_MESSAGE_SAME_WALLPAPER" = "%1$@ set the same wallpaper for the chat with you";
 
+"PUSH_MESSAGE_UNIQUE_STARGIFT" = "%1$@ sent you a Gift";
+"PUSH_MESSAGE_STARGIFT_UPGRADE" = "%1$@ upgraded your Gift";
+
 "PUSH_REMINDER_TITLE" = "🗓 Reminder";
 "PUSH_SENDER_YOU" = "📅 You";
 
@@ -282,6 +285,9 @@
 "LOCAL_MESSAGE_FWDS" = "%1$@ forwarded you %2$d messages";
 "LOCAL_CHANNEL_MESSAGE_FWDS" = "%1$@ posted %2$d forwarded messages";
 "LOCAL_CHAT_MESSAGE_FWDS" = "%1$@ forwarded %2$d messages";
+
+"PUSH_STORY_HIDDEN_AUTHOR" = "New story was posted";
+"PUSH_MESSAGE_STARGIFT" = "%1$@|sent you a Gift worth of %2$@ stars";
 
 // Common
 "Common.OK" = "OK";
@@ -7525,9 +7531,6 @@ Sorry for the inconvenience.";
 "WebApp.OpenWebViewAlertTitle" = "Open Web App";
 "WebApp.OpenWebViewAlertText" = "**%@** would like to open its web app to proceed.\n\nIt will be able to access your **IP address** and basic device info.";
 
-"WebApp.MessagePreview" = "Message Preview";
-"WebApp.Send" = "Send";
-
 "WebApp.RemoveConfirmationTitle" = "Remove Bot";
 "WebApp.RemoveConfirmationText" = "Remove **%@** from the attachment menu?";
 
@@ -12299,6 +12302,7 @@ Sorry for the inconvenience.";
 "Stars.Intro.Transaction.ConvertedGift" = "Converted Gift";
 "Stars.Intro.Transaction.Unsupported.Title" = "Unsupported";
 "Stars.Intro.Transaction.Refund" = "Refund";
+"Stars.Intro.Transaction.GiftUpgrade" = "Gift Upgrade";
 
 "Stars.Intro.PurchasedTitle" = "Stars Acquired";
 "Stars.Intro.PurchasedText" = "**%@** added to your balance.";
@@ -13086,6 +13090,8 @@ Sorry for the inconvenience.";
 "Gift.Send.Limited" = "Limited";
 "Gift.Send.Remains_1" = "%@ left";
 "Gift.Send.Remains_any" = "%@ left";
+"Gift.Send.Sold_1" = "%@ sold";
+"Gift.Send.Sold_any" = "%@ sold";
 
 "Gift.Send.ErrorUnknown" = "An error occurred. Please try again.";
 "Gift.Send.ErrorOutOfStock" = "Sorry, this gift is sold out. Please choose another gift.";
@@ -13218,3 +13224,418 @@ Sorry for the inconvenience.";
 "Gift.Convert.Period.Unavailable.Text" = "Sorry, you can't convert this gift.\n\nStars can only be claimed within %@ after receiving a gift.";
 "Gift.Convert.Period.Unavailable.Days_1" = "%@ day";
 "Gift.Convert.Period.Unavailable.Days_any" = "%@ days";
+
+"Gift.Send.TitleTo" = "Gift to %@";
+"Gift.Send.SendShort" = "Send";
+
+"Premium.EmojiStatus.Proceed" = "Unlock Emoji Statuses";
+
+"Stars.Transaction.Subscription.CancelledByBot" = "Your subscription was cancelled by the bot.";
+"Stars.Transaction.Subscription.CancelledByBusiness" = "Your subscription was cancelled by the business.";
+
+"Gift.View.BotDescription" = "You can keep this gift in your Profile or hide it.";
+
+"Notification.StarGift.Bot.Subtitle" = "Display this gift on your page.";
+"Notification.StarGift.Bot.Subtitle.Displaying" = "You are displaying this gift on your page.";
+
+"Privacy.Gifts" = "Gifts";
+"Privacy.Gifts.WhoCanSeeMyBio" = "WHO CAN DISPLAY GIFTS ON MY PROFILE";
+"Privacy.Gifts.CustomHelp" = "Choose whether gifts from specific senders need your approval before they’re visible to others on your profile.";
+"Privacy.Gifts.AlwaysAllow.Title" = "Always Allow";
+"Privacy.Gifts.NeverAllow.Title" = "Never Allow";
+
+"PrivacySettings.ValueBots" = "Mini Apps";
+"PrivacySettings.ValueBotsPlus" = "Mini Apps +%@";
+
+"PrivacySettings.CategoryBots" = "Mini Apps";
+
+"PeerInfo.Permissions.Title" = "ALLOW ACCESS TO";
+"PeerInfo.Permissions.EmojiStatus" = "Emoji Status";
+"PeerInfo.Permissions.Geolocation" = "Geolocation";
+"PeerInfo.Permissions.Biometry" = "Biometry";
+
+"Stars.Transaction.Subscription" = "Subscription";
+"Stars.Transaction.Subscription.Bot" = "Bot";
+"Stars.Transaction.Subscription.Business" = "Business";
+
+"Stars.Transfer.BotSubscribeInfo" = "Do you want to subscribe to **%1$@** in **%2$@** for **%3$@** per month?";
+"Stars.Transfer.BotSubscribeInfo.Stars_1" = "%@ Star";
+"Stars.Transfer.BotSubscribeInfo.Stars_any" = "%@ Stars";
+"Stars.Transfer.SubscribeFor" = "Subscribe for";
+"Stars.Transfer.SubscribePerMonth" = "/ month";
+
+"WebApp.AddToHomeScreen" = "Add to Home Screen";
+
+"WebApp.Emoji.Title" = "Set Emoji Status";
+"WebApp.Emoji.Text" = "Do you want to set this emoji status suggested by **%@**?";
+"WebApp.Emoji.DurationText" = "Do you want to set this emoji status suggested by **%1$@** for **%2$@**?";
+"WebApp.Emoji.Confirm" = "Confirm";
+
+"WebApp.Emoji.Succeed" = "Your emoji status updated.";
+"WebApp.Emoji.DurationSucceed" = "Your emoji status set for %@.";
+
+"WebApp.EmojiPermission.Text" = "**%1$@** requests access to set your **emoji status**. You will be able to revoke this access in the profile page of **%2$@**.";
+"WebApp.EmojiPermission.Allow" = "Allow";
+"WebApp.EmojiPermission.Decline" = "Decline";
+"WebApp.EmojiPermission.Succeed" = "**%@** can now set your emoji status anytime.";
+"WebApp.EmojiPermission.Undo" = "Undo";
+
+"WebApp.LocationPermission.Text" = "**%1$@** requests access to your **location**. You will be able to revoke this access in the profile page of **%2$@**.";
+"WebApp.LocationPermission.Allow" = "Allow";
+"WebApp.LocationPermission.Decline" = "Decline";
+"WebApp.LocationPermission.Succeed" = "**%@** can now have access to your location.";
+"WebApp.LocationPermission.Undo" = "Undo";
+
+"WebApp.Download.Photo" = "Download Photo";
+"WebApp.Download.Video" = "Download Video";
+"WebApp.Download.Document" = "Download Document";
+"WebApp.Download.Text" = "**%1$@** suggests you to download **%2$@**%3$@.";
+"WebApp.Download.Download" = "Download";
+"WebApp.Download.Cancel" = "Cancel";
+
+"WebApp.Download.SavedToPhotos" = "Saved to Photos.";
+"WebApp.Download.SavedToFiles" = "Saved to Files.";
+
+"MediaGallery.ToastVideoPip.Title" = "Video Minimized";
+"MediaGallery.ToastVideoPip.Text" = "Swipe down on a video to close it.";
+
+"Chat.ToastSubscribedToScheduledLiveStream.Text" = "You will be notified when the live stream starts.";
+"Chat.TitleVideochatPanel.NotifyScheduledButton" = "Notify Me";
+
+"WebApp.ShareMessage.Title" = "Share Message";
+"WebApp.ShareMessage.PreviewTitle" = "MESSAGE PREVIEW";
+"WebApp.ShareMessage.Info" = "%@ mini app suggests you to send this message to a chat you select.";
+"WebApp.ShareMessage.Share" = "Share With...";
+
+"Notification.Gift" = "Gift";
+
+"WebBrowser.PassExistsError" = "This pass is already added to Wallet.";
+
+"Chat.VideoProcessingInfo" = "The video will be published once converted and optimized.";
+
+"Camera.CollageRetake" = "Retake";
+"Camera.CollageDelete" = "Delete";
+"Camera.CollageManagementTooltip" = "Tap a tile to delete or reorder it.";
+"Camera.CollageReorderingInfo" = "Hold and drag tiles to reorder them.";
+
+"MediaPicker.InvertCaptionTooltip" = "Tap here to move caption up.";
+"MediaPicker.InvertCaption.Updated.Up.Title" = "Caption moved up";
+"MediaPicker.InvertCaption.Updated.Up.Text" = "Text will be shown above the media.";
+"MediaPicker.InvertCaption.Updated.Down.Title" = "Caption moved down";
+"MediaPicker.InvertCaption.Updated.Down.Text" = "Text will be shown below the media.";
+
+"AffiliateSetup.AlertTerminate.Title" = "Warning";
+"AffiliateSetup.AlertTerminate.Text" = "If you end your affiliate program:\n\n• Any referral links already shared will be disabled in 24 hours.\n\n• All participating affiliates will be notified.\n\n• You will be able to start a new affiliate program only in 24 hours.";
+"AffiliateSetup.AlertTerminate.Action" = "End Anyway";
+"AffiliateSetup.AlertApply.Title" = "Warning";
+"AffiliateSetup.AlertApply.Text" = "Once you start the affiliate program, you won't be able to decrease its commission or duration. You can only increase these parameters or end the program, whuch will disable all previously distributed referral links.";
+"AffiliateSetup.AlertApply.SectionCommission" = "Commission";
+"AffiliateSetup.AlertApply.SectionDuration" = "Duration";
+"AffiliateSetup.AlertApply.Action" = "Start";
+
+"AffiliateSetup.ToastTerminated.Title" = "Affiliate Program Ended";
+"AffiliateSetup.ToastTerminated.Text" = "Participating affiliates have been notified. All referral links will be disabled in 24 hours.";
+
+"AffiliateSetup.SectionDuration" = "DURATION";
+"AffiliateSetup.SectionDurationFooter" = "Set the duration for which affiliates will earn commissions from referred users.";
+
+"AffiliateSetup.SectionCommission" = "COMMISSION";
+"AffiliateSetup.SectionCommissionFooter" = "Define the percentage of star revenue your affiliates earn for referring users to your bot.";
+
+"AffiliateSetup.ExistingPrograms.Action" = "View Existing Programs";
+"AffiliateSetup.ExistingPrograms.Footer" = "Explore what other mini apps offer.";
+
+"AffiliateSetup.EndAction" = "End Affiliate Program";
+
+"AffiliateSetup.StartTitle" = "Start Affiliate Program";
+"AffiliateSetup.UpdateTitle" = "Update Affiliate Program";
+
+"AffiliateSetup.TermsFooter" = "By creating an affiliate program, you afree to the [terms and conditions](https://telegram.org/terms) of Affiliate Programs.";
+
+"AffiliateSetup.ProgramMenu.OpenBot" = "Open Bot";
+"AffiliateSetup.ProgramMenu.OpenApp" = "Open App";
+"AffiliateSetup.ProgramMenu.CopyLink" = "Copy Link";
+"AffiliateSetup.ProgramMenu.Leave" = "Leave";
+"AffiliateSetup.ProgramLeave" = "Leave";
+
+"AffiliateSetup.ConnectedSectionTitle" = "MY PROGRAMS";
+"AffiliateSetup.SuggestedSectionTitle" = "PROGRAMS";
+"AffiliateSetup.SuggestedSectionEmpty" = "No available programs yet.\nPlease check the page later.";
+
+"AffiliateSetup.TitleNew" = "Affiliate Program";
+"AffiliateSetup.TextNew" = "Affiliate Program";
+"AffiliateSetup.TitleJoin" = "Affiliate Programs";
+"AffiliateSetup.TextJoin" = "Earn a commission each time a user who first accessed a mini app through your referral link spends **Stars** within it.";
+
+"AffiliateSetup.IntroNew.Title1" = "Share revenue with affiliates";
+"AffiliateSetup.IntroNew.Text1" = "Set the commission for revenue generated by users referred to you.";
+"AffiliateSetup.IntroNew.Title2" = "Launch your affiliate program";
+"AffiliateSetup.IntroNew.Text2" = "Telegram will feature your program for millions of potential affiliates.";
+"AffiliateSetup.IntroNew.Title3" = "Let affiliates promote you";
+"AffiliateSetup.IntroNew.Text3" = "Affiliates will share your referral link with their audience.";
+
+"AffiliateSetup.IntroJoin.Title1" = "Reliable";
+"AffiliateSetup.IntroJoin.Text1" = "Receive guaranteed commissions for spending by users you refer.";
+"AffiliateSetup.IntroJoin.Title2" = "Transparent";
+"AffiliateSetup.IntroJoin.Text2" = "Track your commissions from referred users in real time.";
+"AffiliateSetup.IntroJoin.Title3" = "Simple";
+"AffiliateSetup.IntroJoin.Text3" = "Choose a mini app below, get your referral link, and start earning Stars.";
+
+"AffiliateProgram.ToastLinkCopied.Title" = "Link copied to clipboard";
+"AffiliateProgram.ToastLinkCopied.Text" = "Share this link and earn **%1$@** of what people who use it spend in **%2$@!";
+
+"AffiliateProgram.DurationLifetime" = "Lifetime";
+
+"AffiliateProgram.SortSelectorProfitability" = "Profitability";
+"AffiliateProgram.SortSelectorRevenue" = "Revenue";
+"AffiliateProgram.SortSelectorDate" = "Date";
+
+"AffiliateProgram.ValueShortMonths_1" = "%@m";
+"AffiliateProgram.ValueShortMonths_any" = "%@m";
+"AffiliateProgram.ValueShortYears_1" = "%@y";
+"AffiliateProgram.ValueShortYears_any" = "%@y";
+
+"AffiliateProgram.ValueLongMonths_1" = "%@ MONTH";
+"AffiliateProgram.ValueLongMonths_any" = "%@ MONTHS";
+"AffiliateProgram.ValueLongYears_1" = "%@ YEAR";
+"AffiliateProgram.ValueLongYears_any" = "%@ YEARS";
+
+"AffiliateProgram.PeerTypeSelf" = "personal account";
+
+"AffiliateProgram.JoinTitle" = "Affiliate Program";
+"AffiliateProgram.JoinTerms" = "By joining this program, you afree to the [terms and conditions](https://telegram.org/terms) of Affiliate Programs.";
+"AffiliateProgram.DailyRevenueText" = "The average daily revenue per user: #**%@**";
+
+"AffiliateProgram.LinkTitle" = "Referral Link";
+"AffiliateProgram.LinkSubtitleLifetime" = "Share this link with your users to earn a **{commission}** commission on their spending in **{bot}** **forever** after they follow your link.";
+"AffiliateProgram.LinkSubtitleMonths_1" = "Share this link with your users to earn a **{commission}** commission on their spending in **{bot}** for **1 month** after they follow your link.";
+"AffiliateProgram.LinkSubtitleMonths_any" = "Share this link with your users to earn a **{commission}** commission on their spending in **{bot}** for **%d months** after they follow your link.";
+"AffiliateProgram.LinkSubtitleYears_1" = "Share this link with your users to earn a **{commission}** commission on their spending in **{bot}** for **1 year** after they follow your link.";
+"AffiliateProgram.LinkSubtitleYears_any" = "Share this link with your users to earn a **{commission}** commission on their spending in **{bot}** for **%d years** after they follow your link.";
+
+"AffiliateProgram.JoinSubtitleLifetime" = "**{bot}** will share **{commission}** of the revenue from each user you refer to it **forever**.";
+"AffiliateProgram.JoinSubtitleMonths_1" = "**{bot}** will share **{commission}** of the revenue from each user you refer to it for **1 month.**";
+"AffiliateProgram.JoinSubtitleMonths_any" = "**{bot}** will share **{commission}** of the revenue from each user you refer to it for **%d months.**";
+"AffiliateProgram.JoinSubtitleYears_1" = "**{bot}** will share **{commission}** of the revenue from each user you refer to it for **1 month.**";
+"AffiliateProgram.JoinSubtitleYears_any" = "**{bot}** will share **{commission}** of the revenue from each user you refer to it for **%d months.**";
+
+"AffiliateProgram.CommistionDestinationText" = "Commission will be sent to:";
+
+"AffiliateProgram.ActionJoin" = "Join Program";
+"AffiliateProgram.ActionCopyLink" = "Copy Link";
+
+"AffiliateProgram.ToastJoined.Title" = "Program joined";
+"AffiliateProgram.ToastJoined.Text" = "You can now copy the referral link.";
+
+"AffiliateSetup.SortSectionHeader.Date" = "SORT BY [DATE]()";
+"AffiliateSetup.SortSectionHeader.Profitability" = "SORT BY [PROFITABILITY]()";
+"AffiliateSetup.SortSectionHeader.Revenue" = "SORT BY [REVENUE]()";
+
+"AffiliateProgram.UserCountFooter_0" = "No one opened {bot} through this link yet.";
+"AffiliateProgram.UserCountFooter_1" = "1 user opened {bot} through this link.";
+"AffiliateProgram.UserCountFooter_any" = "%d users opened {bot} through this link.";
+
+"ChatList.InlineButtonOpenApp" = "OPEN";
+
+"Monetization.EarnStarsInfo.Title" = "Earn Stars";
+"Monetization.EarnStarsInfo.Text" = "Distribute links to mini apps and earn a share of their revenue in Stars.";
+
+"PeerInfo.ItemAffiliateProgram.Title" = "Affiliate Program";
+"PeerInfo.ItemAffiliatePrograms.Title" = "Affiliate Programs";
+"PeerInfo.ItemAffiliateProgram.Footer" = "Share a link to %1$@ with your friends and and earn %2$@% of their spending there.";
+"PeerInfo.ItemAffiliateProgram.ValueOff" = "Off";
+
+"StarsTransaction.TitleCommission" = "%@% Commission";
+"StarsTransaction.StarRefReason.Title" = "Reason";
+"StarsTransaction.StarRefReason.Program" = "Affiliate Program";
+"StarsTransaction.StarRefReason.Miniapp" = "Mini App";
+"StarsTransaction.StarRefReason.Affiliate" = "Affiliate";
+"StarsTransaction.StarRefReason.Referred" = "Referred User";
+
+"Gallery.SaveToGallery.cached" = "cached";
+
+"ChatList.Search.Messages.AllChats" = "From All Chats";
+"ChatList.Search.Messages.PrivateChats" = "From Private Chats";
+"ChatList.Search.Messages.GroupChats" = "From Group Chats";
+"ChatList.Search.Messages.Channels" = "From Channels";
+
+"ChatList.Search.Messages.Menu.AllChats" = "All Chats";
+"ChatList.Search.Messages.Menu.PrivateChats" = "Private Chats";
+"ChatList.Search.Messages.Menu.GroupChats" = "Group Chats";
+"ChatList.Search.Messages.Menu.Channels" = "Channels";
+
+"MediaEditor.Timeline" = "Timeline";
+
+"Conversation.ContextMenuSendGiftTo" = "Send Gift to %@";
+"Conversation.ContextMenuSendAnotherGift" = "Send Another Gift";
+
+"Gift.View.Status" = "Status";
+"Gift.View.Status.NonUnique" = "Non-Unique";
+"Gift.View.Status.Upgrade" = "upgrade";
+"Gift.View.DisplayedInfoHide" = "The gift is visible on your Page. [Hide >]()";
+"Gift.View.HiddenInfoShow" = "This gift is hidden. Only you can see it. [Show >]()";
+
+"Gift.Upgrade.Title" = "Upgrade Gift";
+"Gift.Upgrade.IncludeTitle" = "Make Unique";
+"Gift.Upgrade.Description" = "Turn your gift into a unique collectible that you can transfer or auction.";
+"Gift.Upgrade.IncludeDescription" = "Let %@ turn your gift into a unique collectible.";
+"Gift.Upgrade.Unique.Title" = "Unique";
+"Gift.Upgrade.Unique.Description" = "Get a unique number, model, backdrop, and symbol for your gift.";
+"Gift.Upgrade.Unique.IncludeDescription" = "The recipient will get a unique number, model, backdrop, and symbol for the gift.";
+"Gift.Upgrade.Transferable.Title" = "Transferable";
+"Gift.Upgrade.Transferable.Description" = "Send your upgraded gift to any of your friends on Telegram.";
+"Gift.Upgrade.Transferable.IncludeDescription" = "The recipient will be able to send the gift to anyone Telegram.";
+"Gift.Upgrade.Tradable.Title" = "Tradable";
+"Gift.Upgrade.Tradable.Description" = "Sell or auction your gift on third-party NFT marketplaces.";
+"Gift.Upgrade.Tradable.IncludeDescription" = "The recipient will be able to auction the gift on third-party NFT marketplaces.";
+"Gift.Upgrade.Soon" = "SOON";
+"Gift.Upgrade.AddName" = "Add sender's name";
+"Gift.Upgrade.AddNameAndComment" = "Add sender's name and comment";
+"Gift.Upgrade.AddMyName" = "Add my name to the gift";
+"Gift.Upgrade.Upgrade" = "Upgrade";
+"Gift.Upgrade.Confirm" = "Confirm";
+
+"Gift.Upgrade.Succeed.Title" = "The gift is now collectible";
+"Gift.Upgrade.Succeed.Text" = "You have received a unique number, model, backdrop and symbol for your gift.";
+
+"Gift.Unique.Collectible" = "Collectible";
+"Gift.Unique.Owner" = "Owner";
+"Gift.Unique.Transfer" = "change";
+"Gift.Unique.Model" = "Model";
+"Gift.Unique.Backdrop" = "Backdrop";
+"Gift.Unique.Symbol" = "Symbol";
+"Gift.Unique.Availability" = "Availability";
+"Gift.Unique.Issued" = "%@ issued";
+"Gift.Unique.OriginalInfo" = "Gifted to %1$@ on %2$@.";
+"Gift.Unique.OriginalInfoWithText" = "Gifted to %1$@ on %2$@ with comment \"%3$@\".";
+"Gift.Unique.OriginalInfoSender" = "Gifted by %1$@ to %2$@ on %3$@.";
+"Gift.Unique.OriginalInfoSenderWithText" = "Gifted by %1$@ to %2$@ on %3$@ with comment \"%4$@\".";
+
+"Gift.Unique.AttributeDescription" = "Only %@ of such collectibles have this attribute.";
+
+"Gift.Transfer.Title" = "Transfer";
+"Gift.Transfer.SendViaBlockchain" = "Send via Blockchain";
+"Gift.Transfer.SendUnlocks" = "unlocks in %@";
+"Gift.Transfer.SendUnlocks.Days_1" = "%@ day";
+"Gift.Transfer.SendUnlocks.Days_any" = "%@ days";
+
+"Gift.Transfer.UnlockPending.Title" = "Unlocking In Progress";
+"Gift.Transfer.UnlockPending.Text" = "In %@, you'll be able to send this collectible to any TON blockchain address outside Telegram for sale or auction.";
+"Gift.Transfer.UnlockPending.Text.Days_1" = "%@ day";
+"Gift.Transfer.UnlockPending.Text.Days_any" = "%@ days";
+
+"Gift.Transfer.UpdateRequired.Title" = "Update Required";
+"Gift.Transfer.UpdateRequired.Text" = "Please update your Telegram application to the latest version.";
+
+"Gift.Transfer.Confirmation.Title" = "Confirm Transfer";
+"Gift.Transfer.Confirmation.TextFree" = "Dou you want to transfer ownership of **%1$@** to **%2$@**?";
+"Gift.Transfer.Confirmation.Text" = "Dou you want to transfer ownership of **%1$@** to **%2$@** for **%3$@**?";
+"Gift.Transfer.Confirmation.Text.Stars_1" = "%@ Star";
+"Gift.Transfer.Confirmation.Text.Stars_any" = "%@ Stars";
+"Gift.Transfer.Confirmation.Transfer" = "Transfer for";
+"Gift.Transfer.Confirmation.TransferFree" = "Transfer";
+
+"Gift.Transfer.Success" = "You have successfully gifted **%1$@** to **%2$@**.";
+
+"Gift.View.UpgradeForFree" = "Upgrade for Free";
+"Gift.View.KeepUpgradeOrConvertDescription" = "You can keep this gift, upgrade it, or sell it for %@. [More About Stars >]()";
+
+"ChatList.ToastFolderMutedV2" = "All chats in {folder} are now muted";
+"ChatList.ToastFolderUnmutedV2" = "All chats in {folder} are now unmuted";
+"ChatList.AddedToFolderTooltipV2" = "{chat} has been added to folder {folder}";
+"ChatList.RemovedFromFolderTooltipV2" = "{chat} has been removed from folder {folder}";
+
+"FolderLinkScreen.TitleDescriptionDeselectedV2" = "Anyone with this link can add {folder} folder and the chats selected below.";
+"FolderLinkScreen.TitleDescriptionSelectedV2" = "Anyone with this link can add {folder} folder and {chats} selected below.";
+"Chat.NextChannelFolderSwipeProgressV2" = "Swipe up to go to the {folder} folder";
+"Chat.NextChannelFolderSwipeActionV2" = "Release to go to the {folder} folder";
+"FolderLinkPreview.TextAddChatsV2" = "Do you want to add {chats} to the\nfolder {folder}?";
+"FolderLinkPreview.ToastLeftTitleV2" = "Folder {folder} deleted";
+"FolderLinkPreview.ToastChatsAddedTitleV2" = "Folder {folder} Updated";
+"FolderLinkPreview.ToastFolderAddedTitleV2" = "Folder {folder} Added";
+
+"Stars.Purchase.UpgradeStarGiftInfo" = "Buy Stars to upgrade yort gift into a unique collectible.";
+
+"Gift.Send.Upgrade" = "Make Unique for %@";
+"Gift.Send.Upgrade.Info" = "Enable this to let %1$@ turn your gift into a unique collectible. [Learn More >]()";
+
+"Notification.StarGift.Unpack" = "Unpack";
+
+"Notification.StarGift.Model" = "Model";
+"Notification.StarGift.Backdrop" = "Backdrop";
+"Notification.StarGift.Symbol" = "Symbol";
+
+"Notification.StarGift.Gift" = "gift";
+
+"Notification.StarsGift.Upgrade" = "%@ turned the gift from you to a unique collectible";
+"Notification.StarsGift.UpgradeYou" = "You turned the gift from %@ to a unique collectible";
+"Notification.StarsGift.UpgradeSelf" = "You turned the gift to a unique collectible";
+
+"Notification.StarsGift.Transfer" = "%@ transferred you a unique collectible";
+"Notification.StarsGift.TransferYou" = "You transferred a unique collectible";
+
+"Notification.StarGift.Subtitle.Refunded" = "This gift cannot be converted to Stars because the payment related to it was refunded.";
+"Notification.StarGift.Subtitle.Downgraded" = "This gift was downgraded because a request to refund the payment related to this gift was made, and the money was returned.";
+
+"Notification.StarGift.Subtitle.Upgrade" = "Tap \"Unpack\" to turn this gift to a unique collectible.";
+"Notification.StarGift.Subtitle.Upgrade.Other" = "%1$@ can turn this gift to a unique collectible.";
+
+"Notification.StarGift.Subtitle.Upgraded" = "This gift was upgraded.";
+
+"Stars.Transaction.GiftFrom" = "Gift From";
+"Stars.Transaction.GiftUpgrade" = "Gift Upgrade";
+
+"Gift.View.FreeUpgradeDescription" = "Upgrade this gift for free to turn it to a unique collectible.";
+"Gift.View.FreeUpgradeOtherDescription" = "%1$@ can turn this gift to a unique collectible.";
+
+"Gift.View.UpgradedDescription" = "This gift was turned to a unique collectible.";
+"Gift.View.ViewUpgraded" = "View Upgraded Gift";
+
+"VideoChat.IncomingVideoQuality.AudioOnly" = "Audio Only";
+"VideoChat.IncomingVideoQuality.Title" = "Receive Video Quality";
+
+"ChatList.EmptyResult.SearchInAll" = "Search in All Messages";
+
+"Gift.Options.GiftSelf.Title" = "Buy a Gift";
+"Gift.Options.GiftSelf.Text" = "Buy yourself a gift to display on your page or reserve for later.\n\nLimited-edition gifts upgraded to collectibles can be gifted to others later.";
+
+"Gift.SendSelf.Title" = "Gift to Myself";
+"Gift.SendSelf.HideMyName" = "Hide My Name";
+"Gift.SendSelf.HideMyName.Info" = "Hide my name and message from visitors to my profile.";
+
+"Notification.StarGift.Self.Title" = "Saved Gift";
+"Notification.StarsGift.Self.Bought" = "You bought a gift for %@";
+"Notification.StarsGift.Subtitle.Self" = "You can display this gift on your page or turn it into a unique collectible and send to others.";
+
+"Gift.View.Self.Title" = "Saved Gift";
+"Gift.View.Self.Description" = "You can display this gift on your page or turn it into a unique collectible and send to others.";
+
+"BotVerification.Verify.Placeholder" = "This page is verified by %@";
+
+"BotVerification.Verify.Channel.Title" = "Verify Channel";
+"BotVerification.Verify.Channel.Text" = "Do you want to verify this channel with your verification mark and description?";
+"BotVerification.Verify.Group.Title" = "Verify Group";
+"BotVerification.Verify.Group.Text" = "Do you want to verify this group with your verification mark and description?";
+"BotVerification.Verify.User.Title" = "Verify Bot";
+"BotVerification.Verify.User.Text" = "Do you want to verify this user with your verification mark and description?";
+"BotVerification.Verify.Bot.Title" = "Verify Bot";
+"BotVerification.Verify.Bot.Text" = "Do you want to verify this bot with your verification mark and description?";
+
+"BotVerification.Verify.Verify" = "Verify";
+
+"BotVerification.Remove.Title" = "Remove Verification";
+"BotVerification.Remove.Channel.Text" = "This channel is already verified by you. Do you want to remove verification?";
+"BotVerification.Remove.Group.Text" = "This group is already verified by you. Do you want to remove verification?";
+"BotVerification.Remove.User.Text" = "This user is already verified by you. Do you want to remove verification?";
+"BotVerification.Remove.Bot.Text" = "This bot is already verified by you. Do you want to remove verification?";
+"BotVerification.Remove.Remove" = "Remove";
+
+"BotVerification.ChooseChat" = "Choose Chat to Verify";
+"BotVerification.Added" = "**%@** has been notified and will receive your verification mark and description upon accepting.";
+"BotVerification.Removed" = "You have removed **%@'s** verification.";
+
+"Premium.Gift.ContactSelection.ThisIsYou" = "THIS IS YOU";
+"Premium.Gift.ContactSelection.BuySelf" = "buy yourself a gift";
+
+"Gift.View.Outgoing.NameHidden" = "Only %@ can see your name.";
+"Gift.View.Outgoing.NameAndMessageHidden" = "Only %@ can see your name and message.";

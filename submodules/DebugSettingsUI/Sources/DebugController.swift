@@ -1,6 +1,7 @@
 // MARK: Nicegram Imports
 import NGAppCache
 import NGData
+import NicegramWallet
 //
 import Foundation
 import UIKit
@@ -20,6 +21,7 @@ import AppBundle
 import ZipArchive
 import WebKit
 import InAppPurchaseManager
+import TelegramVoip
 
 @objc private final class DebugControllerMailComposeDelegate: NSObject, MFMailComposeViewControllerDelegate {
     public func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
@@ -65,6 +67,7 @@ private enum DebugControllerSection: Int32 {
 private enum DebugControllerEntry: ItemListNodeEntry {
     // MARK: Nicegram DebugMenu
     case showOnboarding(Bool)
+    case multichainEnabled(Bool)
     //
     case testStickerImport(PresentationTheme)
     case sendLogs(PresentationTheme)
@@ -118,8 +121,9 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     case disableReloginTokens(Bool)
     case disableCallV2(Bool)
     case experimentalCallMute(Bool)
-    case liveStreamV2(Bool)
-    case dynamicStreaming(Bool)
+    case conferenceCalls(Bool)
+    case playerV2(Bool)
+    case benchmarkReflectors
     case enableLocalTranslation(Bool)
     case preferredVideoCodec(Int, String, String?, Bool)
     case disableVideoAspectScaling(Bool)
@@ -135,7 +139,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     var section: ItemListSectionId {
         switch self {
         // MARK: Nicegram DebugMenu
-        case .showOnboarding:
+        case .showOnboarding, .multichainEnabled:
             return DebugControllerSection.nicegram.rawValue
         //
         case .testStickerImport:
@@ -152,7 +156,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return DebugControllerSection.web.rawValue
         case .keepChatNavigationStack, .skipReadHistory, .dustEffect, .crashOnSlowQueries, .crashOnMemoryPressure:
             return DebugControllerSection.experiments.rawValue
-        case .clearTips, .resetNotifications, .crash, .fillLocalSavedMessageCache, .resetDatabase, .resetDatabaseAndCache, .resetHoles, .resetTagHoles, .reindexUnread, .resetCacheIndex, .reindexCache, .resetBiometricsData, .optimizeDatabase, .photoPreview, .knockoutWallpaper, .storiesExperiment, .storiesJpegExperiment, .playlistPlayback, .enableQuickReactionSwitch, .experimentalCompatibility, .enableDebugDataDisplay, .rippleEffect, .browserExperiment, .localTranscription, .enableReactionOverrides, .restorePurchases, .disableReloginTokens, .disableCallV2, .experimentalCallMute, .liveStreamV2, .dynamicStreaming, .enableLocalTranslation:
+        case .clearTips, .resetNotifications, .crash, .fillLocalSavedMessageCache, .resetDatabase, .resetDatabaseAndCache, .resetHoles, .resetTagHoles, .reindexUnread, .resetCacheIndex, .reindexCache, .resetBiometricsData, .optimizeDatabase, .photoPreview, .knockoutWallpaper, .storiesExperiment, .storiesJpegExperiment, .playlistPlayback, .enableQuickReactionSwitch, .experimentalCompatibility, .enableDebugDataDisplay, .rippleEffect, .browserExperiment, .localTranscription, .enableReactionOverrides, .restorePurchases, .disableReloginTokens, .disableCallV2, .experimentalCallMute, .conferenceCalls, .playerV2, .benchmarkReflectors, .enableLocalTranslation:
             return DebugControllerSection.experiments.rawValue
         case .logTranslationRecognition, .resetTranslationStates:
             return DebugControllerSection.translation.rawValue
@@ -169,6 +173,8 @@ private enum DebugControllerEntry: ItemListNodeEntry {
         switch self {
         // MARK: Nicegram DebugMenu
         case .showOnboarding:
+            return -4
+        case .multichainEnabled:
             return -3
         //
         case .sendNGLogs:
@@ -279,14 +285,16 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return 51
         case .experimentalCallMute:
             return 52
-        case .liveStreamV2:
+        case .conferenceCalls:
             return 53
-        case .dynamicStreaming:
+        case .playerV2:
             return 54
-        case .enableLocalTranslation:
+        case .benchmarkReflectors:
             return 55
+        case .enableLocalTranslation:
+            return 56
         case let .preferredVideoCodec(index, _, _, _):
-            return 56 + index
+            return 57 + index
         case .disableVideoAspectScaling:
             return 100
         case .enableNetworkFramework:
@@ -313,6 +321,13 @@ private enum DebugControllerEntry: ItemListNodeEntry {
         case let .showOnboarding(value):
             return ItemListSwitchItem(presentationData: presentationData, title: "Show onboarding", value: value, sectionId: self.section, style: .blocks, updated: { value in
                 AppCache.wasOnboardingShown = !value
+            })
+        case let .multichainEnabled(value):
+            return ItemListSwitchItem(presentationData: presentationData, title: "Enable Multichain Wallet", value: value, sectionId: self.section, style: .blocks, updated: { value in
+                Task {
+                    let updateUserBlockchainsUseCase = WalletSettingsModule.shared.updateUserBlockchainsUseCase()
+                    await updateUserBlockchainsUseCase.set(multichainEnabled: value)
+                }
             })
         //
         case .testStickerImport:
@@ -1460,25 +1475,80 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     })
                 }).start()
             })
-        case let .liveStreamV2(value):
-            return ItemListSwitchItem(presentationData: presentationData, title: "Live Stream V2", value: value, sectionId: self.section, style: .blocks, updated: { value in
+        case let .conferenceCalls(value):
+            return ItemListSwitchItem(presentationData: presentationData, title: "Conference [WIP]", value: value, sectionId: self.section, style: .blocks, updated: { value in
                 let _ = arguments.sharedContext.accountManager.transaction ({ transaction in
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
-                        settings.liveStreamV2 = value
+                        settings.conferenceCalls = value
                         return PreferencesEntry(settings)
                     })
                 }).start()
             })
-        case let .dynamicStreaming(value):
-            return ItemListSwitchItem(presentationData: presentationData, title: "Dynamic Streaming", value: value, sectionId: self.section, style: .blocks, updated: { value in
+        case let .playerV2(value):
+            return ItemListSwitchItem(presentationData: presentationData, title: "PlayerV2", value: value, sectionId: self.section, style: .blocks, updated: { value in
                 let _ = arguments.sharedContext.accountManager.transaction ({ transaction in
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
-                        settings.dynamicStreaming = value
+                        settings.playerV2 = value
                         return PreferencesEntry(settings)
                     })
                 }).start()
+            })
+        case .benchmarkReflectors:
+            return ItemListActionItem(presentationData: presentationData, title: "Benchmark Reflectors", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                guard let context = arguments.context else {
+                    return
+                }
+                
+                var signal: Signal<ReflectorBenchmark.Results, NoError> = Signal { subscriber in
+                    var reflectorBenchmark: ReflectorBenchmark? = ReflectorBenchmark(address: "91.108.13.35", port: 599)
+                    reflectorBenchmark?.start(completion: { results in
+                        subscriber.putNext(results)
+                        subscriber.putCompletion()
+                    })
+                    
+                    return ActionDisposable {
+                        reflectorBenchmark = nil
+                    }
+                }
+                |> runOn(.mainQueue())
+                
+                var cancelImpl: (() -> Void)?
+                let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                let progressSignal = Signal<Never, NoError> { subscriber in
+                    let controller = OverlayStatusController(theme: presentationData.theme, type: .loading(cancelled: {
+                        cancelImpl?()
+                    }))
+                    arguments.presentController(controller, nil)
+                    return ActionDisposable { [weak controller] in
+                        Queue.mainQueue().async() {
+                            controller?.dismiss()
+                        }
+                    }
+                }
+                |> runOn(Queue.mainQueue())
+                |> delay(0.15, queue: Queue.mainQueue())
+                let progressDisposable = progressSignal.start()
+                
+                let reindexDisposable = MetaDisposable()
+                
+                signal = signal
+                |> afterDisposed {
+                    Queue.mainQueue().async {
+                        progressDisposable.dispose()
+                    }
+                }
+                cancelImpl = {
+                    reindexDisposable.set(nil)
+                }
+                reindexDisposable.set((signal
+                |> deliverOnMainQueue).start(next: { results in
+                    if let context = arguments.context {
+                        let controller = textAlertController(context: context, title: nil, text: "Bandwidth: \(results.bandwidthBytesPerSecond * 8 / 1024) kbit/s (expected \(results.expectedBandwidthBytesPerSecond * 8 / 1024) kbit/s)\nAvg latency: \(Int(results.averageDelay * 1000.0)) ms", actions: [TextAlertAction(type: .genericAction, title: "OK", action: {})])
+                        arguments.presentController(controller, nil)
+                    }
+                }))
             })
         case let .enableLocalTranslation(value):
             return ItemListSwitchItem(presentationData: presentationData, title: "Local Translation", value: value, sectionId: self.section, style: .blocks, updated: { value in
@@ -1584,10 +1654,12 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     }
 }
 
-private func debugControllerEntries(sharedContext: SharedAccountContext, presentationData: PresentationData, loggingSettings: LoggingSettings, mediaInputSettings: MediaInputSettings, experimentalSettings: ExperimentalUISettings, networkSettings: NetworkSettings?, hasLegacyAppData: Bool, useBetaFeatures: Bool) -> [DebugControllerEntry] {
+// MARK: Nicegram Wallet, added multichainEnabled
+private func debugControllerEntries(sharedContext: SharedAccountContext, presentationData: PresentationData, loggingSettings: LoggingSettings, mediaInputSettings: MediaInputSettings, experimentalSettings: ExperimentalUISettings, networkSettings: NetworkSettings?, hasLegacyAppData: Bool, useBetaFeatures: Bool, multichainEnabled: Bool) -> [DebugControllerEntry] {
     var entries: [DebugControllerEntry] = []
     // MARK: Nicegram DebugMenu
     entries.append(.showOnboarding(!AppCache.wasOnboardingShown))
+    entries.append(.multichainEnabled(multichainEnabled))
     //
     entries.append(.sendNGLogs(presentationData.theme))
 // MARK: Nicegram NCG-5828 call recording
@@ -1671,8 +1743,11 @@ private func debugControllerEntries(sharedContext: SharedAccountContext, present
         entries.append(.enableQuickReactionSwitch(!experimentalSettings.disableQuickReaction))
         entries.append(.disableCallV2(experimentalSettings.disableCallV2))
         entries.append(.experimentalCallMute(experimentalSettings.experimentalCallMute))
-        entries.append(.liveStreamV2(experimentalSettings.liveStreamV2))
-        entries.append(.dynamicStreaming(experimentalSettings.dynamicStreaming))
+        
+        entries.append(.conferenceCalls(experimentalSettings.conferenceCalls))
+        entries.append(.playerV2(experimentalSettings.playerV2))
+        
+        entries.append(.benchmarkReflectors)
         entries.append(.enableLocalTranslation(experimentalSettings.enableLocalTranslation))
     }
     
@@ -1738,8 +1813,16 @@ public func debugController(sharedContext: SharedAccountContext, context: Accoun
         preferencesSignal = .single(nil)
     }
     
-    let signal = combineLatest(sharedContext.presentationData, sharedContext.accountManager.sharedData(keys: Set([SharedDataKeys.loggingSettings, ApplicationSpecificSharedDataKeys.mediaInputSettings, ApplicationSpecificSharedDataKeys.experimentalUISettings])), preferencesSignal)
-    |> map { presentationData, sharedData, preferences -> (ItemListControllerState, (ItemListNodeState, Any)) in
+    // MARK: Nicegram Wallet
+    let multichainEnabledSignal = WalletSettingsModule.shared.getUserBlockchainsUseCase()
+        .multichainEnabledPublisher()
+        .toSignal()
+        .skipError()
+    //
+    
+    // MARK: Nicegram Wallet, added multichainEnabled
+    let signal = combineLatest(sharedContext.presentationData, sharedContext.accountManager.sharedData(keys: Set([SharedDataKeys.loggingSettings, ApplicationSpecificSharedDataKeys.mediaInputSettings, ApplicationSpecificSharedDataKeys.experimentalUISettings])), preferencesSignal, multichainEnabledSignal)
+    |> map { presentationData, sharedData, preferences, multichainEnabled -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let loggingSettings: LoggingSettings
         if let value = sharedData.entries[SharedDataKeys.loggingSettings]?.get(LoggingSettings.self) {
             loggingSettings = value
@@ -1771,7 +1854,8 @@ public func debugController(sharedContext: SharedAccountContext, context: Accoun
         }
         
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text("Debug"), leftNavigationButton: leftNavigationButton, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: debugControllerEntries(sharedContext: sharedContext, presentationData: presentationData, loggingSettings: loggingSettings, mediaInputSettings: mediaInputSettings, experimentalSettings: experimentalSettings, networkSettings: networkSettings, hasLegacyAppData: hasLegacyAppData, useBetaFeatures: useBetaFeatures), style: .blocks)
+        // MARK: Nicegram Wallet, added multichainEnabled
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: debugControllerEntries(sharedContext: sharedContext, presentationData: presentationData, loggingSettings: loggingSettings, mediaInputSettings: mediaInputSettings, experimentalSettings: experimentalSettings, networkSettings: networkSettings, hasLegacyAppData: hasLegacyAppData, useBetaFeatures: useBetaFeatures, multichainEnabled: multichainEnabled), style: .blocks)
         
         return (controllerState, (listState, arguments))
     }

@@ -100,7 +100,7 @@ func handleTextLinkActionImpl(context: AccountContext, peerId: EnginePeer.Id?, n
                         let sourceLocation = InstantPageSourceLocation(userLocation: peerId.flatMap(MediaResourceUserLocation.peer) ?? .other, peerType: .group)
                         let browserController = context.sharedContext.makeInstantPageController(context: context, webPage: webPage, anchor: anchor, sourceLocation: sourceLocation)
                         (controller.navigationController as? NavigationController)?.pushViewController(browserController, animated: true)
-                    case .boost, .chatFolder, .join:
+                    case .boost, .chatFolder, .join, .invoice:
                         if let navigationController = controller.navigationController as? NavigationController {
                             openResolvedUrlImpl(result, context: context, urlContext: peerId.flatMap { .chat(peerId: $0, message: nil, updatedPresentationData: nil) } ?? .generic, navigationController: navigationController, forceExternal: false, forceUpdate: false, openPeer: { peer, navigateToPeer in
                                 openResolvedPeerImpl(peer, navigateToPeer)
@@ -116,7 +116,7 @@ func handleTextLinkActionImpl(context: AccountContext, peerId: EnginePeer.Id?, n
     }
     
     let openPeerMentionImpl: (String) -> Void = { mention in
-        navigateDisposable.set((context.engine.peers.resolvePeerByName(name: mention, ageLimit: 10)
+        navigateDisposable.set((context.engine.peers.resolvePeerByName(name: mention, referrer: nil, ageLimit: 10)
         |> mapToSignal { result -> Signal<EnginePeer?, NoError> in
             guard case let .result(result) = result else {
                 return .complete()
@@ -187,7 +187,7 @@ func handleTextLinkActionImpl(context: AccountContext, peerId: EnginePeer.Id?, n
                             } else if url.hasPrefix("mailto:") {
                                 content = .copy(text: presentationData.strings.Conversation_EmailCopied)
                             } else {
-                                content = .linkCopied(text: presentationData.strings.Conversation_LinkCopied)
+                                content = .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied)
                             }
                             
                             let presentationData = context.sharedContext.currentPresentationData.with { $0 }

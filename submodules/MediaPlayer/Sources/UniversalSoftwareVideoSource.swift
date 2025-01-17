@@ -70,6 +70,9 @@ private func readPacketCallback(userData: UnsafeMutableRawPointer?, buffer: Unsa
         }
         let fetchedCount = Int32(fetchedData.count)
         context.readingOffset += Int64(fetchedCount)
+        if fetchedCount == 0 {
+            return FFMPEG_CONSTANT_AVERROR_EOF
+        }
         return fetchedCount
     } else {
         return FFMPEG_CONSTANT_AVERROR_EOF
@@ -143,7 +146,6 @@ private final class UniversalSoftwareVideoSourceImpl {
             self.size = sizeValue
         }
         
-        
         self.mediaBox = mediaBox
         self.source = source
         self.automaticallyFetchHeader = automaticallyFetchHeader
@@ -153,7 +155,7 @@ private final class UniversalSoftwareVideoSourceImpl {
         
         self.cancelRead = cancelInitialization
         
-        let ioBufferSize = 1 * 1024
+        let ioBufferSize = 64 * 1024
         
         let isSeekable: Bool
         switch source {
@@ -174,7 +176,7 @@ private final class UniversalSoftwareVideoSourceImpl {
         }
         avFormatContext.setIO(avIoContext)
         
-        if !avFormatContext.openInput() {
+        if !avFormatContext.openInput(withDirectFilePath: nil) {
             return nil
         }
         
@@ -207,7 +209,7 @@ private final class UniversalSoftwareVideoSourceImpl {
             let rotationAngle: Double = metrics.rotationAngle
             let aspect = Double(metrics.width) / Double(metrics.height)
             
-            if let codec = FFMpegAVCodec.find(forId: codecId) {
+            if let codec = FFMpegAVCodec.find(forId: codecId, preferHardwareAccelerationCapable: false) {
                 let codecContext = FFMpegAVCodecContext(codec: codec)
                 if avFormatContext.codecParams(atStreamIndex: streamIndex, to: codecContext) {
                     if codecContext.open() {

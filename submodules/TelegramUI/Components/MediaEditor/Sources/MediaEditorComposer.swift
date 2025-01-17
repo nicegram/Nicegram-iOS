@@ -50,17 +50,25 @@ private func roundedCornersMaskImage(size: CGSize) -> CIImage {
     return CIImage(cgImage: image!)
 }
 
+private func rectangleMaskImage(size: CGSize) -> CIImage {
+    let image = generateImage(size, opaque: true, scale: 1.0) { size, context in
+        context.setFillColor(UIColor.white.cgColor)
+        context.fill(CGRect(origin: .zero, size: size))
+    }?.cgImage
+    return CIImage(cgImage: image!)
+}
+
 final class MediaEditorComposer {
     enum Input {
-        case texture(MTLTexture, CMTime, Bool)
-        case videoBuffer(VideoPixelBuffer)
+        case texture(MTLTexture, CMTime, Bool, CGRect?, CGFloat, CGPoint)
+        case videoBuffer(VideoPixelBuffer, CGRect?, CGFloat, CGPoint)
         case ciImage(CIImage, CMTime)
         
         var timestamp: CMTime {
             switch self {
-            case let .texture(_, timestamp, _):
+            case let .texture(_, timestamp, _, _, _, _):
                 return timestamp
-            case let .videoBuffer(videoBuffer):
+            case let .videoBuffer(videoBuffer, _, _, _):
                 return videoBuffer.timestamp
             case let .ciImage(_, timestamp):
                 return timestamp
@@ -69,10 +77,10 @@ final class MediaEditorComposer {
         
         var rendererInput: MediaEditorRenderer.Input {
             switch self {
-            case let .texture(texture, timestamp, hasTransparency):
-                return .texture(texture, timestamp, hasTransparency)
-            case let .videoBuffer(videoBuffer):
-                return .videoBuffer(videoBuffer)
+            case let .texture(texture, timestamp, hasTransparency, rect, scale, offset):
+                return .texture(texture, timestamp, hasTransparency, rect, scale, offset)
+            case let .videoBuffer(videoBuffer, rect, scale, offset):
+                return .videoBuffer(videoBuffer, rect, scale, offset)
             case let .ciImage(image, timestamp):
                 return .ciImage(image, timestamp)
             }
@@ -150,21 +158,26 @@ final class MediaEditorComposer {
         self.renderer.videoFinishPass.update(values: self.values, videoDuration: videoDuration, additionalVideoDuration: additionalVideoDuration)
     }
         
-    var previousAdditionalInput: Input?
-    func process(main: Input, additional: Input?, timestamp: CMTime, pool: CVPixelBufferPool?, completion: @escaping (CVPixelBuffer?) -> Void) {
+    var previousAdditionalInput: [Int: Input] = [:]
+    func process(main: Input, additional: [Input?], timestamp: CMTime, pool: CVPixelBufferPool?, completion: @escaping (CVPixelBuffer?) -> Void) {
         guard let pool, let ciContext = self.ciContext else {
             completion(nil)
             return
         }
         
-        var additional = additional
-        if let additional {
-            self.previousAdditionalInput = additional
-        } else {
-            additional = self.previousAdditionalInput
+        var index = 0
+        var augmentedAdditionals: [Input?] = []
+        for input in additional {
+            if let input {
+                self.previousAdditionalInput[index] = input
+                augmentedAdditionals.append(input)
+            } else {
+                augmentedAdditionals.append(self.previousAdditionalInput[index])
+            }
+            index += 1
         }
         
-        self.renderer.consume(main: main.rendererInput, additional: additional?.rendererInput, render: true)
+        self.renderer.consume(main: main.rendererInput, additionals: augmentedAdditionals.compactMap { $0 }.map { $0.rendererInput }, render: true)
         
         if let resultTexture = self.renderer.resultTexture, var ciImage = CIImage(mtlTexture: resultTexture, options: [.colorSpace: self.colorSpace]) {
             ciImage = ciImage.transformed(by: CGAffineTransformMakeScale(1.0, -1.0).translatedBy(x: 0.0, y: -ciImage.extent.height))
@@ -190,13 +203,13 @@ final class MediaEditorComposer {
         completion(nil)
     }
     
-    private var cachedTexture: MTLTexture?
-    func textureForImage(_ image: UIImage) -> MTLTexture? {
-        if let cachedTexture = self.cachedTexture {
+    private var cachedTextures: [Int: MTLTexture] = [:]
+    func textureForImage(index: Int, image: UIImage) -> MTLTexture? {
+        if let cachedTexture = self.cachedTextures[index] {
             return cachedTexture
         }
         if let device = self.device, let texture = loadTexture(image: image, device: device) {
-            self.cachedTexture = texture
+            self.cachedTextures[index] = texture
             return texture
         }
         return nil
@@ -211,6 +224,8 @@ public func makeEditorImageComposition(context: CIContext, postbox: Postbox, inp
     var maskImage: CIImage?
     if values.isSticker {
         maskImage = roundedCornersMaskImage(size: CGSize(width: floor(1080.0 * 0.97), height: floor(1080.0 * 0.97)))
+    } else if let _ = outputDimensions {
+        maskImage = rectangleMaskImage(size: CGSize(width: 1080.0, height: 1080.0))
     }
     
     if let drawing = values.drawing, let image = CIImage(image: drawing, options: [.colorSpace: colorSpace]) {
@@ -280,7 +295,7 @@ private func makeEditorImageFrameComposition(context: CIContext, inputImage: CII
             }
             
             resultImage = resultImage.transformed(by: CGAffineTransform(translationX: dimensions.width / 2.0, y: dimensions.height / 2.0))
-            if values.isSticker {
+            if values.isSticker || values.isAvatar {
                 let minSize = min(dimensions.width, dimensions.height)
                 let scaledSize = CGSize(width: floor(minSize * 0.97), height: floor(minSize * 0.97))
                 resultImage = resultImage.transformed(by: CGAffineTransform(translationX: -(dimensions.width - scaledSize.width) / 2.0, y: -(dimensions.height - scaledSize.height) / 2.0)).cropped(to: CGRect(origin: .zero, size: scaledSize))

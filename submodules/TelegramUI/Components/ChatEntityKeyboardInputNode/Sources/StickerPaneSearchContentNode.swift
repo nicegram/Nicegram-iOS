@@ -10,7 +10,6 @@ import PresentationDataUtils
 import LegacyComponents
 import MergeLists
 import AccountContext
-import StickerPackPreviewUI
 import StickerPeekUI
 import Emoji
 import AppBundle
@@ -19,6 +18,7 @@ import UndoUI
 import ChatControllerInteraction
 import FeaturedStickersScreen
 import ChatPresentationInterfaceState
+import StickerResources
 
 private enum StickerSearchEntryId: Equatable, Hashable {
     case sticker(String?, Int64)
@@ -224,13 +224,25 @@ final class StickerPaneSearchContentNode: ASDisplayNode, PaneSearchContentNode {
                 
                 let presentationData = strongSelf.context.sharedContext.currentPresentationData.with { $0 }.withUpdated(theme: theme)
                 
-                let controller = StickerPackScreen(context: strongSelf.context, updatedPresentationData: (presentationData, .single(presentationData)), mainStickerPack: packReference, stickerPacks: [packReference], actionTitle: stickerActionTitle, parentNavigationController: strongSelf.interaction.getNavigationController(), sendSticker: { [weak self] fileReference, sourceNode, sourceRect in
-                    if let strongSelf = self {
-                        return strongSelf.interaction.sendSticker(fileReference, false, false, nil, false, sourceNode, sourceRect, nil, [])
-                    } else {
-                        return false
-                    }
-                })
+                let controller = strongSelf.context.sharedContext.makeStickerPackScreen(
+                    context: strongSelf.context,
+                    updatedPresentationData: (presentationData, .single(presentationData)),
+                    mainStickerPack: packReference,
+                    stickerPacks: [packReference],
+                    loadedStickerPacks: [],
+                    actionTitle: stickerActionTitle,
+                    isEditing: false,
+                    expandIfNeeded: false,
+                    parentNavigationController: strongSelf.interaction.getNavigationController(),
+                    sendSticker: { [weak self] fileReference, sourceView, sourceRect in
+                        if let strongSelf = self {
+                            return strongSelf.interaction.sendSticker(fileReference, false, false, nil, false, sourceView, sourceRect, nil, [])
+                        } else {
+                            return false
+                        }
+                    },
+                    actionPerformed: nil
+                )
                 strongSelf.interaction.presentController(controller, nil)
             }
         }, install: { [weak self] info, items, install in
@@ -348,7 +360,7 @@ final class StickerPaneSearchContentNode: ASDisplayNode, PaneSearchContentNode {
                 
                 let query = text.trimmingCharacters(in: .whitespacesAndNewlines)
                 if query.isSingleEmoji {
-                    signals = .single([context.engine.stickers.searchStickers(query: [text.basicEmoji.0])
+                    signals = .single([context.engine.stickers.searchStickers(query: nil, emoticon: [text.basicEmoji.0])
                     |> map { (nil, $0.items) }])
                 } else if query.count > 1, let languageCode = languageCode, !languageCode.isEmpty && languageCode != "emoji" {
                     var signal = context.engine.stickers.searchEmojiKeywords(inputLanguageCode: languageCode, query: query.lowercased(), completeMatch: query.count < 3)
@@ -364,17 +376,11 @@ final class StickerPaneSearchContentNode: ASDisplayNode, PaneSearchContentNode {
                             )
                         }
                     }
-                    
                     signals = signal
                     |> map { keywords -> [Signal<(String?, [FoundStickerItem]), NoError>] in
-                        var signals: [Signal<(String?, [FoundStickerItem]), NoError>] = []
-                        let emoticons = keywords.flatMap { $0.emoticons }
-                        for emoji in emoticons {
-                            signals.append(context.engine.stickers.searchStickers(query: [emoji.basicEmoji.0])
-//                            |> take(1)
-                            |> map { (emoji, $0.items) })
-                        }
-                        return signals
+                        let emoticon = keywords.flatMap { $0.emoticons }.map { $0.basicEmoji.0 }
+                        return [context.engine.stickers.searchStickers(query: query, emoticon: emoticon, inputLanguageCode: languageCode)
+                        |> map { (nil, $0.items) }]
                     }
                 }
                 

@@ -142,13 +142,14 @@ private final class TextNodeLine {
     let range: NSRange?
     let isRTL: Bool
     var strikethroughs: [TextNodeStrikethrough]
+    var underlines: [TextNodeStrikethrough]
     var spoilers: [TextNodeSpoiler]
     var spoilerWords: [TextNodeSpoiler]
     var embeddedItems: [TextNodeEmbeddedItem]
     var attachments: [TextNodeAttachment]
     let additionalTrailingLine: (CTLine, Double)?
     
-    init(line: CTLine, frame: CGRect, ascent: CGFloat, descent: CGFloat, range: NSRange?, isRTL: Bool, strikethroughs: [TextNodeStrikethrough], spoilers: [TextNodeSpoiler], spoilerWords: [TextNodeSpoiler], embeddedItems: [TextNodeEmbeddedItem], attachments: [TextNodeAttachment], additionalTrailingLine: (CTLine, Double)?) {
+    init(line: CTLine, frame: CGRect, ascent: CGFloat, descent: CGFloat, range: NSRange?, isRTL: Bool, strikethroughs: [TextNodeStrikethrough], underlines: [TextNodeStrikethrough], spoilers: [TextNodeSpoiler], spoilerWords: [TextNodeSpoiler], embeddedItems: [TextNodeEmbeddedItem], attachments: [TextNodeAttachment], additionalTrailingLine: (CTLine, Double)?) {
         self.line = line
         self.frame = frame
         self.ascent = ascent
@@ -156,6 +157,7 @@ private final class TextNodeLine {
         self.range = range
         self.isRTL = isRTL
         self.strikethroughs = strikethroughs
+        self.underlines = underlines
         self.spoilers = spoilers
         self.spoilerWords = spoilerWords
         self.embeddedItems = embeddedItems
@@ -199,6 +201,14 @@ public struct TextNodeCutout: Equatable {
         self.bottomRight = bottomRight
     }
 }
+
+private let drawUnderlinesManually: Bool = {
+    if #available(iOS 18.0, *) {
+        return true
+    } else {
+        return false
+    }
+}()
 
 private func displayLineFrame(frame: CGRect, isRTL: Bool, boundingRect: CGRect, cutout: TextNodeCutout?) -> CGRect {
     if frame.width.isEqual(to: boundingRect.width) {
@@ -1439,6 +1449,7 @@ open class TextNode: ASDisplayNode, TextNodeProtocol {
                         range: nil,
                         isRTL: false,
                         strikethroughs: [],
+                        underlines: [],
                         spoilers: [],
                         spoilerWords: [],
                         embeddedItems: [],
@@ -1476,6 +1487,7 @@ open class TextNode: ASDisplayNode, TextNodeProtocol {
                         range: NSRange(location: currentLineStartIndex, length: lineCharacterCount),
                         isRTL: isRTL && segment.blockQuote == nil,
                         strikethroughs: [],
+                        underlines: [],
                         spoilers: [],
                         spoilerWords: [],
                         embeddedItems: [],
@@ -1746,6 +1758,7 @@ open class TextNode: ASDisplayNode, TextNodeProtocol {
         var first = true
         while true {
             var strikethroughs: [TextNodeStrikethrough] = []
+            var underlines: [TextNodeStrikethrough] = []
             var spoilers: [TextNodeSpoiler] = []
             var spoilerWords: [TextNodeSpoiler] = []
             var embeddedItems: [TextNodeEmbeddedItem] = []
@@ -2017,6 +2030,11 @@ open class TextNode: ASDisplayNode, TextNodeProtocol {
                             let upperX = ceil(CTLineGetOffsetForStringIndex(coreTextLine, range.location + range.length, nil))
                             let x = lowerX < upperX ? lowerX : upperX
                             strikethroughs.append(TextNodeStrikethrough(range: range, frame: CGRect(x: x, y: 0.0, width: abs(upperX - lowerX), height: fontLineHeight)))
+                        } else if let _ = attributes[NSAttributedString.Key.underlineStyle] {
+                            let lowerX = floor(CTLineGetOffsetForStringIndex(coreTextLine, range.location, nil))
+                            let upperX = ceil(CTLineGetOffsetForStringIndex(coreTextLine, range.location + range.length, nil))
+                            let x = lowerX < upperX ? lowerX : upperX
+                            underlines.append(TextNodeStrikethrough(range: range, frame: CGRect(x: x, y: 0.0, width: abs(upperX - lowerX), height: fontLineHeight)))
                         } else if let paragraphStyle = attributes[NSAttributedString.Key.paragraphStyle] as? NSParagraphStyle {
                             headIndent = paragraphStyle.headIndent
                         }
@@ -2070,6 +2088,7 @@ open class TextNode: ASDisplayNode, TextNodeProtocol {
                     range: NSMakeRange(effectiveLineRange.location, effectiveLineRange.length),
                     isRTL: isRTL,
                     strikethroughs: strikethroughs,
+                    underlines: underlines,
                     spoilers: spoilers,
                     spoilerWords: spoilerWords,
                     embeddedItems: embeddedItems,
@@ -2132,6 +2151,11 @@ open class TextNode: ASDisplayNode, TextNodeProtocol {
                             let upperX = ceil(CTLineGetOffsetForStringIndex(coreTextLine, range.location + range.length, nil))
                             let x = lowerX < upperX ? lowerX : upperX
                             strikethroughs.append(TextNodeStrikethrough(range: range, frame: CGRect(x: x, y: 0.0, width: abs(upperX - lowerX), height: fontLineHeight)))
+                        } else if let _ = attributes[NSAttributedString.Key.underlineStyle] {
+                            let lowerX = floor(CTLineGetOffsetForStringIndex(coreTextLine, range.location, nil))
+                            let upperX = ceil(CTLineGetOffsetForStringIndex(coreTextLine, range.location + range.length, nil))
+                            let x = lowerX < upperX ? lowerX : upperX
+                            underlines.append(TextNodeStrikethrough(range: range, frame: CGRect(x: x, y: 0.0, width: abs(upperX - lowerX), height: fontLineHeight)))
                         } else if let paragraphStyle = attributes[NSAttributedString.Key.paragraphStyle] as? NSParagraphStyle {
                             headIndent = paragraphStyle.headIndent
                         }
@@ -2179,6 +2203,7 @@ open class TextNode: ASDisplayNode, TextNodeProtocol {
                         range: NSMakeRange(lineRange.location, lineRange.length),
                         isRTL: isRTL,
                         strikethroughs: strikethroughs,
+                        underlines: underlines,
                         spoilers: spoilers,
                         spoilerWords: spoilerWords,
                         embeddedItems: embeddedItems,
@@ -2529,7 +2554,16 @@ open class TextNode: ASDisplayNode, TextNodeProtocol {
                             textColor = color
                         }
                     }
-                    if let textColor {
+                    if image.renderingMode == .alwaysOriginal {
+                        let imageRect = CGRect(origin: CGPoint(x: attachment.frame.midX - image.size.width * 0.5, y: attachment.frame.midY - image.size.height * 0.5 + 1.0), size: image.size).offsetBy(dx: lineFrame.minX, dy: lineFrame.minY)
+                        context.translateBy(x: imageRect.midX, y: imageRect.midY)
+                        context.scaleBy(x: 1.0, y: -1.0)
+                        context.translateBy(x: -imageRect.midX, y: -imageRect.midY)
+                        context.draw(image.cgImage!, in: imageRect)
+                        context.translateBy(x: imageRect.midX, y: imageRect.midY)
+                        context.scaleBy(x: 1.0, y: -1.0)
+                        context.translateBy(x: -imageRect.midX, y: -imageRect.midY)
+                    } else if let textColor {
                         if let tintedImage = generateTintedImage(image: image, color: textColor) {
                             let imageRect = CGRect(origin: CGPoint(x: attachment.frame.midX - tintedImage.size.width * 0.5, y: attachment.frame.midY - tintedImage.size.height * 0.5 + 1.0), size: tintedImage.size).offsetBy(dx: lineFrame.minX, dy: lineFrame.minY)
                             context.translateBy(x: imageRect.midX, y: imageRect.midY)
@@ -2543,6 +2577,26 @@ open class TextNode: ASDisplayNode, TextNodeProtocol {
                     }
                 }
                 
+                if drawUnderlinesManually {
+                    if !line.underlines.isEmpty {
+                        for strikethrough in line.underlines {
+                            guard let lineRange = line.range else {
+                                continue
+                            }
+                            var textColor: UIColor?
+                            layout.attributedString?.enumerateAttributes(in: NSMakeRange(lineRange.location, lineRange.length), options: []) { attributes, range, _ in
+                                if range == strikethrough.range, let color = attributes[NSAttributedString.Key.foregroundColor] as? UIColor {
+                                    textColor = color
+                                }
+                            }
+                            if let textColor = textColor {
+                                context.setFillColor(textColor.cgColor)
+                            }
+                            let frame = strikethrough.frame.offsetBy(dx: lineFrame.minX, dy: lineFrame.minY)
+                            context.fill(CGRect(x: frame.minX, y: frame.minY + 1.0, width: frame.width, height: 1.0))
+                        }
+                    }
+                }
                 if !line.strikethroughs.isEmpty {
                     for strikethrough in line.strikethroughs {
                         guard let lineRange = line.range else {

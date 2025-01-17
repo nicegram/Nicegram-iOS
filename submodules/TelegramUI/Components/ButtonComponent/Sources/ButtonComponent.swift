@@ -5,6 +5,7 @@ import ComponentFlow
 import AnimatedTextComponent
 import ActivityIndicator
 import BundleIconComponent
+import ShimmerEffect
 
 public final class ButtonBadgeComponent: Component {
     let fillColor: UIColor
@@ -114,6 +115,7 @@ public final class ButtonTextContentComponent: Component {
     public let text: String
     public let badge: Int
     public let textColor: UIColor
+    public let fontSize: CGFloat
     public let badgeBackground: UIColor
     public let badgeForeground: UIColor
     public let badgeStyle: BadgeStyle
@@ -124,6 +126,7 @@ public final class ButtonTextContentComponent: Component {
         text: String,
         badge: Int,
         textColor: UIColor,
+        fontSize: CGFloat = 17.0,
         badgeBackground: UIColor,
         badgeForeground: UIColor,
         badgeStyle: BadgeStyle = .round,
@@ -133,6 +136,7 @@ public final class ButtonTextContentComponent: Component {
         self.text = text
         self.badge = badge
         self.textColor = textColor
+        self.fontSize = fontSize
         self.badgeBackground = badgeBackground
         self.badgeForeground = badgeForeground
         self.badgeStyle = badgeStyle
@@ -148,6 +152,9 @@ public final class ButtonTextContentComponent: Component {
             return false
         }
         if lhs.textColor != rhs.textColor {
+            return false
+        }
+        if lhs.fontSize != rhs.fontSize {
             return false
         }
         if lhs.badgeBackground != rhs.badgeBackground {
@@ -202,7 +209,7 @@ public final class ButtonTextContentComponent: Component {
                 transition: .immediate,
                 component: AnyComponent(Text(
                     text: component.text,
-                    font: Font.semibold(17.0),
+                    font: Font.semibold(component.fontSize),
                     color: component.textColor
                 )),
                 environment: {},
@@ -335,17 +342,20 @@ public final class ButtonComponent: Component {
         public var foreground: UIColor
         public var pressedColor: UIColor
         public var cornerRadius: CGFloat
+        public var isShimmering: Bool
 
         public init(
             color: UIColor,
             foreground: UIColor,
             pressedColor: UIColor,
-            cornerRadius: CGFloat = 10.0
+            cornerRadius: CGFloat = 10.0,
+            isShimmering: Bool = false
         ) {
             self.color = color
             self.foreground = foreground
             self.pressedColor = pressedColor
             self.cornerRadius = cornerRadius
+            self.isShimmering = isShimmering
         }
     }
 
@@ -410,6 +420,7 @@ public final class ButtonComponent: Component {
         private var component: ButtonComponent?
         private weak var componentState: EmptyComponentState?
 
+        private var shimmeringView: ButtonShimmeringView?
         private var contentItem: ContentItem?
         
         private var activityIndicator: ActivityIndicator?
@@ -462,7 +473,7 @@ public final class ButtonComponent: Component {
             } else if !component.isEnabled && component.tintWhenDisabled {
                 contentAlpha = 0.7
             }
-
+ 
             var previousContentItem: ContentItem?
             let contentItem: ContentItem
             var contentItemTransition = transition
@@ -538,6 +549,26 @@ public final class ButtonComponent: Component {
                 }
             }
             
+            if component.background.isShimmering {
+                let shimmeringView: ButtonShimmeringView
+                var shimmeringTransition = transition
+                if let current = self.shimmeringView {
+                    shimmeringView = current
+                } else {
+                    shimmeringTransition = .immediate
+                    shimmeringView = ButtonShimmeringView(frame: .zero)
+                    self.shimmeringView = shimmeringView
+                    self.insertSubview(shimmeringView, at: 0)
+                }
+                shimmeringView.update(size: availableSize, background: component.background, cornerRadius: component.background.cornerRadius, transition: shimmeringTransition)
+                shimmeringTransition.setFrame(view: shimmeringView, frame: CGRect(origin: .zero, size: availableSize))
+            } else if let shimmeringView = self.shimmeringView {
+                self.shimmeringView = nil
+                shimmeringView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.15, removeOnCompletion: false, completion: { _ in
+                    shimmeringView.removeFromSuperview()
+                })
+            }
+            
             return availableSize
         }
     }
@@ -548,5 +579,69 @@ public final class ButtonComponent: Component {
 
     public func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
         return view.update(component: self, availableSize: availableSize, state: state, environment: environment, transition: transition)
+    }
+}
+
+private class ButtonShimmeringView: UIView {
+    private var shimmerView = ShimmerEffectForegroundView()
+    private var borderView = UIView()
+    private var borderMaskView = UIView()
+    private var borderShimmerView = ShimmerEffectForegroundView()
+    
+    override init(frame: CGRect) {
+        self.borderView.isUserInteractionEnabled = false
+        
+        self.borderMaskView.layer.borderWidth = 1.0 + UIScreenPixel
+        self.borderMaskView.layer.borderColor = UIColor.white.cgColor
+        self.borderView.mask = self.borderMaskView
+        
+        self.borderView.addSubview(self.borderShimmerView)
+        
+        super.init(frame: frame)
+        
+        self.isUserInteractionEnabled = false
+        
+        self.addSubview(self.shimmerView)
+        self.addSubview(self.borderView)
+    }
+    
+    required init?(coder: NSCoder) {
+        preconditionFailure()
+    }
+    
+    func update(size: CGSize, background: ButtonComponent.Background, cornerRadius: CGFloat, transition: ComponentTransition) {
+        let color = background.foreground
+        
+        let alpha: CGFloat
+        let borderAlpha: CGFloat
+        let compositingFilter: String?
+        if color.lightness > 0.5 {
+            alpha = 0.5
+            borderAlpha = 0.75
+            compositingFilter = "overlayBlendMode"
+        } else {
+            alpha = 0.2
+            borderAlpha = 0.3
+            compositingFilter = nil
+        }
+        
+        self.backgroundColor = background.color
+        self.layer.cornerRadius = cornerRadius
+        self.borderMaskView.layer.cornerRadius = cornerRadius
+        
+        self.shimmerView.update(backgroundColor: .clear, foregroundColor: color.withAlphaComponent(alpha), gradientSize: 70.0, globalTimeOffset: false, duration: 4.0, horizontal: true)
+        self.shimmerView.layer.compositingFilter = compositingFilter
+        
+        self.borderShimmerView.update(backgroundColor: .clear, foregroundColor: color.withAlphaComponent(borderAlpha), gradientSize: 70.0, globalTimeOffset: false, duration: 4.0, horizontal: true)
+        self.borderShimmerView.layer.compositingFilter = compositingFilter
+        
+        let bounds = CGRect(origin: .zero, size: size)
+        transition.setFrame(view: self.shimmerView, frame: bounds)
+        transition.setFrame(view: self.borderView, frame: bounds)
+        transition.setFrame(view: self.borderMaskView, frame: bounds)
+        transition.setFrame(view: self.borderShimmerView, frame: bounds)
+        
+        self.shimmerView.updateAbsoluteRect(CGRect(origin: CGPoint(x: size.width * 4.0, y: 0.0), size: size), within: CGSize(width: size.width * 9.0, height: size.height))
+        self.borderShimmerView.updateAbsoluteRect(CGRect(origin: CGPoint(x: size.width * 4.0, y: 0.0), size: size), within: CGSize(width: size.width * 9.0, height: size.height))
     }
 }

@@ -1,6 +1,8 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
-NGDEPS = ["//Nicegram/NGData:NGData"]
+NGDEPS = [
+"//Nicegram/NGData:NGData"
+]
 
 swift_library(
     name = "DebugSettingsUI",
@@ -27,6 +29,7 @@ swift_library(
         "//submodules/GZip:GZip",
         "//third-party/ZipArchive:ZipArchive",
         "//submodules/InAppPurchaseManager:InAppPurchaseManager",
+        "//submodules/TelegramVoip",
     ],
     visibility = [
         "//visibility:public",

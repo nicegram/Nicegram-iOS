@@ -636,7 +636,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                     
                     let author: Peer
                     if link.isCentered {
-                        author = TelegramUser(id: EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: EnginePeer.Id.Id._internalFromInt64Value(0)), accessHash: nil, firstName: "FirstName", lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: .blue, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil)
+                        author = TelegramUser(id: EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: EnginePeer.Id.Id._internalFromInt64Value(0)), accessHash: nil, firstName: "FirstName", lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: .blue, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil, verificationIconFileId: nil)
                     } else {
                         author = accountPeer
                     }
@@ -1676,6 +1676,10 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             }
             
             let height = adPanelNode.updateLayout(width: layout.size.width, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, transition: transition, interfaceState: self.chatPresentationInterfaceState)
+            if let adMessage = self.chatPresentationInterfaceState.adMessage, let opaqueId = adMessage.adAttribute?.opaqueId {
+                self.historyNode.markAdAsSeen(opaqueId: opaqueId)
+            }
+            
             adPanelHeight = height
             if transition.isAnimated && animateAppearance {
                 adPanelNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)

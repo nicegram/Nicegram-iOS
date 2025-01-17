@@ -277,8 +277,9 @@ final class StarsTransactionItemNode: ListViewItemNode, ItemListItemNode {
                     let itemLabel: NSAttributedString
                     let labelString: String
                     
-                    let formattedLabel = presentationStringsFormattedNumber(abs(Int32(item.transaction.count)), item.presentationData.dateTimeFormat.groupingSeparator)
-                    if item.transaction.count < 0 {
+                    let absCount = StarsAmount(value: abs(item.transaction.count.value), nanos: abs(item.transaction.count.nanos))
+                    let formattedLabel = presentationStringsFormattedNumber(absCount, item.presentationData.dateTimeFormat.groupingSeparator)
+                    if item.transaction.count < StarsAmount.zero {
                         labelString = "- \(formattedLabel)"
                     } else {
                         labelString = "+ \(formattedLabel)"
@@ -335,7 +336,7 @@ final class StarsTransactionItemNode: ListViewItemNode, ItemListItemNode {
                             theme: item.presentationData.theme,
                             title: AnyComponent(VStack(titleComponents, alignment: .left, spacing: 2.0)),
                             contentInsets: UIEdgeInsets(top: 9.0, left: 0.0, bottom: 8.0, right: 0.0),
-                            leftIcon: .custom(AnyComponentWithIdentity(id: "avatar", component: AnyComponent(StarsAvatarComponent(context: item.context, theme: item.presentationData.theme, peer: item.transaction.peer, photo: nil, media: [], backgroundColor: item.presentationData.theme.list.itemBlocksBackgroundColor))), false),
+                            leftIcon: .custom(AnyComponentWithIdentity(id: "avatar", component: AnyComponent(StarsAvatarComponent(context: item.context, theme: item.presentationData.theme, peer: item.transaction.peer, photo: nil, media: [], uniqueGift: nil, backgroundColor: item.presentationData.theme.list.itemBlocksBackgroundColor))), false),
                             icon: nil,
                             accessory: .custom(ListActionItemComponent.CustomAccessory(component: AnyComponentWithIdentity(id: "label", component: AnyComponent(StarsLabelComponent(text: itemLabel))), insets: UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 16.0))),
                             action: { [weak self] _ in

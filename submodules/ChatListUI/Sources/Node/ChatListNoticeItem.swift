@@ -13,6 +13,7 @@ import AccountContext
 import MergedAvatarsNode
 import TextNodeWithEntities
 import TextFormat
+import AvatarNode
 
 class ChatListNoticeItem: ListViewItem {
     enum Action {
@@ -94,6 +95,7 @@ final class ChatListNoticeItemNode: ItemListRevealOptionsItemNode {
     private let arrowNode: ASImageNode
     private let separatorNode: ASDisplayNode
     
+    private var avatarNode: AvatarNode?
     private var avatarsNode: MergedAvatarsNode?
     
     private var closeButton: HighlightableButtonNode?
@@ -167,6 +169,7 @@ final class ChatListNoticeItemNode: ItemListRevealOptionsItemNode {
             
             let sideInset: CGFloat = params.leftInset + 16.0
             let rightInset: CGFloat = sideInset + 24.0
+            var titleRightInset = rightInset
             let verticalInset: CGFloat = 9.0
             var spacing: CGFloat = 0.0
             
@@ -174,6 +177,7 @@ final class ChatListNoticeItemNode: ItemListRevealOptionsItemNode {
             
             let titleString: NSAttributedString
             let textString: NSAttributedString
+            var avatarPeer: EnginePeer?
             var avatarPeers: [EnginePeer] = []
             
             var okButtonLayout: (TextNodeLayout, () -> TextNode)?
@@ -214,6 +218,7 @@ final class ChatListNoticeItemNode: ItemListRevealOptionsItemNode {
                 titleString = titleStringValue
                 
                 textString = NSAttributedString(string: item.strings.ChatList_PremiumAnnualDiscountText, font: textFont, textColor: item.theme.rootController.navigationBar.secondaryTextColor)
+                titleRightInset = sideInset
             case let .premiumRestore(discount):
                 let discountString = "\(discount)%"
                 let rawTitleString = item.strings.ChatList_PremiumRestoreDiscountTitle(discountString)
@@ -268,7 +273,7 @@ final class ChatListNoticeItemNode: ItemListRevealOptionsItemNode {
             case let .starsSubscriptionLowBalance(amount, peers):
                 let title: String
                 let text: String
-                let starsValue = item.strings.ChatList_SubscriptionsLowBalance_Stars(Int32(amount))
+                let starsValue = item.strings.ChatList_SubscriptionsLowBalance_Stars(Int32(amount.value))
                 if let peer = peers.first, peers.count == 1 {
                     title = item.strings.ChatList_SubscriptionsLowBalance_Single_Title(starsValue, peer.compactDisplayTitle).string
                     text = item.strings.ChatList_SubscriptionsLowBalance_Single_Text
@@ -283,15 +288,23 @@ final class ChatListNoticeItemNode: ItemListRevealOptionsItemNode {
                 }
                 titleString = attributedTitle
                 textString = NSAttributedString(string: text, font: smallTextFont, textColor: item.theme.rootController.navigationBar.secondaryTextColor)
+            case let .setupPhoto(accountPeer):
+                //TODO:localize
+                titleString = NSAttributedString(string: "Add your photo! 📸", font: titleFont, textColor: item.theme.rootController.navigationBar.primaryTextColor)
+                textString = NSAttributedString(string: "Help your friends spot you easily.", font: smallTextFont, textColor: item.theme.rootController.navigationBar.secondaryTextColor)
+                avatarPeer = accountPeer
             }
             
             var leftInset: CGFloat = sideInset
             if !avatarPeers.isEmpty {
                 let avatarsWidth = 30.0 + CGFloat(avatarPeers.count - 1) * 16.0
                 leftInset += avatarsWidth + 4.0
+            } else if let _ = avatarPeer {
+                let avatarsWidth: CGFloat = 40.0
+                leftInset += avatarsWidth + 6.0
             }
             
-            let titleLayout = makeTitleLayout(TextNodeLayoutArguments(attributedString: titleString, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - rightInset, height: 100.0), alignment: alignment, lineSpacing: 0.18))
+            let titleLayout = makeTitleLayout(TextNodeLayoutArguments(attributedString: titleString, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - titleRightInset, height: 100.0), alignment: alignment, lineSpacing: 0.18))
             
             let textLayout = makeTextLayout(TextNodeLayoutArguments(attributedString: textString, maximumNumberOfLines: 10, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - rightInset, height: 100.0), alignment: alignment, lineSpacing: 0.18))
             
@@ -345,6 +358,25 @@ final class ChatListNoticeItemNode: ItemListRevealOptionsItemNode {
                     } else if let avatarsNode = strongSelf.avatarsNode {
                         avatarsNode.removeFromSupernode()
                         strongSelf.avatarsNode = nil
+                    }
+                    
+                    if let avatarPeer {
+                        let avatarNode: AvatarNode
+                        if let current = strongSelf.avatarNode {
+                            avatarNode = current
+                        } else {
+                            avatarNode = AvatarNode(font: avatarPlaceholderFont(size: 13.0))
+                            avatarNode.isUserInteractionEnabled = false
+                            strongSelf.addSubnode(avatarNode)
+                            strongSelf.avatarNode = avatarNode
+                            
+                            avatarNode.setPeer(context: item.context, theme: item.theme, peer: avatarPeer, overrideImage: .cameraIcon)
+                        }
+                        let avatarSize = CGSize(width: 40.0, height: 40.0)
+                        avatarNode.frame = CGRect(origin: CGPoint(x: sideInset - 6.0, y: floor((layout.size.height - avatarSize.height) / 2.0)), size: avatarSize)
+                    } else if let avatarNode = strongSelf.avatarNode {
+                        avatarNode.removeFromSupernode()
+                        strongSelf.avatarNode = nil
                     }
                     
                     if let image = strongSelf.arrowNode.image {

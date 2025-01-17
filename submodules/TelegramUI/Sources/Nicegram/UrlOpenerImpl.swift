@@ -1,23 +1,21 @@
 import AccountContext
 import Display
 import Foundation
+import MemberwiseInit
 import NGCore
+import NGUtils
 
+@MemberwiseInit
 class UrlOpenerImpl {
-    
-    //  MARK: - Dependencies
-    
-    private let accountContext: AccountContext
-    
-    //  MARK: - Lifecycle
-    
-    init(accountContext: AccountContext) {
-        self.accountContext = accountContext
-    }
+    @Init(.internal) private let contextProvider: ContextProvider
 }
 
 extension UrlOpenerImpl: UrlOpener {
-    func open(_ url: URL) {
+    func open(_ url: URL, options: Options) {
+        guard let accountContext = contextProvider.context() else {
+            return
+        }
+        
         let url = prepare(url: url)
         
         let sharedContext = accountContext.sharedContext
@@ -26,8 +24,14 @@ extension UrlOpenerImpl: UrlOpener {
         
         let telegramHosts = ["t.me", "telegram.me"]
         let isTelegramHost = telegramHosts.contains(url._wrapperHost() ?? "")
+        let isExternalLink = !isTelegramHost
         
-        let forceExternal = !isTelegramHost
+        let forceExternal: Bool
+        if isExternalLink, options.externalLinkBehavior == .openExternally {
+            forceExternal = true
+        } else {
+            forceExternal = false
+        }
         
         sharedContext.openExternalUrl(
             context: accountContext,

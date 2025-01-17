@@ -1,25 +1,21 @@
 import AccountContext
 import FeatNicegramHub
+import MemberwiseInit
+import NGUtils
 import TelegramCore
 
-@available(iOS 13.0, *)
+@MemberwiseInit(.public)
 public class StickersDataProviderImpl {
-    
-    //  MARK: - Dependencies
-    
-    private let context: AccountContext
-    
-    //  MARK: - Lifecycle
-    
-    public init(context: AccountContext) {
-        self.context = context
-    }
+    @Init(.public) private let contextProvider: ContextProvider
 }
 
-@available(iOS 13.0, *)
 extension StickersDataProviderImpl: StickersDataProvider {
     public func getStickersData() async -> StickersData? {
-        await withCheckedContinuation { continuation in
+        guard let context = contextProvider.context() else {
+            return nil
+        }
+        
+        return await withCheckedContinuation { continuation in
             _ = context.account.postbox.transaction { transaction in
                 transaction
                     .getItemCollectionsInfos(

@@ -262,7 +262,7 @@ public func galleryItemForEntry(
                     }
                     
                     if isHLS {
-                        content = HLSVideoContent(id: .message(message.id, message.stableId, file.fileId), userLocation: .peer(message.id.peerId), fileReference: .message(message: MessageReference(message), media: file), streamVideo: streamVideos, loopVideo: loopVideos)
+                        content = HLSVideoContent(id: .message(message.stableId, file.fileId), userLocation: .peer(message.id.peerId), fileReference: .message(message: MessageReference(message), media: file), streamVideo: streamVideos, loopVideo: loopVideos, autoFetchFullSizeThumbnail: true, codecConfiguration: HLSCodecConfiguration(context: context))
                     } else {
                         content = NativeVideoContent(id: .message(message.stableId, file.fileId), userLocation: .peer(message.id.peerId), fileReference: .message(message: MessageReference(message), media: file), imageReference: mediaImage.flatMap({ ImageMediaReference.message(message: MessageReference(message), media: $0) }), streamVideo: .conservative, loopVideo: loopVideos, tempFilePath: tempFilePath, captureProtected: captureProtected, storeAfterDownload: generateStoreAfterDownload?(message, file))
                     }
@@ -572,7 +572,7 @@ private func galleryEntriesForMessageHistoryEntries(_ entries: [MessageHistoryEn
     return results
 }
 
-public class GalleryController: ViewController, StandalonePresentableController, KeyShortcutResponder {
+public class GalleryController: ViewController, StandalonePresentableController, KeyShortcutResponder, GalleryControllerProtocol {
     public static let darkNavigationTheme = NavigationBarTheme(buttonColor: .white, disabledButtonColor: UIColor(rgb: 0x525252), primaryTextColor: .white, backgroundColor: UIColor(white: 0.0, alpha: 0.6), enableBackgroundBlur: false, separatorColor: UIColor(white: 0.0, alpha: 0.8), badgeBackgroundColor: .clear, badgeStrokeColor: .clear, badgeTextColor: .clear)
     public static let lightNavigationTheme = NavigationBarTheme(buttonColor: UIColor(rgb: 0x007aff), disabledButtonColor: UIColor(rgb: 0xd0d0d0), primaryTextColor: .black, backgroundColor: UIColor(red: 0.968626451, green: 0.968626451, blue: 0.968626451, alpha: 1.0), enableBackgroundBlur: false, separatorColor: UIColor(red: 0.6953125, green: 0.6953125, blue: 0.6953125, alpha: 1.0), badgeBackgroundColor: .clear, badgeStrokeColor: .clear, badgeTextColor: .clear)
     
@@ -1056,7 +1056,7 @@ public class GalleryController: ViewController, StandalonePresentableController,
                             } else if isEmail {
                                 content = .copy(text: presentationData.strings.Conversation_EmailCopied)
                             } else if canAddToReadingList {
-                                content = .linkCopied(text: presentationData.strings.Conversation_LinkCopied)
+                                content = .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied)
                             } else {
                                 content = .copy(text: presentationData.strings.Conversation_TextCopied)
                             }
@@ -1215,9 +1215,9 @@ public class GalleryController: ViewController, StandalonePresentableController,
                                             Queue.mainQueue().after(0.2, {
                                                 let content: UndoOverlayContent
                                                 if warnAboutPrivate {
-                                                    content = .linkCopied(text: presentationData.strings.Conversation_PrivateMessageLinkCopiedLong)
+                                                    content = .linkCopied(title: nil, text: presentationData.strings.Conversation_PrivateMessageLinkCopiedLong)
                                                 } else {
-                                                    content = .linkCopied(text: presentationData.strings.Conversation_LinkCopied)
+                                                    content = .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied)
                                                 }
                                                 self?.present(UndoOverlayController(presentationData: presentationData, content: content, elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .window(.root))
                                             })
@@ -1370,7 +1370,7 @@ public class GalleryController: ViewController, StandalonePresentableController,
         })
         
         let disableTapNavigation = !(self.context.sharedContext.currentMediaDisplaySettings.with { $0 }.showNextMediaOnTap)
-        self.displayNode = GalleryControllerNode(controllerInteraction: controllerInteraction, disableTapNavigation: disableTapNavigation)
+        self.displayNode = GalleryControllerNode(context: self.context, controllerInteraction: controllerInteraction, disableTapNavigation: disableTapNavigation)
         self.displayNodeDidLoad()
         
         self.galleryNode.statusBar = self.statusBar

@@ -79,8 +79,7 @@ extension ChatControllerImpl {
                 return
             }
             //
-            
-            var filter: ChatListNodePeersFilter = [.onlyWriteable, .includeSavedMessages, .excludeDisabled, .doNotSearchMessages]
+            var filter: ChatListNodePeersFilter = [.onlyWriteable, .excludeDisabled, .doNotSearchMessages]
             var hasPublicPolls = false
             var hasPublicQuiz = false
             for message in messages {

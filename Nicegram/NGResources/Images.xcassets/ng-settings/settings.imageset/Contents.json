@@ -1,17 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "settings-light.pdf",
-      "idiom" : "universal"
-    },
-    {
-      "appearances" : [
-        {
-          "appearance" : "luminosity",
-          "value" : "dark"
-        }
-      ],
-      "filename" : "settings-dark.pdf",
+      "filename" : "settings.pdf",
       "idiom" : "universal"
     }
   ],

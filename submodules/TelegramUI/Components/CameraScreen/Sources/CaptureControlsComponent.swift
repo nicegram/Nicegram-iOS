@@ -3,9 +3,12 @@ import UIKit
 import Display
 import ComponentFlow
 import SwiftSignalKit
+import TelegramCore
 import Photos
 import LocalMediaResources
 import CameraButtonComponent
+import UIKitRuntimeUtils
+import AccountContext
 
 enum ShutterButtonState: Equatable {
     case disabled
@@ -34,6 +37,8 @@ private final class ShutterButtonContentComponent: Component {
     let tintColor: UIColor
     let shutterState: ShutterButtonState
     let blobState: ShutterBlobView.BlobState
+    let collageProgress: Float
+    let collageCount: Int?
     let highlightedAction: ActionSlot<Bool>
     let updateOffsetX: ActionSlot<(CGFloat, ComponentTransition)>
     let updateOffsetY: ActionSlot<(CGFloat, ComponentTransition)>
@@ -44,6 +49,8 @@ private final class ShutterButtonContentComponent: Component {
         tintColor: UIColor,
         shutterState: ShutterButtonState,
         blobState: ShutterBlobView.BlobState,
+        collageProgress: Float,
+        collageCount: Int?,
         highlightedAction: ActionSlot<Bool>,
         updateOffsetX: ActionSlot<(CGFloat, ComponentTransition)>,
         updateOffsetY: ActionSlot<(CGFloat, ComponentTransition)>
@@ -53,6 +60,8 @@ private final class ShutterButtonContentComponent: Component {
         self.tintColor = tintColor
         self.shutterState = shutterState
         self.blobState = blobState
+        self.collageProgress = collageProgress
+        self.collageCount = collageCount
         self.highlightedAction = highlightedAction
         self.updateOffsetX = updateOffsetX
         self.updateOffsetY = updateOffsetY
@@ -74,16 +83,27 @@ private final class ShutterButtonContentComponent: Component {
         if lhs.blobState != rhs.blobState {
             return false
         }
+        if lhs.collageProgress != rhs.collageProgress {
+            return false
+        }
+        if lhs.collageCount != rhs.collageCount {
+            return false
+        }
         return true
     }
     
     final class View: UIView {
         private var component: ShutterButtonContentComponent?
         
+        private let underRingLayer = SimpleShapeLayer()
         private let ringLayer = SimpleShapeLayer()
         var blobView: ShutterBlobView?
         private let innerLayer = SimpleShapeLayer()
         private let progressLayer = SimpleShapeLayer()
+        
+        private let checkLayer = SimpleLayer()
+        private let checkLayerMask = SimpleShapeLayer()
+        private let checkLayerLineMask = SimpleShapeLayer()
         
         init() {
             super.init(frame: CGRect())
@@ -92,7 +112,34 @@ private final class ShutterButtonContentComponent: Component {
             
             self.progressLayer.strokeEnd = 0.0
             
+            let checkPath = CGMutablePath()
+            checkPath.move(to: CGPoint(x: 18.0 + 2.0, y: 18.0 + 13.0))
+            checkPath.addLine(to: CGPoint(x: 18.0 + 9.0, y: 18.0 + 20.0))
+            checkPath.addLine(to: CGPoint(x: 18.0 + 22.0, y: 18.0 + 7.0))
+            
+            self.checkLayer.frame = CGRect(origin: .zero, size: CGSize(width: 60.0, height: 60.0))
+            if let filter = makeLuminanceToAlphaFilter() {
+                self.checkLayerMask.filters = [filter]
+            }
+            self.checkLayerMask.backgroundColor = UIColor.black.cgColor
+            self.checkLayerMask.fillColor = UIColor.white.cgColor
+            self.checkLayerMask.path = CGPath(ellipseIn: self.checkLayer.frame, transform: nil)
+            self.checkLayerMask.frame = self.checkLayer.frame
+            
+            self.checkLayerLineMask.path = checkPath
+            self.checkLayerLineMask.lineWidth = 3.0
+            self.checkLayerLineMask.lineCap = .round
+            self.checkLayerLineMask.lineJoin = .round
+            self.checkLayerLineMask.fillColor = UIColor.clear.cgColor
+            self.checkLayerLineMask.strokeColor = UIColor.black.cgColor
+            self.checkLayerLineMask.frame = self.checkLayer.frame
+            self.checkLayerMask.addSublayer(self.checkLayerLineMask)
+            
+            self.checkLayer.mask = self.checkLayerMask
+            self.checkLayer.isHidden = true
+            
             self.layer.addSublayer(self.innerLayer)
+            self.layer.addSublayer(self.underRingLayer)
             self.layer.addSublayer(self.ringLayer)
             self.layer.addSublayer(self.progressLayer)
         }
@@ -102,20 +149,26 @@ private final class ShutterButtonContentComponent: Component {
         }
         
         func updateIsHighlighted(_ isHighlighted: Bool) {
-            guard let blobView = self.blobView else {
+            guard let blobView = self.blobView, let component = self.component else {
                 return
             }
             let scale: CGFloat = isHighlighted ? 0.8 : 1.0
             let transition = ComponentTransition(animation: .curve(duration: 0.3, curve: .easeInOut))
             transition.setTransform(view: blobView, transform: CATransform3DMakeScale(scale, scale, 1.0))
+            if component.collageProgress > 1.0 - .ulpOfOne {
+                transition.setTransform(layer: self.ringLayer, transform: CATransform3DMakeScale(scale, scale, 1.0))
+            }
         }
         
         func update(component: ShutterButtonContentComponent, availableSize: CGSize, transition: ComponentTransition) -> CGSize {
+            let previousComponent = self.component
             self.component = component
             
             if component.hasAppeared && self.blobView == nil {
                 self.blobView = ShutterBlobView(test: false)
                 self.addSubview(self.blobView!)
+                
+                self.layer.addSublayer(self.checkLayer)
                 
                 Queue.mainQueue().after(0.2) {
                     self.innerLayer.removeFromSuperlayer()
@@ -163,10 +216,10 @@ private final class ShutterButtonContentComponent: Component {
                 }
             }
                         
-            let innerColor: UIColor
+            var innerColor: UIColor
             let innerSize: CGSize
-            let ringSize: CGSize
-            let ringWidth: CGFloat = 3.0
+            var ringSize: CGSize
+            var ringWidth: CGFloat = 3.0
             var recordingProgress: Float?
             switch component.shutterState {
             case .generic, .disabled:
@@ -193,9 +246,35 @@ private final class ShutterButtonContentComponent: Component {
                 recordingProgress = 0.0
             }
             
+            if component.collageProgress > 1.0 - .ulpOfOne {
+                innerColor = component.tintColor
+                ringSize = CGSize(width: 60.0, height: 60.0)
+                ringWidth = 5.0
+            } else if component.collageProgress > 0.0 {
+                ringSize = CGSize(width: 74.0, height: 74.0)
+                ringWidth = 5.0
+            }
+            
+            if component.collageProgress > 1.0 - .ulpOfOne {
+                self.blobView?.isHidden = true
+                self.checkLayer.isHidden = false
+                transition.setShapeLayerStrokeEnd(layer: self.checkLayerLineMask, strokeEnd: 1.0)
+            } else {
+                self.checkLayer.isHidden = true
+                self.blobView?.isHidden = false
+//                transition.setAlpha(layer: self.checkLayerLineMask, alpha: 0.0)
+//                transition.setShapeLayerStrokeEnd(layer: self.checkLayerLineMask, strokeEnd: 0.0, completion: { _ in
+//                    self.blobView?.isHidden = false
+//                    self.checkLayer.isHidden = true
+//                })
+            }
+            
+            self.checkLayer.backgroundColor = innerColor.cgColor
+            
             self.ringLayer.fillColor = UIColor.clear.cgColor
             self.ringLayer.strokeColor = component.tintColor.cgColor
             self.ringLayer.lineWidth = ringWidth
+            self.ringLayer.lineCap = .round
             let ringPath = CGPath(
                 ellipseIn: CGRect(
                     origin: CGPoint(
@@ -208,6 +287,25 @@ private final class ShutterButtonContentComponent: Component {
             transition.setShapeLayerPath(layer: self.ringLayer, path: ringPath)
             self.ringLayer.bounds = CGRect(origin: .zero, size: maximumShutterSize)
             self.ringLayer.position = CGPoint(x: maximumShutterSize.width / 2.0, y: maximumShutterSize.height / 2.0)
+            self.ringLayer.transform = CATransform3DMakeRotation(-.pi / 2.0, 0.0, 0.0, 1.0)
+            
+            self.checkLayer.position = CGPoint(x: maximumShutterSize.width / 2.0, y: maximumShutterSize.height / 2.0)
+            
+            if component.collageProgress > 0.0 {
+                if previousComponent?.collageProgress == 0.0 {
+                    self.ringLayer.animateRotation(from: -.pi * 3.0 / 2.0, to: -.pi / 2.0, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring)
+                }
+                transition.setShapeLayerStrokeEnd(layer: self.ringLayer, strokeEnd: CGFloat(component.collageProgress))
+            } else {
+                transition.setShapeLayerStrokeEnd(layer: self.ringLayer, strokeEnd: 1.0)
+            }
+            
+            self.underRingLayer.fillColor = UIColor.clear.cgColor
+            self.underRingLayer.strokeColor = component.tintColor.withAlphaComponent(0.2).cgColor
+            self.underRingLayer.lineWidth = ringWidth
+            transition.setShapeLayerPath(layer: self.underRingLayer, path: ringPath)
+            self.underRingLayer.bounds = CGRect(origin: .zero, size: maximumShutterSize)
+            self.underRingLayer.position = CGPoint(x: maximumShutterSize.width / 2.0, y: maximumShutterSize.height / 2.0)
             
             if let blobView = self.blobView {
                 blobView.updateState(component.blobState, tintColor: innerColor, transition: transition)
@@ -224,6 +322,8 @@ private final class ShutterButtonContentComponent: Component {
             self.innerLayer.bounds = CGRect(origin: .zero, size: innerSize)
             self.innerLayer.position = CGPoint(x: maximumShutterSize.width / 2.0, y: maximumShutterSize.height / 2.0)
             
+            let totalProgress = component.collageCount.flatMap { 1.0 / Double($0) } ?? 1.0
+            
             self.progressLayer.bounds = CGRect(origin: .zero, size: maximumShutterSize)
             self.progressLayer.position = CGPoint(x: maximumShutterSize.width / 2.0, y: maximumShutterSize.height / 2.0)
             transition.setShapeLayerPath(layer: self.progressLayer, path: ringPath)
@@ -231,10 +331,14 @@ private final class ShutterButtonContentComponent: Component {
             self.progressLayer.strokeColor = videoRedColor.cgColor
             self.progressLayer.lineWidth = ringWidth + UIScreenPixel
             self.progressLayer.lineCap = .round
-            self.progressLayer.transform = CATransform3DMakeRotation(-.pi / 2.0, 0.0, 0.0, 1.0)
+            if totalProgress < 1.0 {
+                self.progressLayer.transform = CATransform3DMakeRotation(-.pi / 2.0 + CGFloat(component.collageProgress) * 2.0 * .pi, 0.0, 0.0, 1.0)
+            } else {
+                self.progressLayer.transform = CATransform3DMakeRotation(-.pi / 2.0, 0.0, 0.0, 1.0)
+            }
             
             let previousValue = self.progressLayer.strokeEnd
-            self.progressLayer.strokeEnd = CGFloat(recordingProgress ?? 0.0)
+            self.progressLayer.strokeEnd = CGFloat(recordingProgress ?? 0.0) * totalProgress
             self.progressLayer.animateStrokeEnd(from: previousValue, to: self.progressLayer.strokeEnd, duration: 0.33)
             
             return maximumShutterSize
@@ -458,13 +562,19 @@ final class CaptureControlsComponent: Component {
         case flip
     }
     
+    let context: AccountContext
     let isTablet: Bool
     let isSticker: Bool
+    let hasGallery: Bool
     let hasAppeared: Bool
     let hasAccess: Bool
+    let hideControls: Bool
+    let collageProgress: Float
+    let collageCount: Int?
     let tintColor: UIColor
     let shutterState: ShutterButtonState
     let lastGalleryAsset: PHAsset?
+    let resolvedCodePeer: EnginePeer?
     let tag: AnyObject?
     let galleryButtonTag: AnyObject?
     let shutterTapped: () -> Void
@@ -476,15 +586,22 @@ final class CaptureControlsComponent: Component {
     let swipeHintUpdated: (SwipeHint) -> Void
     let zoomUpdated: (CGFloat) -> Void
     let flipAnimationAction: ActionSlot<Void>
+    let openResolvedPeer: (EnginePeer) -> Void
     
     init(
+        context: AccountContext,
         isTablet: Bool,
         isSticker: Bool,
+        hasGallery: Bool,
         hasAppeared: Bool,
         hasAccess: Bool,
+        hideControls: Bool,
+        collageProgress: Float,
+        collageCount: Int?,
         tintColor: UIColor,
         shutterState: ShutterButtonState,
         lastGalleryAsset: PHAsset?,
+        resolvedCodePeer: EnginePeer?,
         tag: AnyObject?,
         galleryButtonTag: AnyObject?,
         shutterTapped: @escaping () -> Void,
@@ -495,15 +612,22 @@ final class CaptureControlsComponent: Component {
         galleryTapped: @escaping () -> Void,
         swipeHintUpdated: @escaping (SwipeHint) -> Void,
         zoomUpdated: @escaping (CGFloat) -> Void,
-        flipAnimationAction: ActionSlot<Void>
+        flipAnimationAction: ActionSlot<Void>,
+        openResolvedPeer: @escaping (EnginePeer) -> Void
     ) {
+        self.context = context
         self.isTablet = isTablet
         self.isSticker = isSticker
+        self.hasGallery = hasGallery
         self.hasAppeared = hasAppeared
         self.hasAccess = hasAccess
+        self.hideControls = hideControls
+        self.collageProgress = collageProgress
+        self.collageCount = collageCount
         self.tintColor = tintColor
         self.shutterState = shutterState
         self.lastGalleryAsset = lastGalleryAsset
+        self.resolvedCodePeer = resolvedCodePeer
         self.tag = tag
         self.galleryButtonTag = galleryButtonTag
         self.shutterTapped = shutterTapped
@@ -515,19 +639,35 @@ final class CaptureControlsComponent: Component {
         self.swipeHintUpdated = swipeHintUpdated
         self.zoomUpdated = zoomUpdated
         self.flipAnimationAction = flipAnimationAction
+        self.openResolvedPeer = openResolvedPeer
     }
     
     static func ==(lhs: CaptureControlsComponent, rhs: CaptureControlsComponent) -> Bool {
+        if lhs.context !== rhs.context {
+            return false
+        }
         if lhs.isTablet != rhs.isTablet {
             return false
         }
         if lhs.isSticker != rhs.isSticker {
             return false
         }
+        if lhs.hasGallery != rhs.hasGallery {
+            return false
+        }
         if lhs.hasAppeared != rhs.hasAppeared {
             return false
         }
         if lhs.hasAccess != rhs.hasAccess {
+            return false
+        }
+        if lhs.hideControls != rhs.hideControls {
+            return false
+        }
+        if lhs.collageProgress != rhs.collageProgress {
+            return false
+        }
+        if lhs.collageCount != rhs.collageCount {
             return false
         }
         if lhs.tintColor != rhs.tintColor {
@@ -537,6 +677,9 @@ final class CaptureControlsComponent: Component {
             return false
         }
         if lhs.lastGalleryAsset?.localIdentifier != rhs.lastGalleryAsset?.localIdentifier {
+            return false
+        }
+        if lhs.resolvedCodePeer != rhs.resolvedCodePeer {
             return false
         }
         return true
@@ -589,6 +732,8 @@ final class CaptureControlsComponent: Component {
         private var component: CaptureControlsComponent?
         private var state: State?
         private var availableSize: CGSize?
+        
+        private var codeResultView: ComponentView<Empty>?
         
         private let zoomView = ComponentView<Empty>()
         private let lockView = ComponentView<Empty>()
@@ -879,14 +1024,22 @@ final class CaptureControlsComponent: Component {
         func animateInFromEditor(transition: ComponentTransition) {
             self.animatedOut = false
 
+            guard let component = self.component else {
+                return
+            }
+            
             if let view = self.galleryButtonView.view {
                 transition.setScale(view: view, scale: 1.0)
-                transition.setAlpha(view: view, alpha: 1.0)
+                if !component.hideControls {
+                    transition.setAlpha(view: view, alpha: 1.0)
+                }
             }
             
             if let view = self.flipButtonView.view {
                 transition.setScale(view: view, scale: 1.0)
-                transition.setAlpha(view: view, alpha: 1.0)
+                if !component.hideControls {
+                    transition.setAlpha(view: view, alpha: 1.0)
+                }
             }
             
             if let view = self.shutterButtonView.view {
@@ -918,9 +1071,11 @@ final class CaptureControlsComponent: Component {
                 isTransitioning = true
             }
                     
+            let hideControls = component.hideControls
+            
             let galleryButtonFrame: CGRect
             let gallerySize: CGSize
-            if !component.isSticker {
+            if component.hasGallery {
                 let galleryCornerRadius: CGFloat
                 if component.isTablet {
                     gallerySize = CGSize(width: 72.0, height: 72.0)
@@ -974,8 +1129,8 @@ final class CaptureControlsComponent: Component {
                     
                     let normalAlpha = component.tintColor.rgb == 0xffffff ? 1.0 : 0.6
                     
-                    transition.setScale(view: galleryButtonView, scale: isRecording || isTransitioning ? 0.1 : 1.0)
-                    transition.setAlpha(view: galleryButtonView, alpha: isRecording || isTransitioning ? 0.0 : normalAlpha)
+                    transition.setScale(view: galleryButtonView, scale: isRecording || isTransitioning || hideControls ? 0.1 : 1.0)
+                    transition.setAlpha(view: galleryButtonView, alpha: isRecording || isTransitioning || hideControls ? 0.0 : normalAlpha)
                 }
             } else {
                 galleryButtonFrame = .zero
@@ -1017,8 +1172,8 @@ final class CaptureControlsComponent: Component {
                     transition.setBounds(view: flipButtonView, bounds: CGRect(origin: .zero, size: flipButtonFrame.size))
                     transition.setPosition(view: flipButtonView, position: flipButtonFrame.center)
                     
-                    transition.setScale(view: flipButtonView, scale: isTransitioning ? 0.01 : 1.0)
-                    transition.setAlpha(view: flipButtonView, alpha: isTransitioning ? 0.0 : 1.0)
+                    transition.setScale(view: flipButtonView, scale: isTransitioning || hideControls ? 0.01 : 1.0)
+                    transition.setAlpha(view: flipButtonView, alpha: isTransitioning || hideControls ? 0.0 : 1.0)
                 }
             } else if let flipButtonView = self.flipButtonView.view {
                 flipButtonView.removeFromSuperview()
@@ -1047,6 +1202,8 @@ final class CaptureControlsComponent: Component {
                                 tintColor: component.tintColor,
                                 shutterState: component.shutterState,
                                 blobState: blobState,
+                                collageProgress: component.collageProgress,
+                                collageCount: component.collageCount,
                                 highlightedAction: self.shutterHightlightedAction,
                                 updateOffsetX: self.shutterUpdateOffsetX,
                                 updateOffsetY: self.shutterUpdateOffsetY
@@ -1144,6 +1301,46 @@ final class CaptureControlsComponent: Component {
                 }
             }
             
+            if let resolvedCodePeer = component.resolvedCodePeer {
+                let codeResultView: ComponentView<Empty>
+                if let current = self.codeResultView {
+                    codeResultView = current
+                } else {
+                    codeResultView = ComponentView<Empty>()
+                    self.codeResultView = codeResultView
+                }
+                
+                let codeResultSize = codeResultView.update(
+                    transition: .immediate,
+                    component: AnyComponent(
+                        CameraCodeResultComponent(
+                            context: component.context,
+                            peer: resolvedCodePeer,
+                            pressed: component.openResolvedPeer
+                        )
+                    ),
+                    environment: {},
+                    containerSize: availableSize
+                )
+                
+                if let view = codeResultView.view {
+                    if view.superview == nil {
+                        self.insertSubview(view, at: 0)   
+                        if let view = view as? CameraCodeResultComponent.View {
+                            view.animateIn()
+                        }
+                    }
+                    view.frame = CGRect(origin: CGPoint(x: (availableSize.width - codeResultSize.width) / 2.0, y: (size.height - shutterButtonSize.height) / 2.0 - codeResultSize.height), size: codeResultSize)
+                }
+            } else if let codeResultView = self.codeResultView {
+                self.codeResultView = nil
+                codeResultView.view?.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.25, removeOnCompletion: false, completion: { _ in
+                    codeResultView.view?.removeFromSuperview()
+                })
+                codeResultView.view?.layer.animateScale(from: 1.0, to: 0.2, duration: 0.25, removeOnCompletion: false)
+                codeResultView.view?.layer.animatePosition(from: .zero, to: CGPoint(x: 0.0, y: 64.0), duration: 0.4, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false, additive: true)
+            }
+            
             let _ = self.lockView.update(
                 transition: .immediate,
                 component: AnyComponent(
@@ -1220,6 +1417,13 @@ final class CaptureControlsComponent: Component {
             }
             
             return size
+        }
+        
+        override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+            if let codeResultView = self.codeResultView?.view, codeResultView.frame.contains(point) {
+                return codeResultView.hitTest(self.convert(point, to: codeResultView), with: event)
+            }
+            return super.hitTest(point, with: event)
         }
     }
 
