@@ -6,7 +6,6 @@ NGDEPS = [
     "//Nicegram/NGLab:NGLab",
     "//Nicegram/NGStrings:NGStrings",
     "//Nicegram/NGUI:NGUI",
-    "//Nicegram/NGUtils:NGUtils",
     "//Nicegram/NGWebUtils:NGWebUtils",
     "@swiftpkg_nicegram_assistant_ios//:FeatPremiumUI",
     "@swiftpkg_nicegram_assistant_ios//:FeatTgUserNotes",
