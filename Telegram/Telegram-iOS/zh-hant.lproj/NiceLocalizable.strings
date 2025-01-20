@@ -1,6 +1,7 @@
 "AppName" = "Nicegram";
 
 "ViewAuditReport" = "查看CertiK報告";
+"Wallet" = "錢包";
 
 /*Common*/
 "Nicegram.PrivacyPolicy" = "隱私權政策";
@@ -87,7 +88,7 @@
 "Common.SupportChatUsername" = "nicegram_tw";
 "Common.FAQUrl" = "https://nicegram-tw.gitbook.io/";
 "Common.FAQ.Button" = "Nicegram 常見問題";
-"IAP.Premium.Title" = "Premium";
+"IAP.Premium.Title" = "進階版功能";
 "IAP.Premium.Subtitle" = "您無法抗拒的獨特功能！";
 "IAP.Premium.Activated" = "已升級進階版！";
 "IAP.Common.Restore" = "恢復購買";
@@ -168,6 +169,7 @@
 "NicegramSettings.EnableGrayscaleAll" = "全螢幕灰階";
 "NicegramSettings.EnableGrayscaleInChatList" = "聊天列表中的灰階";
 "NicegramSettings.EnableGrayscaleInChat" = "灰階在聊天中";
+"NicegramSettings.EnableAppleSpeech2Text" = "啟用Apple Speech2Text";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "早於";

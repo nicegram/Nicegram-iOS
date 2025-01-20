@@ -1,6 +1,7 @@
 "AppName" = "Nicegram";
 
 "ViewAuditReport" = "Visualizza il rapporto CertiK";
+"Wallet" = "Portafoglio";
 
 /*Common*/
 "Nicegram.PrivacyPolicy" = "Informativa sulla privacy";
@@ -70,7 +71,8 @@
 "NiceFeatures.Use.DataStorage" = "Per favore, usa «%1» per configurare il tuo browser predefinito";
 "NiceFeatures.Browser.Header" = "URL";
 "NiceFeatures.Browser.UseBrowser" = "Apri link nel browser";
-"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram aprirà i link in un browser esterno invece di farlo nell'app.\nIl browser selezionato deve essere installato.";
+"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram aprirà i link in un browser esterno invece di farlo nell'app.
+Il browser selezionato deve essere installato.";
 "ChatFilter.Missed" = "Mancati";
 
 /*Premium*/
@@ -168,6 +170,7 @@
 "NicegramSettings.EnableGrayscaleAll" = "Grigio scala a schermo intero";
 "NicegramSettings.EnableGrayscaleInChatList" = "Scala di grigi nella lista chat";
 "NicegramSettings.EnableGrayscaleInChat" = "In scala di grigi nella chat";
+"NicegramSettings.EnableAppleSpeech2Text" = "Attiva Apple Speech2Text";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Più vecchio di";

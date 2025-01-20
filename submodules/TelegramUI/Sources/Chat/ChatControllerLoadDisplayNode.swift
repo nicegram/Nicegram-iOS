@@ -1,3 +1,6 @@
+// MARK: Nicegram ATTUserActions
+import NGUtils
+//
 import Foundation
 import UIKit
 import Postbox
@@ -1336,6 +1339,16 @@ extension ChatControllerImpl {
                         
                         signal = enqueueMessages(account: strongSelf.context.account, peerId: peerId, messages: transformedMessages)
                     }
+                    
+                    // MARK: Nicegram ATTUserActions
+                    if transformedMessages.contains(where: { $0.threadId != nil }) {
+                        AttUserActionsHelper.save(
+                            peerId: peerId,
+                            type: .comment,
+                            userId: strongSelf.context.account.peerId
+                        )
+                    }
+                    //
                     
                     let _ = (signal
                     |> deliverOnMainQueue).startStandalone(next: { messageIds in

@@ -20,8 +20,19 @@ public extension WalletTgUtils {
     }
     
     static func peerToWalletContact(
-        peer: EnginePeer
-    ) -> WalletContact {
+        id: PeerId,
+        context: AccountContext
+    ) async -> WalletContact? {
+        if let peer = await peerById(id, context: context) {
+            WalletContact(peer)
+        } else {
+            nil
+        }
+    }
+}
+
+public extension WalletContact {
+    init(_ peer: EnginePeer) {
         let username: String
         if let addressName = peer.addressName, !addressName.isEmpty {
             username = "@\(addressName)"
@@ -29,21 +40,14 @@ public extension WalletTgUtils {
             username = ""
         }
         
-        return WalletContact(
+        self.init(
             id: .init(peer.id),
             name: peer.compactDisplayTitle,
             username: username
         )
     }
     
-    static func peerToWalletContact(
-        id: PeerId,
-        context: AccountContext
-    ) async -> WalletContact? {
-        if let peer = await peerById(id, context: context) {
-            peerToWalletContact(peer: peer)
-        } else {
-            nil
-        }
+    init(_ peer: Peer) {
+        self.init(EnginePeer(peer))
     }
 }
