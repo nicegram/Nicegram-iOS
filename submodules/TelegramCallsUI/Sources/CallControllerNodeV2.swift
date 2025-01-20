@@ -21,6 +21,8 @@ import LibYuvBinding
 // MARK: Nicegram NCG-5828 call recording
 import NGStrings
 import UndoUI
+// MARK: Nicegram NCG-6903 Nicegram Personality
+import NGPersonality
 //
 final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeProtocol {
     private struct PanGestureState {
@@ -471,6 +473,9 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
                 signalInfo: PrivateCallScreen.State.SignalInfo(quality: Double(signalQuality ?? 0) / 4.0),
                 emojiKey: self.resolvedEmojiKey(data: keyData)
             ))
+// MARK: Nicegram NCG-6903 Nicegram Personality
+            collectCallActivity(with: account.peerId.toInt64())
+//
         case let .reconnecting(startTime, _, keyData):
             self.smoothSignalQuality = nil
             self.smoothSignalQualityTarget = nil
@@ -491,7 +496,7 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
             } else {
                 duration = 0.0
             }
-            
+
             let mappedReason: PrivateCallScreen.State.TerminatedState.Reason
             if let reason {
                 switch reason {
