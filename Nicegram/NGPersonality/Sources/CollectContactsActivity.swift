@@ -7,13 +7,11 @@ private let collectContactsActivityUseCase = container.collectContactsActivityUs
 
 public func collectContactsActivity(
     with userId: Int64,
-    count: Int,
-    completion: @escaping () -> Void = {}
+    count: Int
 ) {
     guard checkPreferencesStateUseCase(with: userId, personality: .contactsActivity(.empty)) else { return }
 
     Task {
         await collectContactsActivityUseCase(with: userId, count: count)
-        completion()
     }
 }

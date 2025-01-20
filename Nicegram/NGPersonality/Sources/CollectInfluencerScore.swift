@@ -41,16 +41,16 @@ private func influencerScore(
     with context: AccountContext
 ) -> Signal<(Int32, Int32, Int32, Int32, Int32, Int32), NoError> {
     dialogs(with: context)
-    |> mapToSignal { dialogs -> Signal<[Api.messages.ChatFull?], NoError> in
+    |> map { dialogs -> [(PeerId.Namespace, Bool, Int32)] in
         switch dialogs {
         case let .dialogs(_, _, chats, _):
-            return fullChannels(with: context, chats: chats)
+            return chats.compactMap { information(from: $0) }
         case let .dialogsSlice(_, _, _, chats, _):
-            return fullChannels(with: context, chats: chats)
-        default: return .single([])
+            return chats.compactMap { information(from: $0) }
+        default: return []
         }
     }
-    |> map { fullChannels -> (Int32, Int32, Int32, Int32, Int32, Int32) in
+    |> map { chats -> (Int32, Int32, Int32, Int32, Int32, Int32) in
         var ownerChannelCount: Int32 = 0
         var ownerChannelParticipantsCount: Int32 = 0
         var ownerGroupCount: Int32 = 0
@@ -58,31 +58,20 @@ private func influencerScore(
 
         var groupCount: Int32 = 0
         var groupParticipantsCount: Int32 = 0
-                
-        fullChannels.forEach { chatFull in
-            switch chatFull {
-            case let .chatFull(fullChat, _, _):
-                switch fullChat {
-                case let .channelFull(flags, _, _, _, participantsCount, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
-                    let channelFlags = TelegramChannelFlags(rawValue: flags)
-                    if channelFlags.contains(.isCreator) {
-                        if channelFlags.contains(.isMegagroup) ||
-                           channelFlags.contains(.isGigagroup) {
-                            ownerGroupCount += 1
-                            ownerGroupParticipantsCount += (participantsCount ?? 0)
-                        } else {
-                            ownerChannelCount += 1
-                            ownerChannelParticipantsCount += (participantsCount ?? 0)
-                        }
-                    }
-                    if channelFlags.contains(.isMegagroup) ||
-                        channelFlags.contains(.isGigagroup) {
-                        groupCount += 1
-                        groupParticipantsCount += (participantsCount ?? 0)
-                    }
-                default: break
+        
+        chats.forEach { chat in
+            if chat.0 == Namespaces.Peer.CloudChannel {
+                if chat.1 {
+                    ownerChannelCount += 1
+                    ownerChannelParticipantsCount += chat.2
                 }
-            default: break
+            } else if chat.0 == Namespaces.Peer.CloudGroup {
+                if chat.1 {
+                    ownerGroupCount += 1
+                    ownerGroupParticipantsCount += chat.2
+                }
+                groupCount += 1
+                groupParticipantsCount += chat.2
             }
         }
 
@@ -94,35 +83,6 @@ private func influencerScore(
             groupCount,
             groupParticipantsCount
         )
-    }
-}
-
-private func fullChannels(
-    with context: AccountContext,
-    chats: [Api.Chat]
-) -> Signal<[Api.messages.ChatFull?], NoError> {
-    combineLatest(
-        chats.compactMap { chat in
-            switch chat {
-            case let .channel(_, _, id, accessHash, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
-                return fullChannel(with: context, channelId: id, accessHash: accessHash ?? 0)
-            default: return nil
-            }
-        }
-    )
-}
-
-private func fullChannel(
-    with context: AccountContext,
-    channelId: Int64,
-    accessHash: Int64
-) -> Signal<Api.messages.ChatFull?, NoError> {
-    context.account.network.request(Api.functions.channels.getFullChannel(
-        channel: .inputChannel(channelId: channelId, accessHash: accessHash)
-    ))
-    |> map(Optional.init)
-    |> `catch` { error -> Signal<Api.messages.ChatFull?, NoError> in
-        return .single(nil)
     }
 }
 
@@ -141,5 +101,24 @@ private func dialogs(
     |> map(Optional.init)
     |> `catch` { error -> Signal<Api.messages.Dialogs?, NoError> in
         return .single(nil)
+    }
+}
+
+private func information(from chat: Api.Chat) -> (PeerId.Namespace, Bool, Int32)? {
+    switch chat {
+    case let .chat(flags, _, _, _, participantsCount, _, _, _, _, _):
+        let isCreator = (flags & (1 << 0)) != 0
+        return (Namespaces.Peer.CloudGroup, isCreator, participantsCount)
+    case let .channel(flags, _, _, _, _, _, _, _, _, _, _, _, participantsCount, _, _, _, _, _, _, _, _):
+        let isCreator = (flags & (1 << 0)) != 0
+
+        var type = Namespaces.Peer.CloudChannel
+        if (flags & Int32(1 << 8)) != 0 {
+            type = Namespaces.Peer.CloudGroup
+        }
+                        
+        return (type, isCreator, participantsCount ?? 0)
+    case .chatEmpty, .chatForbidden, .channelForbidden:
+        return nil
     }
 }
