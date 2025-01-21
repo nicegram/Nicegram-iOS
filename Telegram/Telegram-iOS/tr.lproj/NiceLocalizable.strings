@@ -1,6 +1,7 @@
 "AppName" = "Nicegram";
 
 "ViewAuditReport" = "CertiK Raporunu Görüntüle";
+"Wallet" = "Cüzdan";
 
 /*Common*/
 "Nicegram.PrivacyPolicy" = "Gizlilik politikası";
@@ -111,7 +112,8 @@
 "Messages.SelectAllFromUser" = "Bu Kullanıcıdan Olan Bütün Mesajları Seç";
 "Messages.ToLanguage" = "Hedef Dil";
 "Messages.ToLanguage.WithCode" = "Hedef Dil: %@";
-"Messages.TranslateError.ToLanguageNotFound" = "Metni çevirmek istediğiniz dili tespit edemedik. Lütfen manuel olarak seçin ve tekrar deneyin.\n";
+"Messages.TranslateError.ToLanguageNotFound" = "Metni çevirmek istediğiniz dili tespit edemedik. Lütfen manuel olarak seçin ve tekrar deneyin.
+";
 "Messages.ReplyPrivately" = "Özelden Cevapla";
 "Messages.DeleteAllSystemMessages" = "Tümünü Sil";
 
@@ -168,6 +170,7 @@
 "NicegramSettings.EnableGrayscaleAll" = "Tam Ekran Gri Tonlama";
 "NicegramSettings.EnableGrayscaleInChatList" = "Sohbet listesinde gri tonlama";
 "NicegramSettings.EnableGrayscaleInChat" = "Sohbette gri tonlama";
+"NicegramSettings.EnableAppleSpeech2Text" = "Apple Speech2Text'i Etkinleştir";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Şundan daha eski:";

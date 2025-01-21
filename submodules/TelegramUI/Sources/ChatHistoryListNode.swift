@@ -1,12 +1,15 @@
 // MARK: Nicegram ATT
 import ChatMessageNicegramAdNode
 import FeatAttentionEconomy
+//
 // MARK: Nicegram AiChat
 import NGAiChatUI
+//
 // MARK: Nicegram ChatBanner
 import FeatChatBanner
-// MARK: Nicegram NCG-6903 Nicegram Personality
-import NGPersonality
+//
+// MARK: Nicegram Wallet
+import ChatMessageNicegramWalletTxNode
 //
 import Foundation
 import UIKit
@@ -242,7 +245,8 @@ private func mappedInsertEntries(context: AccountContext, chatLocation: ChatLoca
     return entries.map { entry -> ListViewInsertItem in
         switch entry.entry {
             case let .MessageEntry(message, presentationData, read, location, selection, attributes):
-                let item: ListViewItem
+                // MARK: Nicegram, changed to 'var'
+                var item: ListViewItem
                 switch mode {
                     case .bubbles:
                         // MARK: Nicegram, wantTrButton
@@ -259,6 +263,16 @@ private func mappedInsertEntries(context: AccountContext, chatLocation: ChatLoca
                         }
                         item = ListMessageItem(presentationData: presentationData, context: context, chatLocation: chatLocation, interaction: ListMessageItemInteraction(controllerInteraction: controllerInteraction), message: message, translateToLanguage: associatedData.translateToLanguage, selection: selection, displayHeader: displayHeader, hintIsLink: hintLinks, isGlobalSearchResult: isGlobalSearch)
                 }
+                // MARK: Nicegram Wallet
+                if #available(iOS 16.0, *), let tx = attributes.walletTx {
+                    item = ChatMessageNicegramWalletTxItem(
+                        controllerInteraction: controllerInteraction,
+                        incoming: message.flags.contains(.Incoming),
+                        presentationData: presentationData,
+                        tx: tx
+                    )
+                }
+                //
                 return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: item, directionHint: entry.directionHint)
             case let .MessageGroupEntry(_, messages, presentationData):
                 let item: ListViewItem
@@ -302,7 +316,8 @@ private func mappedUpdateEntries(context: AccountContext, chatLocation: ChatLoca
     return entries.map { entry -> ListViewUpdateItem in
         switch entry.entry {
             case let .MessageEntry(message, presentationData, read, location, selection, attributes):
-                let item: ListViewItem
+                // MARK: Nicegram, changed to 'var'
+                var item: ListViewItem
                 switch mode {
                     case .bubbles:
                         // MARK: Nicegram, wantTrButton
@@ -319,6 +334,16 @@ private func mappedUpdateEntries(context: AccountContext, chatLocation: ChatLoca
                         }
                         item = ListMessageItem(presentationData: presentationData, context: context, chatLocation: chatLocation, interaction: ListMessageItemInteraction(controllerInteraction: controllerInteraction), message: message, translateToLanguage: associatedData.translateToLanguage, selection: selection, displayHeader: displayHeader, hintIsLink: hintLinks, isGlobalSearchResult: isGlobalSearch)
                 }
+                // MARK: Nicegram Wallet
+                if #available(iOS 16.0, *), let tx = attributes.walletTx {
+                    item = ChatMessageNicegramWalletTxItem(
+                        controllerInteraction: controllerInteraction,
+                        incoming: message.flags.contains(.Incoming),
+                        presentationData: presentationData,
+                        tx: tx
+                    )
+                }
+                //
                 return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: item, directionHint: entry.directionHint)
             case let .MessageGroupEntry(_, messages, presentationData):
                 let item: ListViewItem
@@ -998,9 +1023,6 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                                 atBottom = true
                                 offsetFromBottom = offsetValue
                             }
-// MARK: Nicegram NCG-6903 Nicegram Personality
-                        collectScrollActivity(with: strongSelf.context.account.peerId.toInt64())
-//
                             //print("offsetValue: \(offsetValue)")
                         default:
                             break
