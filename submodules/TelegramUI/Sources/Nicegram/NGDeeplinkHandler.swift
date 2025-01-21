@@ -20,6 +20,7 @@ import NGSpecialOffer
 import NGUI
 import TelegramPresentationData
 import UIKit
+import FeatPersonalityUI
 
 @MainActor
 class NGDeeplinkHandler {
@@ -28,6 +29,7 @@ class NGDeeplinkHandler {
     
     private let tgAccountContext: AccountContext
     private let navigationController: NavigationController?
+    private let analyticsManager = AnalyticsContainer.shared.analyticsManager()
     
     //  MARK: - Lifecycle
     
@@ -96,6 +98,16 @@ class NGDeeplinkHandler {
         case "tgAuthSuccess":
             if #available(iOS 15.0, *) {
                 AssistantTgHelper.routeToAssistant(source: .generic)
+            }
+            return true
+        case "personality":
+            if #available(iOS 15.0, *) {
+                analyticsManager.trackEvent(
+                    "nice_personality_banner_clicked",
+                    params: [:]
+                )
+                
+                PersonalityPresenter().present()
             }
             return true
         default:

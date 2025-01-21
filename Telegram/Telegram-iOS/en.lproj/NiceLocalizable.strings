@@ -1,7 +1,6 @@
 "AppName" = "Nicegram";
 
 "ViewAuditReport" = "View CertiK Report";
-"Wallet" = "Wallet";
 
 /*Common*/
 "Nicegram.PrivacyPolicy" = "Privacy policy";
@@ -208,7 +207,7 @@
 /*Hidden Chats*/
 "ChatContextMenu.Hide" = "Hide";
 "ChatContextMenu.Unhide" = "Unhide";
-"HiddenChatsTooltip" = "Press and hold this button to reveal hidden secret chats";
+"HiddenChatsTooltip" = "Press and hold the 'N' logo to reveal hidden secret chats";
 
 /*Data Sharing*/
 "NicegramSettings.ShareBotsToggle" = "Share bots information";

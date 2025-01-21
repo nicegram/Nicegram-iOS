@@ -1,7 +1,6 @@
 "AppName" = "Nicegram";
 
 "ViewAuditReport" = "Просмотреть отчет CertiK";
-"Wallet" = "Кошелек";
 
 /*Common*/
 "Nicegram.PrivacyPolicy" = "Политика конфиденциальности Nicegram";
@@ -169,7 +168,6 @@
 "NicegramSettings.EnableGrayscaleAll" = "Полноэкранный черно-белый режим";
 "NicegramSettings.EnableGrayscaleInChatList" = "Оттенки серого в списке чата";
 "NicegramSettings.EnableGrayscaleInChat" = "Оттенки серого в чате";
-"NicegramSettings.EnableAppleSpeech2Text" = "Включить Apple Speech2Text";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Старше, чем";

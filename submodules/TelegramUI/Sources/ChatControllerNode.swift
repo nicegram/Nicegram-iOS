@@ -1066,8 +1066,18 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 return
             }
             
+            let sendToChat: ((String?) -> Void)?
+            if (self.inputPanelNode as? ChatTextInputPanelNode) != nil {
+                sendToChat = { [weak self] text in
+                    self?.setInput(text: text, image: nil)
+                }
+            } else {
+                sendToChat = nil
+            }
+            
             await WalletEntryPoints.openInChatWidget(
-                contact: contact
+                contact: contact,
+                sendToChat: sendToChat
             )
         }
     }
