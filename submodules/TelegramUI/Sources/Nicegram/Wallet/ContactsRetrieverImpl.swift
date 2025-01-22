@@ -25,7 +25,11 @@ extension ContactsRetrieverImpl: ContactsRetriever {
                 .filter {
                     $0.id != context.account.peerId
                 }
-                .map { WalletContact($0) }
+                .map { peer in
+                    WalletTgUtils.peerToWalletContact(
+                        peer: peer
+                    )
+                }
                 .filter { !$0.name.isEmpty }
         } catch {
             return []

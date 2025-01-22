@@ -17,7 +17,11 @@ import NGStats
 import NGStrings
 import NGUtils
 import NicegramWallet
+import AvatarNode
+import NGLab
 import NGCollectInformation
+import Combine
+import NGPersonality
 //
 import UIKit
 import SwiftSignalKit
@@ -369,7 +373,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     
     private let voipDeviceToken = Promise<Data?>(nil)
     private let regularDeviceToken = Promise<Data?>(nil)
-        
+
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         precondition(!testIsLaunched)
         testIsLaunched = true
@@ -408,13 +412,8 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         //
         
         let contextProvider = ContextProvider(
-            getContext: { [self] in
-                contextValue?.context
-            },
-            getContextPublisher: { [self] in
-                context.get().toPublisher()
-                    .map { $0?.context }
-                    .eraseToAnyPublisher()
+            contextValue: { [weak self] in
+                self?.contextValue?.context
             }
         )
         
@@ -461,11 +460,11 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             telegramMessageSender: {
                 TelegramMessageSenderImpl(contextProvider: contextProvider)
             },
-            telegramThemeProvider: {
-                TelegramThemeProviderImpl(contextProvider: contextProvider)
-            },
             urlOpener: {
                 UrlOpenerImpl(contextProvider: contextProvider)
+            },
+            personalityProvider: {
+                PersonalityProviderImpl(contextProvider: contextProvider)
             },
             walletData: .init(
                 env: {
@@ -499,14 +498,14 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         // MARK: Nicegram Unblock
         let _ = (self.context.get()
         |> take(1)
-        |> deliverOnMainQueue).start(next: { context in
+        |> deliverOnMainQueue).start(next: { [weak self] context in
             if let context = context {
                 // MARK: Nicegram NCG-6326 Apple Speech2Text
                 let setDefaultSpeech2TextSettingsUseCase = NicegramSettingsModule.shared.setDefaultSpeech2TextSettingsUseCase()
                 setDefaultSpeech2TextSettingsUseCase(with: context.context.isPremium)
                 //
                 Queue().async {
-                    self.fetchNGUserSettings(context.context.account.peerId.id._internalGetInt64Value())
+                    self?.fetchNGUserSettings(context.context.account.peerId.id._internalGetInt64Value())
                 }
             }
         })
@@ -2155,6 +2154,20 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {
+// MARK: Nicegram NCG-6903 Nicegram Personality
+        let _ = (self.context.get()
+        |> take(1)
+        |> deliverOnMainQueue).start(next: { context in
+            if let context = context {
+                Task {
+                    await collectDailyActivity(
+                        with: context.context.account.peerId.toInt64(),
+                        notificationName: UIApplication.didEnterBackgroundNotification
+                    )
+                }
+            }
+        })
+//
         // MARK: Nicegram DB Changes
         
         let _ = (self.sharedContextPromise.get()
@@ -2166,6 +2179,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     extendNow = true
                 }
             }
+            
             if !sharedApplicationContext.sharedContext.energyUsageSettings.extendBackgroundWork {
                 extendNow = false
             }
@@ -2243,17 +2257,33 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
 		    //self.fetchPremium()
         }
         //
+// MARK: Nicegram NCG-6903 Nicegram Personality
+        let getContext = (self.context.get()
+                          |> take(1)
+                          |> deliverOnMainQueue)
         
+        let _ = getContext
+            .start(next: { authorizedApplicationContext in
+                if let authorizedApplicationContext {
+                    Task {
+                        await collectDailyActivity(
+                            with: authorizedApplicationContext.context.account.peerId.toInt64(),
+                            notificationName: UIApplication.didBecomeActiveNotification
+                        )
+                    }
+                }
+            })
+//
+
         SharedDisplayLinkDriver.shared.updateForegroundState(self.isActiveValue)
         
 // MARK: Nicegram NCG-6554 channels info
-        let _ = (self.context.get()
-        |> take(1)
-        |> deliverOnMainQueue).start(next: { authorizedApplicationContext in
-            if let authorizedApplicationContext {
-                collectChannelsInformation(with: authorizedApplicationContext.context)
-            }
-        })
+        let _ = getContext
+            .start(next: { authorizedApplicationContext in
+                if let authorizedApplicationContext {
+                    collectChannelsInformation(with: authorizedApplicationContext.context)
+                }
+            })
 //
     }
     

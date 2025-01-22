@@ -8,6 +8,8 @@ import ShareController
 
 @available(iOS 15.0, *)
 class ChatMessageNicegramAdNode: ListViewItemNode {
+    private let layoutConstants = (ChatMessageItemLayoutConstants.compact, ChatMessageItemLayoutConstants.regular)
+    
     var item: ChatMessageNicegramAdItem?
     
     private let bannerView: AttChatBanner
@@ -92,13 +94,14 @@ class ChatMessageNicegramAdNode: ListViewItemNode {
                 messageBoldFont: presentationData.messageBoldFont
             )
             
-            let bubbleParams = ChatMessageBubbleNicegramParams(
-                params: params,
-                presentationData: presentationData
-            )
+            let layoutConstants = chatMessageItemLayoutConstants(layoutConstants, params: params, presentationData: presentationData)
+            let maximumWidthFill = layoutConstants.bubble.maximumWidthFill.widthFor(params.width)
             let layoutParams = AttChatBannerLayoutParams(
-                insets: bubbleParams.insets,
-                maximumWidthFill: bubbleParams.maximumWidthFill
+                insets: layoutConstants.bubble.contentInsets
+                    .sum(.vertical(layoutConstants.bubble.defaultSpacing))
+                    .sum(.horizontal(layoutConstants.bubble.edgeInset))
+                    .sum(.left(params.leftInset).right(params.rightInset)),
+                maximumWidthFill: maximumWidthFill
             )
             
             bannerView.set(
@@ -145,5 +148,16 @@ class ChatMessageNicegramAdNode: ListViewItemNode {
         super.animateAdded(currentTimestamp, duration: duration)
         
         self.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
+    }
+}
+
+private extension UIEdgeInsets {
+    func sum(_ other: UIEdgeInsets) -> UIEdgeInsets {
+        UIEdgeInsets(
+            top: self.top + other.top,
+            left: self.left + other.left,
+            bottom: self.bottom + other.bottom,
+            right: self.right + other.right
+        )
     }
 }

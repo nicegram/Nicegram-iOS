@@ -185,6 +185,9 @@ public func checkPremium(completion: @escaping (Bool) -> Void) {
 }
 
 public func isPremium() -> Bool {
+#if DEBUG
+    return true
+#else
     if #available(iOS 13.0, *) {
         return PremiumContainer.shared
             .getPremiumStatusUseCase()
@@ -192,6 +195,7 @@ public func isPremium() -> Bool {
     } else {
         return false
     }
+#endif
 }
 
 public func usetrButton() -> [(Bool, [String])] {

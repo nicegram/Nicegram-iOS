@@ -98,7 +98,7 @@ final class ChatListNicegramWidgetNode: ListViewItemNode {
         return { [weak self] item, params, last in
             let size = CGSize(
                 width: params.width,
-                height: 110
+                height: 145
             )
             
             let layout = ListViewItemNodeLayout(

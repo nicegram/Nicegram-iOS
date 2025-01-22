@@ -113,8 +113,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/pinned-dapps-improvements",
-        "revision" : "adc8b170be867bb74c74507b441174c38994cc2c"
+        "branch" : "feat/NCG-6903_personality",
+        "revision" : "6a3a0634dc2f8174de1245a9a18227f78472c94f"
       }
     },
     {
@@ -122,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "feat/pinned-dapps-improvements",
-        "revision" : "5b1ff422e7cb5dc05d3460f8874ab037c3855723"
+        "branch" : "develop",
+        "revision" : "0814446b00d6c35271e38ae798eeaf8c871d74cf"
       }
     },
     {
