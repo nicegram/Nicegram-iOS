@@ -49,7 +49,7 @@ func syncContactsOnce(network: Network, postbox: Postbox, accountPeerId: PeerId)
         let peerIds = Set(contactPeerIds.filter({ $0.namespace == Namespaces.Peer.CloudUser }))
         return hashForCountAndIds(count: totalCount, ids: peerIds.map({ $0.id._internalGetInt64Value() }).sorted())
     }
-    
+
     let updatedPeers = initialContactPeerIdsHash
     |> mapToSignal { hash -> Signal<(AccumulatedPeers, Int32)?, NoError> in
         return updatedRemoteContactPeers(network: network, hash: hash)

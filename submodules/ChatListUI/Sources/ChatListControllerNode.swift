@@ -3,6 +3,7 @@ import NGData
 //
 // MARK: Nicegram ColorAlign
 import NGUtils
+import NGLogging
 //
 import Foundation
 import UIKit
@@ -809,6 +810,9 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
     }
     
     public func switchToFilter(id: ChatListFilterTabEntryId, animated: Bool = true, completion: (() -> Void)? = nil) {
+// MARK: Nicegram NCG-7102 bottom folders fix
+        ngLog("===NCG-7102=== switchToFilter: id = \(id), itemNodes = \(itemNodes), pendingItemNode = \(pendingItemNode)")
+//
         self.onFilterSwitch?()
         if id != self.selectedId, let index = self.availableFilters.firstIndex(where: { $0.id == id }) {
             if let itemNode = self.itemNodes[id] {
