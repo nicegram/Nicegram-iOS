@@ -408,12 +408,23 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         //
         
         let contextProvider = ContextProvider(
-            getContext: { [self] in
+            context: { [self] in
                 contextValue?.context
             },
-            getContextPublisher: { [self] in
+            contextPublisher: { [self] in
                 context.get().toPublisher()
                     .map { $0?.context }
+                    .eraseToAnyPublisher()
+            }
+        )
+        
+        let sharedContextProvider = SharedContextProvider(
+            sharedContext: { [self] in
+                try await sharedContextPromise.get().awaitForFirstValue().sharedContext
+            },
+            sharedContextPublisher: { [self] in
+                sharedContextPromise.get().toPublisher()
+                    .map { $0.sharedContext }
                     .eraseToAnyPublisher()
             }
         )
@@ -462,7 +473,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 TelegramMessageSenderImpl(contextProvider: contextProvider)
             },
             telegramThemeProvider: {
-                TelegramThemeProviderImpl(contextProvider: contextProvider)
+                TelegramThemeProviderImpl(sharedContextProvider: sharedContextProvider)
             },
             urlOpener: {
                 UrlOpenerImpl(contextProvider: contextProvider)
@@ -491,7 +502,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     ContactsRetrieverImpl(contextProvider: contextProvider)
                 },
                 walletVerificationInterceptor: {
-                    WalletVerificationInterceptorImpl(contextProvider: contextProvider)
+                    WalletVerificationInterceptorImpl(sharedContextProvider: sharedContextProvider)
                 }
             )
         )

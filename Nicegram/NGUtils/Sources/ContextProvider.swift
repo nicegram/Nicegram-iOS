@@ -3,15 +3,13 @@ import Combine
 import MemberwiseInit
 
 @MemberwiseInit(.public)
+public struct SharedContextProvider {
+    public let sharedContext: () async throws -> SharedAccountContext
+    public let sharedContextPublisher: () -> AnyPublisher<SharedAccountContext, Never>
+}
+
+@MemberwiseInit(.public)
 public struct ContextProvider {
-    @Init(.public) private let getContext: () -> AccountContext?
-    @Init(.public) private let getContextPublisher: () -> AnyPublisher<AccountContext?, Never>
-    
-    public func context() -> AccountContext? {
-        getContext()
-    }
-    
-    public func contextPublisher() -> AnyPublisher<AccountContext?, Never> {
-        getContextPublisher()
-    }
+    public let context: () -> AccountContext?
+    public let contextPublisher: () -> AnyPublisher<AccountContext?, Never>
 }

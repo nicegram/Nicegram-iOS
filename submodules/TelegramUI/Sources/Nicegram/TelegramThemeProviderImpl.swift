@@ -5,15 +5,14 @@ import TelegramBridge
 
 @MemberwiseInit
 class TelegramThemeProviderImpl {
-    @Init(.internal) private let contextProvider: ContextProvider
+    @Init(.internal) private let sharedContextProvider: SharedContextProvider
 }
 
 extension TelegramThemeProviderImpl: TelegramThemeProvider {
     func currentTheme() -> AnyPublisher<TelegramTheme, Never> {
-        contextProvider.contextPublisher()
-            .compactMap { $0 }
-            .map { accountContext in
-                accountContext.sharedContext.presentationData
+        sharedContextProvider.sharedContextPublisher()
+            .map { sharedContext in
+                sharedContext.presentationData
                     .toPublisher()
                     .map { TelegramTheme($0) }
             }
