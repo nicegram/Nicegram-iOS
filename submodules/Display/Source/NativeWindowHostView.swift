@@ -157,11 +157,8 @@ private final class WindowRootViewController: UIViewController, UIViewController
         return orientations
     }
     
-    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-        if #available(iOS 12.0, *) {
-            self._systemUserInterfaceStyle.set(WindowUserInterfaceStyle(style: self.traitCollection.userInterfaceStyle))
-        }
-    }
+    // MARK: Nicegram
+    // System theme observation is removed, we do this in UserInterfaceStyleObserverWindow
     
     init() {
         super.init(nibName: nil, bundle: nil)

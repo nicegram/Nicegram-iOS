@@ -1,6 +1,7 @@
 import FeatAttentionEconomy
 import Foundation
 import NGUtils
+import NicegramWallet
 
 import ChatHistoryEntry
 import Display
@@ -24,6 +25,8 @@ func nicegramMapChatHistoryEntries(
     attConfig: AttConfig
 ) -> [ChatHistoryEntry] {
     var result = newEntries
+    
+    result = parseWalletTransactions(result)
     
     guard !nicegramAd.forceRemove else {
         return result
@@ -63,6 +66,22 @@ func nicegramMapChatHistoryEntries(
     )
     
     return result
+}
+
+private func parseWalletTransactions(_ entries: [ChatHistoryEntry]) -> [ChatHistoryEntry] {
+    guard #available(iOS 16.0, *) else {
+        return entries
+    }
+    
+    return entries.map { entry in
+        if case let .MessageEntry(message, presentationData, isRead, location, selection, attributes) = entry {
+            var attributes = attributes
+            attributes.walletTx = try? ChatMessageTx(messageText: message.text)
+            return .MessageEntry(message, presentationData, isRead, location, selection, attributes)
+        } else {
+            return entry
+        }
+    }
 }
 
 private func areAdsAllowed(

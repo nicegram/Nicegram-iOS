@@ -69,7 +69,14 @@ public struct NGSettings {
             let preferredProviderTypeUseCase = SpeechToTextContainer.shared.getPreferredProviderTypeUseCase()
             let type = preferredProviderTypeUseCase()
 
-            return type == .openAi ? true : NGSettings._useOpenAI
+            let getSpeech2TextSettingsUseCase = NicegramSettingsModule.shared.getSpeech2TextSettingsUseCase()
+            let enableApple = getSpeech2TextSettingsUseCase()
+
+            if enableApple {
+                return type == .openAi ? true : NGSettings._useOpenAI
+            } else {
+                return NGSettings._useOpenAI
+            }
         }
         set {
             NGSettings._useOpenAI = newValue
@@ -185,9 +192,6 @@ public func checkPremium(completion: @escaping (Bool) -> Void) {
 }
 
 public func isPremium() -> Bool {
-#if DEBUG
-    return true
-#else
     if #available(iOS 13.0, *) {
         return PremiumContainer.shared
             .getPremiumStatusUseCase()
@@ -195,7 +199,6 @@ public func isPremium() -> Bool {
     } else {
         return false
     }
-#endif
 }
 
 public func usetrButton() -> [(Bool, [String])] {

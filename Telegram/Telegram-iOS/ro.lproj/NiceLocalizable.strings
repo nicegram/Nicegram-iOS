@@ -199,7 +199,6 @@
 /*Hidden Chats*/
 "ChatContextMenu.Hide" = "Ascunde";
 "ChatContextMenu.Unhide" = "Dezvăluie";
-"HiddenChatsTooltip" = "Apăsați și mențineți apăsat logo-ul 'N' pentru a dezvălui conversațiile secrete ascunse";
 
 /*Data Sharing*/
 "NicegramSettings.ShareBotsToggle" = "Distribuie informații despre boți";

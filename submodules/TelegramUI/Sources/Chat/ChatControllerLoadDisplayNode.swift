@@ -1,3 +1,6 @@
+// MARK: Nicegram ATTUserActions
+import NGUtils
+//
 import Foundation
 import UIKit
 import Postbox
@@ -123,9 +126,7 @@ import PeerNameColorScreen
 import ChatEmptyNode
 import ChatMediaInputStickerGridItem
 import AdsInfoScreen
-// MARK: Nicegram NCG-6903 Nicegram Personality
-import NGPersonality
-//
+
 extension ChatControllerImpl {
     func loadDisplayNodeImpl() {
         if #available(iOS 18.0, *) {
@@ -1335,11 +1336,19 @@ extension ChatControllerImpl {
                             }
                             shouldOpenScheduledMessages = true
                         }
-// MARK: Nicegram NCG-6903 Nicegram Personality
-                            collectMessageActivity(with: strongSelf.context.account.peerId.toInt64())
-//
+                        
                         signal = enqueueMessages(account: strongSelf.context.account, peerId: peerId, messages: transformedMessages)
                     }
+                    
+                    // MARK: Nicegram ATTUserActions
+                    if transformedMessages.contains(where: { $0.threadId != nil }) {
+                        AttUserActionsHelper.save(
+                            peerId: peerId,
+                            type: .comment,
+                            userId: strongSelf.context.account.peerId
+                        )
+                    }
+                    //
                     
                     let _ = (signal
                     |> deliverOnMainQueue).startStandalone(next: { messageIds in

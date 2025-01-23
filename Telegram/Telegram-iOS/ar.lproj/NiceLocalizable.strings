@@ -1,6 +1,7 @@
 "AppName" = "Nicegram";
 
 "ViewAuditReport" = "عرض تقرير CertiK";
+"Wallet" = "المحفظة";
 
 /*Common*/
 "Nicegram.PrivacyPolicy" = "سياسة الخصوصية";
@@ -168,6 +169,7 @@
 "NicegramSettings.EnableGrayscaleAll" = "الشاشة كاملة بالأبيض والأسود";
 "NicegramSettings.EnableGrayscaleInChatList" = "الرمادي في قائمة الدردشة";
 "NicegramSettings.EnableGrayscaleInChat" = "الرمادي في الدردشة";
+"NicegramSettings.EnableAppleSpeech2Text" = "تفعيل Apple Speech2Text";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "أقدم من";
@@ -206,7 +208,6 @@
 /*Hidden Chats*/
 "ChatContextMenu.Hide" = "إخفاء";
 "ChatContextMenu.Unhide" = "إظهار";
-"HiddenChatsTooltip" = "اضغط مع الاستمرار على شعار 'N' لكشف الدردشات السرية المخفية";
 
 /*Data Sharing*/
 "NicegramSettings.ShareBotsToggle" = "مشاركة معلومات البوتات";

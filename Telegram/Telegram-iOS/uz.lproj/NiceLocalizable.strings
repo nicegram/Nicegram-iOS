@@ -200,7 +200,6 @@
 /*Hidden Chats*/
 "ChatContextMenu.Hide" = "Yashirish";
 "ChatContextMenu.Unhide" = "Ko'rsatish";
-"HiddenChatsTooltip" = "Yashirin maxfiy suhbatlarni ochish uchun \"N\" logotipini bosing va ushlab turing";
 
 /*Data Sharing*/
 "NicegramSettings.ShareBotsToggle" = "Botlar haqida ma'lumot ulashing";
