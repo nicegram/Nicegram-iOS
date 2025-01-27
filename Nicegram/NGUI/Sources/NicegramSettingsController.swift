@@ -13,6 +13,7 @@ import Display
 import FeatImagesHubUI
 import FeatNicegramHub
 import FeatPinnedChats
+import FeatPumpAds
 import Foundation
 import ItemListUI
 import NGData
@@ -103,7 +104,13 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     case showFeedTab(String, Bool)
     
     case pinnedChatsHeader
-    case pinnedChat(Int32, PinnedChat)
+    case pinnedChat(PinnedChat)
+    struct PinnedChat: Equatable {
+        var index: Int32 = 0
+        let title: String
+        let enabled: Bool
+        @IgnoreEquatable var setEnabled: (Bool) -> Void
+    }
 
     case FoldersHeader(String)
     case foldersAtBottom(String, Bool)
@@ -199,8 +206,8 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
         case .pinnedChatsHeader:
             return 1910
             
-        case let .pinnedChat(index, _):
-            return 1911 + index
+        case let .pinnedChat(chat):
+            return 1911 + chat.index
 
         case .RoundVideosHeader:
             return 2000
@@ -415,9 +422,8 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
-        case let .pinnedChat(lhsIndex, lhsChat):
-            if case let .pinnedChat(rhsIndex, rhsChat) = rhs,
-               lhsIndex == rhsIndex,
+        case let .pinnedChat(lhsChat):
+            if case let .pinnedChat(rhsChat) = rhs,
                lhsChat == rhsChat {
                 return true
             } else {
@@ -640,28 +646,16 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                 text: NGCoreUI.strings.ngSettingsPinnedChats().localizedUppercase,
                 sectionId: section
             )
-        case let .pinnedChat(_, chat):
-            if #available(iOS 13.0, *) {
-                return ItemListSwitchItem(
-                    presentationData: presentationData,
-                    title: chat.name,
-                    value: chat.isPinned,
-                    enabled: true,
-                    sectionId: section,
-                    style: .blocks,
-                    updated: { value in
-                        Task {
-                            let setChatPinnedUseCase = PinnedChatsContainer.shared.setChatPinnedUseCase()
-                            await setChatPinnedUseCase(
-                                id: chat.id,
-                                pinned: value
-                            )
-                        }
-                    }
-                )
-            } else {
-                fatalError()
-            }
+        case let .pinnedChat(chat):
+            return ItemListSwitchItem(
+                presentationData: presentationData,
+                title: chat.title,
+                value: chat.enabled,
+                enabled: true,
+                sectionId: section,
+                style: .blocks,
+                updated: chat.setEnabled
+            )
         case let .enableAppleSpeech2Text(text, value):
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
                 updateNicegramSettings {
@@ -678,7 +672,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
 // MARK: Entries list
 
-private func nicegramSettingsControllerEntries(presentationData: PresentationData, experimentalSettings: ExperimentalUISettings, showCalls: Bool, pinnedChats: [PinnedChat], sharingSettings: SharingSettings?, context: AccountContext) -> [NicegramSettingsControllerEntry] {
+private func nicegramSettingsControllerEntries(presentationData: PresentationData, experimentalSettings: ExperimentalUISettings, showCalls: Bool, pinnedChats: [NicegramSettingsControllerEntry.PinnedChat], sharingSettings: SharingSettings?, context: AccountContext) -> [NicegramSettingsControllerEntry] {
     let nicegramSettings = getNicegramSettings()
     
     var entries: [NicegramSettingsControllerEntry] = []
@@ -715,14 +709,10 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
         l("NiceFeatures.Folders.TgFolders.Notice")
     ))
     
-    let pinnedChatsEntries = pinnedChats.enumerated().map { index, chat in
-        NicegramSettingsControllerEntry.pinnedChat(Int32(index), chat)
-    }
-    
-    if !pinnedChatsEntries.isEmpty {
+    if !pinnedChats.isEmpty {
         entries.append(.pinnedChatsHeader)
-        pinnedChatsEntries.forEach {
-            entries.append($0)
+        pinnedChats.forEach {
+            entries.append(.pinnedChat($0))
         }
     }
 
@@ -882,15 +872,54 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
         ApplicationSpecificSharedDataKeys.experimentalUISettings,
     ])
     
-    let pinnedChatsSignal: Signal<[PinnedChat], NoError>
-    if #available(iOS 13.0, *) {
-        pinnedChatsSignal = PinnedChatsContainer.shared.getPinnedChatsUseCase()
-            .publisher()
-            .toSignal()
-            .skipError()
-    } else {
-        pinnedChatsSignal = .single([])
-    }
+    let pinnedChatsSignal = PinnedChatsContainer.shared.getPinnedChatsUseCase()
+        .publisher()
+        .combineLatestThreadSafe(
+            PumpAdsModule.shared.getSettingsUseCase().publisher()
+        )
+        .map { pinnedChats, pumpSettings in
+            var entries = [NicegramSettingsControllerEntry.PinnedChat]()
+            
+            entries.append(
+                NicegramSettingsControllerEntry.PinnedChat(
+                    index: (entries.last?.index ?? 0) + 1,
+                    title: PumpAdsUtils.chatName(),
+                    enabled: pumpSettings.enabled,
+                    setEnabled: { value in
+                        Task {
+                            let updateSettingsUseCase = PumpAdsModule.shared.updateSettingsUseCase()
+                            await updateSettingsUseCase.setEnabled(value)
+                        }
+                    }
+                )
+            )
+            
+            entries.append(
+                contentsOf: pinnedChats.map { chat in
+                    NicegramSettingsControllerEntry.PinnedChat(
+                        title: chat.name,
+                        enabled: chat.isPinned,
+                        setEnabled: { value in
+                            Task {
+                                let setChatPinnedUseCase = PinnedChatsContainer.shared.setChatPinnedUseCase()
+                                await setChatPinnedUseCase(
+                                    id: chat.id,
+                                    pinned: value
+                                )
+                            }
+                        }
+                    )
+                }
+            )
+            
+            for i in entries.startIndex..<entries.endIndex {
+                entries[i].index = Int32(i + 1)
+            }
+            
+            return entries
+        }
+        .toSignal()
+        .skipError()
     
     let sharingSettingsSignal: Signal<SharingSettings?, NoError>
     if #available(iOS 13.0, *) {
@@ -972,4 +1001,22 @@ private func showRestartRequiredAlert(
     )
 
     arguments.presentController(controller, nil)
+}
+
+@propertyWrapper
+private struct IgnoreEquatable<Value>: Equatable {
+    var value: Value
+    
+    init(wrappedValue: Value) {
+        self.value = wrappedValue
+    }
+
+    var wrappedValue: Value {
+        get { value }
+        set { value = newValue }
+    }
+    
+    static func == (lhs: IgnoreEquatable<Value>, rhs: IgnoreEquatable<Value>) -> Bool {
+        true
+    }
 }
