@@ -633,7 +633,7 @@
         "bzlTransitiveDigest": "8/YWyYftd8THfVoADvrOmQLl45wUGfP2MVjLM5FFn50=",
         "usagesDigest": "voXBMcSNlo2fnK6JIvInIrncYhBKKG8nBeKvToaUA0Y=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "b21bc2a857c3a584d4633f217160f7655411ef1004595cfc88efc53fdcbbd3c9",
+          "@@//Package.resolved": "d491497e5623d42f0ded767ba15ad1cf1f8e8847abececb4aa0e346382126884",
           "@@//Package.swift": "fb3cb1d48066e64f8bf17fe1a49f689b7a6bf4bfc07aa90b9b80a02188501951"
         },
         "recordedDirentsInputs": {},
@@ -981,6 +981,25 @@
               "patches": []
             }
           },
+          "swiftpkg_swift_syntax": {
+            "bzlFile": "@@rules_swift_package_manager~//swiftpkg/internal:swift_package.bzl",
+            "ruleClassName": "swift_package",
+            "attributes": {
+              "bazel_package_name": "swiftpkg_swift_syntax",
+              "commit": "0687f71944021d616d34d922343dcef086855920",
+              "remote": "https://github.com/swiftlang/swift-syntax",
+              "version": "600.0.1",
+              "init_submodules": false,
+              "recursive_init_submodules": true,
+              "patch_args": [
+                "-p0"
+              ],
+              "patch_cmds": [],
+              "patch_cmds_win": [],
+              "patch_tool": "",
+              "patches": []
+            }
+          },
           "swiftpkg_sdwebimage": {
             "bzlFile": "@@rules_swift_package_manager~//swiftpkg/internal:swift_package.bzl",
             "ruleClassName": "swift_package",
@@ -1119,7 +1138,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "92a694d86feccfc8e913faeb99a1dce36ce6cb1a",
+              "commit": "eaa8485c2d6296036f59b6456fe5195170ddac1b",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "init_submodules": false,
@@ -1309,9 +1328,9 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_wallet_core",
-              "commit": "7b1bee59813f2d93e15e20c8e331cb0b1fafc51b",
+              "commit": "23ae9525ed3bd28a010d6cdd78e39955b1b2cdef",
               "remote": "https://github.com/trustwallet/wallet-core.git",
-              "version": "",
+              "version": "4.2.3",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -1331,6 +1350,25 @@
               "commit": "a51b3bd6f2151e9a6f792ca6937a7242c4758768",
               "remote": "https://github.com/apple/swift-openapi-runtime",
               "version": "0.3.6",
+              "init_submodules": false,
+              "recursive_init_submodules": true,
+              "patch_args": [
+                "-p0"
+              ],
+              "patch_cmds": [],
+              "patch_cmds_win": [],
+              "patch_tool": "",
+              "patches": []
+            }
+          },
+          "swiftpkg_swift_memberwise_init_macro": {
+            "bzlFile": "@@rules_swift_package_manager~//swiftpkg/internal:swift_package.bzl",
+            "ruleClassName": "swift_package",
+            "attributes": {
+              "bazel_package_name": "swiftpkg_swift_memberwise_init_macro",
+              "commit": "21ca6d8c8f9e4ce27e92f82da294e0d91953b8b6",
+              "remote": "https://github.com/gohanlon/swift-memberwise-init-macro",
+              "version": "0.5.1",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -1366,7 +1404,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_wallet_ios",
-              "commit": "ef7f59b58742b67bd968ef198d6535abc3924f00",
+              "commit": "61a7d9d767ac312cb8f7fa69de5b9c75b1e5e9b3",
               "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
               "version": "",
               "init_submodules": false,

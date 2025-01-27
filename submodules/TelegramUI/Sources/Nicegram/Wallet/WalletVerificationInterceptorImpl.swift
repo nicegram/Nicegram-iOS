@@ -5,17 +5,14 @@ import NicegramWallet
 
 @MemberwiseInit
 class WalletVerificationInterceptorImpl {
-    @Init(.internal) private let contextProvider: ContextProvider
+    @Init(.internal) private let sharedContextProvider: SharedContextProvider
 }
 
 extension WalletVerificationInterceptorImpl: WalletVerificationInterceptor {
     func shouldVerifyOnApplicationResignActive() async -> Bool {
-        guard let context = contextProvider.context() else {
-            return false
-        }
-        
         do {
-            let accountManager = context.sharedContext.accountManager
+            let sharedContext = try await sharedContextProvider.sharedContext()
+            let accountManager = sharedContext.accountManager
             
             let accessChallengeData = try await accountManager
                 .accessChallengeData()

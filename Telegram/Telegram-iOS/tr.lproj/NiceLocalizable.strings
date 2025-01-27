@@ -1,5 +1,8 @@
 "AppName" = "Nicegram";
 
+"ViewAuditReport" = "CertiK Raporunu Görüntüle";
+"Wallet" = "Cüzdan";
+
 /*Common*/
 "Nicegram.PrivacyPolicy" = "Gizlilik politikası";
 "Nicegram.EULA" = "EULA";
@@ -166,6 +169,7 @@
 "NicegramSettings.EnableGrayscaleAll" = "Tam Ekran Gri Tonlama";
 "NicegramSettings.EnableGrayscaleInChatList" = "Sohbet listesinde gri tonlama";
 "NicegramSettings.EnableGrayscaleInChat" = "Sohbette gri tonlama";
+"NicegramSettings.EnableAppleSpeech2Text" = "Apple Speech2Text'i Etkinleştir";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Şundan daha eski:";
@@ -204,7 +208,6 @@
 /*Hidden Chats*/
 "ChatContextMenu.Hide" = "Gizle";
 "ChatContextMenu.Unhide" = "Göster";
-"HiddenChatsTooltip" = "Gizli gizli sohbetleri görmek için 'N' logosuna basılı tutun";
 
 /*Data Sharing*/
 "NicegramSettings.ShareBotsToggle" = "Bot bilgilerini paylaş";

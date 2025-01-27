@@ -1,5 +1,8 @@
 "AppName" = "Nicegram";
 
+"ViewAuditReport" = "CertiK 보고서 보기";
+"Wallet" = "지갑";
+
 /*Common*/
 "Nicegram.PrivacyPolicy" = "개인 정보 보호정책";
 "Nicegram.EULA" = "EULA";
@@ -166,6 +169,7 @@
 "NicegramSettings.EnableGrayscaleAll" = "전체 화면 흑백";
 "NicegramSettings.EnableGrayscaleInChatList" = "채팅 목록의 그레이스케일";
 "NicegramSettings.EnableGrayscaleInChat" = "채팅에서의 그레이스케일";
+"NicegramSettings.EnableAppleSpeech2Text" = "Apple Speech2Text 활성화";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "이전의";
@@ -204,7 +208,6 @@
 /*Hidden Chats*/
 "ChatContextMenu.Hide" = "숨기기";
 "ChatContextMenu.Unhide" = "숨김 해제";
-"HiddenChatsTooltip" = "숨겨진 비밀 채팅을 보려면 'N' 로고를 누르고 있으세요";
 
 /*Data Sharing*/
 "NicegramSettings.ShareBotsToggle" = "봇 정보 공유하기";

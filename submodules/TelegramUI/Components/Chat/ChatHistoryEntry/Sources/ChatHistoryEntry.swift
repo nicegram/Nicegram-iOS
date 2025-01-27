@@ -1,6 +1,9 @@
 // MARK: Nicegram ATT
 import FeatAttentionEconomy
 //
+// MARK: Nicegram Wallet
+import NicegramWallet
+//
 import Postbox
 import TelegramCore
 import TelegramPresentationData
@@ -15,6 +18,9 @@ public enum ChatMessageEntryContentType {
 }
 
 public struct ChatMessageEntryAttributes: Equatable {
+    // MARK: Nicegram Wallet
+    public var walletTx: ChatMessageTx?
+    //
     public var rank: CachedChannelAdminRank?
     public var isContact: Bool
     public var contentTypeHint: ChatMessageEntryContentType

@@ -72,6 +72,7 @@ private enum NicegramSettingsControllerSection: Int32 {
     case QuickReplies
     case ShareData
     case PinnedChats
+    case Tools
 }
 
 
@@ -126,6 +127,9 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     
     case quickReplies(String)
     
+    case enableAppleSpeech2Text(String, Bool)
+    case onetaptr(String, Bool)
+    
     case shareBotsData(String, Bool)
     case shareChannelsData(String, Bool)
     case shareStickersData(String, Bool)
@@ -153,6 +157,8 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return NicegramSettingsControllerSection.ShareData.rawValue
         case .pinnedChatsHeader, .pinnedChat:
             return NicegramSettingsControllerSection.PinnedChats.rawValue
+        case .enableAppleSpeech2Text, .onetaptr:
+            return NicegramSettingsControllerSection.Tools.rawValue
         }
     }
 
@@ -226,6 +232,11 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
         case let .easyToggle(index, _, _, _):
             return 5000 + Int32(index)
             
+        case .onetaptr:
+            return 5900
+        case .enableAppleSpeech2Text:
+            return 5950
+
         case .shareBotsData:
             return 6000
         case .shareChannelsData:
@@ -234,7 +245,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return 6002
         case .shareDataNote:
             return 6010
-
         }
     }
 
@@ -409,6 +419,18 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             if case let .pinnedChat(rhsIndex, rhsChat) = rhs,
                lhsIndex == rhsIndex,
                lhsChat == rhsChat {
+                return true
+            } else {
+                return false
+            }
+        case let .enableAppleSpeech2Text(lhsText, lhsValue):
+            if case let .enableAppleSpeech2Text(rhsText, rhsValue) = rhs, lhsText == rhsText, lhsValue == rhsValue {
+                return true
+            } else {
+                return false
+            }
+        case let .onetaptr(lhsText, lhsValue):
+            if case let .onetaptr(rhsText, rhsValue) = rhs, lhsText == rhsText, lhsValue == rhsValue {
                 return true
             } else {
                 return false
@@ -640,6 +662,16 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             } else {
                 fatalError()
             }
+        case let .enableAppleSpeech2Text(text, value):
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
+                updateNicegramSettings {
+                    $0.speechToText.enableApple = value
+                }
+            })
+        case let .onetaptr(text, value):
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
+                NGSettings.oneTapTr = value
+            })
         }
     }
 }
@@ -786,6 +818,9 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     entries.append(.easyToggle(toggleIndex, .enableGrayscaleInChat, l("NicegramSettings.EnableGrayscaleInChat"), nicegramSettings.grayscaleInChat))
     toggleIndex += 1
         
+    entries.append(.onetaptr(l("Premium.OnetapTranslate"), NGSettings.oneTapTr))
+    entries.append(.enableAppleSpeech2Text(l("NicegramSettings.EnableAppleSpeech2Text"), nicegramSettings.speechToText.enableApple ?? false))
+
     if let sharingSettings {
         entries.append(
             .shareBotsData(

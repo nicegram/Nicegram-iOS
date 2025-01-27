@@ -1,5 +1,8 @@
 "AppName" = "Nicegram";
 
+"ViewAuditReport" = "Просмотреть отчет CertiK";
+"Wallet" = "Кошелек";
+
 /*Common*/
 "Nicegram.PrivacyPolicy" = "Политика конфиденциальности Nicegram";
 "Nicegram.EULA" = "Пользовательское соглашение Nicegram";
@@ -166,6 +169,7 @@
 "NicegramSettings.EnableGrayscaleAll" = "Полноэкранный черно-белый режим";
 "NicegramSettings.EnableGrayscaleInChatList" = "Оттенки серого в списке чата";
 "NicegramSettings.EnableGrayscaleInChat" = "Оттенки серого в чате";
+"NicegramSettings.EnableAppleSpeech2Text" = "Включить Apple Speech2Text";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Старше, чем";
@@ -204,7 +208,6 @@
 /*Hidden Chats*/
 "ChatContextMenu.Hide" = "Скрыть";
 "ChatContextMenu.Unhide" = "Показать";
-"HiddenChatsTooltip" = "Нажмите и удерживайте логотип 'N', чтобы показать скрытые секретные чаты";
 
 /*Data Sharing*/
 "NicegramSettings.ShareBotsToggle" = "Поделиться информацией о ботах";

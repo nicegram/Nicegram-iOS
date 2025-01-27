@@ -408,8 +408,24 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         //
         
         let contextProvider = ContextProvider(
-            contextValue: { [weak self] in
-                self?.contextValue?.context
+            context: { [self] in
+                contextValue?.context
+            },
+            contextPublisher: { [self] in
+                context.get().toPublisher()
+                    .map { $0?.context }
+                    .eraseToAnyPublisher()
+            }
+        )
+        
+        let sharedContextProvider = SharedContextProvider(
+            sharedContext: { [self] in
+                try await sharedContextPromise.get().awaitForFirstValue().sharedContext
+            },
+            sharedContextPublisher: { [self] in
+                sharedContextPromise.get().toPublisher()
+                    .map { $0.sharedContext }
+                    .eraseToAnyPublisher()
             }
         )
         
@@ -456,6 +472,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             telegramMessageSender: {
                 TelegramMessageSenderImpl(contextProvider: contextProvider)
             },
+            telegramThemeProvider: {
+                TelegramThemeProviderImpl(sharedContextProvider: sharedContextProvider)
+            },
             urlOpener: {
                 UrlOpenerImpl(contextProvider: contextProvider)
             },
@@ -483,7 +502,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     ContactsRetrieverImpl(contextProvider: contextProvider)
                 },
                 walletVerificationInterceptor: {
-                    WalletVerificationInterceptorImpl(contextProvider: contextProvider)
+                    WalletVerificationInterceptorImpl(sharedContextProvider: sharedContextProvider)
                 }
             )
         )
@@ -2240,6 +2259,10 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         |> deliverOnMainQueue).start(next: { authorizedApplicationContext in
             if let authorizedApplicationContext {
                 collectChannelsInformation(with: authorizedApplicationContext.context)
+// MARK: Nicegram NCG-6326 Apple Speech2Text
+                let setDefaultSpeech2TextSettingsUseCase = NicegramSettingsModule.shared.setDefaultSpeech2TextSettingsUseCase()
+                setDefaultSpeech2TextSettingsUseCase(with: authorizedApplicationContext.context.isPremium)
+//
             }
         })
 //

@@ -53,6 +53,9 @@ import TelegramIntents
 import TooltipUI
 import StatisticsUI
 import NGWebUtils
+// MARK: Nicegram ATTUserActions
+import NGUtils
+//
 // MARK: Nicegram Imports
 import FeatTgUtils
 import NGAppCache
@@ -2006,6 +2009,16 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                                 }
                             })
                         }
+                        
+                        // MARK: Nicegram ATTUserActions
+                        if removedReaction == nil {
+                            AttUserActionsHelper.save(
+                                peerId: message.id.peerId,
+                                type: .reaction,
+                                userId: strongSelf.context.account.peerId
+                            )
+                        }
+                        //
                         
                         let _ = updateMessageReactionsInteractively(account: strongSelf.context.account, messageIds: [message.id], reactions: mappedUpdatedReactions, isLarge: false, storeAsRecentlyUsed: false).startStandalone()
                     }
@@ -7857,6 +7870,16 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
     
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        
+        // MARK: Nicegram ATTUserActions
+        if !self.didAppear {
+            AttUserActionsHelper.save(
+                peerId: chatLocation.peerId,
+                type: .open,
+                userId: context.account.peerId
+            )
+        }
+        //
         
         // MARK: Nicegram NGStats
         if #available(iOS 13.0, *) {

@@ -69,7 +69,14 @@ public struct NGSettings {
             let preferredProviderTypeUseCase = SpeechToTextContainer.shared.getPreferredProviderTypeUseCase()
             let type = preferredProviderTypeUseCase()
 
-            return type == .openAi ? true : NGSettings._useOpenAI
+            let getSpeech2TextSettingsUseCase = NicegramSettingsModule.shared.getSpeech2TextSettingsUseCase()
+            let enableApple = getSpeech2TextSettingsUseCase()
+
+            if enableApple {
+                return type == .openAi ? true : NGSettings._useOpenAI
+            } else {
+                return NGSettings._useOpenAI
+            }
         }
         set {
             NGSettings._useOpenAI = newValue

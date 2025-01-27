@@ -13,6 +13,22 @@ extension NicegramSettingsModule {
             )
         }
     }
+    
+    public var getSpeech2TextSettingsUseCase: Factory<GetSpeech2TextSettingsUseCase> {
+        self { [self] in
+            GetSpeech2TextSettingsUseCase(
+                nicegramSettingsRepository: nicegramSettingsRepository()
+            )
+        }
+    }
+    
+    public var setDefaultSpeech2TextSettingsUseCase: Factory<SetDefaultSpeech2TextSettingsUseCase> {
+        self { [self] in
+            SetDefaultSpeech2TextSettingsUseCase(
+                nicegramSettingsRepository: nicegramSettingsRepository()
+            )
+        }
+    }
 }
 
 extension NicegramSettingsModule {

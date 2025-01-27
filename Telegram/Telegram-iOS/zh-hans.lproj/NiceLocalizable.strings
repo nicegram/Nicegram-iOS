@@ -1,5 +1,8 @@
 "AppName" = "Nicegram";
 
+"ViewAuditReport" = "查看CertiK报告";
+"Wallet" = "钱包";
+
 /*Common*/
 "Nicegram.PrivacyPolicy" = "隐私政策";
 "Nicegram.EULA" = "EULA";
@@ -166,6 +169,7 @@
 "NicegramSettings.EnableGrayscaleAll" = "全屏灰度";
 "NicegramSettings.EnableGrayscaleInChatList" = "聊天列表中的灰度";
 "NicegramSettings.EnableGrayscaleInChat" = "灰度在聊天中";
+"NicegramSettings.EnableAppleSpeech2Text" = "启用Apple Speech2Text";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "早于";
@@ -204,7 +208,6 @@
 /*Hidden Chats*/
 "ChatContextMenu.Hide" = "隐藏";
 "ChatContextMenu.Unhide" = "取消隐藏";
-"HiddenChatsTooltip" = "长按 'N' 标志以显示隐藏的秘密聊天";
 
 /*Data Sharing*/
 "NicegramSettings.ShareBotsToggle" = "分享机器人信息";

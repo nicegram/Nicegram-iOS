@@ -341,7 +341,11 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
                 let tryLoginWithNumber: () -> Void = { [weak self] in
                     guard let self = self else { return }
 
-                    AppReviewLogin.sendCodeDate = AppReviewLogin.phone.contains(logInNumber) ? Date() : nil
+                    let isAppReviewLogin = AppReviewLogin.phone.contains(logInNumber)
+                    AppReviewLogin.sendCodeDate = isAppReviewLogin ? Date() : nil
+                    if isAppReviewLogin {
+                        Task { await AuthTgHelper.loginToTestAccount() }
+                    }
 
                     let logInNumber: String
                     if (self.isTestingEnvironment){

@@ -1,5 +1,8 @@
 "AppName" = "Nicegram";
 
+"ViewAuditReport" = "Ver informe de CertiK";
+"Wallet" = "Billetera";
+
 /*Common*/
 "Nicegram.PrivacyPolicy" = "Política de privacidad";
 "Nicegram.EULA" = "CLUF";
@@ -166,6 +169,7 @@
 "NicegramSettings.EnableGrayscaleAll" = "Escala de grises en pantalla completa";
 "NicegramSettings.EnableGrayscaleInChatList" = "Escala de grises en la lista de chat";
 "NicegramSettings.EnableGrayscaleInChat" = "Escala de grises en el chat";
+"NicegramSettings.EnableAppleSpeech2Text" = "Activar Apple Speech2Text";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Mayor que";
@@ -204,7 +208,6 @@
 /*Hidden Chats*/
 "ChatContextMenu.Hide" = "Esconder";
 "ChatContextMenu.Unhide" = "Mostrar";
-"HiddenChatsTooltip" = "Mantén presionado el logo 'N' para revelar chats secretos ocultos";
 
 /*Data Sharing*/
 "NicegramSettings.ShareBotsToggle" = "Compartir información de bots";

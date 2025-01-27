@@ -4,6 +4,7 @@ import Foundation
 import MemberwiseInit
 import NGCore
 import NGUtils
+import UIKit
 
 @MemberwiseInit
 class UrlOpenerImpl {
@@ -12,11 +13,12 @@ class UrlOpenerImpl {
 
 extension UrlOpenerImpl: UrlOpener {
     func open(_ url: URL, options: Options) {
+        let url = prepare(url: url)
+        
         guard let accountContext = contextProvider.context() else {
+            UIApplication.shared.open(url)
             return
         }
-        
-        let url = prepare(url: url)
         
         let sharedContext = accountContext.sharedContext
         let navigationController = sharedContext.mainWindow?.viewController as? NavigationController

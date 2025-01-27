@@ -255,6 +255,12 @@ private final class PeerInfoScreenItemSectionContainerNode: ASDisplayNode {
             if item is PeerInfoScreenHeaderItem {
                 contentWithBackgroundOffset = contentHeight
             }
+
+            // MARK: Nicegram Wallet (hide section background, like PeerInfoScreenHeaderItem)
+            if #available(iOS 16.0, *), item is PeerInfoScreenWalletItem {
+                contentWithBackgroundOffset = contentHeight
+            }
+            //
         }
         
         var removeIds: [AnyHashable] = []
@@ -1342,6 +1348,7 @@ private func settingsEditingItems(data: PeerInfoScreenData?, state: PeerInfoStat
 }
 
 private enum InfoSection: Int, CaseIterable {
+    case nicegramWallet
     case nicegram
     case groupLocation
     case calls
@@ -2104,6 +2111,13 @@ private func infoItems(data: PeerInfoScreenData?, context: AccountContext, prese
             }))
         }
     }
+    
+    // MARK: Nicegram Wallet
+    if #available(iOS 16.0, *) {
+        items[.nicegramWallet]!.append(PeerInfoScreenHeaderItem(id: 0, text: l("Wallet").uppercased()))
+        items[.nicegramWallet]!.append(PeerInfoScreenWalletItem(peer: data.peer))
+    }
+    //
     
     // MARK: Nicegram ID & Regdate Item
     if NGSettings.showProfileId {

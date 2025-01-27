@@ -80,8 +80,6 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
 
     case otherHeader(PresentationTheme, String)
 
-    case onetaptr(PresentationTheme, String, Bool)
-
     case testButton(PresentationTheme, String)
     case ignoretr(PresentationTheme, String)
     
@@ -98,7 +96,7 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return premiumControllerSection.notifyMissed.rawValue
         case .manageFiltersHeader, .manageFilters, .rememberFolderOnExit:
            return premiumControllerSection.manageFilters.rawValue
-        case .otherHeader, .onetaptr, .ignoretr:
+        case .otherHeader, .ignoretr:
             return premiumControllerSection.other.rawValue
         case .testButton:
             return premiumControllerSection.test.rawValue
@@ -133,8 +131,6 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return 4000
         case .otherHeader:
             return 10000
-        case .onetaptr:
-            return 11000
         case .ignoretr:
             return 12000
         case .useOpenAI:
@@ -196,13 +192,6 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
 
         case let .manageFilters(lhsTheme, lhsText):
             if case let .manageFilters(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
-                return true
-            } else {
-                return false
-            }
-
-        case let .onetaptr(lhsTheme, lhsText, lhsValue):
-            if case let .onetaptr(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
                 return true
             } else {
                 return false
@@ -281,10 +270,6 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             })
         case let .otherHeader(_, text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
-        case let .onetaptr(_, text, value):
-            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
-                arguments.toggleSetting(value, .oneTapTr)
-            })
 
         case let .testButton(_, _):
             return ItemListActionItem(presentationData: presentationData, title: "Test Button", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
@@ -320,7 +305,6 @@ private func premiumControllerEntries(presentationData: PresentationData) -> [Pr
     let theme = presentationData.theme
 
     entries.append(.rememberFolderOnExit(theme, l("Premium.rememberFolderOnExit"), NGSettings.rememberFolderOnExit))
-    entries.append(.onetaptr(theme, l("Premium.OnetapTranslate"), NGSettings.oneTapTr))
     entries.append(.ignoretr(theme, l("Premium.IgnoreTranslate.Title")))
     
     entries.append(.useOpenAI(theme, l("SpeechToText.UseOpenAi"), NGSettings.useOpenAI))

@@ -1,5 +1,8 @@
 "AppName" = "Nicegram";
 
+"ViewAuditReport" = "查看CertiK報告";
+"Wallet" = "錢包";
+
 /*Common*/
 "Nicegram.PrivacyPolicy" = "隱私權政策";
 "Nicegram.EULA" = "授權條款";
@@ -166,6 +169,7 @@
 "NicegramSettings.EnableGrayscaleAll" = "全螢幕灰階";
 "NicegramSettings.EnableGrayscaleInChatList" = "聊天列表中的灰階";
 "NicegramSettings.EnableGrayscaleInChat" = "灰階在聊天中";
+"NicegramSettings.EnableAppleSpeech2Text" = "啟用Apple Speech2Text";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "早於";
@@ -204,7 +208,6 @@
 /*Hidden Chats*/
 "ChatContextMenu.Hide" = "隱藏";
 "ChatContextMenu.Unhide" = "取消隱藏";
-"HiddenChatsTooltip" = "長按 'N' 標誌以顯示隱藏的秘密聊天";
 
 /*Data Sharing*/
 "NicegramSettings.ShareBotsToggle" = "分享機器人資訊";
