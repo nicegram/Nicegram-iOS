@@ -4,7 +4,6 @@ import FeatAttentionEconomy
 //
 // MARK: Nicegram HideReactions, HideStories
 import FeatPinnedChats
-import FeatPumpAds
 import NGData
 //
 import Foundation
@@ -440,9 +439,11 @@ private final class ChatListItemTagListComponent: Component {
 public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
     // MARK: Nicegram PinnedChats
     let nicegramItem: PinnedChatToDisplay?
+    //
     
+    // MARK: Nicegram ATT
     let attBannerFeature = AttBannerFeature()
-    let pumpAdViewModel = PumpAdViewModel()
+    var attAd: AttAd? { nicegramItem?.chat.attAd }
     //
     
     let presentationData: ChatListPresentationData
@@ -555,14 +556,11 @@ public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
             if let nicegramItem {
                 if #available(iOS 13.0, *) {
                     Task { @MainActor in
-                        switch nicegramItem.chat.type {
-                        case let .att(attAd):
+                        if let attAd {
                             attBannerFeature.onClick(ad: attAd)
-                        case .plain:
+                        } else {
                             let openPinnedChatUseCase = PinnedChatsContainer.shared.openPinnedChatUseCase()
                             openPinnedChatUseCase(nicegramItem.chat)
-                        case let .pump(ad):
-                            pumpAdViewModel.onClick(ad: ad)
                         }
                         
                         interaction.clearHighlightAnimated(true)
@@ -1548,18 +1546,14 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
     public func trackViewIfNeeded() {
         guard self.visibilityStatus,
               let item,
-              let nicegramItem = item.nicegramItem,
               item.interaction.isChatListVisible() else {
             return
         }
         
-        switch nicegramItem.chat.type {
-        case let .att(attAd):
+        if let attAd = item.attAd {
             item.attBannerFeature.onView(ad: attAd)
-        case .plain:
+        } else if let nicegramItem = item.nicegramItem {
             PinnedChatsUI.trackChatView(nicegramItem.chat)
-        case let .pump(ad):
-            item.pumpAdViewModel.onView(ad: ad)
         }
     }
     //
@@ -4809,8 +4803,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                     }
                     
                     // MARK: Nicegram ATT
-                    if let nicegramItem = item.nicegramItem,
-                       case .att = nicegramItem.chat.type {
+                    if item.attAd != nil {
                         let attClaimAnimationView: AttClaimAnimationView
                         if let current = strongSelf.attClaimAnimationView {
                             attClaimAnimationView = current
@@ -5077,14 +5070,13 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
             case RevealOptionKey.unpin.rawValue:
                 self.setRevealOptionsOpened(false, animated: true)
                 
-                Task { @MainActor in
-                    switch nicegramItem.chat.type {
-                    case let .att(attAd):
-                        item.attBannerFeature.onRemoveAdClick(ad: attAd)
-                    case .plain:
-                        PinnedChatsUI.unpin(nicegramItem.chat)
-                    case let .pump(ad):
-                        item.pumpAdViewModel.onUnpin(ad: ad)
+                if let ad = item.attAd {
+                    item.attBannerFeature.onRemoveAdClick(ad: ad)
+                } else {
+                    Task { @MainActor in
+                        PinnedChatsUI.unpin(
+                            nicegramItem.chat
+                        )
                     }
                 }
             default:

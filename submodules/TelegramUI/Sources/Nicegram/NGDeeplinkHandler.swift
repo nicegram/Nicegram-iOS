@@ -1,3 +1,4 @@
+import FeatAgents
 import FeatAssistant
 import FeatAttentionEconomy
 import Foundation
@@ -53,6 +54,11 @@ class NGDeeplinkHandler {
         guard url.scheme == "ncg" else { return false }
         
         switch url.host {
+        case "aiAgents":
+            if #available(iOS 15.0, *) {
+                AgentsPresenter().present()
+            }
+            return true
         case "aiAuth":
             return handleAiAuth(url: url)
         case "aiLily":

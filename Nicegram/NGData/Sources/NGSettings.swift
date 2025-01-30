@@ -181,24 +181,11 @@ public struct NGSharedSettings {
 public var VarNGSharedSettings = NGSharedSettings()
 
 public func checkPremium(completion: @escaping (Bool) -> Void) {
-    Task {
-        let refreshPremiumSubStatusUseCase = BillingContainer.shared.refreshPremiumSubStatusUseCase()
-        await refreshPremiumSubStatusUseCase()
-
-        await MainActor.run {
-            completion(PremiumContainer.shared.getPremiumStatusUseCase().hasPremiumOnDevice())
-        }
-    }
+    completion(isPremium())
 }
 
 public func isPremium() -> Bool {
-    if #available(iOS 13.0, *) {
-        return PremiumContainer.shared
-            .getPremiumStatusUseCase()
-            .hasPremiumOnDevice()
-    } else {
-        return false
-    }
+    PremiumContainer.shared.getPremiumStatusUseCase()().premium.activeLocally
 }
 
 public func usetrButton() -> [(Bool, [String])] {
