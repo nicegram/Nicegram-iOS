@@ -181,7 +181,12 @@ public struct NGSharedSettings {
 public var VarNGSharedSettings = NGSharedSettings()
 
 public func checkPremium(completion: @escaping (Bool) -> Void) {
-    completion(isPremium())
+    Task { @MainActor in
+        let subscriptionStatusesRefresher = BillingContainer.shared.subscriptionStatusesRefresher()
+        await subscriptionStatusesRefresher.refresh()
+        
+        completion(isPremium())
+    }
 }
 
 public func isPremium() -> Bool {

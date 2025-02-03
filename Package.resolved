@@ -114,7 +114,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "feat/agents",
-        "revision" : "c435f1b5c90d8e3fd4041775371c3d0b551ee740"
+        "revision" : "68f1bf5196c855338df5c6c7fa6ea425dd581f4b"
       }
     },
     {
@@ -123,7 +123,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "feat/agents",
-        "revision" : "c02f4a7d8e2cc7c653b7d44210c1fae5af8faa25"
+        "revision" : "f2958995064d148f751e1cfe3dfc44f1204f68d7"
       }
     },
     {
