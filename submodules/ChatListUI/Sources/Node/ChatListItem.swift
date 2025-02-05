@@ -1917,9 +1917,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                 context: item.context,
                 theme: item.presentationData.theme,
                 peer: nil,
-                nicegramImage: prepareNicegramImageForAvatar(
-                    nicegramItem.image
-                )
+                nicegramImage: nicegramItem.image
             )
         }
         //
@@ -5335,28 +5333,6 @@ private extension ChatListItem {
     var isNicegramItem: Bool {
         nicegramItem != nil
     }
-}
-
-private func prepareNicegramImageForAvatar(
-    _ image: UIImage?
-) -> UIImage? {
-    guard let image else {
-        return nil
-    }
-    
-    let side = min(image.size.width, image.size.height)
-    
-    return image
-        .sd_resizedImage(
-            with: CGSize(width: side, height: side),
-            scaleMode: .aspectFill
-        )?
-        .sd_roundedCornerImage(
-            withRadius: side / 2,
-            corners: .allCorners,
-            borderWidth: 0,
-            borderColor: nil
-        )
 }
 //
 
