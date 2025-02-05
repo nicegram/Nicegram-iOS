@@ -114,7 +114,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "feat/agents",
-        "revision" : "af3293eea99986707a7fb6fe7e052fcde33b838f"
+        "revision" : "655873c2fef40b082e2716286eb04198f86def31"
       }
     },
     {
