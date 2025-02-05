@@ -5346,23 +5346,17 @@ private func prepareNicegramImageForAvatar(
     
     let side = min(image.size.width, image.size.height)
     
-    return image.sd_resizedImage(
-        with: CGSize(width: side, height: side),
-        scaleMode: .aspectFill
-    )?.roundedImage
-}
-
-private extension UIImage {
-    var roundedImage: UIImage? {
-        let rect = CGRect(origin: .zero, size: size)
-        UIGraphicsBeginImageContextWithOptions(size, false, 0)
-        UIBezierPath(roundedRect: rect, cornerRadius: size.height / 2).addClip()
-        draw(in: rect)
-        
-        let image = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-        return image
-    }
+    return image
+        .sd_resizedImage(
+            with: CGSize(width: side, height: side),
+            scaleMode: .aspectFill
+        )?
+        .sd_roundedCornerImage(
+            withRadius: side / 2,
+            corners: .allCorners,
+            borderWidth: 0,
+            borderColor: nil
+        )
 }
 //
 

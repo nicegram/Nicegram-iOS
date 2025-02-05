@@ -1,4 +1,5 @@
 // MARK: Nicegram Wallet
+import NGCore
 import NicegramWallet
 //
 import Foundation
@@ -573,7 +574,12 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 }
                 //
                 
-                if isTelegramMeLink(url) || isTelegraPhLink(url) {
+                // MARK: Nicegram
+                let isNicegramDeeplink = NGCore.UrlUtils.refersToNicegramApplication(url)
+                //
+                
+                // MARK: Nicegram, added isNicegramDeeplink
+                if isNicegramDeeplink || isTelegramMeLink(url) || isTelegraPhLink(url) {
                     decisionHandler(.cancel)
                     self.controller?.openUrl(url, true, false, {})
                 } else {

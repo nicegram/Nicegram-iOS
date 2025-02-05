@@ -208,6 +208,7 @@
 /*Hidden Chats*/
 "ChatContextMenu.Hide" = "Gizle";
 "ChatContextMenu.Unhide" = "Göster";
+"HiddenChatsTooltip" = "Gizli gizli sohbetleri ortaya çıkarmak için bu düğmeye basın ve basılı tutun";
 
 /*Data Sharing*/
 "NicegramSettings.ShareBotsToggle" = "Bot bilgilerini paylaş";

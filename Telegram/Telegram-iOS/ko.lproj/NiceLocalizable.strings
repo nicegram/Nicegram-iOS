@@ -208,6 +208,7 @@
 /*Hidden Chats*/
 "ChatContextMenu.Hide" = "숨기기";
 "ChatContextMenu.Unhide" = "숨김 해제";
+"HiddenChatsTooltip" = "이 버튼을 길게 누르면 숨겨진 비밀 채팅이 표시됩니다";
 
 /*Data Sharing*/
 "NicegramSettings.ShareBotsToggle" = "봇 정보 공유하기";

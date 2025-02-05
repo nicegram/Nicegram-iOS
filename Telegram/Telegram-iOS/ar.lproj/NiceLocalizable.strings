@@ -208,6 +208,7 @@
 /*Hidden Chats*/
 "ChatContextMenu.Hide" = "إخفاء";
 "ChatContextMenu.Unhide" = "إظهار";
+"HiddenChatsTooltip" = "اضغط مع الاستمرار على هذا الزر لإظهار الدردشات السرية المخفية";
 
 /*Data Sharing*/
 "NicegramSettings.ShareBotsToggle" = "مشاركة معلومات البوتات";

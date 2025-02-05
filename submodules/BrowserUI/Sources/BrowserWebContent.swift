@@ -812,7 +812,12 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
                 }
                 //
                 
-                if (navigationAction.targetFrame == nil || navigationAction.targetFrame?.isMainFrame == true) && (isTelegramMeLink(url) || isTelegraPhLink(url) || url.hasPrefix("tg://")) && !url.contains("/auth/push?") && !self._state.url.contains("/auth/push?") {
+                // MARK: Nicegram
+                let isNicegramDeeplink = NGCore.UrlUtils.refersToNicegramApplication(url)
+                //
+                
+                // MARK: Nicegram, added isNicegramDeeplink
+                if (navigationAction.targetFrame == nil || navigationAction.targetFrame?.isMainFrame == true) && (isNicegramDeeplink || isTelegramMeLink(url) || isTelegraPhLink(url) || url.hasPrefix("tg://")) && !url.contains("/auth/push?") && !self._state.url.contains("/auth/push?") {
                     decisionHandler(.cancel, preferences)
                     self.minimize()
                     self.openAppUrl(url)
