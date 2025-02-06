@@ -1445,14 +1445,6 @@ open class NavigationController: UINavigationController, ContainableController, 
     }
     
     public func pushViewController(_ controller: ViewController, animated: Bool = true, completion: @escaping () -> Void) {
-        // MARK: Nicegram (close nicegram controller before push)
-        if let window = UIApplication.findKeyWindow(),
-           let rootController = window.rootViewController,
-           rootController.presentedViewController != nil {
-               rootController.dismiss(animated: animated)
-        }
-        //
-        
         var controllers = self.viewControllers
         controllers.append(controller)
         self.setViewControllers(controllers, animated: animated, completion: completion)
