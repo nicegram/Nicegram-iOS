@@ -208,6 +208,7 @@
 /*Hidden Chats*/
 "ChatContextMenu.Hide" = "Verbergen";
 "ChatContextMenu.Unhide" = "Einblenden";
+"HiddenChatsTooltip" = "Halten Sie diese Taste gedrückt, um versteckte geheime Chats anzuzeigen";
 
 /*Data Sharing*/
 "NicegramSettings.ShareBotsToggle" = "Teilen Sie Bot-Informationen";

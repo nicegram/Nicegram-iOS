@@ -1159,15 +1159,32 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
                                 break
                             }
                         }
+                        
+                        // MARK: Nicegram
+                        // open links in the SafariViewController instead of the telegram browser if the modal controller is shown
+                        let makeSafariController: () -> SFSafariViewController = {
+                            let controller = SFSafariViewController(url: parsedUrl)
+                            controller.preferredBarTintColor = presentationData.theme.rootController.navigationBar.opaqueBackgroundColor
+                            controller.preferredControlTintColor = presentationData.theme.rootController.navigationBar.accentTextColor
+                            return controller
+                        }
+                        
+                        let modalOverlayController = UIApplication.findKeyWindow()?.rootViewController?.presentedViewController
+                        if let modalOverlayController {
+                            let safariController = makeSafariController()
+                            modalOverlayController.topPresentedViewController.present(safariController, animated: true)
+                            return
+                        }
+                        //
 
                         if (settings.defaultWebBrowser == nil && !isExceptedDomain) || isTonSite {
                             let controller = BrowserScreen(context: context, subject: .webPage(url: parsedUrl.absoluteString))
                             navigationController?.pushViewController(controller)
                         } else {
                             if let window = navigationController?.view.window, !isExceptedDomain {
-                                let controller = SFSafariViewController(url: parsedUrl)
-                                controller.preferredBarTintColor = presentationData.theme.rootController.navigationBar.opaqueBackgroundColor
-                                controller.preferredControlTintColor = presentationData.theme.rootController.navigationBar.accentTextColor
+                                // MARK: Nicegram
+                                // SFSafariViewController creation extracted to makeSafariController
+                                let controller = makeSafariController()
                                 window.rootViewController?.present(controller, animated: true)
                             } else {
                                 context.sharedContext.applicationBindings.openUrl(parsedUrl.absoluteString)

@@ -208,6 +208,7 @@
 /*Hidden Chats*/
 "ChatContextMenu.Hide" = "隱藏";
 "ChatContextMenu.Unhide" = "取消隱藏";
+"HiddenChatsTooltip" = "按住此按鈕可顯示隱藏的秘密聊天";
 
 /*Data Sharing*/
 "NicegramSettings.ShareBotsToggle" = "分享機器人資訊";

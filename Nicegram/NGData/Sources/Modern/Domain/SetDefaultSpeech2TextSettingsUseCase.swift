@@ -16,9 +16,7 @@ public extension SetDefaultSpeech2TextSettingsUseCase {
         guard nicegramSettingsRepository.settings().speechToText.enableApple == nil else { return }
         var result: Bool = true
         
-        let isNicegramPremium = PremiumContainer.shared
-            .getPremiumStatusUseCase()
-            .hasPremiumOnDevice()
+        let isNicegramPremium = isPremium()
 
         if isTelegramPremium {
             result = false

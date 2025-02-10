@@ -4,6 +4,7 @@ import FeatAttentionEconomy
 //
 // MARK: Nicegram HideReactions, HideStories
 import FeatPinnedChats
+import FeatPumpAds
 import NGData
 //
 import Foundation
@@ -439,11 +440,9 @@ private final class ChatListItemTagListComponent: Component {
 public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
     // MARK: Nicegram PinnedChats
     let nicegramItem: PinnedChatToDisplay?
-    //
     
-    // MARK: Nicegram ATT
     let attBannerFeature = AttBannerFeature()
-    var attAd: AttAd? { nicegramItem?.chat.attAd }
+    let pumpAdViewModel = PumpAdViewModel()
     //
     
     let presentationData: ChatListPresentationData
@@ -556,11 +555,14 @@ public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
             if let nicegramItem {
                 if #available(iOS 13.0, *) {
                     Task { @MainActor in
-                        if let attAd {
+                        switch nicegramItem.chat.type {
+                        case let .att(attAd):
                             attBannerFeature.onClick(ad: attAd)
-                        } else {
+                        case .plain:
                             let openPinnedChatUseCase = PinnedChatsContainer.shared.openPinnedChatUseCase()
                             openPinnedChatUseCase(nicegramItem.chat)
+                        case let .pump(ad):
+                            pumpAdViewModel.onClick(ad: ad)
                         }
                         
                         interaction.clearHighlightAnimated(true)
@@ -1546,14 +1548,18 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
     public func trackViewIfNeeded() {
         guard self.visibilityStatus,
               let item,
+              let nicegramItem = item.nicegramItem,
               item.interaction.isChatListVisible() else {
             return
         }
         
-        if let attAd = item.attAd {
+        switch nicegramItem.chat.type {
+        case let .att(attAd):
             item.attBannerFeature.onView(ad: attAd)
-        } else if let nicegramItem = item.nicegramItem {
+        case .plain:
             PinnedChatsUI.trackChatView(nicegramItem.chat)
+        case let .pump(ad):
+            item.pumpAdViewModel.onView(ad: ad)
         }
     }
     //
@@ -1911,9 +1917,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                 context: item.context,
                 theme: item.presentationData.theme,
                 peer: nil,
-                nicegramImage: prepareNicegramImageForAvatar(
-                    nicegramItem.image
-                )
+                nicegramImage: nicegramItem.image
             )
         }
         //
@@ -4803,7 +4807,8 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                     }
                     
                     // MARK: Nicegram ATT
-                    if item.attAd != nil {
+                    if let nicegramItem = item.nicegramItem,
+                       case .att = nicegramItem.chat.type {
                         let attClaimAnimationView: AttClaimAnimationView
                         if let current = strongSelf.attClaimAnimationView {
                             attClaimAnimationView = current
@@ -5070,13 +5075,14 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
             case RevealOptionKey.unpin.rawValue:
                 self.setRevealOptionsOpened(false, animated: true)
                 
-                if let ad = item.attAd {
-                    item.attBannerFeature.onRemoveAdClick(ad: ad)
-                } else {
-                    Task { @MainActor in
-                        PinnedChatsUI.unpin(
-                            nicegramItem.chat
-                        )
+                Task { @MainActor in
+                    switch nicegramItem.chat.type {
+                    case let .att(attAd):
+                        item.attBannerFeature.onRemoveAdClick(ad: attAd)
+                    case .plain:
+                        PinnedChatsUI.unpin(nicegramItem.chat)
+                    case let .pump(ad):
+                        item.pumpAdViewModel.onUnpin(ad: ad)
                     }
                 }
             default:
@@ -5326,34 +5332,6 @@ private extension EmojiStatusComponent {
 private extension ChatListItem {
     var isNicegramItem: Bool {
         nicegramItem != nil
-    }
-}
-
-private func prepareNicegramImageForAvatar(
-    _ image: UIImage?
-) -> UIImage? {
-    guard let image else {
-        return nil
-    }
-    
-    let side = min(image.size.width, image.size.height)
-    
-    return image.sd_resizedImage(
-        with: CGSize(width: side, height: side),
-        scaleMode: .aspectFill
-    )?.roundedImage
-}
-
-private extension UIImage {
-    var roundedImage: UIImage? {
-        let rect = CGRect(origin: .zero, size: size)
-        UIGraphicsBeginImageContextWithOptions(size, false, 0)
-        UIBezierPath(roundedRect: rect, cornerRadius: size.height / 2).addClip()
-        draw(in: rect)
-        
-        let image = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-        return image
     }
 }
 //

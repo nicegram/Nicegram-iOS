@@ -208,6 +208,7 @@
 /*Hidden Chats*/
 "ChatContextMenu.Hide" = "Скрыть";
 "ChatContextMenu.Unhide" = "Показать";
+"HiddenChatsTooltip" = "Нажмите и удерживайте эту кнопку, чтобы открыть скрытые чаты";
 
 /*Data Sharing*/
 "NicegramSettings.ShareBotsToggle" = "Поделиться информацией о ботах";

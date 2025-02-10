@@ -816,8 +816,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         self.updateNavigationMetadata()
         
 // MARK: Nicegram NCG-7102 bottom folders fix
-        _ = self.ready
-            .get()
+        _ = (self.ready.get() |> deliverOnMainQueue)
             .start { [weak self] flag in
                 guard let self else { return }
                 
