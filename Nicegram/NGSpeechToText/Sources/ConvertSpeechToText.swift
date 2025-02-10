@@ -7,6 +7,9 @@ import AccountContext
 import TelegramPresentationData
 import NGData
 import NGUI
+import NGStrings
+
+private let getSpeech2TextSettingsUseCase = NicegramSettingsModule.shared.getSpeech2TextSettingsUseCase()
 
 public enum SpeechToTextMessageSource {
     case chat, contextMenu
@@ -42,9 +45,11 @@ public func convertSpeechToText(
         return
     }
 
+    let useOpenAI = getSpeech2TextSettingsUseCase.useOpenAI(with: id)
+    
     checkPremium { isPremium in
         if isPremium &&
-           NGSettings.useOpenAI {
+            useOpenAI {
             startConvertSpeechToTextTask(
                 from: source,
                 context: context,
@@ -191,7 +196,7 @@ private func startConvertSpeechToTextTask(
                 }
                 let c = getIAPErrorController(
                     context: context,
-                    "Speech to text recognizer not available.",
+                    l("NicegramSpeechToText.NotAvailable"),
                     presentationData
                 )
                 controllerInteraction.presentGlobalOverlayController(c, nil)
@@ -201,7 +206,7 @@ private func startConvertSpeechToTextTask(
                 }
                 let c = getIAPErrorController(
                     context: context,
-                    "Speech to text recognizer autorization status error.",
+                    l("NicegramSpeechToText.AuthorisationError"),
                     presentationData
                 )
                 controllerInteraction.presentGlobalOverlayController(c, nil)

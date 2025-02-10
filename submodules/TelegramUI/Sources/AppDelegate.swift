@@ -2261,7 +2261,11 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 collectChannelsInformation(with: authorizedApplicationContext.context)
 // MARK: Nicegram NCG-6326 Apple Speech2Text
                 let setDefaultSpeech2TextSettingsUseCase = NicegramSettingsModule.shared.setDefaultSpeech2TextSettingsUseCase()
-                setDefaultSpeech2TextSettingsUseCase(with: authorizedApplicationContext.context.isPremium)
+
+                setDefaultSpeech2TextSettingsUseCase(
+                    with: authorizedApplicationContext.context.account.peerId.id._internalGetInt64Value(),
+                    isTelegramPremium: authorizedApplicationContext.context.isPremium
+                )
 //
             }
         })

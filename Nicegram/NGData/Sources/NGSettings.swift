@@ -59,34 +59,11 @@ public struct NGSettings {
     
     @NGStorage(key: "rememberFolderOnExit", defaultValue: false)
     public static var rememberFolderOnExit: Bool
-
-    @NGStorage(key: "useOpenAI", defaultValue: false)
-    private static var _useOpenAI: Bool
-
-    @available(*, deprecated, message: "Deprecation version 1.9.1(392). Use _useOpenAI instead")
-    public static var useOpenAI: Bool {
-        get {
-            let preferredProviderTypeUseCase = SpeechToTextContainer.shared.getPreferredProviderTypeUseCase()
-            let type = preferredProviderTypeUseCase()
-
-            let getSpeech2TextSettingsUseCase = NicegramSettingsModule.shared.getSpeech2TextSettingsUseCase()
-            let enableApple = getSpeech2TextSettingsUseCase()
-
-            if enableApple {
-                return type == .openAi ? true : NGSettings._useOpenAI
-            } else {
-                return NGSettings._useOpenAI
-            }
-        }
-        set {
-            NGSettings._useOpenAI = newValue
-            let preferredProviderTypeUseCase = SpeechToTextContainer.shared.setPreferredProviderTypeUseCase()
-            Task {
-                await preferredProviderTypeUseCase(.google)
-            }
-        }
-    }
     
+    @available(*, deprecated, message: "Deprecation version 1.9.6(441). Use GetSpeech2TextSettingsUseCase or getNicegramSettings()")
+    @NGStorage(key: "useOpenAI", defaultValue: false)
+    public static var useOpenAI: Bool
+
     @NGStorage(key: "lastFolder", defaultValue: -1)
     public static var lastFolder: Int32
     

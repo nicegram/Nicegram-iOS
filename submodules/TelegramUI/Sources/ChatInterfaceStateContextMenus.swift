@@ -57,6 +57,8 @@ import AdsReportScreen
 private func isServiceMessage(_ message: Message) -> Bool {
     return message.media.contains(where: { $0 is TelegramMediaAction })
 }
+// MARK: Nicegram NCG-6326 Apple Speech2Text
+let getSpeech2TextSettingsUseCase = NicegramSettingsModule.shared.getSpeech2TextSettingsUseCase()
 //
 
 private struct MessageContextMenuData {
@@ -1044,8 +1046,9 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             }
         }
 // MARK: Nicegram NCG-6326 Apple Speech2Text
+        let useOpenAI = getSpeech2TextSettingsUseCase.useOpenAI(with: context.account.peerId.id._internalGetInt64Value())
         if let mediaFile = message.media.compactMap({ $0 as? TelegramMediaFile }).first(where: { $0.isVoice }),
-           !(nicegramPremium && NGSettings.useOpenAI) {
+           !(nicegramPremium && useOpenAI) {
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
             didRateAudioTranscription = true
             actions.append(.action(ContextMenuActionItem(

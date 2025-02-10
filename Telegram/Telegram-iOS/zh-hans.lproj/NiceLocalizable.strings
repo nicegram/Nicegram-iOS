@@ -234,6 +234,8 @@
 "NicegramSpeechToText.Language.Whisper" = "⚠️ 选择您语音消息的语言以提高准确性，或[激活 Whisper](https://my.nicegram.app/) 进行轻松的自动识别";
 "NicegramSpeechToText.Language.Choose" = "选择识别语言";
 "NicegramSpeechToText.SelectLanguage" = "选择语言";
+"NicegramSpeechToText.NotAvailable" = "语音转文字识别目前不可用";
+"NicegramSpeechToText.AuthorisationError" = "由于权限设置，语音转文字不可用。在设备设置中允许 Nicegram 访问 → 隐私和安全 → 语音识别";
 
 /*Stars Purchase*/
 "StarsPurchase.GetOnFragment" = "购买于 Fragment";

@@ -234,6 +234,8 @@
 "NicegramSpeechToText.Language.Whisper" = "⚠️ Select the language of your voice message to enhance accuracy, or [activate Whisper](https://my.nicegram.app/) for effortless automatic recognition";
 "NicegramSpeechToText.Language.Choose" = "Choose a language for recognition";
 "NicegramSpeechToText.SelectLanguage" = "Select Language";
+"NicegramSpeechToText.NotAvailable" = "Speech-to-text recognition is currently unavailable";
+"NicegramSpeechToText.AuthorisationError" = "Speech-to-text is unavailable due to permission settings. Allow access for Nicegram in device Settings → Privacy & Security → Speech Recognition";
 
 /*Stars Purchase*/
 "StarsPurchase.GetOnFragment" = "Get on Fragment";

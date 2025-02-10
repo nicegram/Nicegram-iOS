@@ -234,6 +234,8 @@
 "NicegramSpeechToText.Language.Whisper" = "⚠️ Seleccione el idioma de su mensaje de voz para mejorar la precisión, o [active Whisper](https://my.nicegram.app/) para un reconocimiento automático sin esfuerzo";
 "NicegramSpeechToText.Language.Choose" = "Elige un idioma para el reconocimiento";
 "NicegramSpeechToText.SelectLanguage" = "Selecciona un idioma";
+"NicegramSpeechToText.NotAvailable" = "El reconocimiento de voz a texto no está disponible actualmente";
+"NicegramSpeechToText.AuthorisationError" = "El reconocimiento de voz a texto no está disponible debido a la configuración de permisos. Permita el acceso para Nicegram en Configuración del dispositivo → Privacidad y seguridad → Reconocimiento de voz";
 
 /*Stars Purchase*/
 "StarsPurchase.GetOnFragment" = "Compra en Fragment";

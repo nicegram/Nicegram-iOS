@@ -1,5 +1,6 @@
 import Foundation
 import FeatPremium
+import FeatSpeechToText
 
 public class GetSpeech2TextSettingsUseCase {
     private let nicegramSettingsRepository: NicegramSettingsRepository
@@ -12,7 +13,11 @@ public class GetSpeech2TextSettingsUseCase {
 }
 
 public extension GetSpeech2TextSettingsUseCase {    
-    func callAsFunction() -> Bool {
-        nicegramSettingsRepository.settings().speechToText.enableApple ?? false
+    func appleRecognizerState(with id: Int64) -> Bool {
+        (nicegramSettingsRepository.settings().speechToText.appleRecognizerState[id] ?? false) ?? false
+    }
+    
+    func useOpenAI(with id: Int64) -> Bool {
+        (nicegramSettingsRepository.settings().speechToText.useOpenAI[id] ?? false) ?? false
     }
 }

@@ -234,6 +234,8 @@
 "NicegramSpeechToText.Language.Whisper" = "⚠️ Sélectionnez la langue de votre message vocal pour améliorer la précision, ou [activez Whisper](https://my.nicegram.app/) pour une reconnaissance automatique sans effort";
 "NicegramSpeechToText.Language.Choose" = "Choisissez une langue pour la reconnaissance";
 "NicegramSpeechToText.SelectLanguage" = "Sélectionner la langue";
+"NicegramSpeechToText.NotAvailable" = "La reconnaissance vocale est actuellement indisponible";
+"NicegramSpeechToText.AuthorisationError" = "La reconnaissance vocale est indisponible en raison des paramètres d'autorisation. Autorisez l'accès à Nicegram dans les paramètres de l'appareil → Confidentialité et sécurité → Reconnaissance vocale";
 
 /*Stars Purchase*/
 "StarsPurchase.GetOnFragment" = "Achetez sur Fragment";
