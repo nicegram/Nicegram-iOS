@@ -478,7 +478,7 @@ public protocol PresentationCallManager: AnyObject {
 // MARK: Nicegram NCG-5828 call recording
     var callCompletion: (() -> Void)? { get set }
     func startRecordCall(with completion: @escaping () -> Void)
-    func stopRecordCall()
+    func stopRecordCall(needStopPartTimer: Bool)
     func setupPeer(peer: EnginePeer)
     func showRecordSaveToast()
 //

@@ -1491,6 +1491,16 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                             f(.default)
                         })))
                     }
+// MARK: Nicegram NCG-5828 call recording
+                    else if file.isVoice {
+                        actions.append(.action(ContextMenuActionItem(text: chatPresentationInterfaceState.strings.Conversation_SaveToFiles, icon: { theme in
+                            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Save"), color: theme.actionSheet.primaryTextColor)
+                        }, action: { _, f in
+                            controllerInteraction.saveMediaToFiles(message.id)
+                            f(.default)
+                        })))
+                    }
+//
                     break
                 }
             }

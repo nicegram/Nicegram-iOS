@@ -838,7 +838,7 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
             handler: { _ in
                 completion()
                 self.callScreen.stopRecordTimer()
-                self.sharedContext.callManager?.stopRecordCall()
+                self.sharedContext.callManager?.stopRecordCall(needStopPartTimer: true)
             }
         ))
 
