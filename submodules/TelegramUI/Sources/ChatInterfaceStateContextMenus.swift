@@ -38,6 +38,7 @@ import NGUI
 import PeerInfoUI
 import NGData
 import NGSpeechToText
+import AVFoundation
 //
 import TranslateUI
 import DebugSettingsUI
@@ -495,7 +496,9 @@ func updatedChatEditInterfaceMessageState(context: AccountContext, state: ChatPr
         previewState
     )
 }
-
+// MARK: Nicegram NCG-5828 call recording
+var saveMediaDisposable: MetaDisposable?
+//
 func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState: ChatPresentationInterfaceState, context: AccountContext, messages: [Message], controllerInteraction: ChatControllerInteraction?, selectAll: Bool, interfaceInteraction: ChatPanelInterfaceInteraction?, readStats: MessageReadStats? = nil, messageNode: ChatMessageItemView? = nil) -> Signal<ContextController.Items, NoError> {
     guard let interfaceInteraction = interfaceInteraction, let controllerInteraction = controllerInteraction else {
         return .single(ContextController.Items(content: .list([])))
@@ -944,7 +947,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
         
         return (data, updatingMessageMedia, infoSummaryData, appConfig, isMessageRead, messageViewsPrivacyTips, availableReactions, translationSettings, loggingSettings, notificationSoundList, accountPeer)
     }
-    
+
     return dataSignal
     |> deliverOnMainQueue
     |> map { data, updatingMessageMedia, infoSummaryData, appConfig, isMessageRead, messageViewsPrivacyTips, availableReactions, translationSettings, loggingSettings, notificationSoundList, accountPeer -> ContextController.Items in
@@ -1496,10 +1499,108 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                     }
 // MARK: Nicegram NCG-5828 call recording
                     else if file.isVoice {
-                        actions.append(.action(ContextMenuActionItem(text: chatPresentationInterfaceState.strings.Conversation_SaveToFiles, icon: { theme in
+                        actions.append(.action(ContextMenuActionItem(text: chatPresentationInterfaceState.strings.WebBrowser_Download_Download, icon: { theme in
                             return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Save"), color: theme.actionSheet.primaryTextColor)
-                        }, action: { _, f in
-                            controllerInteraction.saveMediaToFiles(message.id)
+                        }, action: {  _, f in
+                            let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Messages.Message(id: message.id))
+                            |> deliverOnMainQueue).startStandalone(next: { message in
+                                guard let message else {
+                                    return
+                                }
+                                var file: TelegramMediaFile?
+                                let title: String = message.text
+
+                                for media in message.media {
+                                    if let mediaFile = media as? TelegramMediaFile, mediaFile.isVoice {
+                                        file = mediaFile
+                                    }
+                                }
+
+                                guard let file else {
+                                    return
+                                }
+                                
+                                var signal = fetchMediaData(context: context, postbox: context.account.postbox, userLocation: .other, mediaReference: .message(message: MessageReference(message._asMessage()), media: file))
+                                
+                                let disposable: MetaDisposable
+                                if let current = saveMediaDisposable {
+                                    disposable = current
+                                } else {
+                                    disposable = MetaDisposable()
+                                    saveMediaDisposable = disposable
+                                }
+                                
+                                var cancelImpl: (() -> Void)?
+                                let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                                let progressSignal = Signal<Never, NoError> { subscriber in
+                                    let controller = OverlayStatusController(theme: presentationData.theme, type: .loading(cancelled: {
+                                        cancelImpl?()
+                                    }))
+                                    controllerInteraction.presentController(controller, nil)
+                                    return ActionDisposable { [weak controller] in
+                                        Queue.mainQueue().async() {
+                                            controller?.dismiss()
+                                        }
+                                    }
+                                }
+                                |> runOn(Queue.mainQueue())
+                                |> delay(0.15, queue: Queue.mainQueue())
+                                let progressDisposable = progressSignal.startStrict()
+                                
+                                signal = signal
+                                |> afterDisposed {
+                                    Queue.mainQueue().async {
+                                        progressDisposable.dispose()
+                                    }
+                                }
+                                cancelImpl = { [weak disposable] in
+                                    disposable?.set(nil)
+                                }
+                                disposable.set((signal
+                                |> deliverOnMainQueue).startStrict(next: { state, _ in
+                                    switch state {
+                                    case .progress:
+                                        break
+                                    case let .data(data):
+                                        if data.complete {
+                                            var symlinkPath = data.path + ".ogg"
+                                            if fileSize(symlinkPath) != nil {
+                                                try? FileManager.default.removeItem(atPath: symlinkPath)
+                                            }
+                                            let _ = try? FileManager.default.linkItem(atPath: data.path, toPath: symlinkPath)
+                                            
+                                            let audioUrl = URL(fileURLWithPath: symlinkPath)
+                                            let audioAsset = AVURLAsset(url: audioUrl)
+                                            
+                                            var fileExtension = "ogg"
+
+                                            if let filename = file.fileName {
+                                                if let dotIndex = filename.lastIndex(of: ".") {
+                                                    fileExtension = String(filename[filename.index(after: dotIndex)...])
+                                                }
+                                            }
+                                            
+                                            var nameComponents: [String] = []
+                                            if !title.isEmpty {
+                                                nameComponents.append(title)
+                                            }
+
+                                            if !nameComponents.isEmpty {
+                                                try? FileManager.default.removeItem(atPath: symlinkPath)
+                                                
+                                                let fileName = "\(nameComponents.joined(separator: " – ")).\(fileExtension)"
+                                                symlinkPath = symlinkPath.replacingOccurrences(of: audioUrl.lastPathComponent, with: fileName)
+                                                let _ = try? FileManager.default.linkItem(atPath: data.path, toPath: symlinkPath)
+                                            }
+                                            
+                                            let url = URL(fileURLWithPath: symlinkPath)
+
+                                            let activityController = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+                                            context.sharedContext.applicationBindings.presentNativeController(activityController)
+                                        }
+                                    }
+                                }))
+                            })
                             f(.default)
                         })))
                     }

@@ -481,5 +481,6 @@ public protocol PresentationCallManager: AnyObject {
     func stopRecordCall(needStopPartTimer: Bool)
     func setupPeer(peer: EnginePeer)
     func showRecordSaveToast()
+    func stopPartTimer()
 //
 }

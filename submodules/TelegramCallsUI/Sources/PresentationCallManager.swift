@@ -1020,7 +1020,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
         
         return dateFormatter
     }()
-    private let partLength: TimeInterval = 60 * 30
+    private let partLength: TimeInterval = 30 * 60
 
     public func startRecordCall(
         with completion: @escaping () -> Void
@@ -1105,7 +1105,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
             randomId: id
         )
         let text = if partNumber > 1 {
-            "\(userDisplayName)-\(dateFormatter.string(from: date))- part \(partNumber)"
+            "\(userDisplayName)-\(dateFormatter.string(from: date))-part-\(partNumber)"
         } else {
             "\(userDisplayName)-\(dateFormatter.string(from: date))"
         }
@@ -1126,8 +1126,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                     title: "",
                     performer: nil,
                     waveform: nil
-                ),
-                .FileName(fileName: text)
+                )
             ],
             alternativeRepresentations: []
         )
@@ -1160,6 +1159,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                         )
                     }
                 }, completed: { [weak self] in
+                    self?.partNumber += 1
                     self?.deleteFile(from: path)
                     self?.showRecordSaveToast()
                     sendCallRecorderAnalytics(with: .end)
@@ -1187,13 +1187,12 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
         let timer = Foundation.Timer(timeInterval: partLength, repeats: true) { [weak self] _ in
             self?.stopRecordCall(needStopPartTimer: false)
             self?.startRecordCall {}
-            self?.partNumber += 1
         }
         self.partTimer = timer
         RunLoop.main.add(timer, forMode: .common)
     }
     
-    private func stopPartTimer() {
+    public func stopPartTimer() {
         partTimer?.invalidate()
         partTimer = nil
     }

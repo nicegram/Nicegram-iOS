@@ -1056,6 +1056,11 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
             }
         }
     }
+// MARK: Nicegram NCG-7102 bottom folders fix
+    public func resetPendingItemNode() {
+        self.pendingItemNode = nil
+    }
+//
 }
 
 final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {

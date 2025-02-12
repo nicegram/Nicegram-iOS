@@ -819,12 +819,13 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         _ = (self.ready.get() |> deliverOnMainQueue)
             .start { [weak self] flag in
                 guard let self else { return }
-                
+
                 if flag,
                    NGSettings.rememberFolderOnExit,
                    NGData.isPremium() {
                     let lastFolder = NGSettings.lastFolder
                     if lastFolder != -1 {
+                        self.chatListDisplayNode.mainContainerNode.resetPendingItemNode()
                         self.selectTab(id: .filter(lastFolder))
                     }
                 }
