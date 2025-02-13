@@ -179,7 +179,6 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         
         if #available(iOS 15.0, *) {
             Task {
-                PostTgLoginOnboardingPresenter().presentIfNeeded()
                 PostLoginOnboardingPresenter().presentIfNeeded()
             }
         }
