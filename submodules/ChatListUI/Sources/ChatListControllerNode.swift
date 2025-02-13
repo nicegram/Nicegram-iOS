@@ -811,7 +811,7 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
     
     public func switchToFilter(id: ChatListFilterTabEntryId, animated: Bool = true, completion: (() -> Void)? = nil) {
 // MARK: Nicegram NCG-7102 bottom folders fix
-        ngLog("===NCG-7102=== switchToFilter: id = \(id), itemNodes = \(itemNodes), pendingItemNode = \(pendingItemNode)")
+        ngLog("===NCG-7102=== switchToFilter enter: id = \(id), pendingItemNode = \(pendingItemNode)")
 //
         self.onFilterSwitch?()
         if id != self.selectedId, let index = self.availableFilters.firstIndex(where: { $0.id == id }) {
@@ -846,7 +846,9 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
                 self.pendingItemNode?.2.dispose()
                 let disposable = MetaDisposable()
                 self.pendingItemNode = (id, itemNode, disposable)
-                
+// MARK: Nicegram NCG-7102 bottom folders fix
+                ngLog("===NCG-7102=== switchToFilter setup pendingItemNode = \(pendingItemNode)")
+//
                 if !animated {
                     self.selectedId = id
                     self.applyItemNodeAsCurrent(id: id, itemNode: itemNode)

@@ -11,6 +11,7 @@ public func sharePeerData(
     peerId: PeerId,
     context: AccountContext
 ) {
+    let _ = context.engine.peers.requestRecommendedChannels(peerId: peerId, forceUpdate: true).startStandalone()
     _ = (context.account.viewTracker.peerView(peerId, updateData: true)
     |> take(1))
     .start(next: { peerView in
@@ -69,9 +70,10 @@ private func sharePeerData(
                 let avatarImageSignal = fetchAvatarImage(peer: peer, context: context)
                 let inviteLinksSignal = context.engine.peers.direct_peerExportedInvitations(peerId: peer.id, revoked: false)
                 let interlocutorLanguageSignal = wrapped_detectInterlocutorLanguage(forChatWith: peer.id, context: context)
+                let recommendedChannels = context.engine.peers.recommendedChannels(peerId: peer.id)
                 
-                _ = (combineLatest(avatarImageSignal, inviteLinksSignal, interlocutorLanguageSignal)
-                     |> take(1)).start(next: { avatarImageData, inviteLinks, interlocutorLanguage in
+                _ = (combineLatest(avatarImageSignal, inviteLinksSignal, interlocutorLanguageSignal, recommendedChannels)
+                     |> take(1)).start(next: { avatarImageData, inviteLinks, interlocutorLanguage, recommendedChannels in
                     let peerData = PeerData(
                         avatarImageData: avatarImageData?.base64EncodedString(),
                         id: peerId,
@@ -79,7 +81,8 @@ private func sharePeerData(
                         payload: extractPayload(
                             peer: peer,
                             cachedData: cachedData,
-                            interlocutorLanguage: interlocutorLanguage
+                            interlocutorLanguage: interlocutorLanguage,
+                            similarChannels: extractSimilarChannels(from: recommendedChannels)
                         ),
                         type: type
                     )
@@ -93,7 +96,8 @@ private func sharePeerData(
 private func extractPayload(
     peer: Peer,
     cachedData: CachedPeerData?,
-    interlocutorLanguage: String?
+    interlocutorLanguage: String?,
+    similarChannels: [SimilarChannel]
 ) -> PeerPayload? {
     switch EnginePeer(peer) {
     case let .legacyGroup(group):
@@ -110,7 +114,8 @@ private func extractPayload(
                 channel: channel,
                 cachedData: cachedData as? CachedChannelData,
                 lastMessageLanguageCode: interlocutorLanguage
-            )
+            ),
+            similarChannels
         )
     case let .user(user):
         if let botInfo = user.botInfo {
@@ -288,4 +293,48 @@ private func extractInviteLinks(
             nil
         }
     }
+}
+
+private func extractSimilarChannels(
+    from recommendedChannels: RecommendedChannels?
+) -> [SimilarChannel] {
+    guard let recommendedChannels else { return [] }
+    
+    return recommendedChannels.channels.compactMap { channel in
+        switch channel.peer {
+        case let .channel(telegramChannel):
+            let channelPayload = extractPayload(
+                channel: telegramChannel,
+                cachedData: nil,
+                lastMessageLanguageCode: nil
+            )
+
+            return SimilarChannel(
+                id: telegramChannel.id.toInt64(),
+                inviteLinks: nil,
+                payload: .channel(channelPayload, []),
+                type: .channel,
+                icon: extractIcon(from: channel.peer, accessHash: telegramChannel.accessHash?.value)
+            )
+        default: return nil
+        }
+    }
+}
+
+private func extractIcon(
+    from peer: EnginePeer,
+    accessHash: Int64?
+) -> SimilarChannel.Icon? {
+    guard let imageRepresentation = peer._asPeer().profileImageRepresentations.first else {
+        return nil
+    }
+    guard let resource = imageRepresentation.resource as? CloudPeerPhotoSizeMediaResource else {
+        return nil
+    }
+    
+    return .init(
+        id: resource.photoId ?? 0,
+        accessHash: accessHash,
+        datacenterId: Int32(resource.datacenterId)
+    )
 }
