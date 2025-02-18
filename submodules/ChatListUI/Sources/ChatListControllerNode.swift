@@ -809,9 +809,9 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
         }
     }
     
-    public func switchToFilter(id: ChatListFilterTabEntryId, animated: Bool = true, preselected: Bool = false, completion: (() -> Void)? = nil) {
+    public func switchToFilter(id: ChatListFilterTabEntryId, animated: Bool = true, completion: (() -> Void)? = nil) {
 // MARK: Nicegram NCG-7102 bottom folders fix
-        ngLog("===NCG-7102=== switchToFilter enter: id = \(id), selectedId = \(selectedId), itemNodes = \(itemNodes.keys), pendingItemNode = \(pendingItemNode?.0)")
+        ngLog("===NCG-7102=== switchToFilter: id = \(id), itemNodes = \(itemNodes), pendingItemNode = \(pendingItemNode)")
 //
         self.onFilterSwitch?()
         if id != self.selectedId, let index = self.availableFilters.firstIndex(where: { $0.id == id }) {
@@ -834,12 +834,6 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
                 itemNode.emptyNode?.restartAnimation()
                 completion?()
             } else if self.pendingItemNode == nil {
-// MARK: Nicegram NCG-7102 bottom folders fix
-                var autoSetReady = !animated
-                if preselected {
-                    autoSetReady = true
-                }
-//
                 let itemNode = ChatListContainerItemNode(context: self.context, controller: self.controller, location: self.location, filter: self.availableFilters[index].filter, chatListMode: self.chatListMode, previewing: self.previewing, isInlineMode: self.isInlineMode, controlsHistoryPreload: self.controlsHistoryPreload, presentationData: self.presentationData, animationCache: self.animationCache, animationRenderer: self.animationRenderer, becameEmpty: { [weak self] filter in
                     self?.filterBecameEmpty(filter)
                 }, emptyAction: { [weak self] filter in
@@ -848,14 +842,11 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
                     self?.secondaryEmptyAction()
                 }, openArchiveSettings: { [weak self] in
                     self?.openArchiveSettings()
-                // MARK: Nicegram NCG-7102 bottom folders fix, autoSetReady
-                }, autoSetReady: autoSetReady, isMainTab: index == 0)
+                }, autoSetReady: !animated, isMainTab: index == 0)
                 self.pendingItemNode?.2.dispose()
                 let disposable = MetaDisposable()
                 self.pendingItemNode = (id, itemNode, disposable)
-// MARK: Nicegram NCG-7102 bottom folders fix
-                ngLog("===NCG-7102=== switchToFilter setup pendingItemNode = \(pendingItemNode?.0)")
-//
+                
                 if !animated {
                     self.selectedId = id
                     self.applyItemNodeAsCurrent(id: id, itemNode: itemNode)
@@ -1065,6 +1056,11 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
             }
         }
     }
+// MARK: Nicegram NCG-7102 bottom folders fix
+    public func resetPendingItemNode() {
+        self.pendingItemNode = nil
+    }
+//
 }
 
 final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {

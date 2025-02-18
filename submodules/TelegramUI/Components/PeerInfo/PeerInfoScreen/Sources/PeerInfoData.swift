@@ -1,6 +1,7 @@
 // MARK: Nicegram Imports
 import FeatTgUserNotes
 import NGData
+import FeatSpyOnFriends
 //
 import Foundation
 import UIKit
@@ -395,7 +396,9 @@ final class PeerInfoScreenData {
     // MARK: Nicegram TgUserNotes
     var note: String
     //
-    
+// MARK: Nicegram NCG-7303 Spy on friends
+    let spyOnFriends: SpyOnFriendsContext?
+//
     let _isContact: Bool
     var forceIsContact: Bool = false
 
@@ -446,8 +449,10 @@ final class PeerInfoScreenData {
         premiumGiftOptions: [PremiumGiftCodeOption],
         webAppPermissions: WebAppPermissionsState?,
         // MARK: Nicegram TgUserNotes
-        note: String = ""
-        //
+        note: String = "",
+// MARK: Nicegram NCG-7303 Spy on friends
+        spyOnFriends: SpyOnFriendsContext? = nil
+//
     ) {
         self.peer = peer
         self.chatPeer = chatPeer
@@ -488,7 +493,9 @@ final class PeerInfoScreenData {
         self.webAppPermissions = webAppPermissions
         // MARK: Nicegram TgUserNotes
         self.note = note
-        //
+// MARK: Nicegram NCG-7303 Spy on friends
+        self.spyOnFriends = spyOnFriends
+//
     }
 }
 
@@ -1013,10 +1020,23 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
             ))
         case let .user(userPeerId, secretChatId, kind):
             let groupsInCommon: GroupsInCommonContext?
+// MARK: Nicegram NCG-7303 Spy on friends
+            var spyOnFriends: SpyOnFriendsContext? = nil
+//
             if isMyProfile {
                 groupsInCommon = nil
             } else if [.user, .bot].contains(kind) {
                 groupsInCommon = GroupsInCommonContext(account: context.account, peerId: userPeerId, hintGroupInCommon: hintGroupInCommon)
+// MARK: Nicegram NCG-7303 Spy on friends
+                let feature = SpyOnFriendsFeature(navigator: SpyOnFriendsNavigatorImpl())
+                
+                spyOnFriends = SpyOnFriendsContext(
+                    account: context.account,
+                    engine: context.engine,
+                    peerId: userPeerId,
+                    lastUpdatedDate: feature.getLastUpdated()
+                )
+//
             } else {
                 groupsInCommon = nil
             }
@@ -1417,7 +1437,15 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                         hasWatchApp: false,
                         enableQRLogin: false)
                 }
-                
+// MARK: Nicegram NCG-7303 Spy on friends
+                if #available(iOS 15.0, *) {
+                    if availablePanes != nil {
+                        availablePanes?.insert(.spyOnFriends, at: 0)
+                    } else {
+                        availablePanes = [.spyOnFriends]
+                    }
+                }
+//
                 return PeerInfoScreenData(
                     peer: peer,
                     chatPeer: peerView.peers[peerId],
@@ -1455,7 +1483,10 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                     revenueStatsContext: revenueContextAndState.0,
                     profileGiftsContext: profileGiftsContext,
                     premiumGiftOptions: premiumGiftOptions,
-                    webAppPermissions: webAppPermissions
+                    webAppPermissions: webAppPermissions,
+// MARK: Nicegram NCG-7303 Spy on friends
+                    spyOnFriends: spyOnFriends
+//
                 )
             }
         case .channel:
