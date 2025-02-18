@@ -134,7 +134,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     
     case quickReplies(String)
     
-    case enableAppleSpeech2Text(String, Bool)
+    case enableAppleSpeech2Text(String, Int64, Bool)
     case onetaptr(String, Bool)
     
     case shareBotsData(String, Bool)
@@ -429,8 +429,8 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
-        case let .enableAppleSpeech2Text(lhsText, lhsValue):
-            if case let .enableAppleSpeech2Text(rhsText, rhsValue) = rhs, lhsText == rhsText, lhsValue == rhsValue {
+        case let .enableAppleSpeech2Text(lhsText, _, lhsValue):
+            if case let .enableAppleSpeech2Text(rhsText, _, rhsValue) = rhs, lhsText == rhsText, lhsValue == rhsValue {
                 return true
             } else {
                 return false
@@ -656,10 +656,10 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                 style: .blocks,
                 updated: chat.setEnabled
             )
-        case let .enableAppleSpeech2Text(text, value):
+        case let .enableAppleSpeech2Text(text, id, value):
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
                 updateNicegramSettings {
-                    $0.speechToText.enableApple = value
+                    $0.speechToText.appleRecognizerState[id] = value
                 }
             })
         case let .onetaptr(text, value):
@@ -807,9 +807,15 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     
     entries.append(.easyToggle(toggleIndex, .enableGrayscaleInChat, l("NicegramSettings.EnableGrayscaleInChat"), nicegramSettings.grayscaleInChat))
     toggleIndex += 1
-        
+    
     entries.append(.onetaptr(l("Premium.OnetapTranslate"), NGSettings.oneTapTr))
-    entries.append(.enableAppleSpeech2Text(l("NicegramSettings.EnableAppleSpeech2Text"), nicegramSettings.speechToText.enableApple ?? false))
+    let id = context.account.peerId.id._internalGetInt64Value()
+    entries.append(
+        .enableAppleSpeech2Text(l("NicegramSettings.EnableAppleSpeech2Text"),
+                                id,
+                                (nicegramSettings.speechToText.appleRecognizerState[id] ?? false) ?? false
+                               )
+    )
 
     if let sharingSettings {
         entries.append(

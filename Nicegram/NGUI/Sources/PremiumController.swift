@@ -21,6 +21,8 @@ import NGData
 import NGStrings
 import NGUtils
 
+private let getSpeech2TextSettingsUseCase = NicegramSettingsModule.shared.getSpeech2TextSettingsUseCase()
+
 private struct SelectionState: Equatable {
 }
 
@@ -223,8 +225,8 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
-        case let .useOpenAI(lhsValue):
-            if case let .useOpenAI(rhsValue) = rhs, lhsValue == rhsValue {
+        case let .useOpenAI(_, lhsValue, _):
+            if case let .useOpenAI(_, rhsValue, _) = rhs, lhsValue == rhsValue {
                 return true
             } else {
                 return false
@@ -299,15 +301,19 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
 }
 
 
-private func premiumControllerEntries(presentationData: PresentationData) -> [PremiumControllerEntry] {
+private func premiumControllerEntries(
+    presentationData: PresentationData,
+    context: AccountContext
+) -> [PremiumControllerEntry] {
     var entries: [PremiumControllerEntry] = []
 
     let theme = presentationData.theme
-
+    
     entries.append(.rememberFolderOnExit(theme, l("Premium.rememberFolderOnExit"), NGSettings.rememberFolderOnExit))
     entries.append(.ignoretr(theme, l("Premium.IgnoreTranslate.Title")))
     
-    entries.append(.useOpenAI(theme, l("SpeechToText.UseOpenAi"), NGSettings.useOpenAI))
+    let useOpenAI = getSpeech2TextSettingsUseCase.useOpenAI(with: context.account.peerId.id._internalGetInt64Value())
+    entries.append(.useOpenAI(theme, l("SpeechToText.UseOpenAi"), useOpenAI))
     entries.append(.recordAllCalls(l("Premium.RecordAllCalls"), NGSettings.recordAllCalls))
 
     #if DEBUG
@@ -355,7 +361,9 @@ public func premiumController(context: AccountContext) -> ViewController {
         case .rememberFilterOnExit:
             NGSettings.rememberFolderOnExit = value
         case .useOpenAI:
-            NGSettings.useOpenAI = value
+            updateNicegramSettings {
+                $0.speechToText.useOpenAI[context.account.peerId.id._internalGetInt64Value()] = value
+            }
         default:
             break
         }
@@ -458,7 +466,7 @@ public func premiumController(context: AccountContext) -> ViewController {
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get())
         |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
 
-            let entries = premiumControllerEntries(presentationData: presentationData)
+            let entries = premiumControllerEntries(presentationData: presentationData, context: context)
 
             var _ = 0
             var scrollToItem: ListViewScrollToItem?

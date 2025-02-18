@@ -148,6 +148,9 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
                 return
             }
             self.endCall?()
+// MARK: Nicegram NCG-5828 call recording
+            self.sharedContext.callManager?.stopPartTimer()
+//
         }
         self.callScreen.backAction = { [weak self] in
             guard let self else {
@@ -838,7 +841,7 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
             handler: { _ in
                 completion()
                 self.callScreen.stopRecordTimer()
-                self.sharedContext.callManager?.stopRecordCall()
+                self.sharedContext.callManager?.stopRecordCall(needStopPartTimer: true)
             }
         ))
 

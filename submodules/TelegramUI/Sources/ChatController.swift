@@ -4218,7 +4218,8 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                 var title: String?
                 var performer: String?
                 for media in message.media {
-                    if let mediaFile = media as? TelegramMediaFile, mediaFile.isMusic {
+                    // MARK: Nicegram NCG-5828 call recording, mediaFile.isVoice
+                    if let mediaFile = media as? TelegramMediaFile, mediaFile.isMusic || mediaFile.isVoice {
                         file = mediaFile
                         for attribute in mediaFile.attributes {
                             if case let .Audio(_, _, titleValue, performerValue, _) = attribute {
@@ -4295,6 +4296,11 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                             let audioAsset = AVURLAsset(url: audioUrl)
                             
                             var fileExtension = "mp3"
+// MARK: Nicegram NCG-5828 call recording
+                            if file.mimeType == "audio/ogg" {
+                                fileExtension = "ogg"
+                            }
+//
                             if let filename = file.fileName {
                                 if let dotIndex = filename.lastIndex(of: ".") {
                                     fileExtension = String(filename[filename.index(after: dotIndex)...])

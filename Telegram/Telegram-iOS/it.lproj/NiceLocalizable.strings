@@ -71,7 +71,8 @@
 "NiceFeatures.Use.DataStorage" = "Per favore, usa «%1» per configurare il tuo browser predefinito";
 "NiceFeatures.Browser.Header" = "URL";
 "NiceFeatures.Browser.UseBrowser" = "Apri link nel browser";
-"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram aprirà i link in un browser esterno invece di farlo nell'app.\nIl browser selezionato deve essere installato.";
+"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram aprirà i link in un browser esterno invece di farlo nell'app.
+Il browser selezionato deve essere installato.";
 "ChatFilter.Missed" = "Mancati";
 
 /*Premium*/
@@ -234,6 +235,8 @@
 "NicegramSpeechToText.Language.Whisper" = "⚠️ Seleziona la lingua del tuo messaggio vocale per aumentare l'accuratezza, oppure [attiva Whisper](https://my.nicegram.app/) per un riconoscimento automatico senza sforzo";
 "NicegramSpeechToText.Language.Choose" = "Scegli una lingua per il riconoscimento";
 "NicegramSpeechToText.SelectLanguage" = "Seleziona la lingua";
+"NicegramSpeechToText.NotAvailable" = "Il riconoscimento vocale al testo non è attualmente disponibile";
+"NicegramSpeechToText.AuthorisationError" = "La conversione da voce a testo non è disponibile a causa delle impostazioni di autorizzazione. Consenti l'accesso a Nicegram in Impostazioni dispositivo → Privacy e sicurezza → Riconoscimento vocale";
 
 /*Stars Purchase*/
 "StarsPurchase.GetOnFragment" = "Acquista su Fragment";

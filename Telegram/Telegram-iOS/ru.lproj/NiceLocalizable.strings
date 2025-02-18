@@ -234,6 +234,8 @@
 "NicegramSpeechToText.Language.Whisper" = "⚠️ Выберите язык голосового сообщения для повышения точности, или [активируйте Whisper](https://my.nicegram.app/) для упрощения автоматического распознавания";
 "NicegramSpeechToText.Language.Choose" = "Выберите язык для распознавания";
 "NicegramSpeechToText.SelectLanguage" = "Выбрать язык";
+"NicegramSpeechToText.NotAvailable" = "Распознавание речи в текст в настоящее время недоступно";
+"NicegramSpeechToText.AuthorisationError" = "Распознавание речи в текст недоступно из-за настроек разрешений. Разрешите доступ в Настройках вашего устройства: Nicegram → Конфиденциальность и безопасность → Распознавание речи";
 
 /*Stars Purchase*/
 "StarsPurchase.GetOnFragment" = "Купить в Fragment";

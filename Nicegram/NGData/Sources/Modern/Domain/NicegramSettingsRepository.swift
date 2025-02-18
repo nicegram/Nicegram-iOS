@@ -3,7 +3,8 @@ import NGCore
 
 public struct NicegramSettings: Withable {
     public struct SpeechToText: Withable {
-        public var enableApple: Bool?
+        public var useOpenAI: [Int64: Bool?]
+        public var appleRecognizerState: [Int64: Bool?]
     }
     
     public var disableAnimationsInChatList: Bool

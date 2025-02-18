@@ -12,70 +12,25 @@ import NGCore
 import NGLogging
 
 fileprivate let LOGTAG = extractNameFromPath(#file)
+fileprivate let collectInformationContainer = CollectInformationContainer.shared
+fileprivate let loadUseCase = collectInformationContainer.loadUseCase()
+fileprivate let collectUseCase = collectInformationContainer.collectUseCase()
 
 public func collectChannelsInformation(with context: AccountContext) {
-    let collectInformationContainer = CollectInformationContainer.shared
-
-    let loadUseCase = collectInformationContainer.loadUseCase()
-    let collectUseCase = collectInformationContainer.collectUseCase()
-
     let collect = loadUseCase
         .publisher()
-        .toSignalMTRpcError()
-    |> mapToSignal { result -> Signal<[(Api.contacts.ResolvedPeer?, ChannelInfo)], MTRpcError> in
-        combineLatest(
-            result.map { info -> Signal<(Api.contacts.ResolvedPeer?, ChannelInfo), MTRpcError> in
-                context.account.network.request(Api.functions.contacts.resolveUsername(flags: 0, username: info.username, referer: nil))
-                |> map(Optional.init)
-                |> `catch` { error -> Signal<Api.contacts.ResolvedPeer?, MTRpcError> in
-                    ngLog("resolveUsername username: \(info.username) error: \(error)", LOGTAG)
-                    return .single(nil)
-                }
-                |> map {
-                    ($0, info)
-                }
-            }
-        )
+        .toSignal()
+        .skipError()
+    |> mapToSignal { result -> Signal<[(Api.contacts.ResolvedPeer?, ChannelInfo)], NoError> in
+        resolveUsernames(with: context, informations: result)
     }
-    |> mapToSignal { result -> Signal<[(Api.messages.ChatFull?, String?, Api.upload.File?, ChannelInfo)], MTRpcError> in
-        combineLatest(
-            result
-                .map { resolvedPeerResult -> Signal<(Api.messages.ChatFull?, String?, Api.upload.File?, ChannelInfo), MTRpcError> in
-                    guard let resolvedPeer = resolvedPeerResult.0 else
-                    { return .single((nil, nil, nil, resolvedPeerResult.1)) }
-
-                    switch resolvedPeer {
-                    case let .resolvedPeer(_, chats, _):
-                        let chat = chats.first
-                        
-                        switch chat {
-                        case let .channel(_, _, id, accessHash, _, _, photo, _, _, _, _, _, _, _, _,  _, _, _, _, _, _):
-                            return getFullChannel(
-                                with: context,
-                                id: id,
-                                accessHash: accessHash ?? 0,
-                                photo: photo,
-                                info: resolvedPeerResult.1
-                            )
-                        case let .chat(_, id, _, photo, _, _, _, _, _, _):
-                            return getFullChat(
-                                with: context,
-                                id: id,
-                                accessHash: 0,
-                                photo: photo,
-                                info: resolvedPeerResult.1
-                            )
-                        default:
-                            return .single((nil, nil, nil, resolvedPeerResult.1))
-                        }
-                    }
-                }
-        )
+    |> mapToSignal { result -> Signal<[(Api.messages.ChatFull?, String?, Api.upload.File?, ChannelInfo, [Api.Chat])], NoError> in
+        resolvedPeers(with: context, resolvedPeers: result)
     }
-    |> mapToSignal { result -> Signal<Bool, MTRpcError> in
+    |> mapToSignal { result -> Signal<Bool, NoError> in
         let models = result.compactMap { result -> FullInformation.Information? in
             switch result.0 {
-            case let .chatFull(fullChat, chats, _):
+            case let .chatFull(fullChat, chats, _):                
                 let lastMessageLanguage = if let language = result.1 {
                     language
                 } else {
@@ -93,7 +48,8 @@ public func collectChannelsInformation(with context: AccountContext) {
                     chat: chats.first,
                     icon: icon,
                     lastMessageLanguage: lastMessageLanguage,
-                    token: result.3.token
+                    token: result.3.token,
+                    similarChannels: result.4
                 )
             default:
                 return mapToInformation(with: result.3)
@@ -104,7 +60,8 @@ public func collectChannelsInformation(with context: AccountContext) {
         return collectUseCase
             .publisher(with: .init(chats: models))
             .map { _ in true }
-            .toSignalMTRpcError()
+            .toSignal()
+            .skipError()
     }
     
     _ = collect
@@ -113,17 +70,62 @@ public func collectChannelsInformation(with context: AccountContext) {
         }
 }
 
+private func resolvedPeers(
+    with context: AccountContext,
+    resolvedPeers: [(Api.contacts.ResolvedPeer?, ChannelInfo)]
+) -> Signal<[(Api.messages.ChatFull?, String?, Api.upload.File?, ChannelInfo, [Api.Chat])], NoError> {
+    combineLatest(
+        resolvedPeers
+            .map { resolvedPeerResult -> Signal<(Api.messages.ChatFull?, String?, Api.upload.File?, ChannelInfo, [Api.Chat]), NoError> in
+                guard let resolvedPeer = resolvedPeerResult.0 else
+                    { return .single((nil, nil, nil, resolvedPeerResult.1, [])) }
+
+                switch resolvedPeer {
+                case let .resolvedPeer(_, chats, _):
+                    let chat = chats.first
+                    switch chat {
+                    case let .channel(_, _, id, accessHash, _, _, photo, _, _, _, _, _, _, _, _,  _, _, _, _, _, _):
+                        return getFullChannel(
+                            with: context,
+                            id: id,
+                            accessHash: accessHash ?? 0,
+                            photo: photo,
+                            info: resolvedPeerResult.1
+                        )
+                    case let .chat(_, id, _, photo, _, _, _, _, _, _):
+                        return getFullChat(
+                            with: context,
+                            id: id,
+                            accessHash: 0,
+                            photo: photo,
+                            info: resolvedPeerResult.1
+                        )
+                    default:
+                        return .single((nil, nil, nil, resolvedPeerResult.1, []))
+                    }
+                }
+            }
+    )
+}
+
 private func resolveUsernames(
     with context: AccountContext,
-    usernames: [String]
-) -> Signal<[Api.contacts.ResolvedPeer?], MTRpcError> {
+    informations: [ChannelInfo]
+) -> Signal<[(Api.contacts.ResolvedPeer?, ChannelInfo)], NoError> {
     combineLatest(
-        usernames.map { username -> Signal<Api.contacts.ResolvedPeer?, MTRpcError> in
-            context.account.network.request(Api.functions.contacts.resolveUsername(flags: 0, username: username, referer: nil))
+        informations.map { info -> Signal<(Api.contacts.ResolvedPeer?, ChannelInfo), NoError> in
+            return context.account.network.request(Api.functions.contacts.resolveUsername(
+                flags: 0,
+                username: info.username,
+                referer: nil
+            ))
             |> map(Optional.init)
-            |> `catch` { error -> Signal<Api.contacts.ResolvedPeer?, MTRpcError> in
-                ngLog("resolveUsername username: \(username) error: \(error)", LOGTAG)
+            |> `catch` { error -> Signal<Api.contacts.ResolvedPeer?, NoError> in
+                ngLog("resolveUsername username: \(info.username) error: \(error)", LOGTAG)
                 return .single(nil)
+            }
+            |> map {
+                ($0, info)
             }
         }
     )
@@ -132,7 +134,7 @@ private func resolveUsernames(
 private func lastMessageLanguageCode(
     with context: AccountContext,
     peer: Api.InputPeer
-) -> Signal<String?, MTRpcError> {
+) -> Signal<String?, NoError> {
     context.account.network.request(Api.functions.messages.getHistory(
         peer: peer,
         offsetId: 0,
@@ -143,6 +145,7 @@ private func lastMessageLanguageCode(
         minId: 0,
         hash: 0)
     )
+    .skipError()
     |> map { result in
         var allMessages: [Api.Message] = []
 
@@ -174,28 +177,24 @@ private func getFullChat(
     accessHash: Int64,
     photo: Api.ChatPhoto,
     info: ChannelInfo
-) -> Signal<(Api.messages.ChatFull?, String?, Api.upload.File?, ChannelInfo), MTRpcError> {
+) -> Signal<(Api.messages.ChatFull?, String?, Api.upload.File?, ChannelInfo, [Api.Chat]), NoError> {
     context.account.network.request(Api.functions.messages.getFullChat(chatId: id))
     |> map(Optional.init)
-    |> `catch` { error -> Signal<Api.messages.ChatFull?, MTRpcError> in
+    |> `catch` { error -> Signal<Api.messages.ChatFull?, NoError> in
         ngLog("getFullChat id: \(id), error: \(error)", LOGTAG)
         return .single(nil)
     }
-    |> mapToSignal { result -> Signal<(Api.messages.ChatFull?, String?), MTRpcError> in
+    |> mapToSignal { result -> Signal<(Api.messages.ChatFull?, String?), NoError> in
         lastMessageLanguageCode(
             with: context,
             peer: .inputPeerChat(chatId: id)
         )
-        |> `catch` { error -> Signal<String?, MTRpcError> in
-            ngLog("lastMessageLanguageCode id: \(id), error: \(error)", LOGTAG)
-            return .single(nil)
-        }
         |> map {
             (result, $0)
         }
     }
-    |> mapToSignal { result -> Signal<(Api.messages.ChatFull?, String?, Api.upload.File?, ChannelInfo), MTRpcError> in
-        guard result.0 != nil else { return .single((result.0, result.1, nil, info)) }
+    |> mapToSignal { result -> Signal<(Api.messages.ChatFull?, String?, Api.upload.File?, ChannelInfo, [Api.Chat]), NoError> in
+        guard result.0 != nil else { return .single((result.0, result.1, nil, info, [])) }
         
         switch photo {
         case let .chatPhoto(flags, photoId, _, dcId):
@@ -204,17 +203,18 @@ private func getFullChat(
                 peer: .inputPeerChat(chatId: id),
                 flags: flags,
                 photoId: photoId,
-                datacenterId: dcId
+                datacenterId: dcId,
+                limit: 256*256
             )
             |> map(Optional.init)
-            |> `catch` { error -> Signal<Api.upload.File?, MTRpcError> in
+            |> `catch` { error -> Signal<Api.upload.File?, NoError> in
                 ngLog("getFile id: \(id), error: \(error)", LOGTAG)
                 return .single(nil)
             }
             |> map {
-                (result.0, result.1, $0, info)
+                (result.0, result.1, $0, info, [])
             }
-        default: return .single((nil, nil, nil, info))
+        default: return .single((nil, nil, nil, info, []))
         }
     }
 }
@@ -225,29 +225,25 @@ private func getFullChannel(
     accessHash: Int64,
     photo: Api.ChatPhoto,
     info: ChannelInfo
-) -> Signal<(Api.messages.ChatFull?, String?, Api.upload.File?, ChannelInfo), MTRpcError> {
+) -> Signal<(Api.messages.ChatFull?, String?, Api.upload.File?, ChannelInfo, [Api.Chat]), NoError> {
     context.account.network.request(Api.functions.channels.getFullChannel(
         channel: .inputChannel(channelId: id, accessHash: accessHash))
     )
     |> map(Optional.init)
-    |> `catch` { error -> Signal<Api.messages.ChatFull?, MTRpcError> in
+    |> `catch` { error -> Signal<Api.messages.ChatFull?, NoError> in
         ngLog("getFullChannel id: \(id), error: \(error)", LOGTAG)
         return .single(nil)
     }
-    |> mapToSignal { result -> Signal<(Api.messages.ChatFull?, String?), MTRpcError> in
+    |> mapToSignal { result -> Signal<(Api.messages.ChatFull?, String?), NoError> in
         lastMessageLanguageCode(
             with: context,
             peer: .inputPeerChannel(channelId: id, accessHash: accessHash)
         )
-        |> `catch` { error -> Signal<String?, MTRpcError> in
-            ngLog("lastMessageLanguageCode id: \(id), error: \(error)", LOGTAG)
-            return .single(nil)
-        }
         |> map {
             (result, $0)
         }
     }
-    |> mapToSignal { result -> Signal<(Api.messages.ChatFull?, String?, Api.upload.File?, ChannelInfo), MTRpcError> in
+    |> mapToSignal { result -> Signal<(Api.messages.ChatFull?, String?, Api.upload.File?, ChannelInfo), NoError> in
         guard result.0 != nil else { return .single((result.0, result.1, nil, info)) }
         
         switch photo {
@@ -257,10 +253,11 @@ private func getFullChannel(
                 peer: .inputPeerChannel(channelId: id, accessHash: accessHash),
                 flags: flags,
                 photoId: photoId,
-                datacenterId: dcId
+                datacenterId: dcId,
+                limit: 256*256
             )
             |> map(Optional.init)
-            |> `catch` { error -> Signal<Api.upload.File?, MTRpcError> in
+            |> `catch` { error -> Signal<Api.upload.File?, NoError> in
                 ngLog("getFile id: \(id), error: \(error)", LOGTAG)
                 return .single(nil)
             }
@@ -268,6 +265,34 @@ private func getFullChannel(
                 (result.0, result.1, $0, info)
             }
         default: return .single((nil, nil, nil, info))
+        }
+    }
+    |> mapToSignal { result -> Signal<(Api.messages.ChatFull?, String?, Api.upload.File?, ChannelInfo, [Api.Chat]), NoError> in
+        var flags: Int32 = 0
+        flags |= (1 << 0)
+
+        return context.account.network.request(Api.functions.channels.getChannelRecommendations(
+            flags: flags,
+            channel: .inputChannel(channelId: id, accessHash: accessHash)
+        ))
+        |> map(Optional.init)
+        |> `catch` { error -> Signal<Api.messages.Chats?, NoError> in
+            ngLog("getFile id: \(id), error: \(error)", LOGTAG)
+            return .single(nil)
+        }
+        |> map {
+            var resultChats: [Api.Chat] = []
+
+            switch $0 {
+            case let .chats(chats):
+                resultChats = chats
+            case let .chatsSlice(_, chats):
+                resultChats = chats
+            case .none:
+                break
+            }
+
+            return (result.0, result.1, result.2, info, resultChats)
         }
     }
 }
@@ -278,7 +303,8 @@ private func mapToInformation(
     icon: String,
     lastMessageLanguage: String,
     token: String,
-    error: String = ""
+    error: String = "",
+    similarChannels: [Api.Chat]
 ) -> FullInformation.Information {
     .init(
         chatFullModel: fullChat.toModel(),
@@ -286,7 +312,8 @@ private func mapToInformation(
         icon: icon,
         lastMessageLanguage: lastMessageLanguage,
         token: token,
-        error: error
+        error: error,
+        similarChannels: similarChannels.map { $0.toModel() }
     )
 }
 
@@ -324,7 +351,8 @@ private extension FullInformation.Information {
             icon: "",
             type: "channel",
             token: info.token,
-            error: error
+            error: error,
+            similarChannels: []
         )
     }
     
@@ -334,7 +362,8 @@ private extension FullInformation.Information {
         icon: String,
         lastMessageLanguage: String,
         token: String,
-        error: String
+        error: String,
+        similarChannels: [Api.Chat.Model]
     ) {
         self.init(
             id: -(1000000000000 + (max(chatFullModel.id, chatModel?.id ?? 0))),
@@ -358,7 +387,42 @@ private extension FullInformation.Information {
             icon: icon,
             type: chatModel?.type ?? "",
             token: token,
-            error: error
+            error: error,
+            similarChannels: similarChannels.map { .init(chatModel: $0) }
+        )
+    }
+}
+
+private extension FullInformation.Information.RecommendationInformation {
+    init(
+        chatModel: Api.Chat.Model
+    ) {
+        self.init(
+            id: -(1000000000000 + chatModel.id),
+            payload: .init(
+                verified: chatModel.verified,
+                scam: chatModel.scam,
+                hasGeo: chatModel.hasGeo,
+                fake: chatModel.fake,
+                megagroup: chatModel.megagroup,
+                gigagroup: chatModel.gigagroup,
+                title: chatModel.title,
+                username: chatModel.username,
+                date: chatModel.date,
+                restrictions: chatModel.restrictions,
+                participantsCount: chatModel.participantsCount,
+                lastMessageLang: nil,
+                about: chatModel.about,
+                geoLocation: nil
+            ),
+            inviteLinks: [],
+            icon: .init(
+                id: chatModel.photoId,
+                accessHash: chatModel.accessHash,
+                flags: chatModel.flags,
+                datacenterId: chatModel.datacenterId
+            ),
+            type: chatModel.type
         )
     }
 }
@@ -379,6 +443,10 @@ private extension Api.Chat {
         var about: String = ""
         var restrictions = [FullInformation.Information.Payload.Restriction]()
         var type: String = ""
+        var accessHash: Int64? = nil
+        var flags: Int32 = 0
+        var photoId: Int64 = 0
+        var datacenterId: Int32 = 0
 
         init () {}
     }
@@ -404,7 +472,7 @@ private extension Api.Chat {
         }
 
         switch self {
-        case let .channel(_, _, id, _, title, username, _, date, restrictionReason, _, _, _, participantsCount, _, _, _, _, _, _, _, _):
+        case let .channel(_, _, id, accessHash, title, username, photo, date, restrictionReason, _, _, _, participantsCount, _, _, _, _, _, _, _, _):
             let restriction : [FullInformation.Information.Payload.Restriction] = restrictionReason?.map { reason -> FullInformation.Information.Payload.Restriction in
                 switch reason {
                 case let .restrictionReason(platform, reason, text):
@@ -418,12 +486,32 @@ private extension Api.Chat {
                 .with(\.date, date)
                 .with(\.participantsCount, participantsCount ?? 0)
                 .with(\.restrictions, restriction)
-        case let .chat(_, id, title, _, participantsCount, date, _, _, _, _):
+                .with(\.accessHash, accessHash)
+            
+            switch photo {
+            case let .chatPhoto(flags, photoId, _, dcId):
+                model = model
+                    .with(\.flags, flags)
+                    .with(\.photoId, photoId)
+                    .with(\.datacenterId, dcId)
+            default: break
+            }
+
+        case let .chat(_, id, title, photo, participantsCount, date, _, _, _, _):
             model = model
                 .with(\.id, id)
                 .with(\.title, title)
                 .with(\.date, date)
                 .with(\.participantsCount, participantsCount)
+            
+            switch photo {
+            case let .chatPhoto(flags, photoId, _, dcId):
+                model = model
+                    .with(\.flags, flags)
+                    .with(\.photoId, photoId)
+                    .with(\.datacenterId, dcId)
+            default: break
+            }
         default: break
         }
         
@@ -485,33 +573,5 @@ private extension Api.ChatFull {
         }
         
         return model
-    }
-}
-
-private extension Publisher {
-    func toSignalMTRpcError() -> Signal<Output, MTRpcError> {
-        Signal { subscriber in
-            let cancellable = self.sink(
-                receiveCompletion: { completion in
-                    switch completion {
-                    case .finished:
-                        break
-                    case .failure(let failure):
-                        subscriber.putError(
-                            .init(errorCode: 999, errorDescription: failure.localizedDescription)
-                        )
-                    }
-                    
-                    subscriber.putCompletion()
-                },
-                receiveValue: { value in
-                    subscriber.putNext(value)
-                }
-            )
-            
-            return ActionDisposable {
-                cancellable.cancel()
-            }
-        }
     }
 }

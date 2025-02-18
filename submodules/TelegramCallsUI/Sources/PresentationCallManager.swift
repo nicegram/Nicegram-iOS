@@ -1010,111 +1010,17 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
         default: return ""
         }
     }
+    private var partTimer: Foundation.Timer?
+    private var partNumber: Int = 1
+    
+    private let setCallRecorderHistoryUseCase = FeatCallRecorderModule.shared.setCallRecorderHistoryUseCase()
     private let dateFormatter: DateFormatter = {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "dd-MM-yyyy"
         
         return dateFormatter
     }()
-
-    private func deleteFile(from path: String) {
-        let fileManager = FileManager.default
-        
-        if fileManager.fileExists(atPath: path) {
-            do {
-                let fileURL = URL(fileURLWithPath: path)
-                try fileManager.removeItem(at: fileURL)
-            } catch {
-                ngLog("[Call Recorder] Error remove call file: \(error.localizedDescription)")
-            }
-        } else {
-            ngLog("[Call Recorder] Call file not found at path \(path)")
-        }
-    }
-
-    private func writeAudioToSaved(
-        from path: String,
-        duration: Double,
-        size: UInt,
-        completion: (() -> Void)? = nil
-    ) {
-        let date = Date()
-
-        let id = Int64.random(in: 0 ... Int64.max)
-        let resource = LocalFileReferenceMediaResource(
-            localFilePath: path,
-            randomId: id
-        )
-
-        let file = TelegramMediaFile(
-            fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: id),
-            partialReference: nil,
-            resource: resource,
-            previewRepresentations: [],
-            videoThumbnails: [],
-            immediateThumbnailData: nil,
-            mimeType: "audio/ogg",
-            size: Int64(size),
-            attributes: [
-                .Audio(
-                    isVoice: true,
-                    duration: Int(duration),
-                    title: "",
-                    performer: nil,
-                    waveform: nil
-                )
-            ],
-            alternativeRepresentations: []
-        )
-
-        let text = "\(userDisplayName)-\(dateFormatter.string(from: date))"
-        let message: EnqueueMessage = .message(
-            text: text,
-            attributes: [],
-            inlineStickers: [:],
-            mediaReference: .standalone(media: file),
-            threadId: nil,
-            replyToMessageId: nil,
-            replyToStoryId: nil,
-            localGroupingKey: nil,
-            correlationId: nil,
-            bubbleUpEmojiOrStickersets: []
-        )
-
-        DispatchQueue.main.async {
-            if let account = self.accountContext?.account {
-                let setCallRecorderHistoryUseCase = FeatCallRecorderModule.shared.setCallRecorderHistoryUseCase()
-                let _ = enqueueMessages(
-                    account: account,
-                    peerId: account.peerId,
-                    messages: [message]
-                ).start(next: { messagesIds in
-                    if let messageId = messagesIds.compactMap({ $0 }).first {
-                        setCallRecorderHistoryUseCase(
-                            with: account.peerId.toInt64(),
-                            id: messageId.id,
-                            text: text
-                        )
-                    }
-                }, completed: { [weak self] in
-                    self?.deleteFile(from: path)
-                    self?.showRecordSaveToast()
-                    sendCallRecorderAnalytics(with: .end)
-                    completion?()
-                })
-            }
-        }
-    }
-
-    private func callActiveState(
-        with audioDevice: OngoingCallContext.AudioDevice?,
-        accountContext: AccountContext
-    ) {
-        if let audioDevice {
-            self.audioDevice = audioDevice
-            self.accountContext = accountContext
-        }
-    }
+    private let partLength: TimeInterval = 30 * 60
 
     public func startRecordCall(
         with completion: @escaping () -> Void
@@ -1130,10 +1036,14 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
             sendCallRecorderAnalytics(with: .error)
         })
         sendCallRecorderAnalytics(with: .start)
+        startPartTimer()
     }
 
-    public func stopRecordCall() {
+    public func stopRecordCall(needStopPartTimer: Bool) {
         audioDevice?.stopNicegramRecording()
+        if needStopPartTimer {
+            stopPartTimer()
+        }
     }
 
     public func setupPeer(peer: EnginePeer) {
@@ -1164,6 +1074,127 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
 
             self.accountContext?.sharedContext.mainWindow?.present(controller, on: .root)
         }
+    }
+    
+    private func deleteFile(from path: String) {
+        let fileManager = FileManager.default
+        
+        if fileManager.fileExists(atPath: path) {
+            do {
+                let fileURL = URL(fileURLWithPath: path)
+                try fileManager.removeItem(at: fileURL)
+            } catch {
+                ngLog("[Call Recorder] Error remove call file: \(error.localizedDescription)")
+            }
+        } else {
+            ngLog("[Call Recorder] Call file not found at path \(path)")
+        }
+    }
+
+    private func writeAudioToSaved(
+        from path: String,
+        duration: Double,
+        size: UInt,
+        completion: (() -> Void)? = nil
+    ) {
+        let date = Date()
+
+        let id = Int64.random(in: 0 ... Int64.max)
+        let resource = LocalFileReferenceMediaResource(
+            localFilePath: path,
+            randomId: id
+        )
+        let text = if partNumber > 1 {
+            "\(userDisplayName)-\(dateFormatter.string(from: date))-part-\(partNumber)"
+        } else {
+            "\(userDisplayName)-\(dateFormatter.string(from: date))"
+        }
+
+        let file = TelegramMediaFile(
+            fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: id),
+            partialReference: nil,
+            resource: resource,
+            previewRepresentations: [],
+            videoThumbnails: [],
+            immediateThumbnailData: nil,
+            mimeType: "audio/ogg",
+            size: Int64(size),
+            attributes: [
+                .Audio(
+                    isVoice: true,
+                    duration: Int(duration),
+                    title: "",
+                    performer: nil,
+                    waveform: nil
+                )
+            ],
+            alternativeRepresentations: []
+        )
+
+        let message: EnqueueMessage = .message(
+            text: text,
+            attributes: [],
+            inlineStickers: [:],
+            mediaReference: .standalone(media: file),
+            threadId: nil,
+            replyToMessageId: nil,
+            replyToStoryId: nil,
+            localGroupingKey: nil,
+            correlationId: nil,
+            bubbleUpEmojiOrStickersets: []
+        )
+
+        DispatchQueue.main.async {
+            if let account = self.accountContext?.account {
+                let _ = enqueueMessages(
+                    account: account,
+                    peerId: account.peerId,
+                    messages: [message]
+                ).start(next: { messagesIds in
+                    if let messageId = messagesIds.compactMap({ $0 }).first {
+                        self.setCallRecorderHistoryUseCase(
+                            with: account.peerId.toInt64(),
+                            id: messageId.id,
+                            text: text
+                        )
+                    }
+                }, completed: { [weak self] in
+                    self?.partNumber += 1
+                    self?.deleteFile(from: path)
+                    self?.showRecordSaveToast()
+                    sendCallRecorderAnalytics(with: .end)
+                    completion?()
+                })
+            }
+        }
+    }
+
+    private func callActiveState(
+        with audioDevice: OngoingCallContext.AudioDevice?,
+        accountContext: AccountContext
+    ) {
+        if let audioDevice {
+            self.audioDevice = audioDevice
+            self.accountContext = accountContext
+        }
+    }
+
+    private func startPartTimer() {
+        guard partTimer == nil else { return }
+                
+        partNumber = 1
+
+        let timer = Foundation.Timer(timeInterval: partLength, repeats: true) { [weak self] _ in
+            self?.stopRecordCall(needStopPartTimer: false)
+            self?.startRecordCall {}
+        }
+        self.partTimer = timer
+        RunLoop.main.add(timer, forMode: .common)
+    }
+    
+    public func stopPartTimer() {
+        partTimer?.invalidate()
+        partTimer = nil
     }
     //
 }

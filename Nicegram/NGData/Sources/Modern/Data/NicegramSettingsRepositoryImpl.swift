@@ -11,7 +11,10 @@ class NicegramSettingsRepositoryImpl {
             grayscaleInChat: false,
             grayscaleInChatList: false,
             trackDigitalFootprint: false,
-            speechToText: .init(enableApple: nil)
+            speechToText: .init(
+                useOpenAI: [:],
+                appleRecognizerState: [:]
+            )
         ),
         toDomain: \.toDomain,
         toDto: \.toDto
@@ -34,7 +37,8 @@ extension NicegramSettingsRepositoryImpl: NicegramSettingsRepository {
 
 private struct NicegramSettingsDto: Codable {
     struct SpeechToTextDto: Codable {
-        let enableApple: Bool?
+        let useOpenAI: [Int64: Bool?]
+        let appleRecognizerState: [Int64: Bool?]
     }
 
     let disableAnimationsInChatList: Bool
@@ -58,7 +62,10 @@ private struct NicegramSettingsDto: Codable {
 
 private extension NicegramSettingsDto.SpeechToTextDto {
     var toDomain: NicegramSettings.SpeechToText {
-        NicegramSettings.SpeechToText(enableApple: enableApple)
+        NicegramSettings.SpeechToText(
+            useOpenAI: useOpenAI,
+            appleRecognizerState: appleRecognizerState
+        )
     }
 }
 
@@ -77,6 +84,9 @@ private extension NicegramSettings {
 
 private extension NicegramSettings.SpeechToText {
     var toDto: NicegramSettingsDto.SpeechToTextDto {
-        NicegramSettingsDto.SpeechToTextDto(enableApple: enableApple)
+        NicegramSettingsDto.SpeechToTextDto(
+            useOpenAI: useOpenAI,
+            appleRecognizerState: appleRecognizerState
+        )
     }
 }

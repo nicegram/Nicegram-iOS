@@ -1,8 +1,15 @@
 import Factory
+import FeatSpeechToText
+import MemberwiseInit
 
+@MemberwiseInit(.private)
 public final class NicegramSettingsModule: SharedContainer {
-    public static var shared = NicegramSettingsModule()
-    public var manager = ContainerManager()
+    public static var shared = NicegramSettingsModule(
+        speechToTextModule: .shared
+    )
+    public var manager: ContainerManager = ContainerManager()
+    
+    private let speechToTextModule: SpeechToTextContainer
 }
 
 extension NicegramSettingsModule {
@@ -25,7 +32,8 @@ extension NicegramSettingsModule {
     public var setDefaultSpeech2TextSettingsUseCase: Factory<SetDefaultSpeech2TextSettingsUseCase> {
         self { [self] in
             SetDefaultSpeech2TextSettingsUseCase(
-                nicegramSettingsRepository: nicegramSettingsRepository()
+                nicegramSettingsRepository: nicegramSettingsRepository(),
+                speechToTextModule: speechToTextModule
             )
         }
     }

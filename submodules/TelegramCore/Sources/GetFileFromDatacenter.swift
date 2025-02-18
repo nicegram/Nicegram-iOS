@@ -9,7 +9,9 @@ public func getFile(
     peer: Api.InputPeer,
     flags: Int32,
     photoId: Int64,
-    datacenterId: Int32
+    datacenterId: Int32,
+// MARK: Nicegram NCG-6554 channels info, limit
+    limit: Int32 = 512*1024
 ) -> Signal<Api.upload.File, MTRpcError> {
     network.download(datacenterId: Int(datacenterId), isMedia: false, tag: nil)    
     |> castError(MTRpcError.self)
@@ -22,7 +24,8 @@ public func getFile(
                 photoId: photoId
             ),
             offset: 0,
-            limit: 512*1024
+// MARK: Nicegram NCG-6554 channels info, limit
+            limit: limit
         ))
     }
 }
