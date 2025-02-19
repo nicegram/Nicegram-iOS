@@ -504,6 +504,35 @@ final class ChatSendMessageContextScreenComponent: Component {
             
             var items: [ContextMenuItem] = []
             
+            // MARK: Nicegram AiChat
+            if textString.length > 0 {
+                let commands = TgChatAiHelper.getCommandsForInputText()
+                for command in commands {
+                    items.append(.action(ContextMenuActionItem(
+                        id: AnyHashable(command.id),
+                        text: command.title,
+                        icon: { _ in nil },
+                        action: { [weak self] _, _ in
+                            guard let self, let component = self.component else {
+                                return
+                            }
+                            self.animateOutToEmpty = true
+                            
+                            let request = TgChatAiRequst(
+                                peerId: component.peerId?.id._internalGetInt64Value(),
+                                command: command,
+                                text: component.textInputView.text
+                            )
+                            TgChatAiHelper.send(request: request)
+                            
+                            self.environment?.controller()?.dismiss()
+                        }
+                    )))
+                }
+                items.append(.separator)
+            }
+            //
+            
             let canAdjustMediaCaptionPosition: Bool
             switch component.params {
             case let .sendMessage(sendMessage):
@@ -671,40 +700,6 @@ final class ChatSendMessageContextScreenComponent: Component {
                     }
                 )))
             }
-            
-            // MARK: Nicegram AiChat
-            if let improveWritingCommand = TgChatAiHelper.improveWritingCommand() {
-                if case .separator = items.last {} else {
-                    items.append(.separator)
-                }
-                
-                items.append(.action(ContextMenuActionItem(
-                    id: AnyHashable("improveWriting"),
-                    text: improveWritingCommand.title,
-                    icon: { theme in
-                        generateTintedImage(
-                            image: UIImage(systemName: "wand.and.stars"),
-                            color: theme.contextMenu.primaryColor
-                        )
-                    },
-                    action: { [weak self] _, _ in
-                        guard let self, let component = self.component else {
-                            return
-                        }
-                        self.animateOutToEmpty = true
-                        
-                        let request = TgChatAiRequst(
-                            peerId: component.peerId?.id._internalGetInt64Value(),
-                            command: improveWritingCommand,
-                            text: component.textInputView.text
-                        )
-                        TgChatAiHelper.send(request: request)
-                        
-                        self.environment?.controller()?.dismiss()
-                    }
-                )))
-            }
-            //
             
             // MARK: Nicegram TranslateEnteredMessage
             if component.nicegramData.canTranslate {

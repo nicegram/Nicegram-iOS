@@ -15,9 +15,7 @@ import PeerInfoChatListPaneNode
 import PeerInfoChatPaneNode
 import TextFormat
 import EmojiTextAttachmentView
-// MARK: Nicegram NCG-7303 Spy on friends
-import NGStrings
-//
+
 final class PeerInfoPaneWrapper {
     let key: PeerInfoPaneKey
     let node: PeerInfoPaneNode
@@ -553,20 +551,6 @@ private final class PeerInfoPendingPane {
             paneNode = PeerInfoChatListPaneNode(context: context, navigationController: chatControllerInteraction.navigationController)
         case .savedMessages:
             paneNode = PeerInfoChatPaneNode(context: context, peerId: peerId, navigationController: chatControllerInteraction.navigationController)
-// MARK: Nicegram NCG-7303 Spy on friends
-        case .spyOnFriends:
-            if #available(iOS 15.0, *) {
-                paneNode = SpyOnFriendsPaneNode(
-                    context: context,
-                    peerId: peerId,
-                    chatControllerInteraction: chatControllerInteraction,
-                    openPeerContextAction: openPeerContextAction,
-                    spyOnFriendsContext: data.spyOnFriends!
-                )
-            } else {
-                preconditionFailure()
-            }
-//
         }
         paneNode.externalDataUpdated = externalDataUpdated
         paneNode.parentController = parentController
@@ -1238,10 +1222,6 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
                         return nil
                     }
                 } ?? []
-// MARK: Nicegram NCG-7303 Spy on friends
-            case .spyOnFriends:
-                title = l("SpyOnFriends.Title")
-//
             }
             return PeerInfoPaneSpecifier(key: key, title: title, icons: icons)
         }, selectedPane: self.currentPaneKey, disableSwitching: disableTabSwitching, transitionFraction: self.transitionFraction, transition: transition)
