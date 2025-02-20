@@ -241,3 +241,6 @@
 /*Stars Purchase*/
 "StarsPurchase.GetOnFragment" = "Get on Fragment";
 "StarsPurchase.GetOnTelegram" = "Get on Telegram";
+
+/*Spy On Friends*/
+"SpyOnFriends.Title" = "Activities";
