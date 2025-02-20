@@ -113,8 +113,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/NCG-7303_spy_on_friends",
-        "revision" : "2a7c71de73ca9dc7b14bc30d7dbdfd1b93fea928"
+        "branch" : "feat/att-action-subscribe",
+        "revision" : "9fdc3f375f2343b9692adaa982192a91fafbdce2"
       }
     },
     {
@@ -122,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "feat/NCG-7303_spy_on_friends",
-        "revision" : "0d12be95114430db63569f04a08ec962733ed2d7"
+        "branch" : "develop",
+        "revision" : "564886b840d2331bb80663e1f21cb34796007804"
       }
     },
     {

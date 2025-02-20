@@ -242,6 +242,11 @@ public final class WindowKeyboardGestureRecognizerDelegate: NSObject, UIGestureR
     }
 
     public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        // MARK: Nicegram
+        if otherGestureRecognizer.isNicegramExclusiveGesture() {
+            return false
+        }
+        //
         return true
     }
     

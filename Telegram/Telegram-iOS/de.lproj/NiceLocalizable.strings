@@ -143,6 +143,7 @@
 "Gmod.Disable" = "Vorschaumodus deaktivieren?";
 
 "ShowNicegramButtonInChat" = "Nicegram-Button im Chat anzeigen";
+"ShowAIShortcutsInChat" = "KI-Abkürzungen im Chat anzeigen";
 "SendWithKb" = "Mit «Enter» senden";
 "NiceFeatures.ShowGmodIcon" = "Icon für Vorschaumodus anzeigen";
 "Gmod.OpenChatQ" = "Chat öffnen?";

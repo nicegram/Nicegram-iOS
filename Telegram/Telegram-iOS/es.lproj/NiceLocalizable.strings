@@ -143,6 +143,7 @@
 "Gmod.Disable" = "¿Desactivar modo vista previa?";
 
 "ShowNicegramButtonInChat" = "Mostrar botón Nicegram en el chat";
+"ShowAIShortcutsInChat" = "Mostrar atajos de IA en el chat";
 "SendWithKb" = "Envía con el botón «Intro»";
 "NiceFeatures.ShowGmodIcon" = "Mostrar icono de modo vista previa";
 "Gmod.OpenChatQ" = "¿Abrir chat?";

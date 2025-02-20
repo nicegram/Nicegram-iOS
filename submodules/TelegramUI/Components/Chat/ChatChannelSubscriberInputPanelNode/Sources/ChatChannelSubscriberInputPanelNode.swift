@@ -1,3 +1,7 @@
+// MARK: Nicegram
+import FeatAttentionEconomy
+import NGUtils
+//
 import Foundation
 import UIKit
 import AsyncDisplayKit
@@ -145,6 +149,10 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
     private let badgeText: ImmediateTextNode
     private let activityIndicator: UIActivityIndicatorView
     
+    // MARK: Nicegram ATT
+    private let subscribeButtonClaimApplier = SubscribeButtonClaimApplier()
+    //
+    
     private let helpButton: HighlightableButtonNode
     
     private var action: SubscriberAction?
@@ -275,6 +283,16 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
                     }
                 }
                 strongSelf.interfaceInteraction?.presentController(textAlertController(context: context, title: nil, text: text, actions: [TextAlertAction(type: .defaultAction, title: presentationInterfaceState.strings.Common_OK, action: {})]), nil)
+            },  completed: {
+                // MARK: Nicegram ATT
+                Task {
+                    await AttCoreModule.shared.claimOngoingActionUseCase()
+                        .claimSubscribeIfNeeded(
+                            chatId: peer.id.ng_toInt64(),
+                            username: peer.addressName ?? ""
+                        )
+                }
+                //
             }))
         case .kicked:
             break
@@ -385,6 +403,21 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
         
         let indicatorSize = self.activityIndicator.bounds.size
         self.activityIndicator.frame = CGRect(origin: CGPoint(x: width - rightInset - indicatorSize.width - 12.0, y: floor((panelHeight - indicatorSize.height) / 2.0)), size: indicatorSize)
+        
+        // MARK: Nicegram ATT
+        let isJoinAction = switch action {
+        case .join, .joinGroup, .applyToJoin:
+            true
+        default:
+            false
+        }
+        self.subscribeButtonClaimApplier.update(
+            buttonNode: self.button,
+            titleNode: self.button.titleNode,
+            apply: isJoinAction,
+            interfaceState: interfaceState
+        )
+        //
         
         return panelHeight
     }

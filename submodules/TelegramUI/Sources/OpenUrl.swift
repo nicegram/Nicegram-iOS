@@ -1169,6 +1169,7 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
                             let controller = SFSafariViewController(url: parsedUrl)
                             controller.preferredBarTintColor = presentationData.theme.rootController.navigationBar.opaqueBackgroundColor
                             controller.preferredControlTintColor = presentationData.theme.rootController.navigationBar.accentTextColor
+                            controller.modalPresentationStyle = .overFullScreen
                             return controller
                         }
                         

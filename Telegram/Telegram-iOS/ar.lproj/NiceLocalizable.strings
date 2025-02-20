@@ -5,8 +5,7 @@
 
 /*Common*/
 "Nicegram.PrivacyPolicy" = "سياسة الخصوصية";
-"Nicegram.EULA" = "اتفاقية ترخيص المستخدم النهائي
-";
+"Nicegram.EULA" = "اتفاقية ترخيص المستخدم النهائي\n";
 
 /*ChatFilter*/
 "ChatFilter.Bots" = "بوتات";
@@ -144,6 +143,7 @@
 "Gmod.Disable" = "تعطيل وضع المعاينة؟";
 
 "ShowNicegramButtonInChat" = "عرض زر Nicegram في الدردشة";
+"ShowAIShortcutsInChat" = "إظهار اختصارات الذكاء الاصطناعي في الدردشة";
 "SendWithKb" = "إرسال مع زر «إدخال»";
 "NiceFeatures.ShowGmodIcon" = "إظهار أيقونة وضع المعاينة";
 "Gmod.OpenChatQ" = "فتح الدردشة؟";
