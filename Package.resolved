@@ -114,7 +114,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "feat/NCG-7303_spy_on_friends",
-        "revision" : "98d0370a003ae4aa43003cf52aa9a89ddc67c733"
+        "revision" : "84961d2992385fb7645a51bb1d32747cc1acadd1"
       }
     },
     {
