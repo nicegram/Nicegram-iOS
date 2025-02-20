@@ -224,11 +224,7 @@ final class MentionChatInputPanelItemNode: ListViewItemNode {
                     if let peer = item.peer {
                         strongSelf.avatarNode.setPeer(context: item.context, theme: item.presentationData.theme, peer: EnginePeer(peer), emptyColor: item.presentationData.theme.list.mediaPlaceholderColor)
                     } else {
-                        let mentionAllImage = generateTintedImage(
-                            image: UIImage(bundleImageName: "logo-nicegram"),
-                            color: item.presentationData.theme.list.itemPrimaryTextColor
-                        )
-                        strongSelf.avatarNode.setPeer(context: item.context, theme: item.presentationData.theme, peer: nil, nicegramImage: mentionAllImage)
+                        strongSelf.avatarNode.setPeer(context: item.context, theme: item.presentationData.theme, peer: nil, nicegramImage: UIImage(named: "logo-nicegram"))
                     }
                     
                     let _ = textApply()

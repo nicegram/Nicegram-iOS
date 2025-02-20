@@ -171,22 +171,6 @@ final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
                                 let inputText = NSMutableAttributedString(attributedString: textInputState.inputText)
                                 // MARK: Nicegram changes
                                 guard let peer = peer else {
-                                    let entries = entries
-                                        .map { entry in
-                                            let isBot: Bool
-                                            if case let .user(user) = entry.peer {
-                                                isBot = (user.botInfo != nil)
-                                            } else {
-                                                isBot = false
-                                            }
-                                            
-                                            let orderValue = isBot ? 1 : 0
-                                            
-                                            return (entry, orderValue)
-                                        }
-                                        .sorted { $0.1 < $1.1 }
-                                        .map(\.0)
-                                    
                                     guard isPremium() else {
                                         PremiumUITgHelper.routeToPremium(
                                             source: .mentionAll

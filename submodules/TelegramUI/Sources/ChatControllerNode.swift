@@ -1,17 +1,21 @@
-// MARK: Nicegram
-import class Combine.AnyCancellable
+// MARK: Nicegram OpenGifsShortcut, AiChat
 import EntityKeyboard
-import FeatAiShortcuts
-import FeatChatBanner
-import FeatTgChatButton
 import NGAiChatUI
 import NGAppCache
-import NGData
 import NGRemoteConfig
 import NGStrings
+import UndoUI
+//
+// MARK: Nicegram ChatBanner
+import FeatChatBanner
+//
+// MARK: Nicegram TgChatButton
+import FeatTgChatButton
 import NGUtils
 import NicegramWallet
-import UndoUI
+//
+// MARK: Nicegram ColorAlign
+import NGData
 //
 import Foundation
 import UIKit
@@ -254,8 +258,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     lazy var nicegramOverlayNode = ASDisplayNode { [nicegramOverlayView] in
         nicegramOverlayView
     }
-    
-    private var cancellables = Set<AnyCancellable>()
     //
     
     // MARK: Nicegram AiChat
@@ -284,11 +286,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             fatalError()
         }
     }()
-    //
-    
-    // MARK: Nicegram AiShortcuts
-    private let aiShortcutsModel: AiShortcutsViewModel
-    private let aiShortcutsNode: ASDisplayNode
     //
     
     let navigateButtons: ChatHistoryNavigationButtons
@@ -491,18 +488,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         
         self.inputContextPanelContainer = ChatControllerTitlePanelNodeContainer()
         self.inputContextOverTextPanelContainer = ChatControllerTitlePanelNodeContainer()
-        
-        // MARK: Nicegram AiShortcuts
-        let aiShortcutsModel = AiShortcutsViewModel()
-        self.aiShortcutsNode = ASDisplayNode {
-            if #available(iOS 16.0, *) {
-                makeAiShortcutsView(viewModel: aiShortcutsModel)
-            } else {
-                UIView()
-            }
-        }
-        self.aiShortcutsModel = aiShortcutsModel
-        //
         
         var source: ChatHistoryListSource
         if case let .messageOptions(_, messageIds, info) = subject {
@@ -931,27 +916,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         self.inputPanelClippingNode.addSubnode(self.inputPanelBackgroundNode)
         self.inputPanelClippingNode.addSubnode(self.inputPanelBackgroundSeparatorNode)
         self.inputPanelBackgroundNode.addSubnode(self.inputPanelBottomBackgroundSeparatorNode)
-        
-        // MARK: Nicegram AiShortcuts
-        if #available(iOS 16.0, *) {
-            self.contentContainerNode.contentNode.addSubnode(self.aiShortcutsNode)
-            
-            aiShortcutsModel
-                .resultPublisher()
-                .sink { [weak self] result in
-                    self?.setInput(text: result, image: nil)
-                }
-                .store(in: &cancellables)
-            
-            aiShortcutsModel.$viewState
-                .map { $0.loadingShortcut != nil }
-                .removeDuplicates()
-                .sink { [weak self] loading in
-                    self?.textInputPanelNode?.update(aiShortcutsLoading: loading)
-                }
-                .store(in: &cancellables)
-        }
-        //
 
         // MARK: Nicegram
         if #available(iOS 15.0, *) {
@@ -2495,24 +2459,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             )
         )
         //
-        
-        // MARK: Nicegram AiShortcuts
-        let aiShortcutsHeight = AiShortcutsConstants.height
-        
-        transition.updateFrame(
-            node: self.aiShortcutsNode,
-            frame: CGRect(
-                origin: CGPoint(
-                    x: 0,
-                    y: apparentNavigateButtonsFrame.maxY - aiShortcutsHeight + 6
-                ),
-                size: CGSize(
-                    width: layout.size.width,
-                    height: aiShortcutsHeight
-                )
-            )
-        )
-        //
     
         if let titleAccessoryPanelNode = self.titleAccessoryPanelNode, let titleAccessoryPanelFrame, !titleAccessoryPanelNode.frame.equalTo(titleAccessoryPanelFrame) {
             titleAccessoryPanelNode.frame = titleAccessoryPanelFrame
@@ -3393,12 +3339,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     }
     
     func updateChatPresentationInterfaceState(_ chatPresentationInterfaceState: ChatPresentationInterfaceState, transition: ContainedViewLayoutTransition, interactive: Bool, completion: @escaping (ContainedViewLayoutTransition) -> Void) {
-        // MARK: Nicegram AiShortcuts
-        aiShortcutsModel.onChangeText(
-            chatPresentationInterfaceState.interfaceState.effectiveInputState.inputText.string
-        )
-        //
-        
         self.selectedMessages = chatPresentationInterfaceState.interfaceState.selectionState?.selectedIds
         
         var textStateUpdated = false

@@ -200,8 +200,8 @@ public final class NavigationContainer: ASDisplayNode, ASGestureRecognizerDelega
     }
     
     public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer) -> Bool {
-        // MARK: Nicegram
-        if otherGestureRecognizer.isNicegramExclusiveGesture() {
+        // MARK: Nicegram AiChat
+        if otherGestureRecognizer.name == "AiChatCommandsPanGestureRecognizer" {
             return false
         }
         //
@@ -213,15 +213,6 @@ public final class NavigationContainer: ASDisplayNode, ASGestureRecognizerDelega
         }
         return false
     }
-    
-    // MARK: Nicegram
-    public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRequireFailureOf otherGestureRecognizer: UIGestureRecognizer) -> Bool {
-        if otherGestureRecognizer.isNicegramExclusiveGesture() {
-            return true
-        }
-        return false
-    }
-    //
     
     @objc private func panGesture(_ recognizer: UIPanGestureRecognizer) {
         switch recognizer.state {

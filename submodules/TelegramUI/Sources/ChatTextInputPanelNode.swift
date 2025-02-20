@@ -679,16 +679,6 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
 //            }
         }
     }
-    
-    // MARK: Nicegram AiShortcuts
-    private var aiShortcutsLoading = false
-    func update(aiShortcutsLoading: Bool) {
-        self.aiShortcutsLoading = aiShortcutsLoading
-        self.textInputNode?.textView.isPreservingText = aiShortcutsLoading
-        
-        self.requestLayout()
-    }
-    //
         
     func updateInputTextState(_ state: ChatTextInputState, keepSendButtonEnabled: Bool, extendedSearchLayout: Bool, accessoryItems: [ChatTextInputAccessoryItem], animated: Bool) {
         if let currentState = self.presentationInterfaceState {
@@ -3812,12 +3802,6 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
                 }
             }
         }
-        
-        // MARK: Nicegram AiShortcuts
-        let aiShortcutsLoading = self.aiShortcutsLoading
-        self.actionButtons.sendButton.isEnabled = !aiShortcutsLoading
-        self.actionButtons.sendContainerNode.alpha = aiShortcutsLoading ? 0.3 : 1
-        //
         
         var animateWithBounce = false
         if self.extendedSearchLayout {

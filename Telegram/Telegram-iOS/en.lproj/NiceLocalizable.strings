@@ -143,7 +143,6 @@
 "Gmod.Disable" = "Disable Preview Mode?";
 
 "ShowNicegramButtonInChat" = "Show Nicegram button in chat";
-"ShowAIShortcutsInChat" = "Show AI Shortcuts in Chat";
 "SendWithKb" = "Send with «Enter» button";
 "NiceFeatures.ShowGmodIcon" = "Show Preview Mode icon";
 "Gmod.OpenChatQ" = "Open chat?";
@@ -241,3 +240,6 @@
 /*Stars Purchase*/
 "StarsPurchase.GetOnFragment" = "Get on Fragment";
 "StarsPurchase.GetOnTelegram" = "Get on Telegram";
+
+/*Spy On Friends*/
+"SpyOnFriends.Title" = "Activities";
