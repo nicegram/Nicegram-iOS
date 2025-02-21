@@ -143,6 +143,7 @@
 "Gmod.Disable" = "Отключить режим предпросмотра?";
 
 "ShowNicegramButtonInChat" = "Показать кнопку Nicegram в чате";
+"ShowAIShortcutsInChat" = "Показывать ИИ-ярлыки в чате";
 "SendWithKb" = "Отправка кнопкой «Enter»";
 "NiceFeatures.ShowGmodIcon" = "Иконка режима предпросмотра";
 "Gmod.OpenChatQ" = "Открыть чат?";

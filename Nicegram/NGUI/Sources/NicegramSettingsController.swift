@@ -10,6 +10,7 @@
 
 import AccountContext
 import Display
+import FeatAiShortcuts
 import FeatImagesHubUI
 import FeatNicegramHub
 import FeatPinnedChats
@@ -79,6 +80,7 @@ private enum NicegramSettingsControllerSection: Int32 {
 
 private enum EasyToggleType {
     case showNicegramButtonInChat
+    case showAiShortcutsInChat
     case sendWithEnter
     case showProfileId
     case showRegDate
@@ -541,6 +543,11 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                 switch (toggleType) {
                 case .showNicegramButtonInChat:
                     NGSettings.showNicegramButtonInChat = value
+                case .showAiShortcutsInChat:
+                    Task {
+                        let updateSettingsUseCase = AiShortcutsModule.shared.updateSettingsUseCase()
+                        await updateSettingsUseCase.set(showInChat: value)
+                    }
                 case .sendWithEnter:
                     NGSettings.sendWithEnter = value
                 case .showProfileId:
@@ -672,7 +679,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
 // MARK: Entries list
 
-private func nicegramSettingsControllerEntries(presentationData: PresentationData, experimentalSettings: ExperimentalUISettings, showCalls: Bool, pinnedChats: [NicegramSettingsControllerEntry.PinnedChat], sharingSettings: SharingSettings?, context: AccountContext) -> [NicegramSettingsControllerEntry] {
+private func nicegramSettingsControllerEntries(presentationData: PresentationData, experimentalSettings: ExperimentalUISettings, showCalls: Bool, pinnedChats: [NicegramSettingsControllerEntry.PinnedChat], sharingSettings: SharingSettings?, aiShortcutsSettings: FeatAiShortcuts.Settings, context: AccountContext) -> [NicegramSettingsControllerEntry] {
     let nicegramSettings = getNicegramSettings()
     
     var entries: [NicegramSettingsControllerEntry] = []
@@ -749,6 +756,9 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     var toggleIndex: Int32 = 1
     // MARK: Other Toggles (Easy)
     entries.append(.easyToggle(toggleIndex, .showNicegramButtonInChat, l("ShowNicegramButtonInChat"), NGSettings.showNicegramButtonInChat))
+    toggleIndex += 1
+    
+    entries.append(.easyToggle(toggleIndex, .showAiShortcutsInChat, l("ShowAIShortcutsInChat"), aiShortcutsSettings.showInChat))
     toggleIndex += 1
     
     entries.append(.easyToggle(toggleIndex, .sendWithEnter, l("SendWithKb"), NGSettings.sendWithEnter))
@@ -940,8 +950,13 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
     } else {
         sharingSettingsSignal = .single(nil)
     }
+    
+    let aiShortcutsSettingsSignal = AiShortcutsModule.shared.getSettingsUseCase()
+        .publisher()
+        .toSignal()
+        .skipError()
 
-    let signal = combineLatest(context.sharedContext.presentationData, sharedDataSignal, showCallsTab, pinnedChatsSignal, sharingSettingsSignal) |> map { presentationData, sharedData, showCalls, pinnedChats, sharingSettings -> (ItemListControllerState, (ItemListNodeState, Any)) in
+    let signal = combineLatest(context.sharedContext.presentationData, sharedDataSignal, showCallsTab, pinnedChatsSignal, sharingSettingsSignal, aiShortcutsSettingsSignal) |> map { presentationData, sharedData, showCalls, pinnedChats, sharingSettings, aiShortcutsSettings -> (ItemListControllerState, (ItemListNodeState, Any)) in
 
         let experimentalSettings: ExperimentalUISettings = sharedData.entries[ApplicationSpecificSharedDataKeys.experimentalUISettings]?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
 
@@ -952,7 +967,7 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
             })
         }
 
-        let entries = nicegramSettingsControllerEntries(presentationData: presentationData, experimentalSettings: experimentalSettings, showCalls: showCalls, pinnedChats: pinnedChats, sharingSettings: sharingSettings, context: context)
+        let entries = nicegramSettingsControllerEntries(presentationData: presentationData, experimentalSettings: experimentalSettings, showCalls: showCalls, pinnedChats: pinnedChats, sharingSettings: sharingSettings, aiShortcutsSettings: aiShortcutsSettings, context: context)
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("AppName")), leftNavigationButton: leftNavigationButton, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
         let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks)
 

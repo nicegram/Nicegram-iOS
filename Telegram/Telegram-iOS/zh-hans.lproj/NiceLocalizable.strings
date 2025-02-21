@@ -143,6 +143,7 @@
 "Gmod.Disable" = "关闭幽灵模式？";
 
 "ShowNicegramButtonInChat" = "在聊天中显示 Nicegram 按钮";
+"ShowAIShortcutsInChat" = "在聊天中显示AI快捷方式";
 "SendWithKb" = "按<回车>发送";
 "NiceFeatures.ShowGmodIcon" = "显示幽灵模式图标";
 "Gmod.OpenChatQ" = "打开对话？";

@@ -112,8 +112,7 @@
 "Messages.SelectAllFromUser" = "Bu Kullanıcıdan Olan Bütün Mesajları Seç";
 "Messages.ToLanguage" = "Hedef Dil";
 "Messages.ToLanguage.WithCode" = "Hedef Dil: %@";
-"Messages.TranslateError.ToLanguageNotFound" = "Metni çevirmek istediğiniz dili tespit edemedik. Lütfen manuel olarak seçin ve tekrar deneyin.
-";
+"Messages.TranslateError.ToLanguageNotFound" = "Metni çevirmek istediğiniz dili tespit edemedik. Lütfen manuel olarak seçin ve tekrar deneyin.\n";
 "Messages.ReplyPrivately" = "Özelden Cevapla";
 "Messages.DeleteAllSystemMessages" = "Tümünü Sil";
 
@@ -144,6 +143,7 @@
 "Gmod.Disable" = "Önizleme Modu devre dışı bırakılsın mı?";
 
 "ShowNicegramButtonInChat" = "Sohbette Nicegram Butonunu Göster";
+"ShowAIShortcutsInChat" = "Sohbette Yapay Zeka Kısayollarını Göster";
 "SendWithKb" = "«Enter» butonu ile gönder";
 "NiceFeatures.ShowGmodIcon" = "Önizleme Modu simgesini göster";
 "Gmod.OpenChatQ" = "Sohbet açılsın mı?";

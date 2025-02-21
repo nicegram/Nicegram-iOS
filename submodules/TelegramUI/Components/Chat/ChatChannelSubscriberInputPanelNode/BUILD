@@ -1,5 +1,9 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
+NGDEPS = [
+    "//Nicegram/NGUtils:NGUtils",
+]
+
 swift_library(
     name = "ChatChannelSubscriberInputPanelNode",
     module_name = "ChatChannelSubscriberInputPanelNode",
@@ -9,7 +13,7 @@ swift_library(
     copts = [
         #"-warnings-as-errors",
     ],
-    deps = [
+    deps = NGDEPS + [
         "//submodules/AsyncDisplayKit",
         "//submodules/Display",
         "//submodules/TelegramCore",

@@ -143,6 +143,7 @@
 "Gmod.Disable" = "Désactiver le mode « Aperçu » ?";
 
 "ShowNicegramButtonInChat" = "Afficher le bouton Nicegram dans le chat";
+"ShowAIShortcutsInChat" = "Afficher les raccourcis IA dans le chat";
 "SendWithKb" = "Envoyer avec le bouton « Entrer »";
 "NiceFeatures.ShowGmodIcon" = "Afficher l'icône du mode « Aperçu »";
 "Gmod.OpenChatQ" = "Ouvrir le chat ?";

@@ -15,7 +15,10 @@ import PeerInfoChatListPaneNode
 import PeerInfoChatPaneNode
 import TextFormat
 import EmojiTextAttachmentView
-
+// MARK: Nicegram NCG-7303 Spy on friends
+import NGStrings
+import NGUtils
+//
 final class PeerInfoPaneWrapper {
     let key: PeerInfoPaneKey
     let node: PeerInfoPaneNode
@@ -209,6 +212,13 @@ final class PeerInfoPaneTabsContainerNode: ASDisplayNode {
                     self.paneNodes[specifier.key] = paneNode
                 }
                 paneNode.updateText(context: self.context, title: specifier.title, icons: specifier.icons, isSelected: selectedPane == specifier.key, presentationData: presentationData)
+                // MARK: Nicegram NCG-7303 Spy on friends
+                if #available(iOS 15.0, *),
+                   selectedPane == specifier.key &&
+                   specifier.key == .spyOnFriends {
+                    sendSpyOnFriendsAnalytics(with: .show)
+                }
+                //
             }
             var removeKeys: [PeerInfoPaneKey] = []
             for (key, _) in self.paneNodes {
@@ -551,6 +561,20 @@ private final class PeerInfoPendingPane {
             paneNode = PeerInfoChatListPaneNode(context: context, navigationController: chatControllerInteraction.navigationController)
         case .savedMessages:
             paneNode = PeerInfoChatPaneNode(context: context, peerId: peerId, navigationController: chatControllerInteraction.navigationController)
+// MARK: Nicegram NCG-7303 Spy on friends
+        case .spyOnFriends:
+            if #available(iOS 15.0, *),
+               let spyOnFriendsContext = data.spyOnFriends {
+                paneNode = SpyOnFriendsPaneNode(
+                    context: context,
+                    peerId: peerId,
+                    chatControllerInteraction: chatControllerInteraction,
+                    spyOnFriendsContext: spyOnFriendsContext
+                )
+            } else {
+                preconditionFailure()
+            }
+//
         }
         paneNode.externalDataUpdated = externalDataUpdated
         paneNode.parentController = parentController
@@ -1222,6 +1246,10 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
                         return nil
                     }
                 } ?? []
+// MARK: Nicegram NCG-7303 Spy on friends
+            case .spyOnFriends:
+                title = l("SpyOnFriends.Title")
+//
             }
             return PeerInfoPaneSpecifier(key: key, title: title, icons: icons)
         }, selectedPane: self.currentPaneKey, disableSwitching: disableTabSwitching, transitionFraction: self.transitionFraction, transition: transition)

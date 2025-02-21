@@ -53,10 +53,8 @@ import TelegramIntents
 import TooltipUI
 import StatisticsUI
 import NGWebUtils
-// MARK: Nicegram ATTUserActions
-import NGUtils
-//
 // MARK: Nicegram Imports
+import FeatAttentionEconomy
 import FeatTgUtils
 import NGAppCache
 import NGStrings
@@ -10000,6 +9998,20 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
             if let strongSelf = self {
                 strongSelf.updateChatPresentationInterfaceState(animated: true, interactive: true, { $0.updatedBotStartPayload(nil) })
             }
+            
+            // MARK: Nicegram ATT
+            Task {
+                guard let self,
+                      let peer = self.presentationInterfaceState.renderedPeer?.peer else {
+                    return
+                }
+                await AttCoreModule.shared.claimOngoingActionUseCase()
+                    .claimSubscribeIfNeeded(
+                        chatId: peer.id.ng_toInt64(),
+                        username: peer.addressName ?? ""
+                    )
+            }
+            //
         }))
     }
     

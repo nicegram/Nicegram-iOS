@@ -143,6 +143,7 @@
 "Gmod.Disable" = "Wyłączyć tryb Podglądu?";
 
 "ShowNicegramButtonInChat" = "Pokaż przycisk Nicegram w czacie";
+"ShowAIShortcutsInChat" = "Pokaż skróty AI w czacie";
 "SendWithKb" = "Wyślij za pomocą przycisku «Enter»";
 "NiceFeatures.ShowGmodIcon" = "Pokaż ikonę trybu Podglądu";
 "Gmod.OpenChatQ" = "Otworzyć czat?";

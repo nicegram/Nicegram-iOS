@@ -825,8 +825,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                    NGData.isPremium() {
                     let lastFolder = NGSettings.lastFolder
                     if lastFolder != -1 {
-                        self.chatListDisplayNode.mainContainerNode.resetPendingItemNode()
-                        self.selectTab(id: .filter(lastFolder))
+                        self.selectTab(id: .filter(lastFolder), preselected: true)
                     }
                 }
             }
@@ -4053,8 +4052,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             }
         }))
     }
-    
-    private func selectTab(id: ChatListFilterTabEntryId) {
+    // MARK: Nicegram NCG-7102 bottom folders fix, preselected
+    private func selectTab(id: ChatListFilterTabEntryId, preselected: Bool = false) {
         if self.parent == nil {
             if let navigationController = self.context.sharedContext.mainWindow?.viewController as? NavigationController {
                 for controller in navigationController.viewControllers {
@@ -4099,7 +4098,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 if strongSelf.chatListDisplayNode.inlineStackContainerNode != nil {
                     strongSelf.setInlineChatList(location: nil)
                 }
-                strongSelf.chatListDisplayNode.mainContainerNode.switchToFilter(id: updatedFilter.flatMap { .filter($0.id) } ?? .all)
+                // MARK: Nicegram NCG-7102 bottom folders fix, preselected
+                strongSelf.chatListDisplayNode.mainContainerNode.switchToFilter(id: updatedFilter.flatMap { .filter($0.id) } ?? .all, preselected: preselected)
             }
         })
     }

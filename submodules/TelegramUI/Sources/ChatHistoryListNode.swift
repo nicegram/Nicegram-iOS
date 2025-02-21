@@ -251,6 +251,17 @@ private func mappedInsertEntries(context: AccountContext, chatLocation: ChatLoca
                     case .bubbles:
                         // MARK: Nicegram, wantTrButton
                         item = ChatMessageItemImpl(presentationData: presentationData, context: context, chatLocation: chatLocation, associatedData: associatedData, controllerInteraction: controllerInteraction, content: .message(message: message, read: read, selection: selection, attributes: attributes, location: location), disableDate: disableFloatingDateHeaders, wantTrButton: wantTrButton)
+                    
+                        // MARK: Nicegram Wallet
+                        if #available(iOS 16.0, *), let tx = attributes.walletTx {
+                            item = ChatMessageNicegramWalletTxItem(
+                                controllerInteraction: controllerInteraction,
+                                incoming: message.flags.contains(.Incoming),
+                                presentationData: presentationData,
+                                tx: tx
+                            )
+                        }
+                        //
                     case let .list(_, _, _, displayHeaders, hintLinks, isGlobalSearch):
                         let displayHeader: Bool
                         switch displayHeaders {
@@ -263,16 +274,6 @@ private func mappedInsertEntries(context: AccountContext, chatLocation: ChatLoca
                         }
                         item = ListMessageItem(presentationData: presentationData, context: context, chatLocation: chatLocation, interaction: ListMessageItemInteraction(controllerInteraction: controllerInteraction), message: message, translateToLanguage: associatedData.translateToLanguage, selection: selection, displayHeader: displayHeader, hintIsLink: hintLinks, isGlobalSearchResult: isGlobalSearch)
                 }
-                // MARK: Nicegram Wallet
-                if #available(iOS 16.0, *), let tx = attributes.walletTx {
-                    item = ChatMessageNicegramWalletTxItem(
-                        controllerInteraction: controllerInteraction,
-                        incoming: message.flags.contains(.Incoming),
-                        presentationData: presentationData,
-                        tx: tx
-                    )
-                }
-                //
                 return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: item, directionHint: entry.directionHint)
             case let .MessageGroupEntry(_, messages, presentationData):
                 let item: ListViewItem
@@ -322,6 +323,17 @@ private func mappedUpdateEntries(context: AccountContext, chatLocation: ChatLoca
                     case .bubbles:
                         // MARK: Nicegram, wantTrButton
                         item = ChatMessageItemImpl(presentationData: presentationData, context: context, chatLocation: chatLocation, associatedData: associatedData, controllerInteraction: controllerInteraction, content: .message(message: message, read: read, selection: selection, attributes: attributes, location: location), disableDate: disableFloatingDateHeaders, wantTrButton: wantTrButton)
+                    
+                        // MARK: Nicegram Wallet
+                        if #available(iOS 16.0, *), let tx = attributes.walletTx {
+                            item = ChatMessageNicegramWalletTxItem(
+                                controllerInteraction: controllerInteraction,
+                                incoming: message.flags.contains(.Incoming),
+                                presentationData: presentationData,
+                                tx: tx
+                            )
+                        }
+                        //
                     case let .list(_, _, _, displayHeaders, hintLinks, isGlobalSearch):
                         let displayHeader: Bool
                         switch displayHeaders {
@@ -334,16 +346,6 @@ private func mappedUpdateEntries(context: AccountContext, chatLocation: ChatLoca
                         }
                         item = ListMessageItem(presentationData: presentationData, context: context, chatLocation: chatLocation, interaction: ListMessageItemInteraction(controllerInteraction: controllerInteraction), message: message, translateToLanguage: associatedData.translateToLanguage, selection: selection, displayHeader: displayHeader, hintIsLink: hintLinks, isGlobalSearchResult: isGlobalSearch)
                 }
-                // MARK: Nicegram Wallet
-                if #available(iOS 16.0, *), let tx = attributes.walletTx {
-                    item = ChatMessageNicegramWalletTxItem(
-                        controllerInteraction: controllerInteraction,
-                        incoming: message.flags.contains(.Incoming),
-                        presentationData: presentationData,
-                        tx: tx
-                    )
-                }
-                //
                 return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: item, directionHint: entry.directionHint)
             case let .MessageGroupEntry(_, messages, presentationData):
                 let item: ListViewItem

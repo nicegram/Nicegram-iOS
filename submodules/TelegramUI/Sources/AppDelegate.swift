@@ -454,6 +454,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     AdProviderMock()
                 }
             },
+            chatListPeersProvider: {
+                ChatListPeersProviderImpl(contextProvider: contextProvider)
+            },
             firebaseAnalyticsSender: {
                 FirebaseAnalyticsSender()
             },
