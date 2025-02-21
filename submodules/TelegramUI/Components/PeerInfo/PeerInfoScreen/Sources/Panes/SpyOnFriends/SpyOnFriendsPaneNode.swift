@@ -166,7 +166,6 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
     private let context: AccountContext
     private let peerId: PeerId
     private let chatControllerInteraction: ChatControllerInteraction
-    private let openPeerContextAction: (Bool, Peer, ASDisplayNode, ContextGesture?) -> Void
     private let spyOnFriendsContext: SpyOnFriendsContext
     
     private let feature = SpyOnFriendsFeature(navigator: SpyOnFriendsNavigatorImpl())
@@ -203,13 +202,11 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
         context: AccountContext,
         peerId: PeerId,
         chatControllerInteraction: ChatControllerInteraction,
-        openPeerContextAction: @escaping (Bool, Peer, ASDisplayNode, ContextGesture?) -> Void,
         spyOnFriendsContext: SpyOnFriendsContext
     ) {
         self.context = context
         self.peerId = peerId
         self.chatControllerInteraction = chatControllerInteraction
-        self.openPeerContextAction = openPeerContextAction
         self.spyOnFriendsContext = spyOnFriendsContext
     
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
@@ -286,7 +283,6 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
     ) {
         let isFirstLayout = self.currentParams == nil
         self.currentParams = (size, isScrollingLockedAtTop, presentationData)
-        
         self.coveringView.backgroundColor = presentationData.theme.list.itemBlocksBackgroundColor
         transition.updateFrame(view: self.coveringView, frame: CGRect(origin: CGPoint(x: 0.0, y: -1.0), size: CGSize(width: size.width, height: topInset + 1.0)))
         
@@ -935,7 +931,7 @@ class SpyOnFriendsUnlockNode: ListViewItemNode {
                     { _ in }
                 )
             }
-
+            
             unlockView.setup(
                 with: item.theme.list.itemAccentColor,
                 backgroundColor: item.theme.list.itemBlocksBackgroundColor
