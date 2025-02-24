@@ -88,7 +88,7 @@
 "Common.SupportChatUsername" = "nicegram_tw";
 "Common.FAQUrl" = "https://nicegram-tw.gitbook.io/";
 "Common.FAQ.Button" = "Nicegram 常見問題";
-"IAP.Premium.Title" = "Premium";
+"IAP.Premium.Title" = "進階版功能";
 "IAP.Premium.Subtitle" = "您無法抗拒的獨特功能！";
 "IAP.Premium.Activated" = "已升級進階版！";
 "IAP.Common.Restore" = "恢復購買";
@@ -241,3 +241,6 @@
 /*Stars Purchase*/
 "StarsPurchase.GetOnFragment" = "購買於 Fragment";
 "StarsPurchase.GetOnTelegram" = "購買於 Telegram";
+
+/*Spy On Friends*/
+"SpyOnFriends.Title" = "活動";

@@ -2,6 +2,7 @@
 import FeatTgUserNotes
 import NGData
 import FeatSpyOnFriends
+import NGUtils
 //
 import Foundation
 import UIKit
@@ -1030,6 +1031,11 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
 // MARK: Nicegram NCG-7303 Spy on friends
                 let feature = SpyOnFriendsFeature(navigator: SpyOnFriendsNavigatorImpl())
                 
+                if isPremium() || isPremiumPlus() {
+                    feature.updateLastUpdated(with: userPeerId.id._internalGetInt64Value())
+                    sendSpyOnFriendsAnalytics(with: .usage)
+                }
+
                 spyOnFriends = SpyOnFriendsContext(
                     account: context.account,
                     engine: context.engine,
@@ -1439,9 +1445,12 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                         enableQRLogin: false)
                 }
 // MARK: Nicegram NCG-7303 Spy on friends
+//                if user.botInfo != nil && !user.id.isVerificationCodes {
                 if #available(iOS 15.0, *),
                    let user = peer as? TelegramUser,
-                   user.botInfo == nil {
+                   !(user.botInfo != nil && !user.id.isVerificationCodes), // checking is bot
+                   user.id.id._internalGetInt64Value() != 777000, //checking for telegram login bot
+                   peer?.id != context.account.peerId {
                     if availablePanes != nil {
                         availablePanes?.insert(.spyOnFriends, at: 0)
                     } else {

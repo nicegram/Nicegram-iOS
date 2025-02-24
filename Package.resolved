@@ -113,8 +113,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "21e5bc1689bd362b7a0858abccd0b4acffc825b9"
+        "branch" : "fix/spy_on_friends",
+        "revision" : "928c810bc05355a39b1fd18cdffd5abaaffc5ace"
       }
     },
     {
@@ -158,8 +158,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SDWebImage/SDWebImage.git",
       "state" : {
-        "revision" : "e7d3256c497af9330a0df866ee38f544ddd87c49",
-        "version" : "5.20.1"
+        "revision" : "cac9a55a3ae92478a2c95042dcc8d9695d2129ca",
+        "version" : "5.21.0"
       }
     },
     {

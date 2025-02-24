@@ -170,6 +170,10 @@ public func isPremium() -> Bool {
     PremiumContainer.shared.getPremiumStatusUseCase()().premium.activeLocally
 }
 
+public func isPremiumPlus() -> Bool {
+    PremiumContainer.shared.getPremiumStatusUseCase()().premiumPlus.activeLocally
+}
+
 public func usetrButton() -> [(Bool, [String])] {
     var ignoredLangs = NGSettings.ignoreTranslate
     if !NGSettings.useIgnoreLanguages {

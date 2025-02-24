@@ -20,6 +20,7 @@ import TelegramApi
 import FeatSpyOnFriends
 import NicegramWallet
 import NGUtils
+import NGData
 
 private struct SpyOnFriendsListTransaction {
     let deletions: [ListViewDeleteItem]
@@ -355,24 +356,24 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
     private func updateEntries(state: SpyOnFriendsState, presentationData: PresentationData) {
         var entries: [SpyOnFriendsListEntry] = []
         
-        if feature.getLastUpdated(with: peerId.id._internalGetInt64Value()) == nil {
-            entries.append(.unlock(sectionId: 1, context: spyOnFriendsContext))
-        } else {
+        if isPremium() || isPremiumPlus() {
             entries.append(.header(sectionId: 0, context: spyOnFriendsContext))
+            
+            let groups = groups(from: state.chatsWithMessages)
+            
+            let groupsEntries = groups.map {
+                SpyOnFriendsListEntry.group(
+                    sectionId: ItemListSectionId($0.0.timeIntervalSince1970),
+                    context: context,
+                    group: $0
+                )
+            }
+            
+            entries.append(contentsOf: groupsEntries)
+        } else {
+            entries.append(.unlock(sectionId: 1, context: spyOnFriendsContext))
         }
-        
-        let groups = groups(from: state.chatsWithMessages)
-        
-        let groupsEntries = groups.map {
-            SpyOnFriendsListEntry.group(
-                sectionId: ItemListSectionId($0.0.timeIntervalSince1970),
-                context: context,
-                group: $0
-            )
-        }
-        
-        entries.append(contentsOf: groupsEntries)
-        
+                
         let transaction = preparedTransition(
             from: self.currentEntries,
             to: entries,
@@ -437,7 +438,8 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
                                   highlight: ChatControllerSubject.MessageHighlight(quote: nil),
                                   timecode: nil,
                                   setupReply: false
-                                 )
+                                 ),
+                keepStack: .always
             ))
         }
     }
@@ -911,7 +913,8 @@ class SpyOnFriendsUnlockNode: ListViewItemNode {
 
         unlockView.setup(
             with: item.theme.list.itemAccentColor,
-            backgroundColor: item.theme.list.itemBlocksBackgroundColor
+            backgroundColor: item.theme.list.itemBlocksBackgroundColor,
+            textColor: item.theme.list.blocksBackgroundColor
         ) {
             item.context.load()
         } share: {
@@ -934,7 +937,8 @@ class SpyOnFriendsUnlockNode: ListViewItemNode {
             
             unlockView.setup(
                 with: item.theme.list.itemAccentColor,
-                backgroundColor: item.theme.list.itemBlocksBackgroundColor
+                backgroundColor: item.theme.list.itemBlocksBackgroundColor,
+                textColor: item.theme.list.blocksBackgroundColor
             ) {
                 item.context.load()
             } share: {
