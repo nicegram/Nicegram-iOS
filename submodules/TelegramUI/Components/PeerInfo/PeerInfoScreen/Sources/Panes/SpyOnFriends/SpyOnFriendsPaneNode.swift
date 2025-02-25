@@ -462,30 +462,29 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
     }
     
     private func share() {
-        let controller = context.sharedContext.makeContactSelectionController(.init(
+        let controller = context.sharedContext.makePeerSelectionController(.init(
             context: context,
-            title: { _ in "" }
+            filter: [.onlyWriteable, .excludeDisabled, .excludeBots],
+            title: ""
         ))
         controller.navigationPresentation = .modal
-        
-        Task {
-            let result = try? await controller.result.awaitForFirstValue()
-            let sender = await ContactMessageSender()
-            let text = await sender.nicegramReferralLink()
-            
-            if let contactListPeer = result?.0.first {
-                switch contactListPeer {
-                case let .peer(peer, _, _):
-                    if let contact = await WalletTgUtils.peerToWalletContact(id: peer.id, context: context) {
-                        await sender.send(
-                            contact: contact,
-                            text: text,
-                            showConfirmation: true
-                        )
-                    }
-                default: break
+        controller.peerSelected = { [weak self, weak controller] peer, _ in
+            guard let self else { return }
+
+            Task {
+                let sender = await ContactMessageSender()
+                let text = await sender.nicegramReferralLink()
+                
+                if let contact = await WalletTgUtils.peerToWalletContact(id: peer.id, context: self.context) {
+                    await sender.send(
+                        contact: contact,
+                        text: text,
+                        showConfirmation: true
+                    )
+                    await controller?.dismiss()
                 }
             }
+
         }
         
         guard let navigationController = chatControllerInteraction.navigationController() else { return }
