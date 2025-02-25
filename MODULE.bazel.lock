@@ -633,8 +633,8 @@
         "bzlTransitiveDigest": "8/YWyYftd8THfVoADvrOmQLl45wUGfP2MVjLM5FFn50=",
         "usagesDigest": "voXBMcSNlo2fnK6JIvInIrncYhBKKG8nBeKvToaUA0Y=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "8129edf94593b3f84e222b0e75b1ddf0c256af3606b0e9f51e13b3ebe7e344c9",
-          "@@//Package.swift": "0c4c991fedb7a7b66589da25fd19557ad938bb874d019e43e5aaa6d7e0a333d6"
+          "@@//Package.resolved": "7b3ab6b65f3eb4d3dc81d74f9d340fcd03ce07e24a38150376a825bf8aaaa4de",
+          "@@//Package.swift": "91f669b89d38025eea7f81c896dca68cd9faf81f2aba285cc7430b2a5514b38c"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -1138,7 +1138,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "928c810bc05355a39b1fd18cdffd5abaaffc5ace",
+              "commit": "9a03d3c4b97508fc4aad0ec3b155af2c5379bbb2",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "init_submodules": false,
@@ -1404,7 +1404,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_wallet_ios",
-              "commit": "63ea2a8342b31467d251a406cf4e72f02fc842eb",
+              "commit": "466e4a1b29809f301818b5670345089e91a5adaa",
               "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
               "version": "",
               "init_submodules": false,

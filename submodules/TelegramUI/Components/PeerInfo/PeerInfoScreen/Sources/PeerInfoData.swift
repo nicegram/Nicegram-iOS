@@ -1031,7 +1031,8 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
 // MARK: Nicegram NCG-7303 Spy on friends
                 let feature = SpyOnFriendsFeature(navigator: SpyOnFriendsNavigatorImpl())
                 
-                if isPremium() || isPremiumPlus() {
+                if (isPremium() || isPremiumPlus()) &&
+                    feature.checkIfNeedUpdate(with: userPeerId.id._internalGetInt64Value()) {
                     feature.updateLastUpdated(with: userPeerId.id._internalGetInt64Value())
                     sendSpyOnFriendsAnalytics(with: .usage)
                 }

@@ -5,19 +5,13 @@ import SwiftSignalKit
 import Postbox
 import TelegramPresentationData
 import AccountContext
-import ContextUI
-import PhotoResources
-import TelegramUIPreferences
-import ItemListPeerItem
 import MergeLists
 import ItemListUI
 import ChatControllerInteraction
-import PeerInfoVisualMediaPaneNode
 import PeerInfoPaneNode
 import FeatSpyOnFriends
-import AvatarNode
 import TelegramApi
-import FeatSpyOnFriends
+import TelegramStringFormatting
 import NicegramWallet
 import NGUtils
 import NGData
@@ -30,26 +24,29 @@ private struct SpyOnFriendsListTransaction {
 
 @available(iOS 15.0, *)
 private enum SpyOnFriendsListEntry: Comparable, Identifiable {
-    case header(sectionId: ItemListSectionId, context: SpyOnFriendsContext)
+    case header(sectionId: ItemListSectionId, context: SpyOnFriendsContext, isRefreshing: Bool)
     case group(sectionId: ItemListSectionId, context: AccountContext, group: (Date, [SpyOnFriendsGroup]))
     case unlock(sectionId: ItemListSectionId, context: SpyOnFriendsContext)
+    case emptyData(sectionId: ItemListSectionId)
         
     var stableId: Int32 {
         switch self {
-        case let .header(sectionId, _):
+        case let .header(sectionId, _, _):
             return sectionId
         case let .group(sectionId, _, _):
             return sectionId
         case let .unlock(sectionId, _):
+            return sectionId
+        case let .emptyData(sectionId):
             return sectionId
         }
     }
     
     static func ==(lhs: SpyOnFriendsListEntry, rhs: SpyOnFriendsListEntry) -> Bool {
         switch lhs {
-        case let .header(lhsSectionId, _):
-            if case let .header(rhsSectionId, _) = rhs {
-                return lhsSectionId == rhsSectionId
+        case let .header(_, _, lhsIsRefreshing):
+            if case let .header(_, _, rhsIsRefreshing) = rhs {
+                return lhsIsRefreshing == rhsIsRefreshing
             } else {
                 return false
             }
@@ -65,6 +62,8 @@ private enum SpyOnFriendsListEntry: Comparable, Identifiable {
             } else {
                 return false
             }
+        case .emptyData:
+            return true
         }
     }
     
@@ -74,10 +73,10 @@ private enum SpyOnFriendsListEntry: Comparable, Identifiable {
                 switch rhs {
                     case let .group(_, _, rhsGroups):
                     return lhsGroups.0 < rhsGroups.0
-                case .header, .unlock:
+                case .header, .unlock, .emptyData:
                     return false
                 }
-        case .header, .unlock:
+        case .header, .unlock, .emptyData:
             return false
         }
     }
@@ -90,18 +89,21 @@ private enum SpyOnFriendsListEntry: Comparable, Identifiable {
         share: @escaping () -> Void
     ) -> ListViewItem {
         switch self {
-        case let .header(sectionId, context):
+        case let .header(sectionId, context, isRefreshing):
             return SpyOnFriendsHeaderItem(
                 sectionId: sectionId,
                 context: context,
                 theme: presentationData.theme,
-                peerId: peerId.id._internalGetInt64Value()
+                locale: localeWithStrings(presentationData.strings),
+                peerId: peerId.id._internalGetInt64Value(),
+                isRefreshing: isRefreshing
             )
         case let .group(sectionId, context, group):
             return SpyOnFriendsMessagesItem(
                 sectionId: sectionId,
                 context: context,
                 theme: presentationData.theme,
+                locale: localeWithStrings(presentationData.strings),
                 group: group,
                 openMessage: openMessage
             )
@@ -109,10 +111,16 @@ private enum SpyOnFriendsListEntry: Comparable, Identifiable {
             return SpyOnFriendsUnlockItem(
                 sectionId: sectionId,
                 theme: presentationData.theme,
+                locale: localeWithStrings(presentationData.strings),
                 context: context,
                 accountContext: accountContext,
                 peerId: peerId,
                 share: share
+            )
+        case let .emptyData(sectionId):
+            return SpyOnFriendsEmptyDataItem(
+                sectionId: sectionId,
+                theme: presentationData.theme
             )
         }
     }
@@ -357,21 +365,30 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
         var entries: [SpyOnFriendsListEntry] = []
         
         if isPremium() || isPremiumPlus() {
-            entries.append(.header(sectionId: 0, context: spyOnFriendsContext))
+            entries.append(.header(
+                sectionId: 0,
+                context: spyOnFriendsContext,
+                isRefreshing: state.dataState != .ready(canLoadMore: true)
+            ))
             
             let groups = groups(from: state.chatsWithMessages)
             
-            let groupsEntries = groups.map {
-                SpyOnFriendsListEntry.group(
-                    sectionId: ItemListSectionId($0.0.timeIntervalSince1970),
-                    context: context,
-                    group: $0
-                )
+            if groups.isEmpty &&
+                state.dataState == .ready(canLoadMore: true)  {
+                entries.append(.emptyData(sectionId: 3))
+            } else {
+                let groupsEntries = groups.map {
+                    SpyOnFriendsListEntry.group(
+                        sectionId: ItemListSectionId($0.0.timeIntervalSince1970),
+                        context: context,
+                        group: $0
+                    )
+                }
+                
+                entries.append(contentsOf: groupsEntries)
             }
-            
-            entries.append(contentsOf: groupsEntries)
         } else {
-            entries.append(.unlock(sectionId: 1, context: spyOnFriendsContext))
+            entries = [.unlock(sectionId: 1, context: spyOnFriendsContext)]
         }
                 
         let transaction = preparedTransition(
@@ -447,9 +464,7 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
     private func share() {
         let controller = context.sharedContext.makeContactSelectionController(.init(
             context: context,
-            title: { strings in
-                ""
-            }
+            title: { _ in "" }
         ))
         controller.navigationPresentation = .modal
         
@@ -524,454 +539,6 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
     }
 }
 
-@available(iOS 15.0, *)
-public final class SpyOnFriendsHeaderItem: ListViewItem, ItemListItem {
-    public let sectionId: ItemListSectionId
-    public let context: SpyOnFriendsContext
-    public let theme: PresentationTheme
-    public let peerId: Int64
-    
-    public init(
-        sectionId: ItemListSectionId,
-        context: SpyOnFriendsContext,
-        theme: PresentationTheme,
-        peerId: Int64
-    ) {
-        self.sectionId = sectionId
-        self.context = context
-        self.theme = theme
-        self.peerId = peerId
-    }
-
-    public func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, previousItem: ListViewItem?, nextItem: ListViewItem?, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void) {
-        let configure = { () -> Void in
-            let node = SpyOnFriendsHeaderNode(peerId: self.peerId)
-            node.setupItem(self)
-
-            let (layout, apply) = node.asyncLayout()(self, params, false, false, false)
-            
-            node.contentSize = layout.contentSize
-            node.insets = layout.insets
-
-            completion(node, {
-                return (nil, { _ in apply(.None) })
-            })
-        }
-        if Thread.isMainThread {
-            configure()
-        } else {
-            Queue.mainQueue().async(configure)
-        }
-    }
-    
-    public func updateNode(async: @escaping (@escaping () -> Void) -> Void, node: @escaping () -> ListViewItemNode, params: ListViewItemLayoutParams, previousItem: ListViewItem?, nextItem: ListViewItem?, animation: ListViewItemUpdateAnimation, completion: @escaping (ListViewItemNodeLayout, @escaping (ListViewItemApply) -> Void) -> Void) {
-        Queue.mainQueue().async {
-            if let nodeValue = node() as? SpyOnFriendsHeaderNode {
-                nodeValue.setupItem(self)
-                
-                let nodeLayout = nodeValue.asyncLayout()
-                
-                let (layout, apply) = nodeLayout(self, params, false, false, false)
-                
-                completion(layout, { _ in
-                    apply(animation)
-                })
-            } else {
-                assertionFailure()
-            }
-        }
-    }
-}
-
-@available(iOS 15.0, *)
-class SpyOnFriendsHeaderNode: ListViewItemNode {
-    var item: SpyOnFriendsHeaderItem?
-
-    private let headerView: SpyOnFriendsHeaderView
-    private let headerNode: ASDisplayNode
-    
-    required init(peerId: Int64) {
-        let headerView = SpyOnFriendsHeaderView(peerId: peerId)
-        self.headerView = headerView
-        self.headerNode = ASDisplayNode {
-            headerView
-        }
-
-        super.init(layerBacked: false, dynamicBounce: false, rotated: false)
-
-        self.addSubnode(headerNode)
-    }
-    
-    func setupItem(_ item: SpyOnFriendsHeaderItem) {
-        self.item = item
-        
-        headerView.setup(
-            with: item.theme.list.itemAccentColor,
-            backgroundColor: item.theme.list.itemBlocksBackgroundColor
-        ) {
-            item.context.load()
-        }
-    }
-
-    func asyncLayout() -> (_ item: SpyOnFriendsHeaderItem, _ params: ListViewItemLayoutParams, _ mergedTop: Bool, _ mergedBottom: Bool, _ dateAtBottom: Bool) -> (ListViewItemNodeLayout, (ListViewItemUpdateAnimation) -> Void) {
-        return { [weak self] item, params, mergedTop, mergedBottom, dateHeaderAtBottom -> (ListViewItemNodeLayout, (ListViewItemUpdateAnimation) -> Void) in
-            guard let self else {
-                return (
-                    ListViewItemNodeLayout(
-                        contentSize: .zero,
-                        insets: .zero
-                    ),
-                    { _ in }
-                )
-            }
-
-            headerView.setup(
-                with: item.theme.list.itemAccentColor,
-                backgroundColor: item.theme.list.itemBlocksBackgroundColor
-            ) {
-                item.context.load()
-            }
-            headerView.updateConstraintsIfNeeded()
-
-            let headerInsets: UIEdgeInsets = isPortrait ? .vertical(12).horizontal(16) : .vertical(12).horizontal(59)
-            let headerSize = headerView.systemLayoutSizeFitting(
-                UIView.layoutFittingExpandedSize
-            )
-            let size = CGSize(
-                width: params.width - (headerInsets.left + headerInsets.right),
-                height: headerSize.height
-            )
-            
-            let layout = ListViewItemNodeLayout(
-                contentSize: size,
-                insets: headerInsets
-            )
-            
-            let apply: (ListViewItemUpdateAnimation) -> Void = { [weak self] _ in
-                guard let self else { return }
-                headerNode.frame = CGRect(origin: .init(x: headerInsets.left, y: 0), size: size)
-            }
-            
-            return (layout, apply)
-        }
-    }
-}
-
-extension ListViewItemNode {
-    var isPortrait: Bool {
-        (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.interfaceOrientation.isPortrait ?? false
-    }
-}
-
-@available(iOS 15.0, *)
-public final class SpyOnFriendsMessagesItem: ListViewItem, ItemListItem {
-    public let sectionId: ItemListSectionId
-    public let context: AccountContext
-    public let theme: PresentationTheme
-    public let group: (Date, [SpyOnFriendsGroup])
-    public let openMessage: (Int32) -> Void
-    
-    public init(
-        sectionId: ItemListSectionId,
-        context: AccountContext,
-        theme: PresentationTheme,
-        group: (Date, [SpyOnFriendsGroup]),
-        openMessage: @escaping (Int32) -> Void
-    ) {
-        self.sectionId = sectionId
-        self.context = context
-        self.theme = theme
-        self.group = group
-        self.openMessage = openMessage
-    }
-
-    public func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, previousItem: ListViewItem?, nextItem: ListViewItem?, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void) {
-        let configure = { () -> Void in
-            let node = SpyOnFriendsMessagesNode()
-            node.setupItem(self)
-
-            let (layout, apply) = node.asyncLayout()(self, params, false, false, false)
-            
-            node.contentSize = layout.contentSize
-            node.insets = layout.insets
-
-            completion(node, {
-                return (nil, { _ in apply(.None) })
-            })
-        }
-        if Thread.isMainThread {
-            configure()
-        } else {
-            Queue.mainQueue().async(configure)
-        }
-    }
-    
-    public func updateNode(async: @escaping (@escaping () -> Void) -> Void, node: @escaping () -> ListViewItemNode, params: ListViewItemLayoutParams, previousItem: ListViewItem?, nextItem: ListViewItem?, animation: ListViewItemUpdateAnimation, completion: @escaping (ListViewItemNodeLayout, @escaping (ListViewItemApply) -> Void) -> Void) {
-        Queue.mainQueue().async {
-            if let nodeValue = node() as? SpyOnFriendsMessagesNode {
-                nodeValue.setupItem(self)
-                
-                let nodeLayout = nodeValue.asyncLayout()
-                
-                let (layout, apply) = nodeLayout(self, params, false, false, false)
-                
-                completion(layout, { _ in
-                    apply(animation)
-                })
-            } else {
-                assertionFailure()
-            }
-        }
-    }
-}
-
-@available(iOS 15.0, *)
-class SpyOnFriendsMessagesNode: ListViewItemNode {
-    var item: SpyOnFriendsMessagesItem?
-
-    private let messagesView: SpyOnFriendsMessagesView
-    private let messagesNode: ASDisplayNode
-
-    required init() {
-        let messagesView = SpyOnFriendsMessagesView()
-        self.messagesView = messagesView
-        self.messagesNode = ASDisplayNode {
-            messagesView
-        }
-
-        super.init(layerBacked: false, dynamicBounce: false, rotated: false)
-        
-        self.addSubnode(messagesNode)
-    }
-    
-    func setupItem(_ item: SpyOnFriendsMessagesItem) {
-        self.item = item
-        
-        messagesView.setup(
-            with: item.group,
-            backgroundColor: item.theme.list.itemBlocksBackgroundColor,
-            tapOnMessage: { id in
-                item.openMessage(id)
-            },
-            logoLoader: { [weak self] peerId in
-                guard let self else { return nil }
-                
-                return try await self.peerAvatar(with: item.context, peerId: PeerId(peerId)).awaitForFirstValue()
-            }
-        )
-    }
-
-    func asyncLayout() -> (_ item: SpyOnFriendsMessagesItem, _ params: ListViewItemLayoutParams, _ mergedTop: Bool, _ mergedBottom: Bool, _ dateAtBottom: Bool) -> (ListViewItemNodeLayout, (ListViewItemUpdateAnimation) -> Void) {
-        return { [weak self] item, params, mergedTop, mergedBottom, dateHeaderAtBottom -> (ListViewItemNodeLayout, (ListViewItemUpdateAnimation) -> Void) in
-            guard let self else {
-                return (
-                    ListViewItemNodeLayout(
-                        contentSize: .zero,
-                        insets: .zero
-                    ),
-                    { _ in }
-                )
-            }
-            
-            messagesView.setup(
-                with: item.group,
-                backgroundColor: item.theme.list.itemBlocksBackgroundColor,
-                tapOnMessage: { id in
-                    item.openMessage(id)
-                },
-                logoLoader: { [weak self] peerId in
-                    guard let self else { return nil }
-                    
-                    return try await self.peerAvatar(with: item.context, peerId: PeerId(peerId)).awaitForFirstValue()
-                }
-            )
-            messagesView.updateConstraintsIfNeeded()
-
-            let messagesInsets: UIEdgeInsets = isPortrait ? .bottom(32).horizontal(16) : .bottom(32).horizontal(59)
-            let messagesSize = messagesView.systemLayoutSizeFitting(
-                UIView.layoutFittingExpandedSize
-            )
-            let size = CGSize(
-                width: params.width - (messagesInsets.left + messagesInsets.right),
-                height: messagesSize.height
-            )
-            
-            let layout = ListViewItemNodeLayout(
-                contentSize: size,
-                insets: messagesInsets
-            )
-            
-            let apply: (ListViewItemUpdateAnimation) -> Void = { [weak self] _ in
-                guard let self else { return }
-                messagesNode.frame = CGRect(origin: .init(x: messagesInsets.left, y: 0), size: size)
-            }
-            
-            return (layout, apply)
-        }
-    }
-    
-    private func peerAvatar(with context: AccountContext, peerId: PeerId) -> Signal<UIImage?, NoError> {
-        return context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
-        |> mapToSignal { peer -> Signal<UIImage?, NoError> in
-            guard let peer else { return .single(nil) }
-
-            return peerAvatarCompleteImage(
-                account: context.account,
-                peer: peer,
-                forceProvidedRepresentation: false,
-                representation: nil,
-                size: CGSize(width: 50, height: 50)
-            )
-        }
-    }
-}
-
-@available(iOS 15.0, *)
-public final class SpyOnFriendsUnlockItem: ListViewItem, ItemListItem {
-    public let sectionId: ItemListSectionId
-    public let theme: PresentationTheme
-    public let context: SpyOnFriendsContext
-    public let accountContext: AccountContext
-    public let peerId: PeerId
-    public let share: () -> Void
-    
-    public init(
-        sectionId: ItemListSectionId,
-        theme: PresentationTheme,
-        context: SpyOnFriendsContext,
-        accountContext: AccountContext,
-        peerId: PeerId,
-        share: @escaping () -> Void
-    ) {
-        self.sectionId = sectionId
-        self.theme = theme
-        self.context = context
-        self.accountContext = accountContext
-        self.peerId = peerId
-        self.share = share
-    }
-
-    public func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, previousItem: ListViewItem?, nextItem: ListViewItem?, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void) {
-        let configure = { () -> Void in
-            let node = SpyOnFriendsUnlockNode(peerId: self.peerId.id._internalGetInt64Value())
-            node.setupItem(self)
-
-            let (layout, apply) = node.asyncLayout()(self, params, false, false, false)
-            
-            node.contentSize = layout.contentSize
-            node.insets = layout.insets
-
-            completion(node, {
-                return (nil, { _ in apply(.None) })
-            })
-        }
-        if Thread.isMainThread {
-            configure()
-        } else {
-            Queue.mainQueue().async(configure)
-        }
-    }
-    
-    public func updateNode(async: @escaping (@escaping () -> Void) -> Void, node: @escaping () -> ListViewItemNode, params: ListViewItemLayoutParams, previousItem: ListViewItem?, nextItem: ListViewItem?, animation: ListViewItemUpdateAnimation, completion: @escaping (ListViewItemNodeLayout, @escaping (ListViewItemApply) -> Void) -> Void) {
-        Queue.mainQueue().async {
-            if let nodeValue = node() as? SpyOnFriendsUnlockNode {
-                let nodeLayout = nodeValue.asyncLayout()
-                
-                let (layout, apply) = nodeLayout(self, params, false, false, false)
-                
-                completion(layout, { _ in
-                    apply(animation)
-                })
-            } else {
-                assertionFailure()
-            }
-        }
-    }
-}
-
-@available(iOS 15.0, *)
-class SpyOnFriendsUnlockNode: ListViewItemNode {
-    var item: SpyOnFriendsUnlockItem?
-
-    private let unlockView: SpyOnFriendsUnlockView
-    private let unlockNode: ASDisplayNode
-    
-    required init(peerId: Int64) {
-        let unlockView = SpyOnFriendsUnlockView(peerId: peerId)
-        self.unlockView = unlockView
-        self.unlockNode = ASDisplayNode {
-            unlockView
-        }
-
-        super.init(layerBacked: false, dynamicBounce: false, rotated: false)
-        
-        self.addSubnode(unlockNode)
-    }
-
-    func setupItem(_ item: SpyOnFriendsUnlockItem) {
-        self.item = item
-
-        unlockView.setup(
-            with: item.theme.list.itemAccentColor,
-            backgroundColor: item.theme.list.itemBlocksBackgroundColor,
-            textColor: item.theme.list.blocksBackgroundColor
-        ) {
-            item.context.load()
-        } share: {
-            item.share()
-        }
-        unlockView.rotate()
-    }
-
-    func asyncLayout() -> (_ item: SpyOnFriendsUnlockItem, _ params: ListViewItemLayoutParams, _ mergedTop: Bool, _ mergedBottom: Bool, _ dateAtBottom: Bool) -> (ListViewItemNodeLayout, (ListViewItemUpdateAnimation) -> Void) {
-        return { [weak self] item, params, mergedTop, mergedBottom, dateHeaderAtBottom -> (ListViewItemNodeLayout, (ListViewItemUpdateAnimation) -> Void) in
-            guard let self else {
-                return (
-                    ListViewItemNodeLayout(
-                        contentSize: .zero,
-                        insets: .zero
-                    ),
-                    { _ in }
-                )
-            }
-            
-            unlockView.setup(
-                with: item.theme.list.itemAccentColor,
-                backgroundColor: item.theme.list.itemBlocksBackgroundColor,
-                textColor: item.theme.list.blocksBackgroundColor
-            ) {
-                item.context.load()
-            } share: {
-                item.share()
-            }
-            unlockView.rotate()
-            unlockView.updateConstraintsIfNeeded()
-            
-            let unlockInsets: UIEdgeInsets = isPortrait ? .top(20).bottom(64).horizontal(16) : .top(20).bottom(32).horizontal(59)
-            let unlockSize = unlockView.systemLayoutSizeFitting(
-                UIView.layoutFittingExpandedSize
-            )
-            
-            let size = CGSize(
-                width: params.width - (unlockInsets.left + unlockInsets.right),
-                height: unlockSize.height + unlockInsets.bottom
-            )
-            
-            let layout = ListViewItemNodeLayout(
-                contentSize: size,
-                insets: unlockInsets
-            )
-            
-            let apply: (ListViewItemUpdateAnimation) -> Void = { [weak self] _ in
-                guard let self else { return }
-                unlockNode.frame = CGRect(origin: .init(x: unlockInsets.left, y: 0), size: size)
-            }
-            
-            return (layout, apply)
-        }
-    }
-}
-
 private extension Api.Chat {
     var peerId: PeerId {
         switch self {
@@ -986,6 +553,12 @@ private extension Api.Chat {
             case let .channelForbidden(_, id, _, _, _):
                 return PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(id))
         }
+    }
+}
+
+extension ListViewItemNode {
+    var isPortrait: Bool {
+        (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.interfaceOrientation.isPortrait ?? false
     }
 }
 

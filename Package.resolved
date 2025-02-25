@@ -114,7 +114,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "fix/spy_on_friends",
-        "revision" : "928c810bc05355a39b1fd18cdffd5abaaffc5ace"
+        "revision" : "9a03d3c4b97508fc4aad0ec3b155af2c5379bbb2"
       }
     },
     {
@@ -123,7 +123,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "63ea2a8342b31467d251a406cf4e72f02fc842eb"
+        "revision" : "466e4a1b29809f301818b5670345089e91a5adaa"
       }
     },
     {
