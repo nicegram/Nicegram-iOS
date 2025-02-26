@@ -1023,28 +1023,26 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
             let groupsInCommon: GroupsInCommonContext?
 // MARK: Nicegram NCG-7303 Spy on friends
             var spyOnFriends: SpyOnFriendsContext? = nil
+            let feature = SpyOnFriendsFeature(navigator: SpyOnFriendsNavigatorImpl())
+            
+            if (isPremium() || isPremiumPlus()) &&
+                feature.checkIfNeedUpdate(with: userPeerId.id._internalGetInt64Value()) {
+                feature.updateLastUpdated(with: userPeerId.id._internalGetInt64Value())
+                sendSpyOnFriendsAnalytics(with: .usage)
+            }
+
+            spyOnFriends = SpyOnFriendsContext(
+                account: context.account,
+                engine: context.engine,
+                peerId: userPeerId
+            ) {
+                feature.getLastUpdated(with: userPeerId.id._internalGetInt64Value())
+            }
 //
             if isMyProfile {
                 groupsInCommon = nil
             } else if [.user, .bot].contains(kind) {
                 groupsInCommon = GroupsInCommonContext(account: context.account, peerId: userPeerId, hintGroupInCommon: hintGroupInCommon)
-// MARK: Nicegram NCG-7303 Spy on friends
-                let feature = SpyOnFriendsFeature(navigator: SpyOnFriendsNavigatorImpl())
-                
-                if (isPremium() || isPremiumPlus()) &&
-                    feature.checkIfNeedUpdate(with: userPeerId.id._internalGetInt64Value()) {
-                    feature.updateLastUpdated(with: userPeerId.id._internalGetInt64Value())
-                    sendSpyOnFriendsAnalytics(with: .usage)
-                }
-
-                spyOnFriends = SpyOnFriendsContext(
-                    account: context.account,
-                    engine: context.engine,
-                    peerId: userPeerId
-                ) {
-                    feature.getLastUpdated(with: userPeerId.id._internalGetInt64Value())
-                }
-//
             } else {
                 groupsInCommon = nil
             }
@@ -1446,12 +1444,10 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                         enableQRLogin: false)
                 }
 // MARK: Nicegram NCG-7303 Spy on friends
-//                if user.botInfo != nil && !user.id.isVerificationCodes {
                 if #available(iOS 15.0, *),
                    let user = peer as? TelegramUser,
                    !(user.botInfo != nil && !user.id.isVerificationCodes), // checking is bot
-                   user.id.id._internalGetInt64Value() != 777000, //checking for telegram login bot
-                   peer?.id != context.account.peerId {
+                   user.id.id._internalGetInt64Value() != 777000 { //checking for telegram login bot                    
                     if availablePanes != nil {
                         availablePanes?.insert(.spyOnFriends, at: 0)
                     } else {

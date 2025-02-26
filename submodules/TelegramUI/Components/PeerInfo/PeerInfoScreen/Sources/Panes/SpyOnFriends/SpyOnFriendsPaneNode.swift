@@ -137,7 +137,7 @@ private func preparedTransition(
     share: @escaping () -> Void
 ) -> SpyOnFriendsListTransaction {
     let (deleteIndices, indicesAndItems, updateIndices) = mergeListsStableWithUpdates(leftList: fromEntries, rightList: toEntries)
-    
+
     let deletions = deleteIndices.map { ListViewDeleteItem(index: $0, directionHint: nil) }
     let insertions = indicesAndItems.map {
         ListViewInsertItem(
