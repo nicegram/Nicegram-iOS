@@ -633,8 +633,8 @@
         "bzlTransitiveDigest": "8/YWyYftd8THfVoADvrOmQLl45wUGfP2MVjLM5FFn50=",
         "usagesDigest": "voXBMcSNlo2fnK6JIvInIrncYhBKKG8nBeKvToaUA0Y=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "4f52e2cf490f8be3ca3b9383a674f0931be219a28d10d8fdac9febc2d3f3a0f8",
-          "@@//Package.swift": "1bb02d6befefe75cf3dd5788e8ab4b445eac6658b6086ca1b7672581ce051fbb"
+          "@@//Package.resolved": "c65859a251ce146c1018c456d630059eda6590932ad4ef92719cd5e17dae3aca",
+          "@@//Package.swift": "545e69b2e1c1fbb385aa3ba65c28bc543ebe617c98360bd80edf089548a7738b"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -1138,7 +1138,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "6211ab244afbd77d0fce224e174c67eb5a06046f",
+              "commit": "694fdb3139a7feb2047097bd6bb67a29273ccd52",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "init_submodules": false,
@@ -1176,9 +1176,9 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_swift_numerics",
-              "commit": "0a5bc04095a675662cf24757cc0640aa2204253b",
+              "commit": "e0ec0f5f3af6f3e4d5e7a19d2af26b481acb6ba8",
               "remote": "https://github.com/apple/swift-numerics.git",
-              "version": "1.0.2",
+              "version": "1.0.3",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -1328,9 +1328,9 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_wallet_core",
-              "commit": "fd7a03e41b35e1d8e83b4e22a9f0d5d9b1c8b973",
+              "commit": "ed6562185df6cc98656a9be055341cda29df7eab",
               "remote": "https://github.com/trustwallet/wallet-core.git",
-              "version": "4.2.11",
+              "version": "4.2.12",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [

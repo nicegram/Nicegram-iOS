@@ -1,12 +1,12 @@
 // MARK: Nicegram ATT
 import ChatMessageNicegramAdNode
 import FeatAttentionEconomy
-//
 // MARK: Nicegram AiChat
 import NGAiChatUI
-//
 // MARK: Nicegram ChatBanner
 import FeatChatBanner
+// MARK: Nicegram NCG-6903 Nicegram Personality
+import NGPersonality
 //
 // MARK: Nicegram Wallet
 import ChatMessageNicegramWalletTxNode
@@ -1025,6 +1025,9 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                                 atBottom = true
                                 offsetFromBottom = offsetValue
                             }
+// MARK: Nicegram NCG-6903 Nicegram Personality
+                        collectScrollActivity(with: strongSelf.context.account.peerId.toInt64())
+//
                             //print("offsetValue: \(offsetValue)")
                         default:
                             break

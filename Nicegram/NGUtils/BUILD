@@ -12,6 +12,7 @@ swift_library(
         "@FirebaseSDK//:FirebaseAnalytics",
         "@swiftpkg_nicegram_assistant_ios//:FeatAttentionEconomy",
         "@swiftpkg_nicegram_assistant_ios//:NGAnalytics",
+        "@swiftpkg_nicegram_assistant_ios//:FeatAuth",
         "@swiftpkg_nicegram_wallet_ios//:NicegramWallet",
     ],
     visibility = [
