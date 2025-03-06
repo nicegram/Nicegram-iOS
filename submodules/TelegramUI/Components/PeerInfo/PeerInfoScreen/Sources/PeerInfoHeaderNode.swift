@@ -1,5 +1,7 @@
 // MARK: Nicegram HidePhone
 import NGData
+import NGStrings
+import FeatGodsEye
 //
 import Foundation
 import UIKit
@@ -155,6 +157,9 @@ final class PeerInfoHeaderNode: ASDisplayNode {
     let navigationButtonContainer: PeerInfoHeaderNavigationButtonContainerNode
     let editingNavigationBackgroundNode: NavigationBackgroundNode
     let editingNavigationBackgroundSeparator: ASDisplayNode
+    // MARK: Nicegram NCG-7704 God's eye
+    let godsEyeButtonNode: ASButtonNode
+    //
     
     var performButtonAction: ((PeerInfoHeaderButtonKey, ContextGesture?) -> Void)?
     var requestAvatarExpansion: ((Bool, [AvatarGalleryEntry], AvatarGalleryEntry?, (ASDisplayNode, CGRect, () -> (UIView?, UIView?))?) -> Void)?
@@ -187,8 +192,8 @@ final class PeerInfoHeaderNode: ASDisplayNode {
     private var appliedCustomNavigationContentNode: PeerInfoPanelNodeNavigationContentNode?
     
     private var validLayout: (width: CGFloat, deviceMetrics: DeviceMetrics)?
-    
-    init(context: AccountContext, controller: PeerInfoScreenImpl, avatarInitiallyExpanded: Bool, isOpenedFromChat: Bool, isMediaOnly: Bool, isSettings: Bool, isMyProfile: Bool, forumTopicThreadId: Int64?, chatLocation: ChatLocation) {
+    // MARK: Nicegram NCG-7704 God's eye, isBot
+    init(context: AccountContext, controller: PeerInfoScreenImpl, avatarInitiallyExpanded: Bool, isOpenedFromChat: Bool, isMediaOnly: Bool, isSettings: Bool, isMyProfile: Bool, forumTopicThreadId: Int64?, chatLocation: ChatLocation, isBot: Bool) {
         self.context = context
         self.controller = controller
         self.isAvatarExpanded = avatarInitiallyExpanded
@@ -294,6 +299,11 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         self.animationCache = context.animationCache
         self.animationRenderer = context.animationRenderer
         
+        // MARK: Nicegram NCG-7704 God's eye
+        self.godsEyeButtonNode = ASButtonNode()
+        self.godsEyeButtonNode.displaysAsynchronously = false
+        self.godsEyeButtonNode.isHidden = true
+        //
         super.init()
         
         requestUpdateLayoutImpl = { [weak self] in
@@ -334,7 +344,23 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         self.addSubnode(self.editingNavigationBackgroundSeparator)
         self.addSubnode(self.navigationButtonContainer)
         self.addSubnode(self.separatorNode)
+        // MARK: Nicegram NCG-7704 God's eye
+        self.addSubnode(self.godsEyeButtonNode)
+        self.godsEyeButtonNode.addTarget(self, action: #selector(self.godsEyePressed), forControlEvents: .touchUpInside)
         
+        let godsEyeConfigUseCase = GodsEyeModule.shared.getGodsEyeConfigUseCase()
+        let godsEyeConfig = godsEyeConfigUseCase()
+                
+        if (isMyProfile ||
+            controller.peerId.namespace == Namespaces.Peer.CloudUser) &&
+            controller.peerId.toInt64() != 777000 &&
+            !isBot &&
+            !isSettings &&
+            godsEyeConfig.enabled {
+            self.godsEyeButtonNode.isHidden = false
+        }
+        //
+
         self.avatarListNode.avatarContainerNode.tapped = { [weak self] in
             self?.initiateAvatarExpansion(gallery: false, first: false)
         }
@@ -2292,6 +2318,56 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             self.updateAvatarMask(transition: .immediate)
         }
         
+        // MARK: Nicegram NCG-7704 God's eye
+        let maxFadeDistance: CGFloat = 65
+        let font = UIFont.mainFont(ofSize: 13, weight: .semibold)
+        var godsEyeButtonSize = CGSize(width: 48, height: 48)
+        var title = ""
+        var godsEyeYInset: CGFloat = isMyProfile ? 65 : 210
+        
+        godsEyeButtonNode.contentHorizontalAlignment = .middle
+        godsEyeButtonNode.contentEdgeInsets = .zero
+        godsEyeButtonNode.contentSpacing = 0
+
+        if self.isAvatarExpanded {
+            title = l("GodsEye.Title")
+            let titleRect = title.boundingRect(
+                with: CGSize(width: 120, height: CGFloat.greatestFiniteMagnitude),
+                options: .usesLineFragmentOrigin,
+                attributes: [.font: font],
+                context: nil
+            )
+            godsEyeButtonNode.contentEdgeInsets = .right(12)
+            godsEyeButtonNode.contentSpacing = 4
+            godsEyeButtonNode.contentHorizontalAlignment = .right
+            godsEyeButtonSize = CGSize(width: titleRect.width + (36 + 14), height: 48)
+            godsEyeYInset = isMyProfile ? 62 : 138
+        }
+        
+        let godsEyeBackgroundImage = generateFilledRoundedRectImage(
+            size: godsEyeButtonSize,
+            cornerRadius: 12,
+            color: presentationData.theme.list.itemBlocksBackgroundColor
+        )
+        
+        /*presentationData?.theme.list.itemPrimaryTextColor*/
+        godsEyeButtonNode.setBackgroundImage(godsEyeBackgroundImage, for: .normal)
+        godsEyeButtonNode.setImage(UIImage(bundleImageName: "gods_eye"), for: .normal)
+        godsEyeButtonNode.setTitle(title, with: font, with: presentationData.theme.list.itemPrimaryTextColor, for: .normal)
+
+        let godsEyeButtonFrame = CGRect(
+            origin: CGPoint(x: width - (godsEyeButtonSize.width + 15), y: apparentHeight - godsEyeYInset),
+            size: godsEyeButtonSize
+        )
+        
+        if additive {
+            transition.updateFrameAdditive(node: godsEyeButtonNode, frame: godsEyeButtonFrame)
+        } else {
+            transition.updateFrame(node: godsEyeButtonNode, frame: godsEyeButtonFrame)
+        }
+        transition.updateAlpha(node: godsEyeButtonNode, alpha: max(0, (maxFadeDistance - contentOffset) / maxFadeDistance))
+        //
+        
         return resolvedHeight
     }
     
@@ -2307,6 +2383,11 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         guard let result = super.hitTest(point, with: event) else {
             return nil
         }
+        // MARK: Nicegram NCG-7704 God's eye
+        if result == self.godsEyeButtonNode.view {
+            return result
+        }
+        //
         if !self.backgroundNode.frame.contains(point) {
             return nil
         }
@@ -2407,5 +2488,10 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         let maskAnchorPoint = CGPoint(x: 0.5, y: isAvatarExpanded ? 0.37 : 0.5)
         transition.updateAnchorPoint(layer: self.avatarListNode.maskNode.layer, anchorPoint: maskAnchorPoint)
     }
+    // MARK: Nicegram NCG-7704 God's eye
+    @objc func godsEyePressed() {
+        self.controller?.openGodsEye()
+    }
+    //
 }
 

@@ -633,8 +633,8 @@
         "bzlTransitiveDigest": "8/YWyYftd8THfVoADvrOmQLl45wUGfP2MVjLM5FFn50=",
         "usagesDigest": "voXBMcSNlo2fnK6JIvInIrncYhBKKG8nBeKvToaUA0Y=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "c65859a251ce146c1018c456d630059eda6590932ad4ef92719cd5e17dae3aca",
-          "@@//Package.swift": "545e69b2e1c1fbb385aa3ba65c28bc543ebe617c98360bd80edf089548a7738b"
+          "@@//Package.resolved": "9a662c6c972f2f543e9dbf8a237976e9378a14804cc27c484645f8c927c6a2d6",
+          "@@//Package.swift": "f2b472b31f34c15616243780a85b6e838004e0abbc198d7d5fcee77c25a725ab"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -1138,7 +1138,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "694fdb3139a7feb2047097bd6bb67a29273ccd52",
+              "commit": "79f86bf4c9593b70dc481907cc70d3e2cb6adadb",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "init_submodules": false,
@@ -1328,9 +1328,9 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_wallet_core",
-              "commit": "ed6562185df6cc98656a9be055341cda29df7eab",
+              "commit": "7a6e7279eb13b3e94008dc01809aebf842ec52fd",
               "remote": "https://github.com/trustwallet/wallet-core.git",
-              "version": "4.2.12",
+              "version": "4.2.13",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -1366,9 +1366,9 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_swift_memberwise_init_macro",
-              "commit": "21ca6d8c8f9e4ce27e92f82da294e0d91953b8b6",
+              "commit": "47a2bdf45f1567e7324438f8482e362ee1c3fb44",
               "remote": "https://github.com/gohanlon/swift-memberwise-init-macro",
-              "version": "0.5.1",
+              "version": "0.5.2",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [

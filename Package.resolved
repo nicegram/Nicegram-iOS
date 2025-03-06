@@ -113,8 +113,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/NCG-6903_personality",
-        "revision" : "694fdb3139a7feb2047097bd6bb67a29273ccd52"
+        "branch" : "feat/NCG-7704_gods_eye",
+        "revision" : "79f86bf4c9593b70dc481907cc70d3e2cb6adadb"
       }
     },
     {
@@ -230,8 +230,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/gohanlon/swift-memberwise-init-macro",
       "state" : {
-        "revision" : "21ca6d8c8f9e4ce27e92f82da294e0d91953b8b6",
-        "version" : "0.5.1"
+        "revision" : "47a2bdf45f1567e7324438f8482e362ee1c3fb44",
+        "version" : "0.5.2"
       }
     },
     {
@@ -356,8 +356,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "ed6562185df6cc98656a9be055341cda29df7eab",
-        "version" : "4.2.12"
+        "revision" : "7a6e7279eb13b3e94008dc01809aebf842ec52fd",
+        "version" : "4.2.13"
       }
     },
     {

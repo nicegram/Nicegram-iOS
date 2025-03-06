@@ -75,7 +75,7 @@
 "ChatFilter.Missed" = "Новые";
 
 /*Premium*/
-"Premium.Title" = "Премиум";
+"Premium.Title" = "Premium";
 "Premium.UnlimitedPins.Header" = "НЕОГРАНИЧЕННЫЕ ЗАКРЕПЛЁННЫЕ ЧАТЫ";
 "Premium.SyncPins" = "Синхронизировать Чаты";
 "Premium.SyncPins.Notice.ON" = "Если вы измените закрепленные чаты в другом клиенте, они ИЗМЕНЯТСЯ в Nicegram.";
@@ -88,7 +88,7 @@
 "Common.SupportChatUsername" = "nicegram_ru";
 "Common.FAQUrl" = "https://nicegram.app/ru/faq/";
 "Common.FAQ.Button" = "Вопросы о Nicegram";
-"IAP.Premium.Title" = "Премиум";
+"IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Уникальные функции, от которых трудно отказаться!";
 "IAP.Premium.Activated" = "Премиум Активирован!";
 "IAP.Common.Restore" = "Восстановить Покупки";
@@ -244,3 +244,6 @@
 
 /*Spy On Friends*/
 "SpyOnFriends.Title" = "Активность";
+
+/*God’s Eye*/
+"GodsEye.Title" = "God’s Eye";
