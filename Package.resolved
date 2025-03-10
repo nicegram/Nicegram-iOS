@@ -114,7 +114,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "feat/NCG-7704_gods_eye",
-        "revision" : "79f86bf4c9593b70dc481907cc70d3e2cb6adadb"
+        "revision" : "473ca1cbbdabb3507f498dad8996f4468fc0bc5e"
       }
     },
     {
@@ -356,8 +356,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "7a6e7279eb13b3e94008dc01809aebf842ec52fd",
-        "version" : "4.2.13"
+        "revision" : "37dd7eda5a3efaafce4aeaa06c7b86732d7a263b",
+        "version" : "4.2.14"
       }
     },
     {
