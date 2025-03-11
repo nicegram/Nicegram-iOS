@@ -5,7 +5,8 @@
 
 /*Common*/
 "Nicegram.PrivacyPolicy" = "سياسة الخصوصية";
-"Nicegram.EULA" = "اتفاقية ترخيص المستخدم النهائي\n";
+"Nicegram.EULA" = "اتفاقية ترخيص المستخدم النهائي
+";
 
 /*ChatFilter*/
 "ChatFilter.Bots" = "بوتات";
@@ -241,3 +242,6 @@
 /*Stars Purchase*/
 "StarsPurchase.GetOnFragment" = "اشترِ في Fragment";
 "StarsPurchase.GetOnTelegram" = "اشترِ في Telegram";
+
+/*Spy On Friends*/
+"SpyOnFriends.Title" = "الأنشطة";

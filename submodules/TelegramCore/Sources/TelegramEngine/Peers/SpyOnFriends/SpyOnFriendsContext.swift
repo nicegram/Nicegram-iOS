@@ -121,16 +121,36 @@ private final class SpyOnFriendsContextImpl {
                     return .single(nil)
                 }
                 
-                let maxId = self.commonChats.last?.peerId.id
-
-                return network.request(Api.functions.messages.getCommonChats(
-                    userId: inputUser,
-                    maxId: maxId?._internalGetInt64Value() ?? 0,
-                    limit: self.limit)
-                )
-                |> map(Optional.init)
-                |> `catch` { _ -> Signal<Api.messages.Chats?, NoError> in
-                    return .single(nil)
+                if peerId == self.account.peerId {
+                    switch inputUser {
+                    case let .inputUser(_, accessHash):
+                        return fetchChatList(
+                            accountPeerId: peerId,
+                            postbox: account.postbox,
+                            network: account.network,
+                            location: .general,
+                            upperBound: .absoluteUpperBound(),
+                            hash: accessHash,
+                            limit: self.limit
+                        )
+                        |> map { result in
+                            Api.messages.Chats.chats(chats: result?.peers.chats.map { $0.value } ?? [])
+                        }
+                    default:
+                        return .single(nil)
+                    }
+                } else {
+                    let maxId = self.commonChats.last?.peerId.id
+                    
+                    return network.request(Api.functions.messages.getCommonChats(
+                        userId: inputUser,
+                        maxId: maxId?._internalGetInt64Value() ?? 0,
+                        limit: self.limit
+                    ))
+                    |> map(Optional.init)
+                    |> `catch` { _ -> Signal<Api.messages.Chats?, NoError> in
+                        return .single(nil)
+                    }
                 }
             }
 
@@ -168,22 +188,16 @@ private final class SpyOnFriendsContextImpl {
     
     private func loadMessages() {
         let peerId = self.peerId
-        let maxDate: Int32? = if let lastUpdatedDate = lastUpdatedDate()?.timeIntervalSince1970 {
-            Int32(lastUpdatedDate)
-        } else {
-            nil
-        }
-        
         let signal = combineLatest(
             commonChats.map { chat -> Signal<(Api.Chat?, [Message]), NoError> in
                 let location = SearchMessagesLocation.peer(
                     peerId: chat.peerId,
                     fromId: peerId,
-                    tags: /*[.file, .music, .webPage, .gif, .photo, .video]*/nil,
+                    tags: nil,
                     reactions: nil,
                     threadId: nil,
                     minDate: nil,
-                    maxDate: maxDate
+                    maxDate: nil
                 )
                 
                 return self.engine.messages.searchMessages(
