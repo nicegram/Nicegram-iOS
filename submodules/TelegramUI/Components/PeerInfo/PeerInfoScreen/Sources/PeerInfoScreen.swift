@@ -64,6 +64,7 @@ import NGEnv
 import NGLab
 import NicegramWallet
 import UndoUI
+import FeatGodsEye
 //
 import ListMessageItem
 import GalleryData
@@ -3113,8 +3114,8 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
         return self._ready
     }
     private var didSetReady = false
-    
-    init(controller: PeerInfoScreenImpl, context: AccountContext, peerId: PeerId, avatarInitiallyExpanded: Bool, isOpenedFromChat: Bool, nearbyPeerDistance: Int32?, reactionSourceMessageId: MessageId?, callMessages: [Message], isSettings: Bool, isMyProfile: Bool, hintGroupInCommon: PeerId?, requestsContext: PeerInvitationImportersContext?, starsContext: StarsContext?, chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, initialPaneKey: PeerInfoPaneKey?) {
+    // MARK: Nicegram NCG-7704 God's eye, isBot
+    init(controller: PeerInfoScreenImpl, context: AccountContext, peerId: PeerId, avatarInitiallyExpanded: Bool, isOpenedFromChat: Bool, nearbyPeerDistance: Int32?, reactionSourceMessageId: MessageId?, callMessages: [Message], isSettings: Bool, isMyProfile: Bool, hintGroupInCommon: PeerId?, requestsContext: PeerInvitationImportersContext?, starsContext: StarsContext?, chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, initialPaneKey: PeerInfoPaneKey?, isBot: Bool) {
         self.controller = controller
         self.context = context
         self.peerId = peerId
@@ -3139,7 +3140,8 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
         if case let .replyThread(message) = chatLocation {
             forumTopicThreadId = message.threadId
         }
-        self.headerNode = PeerInfoHeaderNode(context: context, controller: controller, avatarInitiallyExpanded: avatarInitiallyExpanded, isOpenedFromChat: isOpenedFromChat, isMediaOnly: self.isMediaOnly, isSettings: isSettings, isMyProfile: isMyProfile, forumTopicThreadId: forumTopicThreadId, chatLocation: self.chatLocation)
+        // MARK: Nicegram NCG-7704 God's eye, isBot
+        self.headerNode = PeerInfoHeaderNode(context: context, controller: controller, avatarInitiallyExpanded: avatarInitiallyExpanded, isOpenedFromChat: isOpenedFromChat, isMediaOnly: self.isMediaOnly, isSettings: isSettings, isMyProfile: isMyProfile, forumTopicThreadId: forumTopicThreadId, chatLocation: self.chatLocation, isBot: isBot)
         self.paneContainerNode = PeerInfoPaneContainerNode(context: context, updatedPresentationData: controller.updatedPresentationData, peerId: peerId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, isMediaOnly: self.isMediaOnly, initialPaneKey: initialPaneKey)
         
         super.init()
@@ -12718,8 +12720,13 @@ public final class PeerInfoScreenImpl: ViewController, PeerInfoScreen, KeyShortc
     var didAppear: Bool = false
     
     private var validLayout: (layout: ContainerViewLayout, navigationHeight: CGFloat)?
-    
-    public init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, peerId: PeerId, avatarInitiallyExpanded: Bool, isOpenedFromChat: Bool, nearbyPeerDistance: Int32?, reactionSourceMessageId: MessageId?, callMessages: [Message], isSettings: Bool = false, isMyProfile: Bool = false, hintGroupInCommon: PeerId? = nil, requestsContext: PeerInvitationImportersContext? = nil, forumTopicThread: ChatReplyThreadMessage? = nil, switchToRecommendedChannels: Bool = false, switchToGifts: Bool = false) {
+    // MARK: Nicegram NCG-7704 God's eye
+    private let isBot: Bool
+    // MARK: Nicegram NCG-7704 God's eye, isBot
+    public init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, peerId: PeerId, avatarInitiallyExpanded: Bool, isOpenedFromChat: Bool, nearbyPeerDistance: Int32?, reactionSourceMessageId: MessageId?, callMessages: [Message], isSettings: Bool = false, isMyProfile: Bool = false, hintGroupInCommon: PeerId? = nil, requestsContext: PeerInvitationImportersContext? = nil, forumTopicThread: ChatReplyThreadMessage? = nil, switchToRecommendedChannels: Bool = false, switchToGifts: Bool = false, isBot: Bool = false) {
+        // MARK: Nicegram NCG-7704 God's eye
+        self.isBot = isBot
+        //
         self.context = context
         self.updatedPresentationData = updatedPresentationData
         self.peerId = peerId
@@ -13081,7 +13088,8 @@ public final class PeerInfoScreenImpl: ViewController, PeerInfoScreen, KeyShortc
         } else if self.switchToGifts {
             initialPaneKey = .gifts
         }
-        self.displayNode = PeerInfoScreenNode(controller: self, context: self.context, peerId: self.peerId, avatarInitiallyExpanded: self.avatarInitiallyExpanded, isOpenedFromChat: self.isOpenedFromChat, nearbyPeerDistance: self.nearbyPeerDistance, reactionSourceMessageId: self.reactionSourceMessageId, callMessages: self.callMessages, isSettings: self.isSettings, isMyProfile: self.isMyProfile, hintGroupInCommon: self.hintGroupInCommon, requestsContext: self.requestsContext, starsContext: self.starsContext, chatLocation: self.chatLocation, chatLocationContextHolder: self.chatLocationContextHolder, initialPaneKey: initialPaneKey)
+        // MARK: Nicegram NCG-7704 God's eye, isBot
+        self.displayNode = PeerInfoScreenNode(controller: self, context: self.context, peerId: self.peerId, avatarInitiallyExpanded: self.avatarInitiallyExpanded, isOpenedFromChat: self.isOpenedFromChat, nearbyPeerDistance: self.nearbyPeerDistance, reactionSourceMessageId: self.reactionSourceMessageId, callMessages: self.callMessages, isSettings: self.isSettings, isMyProfile: self.isMyProfile, hintGroupInCommon: self.hintGroupInCommon, requestsContext: self.requestsContext, starsContext: self.starsContext, chatLocation: self.chatLocation, chatLocationContextHolder: self.chatLocationContextHolder, initialPaneKey: initialPaneKey, isBot: self.isBot)
         self.controllerNode.accountsAndPeers.set(self.accountsAndPeers.get() |> map { $0.1 })
         self.controllerNode.activeSessionsContextAndCount.set(self.activeSessionsContextAndCount.get())
         self.cachedDataPromise.set(self.controllerNode.cachedDataPromise.get())
@@ -13507,6 +13515,30 @@ public final class PeerInfoScreenImpl: ViewController, PeerInfoScreen, KeyShortc
     public func cancelItemSelection() {
         self.controllerNode.cancelItemSelection()
     }
+    // MARK: Nicegram NCG-7704 God's eye
+    public func openGodsEye() {
+        if #available(iOS 15.0, *) {
+            let id = peerId.ng_toInt64()
+            let accentColor = presentationData.theme.list.itemAccentColor
+            let blockColor = presentationData.theme.list.blocksBackgroundColor
+            let backgroundColor = presentationData.theme.list.itemBlocksBackgroundColor
+            let overallDarkAppearance = presentationData.theme.overallDarkAppearance
+            
+            Task { @MainActor in
+                GodsEyePresenter().present(
+                    with: id,
+                    theme: GodsEyePresenter.Theme(
+                        accentColor: accentColor,
+                        blockColor: blockColor,
+                        backgroundColor: backgroundColor
+                    ),
+                    locale: localeWithStrings(presentationData.strings),
+                    overallDarkAppearance: overallDarkAppearance
+                )
+            }
+        }
+    }
+    //
 }
 
 private final class SettingsTabBarContextExtractedContentSource: ContextExtractedContentSource {

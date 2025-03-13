@@ -17,6 +17,7 @@ NGDEPS = [
     "@swiftpkg_nicegram_assistant_ios//:NGAiChat",
     "@swiftpkg_nicegram_assistant_ios//:NGRepoUser",
     "@swiftpkg_nicegram_assistant_ios//:NGSpecialOffer",
+    "@swiftpkg_nicegram_assistant_ios//:FeatAiShortcuts"
 ]
 
 swift_library(

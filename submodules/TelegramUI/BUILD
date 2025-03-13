@@ -29,7 +29,8 @@ NGDEPS = [
     "@swiftpkg_nicegram_assistant_ios//:NGEntryPoint",
     "@swiftpkg_nicegram_assistant_ios//:_NGRemoteConfig",
     "@swiftpkg_nicegram_assistant_ios//:FeatSpyOnFriends",
-    "@swiftpkg_nicegram_assistant_ios//:FeatAiShortcuts"
+    "@swiftpkg_nicegram_assistant_ios//:FeatAiShortcuts",
+    "@swiftpkg_nicegram_assistant_ios//:FeatGodsEye"
 ]
 
 load(
