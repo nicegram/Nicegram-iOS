@@ -32,10 +32,10 @@
 "NiceFeatures.RoundVideos.Header" = "ROUND VIDEOS";
 "NiceFeatures.RoundVideos.UseRearCamera" = "Start with rear camera";
 
-"NiceFeatures.InstantLock" = "Immediately";
+"NiceFeatures.InstantLock" = "Immediately1";
 
 /*Save to Cloud*/
-"Chat.SaveToCloud" = "Save to Cloud";
+"Chat.SaveToCloud" = "Save";
 
 /*Open Pin*/
 "Chat.OpenPin" = "Show Pin";

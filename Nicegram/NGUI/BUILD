@@ -37,6 +37,7 @@ swift_library(
         "@swiftpkg_nicegram_assistant_ios//:FeatNicegramHub",
         "@swiftpkg_nicegram_assistant_ios//:FeatPinnedChats",
         "@swiftpkg_nicegram_assistant_ios//:FeatSpeechToText",
+        "@swiftpkg_nicegram_assistant_ios//:FeatAiShortcuts",
     ],
     visibility = [
         "//visibility:public",
