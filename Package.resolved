@@ -113,8 +113,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/NCG-7704_gods_eye",
-        "revision" : "312061e3c85ac270806a74e35457c794debb7256"
+        "branch" : "feat/NCG-7901_new_gems_purchase",
+        "revision" : "d9bc744c3ef4243f29126114e14e501b152f58a8"
       }
     },
     {
@@ -374,8 +374,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tomlokhorst/XcodeEdit",
       "state" : {
-        "revision" : "9bc684439d16c07d7bede66ae43bb577a25d6bb1",
-        "version" : "2.12.0"
+        "revision" : "0e550cdee72844b35431afc3a1e176042be6d0f0",
+        "version" : "2.13.0"
       }
     }
   ],
