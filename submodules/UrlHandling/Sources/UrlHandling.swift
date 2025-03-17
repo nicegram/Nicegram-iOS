@@ -105,6 +105,7 @@ public enum ParsedInternalUrl {
     case chatFolder(slug: String)
     case premiumGiftCode(slug: String)
     case messageLink(slug: String)
+    case collectible(slug: String)
     case externalUrl(url: String)
 }
 
@@ -523,6 +524,8 @@ public func parseInternalUrl(sharedContext: SharedAccountContext, context: Accou
                     return .wallpaper(parameter)
                 } else if pathComponents[0] == "addtheme" {
                     return .theme(pathComponents[1])
+                } else if pathComponents[0] == "nft" {
+                    return .collectible(slug: pathComponents[1])
                 } else if pathComponents[0] == "addlist" || pathComponents[0] == "folder" || pathComponents[0] == "list" {
                     return .chatFolder(slug: pathComponents[1])
                 } else if pathComponents[0] == "boost", pathComponents.count == 2 {
@@ -543,8 +546,9 @@ public func parseInternalUrl(sharedContext: SharedAccountContext, context: Accou
                                             threadId = intValue
                                         }
                                     } else if queryItem.name == "t" {
-                                        if let doubleValue = Double(value) {
-                                            timecode = doubleValue
+                                        let timestampValue = hTmeParseDuration(value)
+                                        if timestampValue != 0 {
+                                            timecode = Double(timestampValue)
                                         }
                                     }
                                 }
@@ -567,8 +571,9 @@ public func parseInternalUrl(sharedContext: SharedAccountContext, context: Accou
                             for queryItem in queryItems {
                                 if let value = queryItem.value {
                                     if queryItem.name == "t" {
-                                        if let doubleValue = Double(value) {
-                                            timecode = doubleValue
+                                        let timestampValue = hTmeParseDuration(value)
+                                        if timestampValue != 0 {
+                                            timecode = Double(timestampValue)
                                         }
                                     }
                                 }
@@ -625,8 +630,9 @@ public func parseInternalUrl(sharedContext: SharedAccountContext, context: Accou
                                         commentId = intValue
                                     }
                                 } else if queryItem.name == "t" {
-                                    if let doubleValue = Double(value) {
-                                        timecode = doubleValue
+                                    let timestampValue = hTmeParseDuration(value)
+                                    if timestampValue != 0 {
+                                        timecode = Double(timestampValue)
                                     }
                                 }
                             }
@@ -1086,6 +1092,11 @@ private func resolveInternalUrl(context: AccountContext, url: ParsedInternalUrl)
             }
         case let .premiumGiftCode(slug):
             return .single(.result(.premiumGiftCode(slug: slug)))
+        case let .collectible(slug):
+            return .single(.progress) |> then(context.engine.payments.getUniqueStarGift(slug: slug)
+            |> map { gift -> ResolveInternalUrlResult in
+                return .result(.collectible(gift: gift))
+            })
         case let .messageLink(slug):
             return .single(.progress)
             |> then(context.engine.peers.resolveMessageLink(slug: slug)
@@ -1391,4 +1402,42 @@ public func cleanDomain(url: String) -> (domain: String, fullUrl: String) {
     } else {
         return (url, url)
     }
+}
+
+private func hTmeParseDuration(_ durationStr: String) -> Int {
+    // Optional hours, optional minutes, optional seconds
+    let pattern = "^(?:(\\d+)h)?(?:(\\d+)m)?(?:(\\d+)s)?$"
+    
+    // Attempt to create the regex
+    guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+        // If regex creation fails, fallback to integer parsing
+        return Int(durationStr) ?? 0
+    }
+    
+    // Search for a match
+    let range = NSRange(durationStr.startIndex..., in: durationStr)
+    if let match = regex.firstMatch(in: durationStr, options: [], range: range) {
+        // Extract capture groups for hours, minutes, and seconds
+        let hoursRange = match.range(at: 1)
+        let minutesRange = match.range(at: 2)
+        let secondsRange = match.range(at: 3)
+        
+        // Helper to safely extract integer from a matched range
+        func intValue(_ nsRange: NSRange) -> Int {
+            guard nsRange.location != NSNotFound,
+                  let substringRange = Range(nsRange, in: durationStr) else {
+                return 0
+            }
+            return Int(durationStr[substringRange]) ?? 0
+        }
+        
+        let hours = intValue(hoursRange)
+        let minutes = intValue(minutesRange)
+        let seconds = intValue(secondsRange)
+        
+        return hours * 3600 + minutes * 60 + seconds
+    }
+    
+    // If the string didn't match the pattern, parse it as a positive integer
+    return Int(durationStr) ?? 0
 }

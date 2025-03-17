@@ -60,15 +60,15 @@ public extension Api {
 }
 public extension Api {
     indirect enum Message: TypeConstructorDescription {
-        case message(flags: Int32, flags2: Int32, id: Int32, fromId: Api.Peer?, fromBoostsApplied: Int32?, peerId: Api.Peer, savedPeerId: Api.Peer?, fwdFrom: Api.MessageFwdHeader?, viaBotId: Int64?, viaBusinessBotId: Int64?, replyTo: Api.MessageReplyHeader?, date: Int32, message: String, media: Api.MessageMedia?, replyMarkup: Api.ReplyMarkup?, entities: [Api.MessageEntity]?, views: Int32?, forwards: Int32?, replies: Api.MessageReplies?, editDate: Int32?, postAuthor: String?, groupedId: Int64?, reactions: Api.MessageReactions?, restrictionReason: [Api.RestrictionReason]?, ttlPeriod: Int32?, quickReplyShortcutId: Int32?, effect: Int64?, factcheck: Api.FactCheck?, reportDeliveryUntilDate: Int32?)
+        case message(flags: Int32, flags2: Int32, id: Int32, fromId: Api.Peer?, fromBoostsApplied: Int32?, peerId: Api.Peer, savedPeerId: Api.Peer?, fwdFrom: Api.MessageFwdHeader?, viaBotId: Int64?, viaBusinessBotId: Int64?, replyTo: Api.MessageReplyHeader?, date: Int32, message: String, media: Api.MessageMedia?, replyMarkup: Api.ReplyMarkup?, entities: [Api.MessageEntity]?, views: Int32?, forwards: Int32?, replies: Api.MessageReplies?, editDate: Int32?, postAuthor: String?, groupedId: Int64?, reactions: Api.MessageReactions?, restrictionReason: [Api.RestrictionReason]?, ttlPeriod: Int32?, quickReplyShortcutId: Int32?, effect: Int64?, factcheck: Api.FactCheck?, reportDeliveryUntilDate: Int32?, paidMessageStars: Int64?)
         case messageEmpty(flags: Int32, id: Int32, peerId: Api.Peer?)
         case messageService(flags: Int32, id: Int32, fromId: Api.Peer?, peerId: Api.Peer, replyTo: Api.MessageReplyHeader?, date: Int32, action: Api.MessageAction, reactions: Api.MessageReactions?, ttlPeriod: Int32?)
     
     public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
     switch self {
-                case .message(let flags, let flags2, let id, let fromId, let fromBoostsApplied, let peerId, let savedPeerId, let fwdFrom, let viaBotId, let viaBusinessBotId, let replyTo, let date, let message, let media, let replyMarkup, let entities, let views, let forwards, let replies, let editDate, let postAuthor, let groupedId, let reactions, let restrictionReason, let ttlPeriod, let quickReplyShortcutId, let effect, let factcheck, let reportDeliveryUntilDate):
+                case .message(let flags, let flags2, let id, let fromId, let fromBoostsApplied, let peerId, let savedPeerId, let fwdFrom, let viaBotId, let viaBusinessBotId, let replyTo, let date, let message, let media, let replyMarkup, let entities, let views, let forwards, let replies, let editDate, let postAuthor, let groupedId, let reactions, let restrictionReason, let ttlPeriod, let quickReplyShortcutId, let effect, let factcheck, let reportDeliveryUntilDate, let paidMessageStars):
                     if boxed {
-                        buffer.appendInt32(-1761756183)
+                        buffer.appendInt32(-356721331)
                     }
                     serializeInt32(flags, buffer: buffer, boxed: false)
                     serializeInt32(flags2, buffer: buffer, boxed: false)
@@ -107,6 +107,7 @@ public extension Api {
                     if Int(flags2) & Int(1 << 2) != 0 {serializeInt64(effect!, buffer: buffer, boxed: false)}
                     if Int(flags2) & Int(1 << 3) != 0 {factcheck!.serialize(buffer, true)}
                     if Int(flags2) & Int(1 << 5) != 0 {serializeInt32(reportDeliveryUntilDate!, buffer: buffer, boxed: false)}
+                    if Int(flags2) & Int(1 << 6) != 0 {serializeInt64(paidMessageStars!, buffer: buffer, boxed: false)}
                     break
                 case .messageEmpty(let flags, let id, let peerId):
                     if boxed {
@@ -135,8 +136,8 @@ public extension Api {
     
     public func descriptionFields() -> (String, [(String, Any)]) {
         switch self {
-                case .message(let flags, let flags2, let id, let fromId, let fromBoostsApplied, let peerId, let savedPeerId, let fwdFrom, let viaBotId, let viaBusinessBotId, let replyTo, let date, let message, let media, let replyMarkup, let entities, let views, let forwards, let replies, let editDate, let postAuthor, let groupedId, let reactions, let restrictionReason, let ttlPeriod, let quickReplyShortcutId, let effect, let factcheck, let reportDeliveryUntilDate):
-                return ("message", [("flags", flags as Any), ("flags2", flags2 as Any), ("id", id as Any), ("fromId", fromId as Any), ("fromBoostsApplied", fromBoostsApplied as Any), ("peerId", peerId as Any), ("savedPeerId", savedPeerId as Any), ("fwdFrom", fwdFrom as Any), ("viaBotId", viaBotId as Any), ("viaBusinessBotId", viaBusinessBotId as Any), ("replyTo", replyTo as Any), ("date", date as Any), ("message", message as Any), ("media", media as Any), ("replyMarkup", replyMarkup as Any), ("entities", entities as Any), ("views", views as Any), ("forwards", forwards as Any), ("replies", replies as Any), ("editDate", editDate as Any), ("postAuthor", postAuthor as Any), ("groupedId", groupedId as Any), ("reactions", reactions as Any), ("restrictionReason", restrictionReason as Any), ("ttlPeriod", ttlPeriod as Any), ("quickReplyShortcutId", quickReplyShortcutId as Any), ("effect", effect as Any), ("factcheck", factcheck as Any), ("reportDeliveryUntilDate", reportDeliveryUntilDate as Any)])
+                case .message(let flags, let flags2, let id, let fromId, let fromBoostsApplied, let peerId, let savedPeerId, let fwdFrom, let viaBotId, let viaBusinessBotId, let replyTo, let date, let message, let media, let replyMarkup, let entities, let views, let forwards, let replies, let editDate, let postAuthor, let groupedId, let reactions, let restrictionReason, let ttlPeriod, let quickReplyShortcutId, let effect, let factcheck, let reportDeliveryUntilDate, let paidMessageStars):
+                return ("message", [("flags", flags as Any), ("flags2", flags2 as Any), ("id", id as Any), ("fromId", fromId as Any), ("fromBoostsApplied", fromBoostsApplied as Any), ("peerId", peerId as Any), ("savedPeerId", savedPeerId as Any), ("fwdFrom", fwdFrom as Any), ("viaBotId", viaBotId as Any), ("viaBusinessBotId", viaBusinessBotId as Any), ("replyTo", replyTo as Any), ("date", date as Any), ("message", message as Any), ("media", media as Any), ("replyMarkup", replyMarkup as Any), ("entities", entities as Any), ("views", views as Any), ("forwards", forwards as Any), ("replies", replies as Any), ("editDate", editDate as Any), ("postAuthor", postAuthor as Any), ("groupedId", groupedId as Any), ("reactions", reactions as Any), ("restrictionReason", restrictionReason as Any), ("ttlPeriod", ttlPeriod as Any), ("quickReplyShortcutId", quickReplyShortcutId as Any), ("effect", effect as Any), ("factcheck", factcheck as Any), ("reportDeliveryUntilDate", reportDeliveryUntilDate as Any), ("paidMessageStars", paidMessageStars as Any)])
                 case .messageEmpty(let flags, let id, let peerId):
                 return ("messageEmpty", [("flags", flags as Any), ("id", id as Any), ("peerId", peerId as Any)])
                 case .messageService(let flags, let id, let fromId, let peerId, let replyTo, let date, let action, let reactions, let ttlPeriod):
@@ -227,6 +228,8 @@ public extension Api {
             } }
             var _29: Int32?
             if Int(_2!) & Int(1 << 5) != 0 {_29 = reader.readInt32() }
+            var _30: Int64?
+            if Int(_2!) & Int(1 << 6) != 0 {_30 = reader.readInt64() }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
@@ -256,8 +259,9 @@ public extension Api {
             let _c27 = (Int(_2!) & Int(1 << 2) == 0) || _27 != nil
             let _c28 = (Int(_2!) & Int(1 << 3) == 0) || _28 != nil
             let _c29 = (Int(_2!) & Int(1 << 5) == 0) || _29 != nil
-            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 && _c11 && _c12 && _c13 && _c14 && _c15 && _c16 && _c17 && _c18 && _c19 && _c20 && _c21 && _c22 && _c23 && _c24 && _c25 && _c26 && _c27 && _c28 && _c29 {
-                return Api.Message.message(flags: _1!, flags2: _2!, id: _3!, fromId: _4, fromBoostsApplied: _5, peerId: _6!, savedPeerId: _7, fwdFrom: _8, viaBotId: _9, viaBusinessBotId: _10, replyTo: _11, date: _12!, message: _13!, media: _14, replyMarkup: _15, entities: _16, views: _17, forwards: _18, replies: _19, editDate: _20, postAuthor: _21, groupedId: _22, reactions: _23, restrictionReason: _24, ttlPeriod: _25, quickReplyShortcutId: _26, effect: _27, factcheck: _28, reportDeliveryUntilDate: _29)
+            let _c30 = (Int(_2!) & Int(1 << 6) == 0) || _30 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 && _c11 && _c12 && _c13 && _c14 && _c15 && _c16 && _c17 && _c18 && _c19 && _c20 && _c21 && _c22 && _c23 && _c24 && _c25 && _c26 && _c27 && _c28 && _c29 && _c30 {
+                return Api.Message.message(flags: _1!, flags2: _2!, id: _3!, fromId: _4, fromBoostsApplied: _5, peerId: _6!, savedPeerId: _7, fwdFrom: _8, viaBotId: _9, viaBusinessBotId: _10, replyTo: _11, date: _12!, message: _13!, media: _14, replyMarkup: _15, entities: _16, views: _17, forwards: _18, replies: _19, editDate: _20, postAuthor: _21, groupedId: _22, reactions: _23, restrictionReason: _24, ttlPeriod: _25, quickReplyShortcutId: _26, effect: _27, factcheck: _28, reportDeliveryUntilDate: _29, paidMessageStars: _30)
             }
             else {
                 return nil
@@ -373,8 +377,8 @@ public extension Api {
         case messageActionSetChatTheme(emoticon: String)
         case messageActionSetChatWallPaper(flags: Int32, wallpaper: Api.WallPaper)
         case messageActionSetMessagesTTL(flags: Int32, period: Int32, autoSettingFrom: Int64?)
-        case messageActionStarGift(flags: Int32, gift: Api.StarGift, message: Api.TextWithEntities?, convertStars: Int64?, upgradeMsgId: Int32?, upgradeStars: Int64?)
-        case messageActionStarGiftUnique(flags: Int32, gift: Api.StarGift, canExportAt: Int32?, transferStars: Int64?)
+        case messageActionStarGift(flags: Int32, gift: Api.StarGift, message: Api.TextWithEntities?, convertStars: Int64?, upgradeMsgId: Int32?, upgradeStars: Int64?, fromId: Api.Peer?, peer: Api.Peer?, savedId: Int64?)
+        case messageActionStarGiftUnique(flags: Int32, gift: Api.StarGift, canExportAt: Int32?, transferStars: Int64?, fromId: Api.Peer?, peer: Api.Peer?, savedId: Int64?)
         case messageActionSuggestProfilePhoto(photo: Api.Photo)
         case messageActionTopicCreate(flags: Int32, title: String, iconColor: Int32, iconEmojiId: Int64?)
         case messageActionTopicEdit(flags: Int32, title: String?, iconEmojiId: Int64?, closed: Api.Bool?, hidden: Api.Bool?)
@@ -720,9 +724,9 @@ public extension Api {
                     serializeInt32(period, buffer: buffer, boxed: false)
                     if Int(flags) & Int(1 << 0) != 0 {serializeInt64(autoSettingFrom!, buffer: buffer, boxed: false)}
                     break
-                case .messageActionStarGift(let flags, let gift, let message, let convertStars, let upgradeMsgId, let upgradeStars):
+                case .messageActionStarGift(let flags, let gift, let message, let convertStars, let upgradeMsgId, let upgradeStars, let fromId, let peer, let savedId):
                     if boxed {
-                        buffer.appendInt32(-655036249)
+                        buffer.appendInt32(1192749220)
                     }
                     serializeInt32(flags, buffer: buffer, boxed: false)
                     gift.serialize(buffer, true)
@@ -730,15 +734,21 @@ public extension Api {
                     if Int(flags) & Int(1 << 4) != 0 {serializeInt64(convertStars!, buffer: buffer, boxed: false)}
                     if Int(flags) & Int(1 << 5) != 0 {serializeInt32(upgradeMsgId!, buffer: buffer, boxed: false)}
                     if Int(flags) & Int(1 << 8) != 0 {serializeInt64(upgradeStars!, buffer: buffer, boxed: false)}
+                    if Int(flags) & Int(1 << 11) != 0 {fromId!.serialize(buffer, true)}
+                    if Int(flags) & Int(1 << 12) != 0 {peer!.serialize(buffer, true)}
+                    if Int(flags) & Int(1 << 12) != 0 {serializeInt64(savedId!, buffer: buffer, boxed: false)}
                     break
-                case .messageActionStarGiftUnique(let flags, let gift, let canExportAt, let transferStars):
+                case .messageActionStarGiftUnique(let flags, let gift, let canExportAt, let transferStars, let fromId, let peer, let savedId):
                     if boxed {
-                        buffer.appendInt32(638024601)
+                        buffer.appendInt32(-1394619519)
                     }
                     serializeInt32(flags, buffer: buffer, boxed: false)
                     gift.serialize(buffer, true)
                     if Int(flags) & Int(1 << 3) != 0 {serializeInt32(canExportAt!, buffer: buffer, boxed: false)}
                     if Int(flags) & Int(1 << 4) != 0 {serializeInt64(transferStars!, buffer: buffer, boxed: false)}
+                    if Int(flags) & Int(1 << 6) != 0 {fromId!.serialize(buffer, true)}
+                    if Int(flags) & Int(1 << 7) != 0 {peer!.serialize(buffer, true)}
+                    if Int(flags) & Int(1 << 7) != 0 {serializeInt64(savedId!, buffer: buffer, boxed: false)}
                     break
                 case .messageActionSuggestProfilePhoto(let photo):
                     if boxed {
@@ -865,10 +875,10 @@ public extension Api {
                 return ("messageActionSetChatWallPaper", [("flags", flags as Any), ("wallpaper", wallpaper as Any)])
                 case .messageActionSetMessagesTTL(let flags, let period, let autoSettingFrom):
                 return ("messageActionSetMessagesTTL", [("flags", flags as Any), ("period", period as Any), ("autoSettingFrom", autoSettingFrom as Any)])
-                case .messageActionStarGift(let flags, let gift, let message, let convertStars, let upgradeMsgId, let upgradeStars):
-                return ("messageActionStarGift", [("flags", flags as Any), ("gift", gift as Any), ("message", message as Any), ("convertStars", convertStars as Any), ("upgradeMsgId", upgradeMsgId as Any), ("upgradeStars", upgradeStars as Any)])
-                case .messageActionStarGiftUnique(let flags, let gift, let canExportAt, let transferStars):
-                return ("messageActionStarGiftUnique", [("flags", flags as Any), ("gift", gift as Any), ("canExportAt", canExportAt as Any), ("transferStars", transferStars as Any)])
+                case .messageActionStarGift(let flags, let gift, let message, let convertStars, let upgradeMsgId, let upgradeStars, let fromId, let peer, let savedId):
+                return ("messageActionStarGift", [("flags", flags as Any), ("gift", gift as Any), ("message", message as Any), ("convertStars", convertStars as Any), ("upgradeMsgId", upgradeMsgId as Any), ("upgradeStars", upgradeStars as Any), ("fromId", fromId as Any), ("peer", peer as Any), ("savedId", savedId as Any)])
+                case .messageActionStarGiftUnique(let flags, let gift, let canExportAt, let transferStars, let fromId, let peer, let savedId):
+                return ("messageActionStarGiftUnique", [("flags", flags as Any), ("gift", gift as Any), ("canExportAt", canExportAt as Any), ("transferStars", transferStars as Any), ("fromId", fromId as Any), ("peer", peer as Any), ("savedId", savedId as Any)])
                 case .messageActionSuggestProfilePhoto(let photo):
                 return ("messageActionSuggestProfilePhoto", [("photo", photo as Any)])
                 case .messageActionTopicCreate(let flags, let title, let iconColor, let iconEmojiId):
@@ -1533,14 +1543,27 @@ public extension Api {
             if Int(_1!) & Int(1 << 5) != 0 {_5 = reader.readInt32() }
             var _6: Int64?
             if Int(_1!) & Int(1 << 8) != 0 {_6 = reader.readInt64() }
+            var _7: Api.Peer?
+            if Int(_1!) & Int(1 << 11) != 0 {if let signature = reader.readInt32() {
+                _7 = Api.parse(reader, signature: signature) as? Api.Peer
+            } }
+            var _8: Api.Peer?
+            if Int(_1!) & Int(1 << 12) != 0 {if let signature = reader.readInt32() {
+                _8 = Api.parse(reader, signature: signature) as? Api.Peer
+            } }
+            var _9: Int64?
+            if Int(_1!) & Int(1 << 12) != 0 {_9 = reader.readInt64() }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = (Int(_1!) & Int(1 << 1) == 0) || _3 != nil
             let _c4 = (Int(_1!) & Int(1 << 4) == 0) || _4 != nil
             let _c5 = (Int(_1!) & Int(1 << 5) == 0) || _5 != nil
             let _c6 = (Int(_1!) & Int(1 << 8) == 0) || _6 != nil
-            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
-                return Api.MessageAction.messageActionStarGift(flags: _1!, gift: _2!, message: _3, convertStars: _4, upgradeMsgId: _5, upgradeStars: _6)
+            let _c7 = (Int(_1!) & Int(1 << 11) == 0) || _7 != nil
+            let _c8 = (Int(_1!) & Int(1 << 12) == 0) || _8 != nil
+            let _c9 = (Int(_1!) & Int(1 << 12) == 0) || _9 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 {
+                return Api.MessageAction.messageActionStarGift(flags: _1!, gift: _2!, message: _3, convertStars: _4, upgradeMsgId: _5, upgradeStars: _6, fromId: _7, peer: _8, savedId: _9)
             }
             else {
                 return nil
@@ -1557,12 +1580,25 @@ public extension Api {
             if Int(_1!) & Int(1 << 3) != 0 {_3 = reader.readInt32() }
             var _4: Int64?
             if Int(_1!) & Int(1 << 4) != 0 {_4 = reader.readInt64() }
+            var _5: Api.Peer?
+            if Int(_1!) & Int(1 << 6) != 0 {if let signature = reader.readInt32() {
+                _5 = Api.parse(reader, signature: signature) as? Api.Peer
+            } }
+            var _6: Api.Peer?
+            if Int(_1!) & Int(1 << 7) != 0 {if let signature = reader.readInt32() {
+                _6 = Api.parse(reader, signature: signature) as? Api.Peer
+            } }
+            var _7: Int64?
+            if Int(_1!) & Int(1 << 7) != 0 {_7 = reader.readInt64() }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = (Int(_1!) & Int(1 << 3) == 0) || _3 != nil
             let _c4 = (Int(_1!) & Int(1 << 4) == 0) || _4 != nil
-            if _c1 && _c2 && _c3 && _c4 {
-                return Api.MessageAction.messageActionStarGiftUnique(flags: _1!, gift: _2!, canExportAt: _3, transferStars: _4)
+            let _c5 = (Int(_1!) & Int(1 << 6) == 0) || _5 != nil
+            let _c6 = (Int(_1!) & Int(1 << 7) == 0) || _6 != nil
+            let _c7 = (Int(_1!) & Int(1 << 7) == 0) || _7 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 {
+                return Api.MessageAction.messageActionStarGiftUnique(flags: _1!, gift: _2!, canExportAt: _3, transferStars: _4, fromId: _5, peer: _6, savedId: _7)
             }
             else {
                 return nil

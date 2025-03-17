@@ -140,7 +140,9 @@ private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> ([
     let hideAllAdditionalInfo = item.presentationData.isPreview
     
     var hasSeparateCommentsButton = false
-        
+    
+    var addedPriceInfo = false
+    
     outer: for (message, itemAttributes) in item.content {
         for attribute in message.attributes {
             if let attribute = attribute as? RestrictedContentMessageAttribute, attribute.platformText(platform: "ios", contentSettings: item.context.currentContentSettings.with { $0 }) != nil {
@@ -151,6 +153,9 @@ private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> ([
                     needReactions = false
                     break outer
                 }
+            } else if let _ = attribute as? PaidStarsMessageAttribute, !addedPriceInfo {
+                result.append((message, ChatMessageActionBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
+                addedPriceInfo = true
             }
         }
         
@@ -1875,7 +1880,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
         var addedContentNodes: [(Message, Bool, ChatMessageBubbleContentNode, Int?)]?
         for contentNodeItemValue in contentNodeMessagesAndClasses {
             let contentNodeItem = contentNodeItemValue as (message: Message, type: AnyClass, attributes: ChatMessageEntryAttributes, bubbleAttributes: BubbleItemAttributes)
-
+            
             var found = false
             for currentNodeItemValue in currentContentClassesPropertiesAndLayouts {
                 let currentNodeItem = currentNodeItemValue as (message: Message, type: AnyClass, supportsMosaic: Bool, index: Int?, currentLayout: (ChatMessageBubbleContentItem, ChatMessageItemLayoutConstants, ChatMessageBubblePreparePosition, Bool?, CGSize, CGFloat) -> (ChatMessageBubbleContentProperties, CGSize?, CGFloat, (CGSize, ChatMessageBubbleContentPosition) -> (CGFloat, (CGFloat) -> (CGSize, (ListViewItemUpdateAnimation, Bool, ListViewItemApply?) -> Void))))
@@ -1887,7 +1892,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 }
             }
             if !found {
-                let contentNode = (contentNodeItem.type as! ChatMessageBubbleContentNode.Type).init()
+                let contentNode = (contentNodeItem.type as! ChatMessageBubbleContentNode.Type).init()                
                 contentNode.index = contentNodeItem.bubbleAttributes.index
                 contentPropertiesAndPrepareLayouts.append((contentNodeItem.message, contentNode.supportsMosaic, contentNodeItem.attributes, contentNodeItem.bubbleAttributes, contentNode.asyncLayoutContent()))
                 if addedContentNodes == nil {
@@ -2112,7 +2117,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 prepareContentPosition = .linear(top: topPosition, bottom: refinedBottomPosition)
             }
             
-            let contentItem = ChatMessageBubbleContentItem(context: item.context, controllerInteraction: item.controllerInteraction, message: message, topMessage: item.content.firstMessage, read: read, chatLocation: item.chatLocation, presentationData: item.presentationData, associatedData: item.associatedData, attributes: attributes, isItemPinned: isItemPinned, isItemEdited: isItemEdited)
+            let contentItem = ChatMessageBubbleContentItem(context: item.context, controllerInteraction: item.controllerInteraction, message: message, topMessage: item.content.firstMessage, content: item.content, read: read, chatLocation: item.chatLocation, presentationData: item.presentationData, associatedData: item.associatedData, attributes: attributes, isItemPinned: isItemPinned, isItemEdited: isItemEdited)
             
             var itemSelection: Bool?
             switch content {
@@ -2150,22 +2155,24 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
             
             contentPropertiesAndLayouts.append((unboundSize, properties, prepareContentPosition, bubbleAttributes, nodeLayout, needSeparateContainers && !bubbleAttributes.isAttachment ? message.stableId : nil, itemSelection))
             
-            switch properties.hidesBackground {
-                case .never:
-                    backgroundHiding = .never
-                case .emptyWallpaper:
-                    if backgroundHiding == nil {
-                        backgroundHiding = properties.hidesBackground
-                    }
-                case .always:
-                    backgroundHiding = .always
-            }
+            if !properties.isDetached {
+                switch properties.hidesBackground {
+                    case .never:
+                        backgroundHiding = .never
+                    case .emptyWallpaper:
+                        if backgroundHiding == nil {
+                            backgroundHiding = properties.hidesBackground
+                        }
+                    case .always:
+                        backgroundHiding = .always
+                }
             
-            switch properties.forceAlignment {
+                switch properties.forceAlignment {
                 case .none:
                     break
                 case .center:
                     alignment = .center
+                }
             }
             
             index += 1
@@ -2184,7 +2191,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
             bottomNodeMergeStatus = .Both
         }
         
-        var currentCredibilityIcon: EmojiStatusComponent.Content?
+        var currentCredibilityIcon: (EmojiStatusComponent.Content, UIColor?)?
         
         var initialDisplayHeader = true
         if hidesHeaders || item.message.adAttribute != nil {
@@ -2247,18 +2254,18 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
 
                 if case let .peer(peerId) = item.chatLocation, let authorPeerId = item.message.author?.id, authorPeerId == peerId {
                     if effectiveAuthor is TelegramChannel, let emojiStatus = effectiveAuthor.emojiStatus {
-                        currentCredibilityIcon = .animation(content: .customEmoji(fileId: emojiStatus.fileId), size: CGSize(width: 20.0, height: 20.0), placeholderColor: incoming ? item.presentationData.theme.theme.chat.message.incoming.mediaPlaceholderColor : item.presentationData.theme.theme.chat.message.outgoing.mediaPlaceholderColor, themeColor: color.withMultipliedAlpha(0.4), loopMode: .count(2))
+                        currentCredibilityIcon = (.animation(content: .customEmoji(fileId: emojiStatus.fileId), size: CGSize(width: 20.0, height: 20.0), placeholderColor: incoming ? item.presentationData.theme.theme.chat.message.incoming.mediaPlaceholderColor : item.presentationData.theme.theme.chat.message.outgoing.mediaPlaceholderColor, themeColor: color.withMultipliedAlpha(0.4), loopMode: .count(2)), nil)
                     }
                 } else if effectiveAuthor.isScam {
-                    currentCredibilityIcon = .text(color: incoming ? item.presentationData.theme.theme.chat.message.incoming.scamColor : item.presentationData.theme.theme.chat.message.outgoing.scamColor, string: item.presentationData.strings.Message_ScamAccount.uppercased())
+                    currentCredibilityIcon = (.text(color: incoming ? item.presentationData.theme.theme.chat.message.incoming.scamColor : item.presentationData.theme.theme.chat.message.outgoing.scamColor, string: item.presentationData.strings.Message_ScamAccount.uppercased()), nil)
                 } else if effectiveAuthor.isFake {
-                    currentCredibilityIcon = .text(color: incoming ? item.presentationData.theme.theme.chat.message.incoming.scamColor : item.presentationData.theme.theme.chat.message.outgoing.scamColor, string: item.presentationData.strings.Message_FakeAccount.uppercased())
+                    currentCredibilityIcon = (.text(color: incoming ? item.presentationData.theme.theme.chat.message.incoming.scamColor : item.presentationData.theme.theme.chat.message.outgoing.scamColor, string: item.presentationData.strings.Message_FakeAccount.uppercased()), nil)
                 } else if let emojiStatus = effectiveAuthor.emojiStatus {
-                    currentCredibilityIcon = .animation(content: .customEmoji(fileId: emojiStatus.fileId), size: CGSize(width: 20.0, height: 20.0), placeholderColor: incoming ? item.presentationData.theme.theme.chat.message.incoming.mediaPlaceholderColor : item.presentationData.theme.theme.chat.message.outgoing.mediaPlaceholderColor, themeColor: color.withMultipliedAlpha(0.4), loopMode: .count(2))
+                    currentCredibilityIcon = (.animation(content: .customEmoji(fileId: emojiStatus.fileId), size: CGSize(width: 20.0, height: 20.0), placeholderColor: incoming ? item.presentationData.theme.theme.chat.message.incoming.mediaPlaceholderColor : item.presentationData.theme.theme.chat.message.outgoing.mediaPlaceholderColor, themeColor: color.withMultipliedAlpha(0.4), loopMode: .count(2)), emojiStatus.color.flatMap { UIColor(rgb: UInt32(bitPattern: $0)) })
                 } else if effectiveAuthor.isVerified {
-                    currentCredibilityIcon = .verified(fillColor: item.presentationData.theme.theme.list.itemCheckColors.fillColor, foregroundColor: item.presentationData.theme.theme.list.itemCheckColors.foregroundColor, sizeType: .compact)
+                    currentCredibilityIcon = (.verified(fillColor: item.presentationData.theme.theme.list.itemCheckColors.fillColor, foregroundColor: item.presentationData.theme.theme.list.itemCheckColors.foregroundColor, sizeType: .compact), nil)
                 } else if effectiveAuthor.isPremium {
-                    currentCredibilityIcon = .premium(color: color.withMultipliedAlpha(0.4))
+                    currentCredibilityIcon = (.premium(color: color.withMultipliedAlpha(0.4)), nil)
                 }
             }
             if let rawAuthorNameColor = authorNameColor {
@@ -2498,7 +2505,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 }
                 
                 var credibilityIconWidth: CGFloat = 0.0
-                if let currentCredibilityIcon = currentCredibilityIcon {
+                if let (currentCredibilityIcon, _) = currentCredibilityIcon {
                     credibilityIconWidth += 4.0
                     switch currentCredibilityIcon {
                     case let .text(_, string):
@@ -2954,7 +2961,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                             bottomBubbleAttributes = contentPropertiesAndLayouts[i + 1].3
                         }
 
-                        if i == 0 {
+                        if i == 0 || (i == 1 && contentPropertiesAndLayouts[0].1.isDetached) {
                             topPosition = firstNodeTopPosition
                         } else {
                             topPosition = .Neighbour(topBubbleAttributes.isAttachment, topBubbleAttributes.neighborType, topBubbleAttributes.neighborSpacing)
@@ -3017,15 +3024,20 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
             if let mosaicRange = mosaicRange, mosaicRange.contains(i), let (framesAndPositions, size) = calculatedGroupFramesAndSize {
                 let mosaicIndex = i - mosaicRange.lowerBound
                 
-                if mosaicIndex == 0 && i == 0 {
+                if mosaicIndex == 0 && (i == 0 || (i == 1 && detachedContentNodesHeight > 0)) {
                     if !headerSize.height.isZero {
                         contentNodesHeight += 7.0
                         totalContentNodesHeight += 7.0
                     }
                 }
                 
+                var contentNodeOriginY = contentNodesHeight
+                if detachedContentNodesHeight > 0 {
+                    contentNodeOriginY -= detachedContentNodesHeight - 4.0
+                }
+                
                 let (_, apply) = finalize(maxContentWidth)
-                let contentNodeFrame = framesAndPositions[mosaicIndex].0.offsetBy(dx: 0.0, dy: contentNodesHeight)
+                let contentNodeFrame = framesAndPositions[mosaicIndex].0.offsetBy(dx: 0.0, dy: contentNodeOriginY)
                 contentNodeFramesPropertiesAndApply.append((contentNodeFrame, properties, true, apply))
                 
                 if i == mosaicRange.upperBound - 1 {
@@ -3034,13 +3046,13 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     
                     contentNodesHeight += size.height
                     totalContentNodesHeight += size.height
-                                        
+                    
                     mosaicStatusOrigin = contentNodeFrame.bottomRight
                 }
             } else {
                 let contentProperties = contentPropertiesAndLayouts[i].3
                 
-                if i == 0 && !headerSize.height.isZero {
+                if (i == 0 || (i == 1 && detachedContentNodesHeight > 0)) && !headerSize.height.isZero {
                     if contentGroupId == nil {
                         contentNodesHeight += properties.headerSpacing
                     }
@@ -3053,7 +3065,15 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                         if !contentContainerNodeFrames.isEmpty {
                             overlapOffset = currentContainerGroupOverlap
                         }
-                        let containerFrame = CGRect(x: 0.0, y: headerSize.height + totalContentNodesHeight - contentNodesHeight - overlapOffset, width: maxContentWidth, height: contentNodesHeight)
+                        var containerContentNodesOrigin = contentNodesHeight
+                        var containerContentNodesHeight = contentNodesHeight
+                        if detachedContentNodesHeight > 0 {
+                            if contentContainerNodeFrames.isEmpty {
+                                containerContentNodesHeight -= detachedContentNodesHeight - 4.0
+                                containerContentNodesOrigin -= detachedContentNodesHeight - 4.0
+                            }
+                        }
+                        let containerFrame = CGRect(x: 0.0, y: headerSize.height + totalContentNodesHeight - containerContentNodesOrigin - overlapOffset, width: maxContentWidth, height: containerContentNodesHeight)
                         contentContainerNodeFrames.append((containerGroupId, containerFrame, currentItemSelection, currentContainerGroupOverlap))
                                                 
                         if !overlapOffset.isZero {
@@ -3068,7 +3088,11 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     currentItemSelection = itemSelection
                 }
                 
-                let contentNodeOriginY = contentNodesHeight - detachedContentNodesHeight
+                var contentNodeOriginY = contentNodesHeight
+                if detachedContentNodesHeight > 0, contentContainerNodeFrames.isEmpty {
+                    contentNodeOriginY -= detachedContentNodesHeight - 4.0
+                }
+                
                 let (size, apply) = finalize(maxContentWidth)
                 let containerFrame = CGRect(origin: CGPoint(x: 0.0, y: contentNodeOriginY), size: size)
                 contentNodeFramesPropertiesAndApply.append((containerFrame, properties, contentGroupId == nil, apply))
@@ -3082,7 +3106,8 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 totalContentNodesHeight += size.height
                 
                 if properties.isDetached {
-                    detachedContentNodesHeight += size.height
+                    detachedContentNodesHeight += size.height + 4.0
+                    totalContentNodesHeight += 4.0
                 }
             }
         }
@@ -3092,7 +3117,15 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
             if !contentContainerNodeFrames.isEmpty {
                 overlapOffset = currentContainerGroupOverlap
             }
-            contentContainerNodeFrames.append((containerGroupId, CGRect(x: 0.0, y: headerSize.height + totalContentNodesHeight - contentNodesHeight - overlapOffset, width: maxContentWidth, height: contentNodesHeight), currentItemSelection, currentContainerGroupOverlap))
+            var containerContentNodesOrigin = contentNodesHeight
+            var containerContentNodesHeight = contentNodesHeight
+            if detachedContentNodesHeight > 0 {
+                if contentContainerNodeFrames.isEmpty {
+                    containerContentNodesHeight -= detachedContentNodesHeight - 4.0
+                    containerContentNodesOrigin -= detachedContentNodesHeight - 4.0
+                }
+            }
+            contentContainerNodeFrames.append((containerGroupId, CGRect(x: 0.0, y: headerSize.height + totalContentNodesHeight - containerContentNodesOrigin - overlapOffset, width: maxContentWidth, height: containerContentNodesHeight), currentItemSelection, currentContainerGroupOverlap))
             if !overlapOffset.isZero {
                 totalContentNodesHeight -= currentContainerGroupOverlap
             }
@@ -3244,7 +3277,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 nameNodeSizeApply: nameNodeSizeApply,
                 viaWidth: viaWidth,
                 contentOrigin: contentOrigin,
-                nameNodeOriginY: nameNodeOriginY,
+                nameNodeOriginY: nameNodeOriginY + detachedContentNodesHeight,
                 authorNameColor: authorNameColor,
                 layoutConstants: layoutConstants,
                 currentCredibilityIcon: currentCredibilityIcon,
@@ -3252,11 +3285,11 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 boostNodeSizeApply: boostNodeSizeApply,
                 contentUpperRightCorner: contentUpperRightCorner,
                 threadInfoSizeApply: threadInfoSizeApply,
-                threadInfoOriginY: threadInfoOriginY,
+                threadInfoOriginY: threadInfoOriginY + detachedContentNodesHeight,
                 forwardInfoSizeApply: forwardInfoSizeApply,
-                forwardInfoOriginY: forwardInfoOriginY,
+                forwardInfoOriginY: forwardInfoOriginY + detachedContentNodesHeight,
                 replyInfoSizeApply: replyInfoSizeApply,
-                replyInfoOriginY: replyInfoOriginY,
+                replyInfoOriginY: replyInfoOriginY + detachedContentNodesHeight,
                 removedContentNodeIndices: removedContentNodeIndices,
                 updatedContentNodeOrder: updatedContentNodeOrder,
                 addedContentNodes: addedContentNodes,
@@ -3308,7 +3341,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
         nameNodeOriginY: CGFloat,
         authorNameColor: UIColor?,
         layoutConstants: ChatMessageItemLayoutConstants,
-        currentCredibilityIcon: EmojiStatusComponent.Content?,
+        currentCredibilityIcon: (EmojiStatusComponent.Content, UIColor?)?,
         adminNodeSizeApply: (CGSize, () -> TextNode?),
         boostNodeSizeApply: (CGSize, () -> TextNode?),
         contentUpperRightCorner: CGPoint,
@@ -3514,7 +3547,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 nameHighlightNode.image = generateFilledRoundedRectImage(size: CGSize(width: 8.0, height: 8.0), cornerRadius: 4.0, color: nameColor.withAlphaComponent(0.1))?.stretchableImage(withLeftCapWidth: 4, topCapHeight: 4)
             }
             
-            if let currentCredibilityIcon = currentCredibilityIcon {
+            if let (currentCredibilityIcon, currentParticleColor) = currentCredibilityIcon {
                 let credibilityIconView: ComponentHostView<Empty>
                 if let current = strongSelf.credibilityIconView {
                     credibilityIconView = current
@@ -3534,6 +3567,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     animationCache: item.context.animationCache,
                     animationRenderer: item.context.animationRenderer,
                     content: currentCredibilityIcon,
+                    particleColor: currentParticleColor,
                     isVisibleForAnimations: strongSelf.visibilityStatus,
                     action: nil
                 )
@@ -4134,32 +4168,33 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
             }
             
             if let addedContentNodes = addedContentNodes {
-                for (contentNodeMessage, isAttachment, contentNode, _ ) in addedContentNodes {
+                for (contentNodeMessage, isAttachment, contentNode, _) in addedContentNodes {
+                    let index = updatedContentNodes.count
                     updatedContentNodes.append(contentNode)
                     
-                    let contextSourceNode: ContextExtractedContentContainingNode
-                    let containerSupernode: ASDisplayNode
-                    if isAttachment {
-                        contextSourceNode = strongSelf.mainContextSourceNode
-                        containerSupernode = strongSelf.clippingNode
+                    if index < contentNodeFramesPropertiesAndApply.count && contentNodeFramesPropertiesAndApply[index].1.isDetached {
+                        strongSelf.addSubnode(contentNode)
                     } else {
-                        contextSourceNode = strongSelf.contentContainers.first(where: { $0.contentMessageStableId == contentNodeMessage.stableId })?.sourceNode ?? strongSelf.mainContextSourceNode
-                        containerSupernode = strongSelf.contentContainers.first(where: { $0.contentMessageStableId == contentNodeMessage.stableId })?.sourceNode.contentNode ?? strongSelf.clippingNode
+                        let contextSourceNode: ContextExtractedContentContainingNode
+                        let containerSupernode: ASDisplayNode
+                        if isAttachment {
+                            contextSourceNode = strongSelf.mainContextSourceNode
+                            containerSupernode = strongSelf.clippingNode
+                        } else {
+                            contextSourceNode = strongSelf.contentContainers.first(where: { $0.contentMessageStableId == contentNodeMessage.stableId })?.sourceNode ?? strongSelf.mainContextSourceNode
+                            containerSupernode = strongSelf.contentContainers.first(where: { $0.contentMessageStableId == contentNodeMessage.stableId })?.sourceNode.contentNode ?? strongSelf.clippingNode
+                        }
+                        containerSupernode.addSubnode(contentNode)
+                        contentNode.updateIsTextSelectionActive = { [weak contextSourceNode] value in
+                            contextSourceNode?.updateDistractionFreeMode?(value)
+                        }
+                        contentNode.updateIsExtractedToContextPreview(contextSourceNode.isExtractedToContextPreview)
                     }
-                    
-                    #if DEBUG && false
-                    contentNode.layer.borderColor = UIColor(white: 0.0, alpha: 0.2).cgColor
-                    contentNode.layer.borderWidth = 1.0
-                    #endif
-                    
-                    containerSupernode.addSubnode(contentNode)
                     
                     contentNode.itemNode = strongSelf
                     contentNode.bubbleBackgroundNode = strongSelf.backgroundNode
                     contentNode.bubbleBackdropNode = strongSelf.backgroundWallpaperNode
-                    contentNode.updateIsTextSelectionActive = { [weak contextSourceNode] value in
-                        contextSourceNode?.updateDistractionFreeMode?(value)
-                    }
+
                     contentNode.requestInlineUpdate = { [weak strongSelf] in
                         guard let strongSelf else {
                             return
@@ -4167,7 +4202,6 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                         
                         strongSelf.internalUpdateLayout()
                     }
-                    contentNode.updateIsExtractedToContextPreview(contextSourceNode.isExtractedToContextPreview)
                 }
             }
             
@@ -4766,6 +4800,9 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     break
                 }
             }
+        }
+        if item.message.timestamp < 10 {
+            hasMenuGesture = false
         }
         strongSelf.mainContainerNode.isGestureEnabled = hasMenuGesture
         for contentContainer in strongSelf.contentContainers {
@@ -5988,16 +6025,20 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
     
     @objc private func credibilityButtonPressed() {
         if let item = self.item, let credibilityIconView = self.credibilityIconView, let iconContent = self.credibilityIconContent, let peer = item.message.author {
-            var emojiFileId: Int64?
-            switch iconContent {
-            case let .animation(content, _, _, _, _):
-                emojiFileId = content.fileId.id
-            case .premium:
-                break
-            default:
-                return
+            if case let .starGift(_, _, _, slug, _, _, _, _, _) = peer.emojiStatus?.content {
+                item.controllerInteraction.openUniqueGift(slug)
+            } else {
+                var emojiFileId: Int64?
+                switch iconContent {
+                case let .animation(content, _, _, _, _):
+                    emojiFileId = content.fileId.id
+                case .premium:
+                    break
+                default:
+                    return
+                }
+                item.controllerInteraction.openPremiumStatusInfo(peer.id, credibilityIconView, emojiFileId, peer.nameColor ?? .blue)
             }
-            item.controllerInteraction.openPremiumStatusInfo(peer.id, credibilityIconView, emojiFileId, peer.nameColor ?? .blue)
         }
     }
     

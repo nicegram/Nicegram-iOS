@@ -300,7 +300,7 @@ func openResolvedUrlImpl(
                             if let photoRepresentation = invite.photoRepresentation {
                                 photo.append(photoRepresentation)
                             }
-                            let channel = TelegramChannel(id: PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(0)), accessHash: .genericPublic(0), title: invite.title, username: nil, photo: photo, creationDate: 0, version: 0, participationStatus: .left, info: .broadcast(TelegramChannelBroadcastInfo(flags: [])), flags: [], restrictionInfo: nil, adminRights: nil, bannedRights: nil, defaultBannedRights: nil, usernames: [], storiesHidden: nil, nameColor: invite.nameColor, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, emojiStatus: nil, approximateBoostLevel: nil, subscriptionUntilDate: nil, verificationIconFileId: nil)
+                            let channel = TelegramChannel(id: PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(0)), accessHash: .genericPublic(0), title: invite.title, username: nil, photo: photo, creationDate: 0, version: 0, participationStatus: .left, info: .broadcast(TelegramChannelBroadcastInfo(flags: [])), flags: [], restrictionInfo: nil, adminRights: nil, bannedRights: nil, defaultBannedRights: nil, usernames: [], storiesHidden: nil, nameColor: invite.nameColor, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, emojiStatus: nil, approximateBoostLevel: nil, subscriptionUntilDate: nil, verificationIconFileId: nil, sendPaidMessageStars: nil)
                             let invoice = TelegramMediaInvoice(title: "", description: "", photo: nil, receiptMessageId: nil, currency: "XTR", totalAmount: subscriptionPricing.amount.value, startParam: "", extendedMedia: nil, subscriptionPeriod: nil, flags: [], version: 0)
                             
                             inputData.set(.single(BotCheckoutController.InputData(
@@ -703,6 +703,18 @@ func openResolvedUrlImpl(
                         navigationController.setViewControllers(controllers, animated: true)
                     }
                 }
+            case .phonePrivacy:
+                let privacySignal = context.engine.privacy.requestAccountPrivacySettings()
+                let _ = (privacySignal
+                |> deliverOnMainQueue).start(next: { info in
+                    let current: SelectivePrivacySettings = info.phoneNumber
+                    if let navigationController = navigationController {
+                        let controller = selectivePrivacySettingsController(context: context, kind: .phoneNumber, current: current, phoneDiscoveryEnabled: info.phoneDiscoveryEnabled, updated: { _, _, _, _ in
+                        })
+                        controller.navigationPresentation = .modal
+                        navigationController.pushViewController(controller)
+                    }
+                })
             }
         case let .premiumOffer(reference):
             dismissInput()
@@ -1211,6 +1223,33 @@ func openResolvedUrlImpl(
                     present(textAlertController(context: context, updatedPresentationData: updatedPresentationData, title: nil, text: presentationData.strings.Login_UnknownError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), nil)
                 }
             })
+        case let .collectible(gift):
+            if let gift {
+                var dismissedImpl: (() -> Void)?
+                if let storyProgressPauseContext = contentContext as? StoryProgressPauseContext {
+                    let updateExternalController = storyProgressPauseContext.update
+                    dismissedImpl = {
+                        updateExternalController(nil)
+                    }
+                }
+                let controller = context.sharedContext.makeGiftViewScreen(context: context, gift: gift, shareStory: { [weak navigationController] uniqueGift in
+                    Queue.mainQueue().after(0.15) {
+                        if let lastController = navigationController?.viewControllers.last as? ViewController {
+                            let controller = context.sharedContext.makeStorySharingScreen(context: context, subject: .gift(gift), parentController: lastController)
+                            navigationController?.pushViewController(controller)
+                        }
+                    }
+                }, dismissed: {
+                    dismissedImpl?()
+                })
+                navigationController?.pushViewController(controller)
+                
+                if let storyProgressPauseContext = contentContext as? StoryProgressPauseContext {
+                    storyProgressPauseContext.update(controller)
+                }
+            } else {
+                present(textAlertController(context: context, updatedPresentationData: updatedPresentationData, title: nil, text: presentationData.strings.Login_UnknownError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), nil)
+            }
         case let .messageLink(link):
             if let link {
                 if let navigationController = navigationController {

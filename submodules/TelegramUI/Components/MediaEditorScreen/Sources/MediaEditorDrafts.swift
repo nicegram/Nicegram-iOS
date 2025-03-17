@@ -24,12 +24,20 @@ extension MediaEditorScreenImpl {
         if case .avatarEditor = self.mode {
             return false
         }
+        if case .coverEditor = self.mode {
+            return false
+        }
         
         let filteredEntities = self.node.entitiesView.entities.filter { entity in
             if entity is DrawingMediaEntity {
                 return false
-            } else if let entity = entity as? DrawingStickerEntity, case .message = entity.content {
-                return false
+            } else if let entity = entity as? DrawingStickerEntity {
+                switch entity.content {
+                case .message, .gift:
+                    return false
+                default:
+                    break
+                }
             }
             return true
         }
@@ -42,6 +50,8 @@ extension MediaEditorScreenImpl {
             if case .asset = subject, !values.hasChanges && caption.string.isEmpty {
                 return false
             } else if case .message = subject, !filteredValues.hasChanges && filteredEntities.isEmpty && caption.string.isEmpty {
+                return false
+            } else if case .gift = subject, !filteredValues.hasChanges && filteredEntities.isEmpty && caption.string.isEmpty {
                 return false
             } else if case .empty = subject, !self.node.hasAnyChanges && !self.node.drawingView.internalState.canUndo {
                 return false
@@ -203,7 +213,7 @@ extension MediaEditorScreenImpl {
                     } else if let image = UIImage(contentsOfFile: draft.fullPath(engine: context.engine)) {
                         innerSaveDraft(media: .image(image: image, dimensions: draft.dimensions))
                     }
-                case .message:
+                case .message, .gift:
                     if let pixel = generateSingleColorImage(size: CGSize(width: 1, height: 1), color: .black) {
                         innerSaveDraft(media: .image(image: pixel, dimensions: PixelDimensions(width: 1080, height: 1920)))
                     }

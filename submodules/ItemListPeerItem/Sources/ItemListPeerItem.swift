@@ -922,6 +922,7 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
             
             var updatedLabelBadgeImage: UIImage?
             var credibilityIcon: EmojiStatusComponent.Content?
+            var credibilityParticleColor: UIColor?
             var verifiedIcon: EmojiStatusComponent.Content?
             
             if case .threatSelfAsSaved = item.aliasHandling, item.peer.id == item.context.accountPeerId {
@@ -932,6 +933,9 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
                     credibilityIcon = .text(color: item.presentationData.theme.chat.message.incoming.scamColor, string: item.presentationData.strings.Message_FakeAccount.uppercased())
                 } else if let emojiStatus = item.peer.emojiStatus {
                     credibilityIcon = .animation(content: .customEmoji(fileId: emojiStatus.fileId), size: CGSize(width: 20.0, height: 20.0), placeholderColor: item.presentationData.theme.list.mediaPlaceholderColor, themeColor: item.presentationData.theme.list.itemAccentColor, loopMode: .count(2))
+                    if let color = emojiStatus.color {
+                        credibilityParticleColor = UIColor(rgb: UInt32(bitPattern: color))
+                    }
                 } else if item.peer.isPremium && !item.context.isPremiumDisabled {
                     credibilityIcon = .premium(color: item.presentationData.theme.list.itemAccentColor)
                 }
@@ -1438,7 +1442,7 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
                     
                     var titleLeftOffset: CGFloat = 0.0
                     var nextIconX: CGFloat = titleFrame.maxX
-                    if let verifiedIcon = verifiedIcon {
+                    if let verifiedIcon {
                         let animationCache = item.context.animationCache
                         let animationRenderer = item.context.animationRenderer
                         
@@ -1463,29 +1467,18 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
                             emojiFileUpdated: nil
                         )
                         strongSelf.verifiedIconComponent = verifiedIconComponent
-                        
-                        let iconOrigin: CGFloat
-                        if case .animation = verifiedIcon {
-                            iconOrigin = titleFrame.minX
-                        } else {
-                            nextIconX += 4.0
-                            iconOrigin = nextIconX
-                        }
-                        
+                                                
                         let iconSize = verifiedIconView.update(
                             transition: .immediate,
                             component: AnyComponent(verifiedIconComponent),
                             environment: {},
-                            containerSize: CGSize(width: 20.0, height: 20.0)
+                            containerSize: CGSize(width: 16.0, height: 16.0)
                         )
                         
-                        transition.updateFrame(view: verifiedIconView, frame: CGRect(origin: CGPoint(x: iconOrigin, y: floorToScreenPixels(titleFrame.midY - iconSize.height / 2.0)), size: iconSize))
+                        transition.updateFrame(view: verifiedIconView, frame: CGRect(origin: CGPoint(x: titleFrame.minX, y: floorToScreenPixels(titleFrame.midY - iconSize.height / 2.0)), size: iconSize))
                       
-                        if case .animation = verifiedIcon {
-                            titleLeftOffset += iconSize.width + 4.0
-                        } else {
-                            nextIconX += iconSize.width
-                        }
+                        titleLeftOffset += iconSize.width + 4.0
+                        nextIconX += iconSize.width + 4.0
                     } else if let verifiedIconView = strongSelf.verifiedIconView {
                         strongSelf.verifiedIconView = nil
                         verifiedIconView.removeFromSuperview()
@@ -1515,6 +1508,7 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
                             animationCache: animationCache,
                             animationRenderer: animationRenderer,
                             content: credibilityIcon,
+                            particleColor: credibilityParticleColor,
                             isVisibleForAnimations: strongSelf.visibilityStatus,
                             action: nil,
                             emojiFileUpdated: nil

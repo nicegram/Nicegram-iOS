@@ -23,6 +23,11 @@ func telegramMediaWebpageAttributeFromApiWebpageAttribute(_ attribute: Api.WebPa
         var files: [TelegramMediaFile] = []
         files = stickers.compactMap { telegramMediaFileFromApiDocument($0, altDocuments: []) }
         return .stickerPack(TelegramMediaWebpageStickerPackAttribute(flags: flags, files: files))
+    case let .webPageAttributeUniqueStarGift(gift):
+        if let starGift = StarGift(apiStarGift: gift) {
+            return .starGift(TelegramMediaWebpageStarGiftAttribute(gift: starGift))
+        }
+        return nil
     case .webPageAttributeStory:
         return nil
     }
@@ -69,8 +74,9 @@ func telegramMediaWebpageFromApiWebpage(_ webpage: Api.WebPage) -> TelegramMedia
             }
         
             let isMediaLargeByDefault = (flags & (1 << 13)) != 0
+            let imageIsVideoCover = (flags & (1 << 14)) != 0
         
-            return TelegramMediaWebpage(webpageId: MediaId(namespace: Namespaces.Media.CloudWebpage, id: id), content: .Loaded(TelegramMediaWebpageLoadedContent(url: url, displayUrl: displayUrl, hash: hash, type: type, websiteName: siteName, title: title, text: description, embedUrl: embedUrl, embedType: embedType, embedSize: embedSize, duration: webpageDuration, author: author, isMediaLargeByDefault: isMediaLargeByDefault, image: image, file: file, story: story, attributes: webpageAttributes, instantPage: instantPage)))
+            return TelegramMediaWebpage(webpageId: MediaId(namespace: Namespaces.Media.CloudWebpage, id: id), content: .Loaded(TelegramMediaWebpageLoadedContent(url: url, displayUrl: displayUrl, hash: hash, type: type, websiteName: siteName, title: title, text: description, embedUrl: embedUrl, embedType: embedType, embedSize: embedSize, duration: webpageDuration, author: author, isMediaLargeByDefault: isMediaLargeByDefault, imageIsVideoCover: imageIsVideoCover, image: image, file: file, story: story, attributes: webpageAttributes, instantPage: instantPage)))
         case .webPageEmpty:
             return nil
     }

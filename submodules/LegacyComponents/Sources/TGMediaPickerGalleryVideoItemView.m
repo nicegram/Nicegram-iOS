@@ -67,6 +67,9 @@
     UIView *_headerView;
     UIView *_scrubberPanelView;
     TGMediaPickerGalleryVideoScrubber *_scrubberView;
+    
+    TGMediaPickerGalleryVideoScrubber *_coverScrubberView;
+    
     bool _wasPlayingBeforeScrubbing;
     bool _appeared;
     bool _scrubbingPanelPresented;
@@ -117,6 +120,8 @@
     
     CMTime _chaseTime;
     bool _chasingTime;
+    
+    bool _isCoverEditing;
 }
 
 @property (nonatomic, strong) TGMediaPickerGalleryVideoItem *item;
@@ -225,12 +230,20 @@
         //scrubberBackgroundView.backgroundColor = [TGPhotoEditorInterfaceAssets toolbarTransparentBackgroundColor];
         [_scrubberPanelView addSubview:scrubberBackgroundView];
         
-        _scrubberView = [[TGMediaPickerGalleryVideoScrubber alloc] initWithFrame:CGRectMake(0.0f, _headerView.frame.size.height - 44.0f, _headerView.frame.size.width, 68.0f)];
+        _scrubberView = [[TGMediaPickerGalleryVideoScrubber alloc] initWithFrame:CGRectMake(0.0f, _headerView.frame.size.height - 44.0f, _headerView.frame.size.width, 68.0f) cover:false];
         _scrubberView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         _scrubberView.dataSource = self;
         _scrubberView.delegate = self;
         headerView.scrubberView = _scrubberView;
         [_scrubberPanelView addSubview:_scrubberView];
+        
+        _coverScrubberView = [[TGMediaPickerGalleryVideoScrubber alloc] initWithFrame:CGRectMake(0.0f, _headerView.frame.size.height - 44.0f, _headerView.frame.size.width, 68.0f) cover:true];
+        _coverScrubberView.alpha = 0.0;
+        _coverScrubberView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+        _coverScrubberView.dataSource = self;
+        _coverScrubberView.delegate = self;
+        headerView.coverScrubberView = _coverScrubberView;
+        [_scrubberPanelView addSubview:_coverScrubberView];
         
         _fileInfoLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 10.0f, _scrubberPanelView.frame.size.width, 21)];
         _fileInfoLabel.autoresizingMask = UIViewAutoresizingFlexibleWidth;
@@ -420,6 +433,7 @@
     }
     
     _scrubberView.allowsTrimming = false;
+    _coverScrubberView.allowsTrimming = false;
     _videoDimensions = item.dimensions;
     
     if (_entitiesView == nil) {
@@ -596,6 +610,12 @@
                 strongSelf->_scrubberView.trimStartValue = adjustments.trimStartValue;
                 strongSelf->_scrubberView.trimEndValue = adjustments.trimEndValue;
                 strongSelf->_scrubberView.value = adjustments.trimStartValue;
+                
+                strongSelf->_coverScrubberView.trimStartValue = adjustments.trimStartValue;
+                strongSelf->_coverScrubberView.trimEndValue = adjustments.trimEndValue;
+                strongSelf->_coverScrubberView.value = adjustments.trimStartValue;
+                [strongSelf->_coverScrubberView _layoutTrimCurtainViews];
+                
                 [strongSelf->_scrubberView setTrimApplied:(adjustments.trimStartValue > 0 || adjustments.trimEndValue < videoDuration)];
                 strongSelf->_shouldResetScrubber = false;
             }
@@ -603,14 +623,21 @@
             {
                 strongSelf->_scrubberView.trimStartValue = 0;
                 strongSelf->_scrubberView.trimEndValue = videoDuration;
+                
+                strongSelf->_coverScrubberView.trimStartValue = 0;
+                strongSelf->_coverScrubberView.trimEndValue = videoDuration;
+                
                 [strongSelf->_scrubberView setTrimApplied:false];
                 strongSelf->_shouldResetScrubber = true;
             }
             
             [strongSelf->_scrubberView reloadData];
+            [strongSelf->_coverScrubberView reloadData];
+             
             if (!strongSelf->_appeared)
             {
                 [strongSelf->_scrubberView resetToStart];
+                [strongSelf->_coverScrubberView resetToStart];
                 strongSelf->_appeared = true;
             }
         } file:__FILE_NAME__ line:__LINE__]];
@@ -629,6 +656,7 @@
         if (afterReload) {
             _cachedThumbnails = nil;
             [_scrubberView reloadData];
+            [_coverScrubberView reloadData];
         }
         else {
             [self setScrubbingPanelHidden:false animated:true];
@@ -648,8 +676,10 @@
     
     if (hidden)
     {
-        if (!_scrubbingPanelPresented)
+        if (!_scrubbingPanelPresented) {
             [_scrubberView ignoreThumbnails];
+            [_coverScrubberView ignoreThumbnails];
+        }
         
         _scrubbingPanelPresented = false;
         
@@ -680,6 +710,7 @@
 
         [_scrubberPanelView layoutSubviews];
         [_scrubberView layoutSubviews];
+        [_coverScrubberView layoutSubviews];
         
         void (^changeBlock)(void) = ^
         {
@@ -732,6 +763,27 @@
         [self setPlayButtonHidden:false animated:true];
 }
 
+- (void)prepareForCoverEditing
+{
+    _isCoverEditing = true;
+    [self setPlayButtonHidden:true animated:true];
+    [self stop];
+    
+    NSNumber *savedPosition = [self.item.editingContext coverPositionForItem:self.item.editableMediaItem];
+    if (savedPosition != nil) {
+        [self _seekToPosition:savedPosition.doubleValue manual:false];
+        [_scrubberView setValue:savedPosition.doubleValue resetPosition:true];
+        [_coverScrubberView setValue:savedPosition.doubleValue resetPosition:true];
+    }
+}
+
+- (void)returnFromCoverEditing
+{
+    _isCoverEditing = false;
+    if (![self usePhotoBehavior])
+        [self setPlayButtonHidden:false animated:true];
+}
+
 - (void)setFrame:(CGRect)frame
 {
     bool frameChanged = !CGRectEqualToRect(frame, self.frame);
@@ -741,6 +793,7 @@
     if (_appeared && frameChanged)
     {
         [_scrubberView resetThumbnails];
+        [_coverScrubberView resetThumbnails];
         
         [_scrubberPanelView setNeedsLayout];
         [_scrubberPanelView layoutIfNeeded];
@@ -748,6 +801,7 @@
         dispatch_async(dispatch_get_main_queue(), ^
         {
             [_scrubberView reloadThumbnails];
+            [_coverScrubberView reloadThumbnails];
             [_scrubberPanelView layoutSubviews];
         });
     }
@@ -892,6 +946,10 @@
     } else {
         return _imageView;
     }
+}
+
+- (NSTimeInterval)currentPosition {
+    return _coverScrubberView.value;
 }
 
 - (UIImage *)screenImage
@@ -1116,6 +1174,7 @@
     self.isPlaying = false;
     [_scrubberView setIsPlaying:false];
     [_scrubberView resetToStart];
+    [_coverScrubberView resetToStart];
     
     [_positionTimer invalidate];
     _positionTimer = nil;
@@ -1228,6 +1287,9 @@
 
 - (void)playPressed
 {
+    if (!self.gesturesEnabled)
+        return;
+    
     if (_downloadRequired)
         [self _download];
     else
@@ -1249,6 +1311,7 @@
         {
             [self _seekToPosition:_scrubberView.trimStartValue manual:false];
             [_scrubberView setValue:_scrubberView.trimStartValue resetPosition:true];
+            [_coverScrubberView setValue:_scrubberView.trimStartValue resetPosition:true];
         }
         
         [_player play];
@@ -1310,10 +1373,12 @@
         _positionTimer = nil;
         
         [_scrubberView resetToStart];
+        [_coverScrubberView resetToStart];
     }
     else
     {
         [_scrubberView setValue:_scrubberView.trimStartValue resetPosition:true];
+        [_coverScrubberView setValue:_scrubberView.trimStartValue resetPosition:true];
     }
     
     [self _seekToPosition:_scrubberView.trimStartValue manual:false];
@@ -1322,6 +1387,7 @@
 - (void)positionTimerEvent
 {
     [_scrubberView setValue:CMTimeGetSeconds(_player.currentItem.currentTime)];
+    [_coverScrubberView setValue:CMTimeGetSeconds(_player.currentItem.currentTime)];
 }
 
 - (void)_seekToPosition:(NSTimeInterval)position manual:(bool)__unused manual
@@ -1389,13 +1455,23 @@
     if (_wasPlayingBeforeScrubbing) {
         [self play];
     } else {
-        [self setPlayButtonHidden:false animated:true];
+        if (!_isCoverEditing)
+            [self setPlayButtonHidden:false animated:true];
+    }
+    
+    if (videoScrubber == _coverScrubberView) {
+        [_coverScrubberView setValue:_scrubberView.value resetPosition:true];
     }
 }
 
 - (void)videoScrubber:(TGMediaPickerGalleryVideoScrubber *)__unused videoScrubber valueDidChange:(NSTimeInterval)position
 {
     [self _seekToPosition:position manual:true];
+    if (videoScrubber == _scrubberView) {
+        [_coverScrubberView setValue:position resetPosition:true];
+    } else {
+        [_scrubberView setValue:position resetPosition:true];
+    }
 }
 
 #pragma mark Trimming
@@ -1425,6 +1501,10 @@
     _shouldResetScrubber = false;
     [self updatePlayerRange:videoScrubber.trimEndValue];
     [self updateEditAdjusments];
+    
+    _coverScrubberView.trimStartValue = videoScrubber.trimStartValue;
+    _coverScrubberView.trimEndValue = videoScrubber.trimEndValue;
+    [_coverScrubberView _layoutTrimCurtainViews];
     
     [self setPlayButtonHidden:false animated:true];
 }
@@ -1622,8 +1702,12 @@
     return [SSignal single:thumbnails];
 }
 
-- (void)videoScrubber:(TGMediaPickerGalleryVideoScrubber *)__unused videoScrubber requestThumbnailImagesForTimestamps:(NSArray *)timestamps size:(CGSize)size isSummaryThumbnails:(bool)isSummaryThumbnails
+- (void)videoScrubber:(TGMediaPickerGalleryVideoScrubber *)videoScrubber requestThumbnailImagesForTimestamps:(NSArray *)timestamps size:(CGSize)size isSummaryThumbnails:(bool)isSummaryThumbnails
 {
+    if (isSummaryThumbnails && videoScrubber == _coverScrubberView) {
+        return;
+    }
+    
     if (timestamps.count == 0)
         return;
 
@@ -1692,8 +1776,10 @@
         
         [images enumerateObjectsUsingBlock:^(UIImage *image, NSUInteger index, __unused BOOL *stop)
         {
-            if (index < timestamps.count)
+            if (index < timestamps.count) {
                 [strongSelf->_scrubberView setThumbnailImage:image forTimestamp:[timestamps[index] doubleValue] index:index isSummaryThubmnail:isSummaryThumbnails last:index == (images.count - 1)];
+                [strongSelf->_coverScrubberView setThumbnailImage:image forTimestamp:[timestamps[index] doubleValue] index:index isSummaryThubmnail:isSummaryThumbnails last:index == (images.count - 1)];
+            }
         }];
     } completed:^
     {

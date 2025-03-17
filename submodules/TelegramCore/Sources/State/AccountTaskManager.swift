@@ -88,6 +88,9 @@ final class AccountTaskManager {
                     tasks.add(managedSynchronizeMarkAllUnseenReactionsOperations(postbox: self.stateManager.postbox, network: self.stateManager.network, stateManager: self.stateManager).start())
                     tasks.add(managedApplyPendingMessageReactionsActions(postbox: self.stateManager.postbox, network: self.stateManager.network, stateManager: self.stateManager).start())
                     tasks.add(managedApplyPendingMessageStarsReactionsActions(postbox: self.stateManager.postbox, network: self.stateManager.network, stateManager: self.stateManager).start())
+                    
+                    tasks.add(managedApplyPendingPaidMessageActions(postbox: self.stateManager.postbox, network: self.stateManager.network, stateManager: self.stateManager).start())
+                    
                     tasks.add(managedSynchronizeEmojiKeywordsOperations(postbox: self.stateManager.postbox, network: self.stateManager.network).start())
                     tasks.add(managedApplyPendingScheduledMessagesActions(postbox: self.stateManager.postbox, network: self.stateManager.network, stateManager: self.stateManager).start())
                     tasks.add(managedSynchronizeAvailableReactions(postbox: self.stateManager.postbox, network: self.stateManager.network).start())
@@ -108,6 +111,7 @@ final class AccountTaskManager {
                     tasks.add(managedRecentStatusEmoji(postbox: self.stateManager.postbox, network: self.stateManager.network).start())
                     tasks.add(managedFeaturedStatusEmoji(postbox: self.stateManager.postbox, network: self.stateManager.network).start())
                     tasks.add(managedFeaturedChannelStatusEmoji(postbox: self.stateManager.postbox, network: self.stateManager.network).start())
+                    tasks.add(managedUniqueStarGifts(accountPeerId: self.accountPeerId, postbox: self.stateManager.postbox, network: self.stateManager.network).start())
                     tasks.add(managedProfilePhotoEmoji(postbox: self.stateManager.postbox, network: self.stateManager.network).start())
                     tasks.add(managedGroupPhotoEmoji(postbox: self.stateManager.postbox, network: self.stateManager.network).start())
                     tasks.add(managedBackgroundIconEmoji(postbox: self.stateManager.postbox, network: self.stateManager.network).start())

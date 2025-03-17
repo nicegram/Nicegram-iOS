@@ -59,7 +59,7 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
     private let dismiss: () -> Void
     
     private var content: UndoOverlayContent
-    private let blurred: Bool
+    private let appearance: UndoOverlayController.Appearance?
     
     private let additionalView: UndoOverlayControllerAdditionalView?
     
@@ -77,11 +77,11 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
     
     private var fetchResourceDisposable: Disposable?
     
-    init(presentationData: PresentationData, content: UndoOverlayContent, elevatedLayout: Bool, placementPosition: UndoOverlayController.Position, blurred: Bool, additionalView: (() -> UndoOverlayControllerAdditionalView?)?, action: @escaping (UndoOverlayAction) -> Bool, dismiss: @escaping () -> Void) {
+    init(presentationData: PresentationData, content: UndoOverlayContent, elevatedLayout: Bool, placementPosition: UndoOverlayController.Position, appearance: UndoOverlayController.Appearance?, additionalView: (() -> UndoOverlayControllerAdditionalView?)?, action: @escaping (UndoOverlayAction) -> Bool, dismiss: @escaping () -> Void) {
         self.presentationData = presentationData
         self.elevatedLayout = elevatedLayout
         self.placementPosition = placementPosition
-        self.blurred = blurred
+        self.appearance = appearance
         self.content = content
         
         self.additionalView = additionalView?()
@@ -555,12 +555,13 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
                     }
                     resourceReference = MediaResourceReference.stickerPackThumbnail(stickerPack: .id(id: info.id.id, accessHash: info.accessHash), resource: thumbnail.resource)
                 } else if let item = topItem {
-                    if item.file.isAnimatedSticker || item.file.isVideoSticker {
-                        thumbnailItem = .animated(EngineMediaResource(item.file.resource), item.file.dimensions ?? PixelDimensions(width: 512, height: 512), item.file.isVideoSticker)
-                        resourceReference = MediaResourceReference.media(media: .standalone(media: item.file), resource: item.file.resource)
-                    } else if let dimensions = item.file.dimensions, let resource = chatMessageStickerResource(file: item.file, small: true) as? TelegramMediaResource {
+                    let itemFile = item.file._parse()
+                    if itemFile.isAnimatedSticker || itemFile.isVideoSticker {
+                        thumbnailItem = .animated(EngineMediaResource(itemFile.resource), itemFile.dimensions ?? PixelDimensions(width: 512, height: 512), itemFile.isVideoSticker)
+                        resourceReference = MediaResourceReference.media(media: .standalone(media: itemFile), resource: itemFile.resource)
+                    } else if let dimensions = itemFile.dimensions, let resource = chatMessageStickerResource(file: itemFile, small: true) as? TelegramMediaResource {
                         thumbnailItem = .still(TelegramMediaImageRepresentation(dimensions: dimensions, resource: resource, progressiveSizes: [], immediateThumbnailData: nil, hasVideo: false, isPersonal: false))
-                        resourceReference = MediaResourceReference.media(media: .standalone(media: item.file), resource: resource)
+                        resourceReference = MediaResourceReference.media(media: .standalone(media: itemFile), resource: resource)
                     }
                 }
                 
@@ -668,7 +669,7 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
                                 case let .result(_, items, _):
                                     let item = items[Int(value)]
 
-                                    animatedStickerNode.setup(source: AnimatedStickerResourceSource(account: context.account, resource: item.file.resource), width: 120, height: 120, playbackMode: .once, mode: .direct(cachePathPrefix: nil))
+                                    animatedStickerNode.setup(source: AnimatedStickerResourceSource(account: context.account, resource: item.file._parse().resource), width: 120, height: 120, playbackMode: .once, mode: .direct(cachePathPrefix: nil))
                                 default:
                                     break
                             }
@@ -1544,7 +1545,7 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
         self.undoButtonNode = HighlightTrackingButtonNode()
         
         self.panelNode = ASDisplayNode()
-        if presentationData.theme.overallDarkAppearance && !self.blurred {
+        if presentationData.theme.overallDarkAppearance && !(self.appearance?.isBlurred == true) {
             self.panelNode.backgroundColor = presentationData.theme.rootController.tabBar.backgroundColor
         } else {
             self.panelNode.backgroundColor = .clear
@@ -1904,7 +1905,7 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
         let rightInset: CGFloat = 16.0
         var contentHeight: CGFloat = 20.0
         
-        let margin: CGFloat = 12.0
+        let margin: CGFloat = self.appearance?.sideInset ?? 12.0
         let leftMargin = margin + layout.insets(options: []).left
         
         let buttonTextSize = self.undoButtonTextNode.updateLayout(CGSize(width: 200.0, height: .greatestFiniteMagnitude))
@@ -1964,7 +1965,9 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
         case .top:
             break
         case .bottom:
-            if self.elevatedLayout {
+            if let bottomInset = self.appearance?.bottomInset {
+                insets.bottom += bottomInset
+            } else if self.elevatedLayout {
                 insets.bottom += 49.0
             }
         }

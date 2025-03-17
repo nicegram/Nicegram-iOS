@@ -1,10 +1,10 @@
 import Foundation
-import UIKit
+
 import SwiftSignalKit
 import Postbox
 import CoreMedia
 import TelegramCore
-import TelegramAudio
+
 
 public final class ChunkMediaPlayerPart {
     public enum Id: Hashable {
@@ -34,7 +34,7 @@ public final class ChunkMediaPlayerPart {
         }
         
         deinit {
-            TempBox.shared.dispose(self.file)
+            //TempBox.shared.dispose(self.file)
         }
     }
     
@@ -43,17 +43,19 @@ public final class ChunkMediaPlayerPart {
     public let content: TempFile
     public let clippedStartTime: Double?
     public let codecName: String?
+    public let offsetTime: Double
     
     public var id: Id {
         return .tempFile(path: self.content.file.path)
     }
     
-    public init(startTime: Double, clippedStartTime: Double? = nil, endTime: Double, content: TempFile, codecName: String?) {
+    public init(startTime: Double, clippedStartTime: Double? = nil, endTime: Double, content: TempFile, codecName: String?, offsetTime: Double) {
         self.startTime = startTime
         self.clippedStartTime = clippedStartTime
         self.endTime = endTime
         self.content = content
         self.codecName = codecName
+        self.offsetTime = offsetTime
     }
 }
 
@@ -118,6 +120,11 @@ public final class ChunkMediaPlayerPartsState {
     }
 }
 
+#if os(iOS)
+
+import UIKit
+import TelegramAudio
+
 public protocol ChunkMediaPlayer: AnyObject {
     var status: Signal<MediaPlayerStatus, NoError> { get }
     var audioLevelEvents: Signal<Float, NoError> { get }
@@ -136,3 +143,5 @@ public protocol ChunkMediaPlayer: AnyObject {
     func seek(timestamp: Double, play: Bool?)
     func setBaseRate(_ baseRate: Double)
 }
+
+#endif

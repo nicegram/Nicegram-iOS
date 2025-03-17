@@ -61,6 +61,7 @@ private func patternScaleValueAt(fraction: CGFloat, t: CGFloat, reverse: Bool) -
 public final class PeerInfoCoverComponent: Component {
     public enum Subject: Equatable {
         case peer(EnginePeer)
+        case status(PeerEmojiStatus)
         case custom(UIColor?, UIColor?, UIColor?, Int64?)
         
         func colors(context: AccountContext, isDark: Bool) -> (UIColor, UIColor)? {
@@ -73,6 +74,11 @@ public final class PeerInfoCoverComponent: Component {
                 } else {
                     return nil
                 }
+            case let .status(status):
+                if case let .starGift(_, _, _, _, _, innerColor, outerColor, _, _) = status.content {
+                    return (UIColor(rgb: UInt32(bitPattern: innerColor)), UIColor(rgb: UInt32(bitPattern: outerColor)))
+                }
+                return nil
             case let .custom(color, secondColor, _, _):
                 if let color {
                     if let secondColor {
@@ -90,6 +96,11 @@ public final class PeerInfoCoverComponent: Component {
             switch self {
             case let .peer(peer):
                 return peer.profileBackgroundEmojiId
+            case let .status(status):
+                if case let .starGift(_, _, _, _, patternFileId, _, _, _, _) = status.content {
+                    return patternFileId
+                }
+                return nil
             case let .custom(_, _, _, fileId):
                 return fileId
             }
@@ -102,6 +113,8 @@ public final class PeerInfoCoverComponent: Component {
     public let avatarCenter: CGPoint
     public let avatarScale: CGFloat
     public let defaultHeight: CGFloat
+    public let gradientOnTop: Bool
+    public let gradientCenter: CGPoint
     public let avatarTransitionFraction: CGFloat
     public let patternTransitionFraction: CGFloat
     
@@ -113,6 +126,8 @@ public final class PeerInfoCoverComponent: Component {
         avatarCenter: CGPoint,
         avatarScale: CGFloat,
         defaultHeight: CGFloat,
+        gradientOnTop: Bool = false,
+        gradientCenter: CGPoint = CGPoint(x: 0.5, y: 0.5),
         avatarTransitionFraction: CGFloat,
         patternTransitionFraction: CGFloat
     ) {
@@ -123,6 +138,8 @@ public final class PeerInfoCoverComponent: Component {
         self.avatarCenter = avatarCenter
         self.avatarScale = avatarScale
         self.defaultHeight = defaultHeight
+        self.gradientOnTop = gradientOnTop
+        self.gradientCenter = gradientCenter
         self.avatarTransitionFraction = avatarTransitionFraction
         self.patternTransitionFraction = patternTransitionFraction
     }
@@ -149,6 +166,12 @@ public final class PeerInfoCoverComponent: Component {
         if lhs.defaultHeight != rhs.defaultHeight {
             return false
         }
+        if lhs.gradientOnTop != rhs.gradientOnTop {
+            return false
+        }
+        if lhs.gradientCenter != rhs.gradientCenter {
+            return false
+        }
         if lhs.avatarTransitionFraction != rhs.avatarTransitionFraction {
             return false
         }
@@ -166,6 +189,7 @@ public final class PeerInfoCoverComponent: Component {
         private let avatarBackgroundGradientLayer: SimpleGradientLayer
         private let backgroundPatternContainer: UIView
         
+        private var currentSize: CGSize?
         private var component: PeerInfoCoverComponent?
         private var state: EmptyComponentState?
         
@@ -180,6 +204,7 @@ public final class PeerInfoCoverComponent: Component {
             self.backgroundGradientLayer = SimpleGradientLayer()
             
             self.avatarBackgroundGradientLayer = SimpleGradientLayer()
+            self.avatarBackgroundGradientLayer.opacity = 0.0
             let baseAvatarGradientAlpha: CGFloat = 0.4
             let numSteps = 6
             self.avatarBackgroundGradientLayer.colors = (0 ..< numSteps).map { i in
@@ -210,6 +235,9 @@ public final class PeerInfoCoverComponent: Component {
             self.layer.addSublayer(self.avatarBackgroundPatternContentsLayer)
             
             self.addSubview(self.backgroundPatternContainer)
+            
+            self.layer.allowsGroupOpacity = true
+            self.backgroundView.layer.allowsGroupOpacity = true
         }
         
         required public init?(coder aDecoder: NSCoder) {
@@ -221,13 +249,41 @@ public final class PeerInfoCoverComponent: Component {
             self.patternImageDisposable?.dispose()
         }
         
+        public func willAnimateIn() {
+            for layer in self.avatarPatternContentLayers {
+                layer.opacity = 0.0
+            }
+        }
+        
+        public func animateIn() {
+            guard let _ = self.currentSize, let component = self.component else {
+                return
+            }
+            
+            for layer in self.avatarPatternContentLayers {
+                layer.opacity = 1.0
+                layer.animatePosition(
+                    from: component.avatarCenter,
+                    to: layer.position,
+                    duration: 0.4,
+                    timingFunction: kCAMediaTimingFunctionSpring
+                )
+            }
+        }
+        
         public func animateTransition() {
             if let gradientSnapshotLayer = self.backgroundGradientLayer.snapshotContentTree() {
-                gradientSnapshotLayer.frame = self.backgroundGradientLayer.frame
-                self.layer.insertSublayer(gradientSnapshotLayer, above: self.backgroundGradientLayer)
-                gradientSnapshotLayer.animateAlpha(from: 1.0, to: 0.0, duration: 0.25, removeOnCompletion: false, completion: { _ in
-                    gradientSnapshotLayer.removeFromSuperlayer()
+                let backgroundSnapshotLayer = SimpleLayer()
+                backgroundSnapshotLayer.allowsGroupOpacity = true
+                backgroundSnapshotLayer.backgroundColor = self.backgroundView.backgroundColor?.cgColor
+                backgroundSnapshotLayer.frame = self.backgroundView.frame
+                self.layer.insertSublayer(backgroundSnapshotLayer, above: self.backgroundGradientLayer)
+               
+                backgroundSnapshotLayer.animateAlpha(from: 1.0, to: 0.0, duration: 0.25, removeOnCompletion: false, completion: { _ in
+                    backgroundSnapshotLayer.removeFromSuperlayer()
                 })
+                gradientSnapshotLayer.frame = self.backgroundGradientLayer.convert(self.backgroundGradientLayer.bounds, to: self.backgroundView.layer)
+                backgroundSnapshotLayer.addSublayer(gradientSnapshotLayer)
             }
             for layer in self.avatarPatternContentLayers {
                 if let _ = layer.contents, let snapshot = layer.snapshotContentTree() {
@@ -295,7 +351,8 @@ public final class PeerInfoCoverComponent: Component {
         func update(component: PeerInfoCoverComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
             let previousComponent = self.component
             self.component = component
-            
+            self.currentSize = availableSize
+                        
             if previousComponent?.subject?.fileId != component.subject?.fileId {
                 if let fileId = component.subject?.fileId, fileId != 0 {
                     if self.patternContentsTarget == nil {
@@ -349,18 +406,25 @@ public final class PeerInfoCoverComponent: Component {
                 secondaryBackgroundColor = .clear
             }
             
-            self.backgroundView.backgroundColor = secondaryBackgroundColor
-            
+            let gradientWidth: CGFloat
+            let gradientHeight: CGFloat = component.defaultHeight
             if case .custom = component.subject {
-                if availableSize.width < availableSize.height {
-                    self.backgroundGradientLayer.startPoint = CGPoint(x: 0.5, y: 0.25)
-                } else {
-                    self.backgroundGradientLayer.startPoint = CGPoint(x: 0.5, y: 0.5)
-                }
+                gradientWidth = gradientHeight
+                self.backgroundView.backgroundColor = backgroundColor
+                self.backgroundGradientLayer.startPoint = CGPoint(x: 0.5, y: component.avatarCenter.y / gradientHeight)
                 self.backgroundGradientLayer.endPoint = CGPoint(x: 1.0, y: 1.0)
                 self.backgroundGradientLayer.type = .radial
                 self.backgroundGradientLayer.colors = [secondaryBackgroundColor.cgColor, backgroundColor.cgColor]
+            } else if case .status = component.subject {
+                gradientWidth = availableSize.width
+                self.backgroundView.backgroundColor = secondaryBackgroundColor
+                self.backgroundGradientLayer.startPoint = component.gradientCenter
+                self.backgroundGradientLayer.endPoint = CGPoint(x: 1.0, y: 1.0)
+                self.backgroundGradientLayer.type = .radial
+                self.backgroundGradientLayer.colors = [backgroundColor.cgColor, secondaryBackgroundColor.cgColor]
             } else {
+                gradientWidth = availableSize.width
+                self.backgroundView.backgroundColor = secondaryBackgroundColor
                 self.backgroundGradientLayer.startPoint = CGPoint(x: 0.5, y: 1.0)
                 self.backgroundGradientLayer.endPoint = CGPoint(x: 0.5, y: 0.0)
                 self.backgroundGradientLayer.type = .axial
@@ -368,8 +432,7 @@ public final class PeerInfoCoverComponent: Component {
             }
             self.backgroundGradientLayer.anchorPoint = CGPoint(x: 0.0, y: 1.0)
             
-            let gradientHeight: CGFloat = component.defaultHeight
-            let backgroundGradientFrame = CGRect(origin: CGPoint(x: 0.0, y: availableSize.height - gradientHeight), size: CGSize(width: availableSize.width, height: gradientHeight))
+            let backgroundGradientFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - gradientWidth) / 2.0), y: component.gradientOnTop ? 0.0 : availableSize.height - gradientHeight), size: CGSize(width: gradientWidth, height: gradientHeight))
             if !transition.animation.isImmediate {
                 let previousPosition = self.backgroundGradientLayer.position
                 let updatedPosition = CGPoint(x: backgroundGradientFrame.minX, y: backgroundGradientFrame.maxY)
@@ -382,17 +445,18 @@ public final class PeerInfoCoverComponent: Component {
             
             let backgroundFrame = CGRect(origin: CGPoint(x: 0.0, y: -1000.0 + availableSize.height), size: CGSize(width: availableSize.width, height: 1000.0))
             transition.containedViewLayoutTransition.updateFrameAdditive(view: self.backgroundView, frame: backgroundFrame)
-            
-            /*let avatarBackgroundPatternContainerFrame = CGSize(width: 0.0, height: 0.0).centered(around: component.avatarCenter)
-            transition.containedViewLayoutTransition.updateFrameAdditive(view: self.avatarBackgroundPatternContainer, frame: avatarBackgroundPatternContainerFrame)
-            transition.containedViewLayoutTransition.updateSublayerTransformScaleAdditive(layer: self.avatarBackgroundPatternContainer.layer, scale: component.avatarScale)*/
-            
-            //transition.setFrame(view: self.avatarBackgroundPatternView, frame: CGSize(width: 200.0, height: 200.0).centered(around: CGPoint()))
-            
+                        
             let avatarPatternFrame = CGSize(width: 380.0, height: floor(component.defaultHeight * 1.0)).centered(around: component.avatarCenter)
             transition.setFrame(layer: self.avatarBackgroundPatternContentsLayer, frame: avatarPatternFrame)
             
             if case let .custom(_, _, patternColor, _) = component.subject, let patternColor {
+                self.avatarBackgroundPatternContentsLayer.compositingFilter = nil
+                self.avatarBackgroundPatternContentsLayer.colors = [
+                    patternColor.withAlphaComponent(0.6).cgColor,
+                    patternColor.withAlphaComponent(0.0).cgColor
+                ]
+            } else if case let .status(status) = component.subject, case let .starGift(_, _, _, _, _, _, _, patternColorValue, _) = status.content {
+                let patternColor = UIColor(rgb: UInt32(bitPattern: patternColorValue))
                 self.avatarBackgroundPatternContentsLayer.compositingFilter = nil
                 self.avatarBackgroundPatternContentsLayer.colors = [
                     patternColor.withAlphaComponent(0.6).cgColor,
@@ -405,7 +469,6 @@ public final class PeerInfoCoverComponent: Component {
                         UIColor(white: 0.0, alpha: 0.6).cgColor,
                         UIColor(white: 0.0, alpha: 0.0).cgColor
                     ]
-                    
                 } else {
                     self.avatarBackgroundPatternContentsLayer.compositingFilter = nil
                     let baseWhite: CGFloat = component.isDark ? 0.5 : 0.3
@@ -416,9 +479,10 @@ public final class PeerInfoCoverComponent: Component {
                 }
             }
             
-            if case .custom = component.subject {
+            switch component.subject {
+            case .custom, .status:
                 self.avatarBackgroundGradientLayer.isHidden = true
-            } else {
+            default:
                 self.avatarBackgroundGradientLayer.isHidden = component.subject?.colors(context: component.context, isDark: component.isDark) == nil
             }
             transition.setFrame(layer: self.avatarBackgroundGradientLayer, frame: CGSize(width: 300.0, height: 300.0).centered(around: component.avatarCenter))
@@ -426,11 +490,7 @@ public final class PeerInfoCoverComponent: Component {
             
             let backgroundPatternContainerFrame = CGRect(origin: CGPoint(x: 0.0, y: availableSize.height), size: CGSize(width: availableSize.width, height: 0.0))
             transition.containedViewLayoutTransition.updateFrameAdditive(view: self.backgroundPatternContainer, frame: backgroundPatternContainerFrame)
-//            if component.peer?.id == component.context.account.peerId {
-//                transition.setAlpha(view: self.backgroundPatternContainer, alpha: 0.0)
-//            } else {
-                transition.setAlpha(view: self.backgroundPatternContainer, alpha: component.patternTransitionFraction)
-//            }
+            transition.setAlpha(view: self.backgroundPatternContainer, alpha: component.patternTransitionFraction)
             
             var baseDistance: CGFloat = 72.0
             var baseRowDistance: CGFloat = 28.0

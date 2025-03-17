@@ -1248,7 +1248,7 @@ public class VideoMessageCameraScreen: ViewController {
             
             if let controller = self.controller, let layout = self.validLayout {
                 let insets = layout.insets(options: .input)
-                if point.y > layout.size.height - insets.bottom - controller.inputPanelFrame.0.height {
+                if point.y > layout.size.height - max(insets.bottom, layout.additionalInsets.bottom) - controller.inputPanelFrame.0.height {
                     if layout.metrics.isTablet {
                         if point.x < layout.size.width * 0.33 {
                             return result
@@ -1847,7 +1847,7 @@ public class VideoMessageCameraScreen: ViewController {
                 guard let self else {
                     return
                 }
-                let values = MediaEditorValues(peerId: self.context.account.peerId, originalDimensions: dimensions, cropOffset: .zero, cropRect: CGRect(origin: .zero, size: dimensions.cgSize), cropScale: 1.0, cropRotation: 0.0, cropMirroring: false, cropOrientation: nil, gradientColors: nil, videoTrimRange: self.node.previewState?.trimRange, videoIsMuted: false, videoIsFullHd: false, videoIsMirrored: false, videoVolume: nil, additionalVideoPath: nil, additionalVideoIsDual: false, additionalVideoPosition: nil, additionalVideoScale: nil, additionalVideoRotation: nil, additionalVideoPositionChanges: [], additionalVideoTrimRange: nil, additionalVideoOffset: nil, additionalVideoVolume: nil, collage: [], nightTheme: false, drawing: nil, maskDrawing: nil, entities: [], toolValues: [:], audioTrack: nil, audioTrackTrimRange: nil, audioTrackOffset: nil, audioTrackVolume: nil, audioTrackSamples: nil, collageTrackSamples: nil, coverImageTimestamp: nil, qualityPreset: .videoMessage)
+                let values = MediaEditorValues(peerId: self.context.account.peerId, originalDimensions: dimensions, cropOffset: .zero, cropRect: CGRect(origin: .zero, size: dimensions.cgSize), cropScale: 1.0, cropRotation: 0.0, cropMirroring: false, cropOrientation: nil, gradientColors: nil, videoTrimRange: self.node.previewState?.trimRange, videoIsMuted: false, videoIsFullHd: false, videoIsMirrored: false, videoVolume: nil, additionalVideoPath: nil, additionalVideoIsDual: false, additionalVideoPosition: nil, additionalVideoScale: nil, additionalVideoRotation: nil, additionalVideoPositionChanges: [], additionalVideoTrimRange: nil, additionalVideoOffset: nil, additionalVideoVolume: nil, collage: [], nightTheme: false, drawing: nil, maskDrawing: nil, entities: [], toolValues: [:], audioTrack: nil, audioTrackTrimRange: nil, audioTrackOffset: nil, audioTrackVolume: nil, audioTrackSamples: nil, collageTrackSamples: nil, coverImageTimestamp: nil, coverDimensions: nil, qualityPreset: .videoMessage)
                 
                 var resourceAdjustments: VideoMediaResourceAdjustments? = nil
                 if let valuesData = try? JSONEncoder().encode(values) {

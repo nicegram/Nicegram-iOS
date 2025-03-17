@@ -79,6 +79,6 @@ Package_local.swift
 submodules/OpusBinding/SharedHeaders/*
 submodules/FFMpegBinding/SharedHeaders/*
 submodules/OpenSSLEncryptionProvider/SharedHeaders/*
-
-
 *.storekit
+submodules/TelegramCore/FlatSerialization/Sources/*
+buildServer.json
